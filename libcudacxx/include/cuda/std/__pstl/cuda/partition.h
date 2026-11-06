@@ -151,7 +151,8 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
         // Preserve the original dispatch for 64-bit integers.
         if constexpr (!(is_integral_v<_ValueType> && sizeof(_ValueType) == 8))
         {
-          if (__count <= static_cast<size_t>(numeric_limits<int>::max()))
+          // Leave headroom for padding in CUB's signed 32-bit per-partition scan.
+          if (__count < static_cast<size_t>(numeric_limits<int>::max() / 2))
           {
             return __par_impl(
               __policy, ::cuda::std::move(__first), static_cast<int>(__count), ::cuda::std::move(__pred));

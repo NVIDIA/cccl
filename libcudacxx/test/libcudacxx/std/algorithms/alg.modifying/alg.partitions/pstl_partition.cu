@@ -134,18 +134,21 @@ using partition_boundary_types =
 C2H_TEST("cuda::std::partition count boundary", "[parallel algorithm][large]", partition_boundary_types)
 try
 {
-  using T                        = typename c2h::get<0, TestType>;
-  constexpr std::int64_t int_max = ::std::numeric_limits<int>::max();
-  const auto count               = GENERATE_COPY(int_max - 1, int_max, int_max + 1);
-  CAPTURE(count, sizeof(T));
+  using T                       = typename c2h::get<0, TestType>;
+  constexpr std::int64_t cutoff = ::std::numeric_limits<int>::max() / 2;
+  const auto count              = GENERATE_COPY(cutoff - 1, cutoff, cutoff + 1);
+  const int rejected            = GENERATE(0, 3000);
+  CAPTURE(count, rejected, sizeof(T));
 
   c2h::device_vector<T> input(static_cast<std::size_t>(count), T{1});
   const auto policy = cuda::execution::gpu;
+  cuda::std::fill(policy, input.begin(), input.begin() + rejected, T{0});
 
-  const auto result = cuda::std::partition(policy, input.begin(), input.end(), cuda::always_true{});
-  REQUIRE(result - input.begin() == count);
+  const auto result = cuda::std::partition(policy, input.begin(), input.end(), cuda::equal_to_value{T{1}});
+  REQUIRE(result - input.begin() == count - rejected);
 
-  CHECK(cuda::std::all_of(policy, input.begin(), input.end(), cuda::equal_to_value{T{1}}));
+  CHECK(cuda::std::all_of(policy, input.begin(), result, cuda::equal_to_value{T{1}}));
+  CHECK(cuda::std::all_of(policy, result, input.end(), cuda::equal_to_value{T{0}}));
 }
 catch (...)
 {
