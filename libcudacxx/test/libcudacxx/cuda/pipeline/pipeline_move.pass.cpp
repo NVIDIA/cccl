@@ -15,6 +15,7 @@
 
 #include <cuda/pipeline>
 #include <cuda/std/cassert>
+#include <cuda/std/optional>
 #include <cuda/std/utility>
 
 #include "test_macros.h"
@@ -38,14 +39,16 @@ template <cuda::thread_scope Scope>
 TEST_HOST_DEVICE_FUNC void test()
 {
   cuda::pipeline_shared_state<Scope, 1> shared_state;
+  cuda::std::optional<cuda::pipeline<Scope>> moved;
   {
-    auto pipe  = cuda::make_pipeline(two_thread_test_group<0>{}, &shared_state);
-    auto moved = cuda::std::move(pipe);
-  } // Only `moved` quits; the moved-from `pipe` must not quit again.
+    auto pipe = cuda::make_pipeline(two_thread_test_group<0>{}, &shared_state);
+    moved.emplace(cuda::std::move(pipe));
+  } // The moved-from `pipe` must not quit.
 
-  // Rank 1 is the last to quit, so it must release the shared state.
-  auto last = cuda::make_pipeline(two_thread_test_group<1>{}, &shared_state);
-  assert(last.quit());
+  // `moved` still holds rank 0's reference, so rank 1 is not the last to quit.
+  auto other = cuda::make_pipeline(two_thread_test_group<1>{}, &shared_state);
+  assert(!other.quit());
+  assert(moved->quit());
 }
 
 int main(int, char**)
