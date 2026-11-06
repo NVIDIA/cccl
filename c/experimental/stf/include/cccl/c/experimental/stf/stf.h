@@ -84,6 +84,7 @@ extern "C" {
 //!
 //! Specifies how a task will access logical data, which determines
 //! synchronization requirements and concurrency opportunities.
+// NOLINTNEXTLINE(readability-enum-initial-value)
 typedef enum stf_access_mode // NOLINT(cppcoreguidelines-use-enum-class)
 {
   STF_NONE  = 0, //!< No access (invalid)
@@ -114,14 +115,14 @@ typedef enum stf_access_mode // NOLINT(cppcoreguidelines-use-enum-class)
 //! exception's full text.
 typedef enum stf_error_t // NOLINT(cppcoreguidelines-use-enum-class)
 {
-  STF_SUCCESS                = 0, //!< No failure
-  STF_ERROR_INVALID_ARGUMENT = 1, //!< A precondition on an argument was violated (\c std::invalid_argument, \c
-                                  //!< std::out_of_range, \c std::domain_error)
-  STF_ERROR_CUDA = 2, //!< A CUDA runtime or driver call failed (\c cuda_exception); the runtime's pending error is
-                      //!< consumed
-  STF_ERROR_OUT_OF_MEMORY = 3, //!< Host allocation failed (\c std::bad_alloc)
-  STF_ERROR_RUNTIME       = 4, //!< Any other \c std::exception
-  STF_ERROR_UNKNOWN       = 5 //!< An exception not derived from \c std::exception
+  STF_SUCCESS, //!< No failure
+  STF_ERROR_INVALID_ARGUMENT, //!< A precondition on an argument was violated (\c std::invalid_argument, \c
+                              //!< std::out_of_range, \c std::domain_error)
+  STF_ERROR_CUDA, //!< A CUDA runtime or driver call failed (\c cuda_exception); the runtime's pending error is
+                  //!< consumed
+  STF_ERROR_OUT_OF_MEMORY, //!< Host allocation failed (\c std::bad_alloc)
+  STF_ERROR_RUNTIME, //!< Any other \c std::exception
+  STF_ERROR_UNKNOWN //!< An exception not derived from \c std::exception
 } stf_error_t;
 
 //! \brief Category of the last failure recorded on the calling thread, or \c STF_SUCCESS.
@@ -538,6 +539,7 @@ typedef struct stf_placement_stats
 } stf_placement_stats;
 
 //! \brief Per-dimension distribution policy (see stf_partition_dim_spec).
+// NOLINTNEXTLINE(readability-enum-initial-value)
 typedef enum stf_dim_policy // NOLINT(cppcoreguidelines-use-enum-class)
 {
   STF_DIM_WHOLE        = 0, //!< dimension is not distributed
@@ -2358,6 +2360,7 @@ stf_repeat_scope_handle stf_stackable_push_repeat(stf_ctx_handle ctx, size_t cou
 stf_error_t stf_stackable_pop_repeat(stf_repeat_scope_handle scope);
 
 //! \brief Comparison operator for built-in while conditions.
+// NOLINTNEXTLINE(readability-enum-initial-value)
 typedef enum stf_compare_op // NOLINT(cppcoreguidelines-use-enum-class)
 {
   STF_CMP_GT = 0, //!< Greater than (>)
@@ -2367,6 +2370,7 @@ typedef enum stf_compare_op // NOLINT(cppcoreguidelines-use-enum-class)
 } stf_compare_op;
 
 //! \brief Scalar element type for \c stf_stackable_while_cond_scalar().
+// NOLINTNEXTLINE(readability-enum-initial-value)
 typedef enum stf_dtype // NOLINT(cppcoreguidelines-use-enum-class)
 {
   STF_DTYPE_FLOAT32 = 0,

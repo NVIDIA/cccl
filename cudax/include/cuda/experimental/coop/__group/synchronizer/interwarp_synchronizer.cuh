@@ -106,11 +106,6 @@ public:
     do_sync_aligned(__hier);
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API __interwarp_synchronizer_instance view() const
-  {
-    return *this;
-  }
-
   template <class _MappingResult, class _Hierarchy>
   _CCCL_DEVICE_API void deinit(const _MappingResult&, const _Hierarchy&)
   {}
@@ -174,11 +169,6 @@ public:
     _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__valid(),
                  "invalid arrival token passed to do_wait_aligned function");
     do_sync_aligned(__hier);
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API __interwarp_synchronizer_instance view() const
-  {
-    return *this;
   }
 
   template <class _MappingResult, class _Hierarchy>

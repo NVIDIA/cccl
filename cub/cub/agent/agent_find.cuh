@@ -17,6 +17,7 @@
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 
@@ -84,7 +85,7 @@ struct agent_t
       const bool full_tile = (tile_offset + tile_size) <= num_items;
 
       // Check alignment at the actual load position (d_in + tile_offset)
-      return full_tile && ::cuda::is_aligned(d_in + tile_offset, sizeof(VectorT));
+      return full_tile && ::cuda::std::is_sufficiently_aligned<alignof(VectorT)>(d_in + tile_offset);
     }
     else
     {

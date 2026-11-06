@@ -14,8 +14,10 @@
 #include <disable_nvfp_conversions_and_operators.h>
 // clang-format on
 
+#include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 #include <cuda/type_traits>
@@ -210,10 +212,39 @@ TEST_FUNC constexpr bool test(float val)
   return true;
 }
 
+// double has an integer implementation on slow fp64 targets
+// the NaN sign and payload after fabs are implementation-defined on device, only check that the result is a NaN
+TEST_FUNC void test_fp64_nan(float val)
+{
+  // the inputs are built at runtime: fabs of a constant sNaN is evaluated at compile time, which quiets it
+  const auto runtime               = static_cast<cuda::std::uint64_t>(val);
+  const cuda::std::uint64_t nans[] = {
+    0x7ff8'0000'0000'0000 * runtime, // +qNaN
+    0xfff8'0000'0000'0000 * runtime, // -qNaN
+    0x7ff4'0000'0000'0000 * runtime, // +sNaN
+    0xfff4'0000'0000'0000 * runtime, // -sNaN
+    0xfff0'0000'0000'0001 * runtime, // -sNaN, smallest payload
+    0xfff8'1234'5678'0001 * runtime, // -qNaN with payload
+  };
+
+  for (const auto nan_bits : nans)
+  {
+    assert(cuda::std::isnan(cuda::std::fabs(cuda::std::bit_cast<double>(nan_bits))));
+  }
+}
+
+// -0.0 == 0.0, so the sign bit of fabs(-0.0) has to be checked explicitly
+TEST_FUNC void test_fp64_neg_zero(float val)
+{
+  assert(!cuda::std::signbit(cuda::std::fabs(-0.0 * val)));
+}
+
 int main(int, char**)
 {
   volatile float val = 1.0f;
   test(val);
+  test_fp64_nan(val);
+  test_fp64_neg_zero(val);
 #if _CCCL_HAS_CONSTEXPR_BIT_CAST()
   static_assert(test(1.0f));
 #endif // _CCCL_HAS_CONSTEXPR_BIT_CAST()
