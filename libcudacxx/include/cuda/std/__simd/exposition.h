@@ -29,8 +29,9 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_extended_arithmetic.h>
-#include <cuda/std/__type_traits/is_object.h>
+#include <cuda/std/__type_traits/is_function.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/is_volatile.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/remove_reference.h>
@@ -89,7 +90,10 @@ inline constexpr bool __is_vectorizable_byte_size_v =
   );
 
 // Disabled vectors remain complete even when sizeof cannot be applied to their element type
-template <typename _Tp, bool = is_object_v<remove_reference_t<_Tp>>, typename = void>
+// The is_object_v trait does not recognize all extended arithmetic types
+template <typename _Tp,
+          bool     = !is_void_v<remove_reference_t<_Tp>> && !is_function_v<remove_reference_t<_Tp>>,
+          typename = void>
 struct __simd_element_size : integral_constant<size_t, 0>
 {};
 
