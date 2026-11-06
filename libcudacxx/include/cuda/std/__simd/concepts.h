@@ -35,10 +35,12 @@
 #include <cuda/std/__fwd/simd.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__simd/exposition.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_member_pointer.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_signed.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
@@ -64,12 +66,29 @@ _CCCL_CONCEPT __simd_vec_type = _CCCL_REQUIRES_EXPR(
 
 // [simd.expos], constexpr-wrapper-like concept
 
+// __has_non_static_value_v is a workaround for NVCC + GCC <= 12
+// "invalid use of non-static data member '_Tp::value'"
+// when the data member is non-static, the value cannot be evaluated at compile-time value
+template <typename _Tp, typename = void>
+inline constexpr bool __has_non_static_value_v = false;
+
 template <typename _Tp>
-_CCCL_CONCEPT __constexpr_wrapper_like = _CCCL_REQUIRES_EXPR((_Tp))(
-  requires(convertible_to<_Tp, decltype(_Tp::value)>),
-  requires(equality_comparable_with<_Tp, decltype(_Tp::value)>),
-  requires(bool_constant<(_Tp() == _Tp::value)>::value),
-  requires(bool_constant<(static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value)>::value));
+inline constexpr bool __has_non_static_value_v<_Tp, void_t<decltype(&_Tp::value)>> =
+  is_member_pointer_v<decltype(&_Tp::value)>;
+
+template <typename _Tp, typename = void>
+inline constexpr bool __constexpr_wrapper_like_v = false;
+
+template <typename _Tp>
+inline constexpr bool __constexpr_wrapper_like_v<
+  _Tp,
+  // Reject non-static members before constant-expression substitution for NVCC + GCC <= 12
+  void_t<enable_if_t<!__has_non_static_value_v<_Tp>>,
+         decltype(bool_constant<(_Tp() == _Tp::value) && (static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value)>{})>> =
+  convertible_to<_Tp, decltype(_Tp::value)> && equality_comparable_with<_Tp, decltype(_Tp::value)>;
+
+template <typename _Tp>
+_CCCL_CONCEPT __constexpr_wrapper_like = __constexpr_wrapper_like_v<_Tp>;
 
 // Covers all integral types including character types (char16_t, char32_t, wchar_t, char8_t),
 // which are excluded by __cccl_is_integer_v
