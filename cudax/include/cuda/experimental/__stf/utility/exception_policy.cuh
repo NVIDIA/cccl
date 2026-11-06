@@ -1089,25 +1089,19 @@ struct translate_t<_To>
   template <class _Fn>
   [[noreturn]] nullval __claimed(const ::std::exception* __e, const ::cuda::std::source_location, _Fn&) const
   {
-    if (__e)
-    {
-      __throw_translated(*__e);
-    }
-    __throw_translated();
-    _CCCL_UNREACHABLE();
+    return __e ? __throw_translated(*__e) : __throw_translated();
   }
 
   template <class _Fn>
   [[noreturn]] nullval on_thrown(const ::std::exception* __e, const ::cuda::std::source_location __loc, _Fn& __fn) const
   {
-    __claimed(__e, __loc, __fn);
-    _CCCL_UNREACHABLE(); // nvcc's front end does not propagate [[noreturn]] through the call above
+    return __claimed(__e, __loc, __fn);
   }
 
   // Builds and throws the `_To`: from the caught `_From` when such a constructor exists, from
   // its `what()` otherwise, default-constructed failing both. Shared with `translate_t<_From, _To>`.
   template <class _From>
-  [[noreturn]] static void __throw_translated(const _From& __from)
+  [[noreturn]] static nullval __throw_translated(const _From& __from)
   {
     if constexpr (::cuda::std::is_constructible_v<_To, const _From&>)
     {
@@ -1129,7 +1123,7 @@ struct translate_t<_To>
 
   // The `_To` for a non-standard exception, which offers nothing to build from: say so when
   // `_To` takes a message, default-construct otherwise.
-  [[noreturn]] static void __throw_translated()
+  [[noreturn]] static nullval __throw_translated()
   {
     if constexpr (::cuda::std::is_constructible_v<_To, const char*>)
     {
