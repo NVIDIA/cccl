@@ -74,14 +74,16 @@ struct __graphAddMemAllocNodeResult
   static const auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphAddMemAllocNode, 11, 4);
   ::CUgraphNode __node{};
   ::CUDA_MEM_ALLOC_NODE_PARAMS __params{};
-  __params.poolProps.allocType   = ::CU_MEM_ALLOCATION_TYPE_PINNED;
-  __params.poolProps.handleTypes = ::CU_MEM_HANDLE_TYPE_NONE;
-  __params.poolProps.location    = {::CU_MEM_LOCATION_TYPE_DEVICE, __device_id};
-  __params.bytesize              = __bytesize;
+  __params.poolProps.allocType     = ::CU_MEM_ALLOCATION_TYPE_PINNED;
+  __params.poolProps.handleTypes   = ::CU_MEM_HANDLE_TYPE_NONE;
+  __params.poolProps.location.type = ::CU_MEM_LOCATION_TYPE_DEVICE;
+  __params.poolProps.location.id   = __device_id;
+  __params.bytesize                = __bytesize;
 
   ::CUmemAccessDesc __access_desc{};
-  __access_desc.location = {::CU_MEM_LOCATION_TYPE_DEVICE, __device_id};
-  __access_desc.flags    = ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE;
+  __access_desc.location.type = ::CU_MEM_LOCATION_TYPE_DEVICE;
+  __access_desc.location.id   = __device_id;
+  __access_desc.flags         = ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE;
 
   __params.accessDescs     = &__access_desc;
   __params.accessDescCount = 1;
@@ -278,7 +280,7 @@ struct __stream_capture_info
 };
 
 [[nodiscard]] _CCCL_HOST_API inline __stream_capture_info
-__streamGetCaptureInfo(::CUstream __stream, const ::CUgraphEdgeData** __edge_data_out = nullptr)
+__streamGetCaptureInfo(::CUstream __stream, [[maybe_unused]] const ::CUgraphEdgeData** __edge_data_out = nullptr)
 {
   __stream_capture_info __info{};
 #    if _CCCL_CTK_AT_LEAST(12, 4)

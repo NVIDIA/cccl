@@ -131,10 +131,14 @@ public:
       : pimpl_(make_static_instance<data_place_invalid>())
   {}
 
-  data_place(const data_place&)            = default;
-  data_place(data_place&&)                 = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  data_place(const data_place&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  data_place(data_place&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
   data_place& operator=(const data_place&) = default;
-  data_place& operator=(data_place&&)      = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  data_place& operator=(data_place&&) = default;
 
   /**
    * @brief Represents an invalid `data_place` object.
@@ -685,6 +689,16 @@ public:
   }
 
   exec_place() = default;
+
+  // NVCC infers device support for defaulted special members of this host-only type.
+  _CCCL_EXEC_CHECK_DISABLE
+  exec_place(const exec_place&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  exec_place(exec_place&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  exec_place& operator=(const exec_place&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  exec_place& operator=(exec_place&&) = default;
 
   bool operator==(const exec_place& rhs) const
   {

@@ -95,7 +95,7 @@ struct hierarchy_level_base
 
   _CCCL_TEMPLATE(class _InLevel, class _Hierarchy)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND __is_or_has_hierarchy_member_v<_Hierarchy>)
-  [[nodiscard]] _CCCL_API static constexpr auto static_count(const _InLevel& __level, const _Hierarchy& __hier) noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto static_count(const _InLevel&, const _Hierarchy& __hier) noexcept
   {
     return ::cuda::__static_count_query<_Level, _InLevel, decltype(::cuda::__unpack_hierarchy_if_needed(__hier))>();
   }

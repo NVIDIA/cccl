@@ -951,6 +951,16 @@ public:
   /// @brief Default constructor.
   logical_data_untyped() = default;
 
+  // NVCC infers device support for defaulted special members of this host-only type.
+  _CCCL_EXEC_CHECK_DISABLE
+  logical_data_untyped(const logical_data_untyped&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  logical_data_untyped(logical_data_untyped&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  logical_data_untyped& operator=(const logical_data_untyped&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  logical_data_untyped& operator=(logical_data_untyped&&) = default;
+
   /// @brief Constructs a logical_data_untyped from an existing implementation.
   /// @param p Shared implementation pointer.
   logical_data_untyped(::std::shared_ptr<reserved::logical_data_untyped_impl> p)

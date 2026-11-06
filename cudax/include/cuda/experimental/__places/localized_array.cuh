@@ -596,10 +596,8 @@ private:
     fprintf(stderr, "  %-6s  %-12s  %-12s  %-10s  %s\n", "-----", "------", "----", "------", "-----");
     for (size_t idx = 0; idx < meta.size(); idx++)
     {
-      const auto& item   = meta[idx];
-      size_t num_blocks  = item.size / stats.block_size;
-      size_t start_block = item.offset / stats.block_size;
-      (void) start_block;
+      const auto& item  = meta[idx];
+      size_t num_blocks = item.size / stats.block_size;
       fprintf(stderr,
               "  %-6zu  %-12zu  %-12zu  %-10zu  %s\n",
               idx,

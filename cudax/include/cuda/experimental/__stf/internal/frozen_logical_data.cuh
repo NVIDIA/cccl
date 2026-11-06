@@ -175,15 +175,19 @@ public:
   frozen_logical_data_untyped() = default;
 
   // Copy constructor
+  _CCCL_EXEC_CHECK_DISABLE
   frozen_logical_data_untyped(const frozen_logical_data_untyped& other) = default;
 
   // Move constructor
+  _CCCL_EXEC_CHECK_DISABLE
   frozen_logical_data_untyped(frozen_logical_data_untyped&& other) noexcept = default;
 
   // Copy assignment
+  _CCCL_EXEC_CHECK_DISABLE
   frozen_logical_data_untyped& operator=(const frozen_logical_data_untyped& other) = default;
 
   // Move assignment
+  _CCCL_EXEC_CHECK_DISABLE
   frozen_logical_data_untyped& operator=(frozen_logical_data_untyped&& other) noexcept = default;
 
   template <typename T>

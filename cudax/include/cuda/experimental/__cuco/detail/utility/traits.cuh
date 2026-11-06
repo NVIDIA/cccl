@@ -58,7 +58,7 @@ inline constexpr bool __is_pair_like_v = ::cuda::std::__pair_like<
 //! @endcode
 #define CUDAX_CUCO_DECLARE_BITWISE_COMPARABLE(Type) \
   template <>                                       \
-  inline constexpr bool ::cuda::is_bitwise_comparable_v<Type> = true
+  inline constexpr bool cuda::is_bitwise_comparable_v<Type> = true
 
 #include <cuda/std/__cccl/epilogue.h>
 
