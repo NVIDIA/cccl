@@ -35,10 +35,11 @@ The tool needs `g++`, `readelf`, `c++filt`, `git` and the CUDA Toolkit headers. 
      example a scalar return that became a struct returned through a hidden pointer.
    - **B** object: `st_size` or type changed (function-local statics, vtables, variable
      templates).
-   - **C** class: `sizeof`, member offsets or member types, or bases changed for a class
-     reachable from a common symbol.
+   - **C** class: `sizeof`, alignment, calling convention, member offsets or member types, or
+     non-empty bases changed for a class reachable from a common symbol.
 
-Any difference fails the check.
+Any difference fails the check. Adding or removing an empty non-virtual base is not a
+difference: it changes neither the layout nor any mangled name.
 
 ## Limitations
 
