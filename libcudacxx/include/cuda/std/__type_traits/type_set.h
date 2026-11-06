@@ -90,20 +90,21 @@ struct __bulk_insert<false>
 // When comparing sets for equality, use conjunction<> to short-circuit the set
 // comparison if the sizes are different.
 template <class _ExpectedSet, class... _Ts>
-using __type_set_eq =
+using __type_set_eq _CCCL_NODEBUG =
   conjunction<bool_constant<sizeof...(_Ts) == _ExpectedSet::__size()>, __type_set_contains<_ExpectedSet, _Ts...>>;
 
 template <class _ExpectedSet, class... _Ts>
 inline constexpr bool __type_set_eq_v = __type_set_eq<_ExpectedSet, _Ts...>::value;
 
 template <class... _Ts>
-using __type_set = __set::__tupl<_Ts...>;
+using __type_set _CCCL_NODEBUG = __set::__tupl<_Ts...>;
 
 template <class _Set, class... _Ts>
-using __type_set_insert = typename __set::__bulk_insert<sizeof...(_Ts) == 0>::template __call<_Set, _Ts...>;
+using __type_set_insert _CCCL_NODEBUG =
+  typename __set::__bulk_insert<sizeof...(_Ts) == 0>::template __call<_Set, _Ts...>;
 
 template <class... _Ts>
-using __make_type_set = __type_set_insert<__type_set<>, _Ts...>;
+using __make_type_set _CCCL_NODEBUG = __type_set_insert<__type_set<>, _Ts...>;
 
 template <class _Ty, class... _Ts>
 struct __is_included_in : __fold_or<is_same_v<_Ty, _Ts>...>

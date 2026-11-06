@@ -71,9 +71,9 @@ public:
   template <bool _Const>
   class __sentinel
   {
-    using _Base = __maybe_const<_Const, _View>;
+    using _Base _CCCL_NODEBUG = __maybe_const<_Const, _View>;
     template <bool _OtherConst>
-    using _Base2 = __maybe_const<_OtherConst, _View>;
+    using _Base2 _CCCL_NODEBUG = __maybe_const<_OtherConst, _View>;
 
     sentinel_t<_Base> __end_ = sentinel_t<_Base>();
     const _Pred* __pred_     = nullptr;

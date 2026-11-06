@@ -73,7 +73,7 @@ struct push_back
 template <class... As, class... Ts>
 struct push_back<nvbench::type_list<As...>, Ts...>
 {
-  using type = nvbench::type_list<As..., Ts...>;
+  using type _CCCL_NODEBUG = nvbench::type_list<As..., Ts...>;
 };
 } // namespace detail
 
@@ -467,7 +467,7 @@ struct less_t
   }
 
   template <typename T>
-  __host__ __device__ inline bool operator()(const cuda::std::complex<T>& lhs, const cuda::std::complex<T>& rhs) const
+  __host__ __device__ bool operator()(const cuda::std::complex<T>& lhs, const cuda::std::complex<T>& rhs) const
   {
     double magnitude_0 = cuda::std::abs(lhs);
     double magnitude_1 = cuda::std::abs(rhs);

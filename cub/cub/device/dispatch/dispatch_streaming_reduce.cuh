@@ -15,6 +15,7 @@
 
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/key_value_pair.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
@@ -218,8 +219,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
 {
   // Resolve the tuning policy from the (optional) tuning environment, defaulting to the type-derived policy
   using default_policy_selector_t = policy_selector_from_types<PerPartitionAccumT, PerPartitionOffsetT, ReductionOpT>;
-  using policy_selector_t =
-    ::cuda::std::execution::__query_result_or_t<TuningEnvT, ReducePolicy, default_policy_selector_t>;
+  using policy_selector_t = policy_selector_from_tuning_env_t<TuningEnvT, ReducePolicy, default_policy_selector_t>;
 
 #  if _CCCL_HAS_CONCEPTS()
   static_assert(reduce_policy_selector<policy_selector_t>);
