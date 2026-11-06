@@ -585,15 +585,36 @@ class Dwarf:
                         "type": self.type_name(t),
                         "offset": num(cd.attrs.get("DW_AT_data_member_location")),
                         "size": self.size(t),
+                        "empty": "DW_AT_virtuality" not in cd.attrs
+                        and self.is_empty(t),
                         "_ref": t,
                     }
                 )
         return {
             "size": num(die.attrs.get("DW_AT_byte_size")),
             "align": num(die.attrs.get("DW_AT_alignment")),
+            "calling_convention": die.attrs.get("DW_AT_calling_convention"),
             "members": members,
             "bases": bases,
         }
+
+    def is_empty(self, off: int | None) -> bool:
+        """True for a class with no non-static data members, vptr or non-empty bases."""
+        off = self.strip(off)
+        if off is None or off not in self.d:
+            return False
+        for c in self.d[off].children:
+            cd = self.d[c]
+            if cd.tag == "DW_TAG_member" and not (
+                "DW_AT_external" in cd.attrs or "DW_AT_declaration" in cd.attrs
+            ):
+                return False
+            if cd.tag == "DW_TAG_inheritance" and (
+                "DW_AT_virtuality" in cd.attrs
+                or not self.is_empty(ref(cd, "DW_AT_type"))
+            ):
+                return False
+        return True
 
     def referenced_classes(self, off: int | None) -> list[tuple[str, int]]:
         """Class DIEs reached by a type through cv/typedef/pointer/ref/array."""
@@ -815,6 +836,11 @@ def layout_diff(a: dict, b: dict) -> list[str]:
         diffs.append(f"sizeof {a['size']} -> {b['size']}")
     if a["align"] != b["align"]:
         diffs.append(f"alignas {a['align']} -> {b['align']}")
+    if a.get("calling_convention") != b.get("calling_convention"):
+        diffs.append(
+            f"calling convention {a.get('calling_convention')} -> "
+            f"{b.get('calling_convention')}"
+        )
 
     def full(m):
         return (
@@ -834,7 +860,11 @@ def layout_diff(a: dict, b: dict) -> list[str]:
         diffs += [
             f"+ member {m[0]} @{m[1]} : {m[3]} ({m[4]}B)" for m in mb if m not in sa
         ]
-    ba, bb = [full(m) for m in a["bases"]], [full(m) for m in b["bases"]]
+    # Empty non-virtual bases occupy no storage and are not mangled, so adding or removing
+    # one changes neither the layout nor any symbol. sizeof, offsets and calling convention
+    # are compared above.
+    ba = [full(m) for m in a["bases"] if not m.get("empty")]
+    bb = [full(m) for m in b["bases"] if not m.get("empty")]
     if ba != bb:
         diffs.append(
             f"bases {[(x[3], x[1]) for x in ba]} -> {[(x[3], x[1]) for x in bb]}"
