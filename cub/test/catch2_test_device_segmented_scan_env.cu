@@ -566,6 +566,90 @@ CUB_TEST("Device segmented inclusive scan init with separate offsets uses enviro
   REQUIRE(d_out == expected);
 }
 
+CUB_TEST("Device segmented scan with fixed-size segments uses environment", "[segmented_scan][device]", CUB_SMALL)
+{
+  const ::cuda::std::int64_t num_segments = 3;
+  const int segment_size                  = 3;
+  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  c2h::device_vector<int> d_out(d_in.size(), thrust::no_init);
+  const c2h::device_vector<int> expected_exclusive_sum{0, 8, 14, 0, 5, 8, 0, 9, 10};
+  const c2h::device_vector<int> expected_exclusive_scan{100, 108, 114, 100, 105, 108, 100, 109, 110};
+  const c2h::device_vector<int> expected_inclusive_sum{8, 14, 21, 5, 8, 8, 9, 10, 12};
+  const c2h::device_vector<int> expected_inclusive_scan_init{108, 114, 121, 105, 108, 108, 109, 110, 112};
+  size_t expected_bytes_allocated{};
+
+  SECTION("exclusive sum")
+  {
+    REQUIRE(cudaSuccess
+            == cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
+              nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_segments, segment_size));
+    auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+    device_segmented_exclusive_sum(d_in.begin(), d_out.begin(), num_segments, segment_size, env);
+    REQUIRE(d_out == expected_exclusive_sum);
+  }
+  SECTION("exclusive scan")
+  {
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
+        nullptr,
+        expected_bytes_allocated,
+        d_in.begin(),
+        d_out.begin(),
+        num_segments,
+        segment_size,
+        ::cuda::std::plus<>{},
+        100));
+    auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+    device_segmented_exclusive_scan(
+      d_in.begin(), d_out.begin(), num_segments, segment_size, ::cuda::std::plus<>{}, 100, env);
+    REQUIRE(d_out == expected_exclusive_scan);
+  }
+  SECTION("inclusive sum")
+  {
+    REQUIRE(cudaSuccess
+            == cub::DeviceSegmentedScan::InclusiveSegmentedSum(
+              nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_segments, segment_size));
+    auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+    device_segmented_inclusive_sum(d_in.begin(), d_out.begin(), num_segments, segment_size, env);
+    REQUIRE(d_out == expected_inclusive_sum);
+  }
+  SECTION("inclusive scan")
+  {
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+        nullptr,
+        expected_bytes_allocated,
+        d_in.begin(),
+        d_out.begin(),
+        num_segments,
+        segment_size,
+        ::cuda::std::plus<>{}));
+    auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+    device_segmented_inclusive_scan(d_in.begin(), d_out.begin(), num_segments, segment_size, ::cuda::std::plus<>{}, env);
+    REQUIRE(d_out == expected_inclusive_sum);
+  }
+  SECTION("inclusive scan init")
+  {
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
+        nullptr,
+        expected_bytes_allocated,
+        d_in.begin(),
+        d_out.begin(),
+        num_segments,
+        segment_size,
+        ::cuda::std::plus<>{},
+        100));
+    auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+    device_segmented_inclusive_scan_init(
+      d_in.begin(), d_out.begin(), num_segments, segment_size, ::cuda::std::plus<>{}, 100, env);
+    REQUIRE(d_out == expected_inclusive_scan_init);
+  }
+}
+
 #if TEST_LAUNCH != 1
 
 // A policy selector that forces a specific block size. We deliberately use direct block load/store so that the chosen
@@ -719,6 +803,69 @@ CUB_TEST("Device segmented inclusive scan init can be tuned", "[segmented_scan][
     d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, scan_op, 100, env);
 
   const thrust::device_vector<int> expected{108, 114, 121, 126, 103, 103, 112, 101, 103};
+  REQUIRE(d_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST(
+  "Device segmented scan with fixed-size segments can be tuned", "[segmented_scan][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  const ::cuda::std::int64_t num_segments  = 3;
+  const int segment_size                   = 3;
+  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  c2h::device_vector<int> d_out(d_in.size(), thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
+  const auto d_block_size_in =
+    block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+  const block_size_extracting_op<::cuda::std::plus<>> scan_op{thrust::raw_pointer_cast(d_block_size.data())};
+  const auto env = cuda::execution::tune(segmented_scan_tuning<target_block_size>{});
+
+  SECTION("exclusive sum")
+  {
+    device_segmented_exclusive_sum(d_block_size_in, d_out.begin(), num_segments, segment_size, env);
+  }
+  SECTION("exclusive scan")
+  {
+    device_segmented_exclusive_scan(d_in.begin(), d_out.begin(), num_segments, segment_size, scan_op, 100, env);
+  }
+  SECTION("inclusive sum")
+  {
+    device_segmented_inclusive_sum(d_block_size_in, d_out.begin(), num_segments, segment_size, env);
+  }
+  SECTION("inclusive scan")
+  {
+    device_segmented_inclusive_scan(d_in.begin(), d_out.begin(), num_segments, segment_size, scan_op, env);
+  }
+  SECTION("inclusive scan init")
+  {
+    device_segmented_inclusive_scan_init(d_in.begin(), d_out.begin(), num_segments, segment_size, scan_op, 100, env);
+  }
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("Device segmented scan with fixed-size segments tuning can be modified", "[segmented_scan][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+  const ::cuda::std::int64_t num_segments  = 3;
+  const int segment_size                   = 3;
+  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  c2h::device_vector<int> d_out(d_in.size(), thrust::no_init);
+  const c2h::device_vector<int> expected{8, 14, 21, 5, 8, 8, 9, 10, 12};
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_extracting_op<::cuda::std::plus<>> scan_op{thrust::raw_pointer_cast(d_block_size.data())};
+
+  {
+    device_segmented_inclusive_scan(d_in.begin(), d_out.begin(), num_segments, segment_size, scan_op, stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
+  auto env = cuda::execution::tune(segmented_scan_tuning_transform<target_block_size>{});
+
+  device_segmented_inclusive_scan(d_in.begin(), d_out.begin(), num_segments, segment_size, scan_op, env);
+
   REQUIRE(d_out == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -982,6 +1129,94 @@ CUB_TEST_CASE("Device segmented inclusive scan init two-phase works with custom 
   }
 }
 
+CUB_TEST_CASE("Device segmented scan with fixed-size segments two-phase works with custom streams",
+              "[segmented_scan][device]",
+              CUB_SMALL)
+{
+  const ::cuda::std::int64_t num_segments = 3;
+  const int segment_size                  = 3;
+  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  c2h::device_vector<int> d_out(d_in.size(), thrust::no_init);
+  const c2h::device_vector<int> expected_exclusive_sum{0, 8, 14, 0, 5, 8, 0, 9, 10};
+  const c2h::device_vector<int> expected_exclusive_scan{100, 108, 114, 100, 105, 108, 100, 109, 110};
+  const c2h::device_vector<int> expected_inclusive_sum{8, 14, 21, 5, 8, 8, 9, 10, 12};
+  const c2h::device_vector<int> expected_inclusive_scan_init{108, 114, 121, 105, 108, 108, 109, 110, 112};
+
+  SECTION("exclusive sum")
+  {
+    test_with_custom_streams([&](const auto& env) {
+      run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+        return cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
+          d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size, env);
+      });
+      REQUIRE(d_out == expected_exclusive_sum);
+    });
+  }
+  SECTION("exclusive scan")
+  {
+    test_with_custom_streams([&](const auto& env) {
+      run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+        return cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in.begin(),
+          d_out.begin(),
+          num_segments,
+          segment_size,
+          ::cuda::std::plus<>{},
+          100,
+          env);
+      });
+      REQUIRE(d_out == expected_exclusive_scan);
+    });
+  }
+  SECTION("inclusive sum")
+  {
+    test_with_custom_streams([&](const auto& env) {
+      run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+        return cub::DeviceSegmentedScan::InclusiveSegmentedSum(
+          d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size, env);
+      });
+      REQUIRE(d_out == expected_inclusive_sum);
+    });
+  }
+  SECTION("inclusive scan")
+  {
+    test_with_custom_streams([&](const auto& env) {
+      run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+        return cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in.begin(),
+          d_out.begin(),
+          num_segments,
+          segment_size,
+          ::cuda::std::plus<>{},
+          env);
+      });
+      REQUIRE(d_out == expected_inclusive_sum);
+    });
+  }
+  SECTION("inclusive scan init")
+  {
+    test_with_custom_streams([&](const auto& env) {
+      run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+        return cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in.begin(),
+          d_out.begin(),
+          num_segments,
+          segment_size,
+          ::cuda::std::plus<>{},
+          100,
+          env);
+      });
+      REQUIRE(d_out == expected_inclusive_scan_init);
+    });
+  }
+}
+
 #endif // TEST_LAUNCH == 0
 
 // The graph launch appends its own stream argument, which cannot be combined with an environment
@@ -1213,6 +1448,51 @@ CUB_TEST_CASE("Device segmented inclusive scan init two-phase accepts legacy nul
   REQUIRE(d_out == expected);
 }
 
+CUB_TEST_CASE("Device segmented scan with fixed-size segments two-phase accepts legacy null streams",
+              "[segmented_scan][device]",
+              CUB_SMALL)
+{
+  const ::cuda::std::int64_t num_segments = 3;
+  const int segment_size                  = 3;
+  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  c2h::device_vector<int> d_out(d_in.size(), thrust::no_init);
+  const c2h::device_vector<int> expected_exclusive_sum{0, 8, 14, 0, 5, 8, 0, 9, 10};
+  const c2h::device_vector<int> expected_exclusive_scan{100, 108, 114, 100, 105, 108, 100, 109, 110};
+  const c2h::device_vector<int> expected_inclusive_sum{8, 14, 21, 5, 8, 8, 9, 10, 12};
+  const c2h::device_vector<int> expected_inclusive_scan_init{108, 114, 121, 105, 108, 108, 109, 110, 112};
+  const stream_scope scope{cudaStream_t{}};
+
+  // The launch wrappers take their arguments by value, so a literal 0 reaches the API as an int either way
+  const auto run_all = [&](auto stream) {
+    device_segmented_exclusive_sum_two_phase(d_in.begin(), d_out.begin(), num_segments, segment_size, stream);
+    REQUIRE(d_out == expected_exclusive_sum);
+    device_segmented_exclusive_scan_two_phase(
+      d_in.begin(), d_out.begin(), num_segments, segment_size, ::cuda::std::plus<>{}, 100, stream);
+    REQUIRE(d_out == expected_exclusive_scan);
+    device_segmented_inclusive_sum_two_phase(d_in.begin(), d_out.begin(), num_segments, segment_size, stream);
+    REQUIRE(d_out == expected_inclusive_sum);
+    device_segmented_inclusive_scan_two_phase(
+      d_in.begin(), d_out.begin(), num_segments, segment_size, ::cuda::std::plus<>{}, stream);
+    REQUIRE(d_out == expected_inclusive_sum);
+    device_segmented_inclusive_scan_init_two_phase(
+      d_in.begin(), d_out.begin(), num_segments, segment_size, ::cuda::std::plus<>{}, 100, stream);
+    REQUIRE(d_out == expected_inclusive_scan_init);
+  };
+
+  SECTION("nullptr")
+  {
+    run_all(nullptr);
+  }
+  SECTION("literal 0")
+  {
+    run_all(0);
+  }
+  SECTION("cudaStream_t{}")
+  {
+    run_all(cudaStream_t{});
+  }
+}
+
 // The tuning environments are empty classes, which older CTKs (at least 12.9 and 13.0) cannot pass as kernel
 // parameters, so these tests cannot use the device launch (TEST_LAUNCH == 1).
 #  if TEST_LAUNCH == 0
@@ -1330,6 +1610,47 @@ CUB_TEST(
   {
     device_segmented_inclusive_scan_init_two_phase(
       d_in, d_out.begin(), offsets, offsets + 1, offsets, num_segments, cuda::std::plus<>{}, 100, env);
+  }
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("Device segmented scan with fixed-size segments two-phase can be tuned",
+         "[segmented_scan][device]",
+         CUB_SMALL,
+         block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  const ::cuda::std::int64_t num_segments  = 3;
+  const int segment_size                   = 3;
+  const c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  c2h::device_vector<int> d_out(d_in.size(), thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
+  const auto d_block_size_in =
+    block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+  const block_size_extracting_op<::cuda::std::plus<>> scan_op{thrust::raw_pointer_cast(d_block_size.data())};
+  const auto env = cuda::execution::tune(segmented_scan_tuning<target_block_size>{});
+
+  SECTION("exclusive sum")
+  {
+    device_segmented_exclusive_sum_two_phase(d_block_size_in, d_out.begin(), num_segments, segment_size, env);
+  }
+  SECTION("exclusive scan")
+  {
+    device_segmented_exclusive_scan_two_phase(
+      d_in.begin(), d_out.begin(), num_segments, segment_size, scan_op, 100, env);
+  }
+  SECTION("inclusive sum")
+  {
+    device_segmented_inclusive_sum_two_phase(d_block_size_in, d_out.begin(), num_segments, segment_size, env);
+  }
+  SECTION("inclusive scan")
+  {
+    device_segmented_inclusive_scan_two_phase(d_in.begin(), d_out.begin(), num_segments, segment_size, scan_op, env);
+  }
+  SECTION("inclusive scan init")
+  {
+    device_segmented_inclusive_scan_init_two_phase(
+      d_in.begin(), d_out.begin(), num_segments, segment_size, scan_op, 100, env);
   }
   REQUIRE(d_block_size[0] == target_block_size);
 }

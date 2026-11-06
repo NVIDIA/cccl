@@ -220,7 +220,7 @@ CUB_TEST("DeviceSegmentedScan fixed-size overloads accept cuda::args segment siz
 
   SECTION("plain char")
   {
-    if constexpr (segment_size <= cuda::std::numeric_limits<char>::max())
+    if constexpr (segment_size <= (cuda::std::numeric_limits<char>::max)())
     {
       device_inclusive_segmented_sum(d_in, d_out, num_segments, static_cast<char>(segment_size));
       REQUIRE(sum == c2h::host_vector<int>(output));
@@ -330,7 +330,7 @@ CUB_TEST("DeviceSegmentedScan fixed-size overloads validate sizes", "[segmented]
   REQUIRE(
     DeviceSegmentedScan::InclusiveSegmentedSum(nullptr, temp_storage_bytes, ptr, ptr, 5, -1) == cudaErrorInvalidValue);
   REQUIRE(DeviceSegmentedScan::InclusiveSegmentedSum(
-            nullptr, temp_storage_bytes, ptr, ptr, cuda::std::numeric_limits<cuda::std::int64_t>::max(), 2)
+            nullptr, temp_storage_bytes, ptr, ptr, (cuda::std::numeric_limits<cuda::std::int64_t>::max)(), 2)
           == cudaErrorInvalidValue);
   REQUIRE(DeviceSegmentedScan::InclusiveSegmentedSum(ptr, ptr, -1, 5) == cudaErrorInvalidValue);
 
