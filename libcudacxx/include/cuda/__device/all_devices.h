@@ -55,8 +55,6 @@ _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
   return ::cuda::std::span<const device_ref>{__devices.data(), __devices.size()};
 }
 
-_CCCL_END_NAMESPACE_ABI_VER4_BUMP
-
 //! @brief A random-access range of all available CUDA devices
 class __all_devices
 {
@@ -134,6 +132,8 @@ public:
 //! * device
 //! * device_ref
 inline constexpr __all_devices devices{};
+
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
 _CCCL_END_NAMESPACE_CUDA
 
