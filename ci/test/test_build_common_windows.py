@@ -305,3 +305,73 @@ run_cuda_smoke_test Probe thrust-gpu
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert any(item["tool"] == "cccl.test.cuda_runtime_smoke.exe" for item in records)
+
+
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+def test_target_driver_preserves_native_build_path_without_line_ending(
+    tmp_path, newline
+):
+    (tmp_path / "cccl-version.json").write_text("{}")
+    tools = tmp_path / "tools"
+    tools.mkdir()
+    log = tmp_path / "tools.jsonl"
+    tool_source = (
+        f"#!{sys.executable}\n"
+        + r"""
+import json
+import os
+import sys
+from pathlib import Path
+
+name = Path(sys.argv[0]).name
+args = sys.argv[1:]
+with open(os.environ["MOCK_LOG"], "a") as log:
+    log.write(json.dumps({"tool": name, "args": args}) + "\n")
+if name == "git":
+    print("fixture commit")
+elif name == "cmake":
+    sys.stdout.write("-- Build files have been written to: C:/Build Tree/thrust" + os.environ["MOCK_NEWLINE"])
+"""
+    )
+    for name in ("git", "cmake", "ninja", "ctest"):
+        tool = tools / name
+        tool.write_text(tool_source)
+        tool.chmod(0o755)
+    env = os.environ.copy()
+    env.pop("BASH_ENV", None)
+    env.update(
+        PATH=f"{tools}{os.pathsep}{os.environ['PATH']}",
+        MOCK_LOG=str(log),
+        MOCK_NEWLINE=newline,
+    )
+    result = subprocess.run(
+        [
+            BASH,
+            str(REPO_ROOT / "ci/util/build_and_test_targets.sh"),
+            "--preset",
+            "thrust",
+            "--build-targets",
+            "smoke",
+            "--ctest-targets",
+            "smoke",
+        ],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    records = [json.loads(line) for line in log.read_text().splitlines()]
+    ninja = next(item for item in records if item["tool"] == "ninja")
+    ctest = next(item for item in records if item["tool"] == "ctest")
+    assert ninja["args"] == ["-C", "C:/Build Tree/thrust", "smoke"]
+    assert ctest["args"] == [
+        "--test-dir",
+        "C:/Build Tree/thrust",
+        "-R",
+        "smoke",
+        "-V",
+        "--output-on-failure",
+    ]
