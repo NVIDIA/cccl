@@ -521,7 +521,11 @@ function test_preset()
     fi
 
     if $GPU_REQUIRED; then
-        fail_if_no_gpu
+        # Windows containers can expose CUDA devices without nvidia-smi/NVML.
+        # Validate them through the CUDA runtime smoke test and the test suite.
+        if ! $CCCL_BUILD_WINDOWS; then
+            fail_if_no_gpu
+        fi
         if [[ -z "${CCCL_SKIP_CI_SMOKE:-}" ]]; then
             run_cuda_smoke_test "${BUILD_NAME}" "${PRESET}" || return $?
         fi

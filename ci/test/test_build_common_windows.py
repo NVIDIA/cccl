@@ -64,6 +64,10 @@ elif name == "cmake" and "--build" in args:
     sys.exit(int(os.environ.get("MOCK_BUILD_EXIT", "0")))
 elif name == "sccache":
     print("{}")
+elif name == "nvidia-smi":
+    sys.exit(int(os.environ.get("MOCK_NVIDIA_SMI_EXIT", "0")))
+elif name == "cccl.test.cuda_runtime_smoke.exe":
+    sys.exit(int(os.environ.get("MOCK_SMOKE_EXIT", "0")))
 """
 
 
@@ -305,6 +309,35 @@ run_cuda_smoke_test Probe thrust-gpu
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert any(item["tool"] == "cccl.test.cuda_runtime_smoke.exe" for item in records)
+
+
+@pytest.mark.parametrize("smoke_exit", [0, 7])
+def test_windows_gpu_testing_uses_cuda_runtime_without_nvml(run_common, smoke_exit):
+    result, records, _ = run_common(
+        extra_env={"MOCK_NVIDIA_SMI_EXIT": "1", "MOCK_SMOKE_EXIT": str(smoke_exit)},
+        script="""
+source ./ci/build_common.sh
+mkdir -p "$BUILD_DIR/thrust/bin"
+cp "$MOCK_TOOLS/probe" "$BUILD_DIR/thrust/bin/cccl.test.cuda_runtime_smoke.exe"
+ctest() { probe ctest "$@"; }
+test_preset Probe thrust-gpu
+""",
+    )
+    assert result.returncode == smoke_exit, result.stdout + result.stderr
+    assert not any(item["tool"] == "nvidia-smi" for item in records)
+    assert any(item["tool"] == "cccl.test.cuda_runtime_smoke.exe" for item in records)
+    assert any(item["tool"] == "probe" for item in records) == (smoke_exit == 0)
+
+
+def test_linux_gpu_testing_keeps_nvml_preflight(run_common):
+    result, records, _ = run_common(
+        platform="linux-gnu",
+        extra_env={"MOCK_NVIDIA_SMI_EXIT": "1"},
+        script="source ./ci/build_common.sh; test_preset Probe thrust-gpu",
+    )
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert "No NVIDIA GPU detected" in result.stderr
+    assert any(item["tool"] == "nvidia-smi" for item in records)
 
 
 @pytest.mark.parametrize("newline", ["\n", "\r\n"])
