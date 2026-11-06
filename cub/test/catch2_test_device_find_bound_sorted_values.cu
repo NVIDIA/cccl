@@ -215,7 +215,7 @@ void test_sorted_heterogeneous(Variant variant, HostVariant host_variant)
   c2h::host_vector<int> values_h(values_num_items);
   for (int i = 0; i < values_num_items; ++i)
   {
-    values_h[i] = i * 7 - 10; // includes values before, inside, and after the range
+    values_h[i] = (i * 7) - 10; // includes values before, inside, and after the range
   }
 
   const c2h::device_vector<heterogeneous_key> range_d = range_h;

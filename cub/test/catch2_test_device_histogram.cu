@@ -1204,7 +1204,7 @@ CUB_TEST("DeviceHistogram::HistogramRange byte samples with wide bins",
     h_levels[channel].resize(num_bins + 1);
     for (int i = 0; i <= num_bins; ++i)
     {
-      h_levels[channel][i] = lower + (upper - lower) * (static_cast<float>(i) / static_cast<float>(num_bins));
+      h_levels[channel][i] = lower + ((upper - lower) * (static_cast<float>(i) / static_cast<float>(num_bins)));
     }
     d_levels[channel] = h_levels[channel];
     d_histogram[channel].resize(num_bins);

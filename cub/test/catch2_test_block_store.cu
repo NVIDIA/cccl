@@ -263,7 +263,7 @@ CUB_TEST("Block store works with 12-byte types", "[store][block]", CUB_SMALL, it
   c2h::host_vector<type> h_input(GENERATE_COPY(take(10, random(0, tile_size))));
   for (int i = 0; i < static_cast<int>(h_input.size()); ++i)
   {
-    h_input[i] = type{i, 3 * i + 1, -i};
+    h_input[i] = type{i, (3 * i) + 1, -i};
   }
   c2h::device_vector<type> d_input = h_input;
   c2h::device_vector<type> d_output(d_input.size());

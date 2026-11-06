@@ -376,7 +376,7 @@ load_direct_striped_vectorized_aligned(int linear_tid, const InputT* block_src_p
   // The thread offset is computed in unsigned arithmetic like offsets from threadIdx.x, because a signed multiplication
   // generates additional address arithmetic in the calling kernels
   const vector_t* vec_ptr =
-    reinterpret_cast<const vector_t*>(block_src_ptr + static_cast<unsigned int>(linear_tid) * vec_size);
+    reinterpret_cast<const vector_t*>(block_src_ptr + (static_cast<unsigned int>(linear_tid) * vec_size));
 
   // Raw storage, because the vector of a type without default constructor has none either
   alignas(vector_t) unsigned char vec_bytes[vectors_per_thread * sizeof(vector_t)];
@@ -384,7 +384,7 @@ load_direct_striped_vectorized_aligned(int linear_tid, const InputT* block_src_p
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < vectors_per_thread; i++)
   {
-    vec_items[i] = ThreadLoad<Modifier>(vec_ptr + i * ThreadsPerBlock);
+    vec_items[i] = ThreadLoad<Modifier>(vec_ptr + (i * ThreadsPerBlock));
   }
 
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -466,7 +466,7 @@ LoadDirectStripedVectorized(int linear_tid, const InputT* block_src_ptr, T (&dst
   }
 
   // Load the same arrangement item by item
-  const InputT* thread_src_ptr = block_src_ptr + static_cast<unsigned int>(linear_tid) * vec_size;
+  const InputT* thread_src_ptr = block_src_ptr + (static_cast<unsigned int>(linear_tid) * vec_size);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ItemsPerThread / vec_size; i++)
   {
@@ -1245,7 +1245,7 @@ public:
       else
       {
         // Load the same arrangement item by item
-        const auto thread_src_it = block_src_it + static_cast<unsigned int>(linear_tid) * vec_size;
+        const auto thread_src_it = block_src_it + (static_cast<unsigned int>(linear_tid) * vec_size);
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread / vec_size; i++)
         {
