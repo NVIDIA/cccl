@@ -65,13 +65,13 @@ inline constexpr bool __idxmap_result_is_integral_v =
 //----------------------------------------------------------------------------------------------------------------------
 // gen-fn: idxmap(i, V::size()) if that expression is well-formed, and idxmap(i) otherwise.
 
+// C++23 allows an index map through an unknown reference, see https://eel.is/c++draft/simd.permute.static#1.1
+// We don't support this feature because it's not supported by nvcc/nvrtc.
+
 // Preserve the mapper's result type so the Mandates are checked before converting to an index.
 template <typename _IdxMap, __simd_size_type _Idx, __simd_size_type _Size>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __permute_gen_fn() noexcept
 {
-  // C++23 allows an index map through an unknown reference, see https://eel.is/c++draft/simd.permute.static#1.1
-  // We don't support this feature because it's not supported by nvcc/nvrtc.
-  // Default-constructing a fresh mapper currently excludes non-default-constructible mappers.
   remove_reference_t<_IdxMap> __idxmap{};
   if constexpr (is_invocable_v<_IdxMap&, __simd_size_type, __simd_size_type>)
   {
