@@ -97,7 +97,8 @@ _CCCL_CONCEPT __is_simd_math_floating_point_v = _CCCL_REQUIRES_EXPR(
   _CCCL_REQUIRES(__is_simd_math_floating_point_v<_Vp>)                                  \
   [[nodiscard]] _CCCL_HOST_DEVICE_API _CONSTEXPR _Result _NAME(const _Vp& __x) noexcept \
   {                                                                                     \
-    return _Result{__simd_##_NAME##_generator<_Result, _Vp>{__x}};                      \
+    const _Result __x_vec(__x);                                                         \
+    return _Result{__simd_##_NAME##_generator<_Result, _Result>{__x_vec}};              \
   }
 
 // common macro to implement (unary) rebind function
@@ -106,8 +107,10 @@ _CCCL_CONCEPT __is_simd_math_floating_point_v = _CCCL_REQUIRES_EXPR(
   _CCCL_REQUIRES(__is_simd_math_floating_point_v<_Vp>)                               \
   [[nodiscard]] _CCCL_HOST_DEVICE_API _CONSTEXPR auto _NAME(const _Vp& __x) noexcept \
   {                                                                                  \
-    using __result_t = rebind_t<_Tp, __deduced_vec_t<_Vp>>;                          \
-    return __result_t{__simd_##_NAME##_generator<__result_t, _Vp>{__x}};             \
+    using __vec_t _CCCL_NODEBUG    = __deduced_vec_t<_Vp>;                           \
+    using __result_t _CCCL_NODEBUG = rebind_t<_Tp, __vec_t>;                         \
+    const __vec_t __x_vec(__x);                                                      \
+    return __result_t{__simd_##_NAME##_generator<__result_t, __vec_t>{__x_vec}};     \
   }
 
 //----------------------------------------------------------------------------------------------------------------------
