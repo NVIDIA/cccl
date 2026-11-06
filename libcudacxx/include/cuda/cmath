@@ -24,10 +24,12 @@
 // IWYU pragma: begin_exports
 #include <cuda/__cmath/abs_diff.h>
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/clamp.h>
 #include <cuda/__cmath/fast_modulo_division.h>
 #include <cuda/__cmath/ilog.h>
 #include <cuda/__cmath/ipow.h>
 #include <cuda/__cmath/isqrt.h>
+#include <cuda/__cmath/min_max.h>
 #include <cuda/__cmath/mul_hi.h>
 #include <cuda/__cmath/neg.h>
 #include <cuda/__cmath/pow2.h>

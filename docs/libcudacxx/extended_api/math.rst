@@ -9,12 +9,14 @@ Math
 
    math/abs_diff
    math/ceil_div
+   math/clamp
    math/round_up
    math/round_down
    math/ilog
    math/ipow
    math/pow2
    math/isqrt
+   math/min_max
    math/neg
    math/uabs
    math/fast_mod_div
@@ -39,6 +41,11 @@ Math
      - Ceiling division
      - CCCL 2.7.0
      - CUDA 12.8
+
+   * - :ref:`clamp <libcudacxx-extended-api-math-clamp>`
+     - Clamp a value to a range, taking and returning values
+     - CCCL 3.7.0
+     - CUDA 13.7
 
    * - :ref:`round_up <libcudacxx-extended-api-math-round-up>`
      - Round up to the next multiple
@@ -84,6 +91,16 @@ Math
      - Integer square root
      - CCCL 3.1.0
      - CUDA 13.1
+
+   * - :ref:`max <libcudacxx-extended-api-math-min-max>`
+     - Larger of two values, taking and returning values
+     - CCCL 3.7.0
+     - CUDA 13.7
+
+   * - :ref:`min <libcudacxx-extended-api-math-min-max>`
+     - Smaller of two values, taking and returning values
+     - CCCL 3.7.0
+     - CUDA 13.7
 
    * - :ref:`neg <libcudacxx-extended-api-math-neg>`
      - Integer negation
