@@ -62,9 +62,10 @@ ENABLE_CUB_RDC="false"
 
 if [[ "$CUDA_COMPILER" == *nvcc* ]]; then
     ENABLE_CUB_RDC="true"
-    NVCC_VERSION=$($CUDA_COMPILER --version | grep release | awk '{print $6}' | cut -c2-)
     if [[ -n "${DISABLE_CUB_BENCHMARKS}" ]]; then
         echo "Benchmarks have been forcefully disabled."
+    elif $CCCL_BUILD_WINDOWS; then
+        echo "CUB benchmarks are disabled on Windows."
     else
         ENABLE_CCCL_BENCHMARKS="true"
         echo "nvcc version is $NVCC_VERSION. Building CUB benchmarks."

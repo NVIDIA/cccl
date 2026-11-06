@@ -191,7 +191,6 @@ projects:
     - "ci/build_cuda_coop_python\\.sh"
     - "ci/test_cuda_coop_python\\.sh"
     - "ci/validate_cuda_coop_wheel\\.py"
-    - "ci/windows/build_cuda_coop_python\\.ps1"
     - "^LICENSE$"
     - "^cub/LICENSE\\.TXT$"
     - "^libcudacxx/LICENSE\\.TXT$"

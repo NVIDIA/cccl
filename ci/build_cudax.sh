@@ -9,10 +9,10 @@ print_environment_details
 
 # If the cudax_ENABLE_CUFILE variable is specified, we don't modify it. Otherwise if we got an nvcc binary, check the
 # nvcc version and if it's less than 12.9, disable the cuFile support. NVHPC Toolkit doesn't come with cuFile, too, so
-# we don't enable cuFile support if the host compiler is nvc++.
+# we don't enable cuFile support if the host compiler is nvc++. cuFile is not supported on Windows.
 if [[ -z "${cudax_ENABLE_CUFILE:-}" ]]; then
   cudax_ENABLE_CUFILE="false"
-  if [[ -n "${NVCC_VERSION:-}" ]] && [[ "$(basename "${HOST_COMPILER}")" != "nvc++" ]]; then
+  if ! $CCCL_BUILD_WINDOWS && [[ -n "${NVCC_VERSION:-}" ]] && [[ "$(basename "${HOST_COMPILER}")" != "nvc++" ]]; then
     if util/version_compare.sh "${NVCC_VERSION}" ge 12.9; then
       cudax_ENABLE_CUFILE="true"
     fi

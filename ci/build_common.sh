@@ -348,7 +348,7 @@ function cccl_configure_preset_for_test() {
     fi
 
     configure_preset=$(
-        jq -r --arg t "${test_preset}" '
+        jq -j --arg t "${test_preset}" '
             .testPresets[] | select(.name == $t) | .configurePreset // empty
         ' "${presets_file}"
     )
@@ -375,6 +375,9 @@ function run_cuda_smoke_test() {
     local configure_preset
     configure_preset="$(cccl_configure_preset_for_test "${test_preset}")"
     local smoke_bin="${BUILD_DIR}/${configure_preset}/bin/cccl.test.cuda_runtime_smoke"
+    if $CCCL_BUILD_WINDOWS; then
+        smoke_bin+=".exe"
+    fi
 
     if [[ -x "${smoke_bin}" ]]; then
         run_ci_timed_command "CUDA smoke ${BUILD_NAME}" "${smoke_bin}" || return $?
@@ -492,7 +495,11 @@ function build_preset() {
               will have a weighted time that is the same or similar to its elapsed time. A
               compile that runs in parallel with 999 other compiles will have a weighted time
               that is tiny."
-        ./ninja_summary.py -C "${BUILD_DIR}"/"${PRESET}" || echo "Warning: ninja_summary.py failed to execute properly."
+        if $CCCL_BUILD_WINDOWS; then
+            python ./ninja_summary.py -C "${BUILD_DIR}"/"${PRESET}" || echo "Warning: ninja_summary.py failed to execute properly."
+        else
+            ./ninja_summary.py -C "${BUILD_DIR}"/"${PRESET}" || echo "Warning: ninja_summary.py failed to execute properly."
+        fi
         end_group
     else
       sccache -s || :

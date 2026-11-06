@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-ci_dir="$(dirname "${BASH_SOURCE[0]}")"
-cccl_dir="$(realpath "${ci_dir}/..")"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cccl_dir="$(cd "${ci_dir}/.." && pwd)"
 
 MIN_CMAKE=false
 minimum_cmake_version=3.18.0
@@ -43,6 +43,9 @@ fi
 # shellcheck source=ci/build_common.sh
 source "${ci_dir}/build_common.sh"
 cd "${ci_dir}"
+if $CCCL_BUILD_WINDOWS; then
+  cccl_dir=$(cygpath -am "${cccl_dir}")
+fi
 
 print_environment_details
 

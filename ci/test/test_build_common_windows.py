@@ -54,6 +54,8 @@ elif name in ("nvcc", "nvcc.exe"):
     sys.stdout.buffer.write(b"Cuda compilation tools, release 13.4, V13.4.70\r\n")
 elif name == "nproc":
     print("7")
+elif name == "jq":
+    sys.stdout.write("thrust" if "-j" in args else "thrust\r\n")
 elif name == "timeout":
     sys.exit(subprocess.call(args[1:]))
 elif name == "memmon.sh" and args[0] == "--start":
@@ -70,8 +72,17 @@ def run_common(tmp_path):
     repo = tmp_path / "repository with spaces"
     ci = repo / "ci"
     (ci / "util").mkdir(parents=True)
-    for source in ("build_common.sh", "pretty_printing.sh", "util/retry.sh"):
+    for source in (
+        "build_common.sh",
+        "build_cub.sh",
+        "build_cudax.sh",
+        "pretty_printing.sh",
+        "util/retry.sh",
+        "util/extract_switches.sh",
+        "util/version_compare.sh",
+    ):
         shutil.copy2(REPO_ROOT / "ci" / source, ci / source)
+    (repo / "CMakePresets.json").write_text("{}")
 
     tools = tmp_path / "tools with spaces"
     tools.mkdir()
@@ -87,6 +98,7 @@ def run_common(tmp_path):
         "git",
         "jq",
         "ninja",
+        "nvidia-smi",
         "nproc",
         "sccache",
         "timeout",
@@ -105,7 +117,7 @@ def run_common(tmp_path):
     (ci / "C:").mkdir()
     (ci / "C:" / "Native Tools").symlink_to(tools, target_is_directory=True)
 
-    def run(platform="msys", extra_env=None, args=()):
+    def run(platform="msys", extra_env=None, args=(), script=None):
         env = os.environ.copy()
         for key in (
             "CXX",
@@ -139,10 +151,15 @@ def run_common(tmp_path):
                 """
 set -euo pipefail
 OSTYPE="$MOCK_OSTYPE"
+"""
+                + (
+                    script
+                    or """
 source ./ci/build_common.sh
 configure_and_build_preset Probe thrust "-DCMAKE_CXX_STANDARD=$CXX_STANDARD"
 probe "$NVCC_VERSION" "$N_CPUS" "$BUILD_DIR"
-""",
+"""
+                ),
                 "build-common-test",
                 *args,
             ],
@@ -242,3 +259,49 @@ def test_linux_keeps_cpu_reservation_symlinks_timeout_and_memory_monitor(run_com
     assert (repo / "build/latest").resolve() == repo / "build/probe"
     assert (repo / "build/preset-latest").is_symlink()
     assert (repo / "build/preset-latest").resolve() == repo / "build/probe/thrust"
+
+
+@pytest.mark.parametrize("platform,enabled", [("msys", "false"), ("linux-gnu", "true")])
+def test_cub_benchmarks_preserve_platform_defaults(run_common, platform, enabled):
+    result, records, _ = run_common(
+        platform=platform,
+        extra_env={"GITHUB_ACTIONS": ""},
+        script="source ./ci/build_cub.sh",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    configure = next(
+        item
+        for item in records
+        if item["tool"] == "cmake" and "--preset=cub" in item["args"]
+    )
+    assert f"-DCCCL_ENABLE_BENCHMARKS={enabled}" in configure["args"]
+    assert "-DCUB_ENABLE_RDC_TESTS=true" in configure["args"]
+
+
+@pytest.mark.parametrize("platform,enabled", [("msys", "false"), ("linux-gnu", "true")])
+def test_cudax_cufile_preserves_platform_defaults(run_common, platform, enabled):
+    result, records, _ = run_common(
+        platform=platform,
+        extra_env={"GITHUB_ACTIONS": ""},
+        script="source ./ci/build_cudax.sh",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    configure = next(
+        item
+        for item in records
+        if item["tool"] == "cmake" and "--preset=cudax" in item["args"]
+    )
+    assert f"-Dcudax_ENABLE_CUFILE={enabled}" in configure["args"]
+
+
+def test_windows_smoke_uses_native_jq_output_and_executable_suffix(run_common):
+    result, records, _ = run_common(
+        script="""
+source ./ci/build_common.sh
+mkdir -p "$BUILD_DIR/thrust/bin"
+cp "$MOCK_TOOLS/probe" "$BUILD_DIR/thrust/bin/cccl.test.cuda_runtime_smoke.exe"
+run_cuda_smoke_test Probe thrust-gpu
+"""
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert any(item["tool"] == "cccl.test.cuda_runtime_smoke.exe" for item in records)

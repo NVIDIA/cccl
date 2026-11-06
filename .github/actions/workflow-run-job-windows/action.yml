@@ -70,17 +70,6 @@ runs:
         fi
         echo "ENVARGS=${ENVARGS}" | tee -a "${GITHUB_ENV}"
 
-        # The comparison is opt-in and uses one immutable Windows image in both arms.
-        experiment=$(echo "${ENVIRONMENT:-[]}" | jq -br '(. // []) | any(. == "CCCL_WINDOWS_BASH_EXPERIMENT=1")')
-        run_image="${{ inputs.image }}"
-        if [[ "$experiment" == true ]]; then
-          digest=$(echo "$ENVIRONMENT" | jq -br '.[] | select(startswith("CCCL_WINDOWS_BASH_IMAGE_DIGEST=")) | split("=")[1]')
-          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
-          run_image="${run_image}@${digest}"
-        fi
-        printf 'WINDOWS_BASH_EXPERIMENT=%s\n' "$experiment" >> "$GITHUB_ENV"
-        printf 'RUN_IMAGE=%s\n' "$run_image" >> "$GITHUB_ENV"
-
         # SCCACHE config:
         echo "SCCACHE_BUCKET=rapids-sccache-devs" | tee -a "${GITHUB_ENV}"
         echo "SCCACHE_REGION=us-east-2" | tee -a "${GITHUB_ENV}"
@@ -178,18 +167,9 @@ runs:
     - name: Fetch ${{ inputs.image }}
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        echo "::group::Pulling Docker image ${{ env.RUN_IMAGE }}"
-        docker pull "${{ env.RUN_IMAGE }}"
+        echo "::group::Pulling Docker image ${{ inputs.image }}"
+        docker pull ${{ inputs.image }}
         echo "::endgroup::"
-
-    - name: Verify native failure propagation
-      if: ${{ env.WINDOWS_BASH_EXPERIMENT == 'true' }}
-      shell: bash --noprofile --norc -euo pipefail {0}
-      run: |
-        bash "${{ steps.paths.outputs.HOST_REPO }}/ci/util/windows_bash_failure_probe.sh" \
-          "${{ env.RUN_IMAGE }}" \
-          "${{ steps.paths.outputs.HOST_REPO }}" \
-          "${{ steps.paths.outputs.MOUNT_REPO }}"
 
     - name: Run command
       id: run
@@ -211,10 +191,6 @@ runs:
 
         $exitCode = 0
         try {
-          if ($env:CCCL_WINDOWS_BASH_EXPERIMENT -eq '1') {
-            & bash 'ci/util/windows_bash_experiment.sh' preflight
-            if ($LASTEXITCODE -ne 0) { throw 'Windows Bash experiment preflight failed' }
-          }
           Write-Host "::group::>>>>> Executing command: $env:COMMAND <<<<<"
           Write-Host "In directory: $(Get-Location)"
           Invoke-Expression $env:COMMAND
@@ -226,14 +202,8 @@ runs:
           Write-Host $_
           $exitCode = 1
         } finally {
-          if ($env:CCCL_WINDOWS_BASH_EXPERIMENT -eq '1') {
-            Set-Location '${{steps.paths.outputs.MOUNT_REPO}}'
-            & bash 'ci/util/windows_bash_experiment.sh' collect $exitCode
-            if ($LASTEXITCODE -ne 0 -and $exitCode -eq 0) { $exitCode = 1 }
-          }
           Write-Host '::group::Uploading job result artifacts'
           & bash 'ci/upload_job_result_artifacts.sh' $env:JOB_ID $exitCode
-          if ($env:CCCL_WINDOWS_BASH_EXPERIMENT -eq '1' -and $LASTEXITCODE -ne 0 -and $exitCode -eq 0) { $exitCode = 1 }
           Write-Host '::endgroup::'
         }
 
@@ -260,7 +230,6 @@ runs:
           --env "AWS_SHARED_CREDENTIALS_FILE=${{steps.paths.outputs.MOUNT_REPO}}/.aws/credentials" \
           --env "CONTAINER_WORKSPACE=${{steps.paths.outputs.MOUNT_REPO}}" \
           --env "CI=true" \
-          --env "CCCL_WINDOWS_BASH_IMAGE=${{ env.RUN_IMAGE }}" \
           --env "DEVCONTAINER_NAME=cuda${{inputs.cuda}}-${{inputs.host}}" \
           --env "DOCKER_HOST=npipe:////./pipe/docker_engine" \
           --env "HOST_WORKSPACE=${{steps.paths.outputs.HOST_REPO}}" \
@@ -282,7 +251,7 @@ runs:
           --env "WORKFLOW_ARTIFACT=${{env.WORKFLOW_ARTIFACT}}" \
           --env "WORKFLOW_DIR=${{env.WORKFLOW_DIR}}" \
           ${ENVARGS:-} \
-          "${{ env.RUN_IMAGE }}" \
+          ${{ inputs.image }} \
           powershell "${{steps.paths.outputs.MOUNT_REPO}}/ci.ps1"
 
         docker_exit=$?
