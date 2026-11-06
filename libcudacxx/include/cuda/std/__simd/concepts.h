@@ -77,18 +77,20 @@ inline constexpr bool __has_non_static_value_v<_Tp, void_t<decltype(&_Tp::value)
   is_member_pointer_v<decltype(&_Tp::value)>;
 
 template <typename _Tp, typename = void>
-inline constexpr bool __constexpr_wrapper_like_v = false;
+inline constexpr bool __constexpr_wrapper_value_matches_v = false;
 
 template <typename _Tp>
-inline constexpr bool __constexpr_wrapper_like_v<
+inline constexpr bool __constexpr_wrapper_value_matches_v<
   _Tp,
   // Reject non-static members before constant-expression substitution for NVCC + GCC <= 12
   void_t<enable_if_t<!__has_non_static_value_v<_Tp>>,
-         decltype(bool_constant<(_Tp() == _Tp::value) && (static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value)>{})>> =
-  convertible_to<_Tp, decltype(_Tp::value)> && equality_comparable_with<_Tp, decltype(_Tp::value)>;
+         enable_if_t<(_Tp() == _Tp::value) && (static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value)>>> = true;
 
 template <typename _Tp>
-_CCCL_CONCEPT __constexpr_wrapper_like = __constexpr_wrapper_like_v<_Tp>;
+_CCCL_CONCEPT __constexpr_wrapper_like = _CCCL_REQUIRES_EXPR(
+  (_Tp))(requires(__constexpr_wrapper_value_matches_v<_Tp>),
+         requires(convertible_to<_Tp, decltype(_Tp::value)>),
+         requires(equality_comparable_with<_Tp, decltype(_Tp::value)>));
 
 // Covers all integral types including character types (char16_t, char32_t, wchar_t, char8_t),
 // which are excluded by __cccl_is_integer_v
