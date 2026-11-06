@@ -39,17 +39,16 @@
 #if _CCCL_HAS_HOST_STD_LIB()
 _CCCL_BEGIN_NAMESPACE_STD
 
-template <size_t _Ip, class... _Tp>
-constexpr typename tuple_element<_Ip, tuple<_Tp...>>::type&
-get(tuple<_Tp...>&) noexcept; // NOLINT(readability-redundant-declaration)
+// NOLINTBEGIN(readability-redundant-declaration)
 
 template <size_t _Ip, class... _Tp>
-constexpr const typename tuple_element<_Ip, tuple<_Tp...>>::type&
-get(const tuple<_Tp...>&) noexcept; // NOLINT(readability-redundant-declaration)
+constexpr typename tuple_element<_Ip, tuple<_Tp...>>::type& get(tuple<_Tp...>&) noexcept;
 
 template <size_t _Ip, class... _Tp>
-constexpr typename tuple_element<_Ip, tuple<_Tp...>>::type&&
-get(tuple<_Tp...>&&) noexcept; // NOLINT(readability-redundant-declaration)
+constexpr const typename tuple_element<_Ip, tuple<_Tp...>>::type& get(const tuple<_Tp...>&) noexcept;
+
+template <size_t _Ip, class... _Tp>
+constexpr typename tuple_element<_Ip, tuple<_Tp...>>::type&& get(tuple<_Tp...>&&) noexcept;
 
 // libstdc++ before GCC 8 has no get(const tuple&&). The parameter is an lvalue, so this calls the const
 // lvalue overload. Cast that result to the const rvalue the caller asked for.
@@ -61,21 +60,17 @@ constexpr const typename tuple_element<_Ip, tuple<_Tp...>>::type&& get(const tup
 }
 #  else // ^^^ _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8) ^^^ / vvv !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8) vvv
 template <size_t _Ip, class... _Tp>
-constexpr const typename tuple_element<_Ip, tuple<_Tp...>>::type&&
-get(const tuple<_Tp...>&&) noexcept; // NOLINT(readability-redundant-declaration)
+constexpr const typename tuple_element<_Ip, tuple<_Tp...>>::type&& get(const tuple<_Tp...>&&) noexcept;
 #  endif // !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8)
 
 template <size_t _Ip, class _T1, class _T2>
-constexpr typename tuple_element<_Ip, pair<_T1, _T2>>::type&
-get(pair<_T1, _T2>&) noexcept; // NOLINT(readability-redundant-declaration)
+constexpr typename tuple_element<_Ip, pair<_T1, _T2>>::type& get(pair<_T1, _T2>&) noexcept;
 
 template <size_t _Ip, class _T1, class _T2>
-constexpr const typename tuple_element<_Ip, pair<_T1, _T2>>::type&
-get(const pair<_T1, _T2>&) noexcept; // NOLINT(readability-redundant-declaration)
+constexpr const typename tuple_element<_Ip, pair<_T1, _T2>>::type& get(const pair<_T1, _T2>&) noexcept;
 
 template <size_t _Ip, class _T1, class _T2>
-constexpr typename tuple_element<_Ip, pair<_T1, _T2>>::type&&
-get(pair<_T1, _T2>&&) noexcept; // NOLINT(readability-redundant-declaration)
+constexpr typename tuple_element<_Ip, pair<_T1, _T2>>::type&& get(pair<_T1, _T2>&&) noexcept;
 
 #  if _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8)
 template <size_t _Ip, class _T1, class _T2>
@@ -85,18 +80,17 @@ constexpr const typename tuple_element<_Ip, pair<_T1, _T2>>::type&& get(const pa
 }
 #  else // ^^^ _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8) ^^^ / vvv !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8) vvv
 template <size_t _Ip, class _T1, class _T2>
-constexpr const typename tuple_element<_Ip, pair<_T1, _T2>>::type&&
-get(const pair<_T1, _T2>&&) noexcept; // NOLINT(readability-redundant-declaration)
+constexpr const typename tuple_element<_Ip, pair<_T1, _T2>>::type&& get(const pair<_T1, _T2>&&) noexcept;
 #  endif // !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8)
 
 template <size_t _Ip, class _Tp, size_t _Size>
-constexpr _Tp& get(array<_Tp, _Size>&) noexcept; // NOLINT(readability-redundant-declaration)
+constexpr _Tp& get(array<_Tp, _Size>&) noexcept;
 
 template <size_t _Ip, class _Tp, size_t _Size>
-constexpr const _Tp& get(const array<_Tp, _Size>&) noexcept; // NOLINT(readability-redundant-declaration)
+constexpr const _Tp& get(const array<_Tp, _Size>&) noexcept;
 
 template <size_t _Ip, class _Tp, size_t _Size>
-constexpr _Tp&& get(array<_Tp, _Size>&&) noexcept; // NOLINT(readability-redundant-declaration)
+constexpr _Tp&& get(array<_Tp, _Size>&&) noexcept;
 
 #  if _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8)
 template <size_t _Ip, class _Tp, size_t _Size>
@@ -106,7 +100,7 @@ constexpr const _Tp&& get(const array<_Tp, _Size>&& __arr) noexcept
 }
 #  else // ^^^ _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8) ^^^ / vvv !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8) vvv
 template <size_t _Ip, class _Tp, size_t _Size>
-constexpr const _Tp&& get(const array<_Tp, _Size>&&) noexcept; // NOLINT(readability-redundant-declaration)
+constexpr const _Tp&& get(const array<_Tp, _Size>&&) noexcept;
 #  endif // !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8)
 
 #  if __cpp_lib_tuple_like >= 202311L
@@ -232,6 +226,8 @@ get(_TupleLike&& __t) noexcept(noexcept(::std::get<_Ip>(::cuda::std::forward<_Tu
   return ::std::get<_Ip>(::cuda::std::forward<_TupleLike>(__t));
 }
 #endif // _CCCL_HAS_HOST_STD_LIB()
+
+// NOLINTEND(readability-redundant-declaration)
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
