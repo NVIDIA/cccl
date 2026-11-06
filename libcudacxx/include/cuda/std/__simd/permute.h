@@ -29,7 +29,6 @@
 #include <cuda/std/__simd/basic_vec.h>
 #include <cuda/std/__simd/permute_dynamic.h> // IWYU pragma: keep
 #include <cuda/std/__simd/type_traits.h>
-#include <cuda/std/__type_traits/integral_constant.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/remove_reference.h>
@@ -63,7 +62,6 @@ inline constexpr bool __idxmap_result_is_integral_v =
   __idxmap_nargs_integral_v<_IdxMap, void, __simd_size_type, __simd_size_type>
   || __idxmap_nargs_integral_v<_IdxMap, void, __simd_size_type>;
 
-
 //----------------------------------------------------------------------------------------------------------------------
 // gen-fn: idxmap(i, V::size()) if that expression is well-formed, and idxmap(i) otherwise.
 
@@ -93,7 +91,6 @@ struct __permute_generator
   using __value_type _CCCL_NODEBUG = typename _Vp::value_type;
 
   const _Vp& __v_;
-  _IdxMap& __idxmap_;
 
   template <__simd_size_type _Idx>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __value_type operator()(__simd_size_constant<_Idx>) const noexcept
@@ -121,39 +118,38 @@ struct __permute_generator
 // The default-N overloads below spell the return type as V because N is V::size(), so resize_t<N, V> is V.
 _CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _IdxMap)
 _CCCL_REQUIRES(__idxmap_result_is_integral_v<_IdxMap>)
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi>
-permute(const basic_vec<_Tp, _Abi>& __v, _IdxMap&& __idxmap)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_vec<_Tp, _Abi> permute(const basic_vec<_Tp, _Abi>& __v, _IdxMap&&)
 {
-  return basic_vec<_Tp, _Abi>{__permute_generator<_IdxMap, basic_vec<_Tp, _Abi>>{__v, __idxmap}};
+  return basic_vec<_Tp, _Abi>{__permute_generator<_IdxMap, basic_vec<_Tp, _Abi>>{__v}};
 }
 
 _CCCL_TEMPLATE(__simd_size_type _Np, typename _Tp, typename _Abi, typename _IdxMap)
 _CCCL_REQUIRES(__idxmap_result_is_integral_v<_IdxMap>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr resize_t<_Np, basic_vec<_Tp, _Abi>>
-permute(const basic_vec<_Tp, _Abi>& __v, _IdxMap&& __idxmap)
+permute(const basic_vec<_Tp, _Abi>& __v, _IdxMap&&)
 {
   static_assert(_Np >= 0, "cuda::std::simd::permute: N must be non-negative");
   using __result_t = resize_t<_Np, basic_vec<_Tp, _Abi>>;
-  return __result_t{__permute_generator<_IdxMap, basic_vec<_Tp, _Abi>>{__v, __idxmap}};
+  return __result_t{__permute_generator<_IdxMap, basic_vec<_Tp, _Abi>>{__v}};
 }
 
 // The default-N overloads below spell the return type as V because N is V::size(), so resize_t<N, V> is V.
 _CCCL_TEMPLATE(typename _Abi, size_t _Bytes, typename _IdxMap)
 _CCCL_REQUIRES(__idxmap_result_is_integral_v<_IdxMap>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr basic_mask<_Bytes, _Abi>
-permute(const basic_mask<_Bytes, _Abi>& __v, _IdxMap&& __idxmap)
+permute(const basic_mask<_Bytes, _Abi>& __v, _IdxMap&&)
 {
-  return basic_mask<_Bytes, _Abi>{__permute_generator<_IdxMap, basic_mask<_Bytes, _Abi>>{__v, __idxmap}};
+  return basic_mask<_Bytes, _Abi>{__permute_generator<_IdxMap, basic_mask<_Bytes, _Abi>>{__v}};
 }
 
 _CCCL_TEMPLATE(__simd_size_type _Np, size_t _Bytes, typename _Abi, typename _IdxMap)
 _CCCL_REQUIRES(__idxmap_result_is_integral_v<_IdxMap>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr resize_t<_Np, basic_mask<_Bytes, _Abi>>
-permute(const basic_mask<_Bytes, _Abi>& __v, _IdxMap&& __idxmap)
+permute(const basic_mask<_Bytes, _Abi>& __v, _IdxMap&&)
 {
   static_assert(_Np >= 0, "cuda::std::simd::permute: N must be non-negative");
   using __result_t = resize_t<_Np, basic_mask<_Bytes, _Abi>>;
-  return __result_t{__permute_generator<_IdxMap, basic_mask<_Bytes, _Abi>>{__v, __idxmap}};
+  return __result_t{__permute_generator<_IdxMap, basic_mask<_Bytes, _Abi>>{__v}};
 }
 
 //----------------------------------------------------------------------------------------------------------------------
