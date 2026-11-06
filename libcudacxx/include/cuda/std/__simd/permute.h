@@ -65,20 +65,34 @@ inline constexpr bool __idxmap_result_is_integral_v =
 //----------------------------------------------------------------------------------------------------------------------
 // gen-fn: idxmap(i, V::size()) if that expression is well-formed, and idxmap(i) otherwise.
 
+// Preserve the mapper's result type so the Mandates are checked before converting to an index.
 template <typename _IdxMap, __simd_size_type _Idx, __simd_size_type _Size>
-inline constexpr bool __idxmap_invocable_two_args_v =
-  is_invocable_v<_IdxMap&, __simd_size_constant<_Idx>, __simd_size_constant<_Size>>;
-
-template <typename _IdxMap, __simd_size_type _Idx, __simd_size_type _Size>
-[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __simd_size_type __permute_gen_fn() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __permute_gen_fn() noexcept
 {
-  if constexpr (__idxmap_invocable_two_args_v<_IdxMap, _Idx, _Size>)
+  // C++23 allows an index map through an unknown reference, see https://eel.is/c++draft/simd.permute.static#1.1
+  // We don't support this feature because it's not supported by nvcc/nvrtc.
+  // Default-constructing a fresh mapper currently excludes non-default-constructible mappers.
+  remove_reference_t<_IdxMap> __idxmap{};
+  if constexpr (is_invocable_v<_IdxMap&, __simd_size_type, __simd_size_type>)
   {
-    return static_cast<__simd_size_type>(_IdxMap{}(__simd_size_constant<_Idx>{}, __simd_size_constant<_Size>{}));
+    return __idxmap(_Idx, _Size);
   }
   else
   {
-    return static_cast<__simd_size_type>(_IdxMap{}(__simd_size_constant<_Idx>{}));
+    return __idxmap(_Idx);
+  }
+}
+
+template <__simd_size_type _Size, typename _Index>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL bool __is_valid_static_permute_index(const _Index& __index) noexcept
+{
+  if constexpr (is_unsigned_v<_Index>)
+  {
+    return __index < _Size;
+  }
+  else
+  {
+    return __index == zero_element || __index == uninit_element || (__index >= 0 && __index < _Size);
   }
 }
 
@@ -95,19 +109,18 @@ struct __permute_generator
   template <__simd_size_type _Idx>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __value_type operator()(__simd_size_constant<_Idx>) const noexcept
   {
-    using __map_t                     = remove_cvref_t<_IdxMap>;
-    constexpr __simd_size_type __size = _Vp::__size;
-    constexpr __simd_size_type __src  = ::cuda::std::simd::__permute_gen_fn<__map_t, _Idx, __size>();
-    static_assert(__src == zero_element || __src == uninit_element || (__src >= 0 && __src < __size),
+    constexpr auto __src = ::cuda::std::simd::__permute_gen_fn<_IdxMap, _Idx, _Vp::__size>();
+    static_assert(::cuda::std::simd::__is_valid_static_permute_index<_Vp::__size>(__src),
                   "cuda::std::simd::permute: idxmap(i) must return zero_element, uninit_element, or a value in [0, "
                   "V::size())");
-    if constexpr (__src == zero_element || __src == uninit_element)
+    constexpr __simd_size_type __index = __src;
+    if constexpr (__index == zero_element || __index == uninit_element)
     {
-      return __value_type{}; // unspecified-value
+      return __value_type{}; // unspecified-value for uninit_element
     }
     else
     {
-      return __v_[__src];
+      return __v_[__index];
     }
   }
 };
