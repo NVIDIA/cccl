@@ -12,8 +12,7 @@
  * @file
  * @brief Elementwise transforms over sharded views (in-place unary and
  *        n-ary zip). No cross-place stage: each shard transforms locally —
- *        one direct per-shard launch (`thrust::transform`,
- *        `cub::DeviceTransform`) on the shard's environment stream, driven
+ *        one direct per-shard launch (`cub::DeviceTransform`) on the shard's environment stream, driven
  *        by `__visit_shards` like the rest of the map family.
  *
  * The same verbs written over the MGMN transform engine live in
@@ -38,9 +37,6 @@
 
 #include <cub/device/device_transform.cuh>
 
-#include <thrust/execution_policy.h>
-#include <thrust/transform.h>
-
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
@@ -57,6 +53,11 @@
 
 namespace cuda::experimental::sharded
 {
+namespace reserved
+{
+template <class _Op>
+struct __tuple_result_op;
+}
 // ============================================================================
 // Concept-generic tier: any sharded_view + per-shard environments
 // ============================================================================
@@ -87,10 +88,21 @@ _CCCL_REQUIRES(
   sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 _CCCL_HOST_API void transform(_S&& data, _Envs&& envs, _UnaryOp op, const _CallEnv& call_env = {})
 {
-  __detail::__visit_shards(data, envs, call_env, "sharded::transform", [&](const auto& d, cudaStream_t s) {
-    thrust::transform(thrust::cuda::par_nosync.on(s), d.data, d.data + d.size, d.data, op);
-    cuda_safe_call(cudaGetLastError());
-  });
+  // cub::DeviceTransform rather than thrust::transform: Thrust routes an op that
+  // does not proclaim_copyable_arguments to CUB's stable-address (prefetch)
+  // kernel, 8-byte loads for doubles, ~0.8x of HBM on a whole-device place;
+  // CUB's own entry point defaults to requires_stable_address::no and takes the
+  // bulk-copy / vectorized kernel, as zip_transform below already does. The
+  // sharded algorithms never expose element addresses to `op`, so this is safe.
+  __detail::__visit_shards(
+    data, envs, call_env, "sharded::transform", [&](::std::size_t g, const auto& d, cudaStream_t) {
+      cuda_safe_call(cub::DeviceTransform::Transform(
+        ::cuda::std::tuple{d.data},
+        ::cuda::std::tuple{d.data},
+        d.size,
+        reserved::__tuple_result_op<_UnaryOp>{op},
+        envs[g]));
+    });
 }
 
 /**
