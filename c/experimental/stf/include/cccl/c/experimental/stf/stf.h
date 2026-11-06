@@ -115,14 +115,14 @@ typedef enum stf_access_mode // NOLINT(cppcoreguidelines-use-enum-class)
 //! exception's full text.
 typedef enum stf_error_t // NOLINT(cppcoreguidelines-use-enum-class)
 {
-  STF_SUCCESS                = 0, //!< No failure
-  STF_ERROR_INVALID_ARGUMENT = 1, //!< A precondition on an argument was violated (\c std::invalid_argument, \c
-                                  //!< std::out_of_range, \c std::domain_error)
-  STF_ERROR_CUDA = 2, //!< A CUDA runtime or driver call failed (\c cuda_exception); the runtime's pending error is
-                      //!< consumed
-  STF_ERROR_OUT_OF_MEMORY = 3, //!< Host allocation failed (\c std::bad_alloc)
-  STF_ERROR_RUNTIME       = 4, //!< Any other \c std::exception
-  STF_ERROR_UNKNOWN       = 5 //!< An exception not derived from \c std::exception
+  STF_SUCCESS, //!< No failure
+  STF_ERROR_INVALID_ARGUMENT, //!< A precondition on an argument was violated (\c std::invalid_argument, \c
+                              //!< std::out_of_range, \c std::domain_error)
+  STF_ERROR_CUDA, //!< A CUDA runtime or driver call failed (\c cuda_exception); the runtime's pending error is
+                  //!< consumed
+  STF_ERROR_OUT_OF_MEMORY, //!< Host allocation failed (\c std::bad_alloc)
+  STF_ERROR_RUNTIME, //!< Any other \c std::exception
+  STF_ERROR_UNKNOWN //!< An exception not derived from \c std::exception
 } stf_error_t;
 
 //! \brief Category of the last failure recorded on the calling thread, or \c STF_SUCCESS.
