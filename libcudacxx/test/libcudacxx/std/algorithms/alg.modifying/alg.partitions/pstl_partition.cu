@@ -26,12 +26,16 @@
 #include <cuda/std/execution>
 #include <cuda/stream>
 
+#include <cstdint>
+#include <limits>
+
 #include <testing.cuh>
 #include <utility.cuh>
 
 #include "test_iterators.h"
 #include "test_macros.h"
 #include "test_pstl.h"
+#include <c2h/catch2_allocation_failure.h>
 
 inline constexpr int size = 1000;
 
@@ -122,4 +126,28 @@ C2H_TEST("cuda::std::partition", "[parallel algorithm]", integral_types)
 
     test_partition(policy, input);
   }
+}
+
+using partition_boundary_types =
+  c2h::type_list<std::int8_t, std::uint8_t, std::int16_t, std::int32_t, std::int64_t, std::uint64_t, double>;
+
+C2H_TEST("cuda::std::partition count boundary", "[parallel algorithm][large]", partition_boundary_types)
+try
+{
+  using T                        = typename c2h::get<0, TestType>;
+  constexpr std::int64_t int_max = ::std::numeric_limits<int>::max();
+  const auto count               = GENERATE_COPY(int_max - 1, int_max, int_max + 1);
+  CAPTURE(count, sizeof(T));
+
+  c2h::device_vector<T> input(static_cast<std::size_t>(count), T{1});
+  const auto policy = cuda::execution::gpu;
+
+  const auto result = cuda::std::partition(policy, input.begin(), input.end(), cuda::always_true{});
+  REQUIRE(result - input.begin() == count);
+
+  CHECK(cuda::std::all_of(policy, input.begin(), input.end(), cuda::equal_to_value{T{1}}));
+}
+catch (...)
+{
+  c2h::skip_if_allocation_failure("Skipping partition count boundary: insufficient device memory");
 }
