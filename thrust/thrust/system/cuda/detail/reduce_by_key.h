@@ -175,8 +175,8 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> reduce_b
   EqualityOp equality_op,
   ReductionOp reduction_op)
 {
-  using size_type     = thrust::detail::it_difference_t<KeysInputIt>;
-  size_type num_items = ::cuda::std::distance(keys_first, keys_last);
+  using size_type           = thrust::detail::it_difference_t<KeysInputIt>;
+  const size_type num_items = ::cuda::std::distance(keys_first, keys_last);
   if (num_items == 0)
   {
     return ::cuda::std::make_pair(keys_output, values_output);

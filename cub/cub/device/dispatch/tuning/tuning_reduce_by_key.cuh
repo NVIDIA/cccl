@@ -1040,7 +1040,7 @@ struct policy_selector
   int key_size;
   int accum_size;
   type_t accum_t;
-  int value_size = 0; //!< Size of the input values. 0 means unknown, in which case accum_size is assumed.
+  int value_size; //!< Size of the input values. 0 means unknown, in which case accum_size is assumed.
 
 private:
   // Input values smaller than the accumulator are promoted (e.g. 1-byte values summed with plus<> into an int)
