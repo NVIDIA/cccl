@@ -917,10 +917,10 @@ clk/ev    33.8         -0.37x  3.14x   34.1   -0.39x  -0.64x
 ========= =====
 Class     Count
 ========= =====
-fp32      9
+fp32      7
 fp64      0
 other     0
-**total** **9**
+**total** **7**
 ========= =====
 
 .. _accuracy-high-4:
@@ -959,10 +959,10 @@ clk/ev    34.0         -0.38x  3.11x   34.1   -0.39x  -0.64x
 ========= =====
 Class     Count
 ========= =====
-fp32      9
+fp32      8
 fp64      0
 other     0
-**total** **9**
+**total** **8**
 ========= =====
 
 **Special Values Table:**
@@ -1086,9 +1086,9 @@ clk/ev    658.6        -0.16x  -0.30x   65.0   -0.34x  3.07x
 Class     Count
 ========= =====
 fp32      0
-fp64      9
+fp64      7
 other     0
-**total** **9**
+**total** **7**
 ========= =====
 
 .. _accuracy-high-5:
@@ -1127,9 +1127,9 @@ clk/ev    658.7        -0.16x  -0.30x   65.0   -0.33x  3.07x
 Class     Count
 ========= =====
 fp32      0
-fp64      9
+fp64      8
 other     0
-**total** **9**
+**total** **8**
 ========= =====
 
 **Special Values Table:**
@@ -1635,10 +1635,10 @@ clk/ev    50.8         -0.26x  2.08x   51.2   -0.26x  -0.42x
 ========= ======
 Class     Count
 ========= ======
-fp32      13
+fp32      10
 fp64      0
 other     0
-**total** **13**
+**total** **10**
 ========= ======
 
 **Special Values Table:**
@@ -1792,9 +1792,9 @@ clk/ev    914.8        -0.12x  -0.18x   99.4   -0.22x  1.66x
 Class     Count
 ========= ======
 fp32      0
-fp64      13
+fp64      10
 other     0
-**total** **13**
+**total** **10**
 ========= ======
 
 **Special Values Table:**
@@ -2239,10 +2239,10 @@ clk/ev    79.0         -0.17x  1.40x   79.1   -0.17x  -0.28x
 ========= ======
 Class     Count
 ========= ======
-fp32      29
+fp32      27
 fp64      0
 other     0
-**total** **29**
+**total** **27**
 ========= ======
 
 .. _type-fp64mp2-6:
@@ -2358,9 +2358,9 @@ clk/ev    1926.5       -0.06x  -0.54x   155.6 -0.14x  6.75x
 Class     Count
 ========= ======
 fp32      0
-fp64      29
+fp64      27
 other     0
-**total** **29**
+**total** **27**
 ========= ======
 
 .. _libcudacxx-extended-api-fp-fpmp-spec-mathematical-functions:

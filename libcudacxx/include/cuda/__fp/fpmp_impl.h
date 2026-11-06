@@ -516,6 +516,12 @@ template <typename _Tp, typename _Fp>
 inline constexpr bool __fpmp2_int_fits_limb_v =
   __fpmp2_int_value_bits_v<_Tp> >= 0 && __fpmp2_int_value_bits_v<_Tp> <= __fpmp2_mantissa_bits_v<_Fp>;
 
+// Scalars that one limb of an fpmp2 with element type _Fp holds exactly for every value of
+// the type. Arithmetic with such a scalar takes the single-limb kernels, whose low operand
+// limb is known to be zero, instead of promoting the scalar to a pair.
+template <typename _Tp, typename _Fp>
+inline constexpr bool __fpmp2_is_limb_v = __fpmp2_is_lossless_fp_v<_Tp, _Fp> || __fpmp2_int_fits_limb_v<_Tp, _Fp>;
+
 /*
 // Integer sources that the fpmp2 pair represents exactly for every value of the type.
 // The two limbs cover twice the significand of one, so the pair holds any integer up to

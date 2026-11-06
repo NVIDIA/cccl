@@ -277,25 +277,13 @@ _CCCL_FPMP_CORE_API void __fpmp2_acc(const _FpType __c, _FpType* __acc_hi, _FpTy
 }
 
 /*
- * Accurate accumulate: Full error propagation (FPAN-style)
- * Provides maximum precision by properly ordering all error terms.
+ * Accurate accumulate: the default accumulate already attains the 2u^2 bound of DWPlusFP
+ * for every operand pair, and a second Fast2Sum of its normalized result returns it unchanged.
  */
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void __fpmp2_high_acc(const _FpType __c, _FpType* __acc_hi, _FpType* __acc_lo) noexcept
 {
-  _FpType __err;
-  // Add c to high part with error capture
-  _FpType __s_hi = ::cuda::__fpmp_two_sum(*__acc_hi, __c, &__err);
-  // Add error to low part
-  _FpType __t = ::cuda::__fpmp_add_rn(*__acc_lo, __err);
-  // First normalization
-  _FpType __v_hi  = ::cuda::__fpmp_add_rn(__s_hi, __t);
-  _FpType __v_tmp = ::cuda::__fpmp_sub_rn(__v_hi, __s_hi);
-  _FpType __v_lo  = ::cuda::__fpmp_sub_rn(__t, __v_tmp);
-  // Final normalization
-  *__acc_hi       = ::cuda::__fpmp_add_rn(__v_hi, __v_lo);
-  _FpType __r_tmp = ::cuda::__fpmp_sub_rn(*__acc_hi, __v_hi);
-  *__acc_lo       = ::cuda::__fpmp_sub_rn(__v_lo, __r_tmp);
+  ::cuda::__fpmp2_acc(__c, __acc_hi, __acc_lo);
 }
 
 /*
@@ -327,8 +315,12 @@ _CCCL_FPMP_CORE_API void __fpmp2_low_mul(
 } // __fpmp2_low_mul
 
 /*
- * Dekker multiplication operation
- * This is a Dekker multiplication operation with normalization.
+ * Default multiplication: the cross terms are folded into the exact residual of x_hi * y_hi
+ * with two fmas and x_lo * y_lo is dropped, 7 operations. With x_hi and y_hi scaled into
+ * [1, 2) and x_hi * y_hi < 2, each fma rounds a value below 4u by at most 2u^2 and the
+ * dropped term is at most u^2: relative error below 5u^2 to first order (3.5u^2 when
+ * x_hi * y_hi >= 2), the bound of Algorithm 10 of Joldes, Muller & Popescu (2017) at two
+ * operations fewer.
  */
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void __fpmp2_mul(
@@ -339,16 +331,10 @@ _CCCL_FPMP_CORE_API void __fpmp2_mul(
   _FpType* __res_hi,
   _FpType* __res_lo) noexcept
 {
-  _FpType __p1, __p2, __c_hi, __c_lo, __res_hi_tmp, __res_lo_tmp;
-  __c_hi = ::cuda::__fpmp_two_mult_fma(__x_hi, __y_hi, &__c_lo);
-  __p1   = ::cuda::__fpmp_mul_rn(__x_hi, __y_lo);
-  __p2   = ::cuda::__fpmp_mul_rn(__x_lo, __y_hi);
-  __c_lo = ::cuda::__fpmp_add_rn(__c_lo, ::cuda::__fpmp_add_rn(__p1, __p2));
-  // Normalize:
-  __res_hi_tmp = ::cuda::__fpmp_fast_two_sum(__c_hi, __c_lo, &__res_lo_tmp);
-
-  *__res_hi = __res_hi_tmp;
-  *__res_lo = __res_lo_tmp;
+  _FpType __c_lo;
+  const _FpType __c_hi = ::cuda::__fpmp_two_mult_fma(__x_hi, __y_hi, &__c_lo);
+  __c_lo               = ::cuda::__fpmp_fma_rn(__x_hi, __y_lo, ::cuda::__fpmp_fma_rn(__x_lo, __y_hi, __c_lo));
+  *__res_hi            = ::cuda::__fpmp_fast_two_sum(__c_hi, __c_lo, __res_lo);
 } // __fpmp2_mul
 
 /* Compute fast fused multiply-add: x*y+z  (16 ops, no normalization)
@@ -1521,6 +1507,80 @@ __fpmp2_neg<double>(const double __x_hi, const double __x_lo, double* __res_hi, 
 }
 
 #endif // _CCCL_FPMP_USE_LIB
+
+// Pair x = (x_hi, x_lo) with a scalar c that one limb holds exactly. Built only from
+// primitives and operations available in both the inline and the library mode.
+
+// x + c. DWPlusFP (Joldes, Muller & Popescu 2017, Algorithm 4): relative error at most
+// 2u^2 for every operand pair, cancellation included. Its value equals that of the pair
+// addition at every level with (c, 0) as the second operand, up to the sign of a zero
+// low limb; low skips the closing renormalization.
+template <fpmp2_accuracy _Acc, typename _FpType>
+_CCCL_TRIVIAL_HOST_DEVICE_API void __fpmp2_add_limb(
+  const _FpType __x_hi, const _FpType __x_lo, const _FpType __c, _FpType* __res_hi, _FpType* __res_lo) noexcept
+{
+  _FpType __hi = __x_hi;
+  _FpType __lo = __x_lo;
+  if constexpr (_Acc == fpmp2_accuracy::low)
+  {
+    ::cuda::__fpmp2_low_acc(__c, &__hi, &__lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_acc(__c, &__hi, &__lo);
+  }
+  *__res_hi = __hi;
+  *__res_lo = __lo;
+}
+
+// x * c, 6 operations. With x_hi and c scaled into [1, 2), |x_lo * c + residual| < 3u, so
+// the one fma rounds by at most 2u^2: relative error below 2u^2 to first order. low skips
+// the renormalization. high is Algorithm 7 of Joldes, Muller & Popescu (2017), 10
+// operations, measured at most 1.5u^2.
+template <fpmp2_accuracy _Acc, typename _FpType>
+_CCCL_TRIVIAL_HOST_DEVICE_API void __fpmp2_mul_limb(
+  const _FpType __x_hi, const _FpType __x_lo, const _FpType __c, _FpType* __res_hi, _FpType* __res_lo) noexcept
+{
+  _FpType __p_lo;
+  const _FpType __p_hi = ::cuda::__fpmp_two_mult_fma(__x_hi, __c, &__p_lo);
+  if constexpr (_Acc == fpmp2_accuracy::high)
+  {
+    _FpType __t_lo;
+    const _FpType __t_hi = ::cuda::__fpmp_fast_two_sum(__p_hi, ::cuda::__fpmp_mul_rn(__x_lo, __c), &__t_lo);
+    *__res_hi            = ::cuda::__fpmp_fast_two_sum(__t_hi, ::cuda::__fpmp_add_rn(__t_lo, __p_lo), __res_lo);
+  }
+  else
+  {
+    const _FpType __lo = ::cuda::__fpmp_fma_rn(__x_lo, __c, __p_lo);
+    if constexpr (_Acc == fpmp2_accuracy::low)
+    {
+      *__res_hi = __p_hi;
+      *__res_lo = __lo;
+    }
+    else
+    {
+      *__res_hi = ::cuda::__fpmp_fast_two_sum(__p_hi, __lo, __res_lo);
+    }
+  }
+}
+
+// Pair product at high accuracy: the low-accuracy product, which folds the exact residual,
+// x_lo * y_lo and both cross terms into one fma chain, followed by the renormalization that
+// low omits. 8 operations; to first order its relative error is below 5u^2, the bound of the
+// default product, but it measures 3.9u^2 at most against 4.9u^2.
+template <typename _FpType>
+_CCCL_TRIVIAL_HOST_DEVICE_API void __fpmp2_high_mul(
+  const _FpType __x_hi,
+  const _FpType __x_lo,
+  const _FpType __y_hi,
+  const _FpType __y_lo,
+  _FpType* __res_hi,
+  _FpType* __res_lo) noexcept
+{
+  _FpType __hi, __lo;
+  ::cuda::__fpmp2_low_mul(__x_hi, __x_lo, __y_hi, __y_lo, &__hi, &__lo);
+  ::cuda::__fpmp2_renormalize(__hi, __lo, __res_hi, __res_lo);
+}
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>

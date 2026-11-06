@@ -8,7 +8,7 @@ Error Bounds for the Basic Operations
    JMP17 Thm 2.2 (DWPlusFP, 2u^2), Thm 3.1 (AccurateDWPlusDW, 3u^2/(1-4u)), Table 1; MR22
    Prop. 2.2, Thms 2.7-2.9 and Table 1 (DWTimesDW1 tightened to 5u^2 under ties-to-even).
    The operation sequences in fpmp_impl_muladd.h were compared line by line with Algorithms
-   4, 5, 6 and 10 of JMP17. "Derived" and "measured" entries are this document's own.
+   4, 5, 6 and 7 of JMP17. "Derived" and "measured" entries are this document's own.
 
 This page states what the ``fpmp2`` arithmetic guarantees, operation by operation. Each
 bound is given in units of ``u²``, where ``u`` is the unit roundoff of the limb format,
@@ -84,7 +84,7 @@ host against binary128 — whichever of the two is larger.
      - ``fp32mp2``
      - ``fp64mp2``
 
-   * - ``x += c`` (scalar accumulate)
+   * - ``x += c``, ``x + c``, ``x - c`` (scalar ``c`` held exactly by one limb)
      - all
      - relative ≤ ``2u²`` (asymptotically optimal)
      - proven [JMP17]_ Thm 2.2, [MR22]_
@@ -109,20 +109,36 @@ host against binary128 — whichever of the two is larger.
      - 2.6 [#same]_
 
    * - ``x * y``
-     - ``low``
-     - relative ≤ ``6u²``
-     - derived
+     - ``mid``
+     - relative ≤ ``5u²`` to first order (``3.5u²`` when ``x_hi·y_hi ≥ 2`` after scaling both into ``[1, 2)``)
+     - derived; the bound [MR22]_ Thm 2.7 proves for Algorithm 10 of [JMP17]_, at two operations fewer
      - all operands
-     - 3.5
-     - 3.6
+     - 4.9 [#host]_
+     - 4.8 [#host]_
 
    * - ``x * y``
-     - ``mid``, ``high``
-     - relative ≤ ``5u²`` (tight; ``5.5u²`` under a tie rule other than ties-to-even)
-     - proven [MR22]_ Thm 2.7 (``7u²`` in [JMP17]_ Thm 5.1)
+     - ``low``, ``high``
+     - relative ≤ ``5u²`` to first order
+     - derived
      - all operands
-     - 4.8
-     - 4.1
+     - 3.9 [#host]_
+     - 3.8 [#host]_
+
+   * - ``x * c`` (scalar ``c`` held exactly by one limb)
+     - ``low``, ``mid``
+     - relative ≤ ``2u²`` to first order
+     - derived
+     - all operands
+     - 1.98 [#host]_
+     - 1.99 [#host]_
+
+   * - ``x * c`` (scalar ``c`` held exactly by one limb)
+     - ``high``
+     - relative ≤ ``2u²`` to first order ([JMP17]_ Algorithm 7)
+     - derived
+     - all operands
+     - 1.50 [#host]_
+     - 1.50 [#host]_
 
    * - ``fma(x, y, z)``
      - ``low``, ``mid``
@@ -164,6 +180,9 @@ host against binary128 — whichever of the two is larger.
      - 9.5
      - 2.9 [#seed]_
 
+.. [#host] Measured on the host against an exact reference, the error accumulated from
+   error-free transforms, over ``5·10⁷`` normalized operand pairs from random and structured
+   regimes plus a hill-climbing search for the worst case.
 .. [#same] Largest relative error over operands that do not cancel. Under cancellation the
    relative error of these operations is unbounded (next section); their absolute error stays
    within the stated absolute bound — the largest observed is in the
@@ -174,9 +193,11 @@ host against binary128 — whichever of the two is larger.
    predicts. The specification's own ``fp64mp2`` table reports a smaller maximum for ``sqrt``
    over its working range.
 
-``low`` and ``mid`` addition, and ``low`` and ``mid`` ``fma``, compute the *same
-value*; ``mid`` additionally normalizes it, which is exact, so they share a bound and differ
-only in the state of the result. The division and square-root sequences (Nagai et al. 2008
+``low`` and ``mid`` addition, ``low`` and ``mid`` ``fma``, ``low`` and ``high``
+multiplication, and ``low`` and ``mid`` multiplication by a one-limb scalar compute the *same
+value*; the normalizing level additionally normalizes it, which is exact, so they share a bound
+and differ only in the state of the result. Division by a one-limb scalar gives the value of
+``x / y`` with ``y = (c, 0)``, one operation cheaper. The division and square-root sequences (Nagai et al. 2008
 and Karp-Markstein 1997 iterations) have no published analysis; double-word divisions with
 proven bounds exist ([JMP17]_ Algorithm 18, ``9.8u²`` at 31 operations) but are not the ones
 implemented.

@@ -115,6 +115,10 @@ TEST_HOST_DEVICE_FUNC void test_parity()
     s += fc;
     b -= fc;
     s -= fc;
+    b *= fc;
+    s *= fc;
+    b /= fb;
+    s /= fb;
     assert(same(limbs(b), limbs(s)));
   }
 

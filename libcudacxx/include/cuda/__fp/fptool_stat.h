@@ -1155,6 +1155,22 @@ public:
     __trace<__fpmp2_stat_binop::__sub>(__x, base_type{__c}, __stat_v_);
     return *this;
   }
+  //! @brief Multiply by a single limb
+  _CCCL_HOST_DEVICE_API fpmp2_stat& operator*=(const _FpType __c) noexcept
+  {
+    const base_type __x = __stat_v_;
+    __stat_v_ *= __c;
+    __trace<__fpmp2_stat_binop::__mul>(__x, base_type{__c}, __stat_v_);
+    return *this;
+  }
+  //! @brief Divide by a single limb
+  _CCCL_HOST_DEVICE_API fpmp2_stat& operator/=(const _FpType __c) noexcept
+  {
+    const base_type __x = __stat_v_;
+    __stat_v_ /= __c;
+    __trace<__fpmp2_stat_binop::__div>(__x, base_type{__c}, __stat_v_);
+    return *this;
+  }
 
   _CCCL_HOST_DEVICE_API fpmp2_stat& operator++() noexcept
   {
@@ -1256,36 +1272,62 @@ public:
   }
 
   // === mixed arithmetic with built-in scalars ===
-  // Same shape as the fpmp2 overloads: the scalar is promoted to the pair type, so
-  // `2.0f * x` and `x / 3` behave as they would for the wrapped type, instrumented.
+  // The arithmetic is the wrapped type's own mixed overload, so `2.0f * x` and `x / 3` give
+  // the same bits as on the wrapped type; the trace sees the scalar converted to the pair.
+  template <class _Tp>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static const _Tp& __unwrap(const _Tp& __v) noexcept
+  {
+    return __v;
+  }
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static const base_type& __unwrap(const fpmp2_stat& __v) noexcept
+  {
+    return __v.__stat_v_;
+  }
+  template <class _Tp>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static base_type __as_base(const _Tp& __v) noexcept
+  {
+    return fpmp2_stat(__v).__stat_v_;
+  }
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static const base_type& __as_base(const fpmp2_stat& __v) noexcept
+  {
+    return __v.__stat_v_;
+  }
 
   _CCCL_TEMPLATE(class _T1, class _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpmp2_stat> || ::cuda::std::is_same_v<_T2, fpmp2_stat>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend fpmp2_stat operator+(const _T1& __x, const _T2& __y) noexcept
   {
-    return fpmp2_stat(__x) + fpmp2_stat(__y);
+    const base_type __r = __unwrap(__x) + __unwrap(__y);
+    __trace<__fpmp2_stat_binop::__add>(__as_base(__x), __as_base(__y), __r);
+    return __from_base(__r);
   }
   _CCCL_TEMPLATE(class _T1, class _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpmp2_stat> || ::cuda::std::is_same_v<_T2, fpmp2_stat>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend fpmp2_stat operator-(const _T1& __x, const _T2& __y) noexcept
   {
-    return fpmp2_stat(__x) - fpmp2_stat(__y);
+    const base_type __r = __unwrap(__x) - __unwrap(__y);
+    __trace<__fpmp2_stat_binop::__sub>(__as_base(__x), __as_base(__y), __r);
+    return __from_base(__r);
   }
   _CCCL_TEMPLATE(class _T1, class _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpmp2_stat> || ::cuda::std::is_same_v<_T2, fpmp2_stat>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend fpmp2_stat operator*(const _T1& __x, const _T2& __y) noexcept
   {
-    return fpmp2_stat(__x) * fpmp2_stat(__y);
+    const base_type __r = __unwrap(__x) * __unwrap(__y);
+    __trace<__fpmp2_stat_binop::__mul>(__as_base(__x), __as_base(__y), __r);
+    return __from_base(__r);
   }
   _CCCL_TEMPLATE(class _T1, class _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpmp2_stat> || ::cuda::std::is_same_v<_T2, fpmp2_stat>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend fpmp2_stat operator/(const _T1& __x, const _T2& __y) noexcept
   {
-    return fpmp2_stat(__x) / fpmp2_stat(__y);
+    const base_type __r = __unwrap(__x) / __unwrap(__y);
+    __trace<__fpmp2_stat_binop::__div>(__as_base(__x), __as_base(__y), __r);
+    return __from_base(__r);
   }
 
   _CCCL_TEMPLATE(class _T1, class _T2)
