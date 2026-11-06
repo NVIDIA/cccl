@@ -252,6 +252,37 @@ public:
   {
     return __impl_.contains(__group, __key);
   }
+
+  //! @brief Finds the stored key equivalent to a query using one thread.
+  //!
+  //! @pre `cg_size == 1` and the key differs from the empty sentinel.
+  //! @tparam _ProbeKey Query type compatible with the hash function and equality predicate
+  //! @param[in] __key Key to query
+  //! @return An iterator to the stored equivalent key, or `end()` if none is present
+  //! @note The iterator points into the live slot storage and is invalidated when the container is
+  //! cleared or destroyed.
+  template <class _ProbeKey = key_type>
+  [[nodiscard]] _CCCL_DEVICE_API const_iterator find(_ProbeKey __key) const noexcept
+  {
+    return __impl_.find(__key);
+  }
+
+  //! @brief Cooperatively finds the stored key equivalent to a query.
+  //!
+  //! @pre All group members participate with the same query, which differs from the empty sentinel.
+  //! @tparam _ParentCG Parent cooperative group type
+  //! @tparam _ProbeKey Query type compatible with the hash function and equality predicate
+  //! @param[in] __group Cooperative group of size `cg_size`
+  //! @param[in] __key Key to query
+  //! @return An iterator to the stored equivalent key, or `end()` if none is present
+  //! @note The iterator points into the live slot storage and is invalidated when the container is
+  //! cleared or destroyed.
+  template <class _ParentCG, class _ProbeKey = key_type>
+  [[nodiscard]] _CCCL_DEVICE_API const_iterator
+  find(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
+  {
+    return __impl_.find(__group, __key);
+  }
 #endif // _CCCL_CUDA_COMPILATION()
 };
 } // namespace cuda::experimental::cuco

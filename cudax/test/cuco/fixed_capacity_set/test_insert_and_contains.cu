@@ -35,6 +35,34 @@ struct duplicate_key
   }
 };
 
+// A selected query `i` finds the stored key `key_scale * i` when `i < num_present`; every other
+// query writes the sentinel. Query `i` is selected when `i + select_offset` is a multiple of
+// `select_every`.
+template <class Key>
+struct matches_find
+{
+  const Key* results{};
+  int num_present{};
+  Key sentinel{};
+  int select_every  = 1;
+  int select_offset = 0;
+  int key_scale     = 1;
+
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(int i) const noexcept
+  {
+    const bool found = i < num_present && (i + select_offset) % select_every == 0;
+    return results[i] == (found ? static_cast<Key>(key_scale * i) : sentinel);
+  }
+};
+
+struct is_even
+{
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(int i) const noexcept
+  {
+    return i % 2 == 0;
+  }
+};
+
 C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_sizes, bucket_sizes, probing_kinds)
 {
   using key_type                              = c2h::get<0, TestType>;
@@ -59,23 +87,52 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
   test_context context;
   set_type set{
     context.stream, context.mr, cuda::std::size_t{num_keys} * 2, cudax::cuco::empty_key{static_cast<key_type>(-1)}};
-  const auto first = cuda::counting_iterator<key_type>{0};
-  auto found       = cuda::make_buffer<int>(context.stream, context.mr, num_queries, 7);
+  const auto first    = cuda::counting_iterator<key_type>{0};
+  const auto sentinel = static_cast<key_type>(-1);
+  const auto indices  = cuda::counting_iterator<int>{0};
+  // The stencil differs from the keys, so `is_even` selects the odd query indices.
+  constexpr int stencil_offset = 1;
+  const auto stencil           = cuda::counting_iterator<int>{stencil_offset};
+  auto found                   = cuda::make_buffer<int>(context.stream, context.mr, num_queries, 7);
+  auto found_keys              = cuda::make_buffer<key_type>(context.stream, context.mr, num_queries, key_type{7});
+  const auto find_matches      = [&](int num_present, int select_every) {
+    return cuda::std::all_of(
+      context.policy(),
+      indices,
+      indices + num_queries,
+      matches_find<key_type>{found_keys.data(), num_present, sentinel, select_every, stencil_offset});
+  };
 
   REQUIRE(set.insert(context.stream, first, first) == 0);
   set.insert_async(context.stream, first, first);
   set.contains(context.stream, first, first, found.begin());
   set.contains_async(context.stream, first, first, found.begin());
   REQUIRE(context.all_equal(found.data(), num_queries, 7));
+  set.find(context.stream, first, first, found_keys.begin());
+  set.find_async(context.stream, first, first, found_keys.begin());
+  set.find_if(context.stream, first, first, stencil, is_even{}, found_keys.begin());
+  set.find_if_async(context.stream, first, first, stencil, is_even{}, found_keys.begin());
+  REQUIRE(cuda::std::all_of(context.policy(), found_keys.begin(), found_keys.end(), cuda::equal_to_value{key_type{7}}));
 
   set.contains(context.stream, first, first + num_queries, found.begin());
   REQUIRE(context.matches(found.data(), num_queries, 0));
+  set.find(context.stream, first, first + num_queries, found_keys.begin());
+  REQUIRE(find_matches(0, 1));
   REQUIRE(set.insert(context.stream, first, first + num_keys / 2) == num_keys / 2);
   set.insert_async(context.stream, first + num_keys / 2, first + num_keys);
   set.contains_async(context.stream, first, first + num_queries, found.begin());
   REQUIRE(context.matches(found.data(), num_queries, num_keys));
+  set.find(context.stream, first, first + num_queries, found_keys.begin());
+  REQUIRE(find_matches(num_keys, 1));
+  set.find_if_async(context.stream, first, first + num_queries, stencil, is_even{}, found_keys.begin());
+  REQUIRE(find_matches(num_keys, 2));
+  set.find_if(context.stream, first, first + num_queries, stencil, is_even{}, found_keys.begin());
+  REQUIRE(find_matches(num_keys, 2));
+  set.find_async(context.stream, first, first + num_queries, found_keys.begin());
+  REQUIRE(find_matches(num_keys, 1));
   REQUIRE(set.insert(context.stream, first, first + num_keys) == 0);
   set.contains(context.stream, first, first + num_queries, cuda::discard_iterator{});
+  set.find(context.stream, first, first + num_queries, cuda::discard_iterator{});
 
   set.clear_async(context.stream);
   set.contains(context.stream, first, first + num_queries, found.begin());
@@ -100,6 +157,9 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
   full.insert_async(context.stream, first + capacity, first + capacity + 1);
   full.contains(context.stream, first, first + capacity + 1, found.begin());
   REQUIRE(context.matches(found.data(), capacity + 1, capacity));
+  full.find(context.stream, first, first + capacity + 1, found_keys.begin());
+  REQUIRE(cuda::std::all_of(
+    context.policy(), indices, indices + capacity + 1, matches_find<key_type>{found_keys.data(), capacity, sentinel}));
 }
 
 struct insert_key
@@ -185,6 +245,11 @@ C2H_TEST(
   REQUIRE(set.insert(context.stream, equivalent, equivalent + num_keys) == 0);
   set.contains_async(context.stream, queries, queries + 2 * num_keys, found.begin());
   REQUIRE(context.matches(found.data(), 2 * num_keys, num_keys));
+
+  // find returns the stored key `2 * i`, not the equivalent query `2 * i + 1`.
+  set.find(context.stream, queries, queries + 2 * num_keys, found.begin());
+  REQUIRE(cuda::std::all_of(
+    context.policy(), first, first + 2 * num_keys, matches_find<int>{found.data(), num_keys, -100, 1, 0, 2}));
 }
 
 C2H_TEST("fixed_capacity_set operations on another stream", "[container][stream]", key_types)
