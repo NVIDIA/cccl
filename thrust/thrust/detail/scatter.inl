@@ -40,11 +40,11 @@ scatter(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
         InputIterator1 first,
         InputIterator1 last,
         InputIterator2 map,
-        RandomAccessIterator output)
+        RandomAccessIterator result)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::scatter");
   using thrust::system::detail::generic::scatter;
-  return scatter(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, map, output);
+  return scatter(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, map, result);
 } // end scatter()
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -89,7 +89,7 @@ _CCCL_HOST_DEVICE void scatter_if(
 } // end scatter_if()
 
 template <typename InputIterator1, typename InputIterator2, typename RandomAccessIterator>
-void scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map, RandomAccessIterator output)
+void scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map, RandomAccessIterator result)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::scatter");
   using thrust::system::detail::generic::select_system;
@@ -102,7 +102,7 @@ void scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map, Rand
   System2 system2;
   System3 system3;
 
-  return thrust::scatter(select_system(system1, system2, system3), first, last, map, output);
+  return thrust::scatter(select_system(system1, system2, system3), first, last, map, result);
 } // end scatter()
 
 template <typename InputIterator1, typename InputIterator2, typename InputIterator3, typename RandomAccessIterator>
