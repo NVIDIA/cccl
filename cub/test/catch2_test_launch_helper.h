@@ -101,7 +101,119 @@ template <class StreamOrEnv>
   }
 }
 
+// Defined alongside each launch implementation below.
+template <class ActionT, class... Args>
+constexpr bool needs_streamless_environment_override();
+
+template <class InvokeT, class EnvT, class... Args>
+decltype(auto) invoke_with_launch_environment(
+  cuda::stream_ref api_stream, cuda::stream_ref host_stream, InvokeT&& invoke, const EnvT& env, Args&... args);
+
+template <class InvokeT, class TupleT>
+decltype(auto) apply_without_stream(cuda::stream_ref api_stream, InvokeT&& invoke, TupleT& args);
+
+// Keep the original arguments by reference until the launch implementation invokes the API.
+template <class ActionT, class... Args>
+class launch_arguments
+{
+  static constexpr bool has_stream_or_env = [] {
+    if constexpr (sizeof...(Args) == 0)
+    {
+      return false;
+    }
+    else
+    {
+      using last_arg_t = cuda::std::tuple_element_t<sizeof...(Args) - 1, cuda::std::tuple<Args...>>;
+      // Keep the trait out of if constexpr for MSVC 19.29.
+      constexpr bool has_stream = cuda::std::is_invocable_v<cuda::get_stream_t, last_arg_t&>;
+      return has_stream || needs_streamless_environment_override<ActionT, Args...>();
+    }
+  }();
+
+  cuda::std::tuple<Args&...> args;
+
+  template <class InvokeT, cuda::std::size_t... Is>
+  decltype(auto)
+  apply_with_stream_or_env(cuda::stream_ref api_stream, InvokeT&& invoke, cuda::std::index_sequence<Is...>) const
+  {
+    const auto& stream_or_env = cuda::std::get<sizeof...(Is)>(args);
+    using last_arg_t          = cuda::std::remove_cvref_t<decltype(stream_or_env)>;
+    constexpr bool is_environment =
+      !cuda::std::is_invocable_v<cuda::get_stream_t, const last_arg_t&> || cuda::__has_query_get_stream<last_arg_t>;
+    if constexpr (is_environment)
+    {
+      return invoke_with_launch_environment(
+        api_stream, stream(), cuda::std::forward<InvokeT>(invoke), stream_or_env, cuda::std::get<Is>(args)...);
+    }
+    else
+    {
+      // Traditional APIs and custom invocables may require a raw handle.
+      return invoke(cuda::std::get<Is>(args)..., api_stream.get());
+    }
+  }
+
+public:
+  explicit launch_arguments(Args&... args)
+      : args(args...)
+  {}
+
+  [[nodiscard]] cuda::stream_ref stream() const
+  {
+    if constexpr (has_stream_or_env)
+    {
+      return cuda::__call_or(cuda::get_stream, c2h::default_stream_ref(), cuda::std::get<sizeof...(Args) - 1>(args));
+    }
+    else
+    {
+      return c2h::default_stream_ref();
+    }
+  }
+
+  template <class InvokeT>
+  decltype(auto) apply(cuda::stream_ref api_stream, InvokeT&& invoke) const
+  {
+    if constexpr (has_stream_or_env)
+    {
+      return apply_with_stream_or_env(
+        api_stream, cuda::std::forward<InvokeT>(invoke), cuda::std::make_index_sequence<sizeof...(Args) - 1>{});
+    }
+    else
+    {
+      // Forward arguments unchanged for host/device launches; append the capture stream for graph launches.
+      return apply_without_stream(api_stream, cuda::std::forward<InvokeT>(invoke), args);
+    }
+  }
+};
+
 #if TEST_LAUNCH == 2
+
+template <class ActionT, class... Args>
+constexpr bool needs_streamless_environment_override()
+{
+  // An API that cannot accept an appended stream already has a trailing environment.
+  return !cuda::std::is_invocable_v<ActionT&, cuda::std::uint8_t*, std::size_t&, Args..., cudaStream_t>;
+}
+
+template <class InvokeT, class EnvT, class... Args>
+decltype(auto) invoke_with_launch_environment(
+  cuda::stream_ref api_stream, cuda::stream_ref host_stream, InvokeT&& invoke, const EnvT& env, Args&... args)
+{
+  if (api_stream != host_stream)
+  {
+    return invoke(args..., override_stream(env, api_stream));
+  }
+  return invoke(args..., env);
+}
+
+template <class InvokeT, class TupleT>
+decltype(auto) apply_without_stream(cuda::stream_ref api_stream, InvokeT&& invoke, TupleT& args)
+{
+  return cuda::std::apply(
+    [&](auto&... args) {
+      return invoke(args..., api_stream.get());
+    },
+    args);
+}
 
 // Executes the captured graph on stream, waits for completion, and destroys both graph handles.
 inline void execute_and_destroy_graph(cudaGraph_t graph, cuda::stream_ref stream)
@@ -114,10 +226,12 @@ inline void execute_and_destroy_graph(cudaGraph_t graph, cuda::stream_ref stream
   REQUIRE(cudaSuccess == cudaGraphDestroy(graph));
 }
 
-template <bool HasStream, class ActionT, class StreamOrEnv, class... Args>
-void launch_impl(
-  cuda::stream_ref stream, ActionT action, [[maybe_unused]] const StreamOrEnv& stream_or_env, Args... args)
+template <class ActionT, class... Args>
+void launch_impl(ActionT action, Args&&... args)
 {
+  const launch_arguments<ActionT, Args...> arguments{args...};
+  const auto stream = arguments.stream();
+
   cuda::stream owning_capture_stream{cuda::no_init};
   auto capture_stream = stream;
   if (c2h::detail::is_default_stream(stream))
@@ -127,18 +241,9 @@ void launch_impl(
   }
 
   const auto invoke = [&](cuda::std::uint8_t* temp_storage, std::size_t& temp_storage_bytes) {
-    if constexpr (HasStream)
-    {
-      if (capture_stream == stream)
-      {
-        return action(temp_storage, temp_storage_bytes, args..., stream_or_env);
-      }
-      return action(temp_storage, temp_storage_bytes, args..., override_stream(stream_or_env, capture_stream));
-    }
-    else
-    {
-      return action(temp_storage, temp_storage_bytes, args..., capture_stream.get());
-    }
+    return arguments.apply(capture_stream, [&](const auto&... api_args) {
+      return action(temp_storage, temp_storage_bytes, api_args...);
+    });
   };
 
   std::size_t temp_storage_bytes{};
@@ -160,6 +265,25 @@ void launch_impl(
 
 #elif TEST_LAUNCH == 1
 
+template <class ActionT, class... Args>
+constexpr bool needs_streamless_environment_override()
+{
+  return false;
+}
+
+template <class InvokeT, class EnvT, class... Args>
+decltype(auto) invoke_with_launch_environment(
+  cuda::stream_ref api_stream, cuda::stream_ref /* host_stream */, InvokeT&& invoke, const EnvT& env, Args&... args)
+{
+  return invoke(args..., override_stream(env, api_stream));
+}
+
+template <class InvokeT, class TupleT>
+decltype(auto) apply_without_stream(cuda::stream_ref /* api_stream */, InvokeT&& invoke, TupleT& args)
+{
+  return cuda::std::apply(cuda::std::forward<InvokeT>(invoke), args);
+}
+
 inline void check_device_launch_completion(cuda::stream_ref stream, const cuda::device_buffer<cudaError_t>& d_error)
 {
   REQUIRE(cudaSuccess == c2h::read_single(stream, d_error));
@@ -176,10 +300,11 @@ __global__ void device_side_api_launch_kernel(
   *d_error = action(d_temp_storage, *temp_storage_bytes, args...);
 }
 
-template <bool HasStream, class ActionT, class StreamOrEnv, class... Args>
-void launch_impl(
-  cuda::stream_ref stream, ActionT action, [[maybe_unused]] const StreamOrEnv& stream_or_env, Args... args)
+template <class ActionT, class... Args>
+void launch_impl(ActionT action, Args&&... args)
 {
+  const launch_arguments<ActionT, Args...> arguments{args...};
+  const auto stream         = arguments.stream();
   const auto device         = c2h::current_device();
   auto d_error              = c2h::make_device_buffer<cudaError_t>(stream, device, 1, cudaErrorInvalidValue);
   auto d_temp_storage_bytes = c2h::make_device_buffer<cuda::std::size_t>(stream, device, 1, cuda::no_init);
@@ -189,32 +314,17 @@ void launch_impl(
   // Launch the parent on the requested stream to preserve preparation ordering.
   // The device-side API receives its own default stream.
   const auto invoke = [&](cuda::std::uint8_t* temp_storage) {
-    if constexpr (HasStream)
-    {
-      const auto device_arg = override_stream(stream_or_env, cuda::stream_ref{cudaStream_t{}});
+    arguments.apply(cuda::stream_ref{cudaStream_t{}}, [&](const auto&... api_args) {
       cuda::launch(
         stream,
         config,
-        device_side_api_launch_kernel<ActionT, Args..., cuda::std::remove_cv_t<decltype(device_arg)>>,
+        device_side_api_launch_kernel<ActionT, cuda::std::decay_t<decltype(api_args)>...>,
         temp_storage,
         d_temp_storage_bytes.data(),
         d_error.data(),
         action,
-        args...,
-        device_arg);
-    }
-    else
-    {
-      cuda::launch(
-        stream,
-        config,
-        device_side_api_launch_kernel<ActionT, Args...>,
-        temp_storage,
-        d_temp_storage_bytes.data(),
-        d_error.data(),
-        action,
-        args...);
-    }
+        api_args...);
+    });
     check_device_launch_completion(stream, d_error);
   };
 
@@ -226,19 +336,39 @@ void launch_impl(
 
 #elif TEST_LAUNCH == 0
 
-template <bool HasStream, class ActionT, class StreamOrEnv, class... Args>
-void launch_impl(
-  cuda::stream_ref stream, ActionT action, [[maybe_unused]] const StreamOrEnv& stream_or_env, Args... args)
+template <class ActionT, class... Args>
+constexpr bool needs_streamless_environment_override()
 {
+  return false;
+}
+
+template <class InvokeT, class EnvT, class... Args>
+decltype(auto) invoke_with_launch_environment(
+  cuda::stream_ref /* api_stream */,
+  cuda::stream_ref /* host_stream */,
+  InvokeT&& invoke,
+  const EnvT& env,
+  Args&... args)
+{
+  return invoke(args..., env);
+}
+
+template <class InvokeT, class TupleT>
+decltype(auto) apply_without_stream(cuda::stream_ref /* api_stream */, InvokeT&& invoke, TupleT& args)
+{
+  return cuda::std::apply(cuda::std::forward<InvokeT>(invoke), args);
+}
+
+template <class ActionT, class... Args>
+void launch_impl(ActionT action, Args&&... args)
+{
+  const launch_arguments<ActionT, Args...> arguments{args...};
+  const auto stream = arguments.stream();
+
   const auto invoke = [&](cuda::std::uint8_t* temp_storage, std::size_t& temp_storage_bytes) {
-    if constexpr (HasStream)
-    {
-      return action(temp_storage, temp_storage_bytes, args..., stream_or_env);
-    }
-    else
-    {
-      return action(temp_storage, temp_storage_bytes, args...);
-    }
+    return arguments.apply(stream, [&](const auto&... api_args) {
+      return action(temp_storage, temp_storage_bytes, api_args...);
+    });
   };
 
   std::size_t temp_storage_bytes{};
@@ -261,60 +391,12 @@ void launch_impl(
 #else
 #  error "Unsupported TEST_LAUNCH value. Supported values are 0, 1, or 2"
 #endif
-
-template <class ActionT, class TupleT, cuda::std::size_t... Is>
-void launch_with_stream(ActionT action, TupleT& args, cuda::std::index_sequence<Is...>)
-{
-  const auto& stream_or_env = cuda::std::get<sizeof...(Is)>(args);
-  const auto stream         = cuda::__call_or(cuda::get_stream, c2h::default_stream_ref(), stream_or_env);
-  using last_arg_t          = cuda::std::remove_cvref_t<decltype(stream_or_env)>;
-  constexpr bool is_environment =
-    !cuda::std::is_invocable_v<cuda::get_stream_t, const last_arg_t&> || cuda::__has_query_get_stream<last_arg_t>;
-  if constexpr (is_environment)
-  {
-    launch_impl<true>(stream, action, stream_or_env, cuda::std::get<Is>(args)...);
-  }
-  else
-  {
-    launch_impl<true>(stream, action, stream.get(), cuda::std::get<Is>(args)...);
-  }
-}
 } // namespace launch_helper_detail
 
 template <class ActionT, class... Args>
 void launch(ActionT action, Args&&... args)
 {
-  if constexpr (sizeof...(Args) != 0)
-  {
-    using last_arg_t = cuda::std::tuple_element_t<sizeof...(Args) - 1, cuda::std::tuple<Args...>>;
-    // MSVC 19.29 can report C1004 when the trait using this local alias appears directly in if constexpr.
-    constexpr bool has_stream = cuda::std::is_invocable_v<cuda::get_stream_t, last_arg_t&>;
-#if TEST_LAUNCH == 2
-    // If appending a stream is invalid, the supplied final argument already occupies
-    // the API's environment parameter. Preserve it and inject the capture stream.
-    constexpr bool has_stream_or_env =
-      has_stream || !cuda::std::is_invocable_v<ActionT&, cuda::std::uint8_t*, std::size_t&, Args..., cudaStream_t>;
-#else
-    constexpr bool has_stream_or_env = has_stream;
-#endif
-    if constexpr (has_stream_or_env)
-    {
-      auto tuple = cuda::std::forward_as_tuple(args...);
-      launch_helper_detail::launch_with_stream(action, tuple, cuda::std::make_index_sequence<sizeof...(Args) - 1>{});
-    }
-    else
-    {
-      const auto default_stream = c2h::default_stream_ref();
-      const cudaStream_t unused_stream_argument{};
-      launch_helper_detail::launch_impl<false>(default_stream, action, unused_stream_argument, args...);
-    }
-  }
-  else
-  {
-    const auto default_stream = c2h::default_stream_ref();
-    const cudaStream_t unused_stream_argument{};
-    launch_helper_detail::launch_impl<false>(default_stream, action, unused_stream_argument);
-  }
+  launch_helper_detail::launch_impl(action, cuda::std::forward<Args>(args)...);
 }
 
 struct get_expected_allocation_size_t
