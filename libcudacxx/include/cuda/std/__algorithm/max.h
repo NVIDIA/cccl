@@ -39,7 +39,8 @@ max(const _Tp& __a _CCCL_LIFETIMEBOUND, const _Tp& __b _CCCL_LIFETIMEBOUND, _Com
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr const _Tp& max(const _Tp& __a _CCCL_LIFETIMEBOUND, const _Tp& __b _CCCL_LIFETIMEBOUND)
+[[nodiscard]] _CCCL_NODEBUG_API constexpr const _Tp&
+max(const _Tp& __a _CCCL_LIFETIMEBOUND, const _Tp& __b _CCCL_LIFETIMEBOUND)
 {
   return __a < __b ? __b : __a;
 }
