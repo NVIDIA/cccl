@@ -29,15 +29,21 @@ if cccl_python_is_windows; then
   cuda_path=$(cygpath -am "$cuda_path")
   nvcc_path="${cuda_path}/bin/nvcc.exe"
   test -f "$(cygpath -u "$nvcc_path")"
-  command -v cl
-  export CC=cl.exe CXX=cl.exe CUDAHOSTCXX=cl.exe
+  msvc_bin=$(dirname "$(command -v cl)")
+  host_compiler=$(cygpath -am "${msvc_bin}/cl.exe")
+  linker=$(cygpath -am "${msvc_bin}/link.exe")
+  test -f "${msvc_bin}/link.exe"
+  # Git Bash also ships link.exe (a hardlink utility). Keep the native toolchain
+  # ahead of Git's tools and pass explicit paths through pip to CMake.
+  export CC="$host_compiler" CXX="$host_compiler" CUDAHOSTCXX="$host_compiler"
   export CUDACXX="$nvcc_path" CUDA_PATH="$cuda_path"
-  PATH="$(cygpath -u "$cuda_path")/bin:$PATH"
+  PATH="${msvc_bin}:$(cygpath -u "$cuda_path")/bin:$PATH"
   export PATH
   export CMAKE_GENERATOR=Ninja
   pip_config_args=(
-    -C cmake.define.CMAKE_C_COMPILER=cl.exe
-    -C cmake.define.CMAKE_CXX_COMPILER=cl.exe
+    -C "cmake.define.CMAKE_C_COMPILER=${host_compiler}"
+    -C "cmake.define.CMAKE_CXX_COMPILER=${host_compiler}"
+    -C "cmake.define.CMAKE_LINKER=${linker}"
     -C "cmake.define.CMAKE_CUDA_COMPILER=${nvcc_path}"
     -C "cmake.define.CUDAToolkit_ROOT=${cuda_path}"
   )
