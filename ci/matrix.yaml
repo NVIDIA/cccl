@@ -320,7 +320,7 @@ workflows:
 
     # Packaging and targeted build wrappers have distinct entry points.
     - {jobs: ['test'], project: 'packaging', ctk: '13.4', cxx: 'msvc14.44', std: 20, gpu: 'l4', sm: '89'}
-    - {jobs: ['run_cpu'], project: 'target', ctk: '13.4', cxx: ['msvc14.44', 'gcc13'], args: '--preset cub-cpp20 --cmake-options "-DCMAKE_CUDA_ARCHITECTURES=89 -DCUB_ENABLE_BENCHMARKS=OFF" --build-targets "cub.cpp20.test.iterator"'}
+    - {jobs: ['run_cpu'], project: 'target', ctk: '13.4', cxx: ['msvc14.44', 'gcc13'], args: '--preset cub-cpp20 --cmake-options "-DCMAKE_CUDA_ARCHITECTURES=89" --build-targets "cub.test.iterator.types_1"'}
 
     # Protect shared Linux behavior with one manylinux wheel producer and the
     # CPU-only headers consumer, in addition to the targeted CUB build above.
