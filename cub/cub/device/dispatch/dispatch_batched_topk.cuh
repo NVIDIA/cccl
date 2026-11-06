@@ -325,13 +325,15 @@ struct cluster_launch_shape
 
 // Chooses the cluster launch shape for the statically-bounded max segment size. Probes occupancy through the CUDA
 // runtime; the caller has already set the kernel's dynamic-SMEM opt-in to the maximum, so every probed config and the
-// final launch run under one consistent opt-in.
+// final launch run under one consistent opt-in. `is_blocked_partition` (the deterministic path) selects the agent's
+// chunk partition, which decides which cluster widths leave ranks without chunks.
 template <typename LayoutT, typename KernelPtr>
 _CCCL_HOST_API ::cuda::std::expected<cluster_launch_shape, cudaError_t> select_cluster_launch_shape(
   ::cuda::std::uint64_t max_segment_size,
   ::cuda::std::uint64_t num_segments,
   int max_dynamic_smem_bytes,
   cluster_topk_policy policy,
+  bool is_blocked_partition,
   cudaStream_t stream,
   KernelPtr kernel_ptr)
 {
@@ -400,10 +402,18 @@ _CCCL_HOST_API ::cuda::std::expected<cluster_launch_shape, cudaError_t> select_c
 
       // Cluster blocks the max segment actually needs (shared with the device so the launch is never wider than
       // necessary). At `min_chunks_per_block == 1` this equals the segment's chunk count; a larger knob shrinks it.
-      const auto desired_cluster_blocks = ::cuda::narrow<int>(batched_topk_cluster::compute_num_logical_cluster_blocks(
-        static_cast<::cuda::std::uint32_t>(layout_t::num_chunks_from_num_items(max_segment_size)),
-        policy.min_chunks_per_block,
-        ::cuda::narrow<::cuda::std::uint32_t>(eff_max_blocks_per_cluster)));
+      const auto num_chunks = static_cast<::cuda::std::uint32_t>(layout_t::num_chunks_from_num_items(max_segment_size));
+      // A width at which some rank would own no chunk only adds idle CTAs: the agent trims it to the chunk-owning
+      // ranks, which hold the same chunks per rank (see `trim_to_chunk_owning_blocks`).
+      const auto trimmed_blocks = [&](int blocks) {
+        return static_cast<int>(
+          batched_topk_cluster::trim_to_chunk_owning_blocks(
+            num_chunks, static_cast<::cuda::std::uint32_t>(blocks), is_blocked_partition)
+            .num_blocks);
+      };
+      const int desired_cluster_blocks =
+        trimmed_blocks(::cuda::narrow<int>(batched_topk_cluster::compute_num_logical_cluster_blocks(
+          num_chunks, policy.min_chunks_per_block, ::cuda::narrow<::cuda::std::uint32_t>(eff_max_blocks_per_cluster))));
 
       // Scan `[min_candidate_blocks, max_candidate_blocks]` for the min-waves block count, tie-breaking largest.
       // `max_candidate_blocks == max(desired_cluster_blocks, min(min_candidate_blocks, eff_max_blocks_per_cluster))`:
@@ -418,6 +428,12 @@ _CCCL_HOST_API ::cuda::std::expected<cluster_launch_shape, cudaError_t> select_c
       auto best_waves = (::cuda::std::numeric_limits<::cuda::std::uint64_t>::max)();
       for (int candidate_blocks = min_candidate_blocks; candidate_blocks <= max_candidate_blocks; ++candidate_blocks)
       {
+        // Trimming is idempotent, so a trimmed width inside the scan range is evaluated in its own iteration.
+        if (const int trimmed = trimmed_blocks(candidate_blocks);
+            trimmed != candidate_blocks && trimmed >= min_candidate_blocks)
+        {
+          continue;
+        }
         const auto num_block_items    = ::cuda::ceil_div(max_segment_size, candidate_blocks);
         const int resident_smem_bytes = layout_t::min_smem_bytes_from_num_items(num_block_items);
         if (resident_smem_bytes > max_dynamic_smem_bytes)
@@ -625,11 +641,13 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
   }
 
   // Resolve the launch shape (cluster blocks + dynamic SMEM) for the max segment size.
+  // The agent uses the blocked chunk partition exactly when determinism is requested (`needs_set_determinism`).
   const auto shape = select_cluster_launch_shape<layout_t>(
     static_cast<::cuda::std::uint64_t>(max_seg_size),
     static_cast<::cuda::std::uint64_t>(num_seg_val),
     max_dynamic_smem_bytes,
     policy,
+    Determinism != ::cuda::execution::determinism::__determinism_t::__not_guaranteed,
     stream,
     kernel_ptr);
   if (!shape)
