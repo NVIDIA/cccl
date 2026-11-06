@@ -138,6 +138,49 @@ private:
       policy_selector_t{});
   }
 
+  // Two-phase overloads pass d_temp_storage and temp_storage_bytes as temp_storage, otherwise the temporary storage
+  // is allocated through the environment
+  _CCCL_EXEC_CHECK_DISABLE
+  template <ForceInclusive EnforceInclusive = ForceInclusive::No,
+            typename InputIteratorT,
+            typename OutputIteratorT,
+            typename SegmentSizeT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename EnvT,
+            typename... TempStorageT>
+  [[nodiscard]] _CCCL_API static cudaError_t fixed_size_env_impl(
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ::cuda::std::int64_t num_segments,
+    SegmentSizeT segment_size,
+    ScanOpT scan_op,
+    InitValueT init_value,
+    const EnvT& env,
+    TempStorageT&... temp_storage)
+  {
+    using accum_t = detail::segmented_scan::deduced_accum_t<ScanOpT, InitValueT, detail::it_value_t<InputIteratorT>>;
+
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      temp_storage...,
+      env,
+      [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+        return detail::segmented_scan::dispatch_fixed_size<EnforceInclusive>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in,
+          d_out,
+          num_segments,
+          segment_size,
+          scan_op,
+          init_value,
+          stream,
+          policy_selector);
+      });
+  }
+
 public:
   //! @rst
   //! Computes a device-wide segmented exclusive prefix sum.
@@ -375,7 +418,8 @@ public:
             typename OutputIteratorT,
             typename BeginOffsetIteratorInputT,
             typename EndOffsetIteratorInputT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OutputIteratorT, size_t>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSegmentedSum(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -631,7 +675,8 @@ public:
             typename BeginOffsetIteratorInputT,
             typename EndOffsetIteratorInputT,
             typename BeginOffsetIteratorOutputT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OutputIteratorT, size_t>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSegmentedSum(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -897,7 +942,8 @@ public:
             typename EndOffsetIteratorInputT,
             typename ScanOpT,
             typename InitValueT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OutputIteratorT, size_t>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSegmentedScan(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -1170,7 +1216,8 @@ public:
             typename BeginOffsetIteratorOutputT,
             typename ScanOpT,
             typename InitValueT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OutputIteratorT, size_t>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSegmentedScan(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -1399,7 +1446,8 @@ public:
             typename OutputIteratorT,
             typename BeginOffsetIteratorInputT,
             typename EndOffsetIteratorInputT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OutputIteratorT, size_t>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSegmentedSum(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -1654,7 +1702,8 @@ public:
             typename BeginOffsetIteratorInputT,
             typename EndOffsetIteratorInputT,
             typename BeginOffsetIteratorOutputT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OutputIteratorT, size_t>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSegmentedSum(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -1885,7 +1934,8 @@ public:
             typename BeginOffsetIteratorInputT,
             typename EndOffsetIteratorInputT,
             typename ScanOpT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OutputIteratorT, size_t>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSegmentedScan(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -2152,7 +2202,8 @@ public:
             typename EndOffsetIteratorInputT,
             typename BeginOffsetIteratorOutputT,
             typename ScanOpT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OutputIteratorT, size_t>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSegmentedScan(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -2415,7 +2466,8 @@ public:
             typename EndOffsetIteratorInputT,
             typename ScanOpT,
             typename InitValueT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OutputIteratorT, size_t>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSegmentedScanInit(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -2692,7 +2744,8 @@ public:
             typename BeginOffsetIteratorOutputT,
             typename ScanOpT,
             typename InitValueT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OutputIteratorT, size_t>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSegmentedScanInit(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -2726,6 +2779,924 @@ public:
         stream,
         tuning_env);
     });
+  }
+
+  //! @rst
+  //! Computes a device-wide segmented exclusive prefix sum over segments of identical size.
+  //!
+  //! .. versionadded:: 3.7.0
+  //!    First appears in CUDA Toolkit 13.7.
+  //!
+  //! - Results are not deterministic for computation of prefix sum on floating-point types
+  //!   and may vary from run to run.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin exclusive-segmented-sum-fixed-size
+  //!     :end-before: example-end exclusive-segmented-sum-fixed-size
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segmented scan inputs @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing segmented scan outputs @iterator
+  //!
+  //! @tparam SegmentSizeT
+  //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in] d_temp_storage
+  //!   @devicestorage
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Random-access iterator to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Random-access iterator to the output sequence of data items
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the segmented prefix scan data
+  //!
+  //! @param[in] segment_size
+  //!   @rst
+  //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
+  //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
+  //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
+  //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
+  //!   @endrst
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename SegmentSizeT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  _CCCL_API static cudaError_t ExclusiveSegmentedSum(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ::cuda::std::int64_t num_segments,
+    SegmentSizeT segment_size,
+    const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::ExclusiveSegmentedSum");
+
+    using init_value_t = detail::it_value_t<InputIteratorT>;
+
+    return fixed_size_env_impl(
+      d_in,
+      d_out,
+      num_segments,
+      segment_size,
+      ::cuda::std::plus<>{},
+      detail::InputValue<init_value_t>(init_value_t{}),
+      env,
+      d_temp_storage,
+      temp_storage_bytes);
+  }
+
+  //! @rst
+  //! Computes a device-wide segmented exclusive prefix sum over segments of identical size.
+  //!
+  //! .. versionadded:: 3.7.0
+  //!    First appears in CUDA Toolkit 13.7.
+  //!
+  //! - Results are not deterministic for computation of prefix sum on floating-point types
+  //!   and may vary from run to run.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
+  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin exclusive-segmented-sum-fixed-size-env
+  //!     :end-before: example-end exclusive-segmented-sum-fixed-size-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segmented scan inputs @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing segmented scan outputs @iterator
+  //!
+  //! @tparam SegmentSizeT
+  //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in] d_in
+  //!   Random-access iterator to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Random-access iterator to the output sequence of data items
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the segmented prefix scan data
+  //!
+  //! @param[in] segment_size
+  //!   @rst
+  //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
+  //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
+  //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
+  //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
+  //!   @endrst
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename SegmentSizeT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] _CCCL_API static cudaError_t ExclusiveSegmentedSum(
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ::cuda::std::int64_t num_segments,
+    SegmentSizeT segment_size,
+    const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::ExclusiveSegmentedSum");
+
+    using init_value_t = detail::it_value_t<InputIteratorT>;
+
+    return fixed_size_env_impl(
+      d_in,
+      d_out,
+      num_segments,
+      segment_size,
+      ::cuda::std::plus<>{},
+      detail::InputValue<init_value_t>(init_value_t{}),
+      env);
+  }
+
+  //! @rst
+  //! Computes a device-wide segmented exclusive prefix scan over segments of identical size using the specified
+  //! binary associative ``scan_op`` functor. The ``init_value`` value is applied as the initial value, and is
+  //! assigned to the first element in each output segment.
+  //!
+  //! .. versionadded:: 3.7.0
+  //!    First appears in CUDA Toolkit 13.7.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin exclusive-segmented-scan-fixed-size
+  //!     :end-before: example-end exclusive-segmented-scan-fixed-size
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segmented scan inputs @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing segmented scan outputs @iterator
+  //!
+  //! @tparam SegmentSizeT
+  //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
+  //!
+  //! @tparam ScanOpT
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam InitValueT
+  //!  **[inferred]** Type of the `init_value`
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in] d_temp_storage
+  //!   @devicestorage
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Random-access iterator to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Random-access iterator to the output sequence of data items
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the segmented prefix scan data
+  //!
+  //! @param[in] segment_size
+  //!   @rst
+  //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
+  //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
+  //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
+  //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
+  //!   @endrst
+  //!
+  //! @param[in] scan_op
+  //!   Binary associative scan functor
+  //!
+  //! @param[in] init_value
+  //!   Initial value to seed the exclusive scan for each segment in the output sequence
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename SegmentSizeT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  _CCCL_API static cudaError_t ExclusiveSegmentedScan(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ::cuda::std::int64_t num_segments,
+    SegmentSizeT segment_size,
+    ScanOpT scan_op,
+    InitValueT init_value,
+    const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::ExclusiveSegmentedScan");
+
+    return fixed_size_env_impl(
+      d_in,
+      d_out,
+      num_segments,
+      segment_size,
+      scan_op,
+      detail::InputValue<InitValueT>(init_value),
+      env,
+      d_temp_storage,
+      temp_storage_bytes);
+  }
+
+  //! @rst
+  //! Computes a device-wide segmented exclusive prefix scan over segments of identical size using the specified
+  //! binary associative ``scan_op`` functor. The ``init_value`` value is applied as the initial value, and is
+  //! assigned to the first element in each output segment.
+  //!
+  //! .. versionadded:: 3.7.0
+  //!    First appears in CUDA Toolkit 13.7.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
+  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin exclusive-segmented-scan-fixed-size-env
+  //!     :end-before: example-end exclusive-segmented-scan-fixed-size-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segmented scan inputs @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing segmented scan outputs @iterator
+  //!
+  //! @tparam SegmentSizeT
+  //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
+  //!
+  //! @tparam ScanOpT
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam InitValueT
+  //!  **[inferred]** Type of the `init_value`
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in] d_in
+  //!   Random-access iterator to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Random-access iterator to the output sequence of data items
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the segmented prefix scan data
+  //!
+  //! @param[in] segment_size
+  //!   @rst
+  //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
+  //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
+  //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
+  //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
+  //!   @endrst
+  //!
+  //! @param[in] scan_op
+  //!   Binary associative scan functor
+  //!
+  //! @param[in] init_value
+  //!   Initial value to seed the exclusive scan for each segment in the output sequence
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename SegmentSizeT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] _CCCL_API static cudaError_t ExclusiveSegmentedScan(
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ::cuda::std::int64_t num_segments,
+    SegmentSizeT segment_size,
+    ScanOpT scan_op,
+    InitValueT init_value,
+    const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::ExclusiveSegmentedScan");
+
+    return fixed_size_env_impl(
+      d_in, d_out, num_segments, segment_size, scan_op, detail::InputValue<InitValueT>(init_value), env);
+  }
+
+  //! @rst
+  //! Computes a device-wide segmented inclusive prefix sum over segments of identical size.
+  //!
+  //! .. versionadded:: 3.7.0
+  //!    First appears in CUDA Toolkit 13.7.
+  //!
+  //! - Results are not deterministic for computation of prefix sum on floating-point types
+  //!   and may vary from run to run.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-segmented-sum-fixed-size
+  //!     :end-before: example-end inclusive-segmented-sum-fixed-size
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segmented scan inputs @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing segmented scan outputs @iterator
+  //!
+  //! @tparam SegmentSizeT
+  //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in] d_temp_storage
+  //!   @devicestorage
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Random-access iterator to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Random-access iterator to the output sequence of data items
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the segmented prefix scan data
+  //!
+  //! @param[in] segment_size
+  //!   @rst
+  //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
+  //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
+  //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
+  //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
+  //!   @endrst
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename SegmentSizeT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  _CCCL_API static cudaError_t InclusiveSegmentedSum(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ::cuda::std::int64_t num_segments,
+    SegmentSizeT segment_size,
+    const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::InclusiveSegmentedSum");
+
+    return fixed_size_env_impl(
+      d_in,
+      d_out,
+      num_segments,
+      segment_size,
+      ::cuda::std::plus<>{},
+      NullType{},
+      env,
+      d_temp_storage,
+      temp_storage_bytes);
+  }
+
+  //! @rst
+  //! Computes a device-wide segmented inclusive prefix sum over segments of identical size.
+  //!
+  //! .. versionadded:: 3.7.0
+  //!    First appears in CUDA Toolkit 13.7.
+  //!
+  //! - Results are not deterministic for computation of prefix sum on floating-point types
+  //!   and may vary from run to run.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
+  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-segmented-sum-fixed-size-env
+  //!     :end-before: example-end inclusive-segmented-sum-fixed-size-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segmented scan inputs @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing segmented scan outputs @iterator
+  //!
+  //! @tparam SegmentSizeT
+  //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in] d_in
+  //!   Random-access iterator to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Random-access iterator to the output sequence of data items
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the segmented prefix scan data
+  //!
+  //! @param[in] segment_size
+  //!   @rst
+  //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
+  //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
+  //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
+  //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
+  //!   @endrst
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename SegmentSizeT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] _CCCL_API static cudaError_t InclusiveSegmentedSum(
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ::cuda::std::int64_t num_segments,
+    SegmentSizeT segment_size,
+    const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedSum");
+
+    return fixed_size_env_impl(d_in, d_out, num_segments, segment_size, ::cuda::std::plus<>{}, NullType{}, env);
+  }
+
+  //! @rst
+  //! Computes a device-wide segmented inclusive prefix scan over segments of identical size using the specified
+  //! binary associative ``scan_op`` functor.
+  //!
+  //! .. versionadded:: 3.7.0
+  //!    First appears in CUDA Toolkit 13.7.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-segmented-scan-fixed-size
+  //!     :end-before: example-end inclusive-segmented-scan-fixed-size
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segmented scan inputs @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing segmented scan outputs @iterator
+  //!
+  //! @tparam SegmentSizeT
+  //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
+  //!
+  //! @tparam ScanOpT
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in] d_temp_storage
+  //!   @devicestorage
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Random-access iterator to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Random-access iterator to the output sequence of data items
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the segmented prefix scan data
+  //!
+  //! @param[in] segment_size
+  //!   @rst
+  //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
+  //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
+  //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
+  //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
+  //!   @endrst
+  //!
+  //! @param[in] scan_op
+  //!   Binary associative scan functor
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename SegmentSizeT,
+            typename ScanOpT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  _CCCL_API static cudaError_t InclusiveSegmentedScan(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ::cuda::std::int64_t num_segments,
+    SegmentSizeT segment_size,
+    ScanOpT scan_op,
+    const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::InclusiveSegmentedScan");
+
+    return fixed_size_env_impl(
+      d_in, d_out, num_segments, segment_size, scan_op, NullType{}, env, d_temp_storage, temp_storage_bytes);
+  }
+
+  //! @rst
+  //! Computes a device-wide segmented inclusive prefix scan over segments of identical size using the specified
+  //! binary associative ``scan_op`` functor.
+  //!
+  //! .. versionadded:: 3.7.0
+  //!    First appears in CUDA Toolkit 13.7.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
+  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-segmented-scan-fixed-size-env
+  //!     :end-before: example-end inclusive-segmented-scan-fixed-size-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segmented scan inputs @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing segmented scan outputs @iterator
+  //!
+  //! @tparam SegmentSizeT
+  //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
+  //!
+  //! @tparam ScanOpT
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in] d_in
+  //!   Random-access iterator to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Random-access iterator to the output sequence of data items
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the segmented prefix scan data
+  //!
+  //! @param[in] segment_size
+  //!   @rst
+  //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
+  //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
+  //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
+  //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
+  //!   @endrst
+  //!
+  //! @param[in] scan_op
+  //!   Binary associative scan functor
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename SegmentSizeT,
+            typename ScanOpT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] _CCCL_API static cudaError_t InclusiveSegmentedScan(
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ::cuda::std::int64_t num_segments,
+    SegmentSizeT segment_size,
+    ScanOpT scan_op,
+    const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedScan");
+
+    return fixed_size_env_impl(d_in, d_out, num_segments, segment_size, scan_op, NullType{}, env);
+  }
+
+  //! @rst
+  //! Computes a device-wide segmented inclusive prefix scan over segments of identical size using the specified
+  //! binary associative ``scan_op`` functor. The result of applying the ``scan_op`` binary operator to
+  //! ``init_value`` value and the first value in each input segment is assigned to the first value of the
+  //! corresponding output segment.
+  //!
+  //! .. versionadded:: 3.7.0
+  //!    First appears in CUDA Toolkit 13.7.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-segmented-scan-init-fixed-size
+  //!     :end-before: example-end inclusive-segmented-scan-init-fixed-size
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segmented scan inputs @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing segmented scan outputs @iterator
+  //!
+  //! @tparam SegmentSizeT
+  //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
+  //!
+  //! @tparam ScanOpT
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam InitValueT
+  //!  **[inferred]** Type of the `init_value`
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in] d_temp_storage
+  //!   @devicestorage
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Random-access iterator to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Random-access iterator to the output sequence of data items
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the segmented prefix scan data
+  //!
+  //! @param[in] segment_size
+  //!   @rst
+  //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
+  //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
+  //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
+  //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
+  //!   @endrst
+  //!
+  //! @param[in] scan_op
+  //!   Binary associative scan functor
+  //!
+  //! @param[in] init_value
+  //!   Initial value to seed the inclusive scan for each segment in the output sequence
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename SegmentSizeT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  _CCCL_API static cudaError_t InclusiveSegmentedScanInit(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ::cuda::std::int64_t num_segments,
+    SegmentSizeT segment_size,
+    ScanOpT scan_op,
+    InitValueT init_value,
+    const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::InclusiveSegmentedScanInit");
+
+    static_assert(!::cuda::std::is_same_v<InitValueT, NullType>);
+
+    return fixed_size_env_impl<ForceInclusive::Yes>(
+      d_in,
+      d_out,
+      num_segments,
+      segment_size,
+      scan_op,
+      detail::InputValue<InitValueT>(init_value),
+      env,
+      d_temp_storage,
+      temp_storage_bytes);
+  }
+
+  //! @rst
+  //! Computes a device-wide segmented inclusive prefix scan over segments of identical size using the specified
+  //! binary associative ``scan_op`` functor. The result of applying the ``scan_op`` binary operator to
+  //! ``init_value`` value and the first value in each input segment is assigned to the first value of the
+  //! corresponding output segment.
+  //!
+  //! .. versionadded:: 3.7.0
+  //!    First appears in CUDA Toolkit 13.7.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
+  //!   shall not overlap in any other way.
+  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-segmented-scan-init-fixed-size-env
+  //!     :end-before: example-end inclusive-segmented-scan-init-fixed-size-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segmented scan inputs @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing segmented scan outputs @iterator
+  //!
+  //! @tparam SegmentSizeT
+  //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
+  //!
+  //! @tparam ScanOpT
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam InitValueT
+  //!  **[inferred]** Type of the `init_value`
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in] d_in
+  //!   Random-access iterator to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Random-access iterator to the output sequence of data items
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the segmented prefix scan data
+  //!
+  //! @param[in] segment_size
+  //!   @rst
+  //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
+  //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
+  //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
+  //!   Must be in ``[0, INT64_MAX]``, or ``cudaErrorInvalidValue`` is returned.
+  //!   @endrst
+  //!
+  //! @param[in] scan_op
+  //!   Binary associative scan functor
+  //!
+  //! @param[in] init_value
+  //!   Initial value to seed the inclusive scan for each segment in the output sequence
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename SegmentSizeT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] _CCCL_API static cudaError_t InclusiveSegmentedScanInit(
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ::cuda::std::int64_t num_segments,
+    SegmentSizeT segment_size,
+    ScanOpT scan_op,
+    InitValueT init_value,
+    const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit");
+
+    static_assert(!::cuda::std::is_same_v<InitValueT, NullType>);
+
+    return fixed_size_env_impl<ForceInclusive::Yes>(
+      d_in, d_out, num_segments, segment_size, scan_op, detail::InputValue<InitValueT>(init_value), env);
   }
 };
 
