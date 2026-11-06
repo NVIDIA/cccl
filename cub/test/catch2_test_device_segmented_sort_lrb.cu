@@ -310,7 +310,11 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   const auto config          = capacity::lookup_bin_config<warp_expansion>(bin_idx);
   REQUIRE(config.threads_per_segment == 4);
   REQUIRE(config.items_per_thread == 10);
-  std::vector<int> lengths{0, 1};
+  // Walk boundaries: empty, singleton, and the first and last length of each logical warp size. The
+  // capacity bounds below add the cutoff (35, 36, 37).
+  constexpr int walk_ipt = capacity::tiny_walk_policy::items_per_thread;
+  std::vector<int> lengths{0, 1, 2, walk_ipt, walk_ipt + 1, 2 * walk_ipt, 2 * walk_ipt + 1};
+  static_assert(capacities::bounds[0] == capacity::tiny_walk_policy::inline_cutoff);
   for (const int bound : capacities::bounds)
   {
     for (const int delta : {-1, 0, 1})
