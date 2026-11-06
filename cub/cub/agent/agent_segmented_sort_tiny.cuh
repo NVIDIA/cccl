@@ -99,9 +99,11 @@ struct tiny_sort_implementation
     typename warp_t::sort_t sort(slot_tile.sort);
     Key keys[items_per_thread];
     typename warp_t::load_t(slot_tile.load).Load(try_make_cache_modified_iterator<LOAD_LDG>(in + begin), keys, num_keys);
-    __syncwarp(sort.get_member_mask());
+    // Every lane calls this, so sync the full warp: a per-logical-warp mask differs across lanes and
+    // compiles to a MATCH.ANY / REDUX sequence.
+    __syncwarp();
     sort.Sort(keys, ::cuda::std::less<Key>{}, num_keys);
-    __syncwarp(sort.get_member_mask());
+    __syncwarp();
     typename warp_t::store_t(slot_tile.store).Store(out + begin, keys, num_keys);
   }
 };
