@@ -33,6 +33,7 @@
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/nested_exception_macros.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/decay.h>
@@ -1084,7 +1085,8 @@ struct when
 /**
  * @brief Boundary translation. `translate<To>` replaces every failure by a `To` built from it;
  * `translate<From, To>` does so only for a `From` (catch-clause rules: same or publicly
- * derived) and forwards anything else untouched.
+ * derived) and forwards anything else untouched. `nest<To>` is `translate<To>` with the
+ * original failure kept as the `To`'s cause; see @ref nest_t.
  *
  * `To` is a `std::exception` derivative, constructed from the caught exception when such a
  * constructor exists, from its `what()` otherwise, default-constructed failing both. The
@@ -1093,6 +1095,9 @@ struct when
  * default-constructed otherwise. Restrict the source with a selector, as in
  * `if_isa<cuda_error>(translate<device_error>)`. A following `|` arm sees the `To`, so
  * `translate<low, high> | if_isa<high>(...)` ladders compose.
+ *
+ * `translate<To>(args...)` replaces every failure by `To(args...)` instead, built once up
+ * front and copied at each throw: `translate<config_error>("bad key")`.
  */
 template <class... _Ts>
 struct translate_t
@@ -1101,13 +1106,19 @@ struct translate_t
                 "translate<To> replaces every exception; translate<From, To> replaces a From");
 };
 
-template <class _To>
-struct translate_t<_To>
+namespace detail
+{
+template <class _To, bool _Nested>
+struct __translate_value;
+
+// The shared body of `translate<To>` and `nest<To>`: claim everything, build a `_To` from the
+// failure, throw it, with the failure nested as its cause when `_Nested`.
+template <class _To, bool _Nested>
+struct __translate_base
 {
   static_assert(::cuda::std::is_base_of_v<::std::exception, _To>,
                 "translate: the target type must derive from std::exception");
 
-  _CUDAX_STF_SINK(translate_t)
   using __pure_claim_tag _CCCL_NODEBUG = void;
 
   //! Everything is claimed; the funnel pointer, null or not, says how to build the `_To`.
@@ -1119,60 +1130,114 @@ struct translate_t<_To>
   template <class _Fn>
   [[noreturn]] nullval __claimed(const ::std::exception* __e, const ::cuda::std::source_location, _Fn&) const
   {
-    if (__e)
-    {
-      __throw_translated(*__e);
-    }
-    __throw_translated();
-    _CCCL_UNREACHABLE();
+    return __e ? __throw_translated(*__e) : __throw_translated();
   }
 
   template <class _Fn>
   [[noreturn]] nullval on_thrown(const ::std::exception* __e, const ::cuda::std::source_location __loc, _Fn& __fn) const
   {
-    __claimed(__e, __loc, __fn);
-    _CCCL_UNREACHABLE(); // nvcc's front end does not propagate [[noreturn]] through the call above
+    return __claimed(__e, __loc, __fn);
+  }
+
+  //! @brief `translate<To>(args...)` / `nest<To>(args...)`: replace every failure by `To(args...)`.
+  //! At least one argument, so the sink is never mistaken for a nullary callable.
+  template <class... _Args,
+            ::cuda::std::enable_if_t<(sizeof...(_Args) > 0) && ::cuda::std::is_constructible_v<_To, _Args&&...>, int> = 0>
+  __translate_value<_To, _Nested> operator()(_Args&&... __args) const
+  {
+    return __translate_value<_To, _Nested>{_To(::cuda::std::forward<_Args>(__args)...)};
+  }
+
+  // Throws `_To(args...)`, nesting the active exception beneath it when `_Nested`.
+  template <class... _Args>
+  [[noreturn]] static nullval __throw(_Args&&... __args)
+  {
+    if constexpr (_Nested)
+    {
+      _CCCL_THROW_WITH_NESTED(_To, ::cuda::std::forward<_Args>(__args)...);
+    }
+    else
+    {
+      _CCCL_THROW(_To, ::cuda::std::forward<_Args>(__args)...);
+    }
   }
 
   // Builds and throws the `_To`: from the caught `_From` when such a constructor exists, from
   // its `what()` otherwise, default-constructed failing both. Shared with `translate_t<_From, _To>`.
   template <class _From>
-  [[noreturn]] static void __throw_translated(const _From& __from)
+  [[noreturn]] static nullval __throw_translated(const _From& __from)
   {
     if constexpr (::cuda::std::is_constructible_v<_To, const _From&>)
     {
-      _CCCL_THROW(_To, __from);
+      return __throw(__from);
     }
     else if constexpr (::cuda::std::is_base_of_v<::std::exception, _From>
                        && ::cuda::std::is_constructible_v<_To, const char*>)
     {
-      _CCCL_THROW(_To, __from.what()); // carry the message across the translation
+      return __throw(__from.what()); // carry the message across the translation
     }
     else
     {
       static_assert(::cuda::std::is_default_constructible_v<_To>,
                     "translate: To must be constructible from the caught exception, from its what(), or "
                     "default-constructible");
-      _CCCL_THROW(_To);
+      return __throw();
     }
   }
 
   // The `_To` for a non-standard exception, which offers nothing to build from: say so when
   // `_To` takes a message, default-construct otherwise.
-  [[noreturn]] static void __throw_translated()
+  [[noreturn]] static nullval __throw_translated()
   {
     if constexpr (::cuda::std::is_constructible_v<_To, const char*>)
     {
-      _CCCL_THROW(_To, "non-standard exception");
+      return __throw("non-standard exception");
     }
     else
     {
       static_assert(::cuda::std::is_default_constructible_v<_To>,
                     "translate<To>: To must be constructible from a const char* or default-constructible to stand "
                     "in for a non-standard exception");
-      _CCCL_THROW(_To);
+      return __throw();
     }
   }
+};
+
+// `translate<To>(args...)` / `nest<To>(args...)`: a stored `_To`, thrown by copy at each failure.
+template <class _To, bool _Nested>
+struct __translate_value
+{
+  _CUDAX_STF_SINK(__translate_value)
+  using __pure_claim_tag _CCCL_NODEBUG = void;
+
+  static_assert(::cuda::std::is_copy_constructible_v<_To>,
+                "translate<To>(args...) / nest<To>(args...) require a copyable exception object");
+
+  _To __exception_;
+
+  __claim __claims(const ::std::exception*) const noexcept
+  {
+    return __claim::__yes;
+  }
+
+  template <class _Fn>
+  [[noreturn]] nullval __claimed(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const
+  {
+    return __translate_base<_To, _Nested>::__throw(__exception_);
+  }
+
+  template <class _Fn>
+  [[noreturn]] nullval on_thrown(const ::std::exception* __e, const ::cuda::std::source_location __loc, _Fn& __fn) const
+  {
+    return __claimed(__e, __loc, __fn);
+  }
+};
+} // namespace detail
+
+template <class _To>
+struct translate_t<_To> : detail::__translate_base<_To, false>
+{
+  _CUDAX_STF_SINK(translate_t)
 };
 
 template <class _From, class _To>
@@ -1201,7 +1266,7 @@ struct translate_t<_From, _To>
   [[noreturn]] nullval __claimed(const ::std::exception* __e, const ::cuda::std::source_location, _Fn&) const
   {
     // The claim was answered yes, so the cast holds.
-    translate_t<_To>::__throw_translated(*dynamic_cast<const _From*>(__e));
+    return translate_t<_To>::__throw_translated(*dynamic_cast<const _From*>(__e));
   }
 
   template <class _Fn>
@@ -1212,7 +1277,7 @@ struct translate_t<_From, _To>
       // The funnel pointer decides for std-derived exceptions, no rethrow needed.
       if (const auto* __from = dynamic_cast<const _From*>(__e))
       {
-        translate_t<_To>::__throw_translated(*__from);
+        return translate_t<_To>::__throw_translated(*__from);
       }
       _CCCL_RETHROW; // decline: a std exception that is not a _From
     }
@@ -1223,7 +1288,7 @@ struct translate_t<_From, _To>
     }
     _CCCL_CATCH (const _From& __from)
     {
-      translate_t<_To>::__throw_translated(__from);
+      return translate_t<_To>::__throw_translated(__from);
     }
     _CCCL_CATCH_FALLTHROUGH // decline: not a _From either
     _CCCL_UNREACHABLE();
@@ -1236,38 +1301,26 @@ template <class... _Ts>
 inline constexpr translate_t<_Ts...> translate{};
 
 /**
- * @brief Throws a stored exception with the active exception nested as its cause.
+ * @brief Nesting translation: `nest<To>` is `translate<To>` with the original failure kept as
+ * the `To`'s cause, through `std::throw_with_nested`; `std::rethrow_if_nested` recovers it.
+ *
+ * `To` is built from the failure exactly as `translate<To>` builds it, and `nest<To>(args...)`
+ * throws `To(args...)` with the failure nested: `nest<config_error>("while loading")`. Two
+ * consequences of `std::throw_with_nested`: the object thrown is of a type derived from both
+ * `To` and `std::nested_exception`, so a following `if_isa<To>` matches and `if_monomorphic<To>`
+ * does not, unless `To` itself derives from `std::nested_exception`, in which case an exact
+ * `To` is thrown; and a `final` `To` is thrown as is, without the cause.
  */
-template <class _E>
-struct nest_t
+template <class _To>
+struct nest_t : detail::__translate_base<_To, true>
 {
   _CUDAX_STF_SINK(nest_t)
-  _E __exception_;
-
-  static_assert(::cuda::std::is_copy_constructible_v<_E>, "nest(e) requires a copyable exception object");
-
-  template <class _Fn>
-  [[noreturn]] nullval on_thrown(const ::std::exception*, const ::cuda::std::source_location, _Fn&)
-  {
-    _CCCL_TRY
-    {
-      _CCCL_RETHROW;
-    }
-    _CCCL_CATCH_ALL
-    {
-      ::std::throw_with_nested(__exception_);
-    }
-    _CCCL_UNREACHABLE();
-  }
 };
 
-//! @brief Stores an exception by value and nests the active exception beneath it.
-template <class _E>
-auto nest(_E&& __exception)
-{
-  using _Stored = ::cuda::std::decay_t<_E>;
-  return nest_t<_Stored>{::cuda::std::forward<_E>(__exception)};
-}
+//! @brief Nests: `nest<To>` replaces every exception by a `To` built from it and carrying it as
+//! the cause; `nest<To>(args...)` does so with `To(args...)`. See @ref nest_t.
+template <class _To>
+inline constexpr nest_t<_To> nest{};
 
 /**
  * @brief Effect policy that sleeps before the next element of an `&` sequence.
@@ -5244,7 +5297,7 @@ namespace sump
  * @ref sump::fwd_t "fwd", @ref sump::unwind_t "unwind", @ref sump::retry_t "retry",
  * @ref sump::as_expected_t "as_expected", @ref sump::noop_t "noop", @ref sump::if_isa,
  * @ref sump::if_monomorphic, @ref sump::if_equal, @ref sump::thrown, @ref sump::returned,
- * @ref sump::when "when", @ref sump::translate_t "translate" / @ref sump::nest,
+ * @ref sump::when "when", @ref sump::translate_t "translate", @ref sump::nest_t "nest",
  * @ref sump::delay_t "delay", @ref sump::backoff, @ref sump::remember_t "remember",
  * @ref sump::circuit_breaker_t "circuit_breaker", and @ref sump::always. Guards forward what they
  * do not claim; translators forward with a different exception; delay/backoff/retry re-run; remember serves the last
@@ -6815,30 +6868,78 @@ UNITTEST("guard translate delay backoff remember")
     EXPECT(passed == 2);
   }
 
-  // Nest preserves the original exception as the translated exception's cause.
+  // Nest keeps the original exception as the translated exception's cause. The cause is read
+  // back through std::rethrow_if_nested; a translation has no cause to read.
   {
-    bool saw_high = false;
-    bool saw_low  = false;
-    try
-    {
-      nest(__ut_high_error{"context"})->*[] {
-        throw __ut_low_error("cause");
-      };
-    }
-    catch (const __ut_high_error& __exception)
-    {
-      saw_high = true;
+    using sump::detail::__has_pure_claim;
+    static_assert(::cuda::std::is_same_v<decltype(nest<__ut_high_error>), const nest_t<__ut_high_error>>);
+    static_assert(__has_pure_claim<decltype(nest<__ut_high_error>)>);
+    static_assert(__has_pure_claim<decltype(nest<__ut_high_error>("context"))>);
+    static_assert(__has_pure_claim<decltype(translate<__ut_high_error>("context"))>);
+
+    // Runs `body` under `s`; reports the high what(), whether a low cause was nested, and
+    // whether the thrown object carries std::nested_exception at all.
+    const auto probe = [](auto s, auto body) {
+      ::std::string high;
+      bool low_cause   = false;
+      bool nested_type = false;
       try
       {
-        ::std::rethrow_if_nested(__exception);
+        s->*body;
       }
-      catch (const __ut_low_error&)
+      catch (const __ut_high_error& __exception)
       {
-        saw_low = true;
+        high        = __exception.what();
+        nested_type = dynamic_cast<const ::std::nested_exception*>(&__exception) != nullptr;
+        try
+        {
+          ::std::rethrow_if_nested(__exception);
+        }
+        catch (const __ut_low_error&)
+        {
+          low_cause = true;
+        }
+        catch (int)
+        {
+          low_cause = true; // the non-standard cause of the last probe below
+        }
       }
-    }
-    EXPECT(saw_high);
-    EXPECT(saw_low);
+      return ::std::make_tuple(high, low_cause, nested_type);
+    };
+    const auto throw_low = [] {
+      throw __ut_low_error("cause");
+    };
+    // The bare form builds the high error from the cause's message.
+    EXPECT(probe(nest<__ut_high_error>, throw_low) == ::std::make_tuple(::std::string("cause"), true, true));
+    // The argument form builds it up front, from arguments or from a ready-made object.
+    EXPECT(probe(nest<__ut_high_error>("context"), throw_low)
+           == ::std::make_tuple(::std::string("context"), true, true));
+    EXPECT(probe(nest<__ut_high_error>(__ut_high_error{"ready"}), throw_low)
+           == ::std::make_tuple(::std::string("ready"), true, true));
+    // translate has the same two forms and drops the cause.
+    EXPECT(probe(translate<__ut_high_error>, throw_low) == ::std::make_tuple(::std::string("cause"), false, false));
+    EXPECT(probe(translate<__ut_high_error>("context"), throw_low)
+           == ::std::make_tuple(::std::string("context"), false, false));
+    // A non-standard cause is nested too, under the fixed message.
+    EXPECT(probe(nest<__ut_high_error>,
+                 [] {
+                   throw 42;
+                 })
+           == ::std::make_tuple(::std::string("non-standard exception"), true, true));
+
+    // The nested object's dynamic type derives from the target: if_isa sees it, if_monomorphic does not.
+    EXPECT(((nest<__ut_high_error> | if_isa<__ut_high_error>(subst(1)) | subst(2))->*[]() -> int {
+             throw __ut_low_error("cause");
+           })
+           == 1);
+    EXPECT(((nest<__ut_high_error> | if_monomorphic<__ut_high_error>(subst(1)) | subst(2))->*[]() -> int {
+             throw __ut_low_error("cause");
+           })
+           == 2);
+    EXPECT(((translate<__ut_high_error> | if_monomorphic<__ut_high_error>(subst(1)) | subst(2))->*[]() -> int {
+             throw __ut_low_error("cause");
+           })
+           == 1);
   }
 
   // Delay composes before each retry; test attempts rather than elapsed wall time.
