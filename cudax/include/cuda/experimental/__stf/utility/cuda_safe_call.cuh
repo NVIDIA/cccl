@@ -290,7 +290,7 @@ public:
     }
 
     int dev = -1;
-    cudaGetDevice(&dev);
+    static_cast<void>(cudaGetDevice(&dev));
 
     format("%s(%u) [device %d] CUDA error in %s: ", loc.file_name(), loc.line(), dev, loc.function_name());
     // The name for T only, not a visit over every alternative: that would instantiate every
@@ -393,25 +393,25 @@ namespace reserved
 template <typename, typename = void>
 struct first_param_impl
 {
-  using type = void;
+  using type _CCCL_NODEBUG = void;
 };
 
 template <typename R, typename P, typename... Ps>
 struct first_param_impl<R (*)(P, Ps...)>
 {
-  using type = P;
+  using type _CCCL_NODEBUG = P;
 };
 
 template <typename, typename = void>
 struct second_param_impl
 {
-  using type = void;
+  using type _CCCL_NODEBUG = void;
 };
 
 template <typename R, typename P0, typename P1, typename... Ps>
 struct second_param_impl<R (*)(P0, P1, Ps...)>
 {
-  using type = P1;
+  using type _CCCL_NODEBUG = P1;
 };
 
 template <typename...>
@@ -420,7 +420,7 @@ struct last_param_impl;
 template <typename P>
 struct last_param_impl<P>
 {
-  using type = P;
+  using type _CCCL_NODEBUG = P;
 };
 
 template <typename P, typename... Ps>
@@ -430,33 +430,33 @@ struct last_param_impl<P, Ps...> : last_param_impl<Ps...>
 template <typename, typename = void>
 struct function_last_param_impl
 {
-  using type = void;
+  using type _CCCL_NODEBUG = void;
 };
 
 template <typename R, typename... Ps>
 struct function_last_param_impl<R (*)(Ps...)>
 {
-  using type = typename last_param_impl<Ps...>::type;
+  using type _CCCL_NODEBUG = typename last_param_impl<Ps...>::type;
 };
 
 // `R (*)()` has no last parameter: the primary template's `void` applies.
 template <typename R>
 struct function_last_param_impl<R (*)()>
 {
-  using type = void;
+  using type _CCCL_NODEBUG = void;
 };
 
 // The pointee of a synthesized output parameter: `T*` -> `T`, anything else -> `void`.
 template <typename>
 struct out_param_impl
 {
-  using type = void;
+  using type _CCCL_NODEBUG = void;
 };
 
 template <typename T>
 struct out_param_impl<T*>
 {
-  using type = T;
+  using type _CCCL_NODEBUG = T;
 };
 
 /*

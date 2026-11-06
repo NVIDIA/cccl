@@ -79,7 +79,7 @@ bool validation(const thrust::device_vector<TupleT>& input,
                 ScanOpT op,
                 cudaStream_t stream)
 {
-  cudaStreamSynchronize(stream);
+  _CCCL_TRY_RUNTIME_API(cudaStreamSynchronize, "Sync failed", stream);
 
   using tuple_t = TupleT;
   thrust::host_vector<tuple_t> h_input(input);

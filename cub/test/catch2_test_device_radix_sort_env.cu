@@ -3217,6 +3217,67 @@ CUB_TEST_CASE("Device radix sort can be tuned with user provided memory", "[radi
 
 #endif // TEST_LAUNCH == 0
 
+#if TEST_LAUNCH != 1
+
+// the radix sort has no user-provided operator that could be used to observe the block size, except for a decomposer
+using block_size_extracting_decomposer_t = block_size_extracting_op<keys_decomposer_t>;
+
+template <int BlockThreads>
+struct block_size_policy_transformer
+{
+  _CCCL_API constexpr auto operator()(cuda::compute_capability, cub::RadixSortPolicy policy) const
+    -> cub::RadixSortPolicy
+  {
+    policy.algorithm                       = cub::RadixSortAlgorithm::onesweep;
+    policy.histogram.threads_per_block     = BlockThreads;
+    policy.histogram.private_partitions    = 1;
+    policy.exclusive_sum.threads_per_block = BlockThreads;
+    policy.onesweep.threads_per_block      = BlockThreads;
+    policy.onesweep.items_per_thread       = 1;
+    policy.single_tile.threads_per_block   = BlockThreads;
+    policy.single_tile.items_per_thread    = 1;
+    policy.downsweep.threads_per_block     = BlockThreads;
+    policy.downsweep.items_per_thread      = 1;
+    policy.alt_downsweep.threads_per_block = BlockThreads;
+    policy.alt_downsweep.items_per_thread  = 1;
+    return policy;
+  }
+};
+
+CUB_TEST_CASE("DeviceRadixSort::SortKeys tuning can be modified", "[radix_sort][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+  constexpr int num_items                  = 10'000; // must be larger than the single tile path
+
+  auto keys_in      = c2h::device_vector<custom_key_t>(num_items);
+  auto keys_out     = c2h::device_vector<custom_key_t>(num_items, thrust::no_init);
+  auto d_block_size = c2h::device_vector<unsigned int>(1, 0);
+
+  const block_size_extracting_decomposer_t decomposer{thrust::raw_pointer_cast(d_block_size.data())};
+
+  {
+    device_radix_sort_keys(
+      keys_in.data().get(),
+      keys_out.data().get(),
+      num_items,
+      decomposer,
+      0,
+      static_cast<int>(sizeof(int) * 8),
+      stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
+  auto env = cuda::execution::tune(block_size_policy_transformer<target_block_size>{});
+
+  device_radix_sort_keys(
+    keys_in.data().get(), keys_out.data().get(), num_items, decomposer, 0, static_cast<int>(sizeof(int) * 8), env);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+#endif // TEST_LAUNCH != 1
+
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
 CUB_TEST("Test RadixSortPolicy properties", "[radix_sort][device]", CUB_SMALL)
 {

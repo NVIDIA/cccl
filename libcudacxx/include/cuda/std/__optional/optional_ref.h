@@ -51,8 +51,8 @@ template <class _Tp>
 class optional<_Tp&>
 {
 private:
-  using __raw_type     = remove_reference_t<_Tp>;
-  __raw_type* __value_ = nullptr;
+  using __raw_type _CCCL_NODEBUG = remove_reference_t<_Tp>;
+  __raw_type* __value_           = nullptr;
 
   _CCCL_TEMPLATE(class _Ref, class _Arg)
   _CCCL_REQUIRES(is_constructible_v<_Ref, _Arg>)

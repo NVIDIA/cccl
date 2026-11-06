@@ -70,8 +70,8 @@ _CCCL_HOST_DEVICE void* malloc(execution_policy<DerivedPolicy>&, std::size_t n)
     (const cudaError_t status = cudaMalloc(&result, n);
 
      if (status != cudaSuccess) {
-       cudaGetLastError(); // Clear global CUDA error state.
-       throw thrust::system::detail::bad_alloc(thrust::cuda_category().message(status).c_str());
+       static_cast<void>(cudaGetLastError()); // Clear global CUDA error state.
+       throw thrust::system::detail::bad_alloc(thrust::cuda_category().message(status));
      }),
     ( // NV_IS_DEVICE
       result = thrust::raw_pointer_cast(thrust::malloc(thrust::seq, n));));

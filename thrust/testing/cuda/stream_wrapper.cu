@@ -50,7 +50,7 @@ void test_on_stream(ExecutionPolicy policy)
   v[2] = 3;
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   Wrapper wrapper(s);
 
@@ -58,7 +58,7 @@ void test_on_stream(ExecutionPolicy policy)
 
   REQUIRE(thrust::reduce(streampolicy, v.begin(), v.end()) == 2);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestCudartStreamSync", "[stream_wrapper]")

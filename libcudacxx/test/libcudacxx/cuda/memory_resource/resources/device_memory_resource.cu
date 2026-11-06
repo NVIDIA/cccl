@@ -62,7 +62,7 @@ static bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocation
 {
   size_t handle              = 0;
   const ::cudaError_t status = ::cudaMemPoolExportToShareableHandle(&handle, pool, allocation_handle, 0);
-  ::cudaGetLastError(); // Clear CUDA error state
+  static_cast<void>(::cudaGetLastError()); // Clear CUDA error state
 
   // If no export was defined we need to query cudaErrorInvalidValue
   return allocation_handle == ::cudaMemHandleTypeNone ? status == ::cudaErrorInvalidValue : status == ::cudaSuccess;
@@ -283,7 +283,7 @@ C2H_CCCLRT_TEST("device_memory_pool allocation", "[memory_resource]")
   cudaStream_t raw_stream;
   {
     const cuda::__ensure_current_context guard{cuda::device_ref{0}};
-    cudaStreamCreate(&raw_stream);
+    REQUIRE(cudaSuccess == cudaStreamCreate(&raw_stream));
   }
   cuda::device_memory_pool_ref res = cuda::device_default_memory_pool(cuda::device_ref{0});
 
@@ -389,7 +389,7 @@ C2H_CCCLRT_TEST("device_memory_pool allocation", "[memory_resource]")
 #endif // _CCCL_HAS_EXCEPTIONS()
   {
     const cuda::__ensure_current_context guard{cuda::device_ref{0}};
-    cudaStreamDestroy(raw_stream);
+    REQUIRE(cudaSuccess == cudaStreamDestroy(raw_stream));
   }
 }
 

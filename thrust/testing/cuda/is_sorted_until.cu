@@ -62,7 +62,7 @@ TEST_CASE("TestIsSortedUntilCudaStreams", "[is_sorted_until]")
   using Iterator = Vector::iterator;
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   Vector v(4);
   v[0] = 0;
@@ -113,5 +113,5 @@ TEST_CASE("TestIsSortedUntilCudaStreams", "[is_sorted_until]")
   ref   = v.begin() + 4;
   REQUIRE(ref == thrust::is_sorted_until(thrust::cuda::par.on(s), first, last, ::cuda::std::greater<T>()));
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
