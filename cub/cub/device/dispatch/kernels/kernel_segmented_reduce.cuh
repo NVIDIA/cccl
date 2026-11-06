@@ -191,7 +191,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
       constexpr int segments_per_block = decltype(segments_per_block_tag)::value;
       const int sid_within_block       = tid / threads_per_warp;
       const int lane_id                = tid % threads_per_warp;
-      const int global_segment_id      = bid * segments_per_block + sid_within_block;
+      const int global_segment_id      = (bid * segments_per_block) + sid_within_block;
 
       if (global_segment_id < num_segments)
       {
@@ -392,7 +392,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
   {
     const int sid_within_block  = tid / small_threads_per_warp;
     const int lane_id           = tid % small_threads_per_warp;
-    const int global_segment_id = bid * segments_per_small_block + sid_within_block;
+    const int global_segment_id = (bid * segments_per_small_block) + sid_within_block;
 
     const auto segment_begin = static_cast<::cuda::std::int64_t>(global_segment_id) * segment_size;
 
@@ -422,7 +422,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
   {
     const int sid_within_block  = tid / medium_threads_per_warp;
     const int lane_id           = tid % medium_threads_per_warp;
-    const int global_segment_id = bid * segments_per_medium_block + sid_within_block;
+    const int global_segment_id = (bid * segments_per_medium_block) + sid_within_block;
 
     const auto segment_begin = static_cast<::cuda::std::int64_t>(global_segment_id) * segment_size;
 

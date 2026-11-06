@@ -240,7 +240,7 @@ CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative
 
   using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block>;
 
-  const unsigned num_items = block_size * items_per_thread * 101 + 1;
+  const unsigned num_items = (block_size * items_per_thread * 101) + 1;
   const c2h::device_vector<offset_t> offsets{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};
   const size_t num_segments = offsets.size() - 1;
 

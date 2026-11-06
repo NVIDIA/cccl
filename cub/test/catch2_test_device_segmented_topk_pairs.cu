@@ -865,7 +865,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with large fixed-size unaligned
      static_max_segment_size - 31,
      static_max_segment_size - 4095,
      segment_size_t{128 * 1024},
-     segment_size_t{128 * 1024 + 1}}));
+     segment_size_t{(128 * 1024) + 1}}));
   const segment_size_t max_k        = (cuda::std::min) (static_max_k, segment_size);
   const segment_size_t k            = GENERATE_COPY(values({segment_size_t{1}, max_k / 2, max_k}));
   const segment_size_t num_items    = num_segments * segment_size;
@@ -2061,8 +2061,8 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with mixed effective-width vari
   constexpr auto direction                         = cub::detail::topk::select::max;
   const segment_size_t k = GENERATE_COPY(values({segment_size_t{1}, static_max_k / 2, static_max_k}));
 
-  constexpr segment_size_t full_segment_size = 96 * 1024 + 17; // enough chunks to fill the launched cluster (no idle)
-  constexpr segment_size_t med_segment_a     = 12 * 1024 + 1; // a few chunks -> most cluster CTAs idle (unaligned)
+  constexpr segment_size_t full_segment_size = (96 * 1024) + 17; // enough chunks to fill the launched cluster (no idle)
+  constexpr segment_size_t med_segment_a     = (12 * 1024) + 1; // a few chunks -> most cluster CTAs idle (unaligned)
   constexpr segment_size_t med_segment_b     = 40 * 1024; // more chunks, still below the launched width
   c2h::host_vector<segment_size_t> h_segment_offsets{
     0,

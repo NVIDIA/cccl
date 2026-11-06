@@ -14,11 +14,7 @@
 template <typename T, int ItemsPerThread, int ThreadsInBlock, cub::BlockLoadAlgorithm LoadAlgorithm>
 static __device__ int get_output_idx(int item, bool full_tile)
 {
-  if constexpr (LoadAlgorithm == cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED)
-  {
-    return static_cast<int>(threadIdx.x) + ThreadsInBlock * item;
-  }
-  else if constexpr (LoadAlgorithm == cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED_VECTORIZED)
+  if constexpr (LoadAlgorithm == cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED_VECTORIZED)
   {
     // Full tiles are striped vectors of the type with which BLOCK_LOAD_VECTORIZE loads the items of a thread, or of
     // single items if that does not hold a whole number of T. Guarded loads are striped.
@@ -27,11 +23,11 @@ static __device__ int get_output_idx(int item, bool full_tile)
     const int items_per_vector = full_tile ? vec_size : 1;
     const int vector           = item / items_per_vector;
     const int element          = item % items_per_vector;
-    return (static_cast<int>(threadIdx.x) + ThreadsInBlock * vector) * items_per_vector + element;
+    return ((static_cast<int>(threadIdx.x) + (ThreadsInBlock * vector)) * items_per_vector) + element;
   }
   else
   {
-    return static_cast<int>(threadIdx.x) * ItemsPerThread + item;
+    return static_cast<int>(threadIdx.x) * (ItemsPerThread + item);
   }
 }
 
@@ -326,7 +322,7 @@ __global__ void load_direct_striped_vectorized_kernel(const InputT* input, T* ou
   cub::LoadDirectStripedVectorized<ThreadsInBlock, VecSize, Modifier>(static_cast<int>(threadIdx.x), input, data);
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    output[(threadIdx.x + ThreadsInBlock * (i / VecSize)) * VecSize + i % VecSize] = data[i];
+    output[((threadIdx.x + (ThreadsInBlock * (i / VecSize))) * VecSize) + (i % VecSize)] = data[i];
   }
 }
 

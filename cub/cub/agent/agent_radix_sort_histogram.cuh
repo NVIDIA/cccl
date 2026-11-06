@@ -101,7 +101,7 @@ struct AgentRadixSortHistogram
   static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
   static constexpr int RADIX_BITS       = AgentRadixSortHistogramPolicy::RADIX_BITS;
   static constexpr int RADIX_DIGITS     = 1 << RADIX_BITS;
-  static constexpr int MAX_NUM_PASSES   = (sizeof(KeyT) * 8 + RADIX_BITS - 1) / RADIX_BITS;
+  static constexpr int MAX_NUM_PASSES   = ((sizeof(KeyT) * 8) + RADIX_BITS - 1) / RADIX_BITS;
   static constexpr int NUM_PARTS        = AgentRadixSortHistogramPolicy::NUM_PARTS;
 
   using traits                 = radix::traits_t<KeyT>;
@@ -238,7 +238,7 @@ struct AgentRadixSortHistogram
           // (ExclusiveSum, Onesweep) don't need atomic
           // access. Therefore, atomicAdd() is used, until
           // cuda::atomic_ref<> becomes available.
-          atomicAdd(&d_bins_out[pass * RADIX_DIGITS + bin], count);
+          atomicAdd(&d_bins_out[(pass * RADIX_DIGITS) + bin], count);
         }
       }
     }

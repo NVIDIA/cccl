@@ -49,7 +49,7 @@ class year_month_weekday
     const sys_days __sysd{__days};
     const chrono::weekday __wd = chrono::weekday{__sysd};
     const year_month_day __ymd = year_month_day{__sysd};
-    return year_month_weekday{__ymd.year(), __ymd.month(), __wd[(static_cast<unsigned>(__ymd.day()) - 1) / 7 + 1]};
+    return year_month_weekday{__ymd.year(), __ymd.month(), __wd[((static_cast<unsigned>(__ymd.day()) - 1) / 7) + 1]};
   }
 
   [[nodiscard]] _CCCL_API constexpr days __to_days() const noexcept
@@ -125,7 +125,7 @@ public:
     }
     const auto __nth_weekday_day =
       __weekday_indexed_.weekday() - chrono::weekday{static_cast<sys_days>(__year_ / __month_ / 1)}
-      + days{(__weekday_indexed_.index() - 1) * 7 + 1};
+      + days{((__weekday_indexed_.index() - 1) * 7) + 1};
     return static_cast<unsigned>(__nth_weekday_day.count()) <= static_cast<unsigned>((__year_ / __month_ / last).day());
   }
 

@@ -24,14 +24,14 @@ int main()
   // A write() access is needed because we initialized lh from a shape, so there is no reference copy
   ctx.parallel_for(box(16), lh.write())->*[] _CCCL_DEVICE(size_t i, auto h) {
     const uint32_t key   = 10 * i;
-    const uint32_t value = 17 + i * 14;
+    const uint32_t value = 17 + (i * 14);
     h.insert(key, value);
   };
 
   ctx.host_launch(lh.rw())->*[](auto h) {
     for (int i = 0; i < 16; i++)
     {
-      EXPECT(h.get(i * 10) == 17 + i * 14);
+      EXPECT(h.get(i * 10) == 17 + (i * 14));
     }
   };
 

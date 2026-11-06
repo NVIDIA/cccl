@@ -26,7 +26,7 @@ __device__ int binary_search(slice<const int> arr, int start, int end, int looku
 {
   while (start <= end)
   {
-    const int mid = start + (end - start) / 2;
+    const int mid = start + ((end - start) / 2);
     if (arr[mid] == lookup)
     {
       return mid;
@@ -113,7 +113,7 @@ int main()
                 const int uni          = calculate_union_size(loffsets, lnonzeros, idx, j);
                 if (uni > 0)
                 {
-                  ljaccard_similarities[idx * (loffsets.size() - 1) + j] =
+                  ljaccard_similarities[(idx * (loffsets.size() - 1)) + j] =
                     static_cast<float>(intersection) / static_cast<float>(uni);
                 }
               }
@@ -128,8 +128,10 @@ int main()
     {
       if (u != v)
       {
-        printf(
-          "Jaccard similarity between vertex %d and vertex %d: %f\n", u, v, jaccard_similarities[u * num_vertices + v]);
+        printf("Jaccard similarity between vertex %d and vertex %d: %f\n",
+               u,
+               v,
+               jaccard_similarities[(u * num_vertices) + v]);
       }
     }
   }

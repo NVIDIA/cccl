@@ -290,7 +290,7 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
       const cuda::compute_capability compute_cap = device_ref(0).attribute(attributes::compute_capability);
       const int compute_cap_major                = device_ref(0).attribute(attributes::compute_capability_major);
       const int compute_cap_minor                = device_ref(0).attribute(attributes::compute_capability_minor);
-      REQUIRE(compute_cap.get() == 10 * compute_cap_major + compute_cap_minor);
+      REQUIRE(compute_cap.get() == (10 * compute_cap_major) + compute_cap_minor);
     }
 
     SECTION("Total global memory")

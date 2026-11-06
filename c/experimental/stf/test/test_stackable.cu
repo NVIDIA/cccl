@@ -18,7 +18,7 @@
 
 __global__ void scale_kernel(int cnt, double* data, double factor)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
   for (int i = tid; i < cnt; i += nthreads)
   {
@@ -28,7 +28,7 @@ __global__ void scale_kernel(int cnt, double* data, double factor)
 
 __global__ void increment_kernel(int cnt, double* data)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
   for (int i = tid; i < cnt; i += nthreads)
   {
@@ -73,7 +73,7 @@ C2H_TEST("stackable: push_graph / pop", "[stackable]")
 
   for (size_t i = 0; i < N; i++)
   {
-    REQUIRE(std::fabs(host_data[i] - 2.0 * static_cast<double>(i)) < 1e-10);
+    REQUIRE(std::fabs(host_data[i] - (2.0 * static_cast<double>(i))) < 1e-10);
   }
 
   REQUIRE(cudaFreeHost(host_data) == cudaSuccess);

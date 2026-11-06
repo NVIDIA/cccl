@@ -99,7 +99,7 @@ _CCCL_DEVICE double Source(double t, double x, double y, double z)
   constexpr double omega      = (2 * pi * freq);
   constexpr double wavelength = 3e8 / freq;
   constexpr double k          = 2 * pi / wavelength;
-  return sin(k * x - omega * t);
+  return sin((k * x) - (omega * t));
 }
 #endif // !_CCCL_COMPILER(MSVC)
 
@@ -211,7 +211,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
           ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ex, auto Hy, auto Hz, auto epsilon) {
                 Ex(i, j, k) =
                   Ex(i, j, k)
-                  + (DT / (epsilon(i, j, k) * DX)) * (Hz(i, j, k) - Hz(i, j - 1, k) - Hy(i, j, k) + Hy(i, j, k - 1));
+                  + ((DT / (epsilon(i, j, k) * DX)) * (Hz(i, j, k) - Hz(i, j - 1, k) - Hy(i, j, k) + Hy(i, j, k - 1)));
               };
 
       // Update Ey
@@ -219,7 +219,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
           ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ey, auto Hx, auto Hz, auto epsilon) {
                 Ey(i, j, k) =
                   Ey(i, j, k)
-                  + (DT / (epsilon(i, j, k) * DY)) * (Hx(i, j, k) - Hx(i, j, k - 1) - Hz(i, j, k) + Hz(i - 1, j, k));
+                  + ((DT / (epsilon(i, j, k) * DY)) * (Hx(i, j, k) - Hx(i, j, k - 1) - Hz(i, j, k) + Hz(i - 1, j, k)));
               };
 
       // Update Ez
@@ -227,7 +227,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
           ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez, auto Hx, auto Hy, auto epsilon) {
                 Ez(i, j, k) =
                   Ez(i, j, k)
-                  + (DT / (epsilon(i, j, k) * DZ)) * (Hy(i, j, k) - Hy(i - 1, j, k) - Hx(i, j, k) + Hx(i, j - 1, k));
+                  + ((DT / (epsilon(i, j, k) * DZ)) * (Hy(i, j, k) - Hy(i - 1, j, k) - Hx(i, j, k) + Hx(i, j - 1, k)));
               };
 
       // Add the source function at the center of the grid
@@ -247,7 +247,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
           ->*[=]
         _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hx, auto Ey, auto Ez, auto mu) {
           Hx(i, j, k) =
-            Hx(i, j, k) - (DT / (mu(i, j, k) * DY)) * (Ez(i, j + 1, k) - Ez(i, j, k) - Ey(i, j, k + 1) + Ey(i, j, k));
+            Hx(i, j, k) - ((DT / (mu(i, j, k) * DY)) * (Ez(i, j + 1, k) - Ez(i, j, k) - Ey(i, j, k + 1) + Ey(i, j, k)));
         };
 
       // Update Hy
@@ -255,7 +255,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
           ->*[=]
         _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hy, auto Ex, auto Ez, auto mu) {
           Hy(i, j, k) =
-            Hy(i, j, k) - (DT / (mu(i, j, k) * DZ)) * (Ex(i, j, k + 1) - Ex(i, j, k) - Ez(i + 1, j, k) + Ez(i, j, k));
+            Hy(i, j, k) - ((DT / (mu(i, j, k) * DZ)) * (Ex(i, j, k + 1) - Ex(i, j, k) - Ez(i + 1, j, k) + Ez(i, j, k)));
         };
 
       // Update Hz
@@ -263,7 +263,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
           ->*[=]
         _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hz, auto Ex, auto Ey, auto mu) {
           Hz(i, j, k) =
-            Hz(i, j, k) - (DT / (mu(i, j, k) * DX)) * (Ey(i + 1, j, k) - Ey(i, j, k) - Ex(i, j + 1, k) + Ex(i, j, k));
+            Hz(i, j, k) - ((DT / (mu(i, j, k) * DX)) * (Ey(i + 1, j, k) - Ey(i, j, k) - Ex(i, j + 1, k) + Ex(i, j, k)));
         };
 
       auto handle = while_guard.cond_handle();

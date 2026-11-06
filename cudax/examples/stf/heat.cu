@@ -60,10 +60,10 @@ int main()
   // temperature in the middle.
   ctx.parallel_for(lU.shape(), lU.write())->*[=] _CCCL_DEVICE(size_t i, size_t j, auto U) {
     const double rad = U.extent(0) / 8.0;
-    const double dx  = (double) i - U.extent(0) / 2.0;
-    const double dy  = (double) j - U.extent(1) / 2.0;
+    const double dx  = (double) i - (U.extent(0) / 2.0);
+    const double dy  = (double) j - (U.extent(1) / 2.0);
 
-    U(i, j) = (dx * dx + dy * dy < rad * rad) ? 100.0 : 0.0;
+    U(i, j) = ((dx * dx) + (dy * dy) < rad * rad) ? 100.0 : 0.0;
 
     /* Set up boundary conditions */
     if (static_cast<double>(j) == 0.0)
@@ -112,12 +112,12 @@ int main()
 
     // Update Un using Un1 value with a finite difference scheme
     ctx.parallel_for(inner<1>(lU.shape()), lU.read(), lU1.write())
-        ->*[=]
-      _CCCL_DEVICE(size_t i, size_t j, auto U, auto U1) {
-        U1(i, j) =
-          U(i, j)
-          + c * ((U(i - 1, j) - 2 * U(i, j) + U(i + 1, j)) / dx2 + (U(i, j - 1) - 2 * U(i, j) + U(i, j + 1)) / dy2);
-      };
+        ->*[=] _CCCL_DEVICE(size_t i, size_t j, auto U, auto U1) {
+              U1(i, j) = U(i, j)
+                       + (c
+                          * (((U(i - 1, j) - (2 * U(i, j)) + U(i + 1, j)) / dx2)
+                             + ((U(i, j - 1) - (2 * U(i, j)) + U(i, j + 1)) / dy2)));
+            };
 
     std::swap(lU, lU1);
   }

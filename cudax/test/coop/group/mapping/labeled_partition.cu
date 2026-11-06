@@ -56,7 +56,7 @@ struct rank_label_fn
     }
     else
     {
-      return static_cast<Label>(static_cast<Label>(Modulus - 1 - rank % Modulus) << Shift);
+      return static_cast<Label>(static_cast<Label>(Modulus - 1 - (rank % Modulus)) << Shift);
     }
   }
 
@@ -190,7 +190,7 @@ __device__ void test_previous_partitions(Config config, const NonExhaustive&... 
     const auto mask       = (label_rank == 0 ? 0x49u : (label_rank == 1 ? 0x92u : 0x24u)) << (lane / 8 * 8);
 
     REQUIRE(result.group_count() == 12);
-    REQUIRE(result.group_rank() == lane / 8 * 3 + label_rank);
+    REQUIRE(result.group_rank() == (lane / 8 * 3) + label_rank);
     REQUIRE(result.unit_count() == (label_rank == 2 ? 2 : 3));
     REQUIRE(result.unit_rank() == local_rank / 3);
     REQUIRE(result.lane_mask() == cuda::device::lane_mask{mask});
@@ -221,7 +221,7 @@ __device__ void test_previous_partitions(Config config, const NonExhaustive&... 
     }
 
     REQUIRE(result.group_count() == 6);
-    REQUIRE(result.group_rank() == (lane / 2 % 3) * 2 + lane % 2);
+    REQUIRE(result.group_rank() == ((lane / 2 % 3) * 2) + (lane % 2));
     REQUIRE(result.unit_count() == unit_count);
     REQUIRE(result.unit_rank() == unit_rank);
     REQUIRE(result.lane_mask() == cuda::device::lane_mask{mask});

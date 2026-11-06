@@ -244,7 +244,7 @@ warp_redux_min_max_large(const T input, const ::cuda::std::uint32_t mask, Reduct
   using generalized_op_t        = generalize_operator_t<ReductionOp>; // map minimum<int64_t> to minimum<>
   constexpr auto generalized_op = generalized_op_t{};
   constexpr auto identity       = ::cuda::identity_element<generalized_op_t, unsigned>();
-  constexpr auto last           = sizeof(T) / sizeof(unsigned) - 1;
+  constexpr auto last           = (sizeof(T) / sizeof(unsigned)) - 1;
 
   auto words = cub::detail::to_words(input);
   // Perform the reduction from the most significant word. Only the top word is affected by the sign, lower words are
