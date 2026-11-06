@@ -92,7 +92,6 @@ Checks:
   # members" than to remember to change 2 places at once.
   - '-readability-redundant-member-init'
   - '-readability-delete-null-pointer'
-  - '-readability-use-std-min-max'
   - '-readability-magic-numbers'
   - '-readability-use-concise-preprocessor-directives'
   - '-readability-uppercase-literal-suffix'
