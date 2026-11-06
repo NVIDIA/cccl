@@ -51,12 +51,14 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__iterator/incrementable_traits.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__iterator/readable_traits.h>
+#  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__tuple_dir/tuple.h>
 #  include <cuda/std/__type_traits/always_false.h>
+#  include <cuda/std/__type_traits/is_integral.h>
 #  include <cuda/std/__utility/move.h>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -68,18 +70,16 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cuda>
 {
-  template <class _Policy, class _InputIterator, class _UnaryPred>
+  template <class _Policy, class _InputIterator, class _OffsetType, class _UnaryPred>
   [[nodiscard]] _CCCL_HOST_API static _InputIterator
-  __par_impl(const _Policy& __policy, _InputIterator __first, _InputIterator __last, _UnaryPred __pred)
+  __par_impl(const _Policy& __policy, _InputIterator __first, _OffsetType __count, _UnaryPred __pred)
   {
     const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
 
-    using _OffsetType = size_t;
-    using value_type  = iter_value_t<_InputIterator>;
+    using value_type = iter_value_t<_InputIterator>;
 
     _OffsetType __num_selected;
-    const auto __count = static_cast<_OffsetType>(::cuda::std::distance(__first, __last));
 
     // Determine temporary device storage requirements for device_partition
     size_t __num_bytes = 0;
@@ -146,7 +146,19 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
     {
       _CCCL_TRY
       {
-        return __par_impl(__policy, ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__pred));
+        const auto __count = static_cast<size_t>(::cuda::std::distance(__first, __last));
+        using _ValueType   = iter_value_t<_InputIterator>;
+        // Preserve the original dispatch for 64-bit integers.
+        if constexpr (!(is_integral_v<_ValueType> && sizeof(_ValueType) == 8))
+        {
+          // CUB widens unsigned counts to 64-bit signed offsets. Use a signed 32-bit count when it fits to avoid
+          // the streaming partition path and its additional offset bookkeeping.
+          if (__count <= static_cast<size_t>(numeric_limits<int>::max()))
+          {
+            return __par_impl(__policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__pred));
+          }
+        }
+        return __par_impl(__policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__pred));
       }
       _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {
