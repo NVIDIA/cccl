@@ -101,7 +101,7 @@ int main(int argc, char** argv)
 
   // If we were to register each part one by one, there could be pages which
   // cross multiple parts, and the pinning operation would fail.
-  cuda_safe_call(cudaHostRegister(&X[0], N * sizeof(double), cudaHostRegisterPortable));
+  cuda_safe_call(cudaHostRegister(X.data(), N * sizeof(double), cudaHostRegisterPortable));
 
   for (size_t b = 0; b < NBLOCKS; b++)
   {
