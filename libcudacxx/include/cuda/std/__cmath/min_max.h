@@ -25,7 +25,11 @@
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__cmath/traits.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__floating_point/format.h>
+#include <cuda/std/__floating_point/mask.h>
+#include <cuda/std/__floating_point/properties.h>
 #include <cuda/std/__floating_point/storage.h>
+#include <cuda/std/__floating_point/traits.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_extended_arithmetic.h>
@@ -62,6 +66,66 @@ template <bool _IsMax>
   const auto __result     = __pick_y ? __y_bits : __x_bits;
   const auto __quiet_bits = ::cuda::std::__fp_get_storage(::cuda::std::numeric_limits<double>::quiet_NaN());
   return ::cuda::std::__fp_from_storage<double>((__x_nan && __y_nan) ? __quiet_bits : __result);
+}
+
+// The functions of <cuda_fp16.h> and <cuda_bf16.h> are called unqualified, so that they are found by ADL on
+// instantiation and this header does not need to include them.
+
+#if _CCCL_HAS_NVBF16() && _CCCL_CUDA_COMPILATION()
+// Before SM80, __hmax and __hmin for __nv_bfloat16 are emulated with many instructions. max.f32 and min.f32 return one
+// of the inputs or the canonical NaN, so the upper 16 bits of their result are the exact __nv_bfloat16 result. The PTX
+// is written inline so that -ftz=true does not flush subnormals.
+template <class _Tp>
+[[nodiscard]] _CCCL_TRIVIAL_DEVICE_API _Tp __fmax_bf16_pre_sm80(_Tp __x, _Tp __y) noexcept
+{
+  float __result;
+  asm("max.f32 %0, %1, %2;" : "=f"(__result) : "f"(__bfloat162float(__x)), "f"(__bfloat162float(__y)));
+  return ::cuda::std::__fp_from_storage<_Tp>(static_cast<uint16_t>(::__float_as_uint(__result) >> 16));
+}
+
+template <class _Tp>
+[[nodiscard]] _CCCL_TRIVIAL_DEVICE_API _Tp __fmin_bf16_pre_sm80(_Tp __x, _Tp __y) noexcept
+{
+  float __result;
+  asm("min.f32 %0, %1, %2;" : "=f"(__result) : "f"(__bfloat162float(__x)), "f"(__bfloat162float(__y)));
+  return ::cuda::std::__fp_from_storage<_Tp>(static_cast<uint16_t>(::__float_as_uint(__result) >> 16));
+}
+#endif // _CCCL_HAS_NVBF16() && _CCCL_CUDA_COMPILATION()
+
+#if _CCCL_HAS_NVFP16() && !_CCCL_CTK_AT_LEAST(12, 2)
+// Before CTK 12.2, __hmax and __hmin are only available on device. On host, we compare as float and select one of the
+// inputs, because the conversion back from float has no extended floating point argument and is not found by ADL.
+template <class _Tp>
+[[nodiscard]] _CCCL_API _Tp __fmax_select_by_float(_Tp __x, float __xf, _Tp __y, float __yf) noexcept
+{
+  return (::cuda::std::isnan(__xf) || __xf < __yf) ? __y : __x;
+}
+
+template <class _Tp>
+[[nodiscard]] _CCCL_API _Tp __fmin_select_by_float(_Tp __x, float __xf, _Tp __y, float __yf) noexcept
+{
+  return (::cuda::std::isnan(__xf) || __yf < __xf) ? __y : __x;
+}
+#endif // _CCCL_HAS_NVFP16() && !_CCCL_CTK_AT_LEAST(12, 2)
+
+// The __nv_fp8, __nv_fp6, and __nv_fp4 types have no comparison operators, but their values other than NaN are ordered
+// by their storage. Flipping all bits of negative values and setting the sign bit of positive values maps the
+// sign-magnitude encoding to an unsigned order, in which -0 is less than +0. Unsigned formats are already ordered.
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr unsigned __fp_storage_order_key(_Tp __x) noexcept
+{
+  using _Storage        = __fp_storage_of_t<_Tp>;
+  const _Storage __bits = ::cuda::std::__fp_get_storage(__x);
+  if constexpr (__fp_is_signed_v<__fp_format_of_v<_Tp>>)
+  {
+    constexpr _Storage __sign = __fp_sign_mask_of_v<_Tp>;
+    constexpr _Storage __all  = static_cast<_Storage>(__sign | __fp_exp_mant_mask_of_v<_Tp>);
+    return (__bits & __sign) ? static_cast<unsigned>(~__bits & __all) : static_cast<unsigned>(__bits | __sign);
+  }
+  else
+  {
+    return __bits;
+  }
 }
 
 /***********************************************************************************************************************
@@ -117,11 +181,11 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
   if constexpr (is_same_v<_Tp, ::__half>)
   {
 #  if _CCCL_CTK_AT_LEAST(12, 2)
-    return ::__hmax(__x, __y);
+    return __hmax(__x, __y);
 #  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                      (return ::__hmax(__x, __y);),
-                      (return ::__float2half(::cuda::std::fmax(::__half2float(__x), ::__half2float(__y)));))
+                      (return __hmax(__x, __y);),
+                      (return ::cuda::std::__fmax_select_by_float(__x, __half2float(__x), __y, __half2float(__y));))
 #  endif // !_CCCL_CTK_AT_LEAST(12, 2)
   }
   // NOLINTEND(bugprone-branch-clone)
@@ -131,11 +195,21 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
     if constexpr (is_same_v<_Tp, ::__nv_bfloat16>)
   {
 #  if _CCCL_CTK_AT_LEAST(12, 2)
-    return ::__hmax(__x, __y);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_80,
+      (return __hmax(__x, __y);),
+      NV_IS_DEVICE,
+      (return ::cuda::std::__fmax_bf16_pre_sm80(__x, __y);),
+      NV_IS_HOST,
+      (return __hmax(__x, __y);))
 #  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
-                      (return ::__hmax(__x, __y);),
-                      (return ::__float2bfloat16(::cuda::std::fmax(::__bfloat162float(__x), ::__bfloat162float(__y)));))
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_80,
+      (return __hmax(__x, __y);),
+      NV_IS_DEVICE,
+      (return ::cuda::std::__fmax_bf16_pre_sm80(__x, __y);),
+      NV_IS_HOST,
+      (return ::cuda::std::__fmax_select_by_float(__x, __bfloat162float(__x), __y, __bfloat162float(__y));))
 #  endif // !_CCCL_CTK_AT_LEAST(12, 2)
   }
   else
@@ -143,6 +217,13 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
     if constexpr (is_integral_v<_Tp>)
     {
       return static_cast<double>(__x < __y ? __y : __x);
+    }
+    else if constexpr (__is_ext_nv_fp_v<_Tp>)
+    {
+      // NaN gets the smallest key, so that the other value is returned
+      const unsigned __x_key = ::cuda::std::isnan(__x) ? 0u : ::cuda::std::__fp_storage_order_key(__x) + 1u;
+      const unsigned __y_key = ::cuda::std::isnan(__y) ? 0u : ::cuda::std::__fp_storage_order_key(__y) + 1u;
+      return __x_key < __y_key ? __y : __x;
     }
     else
     {
@@ -256,11 +337,11 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
   if constexpr (is_same_v<_Tp, ::__half>)
   {
 #  if _CCCL_CTK_AT_LEAST(12, 2)
-    return ::__hmin(__x, __y);
+    return __hmin(__x, __y);
 #  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                      (return ::__hmin(__x, __y);),
-                      (return ::__float2half(::cuda::std::fmin(::__half2float(__x), ::__half2float(__y)));))
+                      (return __hmin(__x, __y);),
+                      (return ::cuda::std::__fmin_select_by_float(__x, __half2float(__x), __y, __half2float(__y));))
 #  endif // !_CCCL_CTK_AT_LEAST(12, 2)
   }
   // NOLINTEND(bugprone-branch-clone)
@@ -270,11 +351,21 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
     if constexpr (is_same_v<_Tp, ::__nv_bfloat16>)
   {
 #  if _CCCL_CTK_AT_LEAST(12, 2)
-    return ::__hmin(__x, __y);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_80,
+      (return __hmin(__x, __y);),
+      NV_IS_DEVICE,
+      (return ::cuda::std::__fmin_bf16_pre_sm80(__x, __y);),
+      NV_IS_HOST,
+      (return __hmin(__x, __y);))
 #  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
-                      (return ::__hmin(__x, __y);),
-                      (return ::__float2bfloat16(::cuda::std::fmin(::__bfloat162float(__x), ::__bfloat162float(__y)));))
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_80,
+      (return __hmin(__x, __y);),
+      NV_IS_DEVICE,
+      (return ::cuda::std::__fmin_bf16_pre_sm80(__x, __y);),
+      NV_IS_HOST,
+      (return ::cuda::std::__fmin_select_by_float(__x, __bfloat162float(__x), __y, __bfloat162float(__y));))
 #  endif // !_CCCL_CTK_AT_LEAST(12, 2)
   }
   else
@@ -282,6 +373,14 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
     if constexpr (is_integral_v<_Tp>)
     {
       return static_cast<double>(__y < __x ? __y : __x);
+    }
+    else if constexpr (__is_ext_nv_fp_v<_Tp>)
+    {
+      // NaN gets the largest key, so that the other value is returned
+      constexpr unsigned __nan_key = 1u << (8 * sizeof(__fp_storage_of_t<_Tp>));
+      const unsigned __x_key       = ::cuda::std::isnan(__x) ? __nan_key : ::cuda::std::__fp_storage_order_key(__x);
+      const unsigned __y_key       = ::cuda::std::isnan(__y) ? __nan_key : ::cuda::std::__fp_storage_order_key(__y);
+      return __y_key < __x_key ? __y : __x;
     }
     else
     {
