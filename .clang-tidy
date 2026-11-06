@@ -53,8 +53,12 @@ Checks:
   - '-modernize-avoid-variadic-functions'
   - '-modernize-type-traits'
 
-  # - 'readability-*'
-  - 'readability-identifier-naming'
+  - 'readability-*'
+  # ============================================================================
+  # TODO: REENABLE readability-function-cognitive-complexity LATER.
+  # This exclusion is temporary. Address the outstanding complexity diagnostics,
+  # then remove this exclusion to restore the check.
+  # ============================================================================
   - '-readability-function-cognitive-complexity'
   - '-readability-implicit-bool-conversion'
   - '-readability-braces-around-statements'
@@ -62,6 +66,9 @@ Checks:
   - '-readability-isolate-declaration'
   - '-readability-named-parameter'
   - '-readability-identifier-length'
+  # This is just noise. 95% of the time we have such static accesses to make things like
+  # cuda::this_thread.foo() work nicely.
+  - '-readability-static-accessed-through-instance'
   # Generally speaking if something is static then it has an express reason to be. 99% of
   # the candidates identified by this check were because they just so happened not to
   # touch any member variables, not because they are logically static. So we disable the
@@ -84,6 +91,30 @@ Checks:
   # again. It is easier to just follow the rule of "always explicitly default initialize
   # members" than to remember to change 2 places at once.
   - '-readability-redundant-member-init'
+  - '-readability-delete-null-pointer'
+  - '-readability-use-std-min-max'
+  - '-readability-magic-numbers'
+  - '-readability-use-concise-preprocessor-directives'
+  - '-readability-uppercase-literal-suffix'
+  - '-readability-math-missing-parentheses'
+  - '-readability-else-after-return'
+  - '-readability-avoid-nested-conditional-operator'
+  - '-readability-redundant-access-specifiers'
+  - '-readability-redundant-declaration'
+  - '-readability-redundant-parentheses'
+  - '-readability-avoid-unconditional-preprocessor-if'
+  - '-readability-non-const-parameter'
+  - '-readability-redundant-typename'
+  - '-readability-redundant-casting'
+  - '-readability-simplify-boolean-expr'
+  - '-readability-make-member-function-const'
+  - '-readability-avoid-return-with-void-value'
+  - '-readability-suspicious-call-argument'
+  - '-readability-container-size-empty'
+  - '-readability-avoid-const-params-in-decls'
+  - '-readability-inconsistent-declaration-parameter-name'
+  # Handled by clang-tidy
+  - '-readability-misleading-indentation'
 
   # - 'clang-analyzer-*'
 
@@ -241,8 +272,6 @@ Checks:
   # Covered by modernize-avoid-c-style-cast, and also is buggier. It seems to fire on
   # `_v`-style constexpr bools as well sometimes.
   - '-google-readability-casting'
-  # readability-* as a whole is not enabled yet; only turn on the specific sub-checks we have
-  # vetted so far.
 
   - 'cppcoreguidelines-*'
   - '-cppcoreguidelines-pro-bounds-pointer-arithmetic'
@@ -372,6 +401,8 @@ CheckOptions:
   # bugprone-*
   bugprone-dangling-handle.HandleClasses: '::cuda::std::span;::cuda::std::mdspan'
   bugprone-unused-return-value.AllowCastToVoid: 'true'
+  # Match canonical enum names: cudaError_t is cudaError, and CUresult is cudaError_enum.
+  bugprone-unused-return-value.CheckedReturnTypes: '^::cuda::std::errc$;^::cuda::std::expected$;^::cuda::std::unexpected$;^::cudaError$;^::cudaError_t;^::cudaError_enum$;^::CUresult'
   bugprone-lambda-function-name.IgnoreMacros: 'true'
   # There are some single-argument functions that we would not like to ignore
   # (`to_string(bool provenance = false)` comes to mind), but setting this to false makes

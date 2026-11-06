@@ -56,14 +56,12 @@ class group_as
 public:
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_RangeView, ::cuda::std::ranges::views::all_t<_Range>>)
-  _CCCL_DEVICE_API group_as(_Range&& __unit_counts) noexcept(
-    noexcept(::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__unit_counts))))
+  _CCCL_DEVICE_API explicit group_as(_Range&& __unit_counts)
       : __unit_counts_{::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__unit_counts))}
   {}
 
   template <bool _Exhaustive, class _Unit, class _PrevMappingResult>
-  [[nodiscard]] _CCCL_DEVICE_API auto
-  __do_map(const _Unit&, const _PrevMappingResult& __prev_mapping_result) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API auto __do_map(const _Unit&, const _PrevMappingResult& __prev_mapping_result) const
   {
     // todo(dabayer): Make group count potentially statically-known when _RangeView has known a known static size.
     using _MappingResult =
@@ -131,7 +129,7 @@ public:
 
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const _Unit& __unit, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const noexcept
+  map(const _Unit& __unit, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const
   {
     return __do_map<true>(__unit, __prev_mapping_result);
   }
@@ -141,7 +139,7 @@ public:
   map(const non_exhaustive_t&,
       const _Unit& __unit,
       const _ParentGroup&,
-      const _PrevMappingResult& __prev_mapping_result) const noexcept
+      const _PrevMappingResult& __prev_mapping_result) const
   {
     return __do_map<false>(__unit, __prev_mapping_result);
   }

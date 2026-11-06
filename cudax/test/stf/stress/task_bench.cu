@@ -20,12 +20,12 @@ using namespace cuda::experimental::stf;
 
 enum class test_id
 {
-  TRIVIAL = 0,
-  STENCIL = 1,
-  FFT     = 2,
-  SWEEP   = 3,
-  TREE    = 4,
-  RANDOM  = 5,
+  TRIVIAL,
+  STENCIL,
+  FFT,
+  SWEEP,
+  TREE,
+  RANDOM,
 };
 
 std::string test_name(test_id id)

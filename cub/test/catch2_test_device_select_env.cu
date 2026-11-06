@@ -1280,6 +1280,95 @@ CUB_TEST("DeviceSelect::UniqueByKey can be tuned", "[select][device]", CUB_SMALL
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+template <unsigned int BlockThreads>
+struct select_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::SelectPolicy policy) const
+    -> cub::SelectPolicy
+  {
+    policy.lookback.threads_per_block = static_cast<int>(BlockThreads);
+    return policy;
+  }
+};
+
+template <unsigned int BlockThreads>
+struct unique_by_key_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::UniqueByKeyPolicy policy) const
+    -> cub::UniqueByKeyPolicy
+  {
+    policy.threads_per_block = static_cast<int>(BlockThreads);
+    return policy;
+  }
+};
+
+CUB_TEST("DeviceSelect::If tuning can be modified", "[select][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+  auto d_in                                = c2h::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
+  auto d_out                               = c2h::device_vector<int>(8);
+  auto d_num_selected                      = c2h::device_vector<unsigned int>(1, thrust::no_init);
+  auto d_block_size                        = c2h::device_vector<unsigned int>(1);
+
+  const block_size_extracting_op<less_than_5_t> select_op{thrust::raw_pointer_cast(d_block_size.data())};
+
+  {
+    device_select_if(d_in.begin(), d_out.begin(), d_num_selected.begin(), 8, select_op, cuda::std::execution::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0u;
+  }
+
+  auto env = cuda::execution::tune(select_tuning_transform<target_block_size>{});
+
+  device_select_if(d_in.begin(), d_out.begin(), d_num_selected.begin(), 8, select_op, env);
+  REQUIRE(d_num_selected[0] == 4);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceSelect::UniqueByKey tuning can be modified", "[select][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 96; // must be different from any value we use in production
+  auto d_keys_in                           = c2h::device_vector<int>{0, 0, 1, 1, 2, 2, 3, 3};
+  auto d_values_in                         = c2h::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
+  auto d_keys_out                          = c2h::device_vector<int>(8);
+  auto d_values_out                        = c2h::device_vector<int>(8);
+  auto d_num_selected                      = c2h::device_vector<unsigned int>(1, thrust::no_init);
+  auto d_block_size                        = c2h::device_vector<unsigned int>(1);
+
+  using eq_op_t = block_size_extracting_op<cuda::std::equal_to<>>;
+  const eq_op_t equality_op{thrust::raw_pointer_cast(d_block_size.data())};
+
+  {
+    device_select_unique_by_key(
+      d_keys_in.begin(),
+      d_values_in.begin(),
+      d_keys_out.begin(),
+      d_values_out.begin(),
+      d_num_selected.begin(),
+      8,
+      equality_op,
+      cuda::std::execution::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0u;
+  }
+
+  auto env = cuda::execution::tune(unique_by_key_tuning_transform<target_block_size>{});
+
+  device_select_unique_by_key(
+    d_keys_in.begin(),
+    d_values_in.begin(),
+    d_keys_out.begin(),
+    d_values_out.begin(),
+    d_num_selected.begin(),
+    8,
+    equality_op,
+    env);
+  REQUIRE(d_num_selected[0] == 4);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
 #  if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
 CUB_TEST("Test UniqueByKeyPolicy properties", "[select_unique_by_key][device]", CUB_SMALL)
 {

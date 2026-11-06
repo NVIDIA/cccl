@@ -73,9 +73,10 @@ struct __validate_uniform_or_per_segment_integral_param
 
   static constexpr bool is_valid_type = ::cuda::args::__is_wrapper_v<Param> || ::cuda::std::is_integral_v<Param>;
 
-  using __value_t = ::cuda::std::conditional_t<args_traits::is_deferred || !args_traits::is_single_value,
-                                               typename args_traits::element_type,
-                                               typename args_traits::value_type>;
+  using __value_t _CCCL_NODEBUG =
+    ::cuda::std::conditional_t<args_traits::is_deferred || !args_traits::is_single_value,
+                               typename args_traits::element_type,
+                               typename args_traits::value_type>;
   static constexpr bool is_integral =
     ::cuda::std::is_integral_v<__value_t> && !::cuda::std::is_same_v<::cuda::std::remove_cvref_t<__value_t>, bool>;
 
@@ -125,9 +126,10 @@ struct __validate_uniform_integral_param
   static constexpr bool is_single_value    = args_traits::is_single_value;
   static constexpr bool is_deferred_single = args_traits::is_deferred && args_traits::is_single_value;
 
-  using __value_t = ::cuda::std::conditional_t<args_traits::is_deferred || !args_traits::is_single_value,
-                                               typename args_traits::element_type,
-                                               typename args_traits::value_type>;
+  using __value_t _CCCL_NODEBUG =
+    ::cuda::std::conditional_t<args_traits::is_deferred || !args_traits::is_single_value,
+                               typename args_traits::element_type,
+                               typename args_traits::value_type>;
   static constexpr bool is_integral =
     ::cuda::std::is_integral_v<__value_t> && !::cuda::std::is_same_v<::cuda::std::remove_cvref_t<__value_t>, bool>;
 
@@ -292,7 +294,7 @@ using bounded_offset_t =
 // and `constant<384>` select the same 32-bit kernel instead of two different ones.
 
 template <auto Value>
-using __static_value_type_t = ::cuda::std::conditional_t<
+using __static_value_type_t _CCCL_NODEBUG = ::cuda::std::conditional_t<
   ::cuda::std::in_range<::cuda::std::int32_t>(Value),
   ::cuda::std::int32_t,
   ::cuda::std::
@@ -301,17 +303,17 @@ using __static_value_type_t = ::cuda::std::conditional_t<
 template <class ElementT, class StaticBounds>
 struct __retype_static_bounds
 {
-  using type = StaticBounds; // no_bounds
+  using type _CCCL_NODEBUG = StaticBounds; // no_bounds
 };
 
 template <class ElementT, auto Lowest, auto Highest>
 struct __retype_static_bounds<ElementT, ::cuda::args::static_bounds<Lowest, Highest>>
 {
-  using type = ::cuda::args::static_bounds<static_cast<ElementT>(Lowest), static_cast<ElementT>(Highest)>;
+  using type _CCCL_NODEBUG = ::cuda::args::static_bounds<static_cast<ElementT>(Lowest), static_cast<ElementT>(Highest)>;
 };
 
 template <class ElementT, class StaticBounds>
-using __retype_static_bounds_t = typename __retype_static_bounds<ElementT, StaticBounds>::type;
+using __retype_static_bounds_t _CCCL_NODEBUG = typename __retype_static_bounds<ElementT, StaticBounds>::type;
 
 //! @brief Plain values carry no `auto` NTTP and pass through unchanged.
 _CCCL_TEMPLATE(class Tp)

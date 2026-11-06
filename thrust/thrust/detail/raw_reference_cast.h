@@ -70,7 +70,7 @@ struct raw_reference_impl<T, ::cuda::std::enable_if_t<is_wrapped_reference<::cud
 template <typename T>
 struct raw_reference_impl<T, ::cuda::std::enable_if_t<is_proxy_reference_v<::cuda::std::remove_cv_t<T>>>>
 {
-  using type = T;
+  using type _CCCL_NODEBUG = T;
 };
 } // namespace raw_reference_detail
 
@@ -105,13 +105,13 @@ struct raw_reference_tuple_helper
 template <typename... Ts>
 struct raw_reference_tuple_helper<::cuda::std::tuple<Ts...>>
 {
-  using type = ::cuda::std::tuple<typename raw_reference_tuple_helper<Ts>::type...>;
+  using type _CCCL_NODEBUG = ::cuda::std::tuple<typename raw_reference_tuple_helper<Ts>::type...>;
 };
 
 template <typename... Ts>
 struct raw_reference_tuple_helper<tuple_of_iterator_references<Ts...>>
 {
-  using type = tuple_of_iterator_references<typename raw_reference_tuple_helper<Ts>::type...>;
+  using type _CCCL_NODEBUG = tuple_of_iterator_references<typename raw_reference_tuple_helper<Ts>::type...>;
 };
 } // namespace raw_reference_detail
 
@@ -135,7 +135,8 @@ public:
 template <typename... Ts>
 struct raw_reference<tuple_of_iterator_references<Ts...>>
 {
-  using type = typename raw_reference_detail::raw_reference_tuple_helper<tuple_of_iterator_references<Ts...>>::type;
+  using type _CCCL_NODEBUG =
+    typename raw_reference_detail::raw_reference_tuple_helper<tuple_of_iterator_references<Ts...>>::type;
 };
 } // namespace detail
 

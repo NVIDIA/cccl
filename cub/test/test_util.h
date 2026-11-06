@@ -35,6 +35,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "mersenne.h"
@@ -126,16 +127,9 @@ struct CommandLineArgs
    */
   bool CheckCmdLineFlag(const char* arg_name)
   {
-    using namespace std;
-
-    for (const auto& key : keys)
-    {
-      if (key == string(arg_name))
-      {
-        return true;
-      }
-    }
-    return false;
+    return ::cuda::std::any_of(keys.begin(), keys.end(), [arg_name](const auto& key) {
+      return key == std::string_view(arg_name);
+    });
   }
 
   /**
@@ -1418,31 +1412,31 @@ struct GpuTimer
 
   GpuTimer()
   {
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
+    CubDebugExit(cudaEventCreate(&start));
+    CubDebugExit(cudaEventCreate(&stop));
   }
 
   ~GpuTimer()
   {
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
+    CubDebugExit(cudaEventDestroy(start));
+    CubDebugExit(cudaEventDestroy(stop));
   }
 
   void Start()
   {
-    cudaEventRecord(start, nullptr);
+    CubDebugExit(cudaEventRecord(start, nullptr));
   }
 
   void Stop()
   {
-    cudaEventRecord(stop, nullptr);
+    CubDebugExit(cudaEventRecord(stop, nullptr));
   }
 
   float ElapsedMillis()
   {
     float elapsed;
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&elapsed, start, stop);
+    CubDebugExit(cudaEventSynchronize(stop));
+    CubDebugExit(cudaEventElapsedTime(&elapsed, start, stop));
     return elapsed;
   }
 };

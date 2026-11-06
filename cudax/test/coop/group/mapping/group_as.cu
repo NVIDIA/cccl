@@ -56,8 +56,6 @@ __device__ void test_group_as(Config config, Range&& range)
 
     static_assert(cudax::coop::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
                     cuda::gpu_thread, parent_group, prev_mapping_result))>);
-    static_assert(
-      noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
     const Mapping mapping{range};
     auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
@@ -136,8 +134,6 @@ __device__ void test_group_as_non_exhaustive(Config config, Range&& range)
 
     static_assert(cudax::coop::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
                     cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, prev_mapping_result))>);
-    static_assert(noexcept(cuda::std::declval<const Mapping>().map(
-      cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, prev_mapping_result)));
 
     const Mapping mapping{range};
     auto result  = mapping.map(cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, prev_mapping_result);

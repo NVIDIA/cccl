@@ -12,6 +12,7 @@
 #include <cuda/functional>
 
 #include <cstddef>
+#include <iostream>
 
 #include "cub_test_macros.h"
 
@@ -27,7 +28,7 @@ CUB_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][
 
   // Determine temporary device storage requirements
   size_t temp_storage_bytes = 0;
-  cub::DeviceSelect::FlaggedIf(
+  const auto query_error    = cub::DeviceSelect::FlaggedIf(
     nullptr,
     temp_storage_bytes,
     d_in.begin(),
@@ -36,12 +37,16 @@ CUB_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][
     d_num_selected_out.data(),
     num_items,
     is_even);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSelect::FlaggedIf failed with status: " << query_error << '\n';
+  }
 
   // Allocate temporary storage
   c2h::device_vector<char> temp_storage(temp_storage_bytes);
 
   // Run selection
-  cub::DeviceSelect::FlaggedIf(
+  const auto error = cub::DeviceSelect::FlaggedIf(
     thrust::raw_pointer_cast(temp_storage.data()),
     temp_storage_bytes,
     d_in.begin(),
@@ -50,9 +55,15 @@ CUB_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][
     d_num_selected_out.data(),
     num_items,
     is_even);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSelect::FlaggedIf failed with status: " << error << '\n';
+  }
 
   const c2h::device_vector<int> expected{0, 1, 5};
   // example-end segmented-select-flaggedif
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
   REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));
   d_out.resize(d_num_selected_out[0]);
@@ -70,14 +81,18 @@ CUB_TEST("cub::DeviceSelect::FlaggedIf in-place works with int data elements", "
 
   // Determine temporary device storage requirements
   size_t temp_storage_bytes = 0;
-  cub::DeviceSelect::FlaggedIf(
+  const auto query_error    = cub::DeviceSelect::FlaggedIf(
     nullptr, temp_storage_bytes, d_data.begin(), d_flags.begin(), d_num_selected_out.data(), num_items, is_even);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSelect::FlaggedIf failed with status: " << query_error << '\n';
+  }
 
   // Allocate temporary storage
   c2h::device_vector<char> temp_storage(temp_storage_bytes);
 
   // Run selection
-  cub::DeviceSelect::FlaggedIf(
+  const auto error = cub::DeviceSelect::FlaggedIf(
     thrust::raw_pointer_cast(temp_storage.data()),
     temp_storage_bytes,
     d_data.begin(),
@@ -85,9 +100,15 @@ CUB_TEST("cub::DeviceSelect::FlaggedIf in-place works with int data elements", "
     d_num_selected_out.data(),
     num_items,
     is_even);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSelect::FlaggedIf failed with status: " << error << '\n';
+  }
 
   const c2h::device_vector<int> expected{0, 1, 5};
   // example-end segmented-select-flaggedif-inplace
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
   REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));
   d_data.resize(d_num_selected_out[0]);
@@ -103,24 +124,35 @@ CUB_TEST("cub::DeviceSelect::Unique in-place works with int data elements", "[se
 
   // Determine temporary device storage requirements
   size_t temp_storage_bytes = 0;
-  cub::DeviceSelect::Unique(nullptr, temp_storage_bytes, d_data.begin(), d_num_selected_out.begin(), num_items);
+  const auto query_error =
+    cub::DeviceSelect::Unique(nullptr, temp_storage_bytes, d_data.begin(), d_num_selected_out.begin(), num_items);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSelect::Unique failed with status: " << query_error << '\n';
+  }
 
   // Allocate temporary storage
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
 
   // Run selection
-  cub::DeviceSelect::Unique(
+  const auto error = cub::DeviceSelect::Unique(
     thrust::raw_pointer_cast(temp_storage.data()),
     temp_storage_bytes,
     d_data.begin(),
     d_num_selected_out.begin(),
     num_items);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSelect::Unique failed with status: " << error << '\n';
+  }
 
   // Resize input to new length
   d_data.resize(d_num_selected_out[0]);
 
   const thrust::device_vector<int> expected{0, 2, 9, 5, 8};
   // example-end select-unique-inplace
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
   REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));
   REQUIRE(d_data == expected);
@@ -148,26 +180,36 @@ CUB_TEST("cub::DeviceSelect::Unique in-place with equality_op works with int dat
 
   // Determine temporary device storage requirements
   size_t temp_storage_bytes = 0;
-  cub::DeviceSelect::Unique(
+  const auto query_error    = cub::DeviceSelect::Unique(
     nullptr, temp_storage_bytes, d_data.begin(), d_num_selected_out.begin(), num_items, equality_op);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSelect::Unique failed with status: " << query_error << '\n';
+  }
 
   // Allocate temporary storage
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
 
   // Run selection
-  cub::DeviceSelect::Unique(
+  const auto error = cub::DeviceSelect::Unique(
     thrust::raw_pointer_cast(temp_storage.data()),
     temp_storage_bytes,
     d_data.begin(),
     d_num_selected_out.begin(),
     num_items,
     equality_op);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSelect::Unique failed with status: " << error << '\n';
+  }
 
   // Resize input to new length
   d_data.resize(d_num_selected_out[0]);
 
   const thrust::device_vector<int> expected{0, 2, 9, 5, 8};
   // example-end select-unique-inplace-eqop
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
   REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));
   REQUIRE(d_data == expected);

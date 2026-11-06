@@ -122,10 +122,10 @@ template <class _Tp>
 extern __apply_cvref_cvrr __apply_cvref<const volatile _Tp&&>;
 
 template <class _Tp>
-using __apply_cvref_fn = decltype(__apply_cvref<_Tp>);
+using __apply_cvref_fn _CCCL_NODEBUG = decltype(__apply_cvref<_Tp>);
 
 template <class _From, class _To>
-using __copy_cvref_t = typename __apply_cvref_fn<_From>::template __call<_To>;
+using __copy_cvref_t _CCCL_NODEBUG = typename __apply_cvref_fn<_From>::template __call<_To>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
