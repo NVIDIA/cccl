@@ -109,7 +109,10 @@ _CCCL_HOST_DEVICE void shuffle_copy(
   thrust::inclusive_scan(
     exec,
     key_flag_it,
-    key_flag_it + static_cast<decltype(key_flag_it)::difference_type>(n),
+    // clang-tidy is right, the typename is redundant, but older compilers have bugs.
+    //
+    // NOLINTNEXTLINE(readability-redundant-typename)
+    key_flag_it + static_cast<typename decltype(key_flag_it)::difference_type>(n),
     gather_output_it,
     key_flag_scan_op());
 }
