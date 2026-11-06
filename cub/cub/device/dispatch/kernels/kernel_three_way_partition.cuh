@@ -127,7 +127,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires three_way_partition_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(current_policy<PolicySelector>().lookback.threads_per_block)
+__launch_bounds__(_CUB::detail::current_policy<PolicySelector>().lookback.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionKernel(
     const InputIteratorT d_in,
     const FirstOutputIteratorT d_first_part_out,
@@ -141,7 +141,7 @@ __launch_bounds__(current_policy<PolicySelector>().lookback.threads_per_block)
     const int num_tiles,
     const StreamingContextT streaming_context)
 {
-  static constexpr auto active_policy = current_policy<PolicySelector>();
+  static constexpr auto active_policy = _CUB::detail::current_policy<PolicySelector>();
   using AgentThreeWayPartitionPolicyT = agent_three_way_partition_policy<
     active_policy.lookback.threads_per_block,
     active_policy.lookback.items_per_thread,

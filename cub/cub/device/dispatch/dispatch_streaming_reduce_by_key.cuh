@@ -82,14 +82,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
   [[maybe_unused]] KernelSource kernel_source = {})
 {
   ::cuda::compute_capability cc{};
-  if (const auto error = CubDebug(ptx_compute_cap(cc)))
+  if (const auto error = CubDebug(_CUB::detail::ptx_compute_cap(cc)))
   {
     return error;
   }
 
   const ReduceByKeyPolicy policy = policy_selector(cc);
 
-  detail::log_dispatch("DeviceReduce (by key, streaming)", cc, policy);
+  _CUB::detail::log_dispatch("DeviceReduce (by key, streaming)", cc, policy);
 
   using local_offset_t  = ::cuda::std::int32_t;
   using global_offset_t = OffsetT;
@@ -104,21 +104,22 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
   int threads_per_block{};
   int items_per_thread{};
   size_t vsmem_per_block{};
-  if (const auto error = CubDebug(dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
-        ::cuda::std::tie(threads_per_block, items_per_thread, vsmem_per_block) = determine_threads_items_vsmem<
-          decltype(policy_getter),
-          KeysInputIteratorT,
-          UniqueOutputIteratorT,
-          ValuesInputIteratorT,
-          AggregatesOutputIteratorT,
-          NumRunsOutputIteratorT,
-          EqualityOpT,
-          ReductionOpT,
-          local_offset_t,
-          AccumT,
-          streaming_context_t>(policy_getter);
-        return cudaSuccess;
-      })))
+  if (const auto error =
+        CubDebug(_CUB::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
+          ::cuda::std::tie(threads_per_block, items_per_thread, vsmem_per_block) = determine_threads_items_vsmem<
+            decltype(policy_getter),
+            KeysInputIteratorT,
+            UniqueOutputIteratorT,
+            ValuesInputIteratorT,
+            AggregatesOutputIteratorT,
+            NumRunsOutputIteratorT,
+            EqualityOpT,
+            ReductionOpT,
+            local_offset_t,
+            AccumT,
+            streaming_context_t>(policy_getter);
+          return cudaSuccess;
+        })))
   {
     return error;
   }
@@ -151,7 +152,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
 
   void* allocations[4] = {};
   if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -186,7 +187,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -266,7 +267,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
         return error;
       }
     }
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }

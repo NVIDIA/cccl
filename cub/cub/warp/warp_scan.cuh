@@ -165,7 +165,7 @@ private:
 
   /// Shared storage reference
   _TempStorage& temp_storage;
-  unsigned int lane_id = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
+  unsigned int lane_id = _CUB::detail::logical_lane_id<LogicalWarpThreads>();
 
   /******************************************************************************
    * Public types

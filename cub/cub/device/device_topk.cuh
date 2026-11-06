@@ -125,7 +125,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_topk(
   using policy_selector_t =
     policy_selector_from_tuning_env_t<tuning_env_t, topk::topk_policy, default_policy_selector_t>;
 
-  return topk::dispatch<SelectDirection>(
+  return _CUB::detail::topk::dispatch<SelectDirection>(
     d_temp_storage,
     temp_storage_bytes,
     d_keys_in,
@@ -158,7 +158,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_topk_hub(
   NumOutItemsT k,
   const EnvT& env)
 {
-  return dispatch_topk<SelectDirection>(
+  return _CUB::detail::dispatch_topk<SelectDirection>(
     d_temp_storage,
     temp_storage_bytes,
     d_keys_in,
@@ -329,7 +329,7 @@ struct DeviceTopK
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxPairs");
 
-    return detail::dispatch_topk<detail::topk::select::max>(
+    return _CUB::detail::dispatch_topk<detail::topk::select::max>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -436,9 +436,9 @@ struct DeviceTopK
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTopK::MaxPairs");
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
-        return detail::dispatch_topk<detail::topk::select::max>(
+        return _CUB::detail::dispatch_topk<detail::topk::select::max>(
           storage,
           bytes,
           d_keys_in,
@@ -578,7 +578,7 @@ struct DeviceTopK
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
-    return detail::dispatch_topk<detail::topk::select::max>(
+    return _CUB::detail::dispatch_topk<detail::topk::select::max>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -702,9 +702,9 @@ struct DeviceTopK
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
-        return detail::dispatch_topk<detail::topk::select::max>(
+        return _CUB::detail::dispatch_topk<detail::topk::select::max>(
           storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, k, decomposer, env);
       });
   }
@@ -807,7 +807,7 @@ struct DeviceTopK
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinPairs");
 
-    return detail::dispatch_topk<detail::topk::select::min>(
+    return _CUB::detail::dispatch_topk<detail::topk::select::min>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -914,9 +914,9 @@ struct DeviceTopK
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTopK::MinPairs");
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
-        return detail::dispatch_topk<detail::topk::select::min>(
+        return _CUB::detail::dispatch_topk<detail::topk::select::min>(
           storage,
           bytes,
           d_keys_in,
@@ -1056,7 +1056,7 @@ struct DeviceTopK
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
-    return detail::dispatch_topk<detail::topk::select::min>(
+    return _CUB::detail::dispatch_topk<detail::topk::select::min>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -1180,9 +1180,9 @@ struct DeviceTopK
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
-        return detail::dispatch_topk<detail::topk::select::min>(
+        return _CUB::detail::dispatch_topk<detail::topk::select::min>(
           storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, k, decomposer, env);
       });
   }
@@ -1268,7 +1268,7 @@ struct DeviceTopK
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxKeys");
 
-    return detail::dispatch_topk<detail::topk::select::max>(
+    return _CUB::detail::dispatch_topk<detail::topk::select::max>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -1358,9 +1358,9 @@ struct DeviceTopK
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTopK::MaxKeys");
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
-        return detail::dispatch_topk<detail::topk::select::max>(
+        return _CUB::detail::dispatch_topk<detail::topk::select::max>(
           storage,
           bytes,
           d_keys_in,
@@ -1483,7 +1483,7 @@ struct DeviceTopK
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
-    return detail::dispatch_topk<detail::topk::select::max>(
+    return _CUB::detail::dispatch_topk<detail::topk::select::max>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -1590,9 +1590,9 @@ struct DeviceTopK
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
-        return detail::dispatch_topk<detail::topk::select::max>(
+        return _CUB::detail::dispatch_topk<detail::topk::select::max>(
           storage,
           bytes,
           d_keys_in,
@@ -1687,7 +1687,7 @@ struct DeviceTopK
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinKeys");
 
-    return detail::dispatch_topk<detail::topk::select::min>(
+    return _CUB::detail::dispatch_topk<detail::topk::select::min>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -1777,9 +1777,9 @@ struct DeviceTopK
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTopK::MinKeys");
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
-        return detail::dispatch_topk<detail::topk::select::min>(
+        return _CUB::detail::dispatch_topk<detail::topk::select::min>(
           storage,
           bytes,
           d_keys_in,
@@ -1902,7 +1902,7 @@ struct DeviceTopK
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
-    return detail::dispatch_topk<detail::topk::select::min>(
+    return _CUB::detail::dispatch_topk<detail::topk::select::min>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -2009,9 +2009,9 @@ struct DeviceTopK
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, [[maybe_unused]] auto stream) {
-        return detail::dispatch_topk<detail::topk::select::min>(
+        return _CUB::detail::dispatch_topk<detail::topk::select::min>(
           storage,
           bytes,
           d_keys_in,

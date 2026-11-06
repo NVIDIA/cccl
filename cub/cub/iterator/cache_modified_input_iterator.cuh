@@ -147,7 +147,7 @@ public:
   /// Indirection
   _CCCL_DEVICE _CCCL_FORCEINLINE reference operator*() const
   {
-    return ThreadLoad<MODIFIER>(ptr);
+    return _CUB::ThreadLoad<MODIFIER>(ptr);
   }
 
   /// Addition
@@ -192,13 +192,13 @@ public:
   template <typename Distance>
   _CCCL_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
   {
-    return ThreadLoad<MODIFIER>(ptr + n);
+    return _CUB::ThreadLoad<MODIFIER>(ptr + n);
   }
 
   /// Structure dereference
   _CCCL_DEVICE _CCCL_FORCEINLINE pointer operator->()
   {
-    return &ThreadLoad<MODIFIER>(ptr);
+    return &_CUB::ThreadLoad<MODIFIER>(ptr);
   }
 
   /// Equal to
@@ -246,7 +246,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto try_make_cache_modified_iterator(Iterat
 
 template <CacheLoadModifier LoadModifier, typename Iterator>
 using try_make_cache_modified_iterator_t =
-  decltype(try_make_cache_modified_iterator<LoadModifier>(::cuda::std::declval<Iterator>()));
+  decltype(_CUB::detail::try_make_cache_modified_iterator<LoadModifier>(::cuda::std::declval<Iterator>()));
 } // namespace detail
 
 CUB_NAMESPACE_END

@@ -323,7 +323,7 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
         asm volatile("" : "+l"(srcSmem));
 #  endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
         // Copy a subset of the first 16 bytes
-        squadStoreMasked16B(
+        _CUB::detail::warpspeed::squadStoreMasked16B(
           squad,
           cpAsyncOobInfo.ptrGmemStartAlignDown,
           srcSmem,
@@ -340,7 +340,7 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
 #  endif // _CCCL_CUDA_COMPILER(NVHPC)
 
         // Copy a subset of the last 16 bytes
-        squadStoreMasked16B(
+        _CUB::detail::warpspeed::squadStoreMasked16B(
           squad,
           cpAsyncOobInfo.ptrGmemEndAlignDown,
           ptrSmemMiddle + cpAsyncOobInfo.underCopySizeBytes,
@@ -352,7 +352,7 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
     else
     {
       // Copy a subset of the first 16 bytes
-      squadStoreMasked16B(
+      _CUB::detail::warpspeed::squadStoreMasked16B(
         squad,
         cpAsyncOobInfo.ptrGmemStartAlignDown,
         srcSmem,
