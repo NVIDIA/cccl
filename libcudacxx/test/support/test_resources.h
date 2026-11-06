@@ -27,10 +27,10 @@ struct other_property
 {};
 
 // make the cudax resources have that property for tests
-_CCCL_HOST_API inline void get_property(const cuda::device_memory_pool_ref&, other_property) {}
-_CCCL_HOST_API inline void get_property(const cuda::mr::legacy_pinned_memory_resource&, other_property) {}
+inline void get_property(const cuda::device_memory_pool_ref&, other_property) {}
+inline void get_property(const cuda::mr::legacy_pinned_memory_resource&, other_property) {}
 #if _CCCL_CTK_AT_LEAST(12, 9)
-_CCCL_HOST_API inline void get_property(const cuda::pinned_memory_pool_ref&, other_property) {}
+inline void get_property(const cuda::pinned_memory_pool_ref&, other_property) {}
 #endif // _CCCL_CTK_AT_LEAST(12, 9)
 
 //! @brief Simple wrapper around a memory resource to ensure that it compares
@@ -42,37 +42,37 @@ struct memory_resource_wrapper
   // https://github.com/NVIDIA/cccl/issues/4166
   cuda::mr::any_resource<Properties...> resource_;
 
-  _CCCL_HOST_API void* allocate_sync(std::size_t size, std::size_t alignment)
+  void* allocate_sync(std::size_t size, std::size_t alignment)
   {
     return resource_.allocate_sync(size, alignment);
   }
-  _CCCL_HOST_API void deallocate_sync(void* ptr, std::size_t size, std::size_t alignment)
+  void deallocate_sync(void* ptr, std::size_t size, std::size_t alignment)
   {
     resource_.deallocate_sync(ptr, size, alignment);
   }
-  _CCCL_HOST_API void* allocate(cuda::stream_ref stream, std::size_t size, std::size_t alignment)
+  void* allocate(cuda::stream_ref stream, std::size_t size, std::size_t alignment)
   {
     return resource_.allocate(stream, size, alignment);
   }
-  _CCCL_HOST_API void deallocate(cuda::stream_ref stream, void* ptr, std::size_t size, std::size_t alignment)
+  void deallocate(cuda::stream_ref stream, void* ptr, std::size_t size, std::size_t alignment)
   {
     resource_.deallocate(stream, ptr, size, alignment);
   }
 
-  _CCCL_HOST_API bool operator==(const memory_resource_wrapper&) const
+  bool operator==(const memory_resource_wrapper&) const
   {
     return true;
   }
-  _CCCL_HOST_API bool operator!=(const memory_resource_wrapper&) const
+  bool operator!=(const memory_resource_wrapper&) const
   {
     return false;
   }
 
   _CCCL_TEMPLATE(class Property)
   _CCCL_REQUIRES(cuda::std::__is_included_in_v<Property, Properties...>)
-  _CCCL_HOST_API friend void get_property(const memory_resource_wrapper&, Property) noexcept {}
+  friend void get_property(const memory_resource_wrapper&, Property) noexcept {}
 
-  _CCCL_HOST_API friend void get_property(const memory_resource_wrapper&, other_property) noexcept {}
+  friend void get_property(const memory_resource_wrapper&, other_property) noexcept {}
 };
 
 //! @brief Resource adapter for alignment testing.
@@ -87,55 +87,55 @@ struct offset_by_alignment_resource
 {
   Resource resource_;
 
-  _CCCL_HOST_API offset_by_alignment_resource(const Resource& resource) noexcept
+  offset_by_alignment_resource(const Resource& resource) noexcept
       : resource_(resource)
   {}
-  _CCCL_HOST_API offset_by_alignment_resource(Resource&& resource) noexcept
+  offset_by_alignment_resource(Resource&& resource) noexcept
       : resource_(cuda::std::move(resource))
   {}
 
-  _CCCL_HOST_API void* offset_by_alignment(void* ptr, std::size_t alignment)
+  void* offset_by_alignment(void* ptr, std::size_t alignment)
   {
     return reinterpret_cast<char*>(ptr) + alignment;
   }
 
-  _CCCL_HOST_API void* remove_alignment_offset(void* ptr, std::size_t alignment)
+  void* remove_alignment_offset(void* ptr, std::size_t alignment)
   {
     return reinterpret_cast<char*>(ptr) - alignment;
   }
 
-  _CCCL_HOST_API void* allocate_sync(std::size_t size, std::size_t alignment)
+  void* allocate_sync(std::size_t size, std::size_t alignment)
   {
     return offset_by_alignment(resource_.allocate_sync(size + alignment, alignment), alignment);
   }
-  _CCCL_HOST_API void deallocate_sync(void* ptr, std::size_t size, std::size_t alignment)
+  void deallocate_sync(void* ptr, std::size_t size, std::size_t alignment)
   {
     resource_.deallocate_sync(remove_alignment_offset(ptr, alignment), size + alignment, alignment);
   }
-  _CCCL_HOST_API void* allocate(cuda::stream_ref stream, std::size_t size, std::size_t alignment)
+  void* allocate(cuda::stream_ref stream, std::size_t size, std::size_t alignment)
   {
     return offset_by_alignment(resource_.allocate(stream, size + alignment, alignment), alignment);
   }
 
-  _CCCL_HOST_API void deallocate(cuda::stream_ref stream, void* ptr, std::size_t size, std::size_t alignment)
+  void deallocate(cuda::stream_ref stream, void* ptr, std::size_t size, std::size_t alignment)
   {
     resource_.deallocate(stream, remove_alignment_offset(ptr, alignment), size + alignment, alignment);
   }
 
-  _CCCL_HOST_API bool operator==(const offset_by_alignment_resource&) const
+  bool operator==(const offset_by_alignment_resource&) const
   {
     return true;
   }
-  _CCCL_HOST_API bool operator!=(const offset_by_alignment_resource&) const
+  bool operator!=(const offset_by_alignment_resource&) const
   {
     return false;
   }
 
-  _CCCL_HOST_API Resource& upstream_resource() noexcept
+  Resource& upstream_resource() noexcept
   {
     return resource_;
   }
-  _CCCL_HOST_API const Resource& upstream_resource() const noexcept
+  const Resource& upstream_resource() const noexcept
   {
     return resource_;
   }
@@ -143,7 +143,7 @@ struct offset_by_alignment_resource
 
 //! @brief Returns true if \p ptr is aligned to \p alignment (power-of-two).
 template <typename T>
-_CCCL_HOST_API inline bool is_pointer_aligned(const T* ptr, ::cuda::std::size_t alignment) noexcept
+inline bool is_pointer_aligned(const T* ptr, ::cuda::std::size_t alignment) noexcept
 {
   return ptr != nullptr && (reinterpret_cast<std::uintptr_t>(ptr) % alignment == 0);
 }

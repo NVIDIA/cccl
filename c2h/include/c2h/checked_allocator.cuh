@@ -37,20 +37,20 @@ public:
     using other = checked_cuda_allocator<U>;
   };
 
-  _CCCL_HIDE_FROM_ABI checked_cuda_allocator() = default;
+  checked_cuda_allocator() = default;
 
-  _CCCL_HOST_DEVICE_API checked_cuda_allocator(const checked_cuda_allocator& other)
+  _CCCL_HOST_DEVICE checked_cuda_allocator(const checked_cuda_allocator& other)
       : base(other)
   {}
 
   template <typename U>
-  _CCCL_HOST_DEVICE_API checked_cuda_allocator(const checked_cuda_allocator<U>& other)
+  _CCCL_HOST_DEVICE checked_cuda_allocator(const checked_cuda_allocator<U>& other)
       : base(other)
   {}
 
-  _CCCL_HIDE_FROM_ABI checked_cuda_allocator& operator=(const checked_cuda_allocator&) = default;
+  checked_cuda_allocator& operator=(const checked_cuda_allocator&) = default;
 
-  _CCCL_HIDE_FROM_ABI ~checked_cuda_allocator() = default;
+  ~checked_cuda_allocator() = default;
 };
 
 struct checked_host_memory_resource final : public THRUST_NS_QUALIFIER::mr::new_delete_resource_base

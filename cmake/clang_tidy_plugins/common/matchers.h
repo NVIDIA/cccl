@@ -16,10 +16,13 @@ namespace clang::tidy::cccl::util
 AST_MATCHER_P(Decl, isExpansionInHeaderFile, const FileExtensionsSet*, extensions) // NOLINT
 {
   const auto begin    = Node.getBeginLoc();
-  const auto& sm      = Finder->getASTContext().getSourceManager();
-  const auto filename = sm.getFilename(sm.getExpansionLoc(begin));
+  const auto& SM      = Finder->getASTContext().getSourceManager();
+  const auto filename = SM.getFilename(SM.getExpansionLoc(begin));
   // LLVM's header utility rejects extensionless files even when the empty extension is configured.
-  return utils::isExpansionLocInHeaderFile(begin, sm, *extensions)
+  return utils::isExpansionLocInHeaderFile(begin, SM, *extensions)
       || (extensions->contains("") && !filename.empty() && llvm::sys::path::extension(filename).empty());
 }
+
+// NOLINTNEXTLINE(bugprone-throwing-static-initialization)
+inline const auto isExpansionInTestFile = ast_matchers::isExpansionInFileMatching(".*/test/.*");
 } // namespace clang::tidy::cccl::util

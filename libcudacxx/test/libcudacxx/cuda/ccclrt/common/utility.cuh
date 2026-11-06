@@ -24,7 +24,7 @@
 
 #include "test_macros.h"
 
-_CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC void ccclrt_require_impl(
+TEST_DEVICE_FUNC inline void ccclrt_require_impl(
   bool condition, const char* condition_text, const char* filename, unsigned int linenum, const char* funcname)
 {
   if (!condition)
@@ -48,7 +48,7 @@ _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC void ccclrt_require_impl(
 namespace test
 {
 template <typename T1, typename T2>
-_CCCL_HOST_API T1& assign(T1& t1, T2&& t2)
+T1& assign(T1& t1, T2&& t2)
 {
   t1 = ::cuda::std::forward<T2>(t2);
   return t1;
@@ -60,20 +60,20 @@ private:
   void* pv = nullptr;
 
 public:
-  _CCCL_HOST_API explicit _malloc_pinned(std::size_t size)
+  explicit _malloc_pinned(std::size_t size)
   {
     const cuda::__ensure_current_context guard(cuda::device_ref{0});
     _CCCL_TRY_RUNTIME_API(::cudaMallocHost, "failed to allocate pinned memory", &pv, size);
   }
 
-  _CCCL_HOST_API ~_malloc_pinned()
+  ~_malloc_pinned()
   {
     const cuda::__ensure_current_context guard(cuda::device_ref{0});
     [[maybe_unused]] auto status = ::cudaFreeHost(pv);
   }
 
   template <class T>
-  _CCCL_HOST_API T* get_as() const noexcept
+  T* get_as() const noexcept
   {
     return static_cast<T*>(pv);
   }
@@ -86,31 +86,31 @@ private:
   _malloc_pinned _mem;
 
 public:
-  _CCCL_HOST_API explicit pinned(T t)
+  explicit pinned(T t)
       : _mem(sizeof(T))
   {
     ::new (_mem.get_as<void>()) T(std::move(t));
   }
 
-  _CCCL_HOST_API ~pinned()
+  ~pinned()
   {
     get()->~T();
   }
 
-  _CCCL_HOST_API T* get() noexcept
+  T* get() noexcept
   {
     return _mem.get_as<T>();
   }
-  _CCCL_HOST_API const T* get() const noexcept
+  const T* get() const noexcept
   {
     return _mem.get_as<T>();
   }
 
-  _CCCL_HOST_API T& operator*() noexcept
+  T& operator*() noexcept
   {
     return *get();
   }
-  _CCCL_HOST_API const T& operator*() const noexcept
+  const T& operator*() const noexcept
   {
     return *get();
   }
@@ -119,7 +119,7 @@ public:
 template <int N>
 struct assign_n
 {
-  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC constexpr void operator()(int* pi) const noexcept
+  TEST_DEVICE_FUNC constexpr void operator()(int* pi) const noexcept
   {
     *pi = N;
   }
@@ -128,7 +128,7 @@ struct assign_n
 template <int N>
 struct verify_n
 {
-  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
+  TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
   {
     // TODO: fix clang CUDA require macro
     // CCCLRT_REQUIRE(*pi == N);
@@ -141,7 +141,7 @@ using verify_42 = verify_n<42>;
 
 struct atomic_add_one
 {
-  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
+  TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
   {
     const cuda::atomic_ref atomic_pi(*pi);
     atomic_pi.fetch_add(1);
@@ -150,7 +150,7 @@ struct atomic_add_one
 
 struct atomic_sub_one
 {
-  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
+  TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
   {
     const cuda::atomic_ref atomic_pi(*pi);
     atomic_pi.fetch_sub(1);
@@ -159,7 +159,7 @@ struct atomic_sub_one
 
 struct spin_until_80
 {
-  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
+  TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
   {
     const cuda::atomic_ref atomic_pi(*pi);
     while (atomic_pi.load() != 80)
@@ -170,7 +170,7 @@ struct spin_until_80
 
 struct empty_kernel
 {
-  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC void operator()() const noexcept {}
+  TEST_DEVICE_FUNC void operator()() const noexcept {}
 };
 
 template <class Fn, class... Args>
@@ -180,7 +180,7 @@ static __global__ void kernel_launcher(Fn fn, Args... args)
 }
 
 template <class Fn, class... Args>
-_CCCL_HOST_API void launch_kernel_single_thread(cuda::stream_ref stream, Fn fn, Args... args)
+void launch_kernel_single_thread(cuda::stream_ref stream, Fn fn, Args... args)
 {
   const cuda::__ensure_current_context guard(stream);
   kernel_launcher<<<1, 1, 0, stream.get()>>>(fn, args...);

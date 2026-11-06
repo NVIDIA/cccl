@@ -23,111 +23,109 @@ struct nontrivial_type
 
   int value_;
 
-  _CCCL_HIDE_FROM_ABI nontrivial_type() = default;
+  nontrivial_type() = default;
 
   // Not explicit to test conversions between types
-  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr nontrivial_type(int value)
+  TEST_FUNC constexpr nontrivial_type(int value)
       : value_(value)
   {}
 
 #if TEST_HAS_SPACESHIP()
   auto operator<=>(const nontrivial_type&) const = default;
 #else
-  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator==(const nontrivial_type& lhs, const nontrivial_type& rhs)
+  TEST_FUNC friend constexpr bool operator==(const nontrivial_type& lhs, const nontrivial_type& rhs)
   {
     return lhs.value_ == rhs.value_;
   }
-  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator!=(const nontrivial_type& lhs, const nontrivial_type& rhs)
+  TEST_FUNC friend constexpr bool operator!=(const nontrivial_type& lhs, const nontrivial_type& rhs)
   {
     return lhs.value_ != rhs.value_;
   }
 
-  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator<(const nontrivial_type& lhs, const nontrivial_type& rhs)
+  TEST_FUNC friend constexpr bool operator<(const nontrivial_type& lhs, const nontrivial_type& rhs)
   {
     return lhs.value_ < rhs.value_;
   }
-  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator<=(const nontrivial_type& lhs, const nontrivial_type& rhs)
+  TEST_FUNC friend constexpr bool operator<=(const nontrivial_type& lhs, const nontrivial_type& rhs)
   {
     return lhs.value_ <= rhs.value_;
   }
-  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator>(const nontrivial_type& lhs, const nontrivial_type& rhs)
+  TEST_FUNC friend constexpr bool operator>(const nontrivial_type& lhs, const nontrivial_type& rhs)
   {
     return lhs.value_ > rhs.value_;
   }
-  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr bool operator>=(const nontrivial_type& lhs, const nontrivial_type& rhs)
+  TEST_FUNC friend constexpr bool operator>=(const nontrivial_type& lhs, const nontrivial_type& rhs)
   {
     return lhs.value_ >= rhs.value_;
   }
 #endif
 
-  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr nontrivial_type&
-  operator+=(nontrivial_type& lhs, const nontrivial_type& rhs)
+  TEST_FUNC friend constexpr nontrivial_type& operator+=(nontrivial_type& lhs, const nontrivial_type& rhs)
   {
     lhs.value_ += rhs.value_;
     return lhs;
   }
-  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr nontrivial_type&
-  operator-=(nontrivial_type& lhs, const nontrivial_type& rhs)
+  TEST_FUNC friend constexpr nontrivial_type& operator-=(nontrivial_type& lhs, const nontrivial_type& rhs)
   {
     lhs.value_ -= rhs.value_;
     return lhs;
   }
 
-  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr nontrivial_type& operator+=(nontrivial_type& lhs, difference_type rhs)
+  TEST_FUNC friend constexpr nontrivial_type& operator+=(nontrivial_type& lhs, difference_type rhs)
   {
     lhs.value_ += rhs;
     return lhs;
   }
-  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr nontrivial_type& operator-=(nontrivial_type& lhs, difference_type rhs)
+  TEST_FUNC friend constexpr nontrivial_type& operator-=(nontrivial_type& lhs, difference_type rhs)
   {
     lhs.value_ -= rhs;
     return lhs;
   }
 
-  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr nontrivial_type operator+(nontrivial_type lhs, nontrivial_type rhs)
+  TEST_FUNC friend constexpr nontrivial_type operator+(nontrivial_type lhs, nontrivial_type rhs)
   {
     return nontrivial_type{lhs.value_ + rhs.value_};
   }
-  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr int operator-(nontrivial_type lhs, nontrivial_type rhs)
+  TEST_FUNC friend constexpr int operator-(nontrivial_type lhs, nontrivial_type rhs)
   {
     return lhs.value_ - rhs.value_;
   }
 
-  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr nontrivial_type operator+(nontrivial_type lhs, difference_type rhs)
+  TEST_FUNC friend constexpr nontrivial_type operator+(nontrivial_type lhs, difference_type rhs)
   {
     return nontrivial_type{lhs.value_ + rhs};
   }
-  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr int operator-(nontrivial_type lhs, difference_type rhs)
+  TEST_FUNC friend constexpr int operator-(nontrivial_type lhs, difference_type rhs)
   {
     return lhs.value_ - rhs;
   }
 
-  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr nontrivial_type operator+(difference_type lhs, nontrivial_type rhs)
+  TEST_FUNC friend constexpr nontrivial_type operator+(difference_type lhs, nontrivial_type rhs)
   {
     return nontrivial_type{lhs + rhs.value_};
   }
-  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr int operator-(difference_type lhs, nontrivial_type rhs)
+  TEST_FUNC friend constexpr int operator-(difference_type lhs, nontrivial_type rhs)
   {
     return lhs - rhs.value_;
   }
 
-  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr nontrivial_type& operator++()
+  TEST_FUNC constexpr nontrivial_type& operator++()
   {
     ++value_;
     return *this;
   }
-  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr nontrivial_type operator++(int)
+  TEST_FUNC constexpr nontrivial_type operator++(int)
   {
     auto tmp = *this;
     ++value_;
     return tmp;
   }
-  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr nontrivial_type& operator--()
+  TEST_FUNC constexpr nontrivial_type& operator--()
   {
     --value_;
     return *this;
   }
-  _CCCL_HIDE_FROM_ABI TEST_FUNC constexpr nontrivial_type operator--(int)
+  TEST_FUNC constexpr nontrivial_type operator--(int)
   {
     auto tmp = *this;
     --value_;
@@ -135,8 +133,7 @@ struct nontrivial_type
   }
 
   // Also support thrust::sequence
-  _CCCL_HIDE_FROM_ABI TEST_FUNC friend constexpr nontrivial_type
-  operator*(const nontrivial_type lhs, const size_t rhs) noexcept
+  TEST_FUNC friend constexpr nontrivial_type operator*(const nontrivial_type lhs, const size_t rhs) noexcept
   {
     return nontrivial_type{lhs.value_ * static_cast<int>(rhs)};
   }
@@ -145,7 +142,7 @@ struct nontrivial_type
 template <class T>
 struct cast_to
 {
-  _CCCL_HIDE_FROM_ABI TEST_DEVICE_FUNC T operator()(int value) const noexcept
+  TEST_DEVICE_FUNC T operator()(int value) const noexcept
   {
     return static_cast<T>(value);
   }
@@ -199,7 +196,7 @@ using integral_types =
 
 /// Sum of integers 1..n (inclusive), as @p T — for PSTL tests with `thrust::sequence(..., 1)`.
 template <class T>
-_CCCL_HIDE_FROM_ABI TEST_FUNC constexpr T triangular_number(int n)
+TEST_FUNC constexpr T triangular_number(int n)
 {
   return static_cast<T>(n * (n + 1) / 2);
 }
@@ -219,13 +216,13 @@ using pstl_numerics_types =
 // We want to use thrust::sequence
 
 #if _LIBCUDACXX_HAS_NVFP16()
-_CCCL_HIDE_FROM_ABI TEST_FUNC __half operator*(const __half lhs, const size_t rhs) noexcept
+inline TEST_FUNC __half operator*(const __half lhs, const size_t rhs) noexcept
 {
   return ::__float2half(::__half2float(lhs) * static_cast<float>(rhs));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 #if _LIBCUDACXX_HAS_NVBF16()
-_CCCL_HIDE_FROM_ABI TEST_FUNC __nv_bfloat16 operator*(const __nv_bfloat16 lhs, const size_t rhs) noexcept
+inline TEST_FUNC __nv_bfloat16 operator*(const __nv_bfloat16 lhs, const size_t rhs) noexcept
 {
   return ::__float2bfloat16(::__bfloat162float(lhs) * static_cast<float>(rhs));
 }

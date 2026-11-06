@@ -44,7 +44,7 @@ inline constexpr bool is_memory_pool_type =
   cuda::std::is_base_of_v<cuda::__memory_pool_base, cuda::std::remove_cv_t<PoolType>>;
 
 template <typename PoolType>
-_CCCL_HOST_API void skip_if_unsupported_memory_pool()
+void skip_if_unsupported_memory_pool()
 {
   static_assert(is_memory_pool_type<PoolType>,
                 "skip_if_unsupported_memory_pool requires a memory pool, memory pool ref, or shared memory pool type");
@@ -75,7 +75,7 @@ _CCCL_HOST_API void skip_if_unsupported_memory_pool()
 } // namespace test
 
 template <typename ResourceType>
-_CCCL_HOST_API void test_deallocate_async([[maybe_unused]] ResourceType& resource)
+void test_deallocate_async([[maybe_unused]] ResourceType& resource)
 {
   /* disable until we move the launch API to libcudacxx
   cudax::stream stream{cuda::device_ref{0}};

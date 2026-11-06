@@ -37,24 +37,24 @@ struct bfloat16_t
   uint16_t __x;
 
   /// Constructor from __nv_bfloat16
-  _CCCL_HOST_DEVICE_API __forceinline__ explicit bfloat16_t(const __nv_bfloat16& other)
+  __host__ __device__ __forceinline__ explicit bfloat16_t(const __nv_bfloat16& other)
       : __x(reinterpret_cast<const uint16_t&>(other))
   {}
 
   /// Constructor from integer
-  _CCCL_HOST_DEVICE_API __forceinline__ explicit bfloat16_t(int a)
+  __host__ __device__ __forceinline__ explicit bfloat16_t(int a)
   {
     *this = bfloat16_t(static_cast<float>(a));
   }
 
   /// Constructor from std::size_t
-  _CCCL_HOST_DEVICE_API __forceinline__ explicit bfloat16_t(std::size_t a)
+  __host__ __device__ __forceinline__ explicit bfloat16_t(std::size_t a)
   {
     *this = bfloat16_t(static_cast<float>(a));
   }
 
   /// Constructor from double
-  _CCCL_HOST_DEVICE_API __forceinline__ explicit bfloat16_t(double a)
+  __host__ __device__ __forceinline__ explicit bfloat16_t(double a)
   {
     *this = bfloat16_t(static_cast<float>(a));
   }
@@ -63,16 +63,16 @@ struct bfloat16_t
   template <typename T,
             typename = ::cuda::std::enable_if_t<::cuda::std::is_same_v<T, unsigned long long int>
                                                 && (!::cuda::std::is_same_v<std::size_t, unsigned long long int>)>>
-  _CCCL_HOST_DEVICE_API __forceinline__ explicit bfloat16_t(T a)
+  __host__ __device__ __forceinline__ explicit bfloat16_t(T a)
   {
     *this = bfloat16_t(static_cast<float>(a));
   }
 
   /// Default constructor
-  _CCCL_HIDE_FROM_ABI bfloat16_t() = default;
+  bfloat16_t() = default;
 
   /// Constructor from float
-  _CCCL_HOST_DEVICE_API __forceinline__ explicit bfloat16_t(float a)
+  __host__ __device__ __forceinline__ explicit bfloat16_t(float a)
   {
     // Reference:
     // https://github.com/pytorch/pytorch/blob/44cc873fba5e5ffc4d4d4eef3bd370b653ce1ce1/c10/util/BFloat16.h#L51
@@ -91,13 +91,13 @@ struct bfloat16_t
   }
 
   /// Cast to __nv_bfloat16
-  _CCCL_HOST_DEVICE_API __forceinline__ operator __nv_bfloat16() const
+  __host__ __device__ __forceinline__ operator __nv_bfloat16() const
   {
     return reinterpret_cast<const __nv_bfloat16&>(__x);
   }
 
   /// Cast to float
-  _CCCL_HOST_DEVICE_API __forceinline__ operator float() const
+  __host__ __device__ __forceinline__ operator float() const
   {
     float f     = 0;
     uint32_t* p = reinterpret_cast<uint32_t*>(&f);
@@ -106,87 +106,87 @@ struct bfloat16_t
   }
 
   /// Get raw storage
-  _CCCL_HOST_DEVICE_API __forceinline__ uint16_t raw() const
+  __host__ __device__ __forceinline__ uint16_t raw() const
   {
     return this->__x;
   }
 
   /// Equality
-  _CCCL_HOST_DEVICE_API __forceinline__ friend bool operator==(const bfloat16_t& a, const bfloat16_t& b)
+  __host__ __device__ __forceinline__ friend bool operator==(const bfloat16_t& a, const bfloat16_t& b)
   {
     return (a.__x == b.__x);
   }
 
   /// Inequality
-  _CCCL_HOST_DEVICE_API __forceinline__ friend bool operator!=(const bfloat16_t& a, const bfloat16_t& b)
+  __host__ __device__ __forceinline__ friend bool operator!=(const bfloat16_t& a, const bfloat16_t& b)
   {
     return (a.__x != b.__x);
   }
 
   /// Assignment by sum
-  _CCCL_HOST_DEVICE_API __forceinline__ bfloat16_t& operator+=(const bfloat16_t& rhs)
+  __host__ __device__ __forceinline__ bfloat16_t& operator+=(const bfloat16_t& rhs)
   {
     *this = bfloat16_t(static_cast<float>(*this) + static_cast<float>(rhs));
     return *this;
   }
 
   /// Multiply
-  _CCCL_HOST_DEVICE_API __forceinline__ bfloat16_t operator*(const bfloat16_t& other) const
+  __host__ __device__ __forceinline__ bfloat16_t operator*(const bfloat16_t& other) const
   {
     return bfloat16_t(static_cast<float>(*this) * static_cast<float>(other));
   }
 
   /// Divide
-  _CCCL_HOST_DEVICE_API __forceinline__ bfloat16_t operator/(const bfloat16_t& other) const
+  __host__ __device__ __forceinline__ bfloat16_t operator/(const bfloat16_t& other) const
   {
     return bfloat16_t(static_cast<float>(*this) / static_cast<float>(other));
   }
 
   /// Add
-  _CCCL_HOST_DEVICE_API __forceinline__ bfloat16_t operator+(const bfloat16_t& other) const
+  __host__ __device__ __forceinline__ bfloat16_t operator+(const bfloat16_t& other) const
   {
     return bfloat16_t(static_cast<float>(*this) + static_cast<float>(other));
   }
 
   /// Sub
-  _CCCL_HOST_DEVICE_API __forceinline__ bfloat16_t operator-(const bfloat16_t& other) const
+  __host__ __device__ __forceinline__ bfloat16_t operator-(const bfloat16_t& other) const
   {
     return bfloat16_t(static_cast<float>(*this) - static_cast<float>(other));
   }
 
   /// Less-than
-  _CCCL_HOST_DEVICE_API __forceinline__ bool operator<(const bfloat16_t& other) const
+  __host__ __device__ __forceinline__ bool operator<(const bfloat16_t& other) const
   {
     return static_cast<float>(*this) < static_cast<float>(other);
   }
 
   /// Less-than-equal
-  _CCCL_HOST_DEVICE_API __forceinline__ bool operator<=(const bfloat16_t& other) const
+  __host__ __device__ __forceinline__ bool operator<=(const bfloat16_t& other) const
   {
     return static_cast<float>(*this) <= static_cast<float>(other);
   }
 
   /// Greater-than
-  _CCCL_HOST_DEVICE_API __forceinline__ bool operator>(const bfloat16_t& other) const
+  __host__ __device__ __forceinline__ bool operator>(const bfloat16_t& other) const
   {
     return static_cast<float>(*this) > static_cast<float>(other);
   }
 
   /// Greater-than-equal
-  _CCCL_HOST_DEVICE_API __forceinline__ bool operator>=(const bfloat16_t& other) const
+  __host__ __device__ __forceinline__ bool operator>=(const bfloat16_t& other) const
   {
     return static_cast<float>(*this) >= static_cast<float>(other);
   }
 
   /// numeric_traits<bfloat16_t>::max
-  _CCCL_HOST_DEVICE_API __forceinline__ static bfloat16_t(max)()
+  __host__ __device__ __forceinline__ static bfloat16_t(max)()
   {
     uint16_t max_word = 0x7F7F;
     return reinterpret_cast<bfloat16_t&>(max_word);
   }
 
   /// numeric_traits<bfloat16_t>::lowest
-  _CCCL_HOST_DEVICE_API __forceinline__ static bfloat16_t lowest()
+  __host__ __device__ __forceinline__ static bfloat16_t lowest()
   {
     uint16_t lowest_word = 0xFF7F;
     return reinterpret_cast<bfloat16_t&>(lowest_word);
@@ -198,14 +198,14 @@ struct bfloat16_t
  ******************************************************************************/
 
 /// Insert formatted \p bfloat16_t into the output stream
-_CCCL_HOST_API inline std::ostream& operator<<(std::ostream& out, const bfloat16_t& x)
+inline std::ostream& operator<<(std::ostream& out, const bfloat16_t& x)
 {
   out << static_cast<float>(x);
   return out;
 }
 
 /// Insert formatted \p __nv_bfloat16 into the output stream
-_CCCL_HOST_API inline std::ostream& operator<<(std::ostream& out, const __nv_bfloat16& x)
+inline std::ostream& operator<<(std::ostream& out, const __nv_bfloat16& x)
 {
   return out << bfloat16_t(x);
 }
@@ -226,17 +226,17 @@ class cuda::std::numeric_limits<bfloat16_t>
 public:
   static constexpr bool is_specialized = true;
 
-  _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE bfloat16_t max()
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bfloat16_t max()
   {
     return bfloat16_t(numeric_limits<__nv_bfloat16>::max());
   }
 
-  _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE bfloat16_t min()
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bfloat16_t min()
   {
     return bfloat16_t(numeric_limits<__nv_bfloat16>::min());
   }
 
-  _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE bfloat16_t lowest()
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bfloat16_t lowest()
   {
     return bfloat16_t(numeric_limits<__nv_bfloat16>::lowest());
   }

@@ -35,9 +35,9 @@ using namespace ast_matchers; // NOLINT(google-build-using-namespace)
 enum class [[clang::flag_enum]] execution_space : std::uint8_t
 {
   none   = 0,
-  host   = 1 << 1,
-  device = 1 << 2,
-  tile   = 1 << 3,
+  host   = 1 << 0,
+  device = 1 << 1,
+  tile   = 1 << 2,
 };
 
 [[nodiscard]] constexpr execution_space operator|(execution_space lhs, execution_space rhs)
@@ -82,7 +82,8 @@ public:
                      isConsteval(),
                      hasAttr(attr::Visibility),
                      cxxMethodDecl(ofClass(cxxRecordDecl(isLambda()))),
-                     isExpansionInSystemHeader())),
+                     isExpansionInSystemHeader(),
+                     util::isExpansionInTestFile)),
         util::isExpansionInHeaderFile(header_extensions_),
         optionally(is_special_member.bind(SPECIAL_FUNCTION_BIND)))
         .bind(FUNCTION_BIND),

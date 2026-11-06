@@ -39,7 +39,7 @@ struct Catch::StringMaker<THRUST_NS_QUALIFIER::detail::vector_base<T, A>,
                           ::cuda::std::enable_if_t<sizeof(T) == 1 && ::cuda::std::is_fundamental_v<T>>>
 {
   // Copied from `rangeToString` in catch_tostring.hpp
-  _CCCL_HOST_API static auto convert(const THRUST_NS_QUALIFIER::detail::vector_base<T, A>& v) -> std::string
+  static auto convert(const THRUST_NS_QUALIFIER::detail::vector_base<T, A>& v) -> std::string
   {
     auto first = v.begin();
     auto last  = v.end();

@@ -39,24 +39,24 @@ struct half_t
   uint16_t __x;
 
   /// Constructor from __half
-  _CCCL_HOST_DEVICE_API __forceinline__ explicit half_t(const __half& other)
+  __host__ __device__ __forceinline__ explicit half_t(const __half& other)
       : __x(reinterpret_cast<const uint16_t&>(other))
   {}
 
   /// Constructor from integer
-  _CCCL_HOST_DEVICE_API __forceinline__ explicit half_t(int a)
+  __host__ __device__ __forceinline__ explicit half_t(int a)
   {
     *this = half_t(static_cast<float>(a));
   }
 
   /// Constructor from std::size_t
-  _CCCL_HOST_DEVICE_API __forceinline__ explicit half_t(std::size_t a)
+  __host__ __device__ __forceinline__ explicit half_t(std::size_t a)
   {
     *this = half_t(static_cast<float>(a));
   }
 
   /// Constructor from double
-  _CCCL_HOST_DEVICE_API __forceinline__ explicit half_t(double a)
+  __host__ __device__ __forceinline__ explicit half_t(double a)
   {
     *this = half_t(static_cast<float>(a));
   }
@@ -65,16 +65,16 @@ struct half_t
   template <typename T,
             typename = ::cuda::std::enable_if_t<::cuda::std::is_same_v<T, unsigned long long int>
                                                 && (!::cuda::std::is_same_v<std::size_t, unsigned long long int>)>>
-  _CCCL_HOST_DEVICE_API __forceinline__ explicit half_t(T a)
+  __host__ __device__ __forceinline__ explicit half_t(T a)
   {
     *this = half_t(static_cast<float>(a));
   }
 
   /// Default constructor
-  _CCCL_HIDE_FROM_ABI half_t() = default;
+  half_t() = default;
 
   /// Constructor from float
-  _CCCL_HOST_DEVICE_API __forceinline__ explicit half_t(float a)
+  __host__ __device__ __forceinline__ explicit half_t(float a)
   {
     // Stolen from Norbert Juffa
     uint32_t ia = *reinterpret_cast<uint32_t*>(&a);
@@ -124,13 +124,13 @@ struct half_t
   }
 
   /// Cast to __half
-  _CCCL_HOST_DEVICE_API __forceinline__ operator __half() const
+  __host__ __device__ __forceinline__ operator __half() const
   {
     return reinterpret_cast<const __half&>(__x);
   }
 
   /// Cast to float
-  _CCCL_HOST_DEVICE_API __forceinline__ operator float() const
+  __host__ __device__ __forceinline__ operator float() const
   {
     // Stolen from Andrew Kerr
 
@@ -187,92 +187,92 @@ struct half_t
   }
 
   /// Get raw storage
-  _CCCL_HOST_DEVICE_API __forceinline__ uint16_t raw() const
+  __host__ __device__ __forceinline__ uint16_t raw() const
   {
     return this->__x;
   }
 
   /// Equality
-  _CCCL_HOST_DEVICE_API __forceinline__ friend bool operator==(const half_t& a, const half_t& b)
+  __host__ __device__ __forceinline__ friend bool operator==(const half_t& a, const half_t& b)
   {
     return (a.__x == b.__x);
   }
 
   /// Inequality
-  _CCCL_HOST_DEVICE_API __forceinline__ friend bool operator!=(const half_t& a, const half_t& b)
+  __host__ __device__ __forceinline__ friend bool operator!=(const half_t& a, const half_t& b)
   {
     return (a.__x != b.__x);
   }
 
   /// Assignment by sum
-  _CCCL_HOST_DEVICE_API __forceinline__ half_t& operator+=(const half_t& rhs)
+  __host__ __device__ __forceinline__ half_t& operator+=(const half_t& rhs)
   {
     *this = half_t(static_cast<float>(*this) + static_cast<float>(rhs));
     return *this;
   }
 
   /// Multiply
-  _CCCL_HOST_DEVICE_API __forceinline__ half_t operator*(const half_t& other) const
+  __host__ __device__ __forceinline__ half_t operator*(const half_t& other) const
   {
     return half_t(static_cast<float>(*this) * static_cast<float>(other));
   }
 
   /// Divide
-  _CCCL_HOST_DEVICE_API __forceinline__ half_t& operator/=(const half_t& other)
+  __host__ __device__ __forceinline__ half_t& operator/=(const half_t& other)
   {
     return *this = half_t(static_cast<float>(*this) / static_cast<float>(other));
   }
 
-  _CCCL_HOST_DEVICE_API friend __forceinline__ half_t operator/(half_t self, const half_t& other)
+  friend __host__ __device__ __forceinline__ half_t operator/(half_t self, const half_t& other)
   {
     return self /= other;
   }
 
   /// Add
-  _CCCL_HOST_DEVICE_API __forceinline__ half_t operator+(const half_t& other) const
+  __host__ __device__ __forceinline__ half_t operator+(const half_t& other) const
   {
     return half_t(static_cast<float>(*this) + static_cast<float>(other));
   }
 
   /// Sub
-  _CCCL_HOST_DEVICE_API __forceinline__ half_t operator-(const half_t& other) const
+  __host__ __device__ __forceinline__ half_t operator-(const half_t& other) const
   {
     return half_t(static_cast<float>(*this) - static_cast<float>(other));
   }
 
   /// Less-than
-  _CCCL_HOST_DEVICE_API __forceinline__ bool operator<(const half_t& other) const
+  __host__ __device__ __forceinline__ bool operator<(const half_t& other) const
   {
     return static_cast<float>(*this) < static_cast<float>(other);
   }
 
   /// Less-than-equal
-  _CCCL_HOST_DEVICE_API __forceinline__ bool operator<=(const half_t& other) const
+  __host__ __device__ __forceinline__ bool operator<=(const half_t& other) const
   {
     return static_cast<float>(*this) <= static_cast<float>(other);
   }
 
   /// Greater-than
-  _CCCL_HOST_DEVICE_API __forceinline__ bool operator>(const half_t& other) const
+  __host__ __device__ __forceinline__ bool operator>(const half_t& other) const
   {
     return static_cast<float>(*this) > static_cast<float>(other);
   }
 
   /// Greater-than-equal
-  _CCCL_HOST_DEVICE_API __forceinline__ bool operator>=(const half_t& other) const
+  __host__ __device__ __forceinline__ bool operator>=(const half_t& other) const
   {
     return static_cast<float>(*this) >= static_cast<float>(other);
   }
 
   /// numeric_traits<half_t>::max
-  _CCCL_HOST_DEVICE_API __forceinline__ static half_t(max)()
+  __host__ __device__ __forceinline__ static half_t(max)()
   {
     uint16_t max_word = 0x7BFF;
     return reinterpret_cast<half_t&>(max_word);
   }
 
   /// numeric_traits<half_t>::lowest
-  _CCCL_HOST_DEVICE_API __forceinline__ static half_t lowest()
+  __host__ __device__ __forceinline__ static half_t lowest()
   {
     uint16_t lowest_word = 0xFBFF;
     return reinterpret_cast<half_t&>(lowest_word);
@@ -284,14 +284,14 @@ struct half_t
  ******************************************************************************/
 
 /// Insert formatted \p half_t into the output stream
-_CCCL_HOST_API inline std::ostream& operator<<(std::ostream& out, const half_t& x)
+inline std::ostream& operator<<(std::ostream& out, const half_t& x)
 {
   out << static_cast<float>(x);
   return out;
 }
 
 /// Insert formatted \p __half into the output stream
-_CCCL_HOST_API inline std::ostream& operator<<(std::ostream& out, const __half& x)
+inline std::ostream& operator<<(std::ostream& out, const __half& x)
 {
   return out << half_t(x);
 }
@@ -312,17 +312,17 @@ class cuda::std::numeric_limits<half_t>
 public:
   static constexpr bool is_specialized = true;
 
-  _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE half_t max()
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE half_t max()
   {
     return half_t(numeric_limits<__half>::max());
   }
 
-  _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE half_t min()
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE half_t min()
   {
     return half_t(numeric_limits<__half>::min());
   }
 
-  _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE half_t lowest()
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE half_t lowest()
   {
     return half_t(numeric_limits<__half>::lowest());
   }
