@@ -23,10 +23,11 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort_lrb
 {
-// Count and scatter use the same block size, with one input segment per thread.
+// The deferred-ID scatter strides over its queue with one ID per thread per pass.
 struct partition_policy
 {
-  int threads_per_block = 256;
+  int threads_per_block    = 256;
+  int grid_size_multiplier = 4; // Launch at most SM count * grid_size_multiplier blocks.
 };
 
 // Walk launch: one warp per block, with each thread visiting segments_per_thread segments.
@@ -80,6 +81,7 @@ struct lrb_policy
   operator==(const lrb_policy& lhs, const lrb_policy& rhs) noexcept
   {
     return lhs.partition.threads_per_block == rhs.partition.threads_per_block
+        && lhs.partition.grid_size_multiplier == rhs.partition.grid_size_multiplier
         && lhs.group_merge.warp == rhs.group_merge.warp && lhs.group_merge.small_block == rhs.group_merge.small_block
         && lhs.group_merge.large == rhs.group_merge.large;
   }

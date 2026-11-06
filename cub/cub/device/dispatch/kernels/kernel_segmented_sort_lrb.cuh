@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Device kernels for the tiny-segment walk, capacity-based ID partitioning, and sorting with work prefixes
+// Device kernels for the tiny-segment walk, capacity-based ID scattering, and sorting with work prefixes
 // built in shared memory.
 
 #pragma once
@@ -27,75 +27,26 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort_lrb
 {
-// Count segments of at least MinLength keys by capacity, or scatter their IDs into reserved per-bin ranges.
-// Count and scatter must use the same MinLength. Partition receives capacity bounds only; it never receives
-// sorting configurations.
-template <typename Capacities,
-          bool Scatter,
-          typename BeginIterator,
-          typename EndIterator,
-          typename PolicySelector = partition_policy_selector,
-          int MinLength           = 1>
-__launch_bounds__(current_policy<PolicySelector>().threads_per_block) _CCCL_KERNEL_ATTRIBUTES void partition_kernel(
+// Each block walks one tile of threads_per_block * segments_per_thread segments. Empty segments are skipped,
+// singletons are copied, and segments shorter than inline_cutoff are queued by logical warp size and sorted
+// by the block. Longer segments are counted by capacity and appended to deferred_ids in no particular order;
+// the block flushes its counts only if it found one.
+template <typename Capacities, typename BeginIterator, typename EndIterator, typename Key>
+__launch_bounds__(tiny_walk_policy::threads_per_block) _CCCL_KERNEL_ATTRIBUTES void tiny_walk_kernel(
   BeginIterator begins,
   EndIterator ends,
   unsigned num_segments,
-  unsigned* counts_or_cursors,
-  ::cuda::std::conditional_t<Scatter, unsigned, const unsigned>* ids)
-{
-  constexpr int total_bins = Capacities::size + 1;
-  __shared__ unsigned bin_counts_shared[total_bins];
-  [[maybe_unused]] __shared__ unsigned bin_starts_shared[total_bins];
-  for (int bin_idx = static_cast<int>(threadIdx.x); bin_idx < total_bins; bin_idx += static_cast<int>(blockDim.x))
-  {
-    bin_counts_shared[bin_idx] = 0;
-  }
-  __syncthreads();
-  const unsigned seg_id                         = (blockIdx.x * blockDim.x) + threadIdx.x;
-  int bin_idx                                   = -1;
-  [[maybe_unused]] unsigned segment_rank_in_bin = 0;
-  if (seg_id < num_segments)
-  {
-    const auto begin = begins[seg_id];
-    const auto end   = ends[seg_id];
-    // Compare before subtracting: with unsigned offsets, end < begin would wrap to a huge length.
-    if (end > begin && end - begin >= MinLength)
-    {
-      bin_idx             = Capacities::first_fit(end - begin);
-      segment_rank_in_bin = atomicAdd(&bin_counts_shared[bin_idx], 1u);
-    }
-  }
-  __syncthreads();
-  for (int i = static_cast<int>(threadIdx.x); i < total_bins; i += static_cast<int>(blockDim.x))
-  {
-    if (bin_counts_shared[i])
-    {
-      bin_starts_shared[i] = atomicAdd(&counts_or_cursors[i], bin_counts_shared[i]);
-    }
-  }
-  if constexpr (Scatter)
-  {
-    __syncthreads();
-    if (bin_idx >= 0)
-    {
-      ids[bin_starts_shared[bin_idx] + segment_rank_in_bin] = seg_id;
-    }
-  }
-}
-
-// Each block walks one tile of threads_per_block * segments_per_thread segments. Empty segments are skipped,
-// singletons are copied, and segments shorter than inline_cutoff are queued by logical warp size and sorted
-// by the block. Longer segments are counted by capacity; the block flushes its counts only if it found one.
-template <typename Capacities, typename BeginIterator, typename EndIterator, typename Key>
-__launch_bounds__(tiny_walk_policy::threads_per_block) _CCCL_KERNEL_ATTRIBUTES void tiny_walk_kernel(
-  BeginIterator begins, EndIterator ends, unsigned num_segments, const Key* in, Key* out, unsigned* counts)
+  const Key* in,
+  Key* out,
+  unsigned* counts,
+  unsigned* deferred_count,
+  unsigned* deferred_ids)
 {
   using policy_t                   = tiny_walk_policy;
   using sorter_t                   = tiny_sort_implementation<Key>;
@@ -142,7 +93,8 @@ __launch_bounds__(tiny_walk_policy::threads_per_block) _CCCL_KERNEL_ATTRIBUTES v
       else if (length >= policy_t::inline_cutoff)
       {
         atomicAdd(&bin_counts_shared[Capacities::first_fit(length)], 1u);
-        has_deferred = true;
+        deferred_ids[atomicAdd(deferred_count, 1u)] = segment_id;
+        has_deferred                                = true;
       }
     }
   }
@@ -210,6 +162,60 @@ template <typename Capacities>
 _CCCL_KERNEL_ATTRIBUTES void segment_prefix_kernel(const unsigned* counts, unsigned* offsets, unsigned* cursors)
 {
   scan_bin_counts<Capacities::size + 1>(counts, offsets, cursors);
+}
+
+// Scatter the walk's deferred IDs into reserved per-bin ranges, reading offsets for deferred segments only.
+// Every deferred segment holds at least inline_cutoff keys, so each has a bin.
+template <typename Capacities,
+          typename BeginIterator,
+          typename EndIterator,
+          typename PolicySelector = partition_policy_selector>
+__launch_bounds__(current_policy<PolicySelector>().threads_per_block)
+  _CCCL_KERNEL_ATTRIBUTES void compact_scatter_kernel(
+    BeginIterator begins,
+    EndIterator ends,
+    const unsigned* deferred_count,
+    const unsigned* deferred_ids,
+    unsigned* cursors,
+    unsigned* ids)
+{
+  constexpr int total_bins = Capacities::size + 1;
+  __shared__ unsigned bin_counts_shared[total_bins];
+  __shared__ unsigned bin_starts_shared[total_bins];
+  const unsigned num_deferred = *deferred_count;
+  const auto tile_stride      = static_cast<unsigned long long>(gridDim.x) * blockDim.x;
+  for (auto tile_begin = static_cast<unsigned long long>(blockIdx.x) * blockDim.x; tile_begin < num_deferred;
+       tile_begin += tile_stride)
+  {
+    for (int bin_idx = static_cast<int>(threadIdx.x); bin_idx < total_bins; bin_idx += static_cast<int>(blockDim.x))
+    {
+      bin_counts_shared[bin_idx] = 0;
+    }
+    __syncthreads();
+    const auto deferred_idx      = tile_begin + threadIdx.x;
+    int bin_idx                  = -1;
+    unsigned segment_id          = 0;
+    unsigned segment_rank_in_bin = 0;
+    if (deferred_idx < num_deferred)
+    {
+      segment_id          = deferred_ids[deferred_idx];
+      bin_idx             = Capacities::first_fit(ends[segment_id] - begins[segment_id]);
+      segment_rank_in_bin = atomicAdd(&bin_counts_shared[bin_idx], 1u);
+    }
+    __syncthreads();
+    for (int i = static_cast<int>(threadIdx.x); i < total_bins; i += static_cast<int>(blockDim.x))
+    {
+      if (bin_counts_shared[i])
+      {
+        bin_starts_shared[i] = atomicAdd(&cursors[i], bin_counts_shared[i]);
+      }
+    }
+    __syncthreads();
+    if (bin_idx >= 0)
+    {
+      ids[bin_starts_shared[bin_idx] + segment_rank_in_bin] = segment_id;
+    }
+  }
 }
 
 // Consume this kernel's bins, packing segments into groups and invoking its sorting implementation.
