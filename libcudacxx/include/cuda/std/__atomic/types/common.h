@@ -24,6 +24,7 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_same.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
@@ -34,6 +35,90 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+template <class _Tp>
+inline constexpr bool __atomic_is_small_floating_point_v =
+  __is_extended_floating_point_v<remove_cv_t<_Tp>> && sizeof(_Tp) == 2;
+
+template <class _Tp>
+inline constexpr bool __atomic_is_floating_point_v =
+  is_floating_point_v<_Tp> || __atomic_is_small_floating_point_v<_Tp>;
+
+// Keep the destination type in ADL without including CUDA floating-point headers.
+template <class _Tp>
+struct __atomic_adl_float
+{
+  float __value;
+
+  _CCCL_HOST_DEVICE_API constexpr operator float() const noexcept
+  {
+    return __value;
+  }
+};
+
+template <class _Tp>
+_CCCL_HOST_DEVICE_API _Tp __cuda_atomic_add(_Tp __lhs, _Tp __rhs)
+{
+#if _CCCL_HAS_NVFP16()
+  if constexpr (is_same_v<_Tp, __half>)
+  {
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
+                      (return __hadd(__lhs, __rhs);),
+                      (return __float2half(__atomic_adl_float<_Tp>{__half2float(__lhs) + __half2float(__rhs)});))
+  }
+  else
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+    if constexpr (is_same_v<_Tp, __nv_bfloat16>)
+  {
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_80,
+      (return __hadd(__lhs, __rhs);),
+      NV_IS_DEVICE,
+      ( // Preserve bfloat16 subnormals when fast math flushes float subnormals.
+        return __float2bfloat16(
+                 __atomic_adl_float<_Tp>{__fmaf_ieee_rn(__bfloat162float(__lhs), 1.0f, __bfloat162float(__rhs))});),
+      NV_IS_HOST,
+      (return __float2bfloat16(__atomic_adl_float<_Tp>{__bfloat162float(__lhs) + __bfloat162float(__rhs)});))
+  }
+  else
+#endif // _CCCL_HAS_NVBF16()
+  {
+    return __lhs + __rhs;
+  }
+}
+
+template <class _Tp>
+_CCCL_HOST_DEVICE_API _Tp __cuda_atomic_sub(_Tp __lhs, _Tp __rhs)
+{
+#if _CCCL_HAS_NVFP16()
+  if constexpr (is_same_v<_Tp, __half>)
+  {
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
+                      (return __hsub(__lhs, __rhs);),
+                      (return __float2half(__atomic_adl_float<_Tp>{__half2float(__lhs) - __half2float(__rhs)});))
+  }
+  else
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+    if constexpr (is_same_v<_Tp, __nv_bfloat16>)
+  {
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_80,
+      (return __hsub(__lhs, __rhs);),
+      NV_IS_DEVICE,
+      ( // Preserve bfloat16 subnormals when fast math flushes float subnormals.
+        return __float2bfloat16(
+                 __atomic_adl_float<_Tp>{__fmaf_ieee_rn(__bfloat162float(__rhs), -1.0f, __bfloat162float(__lhs))});),
+      NV_IS_HOST,
+      (return __float2bfloat16(__atomic_adl_float<_Tp>{__bfloat162float(__lhs) - __bfloat162float(__rhs)});))
+  }
+  else
+#endif // _CCCL_HAS_NVBF16()
+  {
+    return __lhs - __rhs;
+  }
+}
 
 template <class _Tp>
 _CCCL_HOST_DEVICE_API bool __cuda_atomic_less(_Tp __lhs, _Tp __rhs)
