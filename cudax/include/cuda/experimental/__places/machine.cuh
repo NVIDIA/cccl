@@ -94,7 +94,10 @@ public:
           assert(res == cudaErrorPeerAccessAlreadyEnabled || res == cudaSuccess);
           if (res == cudaErrorPeerAccessAlreadyEnabled)
           {
-            fprintf(stderr, "[DEV %d] peer access already enabled with device %d\n", d, peer_d);
+            // The caller (or another library) enabled it first: not an error for
+            // us, and it must not stay in the runtime's last-error slot, where the
+            // next launch check in the process (e.g. CUB's) would report it.
+            (void) cudaGetLastError();
           }
 
           // Enable access to remote memory pool
