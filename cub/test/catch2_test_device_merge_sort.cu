@@ -10,11 +10,15 @@
 #include <thrust/equal.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/random.h>
+#include <thrust/reverse.h>
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
+#include <thrust/tabulate.h>
 
+#include <cuda/buffer>
 #include <cuda/iterator>
 #include <cuda/std/iterator>
+#include <cuda/std/type_traits>
 
 #include <algorithm>
 
@@ -23,6 +27,7 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/catch2_allocation_failure.h>
+#include <c2h/device_and_stream.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -497,4 +502,118 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
       c2h::skip_if_allocation_failure();
     }
   }
+}
+
+// A trivially copyable type without a default constructor
+struct not_default_constructible_t
+{
+  int value;
+
+  __host__ __device__ explicit not_default_constructible_t(int v)
+      : value(v)
+  {}
+
+  __host__ __device__ friend bool
+  operator==(const not_default_constructible_t& lhs, const not_default_constructible_t& rhs)
+  {
+    return lhs.value == rhs.value;
+  }
+
+  __host__ __device__ friend bool
+  operator<(const not_default_constructible_t& lhs, const not_default_constructible_t& rhs)
+  {
+    return lhs.value < rhs.value;
+  }
+
+  // for printing mismatches
+  friend std::ostream& operator<<(std::ostream& os, const not_default_constructible_t& v)
+  {
+    return os << v.value;
+  }
+};
+
+static_assert(!cuda::std::is_default_constructible_v<not_default_constructible_t>);
+static_assert(cuda::std::is_trivially_copyable_v<not_default_constructible_t>);
+
+struct make_not_default_constructible_op_t
+{
+  __host__ __device__ not_default_constructible_t operator()(int i) const
+  {
+    return not_default_constructible_t{i};
+  }
+};
+
+// Device storage for not_default_constructible_t, which thrust::device_vector cannot hold. Elements are constructed on
+// the device. Holds 0, 1, ..., num_items - 1, or the same values in reverse order.
+inline auto make_ndc_buffer(const cuda::stream& stream, int num_items, bool reversed = false)
+{
+  auto buffer =
+    cuda::make_device_buffer<not_default_constructible_t>(stream, c2h::current_device(), num_items, cuda::no_init);
+  const auto policy = thrust::cuda::par.on(stream.get());
+  thrust::tabulate(policy, buffer.data(), buffer.data() + num_items, make_not_default_constructible_op_t{});
+  if (reversed)
+  {
+    thrust::reverse(policy, buffer.data(), buffer.data() + num_items);
+  }
+  stream.sync();
+  return buffer;
+}
+
+CUB_TEST("DeviceMergeSort::SortKeysCopy works with non-default-constructible keys", "[merge][sort][device]", CUB_SMALL)
+{
+  const cuda::stream stream = c2h::make_current_device_stream();
+  const int num_items       = GENERATE(1, 500, 1000000);
+  auto keys_in              = make_ndc_buffer(stream, num_items, true);
+  auto keys_out =
+    cuda::make_device_buffer<not_default_constructible_t>(stream, c2h::current_device(), num_items, cuda::no_init);
+
+  sort_keys_copy(keys_in.data(), keys_out.data(), num_items, custom_less_op_t{});
+
+  REQUIRE_THAT(keys_out, Equals(make_ndc_buffer(stream, num_items)));
+}
+
+CUB_TEST("DeviceMergeSort::SortKeys works with non-default-constructible keys", "[merge][sort][device]", CUB_SMALL)
+{
+  const cuda::stream stream = c2h::make_current_device_stream();
+  const int num_items       = GENERATE(1, 500, 1000000);
+  auto keys_in_out          = make_ndc_buffer(stream, num_items, true);
+
+  sort_keys(keys_in_out.data(), num_items, custom_less_op_t{});
+
+  REQUIRE_THAT(keys_in_out, Equals(make_ndc_buffer(stream, num_items)));
+}
+
+CUB_TEST("DeviceMergeSort::SortPairsCopy works with non-default-constructible keys and values",
+         "[merge][sort][device]",
+         CUB_SMALL)
+{
+  const cuda::stream stream = c2h::make_current_device_stream();
+  const int num_items       = GENERATE(1, 500, 1000000);
+  auto keys_in              = make_ndc_buffer(stream, num_items, true);
+  auto values_in            = make_ndc_buffer(stream, num_items);
+  auto keys_out =
+    cuda::make_device_buffer<not_default_constructible_t>(stream, c2h::current_device(), num_items, cuda::no_init);
+  auto values_out =
+    cuda::make_device_buffer<not_default_constructible_t>(stream, c2h::current_device(), num_items, cuda::no_init);
+
+  sort_pairs_copy(keys_in.data(), values_in.data(), keys_out.data(), values_out.data(), num_items, custom_less_op_t{});
+
+  REQUIRE_THAT(keys_out, Equals(make_ndc_buffer(stream, num_items)));
+  // values were ascending while keys were descending, so values end up descending
+  REQUIRE_THAT(values_out, Equals(make_ndc_buffer(stream, num_items, true)));
+}
+
+CUB_TEST("DeviceMergeSort::SortPairs works with non-default-constructible keys and values",
+         "[merge][sort][device]",
+         CUB_SMALL)
+{
+  const cuda::stream stream = c2h::make_current_device_stream();
+  const int num_items       = GENERATE(1, 500, 1000000);
+  auto keys_in_out          = make_ndc_buffer(stream, num_items, true);
+  auto values_in_out        = make_ndc_buffer(stream, num_items);
+
+  sort_pairs(keys_in_out.data(), values_in_out.data(), num_items, custom_less_op_t{});
+
+  REQUIRE_THAT(keys_in_out, Equals(make_ndc_buffer(stream, num_items)));
+  REQUIRE_THAT(values_in_out, Equals(make_ndc_buffer(stream, num_items, true)));
 }

@@ -44,6 +44,16 @@ struct __uninitialized_array
     return ::cuda::std::launder(reinterpret_cast<const _Tp*>(__data));
   }
 
+  [[nodiscard]] _CCCL_API _Tp (&alias() noexcept)[_Size]
+  {
+    return *::cuda::std::launder(reinterpret_cast<_Tp(*)[_Size]>(__data));
+  }
+
+  [[nodiscard]] _CCCL_API const _Tp (&alias() const noexcept)[_Size]
+  {
+    return *::cuda::std::launder(reinterpret_cast<const _Tp(*)[_Size]>(__data));
+  }
+
   [[nodiscard]] _CCCL_API _Tp& operator[](const size_t __idx) noexcept
   {
     _CCCL_ASSERT(__idx < _Size, "out of bounds access in uninitialized_array::operator[]");
