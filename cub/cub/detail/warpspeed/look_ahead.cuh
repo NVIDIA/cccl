@@ -64,6 +64,25 @@ enum class scan_state : ::cuda::std::uint32_t
   tile_aggregate = 1,
 };
 
+// One ring buffer slot, with its current batch, finished lookahead count, and the prefix of all earlier batches.
+template <typename AccumT>
+struct lookahead_buffer_state
+{
+  ::cuda::std::uint64_t batch_idx;
+  ::cuda::std::uint32_t lookaheads_completed;
+  ::cuda::std::uint32_t incoming_prefix_ready;
+  AccumT incoming_prefix;
+};
+
+// Tickets are handed out monotonically. Each buffer can be recycled after every lookahead reader has finished,
+// independently of output stores that only use CTA-local resources.
+template <typename AccumT, int NumBuffers>
+struct lookahead_batch_state
+{
+  ::cuda::std::uint64_t next_tile_idx;
+  lookahead_buffer_state<AccumT> buffers[NumBuffers];
+};
+
 template <typename AccumT>
 struct tile_state_unaligned_t
 {
@@ -188,7 +207,7 @@ _CCCL_DEVICE_API void warpLoadLookahead(
 // calculate the value of aggrExclusiveCta from the preceding states.
 //
 // The function must be called from a single warp. All passed arguments must be warp-uniform.
-template <int NumTileStatesPerThread, typename AccumT, typename ScanOpT>
+template <int NumTileStatesPerThread, bool HasPrefix = false, typename AccumT, typename ScanOpT>
 [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT warpIncrementalLookahead(
   SpecialRegisters specialRegisters,
   tile_state_t<AccumT>* ptrTileStates,
@@ -253,8 +272,8 @@ template <int NumTileStatesPerThread, typename AccumT, typename ScanOpT>
         (local_aggr =
            warp_reduce_t{temp_storage}.Reduce(regTmpStates[idx].value, scan_op, warp_right_aggregates_count);))
 
-      // We never initialized aggrExclusiveCtaCur when starting look ahead at tile 0
-      aggrExclusiveCtaCur = idxTileCur == 0 ? local_aggr : scan_op(aggrExclusiveCtaCur, local_aggr);
+      // The first batch has no prefix when starting at tile 0. Later batches are seeded by the preceding batch sum.
+      aggrExclusiveCtaCur = !HasPrefix && idxTileCur == 0 ? local_aggr : scan_op(aggrExclusiveCtaCur, local_aggr);
       idxTileCur += warp_right_aggregates_count;
 
       // we can only continue on the next 32 tile states, if we consumed all 32 of this iteration
@@ -274,7 +293,7 @@ template <int NumTileStatesPerThread, typename AccumT, typename ScanOpT>
 // from there directly. Because every reduction begins at the same fixed tiles, no matter which tiles happened to finish
 // first, the order in which values are summed is always the same and the result is identical on every run.
 // idxTilePrev/aggrExclusiveCtaPrev are updated by reference to the last multiple of 32.
-template <int NumTileStatesPerThread, typename AccumT, typename ScanOpT>
+template <int NumTileStatesPerThread, bool HasPrefix = false, typename AccumT, typename ScanOpT>
 [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT warpIncrementalLookaheadStable(
   SpecialRegisters specialRegisters,
   tile_state_t<AccumT>* ptrTileStates,
@@ -325,12 +344,12 @@ template <int NumTileStatesPerThread, typename AccumT, typename ScanOpT>
 
       if (expected_count == 32)
       {
-        aggrExclusiveCtaCur = idxTileCur == 0 ? local_aggr : scan_op(aggrExclusiveCtaCur, local_aggr);
+        aggrExclusiveCtaCur = !HasPrefix && idxTileCur == 0 ? local_aggr : scan_op(aggrExclusiveCtaCur, local_aggr);
         idxTileCur += 32;
       }
       else
       {
-        const AccumT full_aggr = idxTileCur == 0 ? local_aggr : scan_op(aggrExclusiveCtaCur, local_aggr);
+        const AccumT full_aggr = !HasPrefix && idxTileCur == 0 ? local_aggr : scan_op(aggrExclusiveCtaCur, local_aggr);
         idxTilePrev            = idxTileCur;
         aggrExclusiveCtaPrev   = aggrExclusiveCtaCur;
         return full_aggr;
