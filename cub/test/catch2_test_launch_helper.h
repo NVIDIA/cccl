@@ -276,8 +276,7 @@ void launch_with_stream(ActionT action, TupleT& args, cuda::std::index_sequence<
   }
   else
   {
-    // make stream copyable to handle owning stream arguments
-    launch_impl<true>(stream, action, cuda::stream_ref{stream}, cuda::std::get<Is>(args)...);
+    launch_impl<true>(stream, action, stream.get(), cuda::std::get<Is>(args)...);
   }
 }
 } // namespace launch_helper_detail
