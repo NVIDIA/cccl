@@ -150,7 +150,7 @@ _CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
   }
   else
   {
-    return (result);
+    return result;
   }
 }
 // NOLINTEND(misc-redundant-expression)
