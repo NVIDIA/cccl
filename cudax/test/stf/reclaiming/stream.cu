@@ -62,7 +62,7 @@ public:
     }
 
     EXPECT(memory_node.is_device());
-    if (!base)
+    if (base == nullptr)
     {
       cuda_safe_call(cudaMalloc(&base, s));
     }

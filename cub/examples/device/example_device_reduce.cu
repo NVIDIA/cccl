@@ -139,14 +139,11 @@ int main(int argc, char** argv)
   // Check for correctness (and display results, if specified)
   stream.sync();
   const int compare = CompareDeviceResults(&h_reference, d_out.data(), 1, g_verbose, g_verbose, stream);
-  printf("\t%s", compare ? "FAIL" : "PASS");
+  printf("\t%s", compare != 0 ? "FAIL" : "PASS");
   AssertEquals(0, compare);
 
   // Cleanup
-  if (h_in)
-  {
-    delete[] h_in;
-  }
+  delete[] h_in;
 
   printf("\n\n");
 

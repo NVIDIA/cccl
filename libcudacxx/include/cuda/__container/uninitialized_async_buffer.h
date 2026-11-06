@@ -275,7 +275,7 @@ public:
       return *this;
     }
 
-    if (__buf_)
+    if (__buf_ != nullptr)
     {
       __mr_.deallocate(__stream_, __buf_, __get_allocation_size(__count_), __alignment_);
     }
@@ -296,7 +296,7 @@ public:
   //! objects within the buffer have been properly destroyed.
   _CCCL_HOST_API void destroy(::cuda::stream_ref __stream) noexcept
   {
-    if (__buf_)
+    if (__buf_ != nullptr)
     {
       __mr_.deallocate(__stream, __buf_, __get_allocation_size(__count_), __alignment_);
       __buf_   = nullptr;
@@ -468,7 +468,7 @@ public:
   {
     __validate_element_count(__count, __alignment_);
 
-    if (__buf_)
+    if (__buf_ != nullptr)
     {
       __mr_.deallocate(__stream_, __buf_, __get_allocation_size(__old_capacity), __alignment_);
       __buf_   = nullptr;

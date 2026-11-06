@@ -81,7 +81,7 @@ public:
     _CCCL_DIAG_SUPPRESS_MSVC(4996)
     const char* c_str = std::strerror(ev);
     _CCCL_DIAG_POP
-    return c_str ? std::string(c_str) : unknown_err;
+    return c_str != nullptr ? std::string(c_str) : unknown_err;
   }
 }; // end generic_category_result
 

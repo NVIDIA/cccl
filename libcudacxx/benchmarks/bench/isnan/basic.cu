@@ -23,7 +23,8 @@ struct benchmark_op_t
     // "storage" is used to prevent code elimination by the compiler
     // __fp_get_storage and __fp_from_storage are no op
     const auto storage = cuda::std::__fp_get_storage(value);
-    return cuda::std::__fp_from_storage<double>(storage + cuda::std::isnan(value));
+    return cuda::std::__fp_from_storage<double>(
+      storage + static_cast<cuda::std::__fp_storage_of_t<double>>(cuda::std::isnan(value)));
   }
 };
 
