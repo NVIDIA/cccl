@@ -234,6 +234,14 @@ public:
     return ::cuda::std::move(__func());
   }
 
+  // Returns a copy of this iterator with the stored iterators replaced by __iters, keeping the functor. Lets CCCL
+  // rebase iterators onto other storage.
+  _CCCL_EXEC_CHECK_DISABLE
+  [[nodiscard]] _CCCL_API constexpr zip_transform_iterator __rebase(::cuda::std::tuple<_Iterators...> __iters) const
+  {
+    return zip_transform_iterator{__func(), ::cuda::std::move(__iters)};
+  }
+
   struct __zip_transform_op_star
   {
     _Fn& __func_;

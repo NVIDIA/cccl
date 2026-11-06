@@ -151,6 +151,16 @@ public:
   {}
 
   //! \cond
+  // Returns a copy of this iterator with the index iterator replaced by index, keeping the element iterator. Lets CCCL
+  // rebase iterators onto other storage.
+  _CCCL_HOST_DEVICE permutation_iterator
+  __rebase(IndexIterator const& index) const // NOLINT(readability-identifier-naming)
+  {
+    return permutation_iterator(m_element_iterator, index);
+  }
+  //! \endcond
+
+  //! \cond
 
 private:
   // MSVC incorrectly warning about returning a reference to a local/temporary here.
