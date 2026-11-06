@@ -73,7 +73,7 @@ void test_equal(const Policy& policy)
       policy,
       cuda::counting_iterator{short{0}},
       cuda::counting_iterator{size},
-      cuda::counting_iterator{int{0}},
+      cuda::counting_iterator{0},
       cuda::std::equal_to<>{});
     CHECK(res);
   }
@@ -83,7 +83,7 @@ void test_equal(const Policy& policy)
       policy,
       cuda::counting_iterator{short{0}},
       cuda::counting_iterator{short{size}},
-      cuda::counting_iterator{int{0}},
+      cuda::counting_iterator{0},
       cuda::std::equal_to<cuda::std::ptrdiff_t>{});
     CHECK(res);
   }
@@ -160,9 +160,9 @@ void test_equal2(const Policy& policy)
   { // convertible pred
     const auto res = cuda::std::equal(
       policy,
-      cuda::counting_iterator{int{0}},
+      cuda::counting_iterator{0},
       cuda::counting_iterator{int{size}},
-      cuda::counting_iterator{int{0}},
+      cuda::counting_iterator{0},
       cuda::counting_iterator{int{size}},
       cuda::std::equal_to<cuda::std::ptrdiff_t>{});
     CHECK(res);
@@ -173,7 +173,7 @@ void test_equal2(const Policy& policy)
       policy,
       cuda::counting_iterator{short{0}},
       cuda::counting_iterator{size},
-      cuda::counting_iterator{int{0}},
+      cuda::counting_iterator{0},
       cuda::counting_iterator{int{size}},
       cuda::std::equal_to<>{});
     CHECK(res);
@@ -184,7 +184,7 @@ void test_equal2(const Policy& policy)
       policy,
       cuda::counting_iterator{short{0}},
       cuda::counting_iterator{short{size}},
-      cuda::counting_iterator{int{0}},
+      cuda::counting_iterator{0},
       cuda::counting_iterator{int{size}},
       cuda::std::equal_to<cuda::std::ptrdiff_t>{});
     CHECK(res);

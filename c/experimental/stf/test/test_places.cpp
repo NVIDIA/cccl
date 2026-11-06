@@ -29,7 +29,7 @@ static void blocked_mapper_1d(stf_pos4* result, stf_pos4 data_coords, stf_dim4 d
   {
     part_size = 1;
   }
-  const int64_t c = static_cast<int64_t>(data_coords.x);
+  const int64_t c = data_coords.x;
   int64_t place_x = c / static_cast<int64_t>(part_size);
   if (place_x >= static_cast<int64_t>(nplaces))
   {
