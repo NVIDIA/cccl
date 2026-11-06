@@ -23,10 +23,11 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort_capacity
 {
-// Count and scatter use the same block size, with one input segment per thread.
+// The deferred-ID scatter strides over its queue with one ID per thread per pass.
 struct partition_policy
 {
   static constexpr int block_threads = 256;
+  static constexpr int blocks_per_sm = 4;
 };
 
 // Walk launch: one warp per block, with each thread visiting segments_per_thread segments.

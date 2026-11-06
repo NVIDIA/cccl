@@ -25,6 +25,7 @@
 #include <cub/util_debug.cuh>
 #include <cub/util_temporary_storage.cuh>
 
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/utility>
 
 CUB_NAMESPACE_BEGIN
@@ -45,8 +46,8 @@ using group_merge_sort_kernels_t =
                      sort_kernel_t<group_merge_implementation, group_merge_small_policy_selector>,
                      sort_kernel_t<group_merge_implementation, group_merge_large_policy_selector<Key>>>;
 
-// Query or use temporary storage, then sort tiny segments while counting the rest, prefix, and scatter the
-// remaining IDs into capacity bins. These pointers alias caller-provided global storage. It must remain valid
+// Query or use temporary storage, then sort tiny segments while counting and queueing the rest, prefix, and
+// scatter the queued IDs into capacity bins. These pointers alias caller-provided global storage. It must remain valid
 // until every operation queued on the stream has completed, as with other CUB algorithms.
 // Empty ranges are skipped; segments shorter than tiny_walk_policy::inline_cutoff are written to out here.
 template <typename Capacities,
@@ -67,9 +68,12 @@ _CCCL_HOST_API cudaError_t dispatch_tiny_sort_and_partition(
   KernelLauncherFactory launcher_factory = {})
 {
   constexpr int total_bins = Capacities::size + 1;
-  // One allocation holds counts, offsets (with an end sentinel), and cursors; the other holds IDs.
-  const size_t sizes[] = {sizeof(unsigned) * (3 * total_bins + 1), sizeof(unsigned) * size_t{num_segments}};
-  void* allocations[2]{};
+  // The first allocation holds counts and the deferred count (cleared together), offsets (with an end
+  // sentinel), and cursors. The others hold binned IDs and the walk's deferred IDs.
+  const size_t sizes[] = {sizeof(unsigned) * (3 * total_bins + 2),
+                          sizeof(unsigned) * size_t{num_segments},
+                          sizeof(unsigned) * size_t{num_segments}};
+  void* allocations[3]{};
   if (const auto error = CubDebug(alias_temporaries(temp_storage, temp_storage_bytes, allocations, sizes)))
   {
     return error;
@@ -78,11 +82,13 @@ _CCCL_HOST_API cudaError_t dispatch_tiny_sort_and_partition(
   {
     return cudaSuccess;
   }
-  auto* counts  = static_cast<unsigned*>(allocations[0]);
-  auto* offsets = counts + total_bins;
-  auto* cursors = offsets + total_bins + 1;
-  result        = {offsets, static_cast<unsigned*>(allocations[1])};
-  if (const auto error = CubDebug(cudaMemsetAsync(counts, 0, total_bins * sizeof(unsigned), stream)))
+  auto* counts         = static_cast<unsigned*>(allocations[0]);
+  auto* deferred_count = counts + total_bins;
+  auto* offsets        = deferred_count + 1;
+  auto* cursors        = offsets + total_bins + 1;
+  auto* deferred_ids   = static_cast<unsigned*>(allocations[2]);
+  result               = {offsets, static_cast<unsigned*>(allocations[1])};
+  if (const auto error = CubDebug(cudaMemsetAsync(counts, 0, (total_bins + 1) * sizeof(unsigned), stream)))
   {
     return error;
   }
@@ -98,7 +104,9 @@ _CCCL_HOST_API cudaError_t dispatch_tiny_sort_and_partition(
                   num_segments,
                   in,
                   out,
-                  counts)))
+                  counts,
+                  deferred_count,
+                  deferred_ids)))
     {
       return error;
     }
@@ -108,15 +116,25 @@ _CCCL_HOST_API cudaError_t dispatch_tiny_sort_and_partition(
   {
     return error;
   }
-  constexpr unsigned block_threads = partition_policy::block_threads;
   if (num_segments)
   {
+    int sm_count = 0;
+    if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
+    {
+      return error;
+    }
+    // The deferred count is not known on the host; the grid strides over it and never exceeds one block per
+    // block_threads segments.
+    constexpr unsigned block_threads = partition_policy::block_threads;
+    const unsigned grid_size = (::cuda::std::min) (static_cast<unsigned>(sm_count) * partition_policy::blocks_per_sm,
+                                                   num_segments / block_threads + (num_segments % block_threads != 0));
     if (const auto error = CubDebug(
-          launcher_factory(num_segments / block_threads + (num_segments % block_threads != 0), block_threads, 0, stream)
-            .doit(partition_kernel<Capacities, true, BeginIterator, EndIterator, tiny_walk_policy::inline_cutoff>,
+          launcher_factory(grid_size, block_threads, 0, stream)
+            .doit(compact_scatter_kernel<Capacities, BeginIterator, EndIterator>,
                   begins,
                   ends,
-                  num_segments,
+                  deferred_count,
+                  deferred_ids,
                   cursors,
                   result.segment_ids)))
     {
