@@ -410,30 +410,39 @@ if the stream is passed as the environment of the CUB API (usually the last argu
 Both wrapper families preserve the environment's other properties and use the following
 launch behavior:
 
-- Host launch (``TEST_LAUNCH == 0``): enqueue the algorithm's work on a host
-  stream and pass that stream to the wrapped API.
+.. list-table::
+   :header-rows: 1
+   :widths: 16 42 42
 
-- Device launch (``TEST_LAUNCH == 1``): enqueue a parent kernel ordered after pending work
-  on the stream specified by the API environment. The parent kernel invokes the wrapped API
-  with the device-side default stream.
+   * - Launch mode
+     - Two-phase wrappers
+     - ``_ENV`` wrappers
+   * - Host (``TEST_LAUNCH == 0``)
+     - Enqueue the algorithm's work on the supplied stream, or the host default stream
+       when none is supplied. Pass that stream to the wrapped API.
+     - Enqueue the algorithm's work on the environment's stream, or a temporary host
+       stream when no stream property exists. Pass that stream to the wrapped API.
+   * - Device (``TEST_LAUNCH == 1``)
+     - Enqueue a parent kernel on the supplied host stream, or the host default stream
+       when none is supplied.
+     - Enqueue a parent kernel on the environment's host stream, or the host default
+       stream when no stream property exists.
+   * - Graph (``TEST_LAUNCH == 2``)
+     - Capture on the supplied stream when it is non-default, or a temporary capture
+       stream otherwise. Pass the capture stream to the wrapped API. Execute the graph
+       on the supplied stream, or the host default stream when none is supplied.
+     - Capture on the environment's stream, or a temporary host stream when no stream
+       property exists. Pass that stream to the wrapped API and execute the graph on
+       the same stream. An explicitly supplied default stream is rejected.
 
-- Graph launch (``TEST_LAUNCH == 2``): capture the algorithm's work on a non-default capture
-  stream, pass that stream to the wrapped API, and execute the graph on a host stream.
-
-The wrappers wait for execution to complete before returning.
-
-Two-phase wrappers select the supplied stream, or the default stream when none is supplied.
-Graph launches capture on the selected stream when it is non-default, and use a temporary
-capture stream otherwise.
+For device launches, the parent kernel is ordered after pending work on its host stream
+and invokes the wrapped API with the device-side default stream.
+All wrappers wait for execution to complete before returning.
 
 For two-phase graph launches, the wrapper adds the capture stream to a trailing environment
 that does not provide one. When no stream or environment argument is supplied, it appends a
 separate ``stream`` argument. Specify any preceding default parameters explicitly so that
 the environment or stream argument occupies the correct position.
-
-For ``_ENV`` wrappers, host and graph launches select the environment's stream, or create a
-temporary host stream when no stream property exists. Graph ``_ENV`` launches capture on
-that same stream and reject an explicitly supplied default stream.
 
 When an ``_ENV`` environment has no stream property, callers must complete input preparation
 before invoking the wrapper.

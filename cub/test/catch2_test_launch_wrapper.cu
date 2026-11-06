@@ -63,13 +63,8 @@ private:
 template <class T>
 void require_all_equal(cuda::stream_ref stream, const cuda::device_buffer<T>& actual, const T& expected)
 {
-  auto host = c2h::make_host_buffer<T>(stream, c2h::current_device(), actual.size(), cuda::no_init);
-  c2h::copy_to_host(stream, actual, host);
-  for (std::size_t i = 0; i < host.size(); ++i)
-  {
-    INFO("Element index: " << i);
-    REQUIRE(host[i] == expected);
-  }
+  const auto expected_items = c2h::make_host_buffer<T>(stream, c2h::current_device(), actual.size(), expected);
+  REQUIRE_THAT(actual, c2h::Equals(stream, expected_items));
 }
 
 template <class T>
@@ -282,14 +277,14 @@ struct cub_api_example_t
       cuda::__call_or(cuda::get_stream, cuda::stream_ref{cudaStream_t{}}, stream_or_env).get());
   }
 
-  template <class T, class Env>
+  template <class T, class Env = cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t x2_0_with_env(
     std::uint8_t* d_temp_storage,
     std::size_t& temp_storage_bytes,
     const T* d_in,
     T* d_out,
     int num_items,
-    const Env& env)
+    const Env& env = {})
   {
     // Check forwarding during both the storage query and execution.
     if (env.query(get_two_phase_token_t{}) != 123)
@@ -446,9 +441,8 @@ CUB_TEST("Two-phase launch wrapper preserves environment properties", "[test][ut
   CAPTURE(use_default_stream);
 
   launch_test_data<int> data{stream, num_items};
-  const auto stream_prop = cuda::std::execution::prop{cuda::get_stream_t{}, stream};
-  const auto token_prop  = cuda::std::execution::prop{get_two_phase_token_t{}, 123};
-  const auto env         = cuda::std::execution::env{stream_prop, token_prop};
+  const auto token_prop = cuda::std::execution::prop{get_two_phase_token_t{}, 123};
+  const auto env        = cuda::std::execution::env{stream, token_prop};
   const expected_stream_scope expected_scope{stream.get()};
   data.prepare(stream);
 
@@ -499,11 +493,6 @@ CUB_TEST("Two-phase launch wrapper accepts stream-less environments", "[test][ut
     {
       x2_0_with_env_templated<int>(data.in.data(), data.out.data(), num_items, env);
     }
-  }
-  SECTION("property used directly as an environment")
-  {
-    const auto env = cuda::std::execution::prop{get_two_phase_token_t{}, 123};
-    x2_0_with_env(data.in.data(), data.out.data(), num_items, env);
   }
 
   REQUIRE(stream.is_done());
