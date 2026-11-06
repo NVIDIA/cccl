@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from copy import copy
 from functools import cache
 
 from .._caching import _process_wide_cache_registry, cache_with_registered_key_functions
@@ -92,6 +93,17 @@ class _Select(Serializable):
         # recompile nor require a GPU, and calling _get_always_false_op() here
         # would do both (cold cache -> compile_cpp_op_code -> Device() fallback).
         self.always_false_op = RawOp(ltoir=b"", name="always_false")
+
+    def bind(self, *, device_id: int | None = None) -> _Select:
+        """Return a new selector whose partitioner is device-bound.
+
+        Makes the selected device current. Argument descriptors remain shared;
+        binding does not provide thread isolation.
+        """
+        executable = copy(self)
+        executable.partitioner = self.partitioner.bind(device_id=device_id)
+        executable._bound_build_result = executable.partitioner._bound_build_result
+        return executable
 
     def __call__(
         self,
