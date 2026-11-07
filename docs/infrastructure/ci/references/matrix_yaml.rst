@@ -111,7 +111,9 @@ Current defaults for all tags are defined in the ``tags`` section of ``ci/matrix
    * - ``cmake_options``
      - Extra CMake defines, passed as ``-cmake_options "<value>"``.
    * - ``environment``
-     - Environment variables injected into the job.
+     - Environment variables injected into the job. ``ENABLE_CUDA_COMPAT=1`` opts the job into
+       the CUDA forward compatibility (``cuda-compat``) libraries, which are only supported on
+       data center GPUs (see ``.devcontainer/cccl-entrypoint.sh``).
 
 Computed internally, not user-specified:
 
