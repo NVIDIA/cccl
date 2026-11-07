@@ -1186,7 +1186,7 @@ public:
   // implicit single-limb constructor, which would narrow it.
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<_Tp> _CCCL_AND(!__fpmp2_stat_add_assignable_v<base_type, _Tp>))
-  fpmp2_stat& operator+=(const _Tp&) = delete;
+  _CCCL_HOST_DEVICE_API fpmp2_stat& operator+=(const _Tp&) = delete;
   //! @brief Subtract a scalar, as for `operator+=`
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<_Tp> _CCCL_AND __fpmp2_stat_sub_assignable_v<base_type, _Tp>)
@@ -1199,7 +1199,7 @@ public:
   }
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<_Tp> _CCCL_AND(!__fpmp2_stat_sub_assignable_v<base_type, _Tp>))
-  fpmp2_stat& operator-=(const _Tp&) = delete;
+  _CCCL_HOST_DEVICE_API fpmp2_stat& operator-=(const _Tp&) = delete;
   //! @brief Multiply by a scalar, as for `operator+=`
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<_Tp> _CCCL_AND __fpmp2_stat_mul_assignable_v<base_type, _Tp>)
@@ -1212,7 +1212,7 @@ public:
   }
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<_Tp> _CCCL_AND(!__fpmp2_stat_mul_assignable_v<base_type, _Tp>))
-  fpmp2_stat& operator*=(const _Tp&) = delete;
+  _CCCL_HOST_DEVICE_API fpmp2_stat& operator*=(const _Tp&) = delete;
   //! @brief Divide by a scalar, as for `operator+=`
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<_Tp> _CCCL_AND __fpmp2_stat_div_assignable_v<base_type, _Tp>)
@@ -1225,7 +1225,7 @@ public:
   }
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<_Tp> _CCCL_AND(!__fpmp2_stat_div_assignable_v<base_type, _Tp>))
-  fpmp2_stat& operator/=(const _Tp&) = delete;
+  _CCCL_HOST_DEVICE_API fpmp2_stat& operator/=(const _Tp&) = delete;
 
   _CCCL_HOST_DEVICE_API fpmp2_stat& operator++() noexcept
   {

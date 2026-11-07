@@ -317,7 +317,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_low_mul(
 /*
  * Default multiplication, 8 operations: the cross terms are summed by one fma off the path
  * of the exact residual of x_hi * y_hi, and x_lo * y_lo is dropped. In a chain of products
- * x_lo arrives last and enters only that fma, so the dependent latency is that of a TwoSum
+ * x_lo arrives last and enters only that fma, so the dependent latency is that of a Fast2Sum
  * plus one fma and one add. To first order the relative error is below 6u^2; it measures
  * 5.0u^2 at most, as Algorithm 10 of Joldes, Muller & Popescu (2017) does.
  */
@@ -1532,7 +1532,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API void __fpmp2_add_limb(
   *__res_lo = __lo;
 }
 
-// x * c, 6 operations. With x_hi and c scaled into [1, 2), |x_lo * c + residual| < 3u, so
+// x * c, 6 operations. With x_hi and c scaled into [1, 2), |x_lo * c + residual| < 4u, so
 // the one fma rounds by at most 2u^2: relative error below 2u^2 to first order. low skips
 // the renormalization. high is Algorithm 7 of Joldes, Muller & Popescu (2017), 10
 // operations, measured at most 1.5u^2.

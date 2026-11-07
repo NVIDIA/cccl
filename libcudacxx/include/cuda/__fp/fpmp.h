@@ -920,10 +920,10 @@ public:
   }
 
   // Compound assignment with a scalar that one limb holds exactly. Constrained for the
-  // same reason as the single-component constructor: a bare _FpType
-  // parameter would win overload resolution against operator+=(const fpmp2&) for any
-  // narrowing arithmetic source, since a standard conversion beats a user-defined one, and
-  // would then accumulate a value that had already lost its low limb.
+  // same reason as the single-component constructor: a bare _FpType parameter would win
+  // overload resolution against operator+=(const fpmp2&) for any narrowing arithmetic
+  // source, since a standard conversion beats a user-defined one, and would then
+  // accumulate a value that had already lost its low limb.
   _CCCL_TEMPLATE(typename _Tp)
   _CCCL_REQUIRES(__fpmp2_is_limb_v<_Tp, _FpType>)
   _CCCL_HOST_DEVICE_API fpmp2& operator+=(const _Tp __c) noexcept
@@ -1042,7 +1042,7 @@ public:
   }
 
   // Mixed arithmetic: a scalar that one limb holds exactly (__fpmp2_is_limb_v) takes the
-  // single-limb kernels; any other scalar is converted to the pair first.
+  // single-limb kernels; a scalar dividend or any other scalar is converted to the pair.
   // === mul ===
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpmp2> || ::cuda::std::is_same_v<_T2, fpmp2>)
@@ -1315,9 +1315,10 @@ private:
  *     when types are already matched.
  *   - Mixed form (one template, symmetric): accepts any combination where
  *     at least one operand is fpmp2 and at least one is a built-in
- *     arithmetic type. The arithmetic side is converted to the fpmp2 side
- *     via its (implicit/explicit) constructor, then dispatched to the
- *     strict form. Examples:
+ *     arithmetic type. A scalar that one limb holds exactly, other than a
+ *     dividend, takes the single-limb kernels; any other arithmetic side is
+ *     converted to the fpmp2 side via its (implicit/explicit) constructor,
+ *     then dispatched to the strict form. Examples:
  *       ffloat x = sub<fpmp2_accuracy::high>(a, 1.0f);  // ffloat - float
  *       ffloat y = sub<fpmp2_accuracy::high>(1.0f, a);  // float  - ffloat
  *
