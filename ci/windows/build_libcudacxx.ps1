@@ -37,15 +37,18 @@ if ($env:GITHUB_ACTIONS) {
     }
 }
 
-configure_and_build_preset "libcudacxx" $PRESET $LOCAL_CMAKE_OPTIONS
 
-if ($uploadTestArtifacts) {
-    Write-Host "Packaging test artifacts..."
-    Invoke-Checked {
-        & bash "./upload_libcudacxx_test_artifacts.sh"
-    } "Packaging test artifacts failed"
-}
+try {
+    configure_and_build_preset "libcudacxx" $PRESET $LOCAL_CMAKE_OPTIONS
+} finally {
+    if ($uploadTestArtifacts) {
+        Write-Host "Packaging test artifacts..."
+        Invoke-Checked {
+            & bash "./upload_libcudacxx_test_artifacts.sh"
+        } "Packaging test artifacts failed"
+    }
 
-If($CURRENT_PATH -ne "ci") {
-    popd
+    If($CURRENT_PATH -ne "ci") {
+        popd
+    }
 }
