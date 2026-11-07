@@ -20,6 +20,7 @@
 
 #include <cccl/c/serialization.h>
 #include <cccl/c/types.h>
+#include <util/error.h>
 
 namespace cccl::serialization_v2
 {
@@ -114,6 +115,19 @@ inline std::vector<char> write_blob(
   return out;
 }
 
+// Rejects a blob built for a different OS or CPU architecture than this machine.
+inline void check_os_arch(const blob_header& header)
+{
+  if (header.os_arch_tag != static_cast<uint32_t>(current_os_arch_tag()))
+  {
+    throw cccl::detail::cccl_error(
+      CUDA_ERROR_INVALID_VALUE,
+      "cccl.c.parallel.v2 serialization: blob was built for a different OS/architecture than this machine "
+      "(cccl.c.parallel.v2 AoT blobs are portable within the same OS family and CPU architecture, e.g. "
+      "Linux x86_64 -> Linux x86_64, but not across OS or architecture)");
+  }
+}
+
 // Result of a successful read_blob(): parsed metadata plus a view INTO the
 // input buffer (payload/payload's lifetime is tied to the caller's buffer —
 // copy out before that buffer is freed/goes out of scope).
@@ -136,7 +150,7 @@ inline parsed_blob read_blob(cccl_serialization_algo_v2_t expected_algo, const v
   auto need     = [&](size_t n) {
     if (n > size - pos)
     {
-      throw std::runtime_error("cccl.c.parallel.v2 serialization: truncated blob");
+      throw cccl::detail::cccl_error(CUDA_ERROR_INVALID_VALUE, "cccl.c.parallel.v2 serialization: truncated blob");
     }
   };
 
@@ -147,19 +161,14 @@ inline parsed_blob read_blob(cccl_serialization_algo_v2_t expected_algo, const v
 
   if (std::memcmp(header.magic, k_blob_magic, sizeof(k_blob_magic)) != 0)
   {
-    throw std::runtime_error("cccl.c.parallel.v2 serialization: bad magic (not a v2 CCCL C parallel blob)");
+    throw cccl::detail::cccl_error(
+      CUDA_ERROR_INVALID_VALUE, "cccl.c.parallel.v2 serialization: bad magic (not a v2 CCCL C parallel blob)");
   }
   if (header.algo_tag != static_cast<uint32_t>(expected_algo))
   {
-    throw std::runtime_error("cccl.c.parallel.v2 serialization: algorithm tag mismatch");
+    throw cccl::detail::cccl_error(CUDA_ERROR_INVALID_VALUE, "cccl.c.parallel.v2 serialization: algorithm tag mismatch");
   }
-  if (header.os_arch_tag != static_cast<uint32_t>(current_os_arch_tag()))
-  {
-    throw std::runtime_error(
-      "cccl.c.parallel.v2 serialization: blob was built for a different OS/architecture than this machine "
-      "(cccl.c.parallel.v2 AoT blobs are portable within the same OS family and CPU architecture, e.g. "
-      "Linux x86_64 -> Linux x86_64, but not across OS or architecture)");
-  }
+  check_os_arch(header);
 
   parsed_blob result{};
   result.algo_tag       = static_cast<cccl_serialization_algo_v2_t>(header.algo_tag);
@@ -191,12 +200,13 @@ inline parsed_blob read_blob(cccl_serialization_algo_v2_t expected_algo, const v
   pos += sizeof(psize);
   if (psize == 0)
   {
-    throw std::runtime_error("cccl.c.parallel.v2 serialization: empty payload");
+    throw cccl::detail::cccl_error(CUDA_ERROR_INVALID_VALUE, "cccl.c.parallel.v2 serialization: empty payload");
   }
   need(static_cast<size_t>(psize));
   if (size - pos != static_cast<size_t>(psize))
   {
-    throw std::runtime_error("cccl.c.parallel.v2 serialization: trailing bytes after payload");
+    throw cccl::detail::cccl_error(
+      CUDA_ERROR_INVALID_VALUE, "cccl.c.parallel.v2 serialization: trailing bytes after payload");
   }
   result.payload      = p + pos;
   result.payload_size = static_cast<size_t>(psize);

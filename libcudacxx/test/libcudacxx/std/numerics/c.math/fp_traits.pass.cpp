@@ -230,6 +230,75 @@ TEST_FUNC void test_isunordered(float val)
 #endif // _CCCL_HAS_FLOAT128()
 }
 
+TEST_FUNC void test_fp64_comparison(
+  double x, double y, bool less, bool less_equal, bool greater, bool greater_equal, bool less_greater)
+{
+  assert(cuda::std::isless(x, y) == less);
+  assert(cuda::std::islessequal(x, y) == less_equal);
+  assert(cuda::std::isgreater(x, y) == greater);
+  assert(cuda::std::isgreaterequal(x, y) == greater_equal);
+  assert(cuda::std::islessgreater(x, y) == less_greater);
+}
+
+// double has an integer implementation on slow fp64 targets
+// check the cases where the integer mapping can go wrong
+TEST_FUNC void test_fp64_edge_cases(float val)
+{
+  // values are derived from val at runtime
+  double one   = val;
+  double two   = one + one;
+  double zero  = one - one;
+  double nzero = -zero;
+  double inf   = cuda::std::numeric_limits<double>::infinity() * one;
+  double max   = cuda::std::numeric_limits<double>::max() * one;
+  double dmin  = cuda::std::numeric_limits<double>::denorm_min() * one;
+  double nan   = cuda::std::numeric_limits<double>::quiet_NaN();
+  double nnan  = cuda::std::copysign(nan, -one);
+
+  //                   x      y      <      <=     >      >=     <>
+  // signed zeros compare equal
+  test_fp64_comparison(zero, nzero, false, true, false, true, false);
+  test_fp64_comparison(nzero, zero, false, true, false, true, false);
+
+  // negative values are ordered in reverse to their bit patterns
+  test_fp64_comparison(-one, -two, false, false, true, true, true);
+  test_fp64_comparison(-two, -one, true, true, false, false, true);
+  test_fp64_comparison(-one, one, true, true, false, false, true);
+  test_fp64_comparison(one, -one, false, false, true, true, true);
+
+  // equal values
+  test_fp64_comparison(one, one, false, true, false, true, false);
+  test_fp64_comparison(-one, -one, false, true, false, true, false);
+
+  // infinities and limits
+  test_fp64_comparison(-inf, inf, true, true, false, false, true);
+  test_fp64_comparison(inf, inf, false, true, false, true, false);
+  test_fp64_comparison(-inf, -max, true, true, false, false, true);
+  test_fp64_comparison(max, inf, true, true, false, false, true);
+
+  // denormals
+  test_fp64_comparison(dmin, zero, false, false, true, true, true);
+  test_fp64_comparison(-dmin, zero, true, true, false, false, true);
+  test_fp64_comparison(-dmin, nzero, true, true, false, false, true);
+  test_fp64_comparison(-dmin, dmin, true, true, false, false, true);
+
+  // NaNs are unordered, including negative NaNs whose bit patterns would map below -inf
+  test_fp64_comparison(nan, one, false, false, false, false, false);
+  test_fp64_comparison(one, nan, false, false, false, false, false);
+  test_fp64_comparison(nan, nan, false, false, false, false, false);
+  test_fp64_comparison(nan, inf, false, false, false, false, false);
+  test_fp64_comparison(nnan, -one, false, false, false, false, false);
+  test_fp64_comparison(-inf, nnan, false, false, false, false, false);
+
+  // mixed arguments are promoted to double
+  int int_one = static_cast<int>(val);
+  assert(cuda::std::isless(-int_one, -0.5 * one) == true);
+  assert(cuda::std::isgreater(int_one - int_one, nzero) == false);
+  assert(cuda::std::islessequal(int_one - int_one, nzero) == true);
+  assert(cuda::std::islessgreater(-2 * int_one, -one) == true);
+  assert(cuda::std::isless(-val, -0.5 * one) == true);
+}
+
 TEST_FUNC void test(float val)
 {
   test_isgreater(val);
@@ -238,6 +307,7 @@ TEST_FUNC void test(float val)
   test_islessequal(val);
   test_islessgreater(val);
   test_isunordered(val);
+  test_fp64_edge_cases(val);
 }
 
 __global__ void test_global_kernel(float* val)

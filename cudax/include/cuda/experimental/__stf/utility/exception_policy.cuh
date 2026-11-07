@@ -982,20 +982,50 @@ struct as_expected_t
 };
 inline constexpr as_expected_t as_expected{};
 
+namespace detail
+{
+template <class _R>
+auto __normalize(_R&& __r);
+} // namespace detail
+
 /**
- * @brief Predicate guard for an exception-path sequence.
+ * @brief Predicate guard: `when(pred)(s)` restricts the sink `s` to the cases where `pred` holds.
  *
+ * `when(pred)` is itself a sink, the guard; applying it to a sink `s` yields `when(pred) & s`.
  * There is no runtime "nop" answer on the exception path: a hook either accepts or forwards.
  * A true predicate contributes a void effect answer so `&` continues; false forwards by
  * throwing. As a `|` arm this means "not applicable, try the next arm"; inside `&`, false
- * passes the whole sequence through. `if_isa` remains separate because its typed claims support
- * the starved-arm theorem, while arbitrary predicates do not.
+ * passes the whole sequence through. The predicate takes either nothing or the
+ * `const std::exception*` of the failure in flight. A guard can be named and applied to
+ * several sinks: `auto transient = when(is_transient); transient(retry(3)) | transient(notify(log))`.
+ * The guard holds the predicate by value: an lvalue predicate is copied, so later changes to the
+ * original do not reach the guard; pass `std::ref(pred)` to share one predicate object. Each
+ * application copies the predicate into the guarded sink.
+ * `if_isa` remains separate because its typed claims support the starved-arm theorem, while
+ * arbitrary predicates do not.
  */
 template <class _Pred>
-struct when_t
+struct when
 {
-  _CUDAX_STF_SINK(when_t)
+  _CUDAX_STF_SINK(when)
   _Pred __pred_;
+
+  explicit when(_Pred __pred)
+      : __pred_(::cuda::std::move(__pred))
+  {}
+
+  //! @brief Applies the guard to a sink: `when(pred)(s)` is `when(pred) & s`.
+  template <class _P>
+  auto operator()(_P&& __p) const&
+  {
+    return *this & detail::__normalize(::cuda::std::forward<_P>(__p));
+  }
+
+  template <class _P>
+  auto operator()(_P&& __p) &&
+  {
+    return ::cuda::std::move(*this) & detail::__normalize(::cuda::std::forward<_P>(__p));
+  }
 
   static constexpr bool __nothrow_pred =
     ::cuda::std::is_invocable_v<_Pred&, const ::std::exception*>
@@ -2463,7 +2493,7 @@ struct __policy_and : __composite_hooks<_L, _R>
   }
 
   // The code channel, as on the exception channel: `_L` runs first, and a status it passes
-  // through leaves the composite without reaching `_R` (which is what makes `when(gate, p)` a
+  // through leaves the composite without reaching `_R` (which is what makes `when(gate)(p)` a
   // gate); otherwise `_R` answers. A throw from either side ends the matter.
   template <
     class _Status,
@@ -4191,18 +4221,6 @@ template <class _P,
 [[nodiscard]] auto operator*(int __n, _P&& __p)
 {
   return ::cuda::std::forward<_P>(__p) * __n;
-}
-
-/**
- * @brief Restricts a policy with a runtime predicate.
- *
- * Returns `when_t{pred} & p`: as a `|` arm, false means the next alternative gets the
- * exception; inside a larger `&`, false passes the whole sequence through.
- */
-template <class _Pred, class _P>
-auto when(_Pred&& __pred, _P&& __p)
-{
-  return when_t<_Pred>{::cuda::std::forward<_Pred>(__pred)} & detail::__normalize(::cuda::std::forward<_P>(__p));
 }
 
 /**
@@ -6138,14 +6156,20 @@ UNITTEST("alternation and repetition nested under & and |")
 
   // An alternation of two sequences, each ending in a value answer.
   int effects     = 0;
-  const auto tick = when(
-    [&](const ::std::exception*) {
-      ++effects;
-      return true;
-    },
-    noop);
+  const auto tick = when([&](const ::std::exception*) {
+    ++effects;
+    return true;
+  })(noop);
   EXPECT((((tick & if_isa<key>(subst(1))) | (tick & subst(2)))->*throw_boom) == 2);
   EXPECT(effects == 2);
+
+  // A named selector applies to several sinks; each application copies the predicate.
+  int asked        = 0;
+  const auto gated = when([&](const ::std::exception*) {
+    return ++asked > 1;
+  });
+  EXPECT(((gated(subst(1)) | gated(subst(2)) | subst(3))->*throw_boom) == 2);
+  EXPECT(asked == 2);
 
   // The outermost forms that always worked still do.
   EXPECT(((notify(quiet) & if_isa<key>(subst(1)) | subst(2))->*throw_boom) == 2);
@@ -6229,11 +6253,9 @@ UNITTEST("selecting arms decline by return")
   EXPECT(two.__claims(&b) == __claim::__yes);
   const ::std::overflow_error other("other");
   EXPECT(two.__claims(&other) == __claim::__no);
-  auto guarded = when(
-    [](const ::std::exception*) {
-      return true;
-    },
-    subst(1));
+  auto guarded = when([](const ::std::exception*) {
+    return true;
+  })(subst(1));
   static_assert(__has_claim<decltype(guarded)>);
   static_assert(!__has_pure_claim<decltype(guarded)>);
   static_assert(!__has_claim<decltype(notify & subst(1))>);
@@ -6285,23 +6307,19 @@ UNITTEST("selecting arms decline by return")
 
   // A predicate is evaluated exactly once, whether it claims or declines.
   int evals = 0;
-  EXPECT(((when(
-             [&](const ::std::exception*) {
-               ++evals;
-               return false;
-             },
-             subst(1))
+  EXPECT(((when([&](const ::std::exception*) {
+             ++evals;
+             return false;
+           })(subst(1))
            | subst(2))
             ->*throw_boom)
          == 2);
   EXPECT(evals == 1);
   evals = 0;
-  EXPECT(((when(
-             [&](const ::std::exception*) {
-               ++evals;
-               return true;
-             },
-             subst(1))
+  EXPECT(((when([&](const ::std::exception*) {
+             ++evals;
+             return true;
+           })(subst(1))
            | subst(2))
             ->*throw_boom)
          == 1);
@@ -6314,12 +6332,12 @@ UNITTEST("selecting arms decline by return")
     ++thrown;
     throw ::std::invalid_argument("predicate");
   };
-  static_assert(!detail::__nothrow_claim<decltype(when(bad_pred, subst(1)))>);
+  static_assert(!detail::__nothrow_claim<decltype(when(bad_pred)(subst(1)))>);
   static_assert(detail::__nothrow_claim<decltype(two)>);
-  EXPECT(((when(bad_pred, subst(1)) | if_isa<::std::invalid_argument>(subst(3)) | subst(0))->*throw_boom) == 3);
+  EXPECT(((when(bad_pred)(subst(1)) | if_isa<::std::invalid_argument>(subst(3)) | subst(0))->*throw_boom) == 3);
   EXPECT(thrown == 1);
   thrown = 0;
-  EXPECT(((when(bad_pred, subst(1)) * 2 | if_isa<::std::invalid_argument>(subst(4)) | subst(0))->*throw_boom) == 4);
+  EXPECT(((when(bad_pred)(subst(1)) * 2 | if_isa<::std::invalid_argument>(subst(4)) | subst(0))->*throw_boom) == 4);
   EXPECT(thrown == 2);
 
   // An effect ahead of a selecting arm still runs when that arm declines: the sequence's claim
@@ -6332,11 +6350,9 @@ UNITTEST("selecting arms decline by return")
   // repetition and may claim on a later one.
   EXPECT(((if_isa<key>(subst(1)) * 3 | subst(0))->*throw_boom) == 0);
   int asked = 0;
-  EXPECT(((when(
-             [&](const ::std::exception*) {
-               return ++asked >= 3;
-             },
-             subst(7))
+  EXPECT(((when([&](const ::std::exception*) {
+             return ++asked >= 3;
+           })(subst(7))
              * 5
            | subst(0))
             ->*throw_boom)
@@ -6349,13 +6365,10 @@ UNITTEST("selecting arms decline by return")
   // Void callables through the same paths.
   ::std::ostringstream quiet;
   int ran = 0;
-  (if_isa<key>(notify(quiet))
-   | if_isa<boom>(when(
-     [&](const ::std::exception*) {
-       ++ran;
-       return true;
-     },
-     notify(quiet))))
+  (if_isa<key>(notify(quiet)) | if_isa<boom>(when([&](const ::std::exception*) {
+     ++ran;
+     return true;
+   })(notify(quiet))))
       ->*[] {
             throw boom();
           };
@@ -6752,10 +6765,10 @@ UNITTEST("guard translate delay backoff remember")
     const auto is_low = [](const ::std::exception* __exception) {
       return __exception && dynamic_cast<const __ut_low_error*>(__exception);
     };
-    const int claimed = (when(is_low, subst(1)) | subst(2))->*[]() -> int {
+    const int claimed = (when(is_low)(subst(1)) | subst(2))->*[]() -> int {
       throw __ut_low_error("low");
     };
-    const int declined = (when(is_low, subst(1)) | subst(2))->*[]() -> int {
+    const int declined = (when(is_low)(subst(1)) | subst(2))->*[]() -> int {
       throw __ut_high_error("high");
     };
     EXPECT(claimed == 1);
@@ -6763,11 +6776,9 @@ UNITTEST("guard translate delay backoff remember")
   }
   {
     const int claimed =
-      (when(
-         [](const ::std::exception* __exception) {
-           return !__exception;
-         },
-         subst(5))
+      (when([](const ::std::exception* __exception) {
+         return !__exception;
+       })(subst(5))
        | subst(6))
         ->*[]() -> int {
       throw 42;
@@ -6776,20 +6787,16 @@ UNITTEST("guard translate delay backoff remember")
   }
   {
     const int accepted =
-      when(
-        [] {
-          return true;
-        },
-        subst(3))
+      when([] {
+        return true;
+      })(subst(3))
         ->*[]() -> int {
       throw __ut_low_error("low");
     };
     const int declined =
-      (when(
-         [] {
-           return false;
-         },
-         subst(3))
+      (when([] {
+         return false;
+       })(subst(3))
        | subst(4))
         ->*[]() -> int {
       throw __ut_low_error("low");
@@ -7630,13 +7637,10 @@ UNITTEST("type erasure")
   }
   // Dynamic and static policies side by side in one expression.
   {
-    const int x =
-      when(
-        [] {
-          return true;
-        },
-        dynamic(subst(11)))
-        ->*[]() -> int {
+    const int x = when([] {
+                    return true;
+                  })(dynamic(subst(11)))
+                    ->*[]() -> int {
       throw ::std::runtime_error("x");
     };
     EXPECT(x == 11);
@@ -7684,11 +7688,9 @@ UNITTEST("type erasure")
   {
     // A stored int that FITS the unsigned body converts.
     const unsigned x =
-      dynamic(when(
-                [] {
-                  return true;
-                },
-                subst(7))
+      dynamic(when([] {
+                return true;
+              })(subst(7))
               | subst(0u))
         ->*[]() -> unsigned {
       throw ::std::runtime_error("x");
@@ -7700,11 +7702,9 @@ UNITTEST("type erasure")
     bool failed = false;
     try
     {
-      dynamic(when(
-                [] {
-                  return true;
-                },
-                subst(-1))
+      dynamic(when([] {
+                return true;
+              })(subst(-1))
               | subst(0))
           ->*[]() -> unsigned {
         throw ::std::runtime_error("x");
@@ -7721,11 +7721,9 @@ UNITTEST("type erasure")
     bool failed = false;
     try
     {
-      dynamic(when(
-                [] {
-                  return true;
-                },
-                subst(1.5))
+      dynamic(when([] {
+                return true;
+              })(subst(1.5))
               | subst(0))
           ->*[]() -> int {
         throw ::std::runtime_error("x");
@@ -8298,11 +8296,9 @@ UNITTEST("error sinks: & stops at the first fwd on both channels")
   using namespace cuda::experimental::stf::sump;
   ::std::ostringstream log;
   bool gate = false;
-  EXPECT(((when(
-             [&] {
-               return gate;
-             },
-             notify(log))
+  EXPECT(((when([&] {
+             return gate;
+           })(notify(log))
            | fwd)
           << cudaErrorInvalidValue)
            .status<cudaError_t>()
@@ -8673,9 +8669,9 @@ UNITTEST("error sinks: composites and the bridge on a code")
   const auto gate = [&] {
     return open;
   };
-  EXPECT(((when(gate, noop) | fwd) << cudaErrorInvalidValue).forwarded());
+  EXPECT(((when(gate)(noop) | fwd) << cudaErrorInvalidValue).forwarded());
   open = true;
-  EXPECT(!((when(gate, noop) | fwd) << cudaErrorInvalidValue).forwarded());
+  EXPECT(!((when(gate)(noop) | fwd) << cudaErrorInvalidValue).forwarded());
   // The text targets of store take the trait's name, allocation-bounded for a span.
   char buffer[64]{};
   store(::cuda::std::span<char>(buffer)) << cudaErrorInvalidValue;
