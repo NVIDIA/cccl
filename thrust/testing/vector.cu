@@ -625,6 +625,89 @@ TEST_CASE("TestVectorEquality", "[vector]")
   REQUIRE_FALSE(h_c == s_b);
 }
 
+struct overloaded_address_of
+{
+  int value;
+
+  _CCCL_HOST_DEVICE overloaded_address_of* operator&()
+  {
+    return this;
+  }
+
+  _CCCL_HOST_DEVICE const overloaded_address_of* operator&() const
+  {
+    return this + 1;
+  }
+
+  _CCCL_HOST_DEVICE friend bool operator==(const overloaded_address_of& lhs, const overloaded_address_of& rhs)
+  {
+    return lhs.value == rhs.value;
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const overloaded_address_of& self)
+  {
+    return os << self.value;
+  }
+};
+
+TEST_CASE("TestVectorEqualityOverloadedAddressOf", "[vector]")
+{
+  // The const operator& of the elements must not be used to compare them
+  const thrust::host_vector<overloaded_address_of> h{{0}, {1}, {2}};
+  const thrust::device_vector<overloaded_address_of> d = h;
+
+  REQUIRE(h == d);
+  REQUIRE(d == h);
+}
+
+struct deleted_address_of
+{
+  int value;
+
+  void operator&() const = delete;
+};
+
+struct nontrivial_deleted_address_of
+{
+  int value = 0;
+
+  nontrivial_deleted_address_of() = default;
+
+  _CCCL_HOST_DEVICE explicit nontrivial_deleted_address_of(int v)
+      : value(v)
+  {}
+
+  _CCCL_HOST_DEVICE nontrivial_deleted_address_of(const nontrivial_deleted_address_of& other)
+      : value(other.value)
+  {}
+
+  nontrivial_deleted_address_of& operator=(const nontrivial_deleted_address_of&) = default;
+
+  void operator&() const = delete;
+};
+
+using deleted_address_of_types = unittest::type_list<deleted_address_of, nontrivial_deleted_address_of>;
+
+TEMPLATE_LIST_TEST_CASE("TestVectorDeletedAddressOf", "[vector]", deleted_address_of_types)
+{
+  using T = TestType;
+
+  // Elements must be constructed, copied and accessed without their operator&
+  thrust::device_vector<T> d(2);
+  d[0] = T{1};
+  REQUIRE(static_cast<T>(d[0]).value == 1);
+
+  const thrust::host_vector<T> h(2, T{2});
+  d = h;
+  d.push_back(T{3});
+
+  const thrust::host_vector<T> result = d;
+  REQUIRE(result.size() == 3);
+  REQUIRE(result[0].value == 2);
+  REQUIRE(result[1].value == 2);
+  REQUIRE(result[2].value == 3);
+}
+
 TEST_CASE("TestVectorInequality", "[vector]")
 {
   const thrust::host_vector<int> h_a{0, 1, 2};

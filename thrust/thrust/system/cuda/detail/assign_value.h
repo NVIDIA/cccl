@@ -21,6 +21,8 @@
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__memory/addressof.h>
+
 #  include <nv/target>
 
 _CCCL_DIAG_PUSH
@@ -88,8 +90,9 @@ struct cross_system_assign_host_path
   _CCCL_HOST void operator()(System1&, execution_policy<DerivedPolicy2>& system2, Pointer1 dst, Pointer2 src)
   {
     thrust::detail::it_value_t<Pointer2> copy_dst;
-    const cudaError status = trivial_copy_from_device(&copy_dst, raw_pointer_cast(src), 1, stream(system2));
-    *dst                   = copy_dst; // may convert type
+    const cudaError status =
+      trivial_copy_from_device(::cuda::std::addressof(copy_dst), raw_pointer_cast(src), 1, stream(system2));
+    *dst = copy_dst; // may convert type
     throw_on_error(status, "__copy:: D->H: failed");
   }
 
@@ -98,7 +101,8 @@ struct cross_system_assign_host_path
   _CCCL_HOST void operator()(execution_policy<DerivedPolicy1>& system1, System2&, Pointer1 dst, Pointer2 src)
   {
     thrust::detail::it_value_t<Pointer1> copy_src = *src; // may convert type
-    const cudaError status = trivial_copy_to_device(raw_pointer_cast(dst), &copy_src, 1, stream(system1));
+    const cudaError status =
+      trivial_copy_to_device(raw_pointer_cast(dst), ::cuda::std::addressof(copy_src), 1, stream(system1));
     throw_on_error(status, "__copy:: H->D: failed");
   }
 };

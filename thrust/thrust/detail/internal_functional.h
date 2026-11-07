@@ -28,6 +28,7 @@
 #include <cuda/__iterator/tabulate_output_iterator.h>
 #include <cuda/__iterator/transform_input_output_iterator.h>
 #include <cuda/__iterator/transform_output_iterator.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -237,7 +238,7 @@ struct uninitialized_fill_functor
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE void operator()(T& x)
   {
-    ::new (static_cast<void*>(&x)) T(exemplar);
+    ::new (static_cast<void*>(::cuda::std::addressof(x))) T(exemplar);
   } // end operator()()
 }; // end uninitialized_fill_functor
 

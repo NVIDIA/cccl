@@ -20,6 +20,7 @@
 #  include <thrust/system/cuda/detail/util.h>
 
 #  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__new/device_new.h>
 #  include <cuda/std/__type_traits/is_trivially_assignable.h>
 #  include <cuda/std/__type_traits/is_trivially_constructible.h>
@@ -42,7 +43,7 @@ struct functor
   void _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(Size idx)
   {
     value_type& out = raw_reference_cast(items[idx]);
-    ::new (static_cast<void*>(&out)) value_type(value);
+    ::new (static_cast<void*>(::cuda::std::addressof(out))) value_type(value);
   }
 };
 } // namespace __uninitialized_fill

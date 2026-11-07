@@ -186,3 +186,34 @@ TEST_CASE("TestUninitializedCopyNNonPODHost", "[uninitialized_copy]")
   REQUIRE(n_device == 0u);
   REQUIRE(n_host == v2.size());
 }
+
+struct deleted_address_of
+{
+  int value = 0;
+
+  deleted_address_of() = default;
+
+  _CCCL_HOST_DEVICE deleted_address_of(const deleted_address_of& other)
+      : value(other.value)
+  {}
+
+  deleted_address_of& operator=(const deleted_address_of&) = default;
+
+  void operator&() const = delete;
+};
+
+TEST_CASE("TestUninitializedCopyDeletedAddressOf", "[uninitialized_copy]")
+{
+  using T = deleted_address_of;
+
+  // Elements must be constructed without their operator&
+  thrust::host_vector<T> h1(2), h2(2);
+  h1[1].value = 1;
+  thrust::uninitialized_copy(h1.begin(), h1.end(), h2.begin());
+  REQUIRE(h2[1].value == 1);
+
+  const thrust::device_vector<T> d1 = h1;
+  thrust::device_vector<T> d2(2);
+  thrust::uninitialized_copy(d1.begin(), d1.end(), d2.begin());
+  REQUIRE(static_cast<T>(d2[1]).value == 1);
+}

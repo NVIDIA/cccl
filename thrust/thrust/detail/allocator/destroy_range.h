@@ -18,6 +18,7 @@
 #include <thrust/for_each.h>
 
 #include <cuda/std/__host_stdlib/memory>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__memory/pointer_traits.h>
 
@@ -46,7 +47,7 @@ struct destroy_via_allocator
   template <typename T>
   _CCCL_HOST_DEVICE void operator()(T& x) noexcept
   {
-    ::cuda::std::allocator_traits<Allocator>::destroy(a, &x);
+    ::cuda::std::allocator_traits<Allocator>::destroy(a, ::cuda::std::addressof(x));
   }
 };
 
