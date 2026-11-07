@@ -273,7 +273,9 @@ public:
 
   _CCCL_HOST_DEVICE_API constexpr void discard(uint64_t __z) noexcept
   {
-    constexpr bool __can_overflow = (_Av != 0 && _Mv != 0 && _Mv - 1 > (_Mp - _Cv) / _Av);
+    // The products below stay in uint64_t if m <= 2^32. For m = 2^n, wrapping around 2^64 does not change the result.
+    constexpr bool __can_overflow =
+      (_Av != 0 && _Mv != 0 && _Mv - 1 > (_Mp - _Cv) / _Av) || ((_Mv & (_Mv - 1)) != 0 && _Mv > 0x100000000ull);
     // Fallback implementation
     if constexpr (__can_overflow)
     {

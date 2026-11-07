@@ -65,6 +65,22 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test_modulus_zero()
   return true;
 }
 
+// discard must not overflow when squaring the multiplier, even though a * (m - 1) + c fits
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test_large_modulus()
+{
+  using cuda::std::uint64_t;
+  test_sequence<uint64_t, 16807, 0, (1ull << 40) - 87>(1, 1000, 300634309918ull);
+  test_sequence<uint64_t, 16807, 11, (1ull << 40) - 87>(1, 1000, 388956881613ull);
+  test_seed_seq<uint64_t, 16807, 0, (1ull << 40) - 87>(1028154845247ull);
+
+  // m = 2^n keeps the logarithmic discard, stepping 10^12 times would not finish
+  test_sequence<uint64_t, 5, 1, (1ull << 40)>(1, 1000, 1085124145118ull);
+  cuda::std::linear_congruential_engine<uint64_t, 5, 1, (1ull << 40)> e;
+  e.discard(1000000000000ull);
+  assert(e() == 725246242822ull);
+  return true;
+}
+
 // P4037R1: linear_congruential_engine must accept the unsigned char UIntType
 TEST_HOST_DEVICE_FUNC void test_p4037r1_small_uinttype()
 {
@@ -82,8 +98,10 @@ int main(int, char**)
   test();
   test_p4037r1_small_uinttype();
   test_modulus_zero();
+  test_large_modulus();
 #if TEST_STD_VER >= 2020
   static_assert(test_modulus_zero());
+  static_assert(test_large_modulus());
 #endif // TEST_STD_VER >= 2020
   return 0;
 }
