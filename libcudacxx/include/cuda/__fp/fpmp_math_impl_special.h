@@ -81,7 +81,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  * Four ranges with transformed-argument Horner polynomials:
  *   x > 34.38    : asymptotic  (sqrt(pi)/2) * rsqrt(x)
  *   x < 4        : 17-term minimax in (3 - x)
- *   4 <= x < 11.46: 20-term minimax in (6.92 - x)
+ *   4 <= x < 11.46: 20-term minimax in (3.46 - x)
  *   11.46 <= x <= 34.38: 19-term minimax in (rsqrt(x)^2 - 0.058)
  *
  * No erf, no sqrt.  Only rsqrt in ranges 1 and 4.
@@ -642,7 +642,7 @@ __internal_fpmp2_boys_f0(const float __a_hi, const float __a_lo, float* __res_hi
 
   if (__a_hi < 0x1.6ebc6ap3f)
   {
-    /* 4 <= a < 11.46: 20-term minimax in x = 6.92 - a (degree 19).
+    /* 4 <= a < 11.46: 20-term minimax in x = 3.46 - a (degree 19).
      * Standard ff-Horner with periodic renormalization -- the
      * compensated variant loses accuracy here because the
      * coefficients span ~22 orders of magnitude. */
