@@ -97,6 +97,8 @@ else
   fi
 fi
 BUILD_DIR=$(awk -F': ' '/-- Build files have been written to:/ {print $2}' "${cmlog_file}" | tail -n1)
+# Native Windows CMake writes CRLF; command substitution only removes LF.
+BUILD_DIR=${BUILD_DIR%$'\r'}
 if [[ -z "${BUILD_DIR}" ]]; then
   echo "::endgroup::"
   echo "🔴‼️ Unable to determine build directory ($(elapsed_time))"

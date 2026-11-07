@@ -122,7 +122,10 @@ def ReadTargets(log, show_all):
     # targets.
     if not header:
         return []
-    assert header == "# ninja log v6\n", "unrecognized ninja log version %r" % header
+    # Version 7 changes the command hash, but retains the same timing fields.
+    assert header in ("# ninja log v6\n", "# ninja log v7\n"), (
+        "unrecognized ninja log version %r" % header
+    )
     targets_dict = {}
     last_end_seen = 0.0
     for line in log:

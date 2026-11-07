@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-ci_dir="$(dirname "${BASH_SOURCE[0]}")"
-cccl_dir="$(realpath "${ci_dir}/..")"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cccl_dir="$(cd "${ci_dir}/.." && pwd)"
 
 MIN_CMAKE=false
 minimum_cmake_version=3.18.0
@@ -43,6 +43,17 @@ fi
 # shellcheck source=ci/build_common.sh
 source "${ci_dir}/build_common.sh"
 cd "${ci_dir}"
+if $CCCL_BUILD_WINDOWS; then
+  cccl_dir=$(cygpath -am "${cccl_dir}")
+  # CTest captures Python output in a pipe, where Windows otherwise uses the
+  # legacy code page and cannot print inspect_changes.py's Unicode diagnostics.
+  export PYTHONUTF8=1
+  # Packaging also runs the inspect_changes fixtures. Linux images already
+  # provide PyYAML; the native Windows Python installation may not.
+  if ! python -c 'import yaml' > /dev/null 2>&1; then
+    python -m pip install PyYAML
+  fi
+fi
 
 print_environment_details
 

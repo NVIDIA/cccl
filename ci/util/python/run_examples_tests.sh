@@ -15,6 +15,33 @@ source "$ci_dir/pyenv_helper.sh"
 
 python_payload_init "$@"
 
+if cccl_python_is_windows; then
+  # CuPy currently needs the system MSVC runtime (cupy/cupy#10316). Keep this
+  # exception local to examples: cuda-cccl's other lanes test bundled runtimes.
+  (
+    runtime="$(cygpath -u "${SystemRoot:-C:/Windows}")/System32/msvcp140.dll"
+    if [[ ! -f "$runtime" ]]; then
+      installer_dir=$(mktemp -d)
+      trap 'rm -rf -- "$installer_dir"' EXIT
+      installer="$installer_dir/vc_redist.x64.exe"
+      curl -fLS --retry 5 https://aka.ms/vs/17/release/vc_redist.x64.exe -o "$installer"
+      installer_status=0
+      MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' \
+        "$installer" /install /quiet /norestart || installer_status=$?
+      # Windows installer exit 3010 means installation succeeded, reboot needed.
+      # Bash may expose only its low byte (194).
+      if [[ "$installer_status" -ne 0 && "$installer_status" -ne 3010 && "$installer_status" -ne 194 ]]; then
+        echo "MSVC runtime installation failed: ${installer_status}" >&2
+        exit 1
+      fi
+      if [[ ! -f "$runtime" ]]; then
+        echo "MSVC runtime installation did not provide ${runtime}" >&2
+        exit 1
+      fi
+    fi
+  )
+fi
+
 # Install cuda_cccl, plus CuPy which the cuda.compute examples require, plus
 # pytest-benchmark for the host-overhead benchmark smoke test below. (cuda-bench,
 # for the throughput smoke, is installed best-effort further down since it does
@@ -41,6 +68,12 @@ python -m pytest -n 6 test_examples.py
 # of silently surviving until someone runs the perf suite.
 cd "${repo_root}/python/cuda_cccl/benchmarks/compute/host/"
 python -m pytest -v --benchmark-disable .
+
+# The existing Windows examples lane covers the host benchmarks; the nvbench
+# throughput harness is supported by the Linux lanes.
+if cccl_python_is_windows; then
+  exit 0
+fi
 
 # Smoke-test the throughput (nvbench) benchmarks the same way. --profile runs
 # each configuration once (no sampling); --quick uses the reduced quick_configs

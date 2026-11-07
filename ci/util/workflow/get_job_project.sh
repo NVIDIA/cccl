@@ -30,5 +30,5 @@ if [[ -z "$job_id" ]]; then
 fi
 
 job_def=$("${ci_dir}/util/workflow/get_job_def.sh" "$job_id")
-project=$(echo "$job_def" | jq -r '.origin.matrix_job.project')
+project=$(echo "$job_def" | jq -rj '.origin.matrix_job.project')
 echo "$project"
