@@ -20,6 +20,18 @@
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"
+#include "math_test_utils.h"
+
+template <typename T, int N>
+TEST_HOST_DEVICE_FUNC void test_wrapper()
+{
+  using V = simd::vec<T, N>;
+  const explicit_math_wrapper<V> x{V(T{4})};
+  const explicit_math_wrapper<V> y{V(T{2})};
+  static_assert(noexcept(simd::isgreater(x, y)));
+
+  check_math_values(simd::isgreater(x, y), true);
+}
 
 template <typename T, int N>
 TEST_HOST_DEVICE_FUNC void test_non_scalar()
@@ -140,6 +152,7 @@ TEST_HOST_DEVICE_FUNC void test_scalar()
 template <typename T, int N>
 TEST_HOST_DEVICE_FUNC void test_type()
 {
+  test_wrapper<T, N>();
   test_non_scalar<T, N>();
   test_scalar<T, N>();
 }
