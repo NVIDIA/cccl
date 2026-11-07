@@ -18,6 +18,11 @@ from cuda.compute import (
 )
 from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
 
+try:
+    from cuda.compute._build_info import USING_V2
+except ImportError:
+    USING_V2 = False
+
 DTYPE_LIST = [
     np.uint8,
     np.uint16,
@@ -502,7 +507,12 @@ def test_histogram_cache_reuses_artifact_for_same_offset_width():
         h_upper_level=h_upper_level,
         num_samples=large_num_samples,
     )
-    assert hist3 is not hist1
+    # v2 always compiles 64-bit offsets, so it shares one build; v1 selects
+    # the offset type at build time.
+    if USING_V2:
+        assert hist3 is hist1
+    else:
+        assert hist3 is not hist1
 
     d_samples = DeviceArray.from_numpy(np.arange(12, dtype=np.float32))
     d_histogram.copy_from_host(np.zeros(num_levels - 1, dtype=np.int32))
@@ -528,6 +538,74 @@ def test_histogram_cache_reuses_artifact_for_same_offset_width():
     np.testing.assert_array_equal(
         d_histogram.copy_to_host(), np.array([3, 3, 3, 3], dtype=np.int32)
     )
+
+
+@pytest.mark.thread_unsafe(
+    reason="Clears the process-wide caches and asserts wrapper identity, which a concurrent instance's clear breaks."
+)
+def test_histogram_cache_reuses_artifact_across_level_counts():
+    # GH:#11418
+    cuda.compute.clear_all_caches()
+
+    num_samples = 64
+    h_samples = np.random.randint(0, 2048, size=num_samples, dtype=np.int32)
+    d_samples = DeviceArray.from_numpy(h_samples)
+    h_lower_level = np.array([0], dtype=np.int32)
+    h_upper_level = np.array([2048], dtype=np.int32)
+
+    def make(num_levels):
+        return cuda.compute.make_histogram_even(
+            d_samples=d_samples,
+            d_histogram=DeviceArray.empty(num_levels - 1, np.int32),
+            h_num_output_levels=np.array([num_levels], dtype=np.int32),
+            h_lower_level=h_lower_level,
+            h_upper_level=h_upper_level,
+            num_samples=num_samples,
+        )
+
+    # Level counts within the same privatized shared-memory regime share a
+    # build on both backends.
+    hist_5 = make(5)
+    hist_9 = make(9)
+    assert hist_5 is hist_9
+
+    # Crossing the 256-bin threshold changes the v1 kernel; v2 takes the level
+    # count at launch and keeps sharing one build.
+    hist_129 = make(129)
+    hist_2049 = make(2049)
+    if USING_V2:
+        assert hist_129 is hist_2049
+        assert hist_129 is hist_5
+    else:
+        assert hist_129 is not hist_2049
+
+    # The shared builds must honour each call's own level count.
+    for hist, num_levels in ((hist_9, 9), (hist_2049, 2049)):
+        h_num_output_levels = np.array([num_levels], dtype=np.int32)
+        d_histogram = DeviceArray.from_numpy(np.zeros(num_levels - 1, dtype=np.int32))
+        temp_bytes = hist(
+            temp_storage=None,
+            d_samples=d_samples,
+            d_histogram=d_histogram,
+            h_num_output_levels=h_num_output_levels,
+            h_lower_level=h_lower_level,
+            h_upper_level=h_upper_level,
+            num_samples=num_samples,
+        )
+        temp_storage = DeviceArray.empty(temp_bytes, np.uint8)
+        hist(
+            temp_storage=temp_storage,
+            d_samples=d_samples,
+            d_histogram=d_histogram,
+            h_num_output_levels=h_num_output_levels,
+            h_lower_level=h_lower_level,
+            h_upper_level=h_upper_level,
+            num_samples=num_samples,
+        )
+        h_expected, _ = np.histogram(h_samples, bins=num_levels - 1, range=(0, 2048))
+        np.testing.assert_array_equal(
+            d_histogram.copy_to_host(), h_expected.astype(np.int32)
+        )
 
 
 def test_make_histogram_even_rejects_mismatched_bound_dtypes():
