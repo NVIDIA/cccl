@@ -29,6 +29,7 @@
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/is_seed_sequence.h>
 #include <cuda/std/__random/is_valid.h>
+#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/array>
@@ -448,25 +449,17 @@ private:
 
   [[nodiscard]] static _CCCL_HOST_DEVICE_API constexpr auto __mulhilo_fallback(result_type __a, result_type __b) noexcept
   {
-    // Generic slow implementation
-    constexpr result_type __w_half  = word_size / 2;
-    constexpr result_type __lo_mask = (result_type{1} << __w_half) - 1;
-
-    result_type __lo  = __a * __b;
-    result_type __ahi = __a >> __w_half;
-    result_type __alo = __a & __lo_mask;
-    result_type __bhi = __b >> __w_half;
-    result_type __blo = __b & __lo_mask;
-
-    result_type __ahbl = __ahi * __blo;
-    result_type __albh = __alo * __bhi;
-
-    result_type __ahbl_albh = ((__ahbl & __lo_mask) + (__albh & __lo_mask));
-    result_type __hi        = __ahi * __bhi + (__ahbl >> __w_half) + (__albh >> __w_half);
-    __hi += __ahbl_albh >> __w_half;
-    __hi += ((__lo >> __w_half) < (__ahbl_albh & __lo_mask));
-
-    return pair{__hi & max(), __lo & max()};
+    // mulhi(a, b, w) is floor(a * b / 2^w). ::cuda::mul_hi returns the bits above digits(result_type), so bring in the
+    // bits of the low half that are above w. The low half is computed without the integer promotion of small types.
+    using _Up             = common_type_t<result_type, unsigned>;
+    constexpr int __shift = numeric_limits<result_type>::digits - static_cast<int>(word_size);
+    const auto __lo       = static_cast<result_type>(static_cast<_Up>(__a) * static_cast<_Up>(__b));
+    auto __hi             = ::cuda::mul_hi(__a, __b);
+    if constexpr (__shift != 0)
+    {
+      __hi = static_cast<result_type>((__hi << __shift) | (__lo >> word_size));
+    }
+    return pair{static_cast<result_type>(__hi & max()), static_cast<result_type>(__lo & max())};
   }
 
   static _CCCL_HOST_DEVICE_API constexpr auto __mulhilo(result_type __a, result_type __b) noexcept

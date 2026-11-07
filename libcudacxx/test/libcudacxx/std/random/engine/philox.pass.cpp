@@ -81,6 +81,45 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test_against_reference()
   return true;
 }
 
+// The sequence is defined by w: mulhi(a, b, w) is floor(a * b / 2^w), whatever the width of UIntType is.
+template <typename UIntType, cuda::std::size_t W, cuda::std::size_t N, UIntType... Constants>
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test_word_size(UIntType value_3, UIntType value_10000)
+{
+  using Engine = cuda::std::philox_engine<UIntType, W, N, 10, Constants...>;
+  Engine e;
+  e.discard(2);
+  assert(e() == value_3);
+  e = Engine();
+  e.discard(9999);
+  assert(e() == value_10000);
+  return true;
+}
+
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test_word_sizes()
+{
+  using cuda::std::uint16_t;
+  using cuda::std::uint32_t;
+  using cuda::std::uint64_t;
+  using cuda::std::uint8_t;
+  // reference values obtained from a big integer implementation of [rand.eng.philox] and libstdc++
+  test_word_size<uint8_t, 8, 4, 0xD2, 0x9E, 0xCA, 0xBB>(8, 72);
+  test_word_size<uint32_t, 8, 4, 0xD2, 0x9E, 0xCA, 0xBB>(8, 72);
+  test_word_size<uint16_t, 12, 4, 0xD25, 0x9E3, 0xCA5, 0xBB6>(3971, 1747);
+  test_word_size<uint32_t, 12, 4, 0xD25, 0x9E3, 0xCA5, 0xBB6>(3971, 1747);
+  test_word_size<uint16_t, 15, 4, 0x5256, 0x1E37, 0x4A50, 0x3B67>(26842, 6240);
+  test_word_size<uint64_t, 15, 4, 0x5256, 0x1E37, 0x4A50, 0x3B67>(26842, 6240);
+  test_word_size<uint16_t, 16, 4, 0xD256, 0x9E37, 0xCA50, 0xBB67>(26065, 19920);
+  test_word_size<uint32_t, 16, 4, 0xD256, 0x9E37, 0xCA50, 0xBB67>(26065, 19920);
+  test_word_size<uint64_t, 16, 4, 0xD256, 0x9E37, 0xCA50, 0xBB67>(26065, 19920);
+  test_word_size<uint32_t, 16, 2, 0xD256, 0x9E37>(57017, 34504);
+  test_word_size<uint32_t, 24, 4, 0xD25651, 0x9E3779, 0xCA5A82, 0xBB67AE>(16651119, 10459244);
+  test_word_size<uint64_t, 48, 4, 0xCA5A82639512, 0x9E3779B97F4A, 0xD2E7470EE14C, 0xBB67AE8584CA>(
+    192901316765185, 152776453925548);
+  test_word_size<uint64_t, 63, 4, 0x4A5A826395121157, 0x1E3779B97F4A7C15, 0x52E7470EE14C6C93, 0x3B67AE8584CAA73B>(
+    2623682490625152343, 3545397186678796316);
+  return true;
+}
+
 TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   test_engine<cuda::std::philox4x32, 1955073260u>();
@@ -88,10 +127,12 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
   test_set_counter<cuda::std::philox4x32>();
   test_set_counter<cuda::std::philox4x64>();
   test_against_reference();
+  test_word_sizes();
 #if TEST_STD_VER >= 2020
   static_assert(test_set_counter<cuda::std::philox4x32>());
   static_assert(test_set_counter<cuda::std::philox4x64>());
   static_assert(test_against_reference());
+  static_assert(test_word_sizes());
 #endif
   return true;
 }
