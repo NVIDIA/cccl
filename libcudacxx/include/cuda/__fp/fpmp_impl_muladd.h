@@ -1544,8 +1544,10 @@ _CCCL_TRIVIAL_HOST_DEVICE_API void __fpmp2_mul_limb(
   const _FpType __p_hi = ::cuda::__fpmp_two_mult_fma(__x_hi, __c, &__p_lo);
   if constexpr (_Acc == fpmp2_accuracy::high)
   {
+    // x_lo * c rounded once, through an fma with a zero addend: a plain multiply feeding the
+    // add would be contracted by a host compiler and give different bits from the device.
     _FpType __t_lo;
-    const _FpType __t_hi = ::cuda::__fpmp_fast_two_sum(__p_hi, ::cuda::__fpmp_mul_rn(__x_lo, __c), &__t_lo);
+    const _FpType __t_hi = ::cuda::__fpmp_fast_two_sum(__p_hi, ::cuda::__fpmp_fma_rn(__x_lo, __c, _FpType{0}), &__t_lo);
     *__res_hi            = ::cuda::__fpmp_fast_two_sum(__t_hi, ::cuda::__fpmp_add_rn(__t_lo, __p_lo), __res_lo);
   }
   else
