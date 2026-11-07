@@ -60,7 +60,7 @@ class exec_place;
  *
  * Capture-safe on CTK >= 12.8: `cudaStreamGetDevice` succeeds during
  * thread-local, relaxed and global capture, on device and green-context
- * streams alike, without invalidating the capture (probed on CTK 13.4).
+ * streams alike, without invalidating the capture.
  * Answering from a guess instead of the query is what put transient events
  * in the wrong device's context on multi-GPU systems
  * (`cudaErrorInvalidResourceHandle` at event-record time).
@@ -75,10 +75,9 @@ inline int get_device_from_stream(cudaStream_t stream)
 #if _CCCL_CTK_AT_LEAST(12, 8)
   return cuda_try<cudaStreamGetDevice>(stream);
 #else
-  // cuStreamGetCtx during capture is unverified on pre-12.8 drivers: keep
+  // cuStreamGetCtx during capture is unverified on pre-12.8 toolkits: keep
   // the conservative current-device fallback there. Only correct on
-  // single-device systems; the locality-domain feature set requires 13.4+
-  // anyway, so this branch is legacy-toolkit compatibility only.
+  // single-device systems.
   if (is_stream_capturing(stream))
   {
     return cuda_try<cudaGetDevice>();
@@ -115,9 +114,9 @@ inline unsigned long long get_stream_id(cudaStream_t stream)
     return k_no_stream_id;
   }
 
-  // Deliberately report an unknown id while capture is in flight — not
-  // because the query fails (``cuStreamGetId`` succeeds during capture,
-  // probed on CTK 13.4), but because sync-skip caching must never elide a
+  // Deliberately report an unknown id while capture is in flight: not
+  // because the query fails (``cuStreamGetId`` succeeds during capture),
+  // but because sync-skip caching must never elide a
   // ``cudaStreamWaitEvent`` under capture: the wait IS the graph edge.
   if (is_stream_capturing(stream))
   {
