@@ -149,6 +149,9 @@ public:
 
   _CCCL_HOST_DEVICE void uninitialized_fill_n(iterator first, size_type n, const value_type& value);
 
+  template <typename... Args>
+  _CCCL_HOST_DEVICE void emplace_construct_one(iterator location, Args&&... args);
+
   template <typename InputIterator>
   _CCCL_HOST_DEVICE iterator uninitialized_copy(InputIterator first, InputIterator last, iterator result);
 
