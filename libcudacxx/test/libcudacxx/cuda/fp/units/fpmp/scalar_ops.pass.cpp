@@ -7,7 +7,8 @@
 //
 //  At every accuracy level: x + c and x * c within 2u^2 of the exact result,
 //  x + c and x / c equal to the pair operation with c promoted, x * y within
-//  5u^2, and the compound forms and integer scalars equal to the operators.
+//  its first-order bound (6u^2 at mid, 5u^2 otherwise), and the compound forms
+//  and integer scalars equal to the operators.
 //
 //===----------------------------------------------------------------------===//
 
@@ -218,7 +219,7 @@ TEST_HOST_DEVICE_FUNC void test_accuracy()
         const P promoted = x / P(c);
         assert(r.hi() == promoted.hi() && r.lo() == promoted.lo());
       }
-      // x * y: within 5u^2 to first order at every level.
+      // x * y: within its first-order bound, 6u^2 at mid and 5u^2 at low and high.
       {
         const P r = x * y;
         expansion<T> exact, error;
@@ -233,7 +234,8 @@ TEST_HOST_DEVICE_FUNC void test_accuracy()
           error.add(-p[k]);
           error.add(-e[k]);
         }
-        assert(relative_error(error, exact) <= T(5) * u2 * tol);
+        const T bound = cuda::std::is_same_v<P, cuda::fpmp2<T, cuda::fpmp2_accuracy::mid>> ? T(6) : T(5);
+        assert(relative_error(error, exact) <= bound * u2 * tol);
       }
     }
   }

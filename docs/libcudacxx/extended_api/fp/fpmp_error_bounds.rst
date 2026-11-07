@@ -109,20 +109,28 @@ host against binary128 — whichever of the two is larger.
      - 2.6 [#same]_
 
    * - ``x * y``
-     - ``mid``
-     - relative ≤ ``5u²`` to first order (``3.5u²`` when ``x_hi·y_hi ≥ 2`` after scaling both into ``[1, 2)``)
-     - derived; the bound [MR22]_ Thm 2.7 proves for Algorithm 10 of [JMP17]_, at two operations fewer
+     - ``low``
+     - relative ≤ ``6u²``
+     - derived
      - all operands
-     - 4.9 [#host]_
-     - 4.8 [#host]_
+     - 5.0 [#host]_
+     - 3.9 [#host]_
 
    * - ``x * y``
-     - ``low``, ``high``
+     - ``mid``
+     - relative ≤ ``6u²`` to first order
+     - derived; measures as Algorithm 10 of [JMP17]_, for which [MR22]_ Thm 2.7 proves ``5u²``
+     - all operands
+     - 5.0 [#host]_
+     - 5.0 [#host]_
+
+   * - ``x * y``
+     - ``high``
      - relative ≤ ``5u²`` to first order
      - derived
      - all operands
-     - 3.9 [#host]_
-     - 3.8 [#host]_
+     - 4.0 [#host]_
+     - 4.0 [#host]_
 
    * - ``x * c`` (scalar ``c`` held exactly by one limb)
      - ``low``, ``mid``
@@ -193,9 +201,8 @@ host against binary128 — whichever of the two is larger.
    predicts. The specification's own ``fp64mp2`` table reports a smaller maximum for ``sqrt``
    over its working range.
 
-``low`` and ``mid`` addition, ``low`` and ``mid`` ``fma``, ``low`` and ``high``
-multiplication, and ``low`` and ``mid`` multiplication by a one-limb scalar compute the *same
-value*; the normalizing level additionally normalizes it, which is exact, so they share a bound
+``low`` and ``mid`` addition, ``low`` and ``mid`` ``fma``, and ``low`` and ``mid``
+multiplication by a one-limb scalar compute the *same value*; the normalizing level additionally normalizes it, which is exact, so they share a bound
 and differ only in the state of the result. Division by a one-limb scalar gives the value of
 ``x / y`` with ``y = (c, 0)``, one operation cheaper. The division and square-root sequences (Nagai et al. 2008
 and Karp-Markstein 1997 iterations) have no published analysis; double-word divisions with

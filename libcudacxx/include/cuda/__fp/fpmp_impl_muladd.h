@@ -315,12 +315,11 @@ _CCCL_FPMP_CORE_API void __fpmp2_low_mul(
 } // __fpmp2_low_mul
 
 /*
- * Default multiplication: the cross terms are folded into the exact residual of x_hi * y_hi
- * with two fmas and x_lo * y_lo is dropped, 7 operations. With x_hi and y_hi scaled into
- * [1, 2) and x_hi * y_hi < 2, each fma rounds a value below 4u by at most 2u^2 and the
- * dropped term is at most u^2: relative error below 5u^2 to first order (3.5u^2 when
- * x_hi * y_hi >= 2), the bound of Algorithm 10 of Joldes, Muller & Popescu (2017) at two
- * operations fewer.
+ * Default multiplication, 8 operations: the cross terms are summed by one fma off the path
+ * of the exact residual of x_hi * y_hi, and x_lo * y_lo is dropped. In a chain of products
+ * x_lo arrives last and enters only that fma, so the dependent latency is that of a TwoSum
+ * plus one fma and one add. To first order the relative error is below 6u^2; it measures
+ * 5.0u^2 at most, as Algorithm 10 of Joldes, Muller & Popescu (2017) does.
  */
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void __fpmp2_mul(
@@ -333,8 +332,8 @@ _CCCL_FPMP_CORE_API void __fpmp2_mul(
 {
   _FpType __c_lo;
   const _FpType __c_hi = ::cuda::__fpmp_two_mult_fma(__x_hi, __y_hi, &__c_lo);
-  __c_lo               = ::cuda::__fpmp_fma_rn(__x_hi, __y_lo, ::cuda::__fpmp_fma_rn(__x_lo, __y_hi, __c_lo));
-  *__res_hi            = ::cuda::__fpmp_fast_two_sum(__c_hi, __c_lo, __res_lo);
+  const _FpType __s    = ::cuda::__fpmp_fma_rn(__x_lo, __y_hi, ::cuda::__fpmp_mul_rn(__x_hi, __y_lo));
+  *__res_hi            = ::cuda::__fpmp_fast_two_sum(__c_hi, ::cuda::__fpmp_add_rn(__c_lo, __s), __res_lo);
 } // __fpmp2_mul
 
 /* Compute fast fused multiply-add: x*y+z  (16 ops, no normalization)
@@ -1564,10 +1563,10 @@ _CCCL_TRIVIAL_HOST_DEVICE_API void __fpmp2_mul_limb(
   }
 }
 
-// Pair product at high accuracy: the low-accuracy product, which folds the exact residual,
-// x_lo * y_lo and both cross terms into one fma chain, followed by the renormalization that
-// low omits. 8 operations; to first order its relative error is below 5u^2, the bound of the
-// default product, but it measures 3.9u^2 at most against 4.9u^2.
+// Pair product at high accuracy, 9 operations: x_lo * y_lo and the cross terms, smallest
+// first, summed by two fmas off the residual's path, then added to it. Nothing is dropped,
+// and to first order the relative error is below 5u^2; it measures 4.0u^2 at most (3.5u^2
+// for squares) against 5.0u^2 for the default product.
 template <typename _FpType>
 _CCCL_TRIVIAL_HOST_DEVICE_API void __fpmp2_high_mul(
   const _FpType __x_hi,
@@ -1577,9 +1576,11 @@ _CCCL_TRIVIAL_HOST_DEVICE_API void __fpmp2_high_mul(
   _FpType* __res_hi,
   _FpType* __res_lo) noexcept
 {
-  _FpType __hi, __lo;
-  ::cuda::__fpmp2_low_mul(__x_hi, __x_lo, __y_hi, __y_lo, &__hi, &__lo);
-  ::cuda::__fpmp2_renormalize(__hi, __lo, __res_hi, __res_lo);
+  _FpType __c_lo;
+  const _FpType __c_hi = ::cuda::__fpmp_two_mult_fma(__x_hi, __y_hi, &__c_lo);
+  const _FpType __s =
+    ::cuda::__fpmp_fma_rn(__x_hi, __y_lo, ::cuda::__fpmp_fma_rn(__x_lo, __y_hi, ::cuda::__fpmp_mul_rn(__x_lo, __y_lo)));
+  *__res_hi = ::cuda::__fpmp_fast_two_sum(__c_hi, ::cuda::__fpmp_add_rn(__c_lo, __s), __res_lo);
 }
 _CCCL_END_NAMESPACE_CUDA
 

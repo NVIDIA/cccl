@@ -917,10 +917,10 @@ clk/ev    33.8         -0.37x  3.14x   34.1   -0.39x  -0.64x
 ========= =====
 Class     Count
 ========= =====
-fp32      7
+fp32      8
 fp64      0
 other     0
-**total** **7**
+**total** **8**
 ========= =====
 
 .. _accuracy-high-4:
@@ -959,10 +959,10 @@ clk/ev    34.0         -0.38x  3.11x   34.1   -0.39x  -0.64x
 ========= =====
 Class     Count
 ========= =====
-fp32      8
+fp32      9
 fp64      0
 other     0
-**total** **8**
+**total** **9**
 ========= =====
 
 **Special Values Table:**
@@ -1086,9 +1086,9 @@ clk/ev    658.6        -0.16x  -0.30x   65.0   -0.34x  3.07x
 Class     Count
 ========= =====
 fp32      0
-fp64      7
+fp64      8
 other     0
-**total** **7**
+**total** **8**
 ========= =====
 
 .. _accuracy-high-5:
@@ -1127,9 +1127,9 @@ clk/ev    658.7        -0.16x  -0.30x   65.0   -0.33x  3.07x
 Class     Count
 ========= =====
 fp32      0
-fp64      8
+fp64      9
 other     0
-**total** **8**
+**total** **9**
 ========= =====
 
 **Special Values Table:**
@@ -2239,10 +2239,10 @@ clk/ev    79.0         -0.17x  1.40x   79.1   -0.17x  -0.28x
 ========= ======
 Class     Count
 ========= ======
-fp32      27
+fp32      28
 fp64      0
 other     0
-**total** **27**
+**total** **28**
 ========= ======
 
 .. _type-fp64mp2-6:
@@ -2358,9 +2358,9 @@ clk/ev    1926.5       -0.06x  -0.54x   155.6 -0.14x  6.75x
 Class     Count
 ========= ======
 fp32      0
-fp64      27
+fp64      28
 other     0
-**total** **27**
+**total** **28**
 ========= ======
 
 .. _libcudacxx-extended-api-fp-fpmp-spec-mathematical-functions:
