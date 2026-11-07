@@ -2949,8 +2949,8 @@ private:
 
     // Logical cluster blocks: the CTAs that actually receive chunks (at least `policy.min_chunks_per_block` each), <=
     // the launched `num_full_cluster_blocks`. Ranks at or beyond it are idle -- they own no chunks, consume nothing,
-    // never lead, and no peer touches their shared memory, so they exit before the startup barrier (see
-    // `process_impl`). Derived from this CTA's
+    // never lead, and no peer touches their shared memory, so they exit right after arriving at the startup barrier
+    // (see `process_impl`). Derived from this CTA's
     // head-aligned `num_cluster_chunks` so it matches the partition exactly. Collapses to 1 on the single-CTA path and
     // stays at `num_full_cluster_blocks` for host-exact sizes (the dispatch already matched it).
     // TODO(cccl): the blocked partition (deterministic path) gives each rank `ceil(chunks / blocks)` chunks, so
@@ -3654,11 +3654,14 @@ private:
     }
 
     // The chunk layout depends only on the segment, not on the select direction, so it is computed before the startup
-    // barrier: an idle rank (no chunks, never the leader, never targeted by DSMEM traffic) exits here without taking
-    // part in any cluster barrier, freeing its SM slot. Cluster barriers only wait for non-exited threads.
+    // barrier: an idle rank (no chunks, never the leader, never targeted by DSMEM traffic) arrives at the startup
+    // barrier and exits without waiting, freeing its SM slot. Later cluster barriers only wait for non-exited threads.
+    // The arrival is cheaper than letting the exit complete a barrier peers may already be waiting at; it is relaxed
+    // because an idle rank publishes nothing.
     compute_segment_layout();
     if (layout.is_idle_rank)
     {
+      NV_IF_TARGET(NV_PROVIDES_SM_90, (::__cluster_barrier_arrive_relaxed();));
       return;
     }
 
@@ -3695,7 +3698,7 @@ private:
     // only block-local `hist`; the leader's `state` and the scan counters are untouched until later).
 #if _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC()
     // The mbarrier path arrives relaxed behind a fence that releases only shared memory, so the arrival does not wait
-    // for global memory. `.aligned`: all threads reach it under a uniform branch.
+    // for global memory.
     if (is_single_cta)
     {
       __syncthreads();
@@ -3703,7 +3706,7 @@ private:
     else
     {
       ::cuda::ptx::fence_sync_restrict(::cuda::ptx::sem_release, ::cuda::ptx::space_shared, ::cuda::ptx::scope_cluster);
-      asm volatile("barrier.cluster.arrive.relaxed.aligned;" : : : "memory");
+      NV_IF_TARGET(NV_PROVIDES_SM_90, (::__cluster_barrier_arrive_relaxed();));
     }
 #else // ^^^ _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() ^^^ / vvv !_CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() vvv
     cluster_or_block_arrive(is_single_cta);
