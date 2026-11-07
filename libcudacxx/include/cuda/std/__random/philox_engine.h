@@ -401,7 +401,7 @@ public:
     // save old flags
     const typename ios_base::fmtflags __flags = __is.flags();
 
-    __is.flags(ios_base::dec);
+    __is.flags(ios_base::dec | ios_base::skipws);
 
     // input counter array (__x_)
     for (size_t __i = 0; __i < word_count; ++__i)
