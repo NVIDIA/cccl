@@ -255,10 +255,6 @@ template <class _Tp>
   {
     return numeric_limits<int>::max();
   }
-  else if (__exp < __fp_exp_min_v<__fmt>)
-  {
-    return numeric_limits<int>::min();
-  }
   else
   {
     return __exp;
@@ -490,12 +486,17 @@ template <class _Tp>
   // We need to go through the slow emulation for old GCC
   if constexpr (__fp_is_native_type_v<_Tp>)
   {
-    __x                      = ::cuda::std::fabs(__x);
-    unsigned long long __exp = 0;
+    __x           = ::cuda::std::fabs(__x);
+    int64_t __exp = 0;
     while (__x >= _Tp(numeric_limits<_Tp>::radix))
     {
       __x /= numeric_limits<_Tp>::radix;
       __exp += 1;
+    }
+    while (__x < _Tp(1))
+    {
+      __x *= numeric_limits<_Tp>::radix;
+      __exp -= 1;
     }
     return static_cast<_Tp>(__exp);
   }
