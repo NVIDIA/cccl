@@ -20,7 +20,8 @@ template <typename T>
 __global__ void stencil2D_kernel(slice<T, 2> sUn, slice<const T, 2> sUn1)
 {
   const size_t N = sUn.extent(0);
-  for (size_t i = threadIdx.x + blockIdx.x * blockDim.x; i < N; i += blockDim.x * gridDim.x)
+  for (size_t i = threadIdx.x + static_cast<size_t>(blockIdx.x) * blockDim.x; i < N;
+       i += static_cast<size_t>(blockDim.x) * gridDim.x)
   {
     for (size_t j = 0; j < N; j++)
     {

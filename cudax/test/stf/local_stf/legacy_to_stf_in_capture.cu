@@ -50,8 +50,8 @@ using namespace cuda::experimental::stf;
 
 __global__ void initA(double* d_ptrA, size_t N)
 {
-  const size_t tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  const size_t nthreads = blockDim.x * gridDim.x;
+  const size_t tid      = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+  const size_t nthreads = static_cast<size_t>(blockDim.x) * gridDim.x;
   for (size_t i = tid; i < N; i += nthreads)
   {
     d_ptrA[i] = sin(i);
@@ -60,8 +60,8 @@ __global__ void initA(double* d_ptrA, size_t N)
 
 __global__ void initB(double* d_ptrB, size_t N)
 {
-  const size_t tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  const size_t nthreads = blockDim.x * gridDim.x;
+  const size_t tid      = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+  const size_t nthreads = static_cast<size_t>(blockDim.x) * gridDim.x;
   for (size_t i = tid; i < N; i += nthreads)
   {
     d_ptrB[i] = cos(i);
@@ -71,8 +71,8 @@ __global__ void initB(double* d_ptrB, size_t N)
 // B += alpha * A
 __global__ void axpy(double alpha, const double* d_ptrA, double* d_ptrB, size_t N)
 {
-  const size_t tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  const size_t nthreads = blockDim.x * gridDim.x;
+  const size_t tid      = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+  const size_t nthreads = static_cast<size_t>(blockDim.x) * gridDim.x;
   for (size_t i = tid; i < N; i += nthreads)
   {
     d_ptrB[i] += alpha * d_ptrA[i];

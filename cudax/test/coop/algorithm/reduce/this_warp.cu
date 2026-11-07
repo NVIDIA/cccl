@@ -166,8 +166,11 @@ C2H_TEST("reduce/this_warp Integral Type Tests", "[reduce][this_warp]", integral
   const cuda::stream stream{cuda::devices[0]};
   for (int num_items = 1; num_items <= max_size; ++num_items)
   {
-    auto reference_result =
-      cuda::std::accumulate(h_in.begin(), h_in.begin() + num_items * warp_size, operator_identity, reduce_op);
+    auto reference_result = cuda::std::accumulate(
+      h_in.begin(),
+      h_in.begin() + static_cast<typename decltype(h_in)::difference_type>(num_items) * warp_size,
+      operator_identity,
+      reduce_op);
     run_reduce_kernel(stream, num_items, d_in, d_out, reduce_op);
     verify_results(reference_result, c2h::host_vector<value_t>(d_out)[0]);
   }
@@ -187,8 +190,11 @@ C2H_TEST("reduce/this_warp Floating-Point Type Tests", "[reduce][this_warp]", fp
   const cuda::stream stream{cuda::devices[0]};
   for (int num_items = 1; num_items <= max_size; ++num_items)
   {
-    auto reference_result =
-      cuda::std::accumulate(h_in.begin(), h_in.begin() + num_items * warp_size, operator_identity, reduce_op);
+    auto reference_result = cuda::std::accumulate(
+      h_in.begin(),
+      h_in.begin() + static_cast<typename decltype(h_in)::difference_type>(num_items) * warp_size,
+      operator_identity,
+      reduce_op);
     run_reduce_kernel(stream, num_items, d_in, d_out, reduce_op);
     verify_results(reference_result, c2h::host_vector<value_t>(d_out)[0]);
   }
@@ -208,8 +214,11 @@ C2H_TEST("reduce/this_warp Broadcasted", "[reduce][this_warp]", integral_type_li
   for (int num_items = 1; num_items <= max_size; ++num_items)
   {
     c2h::device_vector<value_t> d_out(warp_size);
-    auto reference_result =
-      cuda::std::accumulate(h_in.begin(), h_in.begin() + num_items * warp_size, operator_identity, reduce_op);
+    auto reference_result = cuda::std::accumulate(
+      h_in.begin(),
+      h_in.begin() + static_cast<typename decltype(h_in)::difference_type>(num_items) * warp_size,
+      operator_identity,
+      reduce_op);
     run_reduce_kernel(stream, num_items, d_in, d_out, reduce_op, cuda::std::true_type{});
     verify_results(c2h::host_vector<value_t>(warp_size, reference_result), c2h::host_vector<value_t>(d_out));
   }
