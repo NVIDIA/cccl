@@ -308,6 +308,10 @@ workflows:
 
   nightly:
     - {jobs: ['test'], project: 'packaging', ctk: '13.4', cxx: 'msvc14.44', std: 20, gpu: 'l4', sm: '89'}
+    - {jobs: ['run_gpu'], project: 'bash_validation', ctk: '13.4', cxx: 'msvc14.44', gpu: 'l4', args: 'CA ./ci/test_thrust.sh -gpu-only -std 20 -arch 89'}
+    - {jobs: ['run_gpu'], project: 'bash_validation', ctk: '13.4', cxx: 'msvc14.44', gpu: 'l4', args: 'Y ./ci/test_cub.sh -lid0 --test-par 8 -std 20 -arch 89'}
+    - {jobs: ['run_gpu'], project: 'bash_validation', ctk: '13.4', cxx: 'msvc14.44', gpu: 'l4', args: 'w ./ci/test_cudax.sh -std 20 -arch 89'}
+    - {jobs: ['run_gpu'], project: 'bash_validation', ctk: '13.4', cxx: 'msvc14.44', gpu: 'l4', args: 'I ./ci/test_cccl_c_parallel.sh -std 20 -arch 89'}
 
   weekly:
     # CTK 12.0 full matrix build: default projects
@@ -724,6 +728,9 @@ codegen_targets:
 #            E.g. "job_map: { test: ['test_cpu', 'test_gpu'] }" replaces
 #            the "test" job with distinct "test_cpu" and "test_gpu" jobs.
 projects:
+  bash_validation:
+    name: Bash GPU validation
+    stds: [20]
   packaging:
     name: 'CCCL Packaging'
     stds: [17, 20, 23]
