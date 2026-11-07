@@ -33,9 +33,8 @@
  * `stream_pool::next`), and long-lived context-implicit state such as vendor
  * library handles (create those under the owning place and cache them).
  *
- * Capture note: the stream's context query is capture-safe on CTK 13.4 (the
- * locality-domain feature set requires it anyway), so this scope is correct
- * while lanes are capturing, including cross-device captures.
+ * Capture note: querying the stream's context is capture-safe, so this scope
+ * is correct while the stream is capturing, including cross-device captures.
  */
 
 #pragma once
