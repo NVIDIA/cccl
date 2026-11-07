@@ -45,6 +45,9 @@ source "${ci_dir}/build_common.sh"
 cd "${ci_dir}"
 if $CCCL_BUILD_WINDOWS; then
   cccl_dir=$(cygpath -am "${cccl_dir}")
+  # CTest captures Python output in a pipe, where Windows otherwise uses the
+  # legacy code page and cannot print inspect_changes.py's Unicode diagnostics.
+  export PYTHONUTF8=1
   # Packaging also runs the inspect_changes fixtures. Linux images already
   # provide PyYAML; the native Windows Python installation may not.
   if ! python -c 'import yaml' > /dev/null 2>&1; then
