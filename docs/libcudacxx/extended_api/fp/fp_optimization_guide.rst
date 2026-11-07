@@ -218,20 +218,25 @@ question.
      - 11
      - 20
 
-   * - ``+=``, ``-=`` with a one-limb scalar
+   * - ``+``, ``-``, ``+=``, ``-=`` with a one-limb scalar
      - 7
      - 10
-     - 13
+     - 10
 
    * - ``*``
      - 5
+     - 8
      - 9
-     - 9
+
+   * - ``*``, ``*=`` with a one-limb scalar
+     - 3
+     - 6
+     - 10
 
    * - ``mad``
      - 13
      - 16
-     - 29
+     - 28
 
    * - ``fma``
      - 16
@@ -265,8 +270,10 @@ question.
 
 Three things follow from the table before any type-specific advice:
 
-1. Multiplication costs the same at ``mid`` and ``high``, so ``high`` is paid for on additions and
-   divisions.
+1. Multiplication costs one instruction more at ``high`` than at ``mid``, so ``high`` is paid for
+   mostly on additions and divisions. A scalar that one limb holds exactly - ``float`` for
+   ``fp32mp2``, ``float`` or ``double`` for ``fp64mp2`` - is cheaper as it is than converted to
+   a pair.
 
 2. Division is the expensive basic operation, and the one ``high`` makes most expensive.
 

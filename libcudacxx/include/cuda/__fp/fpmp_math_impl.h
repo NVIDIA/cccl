@@ -125,8 +125,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  *     transition step
  *         v = v_f * x.hi() + c[N-M-1]
  *     mirrors the float*float + ff layout used in `__fpmp2_erfc`
- *     (the float product gets promoted to ff via the mixed-arithmetic
- *     operator, then the remaining iterations are plain ff Horner).
+ *     (the mixed-arithmetic operator adds the float product to the
+ *     pair with the single-limb kernel, then the remaining iterations
+ *     are plain ff Horner).
  *
  * Special cases:
  *   - M == 0     : pure ff Horner (no FpType phase).
@@ -188,8 +189,8 @@ __fpmp_poly_horner_mixed(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpTyp
     else
     {
       // Transition step: (float * float) + ff -> ff
-      // (the mixed-type operator+ promotes the FpType product
-      // to __ff_t with .lo() == 0 before adding c[N-M-1].)
+      // (the mixed-type operator+ adds the FpType product to
+      // c[N-M-1] with the single-limb kernel.)
       __ff_t __v = __v_f * __xh + __c[_Np - _Mp - 1];
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int __k = _Np - _Mp - 2; __k >= 0; --__k)
