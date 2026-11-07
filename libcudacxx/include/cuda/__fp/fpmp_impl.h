@@ -966,6 +966,16 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_ceil(const _FpType __x) no
 /*
 // Internal operations for 2-precision arithmetic
 */
+// x * y rounded once, as an fma with a zero addend: GCC fuses a plain product whose only
+// uses are adds into those adds, which __fmul_rn and __dmul_rn on the device never allow.
+// An exactly zero product comes out as +0; the addend cannot be -0, since clang folds
+// fma(x, y, -0) back into a plain multiply.
+template <typename _FpType>
+_CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_mul_rn_nocontract(const _FpType __x, const _FpType __y) noexcept
+{
+  return ::cuda::__fpmp_fma_rn(__x, __y, _FpType{0});
+}
+
 // Multiply 2 floats exactly, assuming no over/underflow.
 template <typename _FpType>
 _CCCL_TRIVIAL_HOST_DEVICE_API _FpType

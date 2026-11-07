@@ -48,7 +48,8 @@ native quotient estimate and the lo word carries the residual a - b*q divided by
 puts the pair in the same precision class as the mid-accuracy quotient for about half the
 arithmetic, at the cost of leaving it unnormalized - as the low accuracy level does
 throughout. The residual itself is exact: q is within an ulp or two of a_hi/b_hi, so the
-subtraction inside the fma cancels without rounding.
+subtraction inside the fma cancels without rounding. The lo word is a product that only
+the caller's adds consume, so it is formed by __fpmp_mul_rn_nocontract.
 */
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void __fpmp2_low_div(
@@ -67,7 +68,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_low_div(
   __e         = ::cuda::__fpmp_fma_rn(__b_lo, -__q, __e);
 
   *__res_hi = __q;
-  *__res_lo = ::cuda::__fpmp_mul_rn(__r, __e);
+  *__res_lo = ::cuda::__fpmp_mul_rn_nocontract(__r, __e);
 } // __fpmp2_low_div
 
 /* Compute high-accuracy quotient, using Newton-
@@ -541,7 +542,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API void __fpmp2_div_limb(
     if constexpr (_Acc == fpmp2_accuracy::low)
     {
       *__res_hi = __t_hi;
-      *__res_lo = ::cuda::__fpmp_mul_rn(__r, ::cuda::__fpmp_add_rn(__a_lo, __e));
+      *__res_lo = ::cuda::__fpmp_mul_rn_nocontract(__r, ::cuda::__fpmp_add_rn(__a_lo, __e));
     }
     else
     {
