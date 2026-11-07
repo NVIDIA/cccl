@@ -998,25 +998,25 @@ public:
   // Prefix increment/decrement
   _CCCL_HOST_DEVICE_API fpmp2& operator++() noexcept
   {
-    *this += _FpType(1);
+    *this += _FpType{1};
     return *this;
   }
   _CCCL_HOST_DEVICE_API fpmp2& operator--() noexcept
   {
-    *this -= _FpType(1);
+    *this -= _FpType{1};
     return *this;
   }
   // Postfix increment/decrement
   _CCCL_HOST_DEVICE_API fpmp2 operator++(int) noexcept
   {
     fpmp2 __temp(*this);
-    *this += _FpType(1);
+    *this += _FpType{1};
     return __temp;
   }
   _CCCL_HOST_DEVICE_API fpmp2 operator--(int) noexcept
   {
     fpmp2 __temp(*this);
-    *this -= _FpType(1);
+    *this -= _FpType{1};
     return __temp;
   }
   // Compound assignment operators (multi-precision operand)
@@ -1346,7 +1346,7 @@ struct __fpmp2_element<fpmp2<_FpType, _TypeAcc>>
 
 // The accuracy-selecting functions below with a scalar that one limb holds exactly.
 template <fpmp2_accuracy _Acc, typename _FpType, fpmp2_accuracy _TypeAcc>
-[[nodiscard]] _CCCL_HOST_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
+[[nodiscard]] _CCCL_HOST_DEVICE_API fpmp2<_FpType, _TypeAcc>
 __fpmp2_add_scalar(const fpmp2<_FpType, _TypeAcc>& __x, const _FpType __c) noexcept
 {
   _FpType __rhi, __rlo;
@@ -1354,7 +1354,7 @@ __fpmp2_add_scalar(const fpmp2<_FpType, _TypeAcc>& __x, const _FpType __c) noexc
   return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
 }
 template <fpmp2_accuracy _Acc, typename _FpType, fpmp2_accuracy _TypeAcc>
-[[nodiscard]] _CCCL_HOST_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
+[[nodiscard]] _CCCL_HOST_DEVICE_API fpmp2<_FpType, _TypeAcc>
 __fpmp2_mul_scalar(const fpmp2<_FpType, _TypeAcc>& __x, const _FpType __c) noexcept
 {
   _FpType __rhi, __rlo;
@@ -1362,7 +1362,7 @@ __fpmp2_mul_scalar(const fpmp2<_FpType, _TypeAcc>& __x, const _FpType __c) noexc
   return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
 }
 template <fpmp2_accuracy _Acc, typename _FpType, fpmp2_accuracy _TypeAcc>
-[[nodiscard]] _CCCL_HOST_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
+[[nodiscard]] _CCCL_HOST_DEVICE_API fpmp2<_FpType, _TypeAcc>
 __fpmp2_div_scalar(const fpmp2<_FpType, _TypeAcc>& __x, const _FpType __c) noexcept
 {
   _FpType __rhi, __rlo;
@@ -1511,8 +1511,8 @@ _CCCL_REQUIRES(((__fpmp_is_fpmp2_v<_T1> || __fpmp_is_fpmp2_v<_T2>)
                 && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline auto add(const _T1& __x, const _T2& __y) noexcept
 {
-  using mp2 = ::cuda::std::conditional_t<__fpmp_is_fpmp2_v<_T1>, _T1, _T2>;
-  using _Fp = typename __fpmp2_element<mp2>::type;
+  using mp2               = ::cuda::std::conditional_t<__fpmp_is_fpmp2_v<_T1>, _T1, _T2>;
+  using _Fp _CCCL_NODEBUG = typename __fpmp2_element<mp2>::type;
   if constexpr (__fpmp2_is_limb_v<_T2, _Fp>)
   {
     return ::cuda::__fpmp2_add_scalar<_Acc>(__x, static_cast<_Fp>(__y));
@@ -1552,8 +1552,8 @@ _CCCL_REQUIRES(((__fpmp_is_fpmp2_v<_T1> || __fpmp_is_fpmp2_v<_T2>)
                 && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline auto sub(const _T1& __x, const _T2& __y) noexcept
 {
-  using mp2 = ::cuda::std::conditional_t<__fpmp_is_fpmp2_v<_T1>, _T1, _T2>;
-  using _Fp = typename __fpmp2_element<mp2>::type;
+  using mp2               = ::cuda::std::conditional_t<__fpmp_is_fpmp2_v<_T1>, _T1, _T2>;
+  using _Fp _CCCL_NODEBUG = typename __fpmp2_element<mp2>::type;
   if constexpr (__fpmp2_is_limb_v<_T2, _Fp>)
   {
     return ::cuda::__fpmp2_add_scalar<_Acc>(__x, -static_cast<_Fp>(__y));
@@ -1593,8 +1593,8 @@ _CCCL_REQUIRES(((__fpmp_is_fpmp2_v<_T1> || __fpmp_is_fpmp2_v<_T2>)
                 && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline auto mul(const _T1& __x, const _T2& __y) noexcept
 {
-  using mp2 = ::cuda::std::conditional_t<__fpmp_is_fpmp2_v<_T1>, _T1, _T2>;
-  using _Fp = typename __fpmp2_element<mp2>::type;
+  using mp2               = ::cuda::std::conditional_t<__fpmp_is_fpmp2_v<_T1>, _T1, _T2>;
+  using _Fp _CCCL_NODEBUG = typename __fpmp2_element<mp2>::type;
   if constexpr (__fpmp2_is_limb_v<_T2, _Fp>)
   {
     return ::cuda::__fpmp2_mul_scalar<_Acc>(__x, static_cast<_Fp>(__y));
@@ -1634,8 +1634,8 @@ _CCCL_REQUIRES(((__fpmp_is_fpmp2_v<_T1> || __fpmp_is_fpmp2_v<_T2>)
                 && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline auto div(const _T1& __x, const _T2& __y) noexcept
 {
-  using mp2 = ::cuda::std::conditional_t<__fpmp_is_fpmp2_v<_T1>, _T1, _T2>;
-  using _Fp = typename __fpmp2_element<mp2>::type;
+  using mp2               = ::cuda::std::conditional_t<__fpmp_is_fpmp2_v<_T1>, _T1, _T2>;
+  using _Fp _CCCL_NODEBUG = typename __fpmp2_element<mp2>::type;
   if constexpr (__fpmp2_is_limb_v<_T2, _Fp>)
   {
     return ::cuda::__fpmp2_div_scalar<_Acc>(__x, static_cast<_Fp>(__y));

@@ -1229,11 +1229,11 @@ public:
 
   _CCCL_HOST_DEVICE_API fpmp2_stat& operator++() noexcept
   {
-    return *this += _FpType(1);
+    return *this += _FpType{1};
   }
   _CCCL_HOST_DEVICE_API fpmp2_stat& operator--() noexcept
   {
-    return *this -= _FpType(1);
+    return *this -= _FpType{1};
   }
   _CCCL_HOST_DEVICE_API fpmp2_stat operator++(int) noexcept
   {

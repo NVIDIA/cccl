@@ -531,7 +531,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API void __fpmp2_div_limb(
 {
   if constexpr (_Acc == fpmp2_accuracy::high)
   {
-    ::cuda::__fpmp2_high_div(__a_hi, __a_lo, __c, _FpType(0), __res_hi, __res_lo);
+    ::cuda::__fpmp2_high_div(__a_hi, __a_lo, __c, _FpType{0}, __res_hi, __res_lo);
   }
   else
   {
