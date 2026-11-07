@@ -23,16 +23,19 @@
 
 #include <cuda/hierarchy>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__optional/optional.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
-#include <cuda/std/optional>
+#include <cuda/std/__utility/in_place.h>
 
 #include <cuda/experimental/coop/__group/coalesced_group.cuh>
 #include <cuda/experimental/coop/__group/concepts.cuh>
+#include <cuda/experimental/coop/__group/fwd.cuh>
 #include <cuda/experimental/coop/__group/generic_group.cuh>
 #include <cuda/experimental/coop/__group/mapping/common.cuh>
 #include <cuda/experimental/coop/__group/mapping/group_by.cuh>
@@ -84,14 +87,11 @@ _CCCL_REQUIRES(__is_same_templ_v<generic_group, _GroupTempl> _CCCL_AND __is_hier
 {
   const auto __mapping_result = ::cuda::experimental::coop::__do_group_mapping(
     __non_exhaustive, __unit, __parent, ::cuda::std::forward<_Mapping>(__mapping));
+  const auto __synchronizer_instance =
+    ::cuda::std::forward<_Synchronizer>(__synchronizer).make_instance(__unit, __parent, __mapping_result);
   using _Ret = ::cuda::std::optional<_Group>;
   return (__mapping_result.is_valid())
-         ? _Ret{::cuda::std::in_place,
-                __non_exhaustive,
-                __unit,
-                __parent,
-                __mapping_result,
-                ::cuda::std::forward<_Synchronizer>(__synchronizer)}
+         ? _Ret{::cuda::std::in_place, __non_exhaustive, __unit, __parent, __mapping_result, __synchronizer_instance}
          : _Ret{};
 }
 

@@ -25,7 +25,6 @@
 #include <cuda/__warp/lane_mask.h>
 #include <cuda/hierarchy>
 #include <cuda/std/__bit/popcount.h>
-#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>

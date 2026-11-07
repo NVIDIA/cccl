@@ -854,6 +854,18 @@ struct segmented_radix_sort_block_size_tuning
   }
 };
 
+template <int ThreadsPerBlock>
+struct segmented_radix_sort_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::SegmentedRadixSortPolicy policy) const
+    -> cub::SegmentedRadixSortPolicy
+  {
+    policy.regular_pass.threads_per_block   = ThreadsPerBlock;
+    policy.alternate_pass.threads_per_block = ThreadsPerBlock;
+    return policy;
+  }
+};
+
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 
@@ -873,6 +885,54 @@ CUB_TEST("DeviceSegmentedRadixSort::SortPairs can be tuned", "[segmented_radix_s
   auto d_end_offsets   = block_size_extracting_constant_iterator(10'000, thrust::raw_pointer_cast(d_block_size.data()));
 
   auto env = cuda::execution::tune(segmented_radix_sort_block_size_tuning<int, int, target_block_size>{});
+
+  sort_pairs(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<cuda::std::int64_t>(keys_in.size()),
+    cuda::std::int64_t{1},
+    d_begin_offsets,
+    d_end_offsets,
+    0,
+    static_cast<int>(sizeof(int) * 8),
+    env);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceSegmentedRadixSort::SortPairs tuning can be modified", "[segmented_radix_sort][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+
+  auto keys_in    = c2h::device_vector<int>(10'000);
+  auto keys_out   = c2h::device_vector<int>(10'000, thrust::no_init);
+  auto values_in  = c2h::device_vector<int>(10'000);
+  auto values_out = c2h::device_vector<int>(10'000, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0);
+
+  auto d_begin_offsets = block_size_extracting_constant_iterator(0, thrust::raw_pointer_cast(d_block_size.data()));
+  auto d_end_offsets   = block_size_extracting_constant_iterator(10'000, thrust::raw_pointer_cast(d_block_size.data()));
+
+  {
+    sort_pairs(
+      thrust::raw_pointer_cast(keys_in.data()),
+      thrust::raw_pointer_cast(keys_out.data()),
+      thrust::raw_pointer_cast(values_in.data()),
+      thrust::raw_pointer_cast(values_out.data()),
+      static_cast<cuda::std::int64_t>(keys_in.size()),
+      cuda::std::int64_t{1},
+      d_begin_offsets,
+      d_end_offsets,
+      0,
+      static_cast<int>(sizeof(int) * 8),
+      stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
+  auto env = cuda::execution::tune(segmented_radix_sort_tuning_transform<target_block_size>{});
 
   sort_pairs(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -1350,6 +1410,10 @@ CUB_TEST_CASE("DeviceSegmentedRadixSort keys two-phase accepts legacy null strea
   REQUIRE((keys == expected_keys || alt_keys == expected_keys));
 }
 
+// The tuning environments are empty classes, which older CTKs (at least 12.9 and 13.0) cannot pass as kernel
+// parameters, so these tests cannot use the device launch (TEST_LAUNCH == 1).
+#  if TEST_LAUNCH == 0
+
 CUB_TEST(
   "DeviceSegmentedRadixSort keys two-phase can be tuned", "[segmented_radix_sort][device]", CUB_SMALL, block_sizes)
 {
@@ -1397,6 +1461,8 @@ CUB_TEST(
   }
   REQUIRE(d_block_size[0] == target_block_size);
 }
+
+#  endif // TEST_LAUNCH == 0
 
 CUB_TEST_CASE("DeviceSegmentedRadixSort pairs two-phase accepts legacy null streams",
               "[segmented_radix_sort][device]",
@@ -1461,6 +1527,10 @@ CUB_TEST_CASE("DeviceSegmentedRadixSort pairs two-phase accepts legacy null stre
            || (alt_keys == expected_keys && alt_values == expected_values)));
 }
 
+// The tuning environments are empty classes, which older CTKs (at least 12.9 and 13.0) cannot pass as kernel
+// parameters, so these tests cannot use the device launch (TEST_LAUNCH == 1).
+#  if TEST_LAUNCH == 0
+
 CUB_TEST(
   "DeviceSegmentedRadixSort pairs two-phase can be tuned", "[segmented_radix_sort][device]", CUB_SMALL, block_sizes)
 {
@@ -1515,6 +1585,8 @@ CUB_TEST(
   }
   REQUIRE(d_block_size[0] == target_block_size);
 }
+
+#  endif // TEST_LAUNCH == 0
 
 #endif // TEST_LAUNCH != 2
 

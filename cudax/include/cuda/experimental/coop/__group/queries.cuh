@@ -26,6 +26,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -70,13 +71,12 @@ template <class _Tp, class _Unit, class _Group>
 {
   using _GroupUnit = typename _Group::unit_type;
 
-  // todo(dabayer): This optimization segfaults the compiler.
-  // constexpr auto __static_count = ::cuda::experimental::coop::__static_count_query_group<_Unit, _Group>();
-  // if constexpr (__static_count != ::cuda::std::dynamic_extent)
-  // {
-  //   return static_cast<_Tp>(__static_count);
-  // }
-  // else
+  constexpr auto __static_count = ::cuda::experimental::coop::__static_count_query_group<_Unit, _Group>();
+  if constexpr (__static_count != ::cuda::std::dynamic_extent)
+  {
+    return static_cast<_Tp>(__static_count);
+  }
+  else
   {
     const auto __group_unit_count = static_cast<_Tp>(__group.__mapping_result().unit_count());
     if constexpr (::cuda::std::is_same_v<_Unit, _GroupUnit>)

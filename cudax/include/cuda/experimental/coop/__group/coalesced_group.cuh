@@ -97,6 +97,11 @@ public:
     return true;
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive()
+  {
+    return true;
+  }
+
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous()
   {
     return false;
@@ -111,14 +116,15 @@ class coalesced_group
 
   _Hierarchy __hier_;
   _MappingResult __mapping_result_{};
-  _SynchronizerInstance __synchronizer_instance_{};
+  _SynchronizerInstance __synchronizer_instance_{__mapping_result_.lane_mask()};
 
 public:
-  using unit_type             = thread_level;
-  using level_type            = warp_level;
-  using hierarchy_type        = _Hierarchy;
-  using __mapping_result_type = _MappingResult;
-  using arrival_token         = typename _SynchronizerInstance::arrival_token;
+  using unit_type                    = thread_level;
+  using level_type                   = warp_level;
+  using hierarchy_type               = _Hierarchy;
+  using __mapping_result_type        = _MappingResult;
+  using __synchronizer_instance_type = _SynchronizerInstance;
+  using arrival_token                = typename _SynchronizerInstance::arrival_token;
 
   _CCCL_TEMPLATE(class _HierarchyLike)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Hierarchy, __hierarchy_type_of<_HierarchyLike>>)
@@ -156,32 +162,32 @@ public:
   //                aligned/unaligned variants?
   _CCCL_DEVICE_API void sync() const
   {
-    __synchronizer_instance_.do_sync(__mapping_result_, __hier_);
+    __synchronizer_instance_.do_sync(__hier_);
   }
 
   _CCCL_DEVICE_API void sync_aligned() const
   {
-    __synchronizer_instance_.do_sync_aligned(__mapping_result_, __hier_);
+    __synchronizer_instance_.do_sync_aligned(__hier_);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API arrival_token arrive() const
   {
-    return __synchronizer_instance_.do_arrive(__mapping_result_, __hier_);
+    return __synchronizer_instance_.do_arrive(__hier_);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API arrival_token arrive_aligned() const
   {
-    return __synchronizer_instance_.do_arrive_aligned(__mapping_result_, __hier_);
+    return __synchronizer_instance_.do_arrive_aligned(__hier_);
   }
 
   _CCCL_DEVICE_API void wait(arrival_token&& __tok) const
   {
-    __synchronizer_instance_.do_wait(__mapping_result_, __hier_, ::cuda::std::move(__tok));
+    __synchronizer_instance_.do_wait(__hier_, ::cuda::std::move(__tok));
   }
 
   _CCCL_DEVICE_API void wait_aligned(arrival_token&& __tok) const
   {
-    __synchronizer_instance_.do_wait_aligned(__mapping_result_, __hier_, ::cuda::std::move(__tok));
+    __synchronizer_instance_.do_wait_aligned(__hier_, ::cuda::std::move(__tok));
   }
 
   _CCCL_TEMPLATE(class _InLevel)

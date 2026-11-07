@@ -21,8 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/barrier>
+#include <cuda/__fwd/barrier.h>
 #include <cuda/hierarchy>
+#include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/next.h>
@@ -91,126 +92,47 @@ inline constexpr bool __is_sufficient_scope_for_v<thread_scope_system, cluster_l
 template <>
 inline constexpr bool __is_sufficient_scope_for_v<thread_scope_system, grid_level> = true;
 
-template <class _Tp>
-inline constexpr thread_scope __barrier_scope_v = thread_scope_system;
-template <thread_scope _Sco, class _ComplFn>
-inline constexpr thread_scope __barrier_scope_v<barrier<_Sco, _ComplFn>> = _Sco;
-
-template <class _Barrier>
-class __barrier_synchronizer_instance_view
-{
-  _Barrier* __barrier_;
-
-public:
-  using arrival_token _CCCL_NODEBUG = typename _Barrier::arrival_token;
-
-  _CCCL_DEVICE_API explicit __barrier_synchronizer_instance_view(_Barrier* __barrier)
-      : __barrier_{__barrier}
-  {}
-
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_sync(const _MappingResult&, const _Hierarchy&) const
-  {
-    __barrier_->arrive_and_wait();
-  }
-
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_sync_aligned(const _MappingResult&, const _Hierarchy&) const
-  {
-    __barrier_->arrive_and_wait();
-  }
-
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API arrival_token do_arrive(const _MappingResult&, const _Hierarchy&) const
-  {
-    return __barrier_->arrive();
-  }
-
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API arrival_token do_arrive_aligned(const _MappingResult&, const _Hierarchy&) const
-  {
-    return __barrier_->arrive();
-  }
-
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_wait(const _MappingResult&, const _Hierarchy&, arrival_token&& __tok) const
-  {
-    __barrier_->wait(::cuda::std::move(__tok));
-  }
-
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_wait_aligned(const _MappingResult&, const _Hierarchy&, arrival_token&& __tok) const
-  {
-    __barrier_->wait(::cuda::std::move(__tok));
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API auto view() const
-  {
-    return *this;
-  }
-
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void deinit(const _MappingResult&, const _Hierarchy&) const
-  {}
-};
-
 template <class _Barrier, class _Unit>
-class __barrier_synchronizer_instance
+struct __barrier_synchronizer_instance
 {
-  _Barrier* __barrier_;
-
-public:
   using arrival_token _CCCL_NODEBUG = typename _Barrier::arrival_token;
 
-  _CCCL_DEVICE_API explicit __barrier_synchronizer_instance(_Barrier* __barrier)
-      : __barrier_{__barrier}
-  {}
+  _Barrier* __barrier_;
 
-  // This synchronizer instance doesn't provide copy/move/assignment methods.
-  __barrier_synchronizer_instance(const __barrier_synchronizer_instance&)            = delete;
-  __barrier_synchronizer_instance(__barrier_synchronizer_instance&&)                 = delete;
-  __barrier_synchronizer_instance& operator=(const __barrier_synchronizer_instance&) = delete;
-  __barrier_synchronizer_instance& operator=(__barrier_synchronizer_instance&&)      = delete;
-
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_sync(const _MappingResult&, const _Hierarchy&) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_sync(const _Hierarchy&) const
   {
     __barrier_->arrive_and_wait();
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_sync_aligned(const _MappingResult&, const _Hierarchy&) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_sync_aligned(const _Hierarchy&) const
   {
     __barrier_->arrive_and_wait();
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API arrival_token do_arrive(const _MappingResult&, const _Hierarchy&) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API arrival_token do_arrive(const _Hierarchy&) const
   {
     return __barrier_->arrive();
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API arrival_token do_arrive_aligned(const _MappingResult&, const _Hierarchy&) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API arrival_token do_arrive_aligned(const _Hierarchy&) const
   {
     return __barrier_->arrive();
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_wait(const _MappingResult&, const _Hierarchy&, arrival_token&& __tok) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_wait(const _Hierarchy&, arrival_token&& __tok) const
   {
     __barrier_->wait(::cuda::std::move(__tok));
   }
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_wait_aligned(const _MappingResult&, const _Hierarchy&, arrival_token&& __tok) const
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_wait_aligned(const _Hierarchy&, arrival_token&& __tok) const
   {
     __barrier_->wait(::cuda::std::move(__tok));
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API __barrier_synchronizer_instance_view<_Barrier> view() const
-  {
-    return __barrier_synchronizer_instance_view<_Barrier>{__barrier_};
   }
 
   template <class _MappingResult, class _Hierarchy>
@@ -262,7 +184,7 @@ public:
   {
     using _Level = typename _ParentGroup::level_type;
 
-    static_assert(__is_sufficient_scope_for_v<__barrier_scope_v<_Barrier>, _Level>,
+    static_assert(__is_sufficient_scope_for_v<_Barrier::scope, _Level>,
                   "_Barrier's thread scope is insufficient for group synchronization in _Level");
 
     ::cuda::std::size_t __nthread_in_unit     = 1;

@@ -33,8 +33,6 @@
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
 #  include <cub/device/dispatch/kernels/kernel_scan_lookahead.cuh>
-
-#  include <cuda/std/__type_traits/always_false.h> // IWYU pragma: keep
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
 
 #include <cuda/__atomic/atomic.h>
@@ -536,7 +534,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   static_assert(::cuda::std::is_unsigned_v<OffsetT>, "the batched scan expects an unsigned offset type");
 
   __shared__ typename agent_t::TempStorage temp_storage;
-  __shared__ ::cuda::std::uint64_t tile_idx;
+  __shared__::cuda::std::uint64_t tile_idx;
 
   ::cuda::std::uint64_t current_batch_idx = 0;
 

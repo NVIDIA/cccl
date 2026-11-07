@@ -12,6 +12,8 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/cstddef>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>

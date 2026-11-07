@@ -79,8 +79,8 @@ class group_view
   static_assert(__unit_same_as_or_below_v<_Unit, typename _Group::unit_type>,
                 "unit_type must be same as or below the _Group's unit_type");
 
-  using _MappingResult        = __group_view_mapping_result_t<_Unit, _Group>;
-  using _SynchronizerInstance = decltype(::cuda::std::declval<const _Group&>().__synchronizer_instance().view());
+  using _MappingResult _CCCL_NODEBUG        = __group_view_mapping_result_t<_Unit, _Group>;
+  using _SynchronizerInstance _CCCL_NODEBUG = typename _Group::__synchronizer_instance_type;
   static_assert(__group_mapping_result<_MappingResult>);
 
   typename _Group::hierarchy_type __hier_;
@@ -88,11 +88,12 @@ class group_view
   _SynchronizerInstance __synchronizer_instance_;
 
 public:
-  using unit_type             = _Unit;
-  using level_type            = typename _Group::level_type;
-  using hierarchy_type        = typename _Group::hierarchy_type;
-  using __mapping_result_type = _MappingResult;
-  using arrival_token         = typename _Group::arrival_token;
+  using unit_type                    = _Unit;
+  using level_type                   = typename _Group::level_type;
+  using hierarchy_type               = typename _Group::hierarchy_type;
+  using __mapping_result_type        = _MappingResult;
+  using __synchronizer_instance_type = _SynchronizerInstance;
+  using arrival_token                = typename _Group::arrival_token;
 
   group_view() = delete;
 
@@ -100,18 +101,22 @@ public:
 
   _CCCL_HIDE_FROM_ABI group_view(group_view&&) = default;
 
+  _CCCL_HIDE_FROM_ABI group_view& operator=(const group_view&) = default;
+
+  _CCCL_HIDE_FROM_ABI group_view& operator=(group_view&&) = default;
+
   _CCCL_TEMPLATE(class _Unit2 = _Unit)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Unit2, typename _Group::unit_type>)
   _CCCL_DEVICE_API group_view(const _Group& __group)
       : __hier_{__group.hierarchy()}
       , __mapping_result_{::cuda::experimental::coop::__do_group_view_mapping(_Unit{}, __group)}
-      , __synchronizer_instance_{__group.__synchronizer_instance().view()}
+      , __synchronizer_instance_{__group.__synchronizer_instance()}
   {}
 
   _CCCL_DEVICE_API explicit group_view(const _Unit& __unit, const _Group& __group)
       : __hier_{__group.hierarchy()}
       , __mapping_result_{::cuda::experimental::coop::__do_group_view_mapping(__unit, __group)}
-      , __synchronizer_instance_{__group.__synchronizer_instance().view()}
+      , __synchronizer_instance_{__group.__synchronizer_instance()}
   {}
 
   _CCCL_TEMPLATE(class _OtherUnit)
@@ -146,32 +151,32 @@ public:
   //                aligned/unaligned variants?
   _CCCL_DEVICE_API void sync() const
   {
-    __synchronizer_instance_.do_sync(__mapping_result_, __hier_);
+    __synchronizer_instance_.do_sync(__hier_);
   }
 
   _CCCL_DEVICE_API void sync_aligned() const
   {
-    __synchronizer_instance_.do_sync_aligned(__mapping_result_, __hier_);
+    __synchronizer_instance_.do_sync_aligned(__hier_);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API arrival_token arrive() const
   {
-    return __synchronizer_instance_.do_arrive(__mapping_result_, __hier_);
+    return __synchronizer_instance_.do_arrive(__hier_);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API arrival_token arrive_aligned() const
   {
-    return __synchronizer_instance_.do_arrive_aligned(__mapping_result_, __hier_);
+    return __synchronizer_instance_.do_arrive_aligned(__hier_);
   }
 
   _CCCL_DEVICE_API void wait(arrival_token&& __tok) const
   {
-    __synchronizer_instance_.do_wait(__mapping_result_, __hier_, ::cuda::std::move(__tok));
+    __synchronizer_instance_.do_wait(__hier_, ::cuda::std::move(__tok));
   }
 
   _CCCL_DEVICE_API void wait_aligned(arrival_token&& __tok) const
   {
-    __synchronizer_instance_.do_wait_aligned(__mapping_result_, __hier_, ::cuda::std::move(__tok));
+    __synchronizer_instance_.do_wait_aligned(__hier_, ::cuda::std::move(__tok));
   }
 
   template <class _Arg>
@@ -179,6 +184,22 @@ public:
     -> decltype(_Group::static_count(__arg))
   {
     return _Group::static_count(__arg);
+  }
+
+  template <class _Tp, class _QueryMappingResult, class _Arg>
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr auto
+  __count_as_impl(const _QueryMappingResult& __mapping_result, const hierarchy_type& __hier, const _Arg& __arg)
+    -> decltype(_Group::template __count_as_impl<_Tp>(__mapping_result, __hier, __arg))
+  {
+    return _Group::template __count_as_impl<_Tp>(__mapping_result, __hier, __arg);
+  }
+
+  template <class _Tp, class _QueryMappingResult, class _Arg>
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr auto
+  __rank_as_impl(const _QueryMappingResult& __mapping_result, const hierarchy_type& __hier, const _Arg& __arg)
+    -> decltype(_Group::template __rank_as_impl<_Tp>(__mapping_result, __hier, __arg))
+  {
+    return _Group::template __rank_as_impl<_Tp>(__mapping_result, __hier, __arg);
   }
 
   _CCCL_TEMPLATE(class _Tp, class _Arg)

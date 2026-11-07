@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/raw_reference_cast.h>
 #include <thrust/device_reference.h>
 
 #include <cuda/__type_traits/is_bitwise_comparable.h>
