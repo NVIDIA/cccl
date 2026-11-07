@@ -193,6 +193,14 @@
 #  define _CCCL_BUILTIN_IS_IMPLICIT_LIFETIME(...) __builtin_is_implicit_lifetime(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__builtin_is_implicit_lifetime) || _CCCL_COMPILER(MSVC, >=, 19, 51)
 
+// MSVC provides do-nothing intrinsics for start_lifetime_as since it does not perform type-based alias analysis. They
+// are only available when the MSVC STL defines __cpp_lib_start_lifetime_as (C++23 and MSVC 19.51), and we avoid them
+// with nvcc, since the EDG frontend does not know them.
+#if _CCCL_COMPILER(MSVC) && !_CCCL_CUDA_COMPILATION() && defined(__cpp_lib_start_lifetime_as)
+#  define _CCCL_BUILTIN_START_LIFETIME_AS(_Tp, ...)       __builtin_start_lifetime_as<_Tp>(__VA_ARGS__)
+#  define _CCCL_BUILTIN_START_LIFETIME_AS_ARRAY(_Tp, ...) __builtin_start_lifetime_as_array<_Tp>(__VA_ARGS__)
+#endif // _CCCL_COMPILER(MSVC) && !_CCCL_CUDA_COMPILATION() && defined(__cpp_lib_start_lifetime_as)
+
 // nvcc implements __builtin_is_implicit_lifetime since version 13.3.
 #if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
 #  undef _CCCL_BUILTIN_IS_IMPLICIT_LIFETIME
