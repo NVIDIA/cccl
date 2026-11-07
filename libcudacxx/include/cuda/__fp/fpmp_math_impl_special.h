@@ -447,7 +447,9 @@ __internal_fpmp2_erfc(const float __x_hi, const float __x_lo, float* __res_hi, f
 
   constexpr __ffloat __L2E(1.4426950408889634e+0);
   constexpr __ffloat __ln2_hi(6.9314718055994529e-1);
-  constexpr __ffloat __LN2_LO(2.3190468138462996e-17);
+  /* ln 2 - __ln2_hi. The pair holds 6.9314718055994529e-1 only to 48 bits and misses ln 2
+   * by +8.78e-17, so ln 2 minus that double (+2.32e-17) would make the reduction worse. */
+  constexpr float __ln2_lo = -0x1.950d88p-54f;
 
   __ffloat __x   = renormalize(__ffloat(__x_hi, __x_lo));
   bool __is_neg  = __x.hi() < 0.f;
@@ -490,7 +492,7 @@ __internal_fpmp2_erfc(const float __x_hi, const float __x_lo, float* __res_hi, f
   float __prod_hi      = (__xx * __L2E).hi();
   int __i              = ::cuda::__fpmp_fp2int_rn(__prod_hi);
   const float __t_rint = ::cuda::__fpmp_int2fp_rn<float>(__i);
-  __ffloat __z         = renormalize(__xx - __ln2_hi * __t_rint - __LN2_LO * __t_rint);
+  __ffloat __z         = renormalize(__xx - __ln2_hi * __t_rint - ::cuda::__fpmp_mul_rn_nocontract(__ln2_lo, __t_rint));
 
   // exp polynomial: 5 high-order terms in float, remaining 7 in ff
   __ffloat __t = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 5>(__z, __exp_c);
