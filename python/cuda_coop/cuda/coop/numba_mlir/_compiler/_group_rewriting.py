@@ -50,6 +50,15 @@ class GroupRewriteContext:
 
         return self.__rewrite._resolve_thread_data_specification(value)
 
+    def is_typed_group_payload(self, value: ir.Var) -> bool:
+        """Check for a result marker among the variable's definitions.
+
+        Inference uses this to reject a generated result whose extent remains
+        unknown, rather than silently treating it as an unrelated operand.
+        """
+
+        return self.__rewrite._is_typed_group_payload_var(value)
+
     def array(self, value: ir.Var) -> _ThreadDataSpecification | None:
         """Return known dtype and extent facts for local or shared arrays."""
 

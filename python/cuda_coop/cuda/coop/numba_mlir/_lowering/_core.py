@@ -11,9 +11,10 @@ and calling conventions needed to turn those descriptions into an
 and a runtime valid-item count can require checked integer narrowing.
 
 The adapter also carries scratch and synchronization requirements into source
-generation. It creates a specialized algorithm description; compilation and
-creation of a callable happen later in ``make_invocable_from_specialization``
-or after several descriptions have been collected for a shared compilation.
+generation. It creates a specialized algorithm description. Python callback
+operators compile their LTO IR during specialization. The provider wrappers
+compile later in ``make_invocable_from_specialization`` or after several
+descriptions have been collected for a shared compilation.
 """
 
 from __future__ import annotations
@@ -44,9 +45,11 @@ from cuda.coop._core import (
     Constant,
     CoreBackendAdapter,
     CxxFunction,
+    CxxOperator,
     Dependency,
     Pointer,
     PointerOffset,
+    PythonOperator,
     Reference,
     SynchronizationScope,
     TempStorageParameter,
@@ -56,6 +59,7 @@ from cuda.coop._core import (
 
 from .. import _types as backend
 from .._compiler._operations import StorageABI
+from .._semantic import _normalize_numba_callable
 
 
 @dataclass(frozen=True)
@@ -120,13 +124,14 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
     The core describes the C++ operation without Numba types. This adapter
     maps its types and parameters to the descriptors used by Numba source
     generation. ``materialize`` produces a specialized backend ``Algorithm``;
+    Python callbacks may compile during specialization. Provider-wrapper
     compilation and linking happen later.
 
-    Named overrides cover cases the C++ signature alone cannot express.
-    For example, a runtime item count needs a checked integer ABI, and an
-    input conversion needs a local array with the target element type.
-    The adapter checks overrides against every matching core parameter when
-    it materializes an algorithm.
+    Named overrides cover cases the C++ signature alone cannot express. For
+    example, a runtime item count needs a checked integer ABI, and an input
+    conversion needs a local array with the target element type. The adapter
+    checks overrides against every matching core parameter when it
+    materializes an algorithm.
 
     Parameters
     ----------
@@ -390,8 +395,9 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
             if isinstance(dtype, Dependency):
                 dependency = dtype
                 dtype = dependency.resolve(specialization.template_arguments)
-                # Substitute bracketed type placeholders, leaving bare tokens
-                # unchanged.
+                # CxxFunction dependencies use the same bracketed placeholder
+                # convention as DependentCxxOperator; bare tokens are not
+                # replaced.
                 cpp = cpp.replace(
                     f"<{dependency.name}>",
                     f"<{self.cpp_type(dtype)}>",
@@ -402,6 +408,75 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
             )
         raise TypeError(
             f"unsupported Numba-CUDA-MLIR core parameter {parameter!r}"
+        )
+
+    def lower_cxx_operator(
+        self,
+        operator: Any,
+        *,
+        specialization: Algorithm,
+    ) -> Any:
+        """Translate a shared C++ functor into a backend operator descriptor.
+
+        A concrete dtype creates a value-initialized ``CxxFunction``.
+        A dtype dependency creates ``DependentCxxOperator``
+        so its bracketed placeholder is replaced only after
+        template arguments are known. Neither path adds a
+        runtime callable argument or compiles a Python function.
+        """
+
+        del specialization
+        if not isinstance(operator, CxxOperator):
+            raise TypeError(f"expected CxxOperator, got {operator!r}")
+        if not isinstance(operator.dtype, Dependency):
+            return backend.CxxFunction(
+                f"{operator.cpp}{{}}",
+                self.normalize_dtype(operator.dtype),
+            )
+        return backend.DependentCxxOperator(
+            backend.Dependency(operator.dtype.name),
+            operator.cpp,
+        )
+
+    def lower_python_operator(
+        self,
+        operator: Any,
+        *,
+        specialization: Algorithm,
+    ) -> Any:
+        """Defer a Python callback until its dtype dependencies are resolved.
+
+        Translate return and argument types to backend resolvables and unwrap
+        the outer device dispatcher to its Python function. The resulting
+        ``DependentPythonOperator`` compiles a concrete device ABI during
+        specialization; this adapter step does not compile the callback yet.
+        """
+
+        del specialization
+        if not isinstance(operator, PythonOperator):
+            raise TypeError(f"expected PythonOperator, got {operator!r}")
+        return backend.DependentPythonOperator(
+            self._resolvable(operator.ret_dtype),
+            tuple(self._resolvable(dtype) for dtype in operator.arg_dtypes),
+            backend.Constant(_normalize_numba_callable(operator.op)),
+        )
+
+    def lower_stateful_operator(
+        self,
+        operator: Any,
+        *,
+        specialization: Algorithm,
+    ) -> Any:
+        """Reject callback descriptors that need a runtime state object.
+
+        This backend supports stateless operator descriptors only; it has no
+        lowering for a stateful operator's extra device-call state.
+        """
+
+        del operator, specialization
+        raise NotImplementedError(
+            "stateful callbacks are not supported by the cuda.coop "
+            "Numba-CUDA-MLIR backend"
         )
 
     def lower_temp_storage(
@@ -448,15 +523,17 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         scalar ABI. The stable ordering otherwise preserves the core's method
         order. Include the leading scratch parameter only for
         ``LEADING_POINTER`` storage, translate type declarations, and finish
-        template substitution without compiling LTO.
+        template substitution. Specializing a Python operator compiles its
+        callback LTO IR here. Provider-wrapper compilation and linking occur
+        later when an invocable or shared compilation is materialized.
 
         Parameters
         ----------
         specialization : Algorithm
             Core specialization with ordered template arguments and overloads.
         storage_abi : StorageABI
-            Whether the backend receives a leading scratch pointer or no
-            scratch.
+            Whether the backend receives a
+            leading scratch pointer or no scratch.
         execution_scope : SynchronizationScope
             Participating scope for scratch allocation by the source emitter.
         synchronization_scope : SynchronizationScope
@@ -480,9 +557,9 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
             Options or scalar ABI declarations are unsupported, or parameter
             lowering encounters an unsupported descriptor.
         ValueError
-            Named overrides/transforms do not match eligible core parameters,
-            their dtypes or output roles conflict, or scope/ABI values are
-            invalid.
+            Named overrides/transforms do not match eligible
+            core parameters, their dtypes or output roles
+            conflict, or scope/ABI values are invalid.
         """
 
         if kwargs:
