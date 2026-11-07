@@ -372,7 +372,7 @@ _CCCL_FPMP_MATH_DISPATCH_1A(erf)
  *      (1+2|x|)*exp(x^2)*erfc(|x|), then divide by (1+2|x|) to get erfcx.
  *   3. Evaluate exp(-x^2) via argument reduction x^2 = n*ln2 + r and a
  *      degree-11 polynomial for exp(r), with split exponent scaling
- *      for large |x^2| and a fma-style correction for rounding of x^2.
+ *      for large |x^2|; x^2 enters the reduction exactly.
  *   4. Multiply erfcx * exp(-x^2) to obtain erfc(|x|).
  *   5. For negative x, apply erfc(-x) = 2 - erfc(x).
  *
@@ -445,11 +445,10 @@ __internal_fpmp2_erfc(const float __x_hi, const float __x_lo, float* __res_hi, f
     __ffloat(2.5022323e-8f) // [11] (= ep0, leading)
   };
 
-  constexpr __ffloat __L2E(1.4426950408889634e+0);
-  constexpr __ffloat __ln2_hi(6.9314718055994529e-1);
-  /* ln 2 - __ln2_hi. The pair holds 6.9314718055994529e-1 only to 48 bits and misses ln 2
-   * by +8.78e-17, so ln 2 minus that double (+2.32e-17) would make the reduction worse. */
-  constexpr float __ln2_lo = -0x1.950d88p-54f;
+  constexpr float __l2e   = 0x1.715476p+0f;
+  constexpr float __ln2_1 = 0x1.62ep-1f;
+  constexpr float __ln2_2 = 0x1.0bfbe8p-15f;
+  constexpr float __ln2_3 = 0x1.cf79acp-40f;
 
   __ffloat __x   = renormalize(__ffloat(__x_hi, __x_lo));
   bool __is_neg  = __x.hi() < 0.f;
@@ -485,14 +484,29 @@ __internal_fpmp2_erfc(const float __x_hi, const float __x_lo, float* __res_hi, f
   __t4 = (__t4 - __t3);
   __t1 = (__t4 * __t2 + __t3);
 
-  /* erfc(x) = erfcx * exp(-x^2) */
-  __ffloat __xx = renormalize(-__a * __a);
+  /* erfc(x) = erfcx * exp(-a^2), with -a^2 = z + i * ln 2. a^2 is taken exactly, as
+   * a_hi^2 = p_hi + p_lo and 2 a_hi a_lo = q_hi + q_lo plus a_lo^2, and ln 2 as L1 + L2 + L3
+   * with L1 to 12 bits, so i * L1 is exact for |i| <= 1091 and -p_hi - i * L1 is exact by
+   * Sterbenz's lemma. The other terms are at most |i * L2| or 2^-22 * a^2 and are summed as
+   * a pair before the leading one, which leaves z with an absolute error of about u^2;
+   * rounding -a^2 to a pair first costs about u^2 * a^2. */
+  const float __a_hi = __a.hi();
+  const float __a_lo = __a.lo();
+  float __p_lo;
+  const float __p_hi = ::cuda::__fpmp_two_mult_fma(__a_hi, __a_hi, &__p_lo);
+  float __q_lo;
+  const float __q_hi = ::cuda::__fpmp_two_mult_fma(__a_hi, 2.0f * __a_lo, &__q_lo);
 
-  /* i = round(xx * L2E); t = exp_mantissa(xx); t3 = accurate_scale(t, i) */
-  float __prod_hi      = (__xx * __L2E).hi();
-  int __i              = ::cuda::__fpmp_fp2int_rn(__prod_hi);
+  const int __i        = ::cuda::__fpmp_fp2int_rn(::cuda::__fpmp_mul_rn(-__p_hi, __l2e));
   const float __t_rint = ::cuda::__fpmp_int2fp_rn<float>(__i);
-  __ffloat __z         = renormalize(__xx - __ln2_hi * __t_rint - ::cuda::__fpmp_mul_rn_nocontract(__ln2_lo, __t_rint));
+  float __b_lo;
+  const float __b_hi = ::cuda::__fpmp_two_mult_fma(__t_rint, __ln2_2, &__b_lo);
+  const float __tiny = ::cuda::__fpmp_fma_rn(
+    __t_rint, __ln2_3, ::cuda::__fpmp_fma_rn(__a_lo, __a_lo, ::cuda::__fpmp_add_rn(__b_lo, __q_lo)));
+  float __m_lo;
+  const float __m_hi = ::cuda::__fpmp_two_sum(-__b_hi, -__q_hi, &__m_lo);
+  const __ffloat __m = __ffloat(__m_hi, ::cuda::__fpmp_sub_rn(__m_lo, __tiny)) - __p_lo;
+  __ffloat __z       = renormalize(__m + ::cuda::__fpmp_fma_rn(-__t_rint, __ln2_1, -__p_hi));
 
   // exp polynomial: 5 high-order terms in float, remaining 7 in ff
   __ffloat __t = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 5>(__z, __exp_c);
@@ -514,10 +528,7 @@ __internal_fpmp2_erfc(const float __x_hi, const float __x_lo, float* __res_hi, f
   float __scale_hi      = ::cuda::std::bit_cast<float>(static_cast<unsigned>(__ek2) << 23);
   __ffloat __exp_scaled = __ffloat(__t.hi() * __scale_lo * __scale_hi, __t.lo() * __scale_lo * __scale_hi);
 
-  /* Correction: exp(-x^2) = exp_scaled * (1 + (-x^2 - xx)) same as double fma(t3, -x*x - xx, t3) */
-  __ffloat __remainder = renormalize(-__a * __a - __xx);
-  __ffloat __exp_xx    = __exp_scaled * __remainder + __exp_scaled;
-  __ffloat __erfc_val  = renormalize(__t1 * __exp_xx);
+  __ffloat __erfc_val = renormalize(__t1 * __exp_scaled);
 
   if (__is_neg)
   {
