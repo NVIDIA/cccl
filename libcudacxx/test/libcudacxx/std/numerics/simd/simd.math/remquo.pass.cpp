@@ -22,6 +22,19 @@
 #include "../simd_test_utils.h"
 #include "math_test_utils.h"
 
+template <int N>
+TEST_HOST_DEVICE_FUNC void test_mixed_arguments()
+{
+  using F = simd::vec<float, N>;
+  using D = simd::vec<double, N>;
+  const F x(4.0f);
+  const D y(2.0);
+  simd::rebind_t<int, D> quotients;
+  const D remainder = simd::remquo(x, y, &quotients);
+  check_math_values(remainder, 0.0);
+  check_math_values(quotients, 2);
+}
+
 template <typename T, int N>
 TEST_HOST_DEVICE_FUNC void test_wrapper()
 {
@@ -84,6 +97,7 @@ TEST_HOST_DEVICE_FUNC void test_scalar()
 template <typename T, int N>
 TEST_HOST_DEVICE_FUNC void test_type()
 {
+  test_mixed_arguments<N>();
   test_wrapper<T, N>();
   test_non_scalar<T, N>();
   test_scalar<T, N>();
