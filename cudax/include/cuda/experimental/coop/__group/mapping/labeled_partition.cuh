@@ -21,11 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__bit/bit_trunc.h>
 #include <cuda/__fwd/hierarchy.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__warp/lane_mask.h>
-#include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/always_false.h>
@@ -92,78 +90,67 @@ public:
 
     using _Label = decltype(::cuda::experimental::coop::__extract_label(__fn_(__prev_mapping_result)));
 
-    if constexpr (::cuda::std::is_same_v<bool, _Label>)
+    using _MappingResult =
+      __mapping_result<::cuda::std::dynamic_extent,
+                       ::cuda::std::dynamic_extent,
+                       _PrevMappingResult::is_always_exhaustive(),
+                       false>;
+
+    _Label __label{};
+    uint32_t __match_mask{};
+    uint32_t __prev_mask{};
+    if (__prev_mapping_result.is_valid())
     {
-      constexpr auto __static_prev_ngroups = _PrevMappingResult::static_group_count();
-      constexpr auto __static_ngroups =
-        (__static_prev_ngroups != ::cuda::std::dynamic_extent)
-          ? (__static_prev_ngroups * 2)
-          : ::cuda::std::dynamic_extent;
+      __label     = ::cuda::experimental::coop::__extract_label(__fn_(__prev_mapping_result));
+      __prev_mask = __prev_mapping_result.lane_mask().value();
 
-      using _MappingResult =
-        __mapping_result<__static_ngroups, ::cuda::std::dynamic_extent, _PrevMappingResult::is_always_exhaustive(), false>;
-
-      if constexpr (!_PrevMappingResult::is_always_exhaustive())
+      if constexpr (::cuda::std::is_same_v<_Label, bool>)
       {
-        if (!__prev_mapping_result.is_valid())
+        __match_mask = ::__ballot_sync(__prev_mask, __label);
+        if (!__label)
         {
-          return _MappingResult::__invalid();
+          __match_mask = (~__match_mask) & __prev_mask;
         }
       }
-
-      const auto __pred      = ::cuda::experimental::coop::__extract_label(__fn_(__prev_mapping_result));
-      const auto __prev_mask = __prev_mapping_result.lane_mask().value();
-
-      auto __match_mask = ::__ballot_sync(__prev_mask, __pred);
-      if (!__pred)
+      else if constexpr (sizeof(__label) <= sizeof(uint64_t))
       {
-        __match_mask = (~__match_mask) & __prev_mask;
+        __match_mask = ::__match_any_sync(__prev_mask, __label);
+      }
+#  if _CCCL_HAS_INT128()
+      else if constexpr (sizeof(__label) <= sizeof(__uint128_t))
+      {
+        __match_mask = ::__match_any_sync(__prev_mask, static_cast<uint64_t>(__label));
+        __match_mask &= ::__match_any_sync(__prev_mask, static_cast<uint64_t>(__label >> 64));
+      }
+#  endif // _CCCL_HAS_INT128()
+      else
+      {
+        static_assert(::cuda::std::__always_false_v<_Unit>, "Unsupported label type");
+      }
+    }
+
+    const auto __lower_match_mask = __match_mask & ::cuda::ptx::get_sreg_lanemask_lt();
+    const auto __unit_count       = static_cast<uint32_t>(::cuda::std::popcount(__match_mask));
+    const auto __unit_rank        = static_cast<uint32_t>(::cuda::std::popcount(__lower_match_mask));
+
+    if constexpr (::cuda::std::is_same_v<_Label, bool> && _PrevMappingResult::static_group_count() == 1)
+    {
+      if (!__prev_mapping_result.is_valid())
+      {
+        return _MappingResult::__invalid();
       }
       return _MappingResult{
-        __prev_mapping_result.group_count() * 2,
-        __prev_mapping_result.group_rank() + ((__pred) ? __prev_mapping_result.group_count() : 0u),
-        static_cast<uint32_t>(::cuda::std::popcount(__match_mask)),
-        static_cast<uint32_t>(::cuda::std::popcount(__match_mask & ::cuda::ptx::get_sreg_lanemask_lt())),
+        (__match_mask == __prev_mask) ? 1u : 2u,
+        (__match_mask == __prev_mask) ? 0u : static_cast<uint32_t>(__label),
+        __unit_count,
+        __unit_rank,
         ::cuda::device::lane_mask{__match_mask}};
     }
     else
     {
-      using _MappingResult =
-        __mapping_result<::cuda::std::dynamic_extent,
-                         ::cuda::std::dynamic_extent,
-                         _PrevMappingResult::is_always_exhaustive(),
-                         false>;
-
-      uint32_t __match_mask{};
-      if (__prev_mapping_result.is_valid())
-      {
-        const auto __label     = ::cuda::experimental::coop::__extract_label(__fn_(__prev_mapping_result));
-        const auto __prev_mask = __prev_mapping_result.lane_mask().value();
-
-        if constexpr (sizeof(__label) <= sizeof(uint64_t))
-        {
-          __match_mask = ::__match_any_sync(__prev_mask, __label);
-        }
-#  if _CCCL_HAS_INT128()
-        else if constexpr (sizeof(__label) <= sizeof(__uint128_t))
-        {
-          __match_mask = ::__match_any_sync(__prev_mask, static_cast<uint64_t>(__label));
-          __match_mask &= ::__match_any_sync(__prev_mask, static_cast<uint64_t>(__label >> 64));
-        }
-#  endif // _CCCL_HAS_INT128()
-        else
-        {
-          static_assert(::cuda::std::__always_false_v<_Unit>, "Unsupported label type");
-        }
-      }
-
-      const auto __unit_count = static_cast<uint32_t>(::cuda::std::popcount(__match_mask));
-      const auto __unit_rank =
-        static_cast<uint32_t>(::cuda::std::popcount(__match_mask & ::cuda::ptx::get_sreg_lanemask_lt()));
-
       const auto __parent_mask = __parent.__mapping_result().lane_mask().value();
-      const auto __root_mask   = ::__ballot_sync(__parent_mask, __prev_mapping_result.is_valid() && __unit_rank == 0);
-      const auto __root_lane   = ::cuda::std::countr_zero(__match_mask);
+      const auto __root_mask =
+        ::__ballot_sync(__parent_mask, __prev_mapping_result.is_valid() && __lower_match_mask == 0);
 
       if (!__prev_mapping_result.is_valid())
       {
@@ -171,8 +158,7 @@ public:
       }
 
       const auto __group_count = static_cast<uint32_t>(::cuda::std::popcount(__root_mask));
-      const auto __group_rank =
-        static_cast<uint32_t>(::cuda::std::popcount(::cuda::bit_trunc(__root_mask, __root_lane)));
+      const auto __group_rank  = static_cast<uint32_t>(::cuda::std::popcount(__root_mask & (__match_mask - 1u)));
 
       return _MappingResult{
         __group_count, __group_rank, __unit_count, __unit_rank, ::cuda::device::lane_mask{__match_mask}};
