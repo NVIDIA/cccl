@@ -372,7 +372,7 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
   }
   stream.sync();
 
-#if 0 // Implement exception handling
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if): Implement exception handling
 #  if _CCCL_HAS_EXCEPTIONS()
   SECTION("Exception handling throwing bad_alloc")
   {

@@ -102,7 +102,6 @@ Checks:
   - '-readability-redundant-access-specifiers'
   - '-readability-redundant-declaration'
   - '-readability-redundant-parentheses'
-  - '-readability-avoid-unconditional-preprocessor-if'
   - '-readability-non-const-parameter'
   - '-readability-redundant-typename'
   - '-readability-redundant-casting'
