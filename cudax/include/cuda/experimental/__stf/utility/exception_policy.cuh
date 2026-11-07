@@ -460,9 +460,6 @@ enum class __claim : unsigned char
  */
 struct notify_t : basic_sink<notify_t>
 {
-  //! @cond
-  //! @endcond
-
   // Destination: `__os_` wins if set, otherwise `__file_` (default `stderr`).
   ::FILE* __file_       = stderr;
   ::std::ostream* __os_ = nullptr;
@@ -550,9 +547,6 @@ inline const notify_t notify{};
 template <class _F>
 struct effect_t : basic_sink<effect_t<_F>>
 {
-  //! @cond
-  //! @endcond
-
   _F __f_;
 
   // maybe_unused: when f is nullary, only the discarded constexpr branch reads the failure;
@@ -615,9 +609,6 @@ struct abort_t : basic_sink<abort_t>
 {
   static constexpr bool __diverges = true;
 
-  //! @cond
-  //! @endcond
-
   //! @brief The exception hook: report, then die.
   template <class _Fn>
   [[noreturn]] nullval
@@ -642,9 +633,6 @@ inline constexpr abort_t abort{};
 struct terminate_t : basic_sink<terminate_t>
 {
   static constexpr bool __diverges = true;
-
-  //! @cond
-  //! @endcond
 
   template <class _Fn>
   [[noreturn]] nullval
@@ -675,9 +663,6 @@ inline constexpr terminate_t terminate{};
  */
 struct noop_t : basic_sink<noop_t>
 {
-  //! @cond
-  //! @endcond
-
   //! @brief The exception hook: do nothing, decide nothing (Nothing). As the whole policy the
   //! expression takes its default value.
   template <class _Fn>
@@ -714,9 +699,6 @@ struct defer_t : basic_sink<defer_t>
   static constexpr bool __produces_value = true;
   static constexpr unsigned __domain     = __on_thrown;
 
-  //! @cond
-  //! @endcond
-
   //! @brief Captures the in-flight exception; the answer converts to the expression's type.
   template <class _Fn>
   ::std::exception_ptr on_thrown(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const noexcept
@@ -738,9 +720,6 @@ inline constexpr defer_t defer{};
  */
 struct fwd_t : basic_sink<fwd_t>
 {
-  //! @cond
-  //! @endcond
-
   template <class _Fn>
   [[noreturn]] nullval on_thrown(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const
   {
@@ -769,9 +748,6 @@ inline constexpr fwd_t fwd{};
 struct unwind_t : basic_sink<unwind_t>
 {
   static constexpr bool __diverges = true;
-
-  //! @cond
-  //! @endcond
 
   template <class _Fn>
   [[noreturn]] nullval on_thrown(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const
@@ -810,9 +786,6 @@ template <class _V>
 struct subst_t : basic_sink<subst_t<_V>>
 {
   static constexpr bool __produces_value = true;
-
-  //! @cond
-  //! @endcond
 
   _V __v_;
 
@@ -952,9 +925,6 @@ struct retry_t : basic_sink<retry_t>
 {
   static constexpr bool __needs_future   = true;
   static constexpr bool __produces_value = true;
-
-  //! @cond
-  //! @endcond
 
   // decltype(auto), not auto: a reference-returning callable must re-run to the same object,
   // not to a copy (the ignore branch deduces the object type and returns a copy of the tag).
@@ -1552,9 +1522,6 @@ struct circuit_open : ::std::runtime_error
  */
 struct circuit_breaker_t : basic_sink<circuit_breaker_t>
 {
-  //! @cond
-  //! @endcond
-
   ::std::shared_ptr<int> __budget_;
   int __initial_;
 
@@ -1648,9 +1615,6 @@ inline constexpr bool __store_may_decline<::std::shared_ptr<_E>> = ::cuda::std::
 template <class _Target>
 struct store_t : basic_sink<store_t<_Target>>
 {
-  //! @cond
-  //! @endcond
-
   _Target __target_;
 
   template <class _Fn>
@@ -4219,8 +4183,6 @@ struct always_t : basic_sink<always_t<_A, _B>>
   static constexpr bool __selects_thrown   = __either(__selects_thrown_v<_A>, __selects_thrown_v<_B>);
   static constexpr bool __selects_returned = __either(__selects_returned_v<_A>, __selects_returned_v<_B>);
 
-  //! @cond
-  //! @endcond
   _A __head_;
   _B __fin_;
 
@@ -4865,9 +4827,6 @@ private:
   }
 
 public:
-  //! @cond
-  //! @endcond
-
   //! @brief Erase a policy. Implicit, so any sink converts where a `dynamic` is expected:
   //! `void release_all(pool&, dynamic sink); release_all(pl, notify & abort);`. A raw reaction
   //! is normalized first. The `dynamic` exclusion is a separate template parameter so that
