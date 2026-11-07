@@ -212,6 +212,29 @@ TEST_HOST_DEVICE_FUNC void test_accuracy()
         const P promoted = x + P(c);
         assert(r.hi() == promoted.hi() && r.lo() == promoted.lo());
       }
+      // x - c and c - x: within 2u^2 of the exact difference, computed independently.
+      for (int order = 0; order < 2; ++order)
+      {
+        const P r    = order == 0 ? x - c : c - x;
+        const T sign = order == 0 ? T(1) : T(-1);
+        expansion<T> exact, error;
+        exact.add(sign * xh);
+        exact.add(sign * xl);
+        exact.add(-sign * c);
+        error.add(r.hi());
+        error.add(r.lo());
+        error.add(-sign * xh);
+        error.add(-sign * xl);
+        error.add(sign * c);
+        if (exact.n == 0)
+        {
+          assert(error.n == 0);
+        }
+        else
+        {
+          assert(relative_error(error, exact) <= T(2) * u2 * tol);
+        }
+      }
       check_scalar_product(x, c);
       // x / c: the promoted pair division without the term on the divisor's zero low limb.
       {
@@ -238,6 +261,39 @@ TEST_HOST_DEVICE_FUNC void test_accuracy()
         assert(relative_error(error, exact) <= bound * u2 * tol);
       }
     }
+  }
+}
+
+// Scalar-first subtraction on fixed operands with results computed by hand.
+template <typename P>
+TEST_HOST_DEVICE_FUNC void test_scalar_minus_pair()
+{
+  using T   = decltype(P{}.hi());
+  const T u = unit_roundoff<T>();
+  // 3 - (1 + u/2) = 2 - u/2: the high limb rounds to 2, and the low limb is exactly -u/2.
+  {
+    const P r = T(3) - P(T(1), u / T(2));
+    expansion<T> error;
+    error.add(r.hi());
+    error.add(r.lo());
+    error.add(T(-2));
+    error.add(u / T(2));
+    assert(error.n == 0);
+    if (!cuda::std::is_same_v<P, cuda::fpmp2<T, cuda::fpmp2_accuracy::low>>)
+    {
+      assert(r.hi() == T(2) && r.lo() == -u / T(2));
+    }
+  }
+  // A low limb of 4u overlaps a high limb of 1 (half its ulp is u): 3 - (1 + 4u) = 2 - 4u,
+  // which one limb holds.
+  {
+    const P r = T(3) - P(T(1), T(4) * u);
+    expansion<T> error;
+    error.add(r.hi());
+    error.add(r.lo());
+    error.add(T(-2));
+    error.add(T(4) * u);
+    assert(error.n == 0);
   }
 }
 
@@ -320,6 +376,7 @@ template <typename P>
 TEST_HOST_DEVICE_FUNC void test_type()
 {
   test_accuracy<P>();
+  test_scalar_minus_pair<P>();
   test_forms<P>();
   test_accuracy_selecting<P>();
 }

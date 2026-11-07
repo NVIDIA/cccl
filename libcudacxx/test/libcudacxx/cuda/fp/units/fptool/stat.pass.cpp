@@ -305,8 +305,8 @@ __global__ void parity_kernel()
 // A kernel by one thread with a hand-counted operation mix.
 constexpr unsigned long long int expected_add = 3ull;
 constexpr unsigned long long int expected_sub = 3ull;
-constexpr unsigned long long int expected_mul = 2ull;
-constexpr unsigned long long int expected_div = 2ull;
+constexpr unsigned long long int expected_mul = 4ull;
+constexpr unsigned long long int expected_div = 3ull;
 constexpr unsigned long long int expected_ops = expected_add + expected_sub + expected_mul + expected_div;
 
 __global__ void counting_kernel(float* sink)
@@ -323,6 +323,9 @@ __global__ void counting_kernel(float* sink)
   s /= a; // div
   ++s; // add
   --s; // sub
+  s *= 2; // mul, a scalar one limb cannot hold, converted to the pair
+  s /= 2.0f; // div, a single-limb scalar
+  s = s * 0.5f; // mul, a single-limb scalar in a binary operator
 
   *sink = static_cast<float>(s);
 }
