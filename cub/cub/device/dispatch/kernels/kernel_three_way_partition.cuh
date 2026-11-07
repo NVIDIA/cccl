@@ -40,7 +40,6 @@ using ScanTileStateT   = cub::ScanTileState<AccumPackT>;
 template <typename TotalNumItemsT>
 class streaming_context_t
 {
-private:
   bool first_partition = true;
   bool last_partition  = false;
   TotalNumItemsT total_previous_num_items{};

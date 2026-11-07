@@ -99,7 +99,6 @@ Checks:
   - '-readability-math-missing-parentheses'
   - '-readability-else-after-return'
   - '-readability-avoid-nested-conditional-operator'
-  - '-readability-redundant-access-specifiers'
   - '-readability-redundant-declaration'
   - '-readability-redundant-parentheses'
   - '-readability-avoid-unconditional-preprocessor-if'

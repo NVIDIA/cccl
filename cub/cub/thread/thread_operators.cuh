@@ -282,7 +282,6 @@ struct CastOp
 template <typename ScanOp>
 class SwizzleScanOp
 {
-private:
   /// Wrapped scan operator
   ScanOp scan_op;
 

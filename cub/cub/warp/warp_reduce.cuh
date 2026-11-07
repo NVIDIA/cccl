@@ -747,7 +747,6 @@ public:
 template <typename T>
 class WarpReduce<T, 1>
 {
-private:
   using _TempStorage _CCCL_NODEBUG = cub::NullType;
 
 public:
