@@ -12,6 +12,8 @@ Calling a marker directly in Python raises the ``RuntimeError`` from
 
 from __future__ import annotations
 
+from typing import Any
+
 try:
     import numpy
 except ModuleNotFoundError as exc:
@@ -42,21 +44,41 @@ from ._marker import group_primitive_marker
 def load(
     group: BlockGroup | WarpGroup,
     source: object,
-    output: ThreadDataLike[_CommonNumericT] | numpy.ndarray,
+    output: ThreadDataLike[_CommonNumericT] | numpy.ndarray | None = None,
     /,
     *,
+    items_per_thread: int | None = None,
+    alignment: int | None = None,
     algorithm: BlockLoadStoreAlgorithm | WarpLoadStoreAlgorithm = "direct",
     valid_items: ValidItems | None = None,
     oob_default: _CommonNumericT | float | None = None,
     offset: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
-) -> None:
+) -> ThreadDataLike[Any] | None:
     """Load a block or warp tile with the Numba-CUDA-MLIR backend.
 
-    Parameters, algorithm choices, tile addressing, and the ``None`` return
-    follow :func:`cuda.coop.load`. In this backend, ``output`` may also be a
-    supported fixed-size Numba local array. It must be writable; an untyped
-    local array can infer its dtype from the source.
+    Parameters, algorithm choices, tile addressing, and result ownership
+    follow :func:`cuda.coop.load`. Prefer ``items_per_thread`` to return a
+    fresh payload with the source dtype. Sources may be contiguous global
+    arrays or shared arrays. The common API supports these memory sources too.
+
+    To fill existing per-thread storage, pass ``output`` and omit
+    ``items_per_thread`` and ``alignment``. This form returns ``None``.
+    In this backend, ``output`` may also be a supported fixed-size,
+    one-dimensional Numba local array. A directly constructed ``ThreadData``
+    can infer its dtype from the source.
+
+    To load directly into shared memory, pass a native contiguous shared
+    array as ``output`` together with ``items_per_thread``. Each physical
+    thread writes its own consecutive row of that many elements. The array
+    must have a statically known capacity of at least the enclosing block's
+    thread count times ``items_per_thread``; a contiguous slice selects the
+    destination origin. Use ``shared[start:stop]``; explicit slice steps,
+    including one, are unsupported by this backend. ``offset`` still selects
+    the source origin. This form returns ``None`` and does not accept
+    ``alignment``. Synchronize before another thread reads the shared result.
+    Guarded loads preserve CUB's unspecified invalid slots when
+    ``oob_default`` is omitted.
 
     See :ref:`per-thread payloads <coop-thread-data>` and
     :ref:`temporary storage <coop-temp-storage>` for allocation rules.
@@ -70,7 +92,9 @@ def load(
 
     Examples
     --------
-    Copy a partial final tile using a Numba local array.
+    Fill an existing Numba local array while copying a partial final tile.
+    For ordinary fresh payloads, prefer the returning example in
+    :func:`cuda.coop.load`.
 
     .. literalinclude::
         ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_load_store_examples.py
@@ -85,6 +109,8 @@ def load(
         group,
         source,
         output,
+        items_per_thread=items_per_thread,
+        alignment=alignment,
         algorithm=algorithm,
         valid_items=valid_items,
         oob_default=oob_default,
@@ -116,6 +142,8 @@ def store(
     follow :func:`cuda.coop.store`. ``value`` may be a numeric scalar or a
     supported fixed-size Numba local array. Transpose algorithms may rearrange
     that input in place; copy values before Store if they are needed later.
+    ``destination`` may be a contiguous global or shared array. Synchronize
+    before another thread reads a shared-memory value written by this call.
 
     See :ref:`per-thread payloads <coop-thread-data>` and
     :ref:`temporary storage <coop-temp-storage>` for allocation rules, and

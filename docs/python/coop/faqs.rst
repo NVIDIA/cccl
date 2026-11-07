@@ -60,12 +60,79 @@ Keep the alias on a dotted import. Bare ``import cuda.coop.numba_mlir``
 assigns the top-level package to ``cuda`` in that scope, replacing the name
 previously imported from ``numba_cuda_mlir``.
 
+.. _coop-faq-load-forms:
+
+When should I use returning Load or its output parameter?
+---------------------------------------------------------
+
+Prefer ``values = coop.load(group, source, items_per_thread=N)`` for fresh
+values. It returns a ``ThreadData`` with the source's dtype. Use
+``coop.load(group, source, output)`` when an existing per-thread object must
+be filled, for example to preserve its lifetime or update a caller's payload.
+This per-thread output form returns ``None``; omit ``items_per_thread`` and leave
+``alignment=None``. Configure the existing payload's alignment at construction.
+The Numba-qualified API additionally accepts supported fixed one-dimensional
+local arrays, as shown in the :ref:`qualified example
+<coop-programming-api-choice>`.
+
+The two forms have the same memory direction: a global or shared source feeds
+per-thread values. A shared source does not require the output form.
+Direct ``ThreadData`` construction and its dtype inference remain supported.
+
+Can Load fill a shared array directly?
+--------------------------------------
+
+Yes. Pass the shared destination and a positive compile-time item count:
+
+.. code-block:: python
+
+   # Inside a kernel; shared has block_threads * N contiguous elements.
+   coop.load(block, source, shared, items_per_thread=N)
+   cuda.syncthreads()
+   reloaded = coop.load(block, shared, items_per_thread=N)
+
+The common API supports this form. It returns ``None`` and assigns physical
+block thread ``r`` the destination row ``shared[r*N:(r+1)*N]``. The array must
+be one-dimensional, contiguous, have the source dtype, and have a compile-time
+extent large enough for ``block_threads * N`` elements. Warp and logical-warp
+calls use the same block-wide destination partition, so sibling groups write
+disjoint rows. ``offset`` applies only to the source; use a shared view to
+select a destination origin. Leave ``alignment=None``; the existing
+allocation determines destination alignment.
+
+Blocked algorithms such as ``direct`` and ``transpose`` preserve source order
+in the flattened destination. ``striped`` retains striped per-thread ownership
+and therefore produces a permutation when the rows are flattened. Partial
+loads leave invalid slots unspecified unless ``oob_default`` is supplied.
+See :ref:`the complete examples and ownership rules <coop-shared-load-store>`.
+
+Is Load an asynchronous global-to-shared copy?
+----------------------------------------------
+
+No. All Load forms are synchronous calls using ordinary CUB BlockLoad or
+WarpLoad. A shared output does not introduce TMA, a completion token, or a
+16-byte copy-size requirement. Each thread finishes writing its own row;
+callers still synchronize before reading another thread's row. Transpose
+algorithms' internal scratch barriers do not replace that producer/consumer
+barrier. See CCCL's :doc:`Tensor Memory Accelerator guide <../../cccl/tma>`
+for separate C++ asynchronous-copy facilities and their synchronization rules.
+
 .. _coop-faq-thread-data-dtype:
 
 When does ``ThreadData`` need an explicit element type?
 -------------------------------------------------------
 
-Start with an inferred payload:
+For a fresh Load, let the source supply the element type:
+
+.. code-block:: python
+
+   # Inside a kernel; source and items_per_thread are kernel arguments.
+   items = coop.load(
+       coop.this_block(), source, items_per_thread=items_per_thread
+   )
+
+The result is a ``ThreadData`` payload, including when the count is one.
+Direct construction without a dtype is also supported:
 
 .. code-block:: python
 
@@ -77,6 +144,13 @@ Load supplies the source element type. In Numba-CUDA-MLIR, supported indexed
 assignments and a Store destination can also establish the type. Other
 cooperative producers define their output types where their contracts say so.
 Inference follows the backend's supported operations and assignments.
+
+Returning Load needs the source's element type during cooperative planning.
+Kernel-array arguments and their contiguous slices provide that information.
+Numba-CUDA-MLIR also recognizes the declared dtype of ``cuda.shared.array``
+sources, including supported aliases and contiguous slices. Both common and
+qualified Load can return a payload from these sources without an explicitly
+typed output.
 
 Numba's current planner cannot infer a payload type solely from the results of
 a non-inlined device helper when no other supported operation supplies type
@@ -138,10 +212,10 @@ share scratch while the values stay in each thread's payload:
 
    # Inside a kernel; source, destination, and items_per_thread are arguments.
    block = coop.this_block()
-   items = coop.ThreadData(items_per_thread)
    scratch = coop.TempStorage(auto_sync=True)
-   coop.load(
-       block, source, items, algorithm="transpose", temp_storage=scratch
+   items = coop.load(
+       block, source, items_per_thread=items_per_thread,
+       algorithm="transpose", temp_storage=scratch,
    )
    coop.store(
        block, destination, items, algorithm="transpose", temp_storage=scratch

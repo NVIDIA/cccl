@@ -350,13 +350,10 @@ def test_production_routes_compile_common_and_qualified_warp_kernels(
             items_per_thread,
         ):
             thread = compiler_cuda.threadIdx.x
-            load_payload = qualified_coop.ThreadData(
-                items_per_thread, dtype=types.int32
-            )
-            qualified_coop.load(
+            load_payload = qualified_coop.load(
                 qualified_coop.this_warp(),
                 load_source,
-                load_payload,
+                items_per_thread=items_per_thread,
                 algorithm=algorithm,
                 valid_items=valid_items,
                 oob_default=types.int32(-17),
@@ -393,13 +390,10 @@ def test_production_routes_compile_common_and_qualified_warp_kernels(
             items_per_thread,
         ):
             thread = compiler_cuda.threadIdx.x
-            load_payload = root_coop.ThreadData(
-                items_per_thread, dtype=types.int32
-            )
-            root_coop.load(
+            load_payload = root_coop.load(
                 root_coop.this_warp(),
                 load_source,
-                load_payload,
+                items_per_thread=items_per_thread,
                 algorithm=algorithm,
                 valid_items=valid_items,
                 oob_default=types.int32(-17),
@@ -475,14 +469,10 @@ def test_production_routes_compile_common_and_qualified_logical_warp_kernels(
         @compiler_cuda.jit(chip="sm_90")
         def kernel(source, destination, valid_items, offset, items_per_thread):
             group = qualified_coop.this_warp().group_by(8)
-            payload = qualified_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            qualified_coop.load(
+            payload = qualified_coop.load(
                 group,
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm=algorithm,
                 valid_items=valid_items,
                 oob_default=types.int32(-17),
@@ -503,14 +493,10 @@ def test_production_routes_compile_common_and_qualified_logical_warp_kernels(
         @compiler_cuda.jit(chip="sm_90")
         def kernel(source, destination, valid_items, offset, items_per_thread):
             group = root_coop.this_warp().group_by(8)
-            payload = root_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            root_coop.load(
+            payload = root_coop.load(
                 group,
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm=algorithm,
                 valid_items=valid_items,
                 oob_default=types.int32(-17),

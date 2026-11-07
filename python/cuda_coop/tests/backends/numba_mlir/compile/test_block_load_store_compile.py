@@ -546,11 +546,10 @@ def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
         storage = coop.TempStorage(
             128 * 1024, alignment=16, sharing="exclusive", auto_sync=True
         )
-        payload = coop.ThreadData(items_per_thread, dtype=types.int32)
-        coop.load(
+        payload = coop.load(
             coop.this_block(),
             source,
-            payload,
+            items_per_thread=items_per_thread,
             algorithm="vectorize",
             temp_storage=storage,
         )
@@ -564,11 +563,10 @@ def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
 
     @compiler_cuda.jit(chip="sm_90")
     def storage_bearing(source, destination, items_per_thread):
-        payload = qualified_coop.ThreadData(items_per_thread, dtype=types.int32)
-        qualified_coop.load(
+        payload = qualified_coop.load(
             qualified_coop.this_block(),
             source,
-            payload,
+            items_per_thread=items_per_thread,
             algorithm="warp_transpose_timesliced",
         )
         qualified_coop.store(
