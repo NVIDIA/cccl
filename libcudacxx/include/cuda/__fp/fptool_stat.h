@@ -282,6 +282,8 @@
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
 
 #if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
@@ -730,6 +732,37 @@ _CCCL_DEVICE_API inline void __fpmp2_stat_note_binop(
 
 // === main class definition ===
 
+// Whether `fpmp2` accepts `x op= c` for a scalar c, so that fpmp2_stat offers the same set and
+// forwards c unconverted: a scalar that needs both limbs must not be narrowed to one first.
+template <class _Base, class _Tp, class = void>
+inline constexpr bool __fpmp2_stat_add_assignable_v = false;
+template <class _Base, class _Tp>
+inline constexpr bool __fpmp2_stat_add_assignable_v<
+  _Base,
+  _Tp,
+  ::cuda::std::void_t<decltype(::cuda::std::declval<_Base&>() += ::cuda::std::declval<const _Tp&>())>> = true;
+template <class _Base, class _Tp, class = void>
+inline constexpr bool __fpmp2_stat_sub_assignable_v = false;
+template <class _Base, class _Tp>
+inline constexpr bool __fpmp2_stat_sub_assignable_v<
+  _Base,
+  _Tp,
+  ::cuda::std::void_t<decltype(::cuda::std::declval<_Base&>() -= ::cuda::std::declval<const _Tp&>())>> = true;
+template <class _Base, class _Tp, class = void>
+inline constexpr bool __fpmp2_stat_mul_assignable_v = false;
+template <class _Base, class _Tp>
+inline constexpr bool __fpmp2_stat_mul_assignable_v<
+  _Base,
+  _Tp,
+  ::cuda::std::void_t<decltype(::cuda::std::declval<_Base&>() *= ::cuda::std::declval<const _Tp&>())>> = true;
+template <class _Base, class _Tp, class = void>
+inline constexpr bool __fpmp2_stat_div_assignable_v = false;
+template <class _Base, class _Tp>
+inline constexpr bool __fpmp2_stat_div_assignable_v<
+  _Base,
+  _Tp,
+  ::cuda::std::void_t<decltype(::cuda::std::declval<_Base&>() /= ::cuda::std::declval<const _Tp&>())>> = true;
+
 //! @brief Statistics-collecting drop-in replacement for `fpmp2`
 //!
 //! Wraps an `fpmp2<_FpType, _TypeAcc>` and mirrors its arithmetic, comparison and
@@ -1139,38 +1172,60 @@ public:
     return *this;
   }
 
-  //! @brief Add a single limb, mirroring the `fpmp2` overload that skips building a pair
-  _CCCL_HOST_DEVICE_API fpmp2_stat& operator+=(const _FpType __c) noexcept
+  //! @brief Add a scalar through the wrapped type's own overload, which converts it exactly as `fpmp2` does
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<_Tp> _CCCL_AND __fpmp2_stat_add_assignable_v<base_type, _Tp>)
+  _CCCL_HOST_DEVICE_API fpmp2_stat& operator+=(const _Tp& __c) noexcept
   {
     const base_type __x = __stat_v_;
     __stat_v_ += __c;
-    __trace<__fpmp2_stat_binop::__add>(__x, base_type{__c}, __stat_v_);
+    __trace<__fpmp2_stat_binop::__add>(__x, __as_base(__c), __stat_v_);
     return *this;
   }
-  //! @brief Subtract a single limb
-  _CCCL_HOST_DEVICE_API fpmp2_stat& operator-=(const _FpType __c) noexcept
+  // A scalar the wrapped type rejects must not reach operator+=(const fpmp2_stat&) through the
+  // implicit single-limb constructor, which would narrow it.
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<_Tp> _CCCL_AND(!__fpmp2_stat_add_assignable_v<base_type, _Tp>))
+  fpmp2_stat& operator+=(const _Tp&) = delete;
+  //! @brief Subtract a scalar, as for `operator+=`
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<_Tp> _CCCL_AND __fpmp2_stat_sub_assignable_v<base_type, _Tp>)
+  _CCCL_HOST_DEVICE_API fpmp2_stat& operator-=(const _Tp& __c) noexcept
   {
     const base_type __x = __stat_v_;
     __stat_v_ -= __c;
-    __trace<__fpmp2_stat_binop::__sub>(__x, base_type{__c}, __stat_v_);
+    __trace<__fpmp2_stat_binop::__sub>(__x, __as_base(__c), __stat_v_);
     return *this;
   }
-  //! @brief Multiply by a single limb
-  _CCCL_HOST_DEVICE_API fpmp2_stat& operator*=(const _FpType __c) noexcept
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<_Tp> _CCCL_AND(!__fpmp2_stat_sub_assignable_v<base_type, _Tp>))
+  fpmp2_stat& operator-=(const _Tp&) = delete;
+  //! @brief Multiply by a scalar, as for `operator+=`
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<_Tp> _CCCL_AND __fpmp2_stat_mul_assignable_v<base_type, _Tp>)
+  _CCCL_HOST_DEVICE_API fpmp2_stat& operator*=(const _Tp& __c) noexcept
   {
     const base_type __x = __stat_v_;
     __stat_v_ *= __c;
-    __trace<__fpmp2_stat_binop::__mul>(__x, base_type{__c}, __stat_v_);
+    __trace<__fpmp2_stat_binop::__mul>(__x, __as_base(__c), __stat_v_);
     return *this;
   }
-  //! @brief Divide by a single limb
-  _CCCL_HOST_DEVICE_API fpmp2_stat& operator/=(const _FpType __c) noexcept
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<_Tp> _CCCL_AND(!__fpmp2_stat_mul_assignable_v<base_type, _Tp>))
+  fpmp2_stat& operator*=(const _Tp&) = delete;
+  //! @brief Divide by a scalar, as for `operator+=`
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<_Tp> _CCCL_AND __fpmp2_stat_div_assignable_v<base_type, _Tp>)
+  _CCCL_HOST_DEVICE_API fpmp2_stat& operator/=(const _Tp& __c) noexcept
   {
     const base_type __x = __stat_v_;
     __stat_v_ /= __c;
-    __trace<__fpmp2_stat_binop::__div>(__x, base_type{__c}, __stat_v_);
+    __trace<__fpmp2_stat_binop::__div>(__x, __as_base(__c), __stat_v_);
     return *this;
   }
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<_Tp> _CCCL_AND(!__fpmp2_stat_div_assignable_v<base_type, _Tp>))
+  fpmp2_stat& operator/=(const _Tp&) = delete;
 
   _CCCL_HOST_DEVICE_API fpmp2_stat& operator++() noexcept
   {
