@@ -43,6 +43,8 @@
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_swappable.h>
+#include <cuda/std/__type_traits/is_trivially_constructible.h>
+#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 #include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/sfinae_traits.h>
@@ -168,6 +170,12 @@ struct __tuple_constraints
     // NOLINTEND(bugprone-branch-clone)
   }
 
+  // The converting constructors from a non-const lvalue or a const rvalue beat the copy constructor for the same type.
+  // Unlike the copy constructor they are never trivial, so prefer the copy constructor when it is equivalent.
+  template <class... _UTypes>
+  static constexpr bool __prefers_trivial_copy_constructor_v =
+    (is_trivially_copy_constructible_v<_Types> && ...) && (is_trivially_constructible_v<_Types, _UTypes> && ...);
+
   template <class _UTuple>
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool __disambiguate_tuple_like() noexcept
   {
@@ -213,6 +221,14 @@ struct __tuple_constraints
       {
         return true;
       }
+    }
+    else if constexpr (is_same_v<_UTuple, tuple<_Types...>&>)
+    { // Prefers a trivial copy constructor for a non-const lvalue
+      return !__prefers_trivial_copy_constructor_v<_Types&...>;
+    }
+    else if constexpr (is_same_v<_UTuple, const tuple<_Types...>&&> || is_same_v<_UTuple, const tuple<_Types...>>)
+    { // Prefers a trivial copy constructor for a const rvalue, which tuple(_Tuple&&) deduces as const tuple
+      return !__prefers_trivial_copy_constructor_v<const _Types&&...>;
     }
     else
     {

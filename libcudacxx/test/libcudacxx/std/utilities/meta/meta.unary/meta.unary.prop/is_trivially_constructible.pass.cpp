@@ -65,5 +65,13 @@ int main(int, char**)
   test_is_not_trivially_constructible<A, int, double>();
   test_is_not_trivially_constructible<A>();
 
+  // Ill-formed initializations of non-class types
+  test_is_not_trivially_constructible<int&, int&&>();
+  test_is_not_trivially_constructible<int&, const int&>();
+  test_is_not_trivially_constructible<int&&, int&>();
+  test_is_not_trivially_constructible<int&&, const int&>();
+  test_is_not_trivially_constructible<int, int*>();
+  test_is_not_trivially_constructible<int*, int>();
+
   return 0;
 }
