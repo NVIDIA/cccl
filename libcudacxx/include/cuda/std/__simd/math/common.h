@@ -212,16 +212,21 @@ template <typename _Arg, typename _Result>
 inline constexpr bool __is_simd_math_same_vec_arg_v<_Arg, _Result, void_t<__deduced_vec_t<_Arg>>> =
   is_same_v<__deduced_vec_t<_Arg>, _Result>;
 
-// Check if the argument is a valid SIMD math argument: same vector argument or convertible to the result type
-template <typename _Arg, typename _Result>
+// Check if the argument is a valid for SIMD math. A deduced argument may use an explicit conversion. Other argument
+// types must convert implicitly
+template <typename _Arg, typename _Result, typename _Vp>
 inline constexpr bool __is_simd_math_arg_v =
-  __is_simd_math_same_vec_arg_v<_Arg, _Result>
-  || (!__is_simd_math_floating_point_v<_Arg>
-      && (is_same_v<remove_cvref_t<_Arg>, typename _Result::value_type> || is_convertible_v<const _Arg&, _Result>) );
+  is_same_v<_Arg, _Vp> || is_same_v<remove_cvref_t<_Arg>, typename _Result::value_type>
+  || is_convertible_v<const _Arg&, _Result>;
 
+template <typename _Result, typename _Vp, typename... _Args>
+inline constexpr bool __is_simd_math_overload_v =
+  __is_simd_math_same_vec_arg_v<_Vp, _Result> && (__is_simd_math_arg_v<_Args, _Result, _Vp> && ...);
+
+// check if there is at least one overload that is valid for the given result type and arguments
 template <typename _Result, typename... _Args>
 inline constexpr bool __is_simd_math_v =
-  __is_simd_floating_point_v<_Result> && (__is_simd_math_arg_v<_Args, _Result> && ...);
+  __is_simd_floating_point_v<_Result> && (__is_simd_math_overload_v<_Result, _Args, _Args...> || ...);
 
 //----------------------------------------------------------------------------------------------------------------------
 // binary macros
