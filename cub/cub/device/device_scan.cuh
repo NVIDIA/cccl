@@ -2783,6 +2783,10 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!   Supports customization of the stream via `cuda::get_stream` and of the tuning via `cuda::execution::tune`.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2805,15 +2809,14 @@ public:
   //!   Binary functor that defines the equality of keys.
   //!   Default is cuda::std::equal_to<>{}.
   //!
-  //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = uint32_t>
+            typename NumItemsT   = uint32_t,
+            typename EnvT        = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSumByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -2822,22 +2825,29 @@ public:
     ValuesOutputIteratorT d_values_out,
     NumItemsT num_items,
     EqualityOpT equality_op = EqualityOpT(),
-    cudaStream_t stream     = nullptr)
+    const EnvT& env         = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSumByKey");
     using init_value_t = cub::detail::it_value_t<ValuesInputIteratorT>;
     const init_value_t init_value{};
-    return scan_by_key_impl<::cuda::std::execution::env<>>(
+    return detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
-      d_keys_in,
-      d_values_in,
-      d_values_out,
-      equality_op,
-      ::cuda::std::plus<>{},
-      init_value,
-      num_items,
-      stream);
+      env,
+      [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_values_in,
+          d_values_out,
+          equality_op,
+          ::cuda::std::plus<>{},
+          init_value,
+          num_items,
+          stream);
+      });
   }
 
   //! @rst
@@ -2946,6 +2956,10 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!   Supports customization of the stream via `cuda::get_stream` and of the tuning via `cuda::execution::tune`.
+  //!
   //!  @param[in] d_temp_storage
   //!    @devicestorage
   //!
@@ -2976,17 +2990,16 @@ public:
   //!    Binary functor that defines the equality of keys.
   //!    Default is cuda::std::equal_to<>{}.
   //!
-  //!  @param[in] stream
-  //!    @rst
-  //!    **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!    @endrst
+  //!  @param[in] env
+  //!    **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
             typename ScanOpT,
             typename InitValueT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = uint32_t>
+            typename NumItemsT   = uint32_t,
+            typename EnvT        = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScanByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -2997,20 +3010,18 @@ public:
     InitValueT init_value,
     NumItemsT num_items,
     EqualityOpT equality_op = EqualityOpT(),
-    cudaStream_t stream     = nullptr)
+    const EnvT& env         = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScanByKey");
-    return scan_by_key_impl<::cuda::std::execution::env<>>(
+    return detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
-      d_keys_in,
-      d_values_in,
-      d_values_out,
-      equality_op,
-      scan_op,
-      init_value,
-      num_items,
-      stream);
+      env,
+      [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, init_value, num_items, stream);
+      });
   }
 
   //! @rst
@@ -3084,6 +3095,10 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!   Supports customization of the stream via `cuda::get_stream` and of the tuning via `cuda::execution::tune`.
+  //!
   //!  @param[in] d_temp_storage
   //!    @devicestorage
   //!
@@ -3106,15 +3121,14 @@ public:
   //!    Binary functor that defines the equality of keys.
   //!    Default is cuda::std::equal_to<>{}.
   //!
-  //!  @param[in] stream
-  //!    @rst
-  //!    **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!    @endrst
+  //!  @param[in] env
+  //!    **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = uint32_t>
+            typename NumItemsT   = uint32_t,
+            typename EnvT        = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSumByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -3123,20 +3137,27 @@ public:
     ValuesOutputIteratorT d_values_out,
     NumItemsT num_items,
     EqualityOpT equality_op = EqualityOpT(),
-    cudaStream_t stream     = nullptr)
+    const EnvT& env         = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSumByKey");
-    return scan_by_key_impl<::cuda::std::execution::env<>>(
+    return detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
-      d_keys_in,
-      d_values_in,
-      d_values_out,
-      equality_op,
-      ::cuda::std::plus<>{},
-      NullType{},
-      num_items,
-      stream);
+      env,
+      [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_values_in,
+          d_values_out,
+          equality_op,
+          ::cuda::std::plus<>{},
+          NullType{},
+          num_items,
+          stream);
+      });
   }
 
   //! @rst
@@ -3237,6 +3258,10 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!   Supports customization of the stream via `cuda::get_stream` and of the tuning via `cuda::execution::tune`.
+  //!
   //!  @param[in] d_temp_storage
   //!    @devicestorage
   //!
@@ -3262,16 +3287,15 @@ public:
   //!    Binary functor that defines the equality of keys.
   //!    Default is cuda::std::equal_to<>{}.
   //!
-  //!  @param[in] stream
-  //!    @rst
-  //!    **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!    @endrst
+  //!  @param[in] env
+  //!    **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
             typename ScanOpT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = uint32_t>
+            typename NumItemsT   = uint32_t,
+            typename EnvT        = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -3281,20 +3305,18 @@ public:
     ScanOpT scan_op,
     NumItemsT num_items,
     EqualityOpT equality_op = EqualityOpT(),
-    cudaStream_t stream     = nullptr)
+    const EnvT& env         = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanByKey");
-    return scan_by_key_impl<::cuda::std::execution::env<>>(
+    return detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
-      d_keys_in,
-      d_values_in,
-      d_values_out,
-      equality_op,
-      scan_op,
-      NullType{},
-      num_items,
-      stream);
+      env,
+      [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, NullType{}, num_items, stream);
+      });
   }
 
   //! @rst
