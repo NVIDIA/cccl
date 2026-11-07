@@ -212,34 +212,53 @@ __status_answer<_Status> __retry_status(_Status __latest, _Fn& __fn, const int _
 // The channels a policy has a treatment for: an exception (thrown) or a failing status
 // (returned). Passing through on purpose (`fwd`) is a treatment; a selector passing a
 // failure through because it is on the other channel is not. Channel-neutral policies cover both.
+//
+// Each property has a default here and is overridden by a sink through a member constant of the
+// same name without the `_v` (`static constexpr bool __produces_value = true;`), stated in the
+// sink itself; a composite computes its members from its arms' traits.
 inline constexpr unsigned __on_thrown   = 1;
 inline constexpr unsigned __on_returned = 2;
 
-template <class _P>
+template <class _P, class = void>
 inline constexpr unsigned __domain_v = __on_thrown | __on_returned;
+template <class _P>
+inline constexpr unsigned __domain_v<_P, ::cuda::std::void_t<decltype(_P::__domain)>> = _P::__domain;
 
 // Whether the policy re-runs the action, which a past result does not have (rule 3).
-template <class _P>
+template <class _P, class = void>
 inline constexpr bool __needs_future_v = false;
+template <class _P>
+inline constexpr bool __needs_future_v<_P, ::cuda::std::void_t<decltype(_P::__needs_future)>> = _P::__needs_future;
 
 // Whether the policy's answer is a value standing in for the expression's (rule 3: at most one
 // per `&`, since the left one would be discarded).
-template <class _P>
+template <class _P, class = void>
 inline constexpr bool __produces_value_v = false;
+template <class _P>
+inline constexpr bool __produces_value_v<_P, ::cuda::std::void_t<decltype(_P::__produces_value)>> =
+  _P::__produces_value;
 
 // Whether the policy always diverges (unwind, abort, terminate): its hook never returns and never
 // passes the failure on. Not detectable from the hook's type, since unwind and fwd both rethrow,
 // so the leaves are marked and `&` carries the mark when its left side always reaches the right.
 // Rule 1b: such a policy cannot stand on the left of `|` or be repeated.
-template <class _P>
+template <class _P, class = void>
 inline constexpr bool __diverges_v = false;
+template <class _P>
+inline constexpr bool __diverges_v<_P, ::cuda::std::void_t<decltype(_P::__diverges)>> = _P::__diverges;
 
 // Whether the policy contains a selector that matches exceptions by type, or failing statuses by
 // value or type (rule 4: each must match a kind the operand can produce).
-template <class _P>
+template <class _P, class = void>
 inline constexpr bool __selects_thrown_v = false;
 template <class _P>
+inline constexpr bool __selects_thrown_v<_P, ::cuda::std::void_t<decltype(_P::__selects_thrown)>> =
+  _P::__selects_thrown;
+template <class _P, class = void>
 inline constexpr bool __selects_returned_v = false;
+template <class _P>
+inline constexpr bool __selects_returned_v<_P, ::cuda::std::void_t<decltype(_P::__selects_returned)>> =
+  _P::__selects_returned;
 
 // Composition of the properties above: a function rather than `|`/`||`, whose operands coincide
 // when both sides of a composite are the same policy type.
@@ -496,6 +515,8 @@ effect_t<::cuda::std::decay_t<_F>> effect(_F&& __f)
  */
 struct abort_t : basic_sink<abort_t>
 {
+  static constexpr bool __diverges = true;
+
   //! @cond
   //! @endcond
 
@@ -522,6 +543,8 @@ inline constexpr abort_t abort{};
 //! @brief Like @ref abort_t "abort", but ends via `std::terminate`.
 struct terminate_t : basic_sink<terminate_t>
 {
+  static constexpr bool __diverges = true;
+
   //! @cond
   //! @endcond
 
@@ -590,6 +613,9 @@ inline constexpr noop_t noop{};
  */
 struct defer_t : basic_sink<defer_t>
 {
+  static constexpr bool __produces_value = true;
+  static constexpr unsigned __domain     = __on_thrown;
+
   //! @cond
   //! @endcond
 
@@ -644,6 +670,8 @@ inline constexpr fwd_t fwd{};
  */
 struct unwind_t : basic_sink<unwind_t>
 {
+  static constexpr bool __diverges = true;
+
   //! @cond
   //! @endcond
 
@@ -664,12 +692,6 @@ struct unwind_t : basic_sink<unwind_t>
 };
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-template <>
-inline constexpr bool __diverges_v<abort_t> = true;
-template <>
-inline constexpr bool __diverges_v<terminate_t> = true;
-template <>
-inline constexpr bool __diverges_v<unwind_t> = true;
 #endif // _CCCL_DOXYGEN_INVOKED
 inline constexpr unwind_t unwind{};
 
@@ -689,6 +711,8 @@ inline constexpr unwind_t unwind{};
 template <class _V>
 struct subst_t : basic_sink<subst_t<_V>>
 {
+  static constexpr bool __produces_value = true;
+
   //! @cond
   //! @endcond
 
@@ -755,6 +779,9 @@ inline constexpr forever_t forever{};
 // `retry(n)` (and `retry(forever)`, a negative count): up to n re-attempts inside one policy.
 struct __retry_n_t : basic_sink<__retry_n_t>
 {
+  static constexpr bool __needs_future   = true;
+  static constexpr bool __produces_value = true;
+
   int __n_;
 
   // The exception channel: re-run while the action throws; exhaustion passes the last
@@ -807,8 +834,6 @@ struct __retry_n_t : basic_sink<__retry_n_t>
   }
 };
 
-template <>
-inline constexpr bool __needs_future_v<__retry_n_t> = true;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 /**
@@ -827,6 +852,9 @@ inline constexpr bool __needs_future_v<__retry_n_t> = true;
  */
 struct retry_t : basic_sink<retry_t>
 {
+  static constexpr bool __needs_future   = true;
+  static constexpr bool __produces_value = true;
+
   //! @cond
   //! @endcond
 
@@ -872,8 +900,6 @@ struct retry_t : basic_sink<retry_t>
 inline constexpr retry_t retry{};
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-template <>
-inline constexpr bool __needs_future_v<retry_t> = true;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 template <class>
@@ -902,6 +928,8 @@ struct __expected_error<::cuda::std::expected<_T, _E>>
  */
 struct as_expected_t : basic_sink<as_expected_t>
 {
+  static constexpr bool __produces_value = true;
+
   template <class _Fn, class _Raw = decltype(::cuda::std::declval<_Fn&>()())>
   auto on_thrown(const ::std::exception* __exception, const ::cuda::std::source_location, _Fn&) const -> _Raw
   {
@@ -1240,6 +1268,9 @@ auto delay(_Duration&& __duration)
  */
 struct backoff_t : basic_sink<backoff_t>
 {
+  static constexpr bool __needs_future   = true;
+  static constexpr bool __produces_value = true;
+
   int __n_;
   ::std::chrono::milliseconds __initial_;
 
@@ -1337,8 +1368,6 @@ private:
 };
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-template <>
-inline constexpr bool __needs_future_v<backoff_t> = true;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a decorrelated-jitter retry policy.
@@ -1359,6 +1388,8 @@ inline backoff_t backoff(int __n, ::std::chrono::milliseconds __initial)
 template <class _Ptr>
 struct remember_t : basic_sink<remember_t<_Ptr>>
 {
+  static constexpr bool __produces_value = true;
+
   _Ptr __cell_; // a raw pointer or a shared_ptr; *__cell_ is the last-known-good value
 
   template <class _R>
@@ -1393,23 +1424,7 @@ auto remember(::std::shared_ptr<_T> __cell)
 }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-template <class _V>
-inline constexpr bool __produces_value_v<subst_t<_V>> = true;
-template <>
-inline constexpr bool __produces_value_v<as_expected_t> = true;
 // A re-attempt answers the re-run's result, so it chooses a value too.
-template <>
-inline constexpr bool __produces_value_v<retry_t> = true;
-template <>
-inline constexpr bool __produces_value_v<__retry_n_t> = true;
-template <>
-inline constexpr bool __produces_value_v<backoff_t> = true;
-template <>
-inline constexpr bool __produces_value_v<defer_t> = true;
-template <>
-inline constexpr unsigned __domain_v<defer_t> = __on_thrown;
-template <class _Ptr>
-inline constexpr bool __produces_value_v<remember_t<_Ptr>> = true;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Thrown by @ref circuit_breaker_t "circuit_breaker" to refuse an attempt while the
@@ -2075,6 +2090,11 @@ struct __if_isa_t
     : basic_sink<__if_isa_t<_P, _Es...>>
     , __forwards_success<_P>
 {
+  static constexpr unsigned __domain       = __on_thrown & __domain_v<_P>;
+  static constexpr bool __produces_value   = __produces_value_v<_P>;
+  static constexpr bool __selects_thrown   = true;
+  static constexpr bool __selects_returned = __selects_returned_v<_P>;
+
   using __pure_claim_tag _CCCL_NODEBUG = void;
 
   // The claim is decided by the funnel pointer alone when every listed type is a class and the
@@ -2168,15 +2188,6 @@ struct __if_isa_t
   }
 };
 
-template <class _P, class... _Es>
-inline constexpr unsigned __domain_v<__if_isa_t<_P, _Es...>> = __on_thrown & __domain_v<_P>;
-template <class _P, class... _Es>
-inline constexpr bool __produces_value_v<__if_isa_t<_P, _Es...>> = __produces_value_v<_P>;
-template <class _P, class... _Es>
-inline constexpr bool __selects_thrown_v<__if_isa_t<_P, _Es...>> = true;
-template <class _P, class... _Es>
-inline constexpr bool __selects_returned_v<__if_isa_t<_P, _Es...>> = __selects_returned_v<_P>;
-
 // Intra-pack duplicates are dead for exact matching; cone relations are fine (Base and
 // Derived may both be listed, each matching only its own dynamic type).
 template <class...>
@@ -2201,6 +2212,11 @@ struct __if_monomorphic_t
     : basic_sink<__if_monomorphic_t<_P, _Es...>>
     , __forwards_success<_P>
 {
+  static constexpr unsigned __domain       = __on_thrown & __domain_v<_P>;
+  static constexpr bool __produces_value   = __produces_value_v<_P>;
+  static constexpr bool __selects_thrown   = true;
+  static constexpr bool __selects_returned = __selects_returned_v<_P>;
+
   using __pure_claim_tag _CCCL_NODEBUG = void;
 
   // Exact matching reads typeid through the funnel, so the claim is always decided: a null
@@ -2236,15 +2252,6 @@ struct __if_monomorphic_t
     return {};
   }
 };
-
-template <class _P, class... _Es>
-inline constexpr unsigned __domain_v<__if_monomorphic_t<_P, _Es...>> = __on_thrown & __domain_v<_P>;
-template <class _P, class... _Es>
-inline constexpr bool __produces_value_v<__if_monomorphic_t<_P, _Es...>> = __produces_value_v<_P>;
-template <class _P, class... _Es>
-inline constexpr bool __selects_thrown_v<__if_monomorphic_t<_P, _Es...>> = true;
-template <class _P, class... _Es>
-inline constexpr bool __selects_returned_v<__if_monomorphic_t<_P, _Es...>> = __selects_returned_v<_P>;
 
 // Tags a raw capability-bearing callable so normal forms are uniformly sink-typed.
 // Forwards every capability it wraps; adds none. Storage follows the `subst_t<_R>`
@@ -2355,6 +2362,14 @@ struct __policy_and
     : basic_sink<__policy_and<_L, _R>>
     , __composite_hooks<_L, _R>
 {
+  // `&` stops at the left's fwd, so it treats only the channels both sides treat.
+  static constexpr unsigned __domain       = __both(__domain_v<_L>, __domain_v<_R>);
+  static constexpr bool __needs_future     = __either(__needs_future_v<_L>, __needs_future_v<_R>);
+  static constexpr bool __diverges         = __never_passes_through_v<_L> && __diverges_v<_R>;
+  static constexpr bool __produces_value   = __either(__produces_value_v<_L>, __produces_value_v<_R>);
+  static constexpr bool __selects_thrown   = __either(__selects_thrown_v<_L>, __selects_thrown_v<_R>);
+  static constexpr bool __selects_returned = __either(__selects_returned_v<_L>, __selects_returned_v<_R>);
+
   // A code-channel selector never returns on the exception channel (it passes through by
   // rethrowing) but may handle a status, so the right side is reachable there.
   static_assert(!__answers_nothing<_L> || __selects_returned_v<_L>,
@@ -2437,22 +2452,6 @@ struct __policy_and
 };
 
 template <class _L, class _R>
-// `&` stops at the left's fwd, so it treats only the channels both sides treat.
-inline constexpr unsigned __domain_v<__policy_and<_L, _R>> = __both(__domain_v<_L>, __domain_v<_R>);
-template <class _L, class _R>
-inline constexpr bool __needs_future_v<__policy_and<_L, _R>> = __either(__needs_future_v<_L>, __needs_future_v<_R>);
-template <class _L, class _R>
-inline constexpr bool __diverges_v<__policy_and<_L, _R>> = __never_passes_through_v<_L> && __diverges_v<_R>;
-template <class _L, class _R>
-inline constexpr bool __produces_value_v<__policy_and<_L, _R>> =
-  __either(__produces_value_v<_L>, __produces_value_v<_R>);
-template <class _L, class _R>
-inline constexpr bool __selects_thrown_v<__policy_and<_L, _R>> =
-  __either(__selects_thrown_v<_L>, __selects_thrown_v<_R>);
-template <class _L, class _R>
-inline constexpr bool __selects_returned_v<__policy_and<_L, _R>> =
-  __either(__selects_returned_v<_L>, __selects_returned_v<_R>);
-template <class _L, class _R>
 inline constexpr bool __has_pure_claim<__policy_and<_L, _R>> = __has_pure_claim<_L>;
 
 // Forward declaration: `|` and `*` reuse this for arm answer interpretation (defined below).
@@ -2509,6 +2508,12 @@ struct __policy_or
     : basic_sink<__policy_or<_L, _R>>
     , __composite_hooks<_L, _R>
 {
+  static constexpr unsigned __domain       = __either(__domain_v<_L>, __domain_v<_R>);
+  static constexpr bool __needs_future     = __either(__needs_future_v<_L>, __needs_future_v<_R>);
+  static constexpr bool __produces_value   = __either(__produces_value_v<_L>, __produces_value_v<_R>);
+  static constexpr bool __selects_thrown   = __either(__selects_thrown_v<_L>, __selects_thrown_v<_R>);
+  static constexpr bool __selects_returned = __either(__selects_returned_v<_L>, __selects_returned_v<_R>);
+
   static_assert(__has_exception_hook<_L> && __has_exception_hook<_R>,
                 "both sides of | must answer the exception path (have an exception hook)");
   static_assert(!__never_passes_through_v<_L>,
@@ -2667,19 +2672,6 @@ private:
 };
 
 template <class _L, class _R>
-inline constexpr unsigned __domain_v<__policy_or<_L, _R>> = __either(__domain_v<_L>, __domain_v<_R>);
-template <class _L, class _R>
-inline constexpr bool __needs_future_v<__policy_or<_L, _R>> = __either(__needs_future_v<_L>, __needs_future_v<_R>);
-template <class _L, class _R>
-inline constexpr bool __produces_value_v<__policy_or<_L, _R>> =
-  __either(__produces_value_v<_L>, __produces_value_v<_R>);
-template <class _L, class _R>
-inline constexpr bool __selects_thrown_v<__policy_or<_L, _R>> =
-  __either(__selects_thrown_v<_L>, __selects_thrown_v<_R>);
-template <class _L, class _R>
-inline constexpr bool __selects_returned_v<__policy_or<_L, _R>> =
-  __either(__selects_returned_v<_L>, __selects_returned_v<_R>);
-template <class _L, class _R>
 inline constexpr bool __has_pure_claim<__policy_or<_L, _R>> = __has_pure_claim<_L> && __has_pure_claim<_R>;
 
 // `p * n`: behaviorally the n-fold `|` of p with itself. One stored policy, invoked up to n
@@ -2693,6 +2685,12 @@ struct __policy_pow
     : basic_sink<__policy_pow<_P>>
     , __forwards_success<_P>
 {
+  static constexpr unsigned __domain       = __domain_v<_P>;
+  static constexpr bool __needs_future     = __needs_future_v<_P>;
+  static constexpr bool __produces_value   = __produces_value_v<_P>;
+  static constexpr bool __selects_thrown   = __selects_thrown_v<_P>;
+  static constexpr bool __selects_returned = __selects_returned_v<_P>;
+
   int __n_;
 
   static_assert(__has_exception_hook<_P>,
@@ -2853,16 +2851,6 @@ struct __policy_pow
   }
 };
 
-template <class _P>
-inline constexpr unsigned __domain_v<__policy_pow<_P>> = __domain_v<_P>;
-template <class _P>
-inline constexpr bool __needs_future_v<__policy_pow<_P>> = __needs_future_v<_P>;
-template <class _P>
-inline constexpr bool __produces_value_v<__policy_pow<_P>> = __produces_value_v<_P>;
-template <class _P>
-inline constexpr bool __selects_thrown_v<__policy_pow<_P>> = __selects_thrown_v<_P>;
-template <class _P>
-inline constexpr bool __selects_returned_v<__policy_pow<_P>> = __selects_returned_v<_P>;
 template <class _P>
 inline constexpr bool __has_pure_claim<__policy_pow<_P>> = __has_pure_claim<_P>;
 
@@ -3636,6 +3624,12 @@ struct __if_equal_t
     : basic_sink<__if_equal_t<_P, _Status, _Count>>
     , __forwards_success<_P>
 {
+  static constexpr unsigned __domain       = __on_returned & __domain_v<_P>;
+  static constexpr bool __needs_future     = __needs_future_v<_P>;
+  static constexpr bool __produces_value   = __produces_value_v<_P>;
+  static constexpr bool __selects_thrown   = __selects_thrown_v<_P>;
+  static constexpr bool __selects_returned = true;
+
   __status_set<_Status, _Count> __set_;
 
   template <class _Fn>
@@ -3673,23 +3667,18 @@ struct __if_equal_selector
   }
 };
 
-template <class _P, class _Status, ::cuda::std::size_t _Count>
-inline constexpr unsigned __domain_v<__if_equal_t<_P, _Status, _Count>> = __on_returned & __domain_v<_P>;
-template <class _P, class _Status, ::cuda::std::size_t _Count>
-inline constexpr bool __needs_future_v<__if_equal_t<_P, _Status, _Count>> = __needs_future_v<_P>;
-template <class _P, class _Status, ::cuda::std::size_t _Count>
-inline constexpr bool __produces_value_v<__if_equal_t<_P, _Status, _Count>> = __produces_value_v<_P>;
-template <class _P, class _Status, ::cuda::std::size_t _Count>
-inline constexpr bool __selects_thrown_v<__if_equal_t<_P, _Status, _Count>> = __selects_thrown_v<_P>;
-template <class _P, class _Status, ::cuda::std::size_t _Count>
-inline constexpr bool __selects_returned_v<__if_equal_t<_P, _Status, _Count>> = true;
-
 // `thrown(p)`: `p` on the exception channel only; on the code channel a status passes through.
 template <class _P>
 struct __thrown_t
     : basic_sink<__thrown_t<_P>>
     , __forwards_success<_P>
 {
+  static constexpr unsigned __domain       = __on_thrown & __domain_v<_P>;
+  static constexpr bool __needs_future     = __needs_future_v<_P>;
+  static constexpr bool __produces_value   = __produces_value_v<_P>;
+  static constexpr bool __selects_thrown   = true;
+  static constexpr bool __selects_returned = __selects_returned_v<_P>;
+
   template <class _Fn, class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
   decltype(auto) on_thrown(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
@@ -3710,6 +3699,12 @@ struct __returned_t
     : basic_sink<__returned_t<_P>>
     , __forwards_success<_P>
 {
+  static constexpr unsigned __domain       = __on_returned & __domain_v<_P>;
+  static constexpr bool __needs_future     = __needs_future_v<_P>;
+  static constexpr bool __produces_value   = __produces_value_v<_P>;
+  static constexpr bool __selects_thrown   = __selects_thrown_v<_P>;
+  static constexpr bool __selects_returned = true;
+
   template <class _Fn>
   [[noreturn]] nullval on_thrown(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const
   {
@@ -3730,6 +3725,10 @@ struct __returned_t
 template <class _F, class _E>
 struct __thrown_fn_t : basic_sink<__thrown_fn_t<_F, _E>>
 {
+  static constexpr unsigned __domain     = __on_thrown;
+  static constexpr bool __produces_value = true;
+  static constexpr bool __selects_thrown = true;
+
   _F __f_;
 
   template <class _Fn>
@@ -3776,6 +3775,10 @@ struct __thrown_fn_t : basic_sink<__thrown_fn_t<_F, _E>>
 template <class _F, class _S>
 struct __returned_fn_t : basic_sink<__returned_fn_t<_F, _S>>
 {
+  static constexpr unsigned __domain       = __on_returned;
+  static constexpr bool __produces_value   = true;
+  static constexpr bool __selects_returned = true;
+
   _F __f_;
 
   template <class _Fn>
@@ -3800,42 +3803,6 @@ struct __returned_fn_t : basic_sink<__returned_fn_t<_F, _S>>
     }
   }
 };
-
-template <class _P>
-inline constexpr unsigned __domain_v<__thrown_t<_P>> = __on_thrown & __domain_v<_P>;
-template <class _P>
-inline constexpr bool __needs_future_v<__thrown_t<_P>> = __needs_future_v<_P>;
-template <class _P>
-inline constexpr bool __produces_value_v<__thrown_t<_P>> = __produces_value_v<_P>;
-template <class _P>
-inline constexpr bool __selects_thrown_v<__thrown_t<_P>> = true;
-template <class _P>
-inline constexpr bool __selects_returned_v<__thrown_t<_P>> = __selects_returned_v<_P>;
-
-template <class _P>
-inline constexpr unsigned __domain_v<__returned_t<_P>> = __on_returned & __domain_v<_P>;
-template <class _P>
-inline constexpr bool __needs_future_v<__returned_t<_P>> = __needs_future_v<_P>;
-template <class _P>
-inline constexpr bool __produces_value_v<__returned_t<_P>> = __produces_value_v<_P>;
-template <class _P>
-inline constexpr bool __selects_thrown_v<__returned_t<_P>> = __selects_thrown_v<_P>;
-template <class _P>
-inline constexpr bool __selects_returned_v<__returned_t<_P>> = true;
-
-template <class _F, class _E>
-inline constexpr unsigned __domain_v<__thrown_fn_t<_F, _E>> = __on_thrown;
-template <class _F, class _E>
-inline constexpr bool __produces_value_v<__thrown_fn_t<_F, _E>> = true;
-template <class _F, class _E>
-inline constexpr bool __selects_thrown_v<__thrown_fn_t<_F, _E>> = true;
-
-template <class _F, class _S>
-inline constexpr unsigned __domain_v<__returned_fn_t<_F, _S>> = __on_returned;
-template <class _F, class _S>
-inline constexpr bool __produces_value_v<__returned_fn_t<_F, _S>> = true;
-template <class _F, class _S>
-inline constexpr bool __selects_returned_v<__returned_fn_t<_F, _S>> = true;
 
 // Whether `thrown`/`returned` were handed a policy (a channel selector) rather than a function
 // (a converter).
@@ -4147,6 +4114,13 @@ auto when(_Pred&& __pred, _P&& __p)
 template <class _A, class _B>
 struct always_t : basic_sink<always_t<_A, _B>>
 {
+  // Finalizers never handle: the head alone decides what is treated.
+  static constexpr unsigned __domain       = __domain_v<_A>;
+  static constexpr bool __needs_future     = __either(__needs_future_v<_A>, __needs_future_v<_B>);
+  static constexpr bool __produces_value   = __produces_value_v<_A>;
+  static constexpr bool __selects_thrown   = __either(__selects_thrown_v<_A>, __selects_thrown_v<_B>);
+  static constexpr bool __selects_returned = __either(__selects_returned_v<_A>, __selects_returned_v<_B>);
+
   //! @cond
   //! @endcond
   _A __head_;
@@ -4247,21 +4221,6 @@ struct always_t : basic_sink<always_t<_A, _B>>
     }
   }
 };
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-template <class _A, class _B>
-// Finalizers never handle: the head alone decides what is treated.
-inline constexpr unsigned __domain_v<always_t<_A, _B>> = __domain_v<_A>;
-template <class _A, class _B>
-inline constexpr bool __needs_future_v<always_t<_A, _B>> = __either(__needs_future_v<_A>, __needs_future_v<_B>);
-template <class _A, class _B>
-inline constexpr bool __produces_value_v<always_t<_A, _B>> = __produces_value_v<_A>;
-template <class _A, class _B>
-inline constexpr bool __selects_thrown_v<always_t<_A, _B>> = __either(__selects_thrown_v<_A>, __selects_thrown_v<_B>);
-template <class _A, class _B>
-inline constexpr bool __selects_returned_v<always_t<_A, _B>> =
-  __either(__selects_returned_v<_A>, __selects_returned_v<_B>);
-#endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief See @ref always_t. Variadic: `always(a, b, c)` folds left, so both `b` and `c` run
 //! regardless of `a`, and `c` runs regardless of `b`.
