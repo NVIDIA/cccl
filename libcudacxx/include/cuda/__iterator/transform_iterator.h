@@ -25,6 +25,7 @@
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#include <cuda/__iterator/contiguous_iterator_adaptor.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__concepts/equality_comparable.h>
@@ -231,6 +232,18 @@ public:
   [[nodiscard]] _CCCL_API constexpr _Iter base() && noexcept(::cuda::std::is_nothrow_move_constructible_v<_Iter>)
   {
     return ::cuda::std::move(__iter());
+  }
+
+  //! @brief Rebuilds this iterator over the storage at @p __ptr. The copy invokes a copy of the stored functor on the
+  //! elements at @p __ptr.
+  //! @param[in] __ptr The address of the storage that replaces the storage this iterator reads from.
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__iter_can_rebind<_Iter, _Tp>)
+  [[nodiscard]] _CCCL_API constexpr auto __rebind(_Tp* __ptr) const
+  {
+    auto __base = ::cuda::__rebind_iterator_adaptor(__iter(), __ptr);
+    return transform_iterator<_Fn, decltype(__base)>{::cuda::std::move(__base), __func()};
   }
 
   //! @brief Dereferences the stored iterator and applies the stored functor to the result
