@@ -112,9 +112,9 @@ Always prefer targeted builds and tests, as full builds are time-consuming. If r
 
 ### Target Names
 
-Target names do not encode the C++ dialect; the preset selects it. Every dotted prefix of a target is also a Ninja metatarget, so `ninja cub.test.device` builds all CUB device tests. `--ctest-targets` takes CTest `-R` regexes, which match substrings: append `$` when a test name is a prefix of others.
+Target names do not encode the C++ dialect. The preset selects it, except for the C Parallel targets, which fix C++20 in their CMake files. Every dotted prefix of a target is also a Ninja metatarget, so `ninja cub.test.device` builds all CUB device tests; targets created with `NO_METATARGETS`, such as the C Parallel tests, are the exception. `--ctest-targets` takes CTest `-R` regexes, which match substrings: append `$` when a test name is a prefix of others.
 
-* CUB: `cub.test.<name>[.<variant>]`. `<name>` is the source file name without `catch2_test_`, with a leading `device_`, `block_`, `warp_`, `thread_`, or `util_` turned into `device.` and so on. Variants come from `// %PARAM%` lines and launcher ids (`lid_0`, `lid_1`, `lid_2`).
+* CUB: `cub.test.<name>[.<variant>]`. `<name>` is the source file name without `catch2_test_` or `test_`, with a leading `device_`, `block_`, `warp_`, `thread_`, or `util_` turned into `device.` and so on. Variants come from `// %PARAM%` lines and launcher ids (`lid_0`, `lid_1`, `lid_2`).
 * Thrust: `thrust.<host>.<device>.test.<name>`, e.g. `thrust.cpp.cuda.test.reduce`.
 * cudax: `cudax.test.<group>`; the groups are defined in `cudax/test/CMakeLists.txt`.
 * C Parallel: `cccl.c.parallel.test.<name>` for `c/parallel/test/test_<name>.cpp`.
@@ -326,7 +326,7 @@ CCCL's CI is built on GitHub Actions and relies on a dynamically generated job m
 * **`ci/inspect_changes.py`**
 
   * Detects which subprojects changed between commits.
-  * Reads project paths and dependencies from `ci/project_files_and_dependencies.yaml`. Each library is split into a public-header project and a tests/infra project: a change to a library's public headers runs its full matrix plus a reduced ("lite") matrix for every dependent project, while a change confined to its tests runs only that library.
+  * Reads project paths and dependencies from `ci/project_files_and_dependencies.yaml`. Each library is split into a public-header project and a tests/infra project. A change to a library's public headers runs its full matrix plus a reduced ("lite") matrix for every project that lists those headers as a dependency. A change confined to a library's tests does not trigger other libraries, only infra projects such as `tidy` and `packaging`. To see what a change selects, run `python3 ci/inspect_changes.py --refs origin/main HEAD`.
   * Allows `build-workflow.py` to skip unaffected jobs.
 
 ---
