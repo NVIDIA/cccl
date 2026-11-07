@@ -292,20 +292,20 @@ public:
       {
         if (__z & 1)
         {
-          __acc_mult = (__acc_mult * __cur_mult) % modulus;
+          __acc_mult = __reduce(__acc_mult * __cur_mult);
           if constexpr (increment != 0)
           {
-            __acc_plus = (__acc_plus * __cur_mult + __cur_plus) % modulus;
+            __acc_plus = __reduce(__acc_plus * __cur_mult + __cur_plus);
           }
         }
         if constexpr (increment != 0)
         {
-          __cur_plus = ((__cur_mult + 1) * __cur_plus) % modulus;
+          __cur_plus = __reduce((__cur_mult + 1) * __cur_plus);
         }
-        __cur_mult = (__cur_mult * __cur_mult) % modulus;
+        __cur_mult = __reduce(__cur_mult * __cur_mult);
         __z >>= 1;
       }
-      __x_ = (__acc_mult * __x_ + __acc_plus) % modulus;
+      __x_ = static_cast<result_type>(__reduce(__acc_mult * __x_ + __acc_plus));
     }
   }
 
@@ -351,6 +351,19 @@ public:
 #endif // _CCCL_HOSTED()
 
 private:
+  // Reduces modulo m. For m == 0 the modulus is 2^w, which the conversion to result_type applies.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr uint64_t __reduce(uint64_t __v) noexcept
+  {
+    if constexpr (_Mv == 0)
+    {
+      return __v;
+    }
+    else
+    {
+      return __v % _Mv;
+    }
+  }
+
   _CCCL_HOST_DEVICE_API constexpr void seed(true_type, true_type, result_type __s) noexcept
   {
     __x_ = __s == 0 ? 1 : __s;
@@ -382,7 +395,7 @@ linear_congruential_engine<_UIntType, _Av, _Cv, _Mv>::__seed(_Sseq& __q, integra
   constexpr uint32_t __k = 1;
   uint32_t __ar[__k + 3] = {};
   __q.generate(__ar, __ar + __k + 3);
-  result_type __s = static_cast<result_type>(__ar[3] % _Mv);
+  result_type __s = static_cast<result_type>(__reduce(__ar[3]));
   __x_            = _Cv == 0 && __s == 0 ? result_type(1) : __s;
 }
 
@@ -394,7 +407,7 @@ linear_congruential_engine<_UIntType, _Av, _Cv, _Mv>::__seed(_Sseq& __q, integra
   constexpr uint32_t __k = 2;
   uint32_t __ar[__k + 3] = {};
   __q.generate(__ar, __ar + __k + 3);
-  result_type __s = static_cast<result_type>((__ar[3] + ((uint64_t) __ar[4] << 32)) % _Mv);
+  result_type __s = static_cast<result_type>(__reduce(__ar[3] + ((uint64_t) __ar[4] << 32)));
   __x_            = _Cv == 0 && __s == 0 ? result_type(1) : __s;
 }
 
