@@ -38,7 +38,7 @@ template <uint64_t _Ap,
           uint64_t _Mp,
           uint64_t _MpMax,
           bool _MightOverflow = (_Ap != 0 && _Mp != 0 && _Mp - 1 > (_MpMax - _Cp) / _Ap),
-          bool _OverflowOk    = ((_Mp | (_Mp - 1)) > _Mp), // m = 2^n
+          bool _OverflowOk    = ((_Mp & (_Mp - 1)) == 0), // m = 2^n
           bool _SchrageOk     = (_Ap != 0 && _Mp != 0 && _Mp % _Ap <= _Mp / _Ap)> // r <= q
 struct __lce_alg_picker
 {

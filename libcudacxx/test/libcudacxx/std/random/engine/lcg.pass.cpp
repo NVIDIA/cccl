@@ -117,6 +117,26 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test_promotion()
   return true;
 }
 
+// Wrapping around is only correct if m is a power of two, not for any even m
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test_even_modulus()
+{
+  using cuda::std::uint32_t;
+  using cuda::std::uint64_t;
+  // Schrage's algorithm applies
+  test_sequence<uint32_t, 3, 0, 4294967294u>(4294967293u, 0, 4294967291u);
+  test_sequence<uint32_t, 3, 0, 4294967294u>(1, 1000, 2805970877u);
+  test_sequence<uint64_t, 3, 0, ~0ull - 1>(~0ull - 2, 0, ~0ull - 4);
+  test_sequence<uint64_t, 3, 0, ~0ull - 1>(1, 1000, 16423488893119839011ull);
+  // Schrage's algorithm does not apply
+  test_sequence<uint32_t, 1664525u, 1013904223u, 4294967294u>(1, 1, 1586792639u);
+  test_sequence<uint32_t, 1664525u, 1013904223u, 4294967294u>(1, 1000, 2340327564u);
+#if _CCCL_HAS_INT128()
+  test_sequence<uint64_t, 2806196910506780709ull, 1, ~0ull - 1>(1, 1, 17001461636717115033ull);
+  test_sequence<uint64_t, 2806196910506780709ull, 1, ~0ull - 1>(1, 1000, 17645910041383950886ull);
+#endif // _CCCL_HAS_INT128()
+  return true;
+}
+
 // P4037R1: linear_congruential_engine must accept the unsigned char UIntType
 TEST_HOST_DEVICE_FUNC void test_p4037r1_small_uinttype()
 {
@@ -137,10 +157,12 @@ int main(int, char**)
   test_modulus_zero();
   test_large_modulus();
   test_promotion();
+  test_even_modulus();
 #if TEST_STD_VER >= 2020
   static_assert(test_modulus_zero());
   static_assert(test_large_modulus());
   static_assert(test_promotion());
+  static_assert(test_even_modulus());
 #endif // TEST_STD_VER >= 2020
   return 0;
 }
