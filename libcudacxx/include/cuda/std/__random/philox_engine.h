@@ -268,8 +268,10 @@ public:
       {
         break;
       }
-      const result_type __new_x_j = (__x_[__j] + (__increment & max()) + __carry) & max();
-      __carry                     = (__new_x_j < __x_[__j]) ? 1 : 0;
+      // Check both additions: a word of 2^w - 1 plus a carry wraps around to the old value of __x_[__j]
+      const result_type __sum     = (__x_[__j] + (__increment & max())) & max();
+      const result_type __new_x_j = (__sum + __carry) & max();
+      __carry                     = (__sum < __x_[__j] || __new_x_j < __sum) ? 1 : 0;
       __x_[__j]                   = __new_x_j;
       if constexpr (word_size < 64)
       {

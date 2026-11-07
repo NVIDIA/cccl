@@ -81,6 +81,22 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test_against_reference()
   return true;
 }
 
+// discard must carry into the next counter word when the word of the increment plus the carry is 2^w. Starting from
+// counter 2^w - 1, discarding n * (2^(2w) - 2^w + 1) values gives counter 2^(2w), which is exactly {0, 1, 0, 0}.
+template <typename UIntType, cuda::std::size_t W, UIntType M0, UIntType C0, UIntType M1, UIntType C1>
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test_discard_carry(unsigned long long z, UIntType next)
+{
+  using Engine = cuda::std::philox_engine<UIntType, W, 4, 10, M0, C0, M1, C1>;
+  Engine e1;
+  e1.set_counter({0, 0, 0, Engine::max()});
+  e1.discard(z);
+  Engine e2;
+  e2.set_counter({0, 1, 0, 0});
+  assert(e1 == e2);
+  assert(e1() == next);
+  return true;
+}
+
 // The sequence is defined by w: mulhi(a, b, w) is floor(a * b / 2^w), whatever the width of UIntType is.
 template <typename UIntType, cuda::std::size_t W, cuda::std::size_t N, UIntType... Constants>
 TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test_word_size(UIntType value_3, UIntType value_10000)
@@ -120,6 +136,17 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test_word_sizes()
   return true;
 }
 
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test_discard_carries()
+{
+  using cuda::std::uint16_t;
+  using cuda::std::uint32_t;
+  // reference values obtained from a big integer implementation of [rand.eng.philox] and libstdc++
+  test_discard_carry<uint32_t, 8, 0xD2, 0x9E, 0xCA, 0xBB>(261124ull, 33);
+  test_discard_carry<uint16_t, 16, 0xD256, 0x9E37, 0xCA50, 0xBB67>(17179607044ull, 50295);
+  test_discard_carry<uint32_t, 31, 0x4D9E8D57, 0x1E3779B9, 0x52511F53, 0x3B67AE85>(18446744065119617028ull, 1942294099);
+  return true;
+}
+
 TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   test_engine<cuda::std::philox4x32, 1955073260u>();
@@ -127,11 +154,13 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
   test_set_counter<cuda::std::philox4x32>();
   test_set_counter<cuda::std::philox4x64>();
   test_against_reference();
+  test_discard_carries();
   test_word_sizes();
 #if TEST_STD_VER >= 2020
   static_assert(test_set_counter<cuda::std::philox4x32>());
   static_assert(test_set_counter<cuda::std::philox4x64>());
   static_assert(test_against_reference());
+  static_assert(test_discard_carries());
   static_assert(test_word_sizes());
 #endif
   return true;
