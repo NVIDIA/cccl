@@ -20,6 +20,21 @@
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"
+#include "math_test_utils.h"
+
+template <typename T, int N>
+TEST_HOST_DEVICE_FUNC void test_wrapper()
+{
+  using V = simd::vec<T, N>;
+  const explicit_math_wrapper<V> x{V(T{4})};
+  const simd::rebind_t<int, V> exponents(2);
+  const simd::rebind_t<long, V> long_exponents(2L);
+  static_assert(noexcept(simd::scalbn(x, exponents)));
+  static_assert(noexcept(simd::scalbln(x, long_exponents)));
+
+  check_math_values(simd::scalbn(x, exponents), T{16});
+  check_math_values(simd::scalbln(x, long_exponents), T{16});
+}
 
 template <typename T, int N>
 TEST_HOST_DEVICE_FUNC void test_non_scalar()
@@ -73,6 +88,7 @@ TEST_HOST_DEVICE_FUNC void test_scalar()
 template <typename T, int N>
 TEST_HOST_DEVICE_FUNC void test_type()
 {
+  test_wrapper<T, N>();
   test_non_scalar<T, N>();
   test_scalar<T, N>();
 }

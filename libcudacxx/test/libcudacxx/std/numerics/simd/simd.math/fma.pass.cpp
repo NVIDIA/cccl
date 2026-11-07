@@ -20,6 +20,54 @@
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"
+#include "math_test_utils.h"
+
+struct fma_function
+{
+  template <typename X, typename Y, typename Z>
+  TEST_HOST_DEVICE_FUNC auto operator()(const X& x, const Y& y, const Z& z) const -> decltype(simd::fma(x, y, z));
+};
+
+template <int N>
+TEST_HOST_DEVICE_FUNC void test_mixed_arguments()
+{
+  // Overload participation.
+  using F              = simd::vec<float, 3>;
+  using D              = simd::vec<double, 3>;
+  using Other          = simd::vec<double, 4>;
+  using math_wrapper_t = explicit_math_wrapper<D>;
+
+  static_assert(cuda::std::is_invocable_v<fma_function, math_wrapper_t, F, D>);
+  static_assert(cuda::std::is_invocable_v<fma_function, F, D, F>);
+  static_assert(!cuda::std::is_invocable_v<fma_function, F, D, Other>);
+  static_assert(!cuda::std::is_invocable_v<fma_function, F, Other, D>);
+  static_assert(!cuda::std::is_invocable_v<fma_function, Other, F, D>);
+  static_assert(!cuda::std::is_invocable_v<fma_function, F, F, double>);
+  static_assert(!cuda::std::is_invocable_v<fma_function, double, double, double>);
+
+  // Mixed argument types.
+  const F x(4.0f);
+  const D y(2.0);
+  const F z(2.0f);
+  const D fused0 = simd::fma(y, x, z);
+  const D fused1 = simd::fma(x, y, z);
+  check_math_values(fused0, 10.0);
+  check_math_values(fused1, 10.0);
+  // Mixed wrapper and vector arguments.
+  const math_wrapper<D> y1{D(2.0)};
+  check_math_values(simd::fma(x, y1, y1), 10.0);
+}
+
+template <typename T, int N>
+TEST_HOST_DEVICE_FUNC void test_wrapper()
+{
+  using V = simd::vec<T, N>;
+  const explicit_math_wrapper<V> x{V(T{4})};
+  const explicit_math_wrapper<V> y{V(T{2})};
+  static_assert(noexcept(simd::fma(x, y, y)));
+
+  check_math_values(simd::fma(x, y, y), T{10});
+}
 
 template <typename T, int N>
 TEST_HOST_DEVICE_FUNC void test_non_scalar()
@@ -84,6 +132,8 @@ TEST_HOST_DEVICE_FUNC void test_scalar()
 template <typename T, int N>
 TEST_HOST_DEVICE_FUNC void test_type()
 {
+  test_mixed_arguments<N>();
+  test_wrapper<T, N>();
   test_non_scalar<T, N>();
   test_scalar<T, N>();
 }
