@@ -517,6 +517,15 @@ _CCCL_KERNEL_ATTRIBUTES void __device_select(
     __session, __comm, __win, __layout.__local_cuts_, __layout.__cuts_, __width * sizeof(__index_type));
 }
 
+// Keep small transfers on the original kernel; large LSA transfers benefit
+// from spreading each CTA's starting peer. Count arithmetic cannot overflow.
+template <class _Tp>
+_CCCL_HOST_API constexpr bool __use_rotated_redistribution(::cuda::std::uint64_t __count)
+{
+  constexpr ::cuda::std::uint64_t __min_bytes = ::cuda::std::uint64_t{1} << 30;
+  return __count >= (__min_bytes / sizeof(_Tp) + (__min_bytes % sizeof(_Tp) != 0));
+}
+
 template <bool _Gin, class _Tp>
 _CCCL_KERNEL_ATTRIBUTES void __device_redistribute(
   ::ncclDevComm __comm, ::ncclGinBarrierHandle __barrier, ::ncclWindow_t __win, __device_layout __layout)
@@ -527,6 +536,51 @@ _CCCL_KERNEL_ATTRIBUTES void __device_redistribute(
   __session.__begin();
   for (int __peer = 0; __peer < __comm.nRanks; ++__peer)
   {
+    const auto __begin    = __cuts[__comm.rank * __width + __peer];
+    const auto __count    = __cuts[__comm.rank * __width + __peer + 1] - __begin;
+    __index_type __cursor = 0, __offset = 0;
+    for (int __source = 0; __source <= __comm.rank; ++__source)
+    {
+      const auto __first  = __cuts[__source * __width + __peer];
+      const auto __length = __cuts[__source * __width + __peer + 1] - __first;
+      __offset            = __cursor;
+      if (__length)
+      {
+        __offset += __first % 16;
+        __cursor = (__offset + __length + 15) / 16 * 16;
+      }
+    }
+    const auto __first =
+      __count / gridDim.x * blockIdx.x + (__count % gridDim.x < blockIdx.x ? __count % gridDim.x : blockIdx.x);
+    const auto __length = __count / gridDim.x + (blockIdx.x < __count % gridDim.x);
+    __session.__put(
+      __win,
+      __peer,
+      __layout.__received_ + (__offset + __first) * sizeof(_Tp),
+      __layout.__sorted_ + (__begin + __first) * sizeof(_Tp),
+      __length * sizeof(_Tp));
+  }
+  __session.__end();
+}
+
+template <class _Tp>
+_CCCL_KERNEL_ATTRIBUTES void __device_redistribute_rotated(
+  ::ncclDevComm __comm, ::ncclGinBarrierHandle __barrier, ::ncclWindow_t __win, __device_layout __layout)
+{
+  __device_session<false> __session{__comm, __barrier};
+  const auto __width = static_cast<::cuda::std::size_t>(__comm.nRanks) + 1;
+  const auto* __cuts = static_cast<const __index_type*>(::ncclGetLocalPointer(__win, __layout.__cuts_));
+  __session.__begin();
+  // Spread large transfers across peers without a remainder in each iteration.
+  const int __block_peer = static_cast<int>(blockIdx.x % __comm.nRanks);
+  const int __first_peer =
+    __block_peer < __comm.nRanks - __comm.rank
+      ? __block_peer + __comm.rank
+      : __block_peer - (__comm.nRanks - __comm.rank);
+  for (int __step = 0; __step < __comm.nRanks; ++__step)
+  {
+    const int __peer =
+      __step < __comm.nRanks - __first_peer ? __step + __first_peer : __step - (__comm.nRanks - __first_peer);
     const auto __begin    = __cuts[__comm.rank * __width + __peer];
     const auto __count    = __cuts[__comm.rank * __width + __peer + 1] - __begin;
     __index_type __cursor = 0, __offset = 0;

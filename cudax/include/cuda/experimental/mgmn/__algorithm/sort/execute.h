@@ -507,6 +507,12 @@ _CCCL_HOST_API void __sort_device(
       <<<__blocks, 256, 0, __stream.get()>>>(
         __window.__device_, __window.__world_barrier_, __window.__window_, __layout);
   }
+  else if (::cuda::experimental::mgmn::__detail::__sort::__use_rotated_redistribution<_Key>(__size))
+  {
+    ::cuda::experimental::mgmn::__detail::__sort::__device_redistribute_rotated<_Key>
+      <<<__blocks, 256, 0, __stream.get()>>>(
+        __window.__device_, __window.__world_barrier_, __window.__window_, __layout);
+  }
   else
   {
     ::cuda::experimental::mgmn::__detail::__sort::__device_redistribute<false, _Key>
@@ -603,8 +609,15 @@ _CCCL_HOST_API void __sort_one(_Comm& __comm, const _Env& __env, _Key* __keys, _
       // Cross-rank CTA barriers require a grid that can reside on every GPU.
       // Query the compiled specialization; the collective takes the rank minimum.
       int __active_blocks = 0, __multiprocessors = 0;
-      const auto __kernel = __gin ? ::cuda::experimental::mgmn::__detail::__sort::__device_redistribute<true, _Key>
-                                  : ::cuda::experimental::mgmn::__detail::__sort::__device_redistribute<false, _Key>;
+      // Ragged ranks may choose different LSA kernels. Query the exact local
+      // choice before agreeing on a common resident grid and barrier slots.
+      const bool __rotate = !__invalid && !__gin
+                         && ::cuda::experimental::mgmn::__detail::__sort::__use_rotated_redistribution<_Key>(
+                           static_cast<::cuda::std::uint64_t>(__input_count));
+      const auto __kernel =
+        __gin      ? ::cuda::experimental::mgmn::__detail::__sort::__device_redistribute<true, _Key>
+        : __rotate ? ::cuda::experimental::mgmn::__detail::__sort::__device_redistribute_rotated<_Key>
+                   : ::cuda::experimental::mgmn::__detail::__sort::__device_redistribute<false, _Key>;
       const auto __occupancy_status =
         ::cudaOccupancyMaxActiveBlocksPerMultiprocessor(&__active_blocks, __kernel, 256, 0);
       const auto __device_status =
