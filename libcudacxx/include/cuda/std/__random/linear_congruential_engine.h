@@ -329,10 +329,13 @@ public:
   {
     using _Ostream                            = ::std::basic_ostream<_CharT, _Traits>;
     const typename _Ostream::fmtflags __flags = __os.flags();
+    const _CharT __fill                       = __os.fill();
     __os.flags(_Ostream::dec | _Ostream::left);
     __os.fill(__os.widen(' '));
+    __os << __e.__x_;
     __os.flags(__flags);
-    return __os << __e.__x_;
+    __os.fill(__fill);
+    return __os;
   }
   template <typename _CharT, typename _Traits>
   _CCCL_HOST_DEVICE_API friend ::std::basic_istream<_CharT, _Traits>&
