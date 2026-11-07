@@ -19,14 +19,18 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/config/memory_resource.h>
 #include <thrust/host_vector.h>
 #include <thrust/mr/allocator.h>
 #include <thrust/mr/memory_resource.h>
 #include <thrust/mr/pool_options.h>
+#include <thrust/mr/validator.h>
 
 #include <cuda/__cmath/ilog.h>
-#include <cuda/__memory/is_valid_alignment.h>
+#include <cuda/__memory/is_valid_alignment.h> // IWYU pragma: keep
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/algorithm>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
