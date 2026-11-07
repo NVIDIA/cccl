@@ -42,11 +42,14 @@ template <uint64_t _Ap,
           bool _SchrageOk     = (_Ap != 0 && _Mp != 0 && _Mp % _Ap <= _Mp / _Ap)> // r <= q
 struct __lce_alg_picker
 {
-  static_assert(_Ap != 0 || _Mp != 0 || !_MightOverflow || _OverflowOk || _SchrageOk,
-                "The current values of a, c, and m cannot generate a number "
-                "within bounds of linear_congruential_engine.");
-
   static constexpr const bool __use_schrage = _MightOverflow && !_OverflowOk && _SchrageOk;
+  // Neither wrapping around nor Schrage's algorithm is correct, so compute a * x + c in a wider type
+  static constexpr const bool __use_promotion = _MightOverflow && !_OverflowOk && !_SchrageOk;
+
+#if !_CCCL_HAS_INT128()
+  static_assert(_MpMax != ~uint64_t{0} || !__use_promotion,
+                "The current values of a, c, and m need __int128, which is not available on this platform.");
+#endif // !_CCCL_HAS_INT128()
 };
 
 template <uint64_t _Ap,
@@ -97,7 +100,16 @@ struct __lce_ta<_Ap, _Cp, _Mp, ~uint64_t{0}, false>
   using result_type = uint64_t;
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type next(result_type __x) noexcept
   {
-    return (_Ap * __x + _Cp) % _Mp;
+#if _CCCL_HAS_INT128()
+    if constexpr (__lce_alg_picker<_Ap, _Cp, _Mp, ~uint64_t{0}>::__use_promotion)
+    {
+      return static_cast<result_type>((__uint128_t{_Ap} * __x + _Cp) % _Mp);
+    }
+    else
+#endif // _CCCL_HAS_INT128()
+    {
+      return (_Ap * __x + _Cp) % _Mp;
+    }
   }
 };
 
@@ -160,7 +172,14 @@ struct __lce_ta<_Ap, _Cp, _Mp, ~uint32_t{0}, false>
     constexpr result_type __a = static_cast<result_type>(_Ap);
     constexpr result_type __c = static_cast<result_type>(_Cp);
     constexpr result_type __m = static_cast<result_type>(_Mp);
-    return (__a * __x + __c) % __m;
+    if constexpr (__lce_alg_picker<_Ap, _Cp, _Mp, ~uint32_t{0}>::__use_promotion)
+    {
+      return static_cast<result_type>((uint64_t{__a} * __x + __c) % __m);
+    }
+    else
+    {
+      return (__a * __x + __c) % __m;
+    }
   }
 };
 

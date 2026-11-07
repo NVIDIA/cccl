@@ -103,6 +103,20 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test_large_modulus()
   return true;
 }
 
+// a * x + c overflows and Schrage's algorithm does not apply, since m % a > m / a
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test_promotion()
+{
+  using cuda::std::uint32_t;
+  using cuda::std::uint64_t;
+  test_sequence<uint32_t, 1664525u, 1013904223u, 4294967291u>(1, 1, 1587973397u);
+  test_sequence<uint32_t, 1664525u, 1013904223u, 4294967291u>(1, 1000, 3122718224u);
+#if _CCCL_HAS_INT128()
+  test_sequence<uint64_t, 2806196910506780709ull, 1, (1ull << 63) - 25>(1, 1, 598720870811554157ull);
+  test_sequence<uint64_t, 2806196910506780709ull, 1, (1ull << 63) - 25>(1, 1000, 985508913947959965ull);
+#endif // _CCCL_HAS_INT128()
+  return true;
+}
+
 // P4037R1: linear_congruential_engine must accept the unsigned char UIntType
 TEST_HOST_DEVICE_FUNC void test_p4037r1_small_uinttype()
 {
@@ -122,9 +136,11 @@ int main(int, char**)
   NV_IF_TARGET(NV_IS_HOST, ({ test_stream_format(); }));
   test_modulus_zero();
   test_large_modulus();
+  test_promotion();
 #if TEST_STD_VER >= 2020
   static_assert(test_modulus_zero());
   static_assert(test_large_modulus());
+  static_assert(test_promotion());
 #endif // TEST_STD_VER >= 2020
   return 0;
 }
