@@ -76,7 +76,6 @@
 #include <cuda/__memory/ptr_rebind.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/fence.h>
-#include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
 #include <cuda/__ptx/instructions/mbarrier_complete_tx.h>
 #include <cuda/__ptx/instructions/mbarrier_init.h>
@@ -2914,8 +2913,7 @@ private:
       "Dynamic shared memory block_tile is too small");
   }
 
-  // Fill the `layout` member for this block's `segment_id`/`segment_size`. Called once in `process_impl`, before the
-  // startup barrier.
+  // Fill the `layout` member for this block's `segment_id`/`segment_size`. Called once at the top of `run`.
   _CCCL_DEVICE _CCCL_FORCEINLINE void compute_segment_layout()
   {
     layout.block_keys_in = d_key_segments_it[segment_id];
@@ -2949,8 +2947,8 @@ private:
 
     // Logical cluster blocks: the CTAs that actually receive chunks (at least `policy.min_chunks_per_block` each), <=
     // the launched `num_full_cluster_blocks`. Ranks at or beyond it are idle -- they own no chunks, consume nothing,
-    // never lead, and no peer touches their shared memory, so they exit right after arriving at the startup barrier
-    // (see `process_impl`). Derived from this CTA's
+    // never lead, and no peer touches their shared memory, so they return after the startup barrier (see `run`).
+    // Derived from this CTA's
     // head-aligned `num_cluster_chunks` so it matches the partition exactly. Collapses to 1 on the single-CTA path and
     // stays at `num_full_cluster_blocks` for host-exact sizes (the dispatch already matched it).
     // TODO(cccl): the blocked partition (deterministic path) gives each rank `ceil(chunks / blocks)` chunks, so
@@ -3421,7 +3419,14 @@ private:
     // `process_impl` handles `k == 0` and select-all, so the radix path sees a strict `0 < k < segment_size`.
     _CCCL_ASSERT(k > out_offset_t{0} && static_cast<segment_size_val_t>(k) < segment_size,
                  "radix path requires 0 < k < segment size");
-    _CCCL_ASSERT(!layout.is_idle_rank, "idle ranks exit in `process_impl`");
+    compute_segment_layout();
+
+    // An idle rank takes part in no handshake and is never targeted, so after its startup arrival (in `process_impl`)
+    // it returns without waiting, freeing its SM slot. Cluster barriers only wait for non-exited threads.
+    if (layout.is_idle_rank)
+    {
+      return;
+    }
 
     // Per-block local copy of `kth_key_bits` so each key check hits the block's own SMEM rather than DSMEM during the
     // histogram loop. Built up one splitter digit per pass from the leader's published `kth_bucket` (see
@@ -3604,11 +3609,13 @@ private:
     // cached into the members. The radix path runs on the *logical* cluster (`layout.num_logical_cluster_blocks`, set
     // by `compute_segment_layout`); `init_logical_cluster` records whether a small segment collapsed onto rank 0. The
     // launched cluster blocks match the launch attribute the dispatch passed to `cudaLaunchKernelExC`.
-    cluster_block_rank      = ::cuda::ptx::get_sreg_cluster_ctarank();
-    num_full_cluster_blocks = ::cuda::ptx::get_sreg_cluster_nctarank();
+    // The builtins are only declared for SM 9.0+ device passes, the only ones that reach the agent (see `Process`).
+    NV_IF_TARGET(
+      NV_PROVIDES_SM_90,
+      (cluster_block_rank = ::__clusterRelativeBlockRank(); num_full_cluster_blocks = ::__clusterSizeInBlocks();
+       segment_id = static_cast<num_segments_val_t>(::__clusterIdx().x);));
     _CCCL_ASSERT(num_full_cluster_blocks > 0u && cluster_block_rank < num_full_cluster_blocks,
                  "hardware cluster rank must lie within a non-empty cluster");
-    segment_id = static_cast<num_segments_val_t>(::cuda::ptx::get_sreg_clusterid_x());
 
     if (segment_id >= static_cast<num_segments_val_t>(detail::params::get_param(num_segments, num_segments_val_t{0})))
     {
@@ -3653,18 +3660,6 @@ private:
       return;
     }
 
-    // The chunk layout depends only on the segment, not on the select direction, so it is computed before the startup
-    // barrier: an idle rank (no chunks, never the leader, never targeted by DSMEM traffic) arrives at the startup
-    // barrier and exits without waiting, freeing its SM slot. Later cluster barriers only wait for non-exited threads.
-    // The arrival is cheaper than letting the exit complete a barrier peers may already be waiting at; it is relaxed
-    // because an idle rank publishes nothing.
-    compute_segment_layout();
-    if (layout.is_idle_rank)
-    {
-      NV_IF_TARGET(NV_PROVIDES_SM_90, (::__cluster_barrier_arrive_relaxed();));
-      return;
-    }
-
     // Each block's elected leader thread initializes its block-local `state`. Only the leader block's copy is
     // authoritative, but the leader's rank is unknown here
     // (`compute_segment_layout` derives it later from the runtime logical cluster size), so every block initializes
@@ -3676,7 +3671,7 @@ private:
       // Front-load the scan accumulators so the initial cluster barrier below (arrive here, wait in the first pass)
       // publishes the zeros to all ranks: the final filter's `prime_placement_counters` then adds into already-zeroed
       // `selected_offset_counter`/`tie_offset_counter` (its own local seed + peers' DSMEM pushes).
-      // `num_local_candidates` is zeroed too so the leader, which never writes it, reads 0.
+      // `num_local_candidates` is zeroed too so idle/leader ranks that never write it read 0.
       temp_storage.selected_offset_counter     = 0;
       temp_storage.tie_offset_counter          = 0;
       temp_storage.num_local_strictly_selected = 0;
