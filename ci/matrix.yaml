@@ -307,7 +307,8 @@ workflows:
     - {jobs: ['test'], project: 'python_v2', ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
 
   nightly:
-    - {jobs: ['run_gpu'], project: 'bash_validation', ctk: '13.4', cxx: 'msvc14.44', gpu: 'l4', args: '8 ./ci/test_libcudacxx.sh -std 20 -arch 89'}
+    - {jobs: ['run_gpu'], project: 'bash_validation', ctk: '13.4', cxx: 'msvc14.44', gpu: 'l4', args: '8 ./ci/run_libcudacxx_lit_replay.sh -std 20 -arch 89'}
+    - {jobs: ['run_gpu'], project: 'powershell_baseline', ctk: '13.4', cxx: 'msvc14.44', gpu: 'l4'}
 
   weekly:
     # CTK 12.0 full matrix build: default projects
@@ -724,6 +725,9 @@ codegen_targets:
 #            E.g. "job_map: { test: ['test_cpu', 'test_gpu'] }" replaces
 #            the "test" job with distinct "test_cpu" and "test_gpu" jobs.
 projects:
+  powershell_baseline:
+    name: Libcu++ PowerShell baseline
+    stds: [20]
   bash_validation:
     name: Bash GPU validation
     stds: [20]
