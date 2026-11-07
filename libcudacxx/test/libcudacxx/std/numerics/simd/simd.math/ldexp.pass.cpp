@@ -27,7 +27,7 @@ TEST_HOST_DEVICE_FUNC void test_wrapper()
 {
   using V = simd::vec<T, N>;
   const explicit_math_wrapper<V> x{V(T{4})};
-  simd::rebind_t<int, V> exponents(2);
+  const simd::rebind_t<int, V> exponents(2);
   static_assert(noexcept(simd::ldexp(x, exponents)));
 
   check_math_values(simd::ldexp(x, exponents), T{16});
