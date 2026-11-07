@@ -129,7 +129,7 @@ _CCCL_CONCEPT __is_simd_math_floating_point_v = _CCCL_REQUIRES_EXPR(
 //  template<math-floating-point V>
 //  constexpr deduced-vec-t<V> pow(const V& x, const deduced-vec-t<V>& y);
 
-template <typename _Void, typename... _Args>
+template <typename _Enable, typename... _Args>
 struct __simd_math_result
 {};
 
@@ -175,15 +175,22 @@ struct __simd_math_result_impl
 // Accumulate the result type
 // - no vector argument -> keep the result type
 // - vector argument -> combine with the result type
-template <bool _IsVec, typename _Result, typename _Arg, typename... _Args>
-struct __simd_math_accumulate_vec_result;
-
-template <typename _Result, typename _Arg, typename... _Args>
-struct __simd_math_accumulate_vec_result<false, _Result, _Arg, _Args...> : __simd_math_result_impl<_Result, _Args...>
+template <bool _IsVec, typename _EnableIfConversionSupported, typename _Result, typename _Arg, typename... _Args>
+struct __simd_math_accumulate_vec_result
 {};
 
 template <typename _Result, typename _Arg, typename... _Args>
-struct __simd_math_accumulate_vec_result<true, _Result, _Arg, _Args...>
+struct __simd_math_accumulate_vec_result<false, void, _Result, _Arg, _Args...>
+    : __simd_math_result_impl<_Result, _Args...>
+{};
+
+template <typename _Result, typename _Arg, typename... _Args>
+struct __simd_math_accumulate_vec_result<
+  true,
+  void_t<decltype(::cuda::std::declval<const _Result&>() + ::cuda::std::declval<const __deduced_vec_t<_Arg>&>())>,
+  _Result,
+  _Arg,
+  _Args...>
     : __simd_math_result_impl<
         decltype(::cuda::std::declval<const _Result&>() + ::cuda::std::declval<const __deduced_vec_t<_Arg>&>()),
         _Args...>
@@ -192,7 +199,7 @@ struct __simd_math_accumulate_vec_result<true, _Result, _Arg, _Args...>
 // Derive the result type (with arguments)
 template <typename _Result, typename _Arg, typename... _Args>
 struct __simd_math_result_impl<_Result, _Arg, _Args...>
-    : __simd_math_accumulate_vec_result<__is_simd_math_floating_point_v<_Arg>, _Result, _Arg, _Args...>
+    : __simd_math_accumulate_vec_result<__is_simd_math_floating_point_v<_Arg>, void, _Result, _Arg, _Args...>
 {};
 
 // there is at least one vector argument, invalid otherwise
