@@ -20,9 +20,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/constant.cuh>
+#include <cub/detail/key_value_pair.cuh>
+#include <cub/detail/log2.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
+#include <cub/warp/warp_utils.cuh>
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/operator_properties.h>
@@ -55,9 +59,6 @@ struct WarpScanShfl
   // Constants and type definitions
   //---------------------------------------------------------------------
 
-  /// Whether the logical warp size and the PTX warp size coincide
-  static constexpr bool IS_ARCH_WARP = (LogicalWarpThreads == warp_threads);
-
   /// The number of warp scan steps
   static constexpr int STEPS = Log2<LogicalWarpThreads>::VALUE;
 
@@ -81,29 +82,17 @@ struct WarpScanShfl
   //---------------------------------------------------------------------
 
   /// Lane index in logical warp
-  unsigned int lane_id;
-
-  /// Logical warp index in 32-thread physical warp
-  unsigned int warp_id;
+  unsigned int lane_id = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
 
   /// 32-thread physical warp member mask of logical warp
-  unsigned int member_mask;
+  unsigned int member_mask = CUB_NS_QUALIFIER::detail::warp_mask<LogicalWarpThreads>();
 
   //---------------------------------------------------------------------
   // Construction
   //---------------------------------------------------------------------
 
   /// Constructor
-  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpScanShfl(TempStorage& /*temp_storage*/)
-      : lane_id(::cuda::ptx::get_sreg_laneid())
-      , warp_id(IS_ARCH_WARP ? 0 : (lane_id / LogicalWarpThreads))
-      , member_mask(WarpMask<LogicalWarpThreads>(warp_id))
-  {
-    if (!IS_ARCH_WARP)
-    {
-      lane_id = lane_id % LogicalWarpThreads;
-    }
-  }
+  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpScanShfl(TempStorage& /*temp_storage*/) {}
 
   //---------------------------------------------------------------------
   // Inclusive scan steps
@@ -476,7 +465,7 @@ struct WarpScanShfl
    */
   template <typename Tp, typename ScanOpT>
   _CCCL_DEVICE _CCCL_FORCEINLINE Tp InclusiveScanStep(
-    Tp input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
+    const Tp& input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
   {
     return InclusiveScanStep(input, scan_op, first_lane, offset);
   }

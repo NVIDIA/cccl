@@ -30,7 +30,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT enable_if
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT enable_if<true, _Tp>
 {
-  using type = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 template <bool _Bp, class _Tp = void>

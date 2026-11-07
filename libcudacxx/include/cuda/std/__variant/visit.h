@@ -116,7 +116,7 @@ template <class... _Types>
 template <class... _Vs>
 _CCCL_API constexpr void __throw_if_valueless(_Vs&&... __vs)
 {
-  [[maybe_unused]] int __unused[] = {
+  [[maybe_unused]] int __unused_var[] = {
     (::cuda::std::__as_variant(__vs).valueless_by_exception() ? ::cuda::std::__throw_bad_variant_access() : void(),
      0)...,
     0};

@@ -256,7 +256,7 @@ try
     R"XXX(
 #include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
 #include <cub/device/dispatch/kernels/kernel_merge_sort.cuh>
-#include <cub/util_type.cuh> // needed for cub::NullType
+#include <cub/detail/null_type.cuh>
 struct __align__({1}) storage_t {{
   char data[{0}];
 }};

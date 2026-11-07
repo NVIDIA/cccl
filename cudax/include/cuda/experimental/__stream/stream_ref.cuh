@@ -30,8 +30,6 @@
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental

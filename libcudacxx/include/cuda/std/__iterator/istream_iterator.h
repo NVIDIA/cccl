@@ -24,7 +24,6 @@
 #include <cuda/std/__fwd/char_traits.h>
 #include <cuda/std/__fwd/ios.h>
 #include <cuda/std/__iterator/default_sentinel.h>
-#include <cuda/std/__iterator/iterator.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/cstddef>

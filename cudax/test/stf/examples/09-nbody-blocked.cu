@@ -155,7 +155,7 @@ int main(int argc, char** argv)
     }
   }
 
-  cuda_safe_call(cudaHostRegister(&particles[0], BODY_CNT * sizeof(body), cudaHostRegisterPortable));
+  cuda_safe_call(cudaHostRegister(particles.data(), BODY_CNT * sizeof(body), cudaHostRegisterPortable));
 
   const double dt    = 0.005;
   const size_t NITER = 7; // 7000;
@@ -276,6 +276,8 @@ int main(int argc, char** argv)
   ctx.finalize();
 
   float elapsed;
+  // finalize() does not wait for work recorded in a stream returned by fence().
+  cuda_safe_call(cudaEventSynchronize(stop));
   cuda_safe_call(cudaEventElapsedTime(&elapsed, start, stop));
 
   // rough approximation !

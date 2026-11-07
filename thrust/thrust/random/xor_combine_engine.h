@@ -19,13 +19,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/type_traits.h>
 #include <thrust/random/detail/random_core_access.h>
 #include <thrust/random/detail/xor_combine_engine_max.h>
 
 #include <cuda/std/__host_stdlib/istream>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/cstddef> // for size_t
 
 THRUST_NAMESPACE_BEGIN
@@ -84,10 +83,10 @@ public:
   /*! \typedef result_type
    *  \brief The type of the unsigned integer produced by this \p xor_combine_engine.
    */
-  using result_type = typename thrust::detail::eval_if<
-    (sizeof(typename base2_type::result_type) > sizeof(typename base1_type::result_type)),
-    ::cuda::std::type_identity<typename base2_type::result_type>,
-    ::cuda::std::type_identity<typename base1_type::result_type>>::type;
+  using result_type =
+    ::cuda::std::conditional_t<(sizeof(typename base2_type::result_type) > sizeof(typename base1_type::result_type)),
+                               typename base2_type::result_type,
+                               typename base1_type::result_type>;
 
   /*! The size of the first shift used in the generation algorithm.
    */

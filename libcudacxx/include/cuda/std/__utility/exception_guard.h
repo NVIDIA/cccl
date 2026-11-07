@@ -22,7 +22,6 @@
 
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__utility/ctad_support.h>
-#include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -143,10 +142,10 @@ _CCCL_CTAD_SUPPORTED_FOR_TYPE(__exception_guard_noexceptions);
 
 #if !_CCCL_HAS_EXCEPTIONS()
 template <class _Rollback>
-using __exception_guard = __exception_guard_noexceptions<_Rollback>;
+using __exception_guard _CCCL_NODEBUG = __exception_guard_noexceptions<_Rollback>;
 #else // ^^^ !_CCCL_HAS_EXCEPTIONS() ^^^ / vvv _CCCL_HAS_EXCEPTIONS() vvv
 template <class _Rollback>
-using __exception_guard = __exception_guard_exceptions<_Rollback>;
+using __exception_guard _CCCL_NODEBUG = __exception_guard_exceptions<_Rollback>;
 #endif // _CCCL_HAS_EXCEPTIONS()
 
 template <class _Rollback>

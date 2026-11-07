@@ -10,6 +10,11 @@
 
 #include <unittest/unittest.h>
 
+// omp_set_nested is deprecated since OpenMP 5.0
+#if _OPENMP >= 201811
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+#endif // openmp 5.0
+
 TEST_CASE("OpenMP scans with a serialized nested team", "[scan]")
 {
   constexpr int num_items = 4096;

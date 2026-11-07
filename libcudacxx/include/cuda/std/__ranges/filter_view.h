@@ -45,6 +45,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_comparable.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_object.h>

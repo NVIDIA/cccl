@@ -92,6 +92,7 @@ struct __equal_wrapper
   //!
   //! @tparam _IsInsert Flag indicating whether it's an insert equality check or not. Insert probing
   //! stops when it's an empty or erased slot while query probing stops only when it's empty.
+  //! @tparam _SupportsErase Whether insertion must recognize a distinct erased sentinel
   //! @tparam _Lhs Left-hand side element type
   //! @tparam _Rhs Right-hand side element type
   //!
@@ -99,12 +100,13 @@ struct __equal_wrapper
   //! @param __rhs Right-hand side element to check equality
   //!
   //! @return Three-way equality comparison result
-  template <__is_insert _IsInsert, class _Lhs, class _Rhs>
+  template <__is_insert _IsInsert, bool _SupportsErase = true, class _Lhs, class _Rhs>
   [[nodiscard]] _CCCL_DEVICE_API constexpr __equal_result operator()(const _Lhs& __lhs, const _Rhs& __rhs) const noexcept
   {
     if constexpr (_IsInsert == __is_insert::__yes)
     {
-      if (detail::__bitwise_compare(__rhs, __empty_sentinel) || detail::__bitwise_compare(__rhs, __erased_sentinel))
+      if (detail::__bitwise_compare(__rhs, __empty_sentinel)
+          || (_SupportsErase && detail::__bitwise_compare(__rhs, __erased_sentinel)))
       {
         return __equal_result::__available;
       }

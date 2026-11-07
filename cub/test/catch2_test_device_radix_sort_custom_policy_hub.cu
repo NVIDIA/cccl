@@ -115,27 +115,31 @@ CUB_TEST("DispatchRadixSort::Dispatch: custom policy hub", "[keys][radix][sort][
   using dispatch_t =
     DispatchRadixSort<SortOrder::Ascending, key_t, NullType, offset_t, cub::detail::identity_decomposer_t, policy_hub_t>;
   size_t temp_size = 0;
-  dispatch_t::Dispatch(
-    nullptr,
-    temp_size,
-    d_keys,
-    d_values,
-    num_items,
-    0,
-    sizeof(key_t) * CHAR_BIT,
-    /* is_overwrite_ok */ false,
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      nullptr,
+      temp_size,
+      d_keys,
+      d_values,
+      num_items,
+      0,
+      sizeof(key_t) * CHAR_BIT,
+      /* is_overwrite_ok */ false,
+      /* stream */ nullptr));
   c2h::device_vector<uint8_t> temp_storage(temp_size, thrust::no_init);
-  dispatch_t::Dispatch(
-    thrust::raw_pointer_cast(temp_storage.data()),
-    temp_size,
-    d_keys,
-    d_values,
-    num_items,
-    0,
-    sizeof(key_t) * CHAR_BIT,
-    /* is_overwrite_ok */ false,
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      thrust::raw_pointer_cast(temp_storage.data()),
+      temp_size,
+      d_keys,
+      d_values,
+      num_items,
+      0,
+      sizeof(key_t) * CHAR_BIT,
+      /* is_overwrite_ok */ false,
+      /* stream */ nullptr));
 
   const auto ref_keys = radix_sort_reference(in_keys, /* is_decending */ false);
   REQUIRE(ref_keys == out_keys);

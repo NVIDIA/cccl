@@ -36,7 +36,10 @@
 // For clang cuda check
 // https://github.com/llvm/llvm-project/blob/release/<VER>.x/clang/lib/Driver/ToolChains/Cuda.cpp getNVPTXTargetFeatures
 #if _CCCL_CUDACC_AT_LEAST(14, 0) && !_CCCL_CUDA_COMPILER(CLANG)
-#  define __cccl_ptx_isa 940ULL
+#  define __cccl_ptx_isa 950ULL
+// PTX ISA 9.5 is available from CUDA 13.5
+#elif _CCCL_CUDACC_AT_LEAST(13, 5) && !_CCCL_CUDA_COMPILER(CLANG)
+#  define __cccl_ptx_isa 950ULL
 // PTX ISA 9.4 is available from CUDA 13.4
 #elif _CCCL_CUDACC_AT_LEAST(13, 4) && !_CCCL_CUDA_COMPILER(CLANG)
 #  define __cccl_ptx_isa 940ULL

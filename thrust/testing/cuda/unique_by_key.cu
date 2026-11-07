@@ -139,12 +139,12 @@ void test_unique_by_key_cuda_streams(ExecutionPolicy policy)
   initialize_values(values);
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   auto streampolicy = policy.on(s);
 
   new_last = thrust::unique_by_key(streampolicy, keys.begin(), keys.end(), values.begin());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(new_last.first - keys.begin() == 5);
   keys.erase(new_last.first, keys.end());
@@ -172,7 +172,7 @@ void test_unique_by_key_cuda_streams(ExecutionPolicy policy)
   values_ref = {0, 2, 7};
   REQUIRE(values == values_ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestUniqueByKeyCudaStreamsSync", "[unique_by_key]")
@@ -331,13 +331,13 @@ void test_unique_copy_by_key_cuda_streams(ExecutionPolicy policy)
   Vector output_values(values.size());
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   auto streampolicy = policy.on(s);
 
   new_last = thrust::unique_by_key_copy(
     streampolicy, keys.begin(), keys.end(), values.begin(), output_keys.begin(), output_values.begin());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(new_last.first - output_keys.begin() == 5);
   output_keys.erase(new_last.first, output_keys.end());
@@ -361,7 +361,7 @@ void test_unique_copy_by_key_cuda_streams(ExecutionPolicy policy)
     output_keys.begin(),
     output_values.begin(),
     is_equal_div_10_unique<T>());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(new_last.first - output_keys.begin() == 3);
   output_keys.erase(new_last.first, output_keys.end());
@@ -373,7 +373,7 @@ void test_unique_copy_by_key_cuda_streams(ExecutionPolicy policy)
   values_ref = {0, 2, 7};
   REQUIRE(output_values == values_ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestUniqueCopyByKeyCudaStreamsSync", "[unique_by_key]")

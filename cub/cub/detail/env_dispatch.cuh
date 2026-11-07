@@ -13,12 +13,19 @@
 #endif // no system header
 
 #include <cub/detail/device_memory_resource.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/detail/temporary_storage.cuh>
+#include <cub/util_debug.cuh>
+#include <cub/util_runs_on.cuh>
 
+#include <cuda/__device/compute_capability.h>
+#include <cuda/__execution/guarantee.h>
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/call_or.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__stream/get_stream.h>
+#include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
 
 CUB_NAMESPACE_BEGIN
@@ -75,6 +82,21 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env(const EnvT& env, const Algori
 }
 //! @endcond
 
+template <typename EnvT, typename AlgorithmCallable>
+[[nodiscard]] CUB_RUNTIME_FUNCTION cudaError_t
+dispatch_with_env_and_runs_on(const EnvT& env, const AlgorithmCallable& algorithm_callable)
+{
+  static_assert(!::cuda::std::execution::__queryable_with<EnvT, experimental::__get_runs_on_t>,
+                "runs_on should be used inside guarantee to have an effect.");
+  auto guarantees = ::cuda::__call_or(::cuda::execution::__get_guarantees, ::cuda::std::execution::env<>{}, env);
+  auto runs_on    = ::cuda::__call_or(experimental::__get_runs_on, experimental::RunsOn{}, guarantees);
+
+  return detail::dispatch_with_env(
+    env, [&](auto&& tuning, void* d_temp_storage, size_t& temp_storage_bytes, ::cudaStream_t stream) {
+      return algorithm_callable(tuning, d_temp_storage, temp_storage_bytes, stream, runs_on);
+    });
+}
+
 template <typename DefaultPolicySelector, typename EnvT, typename AlgorithmCallable>
 CUB_RUNTIME_FUNCTION cudaError_t
 dispatch_with_env_and_tuning(const EnvT& env, const AlgorithmCallable& algorithm_callable)
@@ -83,9 +105,8 @@ dispatch_with_env_and_tuning(const EnvT& env, const AlgorithmCallable& algorithm
     env,
     [&algorithm_callable](
       [[maybe_unused]] auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-      using policy_t = decltype(DefaultPolicySelector{}(::cuda::compute_capability{}));
-      using policy_selector =
-        ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), policy_t, DefaultPolicySelector>;
+      using policy_t        = decltype(DefaultPolicySelector{}(::cuda::compute_capability{}));
+      using policy_selector = policy_selector_from_tuning_env_t<decltype(tuning_env), policy_t, DefaultPolicySelector>;
       return algorithm_callable(policy_selector{}, d_temp_storage, temp_storage_bytes, stream);
     });
 }
@@ -115,6 +136,22 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env(
 }
 //! @endcond
 
+template <typename EnvT, typename AlgorithmCallable>
+[[nodiscard]] CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_and_runs_on(
+  void* d_temp_storage, size_t& temp_storage_bytes, const EnvT& env, const AlgorithmCallable& algorithm_callable)
+{
+  static_assert(!::cuda::std::execution::__queryable_with<EnvT, experimental::__get_runs_on_t>,
+                "runs_on should be used inside guarantee to have an effect.");
+  auto guarantees = ::cuda::__call_or(::cuda::execution::__get_guarantees, ::cuda::std::execution::env<>{}, env);
+  auto runs_on    = ::cuda::__call_or(experimental::__get_runs_on, experimental::RunsOn{}, guarantees);
+
+  // Preserve the separate storage query so callers can size storage without a device.
+  return detail::dispatch_with_env(
+    d_temp_storage, temp_storage_bytes, env, [&](auto&& tuning, void* storage, size_t& bytes, ::cudaStream_t stream) {
+      return algorithm_callable(tuning, storage, bytes, stream, runs_on);
+    });
+}
+
 template <typename DefaultPolicySelector, typename EnvT, typename AlgorithmCallable>
 CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_and_tuning(
   void* d_temp_storage, size_t& temp_storage_bytes, const EnvT& env, const AlgorithmCallable& algorithm_callable)
@@ -125,9 +162,8 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_and_tuning(
     env,
     [&algorithm_callable](
       [[maybe_unused]] auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-      using policy_t = decltype(DefaultPolicySelector{}(::cuda::compute_capability{}));
-      using policy_selector =
-        ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), policy_t, DefaultPolicySelector>;
+      using policy_t        = decltype(DefaultPolicySelector{}(::cuda::compute_capability{}));
+      using policy_selector = policy_selector_from_tuning_env_t<decltype(tuning_env), policy_t, DefaultPolicySelector>;
       return algorithm_callable(policy_selector{}, d_temp_storage, temp_storage_bytes, stream);
     });
 }

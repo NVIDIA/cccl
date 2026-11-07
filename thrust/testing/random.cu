@@ -645,7 +645,7 @@ void validate_distribution_characteristic()
 
   // test distribution & engine with comparable ranges
   // only do this if they have the same result_type
-  if (::cuda::std::is_same<typename Distribution::result_type, typename Engine::result_type>::value)
+  if constexpr (::cuda::std::is_same_v<typename Distribution::result_type, typename Engine::result_type>)
   {
     using engine_traits = thrust::random::detail::urng_traits<Engine>;
 

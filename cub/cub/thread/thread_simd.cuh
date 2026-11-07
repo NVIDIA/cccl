@@ -21,17 +21,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/thread/thread_operators.cuh>
+#include <cub/detail/type_traits.cuh>
 
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
 #include <cuda/__functional/operator_properties.h>
-#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__bit/bit_cast.h> // IWYU pragma: keep
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/always_false.h>
-#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
+
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 
@@ -334,13 +336,13 @@ struct VectorTypeX2
 template <>
 struct VectorTypeX2<int16_t>
 {
-  using type = short2;
+  using type _CCCL_NODEBUG = short2;
 };
 
 template <>
 struct VectorTypeX2<uint16_t>
 {
-  using type = ushort2;
+  using type _CCCL_NODEBUG = ushort2;
 };
 
 #  if _CCCL_HAS_NVFP16()
@@ -348,7 +350,7 @@ struct VectorTypeX2<uint16_t>
 template <>
 struct VectorTypeX2<__half>
 {
-  using type = __half2;
+  using type _CCCL_NODEBUG = __half2;
 };
 
 #  endif // _CCCL_HAS_NVFP16()
@@ -358,7 +360,7 @@ struct VectorTypeX2<__half>
 template <>
 struct VectorTypeX2<__nv_bfloat16>
 {
-  using type = __nv_bfloat162;
+  using type _CCCL_NODEBUG = __nv_bfloat162;
 };
 
 #  endif // _CCCL_HAS_NVBF16()
@@ -378,49 +380,49 @@ struct CudaOperatorToSimdX2
 template <typename T>
 struct CudaOperatorToSimdX2<::cuda::minimum<>, T>
 {
-  using type = SimdMin<vector_type_x2_t<T>>;
+  using type _CCCL_NODEBUG = SimdMin<vector_type_x2_t<T>>;
 };
 
 template <typename T>
 struct CudaOperatorToSimdX2<::cuda::minimum<T>, T>
 {
-  using type = SimdMin<vector_type_x2_t<T>>;
+  using type _CCCL_NODEBUG = SimdMin<vector_type_x2_t<T>>;
 };
 
 template <typename T>
 struct CudaOperatorToSimdX2<::cuda::maximum<>, T>
 {
-  using type = SimdMax<vector_type_x2_t<T>>;
+  using type _CCCL_NODEBUG = SimdMax<vector_type_x2_t<T>>;
 };
 
 template <typename T>
 struct CudaOperatorToSimdX2<::cuda::maximum<T>, T>
 {
-  using type = SimdMax<vector_type_x2_t<T>>;
+  using type _CCCL_NODEBUG = SimdMax<vector_type_x2_t<T>>;
 };
 
 template <typename T>
 struct CudaOperatorToSimdX2<::cuda::std::plus<>, T>
 {
-  using type = SimdSum<vector_type_x2_t<T>>;
+  using type _CCCL_NODEBUG = SimdSum<vector_type_x2_t<T>>;
 };
 
 template <typename T>
 struct CudaOperatorToSimdX2<::cuda::std::plus<T>, T>
 {
-  using type = SimdSum<vector_type_x2_t<T>>;
+  using type _CCCL_NODEBUG = SimdSum<vector_type_x2_t<T>>;
 };
 
 template <typename T>
 struct CudaOperatorToSimdX2<::cuda::std::multiplies<>, T>
 {
-  using type = SimdMul<vector_type_x2_t<T>>;
+  using type _CCCL_NODEBUG = SimdMul<vector_type_x2_t<T>>;
 };
 
 template <typename T>
 struct CudaOperatorToSimdX2<::cuda::std::multiplies<T>, T>
 {
-  using type = SimdMul<vector_type_x2_t<T>>;
+  using type _CCCL_NODEBUG = SimdMul<vector_type_x2_t<T>>;
 };
 
 template <typename ReduceOp, typename T>

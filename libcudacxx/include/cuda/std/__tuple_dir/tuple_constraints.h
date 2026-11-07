@@ -42,6 +42,7 @@
 #include <cuda/std/__type_traits/is_nothrow_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/sfinae_traits.h>
@@ -59,7 +60,7 @@ inline constexpr bool __tuple_like_with_size = false;
 
 template <class _Tuple, size_t _ExpectedSize>
 inline constexpr bool __tuple_like_with_size<_Tuple, _ExpectedSize, true> =
-  _ExpectedSize == tuple_size<remove_cvref_t<_Tuple>>::value;
+  _ExpectedSize == tuple_size_v<remove_cvref_t<_Tuple>>;
 
 template <class... _Types>
 struct __tuple_constraints;
@@ -501,6 +502,19 @@ struct __tuple_constraints
   template <class... _UTypes>
   static constexpr bool __is_nothrow_less_than_comparable_v =
     (__is_cpp17_nothrow_less_than_comparable_v<_Types, _UTypes> && ...);
+};
+
+// Kept out of __tuple_constraints, which tuple and pair instantiate for their constructors: NVRTC evaluates static data
+// member initializers on class instantiation, and is_swappable_v crashes NVRTC for references to incomplete types.
+template <class... _Types>
+struct __tuple_swap_constraints
+{
+  // [tuple.swap]: is_swappable_v<T> / is_swappable_v<const T> for every element.
+  static constexpr bool __all_swappable       = (is_swappable_v<_Types> && ... && true);
+  static constexpr bool __all_const_swappable = (is_swappable_v<const _Types> && ... && true);
+
+  static constexpr bool __all_nothrow_swappable       = (is_nothrow_swappable_v<_Types> && ... && true);
+  static constexpr bool __all_nothrow_const_swappable = (is_nothrow_swappable_v<const _Types> && ... && true);
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD

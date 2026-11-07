@@ -6,6 +6,7 @@
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 // FIXME: Graph launch disabled, algorithm syncs internally. WAR exists for device-launch, figure out how to enable for
 // graph launch.
@@ -247,9 +248,9 @@ try
   // Verify values were sorted along with the keys
   REQUIRE(thrust::equal(out_keys.cbegin(), out_keys.cend(), out_values.cbegin()));
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
+  c2h::skip_if_allocation_failure();
 }
 
 CUB_TEST("DeviceSegmentedSort::SortPairs: very large segments",
@@ -300,9 +301,9 @@ try
   // Verify values were sorted along with the keys
   REQUIRE(thrust::equal(out_keys.cbegin(), out_keys.cend(), out_values.cbegin()));
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
+  c2h::skip_if_allocation_failure();
 }
 
 #endif // TEST_TYPES == 0

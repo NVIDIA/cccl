@@ -30,6 +30,8 @@
 #  include <stdlib.h>
 #endif // _CCCL_HOSTED()
 
+#include <nv/target>
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_DIAG_PUSH

@@ -25,6 +25,7 @@
 #  include <cuda/std/__compare/synth_three_way.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/different_from.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/unwrap_ref.h>
@@ -38,17 +39,15 @@
 #include <cuda/std/__tuple_dir/tuple_indices.h>
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__tuple_dir/tuple_types.h>
 #include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_copy_assignable.h>
-#include <cuda/std/__type_traits/is_default_constructible.h>
-#include <cuda/std/__type_traits/is_implicitly_default_constructible.h>
 #include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
@@ -56,14 +55,16 @@
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
-#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_swappable.h>
-#include <cuda/std/__type_traits/make_const_lvalue_ref.h>
+#include <cuda/std/__type_traits/nat.h>
 #include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/sfinae_traits.h>
+#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/piecewise_construct.h>
 
@@ -226,7 +227,7 @@ private:
   // CUDA 12.0/MSVC rejects a static constexpr variable template member during dependent pair
   // instantiations. An alias to bool_constant is not a static data member.
   template <class _UPair>
-  using __disambiguate_pair_like =
+  using __disambiguate_pair_like _CCCL_NODEBUG =
     bool_constant<!is_same_v<pair, remove_cvref_t<_UPair>> // [pairs#pair]-42.1 different-from<P, pair> is true
                   && !__is_cuda_std_ranges_subrange_v<remove_cvref_t<_UPair>> // [pairs#pair]-15.1, [pairs#pair]-42.2
                   && __pair_like<_UPair>>; // [pairs#pair]-13, [pairs#pair]-42 template<pair-like P>
@@ -251,10 +252,10 @@ private:
   }
 
   template <size_t _Index, class _UPair>
-  using __get_t = decltype(pair::__get_type<_Index>(::cuda::std::declval<_UPair>()));
+  using __get_t _CCCL_NODEBUG = decltype(pair::__get_type<_Index>(::cuda::std::declval<_UPair>()));
 #else // ^^^ _CCCL_COMPILER(GCC, <, 11) ^^^ / vvv !_CCCL_COMPILER(GCC, <, 11) vvv
   template <size_t _Index, class _UPair>
-  using __get_t = decltype(::cuda::std::get<_Index>(::cuda::std::declval<_UPair>()));
+  using __get_t _CCCL_NODEBUG = decltype(::cuda::std::get<_Index>(::cuda::std::declval<_UPair>()));
 #endif // !_CCCL_COMPILER(GCC, <, 11)
 
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
@@ -308,10 +309,10 @@ private:
 
   // MSVC cannot parse a default template argument that calls a function with two packs.
   template <class _TupleTypes0, class _TupleTypes1>
-  using _PiecewiseConstructible =
+  using _PiecewiseConstructible _CCCL_NODEBUG =
     _ConstructorConstraint<pair::__select_piecewise_constructible(_TupleTypes0{}, _TupleTypes1{})>;
 
-  using __base = __pair_base<_T1, _T2>;
+  using __base _CCCL_NODEBUG = __pair_base<_T1, _T2>;
 
 public:
   using first_type  = _T1;
@@ -647,6 +648,7 @@ public:
   // NOLINTEND(bugprone-use-after-move)
 
   _CCCL_EXEC_CHECK_DISABLE
+  template <class _Constraints = __tuple_swap_constraints<_T1, _T2>, enable_if_t<_Constraints::__all_swappable, int> = 0>
   _CCCL_API constexpr void swap(pair& __p) noexcept(is_nothrow_swappable_v<_T1> && is_nothrow_swappable_v<_T2>)
   {
     using ::cuda::std::swap;
@@ -654,8 +656,9 @@ public:
     swap(this->second, __p.second);
   }
 
-#if _CCCL_STD_VER >= 2023
   _CCCL_EXEC_CHECK_DISABLE
+  template <class _Constraints                                    = __tuple_swap_constraints<_T1, _T2>,
+            enable_if_t<_Constraints::__all_const_swappable, int> = 0>
   _CCCL_API constexpr void swap(const pair& __p) const
     noexcept(is_nothrow_swappable_v<const _T1> && is_nothrow_swappable_v<const _T2>)
   {
@@ -663,7 +666,6 @@ public:
     swap(this->first, __p.first);
     swap(this->second, __p.second);
   }
-#endif // _CCCL_STD_VER >= 2023
 
 #if _CCCL_HOSTED()
   _CCCL_HOST_API constexpr operator ::std::pair<_T1, _T2>() const
@@ -746,7 +748,8 @@ struct basic_common_reference<
   _UQual,
   void_t<pair<common_reference_t<_TQual<_T1>, _UQual<_U1>>, common_reference_t<_TQual<_T2>, _UQual<_U2>>>>>
 {
-  using type = pair<common_reference_t<_TQual<_T1>, _UQual<_U1>>, common_reference_t<_TQual<_T2>, _UQual<_U2>>>;
+  using type _CCCL_NODEBUG =
+    pair<common_reference_t<_TQual<_T1>, _UQual<_U1>>, common_reference_t<_TQual<_T2>, _UQual<_U2>>>;
 };
 
 #if _CCCL_STD_VER >= 2023
@@ -759,7 +762,7 @@ struct common_type<pair<_T1, _T2>, pair<_U1, _U2>>
 #endif // _CCCL_STD_VER >= 2023
 
 _CCCL_TEMPLATE(class _T1, class _T2)
-_CCCL_REQUIRES(is_swappable_v<_T1> _CCCL_AND is_swappable_v<_T2>)
+_CCCL_REQUIRES(__tuple_swap_constraints<_T1, _T2>::__all_swappable)
 _CCCL_API constexpr void
 swap(pair<_T1, _T2>& __x, pair<_T1, _T2>& __y) noexcept((is_nothrow_swappable_v<_T1> && is_nothrow_swappable_v<_T2>) )
 {
@@ -767,7 +770,7 @@ swap(pair<_T1, _T2>& __x, pair<_T1, _T2>& __y) noexcept((is_nothrow_swappable_v<
 }
 
 _CCCL_TEMPLATE(class _T1, class _T2)
-_CCCL_REQUIRES(is_swappable_v<const _T1> _CCCL_AND is_swappable_v<const _T2>)
+_CCCL_REQUIRES(__tuple_swap_constraints<_T1, _T2>::__all_const_swappable)
 _CCCL_API constexpr void swap(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y) noexcept(
   (is_nothrow_swappable_v<const _T1> && is_nothrow_swappable_v<const _T2>) )
 {

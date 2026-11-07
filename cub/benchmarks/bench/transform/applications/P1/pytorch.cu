@@ -54,12 +54,12 @@
 template <typename T>
 struct opmath_type_impl
 {
-  using type = T;
+  using type _CCCL_NODEBUG = T;
 };
 template <>
 struct opmath_type_impl<BFloat16>
 {
-  using type = float;
+  using type _CCCL_NODEBUG = float;
 };
 template <typename T>
 using opmath_type = typename opmath_type_impl<T>::type;

@@ -40,10 +40,10 @@ The function finds the ``rank``-th set bit of ``value``, counting set bits from 
 
 **Performance considerations**
 
-- ``log2(num_bits(T))`` binary-search steps, each of them executing a 32-bit population count and about 6 ALU instructions.
+- Uses binary search with population counts. Wider integers are first narrowed to a 32-bit word.
+- When the compiler recognizes ``rank == num_bits(T) - 1`` as a constant, a comparison replaces the search.
 - If ``rank`` is a constant expression:
 
-  - ``bit_fns(value, 0)`` is equal to ``cuda::std::countr_zero(value)``.
   - ``bit_fns(value, num_bits(T) - 1)`` is equal to ``num_bits(T) - 1`` for a ``value`` with all bits set.
 
 .. note::

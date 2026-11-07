@@ -101,7 +101,7 @@ int main(int argc, char** argv)
 
   // If we were to register each part one by one, there could be pages which
   // cross multiple parts, and the pinning operation would fail.
-  cuda_safe_call(cudaHostRegister(&X[0], N * sizeof(double), cudaHostRegisterPortable));
+  cuda_safe_call(cudaHostRegister(X.data(), N * sizeof(double), cudaHostRegisterPortable));
 
   for (size_t b = 0; b < NBLOCKS; b++)
   {
@@ -182,6 +182,8 @@ int main(int argc, char** argv)
   ctx.finalize();
 
   float ms = 0;
+  // finalize() does not wait for work recorded in a stream returned by fence().
+  cuda_safe_call(cudaEventSynchronize(stop));
   cuda_safe_call(cudaEventElapsedTime(&ms, start, stop));
 
   fprintf(stdout, "%zu %f ms\n", N / 1024 / 1024, ms);

@@ -29,6 +29,7 @@
 #  include <cuda/__cmath/round_up.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/cstdint>
 
