@@ -49,7 +49,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  *   1. Argument reduction: x = n*(pi/2) + r, |r| <= pi/4
  *      - Tiny (|x| < pi/4): no reduction
  *      - Fast (|x| < 2^20): Cody-Waite with exact error tracking
- *        via two_mult_fma + two_sum (3-piece pi/2, ~70 bits)
+ *        via two_mult_fma + two_sum (4-piece pi/2, within 8.5e-32)
  *      - Large (|x| >= 2^20): Payne-Hanek using integer 2/pi table, combining
  *        x_hi and x_lo fractions in 64-bit fixed-point before converting to
  *        fp32mp2 (pure fp32 arithmetic, no fp64). Delivers ~46 bits in the
@@ -270,7 +270,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_trig_reduction(
   {
     /* -- Fast path: Cody-Waite for |x_hi| < 2^20 --
      *
-     * pi/2 split into 3 float pieces (~70 bits)
+     * pi/2 split into 4 float pieces, whose sum misses pi/2 by 8.5e-32.
      * C1 has 2 trailing zero mantissa bits, making n*C1 exact
      * for |n| < 2^12 via two_mult_fma, and accurate for larger n.
      *
@@ -283,6 +283,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_trig_reduction(
     constexpr _FpType __c1 = _FpType(1.5707962512969971e+000);
     constexpr _FpType __c2 = _FpType(7.5497894158615964e-008);
     constexpr _FpType __c3 = _FpType(5.3903029534742384e-015);
+    constexpr _FpType __c4 = _FpType(-0x1.cceba4p-74);
 
     int __n       = ::cuda::__fpmp_fp2int_rn(__x_hi * _FpType(0x1.45f306p-1f));
     _FpType __n_f = ::cuda::__fpmp_int2fp_rn<_FpType>(__n);
@@ -307,8 +308,15 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_trig_reduction(
     _FpType __n_c2_hi = ::cuda::__fpmp_two_mult_fma(__n_f, __c2, &__n_c2_lo);
     __result          = __result - __afloat(__n_c2_hi, __n_c2_lo);
 
-    /* n*C3 is tiny (~10^-11), single-precision product suffices */
-    __result = __result + ::cuda::__fpmp_mul_rn_nocontract(__n_f, -__c3);
+    /* nC3_hi + nC3_lo = n*(C3 + C4) to within 2^-47 * n*C3: n*C3 exactly, and n*C4 added
+     * to its low word by one fma. Near a multiple of pi/2, r is far smaller than n*C3, so
+     * neither rounding n*C3 (error up to 2^-24 * n*C3) nor cutting pi/2 at C3
+     * (error n * 9.5e-23) keeps the error small relative to r.
+     */
+    _FpType __n_c3_lo;
+    _FpType __n_c3_hi = ::cuda::__fpmp_two_mult_fma(__n_f, __c3, &__n_c3_lo);
+    __n_c3_lo         = ::cuda::__fpmp_fma_rn(__n_f, __c4, __n_c3_lo);
+    __result          = __result - __afloat(__n_c3_hi, __n_c3_lo);
 
     *__quadrant = __n;
     *__r_hi     = __result.hi();
@@ -1433,8 +1441,9 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
     __f_hi               = __renorm;
   }
 
-  /* Same 3-piece pi/2 as the Cody-Waite reduction, doubled to pi (~70 bits).
-   * Multiplying a float by 2 is exact, so these are the Cody-Waite pieces. */
+  /* The first three Cody-Waite pieces of pi/2, doubled to pi (within 1.9e-22; doubling a
+   * float is exact). pi * f involves no cancellation, so their truncation error stays
+   * relative to the angle and the fourth piece is not needed here. */
   constexpr float __pi1 = 2.0f * 1.5707962512969971e+00f;
   constexpr float __pi2 = 2.0f * 7.5497894158615964e-08f;
   constexpr float __pi3 = 2.0f * 5.3903029534742384e-15f;
