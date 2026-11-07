@@ -35,6 +35,26 @@ struct duplicate_key
   }
 };
 
+// Input `i` finds the stored key `key_scale * i` when `i < num_stored`, and the sentinel otherwise.
+// It reports an insertion only when `num_existing <= i < num_stored`.
+template <class Key>
+struct matches_insert_and_find
+{
+  const Key* found{};
+  const int* inserted{};
+  int num_existing{};
+  int num_stored{};
+  Key sentinel{};
+  int key_scale = 1;
+
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(int i) const noexcept
+  {
+    const bool stored      = i < num_stored;
+    const Key expected_key = stored ? static_cast<Key>(key_scale * i) : sentinel;
+    return found[i] == expected_key && inserted[i] == static_cast<int>(i >= num_existing && stored);
+  }
+};
+
 C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_sizes, bucket_sizes, probing_kinds)
 {
   using key_type                              = c2h::get<0, TestType>;
@@ -59,14 +79,27 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
   test_context context;
   set_type set{
     context.stream, context.mr, cuda::std::size_t{num_keys} * 2, cudax::cuco::empty_key{static_cast<key_type>(-1)}};
-  const auto first = cuda::counting_iterator<key_type>{0};
-  auto found       = cuda::make_buffer<int>(context.stream, context.mr, num_queries, 7);
+  const auto first    = cuda::counting_iterator<key_type>{0};
+  const auto sentinel = static_cast<key_type>(-1);
+  const auto indices  = cuda::counting_iterator<int>{0};
+  auto found          = cuda::make_buffer<int>(context.stream, context.mr, num_queries, 7);
+  auto found_keys     = cuda::make_buffer<key_type>(context.stream, context.mr, num_queries, key_type{7});
+  const auto insert_and_find_matches = [&](int count, int num_existing, int num_stored) {
+    return cuda::std::all_of(
+      context.policy(),
+      indices,
+      indices + count,
+      matches_insert_and_find<key_type>{found_keys.data(), found.data(), num_existing, num_stored, sentinel});
+  };
 
   REQUIRE(set.insert(context.stream, first, first) == 0);
   set.insert_async(context.stream, first, first);
   set.contains(context.stream, first, first, found.begin());
   set.contains_async(context.stream, first, first, found.begin());
+  set.insert_and_find(context.stream, first, first, found_keys.begin(), found.begin());
+  set.insert_and_find_async(context.stream, first, first, found_keys.begin(), found.begin());
   REQUIRE(context.all_equal(found.data(), num_queries, 7));
+  REQUIRE(cuda::std::all_of(context.policy(), found_keys.begin(), found_keys.end(), cuda::equal_to_value{key_type{7}}));
 
   set.contains(context.stream, first, first + num_queries, found.begin());
   REQUIRE(context.matches(found.data(), num_queries, 0));
@@ -87,6 +120,16 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
   set.contains(context.stream, first, first + num_queries, found.begin());
   REQUIRE(context.matches(found.data(), num_queries, 17));
 
+  // Every duplicate finds the stored key, and exactly one input per distinct key is inserted.
+  set.clear(context.stream);
+  set.insert_and_find(context.stream, duplicates, duplicates + num_queries, found_keys.begin(), found.begin());
+  REQUIRE(cuda::std::equal(context.policy(), found_keys.begin(), found_keys.end(), duplicates));
+  REQUIRE(cuda::std::count(context.policy(), found.data(), found.data() + num_queries, 1) == 17);
+
+  // The 17 stored keys are found without insertion; the remaining keys are new.
+  set.insert_and_find_async(context.stream, first, first + num_queries, found_keys.begin(), found.begin());
+  REQUIRE(insert_and_find_matches(num_queries, 17, num_queries));
+
   set.clear(context.stream);
   set.insert_async(context.stream, first, first + num_keys);
   set.contains(context.stream, first, first + num_queries, found.begin());
@@ -100,6 +143,8 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
   full.insert_async(context.stream, first + capacity, first + capacity + 1);
   full.contains(context.stream, first, first + capacity + 1, found.begin());
   REQUIRE(context.matches(found.data(), capacity + 1, capacity));
+  full.insert_and_find(context.stream, first, first + capacity + 1, found_keys.begin(), found.begin());
+  REQUIRE(insert_and_find_matches(capacity + 1, capacity, capacity));
 }
 
 struct insert_key
@@ -185,6 +230,15 @@ C2H_TEST(
   REQUIRE(set.insert(context.stream, equivalent, equivalent + num_keys) == 0);
   set.contains_async(context.stream, queries, queries + 2 * num_keys, found.begin());
   REQUIRE(context.matches(found.data(), 2 * num_keys, num_keys));
+
+  // insert_and_find returns the stored key `2 * i`, not the equivalent input `2 * i + 1`.
+  auto inserted = cuda::make_buffer<int>(context.stream, context.mr, num_keys, -1);
+  set.insert_and_find(context.stream, equivalent, equivalent + num_keys, found.begin(), inserted.begin());
+  REQUIRE(cuda::std::all_of(
+    context.policy(),
+    first,
+    first + num_keys,
+    matches_insert_and_find<int>{found.data(), inserted.data(), num_keys, num_keys, -100, 2}));
 }
 
 C2H_TEST("fixed_capacity_set operations on another stream", "[container][stream]", key_types)
