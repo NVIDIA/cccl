@@ -45,6 +45,11 @@ source "${ci_dir}/build_common.sh"
 cd "${ci_dir}"
 if $CCCL_BUILD_WINDOWS; then
   cccl_dir=$(cygpath -am "${cccl_dir}")
+  # Packaging also runs the inspect_changes fixtures. Linux images already
+  # provide PyYAML; the native Windows Python installation may not.
+  if ! python -c 'import yaml' > /dev/null 2>&1; then
+    python -m pip install PyYAML
+  fi
 fi
 
 print_environment_details
