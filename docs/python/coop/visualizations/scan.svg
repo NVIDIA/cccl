@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" role="img" aria-labelledby="title desc">
+<title id="title">An exclusive block scan propagates prefixes</title>
+<desc id="desc">Eight teaching threads each own two consecutive input values. Incoming prefixes are sums of all earlier threads, producing exclusive results from zero through 120.</desc>
+<rect width="960" height="360" rx="12" fill="#f7f9fc"/>
+<g font-family="sans-serif" fill="#203341">
+<text x="22" y="43" font-size="15" font-weight="600">Input registers</text>
+<text x="72" y="64" text-anchor="middle" font-size="12">T0</text>
+<rect x="23" y="72" width="98" height="34" rx="6" fill="#dceac1" stroke="#9facba"/>
+<text x="72" y="94" text-anchor="middle" font-size="15">1, 2</text>
+<text x="188" y="64" text-anchor="middle" font-size="12">T1</text>
+<rect x="139" y="72" width="98" height="34" rx="6" fill="#c9eaf0" stroke="#9facba"/>
+<text x="188" y="94" text-anchor="middle" font-size="15">3, 4</text>
+<text x="304" y="64" text-anchor="middle" font-size="12">T2</text>
+<rect x="255" y="72" width="98" height="34" rx="6" fill="#fff0bd" stroke="#9facba"/>
+<text x="304" y="94" text-anchor="middle" font-size="15">5, 6</text>
+<text x="420" y="64" text-anchor="middle" font-size="12">T3</text>
+<rect x="371" y="72" width="98" height="34" rx="6" fill="#f5d5e4" stroke="#9facba"/>
+<text x="420" y="94" text-anchor="middle" font-size="15">7, 8</text>
+<text x="536" y="64" text-anchor="middle" font-size="12">T4</text>
+<rect x="487" y="72" width="98" height="34" rx="6" fill="#e8def7" stroke="#9facba"/>
+<text x="536" y="94" text-anchor="middle" font-size="15">9, 10</text>
+<text x="652" y="64" text-anchor="middle" font-size="12">T5</text>
+<rect x="603" y="72" width="98" height="34" rx="6" fill="#fde2c9" stroke="#9facba"/>
+<text x="652" y="94" text-anchor="middle" font-size="15">11, 12</text>
+<text x="768" y="64" text-anchor="middle" font-size="12">T6</text>
+<rect x="719" y="72" width="98" height="34" rx="6" fill="#c7e9e1" stroke="#9facba"/>
+<text x="768" y="94" text-anchor="middle" font-size="15">13, 14</text>
+<text x="884" y="64" text-anchor="middle" font-size="12">T7</text>
+<rect x="835" y="72" width="98" height="34" rx="6" fill="#dde5ea" stroke="#9facba"/>
+<text x="884" y="94" text-anchor="middle" font-size="15">15, 16</text>
+<text x="22" y="146" font-size="15" font-weight="600">Incoming prefix</text>
+<text x="72" y="167" text-anchor="middle" font-size="12">T0</text>
+<rect x="23" y="175" width="98" height="34" rx="6" fill="#dceac1" stroke="#9facba"/>
+<text x="72" y="197" text-anchor="middle" font-size="15">0</text>
+<text x="188" y="167" text-anchor="middle" font-size="12">T1</text>
+<rect x="139" y="175" width="98" height="34" rx="6" fill="#c9eaf0" stroke="#9facba"/>
+<text x="188" y="197" text-anchor="middle" font-size="15">3</text>
+<text x="304" y="167" text-anchor="middle" font-size="12">T2</text>
+<rect x="255" y="175" width="98" height="34" rx="6" fill="#fff0bd" stroke="#9facba"/>
+<text x="304" y="197" text-anchor="middle" font-size="15">10</text>
+<text x="420" y="167" text-anchor="middle" font-size="12">T3</text>
+<rect x="371" y="175" width="98" height="34" rx="6" fill="#f5d5e4" stroke="#9facba"/>
+<text x="420" y="197" text-anchor="middle" font-size="15">21</text>
+<text x="536" y="167" text-anchor="middle" font-size="12">T4</text>
+<rect x="487" y="175" width="98" height="34" rx="6" fill="#e8def7" stroke="#9facba"/>
+<text x="536" y="197" text-anchor="middle" font-size="15">36</text>
+<text x="652" y="167" text-anchor="middle" font-size="12">T5</text>
+<rect x="603" y="175" width="98" height="34" rx="6" fill="#fde2c9" stroke="#9facba"/>
+<text x="652" y="197" text-anchor="middle" font-size="15">55</text>
+<text x="768" y="167" text-anchor="middle" font-size="12">T6</text>
+<rect x="719" y="175" width="98" height="34" rx="6" fill="#c7e9e1" stroke="#9facba"/>
+<text x="768" y="197" text-anchor="middle" font-size="15">78</text>
+<text x="884" y="167" text-anchor="middle" font-size="12">T7</text>
+<rect x="835" y="175" width="98" height="34" rx="6" fill="#dde5ea" stroke="#9facba"/>
+<text x="884" y="197" text-anchor="middle" font-size="15">105</text>
+<text x="22" y="249" font-size="15" font-weight="600">Exclusive results</text>
+<text x="72" y="270" text-anchor="middle" font-size="12">T0</text>
+<rect x="23" y="278" width="98" height="34" rx="6" fill="#dceac1" stroke="#9facba"/>
+<text x="72" y="300" text-anchor="middle" font-size="15">0, 1</text>
+<text x="188" y="270" text-anchor="middle" font-size="12">T1</text>
+<rect x="139" y="278" width="98" height="34" rx="6" fill="#c9eaf0" stroke="#9facba"/>
+<text x="188" y="300" text-anchor="middle" font-size="15">3, 6</text>
+<text x="304" y="270" text-anchor="middle" font-size="12">T2</text>
+<rect x="255" y="278" width="98" height="34" rx="6" fill="#fff0bd" stroke="#9facba"/>
+<text x="304" y="300" text-anchor="middle" font-size="15">10, 15</text>
+<text x="420" y="270" text-anchor="middle" font-size="12">T3</text>
+<rect x="371" y="278" width="98" height="34" rx="6" fill="#f5d5e4" stroke="#9facba"/>
+<text x="420" y="300" text-anchor="middle" font-size="15">21, 28</text>
+<text x="536" y="270" text-anchor="middle" font-size="12">T4</text>
+<rect x="487" y="278" width="98" height="34" rx="6" fill="#e8def7" stroke="#9facba"/>
+<text x="536" y="300" text-anchor="middle" font-size="15">36, 45</text>
+<text x="652" y="270" text-anchor="middle" font-size="12">T5</text>
+<rect x="603" y="278" width="98" height="34" rx="6" fill="#fde2c9" stroke="#9facba"/>
+<text x="652" y="300" text-anchor="middle" font-size="15">55, 66</text>
+<text x="768" y="270" text-anchor="middle" font-size="12">T6</text>
+<rect x="719" y="278" width="98" height="34" rx="6" fill="#c7e9e1" stroke="#9facba"/>
+<text x="768" y="300" text-anchor="middle" font-size="15">78, 91</text>
+<text x="884" y="270" text-anchor="middle" font-size="12">T7</text>
+<rect x="835" y="278" width="98" height="34" rx="6" fill="#dde5ea" stroke="#9facba"/>
+<text x="884" y="300" text-anchor="middle" font-size="15">105, 120</text>
+<text x="22" y="343" font-size="13">Two items per thread; sum of the full input tile is 136.</text>
+</g>
+</svg>
