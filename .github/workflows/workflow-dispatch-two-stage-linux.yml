@@ -35,12 +35,14 @@ jobs:
       ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) &&
           fromJSON(inputs.producers)[0].runner || 'ubuntu-latest' }}
     permissions:
+      actions: read
       id-token: write
       contents: read
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
+          fetch-depth: 0
           persist-credentials: false
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.commit }}
@@ -63,6 +65,7 @@ jobs:
       ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) &&
           matrix.runner || 'ubuntu-latest' }}
     permissions:
+      actions: read
       id-token: write
       contents: read
     strategy:

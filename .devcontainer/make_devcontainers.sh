@@ -9,12 +9,17 @@
 set -euo pipefail
 
 # Ensure the script is being executed in its containing directory
-cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
+SCRIPT_DIR="$(realpath -Lsm "$(dirname "${BASH_SOURCE[0]}")")"
+SCRIPT_ROOT="$(realpath -Lsm "$(dirname "${BASH_SOURCE[0]}")/..")"
+START_DIR="$(realpath -Lsm "${PWD}")"
+cd "${SCRIPT_DIR}"
 
 function usage {
     echo "Usage: $0 [--clean] [-h/--help] [-v/--verbose]"
-    echo "  --clean   Remove stale devcontainer subdirectories"
-    echo "  -h, --help   Display this help message"
+    echo "  --clean        Remove stale devcontainer subdirectories"
+    echo "  -m, --matrix   Input matrix file to read (default is ci/matrix.yaml)"
+    echo "  -o, --output   Output directory (default is .devcontainer)"
+    echo "  -h, --help     Display this help message"
     echo "  -v, --verbose  Enable verbose mode (set -x)"
     exit 1
 }
@@ -109,10 +114,22 @@ make_name() {
 
 CLEAN=false
 VERBOSE=false
+MATRIX_FILE="${SCRIPT_ROOT}/ci/matrix.yaml"
+INPUT_DIR="${SCRIPT_DIR}"
+OUTPUT_DIR="${SCRIPT_DIR}"
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --clean)
             CLEAN=true
+            ;;
+        -m|--matrix)
+            MATRIX_FILE="$2"
+            shift
+            ;;
+        -o|--output)
+            OUTPUT_DIR="$2"
+            shift
             ;;
         -h|--help)
             usage
@@ -127,8 +144,12 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
-MATRIX_FILE="../ci/matrix.yaml"
-COMPUTE_MATRIX="../.github/actions/workflow-build/build-workflow.py"
+# Resolve relative paths from the initial starting dir
+[[ "${MATRIX_FILE}" != /* ]] && MATRIX_FILE="${START_DIR}/${MATRIX_FILE}"
+[[ "${OUTPUT_DIR}" != /* ]] && OUTPUT_DIR="${START_DIR}/${OUTPUT_DIR}"
+MATRIX_FILE="$(realpath -Lsm "${MATRIX_FILE}")"
+OUTPUT_DIR="$(realpath -Lsm "${OUTPUT_DIR}")"
+COMPUTE_MATRIX="${SCRIPT_ROOT}/.github/actions/workflow-build/build-workflow.py"
 
 # Enable verbose mode if requested
 if [[ "$VERBOSE" = true ]]; then
@@ -160,7 +181,7 @@ readonly combinations
 # Update the base devcontainer with the default values
 # The root devcontainer.json file is used as the default container as well as a template for all
 # other devcontainer.json files by replacing the `image:` field with the appropriate image name
-readonly base_devcontainer_file="./devcontainer.json"
+readonly base_devcontainer_file="${INPUT_DIR}/devcontainer.json"
 NEWEST_GCC_CUDA_ENTRY=$(echo "$combinations" | jq -rs '[.[] | select(.compiler_name == "gcc")] | sort_by((.cuda | split(".") | map(tonumber)), (.compiler_version | tonumber)) | .[-1]')
 readonly NEWEST_GCC_CUDA_ENTRY
 NEWEST_LLVM_CUDA_ENTRY=$(echo "$combinations" | jq -rs '[.[] | select(.compiler_name == "llvm")] | sort_by((.cuda | split(".") | map(tonumber)), (.compiler_version | tonumber)) | .[-1]')
@@ -178,8 +199,21 @@ readonly DEFAULT_COMPILER_VERSION
 DEFAULT_NAME=$(make_name "$DEFAULT_CUDA" "$DEFAULT_CUDA_EXT" "$DEFAULT_COMPILER_NAME" "$DEFAULT_COMPILER_VERSION")
 readonly DEFAULT_NAME
 
-update_devcontainer "${base_devcontainer_file}" "./temp_devcontainer.json" "$DEFAULT_NAME" "$DEFAULT_CUDA" "$DEFAULT_CUDA_EXT" "$DEFAULT_COMPILER_NAME" "$DEFAULT_COMPILER_EXE" "$DEFAULT_COMPILER_VERSION" "$DEVCONTAINER_VERSION" "false"
-mv "./temp_devcontainer.json" "${base_devcontainer_file}"
+# Only update the base container if running in-place
+if [[ "${INPUT_DIR}" = "${OUTPUT_DIR}" ]]; then
+  update_devcontainer \
+    "${base_devcontainer_file}" \
+    "${OUTPUT_DIR}/temp_devcontainer.json" \
+    "${DEFAULT_NAME}" \
+    "${DEFAULT_CUDA}" \
+    "${DEFAULT_CUDA_EXT}" \
+    "${DEFAULT_COMPILER_NAME}" \
+    "${DEFAULT_COMPILER_EXE}" \
+    "${DEFAULT_COMPILER_VERSION}" \
+    "${DEVCONTAINER_VERSION}" \
+    "false"
+  mv "${OUTPUT_DIR}/temp_devcontainer.json" "${base_devcontainer_file}"
+fi
 
 # Create an array to keep track of valid subdirectory names
 valid_subdirs=()
@@ -188,8 +222,8 @@ valid_subdirs=()
 valid_subdirs+=("img")
 
 # Don't remove RAPIDS containers:
-for rapids_container in *rapids*; do
-    valid_subdirs+=("${rapids_container}")
+for rapids_container in "${OUTPUT_DIR}"/*rapids*; do
+    valid_subdirs+=("${rapids_container##*/}")
 done
 
 # Inject ctk version 99.9
@@ -230,20 +264,34 @@ for combination in $all_comb; do
     internal=$(echo "$combination" | jq -r '.internal')
 
     name=$(make_name "$cuda_version" "$cuda_ext" "$compiler_name" "$compiler_version" "$tidy_ext")
-    mkdir -p "$name"
-    new_devcontainer_file="$name/devcontainer.json"
+    mkdir -p "${OUTPUT_DIR}/${name}"
+    new_devcontainer_file="${OUTPUT_DIR}/${name}/devcontainer.json"
 
-    update_devcontainer "$base_devcontainer_file" "$new_devcontainer_file" "$name" "$cuda_version" "$cuda_ext" "$compiler_name" "$compiler_exe" "$compiler_version" "$DEVCONTAINER_VERSION" "$internal" "$tidy_ext"
-    echo "Created $new_devcontainer_file"
+    update_devcontainer \
+      "${base_devcontainer_file}" \
+      "${new_devcontainer_file}" \
+      "${name}" \
+      "${cuda_version}" \
+      "${cuda_ext}" \
+      "${compiler_name}" \
+      "${compiler_exe}" \
+      "${compiler_version}" \
+      "${DEVCONTAINER_VERSION}" \
+      "${internal}" \
+      "${tidy_ext}"
+    echo "Created ${new_devcontainer_file}"
 
     # Add the subdirectory name to the valid_subdirs array
     valid_subdirs+=("$name")
 done
 
-# Clean up stale subdirectories and devcontainer.json files
+# Only clean generated configuration directories; the output directory may be shared.
 if [[ "$CLEAN" = true ]]; then
-    for subdir in ./*; do
-        if [[ -d "$subdir" ]] && [[ " ${valid_subdirs[*]} " != *" ${subdir#./} "* ]]; then
+    re_devcontainer='^cuda[0-9]+[.][0-9]+(ext)?(tidy)?-[a-z]+[0-9]+([.][0-9]+)*$'
+    for subdir in "${OUTPUT_DIR}"/*; do
+        if [[ -f "${subdir}/devcontainer.json" &&
+              "${subdir##*/}" =~ ${re_devcontainer} &&
+              " ${valid_subdirs[*]} " != *" ${subdir##*/} "* ]]; then
             echo "Removing stale subdirectory: $subdir"
             rm -r "$subdir"
         fi
