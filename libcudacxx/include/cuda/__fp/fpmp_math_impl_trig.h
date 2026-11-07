@@ -299,8 +299,8 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_trig_reduction(
      * then accumulate corrections with full precision.
      */
     __afloat __result(__s, __e);
-    __result = __result + __afloat(-__pl);
-    __result = __result + __afloat(__x_lo);
+    __result = __result - __pl;
+    __result = __result + __x_lo;
 
     /* Exact product n*C2 = nC2_hi + nC2_lo via two_mult_fma */
     _FpType __n_c2_lo;
@@ -308,7 +308,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_trig_reduction(
     __result          = __result - __afloat(__n_c2_hi, __n_c2_lo);
 
     /* n*C3 is tiny (~10^-11), single-precision product suffices */
-    __result = __result + __afloat(::cuda::__fpmp_mul_rn(__n_f, -__c3));
+    __result = __result + ::cuda::__fpmp_mul_rn_nocontract(__n_f, -__c3);
 
     *__quadrant = __n;
     *__r_hi     = __result.hi();
@@ -456,7 +456,7 @@ __internal_fpmp2_cos_kernel(_FpType __x_hi, _FpType __x_lo, _FpType* __res_hi, _
 {
   using __ffloat = fp32mp2_low;
 
-  constexpr __ffloat __c1(-5.0000000000000000e-01);
+  constexpr float __c1(-0.5f);
   constexpr __ffloat __c2(4.1666666666666667e-02);
   constexpr __ffloat __c3(-1.3888888888888889e-03);
   constexpr float __c4(2.4801587301587302e-05f);
@@ -479,7 +479,7 @@ __internal_fpmp2_cos_kernel(_FpType __x_hi, _FpType __x_lo, _FpType* __res_hi, _
   __q          = __q * __x2 + __c2;
   __q          = __q * __x2 + __c1;
 
-  __ffloat __result = renormalize(__q * __x2 + __ffloat(_FpType(1)));
+  __ffloat __result = renormalize(__q * __x2 + 1.0f);
   *__res_hi         = __result.hi();
   *__res_lo         = __result.lo();
 }
@@ -1112,7 +1112,7 @@ __internal_fpmp2_asin(const float __x_hi, const float __x_lo, float* __res_hi, f
      *   asin(|x|) = pi/2 - 2*sqrty*(1 + y*P(y))
      * sqrt(y) returns NaN for y < 0 (i.e., |x| > 1), so NaN
      * propagates through the rest of the chain naturally. */
-    __ffloat __y = __ffloat(float(0.5f)) - __absx * __ffloat(float(0.5f));
+    __ffloat __y = 0.5f - __absx * 0.5f;
     float __sy_hi, __sy_lo;
     ::cuda::__fpmp2_sqrt(__y.hi(), __y.lo(), &__sy_hi, &__sy_lo);
     __ffloat __sy(__sy_hi, __sy_lo);
@@ -1121,7 +1121,7 @@ __internal_fpmp2_asin(const float __x_hi, const float __x_lo, float* __res_hi, f
     ::cuda::__internal_fpmp2_asin_poly<float>(__y, &__p);
 
     constexpr __ffloat __PIO2(1.5707963267948966);
-    __r = renormalize(__PIO2 - __ffloat(float(2)) * __sy * (__ffloat(float(1)) + __y * __p));
+    __r = renormalize(__PIO2 - __sy * 2.0f * (1.0f + __y * __p));
   }
 
   if (__is_neg)
@@ -1189,8 +1189,8 @@ __internal_fpmp2_acos(const float __x_hi, const float __x_lo, float* __res_hi, f
      * Polynomial P(y) is evaluated by `__internal_fpmp2_acos_poly`
      * (analogous to `__internal_fpmp2_asin_poly` used by the small
      *  branch and by asin). */
-    __ffloat __y     = __ffloat(float(1)) - __absx;
-    __ffloat __two_y = __ffloat(float(2)) * __y;
+    __ffloat __y     = 1.0f - __absx;
+    __ffloat __two_y = __y * 2.0f;
     float __s_hi, __s_lo;
     ::cuda::__fpmp2_sqrt(__two_y.hi(), __two_y.lo(), &__s_hi, &__s_lo);
     __ffloat __s(__s_hi, __s_lo);
@@ -1445,8 +1445,8 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
   float __q_lo       = 0.0f;
   const float __q_hi = ::cuda::__fpmp_two_mult_fma(__f_lo, __pi1, &__q_lo);
   __angle            = __angle + __afloat(__q_hi, __q_lo);
-  __angle            = __angle + __afloat(__f_hi * __pi2);
-  __angle            = __angle + __afloat(__f_hi * __pi3);
+  __angle            = __angle + ::cuda::__fpmp_mul_rn_nocontract(__f_hi, __pi2);
+  __angle            = __angle + ::cuda::__fpmp_mul_rn_nocontract(__f_hi, __pi3);
 
   float __s_hi, __s_lo, __c_hi, __c_lo;
   ::cuda::__internal_fpmp2_sin_kernel(__angle.hi(), __angle.lo(), &__s_hi, &__s_lo);
