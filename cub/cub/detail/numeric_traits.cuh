@@ -18,6 +18,7 @@
 #include <cub/detail/unit_word.cuh>
 
 #include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__cstring/memcpy.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/remove_cv.h>
@@ -49,6 +50,9 @@ struct is_primitive_impl;
 template <Category Kind, bool Primitive, typename UnsignedBitsT, typename T>
 struct BaseTraits
 {
+  static_assert(!Primitive || ::cuda::is_trivially_copyable_v<T>,
+                "Please also specialize cuda::is_trivially_copyable_v for T");
+
 private:
   friend struct is_primitive_impl;
 
@@ -62,6 +66,7 @@ struct BaseTraits<UNSIGNED_INTEGER, true, UnsignedBitsT, T>
                 "The size of the unsigned type holding the bits of T must be the same as T");
   static_assert(::cuda::std::numeric_limits<T>::is_specialized,
                 "Please also specialize cuda::std::numeric_limits for T");
+  static_assert(::cuda::is_trivially_copyable_v<T>, "Please also specialize cuda::is_trivially_copyable_v for T");
 
   using UnsignedBits                       = UnsignedBitsT;
   static constexpr UnsignedBits LOWEST_KEY = UnsignedBits(0);
@@ -109,6 +114,7 @@ struct BaseTraits<SIGNED_INTEGER, true, UnsignedBitsT, T>
                 "The size of the unsigned type holding the bits of T must be the same as T");
   static_assert(::cuda::std::numeric_limits<T>::is_specialized,
                 "Please also specialize cuda::std::numeric_limits for T");
+  static_assert(::cuda::is_trivially_copyable_v<T>, "Please also specialize cuda::is_trivially_copyable_v for T");
 
   using UnsignedBits = UnsignedBitsT;
 
@@ -154,6 +160,7 @@ struct BaseTraits<FLOATING_POINT, true, UnsignedBitsT, T>
                 "The size of the unsigned type holding the bits of T must be the same as T");
   static_assert(::cuda::std::numeric_limits<T>::is_specialized,
                 "Please also specialize cuda::std::numeric_limits for T");
+  static_assert(::cuda::is_trivially_copyable_v<T>, "Please also specialize cuda::is_trivially_copyable_v for T");
   static_assert(::cuda::is_floating_point_v<T>, "Please specialize cuda::is_floating_point_v for T");
   // Note: this is technically superfluous. cuda::is_floating_point is a using decl that the
   // user cannot specialize. There should be no scenario in which is_floating_point_v is
