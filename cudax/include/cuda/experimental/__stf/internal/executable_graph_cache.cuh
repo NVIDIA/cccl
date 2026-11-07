@@ -65,8 +65,7 @@ inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
   ::std::shared_ptr<cudaGraphExec_t> res{new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
                                            if (*p)
                                            {
-                                             ON_THROW(notify)
-                                             {
+                                             sump::notify->*[&]() {
                                                cuda_try<cudaGraphExecDestroy>(*p);
                                              };
                                            }

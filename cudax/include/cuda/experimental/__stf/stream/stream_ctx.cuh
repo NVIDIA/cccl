@@ -538,22 +538,19 @@ public:
     {
       if (startEvent)
       {
-        ON_THROW(notify)
-        {
+        sump::notify->*[&]() {
           cuda_try<cudaEventDestroy>(startEvent);
         };
       }
       if (stopEvent)
       {
-        ON_THROW(notify)
-        {
+        sump::notify->*[&]() {
           cuda_try<cudaEventDestroy>(stopEvent);
         };
       }
       if (prev_device != 0)
       {
-        ON_THROW(abort)
-        {
+        sump::abort->*[&]() {
           cuda_try<cudaSetDevice>(prev_device);
         };
       }
@@ -839,8 +836,7 @@ UNITTEST("logical_data_untyped moveable")
       // Unregister memory before owner deletes it on failure.
       SCOPE(fail)
       {
-        ON_THROW(notify)
-        {
+        sump::notify->*[&]() {
           cuda_try<cudaHostUnregister>(h_addr);
         };
       };

@@ -473,8 +473,7 @@ public:
             {
               if (dummy_graph != nullptr)
               {
-                ON_THROW(notify)
-                {
+                sump::notify->*[&]() {
                   cuda_try<cudaGraphDestroy>(dummy_graph);
                 };
               }
@@ -518,8 +517,7 @@ public:
         {
           if (graph_owned_by_us)
           {
-            ON_THROW(notify)
-            {
+            sump::notify->*[&]() {
               cuda_try<cudaGraphDestroy>(graph);
             };
           }
@@ -1223,7 +1221,7 @@ public:
       _pop_epilogue(finalize_prereqs, err);
       if (err)
       {
-        sump::sink(policy)->*[&] {
+        policy->*[&] {
           ::std::rethrow_exception(err);
         };
       }
@@ -1322,7 +1320,7 @@ public:
       pending_epilogue_node_offset_ = -1;
       if (err)
       {
-        sump::sink(policy)->*[&] {
+        policy->*[&] {
           ::std::rethrow_exception(err);
         };
       }

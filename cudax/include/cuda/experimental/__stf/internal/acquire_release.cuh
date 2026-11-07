@@ -380,8 +380,7 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs) no
   // a size computation went wrong, not that memory ran out, and should not be quietly treated
   // as memory pressure. Anything else we did not anticipate escapes into terminate rather than
   // being silently absorbed here.
-  ON_THROW(if_monomorphic<::std::bad_alloc>(abort) | if_isa<cuda_exception>(abort))
-  {
+  (sump::if_monomorphic<::std::bad_alloc>(sump::abort) | sump::if_isa<cuda_exception>(sump::abort))->*[&]() {
     // We copy the list of prereqs into the task
     merge_event_list(done_prereqs);
 

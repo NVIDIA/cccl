@@ -63,8 +63,7 @@ protected:
     if (cudaEvent)
     {
       // A destructor cannot throw: a failing destroy leaks the event and is reported.
-      ON_THROW(notify)
-      {
+      sump::notify->*[&]() {
         cuda_try<cudaEventDestroy>(cudaEvent);
       };
     }
@@ -105,8 +104,7 @@ public:
     // wrong context and fails somewhere unrelated. Report and abort.
     SCOPE(exit)
     {
-      ON_THROW(abort)
-      {
+      sump::abort->*[&]() {
         ::std::ignore = cuda_try<cuCtxPopCurrent>();
       };
     };
@@ -120,8 +118,7 @@ public:
       SCOPE(exit)
       {
         // Asynchronously destroy the event to avoid a leak; a failing destroy leaks it and is reported.
-        ON_THROW(notify)
-        {
+        sump::notify->*[&]() {
           cuda_try<cudaEventDestroy>(sync_event);
         };
       };
@@ -145,8 +142,7 @@ public:
   //! exec_place), so converting only the two event calls would leave those uncovered.
   void insert_event() noexcept
   {
-    ON_THROW(abort)
-    {
+    sump::abort->*[&]() {
       // If needed, compute the underlying device
       if (dstream.dev_id == -1)
       {
@@ -159,8 +155,7 @@ public:
         cudaEvent = cuda_try<cudaEventCreateWithFlags>(cudaEventDisableTiming);
         SCOPE(fail)
         {
-          ON_THROW(notify)
-          {
+          sump::notify->*[&]() {
             cuda_try<cudaEventDestroy>(cudaEvent);
           };
           cudaEvent = nullptr;
@@ -440,8 +435,7 @@ private:
       // Restoring the thread's context is not a release (see above): report and abort on failure.
       SCOPE(exit)
       {
-        ON_THROW(abort)
-        {
+        sump::abort->*[&]() {
           ::std::ignore = cuda_try<cuCtxPopCurrent>();
         };
       };

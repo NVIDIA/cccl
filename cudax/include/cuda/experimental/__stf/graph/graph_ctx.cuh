@@ -76,8 +76,7 @@ public:
       // free leaks it and is reported, it cannot become a second exception.
       SCOPE(fail)
       {
-        ON_THROW(notify)
-        {
+        sump::notify->*[&]() {
           cuda_try<cudaFreeHost>(result);
         };
       };
@@ -92,8 +91,7 @@ public:
         cuda_try(cudaMalloc(&result, s));
         SCOPE(fail)
         {
-          ON_THROW(notify)
-          {
+          sump::notify->*[&]() {
             cuda_try<cudaFree>(result);
           };
         };
@@ -648,8 +646,7 @@ private:
     auto cudaGraphExecDeleter = [](cudaGraphExec_t* pGraphExec) {
       if (*pGraphExec)
       {
-        ON_THROW(notify)
-        {
+        sump::notify->*[&]() {
           cuda_try<cudaGraphExecDestroy>(*pGraphExec);
         };
       }
@@ -676,8 +673,7 @@ private:
     auto cudaGraphDeleter = [](cudaGraph_t* pGraph) {
       if (*pGraph)
       {
-        ON_THROW(notify)
-        {
+        sump::notify->*[&]() {
           cuda_try<cudaGraphDestroy>(*pGraph);
         };
       }

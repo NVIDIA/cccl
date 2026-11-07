@@ -562,8 +562,7 @@ public:
   {
     // Timing metadata is diagnostic only; allocation or locking failures must
     // not interfere with task teardown.
-    ON_THROW(notify, loc)
-    {
+    sump::notify.at(loc)->*[&]() {
       ::std::scoped_lock guard(mtx);
 
       if (!tracing_enabled)

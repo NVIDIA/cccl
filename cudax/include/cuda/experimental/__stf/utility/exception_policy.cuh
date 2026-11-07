@@ -144,7 +144,7 @@ template <class _Status>
 struct status_traits;
 
 /**
- * @brief Policy vocabulary: the named error sinks, applied with `->*` and `<<` (see @ref sump::sink).
+ * @brief Policy vocabulary: the named error sinks, applied with `->*` and `<<` (see @ref sump::basic_sink).
  *
  * Nested and deliberately non-inline: the names are short English words, and
  * `using namespace cuda::experimental::stf;` is routine in user code -- it must not
@@ -309,20 +309,118 @@ struct __sink_at
 #endif // _CCCL_DOXYGEN_INVOKED
 
 /**
- * @brief The base of every sink. `struct my_sink : basic_sink<my_sink> { hooks... };` gives the
- * type the two application operators, `sink ->* callable` and `sink << action`, and the tag that
- * `&`, `|`, `*` and the identity rules look for. The operators are hidden friends, found by ADL
- * for an operand of type `_Self` alone; the left operand arrives as `__sink_at<_Self>`, built by
- * an implicit conversion that records the call site (an overloaded operator cannot take a
- * defaulted `source_location`). The bodies call helpers declared further down, found by ADL
- * through `__sink_at` at instantiation.
+ * @brief The base of every sink: `struct my_sink : basic_sink<my_sink> { hooks... };` gives the
+ * type the two application operators and the tag that `&`, `|`, `*` and the identity rules look
+ * for. A sink is its own carrier: every named policy and every composite accepts the two operators
+ * directly, and records the location of the expression that applies it; `s.at(loc)` reports a
+ * different site. Two operators apply a sink:
+ * - `policy ->* x` evaluates and yields, for when you want the value. An action runs
+ *   under the policy, so its throws are handled, and its return comes back verbatim, whatever its
+ *   type: it is never checked and no trait is consulted, even for a registered status type. The
+ *   right operand must be a callable; a status value goes to the right of `<<`. `->*` never chains.
+ * - `policy << x` feeds, possibly several operands: `store(&err) << a() << b()`.
+ *   A status value is offered to the policy as with `->*`. An action runs under the policy, and
+ *   what it returns is an error code: a status is fed in turn (a successful one only fixes the
+ *   chain's status type), `void` feeds nothing, and a type without `status_traits` is a compile
+ *   error. The expression is a carrier, which records the chain. A sink applied by name is copied
+ *   into each expression; the library's stateful sinks keep their state behind a pointer, so the
+ *   copies share it. A named non-const `dynamic` is viewed instead of copied, so one model serves
+ *   every expression that names it; a custom model with mutable state synchronizes its own
+ *   concurrent use. To keep one chain across statements, name the carrier the first `<<` returns:
+ *   `auto s = p << a; s << b;`.
+ *   C++17 sequences the left side of `<<`, its handling included, before the right, so each
+ *   operand runs after the previous one was handled. The carrier records the first status that
+ *   was forwarded, read with `status<S>()` (the success value if none was), and `forwarded()`
+ *   says whether one was. The first `<<` fixes the chain's status type, and a later operand of
+ *   another status type, or `status<S>()` with another `S`, is a programming error checked with
+ *   `_CCCL_VERIFY`. The carrier converts to nothing implicitly, and a `<<` statement whose
+ *   `status<S>()` nobody reads drops a forwarded status: write `->*` to keep it.
  *
- * An aggregate sink lists the base first when brace-initialized: `my_sink{{}, args...}`.
+ * Both operators bind tighter than `&` and `|`, so a composite on their left is parenthesized:
+ * `(notify & abort) << cudaFree(p)`. `->*` binds tighter than `<<`, so `s << a ->* b` parses as
+ * `s << (a ->* b)` and does not compile; write `(s << a).status<S>()`, or split the statement.
+ *
+ * A policy is an object exposing any of two optional capabilities, discovered by compile-time
+ * introspection: the exception hook
+ * `(const std::exception*, source_location, Fn&)` whose return value is its answer on the throw
+ * path (the callable may be re-invoked by policies like `retry`; most policies ignore it), and
+ * a success hook `on_success(...)` that observes the result while preserving its type. The named policies
+ * include @ref sump::notify_t "notify", @ref sump::subst_t "subst", @ref sump::defer_t "defer",
+ * @ref sump::fwd_t "fwd", @ref sump::unwind_t "unwind", @ref sump::retry_t "retry",
+ * @ref sump::as_expected_t "as_expected", @ref sump::noop_t "noop", @ref sump::if_isa,
+ * @ref sump::if_monomorphic, @ref sump::if_equal, @ref sump::thrown, @ref sump::returned,
+ * @ref sump::when "when", @ref sump::translate_t "translate" / @ref sump::nest,
+ * @ref sump::delay_t "delay", @ref sump::backoff, @ref sump::remember_t "remember",
+ * @ref sump::circuit_breaker_t "circuit_breaker", and @ref sump::always. Guards forward what they
+ * do not claim; translators forward with a different exception; delay/backoff/retry re-run; remember serves the last
+ * success. Policies compose with `&` (sequence; the last element answers; non-final answers are
+ * discarded) and `|` (alternation; the left may forward: a guard, translator or predicate on
+ * the left forwards by a returned claim, at no cost beyond its own test; any other policy
+ * forwards by throwing, at one unwind), and with `*` (n-fold `|`).
+ *
+ * An operand of `&` or `|` need not be a sink when the other one is: `std::ignore` resumes with
+ * a default-constructed result, a raw hook of the shape above is a policy, and anything else is
+ * taken as a substitution value, exactly as `subst(value)` (including a user's nullary
+ * `nullval`-returning ending, which dies silently -- pair with `notify &` to opt the report back
+ * in). A substitution passed as an lvalue can serve a reference result, which the policy refers
+ * to rather than copies:
+ *
+ * @code
+ * int fallback = 42;
+ * int& x = subst(fallback) ->* [] { return returns_a_reference(); }; // x is fallback on a throw
+ * @endcode
+ *
+ * The callable itself must not be `noexcept`: an exception raised inside one ends the program
+ * where it stands, leaving the policy unreachable, so such a pairing is rejected instead of
+ * standing there looking like protection. Call such a callable directly.
+ *
+ * Vocabulary visibility: the named policies live in the non-inline namespace
+ * `sump`. Blessed patterns are a block-scope
+ * `using namespace cuda::experimental::stf::sump;` at the function that
+ * configures sinks, or a namespace alias (`namespace pol = cuda::experimental::stf::sump;`):
+ *
+ * @code
+ * using namespace cuda::experimental::stf::sump;
+ * (notify & retry * 3 | subst(-1)) ->* flaky;
+ *
+ * namespace pol = cuda::experimental::stf::sump;
+ * pol::subst(0) ->* flaky;
+ * @endcode
+ *
+ * @note When querying `noexcept(p ->* f)` in a constant expression, write `p.at(loc) ->* f` with a
+ * location: nvcc's front-end with a gcc host reports the defaulted
+ * `source_location::current()` argument as potentially throwing, tainting the query (the
+ * call itself is `noexcept` either way).
+ *
+ * The right operand may also be a status, a value for which @ref status_traits is
+ * specialized (`cudaError_t`, `CUresult`, ... once `cuda_safe_call.cuh` is included):
+ * `policy << cudaFree(p)`. A status is a past result handled on the code channel, and `<<` is
+ * the only way to feed one. The carrier then yields it: `status<S>()` is the first failing status
+ * the chain yielded, one an arm forwarded or left unchanged, and `forwarded()` says whether any
+ * arm forwarded. A value an arm substitutes stands in for the status, and `unwind` turns the
+ * status into an exception. Policies that only handle exceptions see the status's
+ * exception, `status_traits<S>::to_exception(status, loc)`. With exceptions disabled, such a
+ * policy that may forward (`if_isa`, a typed `store`, `translate`, a user policy without
+ * a code-channel hook) reports and aborts on the first failing status, since reaching its hook
+ * means throwing; policies with a code-channel hook are unaffected.
+ *
+ * The operators are hidden friends, found by ADL for an operand of type `_Self` alone; the left
+ * operand arrives as `__sink_at<_Self>`, built by an implicit conversion that records the call
+ * site (an overloaded operator cannot take a defaulted `source_location`). The bodies call
+ * helpers declared further down, found by ADL through `__sink_at` at instantiation. An aggregate
+ * sink lists the base first when brace-initialized: `my_sink{{}, args...}`.
  */
 template <class _Self>
 struct basic_sink
 {
   using __exception_sink_tag _CCCL_NODEBUG = void;
+
+  //! @brief The sink applied from `__loc` rather than from the call site: `s.at(loc) ->* f`.
+  __sink_at<_Self> at(const ::cuda::std::source_location __loc) const
+    noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Self>)
+  {
+    return {static_cast<const _Self&>(*this), __loc};
+  }
 
   template <class _X>
   friend auto operator<<(__sink_at<_Self> __s, _X&& __x) noexcept(
@@ -697,7 +795,7 @@ inline constexpr unwind_t unwind{};
 
 /**
  * @brief Value-substitution policy; `subst(v)` is the documented spelling for what a bare
- * value passed to `sump::sink` also means.
+ * value standing in a composite also means.
  *
  * The exception hook answers, in order: the result of invoking the stored value as a handler
  * `(const std::exception*, source_location, Fn&)` when that is well-formed (so
@@ -5037,8 +5135,7 @@ inline void __check_dynamic_repeated(const dynamic& __p)
 // during the migration of the policy vocabulary into eh, when such calls
 // could silently rebind; with the policies in a non-inline namespace, a bare abort() in
 // this scope can only mean ::abort, which is what callers expect. Policy uses spell
-// sump::abort (or arrive through ON_THROW, which injects the namespace for
-// the policy expression only).
+// sump::abort.
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace sump
@@ -5065,150 +5162,6 @@ decltype(auto) __sink_yield(__sink_at<_Sink>&& __s, _X&& __x) noexcept(
 }
 } // namespace sump
 #endif // _CCCL_DOXYGEN_INVOKED
-
-namespace sump
-{
-/**
- * @brief Applies a reaction that is not a sink, or reports a location other than the call site.
- *
- * A sink is its own carrier: every named policy and every composite accepts the two operators
- * directly, and records the location of the expression that applies it. `sink(reaction, loc)`
- * is for the rest: a user-defined policy, a raw hook or value (see below), an explicit location,
- * and a carrier that outlives a statement. Two operators apply a sink:
- * - `policy ->* x` evaluates and yields, for when you want the value. An action runs
- *   under the policy, so its throws are handled, and its return comes back verbatim, whatever its
- *   type: it is never checked and no trait is consulted, even for a registered status type. The
- *   right operand must be a callable; a status value goes to the right of `<<`. `->*` never chains.
- * - `policy << x` feeds, possibly several operands: `store(&err) << a() << b()`.
- *   A status value is offered to the policy as with `->*`. An action runs under the policy, and
- *   what it returns is an error code: a status is fed in turn (a successful one only fixes the
- *   chain's status type), `void` feeds nothing, and a type without `status_traits` is a compile
- *   error. The expression is a carrier, which records the chain. A sink applied by name is copied
- *   into each expression; the library's stateful sinks keep their state behind a pointer, so the
- *   copies share it. A named non-const `dynamic` is viewed instead of copied, so one model serves
- *   every expression that names it; a custom model with mutable state synchronizes its own
- *   concurrent use. To keep one chain across statements, name the carrier:
- *   `auto s = sink(p); s << a; s << b;`.
- *   C++17 sequences the left side of `<<`, its handling included, before the right, so each
- *   operand runs after the previous one was handled. The carrier records the first status that
- *   was forwarded, read with `status<S>()` (the success value if none was), and `forwarded()`
- *   says whether one was. The first `<<` fixes the chain's status type, and a later operand of
- *   another status type, or `status<S>()` with another `S`, is a programming error checked with
- *   `_CCCL_VERIFY`. The carrier converts to nothing implicitly, and a `<<` statement whose
- *   `status<S>()` nobody reads drops a forwarded status: write `->*` to keep it.
- *
- * Both operators bind tighter than `&` and `|`, so a composite on their left is parenthesized:
- * `(notify & abort) << cudaFree(p)`. `->*` binds tighter than `<<`, so `s << a ->* b` parses as
- * `s << (a ->* b)` and does not compile; write `(s << a).status<S>()`, or split the statement.
- *
- * A policy is an object exposing any of two optional capabilities, discovered by compile-time
- * introspection: the exception hook
- * `(const std::exception*, source_location, Fn&)` whose return value is its answer on the throw
- * path (the callable may be re-invoked by policies like `retry`; most policies ignore it), and
- * a success hook `on_success(...)` that observes the result while preserving its type. The named policies
- * include @ref sump::notify_t "notify", @ref sump::subst_t "subst", @ref sump::defer_t "defer",
- * @ref sump::fwd_t "fwd", @ref sump::unwind_t "unwind", @ref sump::retry_t "retry",
- * @ref sump::as_expected_t "as_expected", @ref sump::noop_t "noop", @ref sump::if_isa,
- * @ref sump::if_monomorphic, @ref sump::if_equal, @ref sump::thrown, @ref sump::returned,
- * @ref sump::when "when", @ref sump::translate_t "translate" / @ref sump::nest,
- * @ref sump::delay_t "delay", @ref sump::backoff, @ref sump::remember_t "remember",
- * @ref sump::circuit_breaker_t "circuit_breaker", and @ref sump::always. Guards forward what they
- * do not claim; translators forward with a different exception; delay/backoff/retry re-run; remember serves the last
- * success. Policies compose with `&` (sequence; the last element answers; non-final answers are
- * discarded) and `|` (alternation; the left may forward: a guard, translator or predicate on
- * the left forwards by a returned claim, at no cost beyond its own test; any other policy
- * forwards by throwing, at one unwind), and with `*` (n-fold `|`).
- *
- * `sink` also accepts reactions that are not policies: `std::ignore`
- * resumes with a default-constructed result; and anything else is taken as a substitution
- * value, exactly as `subst(value)` (including a user's nullary `nullval`-returning ending,
- * which dies silently -- pair with `notify &` to opt the report back in). A substitution
- * passed as an lvalue can serve a reference result, which the policy refers to rather than
- * copies:
- *
- * @code
- * int fallback = 42;
- * int& x = sink(fallback) ->* [] { return returns_a_reference(); }; // x is fallback on a throw
- * @endcode
- *
- * The callable itself must not be `noexcept`: an exception raised inside one ends the program
- * where it stands, leaving the policy unreachable, so such a pairing is rejected instead of
- * standing there looking like protection. Call such a callable directly.
- *
- * The location defaults to the call site, for a sink applied directly and for `sink(reaction)`
- * alike; `sink(reaction, loc)` reports a different site.
- *
- * Vocabulary visibility: the named policies live in the non-inline namespace
- * `sump`. Blessed patterns are a block-scope
- * `using namespace cuda::experimental::stf::sump;` at the function that
- * configures sinks, or a namespace alias (`namespace pol = cuda::experimental::stf::sump;`):
- *
- * @code
- * using namespace cuda::experimental::stf::sump;
- * (notify & retry * 3 | subst(-1)) ->* flaky;
- *
- * namespace pol = cuda::experimental::stf::sump;
- * pol::subst(0) ->* flaky;
- * @endcode
- *
- * @note When querying `noexcept(p ->* f)` in a constant expression, write `sink(p, loc) ->* f` with a
- * location: nvcc's front-end with a gcc host reports the defaulted
- * `source_location::current()` argument as potentially throwing, tainting the query (the
- * call itself is `noexcept` either way).
- *
- * The right operand may also be a status, a value for which @ref status_traits is
- * specialized (`cudaError_t`, `CUresult`, ... once `cuda_safe_call.cuh` is included):
- * `policy << cudaFree(p)`. A status is a past result handled on the code channel, and `<<` is
- * the only way to feed one. The carrier then yields it: `status<S>()` is the first failing status
- * the chain yielded, one an arm forwarded or left unchanged, and `forwarded()` says whether any
- * arm forwarded. A value an arm substitutes stands in for the status, and `unwind` turns the
- * status into an exception. Policies that only handle exceptions see the status's
- * exception, `status_traits<S>::to_exception(status, loc)`. With exceptions disabled, such a
- * policy that may forward (`if_isa`, a typed `store`, `translate`, a user policy without
- * a code-channel hook) reports and aborts on the first failing status, since reaching its hook
- * means throwing; policies with a code-channel hook are unaffected.
- *
- * @param[in] __reaction The policy (or a reaction normalized into one). A policy is copied or moved
- *            in; a raw value or hook passed as an lvalue is referred to.
- * @param[in] __loc The location passed to the policy's hooks.
- * @return A carrier: it accepts `->*` and `<<` like a sink, and a `<<` chain on it records
- *         `status<S>()` and `forwarded()`.
- */
-template <class _Reaction>
-auto sink(_Reaction&& __reaction,
-          const ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
-{
-  return __on_throw_policy{__normalize(::cuda::std::forward<_Reaction>(__reaction)), __loc};
-}
-} // namespace sump
-
-#ifdef ON_THROW
-#  error "CUDASTF's exception_policy.cuh defines ON_THROW; rename the prior definition"
-#endif
-//! @brief Statement-shaped sink: ON_THROW(policy-expression) { body };
-//! The policy expression is evaluated with `sump` visible, so
-//! ON_THROW(notify & retry * 3 | subst(-1)) { return flaky(); }; needs no
-//! qualification. All arguments forward to sump::sink, so a source_location
-//! may follow the policy: ON_THROW(notify, loc) { body };. Expands to
-//! sump::sink(...) ->* a reference-capturing lambda; the call-site location is
-//! the macro's. The macro ends at `[&]()`:
-//! supply the body type by composition when needed, as in
-//! ON_THROW(retry | subst(-1)) -> int { throw failure(); };.
-//!
-//! The block-scope using-declarations pin `abort` and `terminate` to the
-//! policies. Without them, using the macro at global scope with the C
-//! library in scope would be ambiguous: the using-directive parks the
-//! policy names at the nearest namespace enclosing both it and
-//! `sump`, which in user code is the global namespace,
-//! right next to the C library's `abort`.
-#define ON_THROW(...)                                          \
-  [&] {                                                        \
-    using namespace ::cuda::experimental::stf::sump;           \
-    using ::cuda::experimental::stf::sump::abort;              \
-    using ::cuda::experimental::stf::sump::terminate;          \
-    return ::cuda::experimental::stf::sump::sink(__VA_ARGS__); \
-  }()                                                          \
-      ->*[&]()
 
 /**
  * @brief Runs `__step`; if it throws, the exception is kept in `__first` unless one is already
@@ -5351,26 +5304,6 @@ UNITTEST("circuit_breaker")
          == 7);
   EXPECT(*budget == 2);
 
-  // The macro spelling gates identically.
-  *budget = 0;
-  __gated = false;
-  _CCCL_TRY
-  {
-    ON_THROW(circuit_breaker(budget) & subst(-1))
-    {
-      return 9;
-    };
-  }
-  _CCCL_CATCH ([[maybe_unused]] const pol::circuit_open& __open)
-  {
-    __gated = true;
-  }
-  _CCCL_CATCH_ALL
-  {
-    EXPECT(false, "the gate must refuse with circuit_open, nothing else");
-  }
-  EXPECT(__gated);
-
   // The erased form carries the gate through: sinks re-erase, gates survive.
   *budget                     = 0;
   const pol::dynamic __erased = pol::dynamic(pol::circuit_breaker(budget) & pol::subst(-1));
@@ -5502,11 +5435,12 @@ UNITTEST("error sinks")
   //! [error sinks]
 
   // A terminating handler declares `nullval` and dies on its own terms; it stays out of the
-  // way as long as nothing throws. A raw lambda of the right shape is a policy through `sump::sink`.
+  // way as long as nothing throws. A raw lambda of the right shape is a policy once it stands in a
+  // composite; `noop &` is the identity that admits it.
   const auto die = [](const ::std::exception*, ::cuda::std::source_location, auto&) noexcept -> nullval {
     ::std::abort();
   };
-  const int untouched = sump::sink(die)->*[] {
+  const int untouched = (noop & die)->*[] {
     return 7;
   };
   EXPECT(untouched == 7);
@@ -5515,7 +5449,7 @@ UNITTEST("error sinks")
   const auto bail = []() noexcept -> nullval {
     ::std::abort();
   };
-  const int spared = sump::sink(bail)->*[] {
+  const int spared = (noop & bail)->*[] {
     return 9;
   };
   EXPECT(spared == 9);
@@ -5530,15 +5464,15 @@ UNITTEST("error sinks")
   EXPECT(&alias == &target);
 
   // A replacement passed as an lvalue outlives the call, so it can stand in for a reference
-  // result — bare (adapter) and via subst alike.
+  // result.
   int fallback = 42;
-  int& picked  = sump::sink(fallback)->*[]() -> int& {
+  int& picked  = subst(fallback)->*[]() -> int& {
     return target;
   };
   EXPECT(&picked == &target);
 
 #  if _CCCL_HAS_EXCEPTIONS()
-  int& supplanted = sump::sink(fallback)->*[]() -> int& {
+  int& supplanted = subst(fallback)->*[]() -> int& {
     throw ::std::runtime_error("no reference to give");
   };
   EXPECT(&supplanted == &fallback);
@@ -5566,12 +5500,12 @@ UNITTEST("error sinks")
   ::FILE* const log = ::tmpfile();
   EXPECT(log);
   const auto site  = ::cuda::std::source_location::current();
-  const int logged = sump::sink(notify(log), site)->*[]() -> int {
+  const int logged = notify(log).at(site)->*[]() -> int {
     throw ::std::runtime_error("boom");
   };
   EXPECT(logged == 0);
   // An exception that does not derive from std::exception reaches the handler as nullptr.
-  sump::sink(notify(log), site)->*[] {
+  notify(log).at(site)->*[] {
     throw 42;
   };
   EXPECT(::fseek(log, 0, SEEK_SET) == 0);
@@ -5593,7 +5527,7 @@ UNITTEST("error sinks")
 
   // The ostream configuration produces the identical report.
   ::std::ostringstream stream_log;
-  const int streamed = sump::sink(notify(stream_log), site)->*[]() -> int {
+  const int streamed = notify(stream_log).at(site)->*[]() -> int {
     throw ::std::runtime_error("streamed");
   };
   EXPECT(streamed == 0);
@@ -5669,8 +5603,8 @@ UNITTEST("error sinks")
   EXPECT(!!odd);
 
   // A replacement value stands in for the result, converted to the callable's result type;
-  // a bare value still works through `sump::sink`; subst is the documented spelling.
-  const int replaced = sump::sink(42)->*[]() -> int {
+  // a bare value is admitted by the algebra (`noop & 42`); subst is the documented spelling.
+  const int replaced = (noop & 42)->*[]() -> int {
     throw ::std::runtime_error("replaced");
   };
   EXPECT(replaced == 42);
@@ -5795,11 +5729,11 @@ UNITTEST("policy algebra")
 
   // Multi-type: either listed exception is claimed; others decline.
   {
-    const int a = sump::sink(if_isa<::std::logic_error, ::std::overflow_error>(subst(1)) | subst(2))->*[]() -> int {
+    const int a = (if_isa<::std::logic_error, ::std::overflow_error>(subst(1)) | subst(2))->*[]() -> int {
       throw ::std::overflow_error("o");
     };
     EXPECT(a == 1);
-    const int b = sump::sink(if_isa<::std::logic_error, ::std::overflow_error>(subst(1)) | subst(2))->*[]() -> int {
+    const int b = (if_isa<::std::logic_error, ::std::overflow_error>(subst(1)) | subst(2))->*[]() -> int {
       throw ::std::runtime_error("r");
     };
     EXPECT(b == 2);
@@ -5894,13 +5828,13 @@ UNITTEST("policy algebra")
   // defaulted source_location::current() argument inside a noexcept operand reads as
   // potentially throwing (the __builtin_LINE machinery), which would taint the query with
   // something these assertions do not mean to test.
-  static_assert(noexcept(sump::sink(notify, ::cuda::std::source_location{})->*::cuda::std::declval<void (&)()>()),
+  static_assert(noexcept(notify.at(::cuda::std::source_location{})->*::cuda::std::declval<void (&)()>()),
                 "nothrow policy chain must keep the expression noexcept");
-  static_assert(!noexcept(sump::sink(fwd, ::cuda::std::source_location{})->*::cuda::std::declval<void (&)()>()),
+  static_assert(!noexcept(fwd.at(::cuda::std::source_location{})->*::cuda::std::declval<void (&)()>()),
                 "a throwing policy must surface in the expression's noexcept");
-  static_assert(noexcept(sump::sink(notify, ::cuda::std::source_location{}) << ::cuda::std::declval<void (&)()>()),
+  static_assert(noexcept(notify.at(::cuda::std::source_location{}) << ::cuda::std::declval<void (&)()>()),
                 "<< keeps a nothrow policy chain noexcept");
-  static_assert(!noexcept(sump::sink(fwd, ::cuda::std::source_location{}) << ::cuda::std::declval<void (&)()>()),
+  static_assert(!noexcept(fwd.at(::cuda::std::source_location{}) << ::cuda::std::declval<void (&)()>()),
                 "<< surfaces a throwing policy");
 
   // Identity elimination is type-level: composing with a neutral element adds no wrapper.
@@ -6464,11 +6398,13 @@ UNITTEST("re-running policies")
 
   // A raw 3-arg lambda is a policy and may re-run.
   {
-    int calls   = 0;
-    const int v = sump::sink([](const ::std::exception*, auto, auto& __fn) {
-                    return __fn();
-                  })
-                    ->*[&]() -> int {
+    int calls = 0;
+    const int v =
+      (noop &
+       [](const ::std::exception*, auto, auto& __fn) {
+         return __fn();
+       })
+        ->*[&]() -> int {
       if (++calls < 2)
       {
         throw ::std::runtime_error("once");
@@ -6497,7 +6433,7 @@ UNITTEST("re-running policies")
 
   // noexcept surface: a re-running chain is never noexcept (explicit location; see
   // the existing comment about nvcc + gcc host and defaulted current()).
-  static_assert(!noexcept(sump::sink(retry, ::cuda::std::source_location{})->*::cuda::std::declval<int (&)()>()),
+  static_assert(!noexcept(retry.at(::cuda::std::source_location{})->*::cuda::std::declval<int (&)()>()),
                 "a re-running reaction can always decline");
 
   // Negative-compile expectations (do not compile; kept as comments near the code they guard):
@@ -6681,12 +6617,11 @@ UNITTEST("guard translate delay backoff remember")
 
   // translate<From, To>: a From becomes a To for the next typed arm; non-From declines.
   {
-    const int v =
-      sump::sink(translate<__ut_low_error, __ut_high_error> | if_isa<__ut_high_error>(subst(1)))->*[]() -> int {
+    const int v = (translate<__ut_low_error, __ut_high_error> | if_isa<__ut_high_error>(subst(1)))->*[]() -> int {
       throw __ut_low_error("cause");
     };
     EXPECT(v == 1);
-    const int passed = sump::sink(translate<__ut_low_error, __ut_high_error> | subst(2))->*[]() -> int {
+    const int passed = (translate<__ut_low_error, __ut_high_error> | subst(2))->*[]() -> int {
       throw ::std::runtime_error("neither");
     };
     EXPECT(passed == 2);
@@ -6776,12 +6711,10 @@ UNITTEST("guard translate delay backoff remember")
     };
     EXPECT(stale == 7);
 
-    const int fresh = ON_THROW(remember(&last))
-    {
+    const int fresh = remember(&last)->*[&]() {
       return 9;
     };
-    const int served = ON_THROW(remember(&last))->int
-    {
+    const int served = remember(&last)->*[&]() -> int {
       throw __ut_low_error("offline");
     };
     EXPECT(fresh == 9);
@@ -7036,44 +6969,6 @@ UNITTEST("repetition")
   // Negative-compile expectations (do not compile; kept as comments near the code they guard):
   //  - (subst(1) * 3) ->* ...;
   //      -> "the repeated policy never passes through; repetitions after the first are unreachable"
-#  endif // _CCCL_HAS_EXCEPTIONS()
-};
-
-UNITTEST("ON_THROW macro")
-{
-  using namespace cuda::experimental::stf; // deliberately NOT eh:
-                                           // the macro must supply the vocabulary
-#  if _CCCL_HAS_EXCEPTIONS()
-  {
-    int calls   = 0;
-    const int v = ON_THROW(retry * 2 | subst(-1))->int
-    {
-      ++calls;
-      throw ::std::runtime_error("always"); // every path throws: the arrow supplies the type
-    };
-    EXPECT(v == -1);
-    EXPECT(calls == 3);
-  }
-  {
-    const int v = ON_THROW(subst(7))
-    {
-      return 1;
-    };
-    EXPECT(v == 1);
-  }
-  // Reference result via the composed arrow.
-  {
-    static int obj = 3;
-    int& r         = ON_THROW(subst(obj))->int& // lvalue substitution can serve a reference
-    {
-      if (obj == 3)
-      {
-        throw ::std::runtime_error("x");
-      }
-      return obj;
-    };
-    EXPECT(&r == &obj);
-  }
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
 
@@ -7770,7 +7665,7 @@ UNITTEST("a dynamic over a policy without a success hook passes the value unboxe
  * `SCOPE(success)` reject the parameter: their outcome is already known by construction. The
  * exception itself is not available to a guard (a destructor is not a handler, and
  * `std::current_exception()` is null during unwinding); to react to the exception, wrap the
- * region in `ON_THROW(policy)`.
+ * region in a sink: `policy ->* [&] { ... };`.
  *
  * `SCOPE(fail)` runs its code if and only if the current scope is left by means of throwing an exception. Example:
  * @snippet this SCOPE(fail)
@@ -7838,7 +7733,7 @@ void invoke_nothrow(F& f, ::cuda::std::source_location loc, bool failing = false
   // The body may throw; that is what the abort policy is for. In clang-tidy's device pass the policy's
   // catch is erased, so the check sees the throw escape this noexcept function.
   // NOLINTNEXTLINE(bugprone-exception-escape)
-  sump::sink(sump::abort, loc)->*[&] {
+  sump::abort.at(loc)->*[&] {
     invoke_body(f, failing);
   };
 }
@@ -8233,8 +8128,7 @@ UNITTEST("error sinks: << chains, each operand after the previous was handled")
          == cudaErrorNotReady);
   EXPECT(!((if_equal(cudaErrorNotReady)(noop) | unwind) << cudaErrorNotReady).forwarded());
   // a named carrier works across statements
-  auto cleanup = sump::sink(fwd);
-  cleanup << cudaSuccess;
+  auto cleanup = fwd << cudaSuccess;
   cleanup << cudaErrorNotReady;
   cleanup << cudaErrorInvalidValue;
   EXPECT(cleanup.status<cudaError_t>() == cudaErrorNotReady);
@@ -8570,18 +8464,14 @@ UNITTEST("error sinks: the callable channel is unchanged")
 {
   using namespace cuda::experimental::stf;
   int value = 0;
-  ON_THROW(notify)
-  {
+  sump::notify->*[&] {
     value = 1;
   };
   EXPECT(value == 1);
-  // No trailing return type here: clang-tidy's modernize-redundant-void-arg misreads the
-  // macro-expanded lambda's parameter list when one follows it.
   const auto fail = [] {
     throw ::std::runtime_error("x");
   };
-  const int answer = ON_THROW(subst(-1))
-  {
+  const int answer = sump::subst(-1)->*[&]() -> int {
     fail();
     return 0;
   };

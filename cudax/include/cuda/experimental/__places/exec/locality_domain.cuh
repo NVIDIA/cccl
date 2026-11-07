@@ -476,8 +476,7 @@ public:
         // carry on rather than abort a stack that is already unwinding.
         SCOPE(exit)
         {
-          ON_THROW(notify)
-          {
+          ::cuda::experimental::stf::sump::notify->*[&]() {
             cuda_try(cuDevicePrimaryCtxRelease(device));
           };
         };
