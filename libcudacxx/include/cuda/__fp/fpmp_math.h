@@ -329,7 +329,7 @@
       Argument reduction: x = n*(pi/2) + r, |r| <= pi/4.
       Three paths based on |x|:
         Tiny (|x| < pi/4):  no reduction needed.
-        Fast (|x| < 2^20):  Cody-Waite with 3-piece pi/2 (~70 bits),
+        Fast (|x| < 2^20):  Cody-Waite with 4-piece pi/2 (within 8.5e-32),
           error-tracked via two_mult_fma + two_sum.
         Large (|x| >= 2^20): Payne-Hanek using integer 2/pi table (160 bits),
           returning fp32mp2 via extended-precision fixed-point conversion

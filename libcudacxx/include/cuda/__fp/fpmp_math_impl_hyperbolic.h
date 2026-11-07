@@ -104,13 +104,13 @@ __internal_fpmp2_tanh(const float __x_hi, const float __x_lo, float* __res_hi, f
   if (__abs_hi >= __branch_point)
   {
     /* ---- (2) large-|x| branch: 1 - 2/(exp(2|x|)+1) ------------ */
-    __ffloat __two_abs = __abs_a + __abs_a; /* exactly 2|x|: addition of equals */
+    __ffloat __two_abs = __abs_a * 2.0f; /* exactly 2|x| */
     float __u_hi;
     float __u_lo;
     ::cuda::__fpmp2_exp<float>(__two_abs.hi(), __two_abs.lo(), &__u_hi, &__u_lo);
-    __ffloat __denom  = __ffloat(__u_hi, __u_lo) + __ffloat(1.f);
+    __ffloat __denom  = __ffloat(__u_hi, __u_lo) + 1.0f;
     __ffloat __r      = __ffloat(2.f) / __denom;
-    __ffloat __result = __ffloat(1.f) - __r;
+    __ffloat __result = 1.0f - __r;
     if (__is_neg)
     {
       __result = -__result;
@@ -221,7 +221,7 @@ __internal_fpmp2_sinh(const float __x_hi, const float __x_lo, float* __res_hi, f
     float __u_lo;
     ::cuda::__fpmp2_exp<float>(__abs_a.hi(), __abs_a.lo(), &__u_hi, &__u_lo);
     __ffloat __e(__u_hi, __u_lo);
-    __ffloat __half_e     = __e * __ffloat(0.5f);
+    __ffloat __half_e     = __e * 0.5f;
     __ffloat __half_inv_e = __ffloat(0.5f) / __e;
     __ffloat __result     = renormalize(__half_e - __half_inv_e);
     if (__is_neg)
@@ -334,7 +334,7 @@ __internal_fpmp2_cosh(const float __x_hi, const float __x_lo, float* __res_hi, f
   __ffloat __e(__u_hi, __u_lo);
 
   /* cosh(|x|) = 0.5*e + 0.5/e  (both terms positive; no cancellation). */
-  __ffloat __half_e     = __e * __ffloat(0.5f);
+  __ffloat __half_e     = __e * 0.5f;
   __ffloat __half_inv_e = __ffloat(0.5f) / __e;
   __ffloat __result     = renormalize(__half_e + __half_inv_e);
 
@@ -760,15 +760,15 @@ __internal_fpmp2_atanh(const float __x_hi, const float __x_lo, float* __res_hi, 
    *
    * Use accurate sub for 1 - |x| to capture full precision when
    * |x| is close to 1. */
-  __ffloat __one_minus = sub<fpmp2_accuracy::high>(__ffloat(1.0f), __abs_a);
-  __ffloat __two_abs   = __abs_a + __abs_a;
+  __ffloat __one_minus = sub<fpmp2_accuracy::high>(1.0f, __abs_a);
+  __ffloat __two_abs   = __abs_a * 2.0f;
   __ffloat __t         = __two_abs / __one_minus;
 
   float __l_hi;
   float __l_lo;
   ::cuda::__fpmp2_log1p<float>(__t.hi(), __t.lo(), &__l_hi, &__l_lo);
 
-  __ffloat __result = __ffloat(__l_hi, __l_lo) * __ffloat(0.5f);
+  __ffloat __result = __ffloat(__l_hi, __l_lo) * 0.5f;
   if (__is_neg)
   {
     __result = -__result;

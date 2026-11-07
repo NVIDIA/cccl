@@ -884,6 +884,11 @@ public:
       ::cuda::__fpmp2_low_mul(
         __x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
     }
+    else if constexpr (_TypeAcc == fpmp2_accuracy::high)
+    {
+      ::cuda::__fpmp2_high_mul(
+        __x.__mp2_hi_, __x.__mp2_lo_, __y.__mp2_hi_, __y.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
+    }
     else
     {
       ::cuda::__fpmp2_mul(
@@ -914,51 +919,37 @@ public:
     return __res;
   }
 
-  /*
-  // Optimized compound assignment for single-component operands (accumulate)
-  // Uses specialized __fpmp2_acc functions which are more efficient than
-  // full mp2+mp2 addition (saves ~6 operations by avoiding low-part 2Sum).
-  */
-  // Constrained for the same reason as the single-component constructor: a bare _FpType
-  // parameter would win overload resolution against operator+=(const fpmp2&) for any
-  // narrowing arithmetic source, since a standard conversion beats a user-defined one, and
-  // would then accumulate a value that had already lost its low limb.
+  // Compound assignment with a scalar that one limb holds exactly. Constrained for the
+  // same reason as the single-component constructor: a bare _FpType parameter would win
+  // overload resolution against operator+=(const fpmp2&) for any narrowing arithmetic
+  // source, since a standard conversion beats a user-defined one, and would then
+  // accumulate a value that had already lost its low limb.
   _CCCL_TEMPLATE(typename _Tp)
-  _CCCL_REQUIRES(__fpmp2_is_lossless_fp_v<_Tp, _FpType>)
-  _CCCL_HOST_DEVICE_API fpmp2& operator+=(const _Tp __c_in) noexcept
+  _CCCL_REQUIRES(__fpmp2_is_limb_v<_Tp, _FpType>)
+  _CCCL_HOST_DEVICE_API fpmp2& operator+=(const _Tp __c) noexcept
   {
-    const _FpType __c = static_cast<_FpType>(__c_in);
-    if constexpr (_TypeAcc == fpmp2_accuracy::low)
-    {
-      ::cuda::__fpmp2_low_acc(__c, &__mp2_hi_, &__mp2_lo_);
-    }
-    else if constexpr (_TypeAcc == fpmp2_accuracy::high)
-    {
-      ::cuda::__fpmp2_high_acc(__c, &__mp2_hi_, &__mp2_lo_);
-    }
-    else
-    {
-      ::cuda::__fpmp2_acc(__c, &__mp2_hi_, &__mp2_lo_);
-    }
+    ::cuda::__fpmp2_add_limb<_TypeAcc>(__mp2_hi_, __mp2_lo_, static_cast<_FpType>(__c), &__mp2_hi_, &__mp2_lo_);
     return *this;
   }
   _CCCL_TEMPLATE(typename _Tp)
-  _CCCL_REQUIRES(__fpmp2_is_lossless_fp_v<_Tp, _FpType>)
-  _CCCL_HOST_DEVICE_API fpmp2& operator-=(const _Tp __c_in) noexcept
+  _CCCL_REQUIRES(__fpmp2_is_limb_v<_Tp, _FpType>)
+  _CCCL_HOST_DEVICE_API fpmp2& operator-=(const _Tp __c) noexcept
   {
-    const _FpType __c = static_cast<_FpType>(__c_in);
-    if constexpr (_TypeAcc == fpmp2_accuracy::low)
-    {
-      ::cuda::__fpmp2_low_acc(-__c, &__mp2_hi_, &__mp2_lo_);
-    }
-    else if constexpr (_TypeAcc == fpmp2_accuracy::high)
-    {
-      ::cuda::__fpmp2_high_acc(-__c, &__mp2_hi_, &__mp2_lo_);
-    }
-    else
-    {
-      ::cuda::__fpmp2_acc(-__c, &__mp2_hi_, &__mp2_lo_);
-    }
+    ::cuda::__fpmp2_add_limb<_TypeAcc>(__mp2_hi_, __mp2_lo_, -static_cast<_FpType>(__c), &__mp2_hi_, &__mp2_lo_);
+    return *this;
+  }
+  _CCCL_TEMPLATE(typename _Tp)
+  _CCCL_REQUIRES(__fpmp2_is_limb_v<_Tp, _FpType>)
+  _CCCL_HOST_DEVICE_API fpmp2& operator*=(const _Tp __c) noexcept
+  {
+    ::cuda::__fpmp2_mul_limb<_TypeAcc>(__mp2_hi_, __mp2_lo_, static_cast<_FpType>(__c), &__mp2_hi_, &__mp2_lo_);
+    return *this;
+  }
+  _CCCL_TEMPLATE(typename _Tp)
+  _CCCL_REQUIRES(__fpmp2_is_limb_v<_Tp, _FpType>)
+  _CCCL_HOST_DEVICE_API fpmp2& operator/=(const _Tp __c) noexcept
+  {
+    ::cuda::__fpmp2_div_limb<_TypeAcc>(__mp2_hi_, __mp2_lo_, static_cast<_FpType>(__c), &__mp2_hi_, &__mp2_lo_);
     return *this;
   }
 
@@ -1007,25 +998,25 @@ public:
   // Prefix increment/decrement
   _CCCL_HOST_DEVICE_API fpmp2& operator++() noexcept
   {
-    *this = *this + fpmp2(1.0f);
+    *this += _FpType{1};
     return *this;
   }
   _CCCL_HOST_DEVICE_API fpmp2& operator--() noexcept
   {
-    *this = *this - fpmp2(1.0f);
+    *this -= _FpType{1};
     return *this;
   }
   // Postfix increment/decrement
   _CCCL_HOST_DEVICE_API fpmp2 operator++(int) noexcept
   {
     fpmp2 __temp(*this);
-    *this = *this + fpmp2(1.0f);
+    *this += _FpType{1};
     return __temp;
   }
   _CCCL_HOST_DEVICE_API fpmp2 operator--(int) noexcept
   {
     fpmp2 __temp(*this);
-    *this = *this - fpmp2(1.0f);
+    *this -= _FpType{1};
     return __temp;
   }
   // Compound assignment operators (multi-precision operand)
@@ -1050,17 +1041,29 @@ public:
     return *this;
   }
 
-  /*
-  // Mixed types arithmetic operations
-  // Support for mixed arithmetic and emulation types
-  */
+  // Mixed arithmetic: a scalar that one limb holds exactly (__fpmp2_is_limb_v) takes the
+  // single-limb kernels; a scalar dividend or any other scalar is converted to the pair.
   // === mul ===
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpmp2> || ::cuda::std::is_same_v<_T2, fpmp2>)
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend fpmp2 operator*(const _T1& __x, const _T2& __y) noexcept
   {
-    return fpmp2(__x) * fpmp2(__y);
+    if constexpr (__fpmp2_is_limb_v<_T2, _FpType>)
+    {
+      fpmp2 __res;
+      ::cuda::__fpmp2_mul_limb<_TypeAcc>(
+        __x.__mp2_hi_, __x.__mp2_lo_, static_cast<_FpType>(__y), &__res.__mp2_hi_, &__res.__mp2_lo_);
+      return __res;
+    }
+    else if constexpr (__fpmp2_is_limb_v<_T1, _FpType>)
+    {
+      return __y * __x;
+    }
+    else
+    {
+      return fpmp2(__x) * fpmp2(__y);
+    }
   }
   // === div ===
   _CCCL_TEMPLATE(typename _T1, typename _T2)
@@ -1068,7 +1071,17 @@ public:
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend fpmp2 operator/(const _T1& __x, const _T2& __y) noexcept
   {
-    return fpmp2(__x) / fpmp2(__y);
+    if constexpr (__fpmp2_is_limb_v<_T2, _FpType>)
+    {
+      fpmp2 __res;
+      ::cuda::__fpmp2_div_limb<_TypeAcc>(
+        __x.__mp2_hi_, __x.__mp2_lo_, static_cast<_FpType>(__y), &__res.__mp2_hi_, &__res.__mp2_lo_);
+      return __res;
+    }
+    else
+    {
+      return fpmp2(__x) / fpmp2(__y);
+    }
   }
   // === add ===
   _CCCL_TEMPLATE(typename _T1, typename _T2)
@@ -1076,7 +1089,21 @@ public:
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend fpmp2 operator+(const _T1& __x, const _T2& __y) noexcept
   {
-    return fpmp2(__x) + fpmp2(__y);
+    if constexpr (__fpmp2_is_limb_v<_T2, _FpType>)
+    {
+      fpmp2 __res;
+      ::cuda::__fpmp2_add_limb<_TypeAcc>(
+        __x.__mp2_hi_, __x.__mp2_lo_, static_cast<_FpType>(__y), &__res.__mp2_hi_, &__res.__mp2_lo_);
+      return __res;
+    }
+    else if constexpr (__fpmp2_is_limb_v<_T1, _FpType>)
+    {
+      return __y + __x;
+    }
+    else
+    {
+      return fpmp2(__x) + fpmp2(__y);
+    }
   }
   // === sub ===
   _CCCL_TEMPLATE(typename _T1, typename _T2)
@@ -1084,7 +1111,24 @@ public:
                   && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend fpmp2 operator-(const _T1& __x, const _T2& __y) noexcept
   {
-    return fpmp2(__x) - fpmp2(__y);
+    if constexpr (__fpmp2_is_limb_v<_T2, _FpType>)
+    {
+      fpmp2 __res;
+      ::cuda::__fpmp2_add_limb<_TypeAcc>(
+        __x.__mp2_hi_, __x.__mp2_lo_, -static_cast<_FpType>(__y), &__res.__mp2_hi_, &__res.__mp2_lo_);
+      return __res;
+    }
+    else if constexpr (__fpmp2_is_limb_v<_T1, _FpType>)
+    {
+      fpmp2 __res;
+      ::cuda::__fpmp2_add_limb<_TypeAcc>(
+        -__y.__mp2_hi_, -__y.__mp2_lo_, static_cast<_FpType>(__x), &__res.__mp2_hi_, &__res.__mp2_lo_);
+      return __res;
+    }
+    else
+    {
+      return fpmp2(__x) - fpmp2(__y);
+    }
   }
   // equality (==)
   _CCCL_TEMPLATE(typename _T1, typename _T2)
@@ -1271,9 +1315,10 @@ private:
  *     when types are already matched.
  *   - Mixed form (one template, symmetric): accepts any combination where
  *     at least one operand is fpmp2 and at least one is a built-in
- *     arithmetic type. The arithmetic side is converted to the fpmp2 side
- *     via its (implicit/explicit) constructor, then dispatched to the
- *     strict form. Examples:
+ *     arithmetic type. A scalar that one limb holds exactly, other than a
+ *     dividend, takes the single-limb kernels; any other arithmetic side is
+ *     converted to the fpmp2 side via its (implicit/explicit) constructor,
+ *     then dispatched to the strict form. Examples:
  *       ffloat x = sub<fpmp2_accuracy::high>(a, 1.0f);  // ffloat - float
  *       ffloat y = sub<fpmp2_accuracy::high>(1.0f, a);  // float  - ffloat
  *
@@ -1290,6 +1335,41 @@ template <typename _Tp>
 inline constexpr bool __fpmp_is_fpmp2_v = false;
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 inline constexpr bool __fpmp_is_fpmp2_v<fpmp2<_FpType, _TypeAcc>> = true;
+
+template <typename _Tp>
+struct __fpmp2_element
+{};
+template <typename _FpType, fpmp2_accuracy _TypeAcc>
+struct __fpmp2_element<fpmp2<_FpType, _TypeAcc>>
+{
+  using type = _FpType;
+};
+
+// The accuracy-selecting functions below with a scalar that one limb holds exactly.
+template <fpmp2_accuracy _Acc, typename _FpType, fpmp2_accuracy _TypeAcc>
+[[nodiscard]] _CCCL_HOST_DEVICE_API fpmp2<_FpType, _TypeAcc>
+__fpmp2_add_scalar(const fpmp2<_FpType, _TypeAcc>& __x, const _FpType __c) noexcept
+{
+  _FpType __rhi, __rlo;
+  ::cuda::__fpmp2_add_limb<_Acc>(__x.hi(), __x.lo(), __c, &__rhi, &__rlo);
+  return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
+}
+template <fpmp2_accuracy _Acc, typename _FpType, fpmp2_accuracy _TypeAcc>
+[[nodiscard]] _CCCL_HOST_DEVICE_API fpmp2<_FpType, _TypeAcc>
+__fpmp2_mul_scalar(const fpmp2<_FpType, _TypeAcc>& __x, const _FpType __c) noexcept
+{
+  _FpType __rhi, __rlo;
+  ::cuda::__fpmp2_mul_limb<_Acc>(__x.hi(), __x.lo(), __c, &__rhi, &__rlo);
+  return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
+}
+template <fpmp2_accuracy _Acc, typename _FpType, fpmp2_accuracy _TypeAcc>
+[[nodiscard]] _CCCL_HOST_DEVICE_API fpmp2<_FpType, _TypeAcc>
+__fpmp2_div_scalar(const fpmp2<_FpType, _TypeAcc>& __x, const _FpType __c) noexcept
+{
+  _FpType __rhi, __rlo;
+  ::cuda::__fpmp2_div_limb<_Acc>(__x.hi(), __x.lo(), __c, &__rhi, &__rlo);
+  return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
+}
 
 /*********************************************************************
  * Standard-named free functions (renormalize / sqrt / rsqrt / fma /
@@ -1432,8 +1512,20 @@ _CCCL_REQUIRES(((__fpmp_is_fpmp2_v<_T1> || __fpmp_is_fpmp2_v<_T2>)
                 && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline auto add(const _T1& __x, const _T2& __y) noexcept
 {
-  using mp2 = ::cuda::std::conditional_t<__fpmp_is_fpmp2_v<_T1>, _T1, _T2>;
-  return add<_Acc>(mp2(__x), mp2(__y));
+  using mp2               = ::cuda::std::conditional_t<__fpmp_is_fpmp2_v<_T1>, _T1, _T2>;
+  using _Fp _CCCL_NODEBUG = typename __fpmp2_element<mp2>::type;
+  if constexpr (__fpmp2_is_limb_v<_T2, _Fp>)
+  {
+    return ::cuda::__fpmp2_add_scalar<_Acc>(__x, static_cast<_Fp>(__y));
+  }
+  else if constexpr (__fpmp2_is_limb_v<_T1, _Fp>)
+  {
+    return ::cuda::__fpmp2_add_scalar<_Acc>(__y, static_cast<_Fp>(__x));
+  }
+  else
+  {
+    return add<_Acc>(mp2(__x), mp2(__y));
+  }
 }
 
 template <fpmp2_accuracy _Acc, typename _FpType, fpmp2_accuracy _TypeAcc>
@@ -1461,8 +1553,20 @@ _CCCL_REQUIRES(((__fpmp_is_fpmp2_v<_T1> || __fpmp_is_fpmp2_v<_T2>)
                 && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline auto sub(const _T1& __x, const _T2& __y) noexcept
 {
-  using mp2 = ::cuda::std::conditional_t<__fpmp_is_fpmp2_v<_T1>, _T1, _T2>;
-  return sub<_Acc>(mp2(__x), mp2(__y));
+  using mp2               = ::cuda::std::conditional_t<__fpmp_is_fpmp2_v<_T1>, _T1, _T2>;
+  using _Fp _CCCL_NODEBUG = typename __fpmp2_element<mp2>::type;
+  if constexpr (__fpmp2_is_limb_v<_T2, _Fp>)
+  {
+    return ::cuda::__fpmp2_add_scalar<_Acc>(__x, -static_cast<_Fp>(__y));
+  }
+  else if constexpr (__fpmp2_is_limb_v<_T1, _Fp>)
+  {
+    return ::cuda::__fpmp2_add_scalar<_Acc>(-__y, static_cast<_Fp>(__x));
+  }
+  else
+  {
+    return sub<_Acc>(mp2(__x), mp2(__y));
+  }
 }
 
 template <fpmp2_accuracy _Acc, typename _FpType, fpmp2_accuracy _TypeAcc>
@@ -1473,6 +1577,10 @@ mul(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc>& __y) no
   if constexpr (_Acc == fpmp2_accuracy::low)
   {
     ::cuda::__fpmp2_low_mul(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
+  }
+  else if constexpr (_Acc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_mul(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__rhi, &__rlo);
   }
   else
   {
@@ -1486,8 +1594,20 @@ _CCCL_REQUIRES(((__fpmp_is_fpmp2_v<_T1> || __fpmp_is_fpmp2_v<_T2>)
                 && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline auto mul(const _T1& __x, const _T2& __y) noexcept
 {
-  using mp2 = ::cuda::std::conditional_t<__fpmp_is_fpmp2_v<_T1>, _T1, _T2>;
-  return mul<_Acc>(mp2(__x), mp2(__y));
+  using mp2               = ::cuda::std::conditional_t<__fpmp_is_fpmp2_v<_T1>, _T1, _T2>;
+  using _Fp _CCCL_NODEBUG = typename __fpmp2_element<mp2>::type;
+  if constexpr (__fpmp2_is_limb_v<_T2, _Fp>)
+  {
+    return ::cuda::__fpmp2_mul_scalar<_Acc>(__x, static_cast<_Fp>(__y));
+  }
+  else if constexpr (__fpmp2_is_limb_v<_T1, _Fp>)
+  {
+    return ::cuda::__fpmp2_mul_scalar<_Acc>(__y, static_cast<_Fp>(__x));
+  }
+  else
+  {
+    return mul<_Acc>(mp2(__x), mp2(__y));
+  }
 }
 
 template <fpmp2_accuracy _Acc, typename _FpType, fpmp2_accuracy _TypeAcc>
@@ -1515,8 +1635,16 @@ _CCCL_REQUIRES(((__fpmp_is_fpmp2_v<_T1> || __fpmp_is_fpmp2_v<_T2>)
                 && (::cuda::std::is_arithmetic_v<_T1> || ::cuda::std::is_arithmetic_v<_T2>) ))
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline auto div(const _T1& __x, const _T2& __y) noexcept
 {
-  using mp2 = ::cuda::std::conditional_t<__fpmp_is_fpmp2_v<_T1>, _T1, _T2>;
-  return div<_Acc>(mp2(__x), mp2(__y));
+  using mp2               = ::cuda::std::conditional_t<__fpmp_is_fpmp2_v<_T1>, _T1, _T2>;
+  using _Fp _CCCL_NODEBUG = typename __fpmp2_element<mp2>::type;
+  if constexpr (__fpmp2_is_limb_v<_T2, _Fp>)
+  {
+    return ::cuda::__fpmp2_div_scalar<_Acc>(__x, static_cast<_Fp>(__y));
+  }
+  else
+  {
+    return div<_Acc>(mp2(__x), mp2(__y));
+  }
 }
 
 template <fpmp2_accuracy _Acc, typename _FpType, fpmp2_accuracy _TypeAcc>
