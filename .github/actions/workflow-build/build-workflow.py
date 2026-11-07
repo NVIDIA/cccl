@@ -601,15 +601,12 @@ def generate_dispatch_job_environment(matrix_job, job_type):
 
 
 def generate_dispatch_job_command(matrix_job, job_type):
-    script_path = "./ci/windows" if is_windows(matrix_job) else "./ci"
-    script_ext = ".ps1" if is_windows(matrix_job) else ".sh"
-
     job_info = get_job_type_info(job_type)
     job_prefix = job_info["invoke"]["prefix"]
     job_args = job_info["invoke"]["args"]
 
     project = get_project(matrix_job["project"])
-    script_name = f"{script_path}/{job_prefix}_{project['id']}{script_ext}"
+    script_name = f"./ci/{job_prefix}_{project['id']}.sh"
 
     std_str = str(matrix_job["std"]) if "std" in matrix_job else ""
 
@@ -622,7 +619,7 @@ def generate_dispatch_job_command(matrix_job, job_type):
     py_ctk_mode = matrix_job["py_ctk_mode"] if "py_ctk_mode" in matrix_job else ""
     extra_args = matrix_job["args"] if "args" in matrix_job else ""
 
-    command = f'"{script_name}"'
+    command = f'bash --noprofile --norc "{script_name}"'
     if job_args:
         command += f" {job_args}"
     if std_str:

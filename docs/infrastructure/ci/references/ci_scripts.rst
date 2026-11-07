@@ -10,7 +10,11 @@ exact script and arguments it ran. Scripts are organized by role:
 - ``ci/`` root — per-project build and test entry points.
 - ``ci/util/`` — shared utilities, plus the artifact and workflow plumbing jobs use to pass data.
 - ``ci/bench/`` — benchmark drivers.
-- ``ci/windows/`` — PowerShell equivalents of the per-project scripts for Windows runners.
+
+Linux and Windows jobs invoke the same Bash entry points. Windows uses Git Bash with
+native MSVC, CUDA, CMake, and Ninja; the Windows devcontainer initializes the compiler
+environment before launching the script. Platform-specific setup belongs in shared
+helpers rather than a second set of project build and test scripts.
 
 Per-project build and test scripts
 ----------------------------------
@@ -37,6 +41,17 @@ available. In CI, they may download GHA artifacts instead.
 
     ./ci/test_cub.sh  -cxx g++ -std 17 -arch "70;80;90"
 
+For example, in a Windows devcontainer's Git Bash session:
+
+::
+
+    bash ./ci/test_thrust.sh -cpu-only -std 20 -arch "89"
+
+The default host compiler is ``cl`` on Windows and ``g++`` on Linux. Windows uses
+``NUMBER_OF_PROCESSORS`` for default build parallelism and omits the Linux memory
+monitor, convenience symlinks, and GNU per-command timeout. Workflow timeouts still
+apply.
+
 For fast local iteration on a single target rather than a whole project, see
 :doc:`/cccl/development/build_and_bisect_tools`.
 
@@ -48,8 +63,8 @@ dependencies.
 
 The Python test lanes therefore fetch the wheel in the devcontainer (which needs ``gh``)
 and then run the test payload in a sibling container holding nothing but Python, launched
-through the host's docker daemon -- by ci/util/python/run_in_minimal_container.sh on
-Linux and ci/windows/run_in_minimal_container.ps1 on Windows. This is the same
+through the host's docker daemon via ``ci/util/python/run_in_minimal_container.sh``
+on both platforms. This is the same
 docker-outside-of-docker arrangement the wheel builds already use. An undeclared
 dependency fails there instead of passing silently. The same applies to both the v1
 (NVRTC) and v2 (HostJIT) backends.
@@ -59,6 +74,9 @@ the driver reports, since ``--gpus all`` would reach GPUs belonging to other job
 shared runner. Windows exposes GPUs as a whole device class and only under process
 isolation, and its image must match the host kernel -- the devcontainer images are
 LTSC 2022, so the sibling defaults to ``mcr.microsoft.com/windows/servercore:ltsc2022``.
+The Windows launcher stages Git Bash's runtime in the shared workspace for that
+container. It does not bring along MSVC or CUDA, and rejects a staged MSVC
+redistributable so it cannot hide missing wheel dependencies.
 
 Windows needs one more thing. ``python:3.14-slim`` still ships glibc and libstdc++,
 because every C/C++ Python extension links against them; Server Core ships neither of
@@ -78,9 +96,9 @@ shipped in the wheel are on disk and never launches a kernel -- so its entry poi
 devices.
 
 Each lane is therefore two scripts: an entry point that provisions the wheel and
-dispatches (``ci/test_<lane>.sh``, or ``ci/windows/test_<lane>.ps1``), and a payload that
-must survive in the minimal image (``ci/util/python/run_<lane>_tests.sh``, or
-``ci/windows/run_<lane>.ps1``). Set ``CCCL_MINIMAL_CONTAINER=0`` to run the payload in the
+dispatches (``ci/test_<lane>.sh``), and a payload that
+must survive in the minimal image (``ci/util/python/run_<lane>_tests.sh``).
+Set ``CCCL_MINIMAL_CONTAINER=0`` to run the payload in the
 devcontainer instead, which is useful locally and for comparing the two environments.
 
 These lanes deliberately stay in the devcontainer, because they need what it provides:

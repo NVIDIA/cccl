@@ -41,13 +41,14 @@ producers=$(jq --arg job_id "$job_id" '
   | .producers
 ' "$WORKFLOW_DIR/workflow.json")
 
-producer_count=$(echo "$producers" | jq 'length')
+# Suppress jq's newline so native Windows jq cannot append a carriage return.
+producer_count=$(echo "$producers" | jq -j 'length')
 if [[ "$producer_count" -ne 1 ]]; then
   echo "Error: Expected exactly one producer for job ID '$job_id', but found ${producer_count:-0}." >&2
   exit 1
 fi
 
-producer_id=$(echo "$producers" | jq -r '.[0].id')
+producer_id=$(echo "$producers" | jq -rj '.[0].id')
 if [[ -z "$producer_id" ]]; then
   echo "Error: No producer ID found for job ID '$job_id'." >&2
   exit 1

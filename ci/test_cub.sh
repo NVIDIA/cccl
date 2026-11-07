@@ -9,8 +9,10 @@ LID2=false
 LIMITED=false
 COMPUTE_SANITIZER=false
 ARTIFACT_TAGS=()
+BUILD_VARIANT_ARGS=()
 
 ci_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+repo_dir=$(cd "${ci_dir}/.." && pwd)
 
 new_args="$("${ci_dir}/util/extract_switches.sh" \
   -no-lid \
@@ -30,21 +32,25 @@ while true; do
   case "$1" in
   -no-lid)
     ARTIFACT_TAGS+=("no_lid")
+    BUILD_VARIANT_ARGS+=("-no-lid")
     NO_LID=true
     shift
     ;;
   -lid0)
     ARTIFACT_TAGS+=("lid_0")
+    BUILD_VARIANT_ARGS+=("-lid0")
     LID0=true
     shift
     ;;
   -lid1)
     ARTIFACT_TAGS+=("lid_1")
+    BUILD_VARIANT_ARGS+=("-lid1")
     LID1=true
     shift
     ;;
   -lid2)
     ARTIFACT_TAGS+=("lid_2")
+    BUILD_VARIANT_ARGS+=("-lid2")
     LID2=true
     shift
     ;;
@@ -105,14 +111,14 @@ source "${ci_dir}/build_common.sh"
 print_environment_details
 
 
-if [[ -z "${GITHUB_ACTIONS:-}" ]]; then
-  ./build_cub.sh "$@"
+if [[ -z "${GITHUB_ACTIONS:-}" || ${#ARTIFACT_TAGS[@]} -eq 0 ]]; then
+  "${ci_dir}/build_cub.sh" "${BUILD_VARIANT_ARGS[@]}" "$@"
 else
   producer_id=$(util/workflow/get_producer_id.sh)
   for tag in "${ARTIFACT_TAGS[@]}"; do
     artifact="z_cub-test-artifacts-${DEVCONTAINER_NAME:?}-$producer_id-$tag"
     run_command "📦  Unpacking artifact '$artifact'" \
-      "${ci_dir}/util/artifacts/download_packed.sh" "$artifact" /home/coder/cccl
+      "${ci_dir}/util/artifacts/download_packed.sh" "$artifact" "${repo_dir}"
   done
 fi
 

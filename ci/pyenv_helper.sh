@@ -1,3 +1,7 @@
+cccl_python_is_windows() {
+    [[ "${OSTYPE}" == msys* || "${OSTYPE}" == mingw* ]]
+}
+
 setup_python_env() {
     local py_version=$1
     # Optional venv directory name (under $HOME). Callers whose job runs
@@ -17,7 +21,13 @@ setup_python_env() {
 
     # The minimal Python containers ship pip but no curl.
     if ! command -v uv &> /dev/null; then
-        if command -v curl &> /dev/null; then
+        if cccl_python_is_windows; then
+            # Server Core has no Python. Use uv's native Windows installer to
+            # bootstrap the same environment manager used by the Linux jobs.
+            # shellcheck disable=SC2016
+            powershell.exe -NoProfile -Command \
+                '$ErrorActionPreference = "Stop"; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-RestMethod https://astral.sh/uv/install.ps1 | Invoke-Expression'
+        elif command -v curl &> /dev/null; then
             curl -LsSf https://astral.sh/uv/install.sh | sh
         else
             python3 -m pip install --quiet --root-user-action=ignore uv
@@ -30,9 +40,12 @@ setup_python_env() {
     uv venv --seed --python "${py_version}" "${venv_path}"
 
     # Windows venvs use Scripts/, Linux/macOS use bin/
-    if [[ -f "${venv_path}/Scripts/activate" ]]; then
-        #shellcheck disable=SC1091
-        source "${venv_path}/Scripts/activate"
+    if cccl_python_is_windows; then
+        # Native Python consumes environment paths without MSYS argv conversion.
+        export VIRTUAL_ENV
+        VIRTUAL_ENV=$(cygpath -am "${venv_path}")
+        export PATH="${venv_path}/Scripts:$PATH"
+        hash -r
     else
         #shellcheck disable=SC1091
         source "${venv_path}/bin/activate"
@@ -59,6 +72,7 @@ setup_python_env() {
 is_free_threaded_python() {
     local probe
     probe="$(python -c 'import sysconfig; print("FT=%d" % (sysconfig.get_config_var("Py_GIL_DISABLED") in (1, "1")))')" || probe="<probe exited ${?}>"
+    probe=${probe%$'\r'}
     case "${probe}" in
         FT=1) return 0 ;;
         FT=0) return 1 ;;
@@ -111,6 +125,9 @@ pin_cuda_toolkit() {
         pinned)
             export PIP_CONSTRAINT="${TMPDIR:-/tmp}/ctk-constraint.txt"
             echo "cuda-toolkit==${cuda_version}.*" > "${PIP_CONSTRAINT}"
+            if cccl_python_is_windows; then
+                PIP_CONSTRAINT=$(cygpath -am "${PIP_CONSTRAINT}")
+            fi
             ;;
         latest | sysctk)
             # No pin. Clear any inherited constraint so it cannot affect the
@@ -154,7 +171,11 @@ cuda_cccl_wheel_path() {
         echo "ERROR: expected exactly one cuda_cccl wheel in ${repo_root}/wheelhouse, found ${#matches[@]}" >&2
         return 1
     fi
-    echo "${matches[0]}"
+    if cccl_python_is_windows; then
+        cygpath -am "${matches[0]}"
+    else
+        echo "${matches[0]}"
+    fi
 }
 
 # Brings up what every test payload needs: the lane's arguments, the cuda-toolkit
@@ -170,7 +191,7 @@ assert_minimal_environment() {
 
     local found=()
     local tool
-    for tool in gcc g++ cc c++ clang clang++ nvcc; do
+    for tool in gcc g++ cc c++ clang clang++ clang-cl cl nvcc; do
         if command -v "${tool}" &> /dev/null; then
             found+=("${tool} ($(command -v "${tool}"))")
         fi
@@ -178,6 +199,20 @@ assert_minimal_environment() {
     [[ -e /usr/local/cuda ]] && found+=("/usr/local/cuda")
     [[ -n "${CUDA_HOME:-}" ]] && found+=("CUDA_HOME=${CUDA_HOME}")
     [[ -n "${CUDA_PATH:-}" ]] && found+=("CUDA_PATH=${CUDA_PATH}")
+    if cccl_python_is_windows; then
+        local toolkit_dir
+        toolkit_dir=$(cygpath -u "${ProgramFiles:-C:/Program Files}/NVIDIA GPU Computing Toolkit/CUDA")
+        [[ -d "${toolkit_dir}" ]] && found+=("${toolkit_dir}")
+        if command -v link.exe &> /dev/null; then
+            # Git Bash carries GNU link.exe, which creates hard links rather
+            # than linking native binaries. Reject an MSVC linker on PATH.
+            local linker_version
+            linker_version=$(link.exe --version 2>&1) || linker_version=""
+            if [[ "$linker_version" != *"GNU coreutils"* ]]; then
+                found+=("link.exe ($(command -v link.exe))")
+            fi
+        fi
+    fi
 
     if [[ "${#found[@]}" -ne 0 ]]; then
         echo "ERROR: this is supposed to be a minimal environment, but it provides:" >&2

@@ -3,6 +3,7 @@
 set -euo pipefail
 
 ci_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+repo_dir=$(cd "${ci_dir}/.." && pwd)
 
 # shellcheck source=ci/build_common.sh
 source "${ci_dir}/build_common.sh"
@@ -16,7 +17,7 @@ if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
   producer_id="$(util/workflow/get_producer_id.sh)"
   artifact="z_libcudacxx-test-artifacts-${DEVCONTAINER_NAME:?}-$producer_id"
   run_command "📦  Unpacking artifact '$artifact'" \
-    "${ci_dir}/util/artifacts/download_packed.sh" "$artifact" /home/coder/cccl/
+    "${ci_dir}/util/artifacts/download_packed.sh" "$artifact" "${repo_dir}"
 else
   "${ci_dir}/build_libcudacxx.sh" "$@"
   configure_preset libcudacxx "$PRESET" "${CMAKE_OPTIONS[@]}"

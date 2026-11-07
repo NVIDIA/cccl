@@ -31,15 +31,17 @@ fi
 
 job_def=$("${ci_dir}/util/workflow/get_job_def.sh" "$job_id")
 
-py_version=$(echo "$job_def" | jq -r '.origin.matrix_job.py_version')
-host=$(echo "$job_def" | jq -r '.origin.matrix_job.cxx_family')
+# Native Windows jq writes CRLF with -r. These fields are shell values, so
+# suppress its newline instead of retaining a carriage return in artifact names.
+py_version=$(echo "$job_def" | jq -rj '.origin.matrix_job.py_version')
+host=$(echo "$job_def" | jq -rj '.origin.matrix_job.cxx_family')
 if [[ "$host" == "MSVC" ]]; then
   os="windows"
 else
   os="linux"
 fi
-arch=$(echo "$job_def" | jq -r '.origin.matrix_job.cpu')
-project=$(echo "$job_def" | jq -r '.origin.matrix_job.project')
+arch=$(echo "$job_def" | jq -rj '.origin.matrix_job.cpu')
+project=$(echo "$job_def" | jq -rj '.origin.matrix_job.project')
 
 for tag in "$py_version" "$os" "$arch"; do
   if [[ -z "$tag" ]]; then

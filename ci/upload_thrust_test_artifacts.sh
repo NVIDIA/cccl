@@ -71,7 +71,7 @@ if [[ " ${preset_variants[*]} " == *" test_gpu "* ]]; then
   # The CUDA runtime smoke binary is invoked explicitly from build_common.sh
   ci/util/artifacts/stage.sh \
       "$artifact_prefix-test_gpu" \
-      "$build_dir_regex/bin/cccl\.test\.cuda_runtime_smoke$" > /dev/null
+      "$build_dir_regex/bin/cccl\.test\.cuda_runtime_smoke\(\.exe\)?$" > /dev/null
 
   # Windows builds generate binaries for the header tests, remove these:
   ci/util/artifacts/unstage.sh  \
