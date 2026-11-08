@@ -412,3 +412,47 @@ def test_scope_between_blocks_is_ordered_inside_task_is_not():
 
     assert run(False) == pytest.approx(expected, rel=1e-5)
     assert run(True) != pytest.approx(expected, rel=1e-5)
+
+
+def test_scope_allocations_belong_to_the_level():
+    """Warp arrays created inside a nested scope are served by the level's STF
+    allocator (no allocation node in the child graph); one dropped after the
+    scope exits must not raise; results survive the replays."""
+    from cuda.bindings import runtime as rt
+
+    n = 1 << 12
+    ctx = stf.stackable_context()
+    t = token(ctx)
+    keep = []
+    with scope(ctx, launchable=True) as g:
+        with warp_task(ctx, t.rw()):
+            pass
+        with scope(ctx, writes=(t,)):
+            with warp_native(ctx):
+                tmp = wp.zeros(
+                    n, dtype=float
+                )  # per-step temporary: dropped inside the scope
+                wp.launch(scale, dim=n, inputs=[2.0, tmp])
+                keep.append(wp.full(n, 1.0, dtype=float))  # outlives the scope
+                wp.launch(scale, dim=n, inputs=[2.0, keep[0]])
+                del tmp
+        # no MemAlloc node anywhere
+        h = int(g.graph)
+        nodes = rt.cudaGraphGetNodes(h, rt.cudaGraphGetNodes(h, 0)[-1])[1]
+        for x in nodes:
+            tt = rt.cudaGraphNodeGetType(x)[1]
+            assert tt != rt.cudaGraphNodeType.cudaGraphNodeTypeMemAlloc
+            if tt == rt.cudaGraphNodeType.cudaGraphNodeTypeGraph:
+                c = rt.cudaGraphChildGraphNodeGetGraph(x)[1]
+                for y in rt.cudaGraphGetNodes(c, rt.cudaGraphGetNodes(c, 0)[-1])[1]:
+                    assert (
+                        rt.cudaGraphNodeGetType(y)[1]
+                        != rt.cudaGraphNodeType.cudaGraphNodeTypeMemAlloc
+                    )
+        for _ in range(3):
+            g.launch()
+        wp.synchronize()
+        assert keep[0].numpy()[0] == 2.0  # the fill is part of the recorded graph: every replay resets then scales
+    keep.clear()  # Warp frees after the scope: ignored by the adapter
+    ctx.finalize()
+    release_graph_handles()

@@ -288,24 +288,28 @@ class _ScopeAllocator:
     its support stream, outside the capture, so no allocation node enters the
     graph, and the level owns the memory (released at pop, handed to the
     parent until the parent's graph has launched). Nothing is hoisted or
-    retained by hand. With a binding that lacks ``allocate`` the fallback is an
-    eager ``cudaMalloc`` retained until :func:`release_graph_handles`."""
+    retained by hand.
 
-    _ctxs = []  # contexts of the open scopes, innermost last
-    _owner = {}  # ptr -> ctx that allocated it (STF path)
+    Lifetime rule: memory allocated inside a scope belongs to that scope's
+    level. When the scope exits, every allocation of the scope that Warp has
+    not freed yet is returned to the level (the release is deferred to the
+    pop, after the graph has launched); a later free from Warp, e.g. a
+    temporary dropped after the scope or at graph destruction, is ignored.
+    With a binding that lacks ``allocate`` the fallback is an eager
+    ``cudaMalloc`` retained until :func:`release_graph_handles`."""
+
+    _ctxs = []  # (ctx, scope id) of the open scopes, innermost last
+    _owner = {}  # ptr -> (ctx, scope id, size) for live STF allocations
     _live = []  # fallback path: retained pointers
     _installed = 0
-
-    @classmethod
-    def _ctx(cls):
-        return cls._ctxs[-1] if cls._ctxs else None
+    _next_id = 0
 
     @classmethod
     def allocate(cls, size_in_bytes):
         from cuda.bindings import runtime as rt
 
         size_in_bytes = int(size_in_bytes)
-        ctx = cls._ctx()
+        ctx, sid = cls._ctxs[-1] if cls._ctxs else (None, None)
         # Warp's conditional captures resume the task stream's capture in Warp's own mode,
         # not STF's relaxed one; an allocation is an "unsafe" API there: relax around it
         _, mode = rt.cudaThreadExchangeStreamCaptureMode(
@@ -314,7 +318,7 @@ class _ScopeAllocator:
         try:
             if ctx is not None and hasattr(ctx, "allocate"):
                 ptr = int(ctx.allocate(size_in_bytes))
-                cls._owner[ptr] = ctx
+                cls._owner[ptr] = (ctx, sid, size_in_bytes)
                 return ptr
             err, ptr = rt.cudaMalloc(size_in_bytes)
         finally:
@@ -328,16 +332,18 @@ class _ScopeAllocator:
 
     @classmethod
     def deallocate(cls, ptr, size_in_bytes):
-        ctx = cls._owner.pop(int(ptr), None)
-        if ctx is not None:
-            # the level defers the release to its pop: safe while the graph is recorded or replayed
-            ctx.deallocate(int(ptr), int(size_in_bytes))
-        # fallback pointers stay retained until release_graph_handles()
+        rec = cls._owner.pop(int(ptr), None)
+        if rec is not None and any(sid == rec[1] for _, sid in cls._ctxs):
+            rec[0].deallocate(
+                int(ptr), rec[2]
+            )  # the level defers the release to its pop
+        # otherwise: already returned at scope exit, or a fallback pointer retained until release
 
     @classmethod
     def install(cls, ctx):
         wp = _import_warp()
-        cls._ctxs.append(ctx)
+        cls._next_id += 1
+        cls._ctxs.append((ctx, cls._next_id))
         if cls._installed == 0:
             wp.set_device_allocator(wp.get_device(), cls)
         cls._installed += 1
@@ -345,7 +351,14 @@ class _ScopeAllocator:
     @classmethod
     def uninstall(cls):
         wp = _import_warp()
-        cls._ctxs.pop()
+        ctx, sid = cls._ctxs.pop()
+        # return the scope's remaining allocations to its level before the pop
+        for ptr, (octx, osid, size) in [
+            (p, r) for p, r in cls._owner.items() if r[1] == sid
+        ]:
+            del cls._owner[ptr]
+            if octx is not None:
+                octx.deallocate(int(ptr), size)
         cls._installed -= 1
         if cls._installed == 0:
             wp.set_device_allocator(wp.get_device(), None)
