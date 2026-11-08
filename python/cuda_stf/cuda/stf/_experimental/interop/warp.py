@@ -4,34 +4,39 @@
 
 """Warp interop helpers for ``cuda.stf._experimental``.
 
-This module provides:
+Warp work enters a cuda.stf task graph through four names, three of which
+are plain cuda.stf API:
 
-* :func:`wrap_stream` -- one cached ``wp.Stream`` per raw ``cudaStream_t``
-  (registering the same raw stream twice corrupts Warp's stream bookkeeping).
-* :func:`array_arg` and :func:`warp_arguments` -- alias STF task arguments as
-  ``wp.array`` views (no copy) through their ``ptr``/``shape``/``dtype``.
-* :func:`warp_task` -- context manager that opens an STF task, makes the task
-  stream Warp's current stream (no enter/exit synchronisation) and, when that
-  stream is under capture, lets Warp adopt the capture
-  (``wp.capture_begin(external=True)``) so Warp's allocator, ``is_capturing``
-  checks and conditional captures (``capture_if`` / ``capture_while``) see it.
-  Yields ``(stream, arrays)``.
-* :func:`local_context` -- a stream-backend context bound to Warp's current
-  stream, for library code whose caller may already be capturing (e.g. inside
-  ``wp.ScopedCapture``): the library's tasks become parallel branches of the
-  caller's graph without changing the caller.
-* :class:`WarpTaskGraph` -- record a frame once into a stackable context and
-  replay it, with a catch-all "frame" task around the recorded body so Warp
-  work issued outside explicit tasks is captured too; library code adds its
-  own tasks at graph level with :meth:`WarpTaskGraph.suspend_frame` /
-  :meth:`WarpTaskGraph.resume_frame` (tasks are never nested) and finds the
-  recording graph through :func:`current`.
+* **scopes**: ``ctx.graph_scope()`` / ``ctx.launchable_graph_scope()``. A
+  library that wants width opens a scope at its entry; the frame owner opens
+  a launchable scope and replays it. A scope is a graph for its writer and one
+  node for its parent, so library boundaries and graph boundaries coincide.
+  :func:`scope` is the thin wrapper this module adds: the same two context
+  managers plus a *scope token* (see below).
+* :func:`warp_task` -- a leaf phase holding many launches: ``ctx.task(*deps)``
+  with Warp's current stream pointed at the task stream, yielding
+  ``(stream, arrays)`` where ``arrays`` are ``wp.array`` views of the task's
+  logical-data arguments. Tokens for coarse (per-entry) dependencies, logical
+  data for fine ones.
+* :func:`warp_native` -- plain Warp code inside a scope that is not a phase of
+  its own: ordered after every task before it and before every task after it
+  in that scope. It is a task holding the scope token read-write; tasks of the
+  scope read that token, so two tasks with no native block between them stay
+  siblings.
+* Plain Warp code inside a scope but outside both is a **record-time error**:
+  while a scope is open, Warp's current stream is a poison stream whose handle
+  raises on work submission. Without it the launch would run eagerly, outside
+  the graph, and silently race.
 
-Two facts drive the design. Warp's ``capture_if`` / ``capture_while`` pause
-the capture with ``cudaStreamEndCapture``, which CUDA accepts only on the
-capture's **origin** stream: a task placed directly on a context gets such a
-stream, a task of a :func:`local_context` runs on a fork of the caller's
-stream and cannot host them. And ``wp.capture_end`` returns a ``Graph`` whose
+Everything is a no-op without a context (``ctx is None``): the sequential
+version and the task version of a library are the same code. :func:`token`
+returns an inert token in that case.
+
+Two CUDA facts drive the design. Warp's ``capture_if`` / ``capture_while``
+pause the capture with ``cudaStreamEndCapture``, which CUDA accepts only on
+the capture's **origin** stream: task streams of a graph scope are origins,
+streams forked inside a Warp-owned capture are not, so the recording
+boundary is a graph scope. And ``wp.capture_end`` returns a ``Graph`` whose
 destructor destroys the captured ``cudaGraph_t``, which belongs to STF: the
 adapter keeps those handles alive until :func:`release_graph_handles`.
 
@@ -41,9 +46,9 @@ Warp is imported lazily; importing this module does not require ``warp-lang``.
 from __future__ import annotations
 
 import contextlib
+import sys
 
-from .. import context as _context
-from .. import stackable_context as _stackable_context
+from .. import AccessMode as _AccessMode
 
 _WARP_INSTALL_HINT = (
     "This functionality requires Warp to be installed (pip install warp-lang). "
@@ -51,7 +56,7 @@ _WARP_INSTALL_HINT = (
 )
 
 _graph_handles = []  # Graph objects from wp.capture_end inside tasks (see module docstring)
-_recording = []  # WarpTaskGraph stack while recording
+_scopes = {}  # id(ctx) -> stack of scope tokens
 
 
 def _import_warp():
@@ -74,7 +79,8 @@ def _device_cache_key(device):
 
 
 def wrap_stream(raw_ptr, device=None):
-    """Return the cached ``wp.Stream`` wrapping raw ``cudaStream_t`` ``raw_ptr``."""
+    """Return the cached ``wp.Stream`` wrapping raw ``cudaStream_t`` ``raw_ptr``
+    (registering the same raw stream twice corrupts Warp's stream bookkeeping)."""
     wp = _import_warp()
     device = wp.get_device(device) if device is not None else wp.get_cuda_device()
     key = (_device_cache_key(device), int(raw_ptr))
@@ -149,39 +155,214 @@ def warp_arguments(task, dtypes=None):
 
 
 # ---------------------------------------------------------------------------
-# the task scope
+# tokens
+# ---------------------------------------------------------------------------
+
+
+class _NullToken:
+    """What :func:`token` returns without a context: its deps are inert."""
+
+    def rw(self):
+        return None
+
+    def read(self):
+        return None
+
+    def write(self):
+        return None
+
+    def set_symbol(self, symbol):
+        pass
+
+
+def token(ctx, symbol=None):
+    """``ctx.token()``, or an inert token whose ``rw()`` / ``read()`` return
+    ``None`` when ``ctx`` is ``None`` (``None`` deps are dropped by
+    :func:`warp_task`), so a library can create its tokens unconditionally."""
+    if ctx is None:
+        return _NullToken()
+    t = ctx.token()
+    if symbol is not None:
+        t.set_symbol(str(symbol))
+    return t
+
+
+# ---------------------------------------------------------------------------
+# the poison stream
+# ---------------------------------------------------------------------------
+
+# Handle reads that are not work submission; everything else raises while armed.
+_POISON_ALLOWED_CALLERS = frozenset(
+    {
+        "is_capturing",
+        "__del__",
+        "set_stream",
+        "synchronize",
+        "synchronize_device",
+        "get_capture_info",
+    }
+)
+
+
+class _PoisonStream:
+    """While a scope is open and no task or native block is, Warp's current
+    stream is a stream whose handle raises on work submission: a launch there
+    is a record-time error instead of eager work outside the graph."""
+
+    _stream = None  # one per process (Warp's current stream is per-device state; one recording thread)
+    _armed = False
+    _saved = []  # armed flags saved by enter(); restored by exit()
+
+    @classmethod
+    def _make(cls):
+        wp = _import_warp()
+
+        class Stream(wp.Stream):
+            # Warp stores the handle as a plain attribute; shadow it with a property
+            @property
+            def cuda_stream(self):
+                if _PoisonStream._armed:
+                    caller = sys._getframe(1).f_code.co_name
+                    if caller not in _POISON_ALLOWED_CALLERS:
+                        raise RuntimeError(
+                            f"Warp work ({caller}) inside a cuda.stf scope but outside "
+                            "warp_task() / warp_native(): it would run eagerly, outside the graph"
+                        )
+                return self.__dict__.get("_cs")
+
+            @cuda_stream.setter
+            def cuda_stream(self, v):
+                self.__dict__["_cs"] = v
+
+        return Stream(wp.get_device())
+
+    @classmethod
+    def enter(cls):
+        wp = _import_warp()
+        if cls._stream is None:
+            cls._stream = cls._make()
+        cls._saved.append(cls._armed)
+        cls._armed = False
+        sc = wp.ScopedStream(cls._stream, sync_enter=False, sync_exit=False)
+        sc.__enter__()
+        cls._armed = True
+        return sc
+
+    @classmethod
+    def exit(cls, sc):
+        cls._armed = False  # restoring the outer stream reads the handle
+        try:
+            sc.__exit__(None, None, None)
+        finally:
+            cls._armed = cls._saved.pop()
+
+    @classmethod
+    @contextlib.contextmanager
+    def suspended(cls):
+        was = cls._armed
+        cls._armed = False
+        try:
+            yield
+        finally:
+            cls._armed = was
+
+
+# ---------------------------------------------------------------------------
+# scopes
+# ---------------------------------------------------------------------------
+
+
+def _scope_token(ctx):
+    st = _scopes.get(id(ctx))
+    return st[-1] if st else None
+
+
+@contextlib.contextmanager
+def scope(ctx, launchable=False):
+    """``ctx.graph_scope()`` (``launchable=False``) or
+    ``ctx.launchable_graph_scope()`` (``launchable=True``) plus the scope token.
+    Yields the binding's scope object (``.launch()`` / ``.graph`` when
+    launchable). No-op yielding ``None`` without a context.
+
+    The token is created at scope entry, never lazily: a task created before
+    it would not be ordered against a native block after it. A nested scope
+    reads its parent's token at entry (``push(AccessMode.READ)``), so it is
+    ordered after the parent's native blocks before it and stays a sibling of
+    the parent's tasks. While the scope is open, Warp's current stream is the
+    poison stream (see module docstring).
+
+    >>> with scope(ctx, launchable=True) as g:
+    ...     with warp_native(ctx, "collide"): example.collide()
+    ...     solver.step(...)                       # opens its own scope inside
+    ...     for _ in range(frames): g.launch()
+    """
+    if ctx is None:
+        yield None
+        return
+    outer = _scope_token(ctx)
+    cm = ctx.launchable_graph_scope() if launchable else ctx.graph_scope()
+    with cm as g:
+        tok = ctx.token()
+        tok.set_symbol("scope")
+        if outer is not None:
+            outer.push(_AccessMode.READ)
+        _scopes.setdefault(id(ctx), []).append(tok)
+        poison = _PoisonStream.enter()
+        try:
+            yield g
+        finally:
+            _PoisonStream.exit(poison)
+            st = _scopes[id(ctx)]
+            st.pop()
+            if not st:
+                del _scopes[id(ctx)]
+
+
+# ---------------------------------------------------------------------------
+# tasks and native blocks
 # ---------------------------------------------------------------------------
 
 
 def warp_task(ctx, *args, symbol=None, capture="auto", dtypes=None):
     """Context manager: ``ctx.task(*args)`` with Warp's current stream set to
-    the task stream; yields ``(stream, arrays)``.
+    the task stream; yields ``(stream, arrays)``. Inside a scope the task also
+    reads the scope token. ``None`` deps (from an inert :func:`token`) are
+    dropped; with ``ctx=None`` the body runs as is on Warp's current stream and
+    ``arrays`` is empty.
 
     ``capture``: ``"auto"`` (default) adopts the capture as an external Warp
-    capture when the task stream is capturing (STF graph scopes, stackable
-    record); ``"never"`` issues no Warp capture calls (use for a
-    :func:`local_context` under a Warp-owned ``wp.ScopedCapture``: Warp keys
-    its capture registry by capture id, shared with the outer capture, and a
-    nested ``capture_end`` would unregister the caller's capture); ``"always"``
-    requires a capturing stream.
+    capture when the task stream is capturing (graph scopes), so Warp's
+    allocator, ``is_capturing`` checks and conditional captures see it;
+    ``"never"`` issues no Warp capture calls; ``"always"`` requires a capturing
+    stream.
 
-    Example
-    -------
-    >>> from cuda.stf._experimental.interop.warp import warp_task
     >>> with warp_task(ctx, lX.read(), lY.rw()) as (s, (x, y)):
     ...     wp.launch(axpy, dim=x.shape[0], inputs=[2.0, x, y])   # on the task stream
     """
     wp = _import_warp()
     if capture not in ("auto", "never", "always"):
         raise ValueError("capture must be 'auto', 'never' or 'always'")
-    t = ctx.task(*args, symbol=symbol) if symbol is not None else ctx.task(*args)
+    deps = [a for a in args if a is not None]
+    if ctx is None:
+        return _no_context_task(wp)
+    tok = _scope_token(ctx)
+    if tok is not None:
+        deps.append(tok.read())
+    t = ctx.task(*deps, symbol=symbol) if symbol is not None else ctx.task(*deps)
 
     class _WarpTaskContext:
         _scope = None
         _captured = False
+        _suspend = None
 
         def __enter__(self):
-            t.start()
+            self._suspend = _PoisonStream.suspended()
+            self._suspend.__enter__()
+            try:
+                t.start()
+            except BaseException:
+                self._suspend.__exit__(None, None, None)
+                raise
             try:
                 self.stream = wrap_stream(t.stream_ptr())
                 self._scope = wp.ScopedStream(
@@ -203,6 +384,7 @@ def warp_task(ctx, *args, symbol=None, capture="auto", dtypes=None):
                         self._scope.__exit__(type(e), e, e.__traceback__)
                 with contextlib.suppress(Exception):
                     t.end()
+                self._suspend.__exit__(None, None, None)
                 raise
             return self.stream, arrays
 
@@ -223,6 +405,7 @@ def warp_task(ctx, *args, symbol=None, capture="auto", dtypes=None):
                 t.end()
             except BaseException as e:  # noqa: BLE001
                 errors.append(e)
+            self._suspend.__exit__(None, None, None)
             if exc_type is not None:
                 return False
             if errors:
@@ -232,170 +415,46 @@ def warp_task(ctx, *args, symbol=None, capture="auto", dtypes=None):
     return _WarpTaskContext()
 
 
+@contextlib.contextmanager
+def _no_context_task(wp):
+    yield wp.get_stream(), ()
+
+
+@contextlib.contextmanager
+def warp_native(ctx, symbol="native"):
+    """Plain Warp code inside a scope: a task holding the scope token
+    read-write, Warp's current stream on its stream; yields the stream. Ordered
+    after every task of the scope before it and before every task after it.
+    Raises if no scope is open on ``ctx``. No-op without a context.
+
+    >>> with warp_native(ctx, "integrate"):
+    ...     example.integrate()      # any number of launches, copies, allocations
+    """
+    if ctx is None:
+        yield _import_warp().get_stream()
+        return
+    tok = _scope_token(ctx)
+    if tok is None:
+        raise RuntimeError(
+            "warp_native() needs an open scope on this context (see scope())"
+        )
+    with warp_task(ctx, tok.rw(), symbol=symbol) as (s, _):
+        yield s
+
+
 def release_graph_handles():
     """Drop the Warp ``Graph`` handles kept alive by :func:`warp_task`. Call
     only after every STF context that captured through them is finalized."""
     _graph_handles.clear()
 
 
-# ---------------------------------------------------------------------------
-# named tokens, local contexts, record-once graphs
-# ---------------------------------------------------------------------------
-
-
-class _Tokens:
-    """``tokens[name]`` creates a token on first use and reuses it after."""
-
-    def __init__(self, ctx):
-        self._ctx = ctx
-        self._tokens = {}
-
-    def __getitem__(self, name):
-        t = self._tokens.get(name)
-        if t is None:
-            t = self._ctx.token()
-            t.set_symbol(str(name))
-            self._tokens[name] = t
-        return t
-
-
-class _TaskHost:
-    """Shared surface of :class:`LocalContext` and :class:`WarpTaskGraph`:
-    ``ctx``, ``tokens``, ``task()``, ``frame_token``, ``suspend_frame()``."""
-
-    _capture = "auto"
-    frame_token = None
-
-    def task(self, *deps, symbol=None):
-        return warp_task(self.ctx, *deps, symbol=symbol, capture=self._capture)
-
-    def suspend_frame(self):
-        return False
-
-    def resume_frame(self, was_open):
-        pass
-
-
-class LocalContext(_TaskHost):
-    """A stream-backend context bound to Warp's current stream (see
-    :func:`local_context`)."""
-
-    _capture = "never"
-
-    def __init__(self, stream=None, capture="never"):
-        wp = _import_warp()
-        s = stream if stream is not None else wp.get_stream()
-        self.ctx = _context(stream=int(s.cuda_stream))
-        self.tokens = _Tokens(self.ctx)
-        self._capture = capture
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc):
-        self.ctx.finalize()
-        return False
-
-
-def local_context(stream=None, capture="never"):
-    """Open a context whose tasks fork from Warp's current stream and join it
-    again on exit; works eagerly and inside a caller's ``wp.ScopedCapture``.
-
-    Tasks run on forked streams, so bodies must not use Warp's conditional
-    captures (``capture_if`` / ``capture_while``: CUDA pauses a capture only on
-    its origin stream) and, with ``capture="never"`` (the default, required
-    under a Warp-owned capture with stock Warp), Warp allocations inside the
-    tasks are not capture-aware. For those bodies use :class:`WarpTaskGraph`.
-
-    >>> with local_context() as lc:
-    ...     with lc.task(lc.tokens["x"].rw(), symbol="k1"): wp.launch(k1, ...)
-    ...     with lc.task(lc.tokens["x"].read(), lc.tokens["y"].rw()): wp.launch(k2, ...)
-    ...     with lc.task(lc.tokens["x"].read(), lc.tokens["z"].rw()): wp.launch(k3, ...)   # parallel to k2
-    """
-    return LocalContext(stream, capture)
-
-
-def current():
-    """The :class:`WarpTaskGraph` currently recording, or ``None``."""
-    return _recording[-1] if _recording else None
-
-
-class WarpTaskGraph(_TaskHost):
-    """Record a frame of Warp work once as an STF graph, replay it many times.
-
-    >>> g = WarpTaskGraph()
-    >>> graph = g.record(example.simulate)     # instead of wp.ScopedCapture
-    >>> for _ in range(frames): graph.launch()
-    >>> g.finalize()
-
-    During :meth:`record` the body runs inside a catch-all task ("frame") so
-    launches outside explicit tasks are captured; library code that wants its
-    own tasks at graph level (each task stream is a capture origin, so Warp
-    conditional captures work there) calls :meth:`suspend_frame` before and
-    :meth:`resume_frame` after, and orders itself against the frame through
-    ``frame_token`` (read/write it in its barrier tasks).
-    """
-
-    def __init__(self):
-        self.ctx = _stackable_context()
-        self.tokens = _Tokens(self.ctx)
-        self.frame_token = self.tokens["frame"]
-        self._frame = None
-        self._graph = None
-
-    # frame task -----------------------------------------------------------
-    def _open_frame(self):
-        self._frame = self.task(self.frame_token.rw(), symbol="frame")
-        self._frame.__enter__()
-
-    def _close_frame(self):
-        f, self._frame = self._frame, None
-        f.__exit__(None, None, None)
-
-    def suspend_frame(self):
-        """Close the catch-all frame task if it is open; returns whether it was."""
-        if self._frame is None:
-            return False
-        self._close_frame()
-        return True
-
-    def resume_frame(self, was_open):
-        if was_open:
-            self._open_frame()
-
-    # record / replay --------------------------------------------------------
-    def record(self, body, frame_task=True):
-        """Record ``body()`` once; returns a launchable graph (``.launch()``)."""
-        self.ctx.push()
-        _recording.append(self)
-        try:
-            if frame_task:
-                self._open_frame()
-            try:
-                body()
-            finally:
-                if self._frame is not None:
-                    self._close_frame()
-        finally:
-            _recording.pop()
-        self._graph = self.ctx.pop_prologue_shared()
-        return self._graph
-
-    def launch(self):
-        self._graph.launch()
-
-    def finalize(self):
-        self._graph = None
-        self.ctx.finalize()
-
-
 __all__ = [
-    "WarpTaskGraph",
     "array_arg",
-    "current",
-    "local_context",
     "release_graph_handles",
+    "scope",
+    "token",
     "warp_arguments",
+    "warp_native",
     "warp_task",
     "wrap_stream",
 ]

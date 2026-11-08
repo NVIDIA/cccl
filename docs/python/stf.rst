@@ -174,28 +174,47 @@ complete program)::
 ``tensor_arg(task, index)`` and ``tensor_arguments(task)`` convert one or all
 task arguments to tensors if you manage the task block yourself.
 
-**Warp** (``cuda.stf._experimental.interop.warp``) -- ``warp_task`` opens a task,
-makes the task's CUDA stream the current Warp stream (``wp.ScopedStream``) for the
-duration of the block, and yields ``(stream, arrays)`` where ``arrays`` are
-``wp.array`` views of the task arguments. When the task stream is capturing (graph
-backends), the block runs under a Warp external capture so Warp's own capture-aware
-paths (allocations, conditional captures) see the right state. The following excerpt
-launches a kernel on two logical data (see ``tests/stf/interop/test_warp_adapter.py``
-for the complete program)::
+**Warp** (``cuda.stf._experimental.interop.warp``) -- Warp work enters a task graph
+through four names, three of them plain cuda.stf API. A *scope* is
+``ctx.graph_scope()`` / ``ctx.launchable_graph_scope()``: a library that wants width
+opens one at its entry, the frame owner opens a launchable one and replays it; a scope
+is a graph for its writer and one node for its parent, so library boundaries and graph
+boundaries coincide (``scope(ctx, launchable=...)`` is the same plus a *scope token*,
+see below). ``warp_task(ctx, *deps)`` is a leaf phase holding many launches: it opens
+``ctx.task(*deps)``, makes the task's CUDA stream the current Warp stream
+(``wp.ScopedStream``) for the block, and yields ``(stream, arrays)`` where ``arrays``
+are ``wp.array`` views of the logical-data arguments. ``warp_native(ctx)`` wraps plain
+Warp code inside a scope that is not a phase of its own: a task holding the scope token
+read-write, ordered after every task before it and before every task after it in that
+scope (tasks read the token, so two tasks with no native block between them stay
+siblings). Plain Warp code inside a scope but outside both is a **record-time error**:
+while a scope is open, Warp's current stream is a poison stream whose handle raises on
+work submission. Everything is a no-op without a context (``ctx=None``, ``token(None)``),
+so the sequential and the task version of a library are the same code::
 
-    from cuda.stf._experimental.interop.warp import warp_task
+    from cuda.stf._experimental.interop.warp import scope, token, warp_native, warp_task
 
-    with warp_task(ctx, lX.read(), lY.rw()) as (stream, (x, y)):
-        wp.launch(axpy, dim=N, inputs=[x, y], stream=stream)
+    with scope(ctx, launchable=True) as g:          # the frame owner
+        with warp_native(ctx, "collide"):
+            example.collide()                       # plain Warp code, in program order
+        solver.step(state_in, state_out)            # opens its own scope inside
+        for _ in range(frames):
+            g.launch()
 
-``array_arg(task, index)`` and ``warp_arguments(task)`` convert one or all task
+    # inside the solver
+    with scope(ctx):                                # one node of the caller's graph
+        with warp_task(ctx, tok_a.rw(), shared.read(), symbol="solve-a"): ...   # siblings
+        with warp_task(ctx, tok_b.rw(), shared.read(), symbol="solve-b"): ...
+        with warp_task(ctx, tok_a.rw(), tok_b.rw(), shared.rw(), symbol="dual"): ...
+
+When the task stream is capturing (graph scopes), the block runs under a Warp external
+capture so Warp's capture-aware paths (allocations, ``capture_if`` / ``capture_while``)
+see the right state; Warp's conditional captures need a capture-*origin* stream, which
+task streams of a graph scope are and streams forked inside a Warp-owned capture are
+not. ``array_arg(task, index)`` and ``warp_arguments(task)`` convert one or all task
 arguments if you manage the task block yourself, and ``wrap_stream`` returns a cached
-``wp.Stream`` for a raw task stream. Two helpers serve library code that composes with
-a caller's graph: ``local_context()`` opens a stream-bound STF context on the current
-Warp stream (valid inside a caller's ``wp.ScopedCapture``), and ``WarpTaskGraph``
-records a Warp-driven step once into an STF-owned graph, with a catch-all *frame* task
-that library code suspends around its own tasks (``suspend_frame`` / ``resume_frame``,
-``current()``), so that only the work expressed as tasks is reordered.
+``wp.Stream`` for a raw task stream. See ``tests/stf/interop/test_warp_adapter.py`` for
+complete programs.
 
 **Numba** (``cuda.stf._experimental.interop.numba``) -- ``numba_task`` opens a task and
 yields ``(numba_arrays, stream)``, where ``stream`` can be passed straight to

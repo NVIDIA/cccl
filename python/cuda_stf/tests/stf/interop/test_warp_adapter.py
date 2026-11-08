@@ -2,20 +2,21 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Tests for ``cuda.stf._experimental.interop.warp``."""
-
-import functools
+"""Tests for ``cuda.stf._experimental.interop.warp``: scopes, tasks, native blocks."""
 
 import numpy as np
 import pytest
 
 wp = pytest.importorskip("warp")
 
-import cuda.stf._experimental as stf
-from cuda.stf._experimental.interop.warp import (
-    WarpTaskGraph,
+import cuda.stf._experimental as stf  # noqa: E402
+from cuda.stf._experimental import AccessMode  # noqa: E402
+from cuda.stf._experimental.interop.warp import (  # noqa: E402
     array_arg,
-    local_context,
+    release_graph_handles,
+    scope,
+    token,
+    warp_native,
     warp_task,
     wrap_stream,
 )
@@ -33,13 +34,85 @@ def scale(a: float, y: wp.array(dtype=float)):
     y[i] = a * y[i]
 
 
+@wp.kernel
+def count_down(counter: wp.array(dtype=int), acc: wp.array(dtype=float)):
+    i = wp.tid()
+    acc[i] = acc[i] + 1.0
+    if i == 0:
+        counter[0] = counter[0] - 1
+
+
 @pytest.fixture(scope="module", autouse=True)
 def _warm():
     wp.init()
     x = wp.zeros(8, dtype=float)
+    c = wp.zeros(1, dtype=int)
     wp.launch(axpy, dim=8, inputs=[0.0, x, x])
     wp.launch(scale, dim=8, inputs=[1.0, x])
+    wp.launch(count_down, dim=8, inputs=[c, x])
     wp.synchronize()
+
+
+def graph_topology(graph_handle):
+    """(kernel nodes, longest path in kernels) with child graphs (nested scopes) expanded."""
+    from cuda.bindings import runtime as rt
+
+    def walk(h):
+        h = int(h)
+        n = rt.cudaGraphGetNodes(h, 0)[-1]
+        nodes = rt.cudaGraphGetNodes(h, n)[1]
+        m = rt.cudaGraphGetEdges(h, 0)[-1]
+        res = rt.cudaGraphGetEdges(h, m)
+        idx = {int(x): i for i, x in enumerate(nodes)}
+        succ = [[] for _ in nodes]
+        indeg = [0] * len(nodes)
+        for a, b in zip(res[1], res[2]):
+            succ[idx[int(a)]].append(idx[int(b)])
+            indeg[idx[int(b)]] += 1
+        weight, count = [0] * len(nodes), 0
+        for i, x in enumerate(nodes):
+            t = rt.cudaGraphNodeGetType(x)[1]
+            if t == rt.cudaGraphNodeType.cudaGraphNodeTypeGraph:
+                c, w = walk(rt.cudaGraphChildGraphNodeGetGraph(x)[1])
+                weight[i], count = w, count + c
+            elif t == rt.cudaGraphNodeType.cudaGraphNodeTypeKernel:
+                weight[i], count = 1, count + 1
+        depth = weight[:]
+        order = [i for i, d in enumerate(indeg) if d == 0]
+        k = 0
+        while k < len(order):
+            u = order[k]
+            k += 1
+            for v in succ[u]:
+                depth[v] = max(depth[v], depth[u] + weight[v])
+                indeg[v] -= 1
+                if indeg[v] == 0:
+                    order.append(v)
+        return count, (max(depth) if nodes else 0)
+
+    return walk(graph_handle)
+
+
+def _record_and_replay(frame, replays):
+    """Record ``frame(ctx)`` in a launchable scope, replay it; returns the
+    (kernel nodes, longest path) topology."""
+    ctx = stf.stackable_context()
+    try:
+        with scope(ctx, launchable=True) as g:
+            frame(ctx)
+            topo = graph_topology(g.graph)
+            for _ in range(replays):
+                g.launch()
+        wp.synchronize()
+    finally:
+        ctx.finalize()
+        release_graph_handles()
+    return topo
+
+
+# ---------------------------------------------------------------------------
+# streams, arrays
+# ---------------------------------------------------------------------------
 
 
 def test_wrap_stream_is_cached():
@@ -64,160 +137,6 @@ def test_warp_task_logical_data_arrays():
     ctx.finalize()
 
 
-def test_warp_task_fork_join_record_replay():
-    n = 1 << 16
-    frames = 4
-    x = wp.full(n, 1.0, dtype=float)
-    ya, yb, out = (wp.zeros(n, dtype=float) for _ in range(3))
-    g = WarpTaskGraph()
-    A, B, OUT = (g.tokens[k] for k in ("a", "b", "out"))
-
-    def frame():
-        with g.task(A.rw(), symbol="left"):
-            wp.launch(axpy, dim=n, inputs=[1.0, x, ya])
-        with g.task(B.rw(), symbol="right"):
-            wp.launch(axpy, dim=n, inputs=[2.0, x, yb])
-            wp.launch(scale, dim=n, inputs=[0.5, yb])
-        with g.task(A.read(), B.read(), OUT.rw(), symbol="join"):
-            wp.copy(out, ya)  # a Warp builtin inside a task
-            wp.launch(axpy, dim=n, inputs=[1.0, yb, out])
-
-    graph = g.record(frame, frame_task=False)
-    for _ in range(frames):
-        graph.launch()
-    wp.synchronize()
-    ref_a, ref_b = 0.0, 0.0
-    for _ in range(frames):
-        ref_a += 1.0
-        ref_b = 0.5 * (ref_b + 2.0)
-    assert out.numpy()[0] == pytest.approx(ref_a + ref_b)
-    del graph
-    g.finalize()
-
-
-def test_local_context_inside_warp_capture_parallel_branches():
-    """A library routine opens a local context inside the caller's own
-    wp.ScopedCapture: same result, k2 and k3 become parallel branches."""
-    from cuda.bindings import runtime as rt
-
-    n = 1 << 14
-
-    def lib_stream_only(x, y, z):
-        wp.launch(scale, dim=n, inputs=[2.0, x])
-        wp.launch(axpy, dim=n, inputs=[1.0, x, y])
-        wp.launch(axpy, dim=n, inputs=[1.0, x, z])
-        wp.launch(axpy, dim=n, inputs=[1.0, y, z])
-
-    def lib_tasks(x, y, z):
-        with local_context() as lc:
-            tx, ty, tz = (lc.tokens[k] for k in "xyz")
-            with lc.task(tx.rw(), symbol="k1"):
-                wp.launch(scale, dim=n, inputs=[2.0, x])
-            with lc.task(tx.read(), ty.rw(), symbol="k2"):
-                wp.launch(axpy, dim=n, inputs=[1.0, x, y])
-            with lc.task(tx.read(), tz.rw(), symbol="k3"):
-                wp.launch(axpy, dim=n, inputs=[1.0, x, z])
-            with lc.task(ty.read(), tz.rw(), symbol="k4"):
-                wp.launch(axpy, dim=n, inputs=[1.0, y, z])
-
-    def longest_path(graph):
-        h = int(getattr(graph.graph, "value", graph.graph))
-        nodes = rt.cudaGraphGetNodes(h, rt.cudaGraphGetNodes(h, 0)[-1])[1]
-        res = rt.cudaGraphGetEdges(h, rt.cudaGraphGetEdges(h, 0)[-1])
-        idx = {int(a): i for i, a in enumerate(nodes)}
-        succ = [[] for _ in nodes]
-        indeg = [0] * len(nodes)
-        for a, b in zip(res[1], res[2]):
-            succ[idx[int(a)]].append(idx[int(b)])
-            indeg[idx[int(b)]] += 1
-        depth = [1] * len(nodes)
-        order = [i for i, d in enumerate(indeg) if d == 0]
-        k = 0
-        while k < len(order):
-            u = order[k]
-            k += 1
-            for v in succ[u]:
-                depth[v] = max(depth[v], depth[u] + 1)
-                indeg[v] -= 1
-                if indeg[v] == 0:
-                    order.append(v)
-        return len(nodes), max(depth)
-
-    results = {}
-    for name, lib in (("stream", lib_stream_only), ("tasks", lib_tasks)):
-        x, y, z = (
-            wp.full(n, 1.0, dtype=float),
-            wp.zeros(n, dtype=float),
-            wp.zeros(n, dtype=float),
-        )
-        with wp.ScopedCapture() as cap:
-            wp.launch(axpy, dim=n, inputs=[0.5, x, y])
-            lib(x, y, z)
-            wp.launch(axpy, dim=n, inputs=[0.5, x, z])
-        for _ in range(3):
-            wp.capture_launch(cap.graph)
-        wp.synchronize()
-        results[name] = (float(z.numpy()[0]), *longest_path(cap.graph))
-    assert results["stream"][0] == results["tasks"][0]
-    assert results["stream"][1] == results["tasks"][1] == 6  # same kernel count
-    assert results["tasks"][2] < results["stream"][2]  # k2 || k3
-
-
-def test_frame_task_suspend_resume_bit_identical():
-    """Library code adds graph-level tasks while a frame is being recorded."""
-    n = 1 << 14
-
-    class Solver:
-        def __init__(self):
-            self.a = wp.zeros(n, dtype=float)
-            self.b = wp.zeros(n, dtype=float)
-            self.f = wp.full(n, 1.0, dtype=float)
-
-        def step(self, tasks):
-            from cuda.stf._experimental.interop.warp import current
-
-            g = current()
-            if not tasks or g is None:
-                wp.launch(axpy, dim=n, inputs=[1.0, self.f, self.a])
-                wp.launch(axpy, dim=n, inputs=[2.0, self.f, self.b])
-                wp.launch(scale, dim=n, inputs=[0.5, self.f])
-                return
-            was_open = g.suspend_frame()
-            try:
-                ta, tb, tf = g.tokens["a"], g.tokens["b"], g.frame_token
-                with g.task(ta.rw(), tf.read(), symbol="a"):
-                    wp.launch(axpy, dim=n, inputs=[1.0, self.f, self.a])
-                with g.task(tb.rw(), tf.read(), symbol="b"):
-                    wp.launch(axpy, dim=n, inputs=[2.0, self.f, self.b])
-                with g.task(ta.read(), tb.read(), tf.rw(), symbol="barrier"):
-                    wp.launch(scale, dim=n, inputs=[0.5, self.f])
-            finally:
-                g.resume_frame(was_open)
-
-    def frame(solver, tasks):
-        wp.launch(scale, dim=n, inputs=[1.5, solver.f])  # frame work outside tasks
-        solver.step(tasks)
-        wp.launch(axpy, dim=n, inputs=[1.0, solver.b, solver.a])  # and after
-
-    fps = {}
-    for tasks in (False, True):
-        s = Solver()
-        g = WarpTaskGraph()
-        graph = g.record(functools.partial(frame, s, tasks))
-        for _ in range(3):
-            graph.launch()
-        wp.synchronize()
-        fps[tasks] = (
-            float(s.a.numpy().sum()),
-            float(s.b.numpy().sum()),
-            float(s.f.numpy().sum()),
-        )
-        del graph
-        g.finalize()
-    assert fps[False] == fps[True]
-    assert fps[True][0] != 0.0
-
-
 def test_array_arg_dtype_override():
     ctx = stf.context()
     lx = ctx.logical_data(np.zeros(12, dtype=np.float32))
@@ -225,3 +144,227 @@ def test_array_arg_dtype_override():
         v = array_arg(t, 0, dtype=wp.vec3, shape=(4,))
         assert v.dtype == wp.vec3 and v.shape == (4,)
     ctx.finalize()
+
+
+# ---------------------------------------------------------------------------
+# scopes, tasks, native blocks
+# ---------------------------------------------------------------------------
+
+
+def test_fork_join_record_replay():
+    n = 1 << 16
+    frames = 4
+    x = wp.full(n, 1.0, dtype=float)
+    ya, yb, out = (wp.zeros(n, dtype=float) for _ in range(3))
+
+    def frame(ctx):
+        A, B, OUT = (token(ctx, k) for k in ("a", "b", "out"))
+        with warp_task(ctx, A.rw(), symbol="left"):
+            wp.launch(axpy, dim=n, inputs=[1.0, x, ya])
+        with warp_task(ctx, B.rw(), symbol="right"):
+            wp.launch(axpy, dim=n, inputs=[2.0, x, yb])
+            wp.launch(scale, dim=n, inputs=[0.5, yb])
+        with warp_task(ctx, A.read(), B.read(), OUT.rw(), symbol="join"):
+            wp.copy(out, ya)  # a Warp builtin inside a task
+            wp.launch(axpy, dim=n, inputs=[1.0, yb, out])
+
+    kernels, longest = _record_and_replay(frame, frames)
+    assert kernels == 4 and longest == 3  # left || right(2) -> join
+    ref_a, ref_b = 0.0, 0.0
+    for _ in range(frames):
+        ref_a += 1.0
+        ref_b = 0.5 * (ref_b + 2.0)
+    assert out.numpy()[0] == pytest.approx(ref_a + ref_b)
+
+
+def test_native_blocks_ordered_with_tasks():
+    """native ; task(A) ; task(B) ; native: A and B are siblings, the native
+    blocks are barriers; result equals the sequential one."""
+    n = 1 << 14
+
+    def body(ctx, x, y, z):
+        with warp_native(ctx, "k1"):
+            wp.launch(scale, dim=n, inputs=[2.0, x])
+        ty, tz = token(ctx, "y"), token(ctx, "z")
+        with warp_task(ctx, ty.rw(), symbol="A"):
+            wp.launch(axpy, dim=n, inputs=[1.0, x, y])
+        with warp_task(ctx, tz.rw(), symbol="B"):
+            wp.launch(axpy, dim=n, inputs=[1.0, x, z])
+        with warp_native(ctx, "k4"):
+            wp.launch(axpy, dim=n, inputs=[1.0, y, z])
+
+    results = {}
+    for arm in ("sequential", "tasks"):
+        x, y, z = (
+            wp.full(n, 1.0, dtype=float),
+            wp.zeros(n, dtype=float),
+            wp.zeros(n, dtype=float),
+        )
+        if arm == "sequential":
+            for _ in range(3):
+                body(None, x, y, z)  # no context: every name is a no-op
+            wp.synchronize()
+            topo = None
+        else:
+            topo = _record_and_replay(lambda ctx: body(ctx, x, y, z), 3)
+        results[arm] = float(z.numpy()[0])
+    assert results["sequential"] == results["tasks"]
+    assert topo == (4, 3)  # k1 -> {A, B} -> k4
+
+
+def test_back_to_back_tasks_stay_siblings():
+    n = 1 << 12
+    a, b = wp.zeros(n, dtype=float), wp.zeros(n, dtype=float)
+
+    def frame(ctx):
+        ta, tb = token(ctx), token(ctx)
+        with warp_task(ctx, ta.rw()):
+            wp.launch(scale, dim=n, inputs=[2.0, a])
+        with warp_task(ctx, tb.rw()):
+            wp.launch(scale, dim=n, inputs=[2.0, b])
+
+    assert _record_and_replay(frame, 1) == (2, 1)  # no edge between them
+
+
+def test_nested_scope_inner_fork_bit_identical():
+    """A library called from a task opens its own scope and forks inside:
+    the parent sees one node, results are bit-identical, the path is shorter."""
+    n = 1 << 14
+
+    class Entry:
+        def __init__(self, ctx, fork):
+            self.ctx, self.fork = ctx, fork
+            self.v = wp.zeros(n, dtype=float)
+            self.mass = wp.ones(n, dtype=float)
+            self.rows = wp.ones(n, dtype=float)
+            self.t_mass, self.t_rows = token(ctx), token(ctx)
+
+        def step(self, forcing):
+            with scope(self.ctx):
+                if self.fork:
+                    with warp_task(self.ctx, self.t_mass.rw()):
+                        wp.launch(scale, dim=n, inputs=[0.999, self.mass])
+                    with warp_task(self.ctx, self.t_rows.rw()):
+                        wp.launch(axpy, dim=n, inputs=[0.001, forcing, self.rows])
+                else:
+                    with warp_native(self.ctx):
+                        wp.launch(scale, dim=n, inputs=[0.999, self.mass])
+                        wp.launch(axpy, dim=n, inputs=[0.001, forcing, self.rows])
+                with warp_native(self.ctx):
+                    wp.launch(axpy, dim=n, inputs=[0.5, self.rows, self.v])
+                    wp.launch(axpy, dim=n, inputs=[0.5, self.mass, self.v])
+
+    out = {}
+    for fork in (False, True):
+        ctx = stf.stackable_context()
+        e = Entry(ctx, fork)
+        forcing = wp.ones(n, dtype=float)
+        t_e = token(ctx)
+        with scope(ctx, launchable=True) as g:
+            with warp_native(ctx, "pre"):
+                wp.launch(scale, dim=n, inputs=[1.5, forcing])
+            with warp_task(ctx, t_e.rw(), symbol="solve"):
+                e.step(forcing)
+            with warp_native(ctx, "post"):
+                wp.launch(axpy, dim=n, inputs=[1.0, e.v, forcing])
+            topo = graph_topology(g.graph)
+            for _ in range(3):
+                g.launch()
+        wp.synchronize()
+        out[fork] = (float(e.v.numpy().sum()), float(forcing.numpy().sum()), topo)
+        ctx.finalize()
+        release_graph_handles()
+    assert out[False][:2] == out[True][:2]
+    assert out[False][2] == (6, 6)
+    assert out[True][2] == (6, 5)
+
+
+def test_sibling_scopes_overlap_with_read_push():
+    """A root token used inside sibling scopes is auto-imported read-write
+    (serialising them); ``push(READ)`` at entry keeps them siblings."""
+    n = 1 << 12
+
+    def run(push_read):
+        x = wp.ones(n, dtype=float)
+        a, b = wp.zeros(n, dtype=float), wp.zeros(n, dtype=float)
+
+        def frame(ctx):
+            tx, ta, tb = token(ctx), token(ctx), token(ctx)
+            for tok, arr in ((ta, a), (tb, b)):
+                with scope(ctx):
+                    if push_read:
+                        tx.push(AccessMode.READ)
+                    with warp_task(ctx, tx.read(), tok.rw()):
+                        wp.launch(axpy, dim=n, inputs=[1.0, x, arr])
+
+        topo = _record_and_replay(frame, 2)
+        return topo, float(a.numpy()[0]) + float(b.numpy()[0])
+
+    serial, v1 = run(False)
+    sibl, v2 = run(True)
+    assert v1 == v2 == 4.0
+    assert serial == (2, 2) and sibl == (2, 1)
+
+
+def test_capture_while_inside_nested_scope_task():
+    """Warp's conditional capture needs a capture-origin stream: task streams
+    of a (nested) graph scope are such streams."""
+    n = 64
+    acc = wp.zeros(n, dtype=float)
+    counter = wp.zeros(1, dtype=int)
+    reset = wp.full(1, 3, dtype=int)
+
+    def frame(ctx):
+        t = token(ctx)
+        with warp_task(ctx, t.rw()):
+            with scope(ctx):
+                with warp_native(ctx):
+                    wp.copy(counter, reset)
+                    wp.capture_while(
+                        counter,
+                        lambda: wp.launch(count_down, dim=n, inputs=[counter, acc]),
+                    )
+
+    _record_and_replay(frame, 2)
+    assert acc.numpy()[0] == 6.0 and counter.numpy()[0] == 0
+
+
+def test_poison_raises_outside_blocks():
+    n = 8
+    y = wp.zeros(n, dtype=float)
+    ctx = stf.stackable_context()
+    try:
+        with pytest.raises(RuntimeError, match="outside warp_task"):
+            with scope(ctx, launchable=True):
+                wp.launch(scale, dim=n, inputs=[2.0, y])  # forgot warp_native()
+    finally:
+        ctx.finalize()
+    # the current stream is restored after the scope
+    wp.launch(scale, dim=n, inputs=[2.0, y])
+    wp.synchronize()
+
+
+def test_warp_native_requires_scope():
+    ctx = stf.stackable_context()
+    try:
+        with pytest.raises(RuntimeError, match="open scope"):
+            with warp_native(ctx):
+                pass
+    finally:
+        ctx.finalize()
+
+
+def test_no_context_is_a_no_op():
+    n = 8
+    y = wp.ones(n, dtype=float)
+    t = token(None)
+    assert t.rw() is None and t.read() is None
+    with scope(None) as g:
+        assert g is None
+        with warp_task(None, t.rw()) as (s, arrays):
+            assert s is wp.get_stream() and arrays == ()
+            wp.launch(scale, dim=n, inputs=[2.0, y])
+        with warp_native(None):
+            wp.launch(scale, dim=n, inputs=[2.0, y])
+    wp.synchronize()
+    assert y.numpy()[0] == 4.0
