@@ -2459,6 +2459,17 @@ stf_error_t stf_stackable_deallocate(stf_ctx_handle ctx, void* ptr, size_t size)
   };
 }
 
+stf_error_t stf_stackable_set_symbol(stf_ctx_handle ctx, const char* symbol)
+{
+  return stf_boundary->*[&] {
+    _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+    _CCCL_ASSERT(symbol != nullptr, "symbol must not be null");
+    auto* sctx = from_opaque_sctx(ctx);
+    sctx->get_node(sctx->get_head_offset())->ctx.get_dot()->set_ctx_symbol(::std::string(symbol));
+    return STF_SUCCESS;
+  };
+}
+
 stf_logical_data_handle stf_stackable_token(stf_ctx_handle ctx)
 {
   return stf_boundary->*[&] {

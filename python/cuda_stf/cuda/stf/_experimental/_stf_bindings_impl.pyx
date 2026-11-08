@@ -423,6 +423,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     stf_logical_data_handle stf_stackable_token(stf_ctx_handle ctx)
     void* stf_stackable_allocate(stf_ctx_handle ctx, size_t size)
     stf_error_t stf_stackable_deallocate(stf_ctx_handle ctx, void* ptr, size_t size)
+    stf_error_t stf_stackable_set_symbol(stf_ctx_handle ctx, const char* symbol)
     stf_error_t stf_stackable_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol)
     stf_error_t stf_stackable_logical_data_set_read_only(stf_logical_data_handle ld)
     stf_error_t stf_stackable_logical_data_push(
@@ -5196,6 +5197,13 @@ cdef class stackable_context:
         """Return memory from :meth:`allocate` to the current level's allocator
         (the release is deferred to the level's pop)."""
         _check(stf_stackable_deallocate(self._ctx, <void*> <size_t> ptr, <size_t> size), "stf_stackable_deallocate")
+
+    def set_level_symbol(self, str name):
+        """Name the current (innermost) level for DOT output and diagnostics
+        (the default is the source location of the push). Call it right
+        after opening the scope."""
+        b = name.encode("utf-8")
+        _check(stf_stackable_set_symbol(self._ctx, <const char*> b), "stf_stackable_set_symbol")
 
     def task(self, *args, symbol=None):
         """Create a task on the head (innermost) scope of this context."""

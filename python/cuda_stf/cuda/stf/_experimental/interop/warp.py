@@ -411,7 +411,7 @@ def _scope_token(ctx):
 
 
 @contextlib.contextmanager
-def scope(ctx, launchable=False, reads=(), writes=()):
+def scope(ctx, launchable=False, reads=(), writes=(), symbol=None):
     """``ctx.graph_scope()`` (``launchable=False``) or
     ``ctx.launchable_graph_scope()`` (``launchable=True``) plus the scope token.
     Yields the binding's scope object (``.launch()`` / ``.graph`` when
@@ -427,6 +427,7 @@ def scope(ctx, launchable=False, reads=(), writes=()):
     level at entry with that access mode, so the scope's node is ordered like a
     task declaring them (a scope with dependencies is a task whose body is a
     graph; use it around a call into code that opens its own scope).
+    ``symbol`` names the level (STF DOT output, diagnostics) and its token.
 
     A scope opened *inside a running task* is a node of the parent level,
     ordered only through the tokens it imports: it is **not** ordered against
@@ -445,8 +446,10 @@ def scope(ctx, launchable=False, reads=(), writes=()):
     outer = _scope_token(ctx)
     cm = ctx.launchable_graph_scope() if launchable else ctx.graph_scope()
     with cm as g:
+        if symbol is not None and hasattr(ctx, "set_level_symbol"):
+            ctx.set_level_symbol(str(symbol))  # names the level in STF's DOT output
         tok = ctx.token()
-        tok.set_symbol("scope")
+        tok.set_symbol(f"scope:{symbol}" if symbol is not None else "scope")
         if outer is not None:
             outer.push(_AccessMode.READ)
         for d in reads:

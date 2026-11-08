@@ -2490,6 +2490,11 @@ void* stf_stackable_allocate(stf_ctx_handle ctx, size_t size);
 //! is safe to call while a graph that uses the memory is still being recorded.
 stf_error_t stf_stackable_deallocate(stf_ctx_handle ctx, void* ptr, size_t size);
 
+//! \brief Name the current (head) level of a stackable context, for DOT output
+//! and diagnostics (the default is the source location of the push). Call it
+//! right after pushing the level.
+stf_error_t stf_stackable_set_symbol(stf_ctx_handle ctx, const char* symbol);
+
 //! \brief Set the symbolic name of stackable logical data (debug / DOT output).
 stf_error_t stf_stackable_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol);
 
