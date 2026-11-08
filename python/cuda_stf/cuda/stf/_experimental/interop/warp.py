@@ -290,8 +290,12 @@ class _ScopeAllocator:
     parent until the parent's graph has launched). Nothing is hoisted or
     retained by hand.
 
-    Lifetime rule: memory allocated inside a scope belongs to that scope's
-    level. When the scope exits, every allocation of the scope that Warp has
+    Only allocations made while the current stream is capturing go to the
+    level (the native hook of the Warp patch has the same rule); any other
+    allocation while the allocator is installed goes to Warp's own allocator.
+
+    Lifetime rule: memory allocated under capture inside a scope belongs to
+    that scope's level. When the scope exits, every allocation of the scope that Warp has
     not freed yet is returned to the level (the release is deferred to the
     pop, after the graph has launched); a later free from Warp, e.g. a
     temporary dropped after the scope or at graph destruction, is ignored.
@@ -300,6 +304,7 @@ class _ScopeAllocator:
 
     _ctxs = []  # (ctx, scope id) of the open scopes, innermost last
     _owner = {}  # ptr -> (ctx, scope id, size) for live STF allocations
+    _builtin = {}  # ptr -> Warp's own allocator, for allocations made outside a capture
     _live = []  # fallback path: retained pointers
     _installed = 0
     _next_id = 0
@@ -308,7 +313,18 @@ class _ScopeAllocator:
     def allocate(cls, size_in_bytes):
         from cuda.bindings import runtime as rt
 
+        wp = _import_warp()
         size_in_bytes = int(size_in_bytes)
+        # Only an allocation made while recording (the current stream is capturing) is
+        # the level's business: it would otherwise be an allocation node in the graph,
+        # forbidden in a child graph and costly in a wide one. Anything else inside a
+        # scope (eager work between recordings, a wp.empty outside any block) goes to
+        # Warp's own allocator and lives as long as the Python object.
+        if not wp.get_stream().is_capturing:
+            builtin = wp.get_device().current_allocator
+            ptr = int(builtin.allocate(size_in_bytes))
+            cls._builtin[ptr] = builtin
+            return ptr
         ctx, sid = cls._ctxs[-1] if cls._ctxs else (None, None)
         # Warp's conditional captures resume the task stream's capture in Warp's own mode,
         # not STF's relaxed one; an allocation is an "unsafe" API there: relax around it
@@ -332,6 +348,10 @@ class _ScopeAllocator:
 
     @classmethod
     def deallocate(cls, ptr, size_in_bytes):
+        builtin = cls._builtin.pop(int(ptr), None)
+        if builtin is not None:
+            builtin.deallocate(int(ptr), int(size_in_bytes))
+            return
         rec = cls._owner.pop(int(ptr), None)
         if rec is not None and any(sid == rec[1] for _, sid in cls._ctxs):
             rec[0].deallocate(

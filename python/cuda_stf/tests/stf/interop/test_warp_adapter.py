@@ -452,7 +452,34 @@ def test_scope_allocations_belong_to_the_level():
         for _ in range(3):
             g.launch()
         wp.synchronize()
-        assert keep[0].numpy()[0] == 2.0  # the fill is part of the recorded graph: every replay resets then scales
+        assert (
+            keep[0].numpy()[0] == 2.0
+        )  # the fill is part of the recorded graph: every replay resets then scales
     keep.clear()  # Warp frees after the scope: ignored by the adapter
     ctx.finalize()
     release_graph_handles()
+
+
+def test_scope_allocator_only_under_capture():
+    """Inside a scope but outside any task nothing is capturing: an allocation
+    there is Warp's own (lives as long as the Python object), not the level's."""
+    from cuda.stf._experimental.interop import warp as adapter
+
+    n = 1 << 10
+    ctx = stf.stackable_context()
+    t = token(ctx)
+    with scope(ctx, launchable=True) as g:
+        a = wp.empty(
+            n, dtype=float
+        )  # no stream work: the poison stays quiet, no capture is active
+        assert not adapter._ScopeAllocator._owner  # not level-owned
+        with warp_task(ctx, t.rw()):
+            b = wp.zeros(n, dtype=float)  # under capture: the level's
+            assert len(adapter._ScopeAllocator._owner) == 1
+            wp.launch(scale, dim=n, inputs=[2.0, b])
+        g.launch()
+    ctx.finalize()
+    release_graph_handles()
+    a.fill_(3.0)  # eager use after the scope: fine, Warp owns it
+    wp.synchronize()
+    assert a.numpy()[0] == 3.0
