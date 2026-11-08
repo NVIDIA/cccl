@@ -178,6 +178,18 @@ _CCCL_FPMP_MATH_DISPATCH_1A(tanh)
  * ====================================================================
  */
 
+/* 0.5/e for e = exp(|x|), or 0 past e = 2^32, where it is under 2^-63 of sinh and cosh. The
+ * divisor is clamped there: dividing by e forms a subnormal low limb past |x| = 70, and Intel
+ * cores take a microcode assist for each product with a subnormal result. */
+[[nodiscard]] _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_half_inv_exp(const fp32mp2_low& __e) noexcept
+{
+  using __ffloat = fp32mp2_low;
+
+  const bool __negligible     = __e.hi() > 0x1p32f;
+  const __ffloat __half_inv_e = __ffloat(0.5f) / (__negligible ? __ffloat(0x1p32f) : __e);
+  return __negligible ? __ffloat(0.f) : __half_inv_e;
+}
+
 /*
  * --------------------------------------------------------------------
  * Hyperbolic sine sinh(x) (fp32mp2) - dedicated implementation
@@ -222,7 +234,7 @@ __internal_fpmp2_sinh(const float __x_hi, const float __x_lo, float* __res_hi, f
     ::cuda::__fpmp2_exp<float>(__abs_a.hi(), __abs_a.lo(), &__u_hi, &__u_lo);
     __ffloat __e(__u_hi, __u_lo);
     __ffloat __half_e     = __e * __ffloat(0.5f);
-    __ffloat __half_inv_e = __ffloat(0.5f) / __e;
+    __ffloat __half_inv_e = ::cuda::__internal_fpmp2_half_inv_exp(__e);
     __ffloat __result     = renormalize(__half_e - __half_inv_e);
     if (__is_neg)
     {
@@ -335,7 +347,7 @@ __internal_fpmp2_cosh(const float __x_hi, const float __x_lo, float* __res_hi, f
 
   /* cosh(|x|) = 0.5*e + 0.5/e  (both terms positive; no cancellation). */
   __ffloat __half_e     = __e * __ffloat(0.5f);
-  __ffloat __half_inv_e = __ffloat(0.5f) / __e;
+  __ffloat __half_inv_e = ::cuda::__internal_fpmp2_half_inv_exp(__e);
   __ffloat __result     = renormalize(__half_e + __half_inv_e);
 
   *__res_hi = __result.hi();
