@@ -368,3 +368,47 @@ def test_no_context_is_a_no_op():
             wp.launch(scale, dim=n, inputs=[2.0, y])
     wp.synchronize()
     assert y.numpy()[0] == 4.0
+
+
+def test_scope_between_blocks_is_ordered_inside_task_is_not():
+    """A scope opened between tasks / native blocks is ordered by its
+    dependencies; one opened inside a running task is a sibling of that
+    task's own launches (documented limitation)."""
+    n = 1 << 16
+    expected = (1.01**20 + 1.0) * 1.01**20
+
+    def run(inside):
+        ctx = stf.stackable_context()
+        t = token(ctx)
+        y = wp.ones(n, dtype=float)
+        with scope(ctx, launchable=True) as g:
+            if inside:
+                with warp_task(ctx, t.rw()):
+                    for _ in range(20):
+                        wp.launch(scale, dim=n, inputs=[1.01, y])
+                    with scope(ctx):
+                        with warp_native(ctx):
+                            wp.launch(
+                                axpy, dim=n, inputs=[1.0, wp.ones(n, dtype=float), y]
+                            )
+                    for _ in range(20):
+                        wp.launch(scale, dim=n, inputs=[1.01, y])
+            else:
+                with warp_task(ctx, t.rw()):
+                    for _ in range(20):
+                        wp.launch(scale, dim=n, inputs=[1.01, y])
+                with scope(ctx, writes=(t,)):
+                    with warp_native(ctx):
+                        wp.launch(axpy, dim=n, inputs=[1.0, wp.ones(n, dtype=float), y])
+                with warp_task(ctx, t.rw()):
+                    for _ in range(20):
+                        wp.launch(scale, dim=n, inputs=[1.01, y])
+            g.launch()
+        wp.synchronize()
+        v = float(y.numpy()[0])
+        ctx.finalize()
+        release_graph_handles()
+        return v
+
+    assert run(False) == pytest.approx(expected, rel=1e-5)
+    assert run(True) != pytest.approx(expected, rel=1e-5)

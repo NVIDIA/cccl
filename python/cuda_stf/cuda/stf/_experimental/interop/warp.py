@@ -58,6 +58,15 @@ _WARP_INSTALL_HINT = (
 _graph_handles = []  # Graph objects from wp.capture_end inside tasks (see module docstring)
 _scopes = {}  # id(ctx) -> stack of scope tokens
 
+#: While a scope is open, route Warp's allocations through :class:`_ScopeAllocator`
+#: (``wp.set_device_allocator``): allocated outside the capture, retained until
+#: :func:`release_graph_handles`. A nested scope records into a CUDA child graph,
+#: which cannot hold allocation nodes; this is the same lifetime STF gives the data
+#: of a level (allocated on the support stream, freed at pop).
+scope_allocator = (
+    __import__("os").environ.get("CUDA_STF_WARP_SCOPE_ALLOCATOR", "1") == "1"
+)
+
 
 def _import_warp():
     try:
@@ -268,6 +277,69 @@ class _PoisonStream:
 
 
 # ---------------------------------------------------------------------------
+# the scope allocator
+# ---------------------------------------------------------------------------
+
+
+class _ScopeAllocator:
+    """Warp allocator installed while a scope is open. Allocations are made
+    outside the capture (``cudaMalloc``; STF's task captures are relaxed-mode)
+    and retained until :func:`release_graph_handles`, the lifetime of the
+    recorded graphs, so no allocation or free node enters any graph."""
+
+    _live = []
+    _installed = 0
+
+    @classmethod
+    def allocate(cls, size_in_bytes):
+        from cuda.bindings import runtime as rt
+
+        # cudaMalloc is an "unsafe" API under a global / thread-local capture (Warp's
+        # capture_if / capture_while resume the task stream's capture in Warp's own mode,
+        # not STF's relaxed one): switch this thread to relaxed mode around it, as Warp's
+        # native side-stream path does.
+        _, mode = rt.cudaThreadExchangeStreamCaptureMode(
+            rt.cudaStreamCaptureMode.cudaStreamCaptureModeRelaxed
+        )
+        try:
+            err, ptr = rt.cudaMalloc(int(size_in_bytes))
+        finally:
+            rt.cudaThreadExchangeStreamCaptureMode(mode)
+        if err != rt.cudaError_t.cudaSuccess:
+            raise RuntimeError(
+                f"scope allocator: cudaMalloc({size_in_bytes}) failed: {err.name}"
+            )
+        cls._live.append(int(ptr))
+        return int(ptr)
+
+    @classmethod
+    def deallocate(cls, ptr, size_in_bytes):
+        pass  # retained: a recorded graph may still reference it
+
+    @classmethod
+    def install(cls):
+        wp = _import_warp()
+        if cls._installed == 0:
+            wp.set_device_allocator(wp.get_device(), cls)
+        cls._installed += 1
+
+    @classmethod
+    def uninstall(cls):
+        wp = _import_warp()
+        cls._installed -= 1
+        if cls._installed == 0:
+            wp.set_device_allocator(wp.get_device(), None)
+
+    @classmethod
+    def release(cls):
+        from cuda.bindings import runtime as rt
+
+        for p in cls._live:
+            rt.cudaFree(p)
+        cls._live.clear()
+
+
+# ---------------------------------------------------------------------------
 # scopes
 # ---------------------------------------------------------------------------
 
@@ -278,7 +350,7 @@ def _scope_token(ctx):
 
 
 @contextlib.contextmanager
-def scope(ctx, launchable=False):
+def scope(ctx, launchable=False, reads=(), writes=()):
     """``ctx.graph_scope()`` (``launchable=False``) or
     ``ctx.launchable_graph_scope()`` (``launchable=True``) plus the scope token.
     Yields the binding's scope object (``.launch()`` / ``.graph`` when
@@ -289,7 +361,17 @@ def scope(ctx, launchable=False):
     reads its parent's token at entry (``push(AccessMode.READ)``), so it is
     ordered after the parent's native blocks before it and stays a sibling of
     the parent's tasks. While the scope is open, Warp's current stream is the
-    poison stream (see module docstring).
+    poison stream (see module docstring). ``reads`` / ``writes`` are tokens (or
+    logical data) the scope depends on as a whole: they are pushed into the
+    level at entry with that access mode, so the scope's node is ordered like a
+    task declaring them (a scope with dependencies is a task whose body is a
+    graph; use it around a call into code that opens its own scope).
+
+    A scope opened *inside a running task* is a node of the parent level,
+    ordered only through the tokens it imports: it is **not** ordered against
+    the enclosing task's own launches before or after it (they are siblings).
+    Open scopes between tasks / native blocks, never inside a task body that
+    also launches work.
 
     >>> with scope(ctx, launchable=True) as g:
     ...     with warp_native(ctx, "collide"): example.collide()
@@ -306,11 +388,21 @@ def scope(ctx, launchable=False):
         tok.set_symbol("scope")
         if outer is not None:
             outer.push(_AccessMode.READ)
+        for d in reads:
+            if d is not None:
+                d.push(_AccessMode.READ)
+        for d in writes:
+            if d is not None:
+                d.push(_AccessMode.RW)
         _scopes.setdefault(id(ctx), []).append(tok)
         poison = _PoisonStream.enter()
+        if scope_allocator:
+            _ScopeAllocator.install()
         try:
             yield g
         finally:
+            if scope_allocator:
+                _ScopeAllocator.uninstall()
             _PoisonStream.exit(poison)
             st = _scopes[id(ctx)]
             st.pop()
@@ -443,9 +535,11 @@ def warp_native(ctx, symbol="native"):
 
 
 def release_graph_handles():
-    """Drop the Warp ``Graph`` handles kept alive by :func:`warp_task`. Call
-    only after every STF context that captured through them is finalized."""
+    """Drop the Warp ``Graph`` handles kept alive by :func:`warp_task` and free
+    the buffers of the scope allocator. Call only after every STF context that
+    captured through them is finalized."""
     _graph_handles.clear()
+    _ScopeAllocator.release()
 
 
 __all__ = [
