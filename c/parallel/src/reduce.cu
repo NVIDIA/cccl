@@ -222,10 +222,38 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
+  const cccl_type_info accum_t = reduce::get_accumulator_type(op, input_it, init);
+
+  // The generated source declares a single `storage_t` that names the input item
+  // type and the accumulator both, so an opaque accumulator constrains the input:
+  // a primitive input has no conversion to `storage_t`, and a differently sized
+  // one would make the host and JIT policies disagree.
+  if (accum_t.type == cccl_type_enum::CCCL_STORAGE
+      && (input_it.value_type.type != cccl_type_enum::CCCL_STORAGE || input_it.value_type.size != accum_t.size
+          || input_it.value_type.alignment < accum_t.alignment))
+  {
+    fflush(stderr);
+    if (input_it.value_type.type != cccl_type_enum::CCCL_STORAGE)
+    {
+      printf("\nERROR in cccl_device_reduce_compile(): input item type is not an opaque type, so it has no "
+             "conversion to the generated accumulator storage type\n");
+    }
+    else
+    {
+      printf("\nERROR in cccl_device_reduce_compile(): input item type (size %zu, alignment %zu) and accumulator "
+             "type (size %zu, alignment %zu) must have the same layout\n",
+             input_it.value_type.size,
+             input_it.value_type.alignment,
+             accum_t.size,
+             accum_t.alignment);
+    }
+    fflush(stdout);
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
   const char* name = "device_reduce";
 
-  const cccl_type_info accum_t = reduce::get_accumulator_type(op, input_it, init);
-  const auto accum_cpp         = cccl_type_enum_to_name(accum_t.type);
+  const auto accum_cpp = cccl_type_enum_to_name(accum_t.type);
 
   const auto [input_iterator_name, input_iterator_src] =
     get_specialization<reduce_iterator_tag>(template_id<input_iterator_traits>(), input_it);
