@@ -155,8 +155,8 @@ Interop adapters
 ----------------
 
 On top of the raw CUDA Array Interface, ``cuda.stf._experimental`` ships small,
-**opt-in** adapters for Numba and PyTorch under ``cuda.stf._experimental.interop``.
-Importing ``cuda.stf._experimental`` does **not** import Numba or PyTorch; the optional
+**opt-in** adapters for Numba, PyTorch and Warp under ``cuda.stf._experimental.interop``.
+Importing ``cuda.stf._experimental`` does **not** import Numba, PyTorch or Warp; the optional
 runtime is imported lazily inside each adapter, and a missing dependency raises a clear
 ``ImportError`` at first use. You import only the adapter you need.
 
@@ -173,6 +173,29 @@ complete program)::
 
 ``tensor_arg(task, index)`` and ``tensor_arguments(task)`` convert one or all
 task arguments to tensors if you manage the task block yourself.
+
+**Warp** (``cuda.stf._experimental.interop.warp``) -- ``warp_task`` opens a task,
+makes the task's CUDA stream the current Warp stream (``wp.ScopedStream``) for the
+duration of the block, and yields ``(stream, arrays)`` where ``arrays`` are
+``wp.array`` views of the task arguments. When the task stream is capturing (graph
+backends), the block runs under a Warp external capture so Warp's own capture-aware
+paths (allocations, conditional captures) see the right state. The following excerpt
+launches a kernel on two logical data (see ``tests/stf/interop/test_warp_adapter.py``
+for the complete program)::
+
+    from cuda.stf._experimental.interop.warp import warp_task
+
+    with warp_task(ctx, lX.read(), lY.rw()) as (stream, (x, y)):
+        wp.launch(axpy, dim=N, inputs=[x, y], stream=stream)
+
+``array_arg(task, index)`` and ``warp_arguments(task)`` convert one or all task
+arguments if you manage the task block yourself, and ``wrap_stream`` returns a cached
+``wp.Stream`` for a raw task stream. Two helpers serve library code that composes with
+a caller's graph: ``local_context()`` opens a stream-bound STF context on the current
+Warp stream (valid inside a caller's ``wp.ScopedCapture``), and ``WarpTaskGraph``
+records a Warp-driven step once into an STF-owned graph, with a catch-all *frame* task
+that library code suspends around its own tasks (``suspend_frame`` / ``resume_frame``,
+``current()``), so that only the work expressed as tasks is reordered.
 
 **Numba** (``cuda.stf._experimental.interop.numba``) -- ``numba_task`` opens a task and
 yields ``(numba_arrays, stream)``, where ``stream`` can be passed straight to
