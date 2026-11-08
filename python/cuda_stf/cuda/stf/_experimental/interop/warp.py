@@ -59,10 +59,10 @@ _graph_handles = []  # Graph objects from wp.capture_end inside tasks (see modul
 _scopes = {}  # id(ctx) -> stack of scope tokens
 
 #: While a scope is open, route Warp's allocations through :class:`_ScopeAllocator`
-#: (``wp.set_device_allocator``): allocated outside the capture, retained until
-#: :func:`release_graph_handles`. A nested scope records into a CUDA child graph,
-#: which cannot hold allocation nodes; this is the same lifetime STF gives the data
-#: of a level (allocated on the support stream, freed at pop).
+#: (``wp.set_device_allocator``) to the STF allocator of the current level
+#: (``ctx.allocate``): outside the capture, owned by the level, released at its
+#: pop. A nested scope records into a CUDA child graph, which cannot hold
+#: allocation nodes.
 scope_allocator = (
     __import__("os").environ.get("CUDA_STF_WARP_SCOPE_ALLOCATOR", "1") == "1"
 )
@@ -282,27 +282,41 @@ class _PoisonStream:
 
 
 class _ScopeAllocator:
-    """Warp allocator installed while a scope is open. Allocations are made
-    outside the capture (``cudaMalloc``; STF's task captures are relaxed-mode)
-    and retained until :func:`release_graph_handles`, the lifetime of the
-    recorded graphs, so no allocation or free node enters any graph."""
+    """Warp allocator installed (``wp.set_device_allocator``) while a scope is
+    open. Allocations go to the **STF allocator of the current level**
+    (``ctx.allocate`` / ``ctx.deallocate``): a nested graph level allocates on
+    its support stream, outside the capture, so no allocation node enters the
+    graph, and the level owns the memory (released at pop, handed to the
+    parent until the parent's graph has launched). Nothing is hoisted or
+    retained by hand. With a binding that lacks ``allocate`` the fallback is an
+    eager ``cudaMalloc`` retained until :func:`release_graph_handles`."""
 
-    _live = []
+    _ctxs = []  # contexts of the open scopes, innermost last
+    _owner = {}  # ptr -> ctx that allocated it (STF path)
+    _live = []  # fallback path: retained pointers
     _installed = 0
+
+    @classmethod
+    def _ctx(cls):
+        return cls._ctxs[-1] if cls._ctxs else None
 
     @classmethod
     def allocate(cls, size_in_bytes):
         from cuda.bindings import runtime as rt
 
-        # cudaMalloc is an "unsafe" API under a global / thread-local capture (Warp's
-        # capture_if / capture_while resume the task stream's capture in Warp's own mode,
-        # not STF's relaxed one): switch this thread to relaxed mode around it, as Warp's
-        # native side-stream path does.
+        size_in_bytes = int(size_in_bytes)
+        ctx = cls._ctx()
+        # Warp's conditional captures resume the task stream's capture in Warp's own mode,
+        # not STF's relaxed one; an allocation is an "unsafe" API there: relax around it
         _, mode = rt.cudaThreadExchangeStreamCaptureMode(
             rt.cudaStreamCaptureMode.cudaStreamCaptureModeRelaxed
         )
         try:
-            err, ptr = rt.cudaMalloc(int(size_in_bytes))
+            if ctx is not None and hasattr(ctx, "allocate"):
+                ptr = int(ctx.allocate(size_in_bytes))
+                cls._owner[ptr] = ctx
+                return ptr
+            err, ptr = rt.cudaMalloc(size_in_bytes)
         finally:
             rt.cudaThreadExchangeStreamCaptureMode(mode)
         if err != rt.cudaError_t.cudaSuccess:
@@ -314,11 +328,16 @@ class _ScopeAllocator:
 
     @classmethod
     def deallocate(cls, ptr, size_in_bytes):
-        pass  # retained: a recorded graph may still reference it
+        ctx = cls._owner.pop(int(ptr), None)
+        if ctx is not None:
+            # the level defers the release to its pop: safe while the graph is recorded or replayed
+            ctx.deallocate(int(ptr), int(size_in_bytes))
+        # fallback pointers stay retained until release_graph_handles()
 
     @classmethod
-    def install(cls):
+    def install(cls, ctx):
         wp = _import_warp()
+        cls._ctxs.append(ctx)
         if cls._installed == 0:
             wp.set_device_allocator(wp.get_device(), cls)
         cls._installed += 1
@@ -326,6 +345,7 @@ class _ScopeAllocator:
     @classmethod
     def uninstall(cls):
         wp = _import_warp()
+        cls._ctxs.pop()
         cls._installed -= 1
         if cls._installed == 0:
             wp.set_device_allocator(wp.get_device(), None)
@@ -397,7 +417,7 @@ def scope(ctx, launchable=False, reads=(), writes=()):
         _scopes.setdefault(id(ctx), []).append(tok)
         poison = _PoisonStream.enter()
         if scope_allocator:
-            _ScopeAllocator.install()
+            _ScopeAllocator.install(ctx)
         try:
             yield g
         finally:

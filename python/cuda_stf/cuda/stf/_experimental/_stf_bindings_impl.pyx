@@ -421,6 +421,8 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     stf_logical_data_handle stf_stackable_logical_data_empty(stf_ctx_handle ctx, size_t length)
     stf_logical_data_handle stf_stackable_logical_data_no_export_empty(stf_ctx_handle ctx, size_t length)
     stf_logical_data_handle stf_stackable_token(stf_ctx_handle ctx)
+    void* stf_stackable_allocate(stf_ctx_handle ctx, size_t size)
+    stf_error_t stf_stackable_deallocate(stf_ctx_handle ctx, void* ptr, size_t size)
     stf_error_t stf_stackable_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol)
     stf_error_t stf_stackable_logical_data_set_read_only(stf_logical_data_handle ld)
     stf_error_t stf_stackable_logical_data_push(
@@ -5174,6 +5176,26 @@ cdef class stackable_context:
         if out._ld == NULL:
             _raise_last_error("failed to create stackable token")
         return out
+
+    def allocate(self, size):
+        """Allocate ``size`` bytes of device memory through the allocator of the
+        current (innermost) level; returns the raw pointer as an ``int``.
+
+        The memory belongs to that level: in a nested graph level it is
+        allocated on the level's support stream, outside the capture (no
+        allocation node enters the graph), and released when the level is
+        popped (handed to the parent until the parent's graph has launched).
+        External runtimes recording into a scope use it for their temporaries
+        (e.g. Warp through ``wp.set_device_allocator``)."""
+        cdef void* p = stf_stackable_allocate(self._ctx, <size_t> size)
+        if p == NULL:
+            _raise_last_error("stf_stackable_allocate failed")
+        return <size_t> p
+
+    def deallocate(self, ptr, size):
+        """Return memory from :meth:`allocate` to the current level's allocator
+        (the release is deferred to the level's pop)."""
+        _check(stf_stackable_deallocate(self._ctx, <void*> <size_t> ptr, <size_t> size), "stf_stackable_deallocate")
 
     def task(self, *args, symbol=None):
         """Create a task on the head (innermost) scope of this context."""
