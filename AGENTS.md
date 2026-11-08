@@ -326,7 +326,7 @@ CCCL's CI is built on GitHub Actions and relies on a dynamically generated job m
 * **`ci/inspect_changes.py`**
 
   * Detects which subprojects changed between commits.
-  * Reads project paths and dependencies from `ci/project_files_and_dependencies.yaml`. Each library is split into a public-header project and a tests/infra project. A change to a library's public headers runs its full matrix plus a reduced ("lite") matrix for every project that lists those headers as a dependency. A change confined to a library's tests does not trigger other libraries, only infra projects such as `tidy` and `packaging`. To see what a change selects, run `python3 ci/inspect_changes.py --refs origin/main HEAD`.
+  * Reads project paths and dependencies from `ci/project_files_and_dependencies.yaml`. Each library is split into a public-header project and a tests/infra project. A change to a library's public headers runs the full matrix of every project that lists those headers in `full_dependencies` (the library's own tests/infra project and `tidy`), and a reduced ("lite") matrix for every project that lists them in `lite_dependencies` or reaches them through another dependency. A project reached both ways runs only its full matrix. A change confined to a library's tests does not trigger other libraries, only infra projects such as `tidy` and `packaging`. To see what a change selects, run `python3 ci/inspect_changes.py --refs origin/main HEAD`.
   * Allows `build-workflow.py` to skip unaffected jobs.
 
 ---

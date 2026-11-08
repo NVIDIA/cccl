@@ -974,7 +974,7 @@ projects:
   # Use the override workflow and supply arguments via the `args` tag.
   # Example:
   #   override:
-  #     - { jobs: ['run'], project: 'target', ctk: ['12.X', '13.X'], cxx: 'gcc', gpu: 't4',
+  #     - { jobs: ['run_gpu'], project: 'target', ctk: ['12.X', '13.X'], cxx: 'gcc', gpu: 't4',
   #         args: '--preset cub-cpp20 --build-targets "cub.test.iterator" --ctest-targets "cub.test.iterator"' }
   target:
     name: 'Target'
