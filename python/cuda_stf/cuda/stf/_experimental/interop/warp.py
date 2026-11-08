@@ -308,6 +308,11 @@ class _ScopeAllocator:
     _live = []  # fallback path: retained pointers
     _installed = 0
     _next_id = 0
+    stats = {
+        "count": 0,
+        "bytes": 0,
+        "max_size": 0,
+    }  # level allocations since the last reset (measurement aid)
 
     @classmethod
     def allocate(cls, size_in_bytes):
@@ -335,6 +340,9 @@ class _ScopeAllocator:
             if ctx is not None and hasattr(ctx, "allocate"):
                 ptr = int(ctx.allocate(size_in_bytes))
                 cls._owner[ptr] = (ctx, sid, size_in_bytes)
+                cls.stats["count"] += 1
+                cls.stats["bytes"] += size_in_bytes
+                cls.stats["max_size"] = max(cls.stats["max_size"], size_in_bytes)
                 return ptr
             err, ptr = rt.cudaMalloc(size_in_bytes)
         finally:
