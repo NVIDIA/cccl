@@ -57,6 +57,15 @@ _WARP_INSTALL_HINT = (
 
 _graph_handles = []  # Graph objects from wp.capture_end inside tasks (see module docstring)
 _scopes = {}  # id(ctx) -> stack of scope tokens
+_open_tasks = []  # symbols of the warp_task / warp_native blocks currently open (diagnostics)
+
+
+def current_task_symbol():
+    """Symbol of the innermost open :func:`warp_task` / :func:`warp_native`
+    block, or ``None``. For tools that attribute Warp events (a conditional
+    capture, an allocation) to the task that recorded them."""
+    return _open_tasks[-1] if _open_tasks else None
+
 
 #: While a scope is open, route Warp's allocations through :class:`_ScopeAllocator`
 #: (``wp.set_device_allocator``) to the STF allocator of the current level
@@ -519,6 +528,7 @@ def warp_task(ctx, *args, symbol=None, capture="auto", dtypes=None):
             except BaseException:
                 self._suspend.__exit__(None, None, None)
                 raise
+            _open_tasks.append(symbol)
             try:
                 self.stream = wrap_stream(t.stream_ptr())
                 self._scope = wp.ScopedStream(
@@ -540,6 +550,8 @@ def warp_task(ctx, *args, symbol=None, capture="auto", dtypes=None):
                         self._scope.__exit__(type(e), e, e.__traceback__)
                 with contextlib.suppress(Exception):
                     t.end()
+                if _open_tasks:
+                    _open_tasks.pop()
                 self._suspend.__exit__(None, None, None)
                 raise
             return self.stream, arrays
@@ -561,6 +573,8 @@ def warp_task(ctx, *args, symbol=None, capture="auto", dtypes=None):
                 t.end()
             except BaseException as e:  # noqa: BLE001
                 errors.append(e)
+            if _open_tasks:
+                _open_tasks.pop()
             self._suspend.__exit__(None, None, None)
             if exc_type is not None:
                 return False
@@ -608,6 +622,7 @@ def release_graph_handles():
 
 __all__ = [
     "array_arg",
+    "current_task_symbol",
     "release_graph_handles",
     "scope",
     "token",
