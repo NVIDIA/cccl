@@ -387,7 +387,8 @@ class _ScopeAllocator:
 
     @classmethod
     def uninstall(cls):
-        wp = _import_warp()
+        # a scope torn down at interpreter shutdown finds Warp already gone: skip the allocator reset then
+        wp = sys.modules.get("warp")
         ctx, sid = cls._ctxs.pop()
         # return the scope's remaining allocations to its level before the pop
         for ptr, (octx, osid, size) in [
@@ -397,7 +398,7 @@ class _ScopeAllocator:
             if octx is not None:
                 octx.deallocate(int(ptr), size)
         cls._installed -= 1
-        if cls._installed == 0:
+        if cls._installed == 0 and wp is not None:
             wp.set_device_allocator(wp.get_device(), None)
 
     @classmethod
