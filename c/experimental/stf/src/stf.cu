@@ -1217,12 +1217,21 @@ stf_data_place_handle stf_data_place_composite_cute(stf_exec_place_handle grid, 
 namespace
 {
 // Allocation through a context's own allocators (see stf_ctx_allocate()). The
-// allocator says whether it can serve a raw allocation: one whose users the
-// context does not track. It can when its allocations are stream-ordered
-// (block_allocator_interface::allocation_is_stream_ordered): the completion
-// events it reports, if any, are waited for, so the memory is usable on any
-// stream when the call returns. An allocator recording graph nodes cannot (only
-// work ordered after the node may use the memory), and the call fails.
+// allocator says whether it can serve a raw allocation, one whose users the
+// context does not track (block_allocator_interface::allocation_is_stream_ordered;
+// an allocator recording graph nodes cannot). Like any STF operation, the
+// allocation is asynchronous with respect to the context: the events it reports,
+// if any, have no consumer the context knows of, so they are registered as
+// dangling events and joined by fence() / finalize() (the stream_adapter of a
+// stackable scope reports none: it allocates on the scope's support stream).
+void ctx_register_dangling(backend_ctx_untyped& bctx, event_list& prereqs)
+{
+  if (!prereqs.empty() && bctx.track_dangling_events())
+  {
+    bctx.get_state().add_dangling_events(bctx, prereqs);
+  }
+}
+
 void* ctx_allocate(backend_ctx_untyped& bctx, size_t size, bool cached)
 {
   auto& alloc = cached ? bctx.get_allocator() : bctx.get_uncached_allocator();
@@ -1240,12 +1249,7 @@ void* ctx_allocate(backend_ctx_untyped& bctx, size_t size, bool cached)
   {
     throw ::std::runtime_error("allocation of " + ::std::to_string(size) + " bytes failed");
   }
-  if (!prereqs.empty())
-  {
-    cudaStream_t stream = bctx.pick_stream();
-    prereqs.sync_with_stream(bctx, stream);
-    cuda_safe_call(cudaStreamSynchronize(stream));
-  }
+  ctx_register_dangling(bctx, prereqs);
   return p;
 }
 
@@ -1258,6 +1262,7 @@ void ctx_deallocate(backend_ctx_untyped& bctx, void* ptr, size_t size, bool cach
   }
   event_list prereqs;
   alloc.deallocate(bctx, data_place::current_device(), prereqs, ptr, size);
+  ctx_register_dangling(bctx, prereqs);
 }
 } // namespace
 

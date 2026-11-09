@@ -11,8 +11,8 @@
 // stf_ctx_allocate / stf_stackable_allocate: raw device memory served by a
 // context's own allocators (cached or uncached). The allocator says whether it
 // can serve a raw allocation (allocation_is_stream_ordered): a stream context's
-// can, the graph backend's node allocator cannot. At the root of a stackable
-// context and on a stream context the call is synchronous; inside a pushed
+// can, the graph backend's node allocator cannot. The allocation is asynchronous
+// with respect to the context (complete on its fence stream); inside a pushed
 // scope the memory is owned by the scope (allocated on its support stream, no
 // allocation node in the scope's graph, released at pop).
 
@@ -43,11 +43,13 @@ __global__ void add_kernel(int n, const float* in, double* inout)
 
 constexpr int N = 128;
 
-// Round trip through memory the context handed out: the pointer is usable on an
-// arbitrary stream as soon as the call returns.
-void check_round_trip(void* p)
+// Round trip through memory the context handed out. The allocation is
+// asynchronous with respect to the context: complete on its fence stream.
+void check_round_trip(void* p, cudaStream_t fence)
 {
   REQUIRE(p != nullptr);
+  REQUIRE(fence != nullptr);
+  REQUIRE(cudaStreamSynchronize(fence) == cudaSuccess);
   float host[N];
   for (int i = 0; i < N; i++)
   {
@@ -71,7 +73,7 @@ C2H_TEST("ctx_allocate: stream context, cached and uncached", "[ctx][allocate]")
   for (int cached = 0; cached < 2; cached++)
   {
     void* p = stf_ctx_allocate(ctx, N * sizeof(float), cached);
-    check_round_trip(p);
+    check_round_trip(p, stf_fence(ctx));
     REQUIRE(stf_ctx_deallocate(ctx, p, N * sizeof(float), cached) == STF_SUCCESS);
   }
 
@@ -106,7 +108,7 @@ C2H_TEST("stackable_allocate: root behaves like the stream context", "[stackable
   for (int cached = 0; cached < 2; cached++)
   {
     void* p = stf_stackable_allocate(ctx, N * sizeof(float), cached);
-    check_round_trip(p);
+    check_round_trip(p, stf_stackable_ctx_fence(ctx));
     REQUIRE(stf_stackable_deallocate(ctx, p, N * sizeof(float), cached) == STF_SUCCESS);
   }
   REQUIRE(stf_stackable_ctx_finalize(ctx) == STF_SUCCESS);

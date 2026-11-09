@@ -15,8 +15,11 @@ import cuda.stf._experimental as stf  # noqa: E402
 NBYTES = 1024
 
 
-def _round_trip(ptr):
-    """The pointer is usable on any stream as soon as allocate() returns."""
+def _round_trip(ctx, ptr):
+    """The allocation is asynchronous with respect to the context: complete on
+    its fence stream."""
+    (err,) = rt.cudaStreamSynchronize(int(ctx.fence()))
+    assert err == rt.cudaError_t.cudaSuccess
     src = np.arange(NBYTES, dtype=np.uint8)
     (err,) = rt.cudaMemcpy(
         ptr, src.ctypes.data, NBYTES, rt.cudaMemcpyKind.cudaMemcpyHostToDevice
@@ -35,7 +38,7 @@ def test_context_allocate(cached):
     with stf.context() as ctx:
         p = ctx.allocate(NBYTES, cached=cached)
         assert isinstance(p, int) and p != 0
-        _round_trip(p)
+        _round_trip(ctx, p)
         ctx.deallocate(p, NBYTES, cached=cached)
 
 
@@ -58,7 +61,7 @@ def test_graph_context_refuses():
 def test_stackable_root_allocate(cached):
     with stf.stackable_context() as ctx:
         p = ctx.allocate(NBYTES, cached=cached)
-        _round_trip(p)
+        _round_trip(ctx, p)
         ctx.deallocate(p, NBYTES, cached=cached)
 
 

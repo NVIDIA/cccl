@@ -973,8 +973,9 @@ stf_error_t stf_ctx_finalize(stf_ctx_handle ctx);
 //! it follows \c CUDASTF_DEFAULT_ALLOCATOR and \c ctx.set_allocator()), zero
 //! uses the context's uncached allocator (a fresh allocation every time).
 //!
-//! The context orders the allocation: the call returns once the memory is
-//! usable on any stream. The allocator decides whether it can serve such a raw
+//! Like every STF operation the allocation is asynchronous with respect to the
+//! context: it is complete on the stream returned by stf_fence(), and when the
+//! context finalizes. The allocator decides whether it can serve such a raw
 //! allocation (\c block_allocator_interface::allocation_is_stream_ordered):
 //! stream-ordered allocators can, the stream backend's as well as any installed
 //! on the context (e.g. a \c stream_adapter on a graph context); an allocator
@@ -986,8 +987,9 @@ void* stf_ctx_allocate(stf_ctx_handle ctx, size_t size, int cached);
 
 //! \brief Return memory obtained from stf_ctx_allocate() to the allocator of
 //! \p ctx. Pass the same \p cached value as at allocation. The memory must no
-//! longer be in use (synchronize the streams that used it first): a cached
-//! block may be handed to the next stf_ctx_allocate() immediately.
+//! longer be in use by work the context does not track: a cached block may be
+//! handed to the next stf_ctx_allocate() immediately. The release itself is
+//! asynchronous with respect to the context (complete at stf_fence()).
 stf_error_t stf_ctx_deallocate(stf_ctx_handle ctx, void* ptr, size_t size, int cached);
 
 //! \brief Borrow the per-place stream-pool registry embedded in \p ctx.
@@ -2501,9 +2503,9 @@ stf_logical_data_handle stf_stackable_token(stf_ctx_handle ctx);
 //! \brief Allocate \p size bytes of device memory through the allocator of the
 //! current (innermost) scope of a stackable context.
 //!
-//! At the root this is stf_ctx_allocate() on the root stream context (the call
-//! returns once the memory is usable, \p cached as there). Inside a pushed
-//! scope the memory belongs to the scope: it is allocated on the scope's support
+//! At the root this is stf_ctx_allocate() on the root stream context
+//! (asynchronous with respect to the context, \p cached as there). Inside a
+//! pushed scope the memory belongs to the scope: it is allocated on the scope's support
 //! stream, outside the capture, so no allocation node enters the scope's graph,
 //! it is usable by every task recorded in the scope, and it is released when
 //! the scope is popped (handed to the parent until the parent's graph has

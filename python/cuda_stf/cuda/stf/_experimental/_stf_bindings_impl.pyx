@@ -3835,11 +3835,11 @@ cdef class context:
         allocator; returns the raw pointer as an ``int``.
 
         ``cached=True`` uses the context's current allocator (a cached block
-        allocator by default), ``cached=False`` its uncached one. The context
-        orders the allocation: the memory is usable on any stream when the
-        call returns. The allocator decides whether it can serve a raw
-        allocation (stream-ordered ones can; the graph backend's node
-        allocator cannot and the call raises)."""
+        allocator by default), ``cached=False`` its uncached one. Like every
+        STF operation the allocation is asynchronous with respect to the
+        context: complete on the stream :meth:`fence` returns. The allocator
+        decides whether it can serve a raw allocation (stream-ordered ones
+        can; the graph backend's node allocator cannot and the call raises)."""
         cdef void* p = stf_ctx_allocate(self._ctx, size, 1 if cached else 0)
         if p == NULL:
             _raise_last_error("stf_ctx_allocate")
@@ -5189,7 +5189,8 @@ cdef class stackable_context:
         the current (innermost) scope; returns the raw pointer as an ``int``.
 
         At the root this is :meth:`context.allocate` on the root stream
-        context. Inside a scope the memory belongs to the scope: allocated on
+        context (asynchronous with respect to the context, complete on the
+        :meth:`fence` stream). Inside a scope the memory belongs to the scope: allocated on
         the scope's support stream outside the capture (no allocation node
         enters the graph), usable by every task recorded in the scope, and
         released when the scope is popped. External runtimes recording into a
