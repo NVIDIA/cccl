@@ -97,7 +97,9 @@ struct alignas(8) __fpmp2_pow_exp_entry
 // max|r0|, 2^-7.56 over all buckets; ln(c) and 2^(j/128) are rounded from 256-bit values.
 // ln2 = 0x1.62e4p-1f + 0x1.7f7d1cp-20f + 0x1.ef357ap-45f
 // ln2/128 = 0x1.63p-8f - 0x1.bd0106p-20f + 0x1.cf79acp-47f, 128/ln2 ~= 0x1.715476p+7f
-_CCCL_GLOBAL_CONSTANT __fpmp2_pow_log_entry __fpmp2_pow_log_table[128] = {
+// Hidden, like the functions that read them, so that shared libraries built against different
+// versions of these tables do not share one copy.
+_CCCL_VISIBILITY_HIDDEN _CCCL_GLOBAL_CONSTANT __fpmp2_pow_log_entry __fpmp2_pow_log_table[128] = {
   {0x1.6cp+0f, -0x1.686cp-2f, -0x1.03d362p-19f, -0x1.2bb11p-44f},
   {0x1.6ap+0f, -0x1.62c8p-2f, -0x1.795ce4p-21f, 0x1.ab4242p-48f},
   {0x1.68p+0f, -0x1.5d1cp-2f, 0x1.2053fcp-21f, -0x1.ca508ep-46f},
@@ -227,7 +229,7 @@ _CCCL_GLOBAL_CONSTANT __fpmp2_pow_log_entry __fpmp2_pow_log_table[128] = {
   {0x1.7p-1f, 0x1.522cp-2f, -0x1.1f8c76p-18f, 0x1.ebe708p-45f},
   {0x1.6ep-1f, 0x1.57cp-2f, -0x1.1586e6p-19f, 0x1.fadedep-46f},
 };
-_CCCL_GLOBAL_CONSTANT __fpmp2_pow_exp_entry __fpmp2_pow_exp_table[128] = {
+_CCCL_VISIBILITY_HIDDEN _CCCL_GLOBAL_CONSTANT __fpmp2_pow_exp_entry __fpmp2_pow_exp_table[128] = {
   {0x1p+0f, 0.0f},
   {0x1.0163dap+0f, 0x1.3f6666p-25f},
   {0x1.02c9a4p+0f, -0x1.887fap-28f},

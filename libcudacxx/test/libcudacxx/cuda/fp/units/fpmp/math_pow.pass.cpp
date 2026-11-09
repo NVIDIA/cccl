@@ -7,11 +7,13 @@
 
 // fp32mp2 pow: within 4u^2 (u = 2^-24) of binary128 where b ln|a| is large, which magnifies an
 // error in ln|a| (forming ln|a| to the format's own precision erred by up to 160u^2 on these
-// cases); the C99 Annex F special values on the value hi + lo; and gradual underflow below FLT_MIN.
+// cases), and for subnormal and tiny bases; the C99 Annex F special values on the value hi + lo;
+// and gradual underflow below FLT_MIN.
 
 #include <cuda/fpmp>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
+#include <cuda/std/limits>
 
 #include "test_macros.h"
 
@@ -55,6 +57,9 @@ TEST_HOST_DEVICE_FUNC void test_accuracy()
     {-0x1p+0f, 0x1p-30f, 0x1p+30f, 0x1p+0f, -0x1.78b56359fab33p-2, 0x1.f7c41029d2c0fp-56},
     {-0x1p+0f, 0x1p-30f, -0x1p+31f, 0x1p+1f, 0x1.d8e64b85ea41bp+2, -0x1.6d101f078d62cp-54},
     {0x1.6a09e6p-1f, 0x1.9fcef4p-27f, 0x1.4p+3f, 0.0f, 0x1.0000000000018p-5, 0x1.2ac7d7f7f5dbp-59},
+    // a subnormal base, and a tiny base whose lo limb is subnormal
+    {0x1.2d687p-129f, 0.0f, -0x1.333334p-1f, 0.0f, 0x1.32450b3fe3e8cp+77, 0x1.567bef45e3887p+21},
+    {0x1.3c5a7ep-118f, -0x1.98p-143f, 0x1.7ae148p-2f, 0.0f, 0x1.5e6edd1560973p-44, 0x1.51a4a2b5d3bebp-98},
   };
   for (pow_case c : cases)
   {
