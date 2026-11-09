@@ -78,6 +78,10 @@ template <class _Tp, class _Cmp>
 
 // isgreater
 
+#if _CCCL_CHECK_BUILTIN(builtin_isgreater) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ISGREATER(...) __builtin_isgreater(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_isgreater) || _CCCL_COMPILER(GCC)
+
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__is_fp_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr bool isgreater(_Tp __x, _Tp __y) noexcept
@@ -103,9 +107,7 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
       }
 #endif // _CCCL_HAS_NVFP16()
     }
-
-    using _Cmp = ::cuda::std::greater<>;
-    return ::cuda::std::__fp_compare_generic(__x, __y, _Cmp{});
+    return ::cuda::std::__fp_compare_generic(__x, __y, ::cuda::std::greater<>{});
   }
   else
   {
@@ -118,7 +120,11 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
         _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__fp_compare_generic(__x, __y, ::cuda::std::greater<>{});)
       }
 
+#if defined(_CCCL_BUILTIN_ISGREATER)
+      NV_IF_TARGET(NV_IS_HOST, (return _CCCL_BUILTIN_ISGREATER(__x, __y);))
+#else // ^^^ _CCCL_BUILTIN_ISGREATER ^^^ / vvv !_CCCL_BUILTIN_ISGREATER vvv
       NV_IF_TARGET(NV_IS_HOST, (return ::isgreater(__x, __y);))
+#endif // !_CCCL_BUILTIN_ISGREATER
     }
 
     if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
@@ -137,6 +143,10 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_T1> _CCCL_AND __is_extended_arithmeti
 }
 
 // isgreaterequal
+
+#if _CCCL_CHECK_BUILTIN(builtin_isgreaterequal) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ISGREATEREQUAL(...) __builtin_isgreaterequal(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_isgreaterequal) || _CCCL_COMPILER(GCC)
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__is_fp_v<_Tp>)
@@ -163,9 +173,7 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
       }
 #endif // _CCCL_HAS_NVFP16()
     }
-
-    using _Cmp = ::cuda::std::greater_equal<>;
-    return ::cuda::std::__fp_compare_generic(__x, __y, _Cmp{});
+    return ::cuda::std::__fp_compare_generic(__x, __y, ::cuda::std::greater_equal<>{});
   }
   else
   {
@@ -179,7 +187,11 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
           return ::cuda::std::__fp_compare_generic(__x, __y, ::cuda::std::greater_equal<>{});)
       }
 
+#if defined(_CCCL_BUILTIN_ISGREATEREQUAL)
+      NV_IF_TARGET(NV_IS_HOST, (return _CCCL_BUILTIN_ISGREATEREQUAL(__x, __y);))
+#else // ^^^ _CCCL_BUILTIN_ISGREATEREQUAL ^^^ / vvv !_CCCL_BUILTIN_ISGREATEREQUAL vvv
       NV_IF_TARGET(NV_IS_HOST, (return ::isgreaterequal(__x, __y);))
+#endif // !_CCCL_BUILTIN_ISGREATEREQUAL
     }
 
     if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
@@ -198,6 +210,10 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_T1> _CCCL_AND __is_extended_arithmeti
 }
 
 // isless
+
+#if _CCCL_CHECK_BUILTIN(builtin_isless) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ISLESS(...) __builtin_isless(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_isless) || _CCCL_COMPILER(GCC)
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__is_fp_v<_Tp>)
@@ -224,9 +240,7 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
       }
 #endif // _CCCL_HAS_NVFP16()
     }
-
-    using _Cmp = ::cuda::std::less<>;
-    return ::cuda::std::__fp_compare_generic(__x, __y, _Cmp{});
+    return ::cuda::std::__fp_compare_generic(__x, __y, ::cuda::std::less<>{});
   }
   else
   {
@@ -239,7 +253,11 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
         _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__fp_compare_generic(__x, __y, ::cuda::std::less<>{});)
       }
 
+#if defined(_CCCL_BUILTIN_ISLESS)
+      NV_IF_TARGET(NV_IS_HOST, (return _CCCL_BUILTIN_ISLESS(__x, __y);))
+#else // ^^^ _CCCL_BUILTIN_ISLESS ^^^ / vvv !_CCCL_BUILTIN_ISLESS vvv
       NV_IF_TARGET(NV_IS_HOST, (return ::isless(__x, __y);))
+#endif // !_CCCL_BUILTIN_ISLESS
     }
 
     if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
@@ -258,6 +276,10 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_T1> _CCCL_AND __is_extended_arithmeti
 }
 
 // islessequal
+
+#if _CCCL_CHECK_BUILTIN(builtin_islessequal) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ISLESSEQUAL(...) __builtin_islessequal(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_islessequal) || _CCCL_COMPILER(GCC)
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__is_fp_v<_Tp>)
@@ -284,9 +306,7 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
       }
 #endif // _CCCL_HAS_NVFP16()
     }
-
-    using _Cmp = ::cuda::std::less_equal<>;
-    return ::cuda::std::__fp_compare_generic(__x, __y, _Cmp{});
+    return ::cuda::std::__fp_compare_generic(__x, __y, ::cuda::std::less_equal<>{});
   }
   else
   {
@@ -300,7 +320,11 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
           return ::cuda::std::__fp_compare_generic(__x, __y, ::cuda::std::less_equal<>{});)
       }
 
+#if defined(_CCCL_BUILTIN_ISLESSEQUAL)
+      NV_IF_TARGET(NV_IS_HOST, (return _CCCL_BUILTIN_ISLESSEQUAL(__x, __y);))
+#else // ^^^ _CCCL_BUILTIN_ISLESSEQUAL ^^^ / vvv !_CCCL_BUILTIN_ISLESSEQUAL vvv
       NV_IF_TARGET(NV_IS_HOST, (return ::islessequal(__x, __y);))
+#endif // !_CCCL_BUILTIN_ISLESSEQUAL
     }
 
     if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
@@ -319,6 +343,10 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_T1> _CCCL_AND __is_extended_arithmeti
 }
 
 // islessgreater
+
+#if _CCCL_CHECK_BUILTIN(builtin_islessgreater) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ISLESSGREATER(...) __builtin_islessgreater(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_islessgreater) || _CCCL_COMPILER(GCC)
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__is_fp_v<_Tp>)
@@ -345,9 +373,7 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
       }
 #endif // _CCCL_HAS_NVFP16()
     }
-
-    using _Cmp = ::cuda::std::not_equal_to<>;
-    return ::cuda::std::__fp_compare_generic(__x, __y, _Cmp{});
+    return ::cuda::std::__fp_compare_generic(__x, __y, ::cuda::std::not_equal_to<>{});
   }
   else
   {
@@ -361,7 +387,11 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
           return ::cuda::std::__fp_compare_generic(__x, __y, ::cuda::std::not_equal_to<>{});)
       }
 
+#if defined(_CCCL_BUILTIN_ISLESSGREATER)
+      NV_IF_TARGET(NV_IS_HOST, (return _CCCL_BUILTIN_ISLESSGREATER(__x, __y);))
+#else // ^^^ _CCCL_BUILTIN_ISLESSGREATER ^^^ / vvv !_CCCL_BUILTIN_ISLESSGREATER vvv
       NV_IF_TARGET(NV_IS_HOST, (return ::islessgreater(__x, __y);))
+#endif // !_CCCL_BUILTIN_ISLESSGREATER
     }
 
     if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
