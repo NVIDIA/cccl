@@ -1680,10 +1680,13 @@ public:
   //! `policy` decides what happens to that first failure once the level is gone: the default,
   //! `fwd`, propagates it with its type intact; `abort` reports and ends the program, which
   //! is what the RAII scopes pass since they call pop() from a destructor; `notify` reports and
-  //! lets the program continue. See exception_policy.cuh for the full set.
+  //! lets the program continue. See exception_policy.cuh for the full set. `policy` is a sink:
+  //! a raw reaction is spelled `subst(value)` or `thrown(callable)`.
   template <typename Policy = sump::fwd_t>
   void pop(Policy policy = {})
   {
+    static_assert(sump::__is_exception_sink_v<Policy>,
+                  "pop(policy): the policy must be a sink; spell a raw reaction as subst(value) or thrown(callable)");
     pimpl->pop(policy);
   }
 
@@ -1714,6 +1717,9 @@ public:
   template <typename Policy = sump::fwd_t>
   void pop_epilogue(Policy policy = {})
   {
+    static_assert(sump::__is_exception_sink_v<Policy>,
+                  "pop_epilogue(policy): the policy must be a sink; spell a raw reaction as subst(value) or "
+                  "thrown(callable)");
     pimpl->pop_epilogue_impl(policy);
   }
 
