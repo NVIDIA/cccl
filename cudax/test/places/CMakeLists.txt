@@ -6,7 +6,6 @@ set(
   exec_place_scope.cu
   placement.cu
   stream_pool.cu
-  stream_context.cu
 )
 
 set(places_fail_tests exec_place_scope_data_place_fail.cu)
