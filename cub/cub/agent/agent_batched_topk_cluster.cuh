@@ -76,6 +76,7 @@
 #include <cuda/__memory/ptr_rebind.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/fence.h>
+#include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
 #include <cuda/__ptx/instructions/mbarrier_complete_tx.h>
 #include <cuda/__ptx/instructions/mbarrier_init.h>
@@ -3609,13 +3610,11 @@ private:
     // cached into the members. The radix path runs on the *logical* cluster (`layout.num_logical_cluster_blocks`, set
     // by `compute_segment_layout`); `init_logical_cluster` records whether a small segment collapsed onto rank 0. The
     // launched cluster blocks match the launch attribute the dispatch passed to `cudaLaunchKernelExC`.
-    // The builtins are only declared for SM 9.0+ device passes, the only ones that reach the agent (see `Process`).
-    NV_IF_TARGET(
-      NV_PROVIDES_SM_90,
-      (cluster_block_rank = ::__clusterRelativeBlockRank(); num_full_cluster_blocks = ::__clusterSizeInBlocks();
-       segment_id = static_cast<num_segments_val_t>(::__clusterIdx().x);));
+    cluster_block_rank      = ::cuda::ptx::get_sreg_cluster_ctarank();
+    num_full_cluster_blocks = ::cuda::ptx::get_sreg_cluster_nctarank();
     _CCCL_ASSERT(num_full_cluster_blocks > 0u && cluster_block_rank < num_full_cluster_blocks,
                  "hardware cluster rank must lie within a non-empty cluster");
+    segment_id = static_cast<num_segments_val_t>(::cuda::ptx::get_sreg_clusterid_x());
 
     if (segment_id >= static_cast<num_segments_val_t>(detail::params::get_param(num_segments, num_segments_val_t{0})))
     {
