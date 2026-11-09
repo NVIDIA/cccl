@@ -335,8 +335,14 @@ template <typename _Vec>
   }
 }
 
+// NVCC + MSVC doesn't accept const (constexpr) __device__ variable templates
+#if _CCCL_COMPILER(MSVC)
+template <typename _Vec>
+inline constexpr _Vec iota = ::cuda::std::simd::__make_iota<_Vec>();
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 template <typename _Vec>
 _CCCL_GLOBAL_CONSTANT _Vec iota = ::cuda::std::simd::__make_iota<_Vec>();
+#endif // !_CCCL_COMPILER(MSVC)
 
 _CCCL_END_NAMESPACE_CUDA_STD_SIMD
 

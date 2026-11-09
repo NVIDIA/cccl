@@ -60,7 +60,7 @@ struct test_bit_repeat
   {
     using U_vec = simd::vec<T, N>;
     using I_vec = simd::rebind_t<cuda::std::make_signed_t<T>, U_vec>;
-    using I     = I_vec::value_type;
+    using I     = typename I_vec::value_type;
 
     const I_vec vec_counts(repeat_counts<I>{});
     const U_vec vec_bits(bit_values<T>{});
