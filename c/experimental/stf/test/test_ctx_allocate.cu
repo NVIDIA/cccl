@@ -9,11 +9,12 @@
 //===----------------------------------------------------------------------===//
 //
 // stf_ctx_allocate / stf_stackable_allocate: raw device memory served by a
-// context's own allocators (cached or uncached). At the root of a stackable
+// context's own allocators (cached or uncached). The allocator says whether it
+// can serve a raw allocation (allocation_is_stream_ordered): a stream context's
+// can, the graph backend's node allocator cannot. At the root of a stackable
 // context and on a stream context the call is synchronous; inside a pushed
 // scope the memory is owned by the scope (allocated on its support stream, no
-// allocation node in the scope's graph, released at pop), and cached
-// allocations are refused.
+// allocation node in the scope's graph, released at pop).
 
 #include <cuda_runtime.h>
 
@@ -85,10 +86,10 @@ C2H_TEST("ctx_allocate: stream context, cached and uncached", "[ctx][allocate]")
   REQUIRE(stf_ctx_finalize(ctx) == STF_SUCCESS);
 }
 
-// The graph backend's default allocator records allocation nodes: nothing
-// outside the graph can be ordered after them, so a raw allocation is refused.
-// (A graph context with a stream_adapter installed as its allocator would be
-// served; a nested stackable scope is exactly that, see below.)
+// The graph backend's default allocator records allocation nodes and reports
+// that it is not stream-ordered, so a raw allocation is refused. (A graph
+// context with a stream_adapter installed as its allocator is served; a nested
+// stackable scope is exactly that, see below.)
 C2H_TEST("ctx_allocate: graph context with the node allocator is refused", "[ctx][allocate]")
 {
   stf_ctx_handle ctx = stf_ctx_create_graph();
@@ -130,9 +131,11 @@ C2H_TEST("stackable_allocate: scope-owned scratch used by the scope's tasks", "[
     // scope ends; the scope keeps it alive until its graph has run
     void* scratch = stf_stackable_allocate(ctx, N * sizeof(float), 0);
     REQUIRE(scratch != nullptr);
-    // cached allocations are refused inside a scope
-    REQUIRE(stf_stackable_allocate(ctx, N * sizeof(float), 1) == nullptr);
-    REQUIRE(stf_get_last_error() == STF_ERROR_INVALID_ARGUMENT);
+    // the scope's cached allocator serves too (it draws from the same
+    // stream_adapter); a single user, freed after the scope's tasks
+    void* scratch_cached = stf_stackable_allocate(ctx, N * sizeof(float), 1);
+    REQUIRE(scratch_cached != nullptr);
+    REQUIRE(scratch_cached != scratch);
 
     stf_task_handle t1 = stf_stackable_task_create(ctx);
     REQUIRE(t1 != nullptr);
@@ -156,6 +159,7 @@ C2H_TEST("stackable_allocate: scope-owned scratch used by the scope's tasks", "[
     stf_task_destroy(t2);
 
     REQUIRE(stf_stackable_deallocate(ctx, scratch, N * sizeof(float), 0) == STF_SUCCESS);
+    REQUIRE(stf_stackable_deallocate(ctx, scratch_cached, N * sizeof(float), 1) == STF_SUCCESS);
   }
   REQUIRE(stf_stackable_pop(ctx) == STF_SUCCESS);
 

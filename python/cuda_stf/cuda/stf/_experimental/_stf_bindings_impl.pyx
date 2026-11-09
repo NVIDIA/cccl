@@ -3837,7 +3837,9 @@ cdef class context:
         ``cached=True`` uses the context's current allocator (a cached block
         allocator by default), ``cached=False`` its uncached one. The context
         orders the allocation: the memory is usable on any stream when the
-        call returns. Stream contexts only."""
+        call returns. The allocator decides whether it can serve a raw
+        allocation (stream-ordered ones can; the graph backend's node
+        allocator cannot and the call raises)."""
         cdef void* p = stf_ctx_allocate(self._ctx, size, 1 if cached else 0)
         if p == NULL:
             _raise_last_error("stf_ctx_allocate")
@@ -5192,9 +5194,10 @@ cdef class stackable_context:
         enters the graph), usable by every task recorded in the scope, and
         released when the scope is popped. External runtimes recording into a
         scope use it for their temporaries (e.g. Warp through
-        ``wp.set_device_allocator``). ``cached`` must be ``False`` inside a
-        scope: a recycled block would carry a dependency the graph does not
-        otherwise have."""
+        ``wp.set_device_allocator``). Use ``cached=False`` for temporaries
+        freed while the scope records: the scope's uncached allocator defers
+        the release to the pop, a recycling allocator would hand the block to
+        the next request at once."""
         cdef void* p = stf_stackable_allocate(self._ctx, size, 1 if cached else 0)
         if p == NULL:
             _raise_last_error("stf_stackable_allocate")
@@ -5202,9 +5205,9 @@ cdef class stackable_context:
 
     def deallocate(self, size_t ptr, size_t size, *, bint cached=False):
         """Return memory from :meth:`allocate` to the current scope's
-        allocator (same ``cached`` value). Inside a scope the release is
-        deferred to the pop, so this is safe while the graph is still being
-        recorded; at the root the memory must no longer be in use."""
+        allocator (same ``cached`` value). With the scope's uncached allocator
+        the release is deferred to the pop, so this is safe while the graph is
+        still being recorded; otherwise the memory must no longer be in use."""
         _check(stf_stackable_deallocate(self._ctx, <void*> ptr, size, 1 if cached else 0), "stf_stackable_deallocate")
 
     def token(self):

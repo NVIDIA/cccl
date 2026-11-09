@@ -64,13 +64,15 @@ def test_stackable_root_allocate(cached):
 
 def test_stackable_scope_allocate():
     """Inside a scope: a pointer is handed out while recording, freed before
-    the scope ends, and still valid for the scope's graph; cached is refused."""
+    the scope ends, and still valid for the scope's graph; the cached allocator
+    of the scope serves as well."""
     with stf.stackable_context() as ctx:
         with ctx.graph_scope():
             p = ctx.allocate(NBYTES)
             assert p != 0
-            with pytest.raises(Exception):
-                ctx.allocate(NBYTES, cached=True)
+            q = ctx.allocate(NBYTES, cached=True)
+            assert q != 0 and q != p
+            ctx.deallocate(q, NBYTES, cached=True)
             # a task in the scope may touch the memory on its stream
             with ctx.task() as t:
                 (err,) = rt.cudaMemsetAsync(p, 7, NBYTES, int(t.stream_ptr()))

@@ -974,12 +974,14 @@ stf_error_t stf_ctx_finalize(stf_ctx_handle ctx);
 //! uses the context's uncached allocator (a fresh allocation every time).
 //!
 //! The context orders the allocation: the call returns once the memory is
-//! usable on any stream. This requires a stream-ordered allocator: the stream
-//! backend's, or one installed on the context (e.g. a \c stream_adapter on a
-//! graph context). A graph context's default allocator records allocation
-//! nodes in the graph, which a raw allocation cannot be ordered after, so the
-//! call fails with \c STF_ERROR_INVALID_ARGUMENT there. For a stackable
-//! context use stf_stackable_allocate(). Returns NULL on failure.
+//! usable on any stream. The allocator decides whether it can serve such a raw
+//! allocation (\c block_allocator_interface::allocation_is_stream_ordered):
+//! stream-ordered allocators can, the stream backend's as well as any installed
+//! on the context (e.g. a \c stream_adapter on a graph context); an allocator
+//! recording allocation nodes in a graph cannot, since only work ordered after
+//! the node may use the memory, and the call fails with
+//! \c STF_ERROR_INVALID_ARGUMENT. For a stackable context use
+//! stf_stackable_allocate(). Returns NULL on failure.
 void* stf_ctx_allocate(stf_ctx_handle ctx, size_t size, int cached);
 
 //! \brief Return memory obtained from stf_ctx_allocate() to the allocator of
@@ -2508,17 +2510,20 @@ stf_logical_data_handle stf_stackable_token(stf_ctx_handle ctx);
 //! launched). This is what an external runtime (e.g. Warp through its allocator
 //! hook) uses for the temporaries it creates while recording into a scope.
 //!
-//! Inside a scope \p cached must be zero: a recycled block would carry its
-//! previous user's completion into the new user, i.e. a dependency the graph
-//! does not otherwise have (false synchronization), or none at all. Returns NULL
-//! on failure (\c STF_ERROR_INVALID_ARGUMENT for cached != 0 inside a scope).
+//! \p cached selects the scope's current or uncached allocator as in
+//! stf_ctx_allocate(). While a scope records, nothing has executed yet, so a
+//! freed block is not "no longer in use" (see stf_stackable_deallocate()): the
+//! scope's uncached allocator handles that by deferring every release to the
+//! pop, whereas a recycling allocator hands the block to the next request at
+//! once, with no ordering between the two users. Use \p cached = 0 for
+//! temporaries freed while the scope records. Returns NULL on failure.
 void* stf_stackable_allocate(stf_ctx_handle ctx, size_t size, int cached);
 
 //! \brief Return memory obtained from stf_stackable_allocate() to the current
-//! scope's allocator, with the same \p cached value. Inside a scope the release
-//! is deferred to the pop, so it is safe to call while the graph that uses the
-//! memory is still being recorded; at the root the memory must no longer be in
-//! use (see stf_ctx_deallocate()).
+//! scope's allocator, with the same \p cached value. With the scope's uncached
+//! allocator the release is deferred to the pop, so it is safe to call while the
+//! graph that uses the memory is still being recorded; otherwise, and at the
+//! root, the memory must no longer be in use (see stf_ctx_deallocate()).
 stf_error_t stf_stackable_deallocate(stf_ctx_handle ctx, void* ptr, size_t size, int cached);
 
 //! \brief Set the symbolic name of stackable logical data (debug / DOT output).
