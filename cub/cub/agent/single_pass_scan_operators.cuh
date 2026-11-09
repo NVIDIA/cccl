@@ -1238,7 +1238,7 @@ template <typename T,
 struct TilePrefixCallbackOp
 {
   // Parameterized warp reduce
-  using WarpReduceT = WarpReduce<T, (1 << (5))>;
+  using WarpReduceT = WarpReduce<T, (1 << 5)>;
 
   // Temporary storage type
   struct _TempStorage

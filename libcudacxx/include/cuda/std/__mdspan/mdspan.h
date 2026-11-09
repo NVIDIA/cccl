@@ -477,7 +477,7 @@ public:
   template <size_t... _Idxs>
   [[nodiscard]] _CCCL_API constexpr bool __op_empty(index_sequence<_Idxs...>) const noexcept
   {
-    return (((mapping().extents().extent(_Idxs) == index_type{0})) || ...);
+    return ((mapping().extents().extent(_Idxs) == index_type{0}) || ...);
   }
 
   [[nodiscard]] _CCCL_API constexpr bool empty() const noexcept
@@ -582,7 +582,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_ElementType*, const _MappingType&)
 
 template <class _MappingType, class _AccessorType>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES
-mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
+mdspan(typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
   -> mdspan<typename _AccessorType::element_type,
             typename _MappingType::extents_type,
             typename _MappingType::layout_type,

@@ -64,9 +64,15 @@ using thrust::complex;
 // NOLINTBEGIN(misc-redundant-expression)
 _CCCL_HOST_DEVICE inline complex<float> ctanhf(const complex<float>& z)
 {
-  float x, y;
-  float t, beta, s, rho, denom;
-  uint32_t hx, ix;
+  float x;
+  float y;
+  float t;
+  float beta;
+  float s;
+  float rho;
+  float denom;
+  uint32_t hx;
+  uint32_t ix;
 
   x = z.real();
   y = z.imag();
