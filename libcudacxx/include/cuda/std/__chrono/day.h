@@ -34,7 +34,6 @@ namespace chrono
 {
 class day
 {
-private:
   unsigned char __day_;
 
 public:

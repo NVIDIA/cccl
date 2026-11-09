@@ -164,10 +164,7 @@ void Test()
   CubDebugExit(cudaDeviceSynchronize());
 
   // Cleanup
-  if (h_in)
-  {
-    delete[] h_in;
-  }
+  delete[] h_in;
   if (d_in)
   {
     CubDebugExit(cudaFree(d_in));

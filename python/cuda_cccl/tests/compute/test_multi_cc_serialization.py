@@ -57,14 +57,6 @@ try:
 except ImportError:
     USING_V2 = False
 
-# These tests assert that op device code differs per target arch (v1 compiles
-# user ops to arch-specific LTO-IR). v2 compiles ops to arch-independent source
-# text, so the same bytes for every target is correct there.
-v1_only = pytest.mark.skipif(
-    USING_V2,
-    reason="v2 compiles user ops to arch-independent source, not per-arch LTO-IR",
-)
-
 
 def _add_one(a):
     return a + 1
@@ -278,18 +270,13 @@ def test_aot_serialization_waits_for_canonical_first_load():
     assert source.serialize_count == 1
 
 
-def _patch_default_build_env(monkeypatch, device, *, backend_serializes):
+def _patch_default_build_env(monkeypatch, device):
     import cuda.compute._caching as _caching_mod
 
     monkeypatch.setattr(
         _caching_mod, "_get_current_device_info", lambda: (device["id"], (8, 0))
     )
     monkeypatch.setattr(_caching_mod, "_process_wide_build_results_cache", {})
-    # Pin the backend capability so these fake-backed tests exercise a fixed
-    # branch regardless of which backend the suite runs against.
-    monkeypatch.setattr(
-        _caching_mod, "_BACKEND_SERIALIZES_BUILD_RESULTS", backend_serializes
-    )
 
 
 def _make_fake_default_builder(device, built_sources):
@@ -311,7 +298,7 @@ def test_default_build_second_same_cc_device_shares_the_entry(monkeypatch):
     instead of running the builder.
     """
     device = {"id": 0}
-    _patch_default_build_env(monkeypatch, device, backend_serializes=True)
+    _patch_default_build_env(monkeypatch, device)
     built_sources = []
     build = _make_fake_default_builder(device, built_sources)
 
@@ -350,37 +337,6 @@ def test_default_build_second_same_cc_device_shares_the_entry(monkeypatch):
     assert len(built_sources) == 2
 
 
-def test_default_build_keys_per_device_without_backend_serialization(monkeypatch):
-    """Without build-result serialization, each device builds its own entry.
-
-    A non-owner device loads a shared entry by cloning it through
-    serialization, so a backend that cannot serialize (v2 HostJIT today) keys
-    default builds per device ordinal instead of sharing them.
-    TODO: delete this test once v2 supports build-result serialization and
-    the per-ordinal branch is removed.
-    """
-    device = {"id": 0}
-    _patch_default_build_env(monkeypatch, device, backend_serializes=False)
-    built_sources = []
-    build = _make_fake_default_builder(device, built_sources)
-
-    first, first_bound = cache_build_results(
-        _FakeBuildResult, "spec", compute_capability=None, builder=build
-    )
-    assert len(built_sources) == 1
-    assert first_bound is first[80]
-
-    # Second same-cc device: its own key, its own build; nothing serialized.
-    device["id"] = 1
-    second, second_bound = cache_build_results(
-        _FakeBuildResult, "spec", compute_capability=None, builder=build
-    )
-    assert len(built_sources) == 2
-    assert second is not first
-    assert second_bound is second[80]
-    assert first[80].serialize_count == 0
-
-
 def test_default_build_binding_falls_back_to_full_build_when_cloning_fails(
     monkeypatch,
 ):
@@ -392,7 +348,7 @@ def test_default_build_binding_falls_back_to_full_build_when_cloning_fails(
     per-device slot.
     """
     device = {"id": 0}
-    _patch_default_build_env(monkeypatch, device, backend_serializes=True)
+    _patch_default_build_env(monkeypatch, device)
     built_sources = []
     build = _make_fake_default_builder(device, built_sources)
 
@@ -540,7 +496,6 @@ def _transform_case():
     return make, arch_bytes
 
 
-@v1_only
 @pytest.mark.parametrize(
     "case", [_counting_case(), _transform_case()], ids=["counting", "transform"]
 )
@@ -572,9 +527,11 @@ def test_iterator_op_ltoir_tracks_target_cc_across_instance_reuse(case):
     for cc in (hi, lo):
         with target_cc(cc):
             ref[cc] = arch_bytes(make())
-    # The two arches must produce different device code, else the test below
-    # could pass vacuously.
-    assert ref[hi] != ref[lo]
+    # On v1 the two arches must produce different device code, else the test
+    # below could pass vacuously. v2 keeps arch-independent source/IR, so there
+    # the reuse check is what guards the memo.
+    if not USING_V2:
+        assert ref[hi] != ref[lo]
 
     # Reuse a single instance across both targets, higher arch first.
     it = make()
@@ -585,7 +542,6 @@ def test_iterator_op_ltoir_tracks_target_cc_across_instance_reuse(case):
         assert arch_bytes(it) == ref[lo]
 
 
-@v1_only
 def test_default_build_keys_device_code_on_resolved_device_cc(monkeypatch):
     ccs = _compilable_ccs(2)
     if len(ccs) < 2:
@@ -623,12 +579,13 @@ def test_default_build_keys_device_code_on_resolved_device_cc(monkeypatch):
 
     # The build's target cc is the resolved device cc, never None.
     assert seen_hi == hi_cc and seen_lo == lo_cc
-    # Regression: the second device must not reuse the first device's arch.
-    assert bytes_hi != bytes_lo
+    # Regression: the second device must not reuse the first device's arch. v2
+    # compiles the op to arch-independent code, so only v1 differs by arch.
+    if not USING_V2:
+        assert bytes_hi != bytes_lo
     assert set(it._input_deref_op.keys()) == {hi_cc, lo_cc}
 
 
-@v1_only
 def test_select_always_false_op_recompiles_per_target_cc():
     """``_always_false_op`` is a module-global cache whose LTO-IR is linked into
     every ``make_select`` build (as the three-way-partition's second predicate).
@@ -652,8 +609,12 @@ def test_select_always_false_op_recompiles_per_target_cc():
 
     b_hi = code(hi)
     b_lo = code(lo)
-    # Regression: lo must not return the cached hi-arch LTO-IR.
-    assert b_hi != b_lo
+    if USING_V2:
+        # v2 keeps the predicate's C++ source verbatim, whatever the target.
+        assert b_hi == b_lo
+    else:
+        # Regression: lo must not return the cached hi-arch LTO-IR.
+        assert b_hi != b_lo
 
 
 # ----------------------------------------------------------------------------
@@ -672,9 +633,6 @@ def test_build_for_a_target_cc_needs_no_gpu():
     patching ``Device``: the query is the backend's own, below anything this
     package can monkeypatch. The operator is a Python function on purpose, since
     a well-known operator never reaches the backend and would pass either way.
-
-    v1 only: the v2 backend refuses an ahead-of-time build outright, so there is
-    no compile to reach.
     """
     program = textwrap.dedent(
         """
@@ -1043,10 +1001,6 @@ def test_double_serialize_roundtrip_is_stable_and_executes():
     np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
 
 
-@pytest.mark.skipif(
-    USING_V2,
-    reason="v2 still keys default builds per device (_BACKEND_SERIALIZES_BUILD_RESULTS)",
-)
 def test_default_build_on_second_same_cc_device_clones_payload(monkeypatch):
     """Real-GPU check of the shared default entry (see the fake-based
     test_default_build_second_same_cc_device_shares_the_entry for the

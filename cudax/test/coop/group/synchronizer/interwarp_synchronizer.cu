@@ -48,6 +48,16 @@ struct WarpsInBlockMappingResult
     return cuda::std::dynamic_extent;
   }
 
+  __device__ static constexpr bool has_uniform_static_unit_count()
+  {
+    return true;
+  }
+
+  __device__ static constexpr cuda::std::size_t static_unit_count(cuda::std::size_t)
+  {
+    return cuda::std::dynamic_extent;
+  }
+
   __device__ unsigned unit_count() const
   {
     return cuda::warp.count_as<unsigned>(cuda::block);
