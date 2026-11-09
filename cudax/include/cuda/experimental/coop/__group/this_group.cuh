@@ -63,8 +63,19 @@ struct __this_mapping_result
     return 0;
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool has_uniform_static_unit_count()
+  {
+    return true;
+  }
+
   [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count()
   {
+    return 1;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count(::cuda::std::size_t __i)
+  {
+    _CCCL_ASSERT(__i < static_group_count(), "__i out of range");
     return 1;
   }
 
@@ -112,21 +123,21 @@ class __this_group_base
   static_assert(__is_hierarchy_level_v<_Level>);
   static_assert(__is_hierarchy_v<_Hierarchy>);
 
-  using _SynchronizerInstance = level_synchronizer::__synchronizer_instance<_Level>;
+  using _MappingResult _CCCL_NODEBUG        = __this_mapping_result<_Level>;
+  using _SynchronizerInstance _CCCL_NODEBUG = level_synchronizer::__synchronizer_instance<_Level>;
 
-public:
-  using unit_type             = _Level;
-  using level_type            = _Level;
-  using __mapping_result_type = __this_mapping_result<_Level>;
-  using hierarchy_type        = _Hierarchy;
-  using arrival_token         = typename _SynchronizerInstance::arrival_token;
-
-private:
   _Hierarchy __hier_;
-  __mapping_result_type __mapping_result_{};
+  _MappingResult __mapping_result_{};
   _SynchronizerInstance __synchronizer_instance_{};
 
 public:
+  using unit_type                    = _Level;
+  using level_type                   = _Level;
+  using __mapping_result_type        = _MappingResult;
+  using __synchronizer_instance_type = _SynchronizerInstance;
+  using hierarchy_type               = _Hierarchy;
+  using arrival_token                = typename _SynchronizerInstance::arrival_token;
+
   _CCCL_TEMPLATE(class _HierarchyLike)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Hierarchy, __hierarchy_type_of<_HierarchyLike>>)
   _CCCL_DEVICE_API __this_group_base(const _HierarchyLike& __hier_like)

@@ -89,7 +89,6 @@ template <typename KeyT,
           bool MemoizeKeys     = true>
 class block_topk_air
 {
-private:
   // TODO (elstehle): Make this configurable
   // Whether to include all items tied with the k-th key when selecting top-k
   static constexpr bool expand_k_to_include_ties = false;

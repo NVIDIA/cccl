@@ -11,9 +11,9 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
-#include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
+#include <cuda/type_traits>
 
 #include <cuda/experimental/coop/group>
 
@@ -44,7 +44,11 @@ __device__ void test_lane_synchronizer(const Level& level, Config config)
     auto synchronizer_instance = synchronizer.make_instance(cuda::gpu_thread, parent_group, mapping_result);
 
     using SynchronizerInstance = decltype(synchronizer_instance);
-    using ArrivalToken         = typename SynchronizerInstance::arrival_token;
+
+    static_assert(cuda::is_trivially_copyable_v<SynchronizerInstance>);
+    static_assert(cuda::std::is_trivially_destructible_v<SynchronizerInstance>);
+
+    using ArrivalToken = typename SynchronizerInstance::arrival_token;
 
     // Test arrival_token type.
     static_assert(cuda::std::is_move_constructible_v<ArrivalToken>);
@@ -77,15 +81,6 @@ __device__ void test_lane_synchronizer(const Level& level, Config config)
       cuda::std::
         is_same_v<void, decltype(synchronizer_instance.do_wait_aligned(hierarchy, cuda::std::move(arrival_token_a)))>);
     synchronizer_instance.do_wait_aligned(hierarchy, cuda::std::move(arrival_token_a));
-
-    // Test view().
-    static_assert(cuda::std::is_same_v<decltype(synchronizer_instance), decltype(synchronizer_instance.view())>);
-    auto synchronizer_instance_view = synchronizer_instance.view();
-    synchronizer_instance_view.do_sync(hierarchy);
-    synchronizer_instance_view.do_sync_aligned(hierarchy);
-    synchronizer_instance_view.do_wait(hierarchy, synchronizer_instance_view.do_arrive(hierarchy));
-    synchronizer_instance_view.do_wait_aligned(hierarchy, synchronizer_instance_view.do_arrive_aligned(hierarchy));
-    (void) synchronizer_instance_view.view();
 
     // Test deinit(...);
     static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.deinit(mapping_result, hierarchy))>);

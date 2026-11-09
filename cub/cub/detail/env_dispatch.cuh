@@ -13,6 +13,7 @@
 #endif // no system header
 
 #include <cub/detail/device_memory_resource.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_runs_on.cuh>
@@ -104,9 +105,8 @@ dispatch_with_env_and_tuning(const EnvT& env, const AlgorithmCallable& algorithm
     env,
     [&algorithm_callable](
       [[maybe_unused]] auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-      using policy_t = decltype(DefaultPolicySelector{}(::cuda::compute_capability{}));
-      using policy_selector =
-        ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), policy_t, DefaultPolicySelector>;
+      using policy_t        = decltype(DefaultPolicySelector{}(::cuda::compute_capability{}));
+      using policy_selector = policy_selector_from_tuning_env_t<decltype(tuning_env), policy_t, DefaultPolicySelector>;
       return algorithm_callable(policy_selector{}, d_temp_storage, temp_storage_bytes, stream);
     });
 }
@@ -162,9 +162,8 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_and_tuning(
     env,
     [&algorithm_callable](
       [[maybe_unused]] auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-      using policy_t = decltype(DefaultPolicySelector{}(::cuda::compute_capability{}));
-      using policy_selector =
-        ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), policy_t, DefaultPolicySelector>;
+      using policy_t        = decltype(DefaultPolicySelector{}(::cuda::compute_capability{}));
+      using policy_selector = policy_selector_from_tuning_env_t<decltype(tuning_env), policy_t, DefaultPolicySelector>;
       return algorithm_callable(policy_selector{}, d_temp_storage, temp_storage_bytes, stream);
     });
 }

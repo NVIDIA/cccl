@@ -16,9 +16,9 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/ranges>
 #include <cuda/std/span>
-#include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
+#include <cuda/type_traits>
 
 #include <cuda/experimental/coop/group>
 
@@ -44,6 +44,16 @@ struct WarpsInBlockMappingResult
   }
 
   __device__ static constexpr ::cuda::std::size_t static_unit_count()
+  {
+    return cuda::std::dynamic_extent;
+  }
+
+  __device__ static constexpr bool has_uniform_static_unit_count()
+  {
+    return true;
+  }
+
+  __device__ static constexpr cuda::std::size_t static_unit_count(cuda::std::size_t)
   {
     return cuda::std::dynamic_extent;
   }
@@ -115,7 +125,11 @@ __device__ void test_interwarp_synchronizer(Config config)
                == static_cast<unsigned>(barrier_ids[mapping_result.group_rank()])));
 
       using SynchronizerInstance = decltype(synchronizer_instance);
-      using ArrivalToken         = typename SynchronizerInstance::arrival_token;
+
+      static_assert(cuda::is_trivially_copyable_v<SynchronizerInstance>);
+      static_assert(cuda::std::is_trivially_destructible_v<SynchronizerInstance>);
+
+      using ArrivalToken = typename SynchronizerInstance::arrival_token;
 
       // Test arrival_token type.
       static_assert(cuda::std::is_move_constructible_v<ArrivalToken>);
@@ -148,15 +162,6 @@ __device__ void test_interwarp_synchronizer(Config config)
         cuda::std::
           is_same_v<void, decltype(synchronizer_instance.do_wait_aligned(hierarchy, cuda::std::move(arrival_token_a)))>);
       synchronizer_instance.do_wait_aligned(hierarchy, cuda::std::move(arrival_token_a));
-
-      // Test view().
-      static_assert(cuda::std::is_same_v<decltype(synchronizer_instance), decltype(synchronizer_instance.view())>);
-      auto synchronizer_instance_view = synchronizer_instance.view();
-      synchronizer_instance_view.do_sync(hierarchy);
-      synchronizer_instance_view.do_sync_aligned(hierarchy);
-      synchronizer_instance_view.do_wait(hierarchy, synchronizer_instance_view.do_arrive(hierarchy));
-      synchronizer_instance_view.do_wait_aligned(hierarchy, synchronizer_instance_view.do_arrive_aligned(hierarchy));
-      (void) synchronizer_instance_view.view();
 
       // Test deinit(...);
       static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.deinit(mapping_result, hierarchy))>);
@@ -195,7 +200,11 @@ __device__ void test_interwarp_synchronizer(Config config)
                == mapping_result.group_rank() + 1));
 
       using SynchronizerInstance = decltype(synchronizer_instance);
-      using ArrivalToken         = typename SynchronizerInstance::arrival_token;
+
+      static_assert(cuda::is_trivially_copyable_v<SynchronizerInstance>);
+      static_assert(cuda::std::is_trivially_destructible_v<SynchronizerInstance>);
+
+      using ArrivalToken = typename SynchronizerInstance::arrival_token;
 
       // Test arrival_token type.
       static_assert(cuda::std::is_move_constructible_v<ArrivalToken>);
@@ -228,15 +237,6 @@ __device__ void test_interwarp_synchronizer(Config config)
         cuda::std::
           is_same_v<void, decltype(synchronizer_instance.do_wait_aligned(hierarchy, cuda::std::move(arrival_token_a)))>);
       synchronizer_instance.do_wait_aligned(hierarchy, cuda::std::move(arrival_token_a));
-
-      // Test view().
-      static_assert(cuda::std::is_same_v<decltype(synchronizer_instance), decltype(synchronizer_instance.view())>);
-      auto synchronizer_instance_view = synchronizer_instance.view();
-      synchronizer_instance_view.do_sync(hierarchy);
-      synchronizer_instance_view.do_sync_aligned(hierarchy);
-      synchronizer_instance_view.do_wait(hierarchy, synchronizer_instance_view.do_arrive(hierarchy));
-      synchronizer_instance_view.do_wait_aligned(hierarchy, synchronizer_instance_view.do_arrive_aligned(hierarchy));
-      (void) synchronizer_instance_view.view();
 
       // Test deinit(...);
       static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.deinit(mapping_result, hierarchy))>);

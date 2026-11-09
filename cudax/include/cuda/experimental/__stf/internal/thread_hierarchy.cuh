@@ -122,7 +122,7 @@ public:
    * @param level The level
    * @return The width (0 if width is dynamic)
    */
-  static inline constexpr size_t static_width(size_t level)
+  static constexpr size_t static_width(size_t level)
   {
     size_t data[] = {spec...};
     return data[1 + 2 * level];

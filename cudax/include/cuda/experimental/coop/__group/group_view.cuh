@@ -23,9 +23,11 @@
 
 #include <cuda/hierarchy>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 
@@ -41,6 +43,39 @@
 
 namespace cuda::experimental::coop
 {
+template <class _Unit, class _Group, ::cuda::std::size_t... _Is>
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto
+__do_group_view_mapping(const _Unit&, const _Group& __group, ::cuda::std::index_sequence<_Is...>)
+{
+  using _GroupMappingResult = typename _Group::__mapping_result_type;
+  using _UnitExts =
+    decltype(_Unit::extents(typename _Group::unit_type{}, ::cuda::std::declval<typename _Group::hierarchy_type>()));
+  constexpr auto __units_per_group_unit = [] {
+    ::cuda::std::size_t __count = 1;
+    for (::cuda::std::size_t __i = 0; __i < _UnitExts::rank(); ++__i)
+    {
+      __count *= _UnitExts::static_extent(__i);
+    }
+    return __count;
+  }();
+  using _MappingResult =
+    __mapping_result<__static_unit_counts<(_GroupMappingResult::static_unit_count(_Is) * __units_per_group_unit)...>,
+                     _GroupMappingResult::is_always_exhaustive(),
+                     _GroupMappingResult::is_always_contiguous()>;
+
+  const auto& __group_mapping_result = __group.__mapping_result();
+  if constexpr (!_GroupMappingResult::is_always_exhaustive())
+  {
+    if (!__group_mapping_result.is_valid())
+    {
+      return _MappingResult::__invalid();
+    }
+  }
+  return _MappingResult{__group_mapping_result.group_rank(),
+                        ::cuda::experimental::coop::__rank_query_group<::cuda::std::uint32_t, _Unit>(__group),
+                        __group_mapping_result.lane_mask()};
+}
+
 template <class _Unit, class _Group>
 [[nodiscard]] _CCCL_DEVICE_API constexpr auto __do_group_view_mapping(const _Unit& __unit, const _Group& __group)
 {
@@ -51,19 +86,29 @@ template <class _Unit, class _Group>
   else
   {
     using _GroupMappingResult = typename _Group::__mapping_result_type;
-    using _MappingResult =
-      __mapping_result<_GroupMappingResult::static_group_count(),
-                       ::cuda::experimental::coop::__static_count_query_group<_Unit, _Group>(),
-                       _GroupMappingResult::is_always_exhaustive(),
-                       _GroupMappingResult::is_always_contiguous()>;
+    using _UnitExts =
+      decltype(_Unit::extents(typename _Group::unit_type{}, ::cuda::std::declval<typename _Group::hierarchy_type>()));
+    if constexpr (!_GroupMappingResult::has_uniform_static_unit_count() && _UnitExts::rank_dynamic() == 0)
+    {
+      return ::cuda::experimental::coop::__do_group_view_mapping(
+        __unit, __group, ::cuda::std::make_index_sequence<_GroupMappingResult::static_group_count()>{});
+    }
+    else
+    {
+      using _MappingResult = __mapping_result<
+        __uniform_static_unit_count<_GroupMappingResult::static_group_count(),
+                                    ::cuda::experimental::coop::__static_count_query_group<_Unit, _Group>()>,
+        _GroupMappingResult::is_always_exhaustive(),
+        _GroupMappingResult::is_always_contiguous()>;
 
-    const auto& __group_mapping_result = __group.__mapping_result();
-    return _MappingResult{
-      __group_mapping_result.group_count(),
-      __group_mapping_result.group_rank(),
-      ::cuda::experimental::coop::__count_query_group<::cuda::std::uint32_t, _Unit>(__group),
-      ::cuda::experimental::coop::__rank_query_group<::cuda::std::uint32_t, _Unit>(__group),
-      __group_mapping_result.lane_mask()};
+      const auto& __group_mapping_result = __group.__mapping_result();
+      return _MappingResult{
+        __group_mapping_result.group_count(),
+        __group_mapping_result.group_rank(),
+        ::cuda::experimental::coop::__count_query_group<::cuda::std::uint32_t, _Unit>(__group),
+        ::cuda::experimental::coop::__rank_query_group<::cuda::std::uint32_t, _Unit>(__group),
+        __group_mapping_result.lane_mask()};
+    }
   }
 }
 
@@ -79,8 +124,8 @@ class group_view
   static_assert(__unit_same_as_or_below_v<_Unit, typename _Group::unit_type>,
                 "unit_type must be same as or below the _Group's unit_type");
 
-  using _MappingResult        = __group_view_mapping_result_t<_Unit, _Group>;
-  using _SynchronizerInstance = decltype(::cuda::std::declval<const _Group&>().__synchronizer_instance().view());
+  using _MappingResult _CCCL_NODEBUG        = __group_view_mapping_result_t<_Unit, _Group>;
+  using _SynchronizerInstance _CCCL_NODEBUG = typename _Group::__synchronizer_instance_type;
   static_assert(__group_mapping_result<_MappingResult>);
 
   typename _Group::hierarchy_type __hier_;
@@ -88,11 +133,12 @@ class group_view
   _SynchronizerInstance __synchronizer_instance_;
 
 public:
-  using unit_type             = _Unit;
-  using level_type            = typename _Group::level_type;
-  using hierarchy_type        = typename _Group::hierarchy_type;
-  using __mapping_result_type = _MappingResult;
-  using arrival_token         = typename _Group::arrival_token;
+  using unit_type                    = _Unit;
+  using level_type                   = typename _Group::level_type;
+  using hierarchy_type               = typename _Group::hierarchy_type;
+  using __mapping_result_type        = _MappingResult;
+  using __synchronizer_instance_type = _SynchronizerInstance;
+  using arrival_token                = typename _Group::arrival_token;
 
   group_view() = delete;
 
@@ -109,13 +155,13 @@ public:
   _CCCL_DEVICE_API group_view(const _Group& __group)
       : __hier_{__group.hierarchy()}
       , __mapping_result_{::cuda::experimental::coop::__do_group_view_mapping(_Unit{}, __group)}
-      , __synchronizer_instance_{__group.__synchronizer_instance().view()}
+      , __synchronizer_instance_{__group.__synchronizer_instance()}
   {}
 
   _CCCL_DEVICE_API explicit group_view(const _Unit& __unit, const _Group& __group)
       : __hier_{__group.hierarchy()}
       , __mapping_result_{::cuda::experimental::coop::__do_group_view_mapping(__unit, __group)}
-      , __synchronizer_instance_{__group.__synchronizer_instance().view()}
+      , __synchronizer_instance_{__group.__synchronizer_instance()}
   {}
 
   _CCCL_TEMPLATE(class _OtherUnit)

@@ -172,7 +172,6 @@ public:
 
   class param_type
   {
-  private:
     result_type __a_ = result_type{0};
     result_type __b_ = numeric_limits<result_type>::max();
 
