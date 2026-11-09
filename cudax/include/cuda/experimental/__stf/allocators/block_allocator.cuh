@@ -104,7 +104,7 @@ public:
    *
    * @param ctx Untyped backend context (some allocators fall back to its uncached allocator)
    */
-  virtual bool allocation_is_stream_ordered(backend_ctx_untyped&) const
+  virtual bool allocation_is_stream_ordered([[maybe_unused]] backend_ctx_untyped& ctx) const
   {
     return true;
   }
