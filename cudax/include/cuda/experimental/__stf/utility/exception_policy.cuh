@@ -2373,7 +2373,7 @@ auto __normalize(_R&& __r)
   else if constexpr (__has_any_capability<_P>)
   {
     // Raw callable with a capability: tag it so identity elimination and &/| stay ADL-findable.
-    return __as_policy<_R>{{}, ::cuda::std::forward<_R>(__r)};
+    return __as_policy<_R>{{}, {::cuda::std::forward<_R>(__r)}};
   }
   else
   {
@@ -3933,7 +3933,7 @@ auto if_isa(_P&& __p)
                 "if_isa<..., Base, ..., Derived, ...>: the Derived entry is dead "
                 "(Base already claims it)");
   auto __np = __normalize(::cuda::std::forward<_P>(__p));
-  return __if_isa_t<decltype(__np), _Es...>{{}, ::cuda::std::move(__np)};
+  return __if_isa_t<decltype(__np), _Es...>{{}, {::cuda::std::move(__np)}};
 }
 
 /**
@@ -3958,7 +3958,7 @@ auto if_monomorphic(_P&& __p)
                 "listed type must derive std::exception (if_isa takes anything catchable)");
   static_assert(__if_monomorphic_pack_ok<_Es...>, "if_monomorphic<..., E, ..., E, ...>: a repeated entry is dead");
   auto __np = __normalize(::cuda::std::forward<_P>(__p));
-  return __if_monomorphic_t<decltype(__np), _Es...>{{}, ::cuda::std::move(__np)};
+  return __if_monomorphic_t<decltype(__np), _Es...>{{}, {::cuda::std::move(__np)}};
 }
 
 /**
