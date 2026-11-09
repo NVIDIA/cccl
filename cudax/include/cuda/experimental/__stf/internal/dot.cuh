@@ -74,6 +74,28 @@ using IntPairSet = ::std::unordered_set<::std::pair<int, int>, cuda::experimenta
 
 class dot;
 
+//! Escape a symbol for use inside a double-quoted DOT string (`label="..."`).
+//!
+//! Symbols are user-provided text (task, logical data and section names) and
+//! are kept verbatim everywhere else (NVTX ranges, diagnostics); only the DOT
+//! writer knows the target syntax, so the escaping happens here, once, at the
+//! point where a symbol enters a label. `"` and `\` are the two characters
+//! that terminate or alter a quoted DOT string.
+inline ::std::string dot_escape(const ::std::string& symbol)
+{
+  ::std::string out;
+  out.reserve(symbol.size());
+  for (char c : symbol)
+  {
+    if (c == '"' || c == '\\')
+    {
+      out.push_back('\\');
+    }
+    out.push_back(c);
+  }
+  return out;
+}
+
 //! Type of the edge
 //!
 //! Edges represent dependencies, but we want to visualize different types of
@@ -404,7 +426,7 @@ public:
     m.dot_section_id = section_id_stack.back();
     m.ctx_id         = get_unique_id();
 
-    m.label = symbol;
+    m.label = dot_escape(symbol);
 
     m.type = prereq_vertex;
 
@@ -503,7 +525,7 @@ public:
     // We here create the label of the task, which we may augment later with
     // timing information for example
     ::std::ostringstream task_oss;
-    task_oss << t.get_symbol();
+    task_oss << dot_escape(t.get_symbol());
 
     // Append the text with a list of accessed logical data, and the corresponding access modes
     if (!remove_deps)
@@ -514,7 +536,7 @@ public:
         data_type d      = e.get_data();
         access_mode mode = e.get_access_mode();
         size_t size      = d.get_data_interface().data_footprint();
-        task_oss << "\\n" << d.get_symbol() << "(" << access_mode_string(mode) << ")(" << size << ") ";
+        task_oss << "\\n" << dot_escape(d.get_symbol()) << "(" << access_mode_string(mode) << ")(" << size << ") ";
       }
     }
 
@@ -912,7 +934,7 @@ private:
 
       _CCCL_ASSERT(!sec->symbol.empty(), "no symbol for section");
 
-      outFile << "label=\"" << sec->symbol << "\"\n";
+      outFile << "label=\"" << dot_escape(sec->symbol) << "\"\n";
     }
 
     // Put all nodes which belong to this section
@@ -1190,7 +1212,7 @@ private:
 
       // Rename the task that remains to have the label of the section
       ::std::shared_ptr<dot_section> sec = dot::instance().section_map[p.first];
-      all_vertices[p.second[0]].label    = sec->get_symbol();
+      all_vertices[p.second[0]].label    = dot_escape(sec->get_symbol());
 
       // Assign the node to the parent of the section it corresponds to
       all_vertices[p.second[0]].dot_section_id = sec->parent_id;
