@@ -139,6 +139,11 @@ public:
    *
    * @return std::string The string "cached_block_allocator".
    */
+  bool allocation_is_stream_ordered(backend_ctx_untyped& ctx) const override
+  {
+    return root_allocator.allocation_is_stream_ordered(ctx);
+  }
+
   ::std::string to_string() const override
   {
     return "cached_block_allocator";
@@ -337,6 +342,11 @@ public:
    *
    * @return std::string The string "cached_block_allocator".
    */
+  bool allocation_is_stream_ordered(backend_ctx_untyped& ctx) const override
+  {
+    return root_allocator.allocation_is_stream_ordered(ctx);
+  }
+
   ::std::string to_string() const override
   {
     return "cached_block_allocator_fifo";

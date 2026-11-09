@@ -65,6 +65,11 @@ class uncached_block_allocator : public block_allocator_interface
     return event_list();
   }
 
+  bool allocation_is_stream_ordered(backend_ctx_untyped& ctx) const override
+  {
+    return ctx.get_uncached_allocator().allocation_is_stream_ordered(ctx);
+  }
+
   ::std::string to_string() const override
   {
     return "uncached block allocator (wrapper)";
