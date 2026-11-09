@@ -29,7 +29,7 @@ namespace
 {
 __global__ void increment_kernel(int cnt, double* data)
 {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  const int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   if (i < cnt)
   {
     data[i] += 1.0;
