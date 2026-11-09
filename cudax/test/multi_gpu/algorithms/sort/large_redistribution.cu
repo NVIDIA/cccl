@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#include <cuda/algorithm>
 #include <cuda/buffer>
 #include <cuda/launch>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
+#include <cuda/std/span>
 
 #include <cuda/experimental/mgmn/sort>
 
@@ -160,6 +162,7 @@ MULTI_GPU_TEST("sort, repeated large and mixed NVLink redistribution", large_sor
     }
     for (cuda::std::size_t rank = 0; rank < comms.size(); ++rank)
     {
+      CAPTURE(rank);
       cuda::launch(
         streams[rank],
         cuda::make_config(cuda::block_dims<256>(), cuda::grid_dims(256)),
@@ -171,8 +174,13 @@ MULTI_GPU_TEST("sort, repeated large and mixed NVLink redistribution", large_sor
         descending,
         errors[rank].data());
       int error = -1;
-      REQUIRE(cudaMemcpyAsync(&error, errors[rank].data(), sizeof(error), cudaMemcpyDeviceToHost, streams[rank].get())
-              == cudaSuccess);
+      cuda::copy_bytes(
+        streams[rank],
+        errors[rank],
+        cuda::std::span<int>{&error, 1},
+        cuda::copy_configuration{comms[rank].logical_device().underlying_device(),
+                                 cuda::host_memory_location,
+                                 cuda::source_access_order::stream});
       streams[rank].sync();
       REQUIRE(error == 0);
       offset += counts[rank];
