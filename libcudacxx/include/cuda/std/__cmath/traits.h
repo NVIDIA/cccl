@@ -102,7 +102,7 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
                        {
                          return false;
                        }
-                       return ::__hgt(__x, __y);
+                       return __hgt(__x, __y);
                      }))
       }
 #endif // _CCCL_HAS_NVFP16()
@@ -168,7 +168,7 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
                        {
                          return false;
                        }
-                       return ::__hge(__x, __y);
+                       return __hge(__x, __y);
                      }))
       }
 #endif // _CCCL_HAS_NVFP16()
@@ -235,7 +235,7 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
                        {
                          return false;
                        }
-                       return ::__hlt(__x, __y);
+                       return __hlt(__x, __y);
                      }))
       }
 #endif // _CCCL_HAS_NVFP16()
@@ -301,7 +301,7 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
                        {
                          return false;
                        }
-                       return ::__hle(__x, __y);
+                       return __hle(__x, __y);
                      }))
       }
 #endif // _CCCL_HAS_NVFP16()
@@ -368,7 +368,7 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
                        {
                          return false;
                        }
-                       return ::__hne(__x, __y);
+                       return __hne(__x, __y);
                      }))
       }
 #endif // _CCCL_HAS_NVFP16()
