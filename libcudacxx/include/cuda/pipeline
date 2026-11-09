@@ -117,10 +117,7 @@ public:
       , __shared_state(::cuda::std::exchange(__other.__shared_state, nullptr))
   {
     __other.__active = false;
-      , __active(::cuda::std::exchange(__other.__active, false))
-      , __partitioned(__other.__partitioned)
-      , __shared_state(::cuda::std::exchange(__other.__shared_state, nullptr))
-  {}
+  }
   pipeline(const pipeline&)            = delete;
   pipeline& operator=(pipeline&&)      = delete;
   pipeline& operator=(const pipeline&) = delete;
