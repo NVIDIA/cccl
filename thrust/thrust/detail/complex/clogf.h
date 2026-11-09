@@ -62,11 +62,21 @@ _CCCL_HOST_DEVICE inline float trim(float x)
 _CCCL_HOST_DEVICE inline complex<float> clogf(const complex<float>& z)
 {
   // Adapted from FreeBSDs msun
-  float x, y;
-  float ax, ay;
-  float x0, y0, x1, y1, x2, y2, t, hm1;
+  float x;
+  float y;
+  float ax;
+  float ay;
+  float x0;
+  float y0;
+  float x1;
+  float y1;
+  float x2;
+  float y2;
+  float t;
+  float hm1;
   float val[12];
-  int i, sorted;
+  int i;
+  int sorted;
   constexpr auto e = ::cuda::std::__numbers<float>::__e();
 
   x = z.real();

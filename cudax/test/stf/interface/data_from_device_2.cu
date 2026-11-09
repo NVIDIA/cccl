@@ -47,7 +47,9 @@ void run()
   const double alpha = 2.0;
   const int N        = 12;
 
-  double *dX, *dY, *dZ;
+  double* dX;
+  double* dY;
+  double* dZ;
   cuda_safe_call(cudaMalloc(reinterpret_cast<void**>(&dX), N * sizeof(double)));
   cuda_safe_call(cudaMalloc(reinterpret_cast<void**>(&dY), N * sizeof(double)));
   cuda_safe_call(cudaMalloc(reinterpret_cast<void**>(&dZ), N * sizeof(double)));

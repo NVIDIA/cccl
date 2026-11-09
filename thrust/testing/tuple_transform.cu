@@ -38,7 +38,8 @@ struct TestTupleTransform
     // copy to device
     thrust::device_vector<cuda::std::tuple<T, T>> d_tuples = h_tuples;
 
-    thrust::device_vector<T> d_t1(n), d_t2(n);
+    thrust::device_vector<T> d_t1(n);
+    thrust::device_vector<T> d_t2(n);
 
     // select 0th
     thrust::transform(d_tuples.begin(), d_tuples.end(), d_t1.begin(), GetFunctor<0>());

@@ -109,7 +109,6 @@ class mdspan
                             typename _LayoutPolicy::template mapping<_Extents>,
                             _AccessorPolicy>
 {
-private:
   static_assert(__is_cuda_std_extents_v<_Extents>,
                 "mdspan: Extents template parameter must be a specialization of extents.");
   static_assert(!is_array_v<_ElementType>, "mdspan: ElementType template parameter may not be an array type");
@@ -583,7 +582,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_ElementType*, const _MappingType&)
 
 template <class _MappingType, class _AccessorType>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES
-mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
+mdspan(typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
   -> mdspan<typename _AccessorType::element_type,
             typename _MappingType::extents_type,
             typename _MappingType::layout_type,
