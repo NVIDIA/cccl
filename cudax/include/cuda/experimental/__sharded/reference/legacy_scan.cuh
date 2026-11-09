@@ -139,7 +139,7 @@ _CCCL_HOST_API void __scan_generic(
     }
     const auto& env                       = envs[g];
     const ::cuda::stream_ref shard_stream = ::cuda::get_stream(env);
-    const ::cuda::__ensure_current_context scope{::cuda::stream_ref{shard_stream.get()}};
+    const __ensure_current_context scope{shard_stream.get()};
     auto mr      = ::cuda::mr::get_memory_resource(env);
     _Tp* d_total = static_cast<_Tp*>(mr.allocate(shard_stream, sizeof(_Tp), alignof(_Tp)));
     cuda_safe_call(cub::DeviceReduce::Reduce(s.data, d_total, s.size, scan_op, identity, env));

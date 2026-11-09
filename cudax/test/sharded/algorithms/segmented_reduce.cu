@@ -104,7 +104,7 @@ void test_ragged_correctness(place_group& group)
   {
     const auto& env = envs[g];
     const auto strm = ::cuda::get_stream(env);
-    const ::cuda::__ensure_current_context sc{::cuda::stream_ref{strm.get()}};
+    const ::cuda::__ensure_current_context sc{strm.get()};
     auto mr  = ::cuda::mr::get_memory_resource(env);
     d_off[g] = static_cast<int*>(mr.allocate(strm, c.h_off[g].size() * sizeof(int), 256));
     d_in[g]  = static_cast<float*>(mr.allocate(strm, (c.h_in[g].empty() ? 1 : c.h_in[g].size()) * sizeof(float), 256));

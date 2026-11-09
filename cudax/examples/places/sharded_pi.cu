@@ -113,7 +113,7 @@ unsigned long long fused_hits(place_group& group, const ::std::vector<size_t>& s
   for (size_t i = 0; i < shard_sizes.size(); i++)
   {
     const cudaStream_t s = group.get_stream(i);
-    const ::cuda::__ensure_current_context scope{::cuda::stream_ref{s}};
+    const ::cuda::__ensure_current_context scope{s};
     fused_pi_kernel<<<512, 256, 0, s>>>(offset, shard_sizes[i], seed, d_hits);
     cuda_safe_call(cudaGetLastError());
     offset += shard_sizes[i];

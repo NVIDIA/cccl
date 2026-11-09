@@ -199,7 +199,7 @@ void test_lanes_consumed_on_lanes(place_group& group)
     {
       continue;
     }
-    const ::cuda::__ensure_current_context scope{::cuda::stream_ref{s.stream}};
+    const ::cuda::__ensure_current_context scope{s.stream};
     cuda_safe_call(cub::DeviceTransform::Transform(s.data, s.data, s.size, scale_by{d_sums + g}, s.stream));
   }
   barrier(envs);

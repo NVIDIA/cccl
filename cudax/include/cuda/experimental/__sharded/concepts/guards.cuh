@@ -51,6 +51,10 @@
 
 namespace cuda::experimental::sharded
 {
+//! The stream's own context made current for a scope: libcu++'s RAII type,
+//! constructed from a `cudaStream_t` (via `stream_ref`).
+using ::cuda::__ensure_current_context;
+
 //! @brief Guard for the `sync_policy::forbid` contract: throw before a
 //! would-be host synchronization, leaving all state valid.
 //!
@@ -160,7 +164,7 @@ inline void __wait_stream_on(cudaStream_t __consumer, cudaStream_t __producer)
   {
     return;
   }
-  const ::cuda::__ensure_current_context __scope{::cuda::stream_ref{__producer}};
+  const __ensure_current_context __scope{__producer};
   cudaEvent_t __ev = nullptr;
   ::cuda::experimental::stf::cuda_safe_call(cudaEventCreateWithFlags(&__ev, cudaEventDisableTiming));
   ::cuda::experimental::stf::cuda_safe_call(cudaEventRecord(__ev, __producer));

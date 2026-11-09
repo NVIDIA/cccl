@@ -151,7 +151,7 @@ __visit_shards(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, con
     {
       __wait_stream_on(__shard_stream, __call_stream); // fork: lane after the caller
     }
-    const ::cuda::__ensure_current_context __scope{::cuda::stream_ref{__shard_stream}};
+    const __ensure_current_context __scope{__shard_stream};
     if constexpr (::cuda::std::is_invocable_v<_PerShard&, ::std::size_t, decltype(__d), cudaStream_t>)
     {
       __body(__g, __d, __shard_stream);

@@ -122,7 +122,7 @@ _CCCL_REQUIRES(
     }
     const auto& env                       = envs[g];
     const ::cuda::stream_ref shard_stream = ::cuda::get_stream(env);
-    const ::cuda::__ensure_current_context scope{::cuda::stream_ref{shard_stream.get()}};
+    const __ensure_current_context scope{shard_stream.get()};
     auto mr = ::cuda::mr::get_memory_resource(env);
     counter_type* d_hist =
       static_cast<counter_type*>(mr.allocate(shard_stream, bins * sizeof(counter_type), alignof(counter_type)));

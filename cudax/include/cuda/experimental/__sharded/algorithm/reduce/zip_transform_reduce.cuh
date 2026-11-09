@@ -206,7 +206,7 @@ _CCCL_HOST_API void zip_transform_reduce_into(
 
   if (num_shards == 0)
   {
-    const ::cuda::__ensure_current_context scope{::cuda::stream_ref{call_stream.get()}};
+    const __ensure_current_context scope{call_stream.get()};
     reserved::__mgmn_store_value_kernel<<<1, 1, 0, call_stream.get()>>>(init_value, out);
     cuda_safe_call(cudaGetLastError());
     return;
@@ -241,7 +241,7 @@ _CCCL_HOST_API void zip_transform_reduce_into(
   }
 
   {
-    const ::cuda::__ensure_current_context scope{::cuda::stream_ref{call_stream.get()}};
+    const __ensure_current_context scope{call_stream.get()};
     reserved::__mgmn_store_kernel<<<1, 1, 0, call_stream.get()>>>(static_cast<const __stored_t*>(d_slots), out);
     cuda_safe_call(cudaGetLastError());
   }
