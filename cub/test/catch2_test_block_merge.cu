@@ -19,7 +19,7 @@
 #include <c2h/generators.h>
 #include <c2h/vector.h>
 
-// %PARAM% GEOMETRY geometry 0:1:2:3
+// %PARAM% GEOMETRY geometry 0:1:2:3:4
 #ifndef GEOMETRY
 #  define GEOMETRY 0
 #endif
@@ -37,10 +37,12 @@ using geometries =
   c2h::type_list<merge_geometry<128, 1, 1, 3>,
                  merge_geometry<256, 1, 1, 7>,
                  merge_geometry<8, 4, 2, 2>,
-                 merge_geometry<7, 3, 2, 3>>;
-using geometry = c2h::get<GEOMETRY, geometries>;
-using algorithms =
-  c2h::enum_type_list<cub::BlockMergeAlgorithm, cub::BLOCK_MERGE_PING_PONG, cub::BLOCK_MERGE_REGISTER_STAGED>;
+                 merge_geometry<7, 3, 2, 3>,
+                 merge_geometry<512, 1, 1, 1>>;
+using geometry   = c2h::get<GEOMETRY, geometries>;
+using algorithms = c2h::enum_type_list<cub::BlockMergeAlgorithm,
+                                       cub::BlockMergeAlgorithm::PING_PONG,
+                                       cub::BlockMergeAlgorithm::REGISTER_STAGED>;
 using key_types  = c2h::type_list<std::int8_t, std::uint32_t, std::int64_t, float, double>;
 using stable_key = c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>;
 
