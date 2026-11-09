@@ -1114,7 +1114,7 @@ public:
   {
     if (place_.get_impl())
     {
-      sump::abort->*[&]() {
+      ::cuda::experimental::stf::sump::abort->*[&]() {
         place_.get_impl()->deactivate(prev_, idx_);
       };
     }
@@ -1141,7 +1141,7 @@ public:
       if (place_.get_impl())
       {
         // This operator is noexcept, so a throwing deactivate() would terminate without a report.
-        sump::abort->*[&]() {
+        ::cuda::experimental::stf::sump::abort->*[&]() {
           place_.get_impl()->deactivate(prev_, idx_);
         };
       }
@@ -1188,7 +1188,7 @@ public:
   {
     if (place_.get_impl())
     {
-      sump::abort->*[&]() {
+      ::cuda::experimental::stf::sump::abort->*[&]() {
         place_.get_impl()->deactivate(prev_, idx_);
       };
       place_ = exec_place(); // Mark as inactive
