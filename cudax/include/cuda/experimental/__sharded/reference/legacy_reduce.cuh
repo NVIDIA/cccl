@@ -51,7 +51,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
-#include <cuda/experimental/__utility/ensure_current_device.cuh>
+#include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/__stream/stream_ref.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -160,7 +161,7 @@ reduce(const _S& data, const _Envs& envs, _ReduceOp reduce_op, _Tp init_value, c
     }
     const auto& env                       = envs[g];
     const ::cuda::stream_ref shard_stream = ::cuda::get_stream(env);
-    const __ensure_current_device scope{shard_stream.get()};
+    const ::cuda::__ensure_current_context scope{shard_stream.get()};
 
     auto mr      = ::cuda::mr::get_memory_resource(env);
     _Tp* d_out   = static_cast<_Tp*>(mr.allocate(shard_stream, sizeof(_Tp), alignof(_Tp)));
@@ -287,7 +288,7 @@ struct __lane_events
   }
 
   //! Record lane @p __g's event on @p __stream (created under the stream's
-  //! device, which `__ensure_current_device` must have made current).
+  //! device, which `cuda::__ensure_current_context` must have made current).
   void __record(::std::size_t __g, cudaStream_t __stream)
   {
     cuda_safe_call(cudaEventCreateWithFlags(&__ev[__g], cudaEventDisableTiming));
@@ -354,7 +355,7 @@ _CCCL_HOST_API void reduce_into(
 
   if (num_shards == 0)
   {
-    const __ensure_current_device scope{call_stream.get()};
+    const ::cuda::__ensure_current_context scope{call_stream.get()};
     legacy::__fold_partials_kernel<<<1, 1, 0, call_stream.get()>>>(
       static_cast<const _Tp*>(nullptr), ::cuda::std::uint64_t{0}, 0u, reduce_op, init_value, out);
     cuda_safe_call(cudaGetLastError());
@@ -385,7 +386,7 @@ _CCCL_HOST_API void reduce_into(
     // Fork: order the shard's work (and its view of the scratch) after the
     // caller's timeline
     __detail::__wait_stream_on(shard_stream.get(), call_stream.get());
-    const __ensure_current_device scope{shard_stream.get()};
+    const ::cuda::__ensure_current_context scope{shard_stream.get()};
     // `no_init`: the partial is the fold of the shard's own elements; the
     // initial value enters exactly once, in the fold kernel.
     cuda_safe_call(
@@ -401,7 +402,7 @@ _CCCL_HOST_API void reduce_into(
   }
 
   {
-    const __ensure_current_device scope{call_stream.get()};
+    const ::cuda::__ensure_current_context scope{call_stream.get()};
     legacy::__fold_partials_kernel<<<1, 1, 0, call_stream.get()>>>(
       d_partials, mask, static_cast<unsigned>(num_shards), reduce_op, init_value, out);
     cuda_safe_call(cudaGetLastError());
@@ -505,7 +506,7 @@ reduce_into_lanes(const _S& data, const _Envs& envs, _OutIt outs, _ReduceOp redu
     mask |= ::cuda::std::uint64_t{1} << g;
     const auto& env                       = envs[g];
     const ::cuda::stream_ref shard_stream = ::cuda::get_stream(env);
-    const __ensure_current_device scope{shard_stream.get()};
+    const ::cuda::__ensure_current_context scope{shard_stream.get()};
     auto mr      = ::cuda::mr::get_memory_resource(env);
     _Tp* slot    = static_cast<_Tp*>(mr.allocate(shard_stream, sizeof(_Tp), alignof(_Tp)));
     slots.__p[g] = slot;
@@ -518,7 +519,7 @@ reduce_into_lanes(const _S& data, const _Envs& envs, _OutIt outs, _ReduceOp redu
   for (const auto g : each(num_shards))
   {
     const cudaStream_t lane_stream = ::cuda::get_stream(envs[g]).get();
-    const __ensure_current_device scope{lane_stream};
+    const ::cuda::__ensure_current_context scope{lane_stream};
     for (const auto h : each(num_shards))
     {
       if (h != g)
@@ -542,7 +543,7 @@ reduce_into_lanes(const _S& data, const _Envs& envs, _OutIt outs, _ReduceOp redu
     }
     const auto& env                       = envs[g];
     const ::cuda::stream_ref shard_stream = ::cuda::get_stream(env);
-    const __ensure_current_device scope{shard_stream.get()};
+    const ::cuda::__ensure_current_context scope{shard_stream.get()};
     for (const auto h : each(num_shards))
     {
       if (h != g)

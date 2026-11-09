@@ -22,7 +22,8 @@
  */
 
 #include <cuda/experimental/sharded.cuh>
-#include <cuda/experimental/__utility/ensure_current_device.cuh>
+#include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/__stream/stream_ref.h>
 
 #include <cmath>
 #include <vector>
@@ -198,7 +199,7 @@ void test_lanes_consumed_on_lanes(place_group& group)
     {
       continue;
     }
-    const cuda::experimental::__ensure_current_device scope{s.stream};
+    const ::cuda::__ensure_current_context scope{s.stream};
     cuda_safe_call(cub::DeviceTransform::Transform(s.data, s.data, s.size, scale_by{d_sums + g}, s.stream));
   }
   barrier(envs);

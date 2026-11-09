@@ -27,7 +27,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
-#include <cuda/experimental/__utility/ensure_current_device.cuh>
+#include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/__stream/stream_ref.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -138,7 +139,7 @@ _CCCL_HOST_API void __scan_generic(
     }
     const auto& env                       = envs[g];
     const ::cuda::stream_ref shard_stream = ::cuda::get_stream(env);
-    const __ensure_current_device scope{shard_stream.get()};
+    const ::cuda::__ensure_current_context scope{shard_stream.get()};
     auto mr      = ::cuda::mr::get_memory_resource(env);
     _Tp* d_total = static_cast<_Tp*>(mr.allocate(shard_stream, sizeof(_Tp), alignof(_Tp)));
     cuda_safe_call(cub::DeviceReduce::Reduce(s.data, d_total, s.size, scan_op, identity, env));

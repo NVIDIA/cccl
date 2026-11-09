@@ -20,7 +20,8 @@
  */
 
 #include <cuda/experimental/sharded.cuh>
-#include <cuda/experimental/__utility/ensure_current_device.cuh>
+#include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/__stream/stream_ref.h>
 
 #include <cstdlib>
 #include <stdexcept>
@@ -103,7 +104,7 @@ void test_ragged_correctness(place_group& group)
   {
     const auto& env = envs[g];
     const auto strm = ::cuda::get_stream(env);
-    const cuda::experimental::__ensure_current_device sc{strm.get()};
+    const ::cuda::__ensure_current_context sc{strm.get()};
     auto mr  = ::cuda::mr::get_memory_resource(env);
     d_off[g] = static_cast<int*>(mr.allocate(strm, c.h_off[g].size() * sizeof(int), 256));
     d_in[g]  = static_cast<float*>(mr.allocate(strm, (c.h_in[g].empty() ? 1 : c.h_in[g].size()) * sizeof(float), 256));
