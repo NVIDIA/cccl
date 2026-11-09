@@ -2430,7 +2430,7 @@ stf_logical_data_handle stf_stackable_logical_data_no_export_empty(stf_ctx_handl
   };
 }
 
-stf_error_t stf_stackable_set_symbol(stf_ctx_handle ctx, const char* symbol)
+stf_error_t stf_stackable_set_scope_symbol(stf_ctx_handle ctx, const char* symbol)
 {
   return stf_boundary->*[&] {
     _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
