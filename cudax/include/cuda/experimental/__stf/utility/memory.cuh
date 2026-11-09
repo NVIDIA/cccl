@@ -508,7 +508,8 @@ public:
   {
     if (rhs.size() <= small_cap)
     {
-      auto b = rhs.begin(), e = b + rhs.size();
+      auto b = rhs.begin();
+      auto e = b + rhs.size();
       construct_small_elements([&](T* dest, small_size_t) {
         if (b >= e)
         {
@@ -528,7 +529,8 @@ public:
   {
     if (rhs.size() <= small_cap)
     {
-      auto b = rhs.begin(), e = b + rhs.size();
+      auto b = rhs.begin();
+      auto e = b + rhs.size();
       loop([&](auto i) {
         if (b >= e)
         {
@@ -550,7 +552,8 @@ public:
   {
     if (init.size() <= small_cap)
     {
-      auto b = init.begin(), e = init.end();
+      auto b = init.begin();
+      auto e = init.end();
       construct_small_elements([&](T* dest, small_size_t) {
         if (b >= e)
         {
@@ -877,7 +880,8 @@ public:
   {
     if (is_small())
     {
-      auto b = small_begin(), e = b + small_length;
+      auto b = small_begin();
+      auto e = b + small_length;
       assert(b <= first && first <= last && last <= e);
       auto result = ::std::move(last, e, first);
       ::std::destroy(result, e);
@@ -1008,8 +1012,10 @@ public:
           return other.swap(*this);
         }
         // We are longer, the other is shorter
-        auto b = small_begin(), e = small_begin() + small_length, ob = other.small_begin(),
-             oe = other.small_begin() + other.small_length;
+        auto b  = small_begin();
+        auto e  = small_begin() + small_length;
+        auto ob = other.small_begin();
+        auto oe = other.small_begin() + other.small_length;
         ::std::swap_ranges(ob, oe, b);
         ::std::uninitialized_move(b + other.small_length, e, oe);
         ::std::destroy(b + other.small_length, e);

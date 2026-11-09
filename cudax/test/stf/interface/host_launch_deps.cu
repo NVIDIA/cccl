@@ -49,7 +49,8 @@ void test_stream_basic()
 void test_stream_multiple_deps()
 {
   const size_t N = 32;
-  double X[N], Y[N];
+  double X[N];
+  double Y[N];
   for (size_t i = 0; i < N; i++)
   {
     X[i] = static_cast<double>(i);
@@ -224,7 +225,8 @@ void test_graph_basic()
 void test_graph_multiple_deps()
 {
   const size_t N = 32;
-  double X[N], Y[N];
+  double X[N];
+  double Y[N];
   for (size_t i = 0; i < N; i++)
   {
     X[i] = static_cast<double>(i);
