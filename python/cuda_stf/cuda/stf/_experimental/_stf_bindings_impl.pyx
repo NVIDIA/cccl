@@ -88,6 +88,8 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     stf_ctx_handle stf_ctx_create()
     stf_ctx_handle stf_ctx_create_graph()
     stf_error_t stf_ctx_finalize(stf_ctx_handle ctx) nogil
+    void* stf_ctx_allocate(stf_ctx_handle ctx, size_t size, int cached)
+    stf_error_t stf_ctx_deallocate(stf_ctx_handle ctx, void* ptr, size_t size, int cached)
     CUstream stf_fence(stf_ctx_handle ctx) nogil
 
     #
@@ -421,6 +423,8 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     stf_logical_data_handle stf_stackable_logical_data_empty(stf_ctx_handle ctx, size_t length)
     stf_logical_data_handle stf_stackable_logical_data_no_export_empty(stf_ctx_handle ctx, size_t length)
     stf_logical_data_handle stf_stackable_token(stf_ctx_handle ctx)
+    void* stf_stackable_allocate(stf_ctx_handle ctx, size_t size, int cached)
+    stf_error_t stf_stackable_deallocate(stf_ctx_handle ctx, void* ptr, size_t size, int cached)
     stf_error_t stf_stackable_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol)
     stf_error_t stf_stackable_logical_data_set_read_only(stf_logical_data_handle ld)
     stf_error_t stf_stackable_logical_data_push(
@@ -3826,6 +3830,24 @@ cdef class context:
         dtype = _logical_data_default_dtype(dtype)
         return self.logical_data_full(shape, 1.0, dtype, where, exec_place, name)
 
+    def allocate(self, size_t size, *, bint cached=False):
+        """Allocate ``size`` bytes of device memory through this context's
+        allocator; returns the raw pointer as an ``int``.
+
+        ``cached=True`` uses the context's current allocator (a cached block
+        allocator by default), ``cached=False`` its uncached one. The context
+        orders the allocation: the memory is usable on any stream when the
+        call returns. Stream contexts only."""
+        cdef void* p = stf_ctx_allocate(self._ctx, size, 1 if cached else 0)
+        if p == NULL:
+            _raise_last_error("stf_ctx_allocate")
+        return <size_t> p
+
+    def deallocate(self, size_t ptr, size_t size, *, bint cached=False):
+        """Return memory from :meth:`allocate` (same ``cached`` value). The
+        memory must no longer be in use."""
+        _check(stf_ctx_deallocate(self._ctx, <void*> ptr, size, 1 if cached else 0), "stf_ctx_deallocate")
+
     def token(self):
         return logical_data.token(self)
 
@@ -5159,6 +5181,31 @@ cdef class stackable_context:
         """Create stackable logical data filled with ones."""
         dtype = _logical_data_default_dtype(dtype)
         return self.logical_data_full(shape, 1.0, dtype, where, exec_place, name, no_export=no_export)
+
+    def allocate(self, size_t size, *, bint cached=False):
+        """Allocate ``size`` bytes of device memory through the allocator of
+        the current (innermost) scope; returns the raw pointer as an ``int``.
+
+        At the root this is :meth:`context.allocate` on the root stream
+        context. Inside a scope the memory belongs to the scope: allocated on
+        the scope's support stream outside the capture (no allocation node
+        enters the graph), usable by every task recorded in the scope, and
+        released when the scope is popped. External runtimes recording into a
+        scope use it for their temporaries (e.g. Warp through
+        ``wp.set_device_allocator``). ``cached`` must be ``False`` inside a
+        scope: a recycled block would carry a dependency the graph does not
+        otherwise have."""
+        cdef void* p = stf_stackable_allocate(self._ctx, size, 1 if cached else 0)
+        if p == NULL:
+            _raise_last_error("stf_stackable_allocate")
+        return <size_t> p
+
+    def deallocate(self, size_t ptr, size_t size, *, bint cached=False):
+        """Return memory from :meth:`allocate` to the current scope's
+        allocator (same ``cached`` value). Inside a scope the release is
+        deferred to the pop, so this is safe while the graph is still being
+        recorded; at the root the memory must no longer be in use."""
+        _check(stf_stackable_deallocate(self._ctx, <void*> ptr, size, 1 if cached else 0), "stf_stackable_deallocate")
 
     def token(self):
         """Create a synchronization token."""

@@ -1214,6 +1214,70 @@ stf_data_place_handle stf_data_place_composite_cute(stf_exec_place_handle grid, 
   };
 }
 
+namespace
+{
+// Allocation through a context's own allocators (see stf_ctx_allocate()).
+// The uncached allocator of a stream context allocates on a pool stream and
+// reports completion through `prereqs`; with no caller stream to hand those
+// events to, the call waits for them, so the memory is usable on any stream when
+// it returns. The uncached allocator of a nested stackable scope (stream_adapter)
+// allocates on the scope's support stream and leaves `prereqs` empty: nothing to
+// wait for, the scope's graph is launched on that stream after the allocation.
+void* ctx_allocate(backend_ctx_untyped& bctx, size_t size, bool cached)
+{
+  auto& alloc        = cached ? bctx.get_allocator() : bctx.get_uncached_allocator();
+  ::std::ptrdiff_t s = static_cast<::std::ptrdiff_t>(size);
+  event_list prereqs;
+  void* p = alloc.allocate(bctx, data_place::current_device(), s, prereqs);
+  if (p == nullptr)
+  {
+    throw ::std::runtime_error("allocation of " + ::std::to_string(size) + " bytes failed");
+  }
+  if (!prereqs.empty())
+  {
+    cudaStream_t stream = bctx.pick_stream();
+    prereqs.sync_with_stream(bctx, stream);
+    cuda_safe_call(cudaStreamSynchronize(stream));
+  }
+  return p;
+}
+
+void ctx_deallocate(backend_ctx_untyped& bctx, void* ptr, size_t size, bool cached)
+{
+  auto& alloc = cached ? bctx.get_allocator() : bctx.get_uncached_allocator();
+  event_list prereqs;
+  alloc.deallocate(bctx, data_place::current_device(), prereqs, ptr, size);
+}
+} // namespace
+
+void* stf_ctx_allocate(stf_ctx_handle ctx, size_t size, int cached)
+{
+  return stf_boundary->*[&]() -> void* {
+    _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
+    auto* context_ptr = from_opaque(ctx);
+    if (context_ptr->is_graph_ctx())
+    {
+      throw ::std::invalid_argument("stf_ctx_allocate: graph contexts are not supported (an allocation node would have "
+                                    "nothing to order it)");
+    }
+    return ctx_allocate(context_ptr->get_backend(), size, cached != 0);
+  };
+}
+
+stf_error_t stf_ctx_deallocate(stf_ctx_handle ctx, void* ptr, size_t size, int cached)
+{
+  return stf_boundary->*[&] {
+    _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
+    auto* context_ptr = from_opaque(ctx);
+    if (context_ptr->is_graph_ctx())
+    {
+      throw ::std::invalid_argument("stf_ctx_deallocate: graph contexts are not supported");
+    }
+    ctx_deallocate(context_ptr->get_backend(), ptr, size, cached != 0);
+    return STF_SUCCESS;
+  };
+}
+
 stf_ctx_handle stf_ctx_create(void)
 {
   return stf_boundary->*[&] {
@@ -2427,6 +2491,39 @@ stf_logical_data_handle stf_stackable_logical_data_no_export_empty(stf_ctx_handl
     auto* w    = new stackable_ld_opaque{false, inner.get()};
     inner.release();
     return to_opaque_sld(w);
+  };
+}
+
+void* stf_stackable_allocate(stf_ctx_handle ctx, size_t size, int cached)
+{
+  return stf_boundary->*[&]() -> void* {
+    _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+    auto* sctx = from_opaque_sctx(ctx);
+    // the head scope's own context: the root stream context, or a nested graph
+    // context whose uncached allocator is the scope's stream_adapter
+    auto& lctx = sctx->get_node(sctx->get_head_offset())->ctx;
+    if (cached != 0 && lctx.is_graph_ctx())
+    {
+      throw ::std::invalid_argument(
+        "stf_stackable_allocate: cached allocations are not available inside a scope (a recycled block would "
+        "add a dependency the graph does not have, or none); pass cached = 0");
+    }
+    return ctx_allocate(lctx.get_backend(), size, cached != 0);
+  };
+}
+
+stf_error_t stf_stackable_deallocate(stf_ctx_handle ctx, void* ptr, size_t size, int cached)
+{
+  return stf_boundary->*[&] {
+    _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
+    auto* sctx = from_opaque_sctx(ctx);
+    auto& lctx = sctx->get_node(sctx->get_head_offset())->ctx;
+    if (cached != 0 && lctx.is_graph_ctx())
+    {
+      throw ::std::invalid_argument("stf_stackable_deallocate: cached allocations are not available inside a scope");
+    }
+    ctx_deallocate(lctx.get_backend(), ptr, size, cached != 0);
+    return STF_SUCCESS;
   };
 }
 

@@ -966,6 +966,26 @@ stf_ctx_handle stf_ctx_create_ex(const stf_ctx_options* opts);
 
 stf_error_t stf_ctx_finalize(stf_ctx_handle ctx);
 
+//! \brief Allocate \p size bytes of device memory through the allocator of \p ctx.
+//!
+//! \p cached selects the allocator: non-zero uses the context's current
+//! allocator (by default a cached block allocator that recycles freed blocks;
+//! it follows \c CUDASTF_DEFAULT_ALLOCATOR and \c ctx.set_allocator()), zero
+//! uses the context's uncached allocator (a fresh allocation every time).
+//!
+//! The context orders the allocation: the call returns once the memory is
+//! usable on any stream. Only stream contexts are supported (a graph context
+//! would record an allocation node with nothing to order it against); use
+//! stf_stackable_allocate() for a stackable context. Returns NULL on failure
+//! (\c STF_ERROR_INVALID_ARGUMENT for a graph context).
+void* stf_ctx_allocate(stf_ctx_handle ctx, size_t size, int cached);
+
+//! \brief Return memory obtained from stf_ctx_allocate() to the allocator of
+//! \p ctx. Pass the same \p cached value as at allocation. The memory must no
+//! longer be in use (synchronize the streams that used it first): a cached
+//! block may be handed to the next stf_ctx_allocate() immediately.
+stf_error_t stf_ctx_deallocate(stf_ctx_handle ctx, void* ptr, size_t size, int cached);
+
 //! \brief Borrow the per-place stream-pool registry embedded in \p ctx.
 //!
 //! The returned handle refers to resources that remain valid until
@@ -2473,6 +2493,31 @@ stf_logical_data_handle stf_stackable_logical_data_no_export_empty(stf_ctx_handl
 
 //! \brief Create a stackable synchronization token (no payload).
 stf_logical_data_handle stf_stackable_token(stf_ctx_handle ctx);
+
+//! \brief Allocate \p size bytes of device memory through the allocator of the
+//! current (innermost) scope of a stackable context.
+//!
+//! At the root this is stf_ctx_allocate() on the root stream context (the call
+//! returns once the memory is usable, \p cached as there). Inside a pushed
+//! scope the memory belongs to the scope: it is allocated on the scope's support
+//! stream, outside the capture, so no allocation node enters the scope's graph,
+//! it is usable by every task recorded in the scope, and it is released when
+//! the scope is popped (handed to the parent until the parent's graph has
+//! launched). This is what an external runtime (e.g. Warp through its allocator
+//! hook) uses for the temporaries it creates while recording into a scope.
+//!
+//! Inside a scope \p cached must be zero: a recycled block would carry its
+//! previous user's completion into the new user, i.e. a dependency the graph
+//! does not otherwise have (false synchronization), or none at all. Returns NULL
+//! on failure (\c STF_ERROR_INVALID_ARGUMENT for cached != 0 inside a scope).
+void* stf_stackable_allocate(stf_ctx_handle ctx, size_t size, int cached);
+
+//! \brief Return memory obtained from stf_stackable_allocate() to the current
+//! scope's allocator, with the same \p cached value. Inside a scope the release
+//! is deferred to the pop, so it is safe to call while the graph that uses the
+//! memory is still being recorded; at the root the memory must no longer be in
+//! use (see stf_ctx_deallocate()).
+stf_error_t stf_stackable_deallocate(stf_ctx_handle ctx, void* ptr, size_t size, int cached);
 
 //! \brief Set the symbolic name of stackable logical data (debug / DOT output).
 stf_error_t stf_stackable_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol);
