@@ -17,7 +17,7 @@
  *        a body may add its own lane edges (`__wait_stream_on`) before its
  *        launch.
  *
- * Visits every non-empty shard under `stream_scope` on its environment's
+ * Visits every non-empty shard under `cuda::__ensure_current_context` on its environment's
  * stream and applies the sharded call contract around the per-shard body:
  * the environment-count guard, the synchronous no-stream form (refused under
  * `sync_policy::forbid`), lane-ordered or `composition::bracketed`
@@ -29,6 +29,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/__stream/stream_ref.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -61,7 +63,7 @@ namespace __detail
 {
 //! @brief The concept-tier shard visitor (successor of the container's
 //! `each_shard`, with environments as the stream source and the call
-//! contract enforced): visit every non-empty shard under `stream_scope` on its
+//! contract enforced): visit every non-empty shard under `cuda::__ensure_current_context` on its
 //! environment's stream, with the per-call environment selecting the
 //! contract — stream present = asynchronous (LANE-ORDERED by default: the
 //! call enqueues each shard's work on its environment's stream and touches
@@ -149,7 +151,7 @@ __visit_shards(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, con
     {
       __wait_stream_on(__shard_stream, __call_stream); // fork: lane after the caller
     }
-    stream_scope __scope(__shard_stream);
+    const ::cuda::__ensure_current_context __scope{::cuda::stream_ref{__shard_stream}};
     if constexpr (::cuda::std::is_invocable_v<_PerShard&, ::std::size_t, decltype(__d), cudaStream_t>)
     {
       __body(__g, __d, __shard_stream);

@@ -16,7 +16,7 @@
  * Every algorithm of the map family (`fill`, `transform`, `for_each`,
  * `segmented_reduce`, ...) is a per-shard launch handed to one shared driver
  * that applies the call contract around it: visit every non-empty shard, on
- * its environment's stream, under `stream_scope` (so a launch lands in the
+ * its environment's stream, under `cuda::__ensure_current_context` (so a launch lands in the
  * shard's execution context, e.g. a green-context place), with the
  * environment-count guard, lane-ordered or `composition::bracketed`
  * composition against the call stream, the synchronous no-stream form
@@ -62,6 +62,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/__stream/stream_ref.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

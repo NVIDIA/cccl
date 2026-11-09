@@ -59,6 +59,8 @@
  */
 
 #include <cuda/experimental/sharded.cuh>
+#include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/__stream/stream_ref.h>
 
 #include <cmath>
 #include <cstdio>
@@ -199,7 +201,7 @@ int main()
   {
     const auto& env = envs[g];
     const auto strm = ::cuda::get_stream(env);
-    stream_scope sc(strm.get());
+    const ::cuda::__ensure_current_context sc{::cuda::stream_ref{strm.get()}};
     auto mr  = ::cuda::mr::get_memory_resource(env);
     d_col[g] = static_cast<int*>(mr.allocate(strm, (h_col[g].empty() ? 1 : h_col[g].size()) * sizeof(int), 256));
     d_val[g] = static_cast<float*>(mr.allocate(strm, (h_val[g].empty() ? 1 : h_val[g].size()) * sizeof(float), 256));

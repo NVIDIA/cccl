@@ -13,9 +13,9 @@
  * @brief Entry guards shared by every sharded algorithm — the environment
  *        count check, the co-partitioning check, the `sync_policy::forbid`
  *        guard (`require_sync_allowed`) and the capture guards — plus the
- *        stream plumbing they and the engines share: `stream_scope`
- *        (`places::stream_scope`, made available in this namespace) and
- *        `__detail::__wait_stream_on`.
+ *        stream plumbing they and the engines share: the stream's own
+ *        context made current (`cuda::__ensure_current_context` from a
+ *        `stream_ref`) and `__detail::__wait_stream_on`.
  *
  * Every guard runs before anything is enqueued, so a refusal leaves the
  * caller's state (and any open capture) valid.
@@ -24,6 +24,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/__stream/stream_ref.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -36,7 +38,6 @@
 #include <cuda/__stream/get_stream.h>
 
 #include <cuda/experimental/__places/place_group.cuh> // check_not_capturing
-#include <cuda/experimental/__places/stream_scope.cuh>
 #include <cuda/experimental/__sharded/concepts/env.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
 
@@ -50,10 +51,6 @@
 
 namespace cuda::experimental::sharded
 {
-//! @brief RAII device scope derived from a stream (see
-//! `<cuda/experimental/__places/stream_scope.cuh>`).
-using ::cuda::experimental::places::stream_scope;
-
 //! @brief Guard for the `sync_policy::forbid` contract: throw before a
 //! would-be host synchronization, leaving all state valid.
 //!
@@ -163,7 +160,7 @@ inline void __wait_stream_on(cudaStream_t __consumer, cudaStream_t __producer)
   {
     return;
   }
-  stream_scope __scope(__producer);
+  const ::cuda::__ensure_current_context __scope{::cuda::stream_ref{__producer}};
   cudaEvent_t __ev = nullptr;
   ::cuda::experimental::stf::cuda_safe_call(cudaEventCreateWithFlags(&__ev, cudaEventDisableTiming));
   ::cuda::experimental::stf::cuda_safe_call(cudaEventRecord(__ev, __producer));

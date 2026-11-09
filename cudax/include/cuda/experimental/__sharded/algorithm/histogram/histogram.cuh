@@ -23,6 +23,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/__stream/stream_ref.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -120,7 +122,7 @@ _CCCL_REQUIRES(
     }
     const auto& env                       = envs[g];
     const ::cuda::stream_ref shard_stream = ::cuda::get_stream(env);
-    stream_scope scope(shard_stream.get());
+    const ::cuda::__ensure_current_context scope{::cuda::stream_ref{shard_stream.get()}};
     auto mr = ::cuda::mr::get_memory_resource(env);
     counter_type* d_hist =
       static_cast<counter_type*>(mr.allocate(shard_stream, bins * sizeof(counter_type), alignof(counter_type)));

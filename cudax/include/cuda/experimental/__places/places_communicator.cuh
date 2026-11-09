@@ -35,6 +35,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/__stream/stream_ref.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -49,7 +51,6 @@
 
 #include <cuda/experimental/__multi_gpu/concepts.h>
 #include <cuda/experimental/__places/stream_pool.cuh> // get_device_from_stream
-#include <cuda/experimental/__places/stream_scope.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 #include <cstddef>
@@ -689,7 +690,7 @@ private:
         for (::std::size_t __d = 0; __d < __n; ++__d)
         {
           const auto& __dst = __c.__slots[__d];
-          stream_scope __scope(__dst.__stream);
+          const ::cuda::__ensure_current_context __scope{::cuda::stream_ref{__dst.__stream}};
           reserved::__mgmn_all_reduce_kernel<_Tp, _ReduceOp><<<__blocks, __threads, 0, __dst.__stream>>>(
             __ptrs, static_cast<unsigned>(__n), __count, __op, static_cast<_Tp*>(__dst.__recv));
           ::cuda::experimental::stf::cuda_safe_call(cudaGetLastError());

@@ -13,13 +13,14 @@
  *
  * @brief Work submitted into a place's stream executes in the stream's
  *        context with the stream's SM confinement, independent of the
- *        calling thread's current context: `stream_scope` (device currency
- *        derived from the stream) is a sufficient replacement for exec-place
- *        activation on the generic algorithm path.
+ *        calling thread's current context: making the stream's own context
+ *        current (`cuda::__ensure_current_context` from a `stream_ref`) is a
+ *        sufficient replacement for exec-place activation on the generic
+ *        algorithm path.
  *
  * Arms, per locality domain i, launching into the domain's pool stream:
  *   A  activated   : exec_place_scope around the launch (reference behavior)
- *   B  stream_scope: no activation, device currency only
+ *   B  stream ctx  : no activation, the stream's context made current
  *   C  adversarial : the OTHER domain's place activated, launch into i's
  *                    stream (kernels must follow the stream, not the current
  *                    context)
@@ -28,25 +29,25 @@
  *                    the pool streams
  *
  * Gate: arms B, C, D reproduce arm A's per-domain SM set exactly, and every
- * arm computes correct results. Cross-domain SM-set disjointness is
- * reported, not gated (it depends on the SM split method and backend).
+ * arm computes correct results. Cross-domain SM-set disjointness is not
+ * gated (it depends on the SM split method and backend).
  */
 
 #include <thrust/execution_policy.h>
 #include <thrust/transform.h>
 
+#include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/experimental/places.cuh>
+#include <cuda/stream>
 
 #include <algorithm>
-#include <cstdio>
 #include <set>
 #include <vector>
 
 using cuda::experimental::places::cuda_safe_call;
-using cuda::experimental::places::exec_place_scope;
 using cuda::experimental::places::exec_place;
-using cuda::experimental::places::place_group;
-using cuda::experimental::places::stream_scope;
+using cuda::experimental::places::exec_place_resources;
+using cuda::experimental::places::exec_place_scope;
 
 namespace
 {
@@ -92,8 +93,18 @@ int main()
 {
   cuda_safe_call(cudaSetDevice(0));
 
-  auto group     = place_group{exec_place::all_locality_domains()};
-  const size_t P = group.size();
+  // One place per locality domain of every device (whole devices where
+  // domains are unsupported); streams come from the per-place pools of a
+  // standalone resources registry.
+  exec_place_resources resources;
+  const exec_place grid = exec_place::all_locality_domains();
+  const size_t P        = grid.size();
+  std::vector<exec_place> places;
+  places.reserve(P);
+  for (size_t i = 0; i < P; i++)
+  {
+    places.push_back(grid.get_place(i));
+  }
 
   std::vector<unsigned*> d_smids(P);
   std::vector<float*> d_data(P);
@@ -103,7 +114,7 @@ int main()
     cuda_safe_call(cudaMalloc(&d_smids[i], NB * sizeof(unsigned)));
     cuda_safe_call(cudaMalloc(&d_data[i], N * sizeof(float)));
     cuda_safe_call(cudaMemset(d_data[i], 0, N * sizeof(float)));
-    streams[i] = group.get_stream(i);
+    streams[i] = places[i].pick_stream(resources);
   }
 
   auto launch = [&](size_t i) {
@@ -116,16 +127,16 @@ int main()
   // Arm A: reference — exec-place activation around the launch
   for (size_t i = 0; i < P; i++)
   {
-    exec_place_scope scope(group.place(i));
+    exec_place_scope scope(places[i]);
     launch(i);
     smA[i] = collect_smids(d_smids[i], streams[i]);
     EXPECT(check_data(d_data[i], streams[i], 1.0f));
   }
 
-  // Arm B: stream_scope only — no context activation anywhere
+  // Arm B: the stream's own context made current — no place activation anywhere
   for (size_t i = 0; i < P; i++)
   {
-    stream_scope scope(streams[i]);
+    const ::cuda::__ensure_current_context scope{::cuda::stream_ref{streams[i]}};
     launch(i);
     smB[i] = collect_smids(d_smids[i], streams[i]);
     EXPECT(check_data(d_data[i], streams[i], 3.0f));
@@ -137,7 +148,7 @@ int main()
   {
     for (size_t i = 0; i < P; i++)
     {
-      exec_place_scope wrong(group.place((i + 1) % P));
+      exec_place_scope wrong(places[(i + 1) % P]);
       launch(i);
       smC[i] = collect_smids(d_smids[i], streams[i]);
       EXPECT(check_data(d_data[i], streams[i], 7.0f));
@@ -153,7 +164,7 @@ int main()
         return v + 1.0f;
       });
     cuda_safe_call(cudaGetLastError());
-    stream_scope scope(streams[i]);
+    const ::cuda::__ensure_current_context scope{::cuda::stream_ref{streams[i]}};
     launch(i); // (x + 1) * 2 + 1
     smD[i]             = collect_smids(d_smids[i], streams[i]);
     const float expect = P >= 2 ? 17.0f : 9.0f; // arm C skipped when P == 1
@@ -170,19 +181,6 @@ int main()
     cuda_safe_call(cudaStreamWaitEvent(streams[1], ev, 0));
     cuda_safe_call(cudaStreamSynchronize(streams[1]));
     cuda_safe_call(cudaEventDestroy(ev));
-  }
-
-  // Informational: cross-domain disjointness (depends on split method)
-  if (P >= 2)
-  {
-    const bool disjoint = std::none_of(smA[0].begin(), smA[0].end(), [&](unsigned v) {
-      return smA[1].count(v) != 0;
-    });
-    std::printf("stream_scope: %zu domains, dom0 %zu SMs, dom1 %zu SMs, disjoint=%d\n",
-                P,
-                smA[0].size(),
-                smA[1].size(),
-                static_cast<int>(disjoint));
   }
 
   for (size_t i = 0; i < P; i++)

@@ -36,6 +36,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/__stream/stream_ref.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -186,7 +188,7 @@ __copy_if_generic(_S&& data, const _Envs& envs, _Pred pred, const _CallEnv& call
     }
     count_type* d_num                     = ::std::get<1>(d_counts[next++]);
     const ::cuda::stream_ref shard_stream = ::cuda::get_stream(envs[g]);
-    stream_scope scope(shard_stream.get());
+    const ::cuda::__ensure_current_context scope{::cuda::stream_ref{shard_stream.get()}};
     cuda_safe_call(cub::DeviceSelect::If(s.data, d_num, static_cast<::cuda::std::int64_t>(s.size), pred, envs[g]));
     cuda_safe_call(
       cudaMemcpyAsync(&h_new_sizes[g], d_num, sizeof(count_type), cudaMemcpyDeviceToHost, shard_stream.get()));
@@ -319,7 +321,7 @@ template <class _SIn, class _SOut, class _Envs, class _Pred, class _CallEnv>
     }
     count_type* d_num                     = ::std::get<1>(d_counts[next++]);
     const ::cuda::stream_ref shard_stream = ::cuda::get_stream(envs[g]);
-    stream_scope scope(shard_stream.get());
+    const ::cuda::__ensure_current_context scope{::cuda::stream_ref{shard_stream.get()}};
     cuda_safe_call(cub::DeviceSelect::If(
       si.data, dst.shard(g).data, d_num, static_cast<::cuda::std::int64_t>(si.size), pred, envs[g]));
     cuda_safe_call(
