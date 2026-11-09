@@ -13,11 +13,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/functional.h>
 #include <thrust/system/detail/errno.h>
 #include <thrust/system/error_code.h>
 
+#include <cuda/std/__functional/operations.h>
+
 #include <cstring>
+#include <string>
 
 THRUST_NAMESPACE_BEGIN
 

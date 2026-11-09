@@ -8,7 +8,8 @@ struct TestMin
   void operator()()
   {
     // 2 < 3
-    T two(2), three(3);
+    T two(2);
+    T three(3);
     REQUIRE(two == ::cuda::std::min(two, three));
     REQUIRE(two == ::cuda::std::min(two, three, ::cuda::std::less<T>()));
 
@@ -41,7 +42,8 @@ struct TestMax
   void operator()()
   {
     // 2 < 3
-    T two(2), three(3);
+    T two(2);
+    T three(3);
     REQUIRE(three == ::cuda::std::max(two, three));
     REQUIRE(three == ::cuda::std::max(two, three, ::cuda::std::less<T>()));
 

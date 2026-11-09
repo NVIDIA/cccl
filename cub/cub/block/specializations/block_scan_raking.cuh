@@ -539,7 +539,8 @@ struct BlockScanRaking
         T upsweep_partial = Upsweep(scan_op);
 
         // Warp-synchronous scan
-        T exclusive_partial, block_aggregate;
+        T exclusive_partial;
+        T block_aggregate;
         warp_scan.ExclusiveScan(upsweep_partial, exclusive_partial, scan_op, block_aggregate);
 
         // Obtain block-wide prefix in lane0, then broadcast to other lanes
@@ -738,7 +739,8 @@ struct BlockScanRaking
         T upsweep_partial = Upsweep(scan_op);
 
         // Warp-synchronous scan
-        T exclusive_partial, block_aggregate;
+        T exclusive_partial;
+        T block_aggregate;
         warp_scan.ExclusiveScan(upsweep_partial, exclusive_partial, scan_op, block_aggregate);
 
         // Obtain block-wide prefix in lane0, then broadcast to other lanes

@@ -63,7 +63,6 @@ Checks:
   - '-readability-implicit-bool-conversion'
   - '-readability-braces-around-statements'
   - '-readability-qualified-auto'
-  - '-readability-isolate-declaration'
   - '-readability-named-parameter'
   - '-readability-identifier-length'
   # This is just noise. 95% of the time we have such static accesses to make things like
@@ -91,7 +90,6 @@ Checks:
   # again. It is easier to just follow the rule of "always explicitly default initialize
   # members" than to remember to change 2 places at once.
   - '-readability-redundant-member-init'
-  - '-readability-delete-null-pointer'
   - '-readability-use-std-min-max'
   - '-readability-magic-numbers'
   - '-readability-use-concise-preprocessor-directives'
@@ -99,19 +97,16 @@ Checks:
   - '-readability-math-missing-parentheses'
   - '-readability-else-after-return'
   - '-readability-avoid-nested-conditional-operator'
-  - '-readability-redundant-access-specifiers'
   - '-readability-redundant-declaration'
   - '-readability-redundant-parentheses'
   - '-readability-avoid-unconditional-preprocessor-if'
   - '-readability-non-const-parameter'
-  - '-readability-redundant-typename'
   - '-readability-redundant-casting'
   - '-readability-simplify-boolean-expr'
   - '-readability-make-member-function-const'
   - '-readability-avoid-return-with-void-value'
   - '-readability-suspicious-call-argument'
   - '-readability-container-size-empty'
-  - '-readability-avoid-const-params-in-decls'
   - '-readability-inconsistent-declaration-parameter-name'
   # Handled by clang-tidy
   - '-readability-misleading-indentation'

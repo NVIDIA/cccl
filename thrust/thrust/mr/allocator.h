@@ -17,13 +17,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/config/memory_resource.h>
 #include <thrust/mr/polymorphic_adaptor.h>
 #include <thrust/mr/validator.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__memory/pointer_traits.h>
-#include <cuda/std/limits>
+#include <cuda/std/__type_traits/integral_constant.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace mr

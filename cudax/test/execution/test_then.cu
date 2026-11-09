@@ -216,10 +216,11 @@ C2H_TEST("then keeps sends_stopped from input sender", "[adaptors][then]")
 
 C2H_TEST("then can return by reference", "[adaptors][then]")
 {
-  string str("hello"), *pstr = &str;
-  auto snd = ex::just() | ex::then([pstr]() noexcept -> decltype(auto) {
+  string str("hello");
+  string* pstr = &str;
+  auto snd     = ex::just() | ex::then([pstr]() noexcept -> decltype(auto) {
                return *pstr;
-             });
+                 });
   check_value_types<types<string&>>(snd);
   check_error_types<>(snd);
   check_sends_stopped<false>(snd);

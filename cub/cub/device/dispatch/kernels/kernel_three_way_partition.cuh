@@ -34,13 +34,12 @@ namespace detail::three_way_partition
 using per_partition_offset_t = ::cuda::std::int32_t;
 
 using AccumPackHelperT = detail::three_way_partition::accumulator_pack_t<per_partition_offset_t>;
-using AccumPackT       = typename AccumPackHelperT::pack_t;
+using AccumPackT       = AccumPackHelperT::pack_t;
 using ScanTileStateT   = cub::ScanTileState<AccumPackT>;
 
 template <typename TotalNumItemsT>
 class streaming_context_t
 {
-private:
   bool first_partition = true;
   bool last_partition  = false;
   TotalNumItemsT total_previous_num_items{};
