@@ -152,8 +152,9 @@ TEST_HOST_DEVICE_FUNC constexpr bool test()
   test_mapper(unsigned_result_mapper{}, 1, 0); // linear mapping
   test_mapper(mixed_result_mapper{}, 3, 3); // must match double overload
 
-  qualified_mapper mutable_map; // NOLINT(misc-const-correctness)
-  const qualified_mapper const_map;
+  // GCC 7 rejects default-initialized empty objects in constexpr functions; value-initialize the mappers.
+  qualified_mapper mutable_map{}; // NOLINT(misc-const-correctness)
+  const qualified_mapper const_map{};
   test_mapper(mutable_map, 0, 1); // return 1 (operator()&) for mutable lvalue
   test_mapper(const_map, 0, 0); // return 0 (operator() const&) for const lvalue
   test_mapper(qualified_mapper{}, 0, 1); // return 1 (operator()&) for mutable rvalue
