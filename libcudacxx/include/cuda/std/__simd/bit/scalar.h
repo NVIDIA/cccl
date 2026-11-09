@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__bit/bit_repeat.h>
 #include <cuda/std/__bit/bit_reverse.h>
 #include <cuda/std/__bit/byteswap.h>
 #include <cuda/std/__bit/countl.h>
@@ -34,6 +35,7 @@
 #include <cuda/std/__bit/shr.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__simd/basic_vec.h>
+#include <cuda/std/__simd/concepts.h>
 #include <cuda/std/__simd/exposition.h>
 #include <cuda/std/__simd/type_traits.h>
 #include <cuda/std/__type_traits/is_integer.h>
@@ -224,6 +226,41 @@ struct __simd_rotr_scalar_generator
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __result_t operator()(_Idx) const noexcept
   {
     return ::cuda::std::rotr(__v_[_Idx::value], __s_);
+  }
+};
+
+template <typename _Vp0, typename _Vp1>
+struct __simd_bit_repeat_generator
+{
+  const _Vp0& __v0_;
+  const _Vp1& __v1_;
+
+  template <typename _Idx>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr typename _Vp0::value_type operator()(_Idx) const noexcept(false)
+  {
+    // Check before conversion to int so a negative wide count cannot become positive.
+    _CCCL_IF_CONSTEVAL_DEFAULT
+    {
+      _CCCL_VERIFY(__v1_[_Idx::value] > 0, "bit_repeat: count must be greater than 0");
+    }
+    else
+    {
+      _CCCL_ASSERT(__v1_[_Idx::value] > 0, "bit_repeat: count must be greater than 0");
+    }
+    return ::cuda::std::bit_repeat(__v0_[_Idx::value], static_cast<int>(__v1_[_Idx::value]));
+  }
+};
+
+template <typename _Vp>
+struct __simd_bit_repeat_scalar_generator
+{
+  const _Vp& __v_;
+  const int __count_;
+
+  template <typename _Idx>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr typename _Vp::value_type operator()(_Idx) const noexcept(false)
+  {
+    return ::cuda::std::bit_repeat(__v_[_Idx::value], __count_);
   }
 };
 
@@ -433,6 +470,26 @@ _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
 {
   using __vec_t _CCCL_NODEBUG = basic_vec<_Tp, _Abi>;
   return __vec_t{__simd_rotr_scalar_generator<__vec_t>{__v, __s}};
+}
+
+_CCCL_TEMPLATE(typename _Tp0, typename _Abi0, typename _Tp1, typename _Abi1)
+_CCCL_REQUIRES(__simd_vec_type<basic_vec<_Tp0, _Abi0>> _CCCL_AND __simd_vec_type<basic_vec<_Tp1, _Abi1>> _CCCL_AND
+                 __simd_is_valid_rotate_v<_Tp0, _Abi0, _Tp1, _Abi1>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+bit_repeat(const basic_vec<_Tp0, _Abi0>& __v0, const basic_vec<_Tp1, _Abi1>& __v1) noexcept(false)
+{
+  using __vec0_t _CCCL_NODEBUG = basic_vec<_Tp0, _Abi0>;
+  using __vec1_t _CCCL_NODEBUG = basic_vec<_Tp1, _Abi1>;
+  return __vec0_t{__simd_bit_repeat_generator<__vec0_t, __vec1_t>{__v0, __v1}};
+}
+
+_CCCL_TEMPLATE(typename _Tp, typename _Abi)
+_CCCL_REQUIRES(__simd_vec_type<basic_vec<_Tp, _Abi>> _CCCL_AND __cccl_is_unsigned_integer_v<_Tp>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+bit_repeat(const basic_vec<_Tp, _Abi>& __v, const int __count) noexcept(false)
+{
+  using __vec_t _CCCL_NODEBUG = basic_vec<_Tp, _Abi>;
+  return __vec_t{__simd_bit_repeat_scalar_generator<__vec_t>{__v, __count}};
 }
 
 template <typename _Tp, typename _Vp>
