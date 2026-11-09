@@ -2506,6 +2506,9 @@ stf_error_t stf_stackable_set_scope_symbol(stf_ctx_handle ctx, const char* symbo
     _CCCL_ASSERT(symbol != nullptr, "symbol must not be null");
     auto* sctx = from_opaque_sctx(ctx);
     sctx->get_node(sctx->get_head_offset())->ctx.get_dot()->set_ctx_symbol(::std::string(symbol));
+    return STF_SUCCESS;
+  };
+}
 
 void* stf_stackable_allocate(stf_ctx_handle ctx, size_t size, int cached)
 {
