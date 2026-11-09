@@ -14,7 +14,6 @@ set(
   cpp/wait_token.cu
   cuda-samples/3_CUDA_Features/graphConditionalNodes/graphConditionalNodes.cu
   dot/basic.cu
-  dot/escaped_symbols.cu
   dot/graph_print_to_dot.cu
   dot/sections.cu
   dot/sections_2.cu
