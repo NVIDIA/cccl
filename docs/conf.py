@@ -307,7 +307,7 @@ suppress_warnings = [
     # breathe emits the C++ declaration twice, triggering a duplicate-declaration
     # warning.  There is no way to control this from our side without patching
     # breathe's XML traversal.
-    "cpp.duplicate_declaration",
+    "duplicate_declaration.cpp",
     # When breathe expands doxygenfunction/doxygenvariable directives, it writes
     # the resolved C++ signature into RST.  Signatures containing default argument
     # values (e.g. ``= {}``) or complex SFINAE expressions produce RST that the
