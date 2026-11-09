@@ -250,15 +250,15 @@ _CCCL_HOST_API cudaError_t dispatch(
     return error;
   }
   return dispatch_compute_cap(group_merge_tuning_arch_selector{}, cc, [&](auto arch) -> cudaError_t {
-    constexpr auto selected_cc = decltype(arch){}();
-    if constexpr (!can_use_lrb<Key>(selected_cc))
+    using selected_arch_t = decltype(arch);
+    if constexpr (!can_use_lrb<Key>(selected_arch_t{}()))
     {
       return cudaErrorNotSupported;
     }
     else
     {
       using kernels_t    = group_merge_sort_kernels_t<Key>;
-      using capacities_t = typename kernels_t::template capacities_t<policy_getter, selected_cc.get()>;
+      using capacities_t = typename kernels_t::template capacities_t<policy_getter, selected_arch_t{}().get()>;
       if (const auto error = dispatch_partition<capacities_t>(
             temp_storage, temp_storage_bytes, begins, ends, num_segments, result, stream, launcher_factory))
       {
@@ -268,26 +268,23 @@ _CCCL_HOST_API cudaError_t dispatch(
       {
         return cudaSuccess;
       }
-      return launch_sort_kernel_list<kernels_t, selected_cc.get()>(
+      return launch_sort_kernel_list<kernels_t, selected_arch_t{}().get()>(
         result, begins, ends, in, out, stream, launcher_factory, ::cuda::std::make_index_sequence<kernels_t::size>{});
     }
   });
 }
-// Public routing retains current CUB for pairs, custom tuning, and wider segment counts.
+// Compile-time backend eligibility; argument validation does not select another algorithm.
 // Device-side callers stay on the existing dispatch because this backend requires host resource setup.
 template <typename Key, typename Value, typename PolicySelector>
-_CCCL_HOST_DEVICE_API constexpr bool
-can_use_lrb(::cuda::compute_capability cc, ::cuda::std::int64_t num_items, ::cuda::std::int64_t num_segments)
+_CCCL_HOST_DEVICE_API constexpr bool can_use_lrb(::cuda::compute_capability cc)
 {
   return !_CCCL_HAS_CDP() && can_use_lrb<Key>(cc) && ::cuda::std::is_same_v<Value, NullType>
-      && ::cuda::std::is_same_v<PolicySelector, segmented_sort::policy_selector_from_types<Key, Value>>
-      && num_items >= 0 && num_segments >= 0
-      && static_cast<unsigned long long>(num_segments) < ::cuda::std::numeric_limits<unsigned>::max();
+      && ::cuda::std::is_same_v<PolicySelector, segmented_sort::policy_selector_from_types<Key, Value>>;
 }
 
 // Complete keys-only path: bounded GroupMerge bins and CUB's existing radix kernel for overflow.
 // Pointer overloads preserve the input with an intermediate array; DoubleBuffer reuses both caller buffers.
-// Reading the overflow range synchronizes the stream. Capture and device invocation remain on current CUB.
+// Reading the overflow range synchronizes the stream; capture and device invocation are not supported.
 template <SortOrder Order,
           typename Offset,
           typename Key,
@@ -314,14 +311,14 @@ _CCCL_HOST_API cudaError_t dispatch(
     return error;
   }
   return dispatch_compute_cap(group_merge_tuning_arch_selector{}, cc, [&](auto arch) -> cudaError_t {
-    constexpr auto selected_cc = decltype(arch){}();
-    if constexpr (!can_use_lrb<Key>(selected_cc))
+    using selected_arch_t = decltype(arch);
+    if constexpr (!can_use_lrb<Key>(selected_arch_t{}()))
     {
       return cudaErrorNotSupported;
     }
     else
     {
-      using capacities_t = typename kernels_t::template capacities_t<policy_getter, selected_cc.get()>;
+      using capacities_t = typename kernels_t::template capacities_t<policy_getter, selected_arch_t{}().get()>;
       partition_result bins;
       size_t partition_bytes = 0;
       if (const auto error = dispatch_partition<capacities_t>(
@@ -370,15 +367,16 @@ _CCCL_HOST_API cudaError_t dispatch(
         {
           return error;
         }
-        if (const auto error = launch_sort_kernel_list<kernels_t, selected_cc.get(), Order == SortOrder::Descending>(
-              bins,
-              begins,
-              ends,
-              keys.Current(),
-              out,
-              stream,
-              launcher_factory,
-              ::cuda::std::make_index_sequence<kernels_t::size>{}))
+        if (const auto error =
+              launch_sort_kernel_list<kernels_t, selected_arch_t{}().get(), Order == SortOrder::Descending>(
+                bins,
+                begins,
+                ends,
+                keys.Current(),
+                out,
+                stream,
+                launcher_factory,
+                ::cuda::std::make_index_sequence<kernels_t::size>{}))
         {
           return error;
         }

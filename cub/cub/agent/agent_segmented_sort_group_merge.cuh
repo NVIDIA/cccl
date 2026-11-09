@@ -97,7 +97,7 @@ struct group_merge_implementation
     return sizeof(Key) * (policy.block_threads * policy.max_ipt + (is_warp ? policy.block_threads / 32 : 1));
   }
   // Synchronize the scheduling group: one full warp or the whole block.
-  _CCCL_DEVICE_API static void sync()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE static void sync()
   {
     if constexpr (is_warp)
     {
@@ -114,7 +114,7 @@ struct group_merge_implementation
   // A segment_idx of ~0u gives an unused segment zero length; its threads still reach every sync.
   // Configuration and merge rounds are uniform within the warp/block synchronization group.
   template <int ItemsPerThread, bool Descending, typename Key, typename BeginIterator, typename EndIterator>
-  _CCCL_DEVICE_API static void sort_segment(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE static void sort_segment(
     unsigned segment_idx,
     bin_config config,
     const partition_result& bins,
@@ -226,7 +226,7 @@ struct group_merge_implementation
 
   // Translate runtime IPT into a specialization with a fixed-size per-thread key array.
   template <bool Descending = false, typename Key, typename BeginIterator, typename EndIterator>
-  _CCCL_DEVICE_API static void invoke(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE static void invoke(
     unsigned segment_idx,
     bin_config config,
     const partition_result& bins,

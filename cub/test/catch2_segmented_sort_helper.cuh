@@ -1183,7 +1183,7 @@ struct lrb_sort_launcher_t
   cudaError_t operator()(
     std::uint8_t* storage,
     std::size_t& bytes,
-    const KeyT* input,
+    KeyT* input,
     KeyT* output,
     ::cuda::std::int64_t num_items,
     unsigned segments,
@@ -1193,8 +1193,7 @@ struct lrb_sort_launcher_t
     using key_type = unwrap_value_t<KeyT>;
     using offset_t =
       cub::detail::choose_signed_offset_t<cub::detail::common_iterator_value_t<BeginIterator, EndIterator>>;
-    cub::DoubleBuffer<key_type> keys(
-      const_cast<key_type*>(reinterpret_cast<const key_type*>(input)), reinterpret_cast<key_type*>(output));
+    cub::DoubleBuffer<key_type> keys(reinterpret_cast<key_type*>(input), reinterpret_cast<key_type*>(output));
     keys.selector = double_buffer && selector ? *selector : 0;
     const auto error =
       descending
@@ -1257,7 +1256,7 @@ void call_cub_segmented_sort_api(
       }
       INFO("Backend: internal LRB segmented sort; existing input generation and validation.");
       launch(lrb_sort_launcher_t{descending, double_buffer, keys_selector},
-             static_cast<const KeyT*>(input_keys),
+             input_keys,
              output_keys,
              num_items,
              static_cast<unsigned>(num_segments),

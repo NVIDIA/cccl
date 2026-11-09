@@ -244,6 +244,17 @@ try
     using segment_offset_t   = std::int64_t;
     using offset_t           = c2h::get<0, TestType>;
     using segment_iterator_t = segment_index_to_offset_op<offset_t, segment_offset_t>;
+    using selector_t         = cub::detail::segmented_sort::policy_selector_from_types<key_t, cub::NullType>;
+    if constexpr (cub::detail::segmented_sort_capacity::can_use_lrb<key_t, cub::NullType, selector_t>(
+                    cuda::compute_capability{9, 0}))
+    {
+      cuda::compute_capability cc{};
+      REQUIRE(cudaSuccess == CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY{}.PtxComputeCap(cc));
+      if (cub::detail::segmented_sort_capacity::can_use_lrb<key_t, cub::NullType, selector_t>(cc))
+      {
+        SKIP("Wide segment counts require the LRB follow-up; public dispatch no longer falls back by count.");
+      }
+    }
     constexpr std::size_t segment_size = 1000000;
     constexpr std::size_t uint32_max   = cuda::std::numeric_limits<std::uint32_t>::max();
     constexpr std::size_t num_items =
