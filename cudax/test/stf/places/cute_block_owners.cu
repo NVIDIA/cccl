@@ -111,9 +111,10 @@ void check_case(dim4 data_dims, const ::std::vector<dim_spec>& spec, dim4 grid_d
     if (!((*plan)[b] == brute[b]))
     {
       // re-census this block for the analytic owner's count
-      size_t analytic_bytes = 0, brute_bytes = 0;
-      const size_t lo = b * block;
-      const size_t hi = ::std::min((b + 1) * block, total_elems * elemsize);
+      size_t analytic_bytes = 0;
+      size_t brute_bytes    = 0;
+      const size_t lo       = b * block;
+      const size_t hi       = ::std::min((b + 1) * block, total_elems * elemsize);
       for (size_t byte = lo; byte < hi; byte++)
       {
         const pos4 o = part.owner(data_dims.index_to_pos(byte / elemsize));

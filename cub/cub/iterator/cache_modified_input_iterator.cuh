@@ -119,7 +119,6 @@ public:
                                                             THRUST_NS_QUALIFIER::random_access_traversal_tag>;
 #endif // _CCCL_HOSTED()
 
-public:
   /// Wrapped native pointer
   ValueType* ptr;
 

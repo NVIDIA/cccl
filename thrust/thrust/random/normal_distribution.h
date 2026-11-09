@@ -74,7 +74,6 @@ namespace random
 template <typename RealType = double>
 class normal_distribution : public detail::normal_distribution_base<RealType>::type
 {
-private:
   using super_t = typename detail::normal_distribution_base<RealType>::type;
 
 public:

@@ -209,7 +209,6 @@ template <typename KeyT,
           int BlockDimZ                         = 1>
 class BlockRadixSort
 {
-private:
   /******************************************************************************
    * Constants and type definitions
    ******************************************************************************/

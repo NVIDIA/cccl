@@ -192,7 +192,6 @@ private:
 
   struct equal_pointers
   {
-  public:
     _CCCL_HOST_DEVICE equal_pointers(void_ptr p)
         : p(p)
     {}
@@ -208,7 +207,6 @@ private:
 
   struct matching_alignment
   {
-  public:
     _CCCL_HOST_DEVICE matching_alignment(std::size_t requested)
         : requested(requested)
     {}
