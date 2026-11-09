@@ -52,7 +52,6 @@ struct vsmem_t
 template <typename AgentT>
 class vsmem_helper_impl
 {
-private:
   // Per-block virtual shared memory may be padded to make sure vsmem is an integer multiple of `line_size`
   static constexpr ::cuda::std::size_t line_size = 128;
 

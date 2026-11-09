@@ -62,7 +62,8 @@ using thrust::complex;
 _CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
 {
   complex<double> result{};
-  double a, b;
+  double a;
+  double b;
   double t;
   int scale;
 

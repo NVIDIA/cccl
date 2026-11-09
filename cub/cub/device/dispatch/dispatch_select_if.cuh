@@ -63,7 +63,6 @@ using per_partition_offset_t = ::cuda::std::int32_t;
 template <typename TotalNumItemsT, bool IsStreamingInvocation>
 class streaming_context_t
 {
-private:
   bool first_partition = true;
   bool last_partition  = false;
   TotalNumItemsT total_num_items{};

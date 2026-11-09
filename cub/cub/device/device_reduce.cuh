@@ -1247,7 +1247,6 @@ public:
     return ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_min_out, d_index_out, num_items, ::cuda::std::less{}, env);
   }
 
-public:
   //! @rst
   //! Finds the first device-wide minimum using the less-than (``<``) operator and also returns the index of that item.
   //!
@@ -2864,7 +2863,8 @@ public:
     using EqualityOp              = ::cuda::std::equal_to<>;
     using default_policy_selector = detail::reduce_by_key::policy_selector_from_types<
       ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<ValuesInputIteratorT>>,
-      detail::non_void_value_t<UniqueOutputIteratorT, detail::it_value_t<KeysInputIteratorT>>>;
+      detail::non_void_value_t<UniqueOutputIteratorT, detail::it_value_t<KeysInputIteratorT>>,
+      detail::it_value_t<ValuesInputIteratorT>>;
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
         return detail::reduce_by_key::dispatch(
