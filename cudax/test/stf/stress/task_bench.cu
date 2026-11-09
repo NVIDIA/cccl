@@ -20,12 +20,12 @@ using namespace cuda::experimental::stf;
 
 enum class test_id
 {
-  TRIVIAL = 0,
-  STENCIL = 1,
-  FFT     = 2,
-  SWEEP   = 3,
-  TREE    = 4,
-  RANDOM  = 5,
+  TRIVIAL,
+  STENCIL,
+  FFT,
+  SWEEP,
+  TREE,
+  RANDOM,
 };
 
 std::string test_name(test_id id)
@@ -183,7 +183,8 @@ std::vector<int> input_deps(test_id id, int t, int i, int W)
 
 void bench(context& ctx, test_id id, size_t width, size_t nsteps, size_t repeat_cnt)
 {
-  std::chrono::steady_clock::time_point start, stop;
+  std::chrono::steady_clock::time_point start;
+  std::chrono::steady_clock::time_point stop;
 
   const size_t b = nsteps;
 

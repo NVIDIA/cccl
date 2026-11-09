@@ -28,7 +28,7 @@ using namespace cuda::experimental::stf;
  * @param d_offsets  Slice containing the offset vector of the CSR representation.
  * @return           The degree of each vertex.
  */
-__device__ int degree_centrality(int idx, slice<const int> loffsets)
+__host__ __device__ int degree_centrality(int idx, slice<const int> loffsets)
 {
   return loffsets[idx + 1] - loffsets[idx];
 }
@@ -45,9 +45,9 @@ int main()
   const int num_vertices = static_cast<int>(offsets.size() - 1);
   std::vector<int> degrees(num_vertices, 0);
 
-  auto loffsets  = ctx.logical_data(&offsets[0], offsets.size());
-  auto lnonzeros = ctx.logical_data(&nonzeros[0], nonzeros.size());
-  auto ldegrees  = ctx.logical_data(&degrees[0], degrees.size());
+  auto loffsets  = ctx.logical_data(offsets.data(), offsets.size());
+  auto lnonzeros = ctx.logical_data(nonzeros.data(), nonzeros.size());
+  auto ldegrees  = ctx.logical_data(degrees.data(), degrees.size());
 
   ctx.parallel_for(box(num_vertices), loffsets.read(), ldegrees.rw())
       ->*[] __device__(size_t idx, auto loffsets, auto ldegrees) {

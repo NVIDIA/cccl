@@ -51,6 +51,18 @@ struct find_tuning
   }
 };
 
+// A policy transformer that only overrides the block size and keeps all other values of the default policy.
+template <int ThreadsPerBlock>
+struct find_tuning_transformer
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::FindIfPolicy policy) const
+    -> cub::FindIfPolicy
+  {
+    policy.threads_per_block = ThreadsPerBlock;
+    return policy;
+  }
+};
+
 using block_size_extracting_predicate_t = block_size_extracting_op<::cuda::always_false>;
 
 using block_sizes =
@@ -414,6 +426,32 @@ CUB_TEST("Device FindIf can be tuned", "[find][device]", CUB_SMALL, block_sizes)
   const block_size_extracting_predicate_t predicate{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto env = cuda::execution::tune(find_tuning<static_cast<int>(target_block_size)>{});
+
+  device_find_if(d_in.begin(), d_out.begin(), predicate, num_items, env);
+
+  REQUIRE(d_out[0] == num_items); // predicate never matches
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("Device FindIf tuning can be modified", "[find][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 96; // must be different from any value we use in production
+
+  constexpr int num_items = 1024;
+  auto d_in               = c2h::device_vector<int>(num_items, 0);
+  auto d_out              = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_block_size       = c2h::device_vector<unsigned int>(1, 0);
+
+  const block_size_extracting_predicate_t predicate{thrust::raw_pointer_cast(d_block_size.data())};
+
+  {
+    device_find_if(d_in.begin(), d_out.begin(), predicate, num_items, stdexec::env{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
+  auto env = cuda::execution::tune(find_tuning_transformer<static_cast<int>(target_block_size)>{});
 
   device_find_if(d_in.begin(), d_out.begin(), predicate, num_items, env);
 

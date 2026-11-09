@@ -62,7 +62,7 @@ _CCCL_HOST_DEVICE InputIterator
 find_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
 {
   using difference_type = thrust::detail::it_difference_t<InputIterator>;
-  using result_type     = typename ::cuda::std::tuple<bool, difference_type>;
+  using result_type     = ::cuda::std::tuple<bool, difference_type>;
 
   // empty sequence
   if (first == last)

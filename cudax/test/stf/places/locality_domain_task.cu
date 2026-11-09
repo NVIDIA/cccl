@@ -49,7 +49,8 @@ int main()
   const int NITER = 4 * static_cast<int>(ndomains);
   const int n     = 1024;
 
-  double X[n], Y[n];
+  double X[n];
+  double Y[n];
   for (int ind = 0; ind < n; ind++)
   {
     X[ind] = 1.0 * ind;

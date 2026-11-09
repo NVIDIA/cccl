@@ -35,6 +35,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "mersenne.h"
@@ -103,7 +104,8 @@ struct CommandLineArgs
         continue;
       }
 
-      string key, val;
+      string key;
+      string val;
       const string::size_type pos = arg.find('=');
       if (pos == string::npos)
       {
@@ -126,16 +128,9 @@ struct CommandLineArgs
    */
   bool CheckCmdLineFlag(const char* arg_name)
   {
-    using namespace std;
-
-    for (const auto& key : keys)
-    {
-      if (key == string(arg_name))
-      {
-        return true;
-      }
-    }
-    return false;
+    return ::cuda::std::any_of(keys.begin(), keys.end(), [arg_name](const auto& key) {
+      return key == std::string_view(arg_name);
+    });
   }
 
   /**
@@ -337,7 +332,8 @@ inline std::size_t TotalGlobalMem()
 {
   int device = 0;
   CubDebugExit(cudaGetDevice(&device));
-  std::size_t free_mem = 0, total_mem = 0;
+  std::size_t free_mem  = 0;
+  std::size_t total_mem = 0;
   CubDebugExit(cudaMemGetInfo(&free_mem, &total_mem));
   return total_mem;
 }

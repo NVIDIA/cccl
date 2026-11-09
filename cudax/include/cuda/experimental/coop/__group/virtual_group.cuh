@@ -49,11 +49,10 @@ template <class _Unit, class _ParentGroup>
 [[nodiscard]] _CCCL_DEVICE_API constexpr auto __make_init_group_mapping_result(const _ParentGroup& __parent_group)
 {
   using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
-  using _InitMappingResult =
-    __mapping_result</*initial static group count*/ 1,
-                     ::cuda::experimental::coop::__static_count_query_group<_Unit, _ParentGroup>(),
-                     /*initial is always exhaustive*/ true,
-                     _ParentMappingResult::is_always_contiguous()>;
+  using _InitMappingResult   = __mapping_result<
+    __uniform_static_unit_count<1, ::cuda::experimental::coop::__static_count_query_group<_Unit, _ParentGroup>()>,
+    /*initial is always exhaustive*/ true,
+    _ParentMappingResult::is_always_contiguous()>;
 
   return _InitMappingResult{
     /*initial group count*/ 1,
@@ -121,9 +120,9 @@ class virtual_group
   static_assert(__unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>,
                 "unit_type must be same as or below _ParentGroup's unit_type");
 
-  using _Hierarchy            = typename _ParentGroup::hierarchy_type;
-  using _ParentMappingResult  = typename _ParentGroup::__mapping_result_type;
-  using _SynchronizerInstance = decltype(::cuda::std::declval<const _ParentGroup&>().__synchronizer_instance().view());
+  using _Hierarchy _CCCL_NODEBUG            = typename _ParentGroup::hierarchy_type;
+  using _ParentMappingResult _CCCL_NODEBUG  = typename _ParentGroup::__mapping_result_type;
+  using _SynchronizerInstance _CCCL_NODEBUG = typename _ParentGroup::__synchronizer_instance_type;
   static_assert(__group_mapping_result<_MappingResult>);
 
   _Hierarchy __hier_;
@@ -131,11 +130,12 @@ class virtual_group
   _SynchronizerInstance __synchronizer_instance_;
 
 public:
-  using unit_type             = _Unit;
-  using level_type            = typename _ParentGroup::level_type;
-  using hierarchy_type        = _Hierarchy;
-  using __mapping_result_type = _MappingResult;
-  using arrival_token         = typename _ParentGroup::arrival_token;
+  using unit_type                    = _Unit;
+  using level_type                   = typename _ParentGroup::level_type;
+  using hierarchy_type               = _Hierarchy;
+  using __mapping_result_type        = _MappingResult;
+  using __synchronizer_instance_type = _SynchronizerInstance;
+  using arrival_token                = typename _ParentGroup::arrival_token;
 
   _CCCL_TEMPLATE(class _Mapping)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_MappingResult, __group_mapping_result_t<_Unit, _ParentGroup, _Mapping>>)
@@ -143,7 +143,7 @@ public:
       : __hier_{__parent.hierarchy()}
       , __mapping_result_{::cuda::experimental::coop::__do_group_mapping(
           __unit, __parent, ::cuda::std::forward<_Mapping>(__mapping))}
-      , __synchronizer_instance_{__parent.__synchronizer_instance().view()}
+      , __synchronizer_instance_{__parent.__synchronizer_instance()}
   {
     _CCCL_ASSERT(__mapping_result_.is_valid(), "virtual_group requires all units to be part of the group");
   }

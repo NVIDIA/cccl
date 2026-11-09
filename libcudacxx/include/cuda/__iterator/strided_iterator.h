@@ -54,7 +54,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _Iter, class _Stride>
 class strided_iterator
 {
-private:
   static_assert(::cuda::std::__has_random_access_traversal<_Iter>,
                 "The iterator underlying a strided_iterator must be a random access iterator.");
   static_assert(::cuda::std::__integer_like<_Stride> || ::cuda::std::__integral_constant_like<_Stride>,

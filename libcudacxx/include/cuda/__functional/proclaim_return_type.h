@@ -35,7 +35,6 @@ namespace __detail
 template <class _Ret, class _DecayFn>
 class __return_type_wrapper
 {
-private:
   _DecayFn __fn_;
 
 public:

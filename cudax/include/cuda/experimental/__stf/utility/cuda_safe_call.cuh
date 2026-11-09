@@ -336,7 +336,7 @@ private:
     // Pedantically reserve one extra character for the terminating `\0`.
     msg.resize(needed + 1);
     // This will write `needed` bytes plus a `\0` at the end.
-    ::std::snprintf(&msg[0], msg.capacity(), fmt, ::cuda::std::forward<Ps>(ps)...);
+    ::std::snprintf(msg.data(), msg.capacity(), fmt, ::cuda::std::forward<Ps>(ps)...);
     // The terminating `\0` is not part of the string's length.
     msg.resize(needed);
   }
