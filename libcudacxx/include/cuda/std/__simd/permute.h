@@ -113,7 +113,7 @@ struct __permute_generator
     static_assert(::cuda::std::simd::__is_valid_static_permute_index<_Vp::__size>(__src),
                   "cuda::std::simd::permute: idxmap(i) must return zero_element, uninit_element, or a value in [0, "
                   "V::size())");
-    constexpr __simd_size_type __index = __src;
+    constexpr auto __index = static_cast<__simd_size_type>(__src);
     if constexpr (__index == zero_element || __index == uninit_element)
     {
       return __value_type{}; // unspecified-value for uninit_element

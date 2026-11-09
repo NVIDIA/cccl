@@ -74,10 +74,11 @@ TEST_HOST_DEVICE_FUNC constexpr void test_indexed(const V& source, int stride, i
 template <typename Index, int N, typename V>
 TEST_HOST_DEVICE_FUNC constexpr void test_patterns(const V& source)
 {
+  constexpr auto size = static_cast<int>(V::size());
   test_indexed<Index, N>(source, 1, 0); // identity or repeated sequence
-  test_indexed<Index, N>(source, V::size() - 1, V::size() - 1); // reverse
-  test_indexed<Index, N>(source, 0, V::size() - 1); // broadcast the last lane
-  test_indexed<Index, N>(source, 5, 1 % V::size()); // mixed order with repeated indices
+  test_indexed<Index, N>(source, size - 1, size - 1); // reverse
+  test_indexed<Index, N>(source, 0, size - 1); // broadcast the last lane
+  test_indexed<Index, N>(source, 5, 1 % size); // mixed order with repeated indices
 }
 
 template <typename T, int SourceN, int ResultN, typename Index = int>
