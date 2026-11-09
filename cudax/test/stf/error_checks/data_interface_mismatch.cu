@@ -10,35 +10,21 @@
 
 /**
  * @file
- * @brief Ensure an error is detected dynamically if we access a data instance
+ * @brief Ensure an error is reported dynamically if we access a data instance
  *        with the wrong interface type
  */
 
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
-#include <csignal>
-#include <random>
+#include <cstdio>
+#include <cstdlib>
+#include <stdexcept>
 
 using namespace cuda::experimental::stf;
 
-bool should_abort = false;
-
-void cleanupRoutine(int /*unused*/)
-{
-  if (should_abort)
-  {
-    exit(EXIT_SUCCESS);
-  }
-  else
-  {
-    fprintf(stderr, "Unexpected SIGABRT !\n");
-    exit(EXIT_FAILURE);
-  }
-}
-
 template <typename Ctx, size_t n>
-void run(double (&X)[n])
+bool run(double (&X)[n])
 {
   Ctx ctx;
   // This creates an untyped logical data that is implicitly a vector of size
@@ -51,33 +37,28 @@ void run(double (&X)[n])
   auto t = ctx.task();
   t.add_deps(handle_X.rw());
 
-  t->*[&](auto&) {
-    should_abort = true;
-    // We have a programming error here with a vector of `double` accessad as a vector of `float`.
-    handle_X.instance<slice<float>>(t);
-    should_abort = false;
-  };
+  bool caught = false;
+  try
+  {
+    t->*[&](auto&) {
+      // Programming error: a vector of `double` accessed as a vector of `float`.
+      handle_X.instance<slice<float>>(t);
+    };
+  }
+  catch (const ::std::invalid_argument& e)
+  {
+    caught = true;
+    fprintf(stderr, "Caught expected error: %s\n", e.what());
+  }
 
-  assert(0 && "This should not be reached");
+  // The failed task was ended on the way out; the context is still usable.
+  ctx.finalize();
+
+  return caught;
 }
 
 int main()
 {
-  /* Setup an handler to catch the SIGABRT signal during the programming error */
-#if _CCCL_COMPILER(MSVC)
-  signal(SIGABRT, &cleanupRoutine);
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC)
-  struct sigaction sigabrt_action{};
-  memset(&sigabrt_action, 0, sizeof(sigabrt_action));
-  sigabrt_action.sa_handler = &cleanupRoutine;
-
-  if (sigaction(SIGABRT, &sigabrt_action, nullptr) != 0)
-  {
-    perror("sigaction SIGABRT");
-    exit(EXIT_FAILURE);
-  }
-#endif // !_CCCL_COMPILER(MSVC)
-
   const int n = 12;
   double X[n];
 
@@ -86,16 +67,6 @@ int main()
     X[ind] = 1.0 * ind;
   }
 
-  // We can't run both stream and graph tests because either will abort the program. So choose one at random.
-  if (::std::random_device{}() % 2 == 0)
-  {
-    run<stream_ctx>(X);
-  }
-  else
-  {
-    run<graph_ctx>(X);
-  }
-
-  assert(0 && "This should not be reached");
-  return EXIT_FAILURE;
+  const bool ok = run<stream_ctx>(X) && run<graph_ctx>(X);
+  return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }

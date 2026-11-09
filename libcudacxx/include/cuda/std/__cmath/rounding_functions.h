@@ -21,8 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cmath/copysign.h>
+#include <cuda/std/__cmath/signbit.h>
 #include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__floating_point/fp.h>
+#include <cuda/std/__host_stdlib/fenv.h>
 #include <cuda/std/__host_stdlib/math.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -35,6 +40,97 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+#if _CCCL_HAS_FLOAT128()
+// Portable truncation of __float128, used when neither a host builtin nor a device intrinsic is available
+[[nodiscard]] _CCCL_API inline __float128 __trunc_fp128_impl(__float128 __x) noexcept
+{
+  using __storage_t          = __fp_storage_of_t<__float128>;
+  constexpr int __mant_nbits = __fp_mant_nbits_v<__fp_format_of_v<__float128>>;
+  const auto __bits          = ::cuda::std::__fp_get_storage(__x);
+  const int __exp            = ::cuda::std::__fp_get_exp(__x);
+
+  if (__exp >= __mant_nbits)
+  {
+    // already integral, infinity or NaN
+    return __x;
+  }
+  if (__exp < 0)
+  {
+    // |x| < 1 rounds to a zero of the same sign
+    return ::cuda::std::__fp_from_storage<__float128>(
+      static_cast<__storage_t>(__bits & __fp_sign_mask_of_v<__float128>));
+  }
+  const __storage_t __frac_mask = static_cast<__storage_t>(__fp_mant_mask_of_v<__float128> >> __exp);
+  return ::cuda::std::__fp_from_storage<__float128>(static_cast<__storage_t>(__bits & ~__frac_mask));
+}
+
+// rint of __float128 is shared by llrint, lrint, nearbyint and rint, so it is defined ahead of all of them
+#  if _CCCL_CHECK_BUILTIN(builtin_rintf128)
+#    define _CCCL_BUILTIN_RINTF128(...) __builtin_rintf128(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_rintf128)
+
+// nvcc doesn't implement __builtin_rintf128 on device
+#  if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#    undef _CCCL_BUILTIN_RINTF128
+#  endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+
+[[nodiscard]] _CCCL_API inline __float128 __rint_fp128(__float128 __x) noexcept
+{
+#  if defined(_CCCL_BUILTIN_RINTF128)
+  return _CCCL_BUILTIN_RINTF128(__x);
+#  else // ^^^ _CCCL_BUILTIN_RINTF128 ^^^ / vvv !_CCCL_BUILTIN_RINTF128 vvv
+  NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_rint(__x);))
+  constexpr auto __fmt       = __fp_format_of_v<__float128>;
+  constexpr int __mant_nbits = __fp_mant_nbits_v<__fmt>;
+
+  if (::cuda::std::__fp_get_exp(__x) >= __mant_nbits)
+  {
+    // already integral, infinity or NaN
+    return __x;
+  }
+  // The ulp of 2^112 is 1, so adding it rounds |x| to an integer in the current rounding mode (raising FE_INEXACT
+  // when needed) and subtracting it again is exact
+  constexpr __float128 __two_112 = __float128(1ull << 56) * __float128(1ull << 56);
+  const __float128 __r = ::cuda::std::signbit(__x) ? (__x - __two_112) + __two_112 : (__x + __two_112) - __two_112;
+  // a zero result keeps the sign of the argument
+  return ::cuda::std::copysign(__r, __x);
+#  endif // ^^^ !_CCCL_BUILTIN_RINTF128 ^^^
+}
+
+template <class _Integer>
+[[nodiscard]] _CCCL_API _Integer __lrint_fp128(__float128 __x) noexcept
+{
+  const __float128 __r = ::cuda::std::__rint_fp128(__x);
+  // -min() is a power of two, so the bounds are exact
+  constexpr __float128 __bound = -static_cast<__float128>(numeric_limits<_Integer>::min());
+  if (__r >= -__bound && __r < __bound)
+  {
+    return static_cast<_Integer>(__r);
+  }
+  // The result is unspecified for NaN and out of range values. Avoid the undefined conversion and return min(), as
+  // the x86 conversion instructions do
+  return numeric_limits<_Integer>::min();
+}
+
+// llround and lround are defined before round
+[[nodiscard]] _CCCL_API inline __float128 round(__float128 __x) noexcept;
+
+template <class _Integer>
+[[nodiscard]] _CCCL_API _Integer __lround_fp128(__float128 __x) noexcept
+{
+  const __float128 __r = ::cuda::std::round(__x);
+  // -min() is a power of two, so the bounds are exact
+  constexpr __float128 __bound = -static_cast<__float128>(numeric_limits<_Integer>::min());
+  if (__r >= -__bound && __r < __bound)
+  {
+    return static_cast<_Integer>(__r);
+  }
+  // The result is unspecified for NaN and out of range values, and converting them is undefined, so return min() like
+  // the x86 conversion instructions do
+  return numeric_limits<_Integer>::min();
+}
+#endif // _CCCL_HAS_FLOAT128()
+
 // ceil
 
 #if _CCCL_CHECK_BUILTIN(builtin_ceil) || _CCCL_COMPILER(GCC)
@@ -42,6 +138,18 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  define _CCCL_BUILTIN_CEIL(...)  __builtin_ceil(__VA_ARGS__)
 #  define _CCCL_BUILTIN_CEILL(...) __builtin_ceill(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_ceil)
+
+#if _CCCL_HAS_FLOAT128()
+// Unlike __builtin_fabsf128, older gcc (e.g. gcc-7) lacks the f128 rounding builtins, so rely on __has_builtin only
+#  if _CCCL_CHECK_BUILTIN(builtin_ceilf128)
+#    define _CCCL_BUILTIN_CEILF128(...) __builtin_ceilf128(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_ceilf128)
+#endif // _CCCL_HAS_FLOAT128()
+
+// nvcc doesn't implement __builtin_ceilf128 on device
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_CEILF128
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 
 [[nodiscard]] _CCCL_API inline float ceil(float __x) noexcept
 {
@@ -104,6 +212,19 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline __float128 ceil(__float128 __x) noexcept
+{
+#  if defined(_CCCL_BUILTIN_CEILF128)
+  return _CCCL_BUILTIN_CEILF128(__x);
+#  else // ^^^ _CCCL_BUILTIN_CEILF128 ^^^ / vvv !_CCCL_BUILTIN_CEILF128 vvv
+  NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_ceil(__x);))
+  const __float128 __t = ::cuda::std::__trunc_fp128_impl(__x);
+  return (__t < __x) ? __t + 1 : __t;
+#  endif // ^^^ !_CCCL_BUILTIN_CEILF128 ^^^
+}
+#endif // _CCCL_HAS_FLOAT128()
+
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double ceil(_Integer __x) noexcept
 {
@@ -117,6 +238,17 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #  define _CCCL_BUILTIN_FLOOR(...)  __builtin_floor(__VA_ARGS__)
 #  define _CCCL_BUILTIN_FLOORL(...) __builtin_floorl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_floor)
+
+#if _CCCL_HAS_FLOAT128()
+#  if _CCCL_CHECK_BUILTIN(builtin_floorf128)
+#    define _CCCL_BUILTIN_FLOORF128(...) __builtin_floorf128(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_floorf128)
+#endif // _CCCL_HAS_FLOAT128()
+
+// nvcc doesn't implement __builtin_floorf128 on device
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_FLOORF128
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 
 [[nodiscard]] _CCCL_API inline float floor(float __x) noexcept
 {
@@ -179,6 +311,19 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
     NV_IS_DEVICE, (return ::hfloor(__x);), (return __float2bfloat16(::cuda::std::floor(__bfloat162float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline __float128 floor(__float128 __x) noexcept
+{
+#  if defined(_CCCL_BUILTIN_FLOORF128)
+  return _CCCL_BUILTIN_FLOORF128(__x);
+#  else // ^^^ _CCCL_BUILTIN_FLOORF128 ^^^ / vvv !_CCCL_BUILTIN_FLOORF128 vvv
+  NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_floor(__x);))
+  const __float128 __t = ::cuda::std::__trunc_fp128_impl(__x);
+  return (__t > __x) ? __t - 1 : __t;
+#  endif // ^^^ !_CCCL_BUILTIN_FLOORF128 ^^^
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double floor(_Integer __x) noexcept
@@ -262,6 +407,13 @@ _CCCL_API inline long long llrintl(long double __x) noexcept
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline long long llrint(__float128 __x) noexcept
+{
+  return ::cuda::std::__lrint_fp128<long long>(__x);
+}
+#endif // _CCCL_HAS_FLOAT128()
+
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 _CCCL_API inline long long llrint(_Integer __x) noexcept
 {
@@ -343,6 +495,13 @@ _CCCL_API inline long long llroundl(long double __x) noexcept
   return ::cuda::std::llroundf(__bfloat162float(__x));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline long long llround(__float128 __x) noexcept
+{
+  return ::cuda::std::__lround_fp128<long long>(__x);
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 _CCCL_API inline long long llround(_Integer __x) noexcept
@@ -426,6 +585,13 @@ _CCCL_API inline long lrintl(long double __x) noexcept
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline long lrint(__float128 __x) noexcept
+{
+  return ::cuda::std::__lrint_fp128<long>(__x);
+}
+#endif // _CCCL_HAS_FLOAT128()
+
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 _CCCL_API inline long lrint(_Integer __x) noexcept
 {
@@ -508,6 +674,13 @@ _CCCL_API inline long lroundl(long double __x) noexcept
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline long lround(__float128 __x) noexcept
+{
+  return ::cuda::std::__lround_fp128<long>(__x);
+}
+#endif // _CCCL_HAS_FLOAT128()
+
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 _CCCL_API inline long lround(_Integer __x) noexcept
 {
@@ -521,6 +694,15 @@ _CCCL_API inline long lround(_Integer __x) noexcept
 #  define _CCCL_BUILTIN_NEARBYINT(...)  __builtin_nearbyint(__VA_ARGS__)
 #  define _CCCL_BUILTIN_NEARBYINTL(...) __builtin_nearbyintl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_nearbyint)
+
+#if _CCCL_HAS_FLOAT128() && _CCCL_CHECK_BUILTIN(builtin_nearbyintf128)
+#  define _CCCL_BUILTIN_NEARBYINTF128(...) __builtin_nearbyintf128(__VA_ARGS__)
+#endif // _CCCL_HAS_FLOAT128() && _CCCL_CHECK_BUILTIN(builtin_nearbyintf128)
+
+// nvcc doesn't implement __builtin_nearbyintf128 on device
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_NEARBYINTF128
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 
 [[nodiscard]] _CCCL_API inline float nearbyint(float __x) noexcept
 {
@@ -582,6 +764,38 @@ _CCCL_API inline long lround(_Integer __x) noexcept
   return __float2bfloat16(::cuda::std::nearbyintf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline __float128 nearbyint(__float128 __x) noexcept
+{
+#  if defined(_CCCL_BUILTIN_NEARBYINTF128)
+  return _CCCL_BUILTIN_NEARBYINTF128(__x);
+#  elif _CCCL_HOSTED() // ^^^ _CCCL_BUILTIN_NEARBYINTF128 ^^^ / vvv _CCCL_HOSTED() vvv
+  // Only differs from rint in not raising FE_INEXACT, which only matters on the host as the device has no floating
+  // point exceptions. feholdexcept masks the traps while rounding and fesetenv discards the raised flags, which can
+  // only be FE_INEXACT as rint returns NaN and infinity before any arithmetic. The volatile keeps the rounding between
+  // the two calls. There is no way to recover if fesetenv fails, so its result is ignored
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    ({
+                      ::fenv_t __env;
+                      if (::feholdexcept(&__env) != 0)
+                      {
+                        // The environment may not have been saved, so it can not be restored and FE_INEXACT may be
+                        // raised
+                        return ::cuda::std::__rint_fp128(__x);
+                      }
+                      volatile __float128 __result = __x;
+                      __result                     = ::cuda::std::__rint_fp128(__result);
+                      ::fesetenv(&__env);
+                      return __result;
+                    }),
+                    (return ::cuda::std::__rint_fp128(__x);))
+#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
+  // Without <fenv.h> the environment can not be saved, so freestanding hosts may raise FE_INEXACT here
+  return ::cuda::std::__rint_fp128(__x);
+#  endif // ^^^ !_CCCL_HOSTED() ^^^
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double nearbyint(_Integer __x) noexcept
@@ -818,6 +1032,13 @@ _CCCL_API inline double nexttoward(_Integer __x, long double __y) noexcept
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline __float128 rint(__float128 __x) noexcept
+{
+  return ::cuda::std::__rint_fp128(__x);
+}
+#endif // _CCCL_HAS_FLOAT128()
+
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double rint(_Integer __x) noexcept
 {
@@ -831,6 +1052,17 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #  define _CCCL_BUILTIN_ROUND(...)  __builtin_round(__VA_ARGS__)
 #  define _CCCL_BUILTIN_ROUNDL(...) __builtin_roundl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_round)
+
+#if _CCCL_HAS_FLOAT128()
+#  if _CCCL_CHECK_BUILTIN(builtin_roundf128)
+#    define _CCCL_BUILTIN_ROUNDF128(...) __builtin_roundf128(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_roundf128)
+#endif // _CCCL_HAS_FLOAT128()
+
+// nvcc doesn't implement __builtin_roundf128 on device
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_ROUNDF128
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 
 [[nodiscard]] _CCCL_API inline float round(float __x) noexcept
 {
@@ -893,6 +1125,25 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline __float128 round(__float128 __x) noexcept
+{
+#  if defined(_CCCL_BUILTIN_ROUNDF128)
+  return _CCCL_BUILTIN_ROUNDF128(__x);
+#  else // ^^^ _CCCL_BUILTIN_ROUNDF128 ^^^ / vvv !_CCCL_BUILTIN_ROUNDF128 vvv
+  NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_round(__x);))
+  // x - trunc(x) is exact, so this avoids the double rounding of trunc(x + 0.5)
+  const __float128 __t    = ::cuda::std::__trunc_fp128_impl(__x);
+  const __float128 __diff = (__x < 0) ? __t - __x : __x - __t;
+  if (__diff >= __float128(0.5))
+  {
+    return (__x < 0) ? __t - 1 : __t + 1;
+  }
+  return __t;
+#  endif // ^^^ !_CCCL_BUILTIN_ROUNDF128 ^^^
+}
+#endif // _CCCL_HAS_FLOAT128()
+
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double round(_Integer __x) noexcept
 {
@@ -906,6 +1157,17 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #  define _CCCL_BUILTIN_TRUNC(...)  __builtin_trunc(__VA_ARGS__)
 #  define _CCCL_BUILTIN_TRUNCL(...) __builtin_truncl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_trunc)
+
+#if _CCCL_HAS_FLOAT128()
+#  if _CCCL_CHECK_BUILTIN(builtin_truncf128)
+#    define _CCCL_BUILTIN_TRUNCF128(...) __builtin_truncf128(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_truncf128)
+#endif // _CCCL_HAS_FLOAT128()
+
+// nvcc doesn't implement __builtin_truncf128 on device
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_TRUNCF128
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 
 [[nodiscard]] _CCCL_API inline float trunc(float __x) noexcept
 {
@@ -968,6 +1230,18 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
     NV_IS_DEVICE, (return ::htrunc(__x);), (return __float2bfloat16(::cuda::std::trunc(__bfloat162float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API inline __float128 trunc(__float128 __x) noexcept
+{
+#  if defined(_CCCL_BUILTIN_TRUNCF128)
+  return _CCCL_BUILTIN_TRUNCF128(__x);
+#  else // ^^^ _CCCL_BUILTIN_TRUNCF128 ^^^ / vvv !_CCCL_BUILTIN_TRUNCF128 vvv
+  NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_trunc(__x);))
+  return ::cuda::std::__trunc_fp128_impl(__x);
+#  endif // ^^^ !_CCCL_BUILTIN_TRUNCF128 ^^^
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double trunc(_Integer __x) noexcept

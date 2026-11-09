@@ -66,15 +66,18 @@ struct __aggregate_arity_impl
 
 // Returns the number of aggregate members. Only meaningful when is_aggregate_v<_Tp> is true.
 template <typename _Tp>
-inline constexpr int __aggregate_arity_v = int{sizeof(*__aggregate_arity_impl<_Tp>{}())} - 2;
+inline constexpr int __aggregate_arity_v = int{sizeof(*__aggregate_arity_impl<_Tp>{}(__any_aggregate_member{}))} - 2;
 
 // Apply a Predicate to every aggregate member
 
 // provide a generic way to initialize an aggregate member but only if the Predicate is true
+template <template <typename> class _Predicate, typename _Tp>
+inline constexpr bool __aggregate_member_matches_v = _Predicate<remove_cvref_t<_Tp>>::value;
+
 template <template <typename> class _Predicate>
 struct __aggregate_member_if
 {
-  template <typename _Tp, typename = enable_if_t<_Predicate<remove_cvref_t<_Tp>>::value>>
+  template <typename _Tp, typename = enable_if_t<__aggregate_member_matches_v<_Predicate, _Tp>>>
   _CCCL_API constexpr operator _Tp&&() const;
 };
 
@@ -90,9 +93,6 @@ struct __aggregate_all_of_fn
 
   template <template <typename> class, typename>
   _CCCL_API static auto __test(...) -> false_type;
-
-  template <template <typename> class _Predicate, typename _Tp>
-  _CCCL_API static auto __call(int) -> decltype(__test<_Predicate, _Tp>(make_index_sequence<_Arity>{}, 0));
 };
 
 // (aggregate-only trait) Dispatch based on the aggregate arity for non-empty aggregates. Returns:
@@ -106,7 +106,7 @@ inline constexpr bool __aggregate_all_of_dispatch_v = false;
 
 template <template <typename> class _Predicate, typename _Tp, int _Arity>
 inline constexpr bool __aggregate_all_of_dispatch_v<_Predicate, _Tp, _Arity, true> =
-  decltype(__aggregate_all_of_fn<_Arity>::template __call<_Predicate, _Tp>(0))::value;
+  decltype(__aggregate_all_of_fn<_Arity>::template __test<_Predicate, _Tp>(make_index_sequence<_Arity>{}, 0))::value;
 
 // if _Tp is not an aggregate, return false.
 // Empty aggregates are true for any predicate.

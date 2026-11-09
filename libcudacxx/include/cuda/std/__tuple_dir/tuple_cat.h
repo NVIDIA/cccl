@@ -55,7 +55,7 @@ struct __concat_tuple_types<>
 };
 
 template <class... _TupleTypes>
-using __concat_tuple_types_t = typename __concat_tuple_types<_TupleTypes...>::type;
+using __concat_tuple_types_t _CCCL_NODEBUG = typename __concat_tuple_types<_TupleTypes...>::type;
 
 template <class... _Types0, class... _Types1, class... _Tail>
 struct __concat_tuple_types<__tuple_types<_Types0...>, __tuple_types<_Types1...>, _Tail...>
@@ -64,7 +64,7 @@ struct __concat_tuple_types<__tuple_types<_Types0...>, __tuple_types<_Types1...>
 };
 
 template <class... _Tuples>
-using __tuple_cat_return_t = __concat_tuple_types_t<__make_tuple_types_t<_Tuples>...>;
+using __tuple_cat_return_t _CCCL_NODEBUG = __concat_tuple_types_t<__make_tuple_types_t<_Tuples>...>;
 
 // clang-tidy incorrectly reports "'__t0' used after it was forwarded".
 // Each expansion forwards the tuple only to select get<I>'s cvref-qualified
@@ -93,7 +93,7 @@ template <class _Result, class _Tuple1, class _Tuple2, size_t... _Indices1, size
   if constexpr (sizeof...(_Tuples) != 0)
   {
     using _TupleSize0 = __make_tuple_indices_t<sizeof...(_Indices1) + sizeof...(_Indices2)>;
-    using _TupleSize1 = __make_tuple_indices_t<tuple_size<remove_reference_t<__type_index_c<0, _Tuples...>>>::value>;
+    using _TupleSize1 = __make_tuple_indices_t<tuple_size_v<remove_reference_t<__type_index_c<0, _Tuples...>>>>;
     return ::cuda::std::__tuple_cat_impl<_Result>(
       _TupleSize0{},
       _TupleSize1{},
@@ -124,13 +124,13 @@ _CCCL_REQUIRES(__all_tuple_like<_Tuples...>)
   else if constexpr (sizeof...(_Tuples) <= 2)
   {
     return ::cuda::std::__tuple_cat_impl<_Result>(
-      __make_tuple_indices_t<tuple_size<remove_reference_t<_Tuples>>::value>{}...,
+      __make_tuple_indices_t<tuple_size_v<remove_reference_t<_Tuples>>>{}...,
       ::cuda::std::forward<_Tuples>(__tuples)...);
   }
   else
   {
-    using _TupleSize0 = __make_tuple_indices_t<tuple_size<remove_reference_t<__type_index_c<0, _Tuples...>>>::value>;
-    using _TupleSize1 = __make_tuple_indices_t<tuple_size<remove_reference_t<__type_index_c<1, _Tuples...>>>::value>;
+    using _TupleSize0 = __make_tuple_indices_t<tuple_size_v<remove_reference_t<__type_index_c<0, _Tuples...>>>>;
+    using _TupleSize1 = __make_tuple_indices_t<tuple_size_v<remove_reference_t<__type_index_c<1, _Tuples...>>>>;
     return ::cuda::std::__tuple_cat_impl<_Result>(
       _TupleSize0{}, _TupleSize1{}, ::cuda::std::forward<_Tuples>(__tuples)...);
   }

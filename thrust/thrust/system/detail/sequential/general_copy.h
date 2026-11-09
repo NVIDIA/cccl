@@ -76,12 +76,7 @@ _CCCL_HOST_DEVICE OutputIterator general_copy(InputIterator first, InputIterator
 {
   for (; first != last; ++first, (void) ++result)
   {
-    // gcc 4.2 crashes while instantiating iter_assign
-#if _CCCL_COMPILER(GCC, <, 4, 3)
-    *result = *first;
-#else
     general_copy_detail::iter_assign(result, first);
-#endif
   }
 
   return result;
@@ -93,12 +88,7 @@ _CCCL_HOST_DEVICE OutputIterator general_copy_n(InputIterator first, Size n, Out
 {
   for (; n > Size(0); ++first, (void) ++result, (void) --n)
   {
-    // gcc 4.2 crashes while instantiating iter_assign
-#if _CCCL_COMPILER(GCC, <, 4, 3)
-    *result = *first;
-#else
     general_copy_detail::iter_assign(result, first);
-#endif
   }
 
   return result;

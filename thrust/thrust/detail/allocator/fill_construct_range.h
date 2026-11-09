@@ -45,7 +45,7 @@ struct construct2_via_allocator
   Arg1 arg;
 
   template <typename T>
-  inline _CCCL_HOST_DEVICE void operator()(T& x)
+  _CCCL_HOST_DEVICE void operator()(T& x)
   {
     ::cuda::std::allocator_traits<Allocator>::construct(a, &x, arg);
   }

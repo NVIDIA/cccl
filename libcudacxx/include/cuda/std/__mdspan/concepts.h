@@ -102,9 +102,9 @@ _CCCL_CONCEPT __layout_mapping_alike = _CCCL_REQUIRES_EXPR((_Mapping))(
   requires(same_as<bool, decltype(_Mapping::is_always_strided())>),
   requires(same_as<bool, decltype(_Mapping::is_always_exhaustive())>),
   requires(same_as<bool, decltype(_Mapping::is_always_unique())>),
-  (integral_constant<bool, _Mapping::is_always_strided()>::value),
-  (integral_constant<bool, _Mapping::is_always_exhaustive()>::value),
-  (integral_constant<bool, _Mapping::is_always_unique()>::value));
+  (bool_constant<_Mapping::is_always_strided()>::value),
+  (bool_constant<_Mapping::is_always_exhaustive()>::value),
+  (bool_constant<_Mapping::is_always_unique()>::value));
 
 template <class _IndexType, class... _Indices>
 _CCCL_CONCEPT __all_convertible_to_index_type =

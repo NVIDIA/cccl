@@ -32,37 +32,45 @@
 #  include <cuda/std/__chrono/time_point.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/terminate.h>
+#  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__utility/exchange.h>
 #  include <cuda/std/cstdint>
 
 #  include <nv/target>
 
-#  include <cuda_runtime_api.h>
-
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 //! @brief Returns the native shared-memory mbarrier address for a `cuda::shared_memory_barrier`.
-[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint64_t* barrier_native_handle(::cuda::shared_memory_barrier& __b);
+template <::cuda::thread_scope _Scope>
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint64_t* barrier_native_handle(::cuda::shared_memory_barrier<_Scope>& __b);
 _CCCL_END_NAMESPACE_CUDA_DEVICE
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-//! @brief A block-scope shared-memory barrier backed by an mbarrier layout-v1 object.
+//! @brief A shared-memory barrier backed by an mbarrier layout-v1 object.
 //!
 //! `cuda::shared_memory_barrier` is a device-side barrier type for local shared-memory storage. It exposes the common
 //! `cuda::barrier<cuda::thread_scope_block>` arrival and wait operations, plus layout-v1 status-reporting waits,
 //! conditional-phase waits, and transaction-count operations.
 //!
 //! The object must be placed in local shared memory and initialized with `cuda::init`. Host and non-shared-memory
-//! fallback behavior is not provided by this type.
-class shared_memory_barrier : private ::cuda::__shared_mbarrier_impl
+//! fallback behavior is not provided by this type. Cluster scope does not change this local-storage requirement.
+//! Cluster-scoped barriers additionally provide explicit remote arrivals to initialized barriers in cluster shared
+//! memory. Waiting, initialization, and invalidation must still be performed by threads in the owning block.
+//!
+//! @tparam _Scope Synchronization scope: `cuda::thread_scope_block` (the default) or `cuda::thread_scope_cluster`.
+template <thread_scope _Scope>
+class shared_memory_barrier : private ::cuda::__shared_mbarrier_impl<_Scope>
 {
-  _CCCL_DEVICE_API friend ::cuda::std::uint64_t* ::cuda::device::_LIBCUDACXX_ABI_NAMESPACE::barrier_native_handle(
-    ::cuda::shared_memory_barrier& __b);
+  _CCCL_DEVICE_API friend ::cuda::std::uint64_t* ::cuda::device::_LIBCUDACXX_ABI_NAMESPACE::barrier_native_handle<
+    _Scope>(::cuda::shared_memory_barrier<_Scope>& __b);
 
 public:
+  //! @brief The thread scope of the barrier.
+  static constexpr thread_scope scope = _Scope;
+
   //! @brief Result of a status-bearing wait operation.
   //!
   //! An `operation_status` records whether the waited phase completed and whether a status report was produced. If a
@@ -82,7 +90,8 @@ public:
         , __report_value_(__complete ? __report_value : 0)
     {}
 
-    _CCCL_HOST_DEVICE_API constexpr operation_status(::cuda::__shared_mbarrier_impl::__wait_status __result) noexcept
+    _CCCL_HOST_DEVICE_API constexpr operation_status(
+      typename ::cuda::__shared_mbarrier_impl<_Scope>::__wait_status __result) noexcept
         : __complete_(__result.__complete)
         // PTX leaves both report outputs undefined until the phase completes.
         , __report_predicate_(__result.__complete && __result.__report_predicate)
@@ -185,7 +194,9 @@ public:
 
     [[nodiscard]] _CCCL_DEVICE_API unsigned int __error_count(status_source __source) const noexcept
     {
-      if (!__encodes_fabric_errors(__source))
+      // A completed wait without a report carries no error status, so there is nothing to decode. Skipping the decoder
+      // also keeps this path working on devices and drivers that do not support fabric status decoding.
+      if (!__report_predicate_ || !__encodes_fabric_errors(__source))
       {
         return 0;
       }
@@ -301,100 +312,101 @@ private:
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void __assert_supported_storage() const
   {
-    if (!::cuda::device::is_object_from(__storage_ref(), ::cuda::device::address_space::shared))
+    if (!::cuda::device::is_object_from(this->__storage_ref(), ::cuda::device::address_space::shared))
     {
       NV_IF_TARGET(
         NV_PROVIDES_SM_90,
-        (_CCCL_ASSERT(!::cuda::device::is_object_from(__storage_ref(), ::cuda::device::address_space::cluster_shared),
-                      "shared_memory_barrier must not be in another block's cluster shared memory");))
+        (_CCCL_ASSERT(
+           !::cuda::device::is_object_from(this->__storage_ref(), ::cuda::device::address_space::cluster_shared),
+           "shared_memory_barrier must not be in another block's cluster shared memory");))
       __unsupported_storage();
     }
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE operation_status __poll_test_wait_status(arrival_token __token) const
   {
-    return operation_status(__test_wait_status(__token_value(__token)));
+    return operation_status(this->__test_wait_status(__token_value(__token)));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE operation_status
   __poll_test_wait_status(::cuda::std::uint32_t __phase) const
   {
-    return operation_status(__test_wait_phase_status(__phase));
+    return operation_status(this->__test_wait_phase_status(__phase));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE operation_status __poll_try_wait_status(arrival_token __token) const
   {
-    return operation_status(__try_wait_status(__token_value(__token)));
+    return operation_status(this->__try_wait_status(__token_value(__token)));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE operation_status
   __poll_try_wait_status(::cuda::std::uint32_t __phase) const
   {
-    return operation_status(__try_wait_phase_status(__phase));
+    return operation_status(this->__try_wait_phase_status(__phase));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE operation_status
   __poll_try_wait_status(arrival_token __token, ::cuda::std::uint32_t __suspend_time_hint) const
   {
-    return operation_status(__try_wait_status(__token_value(__token), __suspend_time_hint));
+    return operation_status(this->__try_wait_status(__token_value(__token), __suspend_time_hint));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE operation_status
   __poll_try_wait_status(::cuda::std::uint32_t __phase, ::cuda::std::uint32_t __suspend_time_hint) const
   {
-    return operation_status(__try_wait_phase_status(__phase, __suspend_time_hint));
+    return operation_status(this->__try_wait_phase_status(__phase, __suspend_time_hint));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __poll_test_wait_ignoring_status(arrival_token __token) const
   {
-    return __test_wait(__token_value(__token));
+    return this->__test_wait(__token_value(__token));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
   __poll_test_wait_ignoring_status(::cuda::std::uint32_t __phase) const
   {
-    return __test_wait_phase(__phase);
+    return this->__test_wait_phase(__phase);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
   __poll_test_wait_ignoring_status(__conditional_phase __phase) const
   {
-    return __test_wait_conditional_phase(__phase.__phase);
+    return this->__test_wait_conditional_phase(__phase.__phase);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __poll_try_wait_ignoring_status(arrival_token __token) const
   {
-    return __try_wait(__token_value(__token));
+    return this->__try_wait(__token_value(__token));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
   __poll_try_wait_ignoring_status(::cuda::std::uint32_t __phase) const
   {
-    return __try_wait_phase(__phase);
+    return this->__try_wait_phase(__phase);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
   __poll_try_wait_ignoring_status(__conditional_phase __phase) const
   {
-    return __try_wait_conditional_phase(__phase.__phase);
+    return this->__try_wait_conditional_phase(__phase.__phase);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
   __poll_try_wait_ignoring_status(arrival_token __token, ::cuda::std::uint32_t __suspend_time_hint) const
   {
-    return __try_wait(__token_value(__token), __suspend_time_hint);
+    return this->__try_wait(__token_value(__token), __suspend_time_hint);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
   __poll_try_wait_ignoring_status(::cuda::std::uint32_t __phase, ::cuda::std::uint32_t __suspend_time_hint) const
   {
-    return __try_wait_phase(__phase, __suspend_time_hint);
+    return this->__try_wait_phase(__phase, __suspend_time_hint);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
   __poll_try_wait_ignoring_status(__conditional_phase __phase, ::cuda::std::uint32_t __suspend_time_hint) const
   {
-    return __try_wait_conditional_phase(__phase.__phase, __suspend_time_hint);
+    return this->__try_wait_conditional_phase(__phase.__phase, __suspend_time_hint);
   }
 
   template <class _WaitArg>
@@ -485,6 +497,42 @@ private:
     __unsupported_storage();
   }
 
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr ::cuda::std::uint32_t
+  __suspend_time_hint(::cuda::std::chrono::nanoseconds __hint) noexcept
+  {
+    constexpr auto __max_hint = (::cuda::std::numeric_limits<::cuda::std::uint32_t>::max)();
+    _CCCL_ASSERT(__hint.count() <= __max_hint, "Suspension-time hint must fit in a 32-bit unsigned nanosecond count.");
+    return static_cast<::cuda::std::uint32_t>(__hint.count());
+  }
+
+  template <class _WaitArg>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
+  __try_wait_with_hint_status(_WaitArg __wait_arg, ::cuda::std::chrono::nanoseconds __hint) const
+  {
+    if (__hint.count() <= 0)
+    {
+      return test_wait(__wait_arg, return_status);
+    }
+
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __poll_try_wait_status(__wait_arg, __suspend_time_hint(__hint));))
+
+    __unsupported_storage();
+  }
+
+  template <class _WaitArg>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool
+  __try_wait_with_hint_ignoring_status(_WaitArg __wait_arg, ::cuda::std::chrono::nanoseconds __hint) const
+  {
+    if (__hint.count() <= 0)
+    {
+      return __test_wait_ignoring_status(__wait_arg);
+    }
+
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __poll_try_wait_ignoring_status(__wait_arg, __suspend_time_hint(__hint));))
+
+    __unsupported_storage();
+  }
+
   template <class _WaitArg, class _Rep, class _Period>
   [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
   __try_wait_for_status(_WaitArg __wait_arg, const ::cuda::std::chrono::duration<_Rep, _Period>& __dur) const
@@ -521,7 +569,7 @@ public:
   //! The storage must not be reused for another purpose until the mbarrier object is invalidated.
   _CCCL_HOST_DEVICE_API ~shared_memory_barrier()
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (__inval(); return;))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (this->__inval(); return;))
 
     __unsupported_storage();
   }
@@ -557,7 +605,27 @@ public:
     _CCCL_ASSERT(__update <= __max_expected_count(),
                  "Arrival count update cannot exceed the shared_memory_barrier layout-v1 limit.");
 
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return arrival_token(__arrive(__update));))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return arrival_token(this->__arrive(__update));))
+
+    __unsupported_storage();
+  }
+
+  //! @brief Arrives at a cluster-shared barrier without returning an arrival token.
+  //!
+  //! This operation is available only for `cuda::thread_scope_cluster`. The target must be an initialized barrier
+  //! in shared memory of the calling cluster; it may belong to the calling block or another block. The owning block
+  //! must publish initialization before remote arrivals and keep the storage alive until those arrivals complete.
+  //! The operation has release semantics at cluster scope. Wait operations remain local to the owning block.
+  //!
+  //! @param[in] __update Arrival count update.
+  _CCCL_HOST_DEVICE_API void remote_arrive([[maybe_unused]] ::cuda::std::ptrdiff_t __update = 1)
+  {
+    static_assert(_Scope == thread_scope_cluster, "remote_arrive requires cluster scope");
+    _CCCL_ASSERT(1 <= __update, "Arrival count update must be at least one.");
+    _CCCL_ASSERT(__update <= __max_expected_count(),
+                 "Arrival count update cannot exceed the shared_memory_barrier layout-v1 limit.");
+
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (this->__remote_arrive(__update); return;))
 
     __unsupported_storage();
   }
@@ -571,7 +639,26 @@ public:
     _CCCL_ASSERT(__transaction_count_update <= __max_transaction_count_update(),
                  "Transaction count update cannot exceed the mbarrier transaction count limit.");
 
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (__expect_tx(__transaction_count_update); return;))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (this->__expect_tx(__transaction_count_update); return;))
+
+    __unsupported_storage();
+  }
+
+  //! @brief Increases the expected transaction count of a cluster-shared barrier.
+  //!
+  //! This operation has the same cluster-scope and storage-lifetime requirements as `remote_arrive`. It has relaxed
+  //! semantics at cluster scope and does not perform an arrival. The expectation must be established before the
+  //! barrier phase completes.
+  //!
+  //! @param[in] __transaction_count_update Transaction count update.
+  _CCCL_HOST_DEVICE_API void remote_expect_tx([[maybe_unused]] ::cuda::std::ptrdiff_t __transaction_count_update)
+  {
+    static_assert(_Scope == thread_scope_cluster, "remote_expect_tx requires cluster scope");
+    _CCCL_ASSERT(0 <= __transaction_count_update, "Transaction count update must be non-negative.");
+    _CCCL_ASSERT(__transaction_count_update <= __max_transaction_count_update(),
+                 "Transaction count update cannot exceed the mbarrier transaction count limit.");
+
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (this->__remote_expect_tx(__transaction_count_update); return;))
 
     __unsupported_storage();
   }
@@ -594,63 +681,144 @@ public:
                  "Transaction count update cannot exceed the mbarrier transaction count limit.");
 
     NV_IF_TARGET(NV_PROVIDES_SM_90,
-                 (return arrival_token(__arrive_tx(__arrive_count_update, __transaction_count_update));))
+                 (return arrival_token(this->__arrive_tx(__arrive_count_update, __transaction_count_update));))
+
+    __unsupported_storage();
+  }
+
+  //! @brief Arrives at a cluster-shared barrier and increases its expected transaction count without returning a token.
+  //!
+  //! This operation has the same cluster-scope and storage-lifetime requirements as `remote_arrive`. The transaction
+  //! expectation is updated before arrival. Arrival has release semantics at cluster scope.
+  //!
+  //! @param[in] __arrive_count_update Arrival count update.
+  //! @param[in] __transaction_count_update Transaction count update.
+  _CCCL_HOST_DEVICE_API void remote_arrive_tx([[maybe_unused]] ::cuda::std::ptrdiff_t __arrive_count_update,
+                                              [[maybe_unused]] ::cuda::std::ptrdiff_t __transaction_count_update)
+  {
+    static_assert(_Scope == thread_scope_cluster, "remote_arrive_tx requires cluster scope");
+    _CCCL_ASSERT(1 <= __arrive_count_update, "Arrival count update must be at least one.");
+    _CCCL_ASSERT(__arrive_count_update <= __max_expected_count(),
+                 "Arrival count update cannot exceed the shared_memory_barrier layout-v1 limit.");
+    _CCCL_ASSERT(0 <= __transaction_count_update, "Transaction count update must be non-negative.");
+    _CCCL_ASSERT(__transaction_count_update <= __max_transaction_count_update(),
+                 "Transaction count update cannot exceed the mbarrier transaction count limit.");
+
+    NV_IF_TARGET(NV_PROVIDES_SM_90,
+                 (this->__remote_arrive_tx(__arrive_count_update, __transaction_count_update); return;))
+
+    __unsupported_storage();
+  }
+
+  //! @brief Signals transaction completion on a cluster-shared barrier.
+  //!
+  //! This operation has the same cluster-scope and storage-lifetime requirements as `remote_arrive`. It has relaxed
+  //! semantics at cluster scope and does not perform an arrival. It only updates the transaction count; it does not
+  //! wait for or order memory operations. Transactions completed by hardware must not also be completed by this call.
+  //!
+  //! @param[in] __transaction_count_update Number of completed transactions.
+  _CCCL_HOST_DEVICE_API void remote_complete_tx([[maybe_unused]] ::cuda::std::ptrdiff_t __transaction_count_update)
+  {
+    static_assert(_Scope == thread_scope_cluster, "remote_complete_tx requires cluster scope");
+    _CCCL_ASSERT(0 <= __transaction_count_update, "Transaction count update must be non-negative.");
+    _CCCL_ASSERT(__transaction_count_update <= __max_transaction_count_update(),
+                 "Transaction count update cannot exceed the mbarrier transaction count limit.");
+
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (this->__remote_complete_tx(__transaction_count_update); return;))
 
     __unsupported_storage();
   }
 
   //! @brief Tests whether an arrival token's phase completed and returns the status.
   //!
-  //! This performs a single completion check.
+  //! This checks completion without waiting for an incomplete phase to complete. Use `try_wait` to allow a bounded
+  //! wait.
   //!
   //! @param __token Arrival token to test.
   //! @return Completion and report status for the wait operation.
   [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
   test_wait([[maybe_unused]] arrival_token __token, return_status_t) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return operation_status(__test_wait_status(__token_value(__token)));))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return operation_status(this->__test_wait_status(__token_value(__token)));))
 
     __unsupported_storage();
   }
 
   //! @brief Tests whether an arrival token's phase completed and ignores any status report.
   //!
-  //! This performs a single completion check.
+  //! This checks completion without waiting for an incomplete phase to complete. Use `try_wait` to allow a bounded
+  //! wait.
   //!
   //! @param __token Arrival token to test.
   //! @return `true` if the phase completed, otherwise `false`.
   [[nodiscard]] _CCCL_HOST_DEVICE_API bool test_wait([[maybe_unused]] arrival_token __token, ignore_status_t) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __test_wait(__token_value(__token));))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return this->__test_wait(__token_value(__token));))
 
     __unsupported_storage();
   }
 
   //! @brief Tries to wait for an arrival token's phase to complete and returns the status.
   //!
-  //! This may wait for an implementation-defined bounded interval before returning.
+  //! This may wait for an implementation-defined bounded interval, then return even if the phase is incomplete.
+  //! Use the duration-hint overload to suggest a wait duration, or `try_wait_for` to wait until completion or timeout.
   //!
   //! @param __token Arrival token to wait on.
   //! @return Completion and report status for the wait operation.
   [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
   try_wait([[maybe_unused]] arrival_token __token, return_status_t) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return operation_status(__try_wait_status(__token_value(__token)));))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return operation_status(this->__try_wait_status(__token_value(__token)));))
 
     __unsupported_storage();
   }
 
   //! @brief Tries to wait for an arrival token's phase to complete and ignores any status report.
   //!
-  //! This may wait for an implementation-defined bounded interval before returning.
+  //! This may wait for an implementation-defined bounded interval, then return even if the phase is incomplete.
+  //! Use the duration-hint overload to suggest a wait duration, or `try_wait_for` to wait until completion or timeout.
   //!
   //! @param __token Arrival token to wait on.
   //! @return `true` if the phase completed, otherwise `false`.
   [[nodiscard]] _CCCL_HOST_DEVICE_API bool try_wait([[maybe_unused]] arrival_token __token, ignore_status_t) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __try_wait(__token_value(__token));))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return this->__try_wait(__token_value(__token));))
 
     __unsupported_storage();
+  }
+
+  //! @brief Tries to wait for an arrival token's phase using a duration hint and returns the status.
+  //!
+  //! This provides a lower-overhead alternative to `try_wait_for` when the caller does not need timeout enforcement.
+  //! The implementation may ignore `__hint`: the wait can end before or after the hinted duration, even if the phase
+  //! remains incomplete. Use `try_wait_for` to keep waiting until completion or timeout.
+  //! A nonpositive hint performs a single `test_wait` check instead.
+  //!
+  //! @pre `__hint.count() <= UINT32_MAX`.
+  //! @param __token Arrival token to wait on.
+  //! @param __hint Suggested wait duration in nanoseconds, not a timeout.
+  //! @return Completion and report status for the wait attempt.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
+  try_wait(arrival_token __token, ::cuda::std::chrono::nanoseconds __hint, return_status_t) const
+  {
+    return __try_wait_with_hint_status(__token, __hint);
+  }
+
+  //! @brief Tries to wait for an arrival token's phase using a duration hint and ignores status.
+  //!
+  //! This provides a lower-overhead alternative to `try_wait_for` when the caller does not need timeout enforcement.
+  //! The implementation may ignore `__hint`: the wait can end before or after the hinted duration, even if the phase
+  //! remains incomplete. Use `try_wait_for` to keep waiting until completion or timeout.
+  //! A nonpositive hint performs a single `test_wait` check instead.
+  //!
+  //! @pre `__hint.count() <= UINT32_MAX`.
+  //! @param __token Arrival token to wait on.
+  //! @param __hint Suggested wait duration in nanoseconds, not a timeout.
+  //! @return `true` if the phase completed, otherwise `false`.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool
+  try_wait(arrival_token __token, ::cuda::std::chrono::nanoseconds __hint, ignore_status_t) const
+  {
+    return __try_wait_with_hint_ignoring_status(__token, __hint);
   }
 
   //! @brief Waits until an arrival token's phase completes and returns the status.
@@ -687,65 +855,103 @@ public:
   //! @brief Arrives at the barrier and removes one expected arrival from subsequent phases.
   _CCCL_HOST_DEVICE_API void arrive_and_drop()
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (__arrive_and_drop(); return;))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (this->__arrive_and_drop(); return;))
 
     __unsupported_storage();
   }
 
   //! @brief Tests whether a primary phase completed and returns the status.
   //!
-  //! This performs a single completion check.
+  //! This checks completion without waiting for an incomplete phase to complete. Use `try_wait` to allow a bounded
+  //! wait.
   //!
   //! @param __phase Primary phase value to test.
   //! @return Completion and report status for the wait operation.
   [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
   test_wait([[maybe_unused]] ::cuda::std::uint32_t __phase, return_status_t) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return operation_status(__test_wait_phase_status(__phase));))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return operation_status(this->__test_wait_phase_status(__phase));))
 
     __unsupported_storage();
   }
 
   //! @brief Tests whether a primary phase completed and ignores any status report.
   //!
-  //! This performs a single completion check.
+  //! This checks completion without waiting for an incomplete phase to complete. Use `try_wait` to allow a bounded
+  //! wait.
   //!
   //! @param __phase Primary phase value to test.
   //! @return `true` if the phase completed, otherwise `false`.
   [[nodiscard]] _CCCL_HOST_DEVICE_API bool
   test_wait([[maybe_unused]] ::cuda::std::uint32_t __phase, ignore_status_t) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __test_wait_phase(__phase);))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return this->__test_wait_phase(__phase);))
 
     __unsupported_storage();
   }
 
   //! @brief Tries to wait for a primary phase to complete and returns the status.
   //!
-  //! This may wait for an implementation-defined bounded interval before returning.
+  //! This may wait for an implementation-defined bounded interval, then return even if the phase is incomplete.
+  //! Use the duration-hint overload to suggest a wait duration, or `try_wait_for` to wait until completion or timeout.
   //!
   //! @param __phase Primary phase value to wait on.
   //! @return Completion and report status for the wait operation.
   [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
   try_wait([[maybe_unused]] ::cuda::std::uint32_t __phase, return_status_t) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return operation_status(__try_wait_phase_status(__phase));))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return operation_status(this->__try_wait_phase_status(__phase));))
 
     __unsupported_storage();
   }
 
   //! @brief Tries to wait for a primary phase to complete and ignores any status report.
   //!
-  //! This may wait for an implementation-defined bounded interval before returning.
+  //! This may wait for an implementation-defined bounded interval, then return even if the phase is incomplete.
+  //! Use the duration-hint overload to suggest a wait duration, or `try_wait_for` to wait until completion or timeout.
   //!
   //! @param __phase Primary phase value to wait on.
   //! @return `true` if the phase completed, otherwise `false`.
   [[nodiscard]] _CCCL_HOST_DEVICE_API bool
   try_wait([[maybe_unused]] ::cuda::std::uint32_t __phase, ignore_status_t) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __try_wait_phase(__phase);))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return this->__try_wait_phase(__phase);))
 
     __unsupported_storage();
+  }
+
+  //! @brief Tries to wait for a primary phase using a duration hint and returns the status.
+  //!
+  //! This provides a lower-overhead alternative to `try_wait_for` when the caller does not need timeout enforcement.
+  //! The implementation may ignore `__hint`: the wait can end before or after the hinted duration, even if the phase
+  //! remains incomplete. Use `try_wait_for` to keep waiting until completion or timeout.
+  //! A nonpositive hint performs a single `test_wait` check instead.
+  //!
+  //! @pre `__hint.count() <= UINT32_MAX`.
+  //! @param __phase Primary phase value to wait on.
+  //! @param __hint Suggested wait duration in nanoseconds, not a timeout.
+  //! @return Completion and report status for the wait attempt.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
+  try_wait(::cuda::std::uint32_t __phase, ::cuda::std::chrono::nanoseconds __hint, return_status_t) const
+  {
+    return __try_wait_with_hint_status(__phase, __hint);
+  }
+
+  //! @brief Tries to wait for a primary phase using a duration hint and ignores status.
+  //!
+  //! This provides a lower-overhead alternative to `try_wait_for` when the caller does not need timeout enforcement.
+  //! The implementation may ignore `__hint`: the wait can end before or after the hinted duration, even if the phase
+  //! remains incomplete. Use `try_wait_for` to keep waiting until completion or timeout.
+  //! A nonpositive hint performs a single `test_wait` check instead.
+  //!
+  //! @pre `__hint.count() <= UINT32_MAX`.
+  //! @param __phase Primary phase value to wait on.
+  //! @param __hint Suggested wait duration in nanoseconds, not a timeout.
+  //! @return `true` if the phase completed, otherwise `false`.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool
+  try_wait(::cuda::std::uint32_t __phase, ::cuda::std::chrono::nanoseconds __hint, ignore_status_t) const
+  {
+    return __try_wait_with_hint_ignoring_status(__phase, __hint);
   }
 
   //! @brief Waits until a primary phase completes and returns the status.
@@ -768,13 +974,14 @@ public:
   //! @brief Tests whether a conditional phase completed.
   //!
   //! For layout v1, the conditional phase advances only when the primary phase completes without a report.
+  //! This checks completion without waiting for an incomplete phase to complete.
   //!
   //! @param __phase Conditional phase value to test.
   //! @return `true` if the conditional phase completed, otherwise `false`.
   [[nodiscard]] _CCCL_HOST_DEVICE_API bool
   test_wait_conditional_phase([[maybe_unused]] ::cuda::std::uint32_t __phase) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __test_wait_conditional_phase(__phase);))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return this->__test_wait_conditional_phase(__phase);))
 
     __unsupported_storage();
   }
@@ -782,15 +989,37 @@ public:
   //! @brief Tries to wait for a conditional phase to complete.
   //!
   //! For layout v1, the conditional phase advances only when the primary phase completes without a report.
+  //! This may wait for an implementation-defined bounded interval, then return even if the phase is incomplete.
+  //! Use the duration-hint overload to suggest a wait duration, or `try_wait_conditional_phase_for` to wait until
+  //! completion or timeout.
   //!
   //! @param __phase Conditional phase value to wait on.
   //! @return `true` if the conditional phase completed, otherwise `false`.
   [[nodiscard]] _CCCL_HOST_DEVICE_API bool
   try_wait_conditional_phase([[maybe_unused]] ::cuda::std::uint32_t __phase) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __try_wait_conditional_phase(__phase);))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return this->__try_wait_conditional_phase(__phase);))
 
     __unsupported_storage();
+  }
+
+  //! @brief Tries to wait for a conditional phase using a duration hint.
+  //!
+  //! The conditional phase advances only when the primary phase completes without a report.
+  //! This provides a lower-overhead alternative to `try_wait_conditional_phase_for` when the caller does not need
+  //! timeout enforcement. The implementation may ignore `__hint`: the wait can end before or after the hinted
+  //! duration, even if the phase remains incomplete. Use `try_wait_conditional_phase_for` to keep waiting until
+  //! completion or timeout.
+  //! A nonpositive hint performs a single `test_wait_conditional_phase` check instead.
+  //!
+  //! @pre `__hint.count() <= UINT32_MAX`.
+  //! @param __phase Conditional phase value to wait on.
+  //! @param __hint Suggested wait duration in nanoseconds, not a timeout.
+  //! @return `true` if the conditional phase completed, otherwise `false`.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool
+  try_wait_conditional_phase(::cuda::std::uint32_t __phase, ::cuda::std::chrono::nanoseconds __hint) const
+  {
+    return __try_wait_with_hint_ignoring_status(__conditional_phase{__phase}, __hint);
   }
 
   //! @brief Waits until a conditional phase completes.
@@ -804,6 +1033,11 @@ public:
   }
 
   //! @brief Tries to wait for a conditional phase to complete before a relative timeout.
+  //!
+  //! Unlike `try_wait_conditional_phase` with a duration hint, this keeps waiting until completion or timeout.
+  //! It may repeat wait attempts and check elapsed time to enforce the timeout. Use the duration-hint overload of
+  //! `try_wait_conditional_phase` when timeout enforcement is unnecessary.
+  //! Scheduling or other implementation overhead may delay returning after the timeout.
   //!
   //! If `__dur` is nonpositive, this performs a single `test_wait_conditional_phase` check.
   //!
@@ -819,6 +1053,11 @@ public:
 
   //! @brief Tries to wait for a conditional phase to complete before an absolute timeout.
   //!
+  //! Unlike `try_wait_conditional_phase` with a duration hint, this keeps waiting until completion or timeout.
+  //! It may repeat wait attempts and check elapsed time to enforce the timeout. Use the duration-hint overload of
+  //! `try_wait_conditional_phase` when timeout enforcement is unnecessary.
+  //! Scheduling or other implementation overhead may delay returning after the timeout.
+  //!
   //! @param __phase Conditional phase value to wait on.
   //! @param __time Absolute timeout.
   //! @return `true` if the conditional phase completed before the timeout, otherwise `false`.
@@ -830,6 +1069,11 @@ public:
   }
 
   //! @brief Tries to wait for an arrival token's phase to complete before a relative timeout and returns the status.
+  //!
+  //! Unlike `try_wait` with a duration hint, this keeps waiting until completion or timeout. It may repeat wait
+  //! attempts and check elapsed time to enforce the timeout. Use the duration-hint overload of `try_wait` when timeout
+  //! enforcement is unnecessary.
+  //! Scheduling or other implementation overhead may delay returning after the timeout.
   //!
   //! If `__dur` is nonpositive, this performs a single `test_wait` check.
   //!
@@ -845,6 +1089,11 @@ public:
 
   //! @brief Tries to wait for an arrival token's phase to complete before a relative timeout and ignores status.
   //!
+  //! Unlike `try_wait` with a duration hint, this keeps waiting until completion or timeout. It may repeat wait
+  //! attempts and check elapsed time to enforce the timeout. Use the duration-hint overload of `try_wait` when timeout
+  //! enforcement is unnecessary.
+  //! Scheduling or other implementation overhead may delay returning after the timeout.
+  //!
   //! If `__dur` is nonpositive, this performs a single `test_wait` check.
   //!
   //! @param __token Arrival token to wait on.
@@ -859,6 +1108,11 @@ public:
 
   //! @brief Tries to wait for an arrival token's phase to complete before an absolute timeout and returns the status.
   //!
+  //! Unlike `try_wait` with a duration hint, this keeps waiting until completion or timeout. It may repeat wait
+  //! attempts and check elapsed time to enforce the timeout. Use the duration-hint overload of `try_wait` when timeout
+  //! enforcement is unnecessary.
+  //! Scheduling or other implementation overhead may delay returning after the timeout.
+  //!
   //! @param __token Arrival token to wait on.
   //! @param __time Absolute timeout.
   //! @return Completion and report status for the wait operation.
@@ -871,6 +1125,11 @@ public:
 
   //! @brief Tries to wait for an arrival token's phase to complete before an absolute timeout and ignores status.
   //!
+  //! Unlike `try_wait` with a duration hint, this keeps waiting until completion or timeout. It may repeat wait
+  //! attempts and check elapsed time to enforce the timeout. Use the duration-hint overload of `try_wait` when timeout
+  //! enforcement is unnecessary.
+  //! Scheduling or other implementation overhead may delay returning after the timeout.
+  //!
   //! @param __token Arrival token to wait on.
   //! @param __time Absolute timeout.
   //! @return `true` if the phase completed before the timeout, otherwise `false`.
@@ -882,6 +1141,11 @@ public:
   }
 
   //! @brief Tries to wait for a primary phase to complete before a relative timeout and returns the status.
+  //!
+  //! Unlike `try_wait` with a duration hint, this keeps waiting until completion or timeout. It may repeat wait
+  //! attempts and check elapsed time to enforce the timeout. Use the duration-hint overload of `try_wait` when timeout
+  //! enforcement is unnecessary.
+  //! Scheduling or other implementation overhead may delay returning after the timeout.
   //!
   //! If `__dur` is nonpositive, this performs a single `test_wait` check.
   //!
@@ -897,6 +1161,11 @@ public:
 
   //! @brief Tries to wait for a primary phase to complete before a relative timeout and ignores status.
   //!
+  //! Unlike `try_wait` with a duration hint, this keeps waiting until completion or timeout. It may repeat wait
+  //! attempts and check elapsed time to enforce the timeout. Use the duration-hint overload of `try_wait` when timeout
+  //! enforcement is unnecessary.
+  //! Scheduling or other implementation overhead may delay returning after the timeout.
+  //!
   //! If `__dur` is nonpositive, this performs a single `test_wait` check.
   //!
   //! @param __phase Primary phase value to wait on.
@@ -911,6 +1180,11 @@ public:
 
   //! @brief Tries to wait for a primary phase to complete before an absolute timeout and returns the status.
   //!
+  //! Unlike `try_wait` with a duration hint, this keeps waiting until completion or timeout. It may repeat wait
+  //! attempts and check elapsed time to enforce the timeout. Use the duration-hint overload of `try_wait` when timeout
+  //! enforcement is unnecessary.
+  //! Scheduling or other implementation overhead may delay returning after the timeout.
+  //!
   //! @param __phase Primary phase value to wait on.
   //! @param __time Absolute timeout.
   //! @return Completion and report status for the wait operation.
@@ -924,6 +1198,11 @@ public:
   }
 
   //! @brief Tries to wait for a primary phase to complete before an absolute timeout and ignores status.
+  //!
+  //! Unlike `try_wait` with a duration hint, this keeps waiting until completion or timeout. It may repeat wait
+  //! attempts and check elapsed time to enforce the timeout. Use the duration-hint overload of `try_wait` when timeout
+  //! enforcement is unnecessary.
+  //! Scheduling or other implementation overhead may delay returning after the timeout.
   //!
   //! @param __phase Primary phase value to wait on.
   //! @param __time Absolute timeout.
@@ -943,7 +1222,9 @@ _CCCL_END_NAMESPACE_CUDA
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 //! @brief Returns the native shared-memory mbarrier address for a `cuda::shared_memory_barrier`.
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint64_t* barrier_native_handle(::cuda::shared_memory_barrier& __b)
+template <::cuda::thread_scope _Scope>
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint64_t*
+barrier_native_handle(::cuda::shared_memory_barrier<_Scope>& __b)
 {
   return __b.__native_handle();
 }

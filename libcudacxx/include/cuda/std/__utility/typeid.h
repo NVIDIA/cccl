@@ -40,15 +40,17 @@
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/compare>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_function.h>
 #include <cuda/std/__type_traits/is_member_function_pointer.h>
-#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/remove_cv.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/remove_pointer.h>
-#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/string_view>
+
+#if _CCCL_COMPILER(GCC, <, 9)
+#  include <cuda/std/__type_traits/integral_constant.h>
+#  include <cuda/std/__utility/integer_sequence.h>
+#endif // _CCCL_COMPILER(GCC, <, 9)
 
 #if !defined(_CCCL_NO_TYPEID)
 #  include <typeinfo>
@@ -76,10 +78,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if !defined(_CCCL_NO_TYPEID) && !defined(_CCCL_USE_TYPEID_FALLBACK)
 
 #  define _CCCL_TYPEID _CCCL_STD_TYPEID
-using type_info        = ::std::type_info;
-using __type_info_ptr  = type_info const*;
-using __type_info_ref  = type_info const&;
-using __type_info_ref_ = type_info const&;
+using type_info                      = ::std::type_info;
+using __type_info_ptr _CCCL_NODEBUG  = type_info const*;
+using __type_info_ref _CCCL_NODEBUG  = type_info const&;
+using __type_info_ref_ _CCCL_NODEBUG = type_info const&;
 
 #else // ^^^ !_CCCL_NO_TYPEID ^^^ / vvv _CCCL_NO_TYPEID vvv
 
@@ -94,7 +96,7 @@ using __type_info_ref_ = type_info const&;
 //    Everything between them is the name of type _Tp.
 
 template <class _Tp>
-using _CCCL_TYPEID_ONLY_SUPPORTS_TYPES = _Tp;
+using _CCCL_TYPEID_ONLY_SUPPORTS_TYPES _CCCL_NODEBUG = _Tp;
 
 // Earlier versions of gcc (before gcc-9) do not treat __PRETTY_FUNCTION__ as a
 // constexpr value after a reference to it has been returned from a function.
@@ -392,9 +394,9 @@ struct __type_info_ref_ : __type_info
 }
 
 #  if defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
-using type_info       = __type_info;
-using __type_info_ptr = __type_info_ptr_;
-using __type_info_ref = __type_info_ref_;
+using type_info                     = __type_info;
+using __type_info_ptr _CCCL_NODEBUG = __type_info_ptr_;
+using __type_info_ref _CCCL_NODEBUG = __type_info_ref_;
 #  endif // defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
 
 #  define _CCCL_TYPEID_FALLBACK(...) \
@@ -405,9 +407,9 @@ using __type_info_ref = __type_info_ref_;
 // See comment above about _CCCL_BROKEN_MSVC_FUNCSIG
 #  define _CCCL_TYPEID_FALLBACK _CCCL_STD_TYPEID
 #  if defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
-using type_info       = ::std::type_info;
-using __type_info_ptr = ::std::type_info const*;
-using __type_info_ref = ::std::type_info const&;
+using type_info                     = ::std::type_info;
+using __type_info_ptr _CCCL_NODEBUG = ::std::type_info const*;
+using __type_info_ref _CCCL_NODEBUG = ::std::type_info const&;
 #  endif // defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
 
 #else // ^^^ _CCCL_BROKEN_MSVC_FUNCSIG ^^^ / vvv !__CUDA_ARCH__ && !_CCCL_BROKEN_MSVC_FUNCSIG vvv
@@ -464,9 +466,9 @@ private:
 };
 
 #  if defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
-using type_info       = __type_info;
-using __type_info_ptr = __type_info const*;
-using __type_info_ref = __type_info const&;
+using type_info                     = __type_info;
+using __type_info_ptr _CCCL_NODEBUG = __type_info const*;
+using __type_info_ref _CCCL_NODEBUG = __type_info const&;
 #  endif // defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
 
 template <class _Tp>

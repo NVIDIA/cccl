@@ -51,11 +51,11 @@ THRUST_NAMESPACE_END
 template <typename Element, typename Tag, typename Reference, typename Derived>
 struct std::iterator_traits<THRUST_NS_QUALIFIER::pointer<Element, Tag, Reference, Derived>>
 {
-  using pointer           = THRUST_NS_QUALIFIER::pointer<Element, Tag, Reference, Derived>;
-  using iterator_category = typename pointer::iterator_category;
-  using value_type        = typename pointer::value_type;
-  using difference_type   = typename pointer::difference_type;
-  using reference         = typename pointer::reference;
+  using pointer           = Element*; // must match the return type of pointer::operator->()
+  using iterator_category = typename THRUST_NS_QUALIFIER::pointer<Element, Tag, Reference, Derived>::iterator_category;
+  using value_type        = typename THRUST_NS_QUALIFIER::pointer<Element, Tag, Reference, Derived>::value_type;
+  using difference_type   = typename THRUST_NS_QUALIFIER::pointer<Element, Tag, Reference, Derived>::difference_type;
+  using reference         = typename THRUST_NS_QUALIFIER::pointer<Element, Tag, Reference, Derived>::reference;
 };
 
 THRUST_NAMESPACE_BEGIN
@@ -416,8 +416,7 @@ struct pointer_traits<Pointer, void_t<typename Pointer::raw_pointer>>
 
   // Thrust historically provided a non-standard pointer_to for pointer<void>
   template <class T, enable_if_t<(is_void_v<element_type> || is_same_v<T, element_type>), int> = 0>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static pointer
-  pointer_to(T& r) noexcept(noexcept(::cuda::std::addressof(r)))
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static pointer pointer_to(T& r) noexcept(noexcept(::cuda::std::addressof(r)))
   {
     return static_cast<element_type*>(::cuda::std::addressof(r));
   }

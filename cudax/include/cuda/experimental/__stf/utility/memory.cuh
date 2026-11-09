@@ -363,7 +363,7 @@ cudaError_t pin_memory(T* p, size_t n)
   }
   // We cast to (void *) because T may be a const type : we are not going
   // to modify the content, so this is legit ...
-  using NonConstT = typename std::remove_const<T>::type;
+  using NonConstT = std::remove_const_t<T>;
   // Report the result of THIS call only. cudaGetLastError() would return the
   // sticky error of any earlier failed CUDA call on this thread (e.g. an
   // expected probe failure or a caught allocation error), misattributing it
@@ -372,7 +372,7 @@ cudaError_t pin_memory(T* p, size_t n)
   if (res != cudaSuccess)
   {
     // Consume the sticky error state so it is not re-reported elsewhere.
-    cudaGetLastError();
+    static_cast<void>(cudaGetLastError());
   }
   return res;
 }
@@ -390,14 +390,14 @@ void unpin_memory(T* p)
 
   // We cast to non const T * because T may be a const type : we are not going
   // to modify the content, so this is legit ...
-  using NonConstT = typename std::remove_const<T>::type;
+  using NonConstT = std::remove_const_t<T>;
   if (cudaHostUnregister(const_cast<NonConstT*>(p)) != cudaSuccess)
   {
     // Tolerate unregister failures (e.g. the matching registration was
     // skipped or failed) and consume the sticky error state so it is not
     // misattributed to a later, unrelated call. This runs on cleanup paths
     // (including destructors), so it must not throw.
-    cudaGetLastError();
+    static_cast<void>(cudaGetLastError());
   }
 }
 
@@ -433,15 +433,15 @@ UNITTEST("pin_memory")
 {
   ::std::vector<double> a(1024);
 
-  EXPECT(!address_is_pinned(&a[0]));
+  EXPECT(!address_is_pinned(a.data()));
   EXPECT(!address_is_pinned(&a[1023]));
 
-  pin_memory(&a[0], 1024);
-  EXPECT(address_is_pinned(&a[0]));
+  cuda_safe_call(pin_memory(a.data(), 1024));
+  EXPECT(address_is_pinned(a.data()));
   EXPECT(address_is_pinned(&a[1023]));
-  unpin_memory(&a[0]);
+  unpin_memory(a.data());
 
-  EXPECT(!address_is_pinned(&a[0]));
+  EXPECT(!address_is_pinned(a.data()));
   EXPECT(!address_is_pinned(&a[1023]));
 };
 
@@ -449,11 +449,11 @@ UNITTEST("pin_memory const")
 {
   ::std::vector<double> a(1024);
 
-  const double* ca = &a[0];
+  const double* ca = a.data();
 
   EXPECT(!address_is_pinned(ca));
 
-  pin_memory(ca, 1024);
+  cuda_safe_call(pin_memory(ca, 1024));
   EXPECT(address_is_pinned(ca));
   unpin_memory(ca);
 
@@ -470,13 +470,13 @@ UNITTEST("pin_memory ignores stale sticky errors")
   EXPECT(cudaMalloc(&p, size_t(1) << 46) != cudaSuccess);
 
   ::std::vector<double> a(1024);
-  EXPECT(pin_memory(&a[0], 1024) == cudaSuccess);
-  EXPECT(address_is_pinned(&a[0]));
-  unpin_memory(&a[0]);
-  EXPECT(!address_is_pinned(&a[0]));
+  EXPECT(pin_memory(a.data(), 1024) == cudaSuccess);
+  EXPECT(address_is_pinned(a.data()));
+  unpin_memory(a.data());
+  EXPECT(!address_is_pinned(a.data()));
 
   // Consume whatever is left so this test does not poison the next one.
-  cudaGetLastError();
+  static_cast<void>(cudaGetLastError());
 };
 
 #endif // UNITTESTED_FILE

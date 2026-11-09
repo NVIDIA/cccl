@@ -24,9 +24,11 @@
 #include <cuda/__bit/bit_fns.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__warp/warp_shuffle.h>
+#include <cuda/hierarchy>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_same.h>
 
-#include <cuda/experimental/coop/group>
+#include <cuda/experimental/coop/__group/concepts.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -43,7 +45,7 @@ template <bool _Dummy = false>
 _CCCL_TEMPLATE(class _Group, class _Tp)
 _CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::unit_type, thread_level>
                  _CCCL_AND ::cuda::std::is_same_v<typename _Group::level_type, warp_level>)
-[[nodiscard]] _CCCL_DEVICE_API _Tp __shuffle_impl(const _Group& __group, _Tp __value, unsigned __src_unit_rank) noexcept
+[[nodiscard]] _CCCL_DEVICE_API _Tp __shuffle_impl(const _Group& __group, _Tp __value, unsigned __src_unit_rank)
 {
   using _MappingResult         = typename _Group::__mapping_result_type;
   const auto& __mapping_result = __group.__mapping_result();
@@ -73,10 +75,8 @@ _CCCL_REQUIRES(group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group::u
 //! @param[in] __src_unit_rank The rank of the unit whose value should be taken by this unit.
 //! @return The value passed to the function by the equivalent thread from the source rank unit.
 template <class _Group, class _Tp>
-[[nodiscard]] _CCCL_DEVICE_API _Tp shuffle(const _Group& __group, _Tp __value, unsigned __src_unit_rank) noexcept
+[[nodiscard]] _CCCL_DEVICE_API _Tp shuffle(const _Group& __group, _Tp __value, unsigned __src_unit_rank)
 {
-  _CCCL_ASSERT(gpu_thread.is_part_of(__group),
-               "Only threads that are part of the group can call cooperative algorithms");
   return ::cuda::experimental::coop::__shuffle_impl(__group, __value, __src_unit_rank);
 }
 } // namespace cuda::experimental::coop

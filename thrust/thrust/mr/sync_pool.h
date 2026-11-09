@@ -16,7 +16,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/config/memory_resource.h>
+#include <thrust/mr/memory_resource.h>
 #include <thrust/mr/pool.h>
+#include <thrust/mr/pool_options.h>
+
+#include <cuda/std/__cstddef/types.h>
 
 #include <mutex>
 

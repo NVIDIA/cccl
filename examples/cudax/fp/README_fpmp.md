@@ -16,7 +16,7 @@ than FP64, so a float pair can be both more precise than `float` and faster than
 double pair reaches 104 mantissa bits out of ordinary FP64 operations.
 
 Which of the two applies is decided by the rate at which the part runs FP64 against FP32 —
-1:2 on B200 against 1:32 on B300 and RTX PRO 6000 Blackwell. `fp64mp2` spends FP64
+1:2 on B200 against 1:64 on B300 and RTX PRO 6000 Blackwell. `fp64mp2` spends FP64
 throughput, so it is the cheap route to quad-like precision where FP64 runs close to FP32,
 and a costly one where FP64 is rationed: a software binary128 is integer code and is not
 competing for the units `fp64mp2` needs. `fp32mp2` is the mirror image, and wins exactly
@@ -27,46 +27,64 @@ For the example set, see the [examples README](README.md).
 Where this pays off
 -------------------
 
-The figures below are measured on a midpoint-rule π integration — 2^26 terms, five arithmetic
+The figures below come from a midpoint-rule π integration — 2^26 terms, five arithmetic
 operations per term, no memory traffic worth speaking of — so they price arithmetic pipelines
 rather than bandwidth, and every type runs identical code. "Correct digits" means correct
-decimal digits of the computed integral.
+decimal digits of the computed integral, with every step carried out in the type being
+measured, the sequential reduction of the 131072 per-thread partials included: what is
+reported is therefore what a program written in that type costs end to end, not the loop in
+isolation. Native `double` is measured in the same run, as the baseline each row is reported
+against.
 
-**Below `double`, where FP64 throughput is rationed.** On L40S (Ada), RTX PRO 6000 Blackwell and
-B300, native FP64 runs at roughly 1/35 of FP32. A float pair rides the units that are plentiful:
+**Below `double`, where FP64 throughput is rationed.** On these parts native FP64 runs at
+1/64 of FP32, and a float pair rides the units that are plentiful. Accuracy is a property of
+the arithmetic rather than of the GPU — the three parts below agree on it to the last digit
+reported — so it is one column for all of them:
 
-| Type | Correct digits | Speed vs native `double` |
-|---|---|---|
-| `float` | 6.5 | 34–37× |
-| `fp32mp2`, `low` | 12.8 | **16.7–17.4×** |
-| `fp32mp2`, `mid` | 13.8 | **11.7–11.9×** |
-| `fp32mp2`, `high` | 14.5 | **6.9–7.0×** |
-| `double` | 14.8 | 1.0× |
+| Type | Correct digits | RTX 6000 Ada | RTX PRO 6000 Blackwell | B300 |
+|---|---|---|---|---|
+| `float` | 3.1 | 28.2× | 25.4× | 32.3× |
+| `fp32mp2`, `low` | 9.5 | **15.8×** | **11.5×** | **16.0×** |
+| `fp32mp2`, `mid` | 12.0 | **9.9×** | **8.6×** | **10.8×** |
+| `fp32mp2`, `high` | 12.7 | **6.1×** | **5.5×** | **6.7×** |
+| `double` | 14.8 | 1.0× | 1.0× | 1.0× |
 
-The `high` level lands within 0.4 digits of `double` at about seven times its throughput, and
-the ratios hold across those three architectures to within a few percent, the arithmetic being
-pure FP32. Plain `float` is not an alternative at 6.5 digits: with 24 mantissa bits it cannot
-place the grid points past 2^22 terms, so its error stops improving however many terms are
-added, which is the wall these types exist to get past.
+Each GPU column is speed relative to native `double` on that part, which is why the `double`
+row reads 1.0× in all of them. A float pair lands within three digits of `double` at several
+times its throughput, and the three levels do separate here — but they separate very
+unevenly, and the shape of that is worth reading rather than the numbers alone.
 
-**Above `double`, against software binary128.** Where FP64 runs at full rate (B200), a double
-pair is the cheap way to buy digits beyond `double`:
+The large step is from `low` to `mid`: 2.5 digits, for 1.6× the time. It is not cancellation
+that does it, since every term of this integrand is positive. It is that `low` is the one
+level that omits the closing renormalization, so its two limbs are free to overlap, and the
+overlap compounds along a chain of 131072 additions until part of the trailing limb is no
+longer carrying information. `mid` and `high` both restore the invariant on every operation,
+and neither drifts.
 
-| Type | Correct digits | Speed vs software `fp128` |
-|---|---|---|
-| `fp64mp2` | 17.2 | **13.2×** |
-| software `fp128` | 17.2 | 1.0× |
+The step from `mid` to `high` is small by comparison — 0.7 digits, for another 1.6× — and
+that is what to expect on a sum of same-signed values. Both levels normalize; what `high`
+adds is the recovery of the rounding error committed when the two trailing limbs are added,
+and that error only grows into the result when something amplifies it. Cancellation is the
+usual amplifier and there is none here, so `high` collects a fraction of a digit. On a
+computation that does cancel, the same 0.7 digits can be several. Which is the reason to
+measure a given computation rather than to assume from a table.
 
-The same answer to the last reported digit for a thirteenth of the cost — about 3.6 `double`
-passes against roughly 47. Read that as the benchmark saturating rather than the two formats
-being equivalent: 17.2 digits is this integration's own truncation floor, which the pair already
-resolves past, so binary128's extra significand bits have nothing left to buy here. A
-computation that genuinely needs more than 104 bits still needs binary128.
+Plain `float` is not an alternative, and not merely because it is 11.7 digits behind here.
+Its accuracy gets *worse* as terms are added — 5.2 digits at 2^20 against 2.8 at 2^28 — so
+the extra work buys less answer rather than more. With 24 mantissa bits it can neither place
+the grid points at that spacing nor carry the sum across that many additions. `double` holds
+near 14 digits over the same range. That divergence is the wall these types exist to get
+past.
 
-The ordering does depend on the hardware, and it reverses: on
-the FP64-rationed parts above, the pair rides those scarce FP64 units while a software quad path
-does not, and `fp128` comes out 2.4–3.1× *faster* there. Pair arithmetic above `double` wants
-FP64 throughput underneath it.
+**Above `double`.** The same program run with `fp64mp2` reaches 17.2 digits where `double`
+reaches 14.8, and takes roughly five times `double`'s time on all three parts above: a pair
+operation is a run of operations on the limbs, and on these parts those are the rationed FP64
+ones. The digits past `double` are therefore bought at a real price, unlike the ones below
+it, and how bearable that price is follows from the FP64 throughput underneath. Where FP64
+runs at full rate the comparison that matters is against software binary128, and the
+specification document has it per function: on B200 a `mid` addition is 7.8×
+faster than software binary128 and division 17.8×, while on B300 binary128 is 1.4–4× faster
+than `fp64mp2` operation for operation.
 
 **Retiring 80-bit CPU code.** Computations written for x87 double-extended — `long double` on
 Linux/x86 — carry a 64-bit significand. `fp64mp2` carries 104 by the counting used below, so
@@ -353,6 +371,18 @@ little to show beyond the fact that the overloads exist:
 - **The full math surface.** The example calls `exp` and `sin`; the rest of the list above
   is exercised by the test suite, and the accuracy of each is characterized in the
   specification document.
+
+Optimization guide
+------------------
+
+`fp32mp2` pays for its digits in FP32 instructions and wins only where FP64 is rationed;
+`fp64mp2` pays in FP64 instructions and wins only where FP64 runs at full rate. Past that first
+decision, what a kernel gets out of either type depends on where its conversions sit, which
+accuracy level each step runs at, and whether its reductions go through atomics. The [FP
+optimization guide](README_fp_optimization_guide.md#using-fpmp-efficiently) covers those choices
+for both types, with per-operation costs, and its opening section on [choosing the
+type](README_fp_optimization_guide.md#choosing-the-type) places `fpmp` against the other
+components.
 
 References
 ----------

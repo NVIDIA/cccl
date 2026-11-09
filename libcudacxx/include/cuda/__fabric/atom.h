@@ -23,11 +23,12 @@
 
 #if _CCCL_CUDACC_AT_LEAST(13, 4) && !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__barrier/shared_memory_barrier.h>
 #  include <cuda/__fabric/atomic_block.h>
 #  include <cuda/__logical_endpoint/unicast.h>
 #  include <cuda/__memory/address_space.h>
 #  include <cuda/__ptx/ptx_helper_functions.h>
-#  include <cuda/barrier>
+#  include <cuda/std/__atomic/scopes.h>
 #  include <cuda/std/__floating_point/cuda_fp_types.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_same.h>
@@ -48,13 +49,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC
 //! @param[out] __old_shared Local CTA shared-memory result block.
 //! @param[in] __operand_shared Local CTA shared-memory input block.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_fetch_add(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   atomic_block<_Tp>* __old_shared,
   const atomic_block<_Tp>* __operand_shared,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   _CCCL_ASSERT(__offset % sizeof(_Tp) == 0, "invalid atomic endpoint offset");
   _CCCL_ASSERT(::cuda::device::is_address_from(__old_shared, ::cuda::device::address_space::shared),
@@ -137,13 +138,13 @@ _CCCL_DEVICE_API void try_fetch_add(
 //! @param[out] __old_shared Local CTA shared-memory result block.
 //! @param[in] __operand_shared Local CTA shared-memory input block.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_fetch_min(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   atomic_block<_Tp>* __old_shared,
   const atomic_block<_Tp>* __operand_shared,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   _CCCL_ASSERT(__offset % sizeof(_Tp) == 0, "invalid atomic endpoint offset");
   _CCCL_ASSERT(::cuda::device::is_address_from(__old_shared, ::cuda::device::address_space::shared),
@@ -210,13 +211,13 @@ _CCCL_DEVICE_API void try_fetch_min(
 //! @param[out] __old_shared Local CTA shared-memory result block.
 //! @param[in] __operand_shared Local CTA shared-memory input block.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_fetch_max(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   atomic_block<_Tp>* __old_shared,
   const atomic_block<_Tp>* __operand_shared,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   _CCCL_ASSERT(__offset % sizeof(_Tp) == 0, "invalid atomic endpoint offset");
   _CCCL_ASSERT(::cuda::device::is_address_from(__old_shared, ::cuda::device::address_space::shared),
@@ -283,13 +284,13 @@ _CCCL_DEVICE_API void try_fetch_max(
 //! @param[out] __old_shared Local CTA shared-memory result block.
 //! @param[in] __operand_shared Local CTA shared-memory input block.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_fetch_and(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   atomic_block<_Tp>* __old_shared,
   const atomic_block<_Tp>* __operand_shared,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   _CCCL_ASSERT(__offset % sizeof(_Tp) == 0, "invalid atomic endpoint offset");
   _CCCL_ASSERT(::cuda::device::is_address_from(__old_shared, ::cuda::device::address_space::shared),
@@ -336,13 +337,13 @@ _CCCL_DEVICE_API void try_fetch_and(
 //! @param[out] __old_shared Local CTA shared-memory result block.
 //! @param[in] __operand_shared Local CTA shared-memory input block.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_fetch_or(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   atomic_block<_Tp>* __old_shared,
   const atomic_block<_Tp>* __operand_shared,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   _CCCL_ASSERT(__offset % sizeof(_Tp) == 0, "invalid atomic endpoint offset");
   _CCCL_ASSERT(::cuda::device::is_address_from(__old_shared, ::cuda::device::address_space::shared),
@@ -389,13 +390,13 @@ _CCCL_DEVICE_API void try_fetch_or(
 //! @param[out] __old_shared Local CTA shared-memory result block.
 //! @param[in] __operand_shared Local CTA shared-memory input block.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_fetch_xor(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   atomic_block<_Tp>* __old_shared,
   const atomic_block<_Tp>* __operand_shared,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   _CCCL_ASSERT(__offset % sizeof(_Tp) == 0, "invalid atomic endpoint offset");
   _CCCL_ASSERT(::cuda::device::is_address_from(__old_shared, ::cuda::device::address_space::shared),
@@ -442,13 +443,13 @@ _CCCL_DEVICE_API void try_fetch_xor(
 //! @param[out] __old_shared Local CTA shared-memory result block.
 //! @param[in] __operand_shared Local CTA shared-memory input block.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_exchange(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   atomic_block<_Tp>* __old_shared,
   const atomic_block<_Tp>* __operand_shared,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   _CCCL_ASSERT(__offset % sizeof(_Tp) == 0, "invalid atomic endpoint offset");
   _CCCL_ASSERT(::cuda::device::is_address_from(__old_shared, ::cuda::device::address_space::shared),
@@ -503,13 +504,13 @@ _CCCL_DEVICE_API void try_exchange(
 //! @param[out] __old_shared Local CTA shared-memory result block.
 //! @param[in] __operand_shared Local CTA shared-memory compare/desired blocks, aligned to 32 bytes.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_compare_exchange(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   atomic_block<_Tp>* __old_shared,
   const compare_exchange_block<_Tp>* __operand_shared,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   _CCCL_ASSERT(__offset % sizeof(_Tp) == 0, "invalid atomic endpoint offset");
   _CCCL_ASSERT(::cuda::device::is_address_from(__old_shared, ::cuda::device::address_space::shared),

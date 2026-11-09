@@ -68,7 +68,7 @@ struct lowest_supported_sm_arch_impl<SM, typelist<Head, Tail...>>
 template <class SM>
 struct lowest_supported_sm_arch_impl<SM, typelist<>>
 {
-  using type = SM;
+  using type _CCCL_NODEBUG = SM;
 };
 
 using lowest_supported_sm_arch = typename lowest_supported_sm_arch_impl<void, sm_list>::type;
@@ -117,7 +117,7 @@ struct has_sm_tuning : has_sm_tuning_impl<SM, typename P<lowest_supported_sm_arc
 //   otherwise move on to the next sm in the sm_list
 template <template <class> class P, class SM, class... SMs>
 struct specialize_plan_impl_match<P, typelist<SM, SMs...>>
-    : ::cuda::std::conditional<has_sm_tuning<P, SM>::value, P<SM>, specialize_plan_impl_match<P, typelist<SMs...>>>::type
+    : ::cuda::std::conditional_t<has_sm_tuning<P, SM>::value, P<SM>, specialize_plan_impl_match<P, typelist<SMs...>>>
 {};
 
 #if _CCCL_CUDA_COMPILER(NVHPC)
@@ -140,9 +140,10 @@ struct specialize_plan_msvc10_war
   // if Plan has tuning type, this means it has SM-specific tuning
   // so loop through sm_list to find match,
   // otherwise just specialize on provided SM
-  using type = ::cuda::std::conditional<has_tuning_t<Plan<lowest_supported_sm_arch>>::value,
-                                        specialize_plan_impl_loop<Plan, SM, sm_list>,
-                                        Plan<SM>>;
+  using type _CCCL_NODEBUG =
+    ::cuda::std::conditional<has_tuning_t<Plan<lowest_supported_sm_arch>>::value,
+                             specialize_plan_impl_loop<Plan, SM, sm_list>,
+                             Plan<SM>>;
 };
 
 template <template <class> class Plan, class SM = _THRUST_TUNING_ARCH>
@@ -246,12 +247,12 @@ __THRUST_DEFINE_HAS_NESTED_TYPE(has_Plan, Plan)
 template <class Agent>
 struct return_Plan
 {
-  using type = typename Agent::Plan;
+  using type _CCCL_NODEBUG = typename Agent::Plan;
 };
 
 template <class Agent>
 struct get_plan
-    : ::cuda::std::conditional<has_Plan<Agent>::value, return_Plan<Agent>, ::cuda::std::type_identity<AgentPlan>>::type
+    : ::cuda::std::conditional_t<has_Plan<Agent>::value, return_Plan<Agent>, ::cuda::std::type_identity<AgentPlan>>
 {};
 
 // returns AgentPlan corresponding to a given ptx version
@@ -349,7 +350,7 @@ struct get_arch;
 template <template <class> class Plan, class Arch>
 struct get_arch<Plan<Arch>>
 {
-  using type = Arch;
+  using type _CCCL_NODEBUG = Arch;
 };
 
 // cuda_optional

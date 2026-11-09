@@ -62,9 +62,7 @@ public:
   stream_task(backend_ctx_untyped ctx_, exec_place e_place = exec_place::current_device())
       : task(mv(e_place))
       , ctx(mv(ctx_))
-  {
-    ctx.increment_task_count();
-  }
+  {}
 
   // Tasks are move-only: a task wrapper owns per-instance in-flight state
   // (capture stream, frontier, done nodes, held mutex during stream capture)
@@ -342,16 +340,7 @@ public:
 
       if (start_event && end_event)
       {
-        cuda_safe_call(cudaEventRecord(end_event, get_stream()));
-        cuda_safe_call(cudaEventSynchronize(end_event));
-
-        float milliseconds = 0;
-        cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
-
-        if (dot->is_tracing())
-        {
-          dot->template add_vertex_timing<task>(*this, milliseconds);
-        }
+        reserved::task_statistics::instance().record_task_timing(*this, start_event, end_event, get_stream(), *dot);
       }
 
       clear();
@@ -386,20 +375,12 @@ public:
 
   void populate_deps_scheduling_info() const
   {
-    // Error checking copied from acquire() in acquire_release()
-
-    int index        = 0;
     const auto& deps = get_task_deps();
+    reserved::ensure_task_deps_initialized(deps);
     for (const auto& dep : deps)
     {
-      if (!dep.get_data().is_initialized())
-      {
-        fprintf(stderr, "Error: dependency number %d is an uninitialized logical data.\n", index);
-        abort();
-      }
       dep.set_symbol(dep.get_data().get_symbol());
       dep.set_data_footprint(dep.get_data().get_data_interface().data_footprint());
-      index++;
     }
   }
 
@@ -607,21 +588,7 @@ public:
 
       if (start_event && end_event)
       {
-        cuda_safe_call(cudaEventRecord(end_event, get_stream()));
-        cuda_safe_call(cudaEventSynchronize(end_event));
-
-        float milliseconds = 0;
-        cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
-
-        if (dot->is_tracing())
-        {
-          dot->template add_vertex_timing<task>(*this, milliseconds);
-        }
-
-        if (statistics.is_calibrating())
-        {
-          statistics.log_task_time(*this, milliseconds);
-        }
+        statistics.record_task_timing(*this, start_event, end_event, get_stream(), *dot);
       }
 
       clear();

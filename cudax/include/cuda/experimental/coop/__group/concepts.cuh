@@ -54,9 +54,7 @@ _CCCL_CONCEPT group = _CCCL_REQUIRES_EXPR((_Group), _Group&& __g, const _Group&&
   _Same_as(void) __g.sync_aligned(),
 
   // Properties.
-  _Same_as(bool) _Group::is_always_exhaustive(),
   _Same_as(bool) _Group::is_always_contiguous(),
-  (::cuda::std::bool_constant<_Group::is_always_exhaustive()>::value),
   (::cuda::std::bool_constant<_Group::is_always_contiguous()>::value)
 
   // todo: add __sub_unit_queryable and __super_unit_queryable
@@ -75,6 +73,10 @@ _CCCL_CONCEPT __group_mapping_result = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __v
   _Same_as(::cuda::std::uint32_t) __v.group_rank(),
   _Same_as(::cuda::std::size_t) _Tp::static_unit_count(),
   (::cuda::std::integral_constant<::cuda::std::size_t, _Tp::static_unit_count()>::value),
+  _Same_as(bool) _Tp::has_uniform_static_unit_count(),
+  (::cuda::std::bool_constant<_Tp::has_uniform_static_unit_count()>::value),
+  _Same_as(::cuda::std::size_t) _Tp::static_unit_count(::cuda::std::size_t{}),
+  (::cuda::std::integral_constant<::cuda::std::size_t, _Tp::static_unit_count(::cuda::std::size_t{0})>::value),
   _Same_as(::cuda::std::uint32_t) __v.unit_count(),
   _Same_as(::cuda::std::uint32_t) __v.unit_rank(),
   _Same_as(::cuda::device::lane_mask) __v.lane_mask(),

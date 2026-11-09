@@ -19,6 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/constant.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_scan.cuh>
@@ -55,6 +56,10 @@ struct BlockScanWarpScans
 
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
+
+  static_assert(BLOCK_THREADS % WARP_THREADS == 0,
+                "BlockScanWarpScans requires a thread block size that is a multiple of the warp size, since every warp "
+                "is scanned with a full-warp WarpScan and publishes its aggregate from its last lane");
 
   /// Number of active warps
   static constexpr int WARPS = ::cuda::ceil_div(BLOCK_THREADS, WARP_THREADS);

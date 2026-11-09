@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
+
 // <cmath>
 
 #include <cuda/std/cassert>
@@ -17,6 +20,10 @@
 #include "comparison.h"
 #include "fp_compare.h"
 #include "test_macros.h"
+
+#if _CCCL_HOSTED()
+#  include <fenv.h>
+#endif // _CCCL_HOSTED()
 
 TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'double' to 'float', possible loss of data
 TEST_DIAG_SUPPRESS_MSVC(4305) // 'argument': truncation from 'T' to 'float'
@@ -424,6 +431,197 @@ TEST_FUNC void test_trunc(T val)
 #endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
+#if _CCCL_HAS_FLOAT128()
+TEST_FUNC void test_float128_edge_cases()
+{
+  using T = __float128;
+
+  // binary128 keeps fractional bits well beyond the 64-bit integer range
+  const T big = T(1ull << 63) * T(4) + T(0.5); // 2^65 + 0.5
+  assert(eq(cuda::std::trunc(big), big - T(0.5)));
+  assert(eq(cuda::std::floor(big), big - T(0.5)));
+  assert(eq(cuda::std::ceil(big), big + T(0.5)));
+  assert(eq(cuda::std::round(big), big + T(0.5)));
+  assert(eq(cuda::std::trunc(-big), -big + T(0.5)));
+  assert(eq(cuda::std::floor(-big), -big - T(0.5)));
+  assert(eq(cuda::std::ceil(-big), -big + T(0.5)));
+  assert(eq(cuda::std::round(-big), -big - T(0.5)));
+
+  // the largest exponent that still has a fractional bit
+  const T huge = T(1ull << 63) * T(1ull << 48) + T(0.5); // 2^111 + 0.5
+  assert(eq(cuda::std::trunc(huge), huge - T(0.5)));
+  assert(eq(cuda::std::floor(huge), huge - T(0.5)));
+  assert(eq(cuda::std::ceil(huge), huge + T(0.5)));
+  assert(eq(cuda::std::round(huge), huge + T(0.5)));
+
+  // halfway cases round away from zero
+  assert(eq(cuda::std::round(T(0.5)), T(1)));
+  assert(eq(cuda::std::round(T(2.5)), T(3)));
+  assert(eq(cuda::std::round(T(-2.5)), T(-3)));
+
+  // results that are zero keep the sign of the argument
+  assert(cuda::std::signbit(cuda::std::ceil(T(-0.5))));
+  assert(cuda::std::signbit(cuda::std::trunc(T(-0.5))));
+  assert(cuda::std::signbit(cuda::std::round(T(-0.25))));
+  assert(!cuda::std::signbit(cuda::std::floor(T(0.5))));
+  assert(eq(cuda::std::floor(T(-0.5)), T(-1)));
+
+  const T nan = cuda::std::numeric_limits<T>::quiet_NaN();
+  assert(cuda::std::isnan(cuda::std::ceil(nan)));
+  assert(cuda::std::isnan(cuda::std::floor(nan)));
+  assert(cuda::std::isnan(cuda::std::round(nan)));
+  assert(cuda::std::isnan(cuda::std::trunc(nan)));
+}
+
+TEST_FUNC void test_float128_rint_edge_cases()
+{
+  using T = __float128;
+
+  // halfway cases round to even in the default rounding mode
+  assert(eq(cuda::std::rint(T(0.5)), T(0)));
+  assert(eq(cuda::std::rint(T(1.5)), T(2)));
+  assert(eq(cuda::std::rint(T(2.5)), T(2)));
+  assert(eq(cuda::std::rint(T(-2.5)), T(-2)));
+  assert(eq(cuda::std::rint(T(-3.5)), T(-4)));
+  assert(eq(cuda::std::nearbyint(T(2.5)), T(2)));
+  assert(eq(cuda::std::nearbyint(T(-3.5)), T(-4)));
+  assert(cuda::std::lrint(T(2.5)) == 2);
+  assert(cuda::std::lrint(T(-3.5)) == -4);
+  assert(cuda::std::llrint(T(2.5)) == 2);
+  assert(cuda::std::llrint(T(-3.5)) == -4);
+
+  // results that are zero keep the sign of the argument
+  assert(cuda::std::signbit(cuda::std::rint(T(-0.5))));
+  assert(cuda::std::signbit(cuda::std::rint(T(-0.25))));
+  assert(cuda::std::signbit(cuda::std::rint(T(-0.0))));
+  assert(!cuda::std::signbit(cuda::std::rint(T(0.5))));
+  assert(cuda::std::signbit(cuda::std::nearbyint(T(-0.5))));
+  assert(!cuda::std::signbit(cuda::std::nearbyint(T(0.25))));
+
+  // binary128 keeps fractional bits well beyond the 64-bit integer range
+  const T big = T(1ull << 63) * T(4) + T(0.5); // 2^65 + 0.5
+  assert(eq(cuda::std::rint(big), big - T(0.5)));
+  assert(eq(cuda::std::rint(big + T(1)), big + T(1.5)));
+  assert(eq(cuda::std::rint(-big), -big + T(0.5)));
+  assert(eq(cuda::std::nearbyint(big + T(1)), big + T(1.5)));
+
+  // the largest exponent that still has a fractional bit
+  const T huge = T(1ull << 63) * T(1ull << 48) + T(0.5); // 2^111 + 0.5
+  assert(eq(cuda::std::rint(huge), huge - T(0.5)));
+  assert(eq(cuda::std::rint(huge + T(1)), huge + T(1.5)));
+  assert(eq(cuda::std::rint(-huge), -huge + T(0.5)));
+
+  // from 2^112 on every value is an integer
+  const T integral = T(1ull << 56) * T(1ull << 56) + T(1); // 2^112 + 1
+  assert(eq(cuda::std::rint(integral), integral));
+  assert(eq(cuda::std::rint(-integral), -integral));
+
+  // the integer conversions are exact at the limits of the result type
+  assert(cuda::std::llrint(T(cuda::std::numeric_limits<long long>::max()))
+         == cuda::std::numeric_limits<long long>::max());
+  assert(cuda::std::llrint(T(cuda::std::numeric_limits<long long>::min()))
+         == cuda::std::numeric_limits<long long>::min());
+  assert(cuda::std::llrint(T(cuda::std::numeric_limits<long long>::max()) - T(0.5))
+         == cuda::std::numeric_limits<long long>::max() - 1);
+  assert(cuda::std::llrint(T(cuda::std::numeric_limits<long long>::min()) + T(0.5))
+         == cuda::std::numeric_limits<long long>::min());
+  assert(cuda::std::lrint(T(cuda::std::numeric_limits<long>::max())) == cuda::std::numeric_limits<long>::max());
+  assert(cuda::std::lrint(T(cuda::std::numeric_limits<long>::min())) == cuda::std::numeric_limits<long>::min());
+
+  const T inf = cuda::std::numeric_limits<T>::infinity();
+  assert(eq(cuda::std::rint(inf), inf));
+  assert(eq(cuda::std::rint(-inf), -inf));
+  assert(eq(cuda::std::nearbyint(-inf), -inf));
+
+  const T nan = cuda::std::numeric_limits<T>::quiet_NaN();
+  assert(cuda::std::isnan(cuda::std::rint(nan)));
+  assert(cuda::std::isnan(cuda::std::nearbyint(nan)));
+}
+
+#  if _CCCL_HOSTED()
+// nearbyint must not raise FE_INEXACT, nor clear it when it was already raised
+TEST_FUNC void test_float128_nearbyint_inexact(float val)
+{
+  unused(val);
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 using T = __float128;
+
+                 feclearexcept(FE_INEXACT);
+                 assert(eq(cuda::std::nearbyint(T(val)), T(2)));
+                 assert(!fetestexcept(FE_INEXACT));
+
+                 feraiseexcept(FE_INEXACT);
+                 assert(eq(cuda::std::nearbyint(T(val)), T(2)));
+                 assert(fetestexcept(FE_INEXACT));
+                 feclearexcept(FE_INEXACT);
+               }))
+}
+#  endif // _CCCL_HOSTED()
+
+TEST_FUNC void test_float128_lround_edge_cases()
+{
+  using T = __float128;
+
+  // halfway cases round away from zero
+  assert(cuda::std::lround(T(0.5)) == 1);
+  assert(cuda::std::lround(T(-0.5)) == -1);
+  assert(cuda::std::lround(T(2.5)) == 3);
+  assert(cuda::std::lround(T(-2.5)) == -3);
+  assert(cuda::std::llround(T(2.5)) == 3);
+  assert(cuda::std::llround(T(-2.5)) == -3);
+  assert(cuda::std::llround(T(0.49)) == 0);
+  assert(cuda::std::llround(T(-0.49)) == 0);
+
+  // binary128 keeps a fractional bit next to 2^62, where double does not
+  T big = T(1ull << 62) + T(0.5);
+  assert(cuda::std::llround(big) == (1ll << 62) + 1);
+  assert(cuda::std::llround(-big) == -(1ll << 62) - 1);
+
+  // values that round to the limits of the result type convert exactly
+  T max_val = T(cuda::std::numeric_limits<long long>::max());
+  T min_val = T(cuda::std::numeric_limits<long long>::min());
+  assert(cuda::std::llround(max_val) == cuda::std::numeric_limits<long long>::max());
+  assert(cuda::std::llround(min_val) == cuda::std::numeric_limits<long long>::min());
+  assert(cuda::std::llround(max_val + T(0.25)) == cuda::std::numeric_limits<long long>::max());
+  assert(cuda::std::llround(min_val - T(0.25)) == cuda::std::numeric_limits<long long>::min());
+  assert(cuda::std::lround(T(cuda::std::numeric_limits<long>::max())) == cuda::std::numeric_limits<long>::max());
+  assert(cuda::std::lround(T(cuda::std::numeric_limits<long>::min())) == cuda::std::numeric_limits<long>::min());
+
+  // out of range values, infinity and NaN return min()
+  assert(cuda::std::llround(max_val + T(0.5)) == cuda::std::numeric_limits<long long>::min());
+  assert(cuda::std::llround(min_val - T(0.5)) == cuda::std::numeric_limits<long long>::min());
+  assert(cuda::std::llround(T(1ull << 63) * T(4)) == cuda::std::numeric_limits<long long>::min());
+  T inf = cuda::std::numeric_limits<T>::infinity();
+  T nan = cuda::std::numeric_limits<T>::quiet_NaN();
+  assert(cuda::std::llround(inf) == cuda::std::numeric_limits<long long>::min());
+  assert(cuda::std::llround(-inf) == cuda::std::numeric_limits<long long>::min());
+  assert(cuda::std::llround(nan) == cuda::std::numeric_limits<long long>::min());
+  assert(cuda::std::lround(inf) == cuda::std::numeric_limits<long>::min());
+  assert(cuda::std::lround(nan) == cuda::std::numeric_limits<long>::min());
+}
+
+// nextafter and nexttoward do not support __float128 yet, so the generic driver can not be used
+TEST_FUNC void test_float128(const float val)
+{
+  test_ceil<__float128>(val);
+  test_floor<__float128>(val);
+  test_llrint<__float128>(val);
+  test_llround<__float128>(val);
+  test_lrint<__float128>(val);
+  test_lround<__float128>(val);
+  test_nearbyint<__float128>(val);
+  test_rint<__float128>(val);
+  test_round<__float128>(val);
+  test_trunc<__float128>(val);
+  test_float128_edge_cases();
+  test_float128_rint_edge_cases();
+#  if _CCCL_HOSTED()
+  test_float128_nearbyint_inexact(val);
+#  endif // _CCCL_HOSTED()
+  test_float128_lround_edge_cases();
+}
+#endif // _CCCL_HAS_FLOAT128()
+
 template <typename T>
 TEST_FUNC void test(const T val)
 {
@@ -458,6 +656,9 @@ TEST_FUNC void test(const float val)
 #  if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>(val);
 #  endif // _LIBCUDACXX_HAS_NVBF16()
+#  if _CCCL_HAS_FLOAT128()
+  test_float128(val);
+#  endif // _CCCL_HAS_FLOAT128()
 #endif // !_CCCL_TILE_COMPILATION()
 
   test<unsigned short>(static_cast<unsigned short>(val));

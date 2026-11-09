@@ -21,15 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/raw_reference_cast.h>
 #include <thrust/device_reference.h>
 
-#include <cuda/__atomic/atomic.h>
 #include <cuda/__barrier/barrier.h>
 #include <cuda/__barrier/barrier_block_scope.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__memcpy_async/memcpy_async.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/__utility/static_for.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/operations.h>
@@ -45,6 +46,7 @@
 
 #include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>
 #include <cuda/experimental/__cuco/detail/equal_wrapper.cuh>
+#include <cuda/experimental/__cuco/detail/utility/atomic.cuh>
 #include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
 #include <cuda/experimental/__cuco/detail/utility/traits.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
@@ -573,41 +575,40 @@ public:
     while (true)
     {
       const auto __bucket_slots = __storage_ref[*__probing_iter];
-      auto __expected_slot      = empty_slot_sentinel();
-      auto __probing_result     = __bucket_probing_results{detail::__equal_result::__unequal, -1};
+      // Only read when a slot is available, which overwrites it; starting from the first slot lets
+      // single-slot buckets use the loaded value directly.
+      auto __expected_slot = __bucket_slots[0];
+      // Zero, not -1, so every lane forms an in-bounds slot index below.
+      auto __probing_result = __bucket_probing_results{detail::__equal_result::__unequal, 0};
 
+      // Scan without `break` so the bucket loop compiles to straight-line code.
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
       {
-        const auto __slot = __bucket_slots[__i];
-        const auto __state =
-          __predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(__key, __extract_key(__slot));
-
-        if (__state == detail::__equal_result::__available)
+        if (__probing_result.__state == detail::__equal_result::__unequal)
         {
-          __expected_slot  = __slot;
-          __probing_result = __bucket_probing_results{__state, __i};
-          break;
-        }
-        if constexpr (!__allows_duplicates)
-        {
-          if (__state == detail::__equal_result::__equal)
+          const auto __slot = __bucket_slots[__i];
+          const auto __state =
+            __predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(__key, __extract_key(__slot));
+          if (__state == detail::__equal_result::__available
+              || (!__allows_duplicates && __state == detail::__equal_result::__equal))
           {
             __expected_slot  = __slot;
             __probing_result = __bucket_probing_results{__state, __i};
-            break;
           }
         }
       }
 
       const auto [__state, __intra_bucket_index] = __probing_result;
+      // Broadcasting one slot index takes one shuffle instead of two, and forming the pointer from
+      // the storage base after the shuffle keeps it known to address global memory.
+      const auto __slot_index = *__probing_iter + __intra_bucket_index;
 
       const auto __group_finds_equal = __group.ballot(__state == detail::__equal_result::__equal);
       if (__group_finds_equal != 0)
       {
-        const auto __src_lane      = __ffs(__group_finds_equal) - 1;
-        const auto __probing_index = __group.shfl(*__probing_iter, __src_lane);
-        const auto __slot_index    = __group.shfl(__intra_bucket_index, __src_lane);
-        auto* const __slot_ptr     = __get_slot_ptr(__probing_index, __slot_index);
+        const auto __src_lane  = __ffs(__group_finds_equal) - 1;
+        auto* const __slot_ptr = __storage_ref.data() + __group.shfl(__slot_index, __src_lane);
 
         if (__group.thread_rank() == __src_lane)
         {
@@ -620,11 +621,9 @@ public:
       const auto __group_contains_available = __group.ballot(__state == detail::__equal_result::__available);
       if (__group_contains_available != 0)
       {
-        const auto __src_lane      = __ffs(__group_contains_available) - 1;
-        const auto __probing_index = __group.shfl(*__probing_iter, __src_lane);
-        const auto __slot_index    = __group.shfl(__intra_bucket_index, __src_lane);
-        auto* const __slot_ptr     = __get_slot_ptr(__probing_index, __slot_index);
-        auto __status              = __insert_result::__continue;
+        const auto __src_lane  = __ffs(__group_contains_available) - 1;
+        auto* const __slot_ptr = __storage_ref.data() + __group.shfl(__slot_index, __src_lane);
+        auto __status          = __insert_result::__continue;
 
         if (__group.thread_rank() == __src_lane)
         {
@@ -952,6 +951,31 @@ public:
     }
   }
 
+  template <bool _SupportsErase>
+  struct __find_insert_slot_fn
+  {
+    template <class _Index, class _ProbeKey>
+    _CCCL_DEVICE_API void operator()(
+      _Index __i,
+      const __open_addressing_ref_impl& __self,
+      const _ProbeKey& __key,
+      const __bucket_type& __bucket_slots,
+      __bucket_probing_results& __result) const noexcept
+    {
+      if (__result.__state == detail::__equal_result::__unequal)
+      {
+        const auto __state = __self.__predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(
+          __key, __self.__extract_key(__bucket_slots[__i()]));
+        // The insertion predicate handles duplicate policy and never returns __empty.
+        __result.__state = __state;
+        if (__state != detail::__equal_result::__unequal)
+        {
+          __result.__intra_bucket_index = __i();
+        }
+      }
+    }
+  };
+
   //!
   //! @brief Scans a bucket for the first slot available for inserting @p __key.
   //!
@@ -969,24 +993,9 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API __bucket_probing_results
   __find_insert_slot(const _ProbeKey& __key, __bucket_type __bucket_slots) const noexcept
   {
-    for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
-    {
-      switch (__predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(
-        __key, __extract_key(__bucket_slots[__i])))
-      {
-        case detail::__equal_result::__available:
-          return __bucket_probing_results{detail::__equal_result::__available, __i};
-        case detail::__equal_result::__equal:
-          if constexpr (!__allows_duplicates)
-          {
-            return __bucket_probing_results{detail::__equal_result::__equal, __i};
-          }
-          break;
-        default:
-          break;
-      }
-    }
-    return __bucket_probing_results{detail::__equal_result::__unequal, -1};
+    auto __result = __bucket_probing_results{detail::__equal_result::__unequal, -1};
+    ::cuda::static_for<__bucket_size>(__find_insert_slot_fn<_SupportsErase>{}, *this, __key, __bucket_slots, __result);
+    return __result;
   }
 
   //!
@@ -1152,12 +1161,11 @@ public:
     using packed_type =
       ::cuda::std::__make_nbit_uint_t<sizeof(__value_type) * ::cuda::std::numeric_limits<unsigned char>::digits>;
 
-    auto __slot_ref             = ::cuda::atomic_ref<packed_type, _Scope>{*reinterpret_cast<packed_type*>(__address)};
+    auto* const __slot_ptr      = reinterpret_cast<packed_type*>(__address);
     auto __expected_packed      = ::cuda::std::bit_cast<packed_type>(__expected);
     const auto __desired_packed = ::cuda::std::bit_cast<packed_type>(__native_value(__desired));
 
-    const auto success =
-      __slot_ref.compare_exchange_strong(__expected_packed, __desired_packed, ::cuda::memory_order_relaxed);
+    const auto success = detail::__atomic_compare_exchange<_Scope>(__slot_ptr, __expected_packed, __desired_packed);
 
     if (success)
     {
@@ -1194,28 +1202,26 @@ public:
     auto __expected_key     = __expected.first;
     auto __expected_payload = empty_value_sentinel();
 
-    ::cuda::atomic_ref<__key_type, _Scope> key_ref(__address->first);
-    ::cuda::atomic_ref<mapped_type, _Scope> payload_ref(__address->second);
-
     const auto key_cas_success =
-      key_ref.compare_exchange_strong(__expected_key, __key_type{__desired.first}, ::cuda::memory_order_relaxed);
+      detail::__atomic_compare_exchange<_Scope>(&__address->first, __expected_key, __key_type{__desired.first});
     auto payload_cas_success =
-      payload_ref.compare_exchange_strong(__expected_payload, __desired.second, ::cuda::memory_order_relaxed);
+      detail::__atomic_compare_exchange<_Scope>(&__address->second, __expected_payload, mapped_type{__desired.second});
 
     // if __key success
     if (key_cas_success)
     {
       while (!payload_cas_success)
       {
-        payload_cas_success = payload_ref.compare_exchange_strong(
-          __expected_payload = empty_value_sentinel(), __desired.second, ::cuda::memory_order_relaxed);
+        __expected_payload  = empty_value_sentinel();
+        payload_cas_success = detail::__atomic_compare_exchange<_Scope>(
+          &__address->second, __expected_payload, mapped_type{__desired.second});
       }
       return __insert_result::__success;
     }
     else if (payload_cas_success)
     {
       // This is insert-specific, cannot for `erase` operations
-      payload_ref.store(empty_value_sentinel(), ::cuda::memory_order_relaxed);
+      detail::__atomic_store(&__address->second, empty_value_sentinel());
     }
 
     // Our __key was already present in the slot, so our __key is a duplicate
@@ -1244,16 +1250,14 @@ public:
   {
     using mapped_type = ::cuda::std::decay_t<decltype(empty_value_sentinel())>;
 
-    ::cuda::atomic_ref<__key_type, _Scope> key_ref(__address->first);
     auto __expected_key = __expected.first;
     const auto success =
-      key_ref.compare_exchange_strong(__expected_key, __key_type{__desired.first}, ::cuda::memory_order_relaxed);
+      detail::__atomic_compare_exchange<_Scope>(&__address->first, __expected_key, __key_type{__desired.first});
 
     // if __key success
     if (success)
     {
-      ::cuda::atomic_ref<mapped_type, _Scope> payload_ref(__address->second);
-      payload_ref.store(__desired.second, ::cuda::memory_order_relaxed);
+      detail::__atomic_store(&__address->second, mapped_type{__desired.second});
       return __insert_result::__success;
     }
 
@@ -1355,12 +1359,11 @@ public:
   template <class _Value>
   _CCCL_DEVICE_API void __wait_for_payload(_Value& __slot, _Value __sentinel) const noexcept
   {
-    auto __ref = ::cuda::atomic_ref<_Value, _Scope>{__slot};
     _Value __current;
     // TODO exponential backoff strategy
     do
     {
-      __current = __ref.load(::cuda::std::memory_order_relaxed);
+      __current = detail::__atomic_load(&__slot);
     } while (detail::__bitwise_compare(__current, __sentinel));
   }
 

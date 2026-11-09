@@ -75,8 +75,8 @@ inline constexpr size_t __complex_alignment_v<__half> = alignof(__half2);
 template <>
 struct __cccl_complex_overload_traits<__half, false, false>
 {
-  using _ValueType   = __half;
-  using _ComplexType = complex<__half>;
+  using _ValueType _CCCL_NODEBUG   = __half;
+  using _ComplexType _CCCL_NODEBUG = complex<__half>;
 };
 
 #  if _CCCL_TILE_COMPILATION()
@@ -90,15 +90,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__half2)) __complex_f
   __half x;
   __half y;
 };
-using __complex_half_repr_t = __complex_fake_half2;
+using __complex_half_repr_t _CCCL_NODEBUG = __complex_fake_half2;
 #  else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION()
 template <>
 struct __type_to_vector<__half>
 {
-  using __type = __half2;
+  using __type _CCCL_NODEBUG = __half2;
 };
 
-using __complex_half_repr_t = __half2;
+using __complex_half_repr_t _CCCL_NODEBUG = __half2;
 #  endif // !_CCCL_TILE_COMPILATION()
 
 template <>
@@ -113,17 +113,17 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__half2)) complex<__ha
   friend struct __get_complex_impl;
 
   template <class _Tp>
-  [[nodiscard]] _CCCL_API inline static __half __convert_to_half(const _Tp& __value) noexcept
+  [[nodiscard]] _CCCL_API static __half __convert_to_half(const _Tp& __value) noexcept
   {
     return __value;
   }
 
-  [[nodiscard]] _CCCL_API inline static __half __convert_to_half(const float& __value) noexcept
+  [[nodiscard]] _CCCL_API static __half __convert_to_half(const float& __value) noexcept
   {
     return ::__float2half(__value);
   }
 
-  [[nodiscard]] _CCCL_API inline static __half __convert_to_half(const double& __value) noexcept
+  [[nodiscard]] _CCCL_API static __half __convert_to_half(const double& __value) noexcept
   {
     return ::__double2half(__value);
   }
@@ -194,11 +194,11 @@ public:
   }
 #  endif // _CCCL_HOSTED()
 
-  [[nodiscard]] _CCCL_API inline value_type real() const
+  [[nodiscard]] _CCCL_API value_type real() const
   {
     return __repr_.x;
   }
-  [[nodiscard]] _CCCL_API inline value_type imag() const
+  [[nodiscard]] _CCCL_API value_type imag() const
   {
     return __repr_.y;
   }
@@ -213,11 +213,11 @@ public:
   }
 
   // Those additional volatile overloads are meant to help with reductions in thrust
-  [[nodiscard]] _CCCL_API inline value_type real() const volatile
+  [[nodiscard]] _CCCL_API value_type real() const volatile
   {
     return __repr_.x;
   }
-  [[nodiscard]] _CCCL_API inline value_type imag() const volatile
+  [[nodiscard]] _CCCL_API value_type imag() const volatile
   {
     return __repr_.y;
   }
@@ -268,7 +268,7 @@ public:
     return __lhs;
   }
 
-  [[nodiscard]] _CCCL_API inline friend bool operator==(const complex& __lhs, const complex& __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend bool operator==(const complex& __lhs, const complex& __rhs) noexcept
   {
 #  if _CCCL_TILE_COMPILATION()
     return ::__heq(__lhs.__repr_.x, __rhs.__repr_.x) && ::__heq(__lhs.__repr_.y, __rhs.__repr_.y);

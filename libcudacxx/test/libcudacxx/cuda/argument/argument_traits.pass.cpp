@@ -97,6 +97,14 @@ TEST_FUNC void test()
     cuda::std::is_same_v<cuda::args::__element_type_of_t<cuda::std::mdspan<const int, cuda::std::extents<int, 1>>>, int>);
   static_assert(cuda::std::is_same_v<cuda::args::__element_type_of_t<value_type_like<int>>, int>);
 
+  // --- __is_deferred_v ---
+
+  static_assert(cuda::args::__is_deferred_v<cuda::args::deferred<int*>>);
+  static_assert(cuda::args::__is_deferred_v<cuda::args::deferred<int*, cuda::args::static_bounds<0, 1000>>>);
+  static_assert(!cuda::args::__is_deferred_v<int>);
+  static_assert(!cuda::args::__is_deferred_v<cuda::args::immediate<int>>);
+  static_assert(!cuda::args::__is_deferred_v<cuda::args::deferred_sequence<int*>>);
+
   // --- argument_traits: is_deferred ---
 
   static_assert(!cuda::args::__traits<int>::is_deferred);

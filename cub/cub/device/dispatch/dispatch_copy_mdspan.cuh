@@ -20,14 +20,23 @@
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__functional/always_true_false.h>
 #include <cuda/__functional/call_or.h>
+#include <cuda/__mdspan/host_device_accessor.h>
 #include <cuda/__mdspan/host_device_mdspan.h>
 #include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/identity.h>
+#include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__mdspan/layout_right.h>
+#include <cuda/std/__mdspan/mdspan.h>
+
+#include <nv/target>
+
+#include <cuda.h>
 
 #if _CCCL_HOSTED()
 #  include <cuda/__mdspan/__copy/mdspan_d2d.h>

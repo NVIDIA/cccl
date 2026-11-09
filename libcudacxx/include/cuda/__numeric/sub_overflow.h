@@ -91,7 +91,7 @@ template <typename _Tp>
 #if _CCCL_DEVICE_COMPILATION()
 
 template <class _Tp>
-[[nodiscard]] _CCCL_DEVICE_API overflow_result<_Tp> __sub_overflow_device(_Tp __lhs, _Tp __rhs) noexcept
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API overflow_result<_Tp> __sub_overflow_device(_Tp __lhs, _Tp __rhs) noexcept
 {
   if constexpr (::cuda::std::is_unsigned_v<_Tp>)
   {

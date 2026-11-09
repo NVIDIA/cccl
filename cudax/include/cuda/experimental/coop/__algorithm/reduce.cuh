@@ -22,8 +22,8 @@
 #endif // no system header
 
 #include <cub/block/block_reduce.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_reduce.cuh>
-#include <cub/util_type.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
@@ -31,16 +31,26 @@
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__warp/warp_shuffle.h>
+#include <cuda/hierarchy>
+#include <cuda/std/__bit/countr.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/array>
 #include <cuda/std/optional>
 
 #include <cuda/experimental/__utility/result_policy.cuh>
 #include <cuda/experimental/coop/__algorithm/shuffle_down.cuh>
+#include <cuda/experimental/coop/__group/concepts.cuh>
+#include <cuda/experimental/coop/__group/fwd.cuh>
+#include <cuda/experimental/coop/__group/group_view.cuh>
 #include <cuda/experimental/coop/__group/queries.cuh>
-#include <cuda/experimental/coop/group>
+#include <cuda/experimental/coop/__group/this_group.cuh>
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -437,8 +447,6 @@ template <class _Group, class _Tp, ::cuda::std::size_t _Np, class _RedFn>
 [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::optional<_Tp>
 reduce(const _Group& __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
 {
-  _CCCL_ASSERT(gpu_thread.is_part_of(__group),
-               "Only threads that are part of the group can call cooperative algorithms");
   return ::cuda::experimental::coop::__reduce_impl(::cuda::std::false_type{}, __group, __thread_data, __red_fn);
 }
 
@@ -446,8 +454,6 @@ template <class _Group, class _Tp, ::cuda::std::size_t _Np, class _RedFn>
 [[nodiscard]] _CCCL_DEVICE_API _Tp
 reduce(broadcasted_t, const _Group& __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
 {
-  _CCCL_ASSERT(gpu_thread.is_part_of(__group),
-               "Only threads that are part of the group can call cooperative algorithms");
   return ::cuda::experimental::coop::__reduce_impl(::cuda::std::true_type{}, __group, __thread_data, __red_fn);
 }
 } // namespace cuda::experimental::coop

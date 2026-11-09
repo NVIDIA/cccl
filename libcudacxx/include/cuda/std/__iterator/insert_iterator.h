@@ -21,18 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__iterator/iterator.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/cstddef> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Container>
-using __insert_iterator_iter_t = typename _Container::iterator;
+using __insert_iterator_iter_t _CCCL_NODEBUG = typename _Container::iterator;
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG

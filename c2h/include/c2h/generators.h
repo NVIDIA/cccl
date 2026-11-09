@@ -3,4 +3,5 @@
 
 #pragma once
 
+#include <c2h/buffer_generators.cuh>
 #include <c2h/vector_generators.h>

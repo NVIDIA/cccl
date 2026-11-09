@@ -521,10 +521,9 @@ Internally, ``cuda.compute`` separates two kinds of cached state:
   for that cc, carrying the device-independent compiled payload described in
   `Build results and device state`_. They are cached by ``cache_build_results``
   and may be shared by wrapper objects in different Python threads — and, for
-  default builds, across same-cc devices (except on the v2 HostJIT backend
-  today; see `Device keying`_). Each device's loaded result is tracked
-  separately within the entry, so sharing an entry never shares device-specific
-  state.
+  default builds, across same-cc devices (see `Device keying`_). Each device's
+  loaded result is tracked separately within the entry, so sharing an entry
+  never shares device-specific state.
 
 The normal cache-hit path is intentionally cheap. A wrapper-cache hit is
 thread-local and does not consult the process-wide build-result cache. When a
@@ -625,9 +624,7 @@ the entry loads the canonical result in place; each additional same-cc device
 loads its own clone of the compiled payload through serialization (serialize,
 deserialize without loading, then load on the new device) instead of running
 a full native compilation, and the clone re-validates the payload against the
-current device. When the backend cannot serialize build results (the v2 HostJIT
-backend today), sharing is not possible, so default builds are keyed per device
-ordinal instead and each device builds its own entry.
+current device.
 
 Explicit AOT builds cannot include a device ordinal in their compilation key —
 they build with no GPU queried — so their canonical results are shared
