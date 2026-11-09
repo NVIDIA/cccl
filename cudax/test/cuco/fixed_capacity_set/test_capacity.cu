@@ -35,8 +35,8 @@ C2H_TEST("fixed_capacity_set preserves cuCollections default policies", "[contai
 {
   using set_type     = cudax::cuco::fixed_capacity_set<int>;
   using probing_type = cudax::cuco::double_hashing<4, cuda::hash<int, cuda::hash_algorithm::xxhash_32>>;
-  static_assert(cuda::std::is_same_v<typename set_type::probing_scheme_type, probing_type>);
-  static_assert(cuda::std::is_same_v<typename set_type::ref_type::probing_scheme_type, probing_type>);
+  static_assert(cuda::std::is_same_v<set_type::probing_scheme_type, probing_type>);
+  static_assert(cuda::std::is_same_v<set_type::ref_type::probing_scheme_type, probing_type>);
   static_assert(set_type::bucket_size == 1);
 
   const test_context context{};

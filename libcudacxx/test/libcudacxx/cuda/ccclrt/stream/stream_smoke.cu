@@ -123,7 +123,8 @@ void add_dependency_test(const StreamType& waiter, const StreamType& waitee)
 
 C2H_CCCLRT_TEST("Can add dependency into a stream", "[stream]")
 {
-  const cuda::stream waiter{cuda::device_ref{0}}, waitee{cuda::device_ref{0}};
+  const cuda::stream waiter{cuda::device_ref{0}};
+  const cuda::stream waitee{cuda::device_ref{0}};
 
   add_dependency_test<cuda::stream>(waiter, waitee);
   add_dependency_test<cuda::stream_ref>(waiter, waitee);
@@ -302,7 +303,7 @@ C2H_CCCLRT_TEST("Invalid stream", "[stream]")
 
   // 3. Test stream_ref comparisons
   {
-    const cuda::stream_ref valid_stream{(cudaStream_t) (123ull)}; // NOLINT(performance-no-int-to-ptr)
+    const cuda::stream_ref valid_stream{(cudaStream_t) 123ull}; // NOLINT(performance-no-int-to-ptr)
     const cuda::stream_ref invalid_stream{cuda::invalid_stream};
 
     REQUIRE(!(valid_stream == cuda::invalid_stream));

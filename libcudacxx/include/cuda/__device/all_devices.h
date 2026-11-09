@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -35,6 +35,9 @@
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
+
+// Keep the new container and its cached storage separate from the former std::vector.
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::__simple_vector<device_ref> __make_devices()
 {
@@ -129,6 +132,8 @@ public:
 //! * device
 //! * device_ref
 inline constexpr __all_devices devices{};
+
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
 _CCCL_END_NAMESPACE_CUDA
 

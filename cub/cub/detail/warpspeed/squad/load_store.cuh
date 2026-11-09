@@ -197,7 +197,8 @@ _CCCL_DEVICE_API void squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSme
     const int tail_elements = (cpAsyncOobInfo.ptrGmemEnd - cpAsyncOobInfo.ptrGmemEndAlignDown) / sizeof(load_word_t);
     _CCCL_ASSERT(head_elements <= squad.threadCount(), "");
     _CCCL_ASSERT(tail_elements <= squad.threadCount(), "");
-    load_word_t head_value, tail_value;
+    load_word_t head_value;
+    load_word_t tail_value;
     if (squad.threadRank() < head_elements)
     {
       head_value = reinterpret_cast<const load_word_t*>(cpAsyncOobInfo.ptrGmem)[squad.threadRank()];
