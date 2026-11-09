@@ -92,7 +92,6 @@ Checks:
   # members" than to remember to change 2 places at once.
   - '-readability-redundant-member-init'
   - '-readability-delete-null-pointer'
-  - '-readability-container-data-pointer'
   - '-readability-use-std-min-max'
   - '-readability-magic-numbers'
   - '-readability-use-concise-preprocessor-directives'
@@ -109,7 +108,6 @@ Checks:
   - '-readability-redundant-casting'
   - '-readability-simplify-boolean-expr'
   - '-readability-make-member-function-const'
-  - '-readability-enum-initial-value'
   - '-readability-avoid-return-with-void-value'
   - '-readability-suspicious-call-argument'
   - '-readability-container-size-empty'
