@@ -79,7 +79,8 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 //! When built with NCCL 2.29.2 or newer device headers, NCCL communicators use a device
 //! communicator for multi-rank selection and redistribution. All ranks must support the NCCL
 //! device API. Communication outside the NCCL load/store-accessible team additionally requires
-//! GPU-initiated networking (GIN). Unsupported communicators throw `std::runtime_error`.
+//! GPU-initiated networking (GIN). If any rank lacks the required device capabilities,
+//! every rank uses the host selection and communication path instead.
 //! This path allocates an equally sized symmetric communication window on every rank with
 //! `ncclMemAlloc`; that window does not use the environment's memory resource. CUB and other
 //! temporary allocations use the environment as usual. The caller's storage is not resized or

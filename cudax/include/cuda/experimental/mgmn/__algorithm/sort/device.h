@@ -20,6 +20,10 @@
 #  if NCCL_VERSION_CODE >= NCCL_VERSION(2, 29, 2)
 #    define _CUDAX_SORT_HAS_NCCL_DEVICE 1
 
+#    include <cuda/__container/buffer.h>
+#    include <cuda/__driver/driver_api.h>
+#    include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
+#    include <cuda/__runtime/ensure_current_context.h>
 #    include <cuda/std/__exception/exception_macros.h>
 #    include <cuda/std/__host_stdlib/stdexcept>
 #    include <cuda/std/__memory/assume_aligned.h>
@@ -28,6 +32,8 @@
 #    include <cuda/std/limits>
 
 #    include <cuda/experimental/mgmn/__algorithm/sort/select.h>
+
+#    include <memory>
 
 #    include <cuda/std/__cccl/prologue.h>
 
@@ -82,18 +88,20 @@ class __device_window
 {
   ::ncclComm_t __comm_;
   ::cudaStream_t __stream_;
-  int __ordinal_  = 0;
-  bool __created_ = false;
-  void* __host_metadata_[2]{};
-  ::cuda::std::size_t __host_capacity_[2]{};
+  int __ordinal_         = 0;
+  bool __created_        = false;
+  ::CUcontext __context_ = nullptr;
+  ::std::unique_ptr<::cuda::host_buffer<char>> __host_metadata_[2];
 
   _CCCL_HOST_API void __release() noexcept
   {
-    int __previous = 0;
-    (void) ::cudaGetDevice(&__previous);
-    (void) ::cudaSetDevice(__ordinal_);
+    if (!__context_)
+    {
+      return;
+    }
+    const auto __current = ::cuda::__ensure_current_context{__context_};
     // All kernels and the copy back to the caller must finish before unmapping.
-    (void) ::cudaStreamSynchronize(__stream_);
+    _CCCL_ASSERT_DRIVER_API(::cuda::__driver::__streamSynchronizeNoThrow, "waiting for sort resources", __stream_);
     if (__created_)
     {
       (void) ::ncclDevCommDestroy(__comm_, &__device_);
@@ -106,14 +114,10 @@ class __device_window
     {
       (void) ::ncclMemFree(__storage_);
     }
-    for (auto* __buffer : __host_metadata_)
+    for (auto& __buffer : __host_metadata_)
     {
-      if (__buffer)
-      {
-        (void) ::cudaFreeHost(__buffer);
-      }
+      __buffer.reset();
     }
-    (void) ::cudaSetDevice(__previous);
   }
 
 public:
@@ -132,28 +136,27 @@ public:
   _CCCL_HOST_API void __set_stream(::cudaStream_t __stream) noexcept
   {
     __stream_ = __stream;
+    for (auto& __buffer : __host_metadata_)
+    {
+      if (__buffer)
+      {
+        // Prior metadata transfers have completed before changing streams.
+        __buffer->set_stream(::cuda::stream_ref{__stream});
+      }
+    }
   }
 
   // Pinned count and cut buffers are reused only while the context lock is held.
   // Each transfer into them is synchronized before their next use or destruction.
   [[nodiscard]] _CCCL_HOST_API void* __host_buffer(int __slot, ::cuda::std::size_t __bytes)
   {
-    if (__bytes > __host_capacity_[__slot])
+    auto& __buffer = __host_metadata_[__slot];
+    if (!__buffer || __buffer->size() < __bytes)
     {
-      void* __next       = nullptr;
-      const auto __error = ::cudaMallocHost(&__next, __bytes);
-      if (__error != ::cudaSuccess)
-      {
-        _CCCL_THROW(::std::runtime_error, ::cudaGetErrorString(__error));
-      }
-      if (__host_metadata_[__slot])
-      {
-        (void) ::cudaFreeHost(__host_metadata_[__slot]);
-      }
-      __host_metadata_[__slot] = __next;
-      __host_capacity_[__slot] = __bytes;
+      __buffer = ::std::make_unique<::cuda::host_buffer<char>>(
+        ::cuda::stream_ref{__stream_}, ::cuda::mr::legacy_pinned_memory_resource{}, __bytes, ::cuda::no_init);
     }
-    return __host_metadata_[__slot];
+    return __buffer->data();
   }
 
   // All ranks enter together, after prior uses of the old window have completed.
@@ -191,11 +194,8 @@ public:
   {
     _CCCL_TRY
     {
-      const auto __error = ::cudaGetDevice(&__ordinal_);
-      if (__error != ::cudaSuccess)
-      {
-        _CCCL_THROW(::std::runtime_error, ::cudaGetErrorString(__error));
-      }
+      __context_ = ::cuda::__driver::__ctxGetCurrent();
+      __ordinal_ = ::cuda::__driver::__ctxGetDevice();
       __reserve(__bytes);
       ::ncclDevCommRequirements __requirements = NCCL_DEV_COMM_REQUIREMENTS_INITIALIZER;
       ::ncclDevResourceRequirements __barrier_requirements{};
