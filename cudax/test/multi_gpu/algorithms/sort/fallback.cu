@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include <nccl.h>
+#include "nccl_device_headers.cuh"
 #if NCCL_VERSION_CODE >= NCCL_VERSION(2, 29, 2) && __has_include(<nccl_device.h>)
-#  include <nccl_device.h>
 
 namespace fallback_test
 {
