@@ -1085,7 +1085,6 @@ public:
     };
   }
 
-public:
   ::cuda::std::variant<stream_ctx, graph_ctx> payload;
 };
 
