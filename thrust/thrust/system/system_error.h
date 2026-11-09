@@ -169,4 +169,4 @@ using system::system_error;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/system/detail/system_error.inl>
+#include <thrust/system/detail/system_error.inl> // IWYU pragma: export

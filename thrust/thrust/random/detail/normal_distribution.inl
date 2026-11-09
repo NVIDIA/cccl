@@ -13,9 +13,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/random/detail/random_core_access.h>
 #include <thrust/random/normal_distribution.h>
-#include <thrust/random/uniform_real_distribution.h>
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
