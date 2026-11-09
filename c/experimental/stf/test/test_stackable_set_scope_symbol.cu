@@ -13,7 +13,8 @@
 // check that the call is accepted at the root scope and in nested scopes,
 // before and after tasks, and that the computation is unchanged. The DOT
 // label itself is checked by the Python test (python/cuda_stf/tests/stf/
-// test_scope_symbol.py), which runs the traced part in a subprocess because
+// test_dot_symbols.py, every symbol-setting API against the DOT output), which
+// runs the traced part in a subprocess because
 // the DOT writer reads CUDASTF_DOT_FILE once per process.
 
 #include <cmath>
