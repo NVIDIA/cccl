@@ -944,14 +944,14 @@ public:
   }
   _CCCL_TEMPLATE(typename _Tp)
   _CCCL_REQUIRES(__fpmp2_is_limb_v<_Tp, _FpType>)
-  _CCCL_TRIVIAL_HOST_DEVICE_API fpmp2& operator*=(const _Tp __c) noexcept
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2& operator*=(const _Tp __c) noexcept
   {
     ::cuda::__fpmp2_mul_limb<_TypeAcc>(__mp2_hi_, __mp2_lo_, static_cast<_FpType>(__c), &__mp2_hi_, &__mp2_lo_);
     return *this;
   }
   _CCCL_TEMPLATE(typename _Tp)
   _CCCL_REQUIRES(__fpmp2_is_limb_v<_Tp, _FpType>)
-  _CCCL_TRIVIAL_HOST_DEVICE_API fpmp2& operator/=(const _Tp __c) noexcept
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2& operator/=(const _Tp __c) noexcept
   {
     ::cuda::__fpmp2_div_limb<_TypeAcc>(__mp2_hi_, __mp2_lo_, static_cast<_FpType>(__c), &__mp2_hi_, &__mp2_lo_);
     return *this;
@@ -1357,7 +1357,7 @@ struct __fpmp2_element<fpmp2<_FpType, _TypeAcc>>
 
 // The accuracy-selecting functions below with a scalar that one limb holds exactly.
 template <fpmp2_accuracy _Acc, typename _FpType, fpmp2_accuracy _TypeAcc>
-[[nodiscard]] _CCCL_TRIVIAL_HOST_DEVICE_API fpmp2<_FpType, _TypeAcc>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 __fpmp2_add_scalar(const fpmp2<_FpType, _TypeAcc>& __x, const _FpType __c) noexcept
 {
   _FpType __rhi, __rlo;
@@ -1365,7 +1365,7 @@ __fpmp2_add_scalar(const fpmp2<_FpType, _TypeAcc>& __x, const _FpType __c) noexc
   return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
 }
 template <fpmp2_accuracy _Acc, typename _FpType, fpmp2_accuracy _TypeAcc>
-[[nodiscard]] _CCCL_TRIVIAL_HOST_DEVICE_API fpmp2<_FpType, _TypeAcc>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 __fpmp2_mul_scalar(const fpmp2<_FpType, _TypeAcc>& __x, const _FpType __c) noexcept
 {
   _FpType __rhi, __rlo;
@@ -1373,7 +1373,7 @@ __fpmp2_mul_scalar(const fpmp2<_FpType, _TypeAcc>& __x, const _FpType __c) noexc
   return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
 }
 template <fpmp2_accuracy _Acc, typename _FpType, fpmp2_accuracy _TypeAcc>
-[[nodiscard]] _CCCL_TRIVIAL_HOST_DEVICE_API fpmp2<_FpType, _TypeAcc>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 __fpmp2_div_scalar(const fpmp2<_FpType, _TypeAcc>& __x, const _FpType __c) noexcept
 {
   _FpType __rhi, __rlo;
