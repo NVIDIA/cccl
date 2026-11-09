@@ -65,8 +65,7 @@ public:
   {
     // todo(dabayer): Make group count potentially statically-known when _RangeView has known a known static size.
     using _MappingResult =
-      __mapping_result<::cuda::std::dynamic_extent,
-                       ::cuda::std::dynamic_extent,
+      __mapping_result<__uniform_static_unit_count<::cuda::std::dynamic_extent, ::cuda::std::dynamic_extent>,
                        _Exhaustive,
                        _PrevMappingResult::is_always_contiguous()>;
 

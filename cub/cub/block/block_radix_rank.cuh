@@ -249,7 +249,6 @@ template <int BlockDimX,
           int BlockDimZ                         = 1>
 class BlockRadixRank
 {
-private:
   // Integer type for digit counters (to be packed into words of type PackedCounters)
   using DigitCounter = unsigned short;
 
@@ -586,7 +585,6 @@ template <int BlockDimX,
           int BlockDimZ                         = 1>
 class BlockRadixRankMatch
 {
-private:
   using RankT         = int32_t;
   using DigitCounterT = int32_t;
 
