@@ -48,14 +48,13 @@
  */
 
 #include <cuda/experimental/__sharded/algorithm/random/random.cuh> // opt-in vendor tier
-#include <cuda/__runtime/ensure_current_context.h>
-#include <cuda/__stream/stream_ref.h>
 #include <cuda/experimental/sharded.cuh>
 
 #include <cstdio>
 
 using namespace cuda::experimental::sharded;
 using cuda::experimental::places::exec_place;
+using cuda::experimental::places::exec_place_scope;
 using cuda::experimental::places::place_group;
 
 namespace
@@ -113,7 +112,7 @@ unsigned long long fused_hits(place_group& group, const ::std::vector<size_t>& s
   for (size_t i = 0; i < shard_sizes.size(); i++)
   {
     const cudaStream_t s = group.get_stream(i);
-    const ::cuda::__ensure_current_context scope{s};
+    exec_place_scope scope(group.place(i));
     fused_pi_kernel<<<512, 256, 0, s>>>(offset, shard_sizes[i], seed, d_hits);
     cuda_safe_call(cudaGetLastError());
     offset += shard_sizes[i];

@@ -53,8 +53,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
-#include <cuda/__runtime/ensure_current_context.h>
-#include <cuda/__stream/stream_ref.h>
+#include <cuda/experimental/__utility/ensure_current_device.cuh>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -516,7 +515,7 @@ _CCCL_HOST_API void transform_reduce_into(
 
   if (num_shards == 0)
   {
-    const __ensure_current_context scope{call_stream.get()};
+    const __ensure_current_device scope{call_stream.get()};
     reserved::__mgmn_store_value_kernel<<<1, 1, 0, call_stream.get()>>>(init_value, out);
     cuda_safe_call(cudaGetLastError());
     return;
@@ -558,7 +557,7 @@ _CCCL_HOST_API void transform_reduce_into(
   }
 
   {
-    const __ensure_current_context scope{call_stream.get()};
+    const __ensure_current_device scope{call_stream.get()};
     reserved::__mgmn_store_kernel<<<1, 1, 0, call_stream.get()>>>(static_cast<const __stored_t*>(d_slots), out);
     cuda_safe_call(cudaGetLastError());
   }
@@ -701,7 +700,7 @@ reduce_into_lanes(const _S& data, const _Envs& envs, _OutIt outs, _ReduceOp redu
     for (const auto g : each(num_shards))
     {
       const cudaStream_t lane_stream = ::cuda::get_stream(envs[g]).get();
-      const __ensure_current_context scope{lane_stream};
+      const __ensure_current_device scope{lane_stream};
       reserved::__mgmn_store_kernel<<<1, 1, 0, lane_stream>>>(
         static_cast<const __stored_t*>(slots.__pointers()[g]),
         outs + static_cast<::cuda::std::iter_difference_t<_OutIt>>(g));

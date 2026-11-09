@@ -14,8 +14,8 @@
  *        count check, the co-partitioning check, the `sync_policy::forbid`
  *        guard (`require_sync_allowed`) and the capture guards — plus the
  *        stream plumbing they and the engines share: the stream's own
- *        context made current (`cuda::__ensure_current_context` from a
- *        `stream_ref`) and `__detail::__wait_stream_on`.
+ *        context made current (`__ensure_current_device` built from the
+ *        stream) and `__detail::__wait_stream_on`.
  *
  * Every guard runs before anything is enqueued, so a refusal leaves the
  * caller's state (and any open capture) valid.
@@ -24,8 +24,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
-#include <cuda/__runtime/ensure_current_context.h>
-#include <cuda/__stream/stream_ref.h>
+#include <cuda/experimental/__utility/ensure_current_device.cuh>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -51,10 +50,6 @@
 
 namespace cuda::experimental::sharded
 {
-//! The stream's own context made current for a scope: libcu++'s RAII type,
-//! constructed from a `cudaStream_t` (via `stream_ref`).
-using ::cuda::__ensure_current_context;
-
 //! @brief Guard for the `sync_policy::forbid` contract: throw before a
 //! would-be host synchronization, leaving all state valid.
 //!
@@ -164,7 +159,7 @@ inline void __wait_stream_on(cudaStream_t __consumer, cudaStream_t __producer)
   {
     return;
   }
-  const __ensure_current_context __scope{__producer};
+  const __ensure_current_device __scope{__producer};
   cudaEvent_t __ev = nullptr;
   ::cuda::experimental::stf::cuda_safe_call(cudaEventCreateWithFlags(&__ev, cudaEventDisableTiming));
   ::cuda::experimental::stf::cuda_safe_call(cudaEventRecord(__ev, __producer));
