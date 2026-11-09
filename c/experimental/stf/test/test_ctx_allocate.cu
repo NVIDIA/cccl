@@ -168,7 +168,7 @@ C2H_TEST("stackable_allocate: scope-owned scratch used by the scope's tasks", "[
   stf_stackable_logical_data_destroy(lA);
   REQUIRE(stf_stackable_ctx_finalize(ctx) == STF_SUCCESS);
 
-  for (double x : host_data)
+  for (const double x : host_data)
   {
     REQUIRE(x == 3.0);
   }
