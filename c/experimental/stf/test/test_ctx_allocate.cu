@@ -25,7 +25,7 @@ namespace
 {
 __global__ void fill_kernel(int n, float* out, float v)
 {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  const int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   if (i < n)
   {
     out[i] = v;
@@ -34,7 +34,7 @@ __global__ void fill_kernel(int n, float* out, float v)
 
 __global__ void add_kernel(int n, const float* in, double* inout)
 {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  const int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   if (i < n)
   {
     inout[i] += in[i];
@@ -120,9 +120,9 @@ C2H_TEST("stackable_allocate: scope-owned scratch used by the scope's tasks", "[
   REQUIRE(ctx != nullptr);
 
   double host_data[N];
-  for (int i = 0; i < N; i++)
+  for (double& x : host_data)
   {
-    host_data[i] = 1.0;
+    x = 1.0;
   }
   stf_logical_data_handle lA = stf_stackable_logical_data(ctx, host_data, N * sizeof(double));
   REQUIRE(lA != nullptr);
@@ -168,8 +168,8 @@ C2H_TEST("stackable_allocate: scope-owned scratch used by the scope's tasks", "[
   stf_stackable_logical_data_destroy(lA);
   REQUIRE(stf_stackable_ctx_finalize(ctx) == STF_SUCCESS);
 
-  for (int i = 0; i < N; i++)
+  for (double x : host_data)
   {
-    REQUIRE(host_data[i] == 3.0);
+    REQUIRE(x == 3.0);
   }
 }
