@@ -268,7 +268,7 @@ __global__ void ExclusiveSumArrayKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain a segment of consecutive items that are blocked across threads
   int thread_data[4];
@@ -295,7 +295,7 @@ __global__ void ExclusiveSumSingleKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain input item for each thread
   int thread_data = d_data[threadIdx.x];
@@ -315,7 +315,7 @@ __global__ void ExclusiveSumAggregateKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain input item for each thread
   int thread_data = d_data[threadIdx.x];
@@ -364,9 +364,9 @@ __global__ void ExclusiveSumPrefixCallbackKernel(int* d_data, int num_items)
   // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
   __shared__ union
   {
-    typename BlockLoadT::TempStorage load;
-    typename BlockScanT::TempStorage scan;
-    typename BlockStoreT::TempStorage store;
+    BlockLoadT::TempStorage load;
+    BlockScanT::TempStorage scan;
+    BlockStoreT::TempStorage store;
   } temp_storage;
 
   // Initialize running total
@@ -398,7 +398,7 @@ __global__ void ExclusiveScanSingleKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain input item for each thread
   int thread_data = d_data[threadIdx.x];
@@ -422,9 +422,9 @@ __global__ void InclusiveSumPrefixCallbackKernel(int* d_data, int num_items)
   // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
   __shared__ union
   {
-    typename BlockLoadT::TempStorage load;
-    typename BlockScanT::TempStorage scan;
-    typename BlockStoreT::TempStorage store;
+    BlockLoadT::TempStorage load;
+    BlockScanT::TempStorage scan;
+    BlockStoreT::TempStorage store;
   } temp_storage;
 
   // Initialize running total
@@ -456,7 +456,7 @@ __global__ void InclusiveSumArrayKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain a segment of consecutive items that are blocked across threads
   int thread_data[4];
@@ -483,7 +483,7 @@ __global__ void InclusiveSumSingleKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain input item for each thread
   int thread_data = d_data[threadIdx.x];
@@ -503,7 +503,7 @@ __global__ void ExclusiveScanArrayKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain a segment of consecutive items that are blocked across threads
   int thread_data[4];
@@ -530,7 +530,7 @@ __global__ void ExclusiveScanAggregateKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain input item for each thread
   int thread_data = d_data[threadIdx.x];
@@ -579,9 +579,9 @@ __global__ void ExclusiveScanPrefixCallbackKernel(int* d_data, int num_items)
   // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
   __shared__ union
   {
-    typename BlockLoadT::TempStorage load;
-    typename BlockScanT::TempStorage scan;
-    typename BlockStoreT::TempStorage store;
+    BlockLoadT::TempStorage load;
+    BlockScanT::TempStorage scan;
+    BlockStoreT::TempStorage store;
   } temp_storage;
 
   // Initialize running total
@@ -613,7 +613,7 @@ __global__ void ExclusiveSumSinglePrefixCallbackKernel(int* d_data, int num_item
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Initialize running total
   BlockPrefixCallbackOp prefix_op(0);
@@ -641,7 +641,7 @@ __global__ void ExclusiveSumArrayAggregateKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain a segment of consecutive items that are blocked across threads
   int thread_data[4];
@@ -669,7 +669,7 @@ __global__ void InclusiveScanArrayKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain a segment of consecutive items that are blocked across threads
   int thread_data[4];
@@ -696,7 +696,7 @@ __global__ void InclusiveScanSingleKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain input item for each thread
   int thread_data = d_data[threadIdx.x];
@@ -720,9 +720,9 @@ __global__ void InclusiveScanPrefixCallbackKernel(int* d_data, int num_items)
   // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
   __shared__ union
   {
-    typename BlockLoadT::TempStorage load;
-    typename BlockScanT::TempStorage scan;
-    typename BlockStoreT::TempStorage store;
+    BlockLoadT::TempStorage load;
+    BlockScanT::TempStorage scan;
+    BlockStoreT::TempStorage store;
   } temp_storage;
 
   // Initialize running total
@@ -754,7 +754,7 @@ __global__ void InclusiveSumArrayAggregateKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain a segment of consecutive items that are blocked across threads
   int thread_data[4];
@@ -782,7 +782,7 @@ __global__ void InclusiveSumSingleAggregateKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain input item for each thread
   int thread_data = d_data[threadIdx.x];

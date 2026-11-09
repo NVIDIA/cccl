@@ -265,7 +265,7 @@ struct large_array_sort_helper
     TIME(timer.print_elapsed_seconds_and_reset("Host allocate"));
 
     {
-      using range_t = typename thrust::random::uniform_int_distribution<std::size_t>::param_type;
+      using range_t = thrust::random::uniform_int_distribution<std::size_t>::param_type;
       constexpr range_t run_range{1, 256};
 
       thrust::default_random_engine rng(static_cast<std::uint32_t>(seed.get()));
