@@ -272,6 +272,9 @@ static_assert(::cuda::std::__stringof<42>() != ::cuda::std::__stringof<43>());
 static_assert(::cuda::std::__stringof<&::cuda::std::__find_stringof>().find("__find_stringof") != -1);
 #endif // !_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF && !_CCCL_BROKEN_MSVC_FUNCSIG && _CCCL_ENABLE_DEBUG_MODE
 
+// The fallback type information now stores and returns string_view instead of __string_view.
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
+
 // There are many complications with defining a unique constexpr global object
 // for each type in device code, particularly on Windows. So rather than try,
 // we use an alternate formulation of typeid that does not require such objects.
@@ -485,6 +488,8 @@ template <class _Tp>
 #  define _CCCL_TYPEID_FALLBACK(...) ::cuda::std::__typeid<::cuda::std::remove_cv_t<__VA_ARGS__>>()
 
 #endif // !defined(__CUDA_ARCH__) && !_CCCL_BROKEN_MSVC_FUNCSIG
+
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
 // if `__pretty_nameof` is constexpr _CCCL_TYPEID_FALLBACK is also constexpr.
 #if !defined(_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF) && (!defined(_CCCL_BROKEN_MSVC_FUNCSIG) || defined(__CUDA_ARCH__))
