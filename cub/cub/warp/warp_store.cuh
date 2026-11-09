@@ -257,7 +257,6 @@ class WarpStore
 {
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
 
-private:
   /// Store helper
   template <WarpStoreAlgorithm Algorithm, int DUMMY>
   struct StoreInternal;

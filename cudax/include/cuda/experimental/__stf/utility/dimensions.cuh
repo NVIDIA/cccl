@@ -394,7 +394,6 @@ public:
   // Iterator class for box
   class iterator
   {
-  private:
     box iterated; // A copy of the box being iterated
     ::std::array<::std::ptrdiff_t, dimensions> current; // Array to store the current position in each dimension
 

@@ -42,7 +42,6 @@ public:
 
   class param_type
   {
-  private:
     result_type __lambda_;
 
   public:
