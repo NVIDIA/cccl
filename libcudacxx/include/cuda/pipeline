@@ -32,6 +32,7 @@
 #include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__chrono/time_point.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__utility/exchange.h>
 #include <cuda/std/cstdint>
 
 #include <nv/target>
@@ -104,6 +105,7 @@ class pipeline
 {
 public:
   // The moved-from pipeline must not quit, otherwise the shared refcount is released twice.
+  // Its shared state is nulled so that misuse after the move fails loudly.
   _CCCL_HOST_DEVICE_API inline pipeline(pipeline&& __other) noexcept
       : __head(__other.__head)
       , __tail(__other.__tail)
@@ -112,7 +114,7 @@ public:
       , __produced_phase_parity(__other.__produced_phase_parity)
       , __active(__other.__active)
       , __partitioned(__other.__partitioned)
-      , __shared_state(__other.__shared_state)
+      , __shared_state(::cuda::std::exchange(__other.__shared_state, nullptr))
   {
     __other.__active = false;
   }
@@ -225,7 +227,7 @@ private:
   bool __active                : 1;
   // TODO: Remove partitioned on next ABI break
   const bool __partitioned : 1;
-  char* const __shared_state;
+  char* __shared_state;
 
   _CCCL_HOST_DEVICE_API inline pipeline(char* __shared_state, uint8_t __stages_count, bool __partitioned)
       : __head(0)
