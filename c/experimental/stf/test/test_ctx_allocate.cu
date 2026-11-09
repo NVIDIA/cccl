@@ -85,7 +85,11 @@ C2H_TEST("ctx_allocate: stream context, cached and uncached", "[ctx][allocate]")
   REQUIRE(stf_ctx_finalize(ctx) == STF_SUCCESS);
 }
 
-C2H_TEST("ctx_allocate: graph context is refused", "[ctx][allocate]")
+// The graph backend's default allocator records allocation nodes: nothing
+// outside the graph can be ordered after them, so a raw allocation is refused.
+// (A graph context with a stream_adapter installed as its allocator would be
+// served; a nested stackable scope is exactly that, see below.)
+C2H_TEST("ctx_allocate: graph context with the node allocator is refused", "[ctx][allocate]")
 {
   stf_ctx_handle ctx = stf_ctx_create_graph();
   REQUIRE(ctx != nullptr);

@@ -974,10 +974,12 @@ stf_error_t stf_ctx_finalize(stf_ctx_handle ctx);
 //! uses the context's uncached allocator (a fresh allocation every time).
 //!
 //! The context orders the allocation: the call returns once the memory is
-//! usable on any stream. Only stream contexts are supported (a graph context
-//! would record an allocation node with nothing to order it against); use
-//! stf_stackable_allocate() for a stackable context. Returns NULL on failure
-//! (\c STF_ERROR_INVALID_ARGUMENT for a graph context).
+//! usable on any stream. This requires a stream-ordered allocator: the stream
+//! backend's, or one installed on the context (e.g. a \c stream_adapter on a
+//! graph context). A graph context's default allocator records allocation
+//! nodes in the graph, which a raw allocation cannot be ordered after, so the
+//! call fails with \c STF_ERROR_INVALID_ARGUMENT there. For a stackable
+//! context use stf_stackable_allocate(). Returns NULL on failure.
 void* stf_ctx_allocate(stf_ctx_handle ctx, size_t size, int cached);
 
 //! \brief Return memory obtained from stf_ctx_allocate() to the allocator of

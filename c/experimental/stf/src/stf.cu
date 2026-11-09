@@ -1216,13 +1216,14 @@ stf_data_place_handle stf_data_place_composite_cute(stf_exec_place_handle grid, 
 
 namespace
 {
-// Allocation through a context's own allocators (see stf_ctx_allocate()).
-// The uncached allocator of a stream context allocates on a pool stream and
-// reports completion through `prereqs`; with no caller stream to hand those
-// events to, the call waits for them, so the memory is usable on any stream when
-// it returns. The uncached allocator of a nested stackable scope (stream_adapter)
-// allocates on the scope's support stream and leaves `prereqs` empty: nothing to
-// wait for, the scope's graph is launched on that stream after the allocation.
+// Allocation through a context's own allocators (see stf_ctx_allocate()). The
+// context orders the allocation: whatever completion events the allocator
+// reports in `prereqs` are waited for, so the memory is usable on any stream
+// when the call returns. A stream-ordered allocator (the stream backend's, or a
+// stream_adapter installed on a graph context, as a nested stackable scope does)
+// reports stream events or none; the graph backend's node allocator reports
+// graph nodes, which nothing outside the graph can wait for, so that allocator
+// cannot serve raw allocations and the call fails.
 void* ctx_allocate(backend_ctx_untyped& bctx, size_t size, bool cached)
 {
   auto& alloc        = cached ? bctx.get_allocator() : bctx.get_uncached_allocator();
@@ -1235,6 +1236,14 @@ void* ctx_allocate(backend_ctx_untyped& bctx, size_t size, bool cached)
   }
   if (!prereqs.empty())
   {
+    if (bctx.is_graph_ctx())
+    {
+      // the events are graph nodes: the caller could not be ordered after them
+      alloc.deallocate(bctx, data_place::current_device(), prereqs, p, size);
+      throw ::std::invalid_argument(
+        "the context's allocator records allocation nodes in a graph; a raw allocation cannot be ordered after them "
+        "(install a stream-ordered allocator such as stream_adapter, or allocate from a stackable scope)");
+    }
     cudaStream_t stream = bctx.pick_stream();
     prereqs.sync_with_stream(bctx, stream);
     cuda_safe_call(cudaStreamSynchronize(stream));
@@ -1254,13 +1263,7 @@ void* stf_ctx_allocate(stf_ctx_handle ctx, size_t size, int cached)
 {
   return stf_boundary->*[&]() -> void* {
     _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
-    auto* context_ptr = from_opaque(ctx);
-    if (context_ptr->is_graph_ctx())
-    {
-      throw ::std::invalid_argument("stf_ctx_allocate: graph contexts are not supported (an allocation node would have "
-                                    "nothing to order it)");
-    }
-    return ctx_allocate(context_ptr->get_backend(), size, cached != 0);
+    return ctx_allocate(from_opaque(ctx)->get_backend(), size, cached != 0);
   };
 }
 
@@ -1268,12 +1271,7 @@ stf_error_t stf_ctx_deallocate(stf_ctx_handle ctx, void* ptr, size_t size, int c
 {
   return stf_boundary->*[&] {
     _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
-    auto* context_ptr = from_opaque(ctx);
-    if (context_ptr->is_graph_ctx())
-    {
-      throw ::std::invalid_argument("stf_ctx_deallocate: graph contexts are not supported");
-    }
-    ctx_deallocate(context_ptr->get_backend(), ptr, size, cached != 0);
+    ctx_deallocate(from_opaque(ctx)->get_backend(), ptr, size, cached != 0);
     return STF_SUCCESS;
   };
 }
