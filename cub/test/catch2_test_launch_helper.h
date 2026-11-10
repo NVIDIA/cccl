@@ -317,7 +317,7 @@ void launch(ActionT action, Args&&... args)
   }
 }
 
-struct get_expected_allocation_size_t
+struct get_expected_allocation_size_t : cuda::std::execution::__basic_query<get_expected_allocation_size_t>
 {};
 
 [[nodiscard]] inline _CCCL_API cuda::std::execution::prop<get_expected_allocation_size_t, size_t>
@@ -465,7 +465,7 @@ void launch_env(ActionT action, Args... args)
 
   const size_t expected_bytes_allocated = env.query(get_expected_allocation_size_t{});
 
-  const auto stream = cuda::std::execution::__query_or(env, cuda::get_stream_t{}, c2h::default_stream_ref());
+  const auto stream = cuda::__call_or(cuda::get_stream, c2h::default_stream_ref(), env);
 
   auto d_error        = c2h::make_device_buffer<cudaError_t>(stream, 1, cudaErrorInvalidValue);
   auto d_temp_storage = c2h::make_device_buffer<cuda::std::uint8_t>(stream, expected_bytes_allocated, cuda::no_init);
