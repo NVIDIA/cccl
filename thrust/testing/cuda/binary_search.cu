@@ -9,8 +9,8 @@
 
 TEST_CASE("TestEqualRangeOnStream", "[binary_search]")
 { // Regression test for GH issue #921 (nvbug 2173437)
-  using vector_t   = typename thrust::device_vector<int>;
-  using iterator_t = typename vector_t::iterator;
+  using vector_t   = thrust::device_vector<int>;
+  using iterator_t = vector_t::iterator;
   using result_t   = cuda::std::pair<iterator_t, iterator_t>;
 
   vector_t input(10);

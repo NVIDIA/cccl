@@ -103,7 +103,8 @@ TEST_CASE("TestUninitializedCopyNonPODDevice", "[uninitialized_copy]")
 {
   using T = CopyConstructTest;
 
-  thrust::device_vector<T> v1(5), v2(5);
+  thrust::device_vector<T> v1(5);
+  thrust::device_vector<T> v2(5);
 
   thrust::uninitialized_copy(v1.begin(), v1.end(), v2.begin());
 
@@ -125,7 +126,8 @@ TEST_CASE("TestUninitializedCopyNNonPODDevice", "[uninitialized_copy]")
 {
   using T = CopyConstructTest;
 
-  thrust::device_vector<T> v1(5), v2(5);
+  thrust::device_vector<T> v1(5);
+  thrust::device_vector<T> v2(5);
 
   thrust::uninitialized_copy_n(v1.begin(), v1.size(), v2.begin());
 
@@ -147,7 +149,8 @@ TEST_CASE("TestUninitializedCopyNonPODHost", "[uninitialized_copy]")
 {
   using T = CopyConstructTest;
 
-  thrust::host_vector<T> v1(5), v2(5);
+  thrust::host_vector<T> v1(5);
+  thrust::host_vector<T> v2(5);
 
   T x;
   REQUIRE_FALSE(x.copy_constructed_on_device);
@@ -169,7 +172,8 @@ TEST_CASE("TestUninitializedCopyNNonPODHost", "[uninitialized_copy]")
 {
   using T = CopyConstructTest;
 
-  thrust::host_vector<T> v1(5), v2(5);
+  thrust::host_vector<T> v1(5);
+  thrust::host_vector<T> v2(5);
 
   T x;
   REQUIRE_FALSE(x.copy_constructed_on_device);

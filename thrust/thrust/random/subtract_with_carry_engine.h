@@ -20,9 +20,9 @@
 
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/istream>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/cstddef> // for size_t
 #include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -63,7 +63,6 @@ class subtract_with_carry_engine
   /*! \cond
    */
 
-private:
   static const UIntType modulus = UIntType(1) << W;
   /*! \endcond
    */
@@ -229,4 +228,4 @@ using random::subtract_with_carry_engine;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/random/detail/subtract_with_carry_engine.inl>
+#include <thrust/random/detail/subtract_with_carry_engine.inl> // IWYU pragma: export

@@ -33,12 +33,12 @@ template <typename T>
 
   // Store the sentinel value total_elements + 1 at index total_elements.
   // The exclusive scan needs another entry after it, so allocate total_elements + 2 entries.
-  if (total_elements == (::cuda::std::numeric_limits<T>::max)())
+  if (total_elements == ::cuda::std::numeric_limits<T>::max())
   {
     throw std::invalid_argument{"total_elements is too large to generate uniform offsets"};
   }
 
-  constexpr auto max_size            = (::cuda::std::numeric_limits<std::size_t>::max)();
+  constexpr auto max_size            = ::cuda::std::numeric_limits<std::size_t>::max();
   const auto total_elements_unsigned = static_cast<::cuda::std::uintmax_t>(total_elements);
   if (total_elements_unsigned > static_cast<::cuda::std::uintmax_t>(max_size - 2))
   {

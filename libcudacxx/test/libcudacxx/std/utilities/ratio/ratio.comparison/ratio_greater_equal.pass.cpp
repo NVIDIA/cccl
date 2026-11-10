@@ -13,13 +13,13 @@
 #include "test_macros.h"
 
 template <class Rat1, class Rat2, bool result>
-TEST_FUNC void test()
+TEST_FUNC constexpr void test()
 {
   static_assert((result == cuda::std::ratio_greater_equal<Rat1, Rat2>::value));
   static_assert((result == cuda::std::ratio_greater_equal_v<Rat1, Rat2>) );
 }
 
-int main(int, char**)
+TEST_FUNC constexpr bool test()
 {
   {
     using R1 = cuda::std::ratio<1, 1>;
@@ -61,6 +61,14 @@ int main(int, char**)
     using R2 = cuda::std::ratio<1, -0x7FFFFFFFFFFFFFFFLL>;
     test<R1, R2, true>();
   }
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }

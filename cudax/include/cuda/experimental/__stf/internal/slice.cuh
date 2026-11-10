@@ -182,13 +182,14 @@ _CCCL_HOST_DEVICE auto make_slice(T* data, const Extents&... extents)
   }
   else
   {
-    ::cuda::std::array<size_t, Result::rank()> sizes{size_t(extents)...}, strides{};
+    ::cuda::std::array<size_t, Result::rank()> sizes{size_t(extents)...};
+    ::cuda::std::array<size_t, Result::rank()> strides{};
     for (size_t i = 1; i < strides.size(); ++i)
     {
       strides[i] = sizes[i - 1];
     }
 
-    strides[0] = sizes.size() != 0 && sizes.begin()[0] != 0;
+    strides[0] = !sizes.empty() && sizes.begin()[0] != 0;
     for (size_t i = 2; i < strides.size(); ++i)
     {
       strides.begin()[i] *= strides.begin()[i - 1];

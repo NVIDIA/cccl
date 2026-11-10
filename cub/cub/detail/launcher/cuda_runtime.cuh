@@ -48,7 +48,7 @@ struct TripleChevronFactory
     if (dependent_launch)
     {
       [[maybe_unused]] int sm_version = 0; // NOLINT(misc-const-correctness)
-      _CCCL_ASSERT(SmVersion(sm_version) == cudaSuccess, "Failed to query SM compute capability");
+      _CCCL_ASSERT(_CUB::SmVersion(sm_version) == cudaSuccess, "Failed to query SM compute capability");
       if (sm_version >= 900)
       {
         [[maybe_unused]] ::cuda::compute_capability cc; // NOLINT(misc-const-correctness)
@@ -75,13 +75,13 @@ struct TripleChevronFactory
   template <class T = void>
   CUB_RUNTIME_FUNCTION ::cudaError_t PtxVersion(int& version)
   {
-    return cub::PtxVersion<T>(version);
+    return _CUB::PtxVersion<T>(version);
   }
 
   template <class T = void>
   CUB_RUNTIME_FUNCTION ::cudaError_t PtxComputeCap(::cuda::compute_capability& cc) const
   {
-    return ptx_compute_cap<T>(cc);
+    return _CUB::detail::ptx_compute_cap<T>(cc);
   }
 
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t MultiProcessorCount(int& sm_count) const
@@ -129,8 +129,6 @@ struct TripleChevronFactory
     return ::cudaMemcpyAsync(dst, src, num_bytes, kind, stream);
   }
 
-  // TODO(bgruber): this is very similar to thrust::cuda_cub::core::get_max_shared_memory_per_block. We should unify
-  // this.
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION cudaError_t MaxSharedMemory(int& max_shared_memory) const
   {
     int device = 0;
@@ -148,7 +146,7 @@ struct TripleChevronFactory
   max_dynamic_smem_size_for(int& max_dynamic_smem_size, [[maybe_unused]] Kernel kernel_ptr)
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST, //
-                      ({ return MaxPotentialDynamicSmemBytes(max_dynamic_smem_size, kernel_ptr); }),
+                      ({ return _CUB::MaxPotentialDynamicSmemBytes(max_dynamic_smem_size, kernel_ptr); }),
                       ({
                         ::cudaFuncAttributes func_attrs{};
                         if (const auto error = CubDebug(::cudaFuncGetAttributes(&func_attrs, kernel_ptr)))

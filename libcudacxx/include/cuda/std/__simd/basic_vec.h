@@ -37,12 +37,14 @@
 #include <cuda/std/__simd/exposition.h>
 #include <cuda/std/__simd/flag.h>
 #include <cuda/std/__simd/iterator.h>
+#include <cuda/std/__simd/permute_dynamic.h>
 #include <cuda/std/__simd/specializations/fixed_size_float_vec.h> // IWYU pragma: keep
 #include <cuda/std/__simd/specializations/fixed_size_integral_vec.h> // IWYU pragma: keep
 #include <cuda/std/__simd/specializations/fixed_size_vec.h> // IWYU pragma: keep
 #include <cuda/std/__simd/type_traits.h>
 #include <cuda/std/__simd/utility.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/operations.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -73,7 +75,7 @@ class basic_vec
 public:
   using value_type = _Tp;
   using abi_type   = _Abi;
-  using mask_type  = basic_mask<sizeof(_Tp), _Abi>;
+  using mask_type  = basic_mask<__simd_element_size<_Tp>::value, _Abi>;
 
   _CCCL_HIDE_FROM_ABI basic_vec()                            = delete;
   _CCCL_HIDE_FROM_ABI ~basic_vec()                           = delete;
@@ -86,11 +88,7 @@ public:
 // - there exists N in [1, 64] derived from deduce-abi-t<T, N>
 // - sizeof(T) is a vectorizable byte size, i.e. sizeof(T) fits in an integer, otherwise mask is not representable
 template <typename _Tp, typename _Abi>
-class basic_vec<
-  _Tp,
-  _Abi,
-  enable_if_t<__is_vectorizable_v<_Tp> && __is_vectorizable_byte_size_v<sizeof(_Tp)> && __is_enabled_abi_v<_Abi>>>
-    : public __simd_operations<_Tp, _Abi>
+class basic_vec<_Tp, _Abi, enable_if_t<__is_enabled_vec_v<_Tp, _Abi>>> : public __simd_operations<_Tp, _Abi>
 {
 public:
   using value_type = _Tp;
@@ -111,8 +109,8 @@ private:
   _CCCL_HOST_DEVICE_API friend constexpr _Result
   __full_load_from_ptr(const _Up*, const typename _Result::mask_type&, flags<_Flags...>) noexcept;
 
-  using _Impl    = __simd_operations<_Tp, _Abi>;
-  using _Storage = typename _Impl::_SimdStorage;
+  using _Impl _CCCL_NODEBUG    = __simd_operations<_Tp, _Abi>;
+  using _Storage _CCCL_NODEBUG = typename _Impl::_SimdStorage;
 
   _Storage __s_{};
 
@@ -400,9 +398,13 @@ public:
     return __s_.__get(__i);
   }
 
-  // TODO(fbusato): subscript with integral indices, requires permute()
-  // template<simd-integral _Idx>
-  //   constexpr resize_t<_Idx::size(), basic_vec> operator[](const _Idx& __indices) const;
+  _CCCL_TEMPLATE(typename _Indices)
+  _CCCL_REQUIRES(__simd_vec_type<_Indices> _CCCL_AND is_integral_v<typename _Indices::value_type>)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr resize_t<_Indices::size(), basic_vec>
+  operator[](const _Indices& __indices) const
+  {
+    return ::cuda::std::simd::permute(*this, __indices);
+  }
 
   // [simd.complex.access], basic_vec complex accessors
 
