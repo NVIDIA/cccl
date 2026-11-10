@@ -48,6 +48,7 @@ add_library(
   tilelib/provider/families/reduce.cpp
   tilelib/provider/families/scan.cpp
   tilelib/provider/families/shuffle.cpp
+  tilelib/provider/families/topk.cpp
   tilelib/provider/runtime/bundle_builder.cpp
   tilelib/provider/runtime/cache_keys.cpp
   tilelib/provider/runtime/include_paths.cpp

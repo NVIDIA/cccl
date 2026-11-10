@@ -760,7 +760,7 @@ template <size_t Descending, size_t FullTile, typename T, size_t N>
 [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
 topk_keys_call(ct::tile<T, ct::shape<N>> keys, int k, int valid_items, int begin_bit, int end_bit) noexcept
 {
-  static_assert(N > 0, "cuda::coop::tile TopK expects a non-empty tile");
+  static_assert(N > 0 && N % 32 == 0, "cuda::coop::tile TopK expects a positive tile size divisible by 32");
   static_assert(N <= 2147483647, "cuda::coop::tile TopK tile extent must fit in int");
   return detail::topk_keys_foreign<N, T, Descending, FullTile, cpp_dtype_token_v<T>>(
     keys, k, valid_items, begin_bit, end_bit);
@@ -775,7 +775,7 @@ template <size_t Descending, size_t FullTile, typename KeyT, typename ValueT, si
   int begin_bit,
   int end_bit) noexcept
 {
-  static_assert(N > 0, "cuda::coop::tile TopK expects a non-empty tile");
+  static_assert(N > 0 && N % 32 == 0, "cuda::coop::tile TopK expects a positive tile size divisible by 32");
   static_assert(N <= 2147483647, "cuda::coop::tile TopK tile extent must fit in int");
   return detail::
     topk_pairs_foreign<N, KeyT, ValueT, Descending, FullTile, cpp_dtype_token_v<KeyT>, cpp_dtype_token_v<ValueT>>(
@@ -2176,6 +2176,210 @@ template <typename KeyT,
   return ::cuda::coop::tile::radix_sort_pairs(
     keys, values, detail::normalize_i32_control(begin_bit), detail::normalize_i32_control(end_bit), policy);
 }
+
+namespace detail
+{
+template <size_t Descending, typename T, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+topk_keys(ct::tile<T, ct::shape<N>> keys, int k, topk_policy<>) noexcept
+{
+  return detail::topk_keys_call<Descending, 1, T, N>(keys, k, static_cast<int>(N), 0, static_cast<int>(sizeof(T) * 8));
+}
+
+template <size_t Descending, typename T, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+topk_keys(ct::tile<T, ct::shape<N>> keys, int k, int begin_bit, int end_bit, topk_policy<>) noexcept
+{
+  return detail::topk_keys_call<Descending, 1, T, N>(keys, k, static_cast<int>(N), begin_bit, end_bit);
+}
+
+template <size_t Descending, typename T, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+topk_keys(ct::tile<T, ct::shape<N>> keys, int k, int valid_items, topk_policy<>) noexcept
+{
+  return detail::topk_keys_call<Descending, 0, T, N>(keys, k, valid_items, 0, static_cast<int>(sizeof(T) * 8));
+}
+
+template <size_t Descending, typename T, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+topk_keys(ct::tile<T, ct::shape<N>> keys, int k, int valid_items, int begin_bit, int end_bit, topk_policy<>) noexcept
+{
+  return detail::topk_keys_call<Descending, 0, T, N>(keys, k, valid_items, begin_bit, end_bit);
+}
+
+template <size_t Descending, typename KeyT, typename ValueT, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline topk_pair_result<KeyT, ValueT, N>
+topk_pairs(ct::tile<KeyT, ct::shape<N>> keys, ct::tile<ValueT, ct::shape<N>> values, int k, topk_policy<>) noexcept
+{
+  return detail::topk_pairs_call<Descending, 1, KeyT, ValueT, N>(
+    keys, values, k, static_cast<int>(N), 0, static_cast<int>(sizeof(KeyT) * 8));
+}
+
+template <size_t Descending, typename KeyT, typename ValueT, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline topk_pair_result<KeyT, ValueT, N> topk_pairs(
+  ct::tile<KeyT, ct::shape<N>> keys,
+  ct::tile<ValueT, ct::shape<N>> values,
+  int k,
+  int begin_bit,
+  int end_bit,
+  topk_policy<>) noexcept
+{
+  return detail::topk_pairs_call<Descending, 1, KeyT, ValueT, N>(
+    keys, values, k, static_cast<int>(N), begin_bit, end_bit);
+}
+
+template <size_t Descending, typename KeyT, typename ValueT, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline topk_pair_result<KeyT, ValueT, N> topk_pairs(
+  ct::tile<KeyT, ct::shape<N>> keys,
+  ct::tile<ValueT, ct::shape<N>> values,
+  int k,
+  int valid_items,
+  topk_policy<>) noexcept
+{
+  return detail::topk_pairs_call<Descending, 0, KeyT, ValueT, N>(
+    keys, values, k, valid_items, 0, static_cast<int>(sizeof(KeyT) * 8));
+}
+
+template <size_t Descending, typename KeyT, typename ValueT, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline topk_pair_result<KeyT, ValueT, N> topk_pairs(
+  ct::tile<KeyT, ct::shape<N>> keys,
+  ct::tile<ValueT, ct::shape<N>> values,
+  int k,
+  int valid_items,
+  int begin_bit,
+  int end_bit,
+  topk_policy<>) noexcept
+{
+  return detail::topk_pairs_call<Descending, 0, KeyT, ValueT, N>(keys, values, k, valid_items, begin_bit, end_bit);
+}
+} // namespace detail
+
+#  define _CCCL_COOP_TILE_TOPK_KEYS_OVERLOADS(_Name, _Descending)                                            \
+    template <typename T, size_t N>                                                                          \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> _Name(                                \
+      ct::tile<T, ct::shape<N>> keys, int k, topk_policy<> policy = {}) noexcept                             \
+    {                                                                                                        \
+      return detail::topk_keys<_Descending>(keys, k, policy);                                                \
+    }                                                                                                        \
+    template <typename T, size_t N>                                                                          \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> _Name(                                \
+      ct::tile<T, ct::shape<N>> keys, int k, int begin_bit, int end_bit, topk_policy<> policy = {}) noexcept \
+    {                                                                                                        \
+      return detail::topk_keys<_Descending>(keys, k, begin_bit, end_bit, policy);                            \
+    }                                                                                                        \
+    template <typename T, size_t N>                                                                          \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> _Name(                                \
+      ct::tile<T, ct::shape<N>> keys, int k, int valid_items, topk_policy<> policy = {}) noexcept            \
+    {                                                                                                        \
+      return detail::topk_keys<_Descending>(keys, k, valid_items, policy);                                   \
+    }                                                                                                        \
+    template <typename T, size_t N>                                                                          \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> _Name(                                \
+      ct::tile<T, ct::shape<N>> keys,                                                                        \
+      int k,                                                                                                 \
+      int valid_items,                                                                                       \
+      int begin_bit,                                                                                         \
+      int end_bit,                                                                                           \
+      topk_policy<> policy = {}) noexcept                                                                    \
+    {                                                                                                        \
+      return detail::topk_keys<_Descending>(keys, k, valid_items, begin_bit, end_bit, policy);               \
+    }
+
+/**
+ * @brief Select the largest `k` keys.
+ *
+ * The output retains input capacity; only its first `min(k, valid_items)` positions are defined and their order is
+ * unspecified. After k, overloads accept valid_items, begin_bit and end_bit, both controls together,
+ * or neither. Controls are int scalars, with 0 <= k, valid_items <= N and 0 <= begin_bit < end_bit
+ * <= key_bits. Omitted controls select the full input and key width.
+ *
+ * `N` must be a positive multiple of 32.
+ */
+_CCCL_COOP_TILE_TOPK_KEYS_OVERLOADS(topk_max_keys, 1)
+/**
+ * @brief Select the smallest `k` keys.
+ *
+ * The output retains input capacity; only its first `min(k, valid_items)` positions are defined and their order is
+ * unspecified. After k, overloads accept valid_items, begin_bit and end_bit, both controls together,
+ * or neither. Controls are int scalars, with 0 <= k, valid_items <= N and 0 <= begin_bit < end_bit
+ * <= key_bits. Omitted controls select the full input and key width.
+ *
+ * `N` must be a positive multiple of 32.
+ */
+_CCCL_COOP_TILE_TOPK_KEYS_OVERLOADS(topk_min_keys, 0)
+
+#  undef _CCCL_COOP_TILE_TOPK_KEYS_OVERLOADS
+
+#  define _CCCL_COOP_TILE_TOPK_PAIRS_OVERLOADS(_Name, _Descending)                                      \
+    template <typename KeyT, typename ValueT, size_t N>                                                 \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline topk_pair_result<KeyT, ValueT, N> _Name(                   \
+      ct::tile<KeyT, ct::shape<N>> keys,                                                                \
+      ct::tile<ValueT, ct::shape<N>> values,                                                            \
+      int k,                                                                                            \
+      topk_policy<> policy = {}) noexcept                                                               \
+    {                                                                                                   \
+      return detail::topk_pairs<_Descending>(keys, values, k, policy);                                  \
+    }                                                                                                   \
+    template <typename KeyT, typename ValueT, size_t N>                                                 \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline topk_pair_result<KeyT, ValueT, N> _Name(                   \
+      ct::tile<KeyT, ct::shape<N>> keys,                                                                \
+      ct::tile<ValueT, ct::shape<N>> values,                                                            \
+      int k,                                                                                            \
+      int begin_bit,                                                                                    \
+      int end_bit,                                                                                      \
+      topk_policy<> policy = {}) noexcept                                                               \
+    {                                                                                                   \
+      return detail::topk_pairs<_Descending>(keys, values, k, begin_bit, end_bit, policy);              \
+    }                                                                                                   \
+    template <typename KeyT, typename ValueT, size_t N>                                                 \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline topk_pair_result<KeyT, ValueT, N> _Name(                   \
+      ct::tile<KeyT, ct::shape<N>> keys,                                                                \
+      ct::tile<ValueT, ct::shape<N>> values,                                                            \
+      int k,                                                                                            \
+      int valid_items,                                                                                  \
+      topk_policy<> policy = {}) noexcept                                                               \
+    {                                                                                                   \
+      return detail::topk_pairs<_Descending>(keys, values, k, valid_items, policy);                     \
+    }                                                                                                   \
+    template <typename KeyT, typename ValueT, size_t N>                                                 \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline topk_pair_result<KeyT, ValueT, N> _Name(                   \
+      ct::tile<KeyT, ct::shape<N>> keys,                                                                \
+      ct::tile<ValueT, ct::shape<N>> values,                                                            \
+      int k,                                                                                            \
+      int valid_items,                                                                                  \
+      int begin_bit,                                                                                    \
+      int end_bit,                                                                                      \
+      topk_policy<> policy = {}) noexcept                                                               \
+    {                                                                                                   \
+      return detail::topk_pairs<_Descending>(keys, values, k, valid_items, begin_bit, end_bit, policy); \
+    }
+
+/**
+ * @brief Select the largest `k` keys with associated payloads.
+ *
+ * The output retains input capacity; only its first `min(k, valid_items)` positions are defined and their order is
+ * unspecified. After k, overloads accept valid_items, begin_bit and end_bit, both controls together,
+ * or neither. Controls are int scalars, with 0 <= k, valid_items <= N and 0 <= begin_bit < end_bit
+ * <= key_bits. Omitted controls select the full input and key width. Pair results return keys
+ * first; input shapes must match.
+ *
+ * `N` must be a positive multiple of 32.
+ */
+_CCCL_COOP_TILE_TOPK_PAIRS_OVERLOADS(topk_max_pairs, 1)
+/**
+ * @brief Select the smallest `k` keys with associated payloads.
+ *
+ * The output retains input capacity; only its first `min(k, valid_items)` positions are defined and their order is
+ * unspecified. After k, overloads accept valid_items, begin_bit and end_bit, both controls together,
+ * or neither. Controls are int scalars, with 0 <= k, valid_items <= N and 0 <= begin_bit < end_bit
+ * <= key_bits. Omitted controls select the full input and key width. Pair results return keys
+ * first; input shapes must match.
+ *
+ * `N` must be a positive multiple of 32.
+ */
+_CCCL_COOP_TILE_TOPK_PAIRS_OVERLOADS(topk_min_pairs, 0)
+
+#  undef _CCCL_COOP_TILE_TOPK_PAIRS_OVERLOADS
 } // namespace cuda::coop::tile
 
 #  undef _CCCL_COOP_TILE_API

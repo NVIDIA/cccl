@@ -18,6 +18,7 @@
 #include "provider/families/reduce.h"
 #include "provider/families/scan.h"
 #include "provider/families/shuffle.h"
+#include "provider/families/topk.h"
 
 namespace cuda::coop::tile::detail::provider
 {
@@ -25,7 +26,7 @@ namespace
 {
 static_assert(family_count == 21, "the provider contract must contain exactly 21 primitive families");
 
-constexpr std::array<FamilyDescriptor, 19> registry{{
+constexpr std::array<FamilyDescriptor, family_count> registry{{
   {FamilyId::sum,
    "cuda_coop_tile_sum",
    "cuda_coop_tile_sum_impl",
@@ -196,6 +197,26 @@ constexpr std::array<FamilyDescriptor, 19> registry{{
    FamilyRankingPolicy::block_threads_centered_128,
    parse_radix_sort_metadata,
    emit_radix_sort_source},
+  {FamilyId::topk_keys,
+   "cuda_coop_tile_topk_keys",
+   "cuda_coop_tile_topk_keys_impl",
+   "topk-keys",
+   "topk_keys",
+   "cub/block/block_topk.cuh",
+   generated::schema_for("cuda_coop_tile_topk_keys"),
+   FamilyRankingPolicy::block_threads_centered_128,
+   parse_topk_metadata,
+   emit_topk_source},
+  {FamilyId::topk_pairs,
+   "cuda_coop_tile_topk_pairs",
+   "cuda_coop_tile_topk_pairs_impl",
+   "topk-pairs",
+   "topk_pairs",
+   "cub/block/block_topk.cuh",
+   generated::schema_for("cuda_coop_tile_topk_pairs"),
+   FamilyRankingPolicy::block_threads_centered_128,
+   parse_topk_metadata,
+   emit_topk_source},
   {FamilyId::sum_batched,
    "cuda_coop_tile_sum_batched",
    "cuda_coop_tile_sum_batched_impl",
@@ -220,15 +241,16 @@ constexpr std::array<FamilyDescriptor, 19> registry{{
 
 constexpr bool registry_is_complete()
 {
-  if (registry.size() != 19)
+  if (registry.size() != family_count)
   {
     return false;
   }
   for (size_t index = 0; index < registry.size(); ++index)
   {
     const FamilyDescriptor& descriptor = registry[index];
-    if (!descriptor.decl_symbol || !descriptor.impl_symbol || !descriptor.diagnostic_name || !descriptor.payload
-        || !descriptor.required_header || !descriptor.schema || !descriptor.parse_metadata || !descriptor.emit_source)
+    if (static_cast<size_t>(descriptor.family) != index || !descriptor.decl_symbol || !descriptor.impl_symbol
+        || !descriptor.diagnostic_name || !descriptor.payload || !descriptor.required_header || !descriptor.schema
+        || !descriptor.parse_metadata || !descriptor.emit_source)
     {
       return false;
     }
@@ -276,7 +298,7 @@ constexpr bool registry_symbols_are_unique()
   return true;
 }
 
-static_assert(registry_is_complete(), "every registered family must have a complete descriptor");
+static_assert(registry_is_complete(), "the provider family registry must contain every FamilyId exactly once");
 static_assert(registry_symbols_are_unique(), "provider declaration and implementation symbols must be unique");
 } // namespace
 
@@ -292,12 +314,10 @@ size_t family_registry_size()
 
 const FamilyDescriptor& family_descriptor(FamilyId family)
 {
-  for (const FamilyDescriptor& descriptor : registry)
+  const size_t index = static_cast<size_t>(family);
+  if (index < registry.size() && registry[index].family == family)
   {
-    if (descriptor.family == family)
-    {
-      return descriptor;
-    }
+    return registry[index];
   }
   std::abort();
 }

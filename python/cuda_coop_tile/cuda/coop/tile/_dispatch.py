@@ -579,6 +579,56 @@ def dispatch_radix_sort_pairs(
     return decision
 
 
+def dispatch_topk_keys(
+    *,
+    numel: int,
+    dtype: datatype.DType,
+) -> CoopDispatchDecision:
+    backend, rationale = _default_backend_for_numel(numel)
+    backend, rationale = _apply_forced_backend(backend, rationale)
+    block_threads = _select_one_item_block_threads(
+        primitive="topk_keys",
+        numel=numel,
+    )
+    decision = CoopDispatchDecision(
+        primitive="topk_keys",
+        backend_family=backend,
+        block_threads=block_threads,
+        algorithm=None,
+        rationale=rationale,
+        tile_numel=numel,
+        dtype=dtype,
+    )
+    _trace_dispatch(decision)
+    return decision
+
+
+def dispatch_topk_pairs(
+    *,
+    numel: int,
+    key_dtype: datatype.DType,
+    value_dtype: datatype.DType,
+) -> CoopDispatchDecision:
+    del value_dtype
+    backend, rationale = _default_backend_for_numel(numel)
+    backend, rationale = _apply_forced_backend(backend, rationale)
+    block_threads = _select_one_item_block_threads(
+        primitive="topk_pairs",
+        numel=numel,
+    )
+    decision = CoopDispatchDecision(
+        primitive="topk_pairs",
+        backend_family=backend,
+        block_threads=block_threads,
+        algorithm=None,
+        rationale=rationale,
+        tile_numel=numel,
+        dtype=key_dtype,
+    )
+    _trace_dispatch(decision)
+    return decision
+
+
 def dispatch_discontinuity(
     *,
     primitive: str,
