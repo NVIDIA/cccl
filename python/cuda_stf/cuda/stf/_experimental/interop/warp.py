@@ -28,6 +28,14 @@ are plain cuda.stf API:
   raises on work submission. Without it the launch would run eagerly, outside
   the graph, and silently race.
 
+* **A scope opened inside a block continues the block.** A library that is
+  called from someone's block marks the parts of its work that may overlap
+  with ``scope`` + ``warp_task``; the code before and after stays as written
+  and runs in the caller's block, which is cut around the scope and resumed
+  after it (see :func:`scope`). The caller does not need to know, and tasks
+  that declare nothing are joined by the code that follows them.
+  :func:`current_context` gives such a library the context being recorded.
+
 Everything is a no-op without a context (``ctx is None``): the sequential
 version and the task version of a library are the same code. :func:`token`
 returns an inert token in that case.
@@ -55,16 +63,43 @@ _WARP_INSTALL_HINT = (
     "Install Warp or use ``ctx.task()`` directly for a raw task."
 )
 
+#: How a scope opened inside a block is recorded (see :func:`scope`): in the
+#: block's own graph (``True``), or as a nested STF scope, which is a CUDA child
+#: graph (``False``). Same ordering either way.
+fork_in_place = __import__("os").environ.get("CUDA_STF_WARP_FORK_IN_PLACE", "1") == "1"
+
 _graph_handles = []  # Graph objects from wp.capture_end inside tasks (see module docstring)
 _scopes = {}  # id(ctx) -> stack of scope tokens
-_open_tasks = []  # symbols of the warp_task / warp_native blocks currently open (diagnostics)
+_ctx_stack = []  # contexts of the open scopes, innermost last
+_open_tasks = []  # the warp_task / warp_native blocks currently open (_Block), innermost last
+
+
+def current_context():
+    """The context of the innermost open :func:`scope`, or ``None`` when no
+    scope is open. A library reads it at its entry instead of being handed a
+    context: outside a recording it gets ``None`` and every construct of this
+    module is a no-op.
+
+    >>> ctx = current_context()
+    >>> with scope(ctx):
+    ...     with warp_task(ctx, symbol="mass"): ...
+    ...     with warp_task(ctx, symbol="rows"): ...
+    """
+    return _ctx_stack[-1] if _ctx_stack else None
 
 
 def current_task_symbol():
     """Symbol of the innermost open :func:`warp_task` / :func:`warp_native`
     block, or ``None``. For tools that attribute Warp events (a conditional
     capture, an allocation) to the task that recorded them."""
-    return _open_tasks[-1] if _open_tasks else None
+    return _open_tasks[-1].symbol if _open_tasks else None
+
+
+def _open_block(ctx):
+    """The innermost block of ``ctx`` that is open and not suspended by a scope."""
+    if _open_tasks and _open_tasks[-1].ctx is ctx and _open_tasks[-1]._task is not None:
+        return _open_tasks[-1]
+    return None
 
 
 def _import_warp():
@@ -407,57 +442,262 @@ def scope(ctx, launchable=False, reads=(), writes=(), symbol=None):
     the parent's tasks. While the scope is open, Warp's current stream is the
     poison stream (see module docstring). ``reads`` / ``writes`` are tokens (or
     logical data) the scope depends on as a whole: they are pushed into the
-    level at entry with that access mode, so the scope's node is ordered like a
+    scope at entry with that access mode, so the scope's node is ordered like a
     task declaring them (a scope with dependencies is a task whose body is a
-    graph; use it around a call into code that opens its own scope).
-    ``symbol`` names the level (STF DOT output, diagnostics) and its token.
+    graph). ``symbol`` names the scope (STF DOT output, diagnostics) and its
+    token.
 
-    A scope opened *inside a running task* is a node of the parent level,
-    ordered only through the tokens it imports: it is **not** ordered against
-    the enclosing task's own launches before or after it (they are siblings).
-    Open scopes between tasks / native blocks, never inside a task body that
-    also launches work.
+    **A scope opened inside a block** (:func:`warp_task` / :func:`warp_native`)
+    takes over that block's dependencies, and the block continues after it:
+    the block is ended where the scope opens, the scope is entered with the
+    block's dependencies and access modes, and a new task with the same
+    dependencies and symbol is started when the scope closes. The caller wrote
+    one block; the graph holds first part -> scope -> second part, ordered
+    among themselves and, as a whole, like the block. Code that records tasks
+    can therefore be called from any block, by a caller that does not know:
+
+    >>> with warp_native(ctx, "step"):           # caller
+    ...     prepare()                            #   plain: first part
+    ...     with scope(ctx):                     #   callee: these may overlap
+    ...         with warp_task(ctx, symbol="mass"): ...
+    ...         with warp_task(ctx, symbol="rows"): ...
+    ...     finish()                             #   plain: second part
+
+    The block's stream changes when it resumes (``wp.get_stream()`` is always
+    the right one). Refused: a block that yielded arrays of logical data, and
+    a scope opened while Warp's current stream is not the block's own.
 
     >>> with scope(ctx, launchable=True) as g:
     ...     with warp_native(ctx, "collide"): example.collide()
-    ...     solver.step(...)                       # opens its own scope inside
+    ...     with warp_native(ctx, "step"): solver.step(...)   # may open scopes inside
     ...     for _ in range(frames): g.launch()
     """
     if ctx is None:
         yield None
         return
-    outer = _scope_token(ctx)
-    cm = ctx.launchable_graph_scope() if launchable else ctx.graph_scope()
-    with cm as g:
-        if symbol is not None:
-            ctx.set_scope_symbol(str(symbol))  # names the scope in STF's DOT output
-        tok = ctx.token()
-        tok.set_symbol(f"scope:{symbol}" if symbol is not None else "scope")
-        if outer is not None:
-            outer.push(_AccessMode.READ)
-        for d in reads:
-            if d is not None:
-                d.push(_AccessMode.READ)
-        for d in writes:
-            if d is not None:
-                d.push(_AccessMode.RW)
-        _scopes.setdefault(id(ctx), []).append(tok)
-        poison = _PoisonStream.enter()
-        _ScopeAllocator.install(ctx)
+    blk = _open_block(ctx)
+    if (
+        blk is not None
+        and fork_in_place
+        and not launchable
+        and not reads
+        and not writes
+    ):
+        # Recorded in the block's own graph: no STF scope is pushed. The block's
+        # support token plays the scope token (tasks read it, native blocks and
+        # the rest of the block hold it read-write), so the tasks are ordered
+        # after the block's first part and joined by its second part.
+        blk._suspend()
+        resumed = False
         try:
-            yield g
+            _scopes.setdefault(id(ctx), []).append(blk._support)
+            _ctx_stack.append(ctx)
+            poison = _PoisonStream.enter()
+            try:
+                yield None
+            finally:
+                _PoisonStream.exit(poison)
+                _ctx_stack.pop()
+                _scopes[id(ctx)].pop()
+            blk._start_piece()
+            resumed = True
         finally:
-            _ScopeAllocator.uninstall()
-            _PoisonStream.exit(poison)
-            st = _scopes[id(ctx)]
-            st.pop()
-            if not st:
-                del _scopes[id(ctx)]
+            if not resumed:
+                blk._abandon()
+        return
+    if blk is not None:
+        blk._suspend()
+    resumed = False
+    try:
+        outer = _scope_token(ctx)
+        cm = ctx.launchable_graph_scope() if launchable else ctx.graph_scope()
+        with cm as g:
+            if symbol is not None:
+                ctx.set_scope_symbol(str(symbol))  # names the scope in STF's DOT output
+            tok = ctx.token()
+            tok.set_symbol(f"scope:{symbol}" if symbol is not None else "scope")
+            # one push per logical data, with the union of the requested modes
+            pushes = {}
+
+            def want(ld, mode):
+                mode = int(mode)
+                if mode & int(_AccessMode.WRITE):
+                    mode = int(_AccessMode.RW)
+                prev = pushes.get(id(ld))
+                pushes[id(ld)] = (ld, mode | (prev[1] if prev else 0))
+
+            if outer is not None:
+                want(outer, _AccessMode.READ)
+            for d in reads:
+                if d is not None:
+                    want(d, _AccessMode.READ)
+            for d in writes:
+                if d is not None:
+                    want(d, _AccessMode.RW)
+            if blk is not None:
+                # inherit the enclosing block's dependencies and its support token
+                for d in blk.deps:
+                    want(d.ld, d.mode)
+                if blk._support is not None:
+                    want(blk._support, _AccessMode.RW)
+            for ld, mode in pushes.values():
+                ld.push(_AccessMode(mode))
+            _scopes.setdefault(id(ctx), []).append(tok)
+            _ctx_stack.append(ctx)
+            poison = _PoisonStream.enter()
+            _ScopeAllocator.install(ctx)
+            try:
+                yield g
+            finally:
+                _ScopeAllocator.uninstall()
+                _PoisonStream.exit(poison)
+                _ctx_stack.pop()
+                st = _scopes[id(ctx)]
+                st.pop()
+                if not st:
+                    del _scopes[id(ctx)]
+        if blk is not None:
+            blk._start_piece()  # the block continues after the scope
+            resumed = True
+    finally:
+        if blk is not None and not resumed:
+            blk._abandon()
 
 
 # ---------------------------------------------------------------------------
 # tasks and native blocks
 # ---------------------------------------------------------------------------
+
+
+class _Block:
+    """One :func:`warp_task` / :func:`warp_native` block. Usually one STF task;
+    a scope opened inside it cuts it into pieces (see :func:`scope`), all with
+    the block's dependencies and chained by the block's *support token*: a
+    token nothing else knows, held read-write by every piece and by the scope
+    between them, so the pieces are ordered among themselves even when the
+    block declares no dependency it writes."""
+
+    def __init__(self, ctx, deps, symbol, capture, dtypes):
+        self.ctx = ctx
+        self.deps = deps  # the declared dependencies (dep objects)
+        self.symbol = symbol
+        self.stream = None
+        self.arrays = ()
+        self._capture = capture
+        self._dtypes = dtypes
+        self._support = None
+        if hasattr(
+            ctx, "graph_scope"
+        ):  # stackable context: scopes can be opened inside the block
+            self._support = ctx.token()
+            self._support.set_symbol(
+                f"block:{symbol}" if symbol is not None else "block"
+            )
+        self._task = (
+            None  # the STF task of the current piece; None while suspended by a scope
+        )
+        self._wp_scope = None
+        self._captured = False
+        self._poison = None
+
+    def _start_piece(self):
+        wp = _import_warp()
+        deps = list(self.deps)
+        tok = _scope_token(self.ctx)
+        if tok is not None:
+            deps.append(tok.read())
+        if self._support is not None:
+            deps.append(self._support.rw())
+        t = (
+            self.ctx.task(*deps, symbol=self.symbol)
+            if self.symbol is not None
+            else self.ctx.task(*deps)
+        )
+        t.start()
+        self._task = t
+        try:
+            self.stream = wrap_stream(t.stream_ptr())
+            self._wp_scope = wp.ScopedStream(
+                self.stream, sync_enter=False, sync_exit=False
+            )
+            self._wp_scope.__enter__()
+            if self._capture == "always" or (
+                self._capture == "auto" and self.stream.is_capturing
+            ):
+                wp.capture_begin(stream=self.stream, external=True)
+                self._captured = True
+            self.arrays = warp_arguments(t, self._dtypes)
+        except BaseException as e:
+            self._end_piece(type(e), e, e.__traceback__)
+            raise
+
+    def _end_piece(self, exc_type=None, exc_val=None, exc_tb=None):
+        """End the current piece; returns the cleanup errors (not raised)."""
+        wp = _import_warp()
+        errors = []
+        if self._captured:
+            self._captured = False
+            try:
+                _graph_handles.append(wp.capture_end(stream=self.stream))
+            except BaseException as e:  # noqa: BLE001
+                errors.append(e)
+        if self._wp_scope is not None:
+            sc, self._wp_scope = self._wp_scope, None
+            try:
+                sc.__exit__(exc_type, exc_val, exc_tb)
+            except BaseException as e:  # noqa: BLE001
+                errors.append(e)
+        if self._task is not None:
+            t, self._task = self._task, None
+            try:
+                t.end()
+            except BaseException as e:  # noqa: BLE001
+                errors.append(e)
+        return errors
+
+    def _suspend(self):
+        """A scope opens inside the block: end the current piece."""
+        wp = _import_warp()
+        if self.arrays:
+            raise RuntimeError(
+                "a scope cannot be opened inside a block that holds arrays of logical data "
+                f"({self.symbol!r}): the views would not be valid after the scope"
+            )
+        if wp.get_stream() is not self.stream:
+            raise RuntimeError(
+                f"a scope cannot be opened inside block {self.symbol!r} while Warp's current "
+                "stream is not the block's stream"
+            )
+        errors = self._end_piece()
+        if errors:
+            raise errors[0]
+
+    def _abandon(self):
+        """The scope opened inside the block failed: the block has no piece to end."""
+        self._task = None
+
+    def __enter__(self):
+        self._poison = _PoisonStream.suspended()
+        self._poison.__enter__()
+        try:
+            self._start_piece()
+        except BaseException:
+            self._poison.__exit__(None, None, None)
+            raise
+        _open_tasks.append(self)
+        return self.stream, self.arrays
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # same precedence as pytorch_task: body error, then cleanup errors
+        errors = self._end_piece(exc_type, exc_val, exc_tb)
+        if _open_tasks and _open_tasks[-1] is self:
+            _open_tasks.pop()
+        self._poison.__exit__(None, None, None)
+        if exc_type is not None:
+            return False
+        if errors:
+            raise errors[0]
+        return False
 
 
 def warp_task(ctx, *args, symbol=None, capture="auto", dtypes=None):
@@ -466,6 +706,12 @@ def warp_task(ctx, *args, symbol=None, capture="auto", dtypes=None):
     reads the scope token. ``None`` deps (from an inert :func:`token`) are
     dropped; with ``ctx=None`` the body runs as is on Warp's current stream and
     ``arrays`` is empty.
+
+    Tasks of a scope that declare nothing overlap; plain code after them (a
+    native block, or the rest of the block the scope was opened in) joins
+    them. Dependencies are only needed for an order between sibling tasks.
+    A task cannot be opened directly inside another block: open a
+    :func:`scope` around the tasks that may overlap.
 
     ``capture``: ``"auto"`` (default) adopts the capture as an external Warp
     capture when the task stream is capturing (graph scopes), so Warp's
@@ -482,79 +728,13 @@ def warp_task(ctx, *args, symbol=None, capture="auto", dtypes=None):
     deps = [a for a in args if a is not None]
     if ctx is None:
         return _no_context_task(wp)
-    tok = _scope_token(ctx)
-    if tok is not None:
-        deps.append(tok.read())
-    t = ctx.task(*deps, symbol=symbol) if symbol is not None else ctx.task(*deps)
-
-    class _WarpTaskContext:
-        _scope = None
-        _captured = False
-        _suspend = None
-
-        def __enter__(self):
-            self._suspend = _PoisonStream.suspended()
-            self._suspend.__enter__()
-            try:
-                t.start()
-            except BaseException:
-                self._suspend.__exit__(None, None, None)
-                raise
-            _open_tasks.append(symbol)
-            try:
-                self.stream = wrap_stream(t.stream_ptr())
-                self._scope = wp.ScopedStream(
-                    self.stream, sync_enter=False, sync_exit=False
-                )
-                self._scope.__enter__()
-                if capture == "always" or (
-                    capture == "auto" and self.stream.is_capturing
-                ):
-                    wp.capture_begin(stream=self.stream, external=True)
-                    self._captured = True
-                arrays = warp_arguments(t, dtypes)
-            except BaseException as e:
-                if self._captured:
-                    with contextlib.suppress(Exception):
-                        _graph_handles.append(wp.capture_end(stream=self.stream))
-                if self._scope is not None:
-                    with contextlib.suppress(Exception):
-                        self._scope.__exit__(type(e), e, e.__traceback__)
-                with contextlib.suppress(Exception):
-                    t.end()
-                if _open_tasks:
-                    _open_tasks.pop()
-                self._suspend.__exit__(None, None, None)
-                raise
-            return self.stream, arrays
-
-        def __exit__(self, exc_type, exc_val, exc_tb):
-            # same precedence as pytorch_task: body error, then cleanup errors
-            errors = []
-            if self._captured:
-                try:
-                    _graph_handles.append(wp.capture_end(stream=self.stream))
-                except BaseException as e:  # noqa: BLE001
-                    errors.append(e)
-            if self._scope is not None:
-                try:
-                    self._scope.__exit__(exc_type, exc_val, exc_tb)
-                except BaseException as e:  # noqa: BLE001
-                    errors.append(e)
-            try:
-                t.end()
-            except BaseException as e:  # noqa: BLE001
-                errors.append(e)
-            if _open_tasks:
-                _open_tasks.pop()
-            self._suspend.__exit__(None, None, None)
-            if exc_type is not None:
-                return False
-            if errors:
-                raise errors[0]
-            return False
-
-    return _WarpTaskContext()
+    outer = _open_block(ctx)
+    if outer is not None:
+        raise RuntimeError(
+            f"block {symbol!r} opened inside block {outer.symbol!r}: it would not be ordered "
+            "against that block's own work. Open a scope() around the tasks that may overlap"
+        )
+    return _Block(ctx, deps, symbol, capture, dtypes)
 
 
 @contextlib.contextmanager
@@ -592,6 +772,7 @@ def release_graph_handles():
 
 __all__ = [
     "array_arg",
+    "current_context",
     "current_task_symbol",
     "release_graph_handles",
     "scope",

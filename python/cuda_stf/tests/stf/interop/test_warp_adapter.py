@@ -13,6 +13,7 @@ import cuda.stf._experimental as stf  # noqa: E402
 from cuda.stf._experimental import AccessMode  # noqa: E402
 from cuda.stf._experimental.interop.warp import (  # noqa: E402
     array_arg,
+    current_context,
     release_graph_handles,
     scope,
     token,
@@ -370,48 +371,67 @@ def test_no_context_is_a_no_op():
     assert y.numpy()[0] == 4.0
 
 
-def test_scope_between_blocks_is_ordered_inside_task_is_not():
-    """A scope opened between tasks / native blocks is ordered by its
-    dependencies; one opened inside a running task is a sibling of that
-    task's own launches (documented limitation)."""
+def test_scope_inside_a_block_continues_the_block():
+    """A scope opened inside a block takes over the block's dependencies and
+    the block continues after it: first part -> scope -> second part, whatever
+    the block declares (a token it writes, nothing at all, or the scope token
+    of a native block). The same frame with the scope between explicit blocks
+    is the reference. A task directly inside a block is refused, and
+    current_context() follows the open scopes."""
     n = 1 << 16
     expected = (1.01**20 + 1.0) * 1.01**20
 
-    def run(inside):
+    def run(form):
         ctx = stf.stackable_context()
         t = token(ctx)
         y = wp.ones(n, dtype=float)
+        one = wp.ones(n, dtype=float)
+
+        def part():
+            for _ in range(20):
+                wp.launch(scale, dim=n, inputs=[1.01, y])
+
+        def inner():
+            assert current_context() is ctx
+            with scope(ctx):
+                # two tasks that may overlap: one does the work, one is idle
+                with warp_task(ctx, symbol="add"):
+                    wp.launch(axpy, dim=n, inputs=[1.0, one, y])
+                with warp_task(ctx, symbol="idle"):
+                    pass
+
+        assert current_context() is None
         with scope(ctx, launchable=True) as g:
-            if inside:
+            if form == "between":
                 with warp_task(ctx, t.rw()):
-                    for _ in range(20):
-                        wp.launch(scale, dim=n, inputs=[1.01, y])
-                    with scope(ctx):
-                        with warp_native(ctx):
-                            wp.launch(
-                                axpy, dim=n, inputs=[1.0, wp.ones(n, dtype=float), y]
-                            )
-                    for _ in range(20):
-                        wp.launch(scale, dim=n, inputs=[1.01, y])
-            else:
-                with warp_task(ctx, t.rw()):
-                    for _ in range(20):
-                        wp.launch(scale, dim=n, inputs=[1.01, y])
+                    part()
                 with scope(ctx, writes=(t,)):
                     with warp_native(ctx):
-                        wp.launch(axpy, dim=n, inputs=[1.0, wp.ones(n, dtype=float), y])
+                        wp.launch(axpy, dim=n, inputs=[1.0, one, y])
                 with warp_task(ctx, t.rw()):
-                    for _ in range(20):
-                        wp.launch(scale, dim=n, inputs=[1.01, y])
+                    part()
+            else:
+                block = {
+                    "task-rw": lambda: warp_task(ctx, t.rw(), symbol="blk"),
+                    "task-nodeps": lambda: warp_task(ctx, symbol="blk"),
+                    "native": lambda: warp_native(ctx, "blk"),
+                }[form]
+                with block():
+                    part()
+                    inner()
+                    part()
+                    with pytest.raises(RuntimeError, match="inside block"):
+                        warp_task(ctx, symbol="nested")
             g.launch()
+        assert current_context() is None
         wp.synchronize()
         v = float(y.numpy()[0])
         ctx.finalize()
         release_graph_handles()
         return v
 
-    assert run(False) == pytest.approx(expected, rel=1e-5)
-    assert run(True) != pytest.approx(expected, rel=1e-5)
+    for form in ("between", "task-rw", "task-nodeps", "native"):
+        assert run(form) == pytest.approx(expected, rel=1e-5), form
 
 
 def test_scope_allocations_belong_to_the_level():
