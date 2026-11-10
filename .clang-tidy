@@ -104,7 +104,6 @@ Checks:
   - '-readability-simplify-boolean-expr'
   - '-readability-make-member-function-const'
   - '-readability-suspicious-call-argument'
-  - '-readability-inconsistent-declaration-parameter-name'
   # Handled by clang-tidy
   - '-readability-misleading-indentation'
 
