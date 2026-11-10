@@ -241,11 +241,13 @@ struct __simd_bit_repeat_generator
     // Check before conversion to int so a negative wide count cannot become positive.
     _CCCL_IF_CONSTEVAL_DEFAULT
     {
-      _CCCL_VERIFY(__v1_[_Idx::value] > 0, "bit_repeat: count must be greater than 0");
+      _CCCL_VERIFY(::cuda::std::in_range<int>(__v1_[_Idx::value]) && __v1_[_Idx::value] > 0,
+                   "bit_repeat: count must be in (0, INT_MAX]");
     }
     else
     {
-      _CCCL_ASSERT(__v1_[_Idx::value] > 0, "bit_repeat: count must be greater than 0");
+      _CCCL_ASSERT(::cuda::std::in_range<int>(__v1_[_Idx::value]) && __v1_[_Idx::value] > 0,
+                   "bit_repeat: count must be in (0, INT_MAX]");
     }
     return ::cuda::std::bit_repeat(__v0_[_Idx::value], static_cast<int>(__v1_[_Idx::value]));
   }
