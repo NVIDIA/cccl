@@ -36,7 +36,7 @@ struct two_thread_test_group
 };
 
 template <cuda::thread_scope Scope>
-TEST_HOST_DEVICE_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test_move_construct()
 {
   cuda::pipeline_shared_state<Scope, 1> shared_state;
   cuda::std::optional<cuda::pipeline<Scope>> moved;
@@ -49,6 +49,34 @@ TEST_HOST_DEVICE_FUNC void test()
   auto other = cuda::make_pipeline(two_thread_test_group<1>{}, &shared_state);
   assert(!other.quit());
   assert(moved->quit());
+}
+
+template <cuda::thread_scope Scope>
+TEST_HOST_DEVICE_FUNC void test_move_assign()
+{
+  cuda::pipeline_shared_state<Scope, 1> lhs_state;
+  cuda::pipeline_shared_state<Scope, 1> rhs_state;
+  auto lhs = cuda::make_pipeline(two_thread_test_group<0>{}, &lhs_state);
+  {
+    auto rhs = cuda::make_pipeline(two_thread_test_group<0>{}, &rhs_state);
+    lhs      = cuda::std::move(rhs);
+  } // The moved-from `rhs` must not quit.
+
+  // The assignment released rank 0's reference to `lhs_state`, so rank 1 is the last to quit.
+  auto lhs_other = cuda::make_pipeline(two_thread_test_group<1>{}, &lhs_state);
+  assert(lhs_other.quit());
+
+  // `lhs` now holds rank 0's reference to `rhs_state`.
+  auto rhs_other = cuda::make_pipeline(two_thread_test_group<1>{}, &rhs_state);
+  assert(!rhs_other.quit());
+  assert(lhs.quit());
+}
+
+template <cuda::thread_scope Scope>
+TEST_HOST_DEVICE_FUNC void test()
+{
+  test_move_construct<Scope>();
+  test_move_assign<Scope>();
 }
 
 int main(int, char**)
