@@ -114,7 +114,7 @@ Always prefer targeted builds and tests, as full builds are time-consuming. If r
 
 Target names do not encode the C++ dialect. The preset selects it, except for the C Parallel targets, which fix C++20 in their CMake files. Every dotted prefix of a target is also a Ninja metatarget, so `ninja cub.test.device` builds all CUB device tests; targets created with `NO_METATARGETS`, such as the C Parallel tests, are the exception. `--ctest-targets` takes CTest `-R` regexes, which match substrings: append `$` when a test name is a prefix of others.
 
-* CUB: `cub.test.<name>[.<variant>]`. `<name>` is the source file name without `catch2_test_` or `test_`, with a leading `device_`, `block_`, `warp_`, `thread_`, or `util_` turned into `device.` and so on. Variants come from `// %PARAM%` lines and launcher ids (`lid_0`, `lid_1`, `lid_2`).
+* CUB: `cub.test.<name>[.<variant>]`. `<name>` is the source file name without `catch2_test_` or `test_`, with a leading `device_`, `block_`, `warp_`, `thread_`, or `util_` turned into `device.` and so on. Variants come from `// %PARAM%` lines and launcher ids (`lid_0`, `lid_1`, `lid_2`). CMake reads `%PARAM%` lines at configure time, so re-run CMake after changing them (see `docs/cccl/development/testing.rst`).
 * Thrust: `thrust.<host>.<device>.test.<name>`, e.g. `thrust.cpp.cuda.test.reduce`.
 * cudax: `cudax.test.<group>`; the groups are defined in `cudax/test/CMakeLists.txt`.
 * C Parallel: `cccl.c.parallel.test.<name>` for `c/parallel/test/test_<name>.cpp`.
@@ -360,6 +360,11 @@ pre-commit install
 pre-commit run --all-files
 pre-commit run --files <file1> <file2>
 ```
+
+Besides the formatters and linters, two repository-local hooks enforce conventions:
+
+* `check-cub-test-macros`: tests in `cub/test/` must be declared with `CUB_TEST`, `CUB_TEST_CASE`, or `CUB_TEST_LIST`, which take a `CUB_SMALL` or `CUB_LARGE` memory class. Raw `C2H_TEST*` and Catch2 `TEST_CASE`-style macros are rejected.
+* `check-ptx-umbrella`: every PTX wrapper in `libcudacxx/include/cuda/__ptx/{instructions,pragmas}/` needs a public `cuda/ptxs/` header, and `<cuda/ptx>` must include exactly the `cuda/ptxs/` headers.
 
 ### Style Guidance
 
