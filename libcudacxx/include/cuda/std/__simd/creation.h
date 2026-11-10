@@ -33,6 +33,7 @@
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__type_traits/always_false.h>
+#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__utility/integer_sequence.h>
@@ -324,9 +325,11 @@ template <typename _Vec>
   }
   else if constexpr (__is_enabled_basic_vec_v<_Vec>)
   {
-    using _ValueType _CCCL_NODEBUG = typename _Vec::value_type;
+    using _ValueType _CCCL_NODEBUG  = typename _Vec::value_type;
+    using _CommonType _CCCL_NODEBUG = common_type_t<__simd_size_type, _ValueType>;
     static_assert(is_arithmetic_v<_ValueType>, "iota requires an arithmetic element type");
-    static_assert(_Vec::size() - 1 <= numeric_limits<_ValueType>::max(), "iota indices must be representable");
+    static_assert(_CommonType{_Vec::size() - 1} <= _CommonType{numeric_limits<_ValueType>::max()},
+                  "iota indices must be representable");
     return _Vec{__iota_generator<_ValueType>{}};
   }
   else
