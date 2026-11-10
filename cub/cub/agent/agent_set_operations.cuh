@@ -67,7 +67,7 @@ template <bool UpperBound, typename Offset, typename T, typename It, typename Co
   while (begin < end)
   {
     // shift == 1 means scale == 1, so int arithmetic never overflows here regardless of the index magnitude.
-    binary_search_iteration<UpperBound, int>(data, begin, end, key, 1, compare_op);
+    _CUB::detail::set_ops::binary_search_iteration<UpperBound, int>(data, begin, end, key, 1, compare_op);
   }
   return begin;
 }
@@ -82,24 +82,24 @@ biased_binary_search(It data, Offset count, T key, IntT levels, CompareOp compar
 
   if (levels >= 4 && begin < end)
   {
-    binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 9, compare_op);
+    _CUB::detail::set_ops::binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 9, compare_op);
   }
   if (levels >= 3 && begin < end)
   {
-    binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 7, compare_op);
+    _CUB::detail::set_ops::binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 7, compare_op);
   }
   if (levels >= 2 && begin < end)
   {
-    binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 5, compare_op);
+    _CUB::detail::set_ops::binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 5, compare_op);
   }
   if (levels >= 1 && begin < end)
   {
-    binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 4, compare_op);
+    _CUB::detail::set_ops::binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 4, compare_op);
   }
 
   while (begin < end)
   {
-    binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 1, compare_op);
+    _CUB::detail::set_ops::binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 1, compare_op);
   }
   return begin;
 }
@@ -113,7 +113,7 @@ balanced_path(It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset d
 {
   using key_t = it_value_t<It1>;
 
-  Offset index1 = MergePath(keys1, keys2, num_keys1, num_keys2, diag, compare_op);
+  Offset index1 = _CUB::MergePath(keys1, keys2, num_keys1, num_keys2, diag, compare_op);
   Offset index2 = diag - index1;
 
   bool star = false;
@@ -122,8 +122,8 @@ balanced_path(It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset d
     const key_t x = keys2[index2];
 
     // Search for the beginning of the duplicate run of x in both A and B.
-    const Offset start1 = biased_binary_search<false>(keys1, index1, x, levels, compare_op);
-    const Offset start2 = biased_binary_search<false>(keys2, index2, x, levels, compare_op);
+    const Offset start1 = _CUB::detail::set_ops::biased_binary_search<false>(keys1, index1, x, levels, compare_op);
+    const Offset start2 = _CUB::detail::set_ops::biased_binary_search<false>(keys2, index2, x, levels, compare_op);
 
     // Sum x's ranks (distance from merge path to lower bound) in A and B, then split them evenly into a stairstep path.
     const Offset run1      = index1 - start1;
@@ -131,9 +131,10 @@ balanced_path(It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset d
     const Offset total_run = run1 + run2_lb;
 
     // Attempt to advance B and regress A.
-    Offset advance2       = (::cuda::std::max) (total_run >> 1, total_run - run1);
-    const Offset end2     = (::cuda::std::min) (num_keys2, start2 + advance2 + 1);
-    const Offset run2     = (index2 + binary_search<true>(keys2 + index2, end2 - index2, x, compare_op)) - start2;
+    Offset advance2   = (::cuda::std::max) (total_run >> 1, total_run - run1);
+    const Offset end2 = (::cuda::std::min) (num_keys2, start2 + advance2 + 1);
+    const Offset run2 =
+      (index2 + _CUB::detail::set_ops::binary_search<true>(keys2 + index2, end2 - index2, x, compare_op)) - start2;
     advance2              = (::cuda::std::min) (advance2, run2);
     const Offset advance1 = total_run - advance2;
 
@@ -567,8 +568,8 @@ struct agent_set_op
     const int num_keys2 = static_cast<int>(keys2_end - keys2_beg);
 
     // Load both key ranges into shared memory, laid out as [keys1 | keys2].
-    const auto keys1_load = detail::try_make_cache_modified_iterator<load_modifier>(keys1_in);
-    const auto keys2_load = detail::try_make_cache_modified_iterator<load_modifier>(keys2_in);
+    const auto keys1_load = _CUB::detail::try_make_cache_modified_iterator<load_modifier>(keys1_in);
+    const auto keys2_load = _CUB::detail::try_make_cache_modified_iterator<load_modifier>(keys2_in);
     key_type keys_loc[items_per_thread];
     gmem_to_reg<!IsLastTile>(keys_loc, keys1_load + keys1_beg, keys2_load + keys2_beg, num_keys1, num_keys2);
     reg_to_shared(&storage.load_storage.keys_shared[0], keys_loc);
@@ -576,7 +577,7 @@ struct agent_set_op
 
     const int diag_loc = (::cuda::std::min) (items_per_thread * static_cast<int>(threadIdx.x), num_keys1 + num_keys2);
 
-    const auto [keys1_beg_loc, keys2_beg_loc] = balanced_path(
+    const auto [keys1_beg_loc, keys2_beg_loc] = _CUB::detail::set_ops::balanced_path(
       &storage.load_storage.keys_shared[0],
       &storage.load_storage.keys_shared[num_keys1],
       num_keys1,
@@ -645,7 +646,7 @@ struct agent_set_op
 
     if constexpr (has_values)
     {
-      const auto values1_load = detail::try_make_cache_modified_iterator<load_modifier>(values1_in);
+      const auto values1_load = _CUB::detail::try_make_cache_modified_iterator<load_modifier>(values1_in);
       value_type values_loc[items_per_thread];
       // Set difference and intersection emit values exclusively from the first input.
       if constexpr (::cuda::std::is_same_v<SetOp, serial_set_difference>
@@ -655,7 +656,7 @@ struct agent_set_op
       }
       else
       {
-        const auto values2_load = detail::try_make_cache_modified_iterator<load_modifier>(values2_in);
+        const auto values2_load = _CUB::detail::try_make_cache_modified_iterator<load_modifier>(values2_in);
         gmem_to_reg<!IsLastTile>(values_loc, values1_load + keys1_beg, values2_load + keys2_beg, num_keys1, num_keys2);
       }
       __syncthreads();

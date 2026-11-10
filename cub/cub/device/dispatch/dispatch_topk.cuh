@@ -58,7 +58,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+__launch_bounds__(int(_CUB::detail::current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceTopKKernel(
     const KeyInputIteratorT d_keys_in,
     const KeyOutputIteratorT d_keys_out,
@@ -78,7 +78,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     const int pass,
     const bool is_last_pass)
 {
-  static constexpr topk_policy policy = current_policy<PolicySelector>();
+  static constexpr topk_policy policy = _CUB::detail::current_policy<PolicySelector>();
   using agent_topk_policy_t =
     agent_topk_policy<policy.threads_per_block,
                       policy.items_per_thread,
@@ -123,7 +123,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+__launch_bounds__(int(_CUB::detail::current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceTopKHistogramKernel(
     const KeyInputIteratorT d_keys_in,
     const KeyOutputIteratorT d_keys_out,
@@ -138,7 +138,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     const int pass,
     const bool is_last_pass)
 {
-  static constexpr topk_policy policy = current_policy<PolicySelector>();
+  static constexpr topk_policy policy = _CUB::detail::current_policy<PolicySelector>();
   using agent_topk_policy_t =
     agent_topk_policy<policy.threads_per_block,
                       policy.items_per_thread,
@@ -184,7 +184,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+__launch_bounds__(int(_CUB::detail::current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceTopKLastFilterKernel(
     const KeyInputIteratorT d_keys_in,
     const KeyOutputIteratorT d_keys_out,
@@ -199,7 +199,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     IdentifyCandidatesOpT identify_candidates_op,
     const int pass)
 {
-  static constexpr topk_policy policy = current_policy<PolicySelector>();
+  static constexpr topk_policy policy = _CUB::detail::current_policy<PolicySelector>();
   using agent_topk_policy_t =
     agent_topk_policy<policy.threads_per_block,
                       policy.items_per_thread,
@@ -292,9 +292,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+  return _CUB::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     static constexpr topk_policy active_policy = policy_getter();
-    detail::log_dispatch("DeviceTopK", cc, active_policy);
+    _CUB::detail::log_dispatch("DeviceTopK", cc, active_policy);
     using key_in_t                  = it_value_t<KeyInputIteratorT>;
     using value_in_t                = it_value_t<ValueInputIteratorT>;
     static constexpr bool keys_only = ::cuda::std::is_same_v<value_in_t, NullType>;
@@ -321,7 +321,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     constexpr int tile_size                                   = threads_per_block * items_per_thread;
     const auto num_tiles      = static_cast<unsigned int>(::cuda::ceil_div(num_items, tile_size));
     const int total_bits      = detail::radix::traits_t<key_in_t>::default_end_bit(decomposer);
-    const int num_passes      = calc_num_passes<bits_per_pass>(total_bits);
+    const int num_passes      = _CUB::detail::topk::calc_num_passes<bits_per_pass>(total_bits);
     constexpr int num_buckets = 1 << bits_per_pass;
 
     // Define operators
@@ -358,7 +358,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
     void* allocations[allocations_array_size] = {};
     if (const auto error =
-          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+          CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }

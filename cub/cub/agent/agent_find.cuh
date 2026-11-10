@@ -100,7 +100,7 @@ struct agent_t
     alignas(InputT) unsigned char input_bytes[ItemsPerThread * sizeof(InputT)];
     auto& input_items = *reinterpret_cast<InputT(*)[ItemsPerThread]>(input_bytes);
     // is_aligned_and_full_tile checked that the tile is aligned to VectorT
-    detail::load_direct_striped_vectorized_aligned<ThreadsPerBlock, VecSize, LoadModifier>(
+    _CUB::detail::load_direct_striped_vectorized_aligned<ThreadsPerBlock, VecSize, LoadModifier>(
       static_cast<int>(threadIdx.x), d_in + tile_offset, input_items);
 
     for (int i = 0; i < ItemsPerThread; ++i)
