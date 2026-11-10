@@ -212,7 +212,8 @@ __device__ void test_other_mappings(Config config)
   // number groups by their first physical lane instead.
   CHECK(binary_result.group_count() == 6);
   CHECK(binary_result.group_rank() == group + (rank % 2) * 3);
-  CHECK(boolean_result.group_rank() == binary_result.group_rank());
+  CHECK(boolean_result.group_count() == 6);
+  CHECK(boolean_result.group_rank() == integer_result.group_rank());
   CHECK(integer_result.group_count() == 6);
   CHECK(integer_result.group_rank() == group * 2 + rank % 2);
 
