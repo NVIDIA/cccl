@@ -84,7 +84,7 @@ public:
   //! @brief The thread scope of the barrier.
   static constexpr thread_scope scope = thread_scope_block;
 
-  using arrival_token           = typename __barrier_base::arrival_token;
+  using arrival_token           = __barrier_base::arrival_token;
   _CCCL_HIDE_FROM_ABI barrier() = default;
 
   barrier(const barrier&)            = delete;

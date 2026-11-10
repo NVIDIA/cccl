@@ -22,197 +22,262 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/climits>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-// __static_gcd
+// All computations are done in constant evaluated functions rather than recursive class templates to minimize the
+// number of template instantiations. The numerator and denominator of a ratio are within [-INTMAX_MAX, INTMAX_MAX], so
+// they can always be negated.
 
-template <intmax_t _Xp, intmax_t _Yp>
-struct __static_gcd
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL intmax_t __ratio_abs(intmax_t __x) noexcept
 {
-  static const intmax_t value = __static_gcd<_Yp, _Xp % _Yp>::value;
+  return __x < 0 ? -__x : __x;
+}
+
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL intmax_t __ratio_gcd(intmax_t __x, intmax_t __y) noexcept
+{
+  __x = ::cuda::std::__ratio_abs(__x);
+  __y = ::cuda::std::__ratio_abs(__y);
+  // Alternating the roles of __x and __y avoids temporaries, which are expensive to constant evaluate
+  while (__y != 0)
+  {
+    __x %= __y;
+    if (__x == 0)
+    {
+      return __y;
+    }
+    __y %= __x;
+  }
+  // gcd(0, 0) is defined as 1 so that the result is always a valid divisor
+  return __x == 0 ? 1 : __x;
+}
+
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL intmax_t __ratio_lcm(intmax_t __x, intmax_t __y) noexcept
+{
+  return __x / ::cuda::std::__ratio_gcd(__x, __y) * __y;
+}
+
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool __ratio_mul_overflows(intmax_t __x, intmax_t __y) noexcept
+{
+  return __y != 0 && ::cuda::std::__ratio_abs(__x) > INTMAX_MAX / ::cuda::std::__ratio_abs(__y);
+}
+
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool __ratio_add_overflows(intmax_t __x, intmax_t __y) noexcept
+{
+  return __y < 0 ? __x < -INTMAX_MAX - __y : __x > INTMAX_MAX - __y;
+}
+
+//! @brief The canonical numerator and denominator of an arithmetic operation on two ratios
+struct __ratio_result
+{
+  intmax_t __num_;
+  intmax_t __den_;
 };
 
-template <intmax_t _Xp>
-struct __static_gcd<_Xp, 0>
+// The arithmetic operations expect their operands in canonical form, i.e. with coprime numerator and denominator and a
+// positive denominator. On overflow they return INTMAX_MIN for both, so that instantiating the resulting ratio fails.
+
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __ratio_result
+__ratio_multiply(intmax_t __n1, intmax_t __d1, intmax_t __n2, intmax_t __d2) noexcept
 {
-  static const intmax_t value = _Xp;
-};
+  // Cancelling the common factors crosswise avoids intermediate overflow and keeps the result in canonical form
+  const intmax_t __gcd_n1_d2 = ::cuda::std::__ratio_gcd(__n1, __d2);
+  const intmax_t __gcd_n2_d1 = ::cuda::std::__ratio_gcd(__n2, __d1);
+  __n1 /= __gcd_n1_d2;
+  __d2 /= __gcd_n1_d2;
+  __n2 /= __gcd_n2_d1;
+  __d1 /= __gcd_n2_d1;
+  if (::cuda::std::__ratio_mul_overflows(__n1, __n2) || ::cuda::std::__ratio_mul_overflows(__d1, __d2))
+  {
+    return __ratio_result{INTMAX_MIN, INTMAX_MIN};
+  }
+  return __ratio_result{__n1 * __n2, __d1 * __d2};
+}
 
-template <>
-struct __static_gcd<0, 0>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __ratio_result
+__ratio_divide(intmax_t __n1, intmax_t __d1, intmax_t __n2, intmax_t __d2) noexcept
 {
-  static const intmax_t value = 1;
-};
+  // Multiply with the reciprocal of the divisor, whose denominator must be positive
+  return __n2 < 0 ? ::cuda::std::__ratio_multiply(__n1, __d1, -__d2, -__n2)
+                  : ::cuda::std::__ratio_multiply(__n1, __d1, __d2, __n2);
+}
 
-// __static_lcm
-
-template <intmax_t _Xp, intmax_t _Yp>
-struct __static_lcm
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __ratio_result
+__ratio_add(intmax_t __n1, intmax_t __d1, intmax_t __n2, intmax_t __d2) noexcept
 {
-  static const intmax_t value = _Xp / __static_gcd<_Xp, _Yp>::value * _Yp;
-};
+  // Both ratios are scaled to the common denominator lcm(d1, d2) == d1 * scale1 == d2 * scale2. Factoring out the gcd
+  // of the numerators and one of the denominators avoids intermediate overflow:
+  //   n1 / d1 + n2 / d2 == (gcd_n / scale2) * ((n1 / gcd_n * scale1 + n2 / gcd_n * scale2) / d2)
+  const intmax_t __gcd_n  = ::cuda::std::__ratio_gcd(__n1, __n2);
+  const intmax_t __gcd_d  = ::cuda::std::__ratio_gcd(__d1, __d2);
+  const intmax_t __scale1 = __d2 / __gcd_d;
+  const intmax_t __scale2 = __d1 / __gcd_d;
+  __n1 /= __gcd_n;
+  __n2 /= __gcd_n;
+  if (::cuda::std::__ratio_mul_overflows(__n1, __scale1) || ::cuda::std::__ratio_mul_overflows(__n2, __scale2)
+      || ::cuda::std::__ratio_add_overflows(__n1 * __scale1, __n2 * __scale2))
+  {
+    return __ratio_result{INTMAX_MIN, INTMAX_MIN};
+  }
+  const intmax_t __sum     = __n1 * __scale1 + __n2 * __scale2;
+  const intmax_t __gcd_sum = ::cuda::std::__ratio_gcd(__sum, __d2);
+  return ::cuda::std::__ratio_multiply(__gcd_n, __scale2, __sum / __gcd_sum, __d2 / __gcd_sum);
+}
 
-template <intmax_t _Xp>
-struct __static_abs
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool
+__ratio_less_positive(intmax_t __n1, intmax_t __d1, intmax_t __n2, intmax_t __d2) noexcept
 {
-  static const intmax_t value = _Xp < 0 ? -_Xp : _Xp;
-};
+  // Compare the continued fraction expansions term by term, which cannot overflow. For equal integral parts q,
+  // q + r1 / d1 < q + r2 / d2 is equivalent to d2 / r2 < d1 / r1, so every other term compares the reciprocals of the
+  // remainders with swapped operands. Updating the operands in place avoids temporaries, which are expensive to
+  // constant evaluate.
+  while (true)
+  {
+    if (__n1 / __d1 != __n2 / __d2)
+    {
+      return __n1 / __d1 < __n2 / __d2;
+    }
+    __n1 %= __d1;
+    __n2 %= __d2;
+    if (__n1 == 0 || __n2 == 0)
+    {
+      return __n1 < __n2;
+    }
+    if (__d2 / __n2 != __d1 / __n1)
+    {
+      return __d2 / __n2 < __d1 / __n1;
+    }
+    __d2 %= __n2;
+    __d1 %= __n1;
+    if (__d1 == 0 || __d2 == 0)
+    {
+      return __d2 < __d1;
+    }
+  }
+}
 
-template <intmax_t _Xp>
-inline constexpr intmax_t __static_sign_v = _Xp == 0 ? 0 : (_Xp < 0 ? -1 : 1);
-
-template <intmax_t _Xp, intmax_t _Yp, intmax_t = __static_sign_v<_Yp>>
-class __ll_add;
-
-template <intmax_t _Xp, intmax_t _Yp>
-class __ll_add<_Xp, _Yp, 1>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool
+__ratio_less(intmax_t __n1, intmax_t __d1, intmax_t __n2, intmax_t __d2) noexcept
 {
-  static const intmax_t min = (1LL << (sizeof(intmax_t) * CHAR_BIT - 1)) + 1;
-  static const intmax_t max = -min;
+  if (__n1 > 0 && __n2 > 0)
+  {
+    return ::cuda::std::__ratio_less_positive(__n1, __d1, __n2, __d2);
+  }
+  if (__n1 < 0 && __n2 < 0)
+  {
+    return ::cuda::std::__ratio_less_positive(-__n2, __d2, -__n1, __d1);
+  }
+  // The denominators are positive, so the numerators determine the order when the signs differ or one of them is zero
+  return __n1 < __n2;
+}
 
-  static_assert(_Xp <= max - _Yp, "overflow in __ll_add");
-
-public:
-  static const intmax_t value = _Xp + _Yp;
-};
-
-template <intmax_t _Xp, intmax_t _Yp>
-class __ll_add<_Xp, _Yp, 0>
-{
-public:
-  static const intmax_t value = _Xp;
-};
-
-template <intmax_t _Xp, intmax_t _Yp>
-class __ll_add<_Xp, _Yp, -1>
-{
-  static const intmax_t min = (1LL << (sizeof(intmax_t) * CHAR_BIT - 1)) + 1;
-  static const intmax_t max = -min;
-
-  static_assert(min - _Yp <= _Xp, "overflow in __ll_add");
-
-public:
-  static const intmax_t value = _Xp + _Yp;
-};
-
-template <intmax_t _Xp, intmax_t _Yp, intmax_t = __static_sign_v<_Yp>>
-class __ll_sub;
-
-template <intmax_t _Xp, intmax_t _Yp>
-class __ll_sub<_Xp, _Yp, 1>
-{
-  static const intmax_t min = (1LL << (sizeof(intmax_t) * CHAR_BIT - 1)) + 1;
-  static const intmax_t max = -min;
-
-  static_assert(min + _Yp <= _Xp, "overflow in __ll_sub");
-
-public:
-  static const intmax_t value = _Xp - _Yp;
-};
-
-template <intmax_t _Xp, intmax_t _Yp>
-class __ll_sub<_Xp, _Yp, 0>
-{
-public:
-  static const intmax_t value = _Xp;
-};
-
-template <intmax_t _Xp, intmax_t _Yp>
-class __ll_sub<_Xp, _Yp, -1>
-{
-  static const intmax_t min = (1LL << (sizeof(intmax_t) * CHAR_BIT - 1)) + 1;
-  static const intmax_t max = -min;
-
-  static_assert(_Xp <= max + _Yp, "overflow in __ll_sub");
-
-public:
-  static const intmax_t value = _Xp - _Yp;
-};
-
-template <intmax_t _Xp, intmax_t _Yp>
-class __ll_mul
-{
-  static const intmax_t nan   = (1LL << (sizeof(intmax_t) * CHAR_BIT - 1));
-  static const intmax_t min   = nan + 1;
-  static const intmax_t max   = -min;
-  static const intmax_t __a_x = __static_abs<_Xp>::value;
-  static const intmax_t __a_y = __static_abs<_Yp>::value;
-
-  static_assert(_Xp != nan && _Yp != nan && __a_x <= max / __a_y, "overflow in __ll_mul");
-
-public:
-  static const intmax_t value = _Xp * _Yp;
-};
-
-template <intmax_t _Yp>
-class __ll_mul<0, _Yp>
-{
-public:
-  static const intmax_t value = 0;
-};
-
-template <intmax_t _Xp>
-class __ll_mul<_Xp, 0>
-{
-public:
-  static const intmax_t value = 0;
-};
-
-template <>
-class __ll_mul<0, 0>
-{
-public:
-  static const intmax_t value = 0;
-};
-
-// Not actually used but left here in case needed in future maintenance
-template <intmax_t _Xp, intmax_t _Yp>
-class __ll_div
-{
-  static const intmax_t nan = (1LL << (sizeof(intmax_t) * CHAR_BIT - 1));
-  static const intmax_t min = nan + 1;
-  static const intmax_t max = -min;
-
-  static_assert(_Xp != nan && _Yp != nan && _Yp != 0, "overflow in __ll_div");
-
-public:
-  static const intmax_t value = _Xp / _Yp;
-};
+// [ratio.ratio]
 
 template <intmax_t _Num, intmax_t _Den = 1>
 class _CCCL_TYPE_VISIBILITY_DEFAULT ratio
 {
-  static_assert(__static_abs<_Num>::value >= 0, "ratio numerator is out of range");
   static_assert(_Den != 0, "ratio divide by 0");
-  static_assert(__static_abs<_Den>::value > 0, "ratio denominator is out of range");
-  static constexpr intmax_t __na  = __static_abs<_Num>::value;
-  static constexpr intmax_t __da  = __static_abs<_Den>::value;
-  static constexpr intmax_t __s   = __static_sign_v<_Num> * __static_sign_v<_Den>;
-  static constexpr intmax_t __gcd = __static_gcd<__na, __da>::value;
+  static_assert(_Den != INTMAX_MIN, "ratio denominator is out of range");
+
+  static constexpr intmax_t __gcd = ::cuda::std::__ratio_gcd(_Num, _Den);
 
 public:
-  static constexpr intmax_t num = __s * __na / __gcd;
-  static constexpr intmax_t den = __da / __gcd;
+  static constexpr intmax_t num = (_Den < 0 ? -_Num : _Num) / __gcd;
+  static constexpr intmax_t den = ::cuda::std::__ratio_abs(_Den) / __gcd;
 
   using type = ratio<num, den>;
 };
 
-template <intmax_t _Num, intmax_t _Den>
-constexpr intmax_t ratio<_Num, _Den>::num;
-
-template <intmax_t _Num, intmax_t _Den>
-constexpr intmax_t ratio<_Num, _Den>::den;
+// A numerator of INTMAX_MIN is out of range, and ratio<INTMAX_MIN, INTMAX_MIN> is the result of an arithmetic overflow
+template <intmax_t _Den>
+class _CCCL_TYPE_VISIBILITY_DEFAULT ratio<INTMAX_MIN, _Den>
+{
+  static_assert(_Den != INTMAX_MIN, "overflow in ratio arithmetic");
+  static_assert(_Den == INTMAX_MIN, "ratio numerator is out of range");
+};
 
 template <class _Tp>
 inline constexpr bool __is_cuda_std_ratio_v = false;
 
 template <intmax_t _Num, intmax_t _Den>
 inline constexpr bool __is_cuda_std_ratio_v<ratio<_Num, _Den>> = true;
+
+// [ratio.arithmetic]
+
+template <class _R1, class _R2>
+using ratio_add = ratio<::cuda::std::__ratio_add(_R1::num, _R1::den, _R2::num, _R2::den).__num_,
+                        ::cuda::std::__ratio_add(_R1::num, _R1::den, _R2::num, _R2::den).__den_>;
+
+template <class _R1, class _R2>
+using ratio_subtract = ratio<::cuda::std::__ratio_add(_R1::num, _R1::den, -_R2::num, _R2::den).__num_,
+                             ::cuda::std::__ratio_add(_R1::num, _R1::den, -_R2::num, _R2::den).__den_>;
+
+template <class _R1, class _R2>
+using ratio_multiply = ratio<::cuda::std::__ratio_multiply(_R1::num, _R1::den, _R2::num, _R2::den).__num_,
+                             ::cuda::std::__ratio_multiply(_R1::num, _R1::den, _R2::num, _R2::den).__den_>;
+
+template <class _R1, class _R2>
+using ratio_divide = ratio<::cuda::std::__ratio_divide(_R1::num, _R1::den, _R2::num, _R2::den).__num_,
+                           ::cuda::std::__ratio_divide(_R1::num, _R1::den, _R2::num, _R2::den).__den_>;
+
+// [ratio.comparison]
+
+template <class _R1, class _R2>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT ratio_equal : bool_constant<(_R1::num == _R2::num && _R1::den == _R2::den)>
+{};
+
+template <class _R1, class _R2>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT ratio_not_equal : bool_constant<(_R1::num != _R2::num || _R1::den != _R2::den)>
+{};
+
+template <class _R1, class _R2>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+ratio_less : bool_constant<::cuda::std::__ratio_less(_R1::num, _R1::den, _R2::num, _R2::den)>
+{};
+
+template <class _R1, class _R2>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+ratio_less_equal : bool_constant<!::cuda::std::__ratio_less(_R2::num, _R2::den, _R1::num, _R1::den)>
+{};
+
+template <class _R1, class _R2>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+ratio_greater : bool_constant<::cuda::std::__ratio_less(_R2::num, _R2::den, _R1::num, _R1::den)>
+{};
+
+template <class _R1, class _R2>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+ratio_greater_equal : bool_constant<!::cuda::std::__ratio_less(_R1::num, _R1::den, _R2::num, _R2::den)>
+{};
+
+template <class _R1, class _R2>
+inline constexpr bool ratio_equal_v = _R1::num == _R2::num && _R1::den == _R2::den;
+
+template <class _R1, class _R2>
+inline constexpr bool ratio_not_equal_v = _R1::num != _R2::num || _R1::den != _R2::den;
+
+// Clang 17 and 18 reject consteval calls with type-dependent arguments in variable template initializers, so the
+// comparisons are evaluated in a template argument (https://github.com/llvm/llvm-project/issues/94935)
+template <class _R1, class _R2>
+inline constexpr bool ratio_less_v =
+  bool_constant<::cuda::std::__ratio_less(_R1::num, _R1::den, _R2::num, _R2::den)>::value;
+
+template <class _R1, class _R2>
+inline constexpr bool ratio_less_equal_v =
+  bool_constant<!::cuda::std::__ratio_less(_R2::num, _R2::den, _R1::num, _R1::den)>::value;
+
+template <class _R1, class _R2>
+inline constexpr bool ratio_greater_v =
+  bool_constant<::cuda::std::__ratio_less(_R2::num, _R2::den, _R1::num, _R1::den)>::value;
+
+template <class _R1, class _R2>
+inline constexpr bool ratio_greater_equal_v =
+  bool_constant<!::cuda::std::__ratio_less(_R1::num, _R1::den, _R2::num, _R2::den)>::value;
+
+// [ratio.si]
 
 using atto  = ratio<1LL, 1000000000000000000LL>;
 using femto = ratio<1LL, 1000000000000000LL>;
@@ -230,178 +295,6 @@ using giga  = ratio<1000000000LL, 1LL>;
 using tera  = ratio<1000000000000LL, 1LL>;
 using peta  = ratio<1000000000000000LL, 1LL>;
 using exa   = ratio<1000000000000000000LL, 1LL>;
-
-template <class _R1, class _R2>
-struct __ratio_multiply
-{
-  // private:
-  static const intmax_t __gcd_n1_d2 = __static_gcd<_R1::num, _R2::den>::value;
-  static const intmax_t __gcd_d1_n2 = __static_gcd<_R1::den, _R2::num>::value;
-
-public:
-  using type = typename ratio<__ll_mul<_R1::num / __gcd_n1_d2, _R2::num / __gcd_d1_n2>::value,
-                              __ll_mul<_R2::den / __gcd_n1_d2, _R1::den / __gcd_d1_n2>::value>::type;
-};
-
-template <class _R1, class _R2>
-using ratio_multiply = typename __ratio_multiply<_R1, _R2>::type;
-
-template <class _R1, class _R2>
-struct __ratio_divide
-{
-  // private:
-  static const intmax_t __gcd_n1_n2 = __static_gcd<_R1::num, _R2::num>::value;
-  static const intmax_t __gcd_d1_d2 = __static_gcd<_R1::den, _R2::den>::value;
-
-public:
-  using type = typename ratio<__ll_mul<_R1::num / __gcd_n1_n2, _R2::den / __gcd_d1_d2>::value,
-                              __ll_mul<_R2::num / __gcd_n1_n2, _R1::den / __gcd_d1_d2>::value>::type;
-};
-
-template <class _R1, class _R2>
-using ratio_divide = typename __ratio_divide<_R1, _R2>::type;
-
-template <class _R1, class _R2>
-struct __ratio_add
-{
-  // private:
-  static const intmax_t __gcd_n1_n2 = __static_gcd<_R1::num, _R2::num>::value;
-  static const intmax_t __gcd_d1_d2 = __static_gcd<_R1::den, _R2::den>::value;
-
-public:
-  using type =
-    typename ratio_multiply<ratio<__gcd_n1_n2, _R1::den / __gcd_d1_d2>,
-                            ratio<__ll_add<__ll_mul<_R1::num / __gcd_n1_n2, _R2::den / __gcd_d1_d2>::value,
-                                           __ll_mul<_R2::num / __gcd_n1_n2, _R1::den / __gcd_d1_d2>::value>::value,
-                                  _R2::den>>::type;
-};
-
-template <class _R1, class _R2>
-using ratio_add = typename __ratio_add<_R1, _R2>::type;
-
-template <class _R1, class _R2>
-struct __ratio_subtract
-{
-  // private:
-  static const intmax_t __gcd_n1_n2 = __static_gcd<_R1::num, _R2::num>::value;
-  static const intmax_t __gcd_d1_d2 = __static_gcd<_R1::den, _R2::den>::value;
-
-public:
-  using type =
-    typename ratio_multiply<ratio<__gcd_n1_n2, _R1::den / __gcd_d1_d2>,
-                            ratio<__ll_sub<__ll_mul<_R1::num / __gcd_n1_n2, _R2::den / __gcd_d1_d2>::value,
-                                           __ll_mul<_R2::num / __gcd_n1_n2, _R1::den / __gcd_d1_d2>::value>::value,
-                                  _R2::den>>::type;
-};
-
-template <class _R1, class _R2>
-using ratio_subtract = typename __ratio_subtract<_R1, _R2>::type;
-
-// ratio_equal
-
-template <class _R1, class _R2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT ratio_equal : public bool_constant<(_R1::num == _R2::num && _R1::den == _R2::den)>
-{};
-
-template <class _R1, class _R2>
-inline constexpr bool ratio_equal_v = ratio_equal<_R1, _R2>::value;
-
-template <class _R1, class _R2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT ratio_not_equal : public bool_constant<(!ratio_equal_v<_R1, _R2>)>
-{};
-
-template <class _R1, class _R2>
-inline constexpr bool ratio_not_equal_v = ratio_not_equal<_R1, _R2>::value;
-
-// ratio_less
-
-template <class _R1,
-          class _R2,
-          bool _Odd    = false,
-          intmax_t _Q1 = _R1::num / _R1::den,
-          intmax_t _M1 = _R1::num % _R1::den,
-          intmax_t _Q2 = _R2::num / _R2::den,
-          intmax_t _M2 = _R2::num % _R2::den>
-struct __ratio_less1
-{
-  static const bool value = _Odd ? _Q2 < _Q1 : _Q1 < _Q2;
-};
-
-template <class _R1, class _R2, bool _Odd, intmax_t _Qp>
-struct __ratio_less1<_R1, _R2, _Odd, _Qp, 0, _Qp, 0>
-{
-  static const bool value = false;
-};
-
-template <class _R1, class _R2, bool _Odd, intmax_t _Qp, intmax_t _M2>
-struct __ratio_less1<_R1, _R2, _Odd, _Qp, 0, _Qp, _M2>
-{
-  static const bool value = !_Odd;
-};
-
-template <class _R1, class _R2, bool _Odd, intmax_t _Qp, intmax_t _M1>
-struct __ratio_less1<_R1, _R2, _Odd, _Qp, _M1, _Qp, 0>
-{
-  static const bool value = _Odd;
-};
-
-template <class _R1, class _R2, bool _Odd, intmax_t _Qp, intmax_t _M1, intmax_t _M2>
-struct __ratio_less1<_R1, _R2, _Odd, _Qp, _M1, _Qp, _M2>
-{
-  static const bool value = __ratio_less1<ratio<_R1::den, _M1>, ratio<_R2::den, _M2>, !_Odd>::value;
-};
-
-template <class _R1, class _R2, intmax_t _S1 = __static_sign_v<_R1::num>, intmax_t _S2 = __static_sign_v<_R2::num>>
-struct __ratio_less
-{
-  static const bool value = _S1 < _S2;
-};
-
-template <class _R1, class _R2>
-struct __ratio_less<_R1, _R2, 1LL, 1LL>
-{
-  static const bool value = __ratio_less1<_R1, _R2>::value;
-};
-
-template <class _R1, class _R2>
-struct __ratio_less<_R1, _R2, -1LL, -1LL>
-{
-  static const bool value = __ratio_less1<ratio<-_R2::num, _R2::den>, ratio<-_R1::num, _R1::den>>::value;
-};
-
-template <class _R1, class _R2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT ratio_less : public bool_constant<(__ratio_less<_R1, _R2>::value)>
-{};
-
-template <class _R1, class _R2>
-inline constexpr bool ratio_less_v = ratio_less<_R1, _R2>::value;
-
-template <class _R1, class _R2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT ratio_less_equal : public bool_constant<(!ratio_less_v<_R2, _R1>)>
-{};
-
-template <class _R1, class _R2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT ratio_greater : public bool_constant<(ratio_less_v<_R2, _R1>)>
-{};
-
-template <class _R1, class _R2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT ratio_greater_equal : public bool_constant<(!ratio_less_v<_R1, _R2>)>
-{};
-
-template <class _R1, class _R2>
-struct __ratio_gcd
-{
-  using type _CCCL_NODEBUG = ratio<__static_gcd<_R1::num, _R2::num>::value, __static_lcm<_R1::den, _R2::den>::value>;
-};
-
-template <class _R1, class _R2>
-inline constexpr bool ratio_less_equal_v = ratio_less_equal<_R1, _R2>::value;
-
-template <class _R1, class _R2>
-inline constexpr bool ratio_greater_v = ratio_greater<_R1, _R2>::value;
-
-template <class _R1, class _R2>
-inline constexpr bool ratio_greater_equal_v = ratio_greater_equal<_R1, _R2>::value;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

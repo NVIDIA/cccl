@@ -292,7 +292,7 @@ int main()
   const size_t n = 10;
   std::vector<int> v(m * n);
 
-  matrix<int> M(m, n, &v[0]);
+  matrix<int> M(m, n, v.data());
 
   // M(i,j) = 17 * i + 23 * j
   for (size_t j = 0; j < n; j++)

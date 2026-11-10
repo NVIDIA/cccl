@@ -104,7 +104,8 @@ struct CommandLineArgs
         continue;
       }
 
-      string key, val;
+      string key;
+      string val;
       const string::size_type pos = arg.find('=');
       if (pos == string::npos)
       {
@@ -331,7 +332,8 @@ inline std::size_t TotalGlobalMem()
 {
   int device = 0;
   CubDebugExit(cudaGetDevice(&device));
-  std::size_t free_mem = 0, total_mem = 0;
+  std::size_t free_mem  = 0;
+  std::size_t total_mem = 0;
   CubDebugExit(cudaMemGetInfo(&free_mem, &total_mem));
   return total_mem;
 }

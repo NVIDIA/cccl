@@ -53,7 +53,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 // [simd.loadstore] helper: resolves default V template parameter for load functions
 // When _Vp = void (default), resolves to basic_vec<_Up>; otherwise uses the explicit _Vp
 template <typename _Vp, typename _Up>
-using __load_vec_t = conditional_t<is_void_v<_Vp>, basic_vec<_Up>, _Vp>;
+using __load_vec_t _CCCL_NODEBUG = conditional_t<is_void_v<_Vp>, basic_vec<_Up>, _Vp>;
 
 template <typename _Result, typename _Up, typename... _Flags>
 _CCCL_HOST_DEVICE_API constexpr void
@@ -62,7 +62,7 @@ __check_load_preconditions(const _Up* __ptr, flags<_Flags...>, const __simd_size
   using __value_t = typename _Result::value_type;
   static_assert(same_as<remove_cvref_t<_Result>, _Result>, "V must not be a reference or cv-qualified type");
 
-  static_assert(__is_vectorizable_v<__value_t> && __is_enabled_abi_v<typename _Result::abi_type>,
+  static_assert(__is_enabled_vec_v<__value_t, typename _Result::abi_type>,
                 "cuda::std::simd::load: V must be an enabled specialization of basic_vec");
   static_assert(__is_vectorizable_v<_Up>, "range_value_t<R> must be a vectorizable type");
 

@@ -48,7 +48,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _InputFn, class _OutputFn, class _Iter>
 class __transform_input_output_proxy
 {
-private:
   template <class, class, class>
   friend class transform_input_output_iterator;
 

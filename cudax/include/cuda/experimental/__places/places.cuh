@@ -360,7 +360,7 @@ public:
    * @brief Returns an index guaranteed to be >= 0 (0 for managed CPU, 1 for pinned CPU,  2 for device 0, 3 for device
    * 1, ...). Requires that `p` is initialized and different from `data_place::invalid()`.
    */
-  friend inline size_t to_index(const data_place& p)
+  friend size_t to_index(const data_place& p)
   {
     const int devid = p.pimpl_->get_device_ordinal();
     EXPECT(devid >= -2, "Data place with device id ", devid, " does not refer to a device.");
@@ -372,7 +372,7 @@ public:
    * @brief Inverse of `to_index`: converts an index back to a `data_place`.
    * Index 0 -> managed, 1 -> host, 2 -> device(0), 3 -> device(1), ...
    */
-  friend inline data_place from_index(size_t n)
+  friend data_place from_index(size_t n)
   {
     if (n == 0)
     {
@@ -389,7 +389,7 @@ public:
    * @brief Returns the device ordinal (0 = first GPU, 1 = second GPU, ... and by convention the CPU is -1)
    * Requires that `p` is initialized.
    */
-  friend inline int device_ordinal(const data_place& p)
+  friend int device_ordinal(const data_place& p)
   {
     return p.pimpl_->get_device_ordinal();
   }
@@ -786,7 +786,7 @@ public:
    * @param[in] last_axis Last axis to collapse (inclusive)
    * @return A grid over the same places with the selected axes collapsed
    */
-  [[nodiscard]] _CCCL_HOST_API exec_place collapse_axes(const size_t first_axis, const size_t last_axis) const;
+  [[nodiscard]] _CCCL_HOST_API exec_place collapse_axes(size_t first_axis, size_t last_axis) const;
 
   // ===== Activation =====
 
@@ -1027,7 +1027,6 @@ public:
   template <typename Fun>
   auto operator->*(Fun&& fun) const;
 
-public:
   exec_place(::std::shared_ptr<impl> pimpl)
       : pimpl(mv(pimpl))
   {}
@@ -2138,7 +2137,8 @@ public:
     }
     const dim4 dims = grid_.get_dims();
     const pos4 pos  = dims.index_to_pos(place_index);
-    size_t idx = 0, mult = 1;
+    size_t idx      = 0;
+    size_t mult     = 1;
     for (size_t a = 0; a < 4; a++)
     {
       if (axes_mask_ & (1u << a))

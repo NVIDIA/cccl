@@ -72,7 +72,7 @@ class virtual_group;
 template <class _Hierarchy>
 class coalesced_group;
 
-template <class _Unit, class _Group>
+template <class _Unit, class _Group, class _MappingResult>
 class group_view;
 
 // mappings
@@ -87,6 +87,9 @@ template <class _RangeView>
 class group_as;
 
 class identity_mapping;
+
+template <class _Fn>
+class labeled_partition;
 
 template <::cuda::std::size_t _StaticUnitCount = ::cuda::std::dynamic_extent>
 class take;
@@ -128,6 +131,8 @@ template <class _RangeView>
 inline constexpr bool __is_group_mapping_v<group_as<_RangeView>> = true;
 template <>
 inline constexpr bool __is_group_mapping_v<identity_mapping> = true;
+template <class _Fn>
+inline constexpr bool __is_group_mapping_v<labeled_partition<_Fn>> = true;
 template <::cuda::std::size_t _StaticUnitCount>
 inline constexpr bool __is_group_mapping_v<take<_StaticUnitCount>> = true;
 
