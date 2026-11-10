@@ -7,6 +7,24 @@ from cuda.compute._caching import CachableFunction, _make_hashable
 global_x = 1
 
 
+def add(x, y):
+    # Module-level operator whose body names itself: ``add`` is both this
+    # function's global name and the attribute name in ``np.add``.
+    return np.add(x, y)
+
+
+def fact(n):
+    return 1 if n <= 1 else n * fact(n - 1)
+
+
+def _ping(n):
+    return _pong(n - 1) if n else 0
+
+
+def _pong(n):
+    return _ping(n - 1) if n else 1
+
+
 def _key(value):
     # ``_make_hashable`` collects objects it keys by ``id()`` into a keep-alive
     # list; the tests below compare keys only, so a throwaway list is fine.
@@ -275,3 +293,16 @@ def test_func_caching_with_aliased_np_ufunc():
     func2 = make_func2()
 
     assert CachableFunction(func1) != CachableFunction(func2)
+
+
+def test_self_referencing_operator_key_terminates():
+    # Regression test: keying a function by content must not recurse into
+    # itself when its own name appears among the globals it references.
+    assert CachableFunction(add) == CachableFunction(add)
+    assert CachableFunction(fact) == CachableFunction(fact)
+    assert CachableFunction(add) != CachableFunction(fact)
+
+
+def test_mutually_recursive_operator_keys_terminate_and_differ():
+    assert CachableFunction(_ping) == CachableFunction(_ping)
+    assert CachableFunction(_ping) != CachableFunction(_pong)

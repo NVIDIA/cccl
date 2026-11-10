@@ -632,7 +632,20 @@ class _CacheWithRegisteredKeyFunctions:
 cache_with_registered_key_functions = _CacheWithRegisteredKeyFunctions()
 
 
-def _make_hashable(value, keep_alive: list):
+def _function_key(func, in_progress: tuple):
+    """Key a captured function by content, unless its key is already being
+    built further up the walk (the operator refers to itself, directly or via
+    another function). Such a back-reference is keyed by the position of that
+    function in ``in_progress``; identical walks produce identical positions,
+    and descending again would never terminate.
+    """
+    for depth, active in enumerate(in_progress):
+        if active is func:
+            return ("recursive", depth)
+    return CachableFunction(func, _in_progress=in_progress)
+
+
+def _make_hashable(value, keep_alive: list, in_progress: tuple = ()):
     """Hash a global/closure variable for caching purposes.
 
     Values that cannot be keyed by content fall back to ``id()``. Such a value
@@ -640,14 +653,17 @@ def _make_hashable(value, keep_alive: list):
     prevents cache key collisions: once the object is freed, Python may give
     its address to an unrelated object, and two different operators would
     then produce equal keys.
+
+    ``in_progress`` holds the functions whose keys are being built up the
+    walk; see :func:`_function_key`.
     """
     # duck-type check for a JIT backend's dispatcher:
     if hasattr(value, "py_func") and callable(value.py_func):
-        return CachableFunction(value.py_func)
+        return _function_key(value.py_func, in_progress)
     elif isinstance(value, types.FunctionType):
         # A captured plain Python function (e.g. a helper called from the
         # operator) is keyed by its own content, recursively.
-        return CachableFunction(value)
+        return _function_key(value, in_progress)
     elif is_device_array(value):
         # The stateful op machinery threads the array's pointer and
         # shape through the *runtime* state buffer.  Thus, the key
@@ -669,11 +685,14 @@ def _make_hashable(value, keep_alive: list):
         # collisions between like-named scalar subclasses from other modules).
         return ("python.scalar", _type_fqn(value), value)
     elif isinstance(value, (list, tuple)):
-        return tuple(_make_hashable(v, keep_alive) for v in value)
+        return tuple(_make_hashable(v, keep_alive, in_progress) for v in value)
     elif isinstance(value, dict):
         return tuple(
             sorted(
-                (_make_hashable(k, keep_alive), _make_hashable(v, keep_alive))
+                (
+                    _make_hashable(k, keep_alive, in_progress),
+                    _make_hashable(v, keep_alive, in_progress),
+                )
                 for k, v in value.items()
             )
         )
@@ -735,15 +754,18 @@ class CachableFunction:
     # TODO: eventually, move this class to _jit.py as it only
     # has to do with caching of Python callables that will be
     # JIT compiled.
-    def __init__(self, func):
+    def __init__(self, func, _in_progress: tuple = ()):
         self._name = func.__name__
 
+        # Functions whose keys are being built, outermost first, so a
+        # reference back to one of them does not recurse forever.
+        in_progress = (*_in_progress, func)
         closure = func.__closure__ if func.__closure__ is not None else []
         keep_alive: list = []
         contents = []
         # Make closure contents hashable
         for cell in closure:
-            contents.append(_make_hashable(cell.cell_contents, keep_alive))
+            contents.append(_make_hashable(cell.cell_contents, keep_alive, in_progress))
         self._identity = (
             func.__name__,
             func.__code__.co_code,
@@ -757,7 +779,9 @@ class CachableFunction:
                 # use the hash of the name itself. Assumes numba
                 # known how to interpret the dotted name at JIT
                 # time.
-                _make_hashable(func.__globals__.get(name, name), keep_alive)
+                _make_hashable(
+                    func.__globals__.get(name, name), keep_alive, in_progress
+                )
                 for name in func.__code__.co_names
             ),
         )
