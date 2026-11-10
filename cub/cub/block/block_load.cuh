@@ -186,7 +186,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectBlocked(
     dst_items[i] = oob_default;
   }
 
-  LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end);
+  _CUB::LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end);
 }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -231,7 +231,7 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < vectors_per_thread; i++)
     {
-      vec_items[i] = ThreadLoad<MODIFIER>(vec_ptr + i);
+      vec_items[i] = _CUB::ThreadLoad<MODIFIER>(vec_ptr + i);
     }
 
     // Copy to destination
@@ -243,7 +243,7 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
   }
   else
   {
-    LoadDirectBlocked(linear_tid, block_src_ptr, dst_items);
+    _CUB::LoadDirectBlocked(linear_tid, block_src_ptr, dst_items);
   }
 }
 
@@ -304,7 +304,7 @@ template <typename T, int ItemsPerThread>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 LoadDirectBlockedVectorized(int linear_tid, T* block_src_ptr, T (&dst_items)[ItemsPerThread])
 {
-  InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_src_ptr, dst_items);
+  _CUB::InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_src_ptr, dst_items);
 }
 
 //! @}
@@ -384,7 +384,7 @@ load_direct_striped_vectorized_aligned(int linear_tid, const InputT* block_src_p
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < vectors_per_thread; i++)
   {
-    vec_items[i] = ThreadLoad<Modifier>(vec_ptr + i * ThreadsPerBlock);
+    vec_items[i] = _CUB::ThreadLoad<Modifier>(vec_ptr + i * ThreadsPerBlock);
   }
 
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -459,7 +459,7 @@ LoadDirectStripedVectorized(int linear_tid, const InputT* block_src_ptr, T (&dst
   {
     if (::cuda::std::is_sufficiently_aligned<alignof(typename CubVector<InputT, vec_size>::Type)>(block_src_ptr))
     {
-      detail::load_direct_striped_vectorized_aligned<ThreadsPerBlock, VecSize, Modifier>(
+      _CUB::detail::load_direct_striped_vectorized_aligned<ThreadsPerBlock, VecSize, Modifier>(
         linear_tid, block_src_ptr, dst_items);
       return;
     }
@@ -472,13 +472,14 @@ LoadDirectStripedVectorized(int linear_tid, const InputT* block_src_ptr, T (&dst
   {
     if constexpr (Modifier != LOAD_DEFAULT)
     {
-      LoadDirectBlocked(i * ThreadsPerBlock,
-                        CacheModifiedInputIterator<Modifier, InputT, int>(thread_src_ptr),
-                        reinterpret_cast<T(&)[vec_size]>(dst_items[i * vec_size]));
+      _CUB::LoadDirectBlocked(i * ThreadsPerBlock,
+                              CacheModifiedInputIterator<Modifier, InputT, int>(thread_src_ptr),
+                              reinterpret_cast<T(&)[vec_size]>(dst_items[i * vec_size]));
     }
     else
     {
-      LoadDirectBlocked(i * ThreadsPerBlock, thread_src_ptr, reinterpret_cast<T(&)[vec_size]>(dst_items[i * vec_size]));
+      _CUB::LoadDirectBlocked(
+        i * ThreadsPerBlock, thread_src_ptr, reinterpret_cast<T(&)[vec_size]>(dst_items[i * vec_size]));
     }
   }
 }
@@ -599,7 +600,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
     dst_items[i] = oob_default;
   }
 
-  LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
+  _CUB::LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
 }
 
 //! @}
@@ -767,7 +768,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectWarpStriped(
     dst_items[i] = oob_default;
   }
 
-  LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end);
+  _CUB::LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end);
 }
 
 //! @}
@@ -953,7 +954,7 @@ namespace detail
 
 inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
@@ -961,12 +962,12 @@ CUB_NAMESPACE_END
 
 #if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
 template <::cuda::std::same_as<char> CharT>
-struct std::formatter<CUB_NS_QUALIFIER::BlockLoadAlgorithm, CharT> : formatter<const CharT*, CharT>
+struct std::formatter<_CUB::BlockLoadAlgorithm, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const CUB_NS_QUALIFIER::BlockLoadAlgorithm& algo, FmtCtx& ctx) const
+  auto format(const _CUB::BlockLoadAlgorithm& algo, FmtCtx& ctx) const
   {
-    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+    return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(algo), ctx);
   }
 };
 #endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
@@ -1129,7 +1130,7 @@ public:
   //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockLoad()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @brief Collective constructor using the specified memory allocation as temporary storage.
@@ -1142,7 +1143,7 @@ public:
   //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockLoad(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}
@@ -1198,18 +1199,19 @@ public:
   {
     if constexpr (Algorithm == BLOCK_LOAD_DIRECT)
     {
-      LoadDirectBlocked(linear_tid, block_src_it, dst_items);
+      _CUB::LoadDirectBlocked(linear_tid, block_src_it, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED)
     {
-      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items);
+      _CUB::LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_VECTORIZE)
     {
       if constexpr (detail::is_CacheModifiedInputIterator<RandomAccessIterator>
                     && ::cuda::std::is_same_v<detail::it_value_t<RandomAccessIterator>, T>)
       {
-        InternalLoadDirectBlockedVectorized<RandomAccessIterator::__modifier>(linear_tid, block_src_it.ptr, dst_items);
+        _CUB::InternalLoadDirectBlockedVectorized<RandomAccessIterator::__modifier>(
+          linear_tid, block_src_it.ptr, dst_items);
       }
       else if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIterator>
                          && ::cuda::std::is_same_v<detail::it_value_t<RandomAccessIterator>, T>
@@ -1217,11 +1219,12 @@ public:
                          && !::cuda::std::is_volatile_v<
                             ::cuda::std::remove_reference_t<detail::it_reference_t<RandomAccessIterator>>>)
       {
-        InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, ::cuda::std::to_address(block_src_it), dst_items);
+        _CUB::InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(
+          linear_tid, ::cuda::std::to_address(block_src_it), dst_items);
       }
       else
       {
-        LoadDirectBlocked(linear_tid, block_src_it, dst_items);
+        _CUB::LoadDirectBlocked(linear_tid, block_src_it, dst_items);
       }
     }
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED_VECTORIZED)
@@ -1233,13 +1236,13 @@ public:
       if constexpr (detail::is_CacheModifiedInputIterator<RandomAccessIterator>
                     && ::cuda::std::is_same_v<detail::it_value_t<RandomAccessIterator>, T>)
       {
-        LoadDirectStripedVectorized<ThreadsPerBlock, vec_size, RandomAccessIterator::__modifier>(
+        _CUB::LoadDirectStripedVectorized<ThreadsPerBlock, vec_size, RandomAccessIterator::__modifier>(
           linear_tid, block_src_it.ptr, dst_items);
       }
       else if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIterator>
                          && ::cuda::std::is_same_v<detail::it_value_t<RandomAccessIterator>, T>)
       {
-        LoadDirectStripedVectorized<ThreadsPerBlock, vec_size, LOAD_DEFAULT>(
+        _CUB::LoadDirectStripedVectorized<ThreadsPerBlock, vec_size, LOAD_DEFAULT>(
           linear_tid, ::cuda::std::to_address(block_src_it), dst_items);
       }
       else
@@ -1249,19 +1252,19 @@ public:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread / vec_size; i++)
         {
-          LoadDirectBlocked(
+          _CUB::LoadDirectBlocked(
             i * ThreadsPerBlock, thread_src_it, reinterpret_cast<T(&)[vec_size]>(dst_items[i * vec_size]));
         }
       }
     }
     else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
     {
-      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items);
+      _CUB::LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items);
       block_exchange(temp_storage).StripedToBlocked(dst_items, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_WARP_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)
     {
-      LoadDirectWarpStriped(linear_tid, block_src_it, dst_items);
+      _CUB::LoadDirectWarpStriped(linear_tid, block_src_it, dst_items);
       block_exchange(temp_storage).WarpStripedToBlocked(dst_items, dst_items);
     }
   }
@@ -1321,20 +1324,20 @@ public:
   {
     if constexpr (Algorithm == BLOCK_LOAD_DIRECT || Algorithm == BLOCK_LOAD_VECTORIZE)
     {
-      LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end);
+      _CUB::LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED || Algorithm == BLOCK_LOAD_STRIPED_VECTORIZED)
     {
-      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
+      _CUB::LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
     {
-      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
+      _CUB::LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
       block_exchange(temp_storage).StripedToBlocked(dst_items, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_WARP_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)
     {
-      LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end);
+      _CUB::LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end);
       block_exchange(temp_storage).WarpStripedToBlocked(dst_items, dst_items);
     }
   }
@@ -1397,20 +1400,20 @@ public:
   {
     if constexpr (Algorithm == BLOCK_LOAD_DIRECT || Algorithm == BLOCK_LOAD_VECTORIZE)
     {
-      LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
+      _CUB::LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED || Algorithm == BLOCK_LOAD_STRIPED_VECTORIZED)
     {
-      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
+      _CUB::LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
     {
-      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
+      _CUB::LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
       block_exchange(temp_storage).StripedToBlocked(dst_items, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_WARP_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)
     {
-      LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
+      _CUB::LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
       block_exchange(temp_storage).WarpStripedToBlocked(dst_items, dst_items);
     }
   }

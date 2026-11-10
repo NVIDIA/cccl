@@ -232,6 +232,54 @@ public:
     __impl_->insert_async(__stream, __first, __last, ref());
   }
 
+  //! @brief Inserts keys whose stencil satisfies `__pred` and returns the number of new keys inserted.
+  //!
+  //! The key `__first[i]` is inserted when `__pred(__stencil[i])` is true. Duplicate keys and keys
+  //! that cannot fit in the set do not contribute to the count.
+  //! @pre No selected input key equals the empty sentinel.
+  //! @note `__pred` may be invoked more than once for the same stencil element.
+  //! @note Synchronizes the supplied stream for nonempty input. For asynchronous execution use `insert_if_async`.
+  //! @throws cuda_error if the operation or stream synchronization fails
+  //! @tparam _InputIt Device-accessible random-access iterator with compatible key values
+  //! @tparam _StencilIt Device-accessible random-access iterator whose values are convertible to the
+  //! predicate's argument type
+  //! @tparam _Predicate Unary callable returning a value convertible to `bool`
+  //! @param[in] __stream Stream used for insertion
+  //! @param[in] __first Beginning of the input range
+  //! @param[in] __last End of the input range
+  //! @param[in] __stencil Beginning of the stencil range
+  //! @param[in] __pred Predicate applied to each stencil value to select keys for insertion
+  //! @return Number of successfully inserted keys
+  template <class _InputIt, class _StencilIt, class _Predicate>
+  _CCCL_HOST_API size_type
+  insert_if(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _StencilIt __stencil, _Predicate __pred)
+  {
+    return __impl_->insert_if(__stream, __first, __last, __stencil, __pred, ref());
+  }
+
+  //! @brief Asynchronously inserts keys whose stencil satisfies `__pred` without returning an insertion count.
+  //!
+  //! The key `__first[i]` is inserted when `__pred(__stencil[i])` is true. Duplicate keys and keys
+  //! that cannot fit in the set are ignored.
+  //! @pre No selected input key equals the empty sentinel.
+  //! @note `__pred` may be invoked more than once for the same stencil element.
+  //! @throws cuda_error if insertion fails to launch
+  //! @tparam _InputIt Device-accessible random-access iterator with compatible key values
+  //! @tparam _StencilIt Device-accessible random-access iterator whose values are convertible to the
+  //! predicate's argument type
+  //! @tparam _Predicate Unary callable returning a value convertible to `bool`
+  //! @param[in] __stream Stream used for insertion
+  //! @param[in] __first Beginning of the input range
+  //! @param[in] __last End of the input range
+  //! @param[in] __stencil Beginning of the stencil range
+  //! @param[in] __pred Predicate applied to each stencil value to select keys for insertion
+  template <class _InputIt, class _StencilIt, class _Predicate>
+  _CCCL_HOST_API void insert_if_async(
+    ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _StencilIt __stencil, _Predicate __pred)
+  {
+    __impl_->insert_if_async(__stream, __first, __last, __stencil, __pred, ref());
+  }
+
   //! @brief Writes whether each query key is present.
   //!
   //! @pre No query key equals the empty sentinel.

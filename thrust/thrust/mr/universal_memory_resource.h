@@ -13,4 +13,4 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/mr/device_memory_resource.h>
+#include <thrust/mr/device_memory_resource.h> // IWYU pragma: export

@@ -73,12 +73,12 @@ template <class _Type>
 template <class _Type>
 [[nodiscard]] _CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_add(_Type __atom, _Type const& __v)
 {
-  return __atom + __v;
+  return ::cuda::std::__cuda_atomic_add(__atom, __v);
 }
 template <class _Type>
 [[nodiscard]] _CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_sub(_Type __atom, _Type const& __v)
 {
-  return __atom - __v;
+  return ::cuda::std::__cuda_atomic_sub(__atom, __v);
 }
 template <class _Type>
 [[nodiscard]] _CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_max(_Type __atom, _Type const& __v)

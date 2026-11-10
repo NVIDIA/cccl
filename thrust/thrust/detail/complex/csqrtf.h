@@ -61,7 +61,8 @@ using thrust::complex;
 // NOLINTBEGIN(misc-redundant-expression)
 _CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
 {
-  float a = z.real(), b = z.imag();
+  float a = z.real();
+  float b = z.imag();
   float t;
   int scale;
   complex<float> result{};
@@ -152,7 +153,7 @@ _CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
   }
   else
   {
-    return (result);
+    return result;
   }
 }
 // NOLINTEND(misc-redundant-expression)

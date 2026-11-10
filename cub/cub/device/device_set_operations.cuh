@@ -74,12 +74,12 @@ private:
     CompareOp compare_op,
     const EnvT& env)
   {
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
       env,
       [&](auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::set_ops::dispatch(
+        return _CUB::detail::set_ops::dispatch(
           d_temp_storage,
           temp_storage_bytes,
           d_keys_in1,
@@ -124,12 +124,12 @@ private:
     CompareOp compare_op,
     const EnvT& env)
   {
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
       env,
       [&](auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::set_ops::dispatch(
+        return _CUB::detail::set_ops::dispatch(
           d_temp_storage,
           temp_storage_bytes,
           d_keys_in1,
@@ -166,9 +166,9 @@ private:
     CompareOp compare_op,
     const EnvT& env)
   {
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&](auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::set_ops::dispatch(
+        return _CUB::detail::set_ops::dispatch(
           d_temp_storage,
           temp_storage_bytes,
           d_keys_in1,
@@ -211,9 +211,9 @@ private:
     CompareOp compare_op,
     const EnvT& env)
   {
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&](auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::set_ops::dispatch(
+        return _CUB::detail::set_ops::dispatch(
           d_temp_storage,
           temp_storage_bytes,
           d_keys_in1,

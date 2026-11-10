@@ -158,7 +158,9 @@ _CCCL_CONCEPT __any_castable_to =
 template <class _SrcCvAny, class _DstCvAny>
 _CCCL_CONCEPT __any_convertible_to =
   __any_castable_to<_SrcCvAny, _DstCvAny> && //
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   __extension_of<typename ::cuda::std::remove_reference_t<_SrcCvAny>::interface_type,
+                 // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
                  typename ::cuda::std::remove_reference_t<_DstCvAny>::interface_type>;
 
 _CCCL_END_NAMESPACE_CUDA
