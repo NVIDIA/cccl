@@ -14,4 +14,4 @@
 #endif // no system header
 
 // omp system inherits count
-#include <thrust/system/cpp/detail/count.h>
+#include <thrust/system/cpp/detail/count.h> // IWYU pragma: export

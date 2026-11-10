@@ -22,7 +22,8 @@ using namespace cuda::experimental::stf;
 int main()
 {
   const size_t N = 16;
-  double X[N], Y[N];
+  double X[N];
+  double Y[N];
 
   double ref_res = 0.0;
 

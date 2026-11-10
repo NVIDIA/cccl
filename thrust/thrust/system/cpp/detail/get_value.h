@@ -14,4 +14,4 @@
 #endif // no system header
 
 // this system inherits get_value
-#include <thrust/system/detail/sequential/get_value.h>
+#include <thrust/system/detail/sequential/get_value.h> // IWYU pragma: export

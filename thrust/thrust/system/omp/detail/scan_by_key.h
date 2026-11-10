@@ -14,10 +14,10 @@
 #endif // no system header
 
 // this system inherits this algorithm
-#include <thrust/system/cpp/detail/scan_by_key.h>
+#include <thrust/system/cpp/detail/scan_by_key.h> // IWYU pragma: export
 
 // Ensure OMP scan is available before using generic scan_by_key
-#include <thrust/system/omp/detail/scan.h>
+#include <thrust/system/omp/detail/scan.h> // IWYU pragma: export
 
 // use generic parallel implementation
-#include <thrust/system/detail/generic/scan_by_key.h>
+#include <thrust/system/detail/generic/scan_by_key.h> // IWYU pragma: export

@@ -51,7 +51,8 @@ void test_set_symmetric_difference_simple()
 {
   using Iterator = typename Vector::iterator;
 
-  Vector a{0, 2, 4, 6}, b{0, 3, 3, 4, 7};
+  Vector a{0, 2, 4, 6};
+  Vector b{0, 3, 3, 4, 7};
 
   Vector ref{2, 3, 3, 6, 7};
   Vector result(5);
@@ -176,7 +177,8 @@ void test_set_symmetric_difference_key_value(size_t n)
   thrust::host_vector<U> h_keys_b   = unittest::random_integers<U>(n);
   thrust::host_vector<U> h_values_b = unittest::random_integers<U>(n);
 
-  thrust::host_vector<T> h_a(n), h_b(n);
+  thrust::host_vector<T> h_a(n);
+  thrust::host_vector<T> h_b(n);
   for (size_t i = 0; i < n; ++i)
   {
     h_a[i] = T(h_keys_a[i], h_values_a[i]);

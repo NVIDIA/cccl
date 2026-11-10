@@ -60,6 +60,7 @@ namespace __mdspan_detail
 // [mdspan.layout.general]/2
 template <class _Layout, class _Mapping>
 inline constexpr bool __is_mapping_of =
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   is_same_v<typename _Layout::template mapping<typename _Mapping::extents_type>, _Mapping>;
 
 // [mdspan.layout.reqmts]/1

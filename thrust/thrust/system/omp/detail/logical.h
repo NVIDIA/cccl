@@ -14,4 +14,4 @@
 #endif // no system header
 
 // omp system inherits logical
-#include <thrust/system/cpp/detail/logical.h>
+#include <thrust/system/cpp/detail/logical.h> // IWYU pragma: export
