@@ -24,6 +24,7 @@
 #include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/promote.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -70,6 +71,13 @@ template <typename _Fp>
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API constexpr __float128 lerp(__float128 __a, __float128 __b, __float128 __t) noexcept
+{
+  return ::cuda::std::__lerp(__a, __b, __t);
+}
+#endif // _CCCL_HAS_FLOAT128()
+
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half lerp(__half __a, __half __b, __half __t) noexcept
 {
@@ -84,9 +92,18 @@ template <typename _Fp>
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
+// __float128 is not an arithmetic type in the standard sense, but it participates in the usual promotion
+template <class _Tp>
+inline constexpr bool __is_lerp_arithmetic_v = is_arithmetic_v<_Tp>;
+
+#if _CCCL_HAS_FLOAT128()
+template <>
+inline constexpr bool __is_lerp_arithmetic_v<__float128> = true;
+#endif // _CCCL_HAS_FLOAT128()
+
 template <class _A1, class _A2, class _A3>
 [[nodiscard]]
-_CCCL_API constexpr enable_if_t<is_arithmetic_v<_A1> && is_arithmetic_v<_A2> && is_arithmetic_v<_A3>,
+_CCCL_API constexpr enable_if_t<__is_lerp_arithmetic_v<_A1> && __is_lerp_arithmetic_v<_A2> && __is_lerp_arithmetic_v<_A3>,
                                 __promote_t<_A1, _A2, _A3>> lerp(_A1 __a, _A2 __b, _A3 __t) noexcept
 {
   using __result_type = __promote_t<_A1, _A2, _A3>;
