@@ -83,7 +83,8 @@ template <typename _Tp>
 inline constexpr bool __constexpr_wrapper_value_matches_v<
   _Tp,
   // Reject non-static members before constant-expression substitution for NVCC + GCC <= 12
-  void_t<enable_if_t<!__has_non_static_value_v<_Tp>>,
+  void_t<decltype(_Tp::value),
+         enable_if_t<!__has_non_static_value_v<_Tp>>,
          enable_if_t<(_Tp() == _Tp::value) && (static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value)>>> = true;
 
 template <typename _Tp>

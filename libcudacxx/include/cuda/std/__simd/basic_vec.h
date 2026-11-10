@@ -62,6 +62,22 @@ inline constexpr bool __is_complex_real_type_v<_ValueType, _Up, true> = is_same_
 template <typename _Tp>
 inline constexpr bool __is_cccl_complex_v = __is_cuda_std_complex_v<_Tp> || ::cuda::__is_cuda_complex_v<_Tp>;
 
+// workaround for MSVC warnings with conversion of complex types
+template <typename _To, typename _From>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _To __broadcast_cast(_From& __value) noexcept
+{
+  if constexpr (__is_complex_vectorizable_v<_To>
+                && (is_arithmetic_v<_From> || __constexpr_wrapper_like<remove_cvref_t<_From>>) )
+  {
+    using _Real _CCCL_NODEBUG = typename _To::value_type;
+    return _To{static_cast<_Real>(__value)};
+  }
+  else
+  {
+    return static_cast<_To>(__value);
+  }
+}
+
 // [simd.class], class template basic_vec
 
 // If basic_vec<T, Abi> is disabled, the specialization has a deleted default constructor, deleted destructor, deleted
@@ -260,7 +276,7 @@ public:
   _CCCL_TEMPLATE(typename _Up)
   _CCCL_REQUIRES(__is_value_ctor_implicit<_Up, value_type>)
   _CCCL_HOST_DEVICE_API constexpr basic_vec(_Up&& __v) noexcept
-      : __s_{_Impl::__broadcast(static_cast<value_type>(__v))}
+      : __s_{_Impl::__broadcast(::cuda::std::simd::__broadcast_cast<value_type>(__v))}
   {}
   // NOLINTEND(bugprone-forwarding-reference-overload)
 
