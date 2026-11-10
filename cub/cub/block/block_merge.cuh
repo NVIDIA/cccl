@@ -42,8 +42,8 @@ enum class BlockMergeAlgorithm
   //!
   //! This is the default strategy. Its lower barrier count can be useful when
   //! enough shared memory is available. Shared-memory use can limit occupancy.
-  //! For eligible block and run counts, warps are assigned to pairs of runs;
-  //! severely uneven run lengths can concentrate work in a small number of warps.
+  //! Each thread merges a fixed output window, so uneven run lengths do not
+  //! concentrate the output keys in a small number of warps.
   //! @endrst
   PING_PONG,
 
@@ -56,8 +56,7 @@ enum class BlockMergeAlgorithm
   //!
   //! This strategy is useful when shared memory limits occupancy or tile size.
   //! It uses additional registers and barriers, which can reduce throughput.
-  //! Fixed-warp rounds are used only when their register capacity fits every pair;
-  //! other rounds use the general per-thread schedule. Choose between strategies
+  //! Each round uses balanced per-thread output windows. Choose between strategies
   //! using measurements with the application's key type, tile size, and run lengths.
   //! @endrst
   REGISTER_STAGED
@@ -149,7 +148,7 @@ struct block_merge_pair
 };
 
 // Reusable scheduling helpers do not depend on the key type or storage strategy.
-template <unsigned int BlockThreads, unsigned int ItemsPerThread>
+template <unsigned int BlockThreads, unsigned int ItemsPerThread, bool UseWarpPairs = false>
 struct block_merge_layout
 {
   static constexpr unsigned int tile_size = BlockThreads * ItemsPerThread;
@@ -167,7 +166,7 @@ struct block_merge_layout
 
   [[nodiscard]] _CCCL_DEVICE_API static bool use_pairs(int runs)
   {
-    return full_warps && (runs & (runs - 1)) == 0 && static_cast<unsigned int>(runs) <= 2 * warps;
+    return UseWarpPairs && full_warps && (runs & (runs - 1)) == 0 && static_cast<unsigned int>(runs) <= 2 * warps;
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static int effective_runs(int runs)
@@ -178,7 +177,7 @@ struct block_merge_layout
     }
     const int padded = 1 << (32 - ::__clz(static_cast<unsigned int>(runs - 1)));
     // A lone unmatched run does not benefit from padding.
-    const bool pad = full_warps && (runs & (runs - 1)) != 0 && ((runs - 1) & (runs - 2)) != 0
+    const bool pad = UseWarpPairs && full_warps && (runs & (runs - 1)) != 0 && ((runs - 1) & (runs - 2)) != 0
                   && static_cast<unsigned int>(padded) <= 2 * warps;
     return pad ? padded : runs;
   }
@@ -285,11 +284,12 @@ public:
 };
 
 // Supplies shared helpers without making the algorithm headers include this header.
-template <typename KeyT, unsigned int BlockThreads, unsigned int ItemsPerThread>
+// Device-wide callers may opt into pair-warps scheduling for suitably balanced runs.
+template <typename KeyT, unsigned int BlockThreads, unsigned int ItemsPerThread, bool UseWarpPairs = false>
 struct block_merge_policy
 {
   using key_t    = KeyT;
-  using layout_t = CUB_NS_QUALIFIER::detail::block_merge_layout<BlockThreads, ItemsPerThread>;
+  using layout_t = CUB_NS_QUALIFIER::detail::block_merge_layout<BlockThreads, ItemsPerThread, UseWarpPairs>;
   using window_t = CUB_NS_QUALIFIER::detail::block_merge_window;
   static constexpr unsigned int items_per_thread = ItemsPerThread;
 
