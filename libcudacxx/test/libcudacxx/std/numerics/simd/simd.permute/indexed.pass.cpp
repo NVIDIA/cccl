@@ -87,7 +87,7 @@ TEST_HOST_DEVICE_FUNC constexpr void test_sizes()
   cuda::std::array<T, SourceN> input{};
   for (int i = 0; i < SourceN; ++i)
   {
-    input[i] = static_cast<T>(i);
+    input[i] = static_cast<T>(static_cast<float>(i));
   }
   const simd::vec<T, SourceN> values(input, simd::flag_convert);
   const simd::mask<T, SourceN> mask(is_even{});
