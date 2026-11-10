@@ -442,7 +442,93 @@ def sum(
     return value
 
 
+@stub(host=False, tile=True, simt=False)
+def exchange_striped_to_blocked(
+    value: Tile, /, *, block_threads: int, methods=None
+) -> Tile:
+    """Gather striped items into contiguous logical-thread segments.
+
+    Parameters
+    ----------
+    value : Tile
+        Numeric input of shape ``(N,)``.
+    block_threads : int
+        Required compile-time width ``B``: a multiple of 32 in
+        ``[32, 1024]`` that divides ``N``. The kernel must admit this width.
+        Changing it changes the permutation.
+    methods : collections.abc.Mapping or tuple
+        Must be omitted or empty.
+
+    Returns
+    -------
+    Tile
+        Shape ``(N,)`` with the input dtype. With ``I = N // B``,
+        ``output[t * I + j] = value[j * B + t]`` for ``0 <= t < B`` and
+        ``0 <= j < I``. The input is unchanged.
+
+    Examples
+    --------
+    In a ``cuda.tile`` kernel admitting 128 workers, permute 256 values
+    and restore them using the same width:
+
+    .. code-block:: python
+
+        blocked = coop.exchange_striped_to_blocked(values, block_threads=128)
+        restored = coop.exchange_blocked_to_striped(blocked, block_threads=128)
+
+    See Also
+    --------
+    exchange_blocked_to_striped
+    """
+
+    return value
+
+
+@stub(host=False, tile=True, simt=False)
+def exchange_blocked_to_striped(
+    value: Tile, /, *, block_threads: int, methods=None
+) -> Tile:
+    """Interleave contiguous logical-thread segments into striped order.
+
+    Parameters
+    ----------
+    value : Tile
+        Numeric input of shape ``(N,)``.
+    block_threads : int
+        Required compile-time width ``B``: a multiple of 32 in
+        ``[32, 1024]`` that divides ``N``. The kernel must admit this width.
+        Use the same width as the forward exchange to invert it.
+    methods : collections.abc.Mapping or tuple
+        Must be omitted or empty.
+
+    Returns
+    -------
+    Tile
+        Shape ``(N,)`` with the input dtype. With ``I = N // B``,
+        ``output[j * B + t] = value[t * I + j]`` for ``0 <= t < B`` and
+        ``0 <= j < I``. The input is unchanged. With ``I == 1``, the
+        permutation is the identity.
+
+    Examples
+    --------
+    In a ``cuda.tile`` kernel admitting 128 workers, interleave a
+    256-element Tile:
+
+    .. code-block:: python
+
+        striped = coop.exchange_blocked_to_striped(values, block_threads=128)
+
+    See Also
+    --------
+    exchange_striped_to_blocked
+    """
+
+    return value
+
+
 __all__ = [
+    "exchange_blocked_to_striped",
+    "exchange_striped_to_blocked",
     "exclusive_scan",
     "exclusive_sum",
     "inclusive_scan",

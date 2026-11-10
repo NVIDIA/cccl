@@ -29,6 +29,7 @@ from pathlib import Path
 
 from cuda.tile import _datatype as datatype
 from cuda.tile._exception import TileTypeError
+from cuda.tile._ir.core_ops import Assign
 from cuda.tile._ir.ir import Builder, add_operation_variadic
 from cuda.tile._ir.op_impl import (
     normalize_axis,
@@ -49,6 +50,10 @@ from cuda.tile._ir.ops import (
 from cuda.tile._ir.type import TileTy as make_tile_ty
 from cuda.tile._ir.type import TokenTy
 
+from ._block.exchange import (
+    BlockExchangeBlockedToStriped,
+    BlockExchangeStripedToBlocked,
+)
 from ._block.reduce import (
     BlockReduce,
     BlockReduceOptions,
@@ -69,6 +74,8 @@ from ._cpp import _get_tile_library_linker_input
 from ._declarations import DECLARATIONS as _PROVIDER_DECL_SCHEMAS
 from ._declarations import TileType as _ProviderDeclTileType
 from ._dispatch import (
+    dispatch_exchange_blocked_to_striped,
+    dispatch_exchange_striped_to_blocked,
     dispatch_exclusive_scan,
     dispatch_exclusive_sum,
     dispatch_inclusive_scan,
@@ -426,6 +433,58 @@ def _find_defining_op(var):
     return None
 
 
+def _exchange_call_kind(op) -> str | None:
+    """Recognize only the canonical Exchange declaration and constants.
+
+    The blocked fragment adapter reverses the provider direction, so translate
+    it back to the public direction before folding an inverse call.
+    """
+
+    try:
+        preview_foreign_call_type = _preview_foreign_call_type()
+    except TileTypeError:
+        return None
+    if (
+        not isinstance(op, preview_foreign_call_type)
+        or op.symbol_name != _PROVIDER_DECL_EXCHANGE
+        or len(op.constant_params) != 5
+    ):
+        return None
+    return {
+        "blocked_to_striped": "striped_to_blocked",
+        "striped_to_blocked": "blocked_to_striped",
+    }.get(op.constant_params[3])
+
+
+def _find_exchange_origin(var):
+    """Find an Exchange that directly produced the requested data result.
+
+    Follow identity assignments but require the first data result. Return its
+    public direction and operation, or ``(None, None)`` when provenance cannot
+    be established.
+    """
+
+    producer = _find_defining_op(var)
+    # cuTile represents named intermediate values with identity Assign ops.
+    while isinstance(producer, Assign):
+        var = producer.value
+        producer = _find_defining_op(var)
+    if producer is None:
+        return None, None
+    kind = _exchange_call_kind(producer)
+    if kind is None:
+        return None, None
+    result_vars = tuple(getattr(producer, "result_vars", ()) or ())
+    if not result_vars or result_vars[0] is not var:
+        return None, None
+    return kind, producer
+
+
+def _exchange_has_topology(op, block_threads: int) -> bool:
+    constant_params = getattr(op, "constant_params", ())
+    return len(constant_params) >= 3 and constant_params[2] == block_threads
+
+
 def _foreign_call_first_input(op):
     inputs = getattr(op, "inputs", None)
     if inputs:
@@ -542,6 +601,16 @@ def _unary_mode_static_prefix(
         mode,
         _dtype_token(dtype),
     )
+
+
+def _exchange_static_prefix(
+    numel: int,
+    dtype,
+    *,
+    block_threads: int,
+    mode: str,
+):
+    return (numel, dtype, block_threads, mode, _dtype_token(dtype))
 
 
 def _sort_key_static_prefix(
@@ -1402,3 +1471,113 @@ def reduce_impl(
         methods=_require_optional_constant_object(methods, "methods"),
     )
     return _reduce_impl(value, axis, keepdims, broadcast, options=options)
+
+
+def exchange_striped_to_blocked_impl(value, block_threads, methods):
+    """Lower the flat striped-to-blocked permutation at its explicit width.
+
+    Fold a directly preceding inverse Exchange only when its width matches.
+    Otherwise emit the opposite CUB direction because the foreign-call
+    fragment adapter itself uses blocked storage. The width remains a
+    semantic declaration constant.
+    """
+
+    _require_empty_methods(methods, "exchange_striped_to_blocked")
+    tile_ty = require_tile_type(value)
+    shape = tile_ty.shape
+    if tile_ty.ndim != 1:
+        raise TileTypeError(
+            "coop.exchange_striped_to_blocked expects a 1D tile"
+        )
+
+    requested_threads = _require_optional_constant_object(
+        block_threads, "coop.exchange_striped_to_blocked block_threads"
+    )
+    numel = shape[0]
+    decision = dispatch_exchange_striped_to_blocked(
+        numel=numel,
+        dtype=tile_ty.dtype,
+        block_threads=requested_threads,
+    )
+    items_per_thread = numel // decision.block_threads
+
+    origin_kind, origin_op = _find_exchange_origin(value)
+    if origin_kind == "blocked_to_striped" and _exchange_has_topology(
+        origin_op, decision.block_threads
+    ):
+        return _foreign_call_first_input(origin_op)
+
+    # Foreign-call copy paths currently require unit atom strides. The
+    # opposite CUB primitive is intentionally load-bearing here: it preserves
+    # the user-facing flat exchange direction after the blocked layout adapter.
+    BlockExchangeBlockedToStriped(
+        items_per_thread=items_per_thread,
+        dtype=tile_ty.dtype,
+        block_threads=decision.block_threads,
+    )
+
+    out_ty = make_tile_ty(tile_ty.dtype, shape)
+    return _emit_provider_foreign_call(
+        operands=(value,),
+        output_types=(out_ty,),
+        decl_sym_name=_PROVIDER_DECL_EXCHANGE,
+        static_prefix=_exchange_static_prefix(
+            numel,
+            tile_ty.dtype,
+            block_threads=decision.block_threads,
+            mode="blocked_to_striped",
+        ),
+    )
+
+
+def exchange_blocked_to_striped_impl(value, block_threads, methods):
+    """Lower the flat blocked-to-striped permutation at its explicit width.
+
+    A directly preceding inverse with the same width returns its original
+    input. Otherwise emit the inverse CUB direction required by the blocked
+    fragment adapter, preserving the input Tile's shape and dtype.
+    """
+
+    _require_empty_methods(methods, "exchange_blocked_to_striped")
+    tile_ty = require_tile_type(value)
+    shape = tile_ty.shape
+    if tile_ty.ndim != 1:
+        raise TileTypeError(
+            "coop.exchange_blocked_to_striped expects a 1D tile"
+        )
+
+    requested_threads = _require_optional_constant_object(
+        block_threads, "coop.exchange_blocked_to_striped block_threads"
+    )
+    numel = shape[0]
+    decision = dispatch_exchange_blocked_to_striped(
+        numel=numel,
+        dtype=tile_ty.dtype,
+        block_threads=requested_threads,
+    )
+    items_per_thread = numel // decision.block_threads
+
+    origin_kind, origin_op = _find_exchange_origin(value)
+    if origin_kind == "striped_to_blocked" and _exchange_has_topology(
+        origin_op, decision.block_threads
+    ):
+        return _foreign_call_first_input(origin_op)
+
+    BlockExchangeStripedToBlocked(
+        items_per_thread=items_per_thread,
+        dtype=tile_ty.dtype,
+        block_threads=decision.block_threads,
+    )
+
+    out_ty = make_tile_ty(tile_ty.dtype, shape)
+    return _emit_provider_foreign_call(
+        operands=(value,),
+        output_types=(out_ty,),
+        decl_sym_name=_PROVIDER_DECL_EXCHANGE,
+        static_prefix=_exchange_static_prefix(
+            numel,
+            tile_ty.dtype,
+            block_threads=decision.block_threads,
+            mode="striped_to_blocked",
+        ),
+    )

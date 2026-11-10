@@ -1243,6 +1243,34 @@ _CCCL_COOP_TILE_REDUCE_OVERLOAD(::cuda::std::bit_or, "bit_or", true)
 _CCCL_COOP_TILE_REDUCE_OVERLOAD(::cuda::std::bit_xor, "bit_xor", true)
 
 #  undef _CCCL_COOP_TILE_REDUCE_OVERLOAD
+
+/**
+ * @brief For `B = BlockThreads` and `I = N / B`, return `output[t * I + i] = input[i * B + t]`.
+ *
+ * Supply `exchange_policy<B>{}` explicitly so `B` can be deduced. The default function argument
+ * does not supply a default width.
+ */
+template <typename T, size_t N, size_t BlockThreads>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+exchange_striped_to_blocked(ct::tile<T, ct::shape<N>> input, exchange_policy<BlockThreads> = {}) noexcept
+{
+  // The Tile fragment map is blocked. CUB's BlockedToStriped permutation
+  // therefore converts values that are logically striped into blocked order.
+  return detail::exchange_call<"blocked_to_striped", T, N, BlockThreads>(input);
+}
+
+/**
+ * @brief Return the inverse permutation, `output[i * B + t] = input[t * I + i]`.
+ *
+ * Supply the same explicit `exchange_policy<B>{}` as the forward conversion.
+ */
+template <typename T, size_t N, size_t BlockThreads>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+exchange_blocked_to_striped(ct::tile<T, ct::shape<N>> input, exchange_policy<BlockThreads> = {}) noexcept
+{
+  // The inverse conversion likewise uses CUB's StripedToBlocked permutation.
+  return detail::exchange_call<"striped_to_blocked", T, N, BlockThreads>(input);
+}
 } // namespace cuda::coop::tile
 
 #  undef _CCCL_COOP_TILE_API

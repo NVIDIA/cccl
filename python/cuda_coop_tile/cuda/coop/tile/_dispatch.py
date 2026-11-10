@@ -19,6 +19,8 @@ from dataclasses import dataclass
 from cuda.tile import _datatype as datatype
 from cuda.tile._exception import TileTypeError
 
+from ._block.exchange import _SUPPORTED_DTYPES as _EXCHANGE_DTYPES
+
 _SCAN_WARP_ALG = "warp_scans"
 _SCAN_BLOCK_ALG = "raking"
 _REDUCE_WARP_ALG = "warp_reductions"
@@ -359,3 +361,85 @@ def dispatch_reduce(
         dtype=dtype,
         requested_algorithm=requested_algorithm,
     )
+
+
+def _validate_exchange_topology(
+    primitive: str, numel: int, block_threads: int
+) -> None:
+    """Check the width that defines an Exchange permutation.
+
+    Unlike a tuning preference, this width is part of the operation's meaning.
+    Require complete warps and an integral number of elements per member.
+    """
+
+    if (
+        isinstance(block_threads, bool)
+        or not isinstance(block_threads, int)
+        or not 32 <= block_threads <= 1024
+        or block_threads % 32 != 0
+    ):
+        raise TileTypeError(
+            f"coop.{primitive} block_threads must be a compile-time integer "
+            "multiple of 32 in [32, 1024]"
+        )
+    if numel <= 0 or numel % block_threads != 0:
+        raise TileTypeError(
+            f"coop.{primitive} tile extent must be positive and "
+            f"divisible by block_threads"
+        )
+
+
+def dispatch_exchange_striped_to_blocked(
+    *,
+    numel: int,
+    dtype: datatype.DType,
+    block_threads: int,
+) -> CoopDispatchDecision:
+    backend, rationale = _default_backend_for_numel(numel)
+    backend, rationale = _apply_forced_backend(backend, rationale)
+    _validate_exchange_topology(
+        "exchange_striped_to_blocked", numel, block_threads
+    )
+    if dtype not in _EXCHANGE_DTYPES:
+        raise TileTypeError(
+            f"coop.exchange_striped_to_blocked does not support dtype {dtype}"
+        )
+    decision = CoopDispatchDecision(
+        primitive="exchange_striped_to_blocked",
+        backend_family=backend,
+        block_threads=block_threads,
+        algorithm=None,
+        rationale=rationale,
+        tile_numel=numel,
+        dtype=dtype,
+    )
+    _trace_dispatch(decision)
+    return decision
+
+
+def dispatch_exchange_blocked_to_striped(
+    *,
+    numel: int,
+    dtype: datatype.DType,
+    block_threads: int,
+) -> CoopDispatchDecision:
+    backend, rationale = _default_backend_for_numel(numel)
+    backend, rationale = _apply_forced_backend(backend, rationale)
+    _validate_exchange_topology(
+        "exchange_blocked_to_striped", numel, block_threads
+    )
+    if dtype not in _EXCHANGE_DTYPES:
+        raise TileTypeError(
+            f"coop.exchange_blocked_to_striped does not support dtype {dtype}"
+        )
+    decision = CoopDispatchDecision(
+        primitive="exchange_blocked_to_striped",
+        backend_family=backend,
+        block_threads=block_threads,
+        algorithm=None,
+        rationale=rationale,
+        tile_numel=numel,
+        dtype=dtype,
+    )
+    _trace_dispatch(decision)
+    return decision
