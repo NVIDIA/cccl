@@ -21,6 +21,7 @@ from .discontinuity import (
     BlockDiscontinuityFlagHeadsAndTails,
     BlockDiscontinuityFlagTails,
 )
+from .histogram import BlockHistogram, BlockHistogram256
 from .reduce import BlockReduce, BlockReduceSum
 from .scan import (
     BlockScanExclusiveScan,
@@ -36,6 +37,8 @@ __all__ = [
     "BlockDiscontinuityFlagHeads",
     "BlockDiscontinuityFlagHeadsAndTails",
     "BlockDiscontinuityFlagTails",
+    "BlockHistogram",
+    "BlockHistogram256",
     "BlockReduce",
     "BlockReduceSum",
     "BlockScanExclusiveScan",

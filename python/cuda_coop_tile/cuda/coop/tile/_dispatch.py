@@ -132,6 +132,45 @@ def _select_one_item_block_threads(*, primitive: str, numel: int) -> int:
     )
 
 
+def _histogram_thread_candidates(preferred: int) -> tuple[int, ...]:
+    candidates = [preferred]
+    candidates.extend(t for t in _THREAD_CANDIDATES if t != preferred)
+    return tuple(dict.fromkeys(candidates))
+
+
+def _select_histogram_block_threads(
+    *,
+    primitive: str,
+    numel: int,
+    bins: int,
+    preferred: int,
+) -> int:
+    """Find a width that divides both the input and histogram output.
+
+    Each candidate must give integral samples and bins per thread and use
+    whole warps, as required by the native provider.
+    """
+
+    if not isinstance(numel, int):
+        raise TileTypeError(
+            f"coop.{primitive} expects an integer tile size, got "
+            f"{type(numel).__name__}"
+        )
+    if numel <= 0:
+        raise TileTypeError(
+            f"coop.{primitive} expects tile size > 0, got {numel}"
+        )
+
+    candidates = _histogram_thread_candidates(preferred)
+    for threads in candidates:
+        if numel % threads == 0 and bins % threads == 0:
+            return threads
+    raise TileTypeError(
+        f"coop.{primitive} requires a block-thread count that divides both "
+        f"tile size ({numel}) and bins ({bins}); tried {candidates}"
+    )
+
+
 def _forced_backend() -> str | None:
     forced = os.getenv("CUDA_COOP_TILE_DISPATCH_FORCE_BACKEND")
     if forced is None:
@@ -361,6 +400,59 @@ def dispatch_reduce(
         dtype=dtype,
         requested_algorithm=requested_algorithm,
     )
+
+
+def dispatch_histogram_256(
+    *,
+    numel: int,
+    dtype: datatype.DType,
+    bins: int,
+) -> CoopDispatchDecision:
+    return dispatch_histogram(
+        numel=numel,
+        dtype=dtype,
+        bins=bins,
+        primitive="histogram_256",
+    )
+
+
+def dispatch_histogram(
+    *,
+    numel: int,
+    dtype: datatype.DType,
+    bins: int,
+    primitive: str = "histogram",
+) -> CoopDispatchDecision:
+    if not isinstance(bins, int):
+        raise TileTypeError(f"coop.{primitive} bins must be an int")
+    if bins <= 0:
+        raise TileTypeError(f"coop.{primitive} bins must be > 0")
+    if bins > 256:
+        raise TileTypeError(
+            f"coop.{primitive} bins must be <= 256 for uint8 inputs"
+        )
+
+    backend, rationale = _default_backend_for_numel(numel)
+    backend, rationale = _apply_forced_backend(backend, rationale)
+    preferred_threads = _preferred_threads(backend, numel)
+    block_threads = _select_histogram_block_threads(
+        primitive=primitive,
+        numel=numel,
+        bins=bins,
+        preferred=preferred_threads,
+    )
+
+    decision = CoopDispatchDecision(
+        primitive=primitive,
+        backend_family=backend,
+        block_threads=block_threads,
+        algorithm=None,
+        rationale=rationale,
+        tile_numel=numel,
+        dtype=dtype,
+    )
+    _trace_dispatch(decision)
+    return decision
 
 
 def dispatch_discontinuity(

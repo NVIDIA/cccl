@@ -495,7 +495,7 @@ template <size_t Bins, size_t N>
 [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<int, ct::shape<Bins>>
 histogram_call(ct::tile<unsigned char, ct::shape<N>> input) noexcept
 {
-  static_assert(N > 0, "cuda::coop::tile Histogram expects a non-empty input tile");
+  static_assert(N > 0 && N % 32 == 0, "cuda::coop::tile Histogram expects a positive input tile size divisible by 32");
   static_assert(Bins >= 32 && Bins <= 256 && Bins % 32 == 0,
                 "cuda::coop::tile Histogram bins must be a multiple of 32 in [32, 256]");
   return detail::histogram_foreign<N, Bins, cpp_dtype_token_v<unsigned char>>(input);
@@ -505,7 +505,8 @@ template <size_t N>
 [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<int, ct::shape<256>>
 histogram_256_call(ct::tile<unsigned char, ct::shape<N>> input) noexcept
 {
-  static_assert(N > 0, "cuda::coop::tile Histogram-256 expects a non-empty input tile");
+  static_assert(N > 0 && N % 32 == 0,
+                "cuda::coop::tile Histogram-256 expects a positive input tile size divisible by 32");
   return detail::histogram_256_foreign<N, cpp_dtype_token_v<unsigned char>>(input);
 }
 
@@ -515,8 +516,10 @@ template <size_t DecodedN, typename ValueT, typename LengthT, size_t RunN>
   ct::tile<LengthT, ct::shape<RunN>> run_lengths,
   LengthT decoded_window_offset) noexcept
 {
-  static_assert(RunN > 0, "cuda::coop::tile Run-Length Decode expects non-empty run tiles");
-  static_assert(DecodedN > 0, "cuda::coop::tile Run-Length Decode expects a non-empty decoded tile");
+  static_assert(RunN > 0 && RunN % 32 == 0,
+                "cuda::coop::tile Run-Length Decode expects a positive run tile size divisible by 32");
+  static_assert(DecodedN > 0 && DecodedN % 32 == 0,
+                "cuda::coop::tile Run-Length Decode expects a positive decoded tile size divisible by 32");
   static_assert(RunN <= 2147483647, "cuda::coop::tile Run-Length Decode run extent must fit in int");
   static_assert(DecodedN <= 2147483647, "cuda::coop::tile Run-Length Decode decoded extent must fit in int");
   static_assert(run_length_decode_length_type_v<LengthT>,
@@ -541,8 +544,10 @@ run_length_decode_with_offsets_call(ct::tile<ValueT, ct::shape<RunN>> run_values
                                     ct::tile<LengthT, ct::shape<RunN>> run_lengths,
                                     LengthT decoded_window_offset) noexcept
 {
-  static_assert(RunN > 0, "cuda::coop::tile Run-Length Decode expects non-empty run tiles");
-  static_assert(DecodedN > 0, "cuda::coop::tile Run-Length Decode expects a non-empty decoded tile");
+  static_assert(RunN > 0 && RunN % 32 == 0,
+                "cuda::coop::tile Run-Length Decode expects a positive run tile size divisible by 32");
+  static_assert(DecodedN > 0 && DecodedN % 32 == 0,
+                "cuda::coop::tile Run-Length Decode expects a positive decoded tile size divisible by 32");
   static_assert(RunN <= 2147483647, "cuda::coop::tile Run-Length Decode run extent must fit in int");
   static_assert(DecodedN <= 2147483647, "cuda::coop::tile Run-Length Decode decoded extent must fit in int");
   static_assert(run_length_decode_length_type_v<LengthT>,
@@ -1244,6 +1249,117 @@ _CCCL_COOP_TILE_REDUCE_OVERLOAD(::cuda::std::bit_or, "bit_or", true)
 _CCCL_COOP_TILE_REDUCE_OVERLOAD(::cuda::std::bit_xor, "bit_xor", true)
 
 #  undef _CCCL_COOP_TILE_REDUCE_OVERLOAD
+
+/**
+ * @brief Count unsigned-byte samples into an `int` Tile of extent `Bins`.
+ *
+ * `N` must be a positive multiple of 32.
+ * `T` must be `unsigned char` and each sample must be less than `Bins`. `Bins` is 32, 64, 128, or
+ * 256, as required by the CUDA Tile shape rules. The selected worker count must divide both
+ * `N` and `Bins`. Counts start at zero for each call.
+ */
+template <size_t Bins = 256, typename T, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<int, ct::shape<Bins>>
+histogram(ct::tile<T, ct::shape<N>> input, histogram_policy<> = {}) noexcept
+{
+  if constexpr (::cuda::std::is_same_v<T, unsigned char>)
+  {
+    return detail::histogram_call<Bins, N>(input);
+  }
+  else
+  {
+    static_assert(::cuda::std::is_same_v<T, unsigned char>,
+                  "cuda::coop::tile Histogram input dtype must be unsigned char (u8)");
+    return {};
+  }
+}
+
+/**
+ * @brief Count unsigned-byte samples into all 256 bins.
+ *
+ * This is the fixed-bin counterpart of `histogram<256>` with the same input and result contract.
+ */
+template <typename T, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<int, ct::shape<256>>
+histogram_256(ct::tile<T, ct::shape<N>> input, histogram_policy<> = {}) noexcept
+{
+  if constexpr (::cuda::std::is_same_v<T, unsigned char>)
+  {
+    return detail::histogram_256_call<N>(input);
+  }
+  else
+  {
+    static_assert(::cuda::std::is_same_v<T, unsigned char>,
+                  "cuda::coop::tile Histogram-256 input dtype must be unsigned char (u8)");
+    return {};
+  }
+}
+
+/**
+ * @brief Expand runs into a value Tile of extent `DecodedN`.
+ *
+ * Input extents must match. `LengthT` is `unsigned int`, `unsigned long`, or `unsigned long long`;
+ * run-length sums must fit that type. Zero-length runs may only follow all positive runs.
+ * An overload accepts `decoded_window_offset` between
+ * `run_lengths` and the policy: an integral scalar convertible to `LengthT` or `ct::tile<LengthT,
+ * ct::shape<1>>`. The default offset is zero. Use a nonnegative representable offset. Output
+ * beyond the expanded sequence is zero.
+ *
+ * Both input extents and `DecodedN` must be positive multiples of 32.
+ */
+template <size_t DecodedN, typename ValueT, typename LengthT, size_t ValueRunN, size_t LengthRunN>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<ValueT, ct::shape<DecodedN>> run_length_decode(
+  ct::tile<ValueT, ct::shape<ValueRunN>> run_values,
+  ct::tile<LengthT, ct::shape<LengthRunN>> run_lengths,
+  run_length_decode_policy<> = {}) noexcept
+{
+  return detail::run_length_decode_checked<DecodedN, ValueT, LengthT, ValueRunN, LengthRunN>(
+    run_values, run_lengths, LengthT{});
+}
+
+template <size_t DecodedN, typename ValueT, typename LengthT, size_t ValueRunN, size_t LengthRunN, typename OffsetControlT>
+  requires(detail::compatible_run_length_decode_offset_v<LengthT, OffsetControlT>)
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<ValueT, ct::shape<DecodedN>> run_length_decode(
+  ct::tile<ValueT, ct::shape<ValueRunN>> run_values,
+  ct::tile<LengthT, ct::shape<LengthRunN>> run_lengths,
+  OffsetControlT decoded_window_offset,
+  run_length_decode_policy<> = {}) noexcept
+{
+  const LengthT scalar_offset = detail::normalize_run_length_decode_offset<LengthT>(decoded_window_offset);
+  return detail::run_length_decode_checked<DecodedN, ValueT, LengthT, ValueRunN, LengthRunN>(
+    run_values, run_lengths, scalar_offset);
+}
+
+/**
+ * @brief Return decoded values and relative offsets within their runs, in that order.
+ *
+ * The inputs, window-offset overload, and capacity follow `run_length_decode`. Offsets have
+ * element type `LengthT`; padded positions contain its maximum value. Both input and output
+ * extents must admit a common worker count.
+ */
+template <size_t DecodedN, typename ValueT, typename LengthT, size_t ValueRunN, size_t LengthRunN>
+[[nodiscard]] _CCCL_COOP_TILE_API inline run_length_decode_with_offsets_result<ValueT, LengthT, DecodedN>
+run_length_decode_with_offsets(ct::tile<ValueT, ct::shape<ValueRunN>> run_values,
+                               ct::tile<LengthT, ct::shape<LengthRunN>> run_lengths,
+                               run_length_decode_policy<> = {}) noexcept
+{
+  return detail::run_length_decode_with_offsets_checked<DecodedN, ValueT, LengthT, ValueRunN, LengthRunN>(
+    run_values, run_lengths, LengthT{});
+}
+
+template <size_t DecodedN, typename ValueT, typename LengthT, size_t ValueRunN, size_t LengthRunN, typename OffsetControlT>
+  requires(detail::compatible_run_length_decode_offset_v<LengthT, OffsetControlT>)
+[[nodiscard]] _CCCL_COOP_TILE_API inline run_length_decode_with_offsets_result<ValueT, LengthT, DecodedN>
+run_length_decode_with_offsets(
+  ct::tile<ValueT, ct::shape<ValueRunN>> run_values,
+  ct::tile<LengthT, ct::shape<LengthRunN>> run_lengths,
+  OffsetControlT decoded_window_offset,
+  run_length_decode_policy<> = {}) noexcept
+{
+  const LengthT scalar_offset = detail::normalize_run_length_decode_offset<LengthT>(decoded_window_offset);
+  return detail::run_length_decode_with_offsets_checked<DecodedN, ValueT, LengthT, ValueRunN, LengthRunN>(
+    run_values, run_lengths, scalar_offset);
+}
 
 /**
  * @brief Return an `int` flag Tile: one at the first position and where a value differs from its

@@ -22,9 +22,13 @@ from ._lowerings import (
     exchange_striped_to_blocked_impl,
     exclusive_scan_impl,
     exclusive_sum_impl,
+    histogram_256_impl,
+    histogram_impl,
     inclusive_scan_impl,
     inclusive_sum_impl,
     reduce_impl,
+    run_length_decode_impl,
+    run_length_decode_with_offsets_impl,
     scan_impl,
     shuffle_down_impl,
     shuffle_offset_impl,
@@ -67,6 +71,13 @@ def register() -> None:
         _register_tilelib_impl(_api.inclusive_scan, inclusive_scan_impl)
         _register_tilelib_impl(_api.reduce, reduce_impl)
         _register_tilelib_impl(_api.sum, sum_impl)
+        _register_tilelib_impl(_api.histogram_256, histogram_256_impl)
+        _register_tilelib_impl(_api.histogram, histogram_impl)
+        _register_tilelib_impl(_api.run_length_decode, run_length_decode_impl)
+        _register_tilelib_impl(
+            _api.run_length_decode_with_offsets,
+            run_length_decode_with_offsets_impl,
+        )
         _register_tilelib_impl(
             _api.discontinuity_flag_heads, discontinuity_flag_heads_impl
         )
