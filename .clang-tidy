@@ -105,7 +105,6 @@ Checks:
   - '-readability-make-member-function-const'
   - '-readability-avoid-return-with-void-value'
   - '-readability-suspicious-call-argument'
-  - '-readability-container-size-empty'
   - '-readability-inconsistent-declaration-parameter-name'
   # Handled by clang-tidy
   - '-readability-misleading-indentation'
