@@ -190,6 +190,9 @@ struct smem_block_tile_layout
 // Widest cluster a policy allows before the hardware ceiling: the leader's per-pass histogram fold (one 32-bit count
 // per bucket from every other CTA) must fit one mbarrier transaction count, and a non-zero `max_blocks_per_cluster`
 // narrows that further. Used by the dispatch to clamp the launch and by the agent to reject a too-wide explicit cap.
+// The fold bound only matters for the mbarrier-based synchronization (`barrier.cluster` has no transaction count); it
+// is applied on both paths so that they select the same launch shapes. It only binds in edge cases: below 14 bits per
+// pass it is at least 32 CTAs, wider than any launchable cluster.
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr int
 effective_max_cluster_blocks(int bits_per_pass, int max_blocks_per_cluster) noexcept
 {
