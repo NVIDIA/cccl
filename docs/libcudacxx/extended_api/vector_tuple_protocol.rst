@@ -70,6 +70,10 @@ The tuple protocol is supported for all CUDA vector types:
 
 **\*** Single-component vector types.
 
+For ``__nv_fp8x2_ue5m3`` and ``__nv_fp8x4_ue5m3``, only ``tuple_size`` and
+``tuple_element`` are supported. Element access through ``get`` and structured
+bindings is unavailable because these types expose only packed storage.
+
 Example
 -------
 

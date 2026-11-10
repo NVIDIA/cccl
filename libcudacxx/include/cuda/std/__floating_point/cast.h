@@ -242,7 +242,7 @@ template <class _To, class _From>
 #  if _CCCL_HAS_NVFP8_UE5M3()
     else if constexpr (is_same_v<_To, __nv_fp8_ue5m3>)
     {
-      return ::cuda::std::__fp_cast<__nv_fp8_e5m2>(::cuda::std::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp8_ue5m3>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP8_UE5M3()
 #  if _CCCL_HAS_NVFP8_E8M0()
