@@ -431,6 +431,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  * ============================================================================
  * Freestanding API functions for fpmp2 class
  * ============================================================================
+ *
+ * Force-inlined like the fpmp2 operators. With the operators expanded, the larger functions look too
+ * big to GCC to inline into the loops that call them, and those loops are then not vectorized.
  */
 
 template <typename _FpType, fpmp2_accuracy _TypeAcc>

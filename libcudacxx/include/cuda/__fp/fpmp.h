@@ -831,6 +831,11 @@ public:
   /*
   // Arithmetic operations:
   */
+  // The arithmetic and comparison operators, add/sub/mul/div and the compound forms only dispatch to
+  // kernels that are force-inlined already, and are force-inlined too: GCC otherwise calls some of
+  // them out of line inside the fp32mp2 math functions, which made those functions several times
+  // slower on aarch64. _CCCL_FORCEINLINE, unlike _CCCL_TRIVIAL_HOST_DEVICE_API, keeps them visible
+  // to a debugger.
   // (+)
   [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE friend fpmp2
   operator+(const fpmp2& __x, const fpmp2& __y) noexcept
