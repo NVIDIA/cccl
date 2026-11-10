@@ -12,6 +12,7 @@
 #include "provider/families/discontinuity.h"
 #include "provider/families/exchange.h"
 #include "provider/families/histogram_rld.h"
+#include "provider/families/merge_sort.h"
 #include "provider/families/reduce.h"
 #include "provider/families/scan.h"
 #include "provider/families/shuffle.h"
@@ -22,7 +23,7 @@ namespace
 {
 static_assert(family_count == 21, "the provider contract must contain exactly 21 primitive families");
 
-constexpr std::array<FamilyDescriptor, 14> registry{{
+constexpr std::array<FamilyDescriptor, 16> registry{{
   {FamilyId::sum,
    "cuda_coop_tile_sum",
    "cuda_coop_tile_sum_impl",
@@ -143,6 +144,26 @@ constexpr std::array<FamilyDescriptor, 14> registry{{
    FamilyRankingPolicy::block_threads_centered_128,
    parse_exchange_metadata,
    emit_exchange_source},
+  {FamilyId::merge_sort_keys,
+   "cuda_coop_tile_merge_sort_keys",
+   "cuda_coop_tile_merge_sort_keys_impl",
+   "merge-sort-keys",
+   "merge_sort_keys",
+   "cub/block/block_merge_sort.cuh",
+   generated::schema_for("cuda_coop_tile_merge_sort_keys"),
+   FamilyRankingPolicy::block_threads_centered_128,
+   parse_merge_sort_metadata,
+   emit_merge_sort_source},
+  {FamilyId::merge_sort_pairs,
+   "cuda_coop_tile_merge_sort_pairs",
+   "cuda_coop_tile_merge_sort_pairs_impl",
+   "merge-sort-pairs",
+   "merge_sort_pairs",
+   "cub/block/block_merge_sort.cuh",
+   generated::schema_for("cuda_coop_tile_merge_sort_pairs"),
+   FamilyRankingPolicy::block_threads_centered_128,
+   parse_merge_sort_metadata,
+   emit_merge_sort_source},
   {FamilyId::sum_batched,
    "cuda_coop_tile_sum_batched",
    "cuda_coop_tile_sum_batched_impl",
@@ -167,7 +188,7 @@ constexpr std::array<FamilyDescriptor, 14> registry{{
 
 constexpr bool registry_is_complete()
 {
-  if (registry.size() != 14)
+  if (registry.size() != 16)
   {
     return false;
   }

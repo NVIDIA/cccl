@@ -12,6 +12,8 @@ foreach (
   histogram_256_smoke
   discontinuity_flags_smoke
   adjacent_shuffle_sm120
+  merge_sort
+  merge_sort_keys_smoke
   run_length_decode_sm120
 )
   add_executable("cccl.tile.${_test}" "support/tile_cpp_${_test}.cu")
