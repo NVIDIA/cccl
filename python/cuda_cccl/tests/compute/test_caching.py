@@ -209,3 +209,41 @@ def test_operator_cache_identity_is_content_based(factory):
 
     assert CachableFunction(factory(1)) == CachableFunction(factory(1))
     assert CachableFunction(factory(1)) != CachableFunction(factory(2))
+
+
+def _make_op_with_registered_helper(table):
+    # A helper made callable from device code captures ``table``. The outer
+    # operator captures no array itself, so it is stateless and the compiler
+    # bakes the helper's array pointer into the kernel as a constant.
+    from numba_cuda_mlir.extending import register_jitable
+
+    from cuda.compute import _mlir
+
+    @register_jitable(typing_registry=_mlir.typing_registry)
+    def helper(x):
+        return x + table[0]
+
+    def op(x):
+        return helper(x)
+
+    return op
+
+
+def test_operators_with_helper_captured_arrays_do_not_share_a_kernel():
+    _require_jit_backend()
+    from cuda.compute._caching import CachableFunction
+
+    t1 = DeviceArray.from_numpy(np.array([100], dtype=np.int32))
+    t2 = DeviceArray.from_numpy(np.array([200], dtype=np.int32))
+    op1 = _make_op_with_registered_helper(t1)
+    op2 = _make_op_with_registered_helper(t2)
+    assert CachableFunction(op1) != CachableFunction(op2)
+
+    d_in = DeviceArray.from_numpy(np.arange(4, dtype=np.int32))
+    d_out = DeviceArray.empty(4, np.int32)
+    cuda.compute.unary_transform(d_in=d_in, d_out=d_out, op=op1, num_items=4)
+    Device().sync()
+    np.testing.assert_array_equal(d_out.copy_to_host(), np.arange(4) + 100)
+    cuda.compute.unary_transform(d_in=d_in, d_out=d_out, op=op2, num_items=4)
+    Device().sync()
+    np.testing.assert_array_equal(d_out.copy_to_host(), np.arange(4) + 200)

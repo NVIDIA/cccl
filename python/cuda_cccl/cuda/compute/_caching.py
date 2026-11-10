@@ -20,7 +20,13 @@ try:
 except ImportError:
     from cuda.core.experimental._utils.cuda_utils import CUDAError
 
-from ._utils.protocols import get_dtype, get_shape, is_contiguous, is_device_array
+from ._utils.protocols import (
+    get_data_pointer,
+    get_dtype,
+    get_shape,
+    is_contiguous,
+    is_device_array,
+)
 from .struct import _Struct
 
 try:
@@ -665,6 +671,20 @@ def _make_hashable(value, keep_alive: list, in_progress: tuple = ()):
         # operator) is keyed by its own content, recursively.
         return _function_key(value, in_progress)
     elif is_device_array(value):
+        if len(in_progress) > 1:
+            # A device array captured by a *nested* function (a helper the
+            # operator calls) is not threaded through the runtime state; the
+            # compiler bakes its pointer, shape and strides into the device
+            # code as constants. Key it by exactly those, so two operators
+            # whose helpers capture different arrays never share a kernel.
+            cai = value.__cuda_array_interface__
+            return (
+                "device_array.baked",
+                get_dtype(value),
+                tuple(cai["shape"]),
+                cai.get("strides"),
+                get_data_pointer(value),
+            )
         # The stateful op machinery threads the array's pointer and
         # shape through the *runtime* state buffer.  Thus, the key
         # includes only dtype and rank, not pointer or shape.
