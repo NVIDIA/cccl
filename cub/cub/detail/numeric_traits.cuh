@@ -216,7 +216,7 @@ template <typename T, typename = T> struct NumericTraits :            BaseTraits
 
 template <> struct NumericTraits<NullType> :            BaseTraits<NOT_A_NUMBER, false, NullType, NullType> {};
 
-template <> struct NumericTraits<char> :                BaseTraits<(::cuda::std::numeric_limits<char>::is_signed) ? SIGNED_INTEGER : UNSIGNED_INTEGER, true, unsigned char, char> {};
+template <> struct NumericTraits<char> :                BaseTraits<::cuda::std::numeric_limits<char>::is_signed ? SIGNED_INTEGER : UNSIGNED_INTEGER, true, unsigned char, char> {};
 template <> struct NumericTraits<signed char> :         BaseTraits<SIGNED_INTEGER, true, unsigned char, signed char> {};
 template <> struct NumericTraits<short> :               BaseTraits<SIGNED_INTEGER, true, unsigned short, short> {};
 template <> struct NumericTraits<int> :                 BaseTraits<SIGNED_INTEGER, true, unsigned int, int> {};
@@ -326,7 +326,7 @@ template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POIN
     template <typename T> struct NumericTraits<__nv_fp8_e5m2, T> :   BaseTraits<FLOATING_POINT, true, unsigned char, T> {};
 #endif // _CCCL_HAS_NVFP8()
 
-template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, true, typename UnitWord<bool>::VolatileWord, bool> {};
+template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, true, UnitWord<bool>::VolatileWord, bool> {};
 // clang-format on
 
 namespace detail

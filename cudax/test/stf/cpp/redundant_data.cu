@@ -57,7 +57,8 @@ void run(double (&X)[N], double (&Y)[N])
   auto handle_X = ctx.logical_data(X);
   auto handle_Y = ctx.logical_data(Y);
 
-  int ret1 = 0, ret2 = 0;
+  int ret1 = 0;
+  int ret2 = 0;
 
   compare_two_vectors(ctx, handle_X, handle_Y, ret1);
   compare_two_vectors(ctx, handle_X, handle_X, ret2);
@@ -73,7 +74,8 @@ void run(double (&X)[N], double (&Y)[N])
 
 int main()
 {
-  double X[N], Y[N];
+  double X[N];
+  double Y[N];
 
   for (size_t ind = 0; ind < N; ind++)
   {

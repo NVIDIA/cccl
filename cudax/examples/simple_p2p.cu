@@ -206,7 +206,7 @@ try
   for (auto& dev : cuda::devices)
   {
     const auto dev_peers = dev.peers();
-    if (dev_peers.size() != 0)
+    if (!dev_peers.empty())
     {
       peers.assign(dev_peers.begin(), dev_peers.end());
       peers.insert(peers.begin(), dev);
@@ -214,7 +214,7 @@ try
     }
   }
 
-  if (peers.size() == 0)
+  if (peers.empty())
   {
     printf("Two or more GPUs with Peer-to-Peer access capability are required, waving the test.\n");
     return 0;
