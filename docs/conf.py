@@ -115,6 +115,8 @@ templates_path = ["_templates"]
 
 # Exclude patterns
 exclude_patterns = [
+    "**/AGENTS.md",
+    "**/CLAUDE.md",
     "_build",
     "_repo",
     "tools",
