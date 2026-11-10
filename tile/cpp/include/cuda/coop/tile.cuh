@@ -411,7 +411,7 @@ template <cte::fixedString Mode,
 [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
 scan_call(ct::tile<T, ct::shape<N>> input, T runtime_initial, T runtime_prefix) noexcept
 {
-  static_assert(N > 0, "cuda::coop::tile scan expects a non-empty tile");
+  static_assert(N > 0 && N % 32 == 0, "cuda::coop::tile scan expects a positive tile size divisible by 32");
   static_assert(InitialPresent == 0 || InitialPresent == 1);
   static_assert(PrefixPresent == 0 || PrefixPresent == 1);
   static_assert(!(InitialPresent && PrefixPresent),
@@ -819,6 +819,430 @@ template <size_t Descending,
     cpp_dtype_token_v<ValueT>>(keys, values, begin_bit, end_bit);
 }
 } // namespace detail
+
+/**
+ * @brief Return the sum of preceding elements, with zero at position zero.
+ *
+ * The result preserves the input shape and dtype.
+ * All Scan calls require `N` to be a positive multiple of 32.
+ */
+template <typename T, size_t N, scan_algorithm Algorithm = scan_algorithm::raking>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+exclusive_sum(ct::tile<T, ct::shape<N>> input, scan_policy<Algorithm> = {}) noexcept
+{
+  return detail::scan_call<"exclusive", "sum", 0, 0, T, N, Algorithm>(input, T{}, T{});
+}
+
+/**
+ * @brief Return an exclusive sum starting with a runtime prefix.
+ *
+ * The prefix is a scalar convertible to the input dtype or a shape-one Tile of that dtype.
+ */
+template <typename T, size_t N, typename PrefixT, scan_algorithm Algorithm = scan_algorithm::raking>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+exclusive_sum(ct::tile<T, ct::shape<N>> input, PrefixT prefix_value, scan_policy<Algorithm> = {}) noexcept
+{
+  return detail::scan_call<"exclusive", "sum", 0, 1, T, N, Algorithm>(
+    input, T{}, detail::normalize_value_control<T>(prefix_value));
+}
+
+/**
+ * @brief Return the sum through each input position, preserving the input shape and dtype.
+ */
+template <typename T, size_t N, scan_algorithm Algorithm = scan_algorithm::raking>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+inclusive_sum(ct::tile<T, ct::shape<N>> input, scan_policy<Algorithm> = {}) noexcept
+{
+  return detail::scan_call<"inclusive", "sum", 0, 0, T, N, Algorithm>(input, T{}, T{});
+}
+
+/**
+ * @brief Return an inclusive sum including a runtime prefix before the first input.
+ *
+ * The prefix is a scalar convertible to the input dtype or a shape-one Tile of that dtype.
+ */
+template <typename T, size_t N, typename PrefixT, scan_algorithm Algorithm = scan_algorithm::raking>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+inclusive_sum(ct::tile<T, ct::shape<N>> input, PrefixT prefix_value, scan_policy<Algorithm> = {}) noexcept
+{
+  return detail::scan_call<"inclusive", "sum", 0, 1, T, N, Algorithm>(
+    input, T{}, detail::normalize_value_control<T>(prefix_value));
+}
+
+/**
+ * @brief Select the mode with `scan_mode`.
+ *
+ * The overload without an operation computes addition. An operation may follow `input`; a
+ * seed or prefix, when present, follows the operation. In exclusive mode this is the initial
+ * value; in inclusive mode it is a prefix combined with the first input. Exclusive non-addition
+ * requires a seed. Supported operations are plus, multiplies, minimum,
+ * maximum, bit_and, bit_or, and bit_xor. Typed functors match the element type; void functors are
+ * also accepted. Bitwise operations require integral input. Seeds are scalars convertible to the
+ * input dtype or shape-one Tiles of exactly that dtype.
+ */
+template <scan_mode Mode = scan_mode::exclusive, typename T, size_t N, scan_algorithm Algorithm = scan_algorithm::raking>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+scan(ct::tile<T, ct::shape<N>> input, scan_policy<Algorithm> policy = {}) noexcept
+{
+  if constexpr (Mode == scan_mode::exclusive)
+  {
+    return ::cuda::coop::tile::exclusive_sum(input, policy);
+  }
+  else
+  {
+    static_assert(Mode == scan_mode::inclusive);
+    return ::cuda::coop::tile::inclusive_sum(input, policy);
+  }
+}
+
+/**
+ * @brief Compute an exclusive prefix, preserving shape and dtype.
+ *
+ * The overload without an operation computes addition with a zero seed. Addition also accepts a
+ * seed immediately after `input`. With an operation, supply it after `input` and the seed after
+ * the operation. Only addition can omit its seed. Seeds accept a scalar convertible to `T` or
+ * `ct::tile<T, ct::shape<1>>` with exactly the input dtype.
+ */
+template <typename T, size_t N, typename OpT, scan_algorithm Algorithm = scan_algorithm::raking>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+exclusive_scan(ct::tile<T, ct::shape<N>> input, ::cuda::std::plus<OpT>, scan_policy<Algorithm> policy = {}) noexcept
+{
+  detail::validate_functor<T, OpT>();
+  return ::cuda::coop::tile::exclusive_sum(input, policy);
+}
+
+template <typename T, size_t N, scan_algorithm Algorithm = scan_algorithm::raking>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+exclusive_scan(ct::tile<T, ct::shape<N>> input, scan_policy<Algorithm> policy = {}) noexcept
+{
+  return ::cuda::coop::tile::exclusive_sum(input, policy);
+}
+
+template <typename T, size_t N, scan_algorithm Algorithm = scan_algorithm::raking>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> exclusive_scan(
+  ct::tile<T, ct::shape<N>> input, ::cuda::std::type_identity_t<T> initial_value, scan_policy<Algorithm> = {}) noexcept
+{
+  return detail::scan_call<"exclusive", "sum", 1, 0, T, N, Algorithm>(input, initial_value, T{});
+}
+
+template <typename T, size_t N, scan_algorithm Algorithm = scan_algorithm::raking>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> exclusive_scan(
+  ct::tile<T, ct::shape<N>> input, ct::tile<T, ct::shape<1>> initial_value, scan_policy<Algorithm> policy = {}) noexcept
+{
+  const T scalar_initial = static_cast<T>(initial_value);
+  return ::cuda::coop::tile::exclusive_scan(input, scalar_initial, policy);
+}
+
+#  define _CCCL_COOP_TILE_INCLUSIVE_SCAN_OVERLOAD(_Functor, _Token, _IntegralOnly)                   \
+    template <typename T, size_t N, typename OpT, scan_algorithm Algorithm = scan_algorithm::raking> \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> inclusive_scan(               \
+      ct::tile<T, ct::shape<N>> input, _Functor<OpT>, scan_policy<Algorithm> = {}) noexcept          \
+    {                                                                                                \
+      detail::validate_functor<T, OpT>();                                                            \
+      static_assert(!_IntegralOnly || ::cuda::std::is_integral_v<T>,                                 \
+                    "cuda::coop::tile bitwise scans require an integer tile dtype");                 \
+      return detail::scan_call<"inclusive", _Token, 0, 0, T, N, Algorithm>(input, T{}, T{});         \
+    }
+
+_CCCL_COOP_TILE_INCLUSIVE_SCAN_OVERLOAD(::cuda::std::plus, "sum", false)
+_CCCL_COOP_TILE_INCLUSIVE_SCAN_OVERLOAD(::cuda::std::multiplies, "mul", false)
+_CCCL_COOP_TILE_INCLUSIVE_SCAN_OVERLOAD(::cuda::minimum, "min", false)
+_CCCL_COOP_TILE_INCLUSIVE_SCAN_OVERLOAD(::cuda::maximum, "max", false)
+_CCCL_COOP_TILE_INCLUSIVE_SCAN_OVERLOAD(::cuda::std::bit_and, "bit_and", true)
+_CCCL_COOP_TILE_INCLUSIVE_SCAN_OVERLOAD(::cuda::std::bit_or, "bit_or", true)
+_CCCL_COOP_TILE_INCLUSIVE_SCAN_OVERLOAD(::cuda::std::bit_xor, "bit_xor", true)
+
+#  undef _CCCL_COOP_TILE_INCLUSIVE_SCAN_OVERLOAD
+
+#  define _CCCL_COOP_TILE_INCLUSIVE_SCAN_PREFIX_OVERLOAD(_Functor, _Token, _IntegralOnly)                              \
+    template <typename T, size_t N, typename OpT, typename PrefixT, scan_algorithm Algorithm = scan_algorithm::raking> \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> inclusive_scan(                                 \
+      ct::tile<T, ct::shape<N>> input, _Functor<OpT>, PrefixT prefix_value, scan_policy<Algorithm> = {}) noexcept      \
+    {                                                                                                                  \
+      detail::validate_functor<T, OpT>();                                                                              \
+      static_assert(!_IntegralOnly || ::cuda::std::is_integral_v<T>,                                                   \
+                    "cuda::coop::tile bitwise scans require an integer tile dtype");                                   \
+      return detail::scan_call<"inclusive", _Token, 0, 1, T, N, Algorithm>(                                            \
+        input, T{}, detail::normalize_value_control<T>(prefix_value));                                                 \
+    }
+
+_CCCL_COOP_TILE_INCLUSIVE_SCAN_PREFIX_OVERLOAD(::cuda::std::plus, "sum", false)
+_CCCL_COOP_TILE_INCLUSIVE_SCAN_PREFIX_OVERLOAD(::cuda::std::multiplies, "mul", false)
+_CCCL_COOP_TILE_INCLUSIVE_SCAN_PREFIX_OVERLOAD(::cuda::minimum, "min", false)
+_CCCL_COOP_TILE_INCLUSIVE_SCAN_PREFIX_OVERLOAD(::cuda::maximum, "max", false)
+_CCCL_COOP_TILE_INCLUSIVE_SCAN_PREFIX_OVERLOAD(::cuda::std::bit_and, "bit_and", true)
+_CCCL_COOP_TILE_INCLUSIVE_SCAN_PREFIX_OVERLOAD(::cuda::std::bit_or, "bit_or", true)
+_CCCL_COOP_TILE_INCLUSIVE_SCAN_PREFIX_OVERLOAD(::cuda::std::bit_xor, "bit_xor", true)
+
+#  undef _CCCL_COOP_TILE_INCLUSIVE_SCAN_PREFIX_OVERLOAD
+
+/**
+ * @brief Compute an inclusive prefix, preserving shape and dtype.
+ *
+ * Omitting the operation selects addition. An operation may follow `input`, followed by an optional
+ * runtime prefix. Inclusive scans accept prefixes but no initial value.
+ */
+template <typename T, size_t N, scan_algorithm Algorithm = scan_algorithm::raking>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+inclusive_scan(ct::tile<T, ct::shape<N>> input, scan_policy<Algorithm> policy = {}) noexcept
+{
+  return ::cuda::coop::tile::inclusive_sum(input, policy);
+}
+
+template <typename T, size_t N, typename PrefixT, scan_algorithm Algorithm = scan_algorithm::raking>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+inclusive_scan(ct::tile<T, ct::shape<N>> input, PrefixT prefix_value, scan_policy<Algorithm> policy = {}) noexcept
+{
+  return ::cuda::coop::tile::inclusive_sum(input, prefix_value, policy);
+}
+
+#  define _CCCL_COOP_TILE_EXCLUSIVE_SCAN_INITIAL_OVERLOAD(_Functor, _Token, _IntegralOnly)             \
+    template <typename T, size_t N, typename OpT, scan_algorithm Algorithm = scan_algorithm::raking>   \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> exclusive_scan(                 \
+      ct::tile<T, ct::shape<N>> input,                                                                 \
+      _Functor<OpT>,                                                                                   \
+      ::cuda::std::type_identity_t<T> initial_value,                                                   \
+      scan_policy<Algorithm> = {}) noexcept                                                            \
+    {                                                                                                  \
+      detail::validate_functor<T, OpT>();                                                              \
+      static_assert(!_IntegralOnly || ::cuda::std::is_integral_v<T>,                                   \
+                    "cuda::coop::tile bitwise scans require an integer tile dtype");                   \
+      return detail::scan_call<"exclusive", _Token, 1, 0, T, N, Algorithm>(input, initial_value, T{}); \
+    }                                                                                                  \
+    template <typename T, size_t N, typename OpT, scan_algorithm Algorithm = scan_algorithm::raking>   \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> exclusive_scan(                 \
+      ct::tile<T, ct::shape<N>> input,                                                                 \
+      _Functor<OpT> op,                                                                                \
+      ct::tile<T, ct::shape<1>> initial_value,                                                         \
+      scan_policy<Algorithm> policy = {}) noexcept                                                     \
+    {                                                                                                  \
+      const T scalar_initial = static_cast<T>(initial_value);                                          \
+      return ::cuda::coop::tile::exclusive_scan(input, op, scalar_initial, policy);                    \
+    }
+
+_CCCL_COOP_TILE_EXCLUSIVE_SCAN_INITIAL_OVERLOAD(::cuda::std::plus, "sum", false)
+_CCCL_COOP_TILE_EXCLUSIVE_SCAN_INITIAL_OVERLOAD(::cuda::std::multiplies, "mul", false)
+_CCCL_COOP_TILE_EXCLUSIVE_SCAN_INITIAL_OVERLOAD(::cuda::minimum, "min", false)
+_CCCL_COOP_TILE_EXCLUSIVE_SCAN_INITIAL_OVERLOAD(::cuda::maximum, "max", false)
+_CCCL_COOP_TILE_EXCLUSIVE_SCAN_INITIAL_OVERLOAD(::cuda::std::bit_and, "bit_and", true)
+_CCCL_COOP_TILE_EXCLUSIVE_SCAN_INITIAL_OVERLOAD(::cuda::std::bit_or, "bit_or", true)
+_CCCL_COOP_TILE_EXCLUSIVE_SCAN_INITIAL_OVERLOAD(::cuda::std::bit_xor, "bit_xor", true)
+
+#  undef _CCCL_COOP_TILE_EXCLUSIVE_SCAN_INITIAL_OVERLOAD
+
+#  define _CCCL_COOP_TILE_SCAN_OVERLOADS(_Functor, _Token, _IntegralOnly, _ExclusiveWithoutInitial)      \
+    template <scan_mode Mode = scan_mode::exclusive,                                                     \
+              typename T,                                                                                \
+              size_t N,                                                                                  \
+              typename OpT,                                                                              \
+                                                                                                         \
+              scan_algorithm Algorithm = scan_algorithm::raking>                                         \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> scan(                             \
+      ct::tile<T, ct::shape<N>> input, _Functor<OpT>, scan_policy<Algorithm> = {}) noexcept              \
+    {                                                                                                    \
+      detail::validate_functor<T, OpT>();                                                                \
+      static_assert(!_IntegralOnly || ::cuda::std::is_integral_v<T>,                                     \
+                    "cuda::coop::tile bitwise scans require an integer tile dtype");                     \
+      if constexpr (Mode == scan_mode::exclusive)                                                        \
+      {                                                                                                  \
+        static_assert(_ExclusiveWithoutInitial || Mode != scan_mode::exclusive,                          \
+                      "cuda::coop::tile exclusive scans with this operation require an initial value");  \
+        return detail::scan_call<"exclusive", _Token, 0, 0, T, N, Algorithm>(input, T{}, T{});           \
+      }                                                                                                  \
+      else                                                                                               \
+      {                                                                                                  \
+        static_assert(Mode == scan_mode::inclusive);                                                     \
+        return detail::scan_call<"inclusive", _Token, 0, 0, T, N, Algorithm>(input, T{}, T{});           \
+      }                                                                                                  \
+    }                                                                                                    \
+    template <scan_mode Mode = scan_mode::exclusive,                                                     \
+              typename T,                                                                                \
+              size_t N,                                                                                  \
+              typename OpT,                                                                              \
+                                                                                                         \
+              scan_algorithm Algorithm = scan_algorithm::raking>                                         \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> scan(                             \
+      ct::tile<T, ct::shape<N>> input,                                                                   \
+      _Functor<OpT>,                                                                                     \
+      ::cuda::std::type_identity_t<T> initial_value,                                                     \
+      scan_policy<Algorithm> = {}) noexcept                                                              \
+    {                                                                                                    \
+      detail::validate_functor<T, OpT>();                                                                \
+      static_assert(!_IntegralOnly || ::cuda::std::is_integral_v<T>,                                     \
+                    "cuda::coop::tile bitwise scans require an integer tile dtype");                     \
+      if constexpr (Mode == scan_mode::exclusive)                                                        \
+      {                                                                                                  \
+        return detail::scan_call<"exclusive", _Token, 1, 0, T, N, Algorithm>(input, initial_value, T{}); \
+      }                                                                                                  \
+      else                                                                                               \
+      {                                                                                                  \
+        static_assert(Mode == scan_mode::inclusive);                                                     \
+        return detail::scan_call<"inclusive", _Token, 0, 1, T, N, Algorithm>(input, T{}, initial_value); \
+      }                                                                                                  \
+    }                                                                                                    \
+    template <scan_mode Mode = scan_mode::exclusive,                                                     \
+              typename T,                                                                                \
+              size_t N,                                                                                  \
+              typename OpT,                                                                              \
+                                                                                                         \
+              scan_algorithm Algorithm = scan_algorithm::raking>                                         \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> scan(                             \
+      ct::tile<T, ct::shape<N>> input,                                                                   \
+      _Functor<OpT> op,                                                                                  \
+      ct::tile<T, ct::shape<1>> initial_value,                                                           \
+      scan_policy<Algorithm> policy = {}) noexcept                                                       \
+    {                                                                                                    \
+      const T scalar_initial = static_cast<T>(initial_value);                                            \
+      return ::cuda::coop::tile::scan<Mode>(input, op, scalar_initial, policy);                          \
+    }
+
+_CCCL_COOP_TILE_SCAN_OVERLOADS(::cuda::std::plus, "sum", false, true)
+_CCCL_COOP_TILE_SCAN_OVERLOADS(::cuda::std::multiplies, "mul", false, false)
+_CCCL_COOP_TILE_SCAN_OVERLOADS(::cuda::minimum, "min", false, false)
+_CCCL_COOP_TILE_SCAN_OVERLOADS(::cuda::maximum, "max", false, false)
+_CCCL_COOP_TILE_SCAN_OVERLOADS(::cuda::std::bit_and, "bit_and", true, false)
+_CCCL_COOP_TILE_SCAN_OVERLOADS(::cuda::std::bit_or, "bit_or", true, false)
+_CCCL_COOP_TILE_SCAN_OVERLOADS(::cuda::std::bit_xor, "bit_xor", true, false)
+
+#  undef _CCCL_COOP_TILE_SCAN_OVERLOADS
+
+template <scan_mode Mode = scan_mode::exclusive,
+          typename T,
+          size_t N,
+          typename ControlT,
+          scan_algorithm Algorithm = scan_algorithm::raking>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+scan(ct::tile<T, ct::shape<N>> input, ControlT seed_or_prefix, scan_policy<Algorithm> policy = {}) noexcept
+{
+  const T scalar_value = detail::normalize_value_control<T>(seed_or_prefix);
+  return ::cuda::coop::tile::scan<Mode>(input, ::cuda::std::plus<>{}, scalar_value, policy);
+}
+
+/**
+ * @brief Return the sum repeated across the input shape, using the input dtype for accumulation.
+ *
+ * `T` must be a supported numeric type. For valid Tile shapes, `N` must be
+ * 1, 2, 4, 8, 16 or a positive multiple of 32.
+ */
+template <typename T, size_t N, reduce_algorithm Algorithm = reduce_algorithm::warp_reductions>
+  requires(detail::supported_element_v<T>)
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+sum(ct::tile<T, ct::shape<N>> input, reduce_policy<Algorithm> = {}) noexcept
+{
+  return ct::broadcast(detail::sum_batched_call<T, N, 1, Algorithm>(input), ct::shape<N>{});
+}
+
+/**
+ * @brief Sum along a compile-time axis, retaining that dimension with extent one.
+ *
+ * `Axis` is nonnegative and less than the input rank. The input dtype is used
+ * for accumulation and output. Independent reductions execute through native batching.
+ * For valid Tile shapes, the reduced-axis extent must be 1, 2, 4, 8, 16 or a positive multiple of 32.
+ */
+template <size_t Axis, typename T, typename Shape, reduce_algorithm Algorithm = reduce_algorithm::warp_reductions>
+  requires(detail::supported_element_v<T> && Axis < Shape::rank())
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::reduction_result_t<ct::tile<T, Shape>, Axis>
+sum(ct::tile<T, Shape> input, reduce_policy<Algorithm> = {}) noexcept
+{
+  constexpr size_t count   = ct::tile_size_v<ct::tile<T, Shape>>;
+  constexpr size_t batches = count / Shape::static_extent(Axis);
+  using Result             = ct::reduction_result_t<ct::tile<T, Shape>, Axis>;
+  const auto rows          = detail::reduction_rows<Axis>(input, ::cuda::std::make_index_sequence<Shape::rank() - 1>{});
+  return ct::reshape(detail::sum_batched_call<T, count, batches, Algorithm>(rows), typename Result::shape_type{});
+}
+
+/**
+ * @brief Repeat the aggregate across the input shape.
+ *
+ * Omitting the operation selects addition; otherwise an operation follows `input`. `T` must be
+ * numeric and a typed operation must match it. Integer bitwise operations additionally require
+ * integral `T`. For valid Tile shapes, `N` must be 1, 2, 4, 8, 16 or a positive multiple of 32.
+ */
+template <typename T, size_t N, reduce_algorithm Algorithm = reduce_algorithm::warp_reductions>
+  requires(detail::supported_element_v<T>)
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+reduce(ct::tile<T, ct::shape<N>> input, reduce_policy<Algorithm> policy = {}) noexcept
+{
+  return ::cuda::coop::tile::sum(input, policy);
+}
+
+template <typename T, size_t N, typename OpT, reduce_algorithm Algorithm = reduce_algorithm::warp_reductions>
+  requires(detail::supported_element_v<T> && detail::compatible_functor_v<T, OpT>)
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+reduce(ct::tile<T, ct::shape<N>> input, ::cuda::std::plus<OpT>, reduce_policy<Algorithm> policy = {}) noexcept
+{
+  detail::validate_functor<T, OpT>();
+  return ::cuda::coop::tile::sum(input, policy);
+}
+
+/**
+ * @brief Reduce along a compile-time axis, retaining that dimension with extent one.
+ *
+ * Omitting the operation selects addition. Supported operations and dtype
+ * constraints match the one-dimensional broadcast overloads. For valid Tile shapes,
+ * the reduced-axis extent must be 1, 2, 4, 8, 16 or a positive multiple of 32.
+ */
+template <size_t Axis, typename T, typename Shape, reduce_algorithm Algorithm = reduce_algorithm::warp_reductions>
+  requires(detail::supported_element_v<T> && Axis < Shape::rank())
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::reduction_result_t<ct::tile<T, Shape>, Axis>
+reduce(ct::tile<T, Shape> input, reduce_policy<Algorithm> policy = {}) noexcept
+{
+  return ::cuda::coop::tile::sum<Axis>(input, policy);
+}
+
+template <size_t Axis,
+          typename T,
+          typename Shape,
+          typename OpT,
+          reduce_algorithm Algorithm = reduce_algorithm::warp_reductions>
+  requires(detail::supported_element_v<T> && detail::compatible_functor_v<T, OpT> && Axis < Shape::rank())
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::reduction_result_t<ct::tile<T, Shape>, Axis>
+reduce(ct::tile<T, Shape> input, ::cuda::std::plus<OpT>, reduce_policy<Algorithm> policy = {}) noexcept
+{
+  return ::cuda::coop::tile::sum<Axis>(input, policy);
+}
+
+#  define _CCCL_COOP_TILE_REDUCE_OVERLOAD(_Functor, _Token, _IntegralOnly)                                          \
+    template <typename T,                                                                                           \
+              size_t N,                                                                                             \
+              typename OpT,                                                                                         \
+                                                                                                                    \
+              reduce_algorithm Algorithm = reduce_algorithm::warp_reductions>                                       \
+      requires(detail::supported_element_v<T> && detail::compatible_functor_v<T, OpT>                               \
+               && (!_IntegralOnly || ::cuda::std::is_integral_v<T>) )                                               \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> reduce(                                      \
+      ct::tile<T, ct::shape<N>> input, _Functor<OpT>, reduce_policy<Algorithm> = {}) noexcept                       \
+    {                                                                                                               \
+      detail::validate_functor<T, OpT>();                                                                           \
+      return ct::broadcast(detail::reduce_batched_call<_Token, _IntegralOnly, T, N, 1, Algorithm>(input),           \
+                           ct::shape<N>{});                                                                         \
+    }                                                                                                               \
+    template <size_t Axis,                                                                                          \
+              typename T,                                                                                           \
+              typename Shape,                                                                                       \
+              typename OpT,                                                                                         \
+              reduce_algorithm Algorithm = reduce_algorithm::warp_reductions>                                       \
+      requires(detail::supported_element_v<T> && detail::compatible_functor_v<T, OpT>                               \
+               && (!_IntegralOnly || ::cuda::std::is_integral_v<T>) && Axis < Shape::rank())                        \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline ct::reduction_result_t<ct::tile<T, Shape>, Axis> reduce(               \
+      ct::tile<T, Shape> input, _Functor<OpT>, reduce_policy<Algorithm> = {}) noexcept                              \
+    {                                                                                                               \
+      constexpr size_t count   = ct::tile_size_v<ct::tile<T, Shape>>;                                               \
+      constexpr size_t batches = count / Shape::static_extent(Axis);                                                \
+      using Result             = ct::reduction_result_t<ct::tile<T, Shape>, Axis>;                                  \
+      const auto rows = detail::reduction_rows<Axis>(input, ::cuda::std::make_index_sequence<Shape::rank() - 1>{}); \
+      return ct::reshape(detail::reduce_batched_call<_Token, _IntegralOnly, T, count, batches, Algorithm>(rows),    \
+                         typename Result::shape_type{});                                                            \
+    }
+
+_CCCL_COOP_TILE_REDUCE_OVERLOAD(::cuda::std::multiplies, "mul", false)
+_CCCL_COOP_TILE_REDUCE_OVERLOAD(::cuda::minimum, "min", false)
+_CCCL_COOP_TILE_REDUCE_OVERLOAD(::cuda::maximum, "max", false)
+_CCCL_COOP_TILE_REDUCE_OVERLOAD(::cuda::std::bit_and, "bit_and", true)
+_CCCL_COOP_TILE_REDUCE_OVERLOAD(::cuda::std::bit_or, "bit_or", true)
+_CCCL_COOP_TILE_REDUCE_OVERLOAD(::cuda::std::bit_xor, "bit_xor", true)
+
+#  undef _CCCL_COOP_TILE_REDUCE_OVERLOAD
 } // namespace cuda::coop::tile
 
 #  undef _CCCL_COOP_TILE_API
