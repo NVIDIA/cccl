@@ -6,9 +6,13 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <cuda/argument>
+#include <cuda/std/cstdint>
+
 #include <iostream>
 
 #include "cub_test_macros.h"
+#include <c2h/vector.h>
 
 CUB_TEST("Device inclusive scan works", "[scan][device]", CUB_SMALL)
 {
@@ -209,6 +213,42 @@ CUB_TEST("cub::DeviceScan::InclusiveScanInit args::deferred non-env overload wor
   REQUIRE(error == cudaSuccess);
 
   REQUIRE(expected == out);
+}
+
+CUB_TEST("cub::DeviceScan::InclusiveScanInit accepts a runtime-bounded deferred initial value",
+         "[scan][device]",
+         CUB_SMALL)
+{
+  c2h::device_vector<int> input{1, 2, 3, 4};
+  c2h::device_vector<int> single_phase_output(input.size());
+  c2h::device_vector<int> two_phase_output(input.size());
+  c2h::device_vector<int> init_storage{10};
+  auto init           = cuda::args::deferred{init_storage.begin(), cuda::args::bounds(0, 10)};
+  const int num_items = static_cast<int>(input.size());
+  const c2h::device_vector<int> expected{11, 13, 16, 20};
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceScan::InclusiveScanInit(
+            input.begin(), single_phase_output.begin(), cuda::std::plus<>{}, init, num_items));
+  REQUIRE(single_phase_output == expected);
+
+  size_t temp_storage_bytes{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceScan::InclusiveScanInit(
+      nullptr, temp_storage_bytes, input.begin(), two_phase_output.begin(), cuda::std::plus<>{}, init, num_items));
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes);
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceScan::InclusiveScanInit(
+      thrust::raw_pointer_cast(temp_storage.data()),
+      temp_storage_bytes,
+      input.begin(),
+      two_phase_output.begin(),
+      cuda::std::plus<>{},
+      init,
+      num_items));
+  REQUIRE(two_phase_output == expected);
 }
 
 CUB_TEST("cub::DeviceScan::ExclusiveSumByKey non-env overload is not ambiguous", "[scan][device]", CUB_SMALL)

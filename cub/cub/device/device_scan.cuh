@@ -2552,12 +2552,13 @@ public:
             typename InitValueBoundsT,
             typename NumItemsT,
             typename EnvT                                                    = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0>
+            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0,
+            bool InitValueHasRuntimeBounds                                   = false>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ScanOpT scan_op,
-    const ::cuda::args::deferred<InitValueIterT, InitValueBoundsT>& init_value,
+    const ::cuda::args::deferred<InitValueIterT, InitValueBoundsT, InitValueHasRuntimeBounds>& init_value,
     NumItemsT num_items,
     const EnvT& env = {})
   {
@@ -2658,14 +2659,15 @@ public:
             typename InitValueIterT,
             typename InitValueBoundsT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT                  = ::cuda::std::execution::env<>,
+            bool InitValueHasRuntimeBounds = false>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ScanOpT scan_op,
-    const ::cuda::args::deferred<InitValueIterT, InitValueBoundsT>& init_value,
+    const ::cuda::args::deferred<InitValueIterT, InitValueBoundsT, InitValueHasRuntimeBounds>& init_value,
     NumItemsT num_items,
     const EnvT& env = {})
   {

@@ -104,6 +104,7 @@ TEST_FUNC void test()
   static_assert(!cuda::args::__is_deferred_v<int>);
   static_assert(!cuda::args::__is_deferred_v<cuda::args::immediate<int>>);
   static_assert(!cuda::args::__is_deferred_v<cuda::args::deferred_sequence<int*>>);
+  static_assert(!cuda::args::__is_deferred_v<cuda::args::deferred_sequence<int*, cuda::args::no_bounds, true>>);
 
   // --- argument_traits: is_deferred ---
 
