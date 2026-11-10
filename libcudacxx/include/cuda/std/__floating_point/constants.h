@@ -73,11 +73,7 @@ template <__fp_format _Fmt>
   {
     return _Storage(0x7fu);
   }
-  else if constexpr (_Fmt == __fp_format::__fp8_nv_ue5m3)
-  {
-    return _Storage(0xffu);
-  }
-  else if constexpr (_Fmt == __fp_format::__fp8_nv_e8m0)
+  else if constexpr (_Fmt == __fp_format::__fp8_nv_ue5m3 || _Fmt == __fp_format::__fp8_nv_e8m0)
   {
     return _Storage(0xffu);
   }
