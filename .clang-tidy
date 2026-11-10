@@ -99,7 +99,6 @@ Checks:
   - '-readability-avoid-nested-conditional-operator'
   - '-readability-redundant-declaration'
   - '-readability-avoid-unconditional-preprocessor-if'
-  - '-readability-non-const-parameter'
   - '-readability-redundant-casting'
   - '-readability-simplify-boolean-expr'
   - '-readability-make-member-function-const'
