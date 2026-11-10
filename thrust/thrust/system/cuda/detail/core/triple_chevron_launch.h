@@ -17,10 +17,9 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__cstring/memcpy.h> // IWYU pragma: keep
 
 #include <nv/target>
-
-#include <cstring>
 
 THRUST_NAMESPACE_BEGIN
 
