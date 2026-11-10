@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
+
 // <cmath>
 
 #include <cuda/std/cassert>
@@ -294,6 +297,96 @@ TEST_FUNC void test_modf(T val)
 #endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
+#if _CCCL_HAS_FLOAT128()
+TEST_FUNC void test_modf_float128(__float128 x, __float128 expected_integral, __float128 expected_fractional)
+{
+  using T = __float128;
+
+  T integral   = T(42.0);
+  T fractional = cuda::std::modf(x, &integral);
+  assert(eq(integral, expected_integral));
+  assert(eq(fractional, expected_fractional));
+  // both parts have the sign of the argument, also when they are zero
+  assert(cuda::std::signbit(integral) == cuda::std::signbit(x));
+  assert(cuda::std::signbit(fractional) == cuda::std::signbit(x));
+
+  integral   = T(42.0);
+  fractional = cuda::std::modf(-x, &integral);
+  assert(eq(integral, -expected_integral));
+  assert(eq(fractional, -expected_fractional));
+  assert(cuda::std::signbit(integral) != cuda::std::signbit(x));
+  assert(cuda::std::signbit(fractional) != cuda::std::signbit(x));
+}
+
+// Only modf supports __float128 so far, so the generic driver can not be used
+TEST_FUNC void test_float128(const float val)
+{
+  using T = __float128;
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::modf(T{}, static_cast<T*>(nullptr))), T>);
+
+  const T zero = T(val);
+  const T inf  = cuda::std::numeric_limits<T>::infinity();
+
+  // If num is ±0, ±0 is returned, and ±0 is stored in *iptr
+  test_modf_float128(zero, zero, zero);
+
+  // If num is ±∞, ±0 is returned, and ±∞ is stored in *iptr.
+  test_modf_float128(inf, inf, zero);
+
+  // If num is NaN, NaN is returned, and NaN is stored in *iptr.
+  T integral = T(-1.0);
+  assert(cuda::std::isnan(cuda::std::modf(cuda::std::numeric_limits<T>::quiet_NaN(), &integral)));
+  assert(cuda::std::isnan(integral));
+
+  integral = T(-1.0);
+  assert(cuda::std::isnan(cuda::std::modf(-cuda::std::numeric_limits<T>::quiet_NaN(), &integral)));
+  assert(cuda::std::isnan(integral));
+
+  integral = T(-1.0);
+  assert(cuda::std::isnan(cuda::std::modf(cuda::std::numeric_limits<T>::signaling_NaN(), &integral)));
+  assert(cuda::std::isnan(integral));
+
+  // some exactly representable values
+  test_modf_float128(T(0.75), zero, T(0.75));
+  test_modf_float128(T(1.0), T(1.0), zero);
+  test_modf_float128(T(2.75), T(2.0), T(0.75));
+  test_modf_float128(T(12.375), T(12.0), T(0.375));
+
+  // fractional bits that double can not hold next to the integral part
+  const T two_m100 = T(1.0) / (T(1ull << 50) * T(1ull << 50)); // 2^-100
+  test_modf_float128(T(1.0) + two_m100, T(1.0), two_m100);
+  test_modf_float128(T(3.0) + two_m100 / T(1024), T(3.0), two_m100 / T(1024));
+
+  // the largest value below one
+  const T below_one = T(1.0) - two_m100 / T(8192); // 1 - 2^-113
+  assert(below_one < T(1.0));
+  test_modf_float128(below_one, zero, below_one);
+
+  // binary128 keeps fractional bits well beyond the 64-bit integer range
+  const T two_65 = T(1ull << 63) * T(4);
+  test_modf_float128(two_65 + T(0.5), two_65, T(0.5));
+  test_modf_float128(two_65 + T(1.0) + two_m100 * T(1ull << 55), two_65 + T(1.0), two_m100 * T(1ull << 55));
+
+  // the largest exponent that still has a fractional bit
+  const T two_111 = T(1ull << 63) * T(1ull << 48);
+  test_modf_float128(two_111 + T(0.5), two_111, T(0.5));
+  test_modf_float128(two_111 + two_111 - T(0.5), two_111 + two_111 - T(1.0), T(0.5));
+
+  // from 2^112 on every value is integral
+  const T two_112 = two_111 + two_111;
+  test_modf_float128(two_112, two_112, zero);
+  test_modf_float128(two_112 + T(1.0), two_112 + T(1.0), zero);
+  test_modf_float128(cuda::std::numeric_limits<T>::max(), cuda::std::numeric_limits<T>::max(), zero);
+
+  // tiny and subnormal values are purely fractional
+  const T min_val = cuda::std::numeric_limits<T>::min();
+  const T denorm  = cuda::std::numeric_limits<T>::denorm_min();
+  test_modf_float128(min_val, zero, min_val);
+  test_modf_float128(min_val - denorm, zero, min_val - denorm);
+  test_modf_float128(denorm, zero, denorm);
+}
+#endif // _CCCL_HAS_FLOAT128()
+
 template <typename T>
 TEST_FUNC void test(const T val)
 {
@@ -319,6 +412,9 @@ TEST_FUNC void test(const float val)
 #  if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>(val);
 #  endif // _LIBCUDACXX_HAS_NVBF16()
+#  if _CCCL_HAS_FLOAT128()
+  test_float128(val);
+#  endif // _CCCL_HAS_FLOAT128()
 #endif // !_CCCL_TILE_COMPILATION()
 
   test<unsigned short>(static_cast<unsigned short>(val));
