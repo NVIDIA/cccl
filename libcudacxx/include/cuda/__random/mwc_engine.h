@@ -120,7 +120,7 @@ class __mwc_engine
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __i = 0; __i <= _Lag; ++__i)
     {
-      _CCCL_PRAGMA_UNROLL_FULL()
+      // pragma unroll causes compilation stuck here
       for (int __bit = 0; __bit < ::cuda::std::numeric_limits<result_type>::digits; ++__bit)
       {
         if ((__rhs[__i] >> __bit) & 1)
