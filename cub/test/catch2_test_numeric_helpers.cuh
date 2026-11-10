@@ -63,6 +63,11 @@ inline __half* unwrap_it(half_t* it)
   return reinterpret_cast<__half*>(it);
 }
 
+inline const __half* unwrap_it(const half_t* it)
+{
+  return reinterpret_cast<const __half*>(it);
+}
+
 template <class OffsetT>
 cuda::constant_iterator<__half, OffsetT> unwrap_it(cuda::constant_iterator<half_t, OffsetT> it)
 {
@@ -76,6 +81,11 @@ cuda::constant_iterator<__half, OffsetT> unwrap_it(cuda::constant_iterator<half_
 inline __nv_bfloat16* unwrap_it(bfloat16_t* it)
 {
   return reinterpret_cast<__nv_bfloat16*>(it);
+}
+
+inline const __nv_bfloat16* unwrap_it(const bfloat16_t* it)
+{
+  return reinterpret_cast<const __nv_bfloat16*>(it);
 }
 
 template <class OffsetT>
