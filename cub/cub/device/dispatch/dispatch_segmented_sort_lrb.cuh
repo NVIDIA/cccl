@@ -50,7 +50,7 @@ using group_merge_sort_kernels_t =
                      sort_kernel_t<group_merge_implementation, group_merge_small_policy_selector>,
                      sort_kernel_t<group_merge_implementation, group_merge_large_policy_selector<Key>>>;
 
-// Query or use temporary storage, then count, prefix, and scatter IDs into capacity bins.
+// Query or use temporary storage, then count (including the prefix) and scatter IDs into capacity bins.
 // These pointers alias caller-provided global storage. It must remain valid until
 // every operation queued on the stream has completed, as with other CUB algorithms.
 // Empty ranges are skipped; singletons use the same sorting path as other ranges.
@@ -69,8 +69,8 @@ _CCCL_HOST_API cudaError_t dispatch_partition(
   KernelLauncherFactory launcher_factory = {})
 {
   constexpr int total_bins = Capacities::size + 1;
-  // One allocation holds counts, offsets (with an end sentinel), and cursors; the other holds IDs.
-  const size_t sizes[] = {sizeof(unsigned) * (3 * total_bins + 1), sizeof(unsigned) * size_t{num_segments}};
+  // One allocation holds counts, offsets, cursors, and a completion counter; the other holds IDs.
+  const size_t sizes[] = {sizeof(unsigned) * (3 * total_bins + 2), sizeof(unsigned) * size_t{num_segments}};
   void* allocations[2]{};
   if (const auto error = CubDebug(alias_temporaries(temp_storage, temp_storage_bytes, allocations, sizes)))
   {
@@ -80,11 +80,13 @@ _CCCL_HOST_API cudaError_t dispatch_partition(
   {
     return cudaSuccess;
   }
-  auto* counts  = static_cast<unsigned*>(allocations[0]);
-  auto* offsets = counts + total_bins;
-  auto* cursors = offsets + total_bins + 1;
-  result        = {offsets, static_cast<unsigned*>(allocations[1])};
-  if (const auto error = CubDebug(cudaMemsetAsync(counts, 0, total_bins * sizeof(unsigned), stream)))
+  auto* counts           = static_cast<unsigned*>(allocations[0]);
+  auto* offsets          = counts + total_bins;
+  auto* cursors          = offsets + total_bins + 1;
+  auto* blocks_completed = cursors + total_bins;
+  result                 = {offsets, static_cast<unsigned*>(allocations[1])};
+  // Reset the counter on every call and leave zero offsets even when no count kernel is launched.
+  if (const auto error = CubDebug(cudaMemsetAsync(counts, 0, sizes[0], stream)))
   {
     return error;
   }
@@ -99,18 +101,13 @@ _CCCL_HOST_API cudaError_t dispatch_partition(
                   ends,
                   num_segments,
                   counts,
-                  result.segment_ids)))
+                  result.segment_ids,
+                  offsets,
+                  cursors,
+                  blocks_completed)))
     {
       return error;
     }
-  }
-  if (const auto error =
-        CubDebug(launcher_factory(1, 1, 0, stream).doit(segment_prefix_kernel<Capacities>, counts, offsets, cursors)))
-  {
-    return error;
-  }
-  if (num_segments)
-  {
     if (const auto error = CubDebug(
           launcher_factory(grid_size, block_threads, 0, stream)
             .doit(partition_kernel<Capacities, true, BeginIterator, EndIterator>,
@@ -118,7 +115,10 @@ _CCCL_HOST_API cudaError_t dispatch_partition(
                   ends,
                   num_segments,
                   cursors,
-                  result.segment_ids)))
+                  result.segment_ids,
+                  offsets,
+                  cursors,
+                  blocks_completed)))
     {
       return error;
     }

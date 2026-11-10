@@ -80,6 +80,11 @@ CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[se
   REQUIRE(cudaMemcpy(offsets.data(), result.bin_offsets, offsets.size() * sizeof(unsigned), cudaMemcpyDeviceToHost)
           == cudaSuccess);
   REQUIRE(offsets == c2h::host_vector<unsigned>(capacities::size + 2, 0));
+  // Reusing the workspace for nonempty input must also reset the completion counter.
+  REQUIRE(run(thrust::raw_pointer_cast(storage.data()), static_cast<unsigned>(begins.size())) == cudaSuccess);
+  REQUIRE(cudaMemcpy(offsets.data(), result.bin_offsets, offsets.size() * sizeof(unsigned), cudaMemcpyDeviceToHost)
+          == cudaSuccess);
+  REQUIRE(offsets == c2h::host_vector<unsigned>{0, 2, 4, 6, 7});
 }
 
 // Exercise capacity boundaries and all launch groups, including repeated work and untouched overflow.

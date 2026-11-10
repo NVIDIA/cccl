@@ -19,6 +19,10 @@
 #include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
 #include <cub/util_arch.cuh>
 
+#include <cuda/__atomic/atomic.h>
+#include <cuda/std/__atomic/order.h>
+#include <cuda/std/__atomic/scopes.h>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort_capacity
@@ -27,7 +31,14 @@ namespace detail::segmented_sort_capacity
 // Partition receives capacity bounds only; it never receives sorting configurations.
 template <typename Capacities, bool Scatter, typename BeginIterator, typename EndIterator>
 __launch_bounds__(partition_policy::block_threads) _CCCL_KERNEL_ATTRIBUTES void partition_kernel(
-  BeginIterator begins, EndIterator ends, unsigned num_segments, unsigned* counts_or_cursors, unsigned* ids)
+  BeginIterator begins,
+  EndIterator ends,
+  unsigned num_segments,
+  unsigned* counts_or_cursors,
+  unsigned* ids,
+  unsigned* offsets,
+  unsigned* cursors,
+  unsigned* blocks_completed)
 {
   constexpr unsigned total_bins = Capacities::size + 1;
   __shared__ unsigned bin_counts_shared[total_bins];
@@ -58,27 +69,30 @@ __launch_bounds__(partition_policy::block_threads) _CCCL_KERNEL_ATTRIBUTES void 
       bin_starts_shared[i] = atomicAdd(counts_or_cursors + i, bin_counts_shared[i]);
     }
   }
+  // Publish this block's counts only after every thread has finished its global updates.
+  __syncthreads();
   if constexpr (Scatter)
   {
-    __syncthreads();
     if (bin_idx >= 0)
     {
       ids[bin_starts_shared[bin_idx] + segment_rank_in_bin] = static_cast<unsigned>(input_segment_id);
     }
   }
-}
-
-// One thread converts bin counts into global ID offsets and initial scatter cursors.
-template <typename Capacities>
-_CCCL_KERNEL_ATTRIBUTES void segment_prefix_kernel(const unsigned* counts, unsigned* offsets, unsigned* cursors)
-{
-  unsigned prefix = 0;
-  for (int bin_idx = 0; bin_idx <= Capacities::size; ++bin_idx)
+  else if (threadIdx.x == 0)
   {
-    offsets[bin_idx] = cursors[bin_idx] = prefix;
-    prefix += counts[bin_idx];
+    auto completed = ::cuda::atomic_ref<unsigned, ::cuda::thread_scope_device>{*blocks_completed};
+    // The last block to finish acquires all preceding counts; no block waits for another.
+    if (completed.fetch_add(1, ::cuda::std::memory_order_acq_rel) == gridDim.x - 1)
+    {
+      unsigned prefix = 0;
+      for (unsigned bin_idx = 0; bin_idx < total_bins; ++bin_idx)
+      {
+        offsets[bin_idx] = cursors[bin_idx] = prefix;
+        prefix += counts_or_cursors[bin_idx];
+      }
+      offsets[total_bins] = prefix;
+    }
   }
-  offsets[Capacities::size + 1] = prefix;
 }
 
 // Consume this kernel's bins, packing segments into groups and invoking its sorting implementation.
