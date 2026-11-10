@@ -17,14 +17,18 @@
 
 #  include <thrust/system/cuda/config.h>
 
+#  include <cub/agent/agent_select_if.cuh>
+#  include <cub/detail/null_type.cuh>
+#  include <cub/device/dispatch/dispatch_common.cuh>
 #  include <cub/device/dispatch/dispatch_select_if.cuh>
 #  include <cub/util_device.cuh>
-#  include <cub/util_math.cuh>
 
 #  include <thrust/detail/raw_reference_cast.h>
 #  include <thrust/detail/temporary_array.h>
+#  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/partition.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
+#  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/find.h>
 #  include <thrust/system/cuda/detail/reverse.h>
@@ -32,6 +36,7 @@
 #  include <thrust/system/cuda/detail/util.h>
 
 #  include <cuda/__iterator/zip_iterator.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/cstdint>

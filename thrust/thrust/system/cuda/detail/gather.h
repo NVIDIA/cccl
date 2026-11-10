@@ -15,6 +15,7 @@
 
 #if _CCCL_CUDA_COMPILATION()
 #  include <thrust/iterator/permutation_iterator.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/transform.h>
 
 #  include <cuda/std/__functional/identity.h>

@@ -17,18 +17,17 @@
 
 #  include <thrust/system/cuda/config.h>
 
-#  include <cub/device/device_scan.cuh>
+#  include <cub/device/dispatch/dispatch_scan_by_key.cuh> // IWYU pragma: keep
 
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/functional.h>
 #  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/util.h>
-#  include <thrust/type_traits/is_contiguous_iterator.h>
 #  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
@@ -337,6 +336,6 @@ ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 
-#  include <thrust/scan.h>
+#  include <thrust/scan.h> // IWYU pragma: keep
 
 #endif // _CCCL_CUDA_COMPILATION()

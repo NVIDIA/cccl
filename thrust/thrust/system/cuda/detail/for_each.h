@@ -18,9 +18,8 @@
 
 #  include <cub/device/device_for.cuh>
 
-#  include <thrust/detail/function.h>
+#  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
-#  include <thrust/system/cuda/detail/parallel_for.h>
 #  include <thrust/system/cuda/detail/util.h>
 
 #  include <cuda/std/__iterator/distance.h>

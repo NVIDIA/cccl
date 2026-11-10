@@ -18,22 +18,24 @@
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_select.cuh>
-#  include <cub/util_math.cuh>
 #  include <cub/util_temporary_storage.cuh>
 
 #  include <thrust/count.h>
 #  include <thrust/detail/alignment.h>
+#  include <thrust/detail/execution_policy.h>
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/functional.h>
+#  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/advance.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/next.h>
+#  include <cuda/std/__tuple_dir/get.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -194,6 +196,6 @@ unique_count(execution_policy<Derived>& policy, ForwardIt first, ForwardIt last,
 THRUST_NAMESPACE_END
 
 //
-#  include <thrust/memory.h>
-#  include <thrust/unique.h>
+#  include <thrust/memory.h> // IWYU pragma: keep
+#  include <thrust/unique.h> // IWYU pragma: keep
 #endif // _CCCL_CUDA_COMPILATION()

@@ -14,7 +14,12 @@
 #endif // no system header
 
 #if _CCCL_CUDA_COMPILATION()
+#  include <cub/device/device_transform.cuh>
+#  include <cub/util_namespace.cuh>
+
 #  include <thrust/detail/internal_functional.h>
+#  include <thrust/iterator/iterator_traits.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/transform.h>
 
 #  include <cuda/__functional/equal_to_value.h>

@@ -20,12 +20,16 @@
 #  include <cub/device/device_reduce.cuh>
 
 #  include <thrust/detail/alignment.h>
+#  include <thrust/detail/execution_policy.h>
 #  include <thrust/detail/temporary_array.h>
+#  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
+#  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
@@ -221,6 +225,6 @@ _CCCL_HOST_DEVICE void reduce_into(execution_policy<Derived>& policy, InputIt fi
 THRUST_NAMESPACE_END
 
 #  include <thrust/memory.h>
-#  include <thrust/reduce.h>
+#  include <thrust/reduce.h> // IWYU pragma: keep
 
 #endif // _CCCL_CUDA_COMPILATION()

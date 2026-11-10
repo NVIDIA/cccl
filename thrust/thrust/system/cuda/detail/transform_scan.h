@@ -14,8 +14,9 @@
 #endif // no system header
 
 #if _CCCL_CUDA_COMPILATION()
-#  include <thrust/detail/type_traits.h>
+#  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/iterator/transform_iterator.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/scan.h>
 
 #  include <cuda/std/__functional/invoke.h>

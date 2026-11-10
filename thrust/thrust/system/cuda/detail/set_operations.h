@@ -19,6 +19,7 @@
 
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/temporary_array.h>
+#  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/set_operations.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
@@ -27,9 +28,9 @@
 #  include <thrust/system/cuda/detail/util.h>
 
 #  include <cuda/__cmath/round_up.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
-#  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/cstdint>
 
