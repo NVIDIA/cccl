@@ -88,7 +88,6 @@ template <typename T>
 class device_ptr
     : public thrust::pointer<T, thrust::device_system_tag, thrust::device_reference<T>, thrust::device_ptr<T>>
 {
-private:
   using super_t = thrust::pointer<T, thrust::device_system_tag, thrust::device_reference<T>, thrust::device_ptr<T>>;
 
 public:

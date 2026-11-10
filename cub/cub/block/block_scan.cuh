@@ -235,7 +235,6 @@ CUB_NAMESPACE_BEGIN
 template <typename T, int BlockDimX, BlockScanAlgorithm Algorithm = BLOCK_SCAN_RAKING, int BlockDimY = 1, int BlockDimZ = 1>
 class BlockScan
 {
-private:
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
@@ -258,7 +257,7 @@ private:
   using InternalBlockScan = ::cuda::std::_If<SAFE_ALGORITHM == BLOCK_SCAN_WARP_SCANS, WarpScans, Raking>;
 
   /// Shared memory storage layout type for BlockScan
-  using _TempStorage = typename InternalBlockScan::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalBlockScan::TempStorage;
 
   /// Shared storage reference
   _TempStorage& temp_storage;

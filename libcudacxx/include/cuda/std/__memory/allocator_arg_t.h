@@ -49,10 +49,11 @@ enum class __select_uses_allocator
   __allocator_last, //!< Construct from the arguments, then the allocator.
 };
 
-using __select_uses_allocator_none = integral_constant<__select_uses_allocator, __select_uses_allocator::__none>;
-using __select_uses_allocator_arg =
+using __select_uses_allocator_none _CCCL_NODEBUG =
+  integral_constant<__select_uses_allocator, __select_uses_allocator::__none>;
+using __select_uses_allocator_arg _CCCL_NODEBUG =
   integral_constant<__select_uses_allocator, __select_uses_allocator::__allocator_arg>;
-using __select_uses_allocator_last =
+using __select_uses_allocator_last _CCCL_NODEBUG =
   integral_constant<__select_uses_allocator, __select_uses_allocator::__allocator_last>;
 
 template <class _Tp, class _Alloc, class... _Args>

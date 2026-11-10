@@ -166,7 +166,6 @@ template <typename T,
           int BlockDimZ                     = 1>
 class BlockHistogram
 {
-private:
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
@@ -177,7 +176,7 @@ private:
                      detail::BlockHistogramAtomic<Bins>>;
 
   /// Shared memory storage layout type for BlockHistogram
-  using _TempStorage = typename InternalBlockHistogram::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalBlockHistogram::TempStorage;
 
   /// Shared storage reference
   _TempStorage& temp_storage;

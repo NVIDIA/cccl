@@ -72,13 +72,18 @@ _CCCL_HOST_DEVICE inline double frexp_exp(double x, int* expt)
   get_high_word(hx, exp_x);
   *expt = static_cast<int>((hx >> 20) - (0x3ff + 1023) + k);
   set_high_word(exp_x, (hx & 0xfffff) | ((0x3ff + 1023) << 20));
-  return (exp_x);
+  return exp_x;
 }
 
 _CCCL_HOST_DEVICE inline complex<double> ldexp_cexp(complex<double> z, int expt)
 {
-  double x, y, exp_x, scale1, scale2;
-  int ex_expt, half_expt;
+  double x;
+  double y;
+  double exp_x;
+  double scale1;
+  double scale2;
+  int ex_expt;
+  int half_expt;
 
   x     = z.real();
   y     = z.imag();
@@ -104,11 +109,16 @@ _CCCL_HOST_DEVICE inline complex<double> ldexp_cexp(complex<double> z, int expt)
 // NOLINTBEGIN(misc-redundant-expression)
 _CCCL_HOST_DEVICE inline complex<double> cexp(const complex<double>& z)
 {
-  double x, y, exp_x;
-  uint32_t hx, hy, lx, ly;
+  double x;
+  double y;
+  double exp_x;
+  uint32_t hx;
+  uint32_t hy;
+  uint32_t lx;
+  uint32_t ly;
 
-  const uint32_t exp_ovfl = 0x40862e42, /* high bits of MAX_EXP * ln2 ~= 710 */
-    cexp_ovfl             = 0x4096b8e4; /* (MAX_EXP - MIN_DENORM_EXP) * ln2 */
+  const uint32_t exp_ovfl  = 0x40862e42; /* high bits of MAX_EXP * ln2 ~= 710 */
+  const uint32_t cexp_ovfl = 0x4096b8e4; /* (MAX_EXP - MIN_DENORM_EXP) * ln2 */
 
   x = z.real();
   y = z.imag();

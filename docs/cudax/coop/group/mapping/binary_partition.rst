@@ -13,7 +13,7 @@
     Fn /*fn_*/; // exposition-only
 
   public:
-    __device__ explicit binary_partition(Fn fn) noexcept(cuda::std::is_nothrow_move_constructible_v<Fn>)
+    __device__ explicit binary_partition(Fn fn)
       : /*fn_*/(cuda::std::move(fn))
     {}
   };

@@ -8,17 +8,21 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/barrier>
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/array>
 #include <cuda/std/bit>
 #include <cuda/std/cstddef>
 #include <cuda/std/ranges>
-#include <cuda/std/type_traits>
+#include <cuda/std/span>
+#include <cuda/std/utility>
 #include <cuda/stream>
+#include <cuda/type_traits>
 
 #include <cuda/experimental/coop/group>
+
+#include <nv/target>
 
 #include "group_testing.cuh"
 
@@ -44,6 +48,16 @@ struct WarpsInBlockMappingResult
     return cuda::std::dynamic_extent;
   }
 
+  __device__ static constexpr bool has_uniform_static_unit_count()
+  {
+    return true;
+  }
+
+  __device__ static constexpr cuda::std::size_t static_unit_count(cuda::std::size_t)
+  {
+    return cuda::std::dynamic_extent;
+  }
+
   __device__ unsigned unit_count() const
   {
     return cuda::warp.count_as<unsigned>(cuda::block);
@@ -54,7 +68,7 @@ struct WarpsInBlockMappingResult
     return cuda::warp.rank_as<unsigned>(cuda::block);
   }
 
-  __device__ cuda::device::lane_mask lane_mask() const noexcept
+  __device__ cuda::device::lane_mask lane_mask() const
   {
     return cuda::device::lane_mask::all();
   }
@@ -64,12 +78,12 @@ struct WarpsInBlockMappingResult
     return true;
   }
 
-  __device__ static constexpr bool is_always_exhaustive() noexcept
+  __device__ static constexpr bool is_always_exhaustive()
   {
     return true;
   }
 
-  __device__ static constexpr bool is_always_contiguous() noexcept
+  __device__ static constexpr bool is_always_contiguous()
   {
     return true;
   }
@@ -91,6 +105,7 @@ __device__ void test_interwarp_synchronizer(Config config)
 
     // Test constructor from range of barrier ids.
     {
+      // NOLINTNEXTLINE(readability-redundant-parentheses)
       static_assert(cuda::std::is_constructible_v<Synchronizer, decltype((barrier_ids))>);
       [[maybe_unused]] const cudax::coop::interwarp_synchronizer synchronizer{barrier_ids};
     }
@@ -107,31 +122,50 @@ __device__ void test_interwarp_synchronizer(Config config)
       auto synchronizer_instance = synchronizer.make_instance(cuda::warp, parent_group, mapping_result);
 
       // Test that synchronizer instance has the expected barrier id.
-      REQUIRE(cuda::std::bit_cast<int>(synchronizer_instance) == barrier_ids[mapping_result.group_rank()]);
+      REQUIRE((cuda::std::bit_cast<cuda::std::array<unsigned, 2>>(synchronizer_instance)[0]
+               == static_cast<unsigned>(barrier_ids[mapping_result.group_rank()])));
+
+      using SynchronizerInstance = decltype(synchronizer_instance);
+
+      static_assert(cuda::is_trivially_copyable_v<SynchronizerInstance>);
+      static_assert(cuda::std::is_trivially_destructible_v<SynchronizerInstance>);
+
+      using ArrivalToken = typename SynchronizerInstance::arrival_token;
+
+      // Test arrival_token type.
+      static_assert(cuda::std::is_move_constructible_v<ArrivalToken>);
+      static_assert(cuda::std::is_move_assignable_v<ArrivalToken>);
+      static_assert(cuda::std::is_destructible_v<ArrivalToken>);
 
       // Test do_sync(...).
-      static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync(mapping_result, hierarchy))>);
-      static_assert(noexcept(synchronizer_instance.do_sync(mapping_result, hierarchy)));
-      synchronizer_instance.do_sync(mapping_result, hierarchy);
+      static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync(hierarchy))>);
+      synchronizer_instance.do_sync(hierarchy);
+
+      // Test do_arrive(...).
+      static_assert(cuda::std::is_same_v<ArrivalToken, decltype(synchronizer_instance.do_arrive(hierarchy))>);
+      auto arrival_token = synchronizer_instance.do_arrive(hierarchy);
+
+      // Test do_wait(...).
+      static_assert(
+        cuda::std::is_same_v<void, decltype(synchronizer_instance.do_wait(hierarchy, cuda::std::move(arrival_token)))>);
+      synchronizer_instance.do_wait(hierarchy, cuda::std::move(arrival_token));
 
       // Test do_sync_aligned(...).
-      static_assert(
-        cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync_aligned(mapping_result, hierarchy))>);
-      static_assert(noexcept(synchronizer_instance.do_sync_aligned(mapping_result, hierarchy)));
-      synchronizer_instance.do_sync_aligned(mapping_result, hierarchy);
+      static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync_aligned(hierarchy))>);
+      synchronizer_instance.do_sync_aligned(hierarchy);
 
-      // Test view().
-      static_assert(cuda::std::is_same_v<decltype(synchronizer_instance), decltype(synchronizer_instance.view())>);
-      static_assert(noexcept(synchronizer_instance.view()));
-      auto synchronizer_instance_view = synchronizer_instance.view();
-      synchronizer_instance_view.do_sync(mapping_result, hierarchy);
-      synchronizer_instance_view.do_sync_aligned(mapping_result, hierarchy);
-      (void) synchronizer_instance_view.view();
-      synchronizer_instance_view.deinit(mapping_result, hierarchy); // should be noop
+      // Test do_arrive_aligned(...).
+      static_assert(cuda::std::is_same_v<ArrivalToken, decltype(synchronizer_instance.do_arrive_aligned(hierarchy))>);
+      auto arrival_token_a = synchronizer_instance.do_arrive_aligned(hierarchy);
+
+      // Test do_wait_aligned(...).
+      static_assert(
+        cuda::std::
+          is_same_v<void, decltype(synchronizer_instance.do_wait_aligned(hierarchy, cuda::std::move(arrival_token_a)))>);
+      synchronizer_instance.do_wait_aligned(hierarchy, cuda::std::move(arrival_token_a));
 
       // Test deinit(...);
       static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.deinit(mapping_result, hierarchy))>);
-      static_assert(noexcept(synchronizer_instance.deinit(mapping_result, hierarchy)));
       synchronizer_instance.deinit(mapping_result, hierarchy);
     }
   }
@@ -147,7 +181,7 @@ __device__ void test_interwarp_synchronizer(Config config)
 
     // Test constructor from range of barrier ids.
     {
-      static_assert(cuda::std::is_nothrow_constructible_v<Synchronizer, decltype(barrier_ids)>);
+      static_assert(cuda::std::is_constructible_v<Synchronizer, decltype(barrier_ids)>);
       [[maybe_unused]] const cudax::coop::interwarp_synchronizer synchronizer{barrier_ids};
     }
 
@@ -163,31 +197,50 @@ __device__ void test_interwarp_synchronizer(Config config)
       auto synchronizer_instance = synchronizer.make_instance(cuda::warp, parent_group, mapping_result);
 
       // Test that synchronizer instance has the expected barrier id.
-      REQUIRE(cuda::std::bit_cast<int>(synchronizer_instance) == mapping_result.group_rank() + 1);
+      REQUIRE((cuda::std::bit_cast<cuda::std::array<unsigned, 2>>(synchronizer_instance)[0]
+               == mapping_result.group_rank() + 1));
+
+      using SynchronizerInstance = decltype(synchronizer_instance);
+
+      static_assert(cuda::is_trivially_copyable_v<SynchronizerInstance>);
+      static_assert(cuda::std::is_trivially_destructible_v<SynchronizerInstance>);
+
+      using ArrivalToken = typename SynchronizerInstance::arrival_token;
+
+      // Test arrival_token type.
+      static_assert(cuda::std::is_move_constructible_v<ArrivalToken>);
+      static_assert(cuda::std::is_move_assignable_v<ArrivalToken>);
+      static_assert(cuda::std::is_destructible_v<ArrivalToken>);
 
       // Test do_sync(...).
-      static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync(mapping_result, hierarchy))>);
-      static_assert(noexcept(synchronizer_instance.do_sync(mapping_result, hierarchy)));
-      synchronizer_instance.do_sync(mapping_result, hierarchy);
+      static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync(hierarchy))>);
+      synchronizer_instance.do_sync(hierarchy);
+
+      // Test do_arrive(...).
+      static_assert(cuda::std::is_same_v<ArrivalToken, decltype(synchronizer_instance.do_arrive(hierarchy))>);
+      auto arrival_token = synchronizer_instance.do_arrive(hierarchy);
+
+      // Test do_wait(...).
+      static_assert(
+        cuda::std::is_same_v<void, decltype(synchronizer_instance.do_wait(hierarchy, cuda::std::move(arrival_token)))>);
+      synchronizer_instance.do_wait(hierarchy, cuda::std::move(arrival_token));
 
       // Test do_sync_aligned(...).
-      static_assert(
-        cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync_aligned(mapping_result, hierarchy))>);
-      static_assert(noexcept(synchronizer_instance.do_sync_aligned(mapping_result, hierarchy)));
-      synchronizer_instance.do_sync_aligned(mapping_result, hierarchy);
+      static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync_aligned(hierarchy))>);
+      synchronizer_instance.do_sync_aligned(hierarchy);
 
-      // Test view().
-      static_assert(cuda::std::is_same_v<decltype(synchronizer_instance), decltype(synchronizer_instance.view())>);
-      static_assert(noexcept(synchronizer_instance.view()));
-      auto synchronizer_instance_view = synchronizer_instance.view();
-      synchronizer_instance_view.do_sync(mapping_result, hierarchy);
-      synchronizer_instance_view.do_sync_aligned(mapping_result, hierarchy);
-      (void) synchronizer_instance_view.view();
-      synchronizer_instance_view.deinit(mapping_result, hierarchy); // should be noop
+      // Test do_arrive_aligned(...).
+      static_assert(cuda::std::is_same_v<ArrivalToken, decltype(synchronizer_instance.do_arrive_aligned(hierarchy))>);
+      auto arrival_token_a = synchronizer_instance.do_arrive_aligned(hierarchy);
+
+      // Test do_wait_aligned(...).
+      static_assert(
+        cuda::std::
+          is_same_v<void, decltype(synchronizer_instance.do_wait_aligned(hierarchy, cuda::std::move(arrival_token_a)))>);
+      synchronizer_instance.do_wait_aligned(hierarchy, cuda::std::move(arrival_token_a));
 
       // Test deinit(...);
       static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.deinit(mapping_result, hierarchy))>);
-      static_assert(noexcept(synchronizer_instance.deinit(mapping_result, hierarchy)));
       synchronizer_instance.deinit(mapping_result, hierarchy);
     }
   }

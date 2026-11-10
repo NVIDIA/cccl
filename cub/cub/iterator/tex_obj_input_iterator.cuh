@@ -124,7 +124,6 @@ private:
   // NOLINTNEXTLINE(bugprone-sizeof-expression)
   static constexpr int TEXTURE_MULTIPLE = sizeof(T) / sizeof(TextureWord);
 
-private:
   T* ptr{nullptr};
   difference_type tex_offset{0};
   cudaTextureObject_t tex_obj{0};

@@ -38,7 +38,7 @@ class __cccl_fp
 {
   static_assert(_Fmt != __fp_format::__invalid);
 
-  using __storage_type = __fp_storage_t<_Fmt>;
+  using __storage_type _CCCL_NODEBUG = __fp_storage_t<_Fmt>;
 
   __storage_type __storage_;
 

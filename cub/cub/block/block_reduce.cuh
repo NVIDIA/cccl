@@ -306,7 +306,6 @@ template <typename T,
           int WarpAggregateThreshold     = -1>
 class BlockReduce
 {
-private:
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
@@ -328,7 +327,7 @@ private:
                                                        Raking>>>; // BlockReduceRaking
 
   /// Shared memory storage layout type for BlockReduce
-  using _TempStorage = typename InternalBlockReduce::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalBlockReduce::TempStorage;
 
   /// Internal storage allocator
   _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()

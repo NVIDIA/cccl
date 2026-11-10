@@ -154,6 +154,38 @@ struct scan_tuning
   }
 };
 
+template <int ThreadsPerBlock>
+struct scan_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::ScanPolicy policy) const
+    -> cub::ScanPolicy
+  {
+    policy.algorithm                  = cub::ScanAlgorithm::lookback;
+    policy.lookback.threads_per_block = ThreadsPerBlock;
+    return policy;
+  }
+};
+
+// Lookback delays are only slept (via __nanosleep) if the grid has at least 500 blocks, and are replaced by a thread
+// fence otherwise. __nanosleep sleeps at most 1 ms per call, so delays above INT_MAX (the largest an int can hold) are
+// cheap to run, but they cannot be asserted to have elapsed (the sleep is only guaranteed to be in [0, 2 * t]).
+template <cub::LookbackDelayAlgorithm DelayAlgorithm>
+struct large_delay_scan_tuning
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ScanPolicy
+  {
+    return {cub::ScanAlgorithm::lookback,
+            {32,
+             1,
+             cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
+             cub::CacheLoadModifier::LOAD_DEFAULT,
+             cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE,
+             cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING,
+             cub::LookbackDelayPolicy{DelayAlgorithm, 3'000'000'000u, 3'000'000'000u}},
+            {}};
+  }
+};
+
 struct unrelated_policy
 {};
 
@@ -171,6 +203,27 @@ using block_sizes =
 
 #if TEST_LAUNCH != 1
 
+using large_delay_algorithms = c2h::type_list<
+  cuda::std::integral_constant<cub::LookbackDelayAlgorithm, cub::LookbackDelayAlgorithm::fixed_delay>,
+  cuda::std::integral_constant<cub::LookbackDelayAlgorithm, cub::LookbackDelayAlgorithm::exponential_backoff>>;
+
+CUB_TEST("Device scan works with lookback delays above INT_MAX", "[scan][device]", CUB_SMALL, large_delay_algorithms)
+{
+  constexpr auto delay_algorithm = c2h::get<0, TestType>::value;
+
+  // 32 items per tile, so that we get at least 500 tiles and the delays are actually slept
+  constexpr int tile_size = 32;
+  constexpr int num_items = 600 * tile_size;
+
+  auto d_in  = cuda::constant_iterator(1);
+  auto d_out = c2h::device_vector<int>(num_items);
+
+  auto env = cuda::execution::tune(large_delay_scan_tuning<delay_algorithm>{});
+
+  REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveSum(d_in, d_out.begin(), num_items, env));
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(1)));
+}
+
 CUB_TEST("Device scan exclusive-scan can be tuned", "[scan][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
@@ -186,6 +239,32 @@ CUB_TEST("Device scan exclusive-scan can be tuned", "[scan][device]", CUB_SMALL,
   auto env = cuda::execution::tune(scan_tuning<target_block_size>{}, unrelated_tuning{});
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveScan(d_in, d_out.begin(), block_size_check, init, num_items, env));
+
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init)));
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("Device scan exclusive-scan tuning can be modified", "[scan][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+
+  auto num_items = 3;
+  auto d_in      = cuda::constant_iterator(1);
+  auto d_out     = c2h::device_vector<int>(num_items, thrust::no_init);
+  auto init      = int{42};
+
+  {
+    device_scan_exclusive(d_in, d_out.begin(), block_size_check, init, num_items, stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
+  auto env = cuda::execution::tune(scan_tuning_transform<target_block_size>{});
+
+  device_scan_exclusive(d_in, d_out.begin(), block_size_check, init, num_items, env);
 
   REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init)));
   REQUIRE(d_block_size[0] == target_block_size);

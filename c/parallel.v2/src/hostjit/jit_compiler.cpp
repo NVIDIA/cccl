@@ -6,6 +6,7 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <iterator>
 #include <random>
 #include <string>
 #include <string_view>
@@ -15,8 +16,12 @@
 #include <hostjit/jit_compiler.hpp>
 
 #ifdef _WIN32
+#  define WIN32_LEAN_AND_MEAN
 #  include <process.h>
+#  include <windows.h>
+#  pragma comment(lib, "version.lib")
 #else
+#  include <dlfcn.h>
 #  include <unistd.h>
 #endif
 
@@ -191,9 +196,17 @@ bool create_pch_if_needed(
   config.appendCommandLineArguments(options);
 
   const std::string label = kind_name + "_sm" + std::to_string(config.sm_version);
-  const std::string key   = hash_pch_options(options, kind_name);
-  pch_path                = get_pch_path(cache_dir, label, key);
-  const auto source_path  = get_pch_source_path(cache_dir, label, key);
+  // The PTX ISA version is derived inside libnvcc (from sm_version and the nvJitLink in use) rather
+  // than serialized into `options`, but it is baked into a device PCH as a target feature, so it
+  // has to be part of the cache key. Hash a copy: `options` is what libnvcc is invoked with.
+  std::vector<std::string> key_options = options;
+  if (kind_name == "device")
+  {
+    key_options.push_back("ptx-isa=" + std::to_string(libnvccPtxVersionForSm(config.sm_version)));
+  }
+  const std::string key  = hash_pch_options(key_options, kind_name);
+  pch_path               = get_pch_path(cache_dir, label, key);
+  const auto source_path = get_pch_source_path(cache_dir, label, key);
 
   auto present = [&] {
     std::error_code ec;
@@ -353,7 +366,12 @@ JITCompiler::~JITCompiler()
   cleanup();
 }
 
-bool JITCompiler::compile(const std::string& source_code)
+// Shared by compile() and compileOnly(): validate config, compile to an
+// object file, link to a shared library in a fresh temp dir. Does NOT load
+// it. On success, *out_lib_path is the path to the linked artifact (still
+// on disk in temp_dir_, which the caller may read before it's torn down by
+// a later cleanup()).
+bool JITCompiler::compileAndLink(const std::string& source_code, std::string* out_lib_path)
 {
   std::string config_error;
   if (!validateConfig(config_, &config_error))
@@ -506,6 +524,18 @@ bool JITCompiler::compile(const std::string& source_code)
     std::cout << "Linking diagnostics:\n" << link_log << "\n";
   }
 
+  *out_lib_path = lib_path;
+  return true;
+}
+
+bool JITCompiler::compile(const std::string& source_code)
+{
+  std::string lib_path;
+  if (!compileAndLink(source_code, &lib_path))
+  {
+    return false;
+  }
+
   if (!library_.load(lib_path))
   {
     last_error_ = "Failed to load library: " + library_.getLastError();
@@ -516,6 +546,203 @@ bool JITCompiler::compile(const std::string& source_code)
   if (config_.verbose)
   {
     std::cout << "Successfully loaded library: " << lib_path << "\n";
+  }
+
+  last_error_.clear();
+  return true;
+}
+
+bool JITCompiler::compileOnly(const std::string& source_code)
+{
+  std::string lib_path;
+  if (!compileAndLink(source_code, &lib_path))
+  {
+    return false;
+  }
+  // Deliberately do NOT dlopen/LoadLibrary — the caller only wants the
+  // artifact bytes (via getArtifactsPath()), e.g. to persist them for AoT.
+  // temp_dir_ (and the artifact within it) stays on disk until the next
+  // compile()/compileOnly()/loadFromBytes() call or destruction — the
+  // caller must read the bytes before then.
+  last_error_.clear();
+  return true;
+}
+
+namespace
+{
+#ifdef _WIN32
+// CUDART_VERSION of a Windows cudart DLL, from its file version
+// (6.14.11.<CUDART_VERSION>); 0 if unavailable. Used instead of the DLL's
+// cudaRuntimeGetVersion, which reports the driver's version when that is
+// older (a v13.4 cudart64_13.dll reports 13000 under a 13.0 driver).
+int cudartDllVersion(const std::string& path)
+{
+  const std::wstring wpath = std::filesystem::path(path).wstring();
+  DWORD handle             = 0;
+  const DWORD size         = GetFileVersionInfoSizeW(wpath.c_str(), &handle);
+  if (size == 0)
+  {
+    return 0;
+  }
+  std::vector<char> info(size);
+  VS_FIXEDFILEINFO* fixed = nullptr;
+  UINT len                = 0;
+  if (!GetFileVersionInfoW(wpath.c_str(), 0, size, info.data())
+      || !VerQueryValueW(info.data(), L"\\", reinterpret_cast<void**>(&fixed), &len) || fixed == nullptr)
+  {
+    return 0;
+  }
+  return LOWORD(fixed->dwFileVersionLS);
+}
+#endif
+
+// CUDART_VERSION encodes a release as major * 1000 + minor * 10.
+std::string cudartVersionString(int version)
+{
+  return std::to_string(version / 1000) + "." + std::to_string((version % 1000) / 10);
+}
+
+// An artifact imports cudart symbols from the headers it was built against:
+// the runtime must have the same major (the soname changes) and a minor at
+// least as new (a minor only adds exports). Returns an error message, or an
+// empty string if `local_version` is acceptable. A version of 0 is unknown.
+std::string checkCudartCompatible(int built_version, int local_version)
+{
+  if (built_version == 0)
+  {
+    return "the CUDA runtime version the artifact was built against is unknown";
+  }
+  if (local_version == 0)
+  {
+    return "cannot determine its version (cudaRuntimeGetVersion failed)";
+  }
+  if (built_version / 1000 == local_version / 1000 && local_version >= built_version)
+  {
+    return {};
+  }
+  return "the artifact was built against CUDA runtime " + cudartVersionString(built_version) + ", but this machine has "
+       + cudartVersionString(local_version)
+       + "; the runtime must have the same major version and a minor at least as new as the build's "
+         "(build ahead-of-time artifacts with the oldest CUDA Toolkit you need to support)";
+}
+} // namespace
+
+bool JITCompiler::loadFromBytes(
+  const std::vector<char>& library_bytes, const std::string& cudart_path, int built_cudart_version)
+{
+  // Deliberately no validateConfig(): that requires the toolkit's headers, but
+  // loading a prebuilt artifact only needs the runtime library, which a
+  // load-only machine may well have without the headers.
+  cleanup();
+
+  temp_dir_ = createTempDirectory();
+  if (temp_dir_.empty())
+  {
+    last_error_ = "Failed to create temporary directory";
+    return false;
+  }
+
+#ifdef _WIN32
+  std::string lib_path = temp_dir_ + "/cuda_code.dll";
+#else
+  std::string lib_path = temp_dir_ + "/libcuda_code.so";
+#endif
+
+  {
+    std::ofstream out(lib_path, std::ios::binary);
+    if (!out)
+    {
+      last_error_ = "Failed to open " + lib_path + " for writing";
+      removeTempDirectory();
+      return false;
+    }
+    out.write(library_bytes.data(), static_cast<std::streamsize>(library_bytes.size()));
+    if (!out)
+    {
+      last_error_ = "Failed to write artifact bytes to " + lib_path;
+      removeTempDirectory();
+      return false;
+    }
+  }
+
+  // Cross-machine portability: load this machine's own CUDA runtime *before*
+  // the artifact, so the artifact's cudart dependency resolves to it.
+  // - Linux: the artifact's baked RPATH points at the machine it was BUILT on,
+  //   which may not have CUDA at that path. glibc checks already-mapped
+  //   objects by SONAME before any path search, so a preloaded
+  //   libcudart.so.<major> (RTLD_GLOBAL) satisfies the dependency.
+  // - Windows: the artifact names cudart64_<major>.dll; the loader reuses an
+  //   already-loaded module of that name before searching, so the dependency
+  //   no longer relies on the toolkit's bin directory being on PATH.
+  // Never unloaded (matches the "never dlclose a JIT module" policy in
+  // loader.cpp, see #9367: other loaded JIT modules may still reference it).
+  {
+    using get_version_fn = int (*)(int*);
+#ifdef _WIN32
+    SetLastError(0);
+    HMODULE cudart_handle =
+      LoadLibraryExW(std::filesystem::path(cudart_path).wstring().c_str(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
+    if (!cudart_handle)
+    {
+      last_error_ = "Failed to preload CUDA runtime (" + cudart_path + "): error " + std::to_string(GetLastError());
+      removeTempDirectory();
+      return false;
+    }
+    auto get_version = reinterpret_cast<get_version_fn>(GetProcAddress(cudart_handle, "cudaRuntimeGetVersion"));
+    std::string loaded_path;
+    {
+      wchar_t buf[32768];
+      DWORD n     = GetModuleFileNameW(cudart_handle, buf, static_cast<DWORD>(std::size(buf)));
+      loaded_path = std::filesystem::path(std::wstring(buf, n)).string();
+    }
+#else
+    dlerror();
+    void* cudart_handle = dlopen(cudart_path.c_str(), RTLD_NOW | RTLD_GLOBAL);
+    if (!cudart_handle)
+    {
+      const char* err = dlerror();
+      last_error_     = "Failed to preload CUDA runtime (" + cudart_path + "): " + (err ? err : "unknown dlopen error");
+      removeTempDirectory();
+      return false;
+    }
+    auto get_version = reinterpret_cast<get_version_fn>(dlsym(cudart_handle, "cudaRuntimeGetVersion"));
+    std::string loaded_path;
+    if (Dl_info info{}; get_version && dladdr(reinterpret_cast<void*>(get_version), &info) && info.dli_fname)
+    {
+      loaded_path = info.dli_fname;
+    }
+#endif
+    // Fail early, with the cause, instead of with a raw loader error or an
+    // undefined-symbol error from loading the artifact.
+    int local_version = 0;
+#ifdef _WIN32
+    local_version = cudartDllVersion(loaded_path.empty() ? cudart_path : loaded_path);
+#endif
+    if (local_version < 1000 && get_version)
+    {
+      int version = 0;
+      if (get_version(&version) == 0)
+      {
+        local_version = version;
+      }
+    }
+    if (auto error = checkCudartCompatible(built_cudart_version, local_version); !error.empty())
+    {
+      // The module that answered can differ from cudart_path if a runtime of
+      // the same name was already loaded in the process.
+      std::error_code ec;
+      const bool same_file = loaded_path.empty() || std::filesystem::equivalent(loaded_path, cudart_path, ec);
+      last_error_          = "Incompatible CUDA runtime " + cudart_path
+                           + (same_file ? std::string{} : " (resolved to " + loaded_path + ")") + ": " + error;
+      removeTempDirectory();
+      return false;
+    }
+  }
+  if (!library_.load(lib_path))
+  {
+    last_error_ = "Failed to load library: " + library_.getLastError();
+    removeTempDirectory();
+    return false;
   }
 
   last_error_.clear();

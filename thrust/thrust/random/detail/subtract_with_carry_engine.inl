@@ -18,6 +18,10 @@
 #include <thrust/random/linear_congruential_engine.h>
 #include <thrust/random/subtract_with_carry_engine.h>
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
+
 THRUST_NAMESPACE_BEGIN
 
 namespace random

@@ -36,6 +36,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -398,7 +399,6 @@ template <uint32_t NumItems,
           typename BackingUnitT = uint32_t>
 class bit_packed_counter
 {
-private:
   /// The minimum number of bits required to represent all values from [0, MaxItemValue]
   static constexpr uint32_t MIN_BITS_PER_ITEM =
     (MaxItemValue == 0U) ? 1U : cub::Log2<static_cast<int32_t>(MaxItemValue + 1U)>::VALUE;
@@ -407,7 +407,7 @@ private:
   /// have the compiler replace costly integer multiplication with bit-shifting.
   static constexpr uint32_t BITS_PER_ITEM =
     (PreferPowerOfTwoBits == prefer_power_of_two_bits_option::yes)
-      ? (0x01ULL << (cub::Log2<static_cast<int32_t>(MIN_BITS_PER_ITEM)>::VALUE))
+      ? (0x01ULL << cub::Log2<static_cast<int32_t>(MIN_BITS_PER_ITEM)>::VALUE)
       : MIN_BITS_PER_ITEM;
 
   /// The number of bits that each backing data type can store
@@ -505,7 +505,6 @@ template <typename AgentMemcpySmallBuffersPolicyT,
           bool IsMemcpy>
 class AgentBatchMemcpy
 {
-private:
   //---------------------------------------------------------------------
   // CONFIGS / CONSTANTS
   //---------------------------------------------------------------------
@@ -514,7 +513,7 @@ private:
   static constexpr uint32_t BUFFERS_PER_THREAD    = AgentMemcpySmallBuffersPolicyT::BUFFERS_PER_THREAD;
   static constexpr uint32_t TLEV_BYTES_PER_THREAD = AgentMemcpySmallBuffersPolicyT::TLEV_BYTES_PER_THREAD;
   static constexpr prefer_power_of_two_bits_option PREFER_POW2_BITS =
-    (AgentMemcpySmallBuffersPolicyT::PREFER_POW2_BITS)
+    AgentMemcpySmallBuffersPolicyT::PREFER_POW2_BITS
       ? prefer_power_of_two_bits_option::yes
       : prefer_power_of_two_bits_option::no;
   static constexpr uint32_t BLOCK_LEVEL_TILE_SIZE = AgentMemcpySmallBuffersPolicyT::BLOCK_LEVEL_TILE_SIZE;
@@ -533,7 +532,7 @@ private:
   // Constants
   enum class size_class : uint32_t
   {
-    TLEV = 0,
+    TLEV,
     WLEV,
     BLEV,
     NUM_SIZE_CLASSES,
@@ -559,6 +558,11 @@ private:
 
   /// Internal type used to index into the bytes of and represent size of a TLEV buffer
   using TLevBufferSizeT = uint16_t;
+
+  // Buffers of up to WARP_LEVEL_THRESHOLD bytes are copied at thread level and their sizes are stored as
+  // TLevBufferSizeT
+  static_assert(WARP_LEVEL_THRESHOLD <= ::cuda::std::numeric_limits<TLevBufferSizeT>::max(),
+                "BatchedCopyPolicy: lookback.small_buffer.warp_level_threshold must be at most 65535");
 
   /**
    * @brief Helper struct to simplify BlockExchange within a single four-byte word
@@ -634,6 +638,14 @@ private:
                          ::cuda::std::plus<>,
                          BLevBlockOffsetTileState,
                          typename AgentMemcpySmallBuffersPolicyT::block_delay_constructor>;
+
+  // Both prefix callbacks must be invoked by a full warp: BLevBuffScanPrefixCallbackOpT by the first warp and
+  // BLevBlockScanPrefixCallbackOpT by BlockBLevTileCountScanT. Also, buffers requiring warp-level collaboration are
+  // processed by all warps of the block, so the block must not have a partial warp.
+  static_assert(BLOCK_THREADS % warp_threads == 0,
+                "BatchedCopyPolicy: lookback.small_buffer.threads_per_block must be a multiple of 32, since the "
+                "decoupled look-back needs a full warp to enter the block-scan prefix callback and buffers requiring "
+                "warp-level collaboration are processed by full warps");
 
   //-----------------------------------------------------------------------------
   // SHARED MEMORY DECLARATIONS
@@ -879,9 +891,8 @@ private:
     // Currently we do not go over the TLEV buffers in multiple iterations, so we need to make sure
     // we are able to be covered for the case that all our buffers are TLEV buffers
     static_assert(TLEV_BUFFERS_PER_THREAD >= BUFFERS_PER_THREAD,
-                  "Unsupported confiugraiton: The number of 'thread-level buffers' must be at "
-                  "least as large as the number of overall buffers being processed by each "
-                  "thread.");
+                  "Unsupported configuration: The number of 'thread-level buffers' must be at least as large as the "
+                  "number of overall buffers being processed by each thread.");
 
     // Read in the TLEV buffer partition (i.e., the buffers that require thread-level collaboration)
     uint32_t tlev_buffer_offset = threadIdx.x * TLEV_BUFFERS_PER_THREAD;

@@ -30,6 +30,7 @@
 #include <cub/util_ptx.cuh>
 
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -197,6 +198,17 @@ struct AgentRadixSortOnesweep
   static_assert(RANK_ALGORITHM == RADIX_RANK_MATCH || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ANY
                   || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR,
                 "for onesweep agent, the ranking algorithm must warp-strided key arrangement");
+
+  // The warp-striped loads and stores, the warp-aligned scatter and BlockRadixRankMatchEarlyCounts require full warps
+  static_assert(BLOCK_THREADS % WARP_THREADS == 0,
+                "RadixSortPolicy: onesweep.threads_per_block must be a multiple of the warp size (32)");
+
+  // LookbackGlobal() is executed by the threads owning a digit and uses __ballot_sync() on full warps. This also
+  // ensures RADIX_DIGITS is a multiple of the warp size, which BlockRadixRankMatchEarlyCounts requires for
+  // RANK_NUM_PARTS > 1.
+  static_assert(RADIX_DIGITS % BINS_PER_THREAD == 0 && (RADIX_DIGITS / BINS_PER_THREAD) % WARP_THREADS == 0,
+                "RadixSortPolicy: the number of threads owning digits, 2^onesweep.radix_bits / "
+                "ceil(2^onesweep.radix_bits / onesweep.threads_per_block), must be a multiple of 32");
 
   using BlockRadixRankT = ::cuda::std::_If<
     RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR,

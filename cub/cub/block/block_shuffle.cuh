@@ -54,7 +54,6 @@ CUB_NAMESPACE_BEGIN
 template <typename T, int BlockDimX, int BlockDimY = 1, int BlockDimZ = 1>
 class BlockShuffle
 {
-private:
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
   static constexpr int LOG_WARP_THREADS = detail::log2_warp_threads;
@@ -62,7 +61,7 @@ private:
   static constexpr int WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS;
 
   /// Shared memory storage layout type (last element from each thread's input)
-  using _TempStorage = T[BLOCK_THREADS];
+  using _TempStorage _CCCL_NODEBUG = T[BLOCK_THREADS];
 
 public:
   /// \smemstorage{BlockShuffle}

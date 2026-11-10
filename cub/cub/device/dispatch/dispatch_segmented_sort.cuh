@@ -530,7 +530,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedSort") Dis
       // We call partition through dispatch instead of device because c.parallel needs to be able to call the kernel.
       // This approach propagates the type erasure to partition.
       using ChooseOffsetT                = detail::choose_signed_offset<global_segment_offset_t>;
-      using PartitionOffsetT             = typename ChooseOffsetT::type;
+      using PartitionOffsetT             = ChooseOffsetT::type;
       using DispatchThreeWayPartitionIfT = cub::detail::three_way_partition::dispatch_three_way_partition_if<
         THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>,
         decltype(large_and_medium_segments_indices.get()),
@@ -643,15 +643,15 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedSort") Dis
      */
     detail::device_double_buffer<KeyT> d_keys_double_buffer(
       (is_overwrite_okay || is_num_passes_odd) ? d_keys.Alternate() : keys_allocation.get(),
-      (is_overwrite_okay)   ? d_keys.Current()
-      : (is_num_passes_odd) ? keys_allocation.get()
-                            : d_keys.Alternate());
+      (is_overwrite_okay) ? d_keys.Current()
+      : is_num_passes_odd ? keys_allocation.get()
+                          : d_keys.Alternate());
 
     detail::device_double_buffer<ValueT> d_values_double_buffer(
       (is_overwrite_okay || is_num_passes_odd) ? d_values.Alternate() : values_allocation.get(),
-      (is_overwrite_okay)   ? d_values.Current()
-      : (is_num_passes_odd) ? values_allocation.get()
-                            : d_values.Alternate());
+      (is_overwrite_okay) ? d_values.Current()
+      : is_num_passes_odd ? values_allocation.get()
+                          : d_values.Alternate());
 
     cudaError_t error;
     if (partition_segments)
@@ -805,7 +805,7 @@ private:
       // We call partition through dispatch instead of device because c.parallel needs to be able to call the kernel.
       // This approach propagates the type erasure to partition.
       using ChooseOffsetT                = detail::choose_signed_offset<global_segment_offset_t>;
-      using PartitionOffsetT             = typename ChooseOffsetT::type;
+      using PartitionOffsetT             = ChooseOffsetT::type;
       using DispatchThreeWayPartitionIfT = cub::detail::three_way_partition::dispatch_three_way_partition_if<
         THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>,
         decltype(large_and_medium_segments_indices.get()),
@@ -1194,6 +1194,9 @@ CUB_RUNTIME_FUNCTION void check_policy(PolicyGetter policy_getter)
   CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.medium_segment.store_algorithm != WARP_STORE_STRIPED
                                  || active_policy.small_segment.store_algorithm != WARP_STORE_STRIPED,
                                "Striped stores will produce unsorted results");
+  // get_num_passes divides by radix_bits and each pass must make progress through the key bits
+  CUB_DETAIL_STATIC_ISH_ASSERT(
+    active_policy.large_segment.radix_bits > 0, "SegmentedSortPolicy: large_segment.radix_bits must be positive");
 }
 
 template <typename KeyT,
@@ -1484,14 +1487,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
     device_double_buffer<KeyT> d_keys_double_buffer(
       (is_overwrite_okay || is_num_passes_odd) ? d_keys.Alternate() : keys_allocation.get(),
-      (is_overwrite_okay)   ? d_keys.Current()
-      : (is_num_passes_odd) ? keys_allocation.get()
-                            : d_keys.Alternate());
+      is_overwrite_okay   ? d_keys.Current()
+      : is_num_passes_odd ? keys_allocation.get()
+                          : d_keys.Alternate());
     device_double_buffer<ValueT> d_values_double_buffer(
       (is_overwrite_okay || is_num_passes_odd) ? d_values.Alternate() : values_allocation.get(),
-      (is_overwrite_okay)   ? d_values.Current()
-      : (is_num_passes_odd) ? values_allocation.get()
-                            : d_values.Alternate());
+      is_overwrite_okay   ? d_values.Current()
+      : is_num_passes_odd ? values_allocation.get()
+                          : d_values.Alternate());
 
     const auto segmented_sort_fallback_kernel = kernel_source.SegmentedSortFallbackKernel();
     const auto segmented_sort_kernel_small    = kernel_source.SegmentedSortKernelSmall();

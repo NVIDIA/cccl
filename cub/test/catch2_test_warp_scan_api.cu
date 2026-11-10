@@ -38,7 +38,7 @@ __global__ void InclusiveWarpScanKernel(int* output)
   // Specialize WarpScan for type int
   using warp_scan_t = cub::WarpScan<int>;
   // Allocate WarpScan shared memory for 4 warps
-  __shared__ typename warp_scan_t::TempStorage temp_storage[num_warps];
+  __shared__ warp_scan_t::TempStorage temp_storage[num_warps];
 
   const int warp_id       = static_cast<int>(threadIdx.x / 32);
   const int initial_value = 3;
@@ -90,7 +90,7 @@ __global__ void InclusiveWarpScanKernelAggr(int* output, int* d_warp_aggregate)
   // Specialize WarpScan for type int
   using warp_scan_t = cub::WarpScan<int>;
   // Allocate WarpScan shared memory for 4 warps
-  __shared__ typename warp_scan_t::TempStorage temp_storage[num_warps];
+  __shared__ warp_scan_t::TempStorage temp_storage[num_warps];
 
   const int warp_id       = static_cast<int>(threadIdx.x / 32);
   const int initial_value = 3; // for each warp
@@ -164,7 +164,7 @@ __global__ void InclusiveWarpScanPartialKernel(int* output)
   // Specialize WarpScan for type int
   using warp_scan_t = cub::WarpScan<int>;
   // Allocate WarpScan shared memory for 4 warps
-  __shared__ typename warp_scan_t::TempStorage temp_storage[num_warps];
+  __shared__ warp_scan_t::TempStorage temp_storage[num_warps];
 
   const int warp_id = static_cast<int>(threadIdx.x / 32);
 
@@ -242,7 +242,7 @@ __global__ void InclusiveWarpScanPartialKernelAggr(int* output, int* d_warp_aggr
   // Specialize WarpScan for type int
   using warp_scan_t = cub::WarpScan<int>;
   // Allocate WarpScan shared memory for 4 warps
-  __shared__ typename warp_scan_t::TempStorage temp_storage[num_warps];
+  __shared__ warp_scan_t::TempStorage temp_storage[num_warps];
 
   const int warp_id       = static_cast<int>(threadIdx.x / 32);
   const int lane_id       = static_cast<int>(threadIdx.x % 32);

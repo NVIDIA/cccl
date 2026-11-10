@@ -26,6 +26,7 @@
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/null_type.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/detail/segmented_params.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
@@ -415,7 +416,8 @@ _CCCL_HOST_API ::cuda::std::expected<cluster_launch_shape, cudaError_t> select_c
       const auto min_candidate_blocks = (::cuda::std::max) (2, static_cast<int>(min_blocks_per_segment));
       const auto max_candidate_blocks =
         ::cuda::std::clamp(min_candidate_blocks, desired_cluster_blocks, eff_max_blocks_per_cluster);
-      auto best_waves = (::cuda::std::numeric_limits<::cuda::std::uint64_t>::max)();
+      auto best_waves =
+        (::cuda::std::numeric_limits<::cuda::std::uint64_t>::max)(); // NOLINT(readability-redundant-parentheses)
       for (int candidate_blocks = min_candidate_blocks; candidate_blocks <= max_candidate_blocks; ++candidate_blocks)
       {
         const auto num_block_items    = ::cuda::ceil_div(max_segment_size, candidate_blocks);
@@ -1022,8 +1024,7 @@ _CCCL_HOST_API cudaError_t dispatch_select(
 
   // Type derived from the query-result trait rather than `decltype(policy_selector)`: GCC 7 rejects the latter ("use of
   // 'policy_selector' before deduction of 'auto'") when `policy_selector_t` is later named inside the dispatch lambda.
-  using policy_selector_t =
-    ::cuda::std::execution::__query_result_or_t<TuningEnvT, topk_policy, default_policy_selector_t>;
+  using policy_selector_t = policy_selector_from_tuning_env_t<TuningEnvT, topk_policy, default_policy_selector_t>;
 #if _CCCL_HAS_CONCEPTS()
   static_assert(topk_policy_selector<policy_selector_t>,
                 "Invalid policy selector for cub::DeviceBatchedTopK::dispatch");

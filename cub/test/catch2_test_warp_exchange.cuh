@@ -27,8 +27,8 @@ struct exchange_data_t<InputT, OutputT, ItemsPerThread, Alg, std::enable_if_t<st
   OutputT (&output)[ItemsPerThread] = input;
 
   template <int LogicalWarpThreads>
-  inline __device__ void
-  scatter(cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, Alg>& exchange, int (&ranks)[ItemsPerThread])
+  __device__ void scatter(cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, Alg>& exchange,
+                          int (&ranks)[ItemsPerThread])
   {
     exchange.ScatterToStriped(input, ranks);
   }
@@ -41,8 +41,8 @@ struct exchange_data_t<InputT, OutputT, ItemsPerThread, Alg, std::enable_if_t<!s
   OutputT output[ItemsPerThread];
 
   template <int LogicalWarpThreads>
-  inline __device__ void
-  scatter(cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, Alg>& exchange, int (&ranks)[ItemsPerThread])
+  __device__ void scatter(cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, Alg>& exchange,
+                          int (&ranks)[ItemsPerThread])
   {
     exchange.ScatterToStriped(input, output, ranks);
   }

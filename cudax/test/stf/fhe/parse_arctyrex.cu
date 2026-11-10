@@ -37,11 +37,11 @@ static __global__ void cuda_sleep_kernel(long long int clock_cnt)
 void cuda_sleep(double ms, cudaStream_t stream)
 {
   int device;
-  cudaGetDevice(&device);
+  cuda_safe_call(cudaGetDevice(&device));
 
   // cudaDevAttrClockRate: Peak clock frequency in kilohertz;
   int clock_rate;
-  cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device);
+  cuda_safe_call(cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device));
 
   const long long int clock_cnt = (long long int) (ms * clock_rate);
   cuda_sleep_kernel<<<1, 1, 0, stream>>>(clock_cnt);
@@ -191,7 +191,8 @@ void run(const char* inputfile)
         in_body = true;
 
         // Look for parameters
-        size_t begin_params, end_params;
+        size_t begin_params;
+        size_t end_params;
         begin_params       = line.find('(');
         end_params         = line.find(')');
         std::string params = line.substr(begin_params + 1, end_params - begin_params - 1);

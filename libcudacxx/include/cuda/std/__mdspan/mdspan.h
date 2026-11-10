@@ -109,7 +109,6 @@ class mdspan
                             typename _LayoutPolicy::template mapping<_Extents>,
                             _AccessorPolicy>
 {
-private:
   static_assert(__is_cuda_std_extents_v<_Extents>,
                 "mdspan: Extents template parameter must be a specialization of extents.");
   static_assert(!is_array_v<_ElementType>, "mdspan: ElementType template parameter may not be an array type");
@@ -123,7 +122,7 @@ private:
   template <class, class, class, class>
   friend class mdspan;
 
-  using __constraints = __mdspan_constraints<_Extents, _LayoutPolicy, _AccessorPolicy>;
+  using __constraints _CCCL_NODEBUG = __mdspan_constraints<_Extents, _LayoutPolicy, _AccessorPolicy>;
 
 public:
   using extents_type     = _Extents;
@@ -137,9 +136,10 @@ public:
   using rank_type        = typename extents_type::rank_type;
   using data_handle_type = typename accessor_type::data_handle_type;
   using reference        = typename accessor_type::reference;
-  using __base           = __mdspan_ebco<typename accessor_type::data_handle_type,
-                                         typename _LayoutPolicy::template mapping<_Extents>,
-                                         _AccessorPolicy>;
+  using __base _CCCL_NODEBUG =
+    __mdspan_ebco<typename accessor_type::data_handle_type,
+                  typename _LayoutPolicy::template mapping<_Extents>,
+                  _AccessorPolicy>;
 
   [[nodiscard]] _CCCL_API static constexpr rank_type rank() noexcept
   {
@@ -477,7 +477,7 @@ public:
   template <size_t... _Idxs>
   [[nodiscard]] _CCCL_API constexpr bool __op_empty(index_sequence<_Idxs...>) const noexcept
   {
-    return (((mapping().extents().extent(_Idxs) == index_type{0})) || ...);
+    return ((mapping().extents().extent(_Idxs) == index_type{0}) || ...);
   }
 
   [[nodiscard]] _CCCL_API constexpr bool empty() const noexcept
@@ -582,7 +582,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_ElementType*, const _MappingType&)
 
 template <class _MappingType, class _AccessorType>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES
-mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
+mdspan(typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
   -> mdspan<typename _AccessorType::element_type,
             typename _MappingType::extents_type,
             typename _MappingType::layout_type,

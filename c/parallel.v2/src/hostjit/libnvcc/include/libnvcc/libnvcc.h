@@ -195,6 +195,16 @@ libnvccResult libnvccGetProgramLogSize(libnvccProgram prog, size_t* logSizeRet);
  */
 libnvccResult libnvccGetProgramLog(libnvccProgram prog, char* log);
 
+/**
+ * \brief Return the PTX ISA version (major * 10 + minor, e.g. 86 for PTX 8.6) libnvcc targets
+ * for the given SM.
+ *
+ * Depends on the nvJitLink library libnvcc is running against, so it can differ between machines.
+ * Anything that caches compiler output keyed on compile options (such as PCHs) should include it
+ * in the key.
+ */
+int libnvccPtxVersionForSm(int sm_version);
+
 #ifdef __cplusplus
 }
 #endif

@@ -60,13 +60,18 @@ _CCCL_HOST_DEVICE inline float frexp_expf(float x, int* expt)
   get_float_word(hx, exp_x);
   *expt = static_cast<int>((hx >> 23) - (0x7f + 127) + k);
   set_float_word(exp_x, (hx & 0x7fffff) | ((0x7f + 127) << 23));
-  return (exp_x);
+  return exp_x;
 }
 
 _CCCL_HOST_DEVICE inline complex<float> ldexp_cexpf(complex<float> z, int expt)
 {
-  float x, y, exp_x, scale1, scale2;
-  int ex_expt, half_expt;
+  float x;
+  float y;
+  float exp_x;
+  float scale1;
+  float scale2;
+  int ex_expt;
+  int half_expt;
 
   x     = z.real();
   y     = z.imag();
@@ -87,11 +92,14 @@ _CCCL_HOST_DEVICE inline complex<float> ldexp_cexpf(complex<float> z, int expt)
 // NOLINTBEGIN(misc-redundant-expression)
 _CCCL_HOST_DEVICE inline complex<float> cexpf(const complex<float>& z)
 {
-  float x, y, exp_x;
-  uint32_t hx, hy;
+  float x;
+  float y;
+  float exp_x;
+  uint32_t hx;
+  uint32_t hy;
 
-  const uint32_t exp_ovfl = 0x42b17218, /* MAX_EXP * ln2 ~= 88.722839355 */
-    cexp_ovfl             = 0x43400074; /* (MAX_EXP - MIN_DENORM_EXP) * ln2 */
+  const uint32_t exp_ovfl  = 0x42b17218; /* MAX_EXP * ln2 ~= 88.722839355 */
+  const uint32_t cexp_ovfl = 0x43400074; /* (MAX_EXP - MIN_DENORM_EXP) * ln2 */
 
   x = z.real();
   y = z.imag();

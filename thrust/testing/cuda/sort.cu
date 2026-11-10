@@ -102,14 +102,14 @@ TEST_CASE("TestSortCudaStreams", "[sort]")
   thrust::device_vector<int> keys{9, 3, 2, 0, 4, 7, 8, 1, 5, 6};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::sort(thrust::cuda::par.on(s), keys.begin(), keys.end());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(thrust::is_sorted(keys.begin(), keys.end()));
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestComparisonSortCudaStreams", "[sort]")
@@ -117,14 +117,14 @@ TEST_CASE("TestComparisonSortCudaStreams", "[sort]")
   thrust::device_vector<int> keys{9, 3, 2, 0, 4, 7, 8, 1, 5, 6};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::sort(thrust::cuda::par.on(s), keys.begin(), keys.end(), my_less<int>());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(thrust::is_sorted(keys.begin(), keys.end(), my_less<int>()));
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 template <typename T>
@@ -217,7 +217,6 @@ struct index_to_key_value_op
 template <typename UnsignedIntegralKeyT>
 class index_to_expected_key_op
 {
-private:
   static constexpr std::size_t max_key_value =
     static_cast<std::size_t>(::cuda::std::numeric_limits<UnsignedIntegralKeyT>::max());
   static constexpr std::size_t lowest_key_value =

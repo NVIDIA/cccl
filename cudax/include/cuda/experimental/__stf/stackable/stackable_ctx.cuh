@@ -1379,7 +1379,7 @@ public:
     template <typename... Ts>
     struct to_cuda_tuple<::std::tuple<Ts...>>
     {
-      using type = ::cuda::std::tuple<Ts...>;
+      using type _CCCL_NODEBUG = ::cuda::std::tuple<Ts...>;
     };
 
     using kernel_tuple_t = typename to_cuda_tuple<filtered_data_t>::type;

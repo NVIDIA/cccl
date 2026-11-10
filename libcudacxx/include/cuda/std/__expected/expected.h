@@ -76,7 +76,7 @@ inline constexpr bool __can_swap<void, _Err> = is_swappable_v<_Err> && is_move_c
 template <class _Tp, class _Err>
 class expected : private __expected_move_assign<_Tp, _Err>
 {
-  using __base = __expected_move_assign<_Tp, _Err>;
+  using __base _CCCL_NODEBUG = __expected_move_assign<_Tp, _Err>;
 
   static_assert(__expected::__valid_expected<_Tp, _Err>,
                 "[expected.object.general] A program that instantiates the definition of template expected<T, E> for a "
@@ -397,7 +397,6 @@ public:
       ::cuda::std::addressof(this->__union_.__val_), __il, ::cuda::std::forward<_Args>(__args)...);
   }
 
-public:
   // [expected.object.swap], swap
   _CCCL_TEMPLATE(class _Tp2 = _Tp, class _Err2 = _Err)
   _CCCL_REQUIRES(__expected::__can_swap<_Tp2, _Err2>)
@@ -1197,7 +1196,7 @@ public:
 template <class _Err>
 class expected<void, _Err> : private __expected_move_assign<void, _Err>
 {
-  using __base = __expected_move_assign<void, _Err>;
+  using __base _CCCL_NODEBUG = __expected_move_assign<void, _Err>;
   static_assert(__unexpected::__valid_unexpected<_Err>,
                 "[expected.void.general] A program that instantiates expected<T, E> with a E that is not a "
                 "valid argument for unexpected<E> is ill-formed");

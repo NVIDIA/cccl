@@ -44,6 +44,7 @@
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -488,7 +489,8 @@ _CCCL_DEVICE void memcpy_async_maybe_unaligned(void* dst, const void* src, unsig
 
   // TODO(bgruber): ahendriksen suggested to copy elements instead of bytes, but it generates about 20 instructions more
   // ahendriksen: we perform both loads first and then both writes. this reduces the total latency
-  char head_byte, tail_byte;
+  char head_byte;
+  char tail_byte;
   if (threadIdx.x < head_bytes)
   {
     head_byte = src_ptr[threadIdx.x];
@@ -595,6 +597,11 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   // SMEM is 16-byte aligned by default
   extern __shared__ char smem[];
   static_assert(ldgsts_size_and_align <= 16);
+  // the code assumes tile_size (in elements) is a multiple of ldgsts_size_and_align, so tile offsets stay aligned for
+  // any input type
+  static_assert(ThreadsPerBlock % ldgsts_size_and_align == 0,
+                "TransformPolicy: async_copy.threads_per_block must be a multiple of 16 when algorithm is "
+                "TransformAlgorithm::ldgsts");
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(smem), "");
 
   // constexpr int ThreadsPerBlock = Policy.async_copy.ThreadsPerBlock;
@@ -697,7 +704,8 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
   }
 
   // ahendriksen: we perform both loads first and then both writes. this reduces the total latency
-  char head_byte, tail_byte;
+  char head_byte;
+  char tail_byte;
   if (threadIdx.x < head_bytes)
   {
     head_byte = src_ptr[threadIdx.x];
@@ -1298,6 +1306,11 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
   }
   else if constexpr (policy.algorithm == TransformAlgorithm::ldgsts)
   { // NOLINT(bugprone-branch-clone)
+    // we cannot static_assert on nvc++, but custom tunings are unlikely there
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
+    static_assert(::cuda::std::__always_false_v<Offset>,
+                  "TransformPolicy: algorithm must not be TransformAlgorithm::ldgsts when compiling for < sm_80");
+#endif
     NV_IF_TARGET(
       NV_PROVIDES_SM_80,
       (transform_kernel_ldgsts</*policy*/ policy.async_copy.threads_per_block, policy.async_copy.unroll_factor>(
@@ -1310,6 +1323,11 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
   }
   else if constexpr (policy.algorithm == TransformAlgorithm::ublkcp)
   {
+    // we cannot static_assert on nvc++, but custom tunings are unlikely there
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 900
+    static_assert(::cuda::std::__always_false_v<Offset>,
+                  "TransformPolicy: algorithm must not be TransformAlgorithm::ublkcp when compiling for < sm_90");
+#endif
     NV_IF_TARGET(
       NV_PROVIDES_SM_90,
       (transform_kernel_ublkcp<policy.async_copy.threads_per_block,
