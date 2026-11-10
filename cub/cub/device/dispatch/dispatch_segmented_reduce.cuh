@@ -354,7 +354,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedReduce") D
       }
 
       // Sync the stream if specified to flush runtime errors
-      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -367,7 +367,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedReduce") D
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT policy = {})
   {
-    auto wrapped_policy = detail::reduce::MakeReducePolicyWrapper(policy);
+    auto wrapped_policy = _CUB::detail::reduce::MakeReducePolicyWrapper(policy);
     // Force kernel code-generation in all compiler passes
     return InvokePasses(kernel_source.SegmentedReduceKernel(), wrapped_policy);
   }
@@ -514,7 +514,8 @@ template <
   typename ReductionOpT,
   typename InitValueT = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
   typename AccumT =
-    decltype(select_segmented_accum_t<InputIteratorT, InitValueT, ReductionOpT>(static_cast<OverrideAccumT*>(nullptr))),
+    decltype(_CUB::detail::segmented_reduce::select_segmented_accum_t<InputIteratorT, InitValueT, ReductionOpT>(
+      static_cast<OverrideAccumT*>(nullptr))),
   typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT>,
   typename KernelSource   = DeviceSegmentedReduceKernelSource<
     PolicySelector,
@@ -559,7 +560,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   const SegmentedReducePolicy active_policy = policy_selector(cc);
-  detail::log_dispatch("DeviceSegmentedReduce (variable size)", cc, active_policy);
+  _CUB::detail::log_dispatch("DeviceSegmentedReduce (variable size)", cc, active_policy);
 
   // Compute segments_per_block based on max_segment_size hint
   int segments_per_block = 1;
@@ -586,7 +587,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   // Get SM occupancy for the segmented reduce kernel (only needed for logging)
   [[maybe_unused]] int sm_occupancy{};
 #ifndef CUB_DEBUG_LOG
-  if (logging_enabled())
+  if (_CUB::detail::logging_enabled())
 #endif // CUB_DEBUG_LOG
   {
     if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
@@ -650,7 +651,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -717,9 +718,10 @@ template <typename OverrideAccumT = use_default,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitValueT     = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
-          typename AccumT         = decltype(select_segmented_accum_t<InputIteratorT, InitValueT, ReductionOpT>(
-            static_cast<OverrideAccumT*>(nullptr))),
+          typename InitValueT = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
+          typename AccumT =
+            decltype(_CUB::detail::segmented_reduce::select_segmented_accum_t<InputIteratorT, InitValueT, ReductionOpT>(
+              static_cast<OverrideAccumT*>(nullptr))),
           typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT>,
           typename KernelSource   = DeviceFixedSizeSegmentedReduceKernelSource<
             PolicySelector,
@@ -765,7 +767,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
   }
 
   const SegmentedReducePolicy active_policy = policy_selector(cc);
-  detail::log_dispatch("DeviceSegmentedReduce (fixed size)", cc, active_policy);
+  _CUB::detail::log_dispatch("DeviceSegmentedReduce (fixed size)", cc, active_policy);
 
   const auto tile_size = active_policy.large_reduce.threads_per_block * active_policy.large_reduce.items_per_thread;
 
@@ -827,7 +829,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
         return error;
       }
 
-      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -851,7 +853,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
   const size_t allocation_sizes[1] = {static_cast<size_t>(tiles_per_invocation) * kernel_source.AccumSize()};
 
   if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -891,7 +893,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -938,7 +940,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }

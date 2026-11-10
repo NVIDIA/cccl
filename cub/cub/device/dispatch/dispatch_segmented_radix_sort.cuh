@@ -111,8 +111,10 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> SegmentedRadixSortPolic
 {
   using active_policy = LegacyActivePolicy;
 
-  const auto regular_pass   = radix_sort::convert_downsweep_policy(typename active_policy::SegmentedPolicy{});
-  const auto alternate_pass = radix_sort::convert_downsweep_policy(typename active_policy::AltSegmentedPolicy{});
+  const auto regular_pass =
+    _CUB::detail::radix_sort::convert_downsweep_policy(typename active_policy::SegmentedPolicy{});
+  const auto alternate_pass =
+    _CUB::detail::radix_sort::convert_downsweep_policy(typename active_policy::AltSegmentedPolicy{});
   return SegmentedRadixSortPolicy{regular_pass, alternate_pass};
 }
 
@@ -122,7 +124,7 @@ struct policy_selector_from_hub
 {
   _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> SegmentedRadixSortPolicy
   {
-    return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
+    return _CUB::detail::segmented_radix_sort::convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
   }
 };
 } // namespace detail::segmented_radix_sort
@@ -363,7 +365,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
       }
 
       // Sync the stream if specified to flush runtime errors
-      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -452,7 +454,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
       };
 
       // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
-      error = CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error =
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -559,7 +562,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
     // Force kernel code-generation in all compiler passes
     return InvokePasses(kernel_source.SegmentedRadixSortKernel(),
                         kernel_source.AltSegmentedRadixSortKernel(),
-                        detail::radix_sort::MakeRadixSortPolicyWrapper(policy));
+                        _CUB::detail::radix_sort::MakeRadixSortPolicyWrapper(policy));
   }
 
   //------------------------------------------------------------------------------
@@ -726,7 +729,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
   };
 
   if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -835,7 +838,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
       }
 
       // Sync the stream if specified to flush runtime errors
-      if (const auto err = CubDebug(detail::DebugSyncStream(stream)))
+      if (const auto err = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return err;
       }
@@ -952,9 +955,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
   const SegmentedRadixSortPolicy active_policy = policy_selector_t{}(cc);
 
-  detail::log_dispatch("DeviceSegmentedRadixSort", cc, active_policy);
+  _CUB::detail::log_dispatch("DeviceSegmentedRadixSort", cc, active_policy);
 
-  return invoke_passes(
+  return _CUB::detail::segmented_radix_sort::invoke_passes(
     d_temp_storage,
     temp_storage_bytes,
     d_keys,
