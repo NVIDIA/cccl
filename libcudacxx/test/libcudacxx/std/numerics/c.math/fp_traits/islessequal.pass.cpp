@@ -21,6 +21,8 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#include <nv/target>
+
 #include "test_macros.h"
 
 // numeric_limits::has_denorm has been deprecated since C++23
@@ -95,9 +97,26 @@ TEST_FUNC constexpr void test_type()
     }
     else
     {
-      test_ordered(zero, denorm);
+      // Fast device float comparisons flush subnormals to zero; host and constant evaluation preserve them.
+      bool denorms_are_zero = false;
+      if constexpr (TEST_HAS_CUDA_FAST_MATH && cuda::std::is_same_v<T, float>)
+      {
+        NV_IF_TARGET(NV_IS_DEVICE, (denorms_are_zero = !cuda::std::__cccl_default_is_constant_evaluated();))
+      }
+      T negative_denorm = cuda::std::copysign(denorm, Limits::lowest());
+      if (denorms_are_zero)
+      {
+        test_islessequal(zero, denorm, true);
+        test_islessequal(denorm, zero, true);
+        test_islessequal(negative_denorm, negative_zero, true);
+        test_islessequal(negative_zero, negative_denorm, true);
+      }
+      else
+      {
+        test_ordered(zero, denorm);
+        test_ordered(negative_denorm, negative_zero);
+      }
       test_ordered(denorm, min);
-      test_ordered(cuda::std::copysign(denorm, Limits::lowest()), negative_zero);
     }
   }
 
@@ -175,6 +194,8 @@ TEST_FUNC constexpr bool test()
 int main(int, char**)
 {
   test();
+#if _CCCL_HAS_CONSTEXPR_BIT_CAST()
   static_assert(test());
+#endif // _CCCL_HAS_CONSTEXPR_BIT_CAST()
   return 0;
 }

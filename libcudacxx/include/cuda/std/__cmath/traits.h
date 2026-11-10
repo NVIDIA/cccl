@@ -91,21 +91,17 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
 #if _CCCL_HAS_NVFP16()
-      if constexpr (is_same_v<_Tp, ::__half>
-#  if _CCCL_HAS_NVBF16()
-                    || is_same_v<_Tp, ::__nv_bfloat16>
-#  endif // _CCCL_HAS_NVBF16()
-      )
+      if constexpr (is_same_v<_Tp, ::__half>)
       {
-        NV_IF_TARGET(NV_IS_DEVICE, ({
-                       if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
-                       {
-                         return false;
-                       }
-                       return __hgt(__x, __y);
-                     }))
+        NV_IF_TARGET(NV_IS_DEVICE, (return __hgt(__x, __y);))
       }
 #endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+      if constexpr (is_same_v<_Tp, ::__nv_bfloat16>)
+      {
+        NV_IF_TARGET(NV_PROVIDES_SM_80, (return __hgt(__x, __y);))
+      }
+#endif // _CCCL_HAS_NVBF16()
     }
     return ::cuda::std::__fp_compare_generic(__x, __y, ::cuda::std::greater<>{});
   }
@@ -157,21 +153,17 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
 #if _CCCL_HAS_NVFP16()
-      if constexpr (is_same_v<_Tp, ::__half>
-#  if _CCCL_HAS_NVBF16()
-                    || is_same_v<_Tp, ::__nv_bfloat16>
-#  endif // _CCCL_HAS_NVBF16()
-      )
+      if constexpr (is_same_v<_Tp, ::__half>)
       {
-        NV_IF_TARGET(NV_IS_DEVICE, ({
-                       if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
-                       {
-                         return false;
-                       }
-                       return __hge(__x, __y);
-                     }))
+        NV_IF_TARGET(NV_IS_DEVICE, (return __hge(__x, __y);))
       }
 #endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+      if constexpr (is_same_v<_Tp, ::__nv_bfloat16>)
+      {
+        NV_IF_TARGET(NV_PROVIDES_SM_80, (return __hge(__x, __y);))
+      }
+#endif // _CCCL_HAS_NVBF16()
     }
     return ::cuda::std::__fp_compare_generic(__x, __y, ::cuda::std::greater_equal<>{});
   }
@@ -224,21 +216,17 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
 #if _CCCL_HAS_NVFP16()
-      if constexpr (is_same_v<_Tp, ::__half>
-#  if _CCCL_HAS_NVBF16()
-                    || is_same_v<_Tp, ::__nv_bfloat16>
-#  endif // _CCCL_HAS_NVBF16()
-      )
+      if constexpr (is_same_v<_Tp, ::__half>)
       {
-        NV_IF_TARGET(NV_IS_DEVICE, ({
-                       if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
-                       {
-                         return false;
-                       }
-                       return __hlt(__x, __y);
-                     }))
+        NV_IF_TARGET(NV_IS_DEVICE, (return __hlt(__x, __y);))
       }
 #endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+      if constexpr (is_same_v<_Tp, ::__nv_bfloat16>)
+      {
+        NV_IF_TARGET(NV_PROVIDES_SM_80, (return __hlt(__x, __y);))
+      }
+#endif // _CCCL_HAS_NVBF16()
     }
     return ::cuda::std::__fp_compare_generic(__x, __y, ::cuda::std::less<>{});
   }
@@ -290,21 +278,17 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
 #if _CCCL_HAS_NVFP16()
-      if constexpr (is_same_v<_Tp, ::__half>
-#  if _CCCL_HAS_NVBF16()
-                    || is_same_v<_Tp, ::__nv_bfloat16>
-#  endif // _CCCL_HAS_NVBF16()
-      )
+      if constexpr (is_same_v<_Tp, ::__half>)
       {
-        NV_IF_TARGET(NV_IS_DEVICE, ({
-                       if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
-                       {
-                         return false;
-                       }
-                       return __hle(__x, __y);
-                     }))
+        NV_IF_TARGET(NV_IS_DEVICE, (return __hle(__x, __y);))
       }
 #endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+      if constexpr (is_same_v<_Tp, ::__nv_bfloat16>)
+      {
+        NV_IF_TARGET(NV_PROVIDES_SM_80, (return __hle(__x, __y);))
+      }
+#endif // _CCCL_HAS_NVBF16()
     }
     return ::cuda::std::__fp_compare_generic(__x, __y, ::cuda::std::less_equal<>{});
   }
@@ -357,21 +341,17 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
 #if _CCCL_HAS_NVFP16()
-      if constexpr (is_same_v<_Tp, ::__half>
-#  if _CCCL_HAS_NVBF16()
-                    || is_same_v<_Tp, ::__nv_bfloat16>
-#  endif // _CCCL_HAS_NVBF16()
-      )
+      if constexpr (is_same_v<_Tp, ::__half>)
       {
-        NV_IF_TARGET(NV_IS_DEVICE, ({
-                       if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
-                       {
-                         return false;
-                       }
-                       return __hne(__x, __y);
-                     }))
+        NV_IF_TARGET(NV_IS_DEVICE, (return __hne(__x, __y);))
       }
 #endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+      if constexpr (is_same_v<_Tp, ::__nv_bfloat16>)
+      {
+        NV_IF_TARGET(NV_PROVIDES_SM_80, (return __hne(__x, __y);))
+      }
+#endif // _CCCL_HAS_NVBF16()
     }
     return ::cuda::std::__fp_compare_generic(__x, __y, ::cuda::std::not_equal_to<>{});
   }

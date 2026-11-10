@@ -175,6 +175,8 @@ TEST_FUNC constexpr bool test()
 int main(int, char**)
 {
   test();
+#if _CCCL_HAS_CONSTEXPR_BIT_CAST()
   static_assert(test());
+#endif // _CCCL_HAS_CONSTEXPR_BIT_CAST()
   return 0;
 }
