@@ -71,8 +71,8 @@ inline const __half* unwrap_it(const half_t* it)
 template <class OffsetT>
 cuda::constant_iterator<__half, OffsetT> unwrap_it(cuda::constant_iterator<half_t, OffsetT> it)
 {
-  half_t wrapped_val = *it;
-  __half val         = wrapped_val.operator __half();
+  const half_t wrapped_val = *it;
+  const __half val         = wrapped_val.operator __half();
   return cuda::constant_iterator<__half, OffsetT>(val);
 }
 #endif // TEST_HALF_T()
@@ -91,8 +91,8 @@ inline const __nv_bfloat16* unwrap_it(const bfloat16_t* it)
 template <class OffsetT>
 cuda::constant_iterator<__nv_bfloat16, OffsetT> unwrap_it(cuda::constant_iterator<bfloat16_t, OffsetT> it)
 {
-  bfloat16_t wrapped_val = *it;
-  __nv_bfloat16 val      = wrapped_val.operator __nv_bfloat16();
+  const bfloat16_t wrapped_val = *it;
+  const __nv_bfloat16 val      = wrapped_val.operator __nv_bfloat16();
   return cuda::constant_iterator<__nv_bfloat16, OffsetT>(val);
 }
 #endif // TEST_BF_T()
