@@ -40,6 +40,10 @@ from ._lowerings import (
     shuffle_rotate_impl,
     shuffle_up_impl,
     sum_impl,
+    topk_max_keys_impl,
+    topk_max_pairs_impl,
+    topk_min_keys_impl,
+    topk_min_pairs_impl,
 )
 
 _registered = False
@@ -80,6 +84,10 @@ def register() -> None:
         _register_tilelib_impl(_api.merge_sort_pairs, merge_sort_pairs_impl)
         _register_tilelib_impl(_api.radix_sort_keys, radix_sort_keys_impl)
         _register_tilelib_impl(_api.radix_sort_pairs, radix_sort_pairs_impl)
+        _register_tilelib_impl(_api.topk_max_keys, topk_max_keys_impl)
+        _register_tilelib_impl(_api.topk_min_keys, topk_min_keys_impl)
+        _register_tilelib_impl(_api.topk_max_pairs, topk_max_pairs_impl)
+        _register_tilelib_impl(_api.topk_min_pairs, topk_min_pairs_impl)
         _register_tilelib_impl(_api.histogram_256, histogram_256_impl)
         _register_tilelib_impl(_api.histogram, histogram_impl)
         _register_tilelib_impl(_api.run_length_decode, run_length_decode_impl)

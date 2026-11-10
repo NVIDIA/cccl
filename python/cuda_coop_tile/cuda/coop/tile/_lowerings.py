@@ -95,6 +95,12 @@ from ._block.scan import (
     BlockScanInclusiveSumOptions,
 )
 from ._block.shuffle import BlockShuffle
+from ._block.topk import (
+    BlockTopKKeys,
+    BlockTopKKeysOptions,
+    BlockTopKPairs,
+    BlockTopKPairsOptions,
+)
 from ._cpp import _get_tile_library_linker_input
 from ._declarations import DECLARATIONS as _PROVIDER_DECL_SCHEMAS
 from ._declarations import TileType as _ProviderDeclTileType
@@ -117,6 +123,8 @@ from ._dispatch import (
     dispatch_reduce,
     dispatch_shuffle,
     dispatch_sum,
+    dispatch_topk_keys,
+    dispatch_topk_pairs,
 )
 
 _DTYPE_TO_TOKEN = {
@@ -745,6 +753,24 @@ def _radix_rank_static_prefix(
     )
 
 
+def _topk_key_static_prefix(
+    numel: int,
+    dtype,
+    *,
+    descending: bool,
+    full_tile: bool,
+):
+    return (
+        *_sort_key_static_prefix(
+            numel,
+            dtype,
+        ),
+        int(descending),
+        int(full_tile),
+        _dtype_token(dtype),
+    )
+
+
 def _sort_pair_static_prefix(
     numel: int,
     key_dtype,
@@ -796,6 +822,27 @@ def _merge_sort_pair_static_prefix(
         ),
         int(descending),
         int(partial_tile),
+        _dtype_token(key_dtype),
+        _dtype_token(value_dtype),
+    )
+
+
+def _topk_pair_static_prefix(
+    numel: int,
+    key_dtype,
+    value_dtype,
+    *,
+    descending: bool,
+    full_tile: bool,
+):
+    return (
+        *_sort_pair_static_prefix(
+            numel,
+            key_dtype,
+            value_dtype,
+        ),
+        int(descending),
+        int(full_tile),
         _dtype_token(key_dtype),
         _dtype_token(value_dtype),
     )
@@ -2906,4 +2953,364 @@ def radix_sort_pairs_impl(
             inner_scan_algorithm=block_sort.inner_scan_token,
             smem_config=block_sort.smem_config_token,
         ),
+    )
+
+
+def _topk_keys_impl(
+    keys,
+    *,
+    primitive: str,
+    descending: bool,
+    k,
+    num_valid,
+    begin_bit,
+    end_bit,
+    methods,
+):
+    """Lower key selection without specializing its runtime selection size.
+
+    Convert k, valid count, and bit bounds to rank-zero operands. Validate
+    known values against the input extent and key width. Omission of the
+    valid count selects the full-tile provider overload. The output keeps
+    the input shape; min(k, valid_items) identifies its meaningful selected
+    prefix.
+    """
+
+    tile_ty = require_tile_type(keys)
+    shape = tile_ty.shape
+
+    if tile_ty.ndim != 1:
+        raise TileTypeError(f"coop.{primitive} expects a 1D tile")
+
+    methods_val = _require_optional_constant_object(methods, "methods")
+    _reject_runtime_method_overlap(
+        methods_val, begin_bit, "begin_bit", primitive
+    )
+    _reject_runtime_method_overlap(methods_val, end_bit, "end_bit", primitive)
+    k_const = _const_value_or_runtime(k)
+    num_valid_const = _const_value_or_runtime(num_valid)
+    begin_bit_const = _const_value_or_runtime(begin_bit)
+    end_bit_const = _const_value_or_runtime(end_bit)
+    if k_const is None:
+        raise TileTypeError(f"coop.{primitive} k must be an int")
+    options = BlockTopKKeysOptions.from_kwargs(
+        descending=descending,
+        k=None if k_const is _RUNTIME_VALUE else k_const,
+        num_valid=None
+        if num_valid_const is _RUNTIME_VALUE
+        else num_valid_const,
+        begin_bit=None
+        if begin_bit_const is _RUNTIME_VALUE
+        else begin_bit_const,
+        end_bit=None if end_bit_const is _RUNTIME_VALUE else end_bit_const,
+        methods=methods_val,
+    )
+
+    numel = shape[0]
+    k_operand, k_static = _rank0_scalar_tile_operand(
+        k,
+        datatype.int32,
+        primitive=primitive,
+        name="k",
+        int_value=True,
+        allow_shape_one=False,
+    )
+    num_valid_operand, num_valid_static = _rank0_scalar_tile_operand(
+        num_valid,
+        datatype.int32,
+        primitive=primitive,
+        name="valid_items",
+        default=numel,
+        int_value=True,
+        allow_shape_one=False,
+    )
+    if not _is_provided(begin_bit) and options.begin_bit is not None:
+        begin_bit_operand = _constant_scalar_tile(
+            options.begin_bit, datatype.int32
+        )
+        begin_bit_static = options.begin_bit
+    else:
+        begin_bit_operand, begin_bit_static = _rank0_scalar_tile_operand(
+            begin_bit,
+            datatype.int32,
+            primitive=primitive,
+            name="begin_bit",
+            default=0,
+            int_value=True,
+            allow_shape_one=False,
+        )
+    if not _is_provided(end_bit) and options.end_bit is not None:
+        end_bit_operand = _constant_scalar_tile(options.end_bit, datatype.int32)
+        end_bit_static = options.end_bit
+    else:
+        end_bit_operand, end_bit_static = _rank0_scalar_tile_operand(
+            end_bit,
+            datatype.int32,
+            primitive=primitive,
+            name="end_bit",
+            default=tile_ty.dtype.bitwidth,
+            int_value=True,
+            allow_shape_one=False,
+        )
+    num_valid_for_validation = (
+        num_valid_static if _is_provided(num_valid) else None
+    )
+    begin_bit_for_validation = (
+        begin_bit_static
+        if _is_provided(begin_bit) or options.begin_bit is not None
+        else None
+    )
+    end_bit_for_validation = (
+        end_bit_static
+        if _is_provided(end_bit) or options.end_bit is not None
+        else None
+    )
+    decision = dispatch_topk_keys(
+        numel=numel,
+        dtype=tile_ty.dtype,
+    )
+    items_per_thread = numel // decision.block_threads
+
+    block_topk = BlockTopKKeys(
+        items_per_thread=items_per_thread,
+        dtype=tile_ty.dtype,
+        block_threads=decision.block_threads,
+        descending=options.descending,
+        k=k_static,
+        num_valid=num_valid_for_validation,
+        begin_bit=begin_bit_for_validation,
+        end_bit=end_bit_for_validation,
+    )
+    full_tile = not _is_provided(num_valid)
+
+    out_ty = make_tile_ty(tile_ty.dtype, shape)
+    return _emit_provider_foreign_call(
+        operands=(
+            keys,
+            k_operand,
+            num_valid_operand,
+            begin_bit_operand,
+            end_bit_operand,
+        ),
+        output_types=(out_ty,),
+        decl_sym_name=_PROVIDER_DECL_TOPK_KEYS,
+        static_prefix=_topk_key_static_prefix(
+            numel,
+            tile_ty.dtype,
+            descending=block_topk.descending,
+            full_tile=full_tile,
+        ),
+    )
+
+
+def topk_max_keys_impl(keys, k, valid_items, begin_bit, end_bit, methods):
+    return _topk_keys_impl(
+        keys,
+        primitive="topk_max_keys",
+        descending=True,
+        k=k,
+        num_valid=valid_items,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        methods=methods,
+    )
+
+
+def topk_min_keys_impl(keys, k, valid_items, begin_bit, end_bit, methods):
+    return _topk_keys_impl(
+        keys,
+        primitive="topk_min_keys",
+        descending=False,
+        k=k,
+        num_valid=valid_items,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        methods=methods,
+    )
+
+
+def _topk_pairs_impl(
+    keys,
+    values,
+    *,
+    primitive: str,
+    descending: bool,
+    k,
+    num_valid,
+    begin_bit,
+    end_bit,
+    methods,
+):
+    """Lower TopK while retaining the key/value association and full extent.
+
+    Require equal input shapes and validate each dtype. Scalar controls follow
+    the key-only path and are not specialization constants. The result tuple
+    contains full-size key and value Tiles; only the selected prefix is part
+    of the operation's result contract.
+    """
+
+    keys_ty = require_tile_type(keys)
+    values_ty = require_tile_type(values)
+    shape = keys_ty.shape
+
+    if keys_ty.ndim != 1 or values_ty.ndim != 1:
+        raise TileTypeError(f"coop.{primitive} expects 1D tiles")
+    if keys_ty.shape != values_ty.shape:
+        raise TileTypeError(f"coop.{primitive} expects matching shapes")
+
+    methods_val = _require_optional_constant_object(methods, "methods")
+    _reject_runtime_method_overlap(
+        methods_val, begin_bit, "begin_bit", primitive
+    )
+    _reject_runtime_method_overlap(methods_val, end_bit, "end_bit", primitive)
+    k_const = _const_value_or_runtime(k)
+    num_valid_const = _const_value_or_runtime(num_valid)
+    begin_bit_const = _const_value_or_runtime(begin_bit)
+    end_bit_const = _const_value_or_runtime(end_bit)
+    if k_const is None:
+        raise TileTypeError(f"coop.{primitive} k must be an int")
+    options = BlockTopKPairsOptions.from_kwargs(
+        descending=descending,
+        k=None if k_const is _RUNTIME_VALUE else k_const,
+        num_valid=None
+        if num_valid_const is _RUNTIME_VALUE
+        else num_valid_const,
+        begin_bit=None
+        if begin_bit_const is _RUNTIME_VALUE
+        else begin_bit_const,
+        end_bit=None if end_bit_const is _RUNTIME_VALUE else end_bit_const,
+        methods=methods_val,
+    )
+
+    numel = shape[0]
+    k_operand, k_static = _rank0_scalar_tile_operand(
+        k,
+        datatype.int32,
+        primitive=primitive,
+        name="k",
+        int_value=True,
+        allow_shape_one=False,
+    )
+    num_valid_operand, num_valid_static = _rank0_scalar_tile_operand(
+        num_valid,
+        datatype.int32,
+        primitive=primitive,
+        name="valid_items",
+        default=numel,
+        int_value=True,
+        allow_shape_one=False,
+    )
+    if not _is_provided(begin_bit) and options.begin_bit is not None:
+        begin_bit_operand = _constant_scalar_tile(
+            options.begin_bit, datatype.int32
+        )
+        begin_bit_static = options.begin_bit
+    else:
+        begin_bit_operand, begin_bit_static = _rank0_scalar_tile_operand(
+            begin_bit,
+            datatype.int32,
+            primitive=primitive,
+            name="begin_bit",
+            default=0,
+            int_value=True,
+            allow_shape_one=False,
+        )
+    if not _is_provided(end_bit) and options.end_bit is not None:
+        end_bit_operand = _constant_scalar_tile(options.end_bit, datatype.int32)
+        end_bit_static = options.end_bit
+    else:
+        end_bit_operand, end_bit_static = _rank0_scalar_tile_operand(
+            end_bit,
+            datatype.int32,
+            primitive=primitive,
+            name="end_bit",
+            default=keys_ty.dtype.bitwidth,
+            int_value=True,
+            allow_shape_one=False,
+        )
+    num_valid_for_validation = (
+        num_valid_static if _is_provided(num_valid) else None
+    )
+    begin_bit_for_validation = (
+        begin_bit_static
+        if _is_provided(begin_bit) or options.begin_bit is not None
+        else None
+    )
+    end_bit_for_validation = (
+        end_bit_static
+        if _is_provided(end_bit) or options.end_bit is not None
+        else None
+    )
+    decision = dispatch_topk_pairs(
+        numel=numel,
+        key_dtype=keys_ty.dtype,
+        value_dtype=values_ty.dtype,
+    )
+    items_per_thread = numel // decision.block_threads
+
+    block_topk = BlockTopKPairs(
+        items_per_thread=items_per_thread,
+        key_dtype=keys_ty.dtype,
+        value_dtype=values_ty.dtype,
+        block_threads=decision.block_threads,
+        descending=options.descending,
+        k=k_static,
+        num_valid=num_valid_for_validation,
+        begin_bit=begin_bit_for_validation,
+        end_bit=end_bit_for_validation,
+    )
+    full_tile = not _is_provided(num_valid)
+
+    out_keys_ty = make_tile_ty(keys_ty.dtype, shape)
+    out_vals_ty = make_tile_ty(values_ty.dtype, shape)
+    return _emit_provider_foreign_call(
+        operands=(
+            keys,
+            values,
+            k_operand,
+            num_valid_operand,
+            begin_bit_operand,
+            end_bit_operand,
+        ),
+        output_types=(out_keys_ty, out_vals_ty),
+        decl_sym_name=_PROVIDER_DECL_TOPK_PAIRS,
+        static_prefix=_topk_pair_static_prefix(
+            numel,
+            keys_ty.dtype,
+            values_ty.dtype,
+            descending=block_topk.descending,
+            full_tile=full_tile,
+        ),
+    )
+
+
+def topk_max_pairs_impl(
+    keys, values, k, valid_items, begin_bit, end_bit, methods
+):
+    return _topk_pairs_impl(
+        keys,
+        values,
+        primitive="topk_max_pairs",
+        descending=True,
+        k=k,
+        num_valid=valid_items,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        methods=methods,
+    )
+
+
+def topk_min_pairs_impl(
+    keys, values, k, valid_items, begin_bit, end_bit, methods
+):
+    return _topk_pairs_impl(
+        keys,
+        values,
+        primitive="topk_min_pairs",
+        descending=False,
+        k=k,
+        num_valid=valid_items,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        methods=methods,
     )

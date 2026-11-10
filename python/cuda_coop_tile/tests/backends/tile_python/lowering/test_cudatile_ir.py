@@ -471,6 +471,75 @@ def test_radix_sort_pairs_static_options_reach_foreign_call_const_args(
 
 
 @pytest.mark.link
+@pytest.mark.parametrize(
+    ("literal_k", "valid_items"), [(8, None), (0, None), (0, 0), (128, 11)]
+)
+def test_topk_keys_static_options_and_k_operands_reach_foreign_call(
+    monkeypatch, literal_k, valid_items
+):
+    tile_library_path = _configure_tile_library(monkeypatch)
+    _configure_imports(monkeypatch)
+
+    global ct, coop
+    ct = importlib.import_module("cuda.tile")
+    coop = importlib.import_module("cuda.coop.tile")
+    from cuda.tile._cext import default_tile_context
+
+    @ct.kernel
+    def literal_topk_kernel(inp: ct.Array, out: ct.Array):
+        keys = ct.load(inp, (0,), shape=(128,))
+        top_keys = coop.topk_max_keys(
+            keys, k=literal_k, valid_items=valid_items
+        )
+        ct.store(out, (0,), top_keys)
+
+    literal_ir = _get_final_ir(
+        literal_topk_kernel._pyfunc,
+        (_FakeCudaArray((128,)), _FakeCudaArray((128,))),
+        default_tile_context,
+    )
+    literal_ops = _preview_foreign_calls(literal_ir)
+    assert len(literal_ops) == 1
+    literal_op = literal_ops[0]
+    assert literal_op.tilelibs[0][0] == tile_library_path
+    assert literal_op.symbol_name == "cuda_coop_tile_topk_keys"
+    topk_names = ("N", "T", "Descending", "FullTile", "DTypeToken")
+    literal_args = _constant_args(literal_op, topk_names)
+    assert (literal_args["Descending"], literal_args["FullTile"]) == (
+        1,
+        int(valid_items is None),
+    )
+    assert len(literal_op.inputs) == 6
+    assert len(literal_op.result_vars) == 2
+
+    @ct.kernel
+    def dynamic_topk_kernel(inp: ct.Array, k_in: ct.Array, out: ct.Array):
+        keys = ct.load(inp, (0,), shape=(128,))
+        runtime_k = ct.load(k_in, (0,), shape=())
+        top_keys = coop.topk_max_keys(keys, k=runtime_k)
+        ct.store(out, (0,), top_keys)
+
+    dynamic_ir = _get_final_ir(
+        dynamic_topk_kernel._pyfunc,
+        (
+            _FakeCudaArray((128,)),
+            _FakeCudaArray((1,)),
+            _FakeCudaArray((128,)),
+        ),
+        default_tile_context,
+    )
+    dynamic_ops = _preview_foreign_calls(dynamic_ir)
+    assert len(dynamic_ops) == 1
+    dynamic_op = dynamic_ops[0]
+    assert dynamic_op.tilelibs[0][0] == tile_library_path
+    assert dynamic_op.symbol_name == "cuda_coop_tile_topk_keys"
+    dynamic_args = _constant_args(dynamic_op, topk_names)
+    assert (dynamic_args["Descending"], dynamic_args["FullTile"]) == (1, 1)
+    assert len(dynamic_op.inputs) == 6
+    assert dynamic_op.inputs[1].get_type().shape == ()
+
+
+@pytest.mark.link
 @pytest.mark.parametrize("second_width", [128, 256])
 @pytest.mark.parametrize("reverse", [False, True])
 def test_registered_exchange_inverse_fold_requires_same_width(

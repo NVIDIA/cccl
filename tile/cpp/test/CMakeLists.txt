@@ -17,6 +17,8 @@ foreach (
   merge_sort
   merge_sort_keys_smoke
   run_length_decode_sm120
+  topk_sm120
+  topk_keys_smoke
 )
   add_executable("cccl.tile.${_test}" "support/tile_cpp_${_test}.cu")
   cuda_coop_tile_link("cccl.tile.${_test}")

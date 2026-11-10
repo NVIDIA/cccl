@@ -84,6 +84,10 @@ _API_SYMBOLS = (
     "shuffle_offset",
     "shuffle_rotate",
     "radix_rank_keys",
+    "topk_max_keys",
+    "topk_min_keys",
+    "topk_max_pairs",
+    "topk_min_pairs",
 )
 
 # The primitive tuple is shared with lazy loading; every entry is a string.

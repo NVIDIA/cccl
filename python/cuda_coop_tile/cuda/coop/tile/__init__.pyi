@@ -1435,6 +1435,254 @@ def radix_rank_keys(
     radix_sort_keys
     """
 
+def topk_max_keys(
+    keys: _Tile,
+    /,
+    *,
+    k: _RuntimeInt,
+    valid_items: _RuntimeInt | None = None,
+    begin_bit: _RuntimeInt | None = None,
+    end_bit: _RuntimeInt | None = None,
+    methods: _Methods | None = None,
+) -> _Tile:
+    """Select the ``k`` largest keys from a Tile.
+
+    Parameters
+    ----------
+    keys : Tile
+        Numeric keys of shape ``(N,)``.
+        ``N`` must be a positive multiple of 32.
+    k : int or Tile
+        Number requested, with ``0 <= k <= N``. Accepts a constant,
+        runtime integer scalar, or rank-zero Tile. A shape-one Tile is
+        unsupported.
+    valid_items : int or Tile
+        Input prefix length, defaulting to ``N``, in ``[0, N]``.
+        Positions beyond it are excluded. Scalar restrictions match ``k``.
+    begin_bit, end_bit : int or Tile
+        Half-open interval in the radix ordering representation, defaulting
+        to zero and the key width. Require
+        ``0 <= begin_bit < end_bit <= key_bits``. Scalar restrictions match
+        ``k``. Signed and floating-point keys use CUB's ordering transform.
+    methods : collections.abc.Mapping or tuple
+        Compile-time ``begin_bit`` and ``end_bit`` options only.
+
+    Returns
+    -------
+    Tile
+        Selected keys with the input dtype and capacity ``N``. Only the
+        first ``min(k, valid_items)`` positions are defined. The input is
+        unchanged.
+
+    Notes
+    -----
+    Selected keys are not guaranteed to be sorted. Ties may select different
+    input items, so tied payload identity is unspecified. The remaining
+    positions are undefined. Zero counts produce no defined output items.
+    A partial bit interval selects by that digit rather than the full value.
+
+    Examples
+    --------
+    For 256 loaded items in a ``cuda.tile`` kernel, select from the first
+    193 and consume only the first 16 output positions:
+
+    .. code-block:: python
+
+        best_keys = coop.topk_max_keys(keys, k=16, valid_items=193)
+
+    See Also
+    --------
+    topk_min_keys, topk_max_pairs
+    """
+
+def topk_min_keys(
+    keys: _Tile,
+    /,
+    *,
+    k: _RuntimeInt,
+    valid_items: _RuntimeInt | None = None,
+    begin_bit: _RuntimeInt | None = None,
+    end_bit: _RuntimeInt | None = None,
+    methods: _Methods | None = None,
+) -> _Tile:
+    """Select the ``k`` smallest keys from a Tile.
+
+    Parameters
+    ----------
+    keys : Tile
+        Numeric keys of shape ``(N,)``.
+        ``N`` must be a positive multiple of 32.
+    k : int or Tile
+        Number requested, with ``0 <= k <= N``. Accepts a constant,
+        runtime integer scalar, or rank-zero Tile. A shape-one Tile is
+        unsupported.
+    valid_items : int or Tile
+        Input prefix length, defaulting to ``N``, in ``[0, N]``.
+        Positions beyond it are excluded. Scalar restrictions match ``k``.
+    begin_bit, end_bit : int or Tile
+        Half-open interval in the radix ordering representation, defaulting
+        to zero and the key width. Require
+        ``0 <= begin_bit < end_bit <= key_bits``. Scalar restrictions match
+        ``k``. Signed and floating-point keys use CUB's ordering transform.
+    methods : collections.abc.Mapping or tuple
+        Compile-time ``begin_bit`` and ``end_bit`` options only.
+
+    Returns
+    -------
+    Tile
+        Selected keys with the input dtype and capacity ``N``. Only the
+        first ``min(k, valid_items)`` positions are defined. The input is
+        unchanged.
+
+    Notes
+    -----
+    Selected keys are not guaranteed to be sorted. Ties may select different
+    input items, so tied payload identity is unspecified. The remaining
+    positions are undefined. Zero counts produce no defined output items.
+    A partial bit interval selects by that digit rather than the full value.
+
+    Examples
+    --------
+    For 256 loaded items in a ``cuda.tile`` kernel, select from the first
+    193 and consume only the first 16 output positions:
+
+    .. code-block:: python
+
+        best_keys = coop.topk_min_keys(keys, k=16, valid_items=193)
+
+    See Also
+    --------
+    topk_max_keys, topk_min_pairs
+    """
+
+def topk_max_pairs(
+    keys: _Tile,
+    values: _Tile,
+    /,
+    *,
+    k: _RuntimeInt,
+    valid_items: _RuntimeInt | None = None,
+    begin_bit: _RuntimeInt | None = None,
+    end_bit: _RuntimeInt | None = None,
+    methods: _Methods | None = None,
+) -> tuple[_Tile, _Tile]:
+    """Select the ``k`` largest keys and their payloads from a Tile.
+
+    Parameters
+    ----------
+    keys, values : Tile
+        Numeric Tiles of matching shape ``(N,)``. Their dtypes may differ.
+        ``N`` must be a positive multiple of 32.
+    k : int or Tile
+        Number requested, with ``0 <= k <= N``. Accepts a constant,
+        runtime integer scalar, or rank-zero Tile. A shape-one Tile is
+        unsupported.
+    valid_items : int or Tile
+        Input prefix length, defaulting to ``N``, in ``[0, N]``.
+        Positions beyond it are excluded. Scalar restrictions match ``k``.
+    begin_bit, end_bit : int or Tile
+        Half-open interval in the radix ordering representation, defaulting
+        to zero and the key width. Require
+        ``0 <= begin_bit < end_bit <= key_bits``. Scalar restrictions match
+        ``k``. Signed and floating-point keys use CUB's ordering transform.
+    methods : collections.abc.Mapping or tuple
+        Compile-time ``begin_bit`` and ``end_bit`` options only.
+
+    Returns
+    -------
+    tuple[Tile, Tile]
+        ``(selected_keys, selected_values)`` with the respective input dtypes
+        and capacity ``N``. Only the first ``min(k, valid_items)`` positions
+        are defined.
+        Values remain associated with selected keys; inputs are unchanged.
+
+    Notes
+    -----
+    Selected keys are not guaranteed to be sorted. Ties may select different
+    input items, so tied payload identity is unspecified. The remaining
+    positions are undefined. Zero counts produce no defined output items.
+    A partial bit interval selects by that digit rather than the full value.
+
+    Examples
+    --------
+    For 256 loaded items in a ``cuda.tile`` kernel, select from the first
+    193 and consume only the first 16 output positions:
+
+    .. code-block:: python
+
+        best_keys, best_ids = coop.topk_max_pairs(
+            keys, ids, k=16, valid_items=193
+        )
+
+    See Also
+    --------
+    topk_min_pairs, topk_max_keys
+    """
+
+def topk_min_pairs(
+    keys: _Tile,
+    values: _Tile,
+    /,
+    *,
+    k: _RuntimeInt,
+    valid_items: _RuntimeInt | None = None,
+    begin_bit: _RuntimeInt | None = None,
+    end_bit: _RuntimeInt | None = None,
+    methods: _Methods | None = None,
+) -> tuple[_Tile, _Tile]:
+    """Select the ``k`` smallest keys and their payloads from a Tile.
+
+    Parameters
+    ----------
+    keys, values : Tile
+        Numeric Tiles of matching shape ``(N,)``. Their dtypes may differ.
+        ``N`` must be a positive multiple of 32.
+    k : int or Tile
+        Number requested, with ``0 <= k <= N``. Accepts a constant,
+        runtime integer scalar, or rank-zero Tile. A shape-one Tile is
+        unsupported.
+    valid_items : int or Tile
+        Input prefix length, defaulting to ``N``, in ``[0, N]``.
+        Positions beyond it are excluded. Scalar restrictions match ``k``.
+    begin_bit, end_bit : int or Tile
+        Half-open interval in the radix ordering representation, defaulting
+        to zero and the key width. Require
+        ``0 <= begin_bit < end_bit <= key_bits``. Scalar restrictions match
+        ``k``. Signed and floating-point keys use CUB's ordering transform.
+    methods : collections.abc.Mapping or tuple
+        Compile-time ``begin_bit`` and ``end_bit`` options only.
+
+    Returns
+    -------
+    tuple[Tile, Tile]
+        ``(selected_keys, selected_values)`` with the respective input dtypes
+        and capacity ``N``. Only the first ``min(k, valid_items)`` positions
+        are defined.
+        Values remain associated with selected keys; inputs are unchanged.
+
+    Notes
+    -----
+    Selected keys are not guaranteed to be sorted. Ties may select different
+    input items, so tied payload identity is unspecified. The remaining
+    positions are undefined. Zero counts produce no defined output items.
+    A partial bit interval selects by that digit rather than the full value.
+
+    Examples
+    --------
+    For 256 loaded items in a ``cuda.tile`` kernel, select from the first
+    193 and consume only the first 16 output positions:
+
+    .. code-block:: python
+
+        best_keys, best_ids = coop.topk_min_pairs(
+            keys, ids, k=16, valid_items=193
+        )
+
+    See Also
+    --------
+    topk_max_pairs, topk_min_keys
+    """
+
 __all__ = [
     "CppTileConfig",
     "adjacent_difference_subtract_left",
@@ -1470,4 +1718,8 @@ __all__ = [
     "shuffle_rotate",
     "shuffle_up",
     "sum",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]
