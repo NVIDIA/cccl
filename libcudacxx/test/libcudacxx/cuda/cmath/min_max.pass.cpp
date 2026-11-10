@@ -46,12 +46,21 @@ TEST_FUNC constexpr bool operator<(NotArithmetic lhs, NotArithmetic rhs)
   return lhs.value < rhs.value;
 }
 
+enum UnscopedEnum
+{
+};
+
 static_assert(can_min_max<int, int>);
 static_assert(can_min_max<float, float>);
 static_assert(!can_min_max<int, long>);
+static_assert(!can_min_max<short, int>);
+static_assert(!can_min_max<int, unsigned>);
+static_assert(!can_min_max<unsigned, int>);
 static_assert(!can_min_max<float, double>);
+static_assert(!can_min_max<double, float>);
 static_assert(!can_min_max<int*, int*>);
 static_assert(!can_min_max<NotArithmetic, NotArithmetic>);
+static_assert(!can_min_max<UnscopedEnum, UnscopedEnum>);
 
 template <class T>
 TEST_FUNC constexpr T make_value(float value)
@@ -149,9 +158,21 @@ TEST_FUNC constexpr void test_bool()
   assert(cuda::max(false, false) == false);
 }
 
+TEST_FUNC constexpr void test_explicit_template_argument()
+{
+  static_assert(cuda::std::is_same_v<long, decltype(cuda::min<long>(1, 2))>);
+  static_assert(cuda::std::is_same_v<double, decltype(cuda::max<double>(1.0f, 2))>);
+
+  assert(cuda::min<long>(1, 2) == 1);
+  assert(cuda::max<long>(1, 2) == 2);
+  assert(cuda::min<double>(1.0f, 2) == 1.0);
+  assert(cuda::max<double>(1.0f, 2) == 2.0);
+}
+
 TEST_FUNC constexpr bool test(float val)
 {
   test_bool();
+  test_explicit_template_argument();
 
   test_type<char>(val);
   test_type<signed char>(val);

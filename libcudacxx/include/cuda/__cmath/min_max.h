@@ -25,6 +25,7 @@
 #include <cuda/std/__cmath/min_max.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_extended_arithmetic.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -49,6 +50,13 @@ _CCCL_REQUIRES(::cuda::std::__is_extended_arithmetic_v<_Tp>)
   }
 }
 
+// Mixed argument types must select a deleted overload rather than fail deduction, otherwise nvcc with MSVC considers
+// the global ::min of the CUDA headers in SFINAE contexts. The leading non-type template parameter keeps explicit
+// template arguments, like cuda::min<long>(1, 2), from selecting this overload.
+_CCCL_TEMPLATE(int = 0, class _Tp, class _Up)
+_CCCL_REQUIRES((!::cuda::std::is_same_v<_Tp, _Up>) )
+_CCCL_API _Tp min(_Tp, _Up) = delete;
+
 //! @brief Returns the larger of two values. Floating-point values are compared like with `cuda::std::fmax`, so NaN is
 //! only returned if both values are NaN.
 //! @param[in] __a The first value.
@@ -67,6 +75,11 @@ _CCCL_REQUIRES(::cuda::std::__is_extended_arithmetic_v<_Tp>)
     return (__a < __b) ? __b : __a;
   }
 }
+
+// See cuda::min
+_CCCL_TEMPLATE(int = 0, class _Tp, class _Up)
+_CCCL_REQUIRES((!::cuda::std::is_same_v<_Tp, _Up>) )
+_CCCL_API _Tp max(_Tp, _Up) = delete;
 
 _CCCL_END_NAMESPACE_CUDA
 

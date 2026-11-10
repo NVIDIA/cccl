@@ -43,6 +43,8 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(::cuda::std::__is_extended_arithmetic_v<_Tp>)
 [[nodiscard]] _CCCL_TRIVIAL_API constexpr _Tp clamp(_Tp __v, _Tp __lo, _Tp __hi) noexcept
 {
+  // The branches are identical when assertions are disabled.
+  // NOLINTBEGIN(bugprone-branch-clone)
   if constexpr (::cuda::std::__is_ext_nv_fp_v<_Tp>)
   {
     _CCCL_ASSERT(!(::cuda::std::__fp_cast<float>(__hi) < ::cuda::std::__fp_cast<float>(__lo)),
@@ -54,6 +56,7 @@ _CCCL_REQUIRES(::cuda::std::__is_extended_arithmetic_v<_Tp>)
     _CCCL_ASSERT(::cuda::std::isnan(__lo) || ::cuda::std::isnan(__hi) || !(__hi < __lo),
                  "Bad bounds passed to cuda::clamp");
   }
+  // NOLINTEND(bugprone-branch-clone)
   return ::cuda::max(::cuda::min(__v, __hi), __lo);
 }
 
