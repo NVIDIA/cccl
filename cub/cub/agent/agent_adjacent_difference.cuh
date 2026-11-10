@@ -66,6 +66,14 @@ struct AgentDifference
 {
   using LoadIt = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, InputIteratorT>;
 
+  // BlockAdjacentDifference requires the items in a blocked arrangement
+  static_assert(Policy::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
+                "AdjacentDifferencePolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since the difference "
+                "computation requires a blocked arrangement");
+  static_assert(Policy::STORE_ALGORITHM != BLOCK_STORE_STRIPED,
+                "AdjacentDifferencePolicy: store_algorithm must not be BLOCK_STORE_STRIPED, since the difference "
+                "computation produces a blocked arrangement");
+
   using BlockLoad  = typename cub::BlockLoadType<Policy, LoadIt>::type;
   using BlockStore = typename cub::BlockStoreType<Policy, OutputIteratorT, OutputT>::type;
 
@@ -103,7 +111,7 @@ struct AgentDifference
     OffsetT num_items)
       : temp_storage(temp_storage.Alias())
       , input_it(input_it)
-      , load_it(try_make_cache_modified_iterator<Policy::LOAD_MODIFIER>(input_it))
+      , load_it(_CUB::detail::try_make_cache_modified_iterator<Policy::LOAD_MODIFIER>(input_it))
       , first_tile_previous(first_tile_previous)
       , result(result)
       , difference_op(difference_op)

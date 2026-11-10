@@ -95,11 +95,12 @@ struct __iset_flatten_all<_Interface, _Rest...>
 };
 
 template <class... _Interfaces>
-using __iset = ::cuda::std::__type_call<::cuda::std::__type_unique<typename __iset_flatten_all<_Interfaces...>::type>,
-                                        ::cuda::std::__type_quote<__iset_>>;
+using __iset _CCCL_NODEBUG =
+  ::cuda::std::__type_call<::cuda::std::__type_unique<typename __iset_flatten_all<_Interfaces...>::type>,
+                           ::cuda::std::__type_quote<__iset_>>;
 #else // ^^^ _CCCL_COMPILER(GCC, <, 10) ^^^ / vvv _CCCL_COMPILER(GCC, >=, 10) vvv
 template <class... _Interfaces>
-using __iset =
+using __iset _CCCL_NODEBUG =
   ::cuda::std::__type_call<::cuda::std::__type_unique<::cuda::std::__type_concat<__iset_flatten<_Interfaces>...>>,
                            ::cuda::std::__type_quote<__iset_>>;
 #endif // _CCCL_COMPILER(GCC, >=, 10)
@@ -147,10 +148,7 @@ struct __iset_vptr : __base_vptr
     {
       return static_cast<__iset_vtable const*>(__vptr_)->__query_interface(_Interface{});
     }
-    else
-    {
-      return static_cast<__rtti const*>(__vptr_)->__query_interface(_Interface{});
-    }
+    return static_cast<__rtti const*>(__vptr_)->__query_interface(_Interface{});
   }
 };
 

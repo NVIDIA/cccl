@@ -14,4 +14,4 @@
 #endif // no system header
 
 // this system inherits iter_swap
-#include <thrust/system/detail/sequential/iter_swap.h>
+#include <thrust/system/detail/sequential/iter_swap.h> // IWYU pragma: export

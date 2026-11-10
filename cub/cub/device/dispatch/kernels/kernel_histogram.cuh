@@ -83,7 +83,7 @@ struct Transforms
       const int num_bins = num_output_levels - 1;
       if (valid)
       {
-        bin = UpperBound(wrapped_levels, num_output_levels, static_cast<LevelT>(sample)) - 1;
+        bin = _CUB::UpperBound(wrapped_levels, num_output_levels, static_cast<LevelT>(sample)) - 1;
         if (bin >= num_bins)
         {
           bin = -1;
@@ -430,7 +430,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
   ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
   GridQueue<int> tile_queue)
 {
-  [[maybe_unused]] static constexpr HistogramPolicy policy = current_policy<PolicySelector>();
+  [[maybe_unused]] static constexpr HistogramPolicy policy = _CUB::detail::current_policy<PolicySelector>();
   _CCCL_PDL_GRID_DEPENDENCY_SYNC(); // TODO(bgruber): if we had the guarantee that there would be no pending
                                     // writes/reads to the temp storage, we could omit the sync here
 
@@ -445,7 +445,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
 
   if ((threadIdx.x == 0) && (blockIdx.x == 0))
   {
-    tile_queue.ResetDrain();
+    static_cast<void>(tile_queue.ResetDrain());
   }
 
   const int output_bin = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
@@ -543,7 +543,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+__launch_bounds__(int(_CUB::detail::current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernel(
     const SampleIteratorT d_samples,
     const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -558,7 +558,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     const int tiles_per_row,
     GridQueue<int> tile_queue)
 {
-  static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
+  static constexpr HistogramPolicy hp = _CUB::detail::current_policy<PolicySelector>();
 
   // Thread block type for compositing input tiles
   using AgentHistogramPolicyT = agent_histogram_policy<
@@ -703,7 +703,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
+__launch_bounds__(int(_CUB::detail::current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDeviceInitKernel(
     const SampleIteratorT d_samples,
     ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -718,7 +718,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
     const int tiles_per_row,
     const GridQueue<int> tile_queue)
 {
-  static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
+  static constexpr HistogramPolicy hp = _CUB::detail::current_policy<PolicySelector>();
 
   OutputDecodeOpT output_decode_op[NumActiveChannels];
   PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];

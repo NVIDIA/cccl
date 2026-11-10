@@ -954,13 +954,10 @@ _CCCL_API void __introsort(
         __last = __i;
         continue;
       }
-      else
+      if (__fs)
       {
-        if (__fs)
-        {
-          __first = ++__i;
-          continue;
-        }
+        __first = ++__i;
+        continue;
       }
     }
     // Sort the left partition recursively and the right partition with tail recursion elimination.
@@ -1024,10 +1021,10 @@ _CCCL_API constexpr void __sort_dispatch(_RandomAccessIterator __first, _RandomA
 }
 
 template <class _Type, class... _Options>
-using __is_any_of = _Or<is_same<_Type, _Options>...>;
+using __is_any_of _CCCL_NODEBUG = _Or<is_same<_Type, _Options>...>;
 
 template <class _Type>
-using __sort_is_specialized_in_library = __is_any_of<
+using __sort_is_specialized_in_library _CCCL_NODEBUG = __is_any_of<
   _Type,
   char,
 #ifndef _LIBCPP_HAS_NO_WIDE_CHARACTERS

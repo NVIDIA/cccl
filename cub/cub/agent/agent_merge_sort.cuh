@@ -51,6 +51,14 @@ struct AgentBlockSort
   static constexpr int ITEMS_PER_THREAD   = policy.items_per_thread;
   static constexpr int ITEMS_PER_TILE     = BLOCK_THREADS * ITEMS_PER_THREAD;
 
+  // BlockMergeSort requires and produces the items in a blocked arrangement
+  static_assert(policy.load_algorithm != BLOCK_LOAD_STRIPED,
+                "MergeSortPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since the block sort requires a "
+                "blocked arrangement");
+  static_assert(policy.store_algorithm != BLOCK_STORE_STRIPED,
+                "MergeSortPolicy: store_algorithm must not be BLOCK_STORE_STRIPED, since the block sort produces a "
+                "blocked arrangement");
+
   using BlockMergeSortT = BlockMergeSort<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, ValueT, 1, 1, policy.unroll>;
 
   using KeysLoadIt  = try_make_cache_modified_iterator_t<policy.load_modifier, KeyInputIteratorT>;
@@ -282,9 +290,9 @@ struct AgentPartition
     const OffsetT local_tile_idx = mask & partition_idx;
 
     const OffsetT keys1_beg = (::cuda::std::min) (keys_count, start);
-    const OffsetT keys1_end = (::cuda::std::min) (keys_count, detail::safe_add_bound_to_max(start, size));
+    const OffsetT keys1_end = (::cuda::std::min) (keys_count, _CUB::detail::safe_add_bound_to_max(start, size));
     const OffsetT keys2_beg = keys1_end;
-    const OffsetT keys2_end = (::cuda::std::min) (keys_count, detail::safe_add_bound_to_max(keys2_beg, size));
+    const OffsetT keys2_end = (::cuda::std::min) (keys_count, _CUB::detail::safe_add_bound_to_max(keys2_beg, size));
 
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
@@ -299,18 +307,20 @@ struct AgentPartition
 
       OffsetT partition_diag =
         ping
-          ? MergePath(keys_ping + keys1_beg,
-                      keys_ping + keys2_beg,
-                      keys1_end - keys1_beg,
-                      keys2_end - keys2_beg,
-                      partition_at,
-                      compare_op)
-          : MergePath(keys_pong + keys1_beg,
-                      keys_pong + keys2_beg,
-                      keys1_end - keys1_beg,
-                      keys2_end - keys2_beg,
-                      partition_at,
-                      compare_op);
+          ? _CUB::MergePath(
+              keys_ping + keys1_beg,
+              keys_ping + keys2_beg,
+              keys1_end - keys1_beg,
+              keys2_end - keys2_beg,
+              partition_at,
+              compare_op)
+          : _CUB::MergePath(
+              keys_pong + keys1_beg,
+              keys_pong + keys2_beg,
+              keys1_end - keys1_beg,
+              keys2_end - keys2_beg,
+              partition_at,
+              compare_op);
 
       merge_partitions[partition_idx] = keys1_beg + partition_diag;
     }
@@ -387,6 +397,11 @@ struct AgentMerge
   static constexpr int BLOCK_THREADS      = policy.threads_per_block;
   static constexpr int ITEMS_PER_THREAD   = policy.items_per_thread;
   static constexpr int ITEMS_PER_TILE     = BLOCK_THREADS * ITEMS_PER_THREAD;
+
+  // The serial merge produces the items in a blocked arrangement
+  static_assert(policy.store_algorithm != BLOCK_STORE_STRIPED,
+                "MergeSortPolicy: store_algorithm must not be BLOCK_STORE_STRIPED, since the merge produces a blocked "
+                "arrangement");
 
   using KeysLoadPingIt  = try_make_cache_modified_iterator_t<policy.load_modifier, KeyIteratorT>;
   using ItemsLoadPingIt = try_make_cache_modified_iterator_t<policy.load_modifier, ValueIteratorT>;
@@ -485,7 +500,7 @@ struct AgentMerge
     const OffsetT keys2_beg = (::cuda::std::min) (max_keys2, diag - keys1_beg);
     OffsetT keys2_end =
       (::cuda::std::min) (max_keys2,
-                          detail::safe_add_bound_to_max(diag, static_cast<OffsetT>(ITEMS_PER_TILE)) - keys1_end);
+                          _CUB::detail::safe_add_bound_to_max(diag, static_cast<OffsetT>(ITEMS_PER_TILE)) - keys1_end);
 
     // Check if it's the last tile in the tile group being merged
     if (mask == (mask & tile_idx))
@@ -502,15 +517,15 @@ struct AgentMerge
     KeyT keys_local[ITEMS_PER_THREAD];
     if (ping)
     {
-      gmem_to_reg<BLOCK_THREADS, IsFullTile>(
+      _CUB::detail::merge_sort::gmem_to_reg<BLOCK_THREADS, IsFullTile>(
         keys_local, keys_in_ping + start + keys1_beg, keys_in_ping + start + size + keys2_beg, num_keys1, num_keys2);
     }
     else
     {
-      gmem_to_reg<BLOCK_THREADS, IsFullTile>(
+      _CUB::detail::merge_sort::gmem_to_reg<BLOCK_THREADS, IsFullTile>(
         keys_local, keys_in_pong + start + keys1_beg, keys_in_pong + start + size + keys2_beg, num_keys1, num_keys2);
     }
-    reg_to_shared<BLOCK_THREADS>(&storage.keys_shared[0], keys_local);
+    _CUB::detail::merge_sort::reg_to_shared<BLOCK_THREADS>(&storage.keys_shared[0], keys_local);
 
     // preload items into registers already
     //
@@ -519,7 +534,7 @@ struct AgentMerge
     {
       if (ping)
       {
-        gmem_to_reg<BLOCK_THREADS, IsFullTile>(
+        _CUB::detail::merge_sort::gmem_to_reg<BLOCK_THREADS, IsFullTile>(
           items_local,
           items_in_ping + start + keys1_beg,
           items_in_ping + start + size + keys2_beg,
@@ -528,7 +543,7 @@ struct AgentMerge
       }
       else
       {
-        gmem_to_reg<BLOCK_THREADS, IsFullTile>(
+        _CUB::detail::merge_sort::gmem_to_reg<BLOCK_THREADS, IsFullTile>(
           items_local,
           items_in_pong + start + keys1_beg,
           items_in_pong + start + size + keys2_beg,
@@ -547,7 +562,7 @@ struct AgentMerge
     //
     const int diag0_local = (::cuda::std::min) (num_keys1 + num_keys2, ITEMS_PER_THREAD * tid);
 
-    const int keys1_beg_local = MergePath(
+    const int keys1_beg_local = _CUB::MergePath(
       &storage.keys_shared[0], &storage.keys_shared[num_keys1], num_keys1, num_keys2, diag0_local, compare_op);
     const int keys1_end_local = num_keys1;
     const int keys2_beg_local = diag0_local - keys1_beg_local;
@@ -560,7 +575,7 @@ struct AgentMerge
     //
     int indices[ITEMS_PER_THREAD];
 
-    detail::serial_merge<policy.unroll>(
+    _CUB::detail::serial_merge<policy.unroll>(
       &storage.keys_shared[0],
       keys1_beg_local,
       keys2_beg_local + num_keys1,
@@ -601,7 +616,7 @@ struct AgentMerge
     {
       __syncthreads();
 
-      reg_to_shared<BLOCK_THREADS>(&storage.items_shared[0], items_local);
+      _CUB::detail::merge_sort::reg_to_shared<BLOCK_THREADS>(&storage.items_shared[0], items_local);
 
       __syncthreads();
 

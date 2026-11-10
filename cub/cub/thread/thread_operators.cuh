@@ -282,7 +282,6 @@ struct CastOp
 template <typename ScanOp>
 class SwizzleScanOp
 {
-private:
   /// Wrapped scan operator
   ScanOp scan_op;
 
@@ -460,13 +459,13 @@ inline constexpr bool is_cuda_binary_operator =
 template <typename Operator>
 struct GeneralizeOperator
 {
-  using type = Operator;
+  using type _CCCL_NODEBUG = Operator;
 };
 
 template <template <typename = void> class Operator, typename T>
 struct GeneralizeOperator<Operator<T>>
 {
-  using type = Operator<>;
+  using type _CCCL_NODEBUG = Operator<>;
 };
 
 template <typename Op>

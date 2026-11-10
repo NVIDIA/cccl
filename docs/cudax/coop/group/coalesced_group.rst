@@ -19,7 +19,7 @@
 
     template <typename HierarchyLike>
       requires cuda::std::same_as<Hierarchy, /*hierarchy-type-of*/<HierarchyLike>>
-    __device__ explicit coalesced_group(const HierarchyLike& hierarchy_like) noexcept;
+    __device__ explicit coalesced_group(const HierarchyLike& hierarchy_like);
 
     coalesced_group(const coalesced_group&) = delete;
 

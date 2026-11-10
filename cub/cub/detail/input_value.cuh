@@ -54,7 +54,7 @@ struct InputValue
     }
     else
     {
-      detail::uninitialized_copy_single(&m_immediate_value, other.m_immediate_value);
+      _CUB::detail::uninitialized_copy_single(&m_immediate_value, other.m_immediate_value);
     }
   }
 

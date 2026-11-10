@@ -55,7 +55,7 @@ struct unary_transform_run
   CUresult operator()(BuildResultT build, void* scratch, size_t* scratch_size, Ts... args) const noexcept
   {
     *scratch_size = 1;
-    return (scratch) ? cccl_device_unary_transform(build, args...) : CUDA_SUCCESS;
+    return scratch ? cccl_device_unary_transform(build, args...) : CUDA_SUCCESS;
   }
 };
 
@@ -65,7 +65,7 @@ struct binary_transform_run
   CUresult operator()(BuildResultT build, void* scratch, size_t* scratch_size, Ts... args) const noexcept
   {
     *scratch_size = 1;
-    return (scratch) ? cccl_device_binary_transform(build, args...) : CUDA_SUCCESS;
+    return scratch ? cccl_device_binary_transform(build, args...) : CUDA_SUCCESS;
   }
 };
 
@@ -839,7 +839,9 @@ C2H_TEST("Transform works with C++ source operations using custom headers", "[tr
 
   // Verify results
   std::vector<T> output(num_items);
-  cudaMemcpy(output.data(), static_cast<void*>(output_ptr.ptr), sizeof(T) * num_items, cudaMemcpyDeviceToHost);
+  REQUIRE(
+    cudaSuccess
+    == cudaMemcpy(output.data(), static_cast<void*>(output_ptr.ptr), sizeof(T) * num_items, cudaMemcpyDeviceToHost));
   std::vector<T> expected = input;
   std::transform(expected.begin(), expected.end(), expected.begin(), [](T x) {
     return x * 2;

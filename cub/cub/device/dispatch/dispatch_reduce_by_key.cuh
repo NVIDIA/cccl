@@ -218,7 +218,7 @@ template <typename PolicySelector,
   requires reduce_by_key_policy_selector<PolicySelector>
 #endif
 __launch_bounds__(int(
-  make_vsmem_helper<device_policy_getter<PolicySelector, current_tuning_cc().get()>,
+  make_vsmem_helper<device_policy_getter<PolicySelector, _CUB::detail::current_tuning_cc().get()>,
                     KeysInputIteratorT,
                     UniqueOutputIteratorT,
                     ValuesInputIteratorT,
@@ -244,7 +244,7 @@ __launch_bounds__(int(
     vsmem_t vsmem)
 {
   using vsmem_helper_t = typename make_vsmem_helper<
-    device_policy_getter<PolicySelector, current_tuning_cc().get()>,
+    device_policy_getter<PolicySelector, _CUB::detail::current_tuning_cc().get()>,
     KeysInputIteratorT,
     UniqueOutputIteratorT,
     ValuesInputIteratorT,
@@ -447,7 +447,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
       // the necessary size of the blob)
       void* allocations[2] = {};
 
-      error = CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error =
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -482,7 +483,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(_CUB::detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         break;
@@ -497,10 +498,10 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
       // Get SM occupancy for reduce_by_key_kernel (only needed for logging)
       int reduce_by_key_sm_occupancy = 0;
 #ifndef CUB_DEBUG_LOG
-      if (detail::logging_enabled())
+      if (_CUB::detail::logging_enabled())
 #endif // CUB_DEBUG_LOG
       {
-        error = CubDebug(MaxSmOccupancy(reduce_by_key_sm_occupancy, reduce_by_key_kernel, threads_per_block));
+        error = CubDebug(_CUB::MaxSmOccupancy(reduce_by_key_sm_occupancy, reduce_by_key_kernel, threads_per_block));
 
         if (cudaSuccess != error)
         {
@@ -555,7 +556,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
         }
 
         // Sync the stream if specified to flush runtime errors
-        error = CubDebug(detail::DebugSyncStream(stream));
+        error = CubDebug(_CUB::detail::DebugSyncStream(stream));
         if (cudaSuccess != error)
         {
           break;
@@ -644,7 +645,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
     {
       // Get PTX version
       int ptx_version = 0;
-      error           = CubDebug(PtxVersion(ptx_version));
+      error           = CubDebug(_CUB::PtxVersion(ptx_version));
       if (cudaSuccess != error)
       {
         break;
@@ -697,7 +698,7 @@ template <typename KeysInputIteratorT,
           typename OffsetT,
           typename AccumT         = ::cuda::std::__accumulator_t<ReductionOpT, it_value_t<ValuesInputIteratorT>>,
           typename KeyT           = non_void_value_t<UniqueOutputIteratorT, it_value_t<KeysInputIteratorT>>,
-          typename PolicySelector = policy_selector_from_types<AccumT, KeyT>>
+          typename PolicySelector = policy_selector_from_types<AccumT, KeyT, it_value_t<ValuesInputIteratorT>>>
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_by_key::reduce_by_key_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
@@ -720,26 +721,27 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   [[maybe_unused]] static constexpr int init_kernel_threads = 128;
 
   ::cuda::compute_capability cc{};
-  if (const auto error = CubDebug(ptx_compute_cap(cc)))
+  if (const auto error = CubDebug(_CUB::detail::ptx_compute_cap(cc)))
   {
     return error;
   }
 
-  return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
-    detail::log_dispatch("DeviceReduceByKey", cc, policy_getter());
+  return _CUB::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+    _CUB::detail::log_dispatch("DeviceReduceByKey", cc, policy_getter());
 
-    const auto [threads_per_block, items_per_thread, vsmem_per_block] = determine_threads_items_vsmem<
-      decltype(policy_getter),
-      KeysInputIteratorT,
-      UniqueOutputIteratorT,
-      ValuesInputIteratorT,
-      AggregatesOutputIteratorT,
-      NumRunsOutputIteratorT,
-      EqualityOpT,
-      ReductionOpT,
-      OffsetT,
-      AccumT,
-      streaming_context_t>(policy_getter);
+    const auto [threads_per_block, items_per_thread, vsmem_per_block] =
+      _CUB::detail::reduce_by_key::determine_threads_items_vsmem<
+        decltype(policy_getter),
+        KeysInputIteratorT,
+        UniqueOutputIteratorT,
+        ValuesInputIteratorT,
+        AggregatesOutputIteratorT,
+        NumRunsOutputIteratorT,
+        EqualityOpT,
+        ReductionOpT,
+        OffsetT,
+        AccumT,
+        streaming_context_t>(policy_getter);
 
     // Number of input tiles
     const int tile_size = threads_per_block * items_per_thread;
@@ -757,7 +759,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     void* allocations[2]             = {};
 
     if (const auto error =
-          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+          CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -784,7 +786,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     {
       return error;
     }
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -810,11 +812,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     // Get SM occupancy for reduce_by_key_kernel (only needed for logging)
     int reduce_by_key_sm_occupancy{};
 #ifndef CUB_DEBUG_LOG
-    if (logging_enabled())
+    if (_CUB::detail::logging_enabled())
 #endif // CUB_DEBUG_LOG
     {
       if (const auto error =
-            CubDebug(MaxSmOccupancy(reduce_by_key_sm_occupancy, reduce_by_key_kernel, threads_per_block)))
+            CubDebug(_CUB::MaxSmOccupancy(reduce_by_key_sm_occupancy, reduce_by_key_kernel, threads_per_block)))
       {
         return error;
       }
@@ -863,7 +865,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       {
         return error;
       }
-      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }

@@ -41,7 +41,7 @@ template <class _OffsetType, ::cuda::std::ptrdiff_t... _Strides>
 class strides;
 
 //! @brief Tag value indicating a dynamic stride (similar to dynamic_extent for extents)
-inline constexpr ::cuda::std::ptrdiff_t dynamic_stride = (::cuda::std::numeric_limits<::cuda::std::ptrdiff_t>::min)();
+inline constexpr ::cuda::std::ptrdiff_t dynamic_stride = ::cuda::std::numeric_limits<::cuda::std::ptrdiff_t>::min();
 
 namespace __strides_detail
 {
@@ -51,7 +51,7 @@ struct __make_dstrides_impl;
 template <class _OffsetType, ::cuda::std::ptrdiff_t... _Idx>
 struct __make_dstrides_impl<_OffsetType, ::cuda::std::integer_sequence<::cuda::std::ptrdiff_t, _Idx...>>
 {
-  using type = strides<_OffsetType, ((void) _Idx, dynamic_stride)...>;
+  using type _CCCL_NODEBUG = strides<_OffsetType, ((void) _Idx, dynamic_stride)...>;
 };
 } // namespace __strides_detail
 

@@ -16,6 +16,8 @@
 #include <thrust/system/detail/generic/extrema.h>
 #include <thrust/system/omp/detail/execution_policy.h>
 
+#include <cuda/std/__utility/pair.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {

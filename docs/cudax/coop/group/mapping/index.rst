@@ -15,6 +15,21 @@ Group Mappings
 
 Group mappings define how a parent group's units are assigned to subgroups, independently of the synchronization mechanism. To communicate this information, they are required to accept and return types that satisfy the *group mapping result* concept.
 
+.. _cudax-coop-group-mapping-exhaustivness:
+
+Group Mapping Exhaustivity
+--------------------------
+
+Imagine a group of :math:`N` units that shall be split into :math:`N / M` groups of :math:`M` units. When :math:`N` is divisible by :math:`M` without a remainder, every unit can be assigned to a new group. However, when :math:`N` is not divisible by :math:`M` without a remainder, you are left with 3 options:
+
+#. mark this case as unsupported,
+#. create :math:`N / M` groups and leave :math:`N \bmod M` units without a group, or
+#. create :math:`N / M + 1` groups with the last group being incomplete.
+
+Cases **1.** and **3.** can be handled inside the mapping implementation; however, case **2.** requires additional support from the groups implementation.
+
+For this reason, CCCL Cooperative Groups introduce 2 versions of the mapping process based on whether every unit is required to be assigned to a group. We call them exhaustive and non-exhaustive mapping.
+
 Group Mapping Result Concept
 ----------------------------
 
@@ -28,22 +43,22 @@ Group Mapping Result Concept
     requires(cuda::std::is_copy_constructible_v<T>);
 
     // Group within the parent group info.
-    { T::static_group_count() } noexcept -> cuda::std::same_as<cuda::std::size_t>; // (1), must be constexpr
-    { t.group_count() } noexcept -> cuda::std::same_as<cuda::std::uint32_t>;       // (2)
-    { t.group_rank() } noexcept -> cuda::std::same_as<cuda::std::uint32_t>;        // (3)
+    { T::static_group_count() } -> cuda::std::same_as<cuda::std::size_t>; // (1), must be constexpr
+    { t.group_count() } -> cuda::std::same_as<cuda::std::uint32_t>;       // (2)
+    { t.group_rank() } -> cuda::std::same_as<cuda::std::uint32_t>;        // (3)
 
     // Unit within the group info.
-    { T::static_unit_count() } noexcept -> cuda::std::same_as<cuda::std::size_t>;  // (4), must be constexpr
-    { t.unit_count() } noexcept -> cuda::std::same_as<cuda::std::uint32_t>;        // (5)
-    { t.unit_rank() } noexcept -> cuda::std::same_as<cuda::std::uint32_t>;         // (6)
+    { T::static_unit_count() } -> cuda::std::same_as<cuda::std::size_t>;  // (4), must be constexpr
+    { t.unit_count() } -> cuda::std::same_as<cuda::std::uint32_t>;        // (5)
+    { t.unit_rank() } -> cuda::std::same_as<cuda::std::uint32_t>;         // (6)
 
     // Properties of the mapping result.
-    { T::is_always_exhaustive() } noexcept -> cuda::std::same_as<bool>;            // (7), must be constexpr
-    { T::is_always_contiguous() } noexcept -> cuda::std::same_as<bool>;            // (8), must be constexpr
-    { t.is_valid() } noexcept -> cuda::std::same_as<bool>;                         // (9)
+    { T::is_always_exhaustive() } -> cuda::std::same_as<bool>;            // (7), must be constexpr
+    { T::is_always_contiguous() } -> cuda::std::same_as<bool>;            // (8), must be constexpr
+    { t.is_valid() } -> cuda::std::same_as<bool>;                         // (9)
 
     // Other group-related info.
-    { t.lane_mask() } noexcept -> cuda::std::same_as<cuda::device::lane_mask>;     // (10)
+    { t.lane_mask() } -> cuda::std::same_as<cuda::device::lane_mask>;     // (10)
   };
 
 Where:
@@ -54,7 +69,7 @@ Where:
 #. The number of units in every group known at compile time. When equal to ``cuda::std::dynamic_extent``, the number of units is known only at runtime and may differ between groups.
 #. The number of units within the unit's group known at runtime. It is equal to ``static_cast<cuda::std::uint32_t>(static_unit_count())`` when ``static_unit_count() != cuda::std::dynamic_extent``.
 #. The current unit's rank.
-#. A property known at compile time that specifies whether all units are always part of a group.
+#. A property known at compile time that specifies whether all units are always part of a group. Always ``true`` during exhaustive mapping.
 #. A property known at compile time that guarantees that each group occupies a contiguous range of physical units, with ``unit_rank()`` numbering them in ascending physical order starting at zero. This guarantee must hold after mapping composition as well.
 #. A property that defines whether the mapping result is valid for the current unit. If not, it means that the unit won't be part of the newly created group.
 #. The mask of threads within this warp that are part of this group.
@@ -67,7 +82,7 @@ Group Mapping Process
 The group mapping process has 3 steps:
 
 1. The initial mapping result describes the parent group as one group: the static and runtime group counts are ``1``, the group rank is ``0``, and the unit count and rank are queried for the requested unit level. The exhaustive property is ``true`` relative to the parent group, and the contiguous property and lane mask are copied from the parent.
-2. The mapping's ``.map(...)`` member function is invoked with the initial mapping result. When a non-exhaustve mapping is done, the ``cuda::experimental::coop::non_exhaustive`` tag is passed as the first parameter to the ``.map(...)`` method.
+2. The mapping's ``.map(...)`` member function is invoked with the initial mapping result. When a non-exhaustive mapping is done, the ``cuda::experimental::coop::non_exhaustive`` tag is passed as the first parameter to the ``.map(...)`` method.
 3. The transformed mapping result is used to initialize the newly created group.
 
 Only units that belong to the parent group may create a child group. For a unit larger than a thread, all threads in that unit must agree on its assignment and participation.

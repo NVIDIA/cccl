@@ -30,10 +30,8 @@ struct concat_iterators_op
     {
       return first_it[i];
     }
-    else
-    {
-      return second_it[i - num_first_items];
-    }
+
+    return second_it[i - num_first_items];
   }
 };
 
@@ -66,8 +64,8 @@ struct flag_correct_writes_op
 };
 
 template <typename ExpectedValuesItT>
-flag_correct_writes_op<ExpectedValuesItT>
-make_checking_write_op(ExpectedValuesItT expected_it, std::uint32_t* d_correctness_flags)
+flag_correct_writes_op<ExpectedValuesItT> make_checking_write_op(
+  ExpectedValuesItT expected_it, std::uint32_t* d_correctness_flags) // NOLINT(readability-non-const-parameter)
 {
   return flag_correct_writes_op<ExpectedValuesItT>{expected_it, d_correctness_flags};
 }

@@ -15,6 +15,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_reduce.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/util_debug.cuh>
 
 #include <algorithm>
 #include <cstdio>
@@ -42,7 +43,7 @@ int g_grid_size = 1;
  * Simple kernel for performing a block-wide reduction.
  */
 template <int BlockThreads>
-__global__ void BlockReduceKernel(int* d_in, // Tile of input
+__global__ void BlockReduceKernel(const int* d_in, // Tile of input
                                   int* d_out // Tile aggregate
 )
 {
@@ -119,8 +120,8 @@ void Test()
   // Initialize device arrays
   int* d_in  = nullptr;
   int* d_out = nullptr;
-  cudaMalloc(reinterpret_cast<void**>(&d_in), sizeof(int) * BlockThreads);
-  cudaMalloc(reinterpret_cast<void**>(&d_out), sizeof(int) * BlockThreads);
+  CubDebugExit(cudaMalloc(reinterpret_cast<void**>(&d_in), sizeof(int) * BlockThreads));
+  CubDebugExit(cudaMalloc(reinterpret_cast<void**>(&d_out), sizeof(int) * BlockThreads));
 
   // Display input problem data
   if (g_verbose)
@@ -134,13 +135,13 @@ void Test()
   }
 
   // Copy problem to device
-  cudaMemcpy(d_in, h_in, sizeof(int) * BlockThreads, cudaMemcpyHostToDevice);
+  CubDebugExit(cudaMemcpy(d_in, h_in, sizeof(int) * BlockThreads, cudaMemcpyHostToDevice));
 
   // determine necessary storage size:
   auto block_reduce_temp_bytes = sizeof(typename cub::BlockReduce<int, BlockThreads>::TempStorage);
   // finally, we need to make sure that we can hold at least one integer
   // needed in the kernel to exchange data after reduction
-  auto smem_size = (std::max) (1 * sizeof(int), block_reduce_temp_bytes);
+  auto smem_size = (std::max) (1 * sizeof(int), block_reduce_temp_bytes); // NOLINT(readability-redundant-parentheses)
 
   // use default stream
   cudaStream_t stream = nullptr;
@@ -163,17 +164,14 @@ void Test()
   CubDebugExit(cudaDeviceSynchronize());
 
   // Cleanup
-  if (h_in)
-  {
-    delete[] h_in;
-  }
+  delete[] h_in;
   if (d_in)
   {
-    cudaFree(d_in);
+    CubDebugExit(cudaFree(d_in));
   }
   if (d_out)
   {
-    cudaFree(d_out);
+    CubDebugExit(cudaFree(d_out));
   }
 }
 

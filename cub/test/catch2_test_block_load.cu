@@ -6,18 +6,33 @@
 #include <cub/util_allocator.cuh>
 #include <cub/util_arch.cuh>
 
+#include <cuda/iterator>
 #include <cuda/std/span>
 
 #include "cub_test_macros.h"
 
-template <int ItemsPerThread, int ThreadsInBlock, cub::BlockLoadAlgorithm LoadAlgorithm>
-static __device__ int get_output_idx(int item)
+template <typename T, int ItemsPerThread, int ThreadsInBlock, cub::BlockLoadAlgorithm LoadAlgorithm>
+static __device__ int get_output_idx(int item, bool full_tile)
 {
-  if (LoadAlgorithm == cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED)
+  if constexpr (LoadAlgorithm == cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED)
   {
     return static_cast<int>(threadIdx.x) + ThreadsInBlock * item;
   }
-  return static_cast<int>(threadIdx.x) * ItemsPerThread + item;
+  else if constexpr (LoadAlgorithm == cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED_VECTORIZED)
+  {
+    // Full tiles are striped vectors of the type with which BLOCK_LOAD_VECTORIZE loads the items of a thread, or of
+    // single items if that does not hold a whole number of T. Guarded loads are striped.
+    using vector_t             = cub::detail::block_load_vector_t<T, ItemsPerThread>;
+    constexpr int vec_size     = sizeof(vector_t) % sizeof(T) == 0 ? static_cast<int>(sizeof(vector_t) / sizeof(T)) : 1;
+    const int items_per_vector = full_tile ? vec_size : 1;
+    const int vector           = item / items_per_vector;
+    const int element          = item % items_per_vector;
+    return (static_cast<int>(threadIdx.x) + ThreadsInBlock * vector) * items_per_vector + element;
+  }
+  else
+  {
+    return static_cast<int>(threadIdx.x) * ItemsPerThread + item;
+  }
 }
 
 template <int ItemsPerThread,
@@ -35,7 +50,8 @@ __global__ void kernel(cuda::std::true_type, InputIteratorT input, OutputIterato
   block_load_t block_load(storage);
   input_t data[ItemsPerThread];
 
-  if (ItemsPerThread * ThreadsInBlock == num_items)
+  const bool full_tile = ItemsPerThread * ThreadsInBlock == num_items;
+  if (full_tile)
   {
     block_load.Load(input, data);
   }
@@ -46,7 +62,7 @@ __global__ void kernel(cuda::std::true_type, InputIteratorT input, OutputIterato
 
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    const int idx = get_output_idx<ItemsPerThread, ThreadsInBlock, LoadAlgorithm>(i);
+    const int idx = get_output_idx<input_t, ItemsPerThread, ThreadsInBlock, LoadAlgorithm>(i, full_tile);
     if (idx < num_items)
     {
       output[idx] = data[i];
@@ -61,9 +77,11 @@ template <int ItemsPerThread,
           typename OutputIteratorT>
 __global__ void kernel(cuda::std::false_type, InputIteratorT input, OutputIteratorT output, int num_items)
 {
+  using input_t = cub::detail::it_value_t<InputIteratorT>;
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    const int idx = get_output_idx<ItemsPerThread, ThreadsInBlock, cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT>(i);
+    const int idx =
+      get_output_idx<input_t, ItemsPerThread, ThreadsInBlock, cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT>(i, true);
     if (idx < num_items)
     {
       output[idx] = input[idx];
@@ -102,6 +120,7 @@ using load_algorithm =
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED,
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE,
+                      cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED_VECTORIZED,
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_TRANSPOSE,
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED>;
@@ -111,7 +130,13 @@ using odd_load_algorithm =
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED,
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE,
+                      cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED_VECTORIZED,
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_TRANSPOSE>;
+
+using vectorized_load_algorithm =
+  c2h::enum_type_list<cub::BlockLoadAlgorithm,
+                      cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE,
+                      cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED_VECTORIZED>;
 
 template <class TestType>
 struct params_t
@@ -207,20 +232,35 @@ CUB_TEST("Block load works with caching iterators", "[load][block]", CUB_SMALL, 
   test_block_load<items_per_thread, threads_in_block, load_algorithm>(d_input, in);
 }
 
+CUB_TEST("Block load works with fancy iterators", "[load][block]", CUB_SMALL, items_per_thread, load_algorithm)
+{
+  using type                                              = int;
+  constexpr int items_per_thread                          = c2h::get<0, TestType>::value;
+  constexpr int threads_in_block                          = 64;
+  constexpr int tile_size                                 = items_per_thread * threads_in_block;
+  static constexpr cub::BlockLoadAlgorithm load_algorithm = c2h::get<1, TestType>::value;
+
+  c2h::device_vector<type> d_input(GENERATE_COPY(take(10, random(0, tile_size))));
+  c2h::gen(c2h::modulo_t{d_input.size()}, d_input);
+  test_block_load<items_per_thread, threads_in_block, load_algorithm>(d_input, cuda::counting_iterator<type>{0});
+}
+
 #if IPT == 1
-CUB_TEST("Vectorized block load with const and non-const datatype and different alignment cases",
+CUB_TEST("Vectorized block load with const, non-const and cache modified inputs and different alignment cases",
          "[load][block]",
          CUB_SMALL,
-         c2h::type_list<const int*, int*>)
+         c2h::type_list<const int*, int*, cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_LDG, int>>,
+         vectorized_load_algorithm,
+         c2h::enum_type_list<int, 4, 8>)
 {
   using type           = int;
   using input_ptr_type = c2h::get<0, TestType>;
 
   const int offset_for_elements                           = GENERATE_COPY(0, 1, 2, 3, 4);
-  constexpr int items_per_thread                          = 4;
+  constexpr int items_per_thread                          = c2h::get<2, TestType>::value;
   constexpr int threads_in_block                          = 64;
   constexpr int tile_size                                 = items_per_thread * threads_in_block;
-  static constexpr cub::BlockLoadAlgorithm load_algorithm = cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE;
+  static constexpr cub::BlockLoadAlgorithm load_algorithm = c2h::get<1, TestType>::value;
 
   c2h::device_vector<type> d_input_ref(tile_size);
   c2h::gen(C2H_SEED(10), d_input_ref);
@@ -232,18 +272,18 @@ CUB_TEST("Vectorized block load with const and non-const datatype and different 
     d_input_ref, thrust::raw_pointer_cast(d_input.data()) + offset_for_elements);
 }
 
-template <typename T, int ItemsPerThread, int ThreadsInBlock, typename InputIteratorT>
+template <typename T, int ItemsPerThread, int ThreadsInBlock, cub::BlockLoadAlgorithm LoadAlgorithm, typename InputIteratorT>
 __global__ void vectorized_full_tile_load_kernel(InputIteratorT input, T* output)
 {
   T data[ItemsPerThread];
-  cub::BlockLoad<T, ThreadsInBlock, ItemsPerThread, cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE>().Load(input, data);
+  cub::BlockLoad<T, ThreadsInBlock, ItemsPerThread, LoadAlgorithm>().Load(input, data);
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    output[threadIdx.x * ItemsPerThread + i] = data[i];
+    output[get_output_idx<T, ItemsPerThread, ThreadsInBlock, LoadAlgorithm>(i, true)] = data[i];
   }
 }
 
-template <typename T, typename InputT, typename InputIteratorT>
+template <typename T, cub::BlockLoadAlgorithm LoadAlgorithm, typename InputT, typename InputIteratorT>
 void test_vectorized_full_tile_load(const c2h::device_vector<InputT>& d_input, InputIteratorT input)
 {
   constexpr int items_per_thread = 4;
@@ -251,7 +291,7 @@ void test_vectorized_full_tile_load(const c2h::device_vector<InputT>& d_input, I
   REQUIRE(d_input.size() == items_per_thread * threads_in_block);
 
   c2h::device_vector<T> d_output(d_input.size(), thrust::no_init);
-  vectorized_full_tile_load_kernel<T, items_per_thread, threads_in_block>
+  vectorized_full_tile_load_kernel<T, items_per_thread, threads_in_block, LoadAlgorithm>
     <<<1, threads_in_block>>>(input, thrust::raw_pointer_cast(d_output.data()));
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
@@ -259,16 +299,84 @@ void test_vectorized_full_tile_load(const c2h::device_vector<InputT>& d_input, I
   REQUIRE(expected == d_output);
 }
 
-CUB_TEST_CASE("Vectorized block load converts from iterators of a different value type", "[load][block]", CUB_SMALL)
+CUB_TEST("Vectorized block load converts from iterators of a different value type",
+         "[load][block]",
+         CUB_SMALL,
+         vectorized_load_algorithm)
 {
+  static constexpr cub::BlockLoadAlgorithm load_algorithm = c2h::get<0, TestType>::value;
+
   c2h::device_vector<int> d_input(256, thrust::no_init);
   c2h::gen(C2H_SEED(1), d_input);
   int* ptr = thrust::raw_pointer_cast(d_input.data());
 
-  test_vectorized_full_tile_load<long long>(d_input, ptr);
-  test_vectorized_full_tile_load<long long>(d_input, cuda::std::span<int>(ptr, d_input.size()).begin());
-  test_vectorized_full_tile_load<long long>(
+  test_vectorized_full_tile_load<long long, load_algorithm>(d_input, ptr);
+  test_vectorized_full_tile_load<long long, load_algorithm>(d_input, cuda::std::span<int>(ptr, d_input.size()).begin());
+  test_vectorized_full_tile_load<long long, load_algorithm>(
     d_input, cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_DEFAULT, int>(ptr));
-  test_vectorized_full_tile_load<int>(d_input, cuda::std::span<volatile int>(ptr, d_input.size()).begin());
+  test_vectorized_full_tile_load<int, load_algorithm>(
+    d_input, cuda::std::span<volatile int>(ptr, d_input.size()).begin());
+  test_vectorized_full_tile_load<int, load_algorithm>(d_input, static_cast<volatile int*>(ptr));
+}
+
+template <int ThreadsInBlock, int VecSize, cub::CacheLoadModifier Modifier, int ItemsPerThread, typename InputT, typename T>
+__global__ void load_direct_striped_vectorized_kernel(const InputT* input, T* output)
+{
+  T data[ItemsPerThread];
+  cub::LoadDirectStripedVectorized<ThreadsInBlock, VecSize, Modifier>(static_cast<int>(threadIdx.x), input, data);
+  for (int i = 0; i < ItemsPerThread; i++)
+  {
+    output[(threadIdx.x + ThreadsInBlock * (i / VecSize)) * VecSize + i % VecSize] = data[i];
+  }
+}
+
+template <int VecSize, cub::CacheLoadModifier Modifier = cub::CacheLoadModifier::LOAD_DEFAULT, typename T, typename InputT>
+void test_load_direct_striped_vectorized(const c2h::device_vector<T>& d_expected, const InputT* input)
+{
+  constexpr int items_per_thread = 8;
+  constexpr int threads_in_block = 64;
+  REQUIRE(d_expected.size() == items_per_thread * threads_in_block);
+
+  c2h::device_vector<T> d_output(d_expected.size(), thrust::no_init);
+  load_direct_striped_vectorized_kernel<threads_in_block, VecSize, Modifier, items_per_thread>
+    <<<1, threads_in_block>>>(input, thrust::raw_pointer_cast(d_output.data()));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE(d_expected == d_output);
+}
+
+// Offset 0 takes the vectorized loads. Offset 1 misaligns the vectors of multiple items, which are loaded item by item.
+CUB_TEST("LoadDirectStripedVectorized loads a striped arrangement of vectors of VecSize items",
+         "[load][block]",
+         CUB_SMALL,
+         types)
+{
+  using type              = c2h::get<0, TestType>;
+  constexpr int tile_size = 8 * 64;
+
+  const int offset = GENERATE(0, 1);
+  c2h::device_vector<type> d_expected(tile_size);
+  c2h::gen(C2H_SEED(1), d_expected);
+  c2h::device_vector<type> d_input(tile_size + offset);
+  thrust::copy_n(d_expected.begin(), tile_size, d_input.begin() + offset);
+  const type* input = thrust::raw_pointer_cast(d_input.data()) + offset;
+
+  test_load_direct_striped_vectorized<1>(d_expected, input);
+  test_load_direct_striped_vectorized<2>(d_expected, input);
+  test_load_direct_striped_vectorized<4>(d_expected, input);
+  test_load_direct_striped_vectorized<4, cub::CacheLoadModifier::LOAD_LDG>(d_expected, input);
+}
+
+CUB_TEST_CASE("LoadDirectStripedVectorized converts the items to the destination type", "[load][block]", CUB_SMALL)
+{
+  constexpr int tile_size = 8 * 64;
+
+  const int offset = GENERATE(0, 1);
+  c2h::device_vector<int> d_input(tile_size + offset);
+  c2h::gen(C2H_SEED(1), d_input);
+  const c2h::device_vector<long long> d_expected(d_input.begin() + offset, d_input.end());
+  const int* input = thrust::raw_pointer_cast(d_input.data()) + offset;
+
+  test_load_direct_striped_vectorized<4>(d_expected, input);
 }
 #endif
