@@ -37,7 +37,11 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 // clang complains about missing braces in CUmemLocation constructor but GCC complains if we add them
 
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
+
 ::cuda::std::size_t __physical_devices_count();
+
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
 //! @brief A non-owning representation of a CUDA device
 class device_ref

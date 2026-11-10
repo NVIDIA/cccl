@@ -95,7 +95,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES host_mdspan(_ElementType*, const _MappingType&)
 
 template <class _MappingType, class _AccessorType>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES
-host_mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
+host_mdspan(typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
   -> host_mdspan<typename _AccessorType::element_type,
                  typename _MappingType::extents_type,
                  typename _MappingType::layout_type,
@@ -158,7 +158,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES device_mdspan(_ElementType*, const _MappingType
 
 template <class _MappingType, class _AccessorType>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES
-device_mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
+device_mdspan(typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
   -> device_mdspan<typename _AccessorType::element_type,
                    typename _MappingType::extents_type,
                    typename _MappingType::layout_type,
@@ -221,7 +221,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES managed_mdspan(_ElementType*, const _MappingTyp
 
 template <class _MappingType, class _AccessorType>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES
-managed_mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
+managed_mdspan(typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
   -> managed_mdspan<typename _AccessorType::element_type,
                     typename _MappingType::extents_type,
                     typename _MappingType::layout_type,

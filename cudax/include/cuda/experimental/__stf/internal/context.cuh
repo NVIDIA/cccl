@@ -788,7 +788,7 @@ public:
   template <typename... Deps>
   auto launch(exec_place e_place, task_dep<Deps>... deps)
   {
-    return launch(par(par()), mv(e_place), (deps)...);
+    return launch(par(par()), mv(e_place), deps...);
   }
 
   // /* Default execution policy, on automatically selected device */
@@ -1012,7 +1012,7 @@ public:
   }
   const exec_place& current_exec_place() const
   {
-    _CCCL_ASSERT(current_affinity().size() > 0, "current_exec_place no affinity set");
+    _CCCL_ASSERT(!current_affinity().empty(), "current_exec_place no affinity set");
     return *(current_affinity()[0]);
   }
 
@@ -1085,7 +1085,6 @@ public:
     };
   }
 
-public:
   ::cuda::std::variant<stream_ctx, graph_ctx> payload;
 };
 

@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -88,6 +88,9 @@ public:
   using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible>;
 };
 
+// The default-pool cache now uses __simple_vector instead of unique_ptr.
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
+
 struct __default_device_memory_pool
 {
   _CCCL_HOST_API __default_device_memory_pool() noexcept
@@ -148,6 +151,8 @@ __make_default_device_memory_pools()
   static auto __pools_ = ::cuda::__make_default_device_memory_pools();
   return __pools_.data()[static_cast<::cuda::std::size_t>(__device.get())].__get(__device);
 }
+
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
 //! @rst
 //! .. _libcudacxx-memory-resource-async:
