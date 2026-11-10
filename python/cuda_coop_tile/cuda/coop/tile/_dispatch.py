@@ -363,6 +363,85 @@ def dispatch_reduce(
     )
 
 
+def dispatch_discontinuity(
+    *,
+    primitive: str,
+    numel: int,
+    dtype: datatype.DType,
+) -> CoopDispatchDecision:
+    backend, rationale = _default_backend_for_numel(numel)
+    backend, rationale = _apply_forced_backend(backend, rationale)
+    preferred_threads = _preferred_threads(backend, numel)
+    block_threads = _select_block_threads(
+        primitive=primitive,
+        numel=numel,
+        preferred=preferred_threads,
+    )
+    decision = CoopDispatchDecision(
+        primitive=primitive,
+        backend_family=backend,
+        block_threads=block_threads,
+        algorithm=None,
+        rationale=rationale,
+        tile_numel=numel,
+        dtype=dtype,
+    )
+    _trace_dispatch(decision)
+    return decision
+
+
+def dispatch_adjacent_difference_subtract_left(
+    *,
+    numel: int,
+    dtype: datatype.DType,
+) -> CoopDispatchDecision:
+    backend, rationale = _default_backend_for_numel(numel)
+    backend, rationale = _apply_forced_backend(backend, rationale)
+    preferred_threads = _preferred_threads(backend, numel)
+    block_threads = _select_block_threads(
+        primitive="adjacent_difference_subtract_left",
+        numel=numel,
+        preferred=preferred_threads,
+    )
+    decision = CoopDispatchDecision(
+        primitive="adjacent_difference_subtract_left",
+        backend_family=backend,
+        block_threads=block_threads,
+        algorithm=None,
+        rationale=rationale,
+        tile_numel=numel,
+        dtype=dtype,
+    )
+    _trace_dispatch(decision)
+    return decision
+
+
+def dispatch_adjacent_difference_subtract_right(
+    *,
+    numel: int,
+    dtype: datatype.DType,
+) -> CoopDispatchDecision:
+    backend, rationale = _default_backend_for_numel(numel)
+    backend, rationale = _apply_forced_backend(backend, rationale)
+    preferred_threads = _preferred_threads(backend, numel)
+    block_threads = _select_block_threads(
+        primitive="adjacent_difference_subtract_right",
+        numel=numel,
+        preferred=preferred_threads,
+    )
+    decision = CoopDispatchDecision(
+        primitive="adjacent_difference_subtract_right",
+        backend_family=backend,
+        block_threads=block_threads,
+        algorithm=None,
+        rationale=rationale,
+        tile_numel=numel,
+        dtype=dtype,
+    )
+    _trace_dispatch(decision)
+    return decision
+
+
 def _validate_exchange_topology(
     primitive: str, numel: int, block_threads: int
 ) -> None:
@@ -437,6 +516,60 @@ def dispatch_exchange_blocked_to_striped(
         backend_family=backend,
         block_threads=block_threads,
         algorithm=None,
+        rationale=rationale,
+        tile_numel=numel,
+        dtype=dtype,
+    )
+    _trace_dispatch(decision)
+    return decision
+
+
+def dispatch_shuffle(
+    *,
+    primitive: str,
+    numel: int,
+    dtype: datatype.DType,
+    mode: str,
+) -> CoopDispatchDecision:
+    """Choose a validation width for the requested Shuffle overload.
+
+    Offset and Rotate require one item per thread and therefore an extent
+    from the fixed thread candidates. Up and Down allow several items per
+    thread. The returned decision also records the mode for diagnostics.
+    """
+
+    backend, rationale = _default_backend_for_numel(numel)
+    backend, rationale = _apply_forced_backend(backend, rationale)
+
+    if mode in ("offset", "rotate"):
+        if not isinstance(numel, int):
+            raise TileTypeError(
+                f"coop.{primitive} expects an integer tile size, "
+                f"got {type(numel).__name__}"
+            )
+        if numel <= 0:
+            raise TileTypeError(
+                f"coop.{primitive} expects tile size > 0, got {numel}"
+            )
+        if numel % 32 or numel > 1024:
+            raise TileTypeError(
+                f"coop.{primitive} requires one item per thread; tile size "
+                "must be a multiple of 32 in [32, 1024]"
+            )
+        block_threads = numel
+    else:
+        preferred_threads = _preferred_threads(backend, numel)
+        block_threads = _select_block_threads(
+            primitive=primitive,
+            numel=numel,
+            preferred=preferred_threads,
+        )
+
+    decision = CoopDispatchDecision(
+        primitive=primitive,
+        backend_family=backend,
+        block_threads=block_threads,
+        algorithm=mode,
         rationale=rationale,
         tile_numel=numel,
         dtype=dtype,

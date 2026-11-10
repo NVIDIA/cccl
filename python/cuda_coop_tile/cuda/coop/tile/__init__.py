@@ -64,8 +64,17 @@ _API_SYMBOLS = (
     "inclusive_scan",
     "reduce",
     "sum",
+    "discontinuity_flag_heads",
+    "discontinuity_flag_tails",
+    "discontinuity_flag_heads_and_tails",
+    "adjacent_difference_subtract_left",
+    "adjacent_difference_subtract_right",
     "exchange_striped_to_blocked",
     "exchange_blocked_to_striped",
+    "shuffle_up",
+    "shuffle_down",
+    "shuffle_offset",
+    "shuffle_rotate",
 )
 
 # The primitive tuple is shared with lazy loading; every entry is a string.

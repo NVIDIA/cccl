@@ -8,9 +8,12 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "provider/families/adjacent_difference.h"
+#include "provider/families/discontinuity.h"
 #include "provider/families/exchange.h"
 #include "provider/families/reduce.h"
 #include "provider/families/scan.h"
+#include "provider/families/shuffle.h"
 
 namespace cuda::coop::tile::detail::provider
 {
@@ -18,7 +21,7 @@ namespace
 {
 static_assert(family_count == 21, "the provider contract must contain exactly 21 primitive families");
 
-constexpr std::array<FamilyDescriptor, 6> registry{{
+constexpr std::array<FamilyDescriptor, 10> registry{{
   {FamilyId::sum,
    "cuda_coop_tile_sum",
    "cuda_coop_tile_sum_impl",
@@ -49,6 +52,46 @@ constexpr std::array<FamilyDescriptor, 6> registry{{
    FamilyRankingPolicy::block_threads_centered_128,
    parse_scan_metadata,
    emit_scan_source},
+  {FamilyId::discontinuity_flags,
+   "cuda_coop_tile_discontinuity_flags",
+   "cuda_coop_tile_discontinuity_flags_impl",
+   "discontinuity",
+   "discontinuity",
+   "cub/block/block_discontinuity.cuh",
+   generated::schema_for("cuda_coop_tile_discontinuity_flags"),
+   FamilyRankingPolicy::block_threads_centered_128,
+   parse_discontinuity_metadata,
+   emit_discontinuity_source},
+  {FamilyId::discontinuity_heads_and_tails,
+   "cuda_coop_tile_discontinuity_heads_and_tails",
+   "cuda_coop_tile_discontinuity_heads_and_tails_impl",
+   "discontinuity",
+   "discontinuity",
+   "cub/block/block_discontinuity.cuh",
+   generated::schema_for("cuda_coop_tile_discontinuity_heads_and_tails"),
+   FamilyRankingPolicy::block_threads_centered_128,
+   parse_discontinuity_metadata,
+   emit_discontinuity_source},
+  {FamilyId::adjacent_difference,
+   "cuda_coop_tile_adjacent_difference",
+   "cuda_coop_tile_adjacent_difference_impl",
+   "adjacent-difference",
+   "adjacent_difference",
+   "cub/block/block_adjacent_difference.cuh",
+   generated::schema_for("cuda_coop_tile_adjacent_difference"),
+   FamilyRankingPolicy::block_threads_centered_128,
+   parse_adjacent_difference_metadata,
+   emit_adjacent_difference_source},
+  {FamilyId::shuffle,
+   "cuda_coop_tile_shuffle",
+   "cuda_coop_tile_shuffle_impl",
+   "shuffle",
+   "shuffle",
+   "cub/block/block_shuffle.cuh",
+   generated::schema_for("cuda_coop_tile_shuffle"),
+   FamilyRankingPolicy::block_threads_centered_128,
+   parse_shuffle_metadata,
+   emit_shuffle_source},
   {FamilyId::exchange,
    "cuda_coop_tile_exchange",
    "cuda_coop_tile_exchange_impl",
@@ -83,7 +126,7 @@ constexpr std::array<FamilyDescriptor, 6> registry{{
 
 constexpr bool registry_is_complete()
 {
-  if (registry.size() != 6)
+  if (registry.size() != 10)
   {
     return false;
   }

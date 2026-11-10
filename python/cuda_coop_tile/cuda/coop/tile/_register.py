@@ -13,6 +13,11 @@ from cuda.tile._ir.ops import tile_impl_registry
 
 from . import _api
 from ._lowerings import (
+    adjacent_difference_subtract_left_impl,
+    adjacent_difference_subtract_right_impl,
+    discontinuity_flag_heads_and_tails_impl,
+    discontinuity_flag_heads_impl,
+    discontinuity_flag_tails_impl,
     exchange_blocked_to_striped_impl,
     exchange_striped_to_blocked_impl,
     exclusive_scan_impl,
@@ -21,6 +26,10 @@ from ._lowerings import (
     inclusive_sum_impl,
     reduce_impl,
     scan_impl,
+    shuffle_down_impl,
+    shuffle_offset_impl,
+    shuffle_rotate_impl,
+    shuffle_up_impl,
     sum_impl,
 )
 
@@ -59,9 +68,31 @@ def register() -> None:
         _register_tilelib_impl(_api.reduce, reduce_impl)
         _register_tilelib_impl(_api.sum, sum_impl)
         _register_tilelib_impl(
+            _api.discontinuity_flag_heads, discontinuity_flag_heads_impl
+        )
+        _register_tilelib_impl(
+            _api.discontinuity_flag_tails, discontinuity_flag_tails_impl
+        )
+        _register_tilelib_impl(
+            _api.discontinuity_flag_heads_and_tails,
+            discontinuity_flag_heads_and_tails_impl,
+        )
+        _register_tilelib_impl(
+            _api.adjacent_difference_subtract_left,
+            adjacent_difference_subtract_left_impl,
+        )
+        _register_tilelib_impl(
+            _api.adjacent_difference_subtract_right,
+            adjacent_difference_subtract_right_impl,
+        )
+        _register_tilelib_impl(
             _api.exchange_striped_to_blocked, exchange_striped_to_blocked_impl
         )
         _register_tilelib_impl(
             _api.exchange_blocked_to_striped, exchange_blocked_to_striped_impl
         )
+        _register_tilelib_impl(_api.shuffle_up, shuffle_up_impl)
+        _register_tilelib_impl(_api.shuffle_down, shuffle_down_impl)
+        _register_tilelib_impl(_api.shuffle_offset, shuffle_offset_impl)
+        _register_tilelib_impl(_api.shuffle_rotate, shuffle_rotate_impl)
         _registered = True
