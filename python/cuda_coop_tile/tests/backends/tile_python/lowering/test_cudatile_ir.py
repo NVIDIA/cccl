@@ -540,6 +540,323 @@ def test_topk_keys_static_options_and_k_operands_reach_foreign_call(
 
 
 @pytest.mark.link
+def test_non_sort_static_options_reach_foreign_call_const_args(monkeypatch):
+    tile_library_path = _configure_tile_library(monkeypatch)
+    _configure_imports(monkeypatch)
+
+    global ct, coop
+    ct = importlib.import_module("cuda.tile")
+    coop = importlib.import_module("cuda.coop.tile")
+    from cuda.tile._cext import default_tile_context
+
+    @ct.kernel
+    def reduce_scan_kernel(
+        inp: ct.Array, reduce_out: ct.Array, scan_out: ct.Array
+    ):
+        values = ct.load(inp, (0,), shape=(128,))
+        reduced = coop.reduce(
+            values, binary_op="max", algorithm="raking", broadcast=True
+        )
+        scanned = coop.exclusive_scan(
+            values,
+            scan_op="*",
+            initial_value=1,
+            algorithm="raking",
+        )
+        ct.store(reduce_out, (0,), reduced)
+        ct.store(scan_out, (0,), scanned)
+
+    reduce_scan_ir = _get_final_ir(
+        reduce_scan_kernel._pyfunc,
+        (
+            _FakeCudaArray((128,)),
+            _FakeCudaArray((128,)),
+            _FakeCudaArray((128,)),
+        ),
+        default_tile_context,
+    )
+    reduce_scan_ops = _preview_foreign_calls(reduce_scan_ir)
+    assert len(reduce_scan_ops) == 2
+
+    reduce_op = reduce_scan_ops[0]
+    assert reduce_op.tilelibs[0][0] == tile_library_path
+    assert reduce_op.symbol_name == "cuda_coop_tile_reduce_batched"
+    reduce_args = _constant_args(
+        reduce_op,
+        (
+            "N",
+            "T",
+            "Algorithm",
+            "BinaryOp",
+            "DTypeToken",
+            "Batches",
+        ),
+    )
+    assert reduce_args["Algorithm"] == "raking"
+    assert reduce_args["BinaryOp"] == "max"
+
+    scan_op = reduce_scan_ops[1]
+    assert scan_op.tilelibs[0][0] == tile_library_path
+    assert scan_op.symbol_name == "cuda_coop_tile_scan"
+    scan_args = _constant_args(
+        scan_op,
+        (
+            "N",
+            "T",
+            "Mode",
+            "Algorithm",
+            "ScanOp",
+            "InitialPresent",
+            "PrefixPresent",
+            "DTypeToken",
+        ),
+    )
+    assert scan_args["Mode"] == "exclusive"
+    assert scan_args["Algorithm"] == "raking"
+    assert scan_args["ScanOp"] == "mul"
+    assert scan_args["InitialPresent"] == 1
+    assert scan_args["PrefixPresent"] == 0
+    assert scan_args["DTypeToken"] == "i32"
+    assert len(scan_op.inputs) == 4
+    assert scan_op.inputs[1].get_type().shape == ()
+    assert scan_op.inputs[2].get_type().shape == ()
+    assert scan_op.inputs[1].get_constant() == 1
+    assert scan_op.inputs[2].get_constant() == 0
+
+    @ct.kernel
+    def default_scan_kernel(inp: ct.Array, out: ct.Array):
+        values = ct.load(inp, (0,), shape=(128,))
+        scanned = coop.exclusive_scan(values, scan_op="sum")
+        ct.store(out, (0,), scanned)
+
+    default_scan_ir = _get_final_ir(
+        default_scan_kernel._pyfunc,
+        (
+            _FakeCudaArray((128,)),
+            _FakeCudaArray((128,)),
+        ),
+        default_tile_context,
+    )
+    default_scan_ops = _preview_foreign_calls(default_scan_ir)
+    assert len(default_scan_ops) == 1
+    default_scan_args = _constant_args(
+        default_scan_ops[0],
+        (
+            "N",
+            "T",
+            "Mode",
+            "Algorithm",
+            "ScanOp",
+            "InitialPresent",
+            "PrefixPresent",
+            "DTypeToken",
+        ),
+    )
+    assert default_scan_args["Mode"] == "exclusive"
+    assert default_scan_args["ScanOp"] == "sum"
+    assert default_scan_args["InitialPresent"] == 0
+    assert default_scan_args["PrefixPresent"] == 0
+    assert default_scan_ops[0].inputs[1].get_type().shape == ()
+    assert default_scan_ops[0].inputs[2].get_type().shape == ()
+
+    @ct.kernel
+    def prefix_scan_kernel(inp: ct.Array, out: ct.Array):
+        values = ct.load(inp, (0,), shape=(128,))
+        scanned = coop.inclusive_scan(values, scan_op="max", prefix_value=7)
+        ct.store(out, (0,), scanned)
+
+    prefix_scan_ir = _get_final_ir(
+        prefix_scan_kernel._pyfunc,
+        (
+            _FakeCudaArray((128,)),
+            _FakeCudaArray((128,)),
+        ),
+        default_tile_context,
+    )
+    prefix_scan_ops = _preview_foreign_calls(prefix_scan_ir)
+    assert len(prefix_scan_ops) == 1
+    prefix_scan_op = prefix_scan_ops[0]
+    assert prefix_scan_op.symbol_name == "cuda_coop_tile_scan"
+    prefix_scan_args = _constant_args(prefix_scan_op, tuple(scan_args))
+    assert (
+        prefix_scan_args["InitialPresent"],
+        prefix_scan_args["PrefixPresent"],
+    ) == (
+        0,
+        1,
+    )
+    assert prefix_scan_op.inputs[1].get_type().shape == ()
+    assert prefix_scan_op.inputs[2].get_type().shape == ()
+    assert prefix_scan_op.inputs[1].get_constant() == 0
+    assert prefix_scan_op.inputs[2].get_constant() == 7
+
+    @ct.kernel
+    def mixed_scan_kernel(
+        small_in: ct.Array,
+        large_in: ct.Array,
+        small_out: ct.Array,
+        large_out: ct.Array,
+    ):
+        small = ct.load(small_in, (0,), shape=(128,))
+        large = ct.load(large_in, (0,), shape=(512,))
+        ct.store(small_out, (0,), coop.exclusive_sum(small))
+        ct.store(large_out, (0,), coop.inclusive_sum(large))
+
+    mixed_scan_ir = _get_final_ir(
+        mixed_scan_kernel._pyfunc,
+        (
+            _FakeCudaArray((128,), typestr="<i4"),
+            _FakeCudaArray((512,), typestr="<f4"),
+            _FakeCudaArray((128,), typestr="<i4"),
+            _FakeCudaArray((512,), typestr="<f4"),
+        ),
+        default_tile_context,
+    )
+    mixed_scan_ops = _preview_foreign_calls(mixed_scan_ir)
+    assert len(mixed_scan_ops) == 2
+    assert {op.symbol_name for op in mixed_scan_ops} == {"cuda_coop_tile_scan"}
+
+    @ct.kernel
+    def histogram_kernel(inp: ct.Array, out: ct.Array):
+        values = ct.load(inp, (0,), shape=(128,))
+        counts = coop.histogram(values, bins=128)
+        ct.store(out, (0,), counts)
+
+    histogram_ir = _get_final_ir(
+        histogram_kernel._pyfunc,
+        (
+            _FakeCudaArray((128,), typestr="|u1"),
+            _FakeCudaArray((128,)),
+        ),
+        default_tile_context,
+    )
+    histogram_ops = _preview_foreign_calls(histogram_ir)
+    assert len(histogram_ops) == 1
+    assert histogram_ops[0].tilelibs[0][0] == tile_library_path
+    assert histogram_ops[0].symbol_name == "cuda_coop_tile_histogram"
+    assert histogram_ops[0].constant_params[1] == 128
+
+
+@pytest.mark.link
+def test_tilelib_lowerings_require_bytecode_13_5(monkeypatch):
+    _configure_tile_library(monkeypatch)
+    _configure_imports(monkeypatch)
+
+    global ct, coop
+    ct = importlib.import_module("cuda.tile")
+    coop = importlib.import_module("cuda.coop.tile")
+    from cuda.tile._bytecode.version import BytecodeVersion
+    from cuda.tile._cext import default_tile_context
+    from cuda.tile._exception import TileUnsupportedFeatureError
+
+    @ct.kernel
+    def sum_kernel(inp: ct.Array, out: ct.Array):
+        values = ct.load(inp, (0,), shape=(128,))
+        ct.store(out, (0,), coop.exclusive_sum(values))
+
+    args = (_FakeCudaArray((128,)), _FakeCudaArray((128,)))
+    with pytest.raises(
+        TileUnsupportedFeatureError,
+        match=r"exclusive_sum requires tileiras 13\.5 or later",
+    ):
+        _get_compile_result(
+            sum_kernel._pyfunc,
+            args,
+            default_tile_context,
+            bytecode_version=BytecodeVersion.V_13_4,
+            return_bytecode=True,
+            sm_arch="sm_120",
+        )
+
+    result = _get_compile_result(
+        sum_kernel._pyfunc,
+        args,
+        default_tile_context,
+        bytecode_version=BytecodeVersion.V_13_5,
+        return_bytecode=True,
+        sm_arch="sm_120",
+    )
+    assert result.bytecode
+
+
+@pytest.mark.link
+def test_unary_mode_static_options_reach_foreign_call_const_args(monkeypatch):
+    tile_library_path = _configure_tile_library(monkeypatch)
+    _configure_imports(monkeypatch)
+
+    global ct, coop
+    ct = importlib.import_module("cuda.tile")
+    coop = importlib.import_module("cuda.coop.tile")
+    from cuda.tile._cext import default_tile_context
+
+    @ct.kernel
+    def unary_kernel(
+        inp: ct.Array,
+        heads_out: ct.Array,
+        diff_out: ct.Array,
+        exchange_out: ct.Array,
+        exchange_original_out: ct.Array,
+        shuffle_out: ct.Array,
+    ):
+        values = ct.load(inp, (0,), shape=(128,))
+        heads, _ = coop.discontinuity_flag_heads_and_tails(values)
+        diff = coop.adjacent_difference_subtract_right(values)
+        exchanged = coop.exchange_striped_to_blocked(values, block_threads=128)
+        rotated = coop.shuffle_rotate(values, distance=3)
+        ct.store(heads_out, (0,), heads)
+        ct.store(diff_out, (0,), diff)
+        ct.store(exchange_out, (0,), exchanged)
+        ct.store(exchange_original_out, (0,), values)
+        ct.store(shuffle_out, (0,), rotated)
+
+    unary_ir = _get_final_ir(
+        unary_kernel._pyfunc,
+        (
+            _FakeCudaArray((128,)),
+            _FakeCudaArray((128,)),
+            _FakeCudaArray((128,)),
+            _FakeCudaArray((128,)),
+            _FakeCudaArray((128,)),
+            _FakeCudaArray((128,)),
+        ),
+        default_tile_context,
+    )
+    foreign_ops = _preview_foreign_calls(unary_ir)
+    assert len(foreign_ops) == 4
+    assert {op.tilelibs[0][0] for op in foreign_ops} == {tile_library_path}
+
+    assert (
+        foreign_ops[0].symbol_name
+        == "cuda_coop_tile_discontinuity_heads_and_tails"
+    )
+    unary_names = ("N", "T", "Mode", "DTypeToken")
+    assert (
+        _constant_args(foreign_ops[0], unary_names)["Mode"] == "heads_and_tails"
+    )
+
+    assert foreign_ops[1].symbol_name == "cuda_coop_tile_adjacent_difference"
+    assert (
+        _constant_args(foreign_ops[1], unary_names)["Mode"] == "subtract_right"
+    )
+
+    assert foreign_ops[2].symbol_name == "cuda_coop_tile_exchange"
+    assert len(foreign_ops[2].inputs) == 1
+    assert len(foreign_ops[2].result_vars) == 2
+    exchange_args = _constant_args(
+        foreign_ops[2], ("N", "T", "BlockThreads", "Mode", "DTypeToken")
+    )
+    assert exchange_args["BlockThreads"] == 128
+    assert (exchange_args["Mode"], exchange_args["DTypeToken"]) == (
+        "blocked_to_striped",
+        "i32",
+    )
+
+    assert foreign_ops[3].symbol_name == "cuda_coop_tile_shuffle"
+    assert _constant_args(foreign_ops[3], unary_names)["Mode"] == "rotate"
+    assert foreign_ops[3].inputs[1].get_type().shape == ()
+
+
+@pytest.mark.link
 @pytest.mark.parametrize("second_width", [128, 256])
 @pytest.mark.parametrize("reverse", [False, True])
 def test_registered_exchange_inverse_fold_requires_same_width(

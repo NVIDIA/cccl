@@ -4,11 +4,13 @@
 
 foreach (
   _test
+  api_sm120
   scan_reduce
   scan_prefix
   reduce_axes
   radix_sort_sm120
   radix_rank_sm120
+  frontend_abi_sm120
   exchange_smoke
   histogram_smoke
   histogram_256_smoke
