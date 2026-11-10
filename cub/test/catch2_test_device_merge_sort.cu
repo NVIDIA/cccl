@@ -520,6 +520,12 @@ struct not_default_constructible_t
   }
 
   __host__ __device__ friend bool
+  operator!=(const not_default_constructible_t& lhs, const not_default_constructible_t& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+  __host__ __device__ friend bool
   operator<(const not_default_constructible_t& lhs, const not_default_constructible_t& rhs)
   {
     return lhs.value < rhs.value;

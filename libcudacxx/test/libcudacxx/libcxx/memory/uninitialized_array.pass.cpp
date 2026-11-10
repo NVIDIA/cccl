@@ -9,8 +9,8 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/__memory/uninitialized_array.h>
-#include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/cassert>
+#include <cuda/std/memory>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
@@ -71,7 +71,7 @@ TEST_FUNC void test_alias()
   auto& a = arr.alias();
   for (int i = 0; i < 4; ++i)
   {
-    cuda::std::construct_at(&a[i], i + 1);
+    ::new (static_cast<void*>(&a[i])) not_default_constructible_t(i + 1);
   }
   const arr_t& carr = arr;
   for (int i = 0; i < 4; ++i)
