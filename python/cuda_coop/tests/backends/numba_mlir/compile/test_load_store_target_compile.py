@@ -87,10 +87,13 @@ def _compile_kernel(cuda, items_per_thread, **jit_options):
     @cuda.jit(**jit_options)
     def kernel(source, output, items_per_thread):
         block = coop.this_block()
-        payload = coop.ThreadData(items_per_thread)
         storage = coop.TempStorage(sharing="shared", auto_sync=True)
-        coop.load(
-            block, source, payload, algorithm="transpose", temp_storage=storage
+        payload = coop.load(
+            block,
+            source,
+            items_per_thread=items_per_thread,
+            algorithm="transpose",
+            temp_storage=storage,
         )
         coop.store(
             block, output, payload, algorithm="transpose", temp_storage=storage

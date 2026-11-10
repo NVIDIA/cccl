@@ -132,3 +132,53 @@ coop.BlockLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018
 coop.BlockStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018
 coop.WarpLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018
 coop.WarpStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018
+
+common.load(common_block, object())  # expected-error: [call-overload]
+common.load(  # expected-error: [call-overload]
+    common_block, object(), common_values, items_per_thread=4
+)
+common.load(  # expected-error: [call-overload]
+    common_block, object(), items_per_thread=1.5
+)
+common.load(  # expected-error: [call-overload]
+    common.this_warp(), object(), items_per_thread=4, algorithm="warp_transpose"
+)
+common.load(
+    common.this_warp(),  # expected-error: [arg-type]
+    object(),
+    items_per_thread=4,
+    temp_storage=common.TempStorage(),
+)
+common.load(  # expected-error: [call-overload]
+    common_block, object(), items_per_thread=4, oob_default=0
+)
+common.load(  # expected-error: [call-overload]
+    common_block, object(), output=common_values
+)
+coop.load(qualified_block, object())  # expected-error: [call-overload]
+coop.load(  # expected-error: [call-overload]
+    qualified_block, object(), values, items_per_thread=4
+)
+coop.load(  # expected-error: [call-overload]
+    qualified_block, object(), items_per_thread=4, oob_default=0
+)
+common.load(common_block, object(), 4)  # expected-error: [call-overload]
+coop.load(qualified_block, object(), 4)  # expected-error: [call-overload]
+common.load(  # expected-error: [call-overload]
+    common_block, object(), common_values, alignment=64
+)
+coop.load(  # expected-error: [call-overload]
+    qualified_block, object(), values, alignment=64
+)
+common.load(  # expected-error: [call-overload]
+    common_block, object(), alignment=64
+)
+coop.load(  # expected-error: [call-overload]
+    qualified_block, object(), alignment=64
+)
+common.load(  # expected-error: [call-overload]
+    common_block, object(), items_per_thread=4, alignment=1.5
+)
+coop.load(  # expected-error: [call-overload]
+    qualified_block, object(), items_per_thread=4, alignment=1.5
+)

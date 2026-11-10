@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import overload
+from typing import Any, overload
 
 from typing_extensions import TypeVar
 
@@ -15,6 +15,7 @@ from cuda.coop._typing import (
     ThreadDataLike,
     ValidItems,
     WarpLoadStoreAlgorithm,
+    WritableArrayLike,
 )
 
 from .thread_group import BlockGroup, WarpGroup
@@ -25,9 +26,147 @@ _CommonNumericT = TypeVar("_CommonNumericT", bound=CommonNumericScalar)
 def load(
     group: BlockGroup,
     source: object,
+    output: None = None,
+    /,
+    *,
+    items_per_thread: int,
+    alignment: int | None = None,
+    algorithm: BlockLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
+    oob_default: None = None,
+    offset: IntegerValue | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> ThreadDataLike[Any]:
+    """Return a fresh per-thread payload with the source dtype."""
+
+@overload
+def load(
+    group: BlockGroup,
+    source: object,
+    output: None = None,
+    /,
+    *,
+    items_per_thread: int,
+    alignment: int | None = None,
+    algorithm: BlockLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems,
+    oob_default: CommonNumericScalar | float,
+    offset: IntegerValue | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> ThreadDataLike[Any]:
+    """Return a fresh per-thread payload with the source dtype."""
+
+@overload
+def load(
+    group: WarpGroup,
+    source: object,
+    output: None = None,
+    /,
+    *,
+    items_per_thread: int,
+    alignment: int | None = None,
+    algorithm: WarpLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
+    oob_default: None = None,
+    offset: IntegerValue | None = None,
+    temp_storage: None = None,
+) -> ThreadDataLike[Any]:
+    """Return a fresh per-thread payload with the source dtype."""
+
+@overload
+def load(
+    group: WarpGroup,
+    source: object,
+    output: None = None,
+    /,
+    *,
+    items_per_thread: int,
+    alignment: int | None = None,
+    algorithm: WarpLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems,
+    oob_default: CommonNumericScalar | float,
+    offset: IntegerValue | None = None,
+    temp_storage: None = None,
+) -> ThreadDataLike[Any]:
+    """Return a fresh per-thread payload with the source dtype."""
+
+@overload
+def load(
+    group: BlockGroup,
+    source: object,
+    output: WritableArrayLike,
+    /,
+    *,
+    items_per_thread: int,
+    alignment: None = None,
+    algorithm: BlockLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
+    oob_default: None = None,
+    offset: IntegerValue | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> None:
+    """Fill disjoint per-thread rows of a native shared-memory array."""
+
+@overload
+def load(
+    group: BlockGroup,
+    source: object,
+    output: WritableArrayLike,
+    /,
+    *,
+    items_per_thread: int,
+    alignment: None = None,
+    algorithm: BlockLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems,
+    oob_default: CommonNumericScalar | float,
+    offset: IntegerValue | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> None:
+    """Fill disjoint per-thread rows of a native shared-memory array."""
+
+@overload
+def load(
+    group: WarpGroup,
+    source: object,
+    output: WritableArrayLike,
+    /,
+    *,
+    items_per_thread: int,
+    alignment: None = None,
+    algorithm: WarpLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
+    oob_default: None = None,
+    offset: IntegerValue | None = None,
+    temp_storage: None = None,
+) -> None:
+    """Fill disjoint per-thread rows of a native shared-memory array."""
+
+@overload
+def load(
+    group: WarpGroup,
+    source: object,
+    output: WritableArrayLike,
+    /,
+    *,
+    items_per_thread: int,
+    alignment: None = None,
+    algorithm: WarpLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems,
+    oob_default: CommonNumericScalar | float,
+    offset: IntegerValue | None = None,
+    temp_storage: None = None,
+) -> None:
+    """Fill disjoint per-thread rows of a native shared-memory array."""
+
+@overload
+def load(
+    group: BlockGroup,
+    source: object,
     output: ThreadDataLike[_CommonNumericT],
     /,
     *,
+    items_per_thread: None = None,
+    alignment: None = None,
     algorithm: BlockLoadStoreAlgorithm = "direct",
     valid_items: ValidItems | None = None,
     oob_default: None = None,
@@ -43,6 +182,8 @@ def load(
     output: ThreadDataLike[_CommonNumericT],
     /,
     *,
+    items_per_thread: None = None,
+    alignment: None = None,
     algorithm: BlockLoadStoreAlgorithm = "direct",
     valid_items: ValidItems,
     oob_default: _CommonNumericT | float,
@@ -58,6 +199,8 @@ def load(
     output: ThreadDataLike[_CommonNumericT],
     /,
     *,
+    items_per_thread: None = None,
+    alignment: None = None,
     algorithm: WarpLoadStoreAlgorithm = "direct",
     valid_items: ValidItems | None = None,
     oob_default: None = None,
@@ -73,6 +216,8 @@ def load(
     output: ThreadDataLike[_CommonNumericT],
     /,
     *,
+    items_per_thread: None = None,
+    alignment: None = None,
     algorithm: WarpLoadStoreAlgorithm = "direct",
     valid_items: ValidItems,
     oob_default: _CommonNumericT | float,

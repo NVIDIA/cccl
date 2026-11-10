@@ -116,14 +116,10 @@ def _load_kernel(algorithm: str, qualified: bool, numba_dtype=types.int32):
             items_per_thread,
         ):
             thread = cuda.threadIdx.x
-            payload = qualified_coop.ThreadData(
-                items_per_thread,
-                dtype=numba_dtype,
-            )
-            qualified_coop.load(
+            payload = qualified_coop.load(
                 qualified_coop.this_warp(),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm=selector,
                 valid_items=valid_items,
                 oob_default=oob_default,
@@ -144,14 +140,10 @@ def _load_kernel(algorithm: str, qualified: bool, numba_dtype=types.int32):
             items_per_thread,
         ):
             thread = cuda.threadIdx.x
-            payload = root_coop.ThreadData(
-                items_per_thread,
-                dtype=numba_dtype,
-            )
-            root_coop.load(
+            payload = root_coop.load(
                 root_coop.this_warp(),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm=algorithm,
                 valid_items=valid_items,
                 oob_default=oob_default,
@@ -237,13 +229,10 @@ def _direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
             load_source, store_source, observed, destination, items_per_thread
         ):
             thread = cuda.threadIdx.x
-            load_payload = qualified_coop.ThreadData(
-                items_per_thread, dtype=numba_dtype
-            )
-            qualified_coop.load(
+            load_payload = qualified_coop.load(
                 qualified_coop.this_warp(),
                 load_source,
-                load_payload,
+                items_per_thread=items_per_thread,
                 algorithm="direct",
             )
             payload = qualified_coop.ThreadData(
@@ -268,13 +257,10 @@ def _direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
             load_source, store_source, observed, destination, items_per_thread
         ):
             thread = cuda.threadIdx.x
-            load_payload = root_coop.ThreadData(
-                items_per_thread, dtype=numba_dtype
-            )
-            root_coop.load(
+            load_payload = root_coop.load(
                 root_coop.this_warp(),
                 load_source,
-                load_payload,
+                items_per_thread=items_per_thread,
                 algorithm="direct",
             )
             payload = root_coop.ThreadData(
@@ -574,14 +560,10 @@ def _logical_load_store_kernel(algorithm: str, qualified: bool):
             group_index = thread // _LOGICAL_WARP_THREADS
             offset = offset_by_group[group_index]
             group = qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
-            payload = qualified_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            qualified_coop.load(
+            payload = qualified_coop.load(
                 group,
                 load_source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm=load_algorithm,
                 valid_items=valid_by_group[group_index],
                 oob_default=types.int32(-127),
@@ -616,14 +598,10 @@ def _logical_load_store_kernel(algorithm: str, qualified: bool):
             group_index = thread // _LOGICAL_WARP_THREADS
             offset = offset_by_group[group_index]
             group = root_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
-            payload = root_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            root_coop.load(
+            payload = root_coop.load(
                 group,
                 load_source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm=algorithm,
                 valid_items=valid_by_group[group_index],
                 oob_default=types.int32(-127),
@@ -725,14 +703,10 @@ def _logical_partial_transpose_load_kernel(qualified: bool):
         def kernel(source, observed, valid_by_group, items_per_thread):
             thread = cuda.threadIdx.x
             group_index = thread // _LOGICAL_WARP_THREADS
-            payload = qualified_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            qualified_coop.load(
+            payload = qualified_coop.load(
                 qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm="transpose",
                 valid_items=valid_by_group[group_index],
             )
@@ -747,14 +721,10 @@ def _logical_partial_transpose_load_kernel(qualified: bool):
         def kernel(source, observed, valid_by_group, items_per_thread):
             thread = cuda.threadIdx.x
             group_index = thread // _LOGICAL_WARP_THREADS
-            payload = root_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            root_coop.load(
+            payload = root_coop.load(
                 root_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm="transpose",
                 valid_items=valid_by_group[group_index],
             )
@@ -812,14 +782,10 @@ def _logical_width_direct_kernel(width: int, qualified: bool):
         @cuda.jit
         def kernel(source, observed, items_per_thread):
             thread = cuda.threadIdx.x
-            payload = qualified_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            qualified_coop.load(
+            payload = qualified_coop.load(
                 qualified_coop.this_warp().group_by(width),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm="direct",
             )
             for item in range(items_per_thread):
@@ -830,14 +796,10 @@ def _logical_width_direct_kernel(width: int, qualified: bool):
         @cuda.jit
         def kernel(source, observed, items_per_thread):
             thread = cuda.threadIdx.x
-            payload = root_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            root_coop.load(
+            payload = root_coop.load(
                 root_coop.this_warp().group_by(width),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm="direct",
             )
             for item in range(items_per_thread):
@@ -874,13 +836,10 @@ def _logical_direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
         ):
             thread = cuda.threadIdx.x
             group = qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
-            load_payload = qualified_coop.ThreadData(
-                items_per_thread, dtype=numba_dtype
-            )
-            qualified_coop.load(
+            load_payload = qualified_coop.load(
                 group,
                 load_source,
-                load_payload,
+                items_per_thread=items_per_thread,
                 algorithm="direct",
             )
             payload = qualified_coop.ThreadData(
@@ -906,13 +865,10 @@ def _logical_direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
         ):
             thread = cuda.threadIdx.x
             group = root_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
-            load_payload = root_coop.ThreadData(
-                items_per_thread, dtype=numba_dtype
-            )
-            root_coop.load(
+            load_payload = root_coop.load(
                 group,
                 load_source,
-                load_payload,
+                items_per_thread=items_per_thread,
                 algorithm="direct",
             )
             payload = root_coop.ThreadData(
@@ -979,14 +935,10 @@ def _partial_load_kernel(algorithm: str, qualified: bool):
         @cuda.jit
         def kernel(source, observed, valid_items, items_per_thread):
             thread = cuda.threadIdx.x
-            payload = qualified_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            qualified_coop.load(
+            payload = qualified_coop.load(
                 qualified_coop.this_warp(),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm=selector,
                 valid_items=valid_items,
             )
@@ -1005,14 +957,10 @@ def _partial_load_kernel(algorithm: str, qualified: bool):
         @cuda.jit
         def kernel(source, observed, valid_items, items_per_thread):
             thread = cuda.threadIdx.x
-            payload = root_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            root_coop.load(
+            payload = root_coop.load(
                 root_coop.this_warp(),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm=algorithm,
                 valid_items=valid_items,
             )
@@ -1069,14 +1017,10 @@ def _per_warp_valid_items_kernel(qualified: bool):
         def kernel(source, observed, valid_by_warp, items_per_thread):
             thread = cuda.threadIdx.x
             warp = thread // _WARP_THREADS
-            payload = qualified_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            qualified_coop.load(
+            payload = qualified_coop.load(
                 qualified_coop.this_warp(),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm="direct",
                 valid_items=valid_by_warp[warp],
                 oob_default=types.int32(-83),
@@ -1090,14 +1034,10 @@ def _per_warp_valid_items_kernel(qualified: bool):
         def kernel(source, observed, valid_by_warp, items_per_thread):
             thread = cuda.threadIdx.x
             warp = thread // _WARP_THREADS
-            payload = root_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            root_coop.load(
+            payload = root_coop.load(
                 root_coop.this_warp(),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm="direct",
                 valid_items=valid_by_warp[warp],
                 oob_default=types.int32(-83),
@@ -1143,14 +1083,10 @@ def _multidimensional_load_kernel(qualified: bool):
             thread = cuda.threadIdx.x + cuda.blockDim.x * (
                 cuda.threadIdx.y + cuda.blockDim.y * cuda.threadIdx.z
             )
-            payload = qualified_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            qualified_coop.load(
+            payload = qualified_coop.load(
                 qualified_coop.this_warp(),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm="direct",
             )
             for item in range(items_per_thread):
@@ -1163,14 +1099,10 @@ def _multidimensional_load_kernel(qualified: bool):
             thread = cuda.threadIdx.x + cuda.blockDim.x * (
                 cuda.threadIdx.y + cuda.blockDim.y * cuda.threadIdx.z
             )
-            payload = root_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            root_coop.load(
+            payload = root_coop.load(
                 root_coop.this_warp(),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm="direct",
             )
             for item in range(items_per_thread):
@@ -1210,14 +1142,10 @@ def _logical_multidimensional_load_kernel(qualified: bool):
             thread = cuda.threadIdx.x + cuda.blockDim.x * (
                 cuda.threadIdx.y + cuda.blockDim.y * cuda.threadIdx.z
             )
-            payload = qualified_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            qualified_coop.load(
+            payload = qualified_coop.load(
                 qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm="direct",
             )
             for item in range(items_per_thread):
@@ -1230,14 +1158,10 @@ def _logical_multidimensional_load_kernel(qualified: bool):
             thread = cuda.threadIdx.x + cuda.blockDim.x * (
                 cuda.threadIdx.y + cuda.blockDim.y * cuda.threadIdx.z
             )
-            payload = root_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            root_coop.load(
+            payload = root_coop.load(
                 root_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm="direct",
             )
             for item in range(items_per_thread):
@@ -1270,14 +1194,10 @@ def _static_control_load_kernel(qualified: bool):
         @cuda.jit
         def kernel(source, observed, items_per_thread):
             thread = cuda.threadIdx.x
-            payload = qualified_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            qualified_coop.load(
+            payload = qualified_coop.load(
                 qualified_coop.this_warp(),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm="direct",
                 valid_items=(_WARP_THREADS * items_per_thread) - 7,
                 oob_default=-113,
@@ -1291,14 +1211,10 @@ def _static_control_load_kernel(qualified: bool):
         @cuda.jit
         def kernel(source, observed, items_per_thread):
             thread = cuda.threadIdx.x
-            payload = root_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            root_coop.load(
+            payload = root_coop.load(
                 root_coop.this_warp(),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm="direct",
                 valid_items=(_WARP_THREADS * items_per_thread) - 7,
                 oob_default=-113,
@@ -1459,14 +1375,10 @@ def _grid_stride_transpose_kernel(qualified: bool):
             valid_items = min(
                 max(remaining, 0), (_WARP_THREADS * items_per_thread)
             )
-            payload = qualified_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            qualified_coop.load(
+            payload = qualified_coop.load(
                 qualified_coop.this_warp(),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm="transpose",
                 valid_items=valid_items,
                 offset=block_offset,
@@ -1495,14 +1407,10 @@ def _grid_stride_transpose_kernel(qualified: bool):
             valid_items = min(
                 max(remaining, 0), (_WARP_THREADS * items_per_thread)
             )
-            payload = root_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            root_coop.load(
+            payload = root_coop.load(
                 root_coop.this_warp(),
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm="transpose",
                 valid_items=valid_items,
                 offset=block_offset,
@@ -1571,14 +1479,10 @@ def _logical_grid_stride_transpose_kernel(qualified: bool):
                 max(remaining, 0), (_LOGICAL_WARP_THREADS * items_per_thread)
             )
             group = qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
-            payload = qualified_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            qualified_coop.load(
+            payload = qualified_coop.load(
                 group,
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm="transpose",
                 valid_items=valid_items,
                 offset=block_offset,
@@ -1608,14 +1512,10 @@ def _logical_grid_stride_transpose_kernel(qualified: bool):
                 max(remaining, 0), (_LOGICAL_WARP_THREADS * items_per_thread)
             )
             group = root_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
-            payload = root_coop.ThreadData(
-                items_per_thread,
-                dtype=types.int32,
-            )
-            root_coop.load(
+            payload = root_coop.load(
                 group,
                 source,
-                payload,
+                items_per_thread=items_per_thread,
                 algorithm="transpose",
                 valid_items=valid_items,
                 offset=block_offset,
