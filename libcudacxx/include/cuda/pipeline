@@ -104,8 +104,6 @@ template <thread_scope _Scope>
 class pipeline
 {
 public:
-  // The moved-from pipeline must not quit, otherwise the shared refcount is released twice.
-  // Its shared state is nulled so that misuse after the move fails loudly.
   _CCCL_HOST_DEVICE_API inline pipeline(pipeline&& __other) noexcept
       : __head(__other.__head)
       , __tail(__other.__tail)
@@ -116,7 +114,7 @@ public:
       , __partitioned(__other.__partitioned)
       , __shared_state(::cuda::std::exchange(__other.__shared_state, nullptr))
   {
-    __other.__active = false;
+    __other.__active = false; // moved-from pipeline must not quit
   }
   pipeline(const pipeline&)            = delete;
   pipeline& operator=(pipeline&&)      = delete;
