@@ -37,7 +37,8 @@ using custom_key_t =
   c2h::custom_type_t<c2h::equal_comparable_t,
                      c2h::lexicographical_less_comparable_t,
                      c2h::lexicographical_greater_comparable_t>;
-using sort_types = c2h::type_list<int, cuda::std::int64_t, double, custom_key_t>;
+using sort_types =
+  c2h::type_list<int, cuda::std::int64_t, cuda::std::uint32_t, cuda::std::uint64_t, float, double, custom_key_t>;
 
 // `sort` uses `custom_key_t` rather than the `custom_value` of the other algorithms, so it needs
 // its own `make_value` overload set. The scalar cases match the shared one in
