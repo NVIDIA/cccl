@@ -30,6 +30,25 @@ They use the **MWC64X/32** and **MWC128X/32** algorithms from `Scrambled Multipl
 
 Both engines support host and device execution, constant evaluation, and logarithmic-time ``discard(unsigned long long)``.
 
+Performance Considerations
+--------------------------
+
+Both engines have similar throughput. The following table shows approximate performance ratio compared to other engines:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Compared with
+     - ``MWC64X/32``, ``MWC128X/32``
+   * - cuRAND XORWOW
+     - 1.4x
+   * - ``cuda::pcg64``
+     - 2.6x
+   * - cuRAND Philox4x32-10
+     - 3x
+   * - ``cuda::std::philox4x32``
+     - 20x
+
 Seeding
 -------
 
