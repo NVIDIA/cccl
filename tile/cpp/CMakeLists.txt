@@ -38,6 +38,7 @@ add_library(
   tilelib/provider/source_common.cpp
   tilelib/provider/spec_identity.cpp
   tilelib/provider/families/emitter.cpp
+  tilelib/provider/families/exchange.cpp
   tilelib/provider/families/reduce.cpp
   tilelib/provider/families/scan.cpp
   tilelib/provider/runtime/bundle_builder.cpp

@@ -13,6 +13,8 @@ from cuda.tile._ir.ops import tile_impl_registry
 
 from . import _api
 from ._lowerings import (
+    exchange_blocked_to_striped_impl,
+    exchange_striped_to_blocked_impl,
     exclusive_scan_impl,
     exclusive_sum_impl,
     inclusive_scan_impl,
@@ -56,4 +58,10 @@ def register() -> None:
         _register_tilelib_impl(_api.inclusive_scan, inclusive_scan_impl)
         _register_tilelib_impl(_api.reduce, reduce_impl)
         _register_tilelib_impl(_api.sum, sum_impl)
+        _register_tilelib_impl(
+            _api.exchange_striped_to_blocked, exchange_striped_to_blocked_impl
+        )
+        _register_tilelib_impl(
+            _api.exchange_blocked_to_striped, exchange_blocked_to_striped_impl
+        )
         _registered = True

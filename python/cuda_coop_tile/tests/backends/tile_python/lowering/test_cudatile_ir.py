@@ -314,3 +314,120 @@ def test_sum_rejects_invalid_axes(monkeypatch, axis, diagnostic):
             (_FakeCudaArray((8, 128)), _FakeCudaArray((8,))),
             default_tile_context,
         )
+
+
+@pytest.mark.link
+@pytest.mark.parametrize("second_width", [128, 256])
+@pytest.mark.parametrize("reverse", [False, True])
+def test_registered_exchange_inverse_fold_requires_same_width(
+    monkeypatch, second_width, reverse
+):
+    _configure_tile_library(monkeypatch)
+    _configure_imports(monkeypatch)
+    global ct, coop
+    ct = importlib.import_module("cuda.tile")
+    coop = importlib.import_module("cuda.coop.tile")
+    from cuda.tile._cext import default_tile_context
+
+    first = (
+        coop.exchange_blocked_to_striped
+        if reverse
+        else coop.exchange_striped_to_blocked
+    )
+    second = (
+        coop.exchange_striped_to_blocked
+        if reverse
+        else coop.exchange_blocked_to_striped
+    )
+
+    @ct.kernel
+    def kernel(inp: ct.Array, out: ct.Array):
+        values = ct.load(inp, (0,), shape=(512,))
+        exchanged = first(values, block_threads=128)
+        result = second(exchanged, block_threads=second_width)
+        ct.store(out, (0,), result)
+
+    func_ir = _get_final_ir(
+        kernel._pyfunc,
+        (_FakeCudaArray((512,)), _FakeCudaArray((512,))),
+        default_tile_context,
+    )
+    calls = _preview_foreign_calls(func_ir)
+    assert len(calls) == (1 if second_width == 128 else 2)
+    assert all(call.symbol_name == "cuda_coop_tile_exchange" for call in calls)
+    if second_width != 128:
+        assert [call.constant_params[2] for call in calls] == [128, 256]
+        assert calls[1].inputs[0] is calls[0].result_vars[0]
+
+
+@pytest.mark.link
+def test_registered_exchange_does_not_fold_another_foreign_callee(monkeypatch):
+    tile_library = _configure_tile_library(monkeypatch)
+    _configure_imports(monkeypatch)
+    global ct, coop, preview
+    ct = importlib.import_module("cuda.tile")
+    coop = importlib.import_module("cuda.coop.tile")
+    preview = importlib.import_module("cuda.tile_preview")
+    from cuda.tile._cext import default_tile_context
+
+    library = preview.Tilelib(path=str(tile_library), version="callee-test")
+
+    @ct.kernel
+    def kernel(inp: ct.Array, out: ct.Array):
+        values = ct.load(inp, (0,), shape=(512,))
+        (transformed,) = preview.foreign_call(
+            tilelibs=(library,),
+            symbol_name="unrelated_permutation",
+            constant_params=(512, ct.int32, 128, "blocked_to_striped", "i32"),
+            inputs=(values,),
+            output_types=((ct.int32, (512,)),),
+        )
+        result = coop.exchange_blocked_to_striped(
+            transformed, block_threads=128
+        )
+        ct.store(out, (0,), result)
+
+    func_ir = _get_final_ir(
+        kernel._pyfunc,
+        (_FakeCudaArray((512,)), _FakeCudaArray((512,))),
+        default_tile_context,
+    )
+    calls = _preview_foreign_calls(func_ir)
+    assert [call.symbol_name for call in calls] == [
+        "unrelated_permutation",
+        "cuda_coop_tile_exchange",
+    ]
+    assert calls[1].inputs[0] is calls[0].result_vars[0]
+
+
+@pytest.mark.link
+@pytest.mark.parametrize(
+    "name", ["exchange_striped_to_blocked", "exchange_blocked_to_striped"]
+)
+def test_exchange_dtype_diagnostic_names_the_public_operation(
+    monkeypatch, name
+):
+    _configure_tile_library(monkeypatch)
+    _configure_imports(monkeypatch)
+    global ct, coop
+    ct = importlib.import_module("cuda.tile")
+    coop = importlib.import_module("cuda.coop.tile")
+    from cuda.tile._cext import default_tile_context
+    from cuda.tile._exception import TileTypeError
+
+    operation = getattr(coop, name)
+
+    @ct.kernel
+    def kernel(inp: ct.Array, out: ct.Array):
+        flags = ct.load(inp, (0,), shape=(128,))
+        result = operation(flags, block_threads=128)
+        ct.store(out, (0,), result)
+
+    with pytest.raises(
+        TileTypeError, match=rf"coop\.{name} does not support dtype bool_"
+    ):
+        _get_final_ir(
+            kernel._pyfunc,
+            (_FakeCudaArray((128,), "|b1"), _FakeCudaArray((128,), "|b1")),
+            default_tile_context,
+        )

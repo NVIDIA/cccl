@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "provider/families/exchange.h"
 #include "provider/families/reduce.h"
 #include "provider/families/scan.h"
 
@@ -17,7 +18,7 @@ namespace
 {
 static_assert(family_count == 21, "the provider contract must contain exactly 21 primitive families");
 
-constexpr std::array<FamilyDescriptor, 5> registry{{
+constexpr std::array<FamilyDescriptor, 6> registry{{
   {FamilyId::sum,
    "cuda_coop_tile_sum",
    "cuda_coop_tile_sum_impl",
@@ -48,6 +49,16 @@ constexpr std::array<FamilyDescriptor, 5> registry{{
    FamilyRankingPolicy::block_threads_centered_128,
    parse_scan_metadata,
    emit_scan_source},
+  {FamilyId::exchange,
+   "cuda_coop_tile_exchange",
+   "cuda_coop_tile_exchange_impl",
+   "exchange",
+   "exchange",
+   "cub/block/block_exchange.cuh",
+   generated::schema_for("cuda_coop_tile_exchange"),
+   FamilyRankingPolicy::block_threads_centered_128,
+   parse_exchange_metadata,
+   emit_exchange_source},
   {FamilyId::sum_batched,
    "cuda_coop_tile_sum_batched",
    "cuda_coop_tile_sum_batched_impl",
@@ -72,7 +83,7 @@ constexpr std::array<FamilyDescriptor, 5> registry{{
 
 constexpr bool registry_is_complete()
 {
-  if (registry.size() != 5)
+  if (registry.size() != 6)
   {
     return false;
   }

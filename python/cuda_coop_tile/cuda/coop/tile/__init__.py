@@ -64,6 +64,8 @@ _API_SYMBOLS = (
     "inclusive_scan",
     "reduce",
     "sum",
+    "exchange_striped_to_blocked",
+    "exchange_blocked_to_striped",
 )
 
 # The primitive tuple is shared with lazy loading; every entry is a string.
