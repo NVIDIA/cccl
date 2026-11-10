@@ -21,10 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__type_traits/is_integral.h>
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -38,11 +42,21 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  define _CCCL_BUILTIN_FDIML(...) __builtin_fdiml(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_fdim)
 
+#if _CCCL_HAS_FLOAT128() && _CCCL_CHECK_BUILTIN(builtin_fdimf128)
+#  define _CCCL_BUILTIN_FDIMF128(...) __builtin_fdimf128(__VA_ARGS__)
+#endif // _CCCL_HAS_FLOAT128() && _CCCL_CHECK_BUILTIN(builtin_fdimf128)
+
 #if _CCCL_CUDA_COMPILER(CLANG) // Unresolved extern function 'fdim'
 #  undef _CCCL_BUILTIN_FDIMF
 #  undef _CCCL_BUILTIN_FDIM
 #  undef _CCCL_BUILTIN_FDIML
+#  undef _CCCL_BUILTIN_FDIMF128
 #endif // _CCCL_CUDA_COMPILER(CLANG)
+
+// nvcc doesn't implement __builtin_fdimf128 on device
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_FDIMF128
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float fdim(float __x, float __y) noexcept
 {
@@ -90,6 +104,23 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  endif // ^^^ !_CCCL_BUILTIN_FDIML ^^^
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __float128 fdim(__float128 __x, __float128 __y) noexcept
+{
+#  if defined(_CCCL_BUILTIN_FDIMF128)
+  return _CCCL_BUILTIN_FDIMF128(__x, __y);
+#  else // ^^^ _CCCL_BUILTIN_FDIMF128 ^^^ / vvv !_CCCL_BUILTIN_FDIMF128 vvv
+  NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fdim(__x, __y);))
+  // Portable fallback: NaNs propagate (and are quieted), otherwise x - y if x > y and +0 if x <= y
+  if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
+  {
+    return __x + __y;
+  }
+  return __x > __y ? __x - __y : __float128{0};
+#  endif // ^^^ !_CCCL_BUILTIN_FDIMF128 ^^^
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline __half fdim(__half __x, __half __y) noexcept
