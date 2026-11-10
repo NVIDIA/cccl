@@ -98,6 +98,18 @@ projects:
     include_regexes: ["cudax/"]
     exclude_project_files: [cudax_public]
 
+  cuda_coop_tile:
+    name: "Tile (Python and C++)"
+    matrix_project: "cuda_coop_tile"
+    lite_dependencies: [libcudacxx_public, cub_public, thrust_public]
+    full_dependencies: []
+    include_regexes:
+      - "tile/"
+      - "docs/tile/"
+      - "python/cuda_coop_tile/"
+      - "ci/(test|build)_cuda_coop_tile\\.sh$"
+      - "ci/cuda_coop_tile_requirements\\.txt$"
+
   cccl_c_parallel_public:
     name: "CCCL C Parallel Library Public API"
     lite_dependencies: [libcudacxx_public, cub_public, thrust_public]
@@ -304,7 +316,7 @@ ignore_regexes:
   - 'ci/pytorch/'
   - 'ci/rapids/'
   - '^ci/util/pre-commit/'
-  - 'docs/'
+  - 'docs/(?!tile/)'
   - '^LICENSE$'
   - '^cub/LICENSE\.TXT$'
   - '^cudax/LICENSE\.TXT$'

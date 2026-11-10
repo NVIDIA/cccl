@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import os
+import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -39,3 +41,60 @@ def _toolkit_nvrtc() -> tuple[Path, Path]:
             if include.joinpath("nvrtc.h").is_file() and library.is_file():
                 return include, library
     pytest.skip("host conformance test requires CUDA_COOP_TILE_CUDA_ROOT")
+
+
+def test_implementation_selection_emits_ltoir_and_exact_scratch(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv("CUDA_COOP_CCCL_ROOT", str(PACKAGE_ROOT.parents[1]))
+    if compiler_root := os.environ.get("CUDA_COOP_TILE_CUDA_ROOT"):
+        monkeypatch.setenv("CUDA_HOME", compiler_root)
+    compiler = shutil.which(os.environ.get("CXX", "c++"))
+    if compiler is None:
+        pytest.skip("C++ compiler is unavailable")
+
+    sdk_include = _sdk_include()
+    nvrtc_include, nvrtc_library = _toolkit_nvrtc()
+    executable = tmp_path / "tile_native_provider_frontend_conformance"
+
+    provider_sources = sorted((NATIVE_ROOT / "provider").rglob("*.cpp"))
+    compile_result = subprocess.run(
+        [
+            compiler,
+            "-std=c++17",
+            "-O0",
+            "-g0",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-pthread",
+            f"-I{NATIVE_ROOT}",
+            f"-I{sdk_include}",
+            f"-I{nvrtc_include}",
+            str(CPP_TEST),
+            *(str(source) for source in provider_sources),
+            str(nvrtc_library),
+            "-ldl",
+            f"-Wl,-rpath,{nvrtc_library.parent}",
+            "-Wl,--gc-sections",
+            "-o",
+            str(executable),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert compile_result.returncode == 0, (
+        f"host conformance compile failed:\n{compile_result.stdout}"
+        f"{compile_result.stderr}"
+    )
+
+    run_result = subprocess.run(
+        [str(executable)],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert run_result.returncode == 0, (
+        "host conformance executable failed:\n"
+        f"{run_result.stdout}{run_result.stderr}"
+    )
