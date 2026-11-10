@@ -11,6 +11,7 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/iterator>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/complex>
 #include <cuda/std/iterator>
 #include <cuda/std/tuple>
@@ -26,17 +27,17 @@ TEST_CASE("TestIsContiguousIterator", "[type_traits]")
   REQUIRE(thrust::is_contiguous_iterator_v<int*>);
   REQUIRE(cuda::std::__has_contiguous_traversal<int*>);
   REQUIRE(thrust::is_contiguous_iterator_v<thrust::device_ptr<int>>);
-  REQUIRE(cuda::std::__has_contiguous_traversal<thrust::device_ptr<int>>);
+  REQUIRE(cuda::std::__can_to_address<thrust::device_ptr<int>>);
 
   REQUIRE(thrust::is_contiguous_iterator_v<HostVector::iterator>);
-  REQUIRE(cuda::std::__has_contiguous_traversal<HostVector::iterator>);
+  REQUIRE(cuda::std::__can_to_address<HostVector::iterator>);
   REQUIRE(thrust::is_contiguous_iterator_v<HostVector::const_iterator>);
-  REQUIRE(cuda::std::__has_contiguous_traversal<HostVector::const_iterator>);
+  REQUIRE(cuda::std::__can_to_address<HostVector::const_iterator>);
 
   REQUIRE(thrust::is_contiguous_iterator_v<DeviceVector::iterator>);
-  REQUIRE(cuda::std::__has_contiguous_traversal<DeviceVector::iterator>);
+  REQUIRE(cuda::std::__can_to_address<DeviceVector::iterator>);
   REQUIRE(thrust::is_contiguous_iterator_v<DeviceVector::const_iterator>);
-  REQUIRE(cuda::std::__has_contiguous_traversal<DeviceVector::const_iterator>);
+  REQUIRE(cuda::std::__can_to_address<DeviceVector::const_iterator>);
 
   REQUIRE(thrust::is_contiguous_iterator_v<thrust::device_ptr<int>>);
 

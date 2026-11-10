@@ -2,6 +2,7 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/iterator>
 
 #include <unittest/unittest.h>
@@ -30,7 +31,7 @@ void test(Iterator first, Iterator last)
 
   REQUIRE_FALSE(thrust::is_contiguous_iterator_v<Iterator>);
   REQUIRE(thrust::is_contiguous_iterator_v<TrivialIterator>);
-  REQUIRE(cuda::std::__has_contiguous_traversal<TrivialIterator>);
+  REQUIRE(cuda::std::__can_to_address<TrivialIterator>);
 }
 
 template <class Vector>

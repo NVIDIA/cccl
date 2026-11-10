@@ -5,9 +5,7 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
-#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/pointer_traits.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/declval.h>
 
@@ -33,8 +31,7 @@ void check_is_contiguous()
   STATIC_REQUIRE(thrust::is_contiguous_iterator_v<Iterator> == Expected);
   if constexpr (Expected)
   {
-    STATIC_REQUIRE(cuda::std::__can_to_address<Iterator> == Expected);
-    STATIC_REQUIRE(cuda::std::__has_contiguous_traversal<cuda::std::remove_cvref_t<Iterator>>);
+    STATIC_REQUIRE(cuda::std::__can_to_address<Iterator>);
   }
 }
 
@@ -101,7 +98,6 @@ void check_iterator_unwrapping()
   {
     STATIC_REQUIRE(std::is_same_v<unwrapped_t, PointerT>);
     STATIC_REQUIRE(cuda::std::__can_to_address<IteratorT>);
-    STATIC_REQUIRE(cuda::std::__has_contiguous_traversal<IteratorT>);
   }
   else
   {

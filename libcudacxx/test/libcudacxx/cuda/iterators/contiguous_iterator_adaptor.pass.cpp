@@ -16,6 +16,7 @@
 #include <cuda/iterator>
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
+#include <cuda/std/memory>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 
@@ -46,7 +47,7 @@ struct Narrow
   }
 };
 
-// Contiguous iterator with no base(). Unwrap reaches its pointer through to_address.
+// Contiguous iterator with no base(). Recognized because pointer_traits::to_address opts it in.
 struct addressable_iterator
 {
   using iterator_category = cuda::std::contiguous_iterator_tag;
@@ -72,6 +73,19 @@ struct addressable_iterator
   }
 };
 
+template <>
+struct cuda::std::pointer_traits<addressable_iterator>
+{
+  using pointer         = addressable_iterator;
+  using element_type    = int;
+  using difference_type = cuda::std::ptrdiff_t;
+
+  TEST_FUNC static constexpr int* to_address(pointer iter)
+  {
+    return iter.ptr_;
+  }
+};
+
 template <class Iter, bool Expected>
 TEST_FUNC constexpr void test_trait()
 {
@@ -91,7 +105,8 @@ TEST_FUNC constexpr bool test()
 
   test_trait<int*, true>();
   test_trait<const int*, true>();
-  test_trait<contiguous_iterator<int*>, true>();
+  // The contiguous iterator tag does not opt in. pointer_traits::to_address does.
+  test_trait<contiguous_iterator<int*>, false>();
   test_trait<cuda::counting_iterator<int>, false>();
   test_trait<random_access_iterator<int*>, false>();
 
@@ -162,21 +177,19 @@ TEST_FUNC constexpr bool test()
   }
 
   {
-    // The rebuilt adaptor reads through a pointer instead of the contiguous iterator
+    // operator-> makes to_address well formed, but without pointer_traits::to_address the iterator is not storage we
+    // can rebuild
     using Leaf = contiguous_iterator<int*>;
     using Iter = cuda::transform_iterator<PlusOne, Leaf>;
-    test_trait<Iter, true>();
-    static_assert(cuda::__iter_can_unwrap<Iter>);
+    test_trait<Leaf, false>();
+    test_trait<Iter, false>();
+    static_assert(!cuda::__iter_can_rebind<Leaf, int>);
+    static_assert(!cuda::__iter_can_unwrap<Iter>);
     Iter iter{Leaf{buffer}, PlusOne{}};
     auto unwrapped = cuda::__unwrap_iterator_adaptor(iter);
     static_assert(cuda::std::is_same_v<decltype(unwrapped), int*>);
     assert(unwrapped == buffer);
-
-    auto rebound = iter.__rebind(staged);
-    static_assert(cuda::std::is_same_v<decltype(rebound), cuda::transform_iterator<PlusOne, int*>>);
     assert(*iter == 2);
-    assert(*rebound == 11);
-    assert(rebound.base() == staged);
   }
 
   {
@@ -215,24 +228,15 @@ TEST_FUNC constexpr bool test()
     using Inner  = cuda::transform_iterator<PlusOne, contiguous_iterator<int*>>;
     using Middle = cuda::transform_iterator<TimesTwo, Inner>;
     using Outer  = cuda::transform_iterator<PlusOne, Middle>;
-    test_trait<Outer, true>();
-    static_assert(cuda::__iter_can_unwrap<Middle>);
-    static_assert(cuda::__iter_can_unwrap<Outer>);
+    test_trait<Outer, false>();
+    static_assert(!cuda::__iter_can_unwrap<Middle>);
+    static_assert(!cuda::__iter_can_unwrap<Outer>);
     static_assert(cuda::std::is_same_v<cuda::__unwrapped_iterator_t<Outer>, int*>);
     static_assert(cuda::std::is_same_v<cuda::__unwrapped_iter_value_t<Outer>, int>);
 
     Outer iter{Middle{Inner{contiguous_iterator<int*>{buffer}, PlusOne{}}, TimesTwo{}}, PlusOne{}};
     assert(cuda::__unwrap_iterator_adaptor(iter + 1) == buffer + 1);
     assert(*iter == 5);
-
-    // Only the innermost contiguous iterator is replaced, the adaptors around it are kept
-    using Rebound =
-      cuda::transform_iterator<PlusOne, cuda::transform_iterator<TimesTwo, cuda::transform_iterator<PlusOne, int*>>>;
-    auto rebound = cuda::__rebind_iterator_adaptor(iter, staged);
-    static_assert(cuda::std::is_same_v<decltype(rebound), Rebound>);
-    assert(*iter == 5);
-    assert(*rebound == 23);
-    assert(rebound.base().base().base() == staged);
   }
 
   {

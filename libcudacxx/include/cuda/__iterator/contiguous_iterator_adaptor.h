@@ -24,7 +24,6 @@
 #include <cuda/__fwd/iterator.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/is_convertible.h>
@@ -77,11 +76,18 @@ using __unwrapped_iterator_t = decltype(::cuda::__unwrap_iterator_adaptor(::cuda
 template <class _Iter>
 using __unwrapped_iter_value_t = ::cuda::std::iter_value_t<__unwrapped_iterator_t<_Iter>>;
 
+//! @brief True when `_Iter` is a raw pointer or opts into contiguous addressing through `pointer_traits::to_address`.
+//! A contiguous iterator tag is not enough: `cuda::std::to_address` also accepts iterators such as `reverse_iterator`
+//! through `operator->`.
+template <class _Iter>
+inline constexpr bool __iter_has_contiguous_storage =
+  ::cuda::std::is_pointer_v<_Iter> || ::cuda::std::__has_cuda_std_to_address<_Iter>;
+
 //! @brief True when `_Iter` can be rebuilt over the storage at a `_Tp*`, because it is a contiguous iterator or an
 //! iterator adaptor that can rebuild itself over it.
 template <class _Iter, class _Tp>
 _CCCL_CONCEPT __iter_can_rebind =
-  (::cuda::std::__has_contiguous_traversal<_Iter> && ::cuda::std::is_convertible_v<_Tp*, __unwrapped_iterator_t<_Iter>>)
+  (__iter_has_contiguous_storage<_Iter> && ::cuda::std::is_convertible_v<_Tp*, __unwrapped_iterator_t<_Iter>>)
   || __iter_has_member_rebind<_Iter, _Tp>;
 
 //! @brief Rebuild `__iter` over the storage at `__ptr`.
@@ -112,7 +118,7 @@ _CCCL_CONCEPT __iter_can_unwrap = _CCCL_REQUIRES_EXPR((_Iter)) //
 
 template <class _Iter>
 inline constexpr bool __is_contiguous_iterator_or_adaptor_impl =
-  ::cuda::std::is_pointer_v<_Iter> || ::cuda::std::__has_contiguous_traversal<_Iter>;
+  __iter_has_contiguous_storage<_Iter> && ::cuda::std::is_pointer_v<__unwrapped_iterator_t<_Iter>>;
 
 template <class _Fn, class _Iter>
 inline constexpr bool __is_contiguous_iterator_or_adaptor_impl<::cuda::transform_iterator<_Fn, _Iter>> =
