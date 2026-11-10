@@ -50,6 +50,15 @@ from cuda.tile._ir.ops import (
 from cuda.tile._ir.type import TileTy as make_tile_ty
 from cuda.tile._ir.type import TokenTy
 
+from ._block.adjacent_difference import (
+    BlockAdjacentDifferenceSubtractLeft,
+    BlockAdjacentDifferenceSubtractRight,
+)
+from ._block.discontinuity import (
+    BlockDiscontinuityFlagHeads,
+    BlockDiscontinuityFlagHeadsAndTails,
+    BlockDiscontinuityFlagTails,
+)
 from ._block.exchange import (
     BlockExchangeBlockedToStriped,
     BlockExchangeStripedToBlocked,
@@ -70,10 +79,14 @@ from ._block.scan import (
     BlockScanInclusiveSum,
     BlockScanInclusiveSumOptions,
 )
+from ._block.shuffle import BlockShuffle
 from ._cpp import _get_tile_library_linker_input
 from ._declarations import DECLARATIONS as _PROVIDER_DECL_SCHEMAS
 from ._declarations import TileType as _ProviderDeclTileType
 from ._dispatch import (
+    dispatch_adjacent_difference_subtract_left,
+    dispatch_adjacent_difference_subtract_right,
+    dispatch_discontinuity,
     dispatch_exchange_blocked_to_striped,
     dispatch_exchange_striped_to_blocked,
     dispatch_exclusive_scan,
@@ -81,6 +94,7 @@ from ._dispatch import (
     dispatch_inclusive_scan,
     dispatch_inclusive_sum,
     dispatch_reduce,
+    dispatch_shuffle,
     dispatch_sum,
 )
 
@@ -611,6 +625,19 @@ def _exchange_static_prefix(
     mode: str,
 ):
     return (numel, dtype, block_threads, mode, _dtype_token(dtype))
+
+
+def _shuffle_static_prefix(
+    numel: int,
+    dtype,
+    *,
+    mode: str,
+):
+    return _unary_mode_static_prefix(
+        numel,
+        dtype,
+        mode=mode,
+    )
 
 
 def _sort_key_static_prefix(
@@ -1473,6 +1500,186 @@ def reduce_impl(
     return _reduce_impl(value, axis, keepdims, broadcast, options=options)
 
 
+def discontinuity_flag_heads_impl(value, methods):
+    _require_empty_methods(methods, "discontinuity_flag_heads")
+    tile_ty = require_tile_type(value)
+    shape = tile_ty.shape
+
+    if tile_ty.ndim != 1:
+        raise TileTypeError("coop.discontinuity_flag_heads expects a 1D tile")
+
+    numel = shape[0]
+    decision = dispatch_discontinuity(
+        primitive="discontinuity_flag_heads",
+        numel=numel,
+        dtype=tile_ty.dtype,
+    )
+    items_per_thread = numel // decision.block_threads
+
+    BlockDiscontinuityFlagHeads(
+        items_per_thread=items_per_thread,
+        dtype=tile_ty.dtype,
+        block_threads=decision.block_threads,
+    )
+
+    out_ty = make_tile_ty(datatype.int32, shape)
+    return _emit_provider_foreign_call(
+        operands=(value,),
+        output_types=(out_ty,),
+        decl_sym_name=_PROVIDER_DECL_DISCONTINUITY_FLAGS,
+        static_prefix=_unary_mode_static_prefix(
+            numel,
+            tile_ty.dtype,
+            mode="heads",
+        ),
+    )
+
+
+def discontinuity_flag_tails_impl(value, methods):
+    _require_empty_methods(methods, "discontinuity_flag_tails")
+    tile_ty = require_tile_type(value)
+    shape = tile_ty.shape
+
+    if tile_ty.ndim != 1:
+        raise TileTypeError("coop.discontinuity_flag_tails expects a 1D tile")
+
+    numel = shape[0]
+    decision = dispatch_discontinuity(
+        primitive="discontinuity_flag_tails",
+        numel=numel,
+        dtype=tile_ty.dtype,
+    )
+    items_per_thread = numel // decision.block_threads
+
+    BlockDiscontinuityFlagTails(
+        items_per_thread=items_per_thread,
+        dtype=tile_ty.dtype,
+        block_threads=decision.block_threads,
+    )
+
+    out_ty = make_tile_ty(datatype.int32, shape)
+    return _emit_provider_foreign_call(
+        operands=(value,),
+        output_types=(out_ty,),
+        decl_sym_name=_PROVIDER_DECL_DISCONTINUITY_FLAGS,
+        static_prefix=_unary_mode_static_prefix(
+            numel,
+            tile_ty.dtype,
+            mode="tails",
+        ),
+    )
+
+
+def discontinuity_flag_heads_and_tails_impl(value, methods):
+    _require_empty_methods(methods, "discontinuity_flag_heads_and_tails")
+    tile_ty = require_tile_type(value)
+    shape = tile_ty.shape
+
+    if tile_ty.ndim != 1:
+        raise TileTypeError(
+            "coop.discontinuity_flag_heads_and_tails expects a 1D tile"
+        )
+
+    numel = shape[0]
+    decision = dispatch_discontinuity(
+        primitive="discontinuity_flag_heads_and_tails",
+        numel=numel,
+        dtype=tile_ty.dtype,
+    )
+    items_per_thread = numel // decision.block_threads
+
+    BlockDiscontinuityFlagHeadsAndTails(
+        items_per_thread=items_per_thread,
+        dtype=tile_ty.dtype,
+        block_threads=decision.block_threads,
+    )
+
+    out_heads_ty = make_tile_ty(datatype.int32, shape)
+    out_tails_ty = make_tile_ty(datatype.int32, shape)
+    return _emit_provider_foreign_call(
+        operands=(value,),
+        output_types=(out_heads_ty, out_tails_ty),
+        decl_sym_name=_PROVIDER_DECL_DISCONTINUITY_HEADS_AND_TAILS,
+        static_prefix=_unary_mode_static_prefix(
+            numel,
+            tile_ty.dtype,
+            mode="heads_and_tails",
+        ),
+    )
+
+
+def adjacent_difference_subtract_left_impl(value, methods):
+    _require_empty_methods(methods, "adjacent_difference_subtract_left")
+    tile_ty = require_tile_type(value)
+    shape = tile_ty.shape
+
+    if tile_ty.ndim != 1:
+        raise TileTypeError(
+            "coop.adjacent_difference_subtract_left expects a 1D tile"
+        )
+
+    numel = shape[0]
+    decision = dispatch_adjacent_difference_subtract_left(
+        numel=numel,
+        dtype=tile_ty.dtype,
+    )
+    items_per_thread = numel // decision.block_threads
+
+    BlockAdjacentDifferenceSubtractLeft(
+        items_per_thread=items_per_thread,
+        dtype=tile_ty.dtype,
+        block_threads=decision.block_threads,
+    )
+
+    out_ty = make_tile_ty(tile_ty.dtype, shape)
+    return _emit_provider_foreign_call(
+        operands=(value,),
+        output_types=(out_ty,),
+        decl_sym_name=_PROVIDER_DECL_ADJACENT_DIFFERENCE,
+        static_prefix=_unary_mode_static_prefix(
+            numel,
+            tile_ty.dtype,
+            mode="subtract_left",
+        ),
+    )
+
+
+def adjacent_difference_subtract_right_impl(value, methods):
+    _require_empty_methods(methods, "adjacent_difference_subtract_right")
+    tile_ty = require_tile_type(value)
+    shape = tile_ty.shape
+
+    if tile_ty.ndim != 1:
+        raise TileTypeError(
+            "coop.adjacent_difference_subtract_right expects a 1D tile"
+        )
+
+    numel = shape[0]
+    decision = dispatch_adjacent_difference_subtract_right(
+        numel=numel,
+        dtype=tile_ty.dtype,
+    )
+    items_per_thread = numel // decision.block_threads
+
+    BlockAdjacentDifferenceSubtractRight(
+        items_per_thread=items_per_thread,
+        dtype=tile_ty.dtype,
+        block_threads=decision.block_threads,
+    )
+
+    out_ty = make_tile_ty(tile_ty.dtype, shape)
+    return _emit_provider_foreign_call(
+        operands=(value,),
+        output_types=(out_ty,),
+        decl_sym_name=_PROVIDER_DECL_ADJACENT_DIFFERENCE,
+        static_prefix=_unary_mode_static_prefix(
+            numel,
+            tile_ty.dtype,
+            mode="subtract_right",
+        ),
+    )
+
+
 def exchange_striped_to_blocked_impl(value, block_threads, methods):
     """Lower the flat striped-to-blocked permutation at its explicit width.
 
@@ -1580,4 +1787,126 @@ def exchange_blocked_to_striped_impl(value, block_threads, methods):
             block_threads=decision.block_threads,
             mode="striped_to_blocked",
         ),
+    )
+
+
+def _shuffle_impl(value, distance, methods, *, primitive: str, mode: str):
+    """Lower Shuffle with runtime distance kept out of specialization.
+
+    Up and Down use the fixed single-step control. Offset and Rotate accept
+    scalar distance operands and require one item per thread. Check constant
+    ranges here; the generated implementation checks dynamic ranges.
+    """
+
+    _require_empty_methods(methods, primitive)
+    tile_ty = require_tile_type(value)
+    shape = tile_ty.shape
+    if tile_ty.ndim != 1:
+        raise TileTypeError(f"coop.{primitive} expects a 1D tile")
+
+    distance_val = 1
+    distance_is_runtime = False
+    if mode in ("offset", "rotate"):
+        distance_val = _const_value_or_runtime(distance)
+        distance_is_runtime = distance_val is _RUNTIME_VALUE
+        if not distance_is_runtime:
+            if isinstance(distance_val, bool) or not isinstance(
+                distance_val, int
+            ):
+                raise TileTypeError(f"coop.{primitive} distance must be an int")
+            if mode == "rotate" and distance_val < 0:
+                raise TileTypeError("coop.shuffle_rotate distance must be >= 0")
+
+    numel = shape[0]
+    if (
+        not distance_is_runtime
+        and mode == "offset"
+        and not (-numel < distance_val < numel)
+    ):
+        raise TileTypeError(
+            "coop.shuffle_offset distance must satisfy "
+            "-tile size < distance < tile size"
+        )
+    if not distance_is_runtime and mode == "rotate" and distance_val >= numel:
+        raise TileTypeError("coop.shuffle_rotate distance must be < tile size")
+
+    decision = dispatch_shuffle(
+        primitive=primitive,
+        numel=numel,
+        dtype=tile_ty.dtype,
+        mode=mode,
+    )
+    items_per_thread = numel // decision.block_threads
+
+    BlockShuffle(
+        mode=mode,
+        items_per_thread=items_per_thread,
+        dtype=tile_ty.dtype,
+        block_threads=decision.block_threads,
+        # BlockShuffle is used here for compile-time specialization validation.
+        # Dynamic distances are range-checked by the generated implementation.
+        distance=0 if distance_is_runtime else distance_val,
+    )
+
+    out_ty = make_tile_ty(tile_ty.dtype, shape)
+    distance_operand = (
+        _rank0_scalar_tile_operand(
+            distance,
+            datatype.int32,
+            primitive=primitive,
+            name="distance",
+            int_value=True,
+        )[0]
+        if distance_is_runtime
+        else _constant_rank_zero_tile(distance_val, datatype.int32)
+    )
+    return _emit_provider_foreign_call(
+        operands=(value, distance_operand),
+        output_types=(out_ty,),
+        decl_sym_name=_PROVIDER_DECL_SHUFFLE,
+        static_prefix=_shuffle_static_prefix(
+            numel,
+            tile_ty.dtype,
+            mode=mode,
+        ),
+    )
+
+
+def shuffle_up_impl(value, methods):
+    return _shuffle_impl(
+        value,
+        None,
+        methods,
+        primitive="shuffle_up",
+        mode="up",
+    )
+
+
+def shuffle_down_impl(value, methods):
+    return _shuffle_impl(
+        value,
+        None,
+        methods,
+        primitive="shuffle_down",
+        mode="down",
+    )
+
+
+def shuffle_offset_impl(value, distance, methods):
+    return _shuffle_impl(
+        value,
+        distance,
+        methods,
+        primitive="shuffle_offset",
+        mode="offset",
+    )
+
+
+def shuffle_rotate_impl(value, distance, methods):
+    return _shuffle_impl(
+        value,
+        distance,
+        methods,
+        primitive="shuffle_rotate",
+        mode="rotate",
     )

@@ -2,7 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-foreach (_test scan_reduce scan_prefix reduce_axes exchange_smoke)
+foreach (
+  _test
+  scan_reduce
+  scan_prefix
+  reduce_axes
+  exchange_smoke
+  discontinuity_flags_smoke
+  adjacent_shuffle_sm120
+)
   add_executable("cccl.tile.${_test}" "support/tile_cpp_${_test}.cu")
   cuda_coop_tile_link("cccl.tile.${_test}")
   add_test(NAME "cccl.tile.${_test}" COMMAND "cccl.tile.${_test}")

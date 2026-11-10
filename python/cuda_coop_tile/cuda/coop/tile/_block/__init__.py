@@ -12,6 +12,15 @@ The lowering sends their actual values as foreign-call operands, and the
 native provider independently validates the selected implementation.
 """
 
+from .adjacent_difference import (
+    BlockAdjacentDifferenceSubtractLeft,
+    BlockAdjacentDifferenceSubtractRight,
+)
+from .discontinuity import (
+    BlockDiscontinuityFlagHeads,
+    BlockDiscontinuityFlagHeadsAndTails,
+    BlockDiscontinuityFlagTails,
+)
 from .reduce import BlockReduce, BlockReduceSum
 from .scan import (
     BlockScanExclusiveScan,
@@ -19,12 +28,19 @@ from .scan import (
     BlockScanInclusiveScan,
     BlockScanInclusiveSum,
 )
+from .shuffle import BlockShuffle
 
 __all__ = [
+    "BlockAdjacentDifferenceSubtractLeft",
+    "BlockAdjacentDifferenceSubtractRight",
+    "BlockDiscontinuityFlagHeads",
+    "BlockDiscontinuityFlagHeadsAndTails",
+    "BlockDiscontinuityFlagTails",
     "BlockReduce",
     "BlockReduceSum",
     "BlockScanExclusiveScan",
     "BlockScanExclusiveSum",
     "BlockScanInclusiveScan",
     "BlockScanInclusiveSum",
+    "BlockShuffle",
 ]

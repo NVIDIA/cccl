@@ -457,6 +457,215 @@ def sum(
     reduce, inclusive_sum
     """
 
+def discontinuity_flag_heads(
+    value: _Tile,
+    /,
+    *,
+    methods: _Methods | None = None,
+) -> _Tile:
+    """Mark the first element of each equal-value run in a Tile.
+
+    Parameters
+    ----------
+    value : Tile
+        Numeric input of shape ``(N,)``.
+        ``N`` must be a positive multiple of 32.
+    methods : collections.abc.Mapping or tuple
+        Must be omitted or empty.
+
+    Returns
+    -------
+    Tile
+        ``int32`` flags of shape ``(N,)``. Position zero is 1; every other
+        flag is 1 when its value differs from the preceding value, else 0.
+        A matching value in another Tile does not extend this Tile's run.
+
+    Notes
+    -----
+    Comparison uses numeric inequality, so NaNs flag run boundaries.
+    There is no custom predicate or predecessor argument.
+
+    Examples
+    --------
+    In a ``cuda.tile`` kernel, turn head flags into one-based run IDs:
+
+    .. code-block:: python
+
+        heads = coop.discontinuity_flag_heads(values)
+        run_ids = coop.inclusive_sum(heads)
+
+    See Also
+    --------
+    discontinuity_flag_tails, discontinuity_flag_heads_and_tails
+    """
+
+def discontinuity_flag_tails(
+    value: _Tile,
+    /,
+    *,
+    methods: _Methods | None = None,
+) -> _Tile:
+    """Mark the last element of each equal-value run in a Tile.
+
+    Parameters
+    ----------
+    value : Tile
+        Numeric input of shape ``(N,)``.
+        ``N`` must be a positive multiple of 32.
+    methods : collections.abc.Mapping or tuple
+        Must be omitted or empty.
+
+    Returns
+    -------
+    Tile
+        ``int32`` flags of shape ``(N,)``. The last position is 1; every
+        other flag is 1 when its value differs from the next value, else 0.
+        Runs end at this Tile's boundary.
+
+    Notes
+    -----
+    Numeric inequality flags NaNs as boundaries. There is no custom
+    predicate or successor argument.
+
+    Examples
+    --------
+    For a loaded numeric Tile in a ``cuda.tile`` kernel:
+
+    .. code-block:: python
+
+        tails = coop.discontinuity_flag_tails(values)
+
+    See Also
+    --------
+    discontinuity_flag_heads, discontinuity_flag_heads_and_tails
+    """
+
+def discontinuity_flag_heads_and_tails(
+    value: _Tile,
+    /,
+    *,
+    methods: _Methods | None = None,
+) -> tuple[_Tile, _Tile]:
+    """Mark both ends of each equal-value run in a Tile.
+
+    Parameters
+    ----------
+    value : Tile
+        Numeric input of shape ``(N,)``.
+        ``N`` must be a positive multiple of 32.
+    methods : collections.abc.Mapping or tuple
+        Must be omitted or empty.
+
+    Returns
+    -------
+    tuple[Tile, Tile]
+        ``(heads, tails)``, two ``int32`` 0/1 Tiles of shape ``(N,)``.
+        Heads mark position zero and values unequal to their predecessor.
+        Tails mark the last position and values unequal to their successor.
+        Neighboring Tiles do not affect either boundary.
+
+    Notes
+    -----
+    Comparisons use numeric inequality, including for NaNs. Custom
+    predicates and external predecessor/successor values are unsupported.
+
+    Examples
+    --------
+    For a loaded numeric Tile in a ``cuda.tile`` kernel:
+
+    .. code-block:: python
+
+        heads, tails = coop.discontinuity_flag_heads_and_tails(values)
+
+    See Also
+    --------
+    discontinuity_flag_heads, discontinuity_flag_tails
+    """
+
+def adjacent_difference_subtract_left(
+    value: _Tile,
+    /,
+    *,
+    methods: _Methods | None = None,
+) -> _Tile:
+    """Subtract each element's left neighbor, preserving the first input.
+
+    Parameters
+    ----------
+    value : Tile
+        Numeric input of shape ``(N,)``.
+        ``N`` must be a positive multiple of 32.
+    methods : collections.abc.Mapping or tuple
+        Must be omitted or empty.
+
+    Returns
+    -------
+    Tile
+        Shape ``(N,)`` with the input dtype. Position zero is ``value[0]``;
+        position ``i > 0`` is ``value[i] - value[i - 1]``. The input is
+        unchanged, and subtraction stays within this Tile.
+
+    Notes
+    -----
+    Arithmetic uses the input dtype. Convert to a wider type first if the
+    difference can exceed its range. The boundary value is preserved, not
+    replaced with a zero difference.
+
+    Examples
+    --------
+    For a loaded numeric Tile in a ``cuda.tile`` kernel:
+
+    .. code-block:: python
+
+        differences = coop.adjacent_difference_subtract_left(values)
+
+    See Also
+    --------
+    adjacent_difference_subtract_right
+    """
+
+def adjacent_difference_subtract_right(
+    value: _Tile,
+    /,
+    *,
+    methods: _Methods | None = None,
+) -> _Tile:
+    """Subtract each element's right neighbor, preserving the last input.
+
+    Parameters
+    ----------
+    value : Tile
+        Numeric input of shape ``(N,)``.
+        ``N`` must be a positive multiple of 32.
+    methods : collections.abc.Mapping or tuple
+        Must be omitted or empty.
+
+    Returns
+    -------
+    Tile
+        Shape ``(N,)`` with the input dtype. Position ``i < N - 1`` is
+        ``value[i] - value[i + 1]``; the last result is ``value[N - 1]``.
+        The input is unchanged, and subtraction stays within this Tile.
+
+    Notes
+    -----
+    Arithmetic uses the input dtype. Convert to a wider type first if the
+    difference can exceed its range. No successor value is accepted for
+    the last position.
+
+    Examples
+    --------
+    For a loaded numeric Tile in a ``cuda.tile`` kernel:
+
+    .. code-block:: python
+
+        differences = coop.adjacent_difference_subtract_right(values)
+
+    See Also
+    --------
+    adjacent_difference_subtract_left
+    """
+
 def exchange_striped_to_blocked(
     value: _Tile,
     /,
@@ -541,8 +750,172 @@ def exchange_blocked_to_striped(
     exchange_striped_to_blocked
     """
 
+def shuffle_up(
+    value: _Tile,
+    /,
+    *,
+    methods: _Methods | None = None,
+) -> _Tile:
+    """Read each element's predecessor, preserving the first element.
+
+    Parameters
+    ----------
+    value : Tile
+        Numeric input of shape ``(N,)``. Multiple items per worker are
+        supported; the compiler selects a compatible implementation.
+        ``N`` must be a positive multiple of 32.
+    methods : collections.abc.Mapping or tuple
+        Must be omitted or empty.
+
+    Returns
+    -------
+    Tile
+        Shape ``(N,)`` with the input dtype. Position zero is ``value[0]``;
+        position ``i > 0`` is ``value[i - 1]``. The shift stays within this
+        Tile and leaves the input unchanged.
+
+    Examples
+    --------
+    For a loaded numeric Tile in a ``cuda.tile`` kernel:
+
+    .. code-block:: python
+
+        previous = coop.shuffle_up(values)
+
+    See Also
+    --------
+    shuffle_down, shuffle_offset, shuffle_rotate
+    """
+
+def shuffle_down(
+    value: _Tile,
+    /,
+    *,
+    methods: _Methods | None = None,
+) -> _Tile:
+    """Read each element's successor, preserving the last element.
+
+    Parameters
+    ----------
+    value : Tile
+        Numeric input of shape ``(N,)``. Multiple items per worker are
+        supported; the compiler selects a compatible implementation.
+        ``N`` must be a positive multiple of 32.
+    methods : collections.abc.Mapping or tuple
+        Must be omitted or empty.
+
+    Returns
+    -------
+    Tile
+        Shape ``(N,)`` with the input dtype. Position ``i < N - 1`` is
+        ``value[i + 1]``; the last result is ``value[N - 1]``. The shift
+        stays within this Tile and leaves the input unchanged.
+
+    Examples
+    --------
+    For a loaded numeric Tile in a ``cuda.tile`` kernel:
+
+    .. code-block:: python
+
+        following = coop.shuffle_down(values)
+
+    See Also
+    --------
+    shuffle_up, shuffle_offset, shuffle_rotate
+    """
+
+def shuffle_offset(
+    value: _Tile,
+    /,
+    *,
+    distance: _RuntimeInt = 1,
+    methods: _Methods | None = None,
+) -> _Tile:
+    """Read a relative position, preserving values outside the valid range.
+
+    Parameters
+    ----------
+    value : Tile
+        Numeric Tile of shape ``(N,)``, where ``N`` is 32, 64, 128, 256,
+        512, or 1024.
+        This operation requires one worker per item; the kernel must admit
+        that worker count.
+    distance : int or Tile
+        Source offset, defaulting to 1. Accepts a constant, runtime scalar,
+        or single-element Tile, with ``-N < distance < N``. A positive
+        offset reads a higher index and moves values toward lower positions.
+    methods : collections.abc.Mapping or tuple
+        Must be omitted or empty.
+
+    Returns
+    -------
+    Tile
+        Shape ``(N,)`` with the input dtype. Position ``i`` reads
+        ``value[i + distance]`` when in range, otherwise ``value[i]``.
+        The input is unchanged; there is no wraparound.
+
+    Examples
+    --------
+    For 128 loaded values in a ``cuda.tile`` kernel admitting 128 workers:
+
+    .. code-block:: python
+
+        following = coop.shuffle_offset(values, distance=3)
+
+    See Also
+    --------
+    shuffle_rotate, shuffle_up, shuffle_down
+    """
+
+def shuffle_rotate(
+    value: _Tile,
+    /,
+    *,
+    distance: _RuntimeInt = 1,
+    methods: _Methods | None = None,
+) -> _Tile:
+    """Read a relative position with wraparound within the Tile.
+
+    Parameters
+    ----------
+    value : Tile
+        Numeric Tile of shape ``(N,)``, where ``N`` is 32, 64, 128, 256,
+        512, or 1024.
+        This operation requires one worker per item; the kernel must admit
+        that worker count.
+    distance : int or Tile
+        Source offset, defaulting to 1. Accepts a constant, runtime scalar,
+        or single-element Tile, with ``0 <= distance < N``. Positive values
+        move data toward lower output positions.
+    methods : collections.abc.Mapping or tuple
+        Must be omitted or empty.
+
+    Returns
+    -------
+    Tile
+        Shape ``(N,)`` with the input dtype. Position ``i`` reads
+        ``value[(i + distance) % N]``. The input is unchanged.
+
+    Examples
+    --------
+    For 128 loaded values in a ``cuda.tile`` kernel admitting 128 workers:
+
+    .. code-block:: python
+
+        rotated = coop.shuffle_rotate(values, distance=3)
+
+    See Also
+    --------
+    shuffle_offset
+    """
+
 __all__ = [
     "CppTileConfig",
+    "adjacent_difference_subtract_left",
+    "adjacent_difference_subtract_right",
+    "discontinuity_flag_heads",
+    "discontinuity_flag_heads_and_tails",
+    "discontinuity_flag_tails",
     "exchange_blocked_to_striped",
     "exchange_striped_to_blocked",
     "exclusive_scan",
@@ -557,5 +930,9 @@ __all__ = [
     "reduce",
     "register",
     "scan",
+    "shuffle_down",
+    "shuffle_offset",
+    "shuffle_rotate",
+    "shuffle_up",
     "sum",
 ]

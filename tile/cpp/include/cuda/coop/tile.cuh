@@ -607,7 +607,7 @@ template <cte::fixedString Mode, typename T, size_t N>
 [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<int, ct::shape<N>>
 discontinuity_flags_call(ct::tile<T, ct::shape<N>> input) noexcept
 {
-  static_assert(N > 0, "cuda::coop::tile Discontinuity expects a non-empty tile");
+  static_assert(N > 0 && N % 32 == 0, "cuda::coop::tile Discontinuity expects a positive tile size divisible by 32");
   return detail::discontinuity_flags_foreign<N, T, Mode, cpp_dtype_token_v<T>>(input);
 }
 
@@ -615,7 +615,7 @@ template <typename T, size_t N>
 [[nodiscard]] _CCCL_COOP_TILE_API inline discontinuity_pair_result<N>
 discontinuity_heads_and_tails_call(ct::tile<T, ct::shape<N>> input) noexcept
 {
-  static_assert(N > 0, "cuda::coop::tile Discontinuity expects a non-empty tile");
+  static_assert(N > 0 && N % 32 == 0, "cuda::coop::tile Discontinuity expects a positive tile size divisible by 32");
   return detail::discontinuity_heads_and_tails_foreign<N, T, "heads_and_tails", cpp_dtype_token_v<T>>(input);
 }
 
@@ -623,7 +623,8 @@ template <cte::fixedString Mode, typename T, size_t N>
 [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
 adjacent_difference_call(ct::tile<T, ct::shape<N>> input) noexcept
 {
-  static_assert(N > 0, "cuda::coop::tile Adjacent Difference expects a non-empty tile");
+  static_assert(N > 0 && N % 32 == 0,
+                "cuda::coop::tile Adjacent Difference expects a positive tile size divisible by 32");
   return detail::adjacent_difference_foreign<N, T, Mode, cpp_dtype_token_v<T>>(input);
 }
 
@@ -631,7 +632,7 @@ template <cte::fixedString Mode, bool SingleItem, typename T, size_t N>
 [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
 shuffle_call(ct::tile<T, ct::shape<N>> input, int distance) noexcept
 {
-  static_assert(N > 0, "cuda::coop::tile Shuffle expects a non-empty tile");
+  static_assert(N > 0 && N % 32 == 0, "cuda::coop::tile Shuffle expects a positive tile size divisible by 32");
   static_assert(!SingleItem || (N >= 32 && N <= 1024 && N % 32 == 0),
                 "cuda::coop::tile shuffle_offset and shuffle_rotate require "
                 "one item per thread and an extent that is a multiple of 32 "
@@ -1243,6 +1244,142 @@ _CCCL_COOP_TILE_REDUCE_OVERLOAD(::cuda::std::bit_or, "bit_or", true)
 _CCCL_COOP_TILE_REDUCE_OVERLOAD(::cuda::std::bit_xor, "bit_xor", true)
 
 #  undef _CCCL_COOP_TILE_REDUCE_OVERLOAD
+
+/**
+ * @brief Return an `int` flag Tile: one at the first position and where a value differs from its
+ * predecessor; zero elsewhere.
+ *
+ * `N` must be a positive multiple of 32.
+ */
+template <typename T, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<int, ct::shape<N>>
+discontinuity_flag_heads(ct::tile<T, ct::shape<N>> input, discontinuity_policy<> = {}) noexcept
+{
+  return detail::discontinuity_flags_call<"heads", T, N>(input);
+}
+
+/**
+ * @brief Return an `int` flag Tile: one at the last position and where a value differs from its
+ * successor; zero elsewhere.
+ *
+ * `N` must be a positive multiple of 32.
+ */
+template <typename T, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<int, ct::shape<N>>
+discontinuity_flag_tails(ct::tile<T, ct::shape<N>> input, discontinuity_policy<> = {}) noexcept
+{
+  return detail::discontinuity_flags_call<"tails", T, N>(input);
+}
+
+/**
+ * @brief Return two `int` flag Tiles, heads first and tails second.
+ *
+ * Use a structured binding. All run boundaries are local to the input Tile.
+ *
+ * `N` must be a positive multiple of 32.
+ */
+template <typename T, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline discontinuity_pair_result<N>
+discontinuity_flag_heads_and_tails(ct::tile<T, ct::shape<N>> input, discontinuity_policy<> = {}) noexcept
+{
+  return detail::discontinuity_heads_and_tails_call<T, N>(input);
+}
+
+/**
+ * @brief Return the current value minus its predecessor; preserve the first input value.
+ *
+ * Shape and dtype are unchanged. No custom operation or external predecessor is accepted.
+ *
+ * `N` must be a positive multiple of 32.
+ */
+template <typename T, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+adjacent_difference_subtract_left(ct::tile<T, ct::shape<N>> input, adjacent_difference_policy<> = {}) noexcept
+{
+  return detail::adjacent_difference_call<"subtract_left", T, N>(input);
+}
+
+/**
+ * @brief Return the current value minus its successor; preserve the last input value.
+ *
+ * Shape and dtype are unchanged. No custom operation or external successor is accepted.
+ *
+ * `N` must be a positive multiple of 32.
+ */
+template <typename T, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+adjacent_difference_subtract_right(ct::tile<T, ct::shape<N>> input, adjacent_difference_policy<> = {}) noexcept
+{
+  return detail::adjacent_difference_call<"subtract_right", T, N>(input);
+}
+
+/**
+ * @brief Read the preceding element and preserve the first input element.
+ *
+ * Shape and dtype are unchanged. Multiple items per physical worker are supported.
+ *
+ * `N` must be a positive multiple of 32.
+ */
+template <typename T, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+shuffle_up(ct::tile<T, ct::shape<N>> input, shuffle_policy<> = {}) noexcept
+{
+  return detail::shuffle_call<"up", false, T, N>(input, 1);
+}
+
+/**
+ * @brief Read the following element and preserve the last input element.
+ *
+ * Shape and dtype are unchanged. Multiple items per physical worker are supported.
+ *
+ * `N` must be a positive multiple of 32.
+ */
+template <typename T, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+shuffle_down(ct::tile<T, ct::shape<N>> input, shuffle_policy<> = {}) noexcept
+{
+  return detail::shuffle_call<"down", false, T, N>(input, 1);
+}
+
+/**
+ * @brief Return `input[i + distance]` when the source is in range; otherwise preserve `input[i]`.
+ *
+ * Require `-N < distance < N` and one physical worker per logical item. Another overload accepts
+ * `ct::tile<int, ct::shape<1>>` for `distance`.
+ */
+template <typename T, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+shuffle_offset(ct::tile<T, ct::shape<N>> input, int distance = 1, shuffle_policy<> = {}) noexcept
+{
+  return detail::shuffle_call<"offset", true, T, N>(input, distance);
+}
+
+template <typename T, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+shuffle_offset(ct::tile<T, ct::shape<N>> input, ct::tile<int, ct::shape<1>> distance, shuffle_policy<> = {}) noexcept
+{
+  return detail::shuffle_call<"offset", true, T, N>(input, detail::normalize_i32_control(distance));
+}
+
+/**
+ * @brief Return `input[(i + distance) % N]`.
+ *
+ * Require `0 <= distance < N` and one physical worker per logical item. Another overload accepts
+ * `ct::tile<int, ct::shape<1>>` for `distance`.
+ */
+template <typename T, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+shuffle_rotate(ct::tile<T, ct::shape<N>> input, int distance = 1, shuffle_policy<> = {}) noexcept
+{
+  return detail::shuffle_call<"rotate", true, T, N>(input, distance);
+}
+
+template <typename T, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+shuffle_rotate(ct::tile<T, ct::shape<N>> input, ct::tile<int, ct::shape<1>> distance, shuffle_policy<> = {}) noexcept
+{
+  return detail::shuffle_call<"rotate", true, T, N>(input, detail::normalize_i32_control(distance));
+}
 
 /**
  * @brief For `B = BlockThreads` and `I = N / B`, return `output[t * I + i] = input[i * B + t]`.
