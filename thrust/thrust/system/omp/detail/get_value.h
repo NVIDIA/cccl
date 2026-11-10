@@ -14,4 +14,4 @@
 #endif // no system header
 
 // omp system inherits get_value
-#include <thrust/system/cpp/detail/get_value.h>
+#include <thrust/system/cpp/detail/get_value.h> // IWYU pragma: export
