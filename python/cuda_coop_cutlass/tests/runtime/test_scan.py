@@ -742,11 +742,13 @@ def test_register_aggregate(ssa):
 
 @pytest.mark.parametrize("warp", (False, True), ids=("block", "logical-warp"))
 def test_final_cubin(tmp_path, warp):
-    """Check Scan inlining and the absence of block barriers in warp kernels.
+    """Check Scan inlining and shared-memory accesses in the linked kernel.
 
     After checking the prefix values, inspect the linked cubin. A provider
     symbol or CALL instruction in the machine code means the CUB wrapper was
-    not inlined. The logical-warp path must contain no block barrier (BAR).
+    not inlined. Block scratch must use LDS/STS rather than generic LD/ST;
+    global input/output accesses may use LDG/STG. The logical-warp path must
+    contain no block barrier (BAR).
     Resource reports are saved for inspection but have no assertions here.
     """
 
@@ -796,8 +798,12 @@ def test_final_cubin(tmp_path, warp):
         cubin.with_suffix(".resources").write_text(resources)
         assert "cuda_coop_cutlass_" not in sass
         assert re.search(r"\bCALL(?:\.[A-Z0-9_]+)*\b", sass) is None
+        assert re.search(r"\b(?:LD|ST)(?:\.[A-Z0-9_]+)*\b", sass) is None
         if warp:
             assert re.search(r"\bBAR(?:\.[A-Z0-9_]+)*\b", sass) is None
+        else:
+            assert re.search(r"\bLDS(?:\.[A-Z0-9_]+)*\b", sass) is not None
+            assert re.search(r"\bSTS(?:\.[A-Z0-9_]+)*\b", sass) is not None
 
 
 @pytest.mark.parametrize("items_per_thread", (1, 4))

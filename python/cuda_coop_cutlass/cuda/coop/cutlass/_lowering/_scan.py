@@ -632,12 +632,8 @@ def _render_cub_scan(request: _CubScanRequest) -> list[str]:
             "       (required_temp_alignment - 1ull)) != 0ull) {",
             '    asm volatile("trap;");',
             "  }",
-            "  unsigned long long generic_addr;",
-            (
-                '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_addr) : '
-                '"l"(static_cast<unsigned long long>(temp_storage_smem_addr)));'
-            ),
-            "  void* temp_storage_ptr = reinterpret_cast<void*>(generic_addr);",
+            "  auto* const temp_storage_ptr =",
+            "      __cvta_shared_to_generic(temp_storage_smem_addr);",
             "  auto* storage_ptr = reinterpret_cast<",
             (
                 "      typename implementation_type::"

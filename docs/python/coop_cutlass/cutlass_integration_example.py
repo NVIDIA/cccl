@@ -78,9 +78,7 @@ extern "C" __device__ int {symbol}(int value, unsigned int smem_addr,
     asm volatile("trap;");
   }}
   // CuTe passes a 32-bit shared-window address; CUB wants a generic pointer.
-  unsigned long long generic_addr;
-  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_addr)
-      : "l"((unsigned long long) smem_addr));
+  auto* const generic_addr = __cvta_shared_to_generic(smem_addr);
   auto& storage = *reinterpret_cast<storage_t*>(generic_addr);
   int result = reduce_t(storage).Sum(value);
   __syncthreads();  // The scratch may be reused by a later call.

@@ -301,12 +301,8 @@ def _render_cub_load_store(request):
                 ),
                 '    asm volatile("trap;");',
                 "  }",
-                "  unsigned long long generic_addr;",
-                (
-                    '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_addr) : '
-                    '"l"(static_cast<unsigned long long>'
-                    "(temp_storage_smem_addr)));"
-                ),
+                "  auto* const generic_addr =",
+                "      __cvta_shared_to_generic(temp_storage_smem_addr);",
                 (
                     "  auto& storage = "
                     "reinterpret_cast<storage_type*>(generic_addr)"

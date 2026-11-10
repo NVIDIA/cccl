@@ -290,8 +290,8 @@ def test_final_cubin(tmp_path, algorithm):
     """Check that each generated histogram wrapper is fully inlined.
 
     Each algorithm first passes the host result checks. The final SASS must
-    then contain no wrapper symbol and no CALL instruction. Register and
-    shared-memory usage are not checked here.
+    then contain no wrapper symbol, CALL instruction, or generic LD/ST.
+    Register and shared-memory usage are not checked here.
     """
 
     tool = find_nvidia_binary_utility("cuobjdump")
@@ -309,6 +309,7 @@ def test_final_cubin(tmp_path, algorithm):
         )
         assert "cuda_coop_cutlass_histogram_" not in sass
         assert re.search(r"\bCALL\b", sass) is None
+        assert re.search(r"\b(?:LD|ST)(?:\.[A-Z0-9_]+)*\b", sass) is None
 
 
 @pytest.mark.parametrize("items_per_thread", (1, 4))

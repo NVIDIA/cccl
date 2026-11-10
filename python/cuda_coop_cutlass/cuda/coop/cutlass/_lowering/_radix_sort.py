@@ -510,11 +510,8 @@ def _render_radix(request):
         "      (storage_address & (alignof(storage_type) - 1u)) != 0u) {",
         '    asm volatile("trap;");',
         "  }",
-        "  unsigned long long generic_address;",
-        (
-            '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_address) : '
-            '"l"((unsigned long long)storage_address));'
-        ),
+        "  auto* const generic_address =",
+        "      __cvta_shared_to_generic(storage_address);",
         "  auto& storage = *reinterpret_cast<storage_type*>(generic_address);",
         *inputs,
         (
