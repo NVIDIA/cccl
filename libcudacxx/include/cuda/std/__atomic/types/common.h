@@ -37,8 +37,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-inline constexpr bool __atomic_is_small_floating_point_v =
-  __is_extended_floating_point_v<remove_cv_t<_Tp>> && sizeof(_Tp) == 2;
+inline constexpr bool __atomic_is_small_floating_point_v = __is_cv_extended_floating_point_v<_Tp> && sizeof(_Tp) == 2;
 
 template <class _Tp>
 inline constexpr bool __atomic_is_floating_point_v =
