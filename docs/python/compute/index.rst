@@ -410,6 +410,29 @@ The same argument-matching rules described above for the object-based API apply
 to a deserialized algorithm: the dtypes, iterator kinds, and operator you pass
 when invoking it must match those used when it was originally built.
 
+For repeated execution on a known device, explicitly bind the reconstructed
+algorithm once:
+
+.. code-block:: python
+
+   portable = cuda.compute.deserialize(blob)
+   executable = portable.bind(device_id=0)
+
+``bind`` returns a new algorithm object with the same call signature, loads the
+selected device's compiled code without recompiling, and leaves ``portable``
+unchanged. Calls to ``executable`` reuse that loaded result directly, avoiding
+the device query and build-result lookup otherwise performed on every call.
+The selected device must be current when calling ``executable``; it does not
+switch devices during execution. Binding itself restores the previously current
+CUDA context, including if loading fails.
+
+Each binding has independent argument state, so separate threads can bind the
+same portable algorithm and use their own executable. Loaded code is shared
+between bindings for the same device. Each individual executable must still be
+used by one thread at a time. Binding also works on algorithms returned by
+``make_*`` factories, including ahead-of-time builds. Serializing a bound object
+preserves the portable compiled artifact, not its device binding.
+
 Blobs are versioned and self-describing, but they are not a long-term storage
 format: compatibility across ``cuda-cccl`` versions is not guaranteed, and
 loading a blob produced by a different version may be rejected with a clear
