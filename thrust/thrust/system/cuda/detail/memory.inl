@@ -12,9 +12,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/system/cuda/detail/execution_policy.h>
 #include <thrust/system/cuda/detail/malloc_and_free.h>
 #include <thrust/system/cuda/memory.h>
+#include <thrust/system/cuda/pointer.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN

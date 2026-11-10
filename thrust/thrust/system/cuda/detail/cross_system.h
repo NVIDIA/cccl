@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/type_deduction.h>
 #include <thrust/system/cpp/detail/execution_policy.h>
 #include <thrust/system/cuda/detail/execution_policy.h>

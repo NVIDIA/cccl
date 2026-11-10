@@ -42,6 +42,7 @@ THRUST_DEVICE_SYSTEM_OMP, or THRUST_DEVICE_SYSTEM_TBB. Define THRUST_IGNORE_CUDA
 #include <cub/detail/detect_cuda_runtime.cuh> // IWYU pragma: export
 #include <cub/util_debug.cuh> // IWYU pragma: export
 #include <cub/util_namespace.cuh> // IWYU pragma: export
+#include <cub/version.cuh>
 
 /**
  * \def THRUST_RUNTIME_FUNCTION

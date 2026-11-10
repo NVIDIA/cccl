@@ -15,7 +15,6 @@
 
 #include <thrust/copy.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
@@ -23,9 +22,10 @@
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential

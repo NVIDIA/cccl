@@ -11,7 +11,7 @@
 
 #include <cuda/std/__cmath/copysign.h>
 #include <cuda/std/__cmath/isinf.h>
-#include <cuda/std/limits>
+#include <cuda/std/__limits/numeric_limits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex

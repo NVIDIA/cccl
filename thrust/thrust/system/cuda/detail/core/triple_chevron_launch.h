@@ -16,6 +16,11 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__cccl/assert.h>
+#include <cuda/std/__cstddef/types.h>
+
+#include <nv/target>
+
+#include <cstring>
 
 THRUST_NAMESPACE_BEGIN
 

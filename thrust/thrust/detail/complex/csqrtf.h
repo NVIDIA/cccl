@@ -47,7 +47,7 @@
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/signbit.h>
-#include <cuda/std/limits>
+#include <cuda/std/__limits/numeric_limits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
