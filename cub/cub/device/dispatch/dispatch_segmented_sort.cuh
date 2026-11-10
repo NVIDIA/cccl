@@ -348,7 +348,7 @@ struct policy_selector_from_hub
 };
 
 // Partition selects large and small groups. The middle group is not selected.
-static constexpr size_t num_selected_groups = 2;
+inline constexpr size_t num_selected_groups = 2;
 } // namespace detail::segmented_sort
 
 // TODO(bgruber): remove in CCCL 4.0
@@ -1194,6 +1194,9 @@ CUB_RUNTIME_FUNCTION void check_policy(PolicyGetter policy_getter)
   CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.medium_segment.store_algorithm != WARP_STORE_STRIPED
                                  || active_policy.small_segment.store_algorithm != WARP_STORE_STRIPED,
                                "Striped stores will produce unsorted results");
+  // get_num_passes divides by radix_bits and each pass must make progress through the key bits
+  CUB_DETAIL_STATIC_ISH_ASSERT(
+    active_policy.large_segment.radix_bits > 0, "SegmentedSortPolicy: large_segment.radix_bits must be positive");
 }
 
 template <typename KeyT,

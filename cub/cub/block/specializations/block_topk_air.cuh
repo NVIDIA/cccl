@@ -21,8 +21,14 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/util_ptx.cuh>
 
+#include <cuda/__bit/bitmask.h>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/cstdint>
 

@@ -467,7 +467,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
 }
 
 // This should ideally have been a lambda, but MSVC < 14.44 ICEs if we put a `(static) constexpr` variable inside
-template <typename RandomAccessIteratorTupleIn,
+template <requires_stable_address RequiresStableAddress,
+          typename RandomAccessIteratorTupleIn,
           typename RandomAccessIteratorOut,
           typename Offset,
           typename Predicate,
@@ -476,14 +477,16 @@ template <typename RandomAccessIteratorTupleIn,
           typename KernelLauncherFactory>
 struct invoke_for_cc;
 
-template <typename... RandomAccessIteratorsIn,
+template <requires_stable_address RequiresStableAddress,
+          typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
           typename Offset,
           typename Predicate,
           typename TransformOp,
           typename KernelSource,
           typename KernelLauncherFactory>
-struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
+struct invoke_for_cc<RequiresStableAddress,
+                     ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                      RandomAccessIteratorOut,
                      Offset,
                      Predicate,
@@ -508,6 +511,11 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
     const auto seq = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
 
     detail::log_dispatch("DeviceTransform", cc, active_policy);
+
+    // all other algorithms pass copies of the input elements in shared memory or registers to the transformation
+    CUB_DETAIL_STATIC_ISH_ASSERT(
+      RequiresStableAddress == requires_stable_address::no || active_policy.algorithm == TransformAlgorithm::prefetch,
+      "TransformPolicy: algorithm must be TransformAlgorithm::prefetch when stable argument addresses are required");
 
     if CUB_DETAIL_CONSTEXPR_ISH (TransformAlgorithm::ublkcp == active_policy.algorithm)
     {
@@ -567,7 +575,7 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
   }
 };
 
-template <requires_stable_address StableAddress,
+template <requires_stable_address RequiresStableAddress,
           typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
           typename Offset,
@@ -609,7 +617,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   // CUB dispatch below if they do not hold (CUB's kernels handle the unaligned/tail case, so this is a graceful
   // fallback, not an error). device_supports_tile() enforces the sm_80+ hardware floor at runtime; below it (or if
   // the capability query fails) we fall through to the standard CUB dispatch.
-  if constexpr (StableAddress == requires_stable_address::no && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
+  if constexpr (RequiresStableAddress == requires_stable_address::no
+                && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
                 && tile::tile_dispatch_eligible_v<TransformOp, RandomAccessIteratorOut, RandomAccessIteratorsIn...>)
   {
     if (tile::device_supports_tile() && tile::runtime_preconditions_valid(in, out, num_items))
@@ -628,7 +637,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   return dispatch_compute_cap(
     policy_selector,
     cc,
-    invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
+    invoke_for_cc<RequiresStableAddress,
+                  ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                   RandomAccessIteratorOut,
                   Offset,
                   Predicate,

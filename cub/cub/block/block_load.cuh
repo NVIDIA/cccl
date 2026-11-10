@@ -26,16 +26,21 @@
 #include <cub/detail/uninitialized.cuh>
 #include <cub/detail/unit_word.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_ptx.cuh>
 
-#include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
-#include <cuda/std/__new/device_new.h>
+#include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__new/device_new.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_volatile.h>
 #include <cuda/std/__type_traits/remove_reference.h>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
 
 CUB_NAMESPACE_BEGIN
 

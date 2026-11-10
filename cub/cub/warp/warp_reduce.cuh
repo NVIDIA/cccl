@@ -23,7 +23,6 @@
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/detail/uninitialized.cuh>
-#include <cub/thread/thread_operators.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>

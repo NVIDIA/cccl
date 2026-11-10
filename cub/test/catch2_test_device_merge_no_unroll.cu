@@ -60,7 +60,7 @@ void test_keys(Offset size1 = 3623, Offset size2 = 6346, CompareOp compare_op = 
 }
 
 using large_type_fallb = c2h::custom_type_t<c2h::equal_comparable_t, c2h::less_comparable_t, c2h::huge_data<56>::type>;
-using large_type_vsmem = c2h::custom_type_t<c2h::equal_comparable_t, c2h::less_comparable_t, c2h::huge_data<774>::type>;
+using large_type_vsmem = c2h::custom_type_t<c2h::equal_comparable_t, c2h::less_comparable_t, c2h::huge_data<776>::type>;
 
 struct fixed_policy_selector
 {

@@ -156,9 +156,21 @@ template <>
 struct __rank_query<thread_level, warp_level>
 {
   template <class _Tp, class _Hierarchy>
-  [[nodiscard]] _CCCL_DEVICE_API static _Tp __call(const _Hierarchy&) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static _Tp __call(const _Hierarchy& __hier) noexcept
   {
-    return __rank_query_native<thread_level, warp_level>::template __call<_Tp>();
+    using _BlockExts _CCCL_NODEBUG =
+      decltype(__extents_query<thread_level, block_level>::template __call<::cuda::std::size_t>(__hier));
+
+    // When we have only 1D block, we can avoid using inline PTX for %laneid special register read and we can just
+    // return 5 least significant bits of threadIdx.x
+    if constexpr (_BlockExts::static_extent(1) == 1 && _BlockExts::static_extent(2) == 1)
+    {
+      return static_cast<_Tp>(threadIdx.x & 0x1f);
+    }
+    else
+    {
+      return __rank_query_native<thread_level, warp_level>::template __call<_Tp>();
+    }
   }
 };
 

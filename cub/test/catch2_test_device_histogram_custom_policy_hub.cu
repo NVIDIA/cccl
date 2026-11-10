@@ -24,6 +24,7 @@ struct my_policy_hub
   struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     using AgentHistogramPolicyT = AgentHistogramPolicy<384, 16, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false>;
+    static_assert(AgentHistogramPolicyT::PIXELS_PER_THREAD == 16);
     static constexpr int init_kernel_pdl_trigger_max_bins = 2048;
   };
 };
@@ -37,13 +38,13 @@ CUB_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][devi
   constexpr int num_channels                         = 1;
   [[maybe_unused]] constexpr int num_active_channels = 1; // msvc warns, only used in nttp
   constexpr int num_bins                             = 16;
-  const offset_t num_row_pixels                      = 256;
+  const offset_t num_row_items                       = 256;
   const offset_t num_rows                            = 1;
-  const offset_t row_stride_samples                  = num_row_pixels * num_channels;
+  const offset_t row_stride_samples                  = num_row_items * num_channels;
   const int num_output_levels                        = num_bins + 1;
 
-  c2h::host_vector<sample_t> h_samples(num_row_pixels);
-  for (offset_t i = 0; i < num_row_pixels; ++i)
+  c2h::host_vector<sample_t> h_samples(num_row_items);
+  for (offset_t i = 0; i < num_row_items; ++i)
   {
     h_samples[i] = static_cast<sample_t>(i % num_bins);
   }
@@ -69,7 +70,7 @@ CUB_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][devi
     num_levels,
     lower_level,
     upper_level,
-    num_row_pixels,
+    num_row_items,
     num_rows,
     row_stride_samples,
     /* stream */ nullptr,
@@ -83,7 +84,7 @@ CUB_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][devi
     num_levels,
     lower_level,
     upper_level,
-    num_row_pixels,
+    num_row_items,
     num_rows,
     row_stride_samples,
     /* stream */ nullptr,

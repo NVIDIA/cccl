@@ -32,7 +32,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::float2
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::float2
 __add_f32x2([[maybe_unused]] const ::float2 __lhs, [[maybe_unused]] const ::float2 __rhs) noexcept
 {
   ::float2 __result{};
@@ -61,7 +61,7 @@ __add_f32x2([[maybe_unused]] const ::float2 __lhs, [[maybe_unused]] const ::floa
   return __result;
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::float2
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::float2
 __mul_f32x2([[maybe_unused]] const ::float2 __lhs, [[maybe_unused]] const ::float2 __rhs) noexcept
 {
   ::float2 __result{};
@@ -90,7 +90,7 @@ __mul_f32x2([[maybe_unused]] const ::float2 __lhs, [[maybe_unused]] const ::floa
   return __result;
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::float2
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::float2
 __sub_f32x2([[maybe_unused]] const ::float2 __lhs, [[maybe_unused]] const ::float2 __rhs) noexcept
 {
   ::float2 __result{};
@@ -119,7 +119,7 @@ __sub_f32x2([[maybe_unused]] const ::float2 __lhs, [[maybe_unused]] const ::floa
   return __result;
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::float2 __fma_f32x2(
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::float2 __fma_f32x2(
   [[maybe_unused]] const ::float2 __lhs,
   [[maybe_unused]] const ::float2 __rhs,
   [[maybe_unused]] const ::float2 __add) noexcept

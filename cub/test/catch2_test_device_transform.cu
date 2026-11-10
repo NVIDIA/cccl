@@ -177,7 +177,7 @@ struct overaligned_addable_and_equal_comparable_policy
 template <int Alignment>
 using overaligned_t = c2h::custom_type_t<overaligned_addable_and_equal_comparable_policy<Alignment>::template type>;
 
-using huge_t = c2h::custom_type_t<c2h::equal_comparable_t, c2h::accumulateable_t, c2h::huge_data<666>::type>;
+using huge_t = c2h::custom_type_t<c2h::equal_comparable_t, c2h::accumulateable_t, c2h::huge_data<672>::type>;
 static_assert(alignof(huge_t) == 8, "Need a large type with alignment < 16");
 
 using uncommon_types = c2h::type_list<

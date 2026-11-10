@@ -83,7 +83,7 @@ class binary_partition;
 template <::cuda::std::size_t _StaticUnitCount>
 class group_by;
 
-template <class _Tag>
+template <class _RangeView>
 class group_as;
 
 class identity_mapping;
@@ -96,7 +96,7 @@ class take;
 template <class _Barrier, ::cuda::std::size_t _Np>
 class barrier_synchronizer;
 
-template <class _Range>
+template <class _RangeView>
 class interwarp_synchronizer;
 
 class lane_synchronizer;
@@ -124,8 +124,8 @@ template <class _Fn>
 inline constexpr bool __is_group_mapping_v<binary_partition<_Fn>> = true;
 template <::cuda::std::size_t _StaticUnitCount>
 inline constexpr bool __is_group_mapping_v<group_by<_StaticUnitCount>> = true;
-template <class _Tag>
-inline constexpr bool __is_group_mapping_v<group_as<_Tag>> = true;
+template <class _RangeView>
+inline constexpr bool __is_group_mapping_v<group_as<_RangeView>> = true;
 template <>
 inline constexpr bool __is_group_mapping_v<identity_mapping> = true;
 template <::cuda::std::size_t _StaticUnitCount>

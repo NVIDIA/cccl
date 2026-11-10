@@ -14,8 +14,10 @@
 #endif // no system header
 
 #include <cub/agent/agent_reduce.cuh>
+#include <cub/block/block_reduce.cuh>
 #include <cub/detail/key_value_pair.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_macro.cuh>
@@ -23,8 +25,8 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/determinism.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/concepts>
-#include <cuda/std/optional>
+#include <cuda/std/__optional/optional.h>
+#include <cuda/std/__type_traits/void_t.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -522,6 +524,22 @@ struct policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_deterministic_tuning(::cuda::compute_capability cc) const
     -> ReducePolicy
   {
+    if (cc >= ::cuda::compute_capability{10, 0} && cc < ::cuda::compute_capability{10, 7} && offset_size == 8)
+    {
+      // tunings from cub/benchmarks/bench/reduce/deterministic.cu. These are raw measured values and must not be
+      // passed through scale_mem_bound. Only tuned for 64-bit offsets; 32-bit offsets fall through.
+      if (accum_t == type_t::float32)
+      {
+        // ipt_18.tpb_256  2^16..2^32: 1.000 1.000 1.325 1.209 1.285
+        return {{256, 18, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT}, {256, 18, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT}};
+      }
+      if (accum_t == type_t::float64)
+      {
+        // ipt_8.tpb_224  2^16..2^32: 1.000 1.301 1.247 1.116 1.035
+        return {{224, 8, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT}, {224, 8, 1, BLOCK_REDUCE_RAKING, LOAD_DEFAULT}};
+      }
+    }
+
     if (cc >= ::cuda::compute_capability{9, 0})
     {
       // only tuned for float, fall through for other types

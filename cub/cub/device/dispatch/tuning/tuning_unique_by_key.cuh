@@ -20,12 +20,13 @@
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/optional>
+#include <cuda/std/__optional/optional.h>
 
 CUB_NAMESPACE_BEGIN
 

@@ -14,8 +14,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__type_traits/integral_constant.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/void_t.h> // IWYU pragma: keep
 
 CUB_NAMESPACE_BEGIN
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document

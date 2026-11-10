@@ -13,12 +13,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/internal_functional.h>
 #include <thrust/detail/temporary_array.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/iterator/is_output_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/reduce.h>
 #include <thrust/scan.h>
 #include <thrust/scatter.h>
 #include <thrust/transform.h>
@@ -26,7 +28,9 @@
 #include <cuda/std/__functional/not_fn.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__utility/pair.h>
 #include <cuda/std/limits>
+#include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic

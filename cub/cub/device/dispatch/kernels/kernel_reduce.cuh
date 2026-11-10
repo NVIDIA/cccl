@@ -20,10 +20,14 @@
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/util_arch.cuh>
 
-#include <cuda/__device/compute_capability.h>
+#include <cuda/__atomic/atomic.h> // IWYU pragma: keep
 #include <cuda/__functional/operator_properties.h>
-#include <cuda/atomic>
+#include <cuda/std/__atomic/order.h> // IWYU pragma: keep
+#include <cuda/std/__atomic/scopes.h> // IWYU pragma: keep
+#include <cuda/std/__functional/identity.h>
 #include <cuda/std/__type_traits/is_integral.h>
+
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 

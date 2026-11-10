@@ -32,12 +32,12 @@ bool arch_filter(const cudaDeviceProp& props)
   return false;
 }
 
-static bool skip_host_exec(bool (* /* filter */)(const cudaDeviceProp&))
+inline bool skip_host_exec(bool (* /* filter */)(const cudaDeviceProp&))
 {
   return false;
 }
 
-static bool skip_device_exec(bool (*filter)(const cudaDeviceProp&))
+inline bool skip_device_exec(bool (*filter)(const cudaDeviceProp&))
 {
   cudaDeviceProp props{};
   REQUIRE_CUDART(cudaGetDeviceProperties(&props, 0));

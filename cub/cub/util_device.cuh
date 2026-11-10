@@ -19,17 +19,23 @@
 
 #include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_policy_wrapper_t.cuh>
+
+#include <cuda/__cmath/round_up.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/type_identity.h>
+
 // for backward compatibility
-#include <cub/util_temporary_storage.cuh>
+#include <cub/util_policy_wrapper_t.cuh> // IWYU pragma: export
+#include <cub/util_temporary_storage.cuh> // IWYU pragma: export
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/__algorithm/find.h>
-#include <cuda/std/__concepts/regular.h>
-#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -39,6 +45,11 @@
 #endif // _CCCL_HOSTED()
 
 #include <nv/target>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cuda/std/__concepts/regular.h>
+#  include <cuda/std/__concepts/same_as.h>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 

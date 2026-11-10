@@ -21,17 +21,17 @@
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_discontinuity.cuh>
 #include <cub/block/block_load.cuh>
+#include <cub/block/block_raking_layout.cuh>
 #include <cub/block/block_scan.cuh>
-#include <cub/block/block_store.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/key_value_pair.cuh>
 #include <cub/detail/non_void_value.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_operators.cuh>
 
-#include <cuda/__functional/operator_properties.h>
-#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -187,6 +187,17 @@ struct AgentReduceByKey
   static constexpr int ITEMS_PER_THREAD  = AgentReduceByKeyPolicyT::ITEMS_PER_THREAD;
   static constexpr int TILE_ITEMS        = BLOCK_THREADS * ITEMS_PER_THREAD;
   static constexpr int TWO_PHASE_SCATTER = (ITEMS_PER_THREAD > 1);
+
+  // The head flagging, scan and scatter require the items in a blocked arrangement
+  static_assert(AgentReduceByKeyPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
+                "ReduceByKeyLookbackPolicy/RleLookbackPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since "
+                "the reduction requires a blocked arrangement");
+  static_assert(
+    (AgentReduceByKeyPolicyT::SCAN_ALGORITHM == BLOCK_SCAN_WARP_SCANS && BLOCK_THREADS % detail::warp_threads == 0)
+      || BlockRakingLayout<int, BLOCK_THREADS>::RAKING_THREADS == detail::warp_threads,
+    "ReduceByKeyLookbackPolicy/RleLookbackPolicy: the decoupled look-back needs a full warp to enter the block-scan "
+    "prefix callback: with warp scans threads_per_block must be a multiple of 32, otherwise the raking layout must "
+    "yield 32 raking threads");
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
   // for keys Wrap the native input pointer with
