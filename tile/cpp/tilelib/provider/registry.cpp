@@ -8,17 +8,71 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "provider/families/reduce.h"
+#include "provider/families/scan.h"
+
 namespace cuda::coop::tile::detail::provider
 {
 namespace
 {
 static_assert(family_count == 21, "the provider contract must contain exactly 21 primitive families");
 
-constexpr std::array<FamilyDescriptor, 0> registry{{}};
+constexpr std::array<FamilyDescriptor, 5> registry{{
+  {FamilyId::sum,
+   "cuda_coop_tile_sum",
+   "cuda_coop_tile_sum_impl",
+   "sum",
+   "reduce_sum",
+   "cub/block/block_reduce.cuh",
+   generated::schema_for("cuda_coop_tile_sum"),
+   FamilyRankingPolicy::block_threads_centered_128,
+   parse_reduce_metadata,
+   emit_reduce_source},
+  {FamilyId::reduce,
+   "cuda_coop_tile_reduce",
+   "cuda_coop_tile_reduce_impl",
+   "reduce",
+   "reduce_generic",
+   "cub/block/block_reduce.cuh",
+   generated::schema_for("cuda_coop_tile_reduce"),
+   FamilyRankingPolicy::block_threads_centered_128,
+   parse_reduce_metadata,
+   emit_reduce_source},
+  {FamilyId::scan,
+   "cuda_coop_tile_scan",
+   "cuda_coop_tile_scan_impl",
+   "scan",
+   "scan",
+   "cub/block/block_scan.cuh",
+   generated::schema_for("cuda_coop_tile_scan"),
+   FamilyRankingPolicy::block_threads_centered_128,
+   parse_scan_metadata,
+   emit_scan_source},
+  {FamilyId::sum_batched,
+   "cuda_coop_tile_sum_batched",
+   "cuda_coop_tile_sum_batched_impl",
+   "sum-batched",
+   "reduce_sum_batched",
+   "cub/warp/warp_reduce.cuh",
+   generated::schema_for("cuda_coop_tile_sum_batched"),
+   FamilyRankingPolicy::block_threads_centered_128,
+   parse_reduce_metadata,
+   emit_reduce_source},
+  {FamilyId::reduce_batched,
+   "cuda_coop_tile_reduce_batched",
+   "cuda_coop_tile_reduce_batched_impl",
+   "reduce-batched",
+   "reduce_generic_batched",
+   "cub/warp/warp_reduce.cuh",
+   generated::schema_for("cuda_coop_tile_reduce_batched"),
+   FamilyRankingPolicy::block_threads_centered_128,
+   parse_reduce_metadata,
+   emit_reduce_source},
+}};
 
 constexpr bool registry_is_complete()
 {
-  if (registry.size() != 0)
+  if (registry.size() != 5)
   {
     return false;
   }
