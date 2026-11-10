@@ -113,10 +113,10 @@ __internal_fpmp2_tanh(const float __x_hi, const float __x_lo, float* __res_hi, f
     float __u_hi;
     float __u_lo;
     ::cuda::__fpmp2_exp<float>(__two_abs.hi(), __two_abs.lo(), &__u_hi, &__u_lo);
-    __ffloat __denom = __ffloat(__u_hi, __u_lo) + __ffloat(1.f);
+    __ffloat __denom = __ffloat(__u_hi, __u_lo) + 1.0f;
     float __r_hi, __r_lo;
     ::cuda::__fpmp_math_div_refined<true>(2.0f, 0.0f, __denom.hi(), __denom.lo(), &__r_hi, &__r_lo);
-    __ffloat __result = renormalize(__ffloat(1.f) - __ffloat(__r_hi, __r_lo));
+    __ffloat __result = renormalize(1.0f - __ffloat(__r_hi, __r_lo));
     if (__is_neg)
     {
       __result = -__result;
@@ -257,7 +257,7 @@ __internal_fpmp2_sinh(const float __x_hi, const float __x_lo, float* __res_hi, f
       return;
     }
     __ffloat __e(__u_hi, __u_lo);
-    __ffloat __half_e = __e * __ffloat(0.5f);
+    __ffloat __half_e = __e * 0.5f;
     float __i_hi, __i_lo;
     ::cuda::__fpmp_math_div_refined<false>(0.5f, 0.0f, __u_hi, __u_lo, &__i_hi, &__i_lo);
     __ffloat __result = renormalize(__half_e - __ffloat(__i_hi, __i_lo));
@@ -823,8 +823,8 @@ __internal_fpmp2_atanh(const float __x_hi, const float __x_lo, float* __res_hi, 
    * exact-remainder variant, 3.5 u^2, changed nothing visible here and cost
    * 10 % of the throughput).  Accurate sub for 1 - |x| to capture full
    * precision when |x| is close to 1. */
-  __ffloat __one_minus = sub<fpmp2_accuracy::high>(__ffloat(1.0f), __abs_a);
-  __ffloat __two_abs   = __abs_a + __abs_a; /* exact */
+  __ffloat __one_minus = sub<fpmp2_accuracy::high>(1.0f, __abs_a);
+  __ffloat __two_abs   = __abs_a * 2.0f; /* exact */
   __ffloat __two_a2    = __two_abs * __abs_a; /* 2 x^2 */
   float __q_hi, __q_lo;
   ::cuda::__fpmp_math_div_refined<false>(

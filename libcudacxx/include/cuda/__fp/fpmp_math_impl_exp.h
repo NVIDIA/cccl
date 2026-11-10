@@ -282,7 +282,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_exp_core(
   __p = __p * __r_scale + __fscale_lo;
 
   // Scale the result by the high part of the scale
-  __p               = __p * __ffloat(__fscale);
+  __p               = __p * __fscale;
   __ffloat __result = renormalize(__p);
 
   *__res_hi = __result.hi();

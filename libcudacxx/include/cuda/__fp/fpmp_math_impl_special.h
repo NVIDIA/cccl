@@ -524,7 +524,7 @@ __internal_fpmp2_erfcx_kernel(const float __a_hi, const float __a_lo, float* __r
   ::cuda::__fpmp_math_div_refined<true>(__num.hi(), __num.lo(), __den.hi(), __den.lo(), &__t_hi, &__t_lo);
   const __ffloat __t  = renormalize(__ffloat(__t_hi, __t_lo));
   const __ffloat __p  = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 7>(__t, __cheb);
-  const __ffloat __d2 = add<fpmp2_accuracy::high>(__a + __a, 1.0f);
+  const __ffloat __d2 = add<fpmp2_accuracy::high>(__a * 2.0f, 1.0f);
   ::cuda::__fpmp_math_div_refined<true>(__p.hi(), __p.lo(), __d2.hi(), __d2.lo(), __res_hi, __res_lo);
 }
 
@@ -654,8 +654,8 @@ __internal_fpmp2_erfinv_step(const float __y0, const fp32mp2_low __f, const floa
   ::cuda::__internal_fpmp2_exp_sq(__y0, 0.0f, -1.0f, &__e_hi, &__e_lo);
   const __ffloat __gp   = renormalize(__ffloat(__e_hi, __e_lo) * __two_over_sqrtpi * __s);
   const __ffloat __d    = __f / __gp; /* d is a 2^-22 correction: the low division's 26 u^2 land at 2^-65 */
-  const __ffloat __corr = __d * (__ffloat(1.0f) - __ffloat(__y0) * __d);
-  return renormalize(sub<fpmp2_accuracy::high>(__ffloat(__y0), __corr));
+  const __ffloat __corr = __d * (1.0f - __y0 * __d);
+  return renormalize(sub<fpmp2_accuracy::high>(__y0, __corr));
 }
 
 /* erfinv(x) for |x| <= 1/2. */
@@ -706,7 +706,7 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_erfcinv_core(const fp32mp2_low 
     const float __z = __t
                     - (2.515517f + 0.802853f * __t + 0.010328f * __t * __t)
                         / (1.0f + 1.432788f * __t + 0.189269f * __t * __t + 0.001308f * __t * __t * __t);
-    __y0 = __z * 0x1.6a09e6p-1f;
+    __y0            = __z * 0x1.6a09e6p-1f;
   }
   else
   {
@@ -1041,7 +1041,7 @@ __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res
     return;
   }
 
-  const __ffloat __a   = sub<fpmp2_accuracy::high>(__p + __p, 1.0f);
+  const __ffloat __a   = sub<fpmp2_accuracy::high>(__p * 2.0f, 1.0f);
   const __ffloat __omp = sub<fpmp2_accuracy::high>(1.0f, __p);
   const __ffloat __arg = renormalize(4.0f * __p * __omp);
   float __l_hi, __l_lo;
@@ -1051,7 +1051,7 @@ __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res
   __ffloat __poly;
   if (__w.hi() < 6.25f)
   {
-    __poly = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, 4>(__w - __ffloat(3.125f), __rc_c);
+    __poly = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, 4>(__w - 3.125f, __rc_c);
   }
   else
   {
@@ -1060,11 +1060,11 @@ __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res
     const __ffloat __sw(__s_hi, __s_lo);
     if (__w.hi() < 16.0f)
     {
-      __poly = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 4>(__sw - __ffloat(3.25f), __rt_c);
+      __poly = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 4>(__sw - 3.25f, __rt_c);
     }
     else
     {
-      __poly = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 13>(__sw - __ffloat(7.25f), __rt2_c);
+      __poly = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 13>(__sw - 7.25f, __rt2_c);
     }
   }
   const __ffloat __z = ::cuda::__internal_fpmp2_mul_acc(__poly, __a);
