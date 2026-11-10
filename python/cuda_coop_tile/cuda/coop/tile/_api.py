@@ -443,6 +443,135 @@ def sum(
 
 
 @stub(host=False, tile=True, simt=False)
+def merge_sort_keys(
+    keys: Tile,
+    /,
+    *,
+    descending: bool | None = None,
+    valid_items=None,
+    oob_default=None,
+    methods=None,
+) -> Tile:
+    """Sort a Tile's keys by numeric comparison.
+
+    Parameters
+    ----------
+    keys : Tile
+        Numeric keys of shape ``(N,)``.
+        ``N`` must be a positive multiple of 32.
+    descending : bool
+        Compile-time sort direction. ``None`` or ``False`` selects ascending
+        order; ``True`` selects descending order.
+    valid_items : int or Tile
+        Meaningful input prefix length in ``[0, N]``. Accepts a constant,
+        runtime scalar, or single-element Tile. Supply with ``oob_default``.
+    oob_default : int, float, Tile
+        Key used to replace positions beyond ``valid_items`` before sorting.
+        Accepts a constant, runtime scalar, or single-element Tile.
+        Integer keys require an integer constant; floating-point keys accept
+        numeric constants. Runtime values are cast to the key dtype.
+        Supply with ``valid_items``.
+    methods : collections.abc.Mapping or tuple
+        Compile-time ``descending``, ``valid_items``, and ``oob_default``
+        options.
+
+    Returns
+    -------
+    Tile
+        Sorted keys with the input shape and dtype. The input is unchanged.
+        Equal keys have no stability guarantee; NaNs have no total order.
+
+    Notes
+    -----
+    To place all valid keys first, choose a padding key strictly greater
+    than them for ascending order or strictly smaller for descending order.
+    Otherwise padding may interleave with valid keys. Output capacity stays
+    ``N``, including when ``valid_items`` is zero.
+
+    Examples
+    --------
+    In a ``cuda.tile`` kernel with 256 ``int32`` keys, of which the first
+    193 are strictly below the padding key:
+
+    .. code-block:: python
+
+        ordered = coop.merge_sort_keys(
+            keys, valid_items=193, oob_default=2147483647
+        )
+
+    See Also
+    --------
+    merge_sort_pairs, radix_sort_keys
+    """
+
+    return keys
+
+
+@stub(host=False, tile=True, simt=False)
+def merge_sort_pairs(
+    keys: Tile,
+    values: Tile,
+    /,
+    *,
+    descending: bool | None = None,
+    valid_items=None,
+    oob_default=None,
+    methods=None,
+) -> tuple[Tile, Tile]:
+    """Sort keys while carrying their associated payloads.
+
+    Parameters
+    ----------
+    keys, values : Tile
+        Numeric Tiles of matching shape ``(N,)``. Their dtypes may differ.
+        ``N`` must be a positive multiple of 32.
+    descending : bool
+        Compile-time sort direction. ``None`` or ``False`` selects ascending
+        order; ``True`` selects descending order.
+    valid_items : int or Tile
+        Meaningful input prefix length in ``[0, N]``. Accepts a constant,
+        runtime scalar, or single-element Tile. Supply with ``oob_default``.
+    oob_default : int, float, Tile
+        Padding key for positions beyond ``valid_items``. Accepts a constant,
+        runtime scalar, or single-element Tile. Integer keys require an
+        integer constant; floating-point keys accept numeric constants.
+        Runtime values are cast to the key dtype. Padded payloads are zeroed
+        before sorting.
+    methods : collections.abc.Mapping or tuple
+        Compile-time ``descending``, ``valid_items``, and ``oob_default``
+        options.
+
+    Returns
+    -------
+    tuple[Tile, Tile]
+        ``(sorted_keys, sorted_values)`` with the respective input dtypes
+        and shape ``(N,)``. Each value follows its key; inputs are unchanged.
+
+    Notes
+    -----
+    Equal keys have no stability guarantee, and NaNs have no total order.
+    For partial sorting, use a strict high sentinel in ascending order or
+    a strict low sentinel in descending order. This places the valid pairs
+    first and the zeroed padding payloads last. A sentinel equal to a valid
+    key can interleave padded and valid payloads.
+
+    Examples
+    --------
+    For loaded key and payload Tiles in a ``cuda.tile`` kernel:
+
+    .. code-block:: python
+
+        ordered_keys, ordered_ids = coop.merge_sort_pairs(keys, ids)
+
+    See Also
+    --------
+    merge_sort_keys, radix_sort_pairs
+    """
+
+    return keys, values
+
+
+@stub(host=False, tile=True, simt=False)
 def histogram_256(samples: Tile, /, *, methods=None) -> Tile:
     """Count byte values in one Tile into all 256 bins.
 
@@ -1098,6 +1227,8 @@ __all__ = [
     "histogram_256",
     "inclusive_scan",
     "inclusive_sum",
+    "merge_sort_keys",
+    "merge_sort_pairs",
     "reduce",
     "run_length_decode",
     "run_length_decode_with_offsets",

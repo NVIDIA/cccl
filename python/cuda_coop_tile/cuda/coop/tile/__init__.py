@@ -64,6 +64,8 @@ _API_SYMBOLS = (
     "inclusive_scan",
     "reduce",
     "sum",
+    "merge_sort_keys",
+    "merge_sort_pairs",
     "histogram_256",
     "histogram",
     "run_length_decode",

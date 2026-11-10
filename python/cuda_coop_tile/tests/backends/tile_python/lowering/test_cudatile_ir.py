@@ -401,6 +401,98 @@ def test_registered_exchange_does_not_fold_another_foreign_callee(monkeypatch):
 
 
 @pytest.mark.link
+@pytest.mark.parametrize("pairs", [False, True])
+@pytest.mark.parametrize("valid_items", [128, 129])
+def test_merge_sort_checks_constant_valid_item_extent(
+    monkeypatch, pairs, valid_items
+):
+    _configure_tile_library(monkeypatch)
+    _configure_imports(monkeypatch)
+    global ct, coop
+    ct = importlib.import_module("cuda.tile")
+    coop = importlib.import_module("cuda.coop.tile")
+    from cuda.tile._cext import default_tile_context
+    from cuda.tile._exception import TileTypeError
+
+    @ct.kernel
+    def kernel(inp: ct.Array, out: ct.Array):
+        keys = ct.load(inp, (0,), shape=(128,))
+        if pairs:
+            result, _ = coop.merge_sort_pairs(
+                keys, keys, valid_items=valid_items, oob_default=0
+            )
+        else:
+            result = coop.merge_sort_keys(
+                keys, valid_items=valid_items, oob_default=0
+            )
+        ct.store(out, (0,), result)
+
+    arguments = (_FakeCudaArray((128,)), _FakeCudaArray((128,)))
+    if valid_items > 128:
+        with pytest.raises(
+            TileTypeError, match="valid_items exceeds tile size"
+        ):
+            _get_final_ir(kernel._pyfunc, arguments, default_tile_context)
+    else:
+        func_ir = _get_final_ir(kernel._pyfunc, arguments, default_tile_context)
+        assert len(_preview_foreign_calls(func_ir)) == 1
+
+
+@pytest.mark.link
+@pytest.mark.parametrize("pairs", [False, True])
+@pytest.mark.parametrize("use_methods", [False, True])
+def test_merge_sort_rejects_boolean_valid_items(
+    monkeypatch, pairs, use_methods
+):
+    _configure_tile_library(monkeypatch)
+    _configure_imports(monkeypatch)
+    global ct, coop
+    ct = importlib.import_module("cuda.tile")
+    coop = importlib.import_module("cuda.coop.tile")
+    from cuda.tile._cext import default_tile_context
+    from cuda.tile._exception import TileTypeError
+
+    for count in (True, 1):
+        valid_items = None if use_methods else count
+        oob_default = None if use_methods else 999
+        methods = (
+            ("valid_items", count, "oob_default", 999) if use_methods else None
+        )
+
+        @ct.kernel
+        def kernel(inp: ct.Array, out: ct.Array):
+            keys = ct.load(inp, (0,), shape=(128,))
+            if pairs:
+                result, _ = coop.merge_sort_pairs(
+                    keys,
+                    keys,
+                    valid_items=valid_items,
+                    oob_default=oob_default,
+                    methods=methods,
+                )
+            else:
+                result = coop.merge_sort_keys(
+                    keys,
+                    valid_items=valid_items,
+                    oob_default=oob_default,
+                    methods=methods,
+                )
+            ct.store(out, (0,), result)
+
+        arguments = (_FakeCudaArray((128,)), _FakeCudaArray((128,)))
+        if count is True:
+            with pytest.raises(
+                TileTypeError, match="valid_items must be an int"
+            ):
+                _get_final_ir(kernel._pyfunc, arguments, default_tile_context)
+        else:
+            func_ir = _get_final_ir(
+                kernel._pyfunc, arguments, default_tile_context
+            )
+            assert len(_preview_foreign_calls(func_ir)) == 1
+
+
+@pytest.mark.link
 @pytest.mark.parametrize(
     "name", ["exchange_striped_to_blocked", "exchange_blocked_to_striped"]
 )

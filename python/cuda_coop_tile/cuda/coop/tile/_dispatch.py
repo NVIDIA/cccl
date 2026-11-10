@@ -455,6 +455,64 @@ def dispatch_histogram(
     return decision
 
 
+def dispatch_merge_sort_keys(
+    *,
+    numel: int,
+    dtype: datatype.DType,
+    descending: bool,
+    valid_items: int | None,
+) -> CoopDispatchDecision:
+    del descending
+    del valid_items
+    backend, rationale = _default_backend_for_numel(numel)
+    backend, rationale = _apply_forced_backend(backend, rationale)
+    block_threads = _select_one_item_block_threads(
+        primitive="merge_sort_keys",
+        numel=numel,
+    )
+    decision = CoopDispatchDecision(
+        primitive="merge_sort_keys",
+        backend_family=backend,
+        block_threads=block_threads,
+        algorithm=None,
+        rationale=rationale,
+        tile_numel=numel,
+        dtype=dtype,
+    )
+    _trace_dispatch(decision)
+    return decision
+
+
+def dispatch_merge_sort_pairs(
+    *,
+    numel: int,
+    key_dtype: datatype.DType,
+    value_dtype: datatype.DType,
+    descending: bool,
+    valid_items: int | None,
+) -> CoopDispatchDecision:
+    del value_dtype
+    del descending
+    del valid_items
+    backend, rationale = _default_backend_for_numel(numel)
+    backend, rationale = _apply_forced_backend(backend, rationale)
+    block_threads = _select_one_item_block_threads(
+        primitive="merge_sort_pairs",
+        numel=numel,
+    )
+    decision = CoopDispatchDecision(
+        primitive="merge_sort_pairs",
+        backend_family=backend,
+        block_threads=block_threads,
+        algorithm=None,
+        rationale=rationale,
+        tile_numel=numel,
+        dtype=key_dtype,
+    )
+    _trace_dispatch(decision)
+    return decision
+
+
 def dispatch_discontinuity(
     *,
     primitive: str,

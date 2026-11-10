@@ -64,6 +64,12 @@ from ._block.exchange import (
     BlockExchangeStripedToBlocked,
 )
 from ._block.histogram import BlockHistogram
+from ._block.merge_sort import (
+    BlockMergeSortKeys,
+    BlockMergeSortKeysOptions,
+    BlockMergeSortPairs,
+    BlockMergeSortPairsOptions,
+)
 from ._block.reduce import (
     BlockReduce,
     BlockReduceOptions,
@@ -95,6 +101,8 @@ from ._dispatch import (
     dispatch_histogram,
     dispatch_inclusive_scan,
     dispatch_inclusive_sum,
+    dispatch_merge_sort_keys,
+    dispatch_merge_sort_pairs,
     dispatch_reduce,
     dispatch_shuffle,
     dispatch_sum,
@@ -660,12 +668,51 @@ def _sort_key_static_prefix(
     return (numel, dtype)
 
 
+def _merge_sort_key_static_prefix(
+    numel: int,
+    dtype,
+    *,
+    descending: bool,
+    partial_tile: bool,
+):
+    return (
+        *_sort_key_static_prefix(
+            numel,
+            dtype,
+        ),
+        int(descending),
+        int(partial_tile),
+        _dtype_token(dtype),
+    )
+
+
 def _sort_pair_static_prefix(
     numel: int,
     key_dtype,
     value_dtype,
 ):
     return (numel, key_dtype, value_dtype)
+
+
+def _merge_sort_pair_static_prefix(
+    numel: int,
+    key_dtype,
+    value_dtype,
+    *,
+    descending: bool,
+    partial_tile: bool,
+):
+    return (
+        *_sort_pair_static_prefix(
+            numel,
+            key_dtype,
+            value_dtype,
+        ),
+        int(descending),
+        int(partial_tile),
+        _dtype_token(key_dtype),
+        _dtype_token(value_dtype),
+    )
 
 
 def _coop_tile_linker_input() -> tuple[str, str, Path]:
@@ -2116,4 +2163,261 @@ def shuffle_rotate_impl(value, distance, methods):
         methods,
         primitive="shuffle_rotate",
         mode="rotate",
+    )
+
+
+def merge_sort_keys_impl(keys, descending, valid_items, oob_default, methods):
+    """Lower Merge Sort and distinguish full from guarded overloads.
+
+    The presence of a valid-item count and default key selects the guarded
+    provider variant. Their values remain scalar operands, including when
+    known during lowering. Validate static portions with the block adapter
+    and preserve the input extent in the result.
+    """
+
+    tile_ty = require_tile_type(keys)
+    shape = tile_ty.shape
+
+    if tile_ty.ndim != 1:
+        raise TileTypeError("coop.merge_sort_keys expects a 1D tile")
+
+    descending_val = _require_optional_constant_object(descending, "descending")
+    methods_val = _require_optional_constant_object(methods, "methods")
+    _reject_runtime_method_overlap(
+        methods_val, valid_items, "valid_items", "merge_sort_keys"
+    )
+    _reject_runtime_method_overlap(
+        methods_val, oob_default, "oob_default", "merge_sort_keys"
+    )
+    valid_items_const = _const_value_or_runtime(valid_items)
+    oob_default_const = _const_value_or_runtime(oob_default)
+    options = BlockMergeSortKeysOptions.from_kwargs(
+        descending=descending_val,
+        valid_items=0
+        if valid_items_const is _RUNTIME_VALUE
+        else valid_items_const,
+        oob_default=0
+        if oob_default_const is _RUNTIME_VALUE
+        else oob_default_const,
+        methods=methods_val,
+    )
+
+    numel = shape[0]
+    partial_tile = (
+        options.valid_items is not None
+        or options.oob_default is not None
+        or _is_provided(valid_items)
+        or _is_provided(oob_default)
+    )
+    if (
+        partial_tile
+        and (_is_provided(valid_items) != _is_provided(oob_default))
+        and options.valid_items is None
+        and options.oob_default is None
+    ):
+        raise TileTypeError(
+            "coop.merge_sort_keys requires both valid_items "
+            "and oob_default "
+            "when either is present"
+        )
+    if partial_tile and (options.valid_items is None) != (
+        options.oob_default is None
+    ):
+        raise TileTypeError(
+            "coop.merge_sort_keys requires both valid_items and oob_default "
+            "when either is present"
+        )
+    valid_items_operand = (
+        _constant_scalar_tile(options.valid_items, datatype.int32)
+        if not _is_provided(valid_items) and options.valid_items is not None
+        else _rank0_scalar_tile_operand(
+            valid_items,
+            datatype.int32,
+            primitive="merge_sort_keys",
+            name="valid_items",
+            default=numel,
+            int_value=True,
+        )[0]
+    )
+    oob_default_operand = (
+        _constant_scalar_tile(
+            _validate_numeric_constant(
+                options.oob_default,
+                tile_ty.dtype,
+                primitive="merge_sort_keys",
+                name="oob_default",
+            ),
+            tile_ty.dtype,
+        )
+        if not _is_provided(oob_default) and options.oob_default is not None
+        else _rank0_scalar_tile_operand(
+            oob_default,
+            tile_ty.dtype,
+            primitive="merge_sort_keys",
+            name="oob_default",
+            default=0,
+            numeric_value=True,
+        )[0]
+    )
+    decision = dispatch_merge_sort_keys(
+        numel=numel,
+        dtype=tile_ty.dtype,
+        descending=options.descending,
+        valid_items=None,
+    )
+    items_per_thread = numel // decision.block_threads
+
+    BlockMergeSortKeys(
+        items_per_thread=items_per_thread,
+        dtype=tile_ty.dtype,
+        block_threads=decision.block_threads,
+        descending=options.descending,
+        valid_items=options.valid_items,
+        oob_default=options.oob_default,
+    )
+
+    out_ty = make_tile_ty(tile_ty.dtype, shape)
+    return _emit_provider_foreign_call(
+        operands=(keys, valid_items_operand, oob_default_operand),
+        output_types=(out_ty,),
+        decl_sym_name=_PROVIDER_DECL_MERGE_SORT_KEYS,
+        static_prefix=_merge_sort_key_static_prefix(
+            numel,
+            tile_ty.dtype,
+            descending=options.descending,
+            partial_tile=partial_tile,
+        ),
+    )
+
+
+def merge_sort_pairs_impl(
+    keys, values, descending, valid_items, oob_default, methods
+):
+    """Lower paired Merge Sort while keeping keys and values associated.
+
+    Require equal one-dimensional shapes, normalize the guarded-overload
+    controls, and validate each dtype. Pass valid count and default key as
+    scalar operands. Return a tuple of key and value Tiles at their original
+    extents and element types.
+    """
+
+    keys_ty = require_tile_type(keys)
+    values_ty = require_tile_type(values)
+    shape = keys_ty.shape
+
+    if keys_ty.ndim != 1 or values_ty.ndim != 1:
+        raise TileTypeError("coop.merge_sort_pairs expects 1D tiles")
+    if keys_ty.shape != values_ty.shape:
+        raise TileTypeError("coop.merge_sort_pairs expects matching shapes")
+
+    descending_val = _require_optional_constant_object(descending, "descending")
+    methods_val = _require_optional_constant_object(methods, "methods")
+    _reject_runtime_method_overlap(
+        methods_val, valid_items, "valid_items", "merge_sort_pairs"
+    )
+    _reject_runtime_method_overlap(
+        methods_val, oob_default, "oob_default", "merge_sort_pairs"
+    )
+    valid_items_const = _const_value_or_runtime(valid_items)
+    oob_default_const = _const_value_or_runtime(oob_default)
+    options = BlockMergeSortPairsOptions.from_kwargs(
+        descending=descending_val,
+        valid_items=0
+        if valid_items_const is _RUNTIME_VALUE
+        else valid_items_const,
+        oob_default=0
+        if oob_default_const is _RUNTIME_VALUE
+        else oob_default_const,
+        methods=methods_val,
+    )
+
+    numel = shape[0]
+    partial_tile = (
+        options.valid_items is not None
+        or options.oob_default is not None
+        or _is_provided(valid_items)
+        or _is_provided(oob_default)
+    )
+    if (
+        partial_tile
+        and (_is_provided(valid_items) != _is_provided(oob_default))
+        and options.valid_items is None
+        and options.oob_default is None
+    ):
+        raise TileTypeError(
+            "coop.merge_sort_pairs requires both valid_items "
+            "and oob_default "
+            "when either is present"
+        )
+    if partial_tile and (options.valid_items is None) != (
+        options.oob_default is None
+    ):
+        raise TileTypeError(
+            "coop.merge_sort_pairs requires both valid_items and oob_default "
+            "when either is present"
+        )
+    valid_items_operand = (
+        _constant_scalar_tile(options.valid_items, datatype.int32)
+        if not _is_provided(valid_items) and options.valid_items is not None
+        else _rank0_scalar_tile_operand(
+            valid_items,
+            datatype.int32,
+            primitive="merge_sort_pairs",
+            name="valid_items",
+            default=numel,
+            int_value=True,
+        )[0]
+    )
+    oob_default_operand = (
+        _constant_scalar_tile(
+            _validate_numeric_constant(
+                options.oob_default,
+                keys_ty.dtype,
+                primitive="merge_sort_pairs",
+                name="oob_default",
+            ),
+            keys_ty.dtype,
+        )
+        if not _is_provided(oob_default) and options.oob_default is not None
+        else _rank0_scalar_tile_operand(
+            oob_default,
+            keys_ty.dtype,
+            primitive="merge_sort_pairs",
+            name="oob_default",
+            default=0,
+            numeric_value=True,
+        )[0]
+    )
+    decision = dispatch_merge_sort_pairs(
+        numel=numel,
+        key_dtype=keys_ty.dtype,
+        value_dtype=values_ty.dtype,
+        descending=options.descending,
+        valid_items=None,
+    )
+    items_per_thread = numel // decision.block_threads
+
+    BlockMergeSortPairs(
+        items_per_thread=items_per_thread,
+        key_dtype=keys_ty.dtype,
+        value_dtype=values_ty.dtype,
+        block_threads=decision.block_threads,
+        descending=options.descending,
+        valid_items=options.valid_items,
+        oob_default=options.oob_default,
+    )
+
+    out_keys_ty = make_tile_ty(keys_ty.dtype, shape)
+    out_vals_ty = make_tile_ty(values_ty.dtype, shape)
+    return _emit_provider_foreign_call(
+        operands=(keys, values, valid_items_operand, oob_default_operand),
+        output_types=(out_keys_ty, out_vals_ty),
+        decl_sym_name=_PROVIDER_DECL_MERGE_SORT_PAIRS,
+        static_prefix=_merge_sort_pair_static_prefix(
+            numel,
+            keys_ty.dtype,
+            values_ty.dtype,
+            descending=options.descending,
+            partial_tile=partial_tile,
+        ),
     )

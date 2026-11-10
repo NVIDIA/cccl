@@ -42,6 +42,7 @@ add_library(
   tilelib/provider/families/emitter.cpp
   tilelib/provider/families/exchange.cpp
   tilelib/provider/families/histogram_rld.cpp
+  tilelib/provider/families/merge_sort.cpp
   tilelib/provider/families/reduce.cpp
   tilelib/provider/families/scan.cpp
   tilelib/provider/families/shuffle.cpp

@@ -731,7 +731,7 @@ template <size_t Descending, size_t PartialTile, typename T, size_t N>
 [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
 merge_sort_keys_call(ct::tile<T, ct::shape<N>> keys, int valid_items, T oob_default) noexcept
 {
-  static_assert(N > 0, "cuda::coop::tile Merge Sort expects a non-empty tile");
+  static_assert(N > 0 && N % 32 == 0, "cuda::coop::tile Merge Sort expects a positive tile size divisible by 32");
   static_assert(N <= 2147483647, "cuda::coop::tile Merge Sort tile extent must fit in int");
   auto runtime_oob_default_tile = ct::tile{oob_default};
   return detail::merge_sort_keys_foreign<N, T, Descending, PartialTile, cpp_dtype_token_v<T>>(
@@ -742,7 +742,7 @@ template <size_t Descending, size_t PartialTile, typename KeyT, typename ValueT,
 [[nodiscard]] _CCCL_COOP_TILE_API inline merge_sort_pair_result<KeyT, ValueT, N> merge_sort_pairs_call(
   ct::tile<KeyT, ct::shape<N>> keys, ct::tile<ValueT, ct::shape<N>> values, int valid_items, KeyT oob_default) noexcept
 {
-  static_assert(N > 0, "cuda::coop::tile Merge Sort expects non-empty tiles");
+  static_assert(N > 0 && N % 32 == 0, "cuda::coop::tile Merge Sort expects a positive tile size divisible by 32");
   static_assert(N <= 2147483647, "cuda::coop::tile Merge Sort tile extent must fit in int");
   auto runtime_oob_default_tile = ct::tile{oob_default};
   return detail::
@@ -1523,6 +1523,242 @@ exchange_blocked_to_striped(ct::tile<T, ct::shape<N>> input, exchange_policy<Blo
 {
   // The inverse conversion likewise uses CUB's StripedToBlocked permutation.
   return detail::exchange_call<"striped_to_blocked", T, N, BlockThreads>(input);
+}
+
+namespace detail
+{
+template <size_t Descending, typename T, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+merge_sort_keys(ct::tile<T, ct::shape<N>> keys, merge_sort_policy<>) noexcept
+{
+  return detail::merge_sort_keys_call<Descending, 0, T, N>(keys, static_cast<int>(N), T{});
+}
+
+template <size_t Descending, typename T, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> merge_sort_keys(
+  ct::tile<T, ct::shape<N>> keys,
+  int valid_items,
+  ::cuda::std::type_identity_t<T> oob_default,
+  merge_sort_policy<>) noexcept
+{
+  return detail::merge_sort_keys_call<Descending, 1, T, N>(keys, valid_items, oob_default);
+}
+
+template <size_t Descending, size_t PartialTile, typename KeyT, typename ValueT, size_t KeyN, size_t ValueN>
+[[nodiscard]] _CCCL_COOP_TILE_API inline merge_sort_pair_result<KeyT, ValueT, KeyN> merge_sort_pairs_checked(
+  ct::tile<KeyT, ct::shape<KeyN>> keys,
+  ct::tile<ValueT, ct::shape<ValueN>> values,
+  int valid_items,
+  KeyT oob_default,
+  merge_sort_policy<>) noexcept
+{
+  static_assert(KeyN == ValueN, "cuda::coop::tile Merge Sort key and value tiles must have matching extents");
+  if constexpr (KeyN == ValueN)
+  {
+    return detail::merge_sort_pairs_call<Descending, PartialTile, KeyT, ValueT, KeyN>(
+      keys, values, valid_items, oob_default);
+  }
+  else
+  {
+    return {};
+  }
+}
+
+template <size_t Descending, typename KeyT, typename ValueT, size_t KeyN, size_t ValueN>
+[[nodiscard]] _CCCL_COOP_TILE_API inline merge_sort_pair_result<KeyT, ValueT, KeyN> merge_sort_pairs(
+  ct::tile<KeyT, ct::shape<KeyN>> keys, ct::tile<ValueT, ct::shape<ValueN>> values, merge_sort_policy<> policy) noexcept
+{
+  return detail::merge_sort_pairs_checked<Descending, 0>(keys, values, static_cast<int>(KeyN), KeyT{}, policy);
+}
+
+template <size_t Descending, typename KeyT, typename ValueT, size_t KeyN, size_t ValueN>
+[[nodiscard]] _CCCL_COOP_TILE_API inline merge_sort_pair_result<KeyT, ValueT, KeyN> merge_sort_pairs(
+  ct::tile<KeyT, ct::shape<KeyN>> keys,
+  ct::tile<ValueT, ct::shape<ValueN>> values,
+  int valid_items,
+  ::cuda::std::type_identity_t<KeyT> oob_default,
+  merge_sort_policy<> policy) noexcept
+{
+  return detail::merge_sort_pairs_checked<Descending, 1>(keys, values, valid_items, oob_default, policy);
+}
+} // namespace detail
+
+/**
+ * @brief Return keys in ascending numeric order.
+ *
+ * Overloads optionally accept `cuda::std::less<CompareT>` or `cuda::std::greater<CompareT>` after
+ * `keys`, followed optionally by the pair `valid_items, oob_default`. The count is an int scalar
+ * or shape-one int Tile; the padding key is convertible to the key dtype or a shape-one Tile of
+ * that dtype. Require 0 <= valid_items <= N and a strict padding sentinel when consuming the valid
+ * prefix.
+ *
+ * `N` must be a positive multiple of 32.
+ */
+template <typename T, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+merge_sort_keys(ct::tile<T, ct::shape<N>> keys, merge_sort_policy<> policy = {}) noexcept
+{
+  return detail::merge_sort_keys<0>(keys, policy);
+}
+
+template <typename T, size_t N>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> merge_sort_keys(
+  ct::tile<T, ct::shape<N>> keys,
+  int valid_items,
+  ::cuda::std::type_identity_t<T> oob_default,
+  merge_sort_policy<> policy = {}) noexcept
+{
+  return detail::merge_sort_keys<0>(keys, valid_items, oob_default, policy);
+}
+
+#  define _CCCL_COOP_TILE_MERGE_SORT_KEYS_COMPARE_OVERLOADS(_Compare, _Descending)                               \
+    template <typename T, size_t N, typename CompareT>                                                           \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> merge_sort_keys(                          \
+      ct::tile<T, ct::shape<N>> keys, _Compare<CompareT>, merge_sort_policy<> policy = {}) noexcept              \
+    {                                                                                                            \
+      detail::validate_functor<T, CompareT>();                                                                   \
+      return detail::merge_sort_keys<_Descending>(keys, policy);                                                 \
+    }                                                                                                            \
+    template <typename T, size_t N, typename CompareT>                                                           \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> merge_sort_keys(                          \
+      ct::tile<T, ct::shape<N>> keys,                                                                            \
+      _Compare<CompareT>,                                                                                        \
+      int valid_items,                                                                                           \
+      ::cuda::std::type_identity_t<T> oob_default,                                                               \
+      merge_sort_policy<> policy = {}) noexcept                                                                  \
+    {                                                                                                            \
+      detail::validate_functor<T, CompareT>();                                                                   \
+      return detail::merge_sort_keys<_Descending>(keys, valid_items, oob_default, policy);                       \
+    }                                                                                                            \
+    template <typename T, size_t N, typename CompareT, typename ValidItemsT, typename OobDefaultT>               \
+      requires(                                                                                                  \
+        detail::compatible_i32_control_v<ValidItemsT> && detail::compatible_value_control_v<T, OobDefaultT>      \
+        && (detail::shape_one_i32_control_v<ValidItemsT> || detail::shape_one_value_control_v<T, OobDefaultT>) ) \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> merge_sort_keys(                          \
+      ct::tile<T, ct::shape<N>> keys,                                                                            \
+      _Compare<CompareT> compare,                                                                                \
+      ValidItemsT valid_items,                                                                                   \
+      OobDefaultT oob_default,                                                                                   \
+      merge_sort_policy<> policy = {}) noexcept                                                                  \
+    {                                                                                                            \
+      const int scalar_valid_items = detail::normalize_i32_control(valid_items);                                 \
+      const T scalar_oob_default   = detail::normalize_value_control<T>(oob_default);                            \
+      return ::cuda::coop::tile::merge_sort_keys(keys, compare, scalar_valid_items, scalar_oob_default, policy); \
+    }
+
+_CCCL_COOP_TILE_MERGE_SORT_KEYS_COMPARE_OVERLOADS(::cuda::std::less, 0)
+_CCCL_COOP_TILE_MERGE_SORT_KEYS_COMPARE_OVERLOADS(::cuda::std::greater, 1)
+
+#  undef _CCCL_COOP_TILE_MERGE_SORT_KEYS_COMPARE_OVERLOADS
+
+template <typename T, typename ValidItemsT, typename OobDefaultT, size_t N>
+  requires(detail::compatible_i32_control_v<ValidItemsT> && detail::compatible_value_control_v<T, OobDefaultT>
+           && (detail::shape_one_i32_control_v<ValidItemsT> || detail::shape_one_value_control_v<T, OobDefaultT>) )
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> merge_sort_keys(
+  ct::tile<T, ct::shape<N>> keys,
+  ValidItemsT valid_items,
+  OobDefaultT oob_default,
+  merge_sort_policy<> policy = {}) noexcept
+{
+  const int scalar_valid_items = detail::normalize_i32_control(valid_items);
+  const T scalar_oob_default   = detail::normalize_value_control<T>(oob_default);
+  return ::cuda::coop::tile::merge_sort_keys(keys, scalar_valid_items, scalar_oob_default, policy);
+}
+
+/**
+ * @brief Sort keys and associated payloads, returning keys first.
+ *
+ * The overload forms match `merge_sort_keys`, with `values` immediately after `keys`. Key and
+ * value extents must match; dtypes may differ. Partial sorting zeroes padded payloads. Equal keys
+ * have no stability guarantee.
+ *
+ * Each input extent must be a positive multiple of 32.
+ */
+template <typename KeyT, typename ValueT, size_t KeyN, size_t ValueN>
+[[nodiscard]] _CCCL_COOP_TILE_API inline merge_sort_pair_result<KeyT, ValueT, KeyN> merge_sort_pairs(
+  ct::tile<KeyT, ct::shape<KeyN>> keys,
+  ct::tile<ValueT, ct::shape<ValueN>> values,
+  merge_sort_policy<> policy = {}) noexcept
+{
+  return detail::merge_sort_pairs<0>(keys, values, policy);
+}
+
+template <typename KeyT, typename ValueT, size_t KeyN, size_t ValueN>
+[[nodiscard]] _CCCL_COOP_TILE_API inline merge_sort_pair_result<KeyT, ValueT, KeyN> merge_sort_pairs(
+  ct::tile<KeyT, ct::shape<KeyN>> keys,
+  ct::tile<ValueT, ct::shape<ValueN>> values,
+  int valid_items,
+  ::cuda::std::type_identity_t<KeyT> oob_default,
+  merge_sort_policy<> policy = {}) noexcept
+{
+  return detail::merge_sort_pairs<0>(keys, values, valid_items, oob_default, policy);
+}
+
+#  define _CCCL_COOP_TILE_MERGE_SORT_PAIRS_COMPARE_OVERLOADS(_Compare, _Descending)                                 \
+    template <typename KeyT, typename ValueT, size_t KeyN, size_t ValueN, typename CompareT>                        \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline merge_sort_pair_result<KeyT, ValueT, KeyN> merge_sort_pairs(           \
+      ct::tile<KeyT, ct::shape<KeyN>> keys,                                                                         \
+      ct::tile<ValueT, ct::shape<ValueN>> values,                                                                   \
+      _Compare<CompareT>,                                                                                           \
+      merge_sort_policy<> policy = {}) noexcept                                                                     \
+    {                                                                                                               \
+      detail::validate_functor<KeyT, CompareT>();                                                                   \
+      return detail::merge_sort_pairs<_Descending>(keys, values, policy);                                           \
+    }                                                                                                               \
+    template <typename KeyT, typename ValueT, size_t KeyN, size_t ValueN, typename CompareT>                        \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline merge_sort_pair_result<KeyT, ValueT, KeyN> merge_sort_pairs(           \
+      ct::tile<KeyT, ct::shape<KeyN>> keys,                                                                         \
+      ct::tile<ValueT, ct::shape<ValueN>> values,                                                                   \
+      _Compare<CompareT>,                                                                                           \
+      int valid_items,                                                                                              \
+      ::cuda::std::type_identity_t<KeyT> oob_default,                                                               \
+      merge_sort_policy<> policy = {}) noexcept                                                                     \
+    {                                                                                                               \
+      detail::validate_functor<KeyT, CompareT>();                                                                   \
+      return detail::merge_sort_pairs<_Descending>(keys, values, valid_items, oob_default, policy);                 \
+    }                                                                                                               \
+    template <typename KeyT,                                                                                        \
+              typename ValueT,                                                                                      \
+              size_t KeyN,                                                                                          \
+              size_t ValueN,                                                                                        \
+              typename CompareT,                                                                                    \
+              typename ValidItemsT,                                                                                 \
+              typename OobDefaultT>                                                                                 \
+      requires(                                                                                                     \
+        detail::compatible_i32_control_v<ValidItemsT> && detail::compatible_value_control_v<KeyT, OobDefaultT>      \
+        && (detail::shape_one_i32_control_v<ValidItemsT> || detail::shape_one_value_control_v<KeyT, OobDefaultT>) ) \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline merge_sort_pair_result<KeyT, ValueT, KeyN> merge_sort_pairs(           \
+      ct::tile<KeyT, ct::shape<KeyN>> keys,                                                                         \
+      ct::tile<ValueT, ct::shape<ValueN>> values,                                                                   \
+      _Compare<CompareT> compare,                                                                                   \
+      ValidItemsT valid_items,                                                                                      \
+      OobDefaultT oob_default,                                                                                      \
+      merge_sort_policy<> policy = {}) noexcept                                                                     \
+    {                                                                                                               \
+      const int scalar_valid_items  = detail::normalize_i32_control(valid_items);                                   \
+      const KeyT scalar_oob_default = detail::normalize_value_control<KeyT>(oob_default);                           \
+      return ::cuda::coop::tile::merge_sort_pairs(                                                                  \
+        keys, values, compare, scalar_valid_items, scalar_oob_default, policy);                                     \
+    }
+
+_CCCL_COOP_TILE_MERGE_SORT_PAIRS_COMPARE_OVERLOADS(::cuda::std::less, 0)
+_CCCL_COOP_TILE_MERGE_SORT_PAIRS_COMPARE_OVERLOADS(::cuda::std::greater, 1)
+
+#  undef _CCCL_COOP_TILE_MERGE_SORT_PAIRS_COMPARE_OVERLOADS
+
+template <typename KeyT, typename ValueT, typename ValidItemsT, typename OobDefaultT, size_t KeyN, size_t ValueN>
+  requires(detail::compatible_i32_control_v<ValidItemsT> && detail::compatible_value_control_v<KeyT, OobDefaultT>
+           && (detail::shape_one_i32_control_v<ValidItemsT> || detail::shape_one_value_control_v<KeyT, OobDefaultT>) )
+[[nodiscard]] _CCCL_COOP_TILE_API inline merge_sort_pair_result<KeyT, ValueT, KeyN> merge_sort_pairs(
+  ct::tile<KeyT, ct::shape<KeyN>> keys,
+  ct::tile<ValueT, ct::shape<ValueN>> values,
+  ValidItemsT valid_items,
+  OobDefaultT oob_default,
+  merge_sort_policy<> policy = {}) noexcept
+{
+  const int scalar_valid_items  = detail::normalize_i32_control(valid_items);
+  const KeyT scalar_oob_default = detail::normalize_value_control<KeyT>(oob_default);
+  return ::cuda::coop::tile::merge_sort_pairs(keys, values, scalar_valid_items, scalar_oob_default, policy);
 }
 } // namespace cuda::coop::tile
 
