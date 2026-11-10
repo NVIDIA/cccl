@@ -197,8 +197,10 @@ __device__ void test_nonuniform(const Group& group, unsigned units_per_warp)
   // The runtime count identifies which compile-time specialization must be selected.
   const auto expected = group.__mapping_result().unit_count();
   unsigned calls      = 0;
-  auto callback       = [&](auto view) -> unsigned& {
-    ++calls;
+
+  // Capture the address to avoid older NVCC's false dangling-reference diagnostic.
+  auto callback = [&, calls_ptr = &calls](auto view) -> unsigned& {
+    ++*calls_ptr;
 
     constexpr auto unit  = Unit{};
     constexpr auto count = unit.static_count(view);
@@ -225,7 +227,7 @@ __device__ void test_nonuniform(const Group& group, unsigned units_per_warp)
       check_mapping(group, again);
     });
 
-    return calls;
+    return *calls_ptr;
   };
 
   // An lvalue callable and its reference return must pass through without copying.
