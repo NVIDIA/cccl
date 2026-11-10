@@ -67,8 +67,8 @@ inline constexpr bool is_single_value_wrapper_v<::cuda::args::immediate<ArgT, St
 template <auto Value, typename T>
 inline constexpr bool is_single_value_wrapper_v<::cuda::args::constant<Value, T>> = true;
 
-template <typename ArgT, typename StaticBoundsT>
-inline constexpr bool is_single_value_wrapper_v<::cuda::args::deferred<ArgT, StaticBoundsT>> = true;
+template <typename ArgT, typename StaticBoundsT, bool HasRuntimeBounds>
+inline constexpr bool is_single_value_wrapper_v<::cuda::args::deferred<ArgT, StaticBoundsT, HasRuntimeBounds>> = true;
 
 // Classify argument roles here; validate the wrapped count type after selecting the overload.
 template <typename NumItemsT>
@@ -2570,12 +2570,13 @@ public:
             typename InitValueBoundsT,
             typename NumItemsT,
             typename EnvT                                                    = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0>
+            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0,
+            bool InitValueHasRuntimeBounds                                   = false>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ScanOpT scan_op,
-    const ::cuda::args::deferred<InitValueIterT, InitValueBoundsT>& init_value,
+    const ::cuda::args::deferred<InitValueIterT, InitValueBoundsT, InitValueHasRuntimeBounds>& init_value,
     NumItemsT num_items,
     const EnvT& env = {})
   {
@@ -2676,14 +2677,15 @@ public:
             typename InitValueIterT,
             typename InitValueBoundsT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT                  = ::cuda::std::execution::env<>,
+            bool InitValueHasRuntimeBounds = false>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ScanOpT scan_op,
-    const ::cuda::args::deferred<InitValueIterT, InitValueBoundsT>& init_value,
+    const ::cuda::args::deferred<InitValueIterT, InitValueBoundsT, InitValueHasRuntimeBounds>& init_value,
     NumItemsT num_items,
     const EnvT& env = {})
   {

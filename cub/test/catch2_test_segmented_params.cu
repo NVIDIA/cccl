@@ -175,11 +175,21 @@ CUB_TEST("cub::detail::params::normalize_param preserves runtime arguments and b
     +values, cuda::args::static_bounds<i64{1}, i64{3}>{}, cuda::args::runtime_bounds{1, 3}};
   const auto normalized_sequence = cub::detail::params::normalize_param(sequence_arg);
 
-  STATIC_REQUIRE(cuda::std::is_same_v<cuda::std::remove_const_t<decltype(normalized_sequence)>,
-                                      cuda::args::deferred_sequence<const int*, cuda::args::static_bounds<1, 3>>>);
+  STATIC_REQUIRE(
+    cuda::std::is_same_v<cuda::std::remove_const_t<decltype(normalized_sequence)>,
+                         cuda::args::deferred_sequence<const int*, cuda::args::static_bounds<1, 3>, true>>);
+
   CHECK(cuda::args::__access::__arg(normalized_sequence) == +values);
   CHECK(cuda::args::__access::__runtime_bounds(normalized_sequence).lower() == 1);
   CHECK(cuda::args::__access::__runtime_bounds(normalized_sequence).upper() == 3);
+
+  const auto deferred_arg        = cuda::args::deferred{+values, cuda::args::bounds(0, 3)};
+  const auto normalized_deferred = cub::detail::params::normalize_param(deferred_arg);
+  STATIC_REQUIRE(cuda::std::is_same_v<normalized_t<decltype(deferred_arg)>,
+                                      cuda::args::deferred<const int*, cuda::args::no_bounds, true>>);
+  CHECK(cuda::args::__access::__arg(normalized_deferred) == +values);
+  CHECK(cuda::args::__access::__runtime_bounds(normalized_deferred).lower() == 0);
+  CHECK(cuda::args::__access::__runtime_bounds(normalized_deferred).upper() == 3);
 }
 
 // The wrapper reaches the kernel both as a template argument and as a kernel parameter, the way DeviceBatchedTopK
