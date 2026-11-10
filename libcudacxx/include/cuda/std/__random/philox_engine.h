@@ -453,10 +453,10 @@ private:
   {
     // mulhi(a, b, w) is floor(a * b / 2^w). ::cuda::mul_hi returns the bits above digits(result_type), so bring in the
     // bits of the low half that are above w. The low half is computed without the integer promotion of small types.
-    using _Up             = common_type_t<result_type, unsigned>;
-    constexpr int __shift = numeric_limits<result_type>::digits - static_cast<int>(word_size);
-    const auto __lo       = static_cast<result_type>(static_cast<_Up>(__a) * static_cast<_Up>(__b));
-    auto __hi             = ::cuda::mul_hi(__a, __b);
+    using _Up _CCCL_NODEBUG = common_type_t<result_type, unsigned>;
+    constexpr int __shift   = numeric_limits<result_type>::digits - int{word_size};
+    const auto __lo         = static_cast<result_type>(static_cast<_Up>(__a) * static_cast<_Up>(__b));
+    auto __hi               = ::cuda::mul_hi(__a, __b);
     if constexpr (__shift != 0)
     {
       __hi = static_cast<result_type>((__hi << __shift) | (__lo >> word_size));
