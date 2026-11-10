@@ -14,4 +14,4 @@
 #endif // no system header
 
 // this system inherits remove
-#include <thrust/system/detail/sequential/remove.h>
+#include <thrust/system/detail/sequential/remove.h> // IWYU pragma: export

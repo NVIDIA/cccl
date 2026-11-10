@@ -17,15 +17,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/type_traits.h>
 #include <thrust/memory.h>
 #include <thrust/mr/allocator.h>
 #include <thrust/system/cpp/detail/execution_policy.h>
-#include <thrust/system/cpp/memory.h>
+#include <thrust/system/detail/sequential/malloc_and_free.h> // IWYU pragma: keep
 #include <thrust/system/omp/memory_resource.h>
+#include <thrust/system/omp/pointer.h>
 
-#include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/limits>
+#include <cuda/std/__cstddef/types.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::omp
