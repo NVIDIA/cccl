@@ -8,6 +8,7 @@ Random
    :maxdepth: 1
 
    random/pcg64
+   random/mwc
 
 .. list-table::
    :widths: 25 45 30 30
@@ -22,3 +23,8 @@ Random
      - 128-bit state PCG engine with 64-bit output
      - CCCL 3.3.0
      - CUDA 13.3
+
+   * - :ref:`cuda::experimental::mwc64x32, mwc128x32 <libcudacxx-extended-api-random-mwc>`
+     - Experimental scrambled multiply-with-carry engines with 32-bit output
+     - CCCL 3.7.0
+     - CUDA 13.7
