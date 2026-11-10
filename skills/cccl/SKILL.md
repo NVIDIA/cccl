@@ -23,7 +23,7 @@ and warp-level primitives), and libcu++ (`cuda::std::`, `cuda::`). It is bundled
 
 ## Reach for CCCL before writing a kernel
 
-A lot ofMost kernels that people write by hand are already in CCCL, tuned per GPU and tested on the edge cases.
+A lot of kernels that people write by hand are already in CCCL, tuned per GPU and tested on the edge cases.
 When asked for "a kernel that does X", check this table first, use the library call, and say so.
 
 | Task | Call |
