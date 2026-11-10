@@ -513,6 +513,72 @@ def dispatch_merge_sort_pairs(
     return decision
 
 
+def dispatch_radix_sort_keys(
+    *,
+    numel: int,
+    dtype: datatype.DType,
+    inner_scan_algorithm: str | None,
+) -> CoopDispatchDecision:
+    if inner_scan_algorithm == "warp_scans":
+        backend = "warp_like"
+        rationale = "inner_scan_algorithm requests warp scan backend"
+    elif inner_scan_algorithm in ("raking", "raking_memoize"):
+        backend = "cta_block"
+        rationale = "inner_scan_algorithm requests block scan backend"
+    else:
+        backend, rationale = _default_backend_for_numel(numel)
+    backend, rationale = _apply_forced_backend(backend, rationale)
+    block_threads = _select_one_item_block_threads(
+        primitive="radix_sort_keys",
+        numel=numel,
+    )
+    decision = CoopDispatchDecision(
+        primitive="radix_sort_keys",
+        backend_family=backend,
+        block_threads=block_threads,
+        algorithm=inner_scan_algorithm,
+        rationale=rationale,
+        tile_numel=numel,
+        dtype=dtype,
+    )
+    _trace_dispatch(decision)
+    return decision
+
+
+def dispatch_radix_sort_pairs(
+    *,
+    numel: int,
+    key_dtype: datatype.DType,
+    value_dtype: datatype.DType,
+    inner_scan_algorithm: str | None,
+) -> CoopDispatchDecision:
+    del value_dtype
+    if inner_scan_algorithm == "warp_scans":
+        backend = "warp_like"
+        rationale = "inner_scan_algorithm requests warp scan backend"
+    elif inner_scan_algorithm in ("raking", "raking_memoize"):
+        backend = "cta_block"
+        rationale = "inner_scan_algorithm requests block scan backend"
+    else:
+        backend, rationale = _default_backend_for_numel(numel)
+    backend, rationale = _apply_forced_backend(backend, rationale)
+    block_threads = _select_one_item_block_threads(
+        primitive="radix_sort_pairs",
+        numel=numel,
+    )
+    decision = CoopDispatchDecision(
+        primitive="radix_sort_pairs",
+        backend_family=backend,
+        block_threads=block_threads,
+        algorithm=inner_scan_algorithm,
+        rationale=rationale,
+        tile_numel=numel,
+        dtype=key_dtype,
+    )
+    _trace_dispatch(decision)
+    return decision
+
+
 def dispatch_discontinuity(
     *,
     primitive: str,
@@ -720,6 +786,32 @@ def dispatch_shuffle(
         backend_family=backend,
         block_threads=block_threads,
         algorithm=mode,
+        rationale=rationale,
+        tile_numel=numel,
+        dtype=dtype,
+    )
+    _trace_dispatch(decision)
+    return decision
+
+
+def dispatch_radix_rank(
+    *,
+    numel: int,
+    dtype: datatype.DType,
+) -> CoopDispatchDecision:
+    backend, rationale = _default_backend_for_numel(numel)
+    backend, rationale = _apply_forced_backend(backend, rationale)
+    preferred_threads = _preferred_threads(backend, numel)
+    block_threads = _select_block_threads(
+        primitive="radix_rank_keys",
+        numel=numel,
+        preferred=preferred_threads,
+    )
+    decision = CoopDispatchDecision(
+        primitive="radix_rank_keys",
+        backend_family=backend,
+        block_threads=block_threads,
+        algorithm=None,
         rationale=rationale,
         tile_numel=numel,
         dtype=dtype,

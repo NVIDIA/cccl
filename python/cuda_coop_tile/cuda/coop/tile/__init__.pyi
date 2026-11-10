@@ -578,6 +578,148 @@ def merge_sort_pairs(
     merge_sort_keys, radix_sort_pairs
     """
 
+def radix_sort_keys(
+    keys: _Tile,
+    /,
+    *,
+    begin_bit: _RuntimeInt | None = None,
+    end_bit: _RuntimeInt | None = None,
+    descending: bool | None = None,
+    radix_bits: int | None = None,
+    memoize_outer_scan: bool | None = None,
+    inner_scan_algorithm: str | None = None,
+    smem_config: str | int | None = None,
+    methods: _Methods | None = None,
+) -> _Tile:
+    """Stably sort keys by a selected interval of radix-ordering bits.
+
+    Parameters
+    ----------
+    keys : Tile
+        Numeric keys of shape ``(N,)``, with ``N <= 65535``.
+        ``N`` must be a positive multiple of 32.
+    begin_bit, end_bit : int or Tile
+        Half-open interval, defaulting to zero and the key bit width.
+        Accepts constants, runtime scalars, or single-element Tiles.
+        Require ``0 <= begin_bit <= end_bit <= key_bits``.
+    descending : bool
+        Compile-time direction; ``None`` or ``False`` selects ascending.
+    radix_bits : int
+        Compile-time bits per pass in ``[1, 8]``, defaulting to 4.
+        Scratch storage grows exponentially with this value. Configurations
+        within this range can fail compilation depending on the worker count
+        and target resources.
+    memoize_outer_scan : bool
+        Compile-time CUB outer-scan memoization, defaulting to ``True``.
+    inner_scan_algorithm : str
+        Compile-time ``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``
+        (default).
+    smem_config : str or int
+        Compile-time ``"four_byte"`` (default) or ``"eight_byte"`` bank
+        configuration. Aliases are ``4``, ``8``, ``"4"``, ``"8"``, and
+        ``"default"`` (four-byte banks).
+    methods : collections.abc.Mapping or tuple
+        Compile-time values for the seven options above.
+
+    Returns
+    -------
+    Tile
+        Sorted keys with the input shape and dtype. Equal selected digits
+        retain input order. The input is unchanged.
+
+    Notes
+    -----
+    Signed and floating-point keys undergo CUB's radix ordering transform
+    before extracting the bit interval. Partial sorting therefore uses
+    transformed bits. Use unsigned keys for direct bit-field sorting.
+    An empty interval makes all keys equivalent. ``radix_bits`` limits one
+    pass, not the total interval. NaNs follow their transformed bit patterns.
+
+    Examples
+    --------
+    Sort an unsigned integer Tile by its low byte in a ``cuda.tile`` kernel:
+
+    .. code-block:: python
+
+        ordered = coop.radix_sort_keys(keys, begin_bit=0, end_bit=8)
+
+    See Also
+    --------
+    radix_sort_pairs, radix_rank_keys
+    """
+
+def radix_sort_pairs(
+    keys: _Tile,
+    values: _Tile,
+    /,
+    *,
+    begin_bit: _RuntimeInt | None = None,
+    end_bit: _RuntimeInt | None = None,
+    descending: bool | None = None,
+    radix_bits: int | None = None,
+    memoize_outer_scan: bool | None = None,
+    inner_scan_algorithm: str | None = None,
+    smem_config: str | int | None = None,
+    methods: _Methods | None = None,
+) -> tuple[_Tile, _Tile]:
+    """Stably sort key-value pairs by radix-ordering bits.
+
+    Parameters
+    ----------
+    keys, values : Tile
+        Numeric Tiles of matching shape ``(N,)``, with ``N <= 65535``.
+        Their dtypes may differ.
+        ``N`` must be a positive multiple of 32.
+    begin_bit, end_bit : int or Tile
+        Half-open key-bit interval, defaulting to zero and the key width.
+        Accepts constants, runtime scalars, or single-element Tiles.
+        Require ``0 <= begin_bit <= end_bit <= key_bits``.
+    descending : bool
+        Compile-time direction; ``None`` or ``False`` selects ascending.
+    radix_bits : int
+        Compile-time bits per pass in ``[1, 8]``, defaulting to 4.
+        Scratch storage grows exponentially with this value. Configurations
+        within this range can fail compilation depending on the worker count
+        and target resources.
+    memoize_outer_scan : bool
+        Compile-time CUB outer-scan memoization, defaulting to ``True``.
+    inner_scan_algorithm : str
+        Compile-time ``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``
+        (default).
+    smem_config : str or int
+        Compile-time ``"four_byte"`` (default) or ``"eight_byte"`` bank
+        configuration. Aliases are ``4``, ``8``, ``"4"``, ``"8"``, and
+        ``"default"`` (four-byte banks).
+    methods : collections.abc.Mapping or tuple
+        Compile-time values for the seven options above.
+
+    Returns
+    -------
+    tuple[Tile, Tile]
+        ``(sorted_keys, sorted_values)`` with the respective input dtypes
+        and shape ``(N,)``. Equal selected digits retain their input order
+        and payload association. Inputs are unchanged.
+
+    Notes
+    -----
+    Bit bounds select from CUB's transformed representation for signed and
+    floating-point keys; unsigned keys expose their raw bits. An empty
+    interval leaves pairs in input order. NaNs follow their transformed
+    patterns. ``radix_bits`` controls each pass, not the total interval.
+
+    Examples
+    --------
+    Sort a loaded key Tile and its payload in a ``cuda.tile`` kernel:
+
+    .. code-block:: python
+
+        ordered_keys, ordered_ids = coop.radix_sort_pairs(keys, ids)
+
+    See Also
+    --------
+    radix_sort_keys, radix_rank_keys
+    """
+
 def histogram_256(
     samples: _Tile,
     /,
@@ -1220,6 +1362,79 @@ def shuffle_rotate(
     shuffle_offset
     """
 
+def radix_rank_keys(
+    keys: _Tile,
+    /,
+    *,
+    begin_bit: _RuntimeInt = 0,
+    end_bit: _RuntimeInt | None = None,
+    radix_bits: int | None = None,
+    descending: bool = False,
+    memoize_outer_scan: bool | None = None,
+    inner_scan_algorithm: str | None = None,
+    smem_config: str | int | None = None,
+    methods: _Methods | None = None,
+) -> _Tile:
+    """Return stable destination ranks for one ordered integer-key digit.
+
+    Parameters
+    ----------
+    keys : Tile
+        Signed or unsigned 8-, 16-, 32-, or 64-bit integer keys of shape
+        ``(N,)``, with ``N <= 65535``.
+        ``N`` must be a positive multiple of 32.
+    begin_bit, end_bit : int or Tile
+        Half-open interval in the ordered key representation. ``begin_bit``
+        defaults to zero and
+        ``end_bit`` to ``min(key_bits, begin_bit + radix_bits)``. Bounds may
+        be constants, runtime scalars, or single-element Tiles. Require
+        ``0 <= begin_bit < end_bit <= key_bits`` and an interval no wider
+        than ``radix_bits``.
+    radix_bits : int
+        Compile-time digit capacity in ``[1, 16]``, defaulting to 4.
+        Scratch storage grows exponentially with this value. Configurations
+        within this range can fail compilation depending on the worker count
+        and target resources.
+    descending : bool
+        Compile-time direction, defaulting to ``False``.
+    memoize_outer_scan : bool
+        Compile-time scan memoization, defaulting to ``True``.
+    inner_scan_algorithm : str
+        Compile-time ``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``
+        (the default).
+    smem_config : str or int
+        Compile-time shared-memory bank width: ``"four_byte"`` or ``4``
+        (default), or ``"eight_byte"`` or ``8``.
+    methods : collections.abc.Mapping or tuple
+        Must be omitted or empty.
+
+    Returns
+    -------
+    Tile
+        ``int32`` ranks of shape ``(N,)``. ``rank[i]`` is the destination
+        of input item ``i`` in the selected digit's ordering. Equal digits
+        retain input order. Keys are neither reordered nor modified.
+
+    Notes
+    -----
+    Signed keys have their sign bit flipped before digit extraction, matching
+    radix sort's ordering of signed keys. Unsigned
+    keys use their original bits. Use radix sort for intervals larger than
+    one digit or complete-key sorting.
+
+    Examples
+    --------
+    Rank the low nibble of a loaded integer Tile in a ``cuda.tile`` kernel:
+
+    .. code-block:: python
+
+        ranks = coop.radix_rank_keys(keys, begin_bit=0, end_bit=4, radix_bits=4)
+
+    See Also
+    --------
+    radix_sort_keys
+    """
+
 __all__ = [
     "CppTileConfig",
     "adjacent_difference_subtract_left",
@@ -1242,6 +1457,9 @@ __all__ = [
     "inclusive_sum",
     "merge_sort_keys",
     "merge_sort_pairs",
+    "radix_rank_keys",
+    "radix_sort_keys",
+    "radix_sort_pairs",
     "reduce",
     "register",
     "run_length_decode",

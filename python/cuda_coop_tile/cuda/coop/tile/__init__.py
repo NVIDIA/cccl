@@ -66,6 +66,8 @@ _API_SYMBOLS = (
     "sum",
     "merge_sort_keys",
     "merge_sort_pairs",
+    "radix_sort_keys",
+    "radix_sort_pairs",
     "histogram_256",
     "histogram",
     "run_length_decode",
@@ -81,6 +83,7 @@ _API_SYMBOLS = (
     "shuffle_down",
     "shuffle_offset",
     "shuffle_rotate",
+    "radix_rank_keys",
 )
 
 # The primitive tuple is shared with lazy loading; every entry is a string.

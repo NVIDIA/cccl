@@ -28,6 +28,9 @@ from ._lowerings import (
     inclusive_sum_impl,
     merge_sort_keys_impl,
     merge_sort_pairs_impl,
+    radix_rank_keys_impl,
+    radix_sort_keys_impl,
+    radix_sort_pairs_impl,
     reduce_impl,
     run_length_decode_impl,
     run_length_decode_with_offsets_impl,
@@ -75,6 +78,8 @@ def register() -> None:
         _register_tilelib_impl(_api.sum, sum_impl)
         _register_tilelib_impl(_api.merge_sort_keys, merge_sort_keys_impl)
         _register_tilelib_impl(_api.merge_sort_pairs, merge_sort_pairs_impl)
+        _register_tilelib_impl(_api.radix_sort_keys, radix_sort_keys_impl)
+        _register_tilelib_impl(_api.radix_sort_pairs, radix_sort_pairs_impl)
         _register_tilelib_impl(_api.histogram_256, histogram_256_impl)
         _register_tilelib_impl(_api.histogram, histogram_impl)
         _register_tilelib_impl(_api.run_length_decode, run_length_decode_impl)
@@ -110,4 +115,5 @@ def register() -> None:
         _register_tilelib_impl(_api.shuffle_down, shuffle_down_impl)
         _register_tilelib_impl(_api.shuffle_offset, shuffle_offset_impl)
         _register_tilelib_impl(_api.shuffle_rotate, shuffle_rotate_impl)
+        _register_tilelib_impl(_api.radix_rank_keys, radix_rank_keys_impl)
         _registered = True

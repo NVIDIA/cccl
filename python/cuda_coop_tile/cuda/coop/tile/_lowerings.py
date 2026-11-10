@@ -29,6 +29,7 @@ from pathlib import Path
 
 from cuda.tile import _datatype as datatype
 from cuda.tile._exception import TileTypeError
+from cuda.tile._ir.arithmetic_ops import binary_arithmetic_tensorlike
 from cuda.tile._ir.core_ops import Assign
 from cuda.tile._ir.ir import Builder, add_operation_variadic
 from cuda.tile._ir.op_impl import (
@@ -70,6 +71,13 @@ from ._block.merge_sort import (
     BlockMergeSortPairs,
     BlockMergeSortPairsOptions,
 )
+from ._block.radix_rank import BlockRadixRank
+from ._block.radix_sort import (
+    BlockRadixSortKeys,
+    BlockRadixSortKeysOptions,
+    BlockRadixSortPairs,
+    BlockRadixSortPairsOptions,
+)
 from ._block.reduce import (
     BlockReduce,
     BlockReduceOptions,
@@ -103,6 +111,9 @@ from ._dispatch import (
     dispatch_inclusive_sum,
     dispatch_merge_sort_keys,
     dispatch_merge_sort_pairs,
+    dispatch_radix_rank,
+    dispatch_radix_sort_keys,
+    dispatch_radix_sort_pairs,
     dispatch_reduce,
     dispatch_shuffle,
     dispatch_sum,
@@ -668,6 +679,30 @@ def _sort_key_static_prefix(
     return (numel, dtype)
 
 
+def _radix_sort_key_static_prefix(
+    numel: int,
+    dtype,
+    *,
+    descending: bool,
+    radix_bits: int,
+    memoize_outer_scan: bool,
+    inner_scan_algorithm: str,
+    smem_config: str,
+):
+    return (
+        *_sort_key_static_prefix(
+            numel,
+            dtype,
+        ),
+        int(descending),
+        radix_bits,
+        int(memoize_outer_scan),
+        inner_scan_algorithm,
+        smem_config,
+        _dtype_token(dtype),
+    )
+
+
 def _merge_sort_key_static_prefix(
     numel: int,
     dtype,
@@ -686,12 +721,63 @@ def _merge_sort_key_static_prefix(
     )
 
 
+def _radix_rank_static_prefix(
+    numel: int,
+    dtype,
+    *,
+    radix_bits: int,
+    descending: bool,
+    memoize_outer_scan: bool,
+    inner_scan_algorithm: str,
+    smem_config: str,
+):
+    return (
+        *_sort_key_static_prefix(
+            numel,
+            dtype,
+        ),
+        radix_bits,
+        int(descending),
+        int(memoize_outer_scan),
+        inner_scan_algorithm,
+        smem_config,
+        _dtype_token(dtype),
+    )
+
+
 def _sort_pair_static_prefix(
     numel: int,
     key_dtype,
     value_dtype,
 ):
     return (numel, key_dtype, value_dtype)
+
+
+def _radix_sort_pair_static_prefix(
+    numel: int,
+    key_dtype,
+    value_dtype,
+    *,
+    descending: bool,
+    radix_bits: int,
+    memoize_outer_scan: bool,
+    inner_scan_algorithm: str,
+    smem_config: str,
+):
+    return (
+        *_sort_pair_static_prefix(
+            numel,
+            key_dtype,
+            value_dtype,
+        ),
+        int(descending),
+        radix_bits,
+        int(memoize_outer_scan),
+        inner_scan_algorithm,
+        smem_config,
+        _dtype_token(key_dtype),
+        _dtype_token(value_dtype),
+    )
 
 
 def _merge_sort_pair_static_prefix(
@@ -2166,6 +2252,161 @@ def shuffle_rotate_impl(value, distance, methods):
     )
 
 
+def radix_rank_keys_impl(
+    keys,
+    begin_bit,
+    end_bit,
+    radix_bits,
+    descending,
+    memoize_outer_scan,
+    inner_scan_algorithm,
+    smem_config,
+    methods,
+):
+    """Lower a single radix-ranking pass with a fixed digit capacity.
+
+    ``radix_bits`` controls specialization; begin/end bounds are runtime
+    operands. Validate each known bound with safe stand-ins for unknown
+    values. An omitted end with a dynamic begin becomes
+    ``min(begin + radix_bits, key_bitwidth)`` in IR. Return int32 ranks with
+    the same shape as the keys.
+    """
+
+    _require_empty_methods(methods, "radix_rank_keys")
+    tile_ty = require_tile_type(keys)
+    shape = tile_ty.shape
+    if tile_ty.ndim != 1:
+        raise TileTypeError("coop.radix_rank_keys expects a 1D tile")
+    if tile_ty.dtype not in _RADIX_RANK_DTYPES:
+        raise TileTypeError(
+            f"coop.radix_rank_keys does not support dtype {tile_ty.dtype}"
+        )
+
+    begin_bit_val = _const_value_or_runtime(begin_bit)
+    end_bit_val = _const_value_or_runtime(end_bit)
+    radix_bits_val = _require_optional_constant_object(radix_bits, "radix_bits")
+    descending_val = _require_optional_constant_object(descending, "descending")
+    memoize_val = _require_optional_constant_object(
+        memoize_outer_scan, "memoize_outer_scan"
+    )
+    inner_scan_val = _require_optional_constant_object(
+        inner_scan_algorithm, "inner_scan_algorithm"
+    )
+    smem_val = _require_optional_constant_object(smem_config, "smem_config")
+    begin_is_runtime = begin_bit_val is _RUNTIME_VALUE
+    end_is_runtime = end_bit_val is _RUNTIME_VALUE
+    if not begin_is_runtime and (
+        isinstance(begin_bit_val, bool) or not isinstance(begin_bit_val, int)
+    ):
+        raise TileTypeError("coop.radix_rank_keys begin_bit must be an int")
+    if (
+        not end_is_runtime
+        and end_bit_val is not None
+        and (isinstance(end_bit_val, bool) or not isinstance(end_bit_val, int))
+    ):
+        raise TileTypeError("coop.radix_rank_keys end_bit must be an int")
+    if radix_bits_val is not None and (
+        isinstance(radix_bits_val, bool) or not isinstance(radix_bits_val, int)
+    ):
+        raise TileTypeError("coop.radix_rank_keys radix_bits must be an int")
+    if not isinstance(descending_val, bool):
+        raise TileTypeError("coop.radix_rank_keys descending must be a bool")
+
+    radix_bits_capacity = 4 if radix_bits_val is None else radix_bits_val
+    if radix_bits_capacity <= 0 or radix_bits_capacity > 16:
+        raise TileTypeError(
+            "coop.radix_rank_keys radix_bits must be in the range [1, 16]"
+        )
+    numel = shape[0]
+    decision = dispatch_radix_rank(
+        numel=numel,
+        dtype=tile_ty.dtype,
+    )
+    items_per_thread = numel // decision.block_threads
+
+    # Validate every constant portion of the interval without pretending a
+    # dynamic bound is part of specialization identity.  Safe stand-ins let the
+    # existing BlockRadixRank validation cover dtype/topology/tuning as well.
+    if begin_is_runtime:
+        validation_begin_bit = (
+            0
+            if end_is_runtime or end_bit_val is None
+            else max(0, end_bit_val - radix_bits_capacity)
+        )
+    else:
+        validation_begin_bit = begin_bit_val
+    if end_is_runtime or (begin_is_runtime and end_bit_val is None):
+        validation_end_bit = min(
+            tile_ty.dtype.bitwidth,
+            validation_begin_bit + radix_bits_capacity,
+        )
+    else:
+        validation_end_bit = end_bit_val
+    block_rank = BlockRadixRank(
+        items_per_thread=items_per_thread,
+        dtype=tile_ty.dtype,
+        block_threads=decision.block_threads,
+        begin_bit=validation_begin_bit,
+        end_bit=validation_end_bit,
+        radix_bits=radix_bits_capacity,
+        descending=descending_val,
+        memoize_outer_scan=memoize_val,
+        inner_scan_algorithm=inner_scan_val,
+        smem_config=smem_val,
+    )
+
+    out_ty = make_tile_ty(datatype.int32, shape)
+    begin_bit_operand = (
+        _rank0_scalar_tile_operand(
+            begin_bit,
+            datatype.int32,
+            primitive="radix_rank_keys",
+            name="begin_bit",
+            int_value=True,
+        )[0]
+        if begin_is_runtime
+        else _constant_rank_zero_tile(begin_bit_val, datatype.int32)
+    )
+    if end_is_runtime:
+        end_bit_operand = _rank0_scalar_tile_operand(
+            end_bit,
+            datatype.int32,
+            primitive="radix_rank_keys",
+            name="end_bit",
+            int_value=True,
+        )[0]
+    elif begin_is_runtime and end_bit_val is None:
+        capacity_end = binary_arithmetic_tensorlike(
+            "add",
+            begin_bit_operand,
+            _constant_rank_zero_tile(radix_bits_capacity, datatype.int32),
+        )
+        end_bit_operand = binary_arithmetic_tensorlike(
+            "min",
+            capacity_end,
+            _constant_rank_zero_tile(tile_ty.dtype.bitwidth, datatype.int32),
+        )
+    else:
+        end_bit_operand = _constant_rank_zero_tile(
+            block_rank.end_bit if end_bit_val is None else end_bit_val,
+            datatype.int32,
+        )
+    return _emit_provider_foreign_call(
+        operands=(keys, begin_bit_operand, end_bit_operand),
+        output_types=(out_ty,),
+        decl_sym_name=_PROVIDER_DECL_RADIX_RANK,
+        static_prefix=_radix_rank_static_prefix(
+            numel,
+            tile_ty.dtype,
+            radix_bits=block_rank.radix_bits,
+            descending=block_rank.descending,
+            memoize_outer_scan=block_rank.memoize_outer_scan,
+            inner_scan_algorithm=block_rank.inner_scan_token,
+            smem_config=block_rank.smem_config_token,
+        ),
+    )
+
+
 def merge_sort_keys_impl(keys, descending, valid_items, oob_default, methods):
     """Lower Merge Sort and distinguish full from guarded overloads.
 
@@ -2419,5 +2660,250 @@ def merge_sort_pairs_impl(
             values_ty.dtype,
             descending=options.descending,
             partial_tile=partial_tile,
+        ),
+    )
+
+
+def radix_sort_keys_impl(
+    keys,
+    begin_bit,
+    end_bit,
+    descending,
+    radix_bits,
+    memoize_outer_scan,
+    inner_scan_algorithm,
+    smem_config,
+    methods,
+):
+    """Lower Radix Sort with runtime bit bounds and constant tuning.
+
+    Normalize algorithm, radix width, and shared-memory options through the
+    block adapter. Bit bounds become rank-zero operands; only the direction,
+    tuning, logical extent, and dtype identity specialize the declaration.
+    """
+
+    tile_ty = require_tile_type(keys)
+    shape = tile_ty.shape
+
+    if tile_ty.ndim != 1:
+        raise TileTypeError("coop.radix_sort_keys expects a 1D tile")
+
+    descending_val = _require_optional_constant_object(descending, "descending")
+    radix_bits_val = _require_optional_constant_object(radix_bits, "radix_bits")
+    memoize_val = _require_optional_constant_object(
+        memoize_outer_scan, "memoize_outer_scan"
+    )
+    inner_scan_val = _require_optional_constant_object(
+        inner_scan_algorithm, "inner_scan_algorithm"
+    )
+    smem_val = _require_optional_constant_object(smem_config, "smem_config")
+    methods_val = _require_optional_constant_object(methods, "methods")
+    _reject_runtime_method_overlap(
+        methods_val, begin_bit, "begin_bit", "radix_sort_keys"
+    )
+    _reject_runtime_method_overlap(
+        methods_val, end_bit, "end_bit", "radix_sort_keys"
+    )
+    begin_bit_const = _const_value_or_runtime(begin_bit)
+    end_bit_const = _const_value_or_runtime(end_bit)
+    options = BlockRadixSortKeysOptions.from_kwargs(
+        descending=descending_val,
+        begin_bit=None
+        if begin_bit_const is _RUNTIME_VALUE
+        else begin_bit_const,
+        end_bit=None if end_bit_const is _RUNTIME_VALUE else end_bit_const,
+        radix_bits=radix_bits_val,
+        memoize_outer_scan=memoize_val,
+        inner_scan_algorithm=inner_scan_val,
+        smem_config=smem_val,
+        methods=methods_val,
+    )
+
+    numel = shape[0]
+    begin_bit_operand = (
+        _constant_scalar_tile(options.begin_bit, datatype.int32, shape=())
+        if not _is_provided(begin_bit) and options.begin_bit is not None
+        else _rank0_scalar_tile_operand(
+            begin_bit,
+            datatype.int32,
+            primitive="radix_sort_keys",
+            name="begin_bit",
+            default=0,
+            int_value=True,
+        )[0]
+    )
+    end_bit_operand = (
+        _constant_scalar_tile(options.end_bit, datatype.int32, shape=())
+        if not _is_provided(end_bit) and options.end_bit is not None
+        else _rank0_scalar_tile_operand(
+            end_bit,
+            datatype.int32,
+            primitive="radix_sort_keys",
+            name="end_bit",
+            default=tile_ty.dtype.bitwidth,
+            int_value=True,
+        )[0]
+    )
+    decision = dispatch_radix_sort_keys(
+        numel=numel,
+        dtype=tile_ty.dtype,
+        inner_scan_algorithm=options.inner_scan_algorithm,
+    )
+    items_per_thread = numel // decision.block_threads
+
+    block_sort = BlockRadixSortKeys(
+        items_per_thread=items_per_thread,
+        dtype=tile_ty.dtype,
+        block_threads=decision.block_threads,
+        descending=options.descending,
+        # Bounds stay runtime operands; passing only the known constants here
+        # preserves frontend validation without adding them to provider
+        # metadata.
+        begin_bit=options.begin_bit,
+        end_bit=options.end_bit,
+        radix_bits=options.radix_bits,
+        memoize_outer_scan=options.memoize_outer_scan,
+        inner_scan_algorithm=options.inner_scan_algorithm,
+        smem_config=options.smem_config,
+    )
+
+    out_ty = make_tile_ty(tile_ty.dtype, shape)
+    return _emit_provider_foreign_call(
+        operands=(keys, begin_bit_operand, end_bit_operand),
+        output_types=(out_ty,),
+        decl_sym_name=_PROVIDER_DECL_RADIX_SORT_KEYS,
+        static_prefix=_radix_sort_key_static_prefix(
+            numel,
+            tile_ty.dtype,
+            descending=block_sort.descending,
+            radix_bits=block_sort.radix_bits,
+            memoize_outer_scan=block_sort.memoize_outer_scan,
+            inner_scan_algorithm=block_sort.inner_scan_token,
+            smem_config=block_sort.smem_config_token,
+        ),
+    )
+
+
+def radix_sort_pairs_impl(
+    keys,
+    values,
+    begin_bit,
+    end_bit,
+    descending,
+    radix_bits,
+    memoize_outer_scan,
+    inner_scan_algorithm,
+    smem_config,
+    methods,
+):
+    """Lower paired Radix Sort with separate key and value dtype identities.
+
+    Require equal one-dimensional shapes and retain both element types in
+    the result tuple. Runtime bit bounds select the key interval without
+    changing the provider's specialization identity.
+    """
+
+    keys_ty = require_tile_type(keys)
+    values_ty = require_tile_type(values)
+    shape = keys_ty.shape
+
+    if keys_ty.ndim != 1 or values_ty.ndim != 1:
+        raise TileTypeError("coop.radix_sort_pairs expects 1D tiles")
+    if keys_ty.shape != values_ty.shape:
+        raise TileTypeError("coop.radix_sort_pairs expects matching shapes")
+
+    descending_val = _require_optional_constant_object(descending, "descending")
+    radix_bits_val = _require_optional_constant_object(radix_bits, "radix_bits")
+    memoize_val = _require_optional_constant_object(
+        memoize_outer_scan, "memoize_outer_scan"
+    )
+    inner_scan_val = _require_optional_constant_object(
+        inner_scan_algorithm, "inner_scan_algorithm"
+    )
+    smem_val = _require_optional_constant_object(smem_config, "smem_config")
+    methods_val = _require_optional_constant_object(methods, "methods")
+    _reject_runtime_method_overlap(
+        methods_val, begin_bit, "begin_bit", "radix_sort_pairs"
+    )
+    _reject_runtime_method_overlap(
+        methods_val, end_bit, "end_bit", "radix_sort_pairs"
+    )
+    begin_bit_const = _const_value_or_runtime(begin_bit)
+    end_bit_const = _const_value_or_runtime(end_bit)
+    options = BlockRadixSortPairsOptions.from_kwargs(
+        descending=descending_val,
+        begin_bit=None
+        if begin_bit_const is _RUNTIME_VALUE
+        else begin_bit_const,
+        end_bit=None if end_bit_const is _RUNTIME_VALUE else end_bit_const,
+        radix_bits=radix_bits_val,
+        memoize_outer_scan=memoize_val,
+        inner_scan_algorithm=inner_scan_val,
+        smem_config=smem_val,
+        methods=methods_val,
+    )
+
+    numel = shape[0]
+    begin_bit_operand = (
+        _constant_scalar_tile(options.begin_bit, datatype.int32, shape=())
+        if not _is_provided(begin_bit) and options.begin_bit is not None
+        else _rank0_scalar_tile_operand(
+            begin_bit,
+            datatype.int32,
+            primitive="radix_sort_pairs",
+            name="begin_bit",
+            default=0,
+            int_value=True,
+        )[0]
+    )
+    end_bit_operand = (
+        _constant_scalar_tile(options.end_bit, datatype.int32, shape=())
+        if not _is_provided(end_bit) and options.end_bit is not None
+        else _rank0_scalar_tile_operand(
+            end_bit,
+            datatype.int32,
+            primitive="radix_sort_pairs",
+            name="end_bit",
+            default=keys_ty.dtype.bitwidth,
+            int_value=True,
+        )[0]
+    )
+    decision = dispatch_radix_sort_pairs(
+        numel=numel,
+        key_dtype=keys_ty.dtype,
+        value_dtype=values_ty.dtype,
+        inner_scan_algorithm=options.inner_scan_algorithm,
+    )
+    items_per_thread = numel // decision.block_threads
+
+    block_sort = BlockRadixSortPairs(
+        items_per_thread=items_per_thread,
+        key_dtype=keys_ty.dtype,
+        value_dtype=values_ty.dtype,
+        block_threads=decision.block_threads,
+        descending=options.descending,
+        begin_bit=options.begin_bit,
+        end_bit=options.end_bit,
+        radix_bits=options.radix_bits,
+        memoize_outer_scan=options.memoize_outer_scan,
+        inner_scan_algorithm=options.inner_scan_algorithm,
+        smem_config=options.smem_config,
+    )
+
+    out_keys_ty = make_tile_ty(keys_ty.dtype, shape)
+    out_vals_ty = make_tile_ty(values_ty.dtype, shape)
+    return _emit_provider_foreign_call(
+        operands=(keys, values, begin_bit_operand, end_bit_operand),
+        output_types=(out_keys_ty, out_vals_ty),
+        decl_sym_name=_PROVIDER_DECL_RADIX_SORT_PAIRS,
+        static_prefix=_radix_sort_pair_static_prefix(
+            numel,
+            keys_ty.dtype,
+            values_ty.dtype,
+            descending=block_sort.descending,
+            radix_bits=block_sort.radix_bits,
+            memoize_outer_scan=block_sort.memoize_outer_scan,
+            inner_scan_algorithm=block_sort.inner_scan_token,
+            smem_config=block_sort.smem_config_token,
         ),
     )
