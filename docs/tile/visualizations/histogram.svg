@@ -1,0 +1,72 @@
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="598" viewBox="0 0 1000 598" role="img" aria-labelledby="title desc">
+<title id="title">Histogram: sample values become bin indices</title>
+<desc id="desc">Logical Tile input and output values; complete semantics and constraints are in the accompanying reference.</desc>
+<rect width="1000" height="598" rx="8" fill="#ffffff"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="26" y="32" font-size="26" fill="#132c47" font-weight="700" text-anchor="start">Histogram: sample values become bin indices</text>
+<text x="26" y="60" font-size="16" fill="#29435a" font-weight="400" text-anchor="start">Real example: N = 256 uint8 samples, 256 int32 bins, block width 128.</text>
+<text x="26" y="117" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">input values</text>
+<rect x="228.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<rect x="306.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">1</text>
+<rect x="384.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="462.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">...</text>
+<rect x="540.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="576.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">63</text>
+<rect x="618.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="654.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<rect x="696.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="732.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">...</text>
+<rect x="774.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="810.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">63</text>
+<text x="26" y="154" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">The sequence 0 through 63 repeats four times, so all 256 samples are in range.</text>
+<path d="M26 191 H974" stroke="#cbd8e3"/>
+<text x="26" y="220" font-size="20" fill="#132c47" font-weight="600" text-anchor="start">Count each value in its own bin</text>
+<text x="26" y="243" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">Output shape is (256,), determined by bins rather than the sample extent.</text>
+<text x="26" y="299" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">bin indices</text>
+<rect x="228.0" y="270" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="264.5" y="298" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<rect x="306.0" y="270" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="342.5" y="298" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">1</text>
+<rect x="384.0" y="270" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="420.5" y="298" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="462.0" y="270" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="498.5" y="298" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">...</text>
+<rect x="540.0" y="270" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="576.5" y="298" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">63</text>
+<rect x="618.0" y="270" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="654.5" y="298" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">64</text>
+<rect x="696.0" y="270" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="732.5" y="298" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">...</text>
+<rect x="774.0" y="270" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="810.5" y="298" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">255</text>
+<text x="26" y="357" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">output counts</text>
+<rect x="228.0" y="328" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="264.5" y="356" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">4</text>
+<rect x="306.0" y="328" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="342.5" y="356" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">4</text>
+<rect x="384.0" y="328" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="420.5" y="356" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">4</text>
+<rect x="462.0" y="328" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="498.5" y="356" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">...</text>
+<rect x="540.0" y="328" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="576.5" y="356" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">4</text>
+<rect x="618.0" y="328" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="654.5" y="356" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<rect x="696.0" y="328" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="732.5" y="356" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">...</text>
+<rect x="774.0" y="328" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="810.5" y="356" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<text x="26" y="394" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">64 nonempty bins * 4 samples per bin = 256 input samples.</text>
+<path d="M26 431 H974" stroke="#cbd8e3"/>
+<text x="26" y="460" font-size="20" fill="#132c47" font-weight="600" text-anchor="start">The two entry points agree when bins = 256</text>
+<text x="26" y="491" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">histogram(samples, bins=256) == histogram_256(samples)</text>
+<text x="26" y="524" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">Every call starts at zero. Samples must satisfy 0 &lt;= sample &lt; bins.</text>
+<text x="26" y="557" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">For fewer bins, both N and bins must be divisible by the selected block width.</text>
+</g>
+</svg>

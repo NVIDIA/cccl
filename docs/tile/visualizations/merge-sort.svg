@@ -1,0 +1,138 @@
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="764" viewBox="0 0 1000 764" role="img" aria-labelledby="title desc">
+<title id="title">Merge sort: comparison order with matching payloads</title>
+<desc id="desc">Logical Tile input and output values; complete semantics and constraints are in the accompanying reference.</desc>
+<rect width="1000" height="764" rx="8" fill="#ffffff"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="26" y="32" font-size="26" fill="#132c47" font-weight="700" text-anchor="start">Merge sort: comparison order with matching payloads</text>
+<text x="26" y="60" font-size="16" fill="#29435a" font-weight="400" text-anchor="start">Eight-value semantic example. Payload letters identify original input positions.</text>
+<text x="26" y="117" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">input keys</text>
+<rect x="228.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">9</text>
+<rect x="306.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="384.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">7</text>
+<rect x="462.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">4</text>
+<rect x="540.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="576.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">1</text>
+<rect x="618.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="654.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">8</text>
+<rect x="696.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="732.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">3</text>
+<rect x="774.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="810.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">6</text>
+<text x="26" y="175" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">input payloads</text>
+<rect x="228.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">a</text>
+<rect x="306.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">b</text>
+<rect x="384.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">c</text>
+<rect x="462.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">d</text>
+<rect x="540.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="576.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">e</text>
+<rect x="618.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="654.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">f</text>
+<rect x="696.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="732.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">g</text>
+<rect x="774.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="810.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">h</text>
+<path d="M26 216 H974" stroke="#cbd8e3"/>
+<text x="26" y="245" font-size="20" fill="#132c47" font-weight="600" text-anchor="start">Ascending and descending order, full capacity</text>
+<text x="26" y="297" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">ascending keys</text>
+<rect x="228.0" y="268" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="264.5" y="296" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">1</text>
+<rect x="306.0" y="268" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="342.5" y="296" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="384.0" y="268" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="420.5" y="296" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">3</text>
+<rect x="462.0" y="268" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="498.5" y="296" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">4</text>
+<rect x="540.0" y="268" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="576.5" y="296" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">6</text>
+<rect x="618.0" y="268" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="654.5" y="296" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">7</text>
+<rect x="696.0" y="268" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="732.5" y="296" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">8</text>
+<rect x="774.0" y="268" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="810.5" y="296" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">9</text>
+<text x="26" y="355" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">ascending payloads</text>
+<rect x="228.0" y="326" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="354" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">e</text>
+<rect x="306.0" y="326" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="354" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">b</text>
+<rect x="384.0" y="326" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="354" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">g</text>
+<rect x="462.0" y="326" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="354" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">d</text>
+<rect x="540.0" y="326" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="576.5" y="354" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">h</text>
+<rect x="618.0" y="326" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="654.5" y="354" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">c</text>
+<rect x="696.0" y="326" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="732.5" y="354" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">f</text>
+<rect x="774.0" y="326" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="810.5" y="354" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">a</text>
+<text x="26" y="413" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">descending keys</text>
+<rect x="228.0" y="384" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="264.5" y="412" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">9</text>
+<rect x="306.0" y="384" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="342.5" y="412" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">8</text>
+<rect x="384.0" y="384" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="420.5" y="412" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">7</text>
+<rect x="462.0" y="384" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="498.5" y="412" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">6</text>
+<rect x="540.0" y="384" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="576.5" y="412" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">4</text>
+<rect x="618.0" y="384" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="654.5" y="412" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">3</text>
+<rect x="696.0" y="384" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="732.5" y="412" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="774.0" y="384" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="810.5" y="412" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">1</text>
+<text x="26" y="450" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">merge_sort_keys returns keys; merge_sort_pairs also returns the associated payload row.</text>
+<path d="M26 487 H974" stroke="#cbd8e3"/>
+<text x="26" y="516" font-size="20" fill="#132c47" font-weight="600" text-anchor="start">Partial prefix: valid_items = 5, oob_default = 99</text>
+<text x="26" y="539" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">The first five keys are valid. Replaced keys are yellow and payloads are zeroed.</text>
+<text x="26" y="595" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">keys before sorting</text>
+<rect x="228.0" y="566" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="594" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">9</text>
+<rect x="306.0" y="566" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="594" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="384.0" y="566" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="594" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">7</text>
+<rect x="462.0" y="566" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="594" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">4</text>
+<rect x="540.0" y="566" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="576.5" y="594" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">1</text>
+<rect x="618.0" y="566" width="73.0" height="43" rx="5" fill="#fff0c7" stroke="#7894af"/>
+<text x="654.5" y="594" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">99</text>
+<rect x="696.0" y="566" width="73.0" height="43" rx="5" fill="#fff0c7" stroke="#7894af"/>
+<text x="732.5" y="594" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">99</text>
+<rect x="774.0" y="566" width="73.0" height="43" rx="5" fill="#fff0c7" stroke="#7894af"/>
+<text x="810.5" y="594" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">99</text>
+<text x="26" y="653" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">ascending result</text>
+<rect x="228.0" y="624" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="264.5" y="652" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">1</text>
+<rect x="306.0" y="624" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="342.5" y="652" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="384.0" y="624" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="420.5" y="652" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">4</text>
+<rect x="462.0" y="624" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="498.5" y="652" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">7</text>
+<rect x="540.0" y="624" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="576.5" y="652" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">9</text>
+<rect x="618.0" y="624" width="73.0" height="43" rx="5" fill="#fff0c7" stroke="#7894af"/>
+<text x="654.5" y="652" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">99</text>
+<rect x="696.0" y="624" width="73.0" height="43" rx="5" fill="#fff0c7" stroke="#7894af"/>
+<text x="732.5" y="652" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">99</text>
+<rect x="774.0" y="624" width="73.0" height="43" rx="5" fill="#fff0c7" stroke="#7894af"/>
+<text x="810.5" y="652" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">99</text>
+<text x="26" y="690" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">Consume the first five results. A strict sentinel prevents padding from tying with valid keys.</text>
+<text x="26" y="723" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">Equal keys have no stability guarantee; use payload association rather than tie order in checks.</text>
+</g>
+</svg>
