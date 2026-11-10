@@ -99,11 +99,12 @@ struct DeviceScanKernelSource
                      StableReductionOrder,
                      IsDeferred>)
 
-  CUB_DEFINE_KERNEL_GETTER(BatchInitKernel, DeviceScanBatchInitKernel<PolicySelector, ScanTileStateT, AccumT>)
+  CUB_DEFINE_KERNEL_GETTER(BatchInitKernel,
+                           DeviceScanBatchInitKernel<batch_policy_selector<PolicySelector>, ScanTileStateT, AccumT>)
 
   CUB_DEFINE_KERNEL_GETTER(
     BatchScanKernel,
-    DeviceScanBatchKernel<PolicySelector,
+    DeviceScanBatchKernel<batch_policy_selector<PolicySelector>,
                           UnwrappedInputIteratorT,
                           UnwrappedOutputIteratorT,
                           ScanTileStateT,
@@ -208,7 +209,7 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> ScanPolicy
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const -> ScanPolicy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const -> ScanPolicy
   {
     return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
   }
