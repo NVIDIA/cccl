@@ -1315,8 +1315,7 @@ private:
   // guarantee.
   // TODO(cccl): a non-leader without candidates (`num_local_candidates == 0` from the second pass on) could settle the
   // whole histogram with a single fenced `complete_tx` instead of reading every bucket, and a block with candidates
-  // needs no per-warp fence (its `red.async`s already release). Prototyped together with the other empty-work skips
-  // in `run_radix_passes`; not a consistent win on B200/H200 yet.
+  // needs no per-warp fence (its `red.async`s already release).
   _CCCL_DEVICE _CCCL_FORCEINLINE void fold_hist_into_leader()
   {
     offset_t* const remote_hist              = layout.leader_storage->hist;
