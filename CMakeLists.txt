@@ -53,6 +53,7 @@ option(CCCL_ENABLE_THRUST "Enable the Thrust developer build." OFF)
 option(CCCL_ENABLE_TESTING "Enable CUDA C++ Core Library tests." OFF)
 option(CCCL_ENABLE_EXAMPLES "Enable CUDA C++ Core Library examples." OFF)
 option(CCCL_ENABLE_C_PARALLEL "Enable CUDA C Parallel Library." OFF)
+option(CCCL_ENABLE_TILE_COOP "Enable CUDA Tile cooperative primitives." OFF)
 option(
   CCCL_ENABLE_C_PARALLEL_V2
   "Enable CUDA C Parallel Library v2 (HostJIT-based)."
@@ -125,6 +126,10 @@ set(CCCL_CUDA_SMOKE_TARGET cccl.test.cuda_runtime_smoke)
 add_subdirectory(libcudacxx)
 add_subdirectory(cub)
 add_subdirectory(thrust)
+
+if (CCCL_ENABLE_TILE_COOP)
+  add_subdirectory(tile)
+endif()
 
 if (CCCL_ENABLE_UNSTABLE)
   add_subdirectory(cudax)
