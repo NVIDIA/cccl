@@ -10,7 +10,7 @@
 
 // Transform iterators satisfy __is_contiguous_iterator_or_adaptor_v when their stored iterator does, transform output
 // and input output iterators never do. __unwrap_iterator_adaptor peels iterator adaptors down to the contiguous
-// iterator, and __rebind_iterator_adaptor rebuilds a transform iterator over a different contiguous region. Transform
+// iterator, and __rebind_iterator_adaptor rebuilds that iterator in place over a different contiguous region. Transform
 // output and input output iterators cannot be rebuilt, so they do not satisfy __iter_can_unwrap.
 
 #include <cuda/iterator>
@@ -120,11 +120,10 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::std::is_same_v<decltype(unwrapped), int*>);
     assert(unwrapped == buffer);
 
-    // A contiguous iterator is rebuilt as a pointer with the qualifiers of its address
+    // A pointer is rebuilt in place. int* converts to const int*, so the pointee stays const
     const int* const_input = buffer;
-    auto rebound           = cuda::__rebind_iterator_adaptor(const_input, staged);
-    static_assert(cuda::std::is_same_v<decltype(rebound), const int*>);
-    assert(rebound == staged);
+    cuda::__rebind_iterator_adaptor(const_input, staged);
+    assert(const_input == staged);
     static_assert(!cuda::__iter_can_unwrap<int*>);
 
     cuda::counting_iterator<int> counting{4};
@@ -151,12 +150,11 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::std::is_same_v<decltype(unwrapped), int*>);
     assert(unwrapped == buffer + 2);
 
-    auto rebound = iter.__rebind(staged);
-    static_assert(cuda::std::is_same_v<decltype(rebound), Iter>);
     assert(*iter == 2);
-    assert(*rebound == 11);
-    assert(rebound.base() == staged);
-    assert(rebound[3] == 41);
+    iter.__rebind(staged);
+    assert(iter.base() == staged);
+    assert(*iter == 11);
+    assert(iter[3] == 41);
   }
 
   {
@@ -169,11 +167,10 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::std::is_same_v<decltype(unwrapped), const int*>);
     assert(unwrapped == buffer);
 
-    auto rebound = iter.__rebind(staged);
-    static_assert(cuda::std::is_same_v<decltype(rebound), Iter>);
     assert(*iter == 2);
-    assert(*rebound == 11);
-    assert(rebound.base() == staged);
+    iter.__rebind(staged);
+    assert(iter.base() == staged);
+    assert(*iter == 11);
   }
 
   {
@@ -198,10 +195,9 @@ TEST_FUNC constexpr bool test()
     Iter iter{cuda::std::span<int>{buffer}.begin(), PlusOne{}};
     assert(cuda::__unwrap_iterator_adaptor(iter) == buffer);
 
-    auto rebound = iter.__rebind(staged);
-    static_assert(cuda::std::is_same_v<decltype(rebound), cuda::transform_iterator<PlusOne, int*>>);
-    assert(*rebound == 11);
-    assert(rebound.base() == staged);
+    iter.__rebind(staged);
+    assert(cuda::__unwrap_iterator_adaptor(iter) == staged);
+    assert(*iter == 11);
   }
 
   {
@@ -217,11 +213,10 @@ TEST_FUNC constexpr bool test()
     assert(unwrapped == buffer);
     assert(*iter == 4);
 
-    auto rebound = iter.__rebind(staged);
-    static_assert(cuda::std::is_same_v<decltype(rebound), Outer>);
     assert(*iter == 4);
-    assert(*rebound == 22);
-    assert(rebound.base().base() == staged);
+    iter.__rebind(staged);
+    assert(iter.base().base() == staged);
+    assert(*iter == 22);
   }
 
   {
@@ -273,9 +268,9 @@ TEST_FUNC constexpr bool test()
     assert(cuda::__unwrap_iterator_adaptor(transformed) == buffer + 2);
     assert(*transformed == 4);
 
-    auto rebound = transformed.__rebind(staged);
-    static_assert(cuda::std::is_same_v<decltype(rebound), cuda::transform_iterator<PlusOne, int*>>);
-    assert(*rebound == 11);
+    transformed.__rebind(staged);
+    assert(cuda::__unwrap_iterator_adaptor(transformed) == staged);
+    assert(*transformed == 11);
   }
 
   {

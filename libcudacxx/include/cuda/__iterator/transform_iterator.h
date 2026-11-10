@@ -235,15 +235,14 @@ public:
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED
-  //! @brief Rebuilds this iterator over the storage at @p __ptr, keeping a copy of the stored functor.
+  //! @brief Rebuilds the stored iterator in place over the storage at @p __ptr.
   //! @param[in] __ptr The address of the storage that replaces the storage this iterator reads from.
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__iter_can_rebind<_Iter, _Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto __rebind(_Tp* __ptr) const
+  _CCCL_API constexpr void __rebind(_Tp* __ptr)
   {
-    auto __base = ::cuda::__rebind_iterator_adaptor(__iter(), __ptr);
-    return transform_iterator<_Fn, decltype(__base)>{::cuda::std::move(__base), __func()};
+    ::cuda::__rebind_iterator_adaptor(__iter(), __ptr);
   }
 #endif // !_CCCL_DOXYGEN_INVOKED
 

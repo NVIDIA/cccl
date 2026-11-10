@@ -286,15 +286,14 @@ public:
     return m_f;
   }
 
-  //! @brief Rebuilds this iterator over the storage at @p ptr, keeping a copy of the stored functor.
+  //! @brief Rebuilds the stored iterator in place over the storage at @p ptr.
   //! @param[in] ptr The address of the storage that replaces the storage this iterator reads from.
   _CCCL_TEMPLATE(class T)
   _CCCL_REQUIRES(::cuda::__iter_can_rebind<Iterator, T>)
   // NOLINTNEXTLINE(readability-identifier-naming): libcu++ calls this by name
-  [[nodiscard]] _CCCL_HOST_DEVICE auto __rebind(T* ptr) const
+  _CCCL_HOST_DEVICE void __rebind(T* ptr)
   {
-    auto rebound = ::cuda::__rebind_iterator_adaptor(this->base(), ptr);
-    return transform_iterator<AdaptableUnaryFunction, decltype(rebound), Reference, Value>{rebound, m_f};
+    ::cuda::__rebind_iterator_adaptor(this->base_reference(), ptr);
   }
 
   //! \cond

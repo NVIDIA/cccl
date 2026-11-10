@@ -26,6 +26,8 @@
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/is_assignable.h>
+#include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
@@ -42,10 +44,10 @@ _CCCL_CONCEPT __iter_has_member_base = _CCCL_REQUIRES_EXPR((_Iter), const _Iter&
   requires(::cuda::std::__can_to_address<::cuda::std::remove_cvref_t<decltype(__iter.base())>>
            || ::cuda::std::input_or_output_iterator<::cuda::std::remove_cvref_t<decltype(__iter.base())>>));
 
-//! @brief True when `_Iter` is an iterator adaptor that can rebuild itself over the storage at a `_Tp*`.
+//! @brief True when `_Iter` is an iterator adaptor that can rebuild itself in place over the storage at a `_Tp*`.
 template <class _Iter, class _Tp>
 _CCCL_CONCEPT __iter_has_member_rebind =
-  _CCCL_REQUIRES_EXPR((_Iter, _Tp), const _Iter& __iter, _Tp* __ptr)((__iter.__rebind(__ptr)));
+  _CCCL_REQUIRES_EXPR((_Iter, _Tp), _Iter& __iter, _Tp* __ptr)((__iter.__rebind(__ptr)));
 
 //! @brief Peel iterator adaptors until a contiguous iterator or an iterator that adapts no other iterator remains.
 //! @param[in] __iter The iterator to unwrap.
@@ -83,29 +85,32 @@ template <class _Iter>
 inline constexpr bool __iter_has_contiguous_storage =
   ::cuda::std::is_pointer_v<_Iter> || ::cuda::std::__has_cuda_std_to_address<_Iter>;
 
-//! @brief True when `_Iter` can be rebuilt over the storage at a `_Tp*`, because it is a contiguous iterator or an
-//! iterator adaptor that can rebuild itself over it.
+//! @brief True when `_Iter` can be rebuilt in place over the storage at a `_Tp*`, because it is contiguous storage that
+//! can be assigned or constructed from a `_Tp*`, or an iterator adaptor that can rebuild itself over it.
 template <class _Iter, class _Tp>
 _CCCL_CONCEPT __iter_can_rebind =
-  (__iter_has_contiguous_storage<_Iter> && ::cuda::std::is_convertible_v<_Tp*, __unwrapped_iterator_t<_Iter>>)
+  (__iter_has_contiguous_storage<_Iter> && ::cuda::std::is_convertible_v<_Tp*, __unwrapped_iterator_t<_Iter>>
+   && (::cuda::std::is_assignable_v<_Iter&, _Tp*> || ::cuda::std::is_constructible_v<_Iter, _Tp*>) )
   || __iter_has_member_rebind<_Iter, _Tp>;
 
-//! @brief Rebuild `__iter` over the storage at `__ptr`.
-//! @param[in] __iter The iterator to rebuild.
+//! @brief Rebuild `__iter` in place over the storage at `__ptr`, keeping its type.
+//! @param[in,out] __iter The iterator to rebuild.
 //! @param[in] __ptr The address of the storage that replaces the storage `__iter` reads from.
-//! @return A pointer to `__ptr` with the qualifiers of the address of a contiguous iterator. Otherwise a copy of the
-//! iterator adaptor over its rebuilt base iterator.
 _CCCL_TEMPLATE(class _Iter, class _Tp)
 _CCCL_REQUIRES(__iter_can_rebind<_Iter, _Tp>)
-[[nodiscard]] _CCCL_API constexpr auto __rebind_iterator_adaptor([[maybe_unused]] const _Iter& __iter, _Tp* __ptr)
+_CCCL_API constexpr void __rebind_iterator_adaptor(_Iter& __iter, _Tp* __ptr)
 {
   if constexpr (__iter_has_member_rebind<_Iter, _Tp>)
   {
-    return __iter.__rebind(__ptr);
+    __iter.__rebind(__ptr);
+  }
+  else if constexpr (::cuda::std::is_assignable_v<_Iter&, _Tp*>)
+  {
+    __iter = __ptr;
   }
   else
   {
-    return static_cast<__unwrapped_iterator_t<_Iter>>(__ptr);
+    __iter = _Iter{__ptr};
   }
 }
 

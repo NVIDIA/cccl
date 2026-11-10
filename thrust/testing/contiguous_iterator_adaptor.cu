@@ -40,25 +40,22 @@ using transform_output_t = thrust::transform_output_iterator<plus_one, Iter>;
 template <class Iter>
 using transform_input_output_t = thrust::transform_input_output_iterator<plus_one, plus_one, Iter>;
 
-template <class Iter>
-using rebound_t = decltype(cuda::__rebind_iterator_adaptor(cuda::std::declval<Iter>(), cuda::std::declval<int*>()));
-
 template <class Iter, class Pointer>
 void check_contiguous_storage()
 {
   STATIC_REQUIRE(cuda::std::__can_to_address<Iter>);
   STATIC_REQUIRE(cuda::__is_contiguous_iterator_or_adaptor_v<Iter>);
   STATIC_REQUIRE(cuda::std::is_same_v<cuda::__unwrapped_iterator_t<Iter>, Pointer>);
-  STATIC_REQUIRE(cuda::std::is_same_v<rebound_t<Iter>, Pointer>);
+  STATIC_REQUIRE(cuda::__iter_can_rebind<Iter, cuda::std::remove_pointer_t<Pointer>>);
 }
 
-template <class Iter, class Rebound>
+template <class Iter>
 void check_contiguous_adaptor()
 {
   STATIC_REQUIRE(cuda::__is_contiguous_iterator_or_adaptor_v<Iter>);
   STATIC_REQUIRE(cuda::__iter_can_unwrap<Iter>);
   STATIC_REQUIRE(cuda::std::is_same_v<cuda::__unwrapped_iterator_t<Iter>, int*>);
-  STATIC_REQUIRE(cuda::std::is_same_v<rebound_t<Iter>, Rebound>);
+  STATIC_REQUIRE(cuda::__iter_can_rebind<Iter, int>);
 }
 
 // Output adaptors unwrap to their storage, but cannot be rebuilt over a copy of it
@@ -86,97 +83,98 @@ TEST_CASE("contiguous iterator adaptor thrust storage", "[iterators]")
   thrust::device_vector<int> device_values(4);
   int* const storage = thrust::raw_pointer_cast(device_values.data());
 
-  const thrust_pointer pointer{storage};
+  thrust_pointer pointer{storage};
   REQUIRE(cuda::__unwrap_iterator_adaptor(pointer) == storage);
-  REQUIRE(cuda::__rebind_iterator_adaptor(pointer, staged) == staged);
+  cuda::__rebind_iterator_adaptor(pointer, staged);
+  REQUIRE(cuda::__unwrap_iterator_adaptor(pointer) == staged);
 
-  const thrust::device_ptr<int> device_pointer = device_values.data();
+  thrust::device_ptr<int> device_pointer = device_values.data();
   REQUIRE(cuda::__unwrap_iterator_adaptor(device_pointer) == storage);
-  REQUIRE(cuda::__rebind_iterator_adaptor(device_pointer, staged) == staged);
+  cuda::__rebind_iterator_adaptor(device_pointer, staged);
+  REQUIRE(cuda::__unwrap_iterator_adaptor(device_pointer) == staged);
 
-  REQUIRE(cuda::__unwrap_iterator_adaptor(device_values.begin()) == storage);
-  REQUIRE(cuda::__rebind_iterator_adaptor(device_values.begin(), staged) == staged);
+  auto device_iter = device_values.begin();
+  REQUIRE(cuda::__unwrap_iterator_adaptor(device_iter) == storage);
+  cuda::__rebind_iterator_adaptor(device_iter, staged);
+  REQUIRE(cuda::__unwrap_iterator_adaptor(device_iter) == staged);
 
   thrust::host_vector<int> host_values(4);
-  REQUIRE(cuda::__unwrap_iterator_adaptor(host_values.begin()) == host_values.data());
-  REQUIRE(cuda::__rebind_iterator_adaptor(host_values.begin(), staged) == staged);
+  auto host_iter = host_values.begin();
+  REQUIRE(cuda::__unwrap_iterator_adaptor(host_iter) == host_values.data());
+  cuda::__rebind_iterator_adaptor(host_iter, staged);
+  REQUIRE(cuda::__unwrap_iterator_adaptor(host_iter) == staged);
 }
 
 TEST_CASE("contiguous iterator adaptor transform_iterator", "[iterators]")
 {
-  check_contiguous_adaptor<transform_t<int*>, transform_t<int*>>();
-  check_contiguous_adaptor<transform_t<thrust_pointer>, transform_t<int*>>();
-  check_contiguous_adaptor<transform_t<thrust::device_ptr<int>>, transform_t<int*>>();
-  check_contiguous_adaptor<transform_t<thrust::host_vector<int>::iterator>, transform_t<int*>>();
-  check_contiguous_adaptor<transform_t<thrust::device_vector<int>::iterator>, transform_t<int*>>();
+  check_contiguous_adaptor<transform_t<int*>>();
+  check_contiguous_adaptor<transform_t<thrust_pointer>>();
+  check_contiguous_adaptor<transform_t<thrust::device_ptr<int>>>();
+  check_contiguous_adaptor<transform_t<thrust::host_vector<int>::iterator>>();
+  check_contiguous_adaptor<transform_t<thrust::device_vector<int>::iterator>>();
 
   int input[]  = {1, 2, 3, 4};
   int staged[] = {10, 20, 30, 40};
 
-  const auto iter = thrust::make_transform_iterator(input, plus_one{});
+  auto iter = thrust::make_transform_iterator(input, plus_one{});
   REQUIRE(cuda::__unwrap_iterator_adaptor(iter + 2) == input + 2);
-
-  const auto rebound = iter.__rebind(staged);
-  REQUIRE(rebound.base() == staged);
   REQUIRE(*iter == 2);
-  REQUIRE(*rebound == 11);
+
+  iter.__rebind(staged);
+  REQUIRE(iter.base() == staged);
+  REQUIRE(*iter == 11);
 
   // The rebuilt iterator reads the host buffer instead of device memory
   thrust::device_vector<int> device_values(4);
-  const auto device_iter = thrust::make_transform_iterator(device_values.begin(), plus_one{});
+  auto device_iter = thrust::make_transform_iterator(device_values.begin(), plus_one{});
   REQUIRE(cuda::__unwrap_iterator_adaptor(device_iter) == thrust::raw_pointer_cast(device_values.data()));
 
-  const auto device_rebound = device_iter.__rebind(staged);
-  REQUIRE(device_rebound.base() == staged);
-  REQUIRE(*device_rebound == 11);
+  device_iter.__rebind(staged);
+  REQUIRE(cuda::__unwrap_iterator_adaptor(device_iter) == staged);
 }
 
 TEST_CASE("contiguous iterator adaptor nested transform_iterator", "[iterators]")
 {
-  check_contiguous_adaptor<transform_t<transform_t<int*>>, transform_t<transform_t<int*>>>();
-  check_contiguous_adaptor<transform_t<transform_t<thrust::device_ptr<int>>>, transform_t<transform_t<int*>>>();
-  check_contiguous_adaptor<transform_t<transform_t<thrust::host_vector<int>::iterator>>,
-                           transform_t<transform_t<int*>>>();
-  check_contiguous_adaptor<transform_t<transform_t<transform_t<int*>>>, transform_t<transform_t<transform_t<int*>>>>();
+  check_contiguous_adaptor<transform_t<transform_t<int*>>>();
+  check_contiguous_adaptor<transform_t<transform_t<thrust::device_ptr<int>>>>();
+  check_contiguous_adaptor<transform_t<transform_t<thrust::host_vector<int>::iterator>>>();
+  check_contiguous_adaptor<transform_t<transform_t<transform_t<int*>>>>();
 
   int input[]  = {1, 2, 3, 4};
   int staged[] = {10, 20, 30, 40};
 
-  const auto inner = thrust::make_transform_iterator(input, plus_one{});
-  const auto outer = thrust::make_transform_iterator(inner, plus_one{});
+  auto inner = thrust::make_transform_iterator(input, plus_one{});
+  auto outer = thrust::make_transform_iterator(inner, plus_one{});
   REQUIRE(cuda::__unwrap_iterator_adaptor(outer) == input);
-
-  const auto rebound = outer.__rebind(staged);
-  REQUIRE(rebound.base().base() == staged);
   REQUIRE(*outer == 3);
-  REQUIRE(*rebound == 12);
 
-  const auto outermost = thrust::make_transform_iterator(outer, plus_one{});
+  outer.__rebind(staged);
+  REQUIRE(outer.base().base() == staged);
+  REQUIRE(*outer == 12);
+
+  auto outermost = thrust::make_transform_iterator(outer, plus_one{});
+  REQUIRE(*outermost == 13);
+  cuda::__rebind_iterator_adaptor(outermost, input);
   REQUIRE(cuda::__unwrap_iterator_adaptor(outermost) == input);
-
-  const auto outermost_rebound = cuda::__rebind_iterator_adaptor(outermost, staged);
-  REQUIRE(outermost_rebound.base().base().base() == staged);
   REQUIRE(*outermost == 4);
-  REQUIRE(*outermost_rebound == 13);
 }
 
 TEST_CASE("contiguous iterator adaptor mixed thrust and libcu++ transform_iterator", "[iterators]")
 {
-  check_contiguous_adaptor<transform_t<cuda_transform_t<int*>>, transform_t<cuda_transform_t<int*>>>();
-  check_contiguous_adaptor<cuda_transform_t<transform_t<thrust::device_ptr<int>>>, cuda_transform_t<transform_t<int*>>>();
-  check_contiguous_adaptor<cuda_transform_t<transform_t<transform_t<thrust::device_ptr<int>>>>,
-                           cuda_transform_t<transform_t<transform_t<int*>>>>();
+  check_contiguous_adaptor<transform_t<cuda_transform_t<int*>>>();
+  check_contiguous_adaptor<cuda_transform_t<transform_t<thrust::device_ptr<int>>>>();
+  check_contiguous_adaptor<cuda_transform_t<transform_t<transform_t<thrust::device_ptr<int>>>>>();
 
   int input[]  = {1, 2, 3, 4};
   int staged[] = {10, 20, 30, 40};
 
-  const auto iter = cuda::make_transform_iterator(thrust::make_transform_iterator(input, plus_one{}), plus_one{});
+  auto iter = cuda::make_transform_iterator(thrust::make_transform_iterator(input, plus_one{}), plus_one{});
   REQUIRE(cuda::__unwrap_iterator_adaptor(iter) == input);
-
-  const auto rebound = iter.__rebind(staged);
-  REQUIRE(rebound.base().base() == staged);
   REQUIRE(*iter == 3);
-  REQUIRE(*rebound == 12);
+
+  iter.__rebind(staged);
+  REQUIRE(iter.base().base() == staged);
+  REQUIRE(*iter == 12);
 }
 
 TEST_CASE("contiguous iterator adaptor transform_iterator over non-contiguous iterators", "[iterators]")
