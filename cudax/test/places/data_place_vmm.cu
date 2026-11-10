@@ -243,7 +243,8 @@ void test_multi_segment_vmm()
   auto place = data_place::device(dev_id);
 
   // Create two physical allocations
-  CUmemGenericAllocationHandle handle1, handle2;
+  CUmemGenericAllocationHandle handle1;
+  CUmemGenericAllocationHandle handle2;
   cuda_try(place.mem_create(&handle1, segment_size));
   cuda_try(place.mem_create(&handle2, segment_size));
 

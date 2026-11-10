@@ -60,11 +60,21 @@ _CCCL_HOST_DEVICE inline double trim(double x)
 _CCCL_HOST_DEVICE inline complex<double> clog(const complex<double>& z)
 {
   // Adapted from FreeBSDs msun
-  double x, y;
-  double ax, ay;
-  double x0, y0, x1, y1, x2, y2, t, hm1;
+  double x;
+  double y;
+  double ax;
+  double ay;
+  double x0;
+  double y0;
+  double x1;
+  double y1;
+  double x2;
+  double y2;
+  double t;
+  double hm1;
   double val[12];
-  int i, sorted;
+  int i;
+  int sorted;
   constexpr auto e = ::cuda::std::__numbers<double>::__e();
 
   x = z.real();

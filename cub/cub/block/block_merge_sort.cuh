@@ -218,7 +218,6 @@ class BlockMergeSortStrategy
 {
   static_assert(::cuda::is_power_of_two(NumThreads), "NumThreads must be a power of two");
 
-private:
   static constexpr int ITEMS_PER_TILE = ItemsPerThread * NumThreads;
 
   // Whether or not there are values to be trucked along with keys
@@ -959,7 +958,10 @@ private:
 
       const int thread_idx_in_thread_group_being_merged = mask & linear_tid;
 
-      int keys1_beg, keys1_end, keys2_end, diag;
+      int keys1_beg;
+      int keys1_end;
+      int keys2_end;
+      int diag;
       if constexpr (Clamped)
       {
         keys1_beg = (::cuda::std::min) (valid_items, start);
@@ -1113,7 +1115,6 @@ class BlockMergeSort
         BlockMergeSort<KeyT, BlockDimX, ItemsPerThread, ValueT, BlockDimY, BlockDimZ, Unroll>,
         Unroll>
 {
-private:
   // The thread block size in threads
   static constexpr int BLOCK_THREADS  = BlockDimX * BlockDimY * BlockDimZ;
   static constexpr int ITEMS_PER_TILE = ItemsPerThread * BLOCK_THREADS;

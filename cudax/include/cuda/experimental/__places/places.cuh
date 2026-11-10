@@ -786,7 +786,7 @@ public:
    * @param[in] last_axis Last axis to collapse (inclusive)
    * @return A grid over the same places with the selected axes collapsed
    */
-  [[nodiscard]] _CCCL_HOST_API exec_place collapse_axes(const size_t first_axis, const size_t last_axis) const;
+  [[nodiscard]] _CCCL_HOST_API exec_place collapse_axes(size_t first_axis, size_t last_axis) const;
 
   // ===== Activation =====
 
@@ -1027,7 +1027,6 @@ public:
   template <typename Fun>
   auto operator->*(Fun&& fun) const;
 
-public:
   exec_place(::std::shared_ptr<impl> pimpl)
       : pimpl(mv(pimpl))
   {}
@@ -2138,7 +2137,8 @@ public:
     }
     const dim4 dims = grid_.get_dims();
     const pos4 pos  = dims.index_to_pos(place_index);
-    size_t idx = 0, mult = 1;
+    size_t idx      = 0;
+    size_t mult     = 1;
     for (size_t a = 0; a < 4; a++)
     {
       if (axes_mask_ & (1u << a))

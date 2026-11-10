@@ -49,11 +49,10 @@ template <class _Unit, class _ParentGroup>
 [[nodiscard]] _CCCL_DEVICE_API constexpr auto __make_init_group_mapping_result(const _ParentGroup& __parent_group)
 {
   using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
-  using _InitMappingResult =
-    __mapping_result</*initial static group count*/ 1,
-                     ::cuda::experimental::coop::__static_count_query_group<_Unit, _ParentGroup>(),
-                     /*initial is always exhaustive*/ true,
-                     _ParentMappingResult::is_always_contiguous()>;
+  using _InitMappingResult   = __mapping_result<
+    __uniform_static_unit_count<1, ::cuda::experimental::coop::__static_count_query_group<_Unit, _ParentGroup>()>,
+    /*initial is always exhaustive*/ true,
+    _ParentMappingResult::is_always_contiguous()>;
 
   return _InitMappingResult{
     /*initial group count*/ 1,

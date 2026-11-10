@@ -659,8 +659,8 @@ template <class _Arg, class _StaticBounds>
 }
 
 template <auto _Value, class _Tp>
-[[nodiscard]] _CCCL_API constexpr typename constant<_Value, _Tp>::value_type
-__unwrap(const constant<_Value, _Tp>&) noexcept
+[[nodiscard]]
+_CCCL_API constexpr typename constant<_Value, _Tp>::value_type __unwrap(const constant<_Value, _Tp>&) noexcept
 {
   return constant<_Value, _Tp>::__get_value();
 }

@@ -332,7 +332,8 @@ try
   {
     fill_normal(in[i], n, i);
   }
-  thrust::device_vector<T> tmpA(n, thrust::no_init), tmpB(n, thrust::no_init);
+  thrust::device_vector<T> tmpA(n, thrust::no_init);
+  thrust::device_vector<T> tmpB(n, thrust::no_init);
 
   T* d_in[num_in];
   for (int i = 0; i < num_in; i++)
@@ -510,7 +511,8 @@ try
   {
     fill_normal(in[i], n, i);
   }
-  thrust::device_vector<T> tmpA(n, thrust::no_init), tmpB(n, thrust::no_init);
+  thrust::device_vector<T> tmpA(n, thrust::no_init);
+  thrust::device_vector<T> tmpB(n, thrust::no_init);
 
   T* d_in[num_in];
   for (int i = 0; i < num_in; i++)
@@ -656,7 +658,8 @@ try
 
   thrust::device_vector<T> input(n, thrust::no_init);
   fill_normal(input, n, 0);
-  thrust::device_vector<T> tmpA(n, thrust::no_init), tmpB(n, thrust::no_init);
+  thrust::device_vector<T> tmpA(n, thrust::no_init);
+  thrust::device_vector<T> tmpB(n, thrust::no_init);
 
   T* d_in = thrust::raw_pointer_cast(input.data());
   T* d_a  = thrust::raw_pointer_cast(tmpA.data());
@@ -814,7 +817,8 @@ try
 
   thrust::device_vector<T> input(n, thrust::no_init);
   fill_normal(input, n, 0);
-  thrust::device_vector<T> tmpA(n, thrust::no_init), tmpB(n, thrust::no_init);
+  thrust::device_vector<T> tmpA(n, thrust::no_init);
+  thrust::device_vector<T> tmpB(n, thrust::no_init);
 
   T* d_in = thrust::raw_pointer_cast(input.data());
   T* d_a  = thrust::raw_pointer_cast(tmpA.data());

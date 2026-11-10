@@ -68,7 +68,8 @@ int main()
   int NITER   = 30;
   const int n = 12;
 
-  double X[n], Y[n];
+  double X[n];
+  double Y[n];
 
   for (int ind = 0; ind < n; ind++)
   {
