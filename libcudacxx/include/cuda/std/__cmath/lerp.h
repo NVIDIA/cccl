@@ -47,10 +47,7 @@ template <typename _Fp>
   {
     return __b < __x ? __x : __b;
   }
-  else
-  {
-    return __x < __b ? __x : __b;
-  }
+  return __x < __b ? __x : __b;
 }
 
 [[nodiscard]] _CCCL_API constexpr float lerp(float __a, float __b, float __t) noexcept
