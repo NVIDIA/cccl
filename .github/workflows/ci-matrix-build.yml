@@ -37,6 +37,10 @@ on:
         description: "Branch (in this repo) to checkout into '.private' so its matrix file can be sideloaded. When empty, no extra checkout is performed and 'matrix_file' is read from the current checkout."
         type: string
         default: ''
+      matrix_path:
+        description: "Filepath to CI matrix file."
+        type: string
+        default: 'ci/matrix.yaml'
     outputs:
       failure_message:
         description: "Prepared workflow failure notification text, populated when verify-workflow detects failures."
@@ -56,22 +60,31 @@ jobs:
         uses: actions/checkout@v6
         with:
           persist-credentials: false
-      - name: Checkout matrix branch into .private
-        if: ${{ inputs.matrix_branch != '' }}
+      - name: Checkout matrix into .matrix
         uses: actions/checkout@v6
         with:
           persist-credentials: false
           ref: ${{ inputs.matrix_branch }}
-          path: .private
+          sparse-checkout: ${{ inputs.matrix_path }}
+          filter: 'blob:none'
+          path: .matrix
+      - name: Validate matrix path
+        id: validate-matrix-path
+        env:
+          MATRIX_PATH: ${{ inputs.matrix_path }}
+        run: |
+          matrix_file="$(realpath -e -- "$GITHUB_WORKSPACE/.matrix/$MATRIX_PATH")"
+          case "${matrix_file}" in
+            "${GITHUB_WORKSPACE}/.matrix"/*) printf 'matrix_file=%s\n' "${matrix_file}" >> "${GITHUB_OUTPUT}" ;;
+            *) echo "::error::'matrix_path' '${MATRIX_PATH}' must resolve inside the '.matrix' checkout."; exit 1 ;;
+          esac
       - name: Build workflow
         id: build-workflow
         uses: ./.github/actions/workflow-build
         with:
           workflows: ${{ inputs.workflows }}
-          # When sideloading from another branch, the matrix checkout is prefixed with
-          # '.private'. Otherwise use the path as-is from the current checkout
-          # (e.g. 'ci/matrix.yaml' for the default callers).
-          matrix_file: ${{ inputs.matrix_branch != '' && '.private/ci/matrix.yaml' || 'ci/matrix.yaml' }}
+          # Validated absolute path from the 'Validate matrix path' step.
+          matrix_file: ${{ steps.validate-matrix-path.outputs.matrix_file }}
           slack_token: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
           slack_log: ${{ secrets.SLACK_CHANNEL_CI_LOG }}
           slack_alert: ${{ inputs.enable_slack_alert == true && secrets.SLACK_CHANNEL_CI_ALERT || '' }}
