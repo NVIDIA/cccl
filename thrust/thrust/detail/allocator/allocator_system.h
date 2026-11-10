@@ -53,6 +53,7 @@ template <class T, class = void>
 inline constexpr bool has_member_system = false;
 template <class T>
 inline constexpr bool has_member_system<T, ::cuda::std::void_t<decltype(::cuda::std::declval<T>().system())>> =
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   ::cuda::std::is_same_v<decltype(::cuda::std::declval<T>().system()), typename allocator_system<T>::type&>;
 
 template <typename Alloc>

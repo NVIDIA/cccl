@@ -152,7 +152,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 {
   const auto bits = SafeBitCast<uint16_t>(val);
   // commented bit is always true, leaving for documentation:
-  return (((bits >= 0x7C01) && (bits <= 0x7FFF)) || ((bits >= 0xFC01) /*&& (bits <= 0xFFFFFFFF)*/));
+  return (((bits >= 0x7C01) && (bits <= 0x7FFF)) || (bits >= 0xFC01) /*&& (bits <= 0xFFFFFFFF)*/);
 }
 
 #endif // TEST_HALF_T()
@@ -168,7 +168,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 {
   const auto bits = SafeBitCast<uint16_t>(val);
   // commented bit is always true, leaving for documentation:
-  return (((bits >= 0x7F81) && (bits <= 0x7FFF)) || ((bits >= 0xFF81) /*&& (bits <= 0xFFFFFFFF)*/));
+  return (((bits >= 0x7F81) && (bits <= 0x7FFF)) || (bits >= 0xFF81) /*&& (bits <= 0xFFFFFFFF)*/);
 }
 
 #endif // TEST_BF_T()

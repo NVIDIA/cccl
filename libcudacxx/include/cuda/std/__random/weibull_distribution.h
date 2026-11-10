@@ -42,7 +42,6 @@ public:
 
   class param_type
   {
-  private:
     result_type __a_ = result_type{1};
     result_type __b_ = result_type{1};
 

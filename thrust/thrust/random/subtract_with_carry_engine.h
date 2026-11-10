@@ -63,7 +63,6 @@ class subtract_with_carry_engine
   /*! \cond
    */
 
-private:
   static const UIntType modulus = UIntType(1) << W;
   /*! \endcond
    */
