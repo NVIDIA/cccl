@@ -192,20 +192,32 @@ while a scope is open, Warp's current stream is a poison stream whose handle rai
 work submission. Everything is a no-op without a context (``ctx=None``, ``token(None)``),
 so the sequential and the task version of a library are the same code::
 
-    from cuda.stf._experimental.interop.warp import scope, token, warp_native, warp_task
+    from cuda.stf._experimental.interop.warp import current_context, scope, warp_native, warp_task
 
     with scope(ctx, launchable=True) as g:          # the frame owner
-        with warp_native(ctx, "collide"):
+        with warp_native(ctx, "frame"):
             example.collide()                       # plain Warp code, in program order
-        solver.step(state_in, state_out)            # opens its own scope inside
+            solver.step(state_in, state_out)        # may mark tasks inside, see below
         for _ in range(frames):
             g.launch()
 
-    # inside the solver
-    with scope(ctx):                                # one node of the caller's graph
-        with warp_task(ctx, tok_a.rw(), shared.read(), symbol="solve-a"): ...   # siblings
-        with warp_task(ctx, tok_b.rw(), shared.read(), symbol="solve-b"): ...
-        with warp_task(ctx, tok_a.rw(), tok_b.rw(), shared.rw(), symbol="dual"): ...
+    # inside the solver: mark the parts that may overlap, leave the rest as written
+    ctx = current_context()                         # None outside a recording
+    prepare()                                       # runs in the caller's block
+    with scope(ctx):
+        with warp_task(ctx, symbol="solve-a"): ...  # siblings
+        with warp_task(ctx, symbol="solve-b"): ...
+    update()                                        # waits for both
+
+A scope opened inside a block continues that block: the block is ended where the scope
+opens, the tasks of the scope are ordered after that first part, and the block resumes,
+with the same dependencies, when the scope closes. The caller does not need to know
+whether the code it calls marks tasks, and tasks that declare no dependency are joined by
+the code that follows them; dependencies (tokens, logical data) are only needed for an
+order between sibling tasks. ``current_context()`` returns the context of the innermost
+open scope, so a library takes no context argument. By default such a scope is recorded
+in the block's own graph; ``fork_in_place = False`` records it as a nested scope (a CUDA
+child graph) instead.
 
 When the task stream is capturing (graph scopes), the block runs under a Warp external
 capture so Warp's capture-aware paths (allocations, ``capture_if`` / ``capture_while``)
