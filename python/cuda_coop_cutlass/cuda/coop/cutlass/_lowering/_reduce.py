@@ -461,11 +461,8 @@ def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
         "      (temp_storage_smem_addr & (alignof(storage_type) - 1)) != 0) {",
         '    asm volatile("trap;");',
         "  }",
-        "  unsigned long long generic_addr;",
-        (
-            '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_addr) : '
-            '"l"(static_cast<unsigned long long>(temp_storage_smem_addr)));'
-        ),
+        "  auto* const generic_addr =",
+        "      __cvta_shared_to_generic(temp_storage_smem_addr);",
     ]
     instance = "0"
     if request.plan.target is GroupLoweringTarget.CUB_WARP:

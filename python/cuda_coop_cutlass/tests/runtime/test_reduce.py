@@ -513,11 +513,13 @@ raise AssertionError("invalid Reduce prefix did not trap")
 
 @pytest.mark.parametrize("algorithm", (None, "raking"))
 def test_final_cubin(tmp_path, algorithm):
-    """Check that default and explicit CUB algorithms inline into the kernel.
+    """Check inlining and shared-memory accesses for block reductions.
 
     First verify the root's sum, then reject residual provider symbols or CALL
-    instructions in the retained cubin. This test checks call elimination; it
-    does not measure shared allocation, register use, or barrier counts.
+    instructions in the retained cubin. Both algorithms communicate across
+    four warps through shared storage, which must use LDS/STS rather than
+    generic LD/ST. Global input/output accesses may use LDG/STG. No resource
+    or instruction counts are asserted.
     """
 
     cuobjdump = find_nvidia_binary_utility("cuobjdump")
@@ -558,6 +560,9 @@ def test_final_cubin(tmp_path, algorithm):
         cubin.with_suffix(".sass").write_text(sass)
         assert "cuda_coop_cutlass_" not in sass
         assert re.search(r"\bCALL(?:\.[A-Z0-9_]+)*\b", sass) is None
+        assert re.search(r"\b(?:LD|ST)(?:\.[A-Z0-9_]+)*\b", sass) is None
+        assert re.search(r"\bLDS(?:\.[A-Z0-9_]+)*\b", sass) is not None
+        assert re.search(r"\bSTS(?:\.[A-Z0-9_]+)*\b", sass) is not None
 
 
 @pytest.mark.parametrize("items_per_thread", (1, 4))

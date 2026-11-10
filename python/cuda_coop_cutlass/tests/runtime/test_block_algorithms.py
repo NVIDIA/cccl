@@ -550,9 +550,8 @@ def test_final_cubin_storage_contract(tmp_path, algorithm):
 
     First verify the copy result. Then check that provider calls have been
     inlined and that only transpose has shared-memory allocation and barriers.
-    Generic load and store instructions can address shared memory, so resource
-    metadata determines whether an allocation exists. This check does not
-    require a particular shared-memory instruction or exact allocation size.
+    Transpose scratch must use LDS/STS, and no generic LD/ST may remain.
+    Resource metadata checks allocation presence without fixing its size.
     """
 
     cuobjdump = find_nvidia_binary_utility("cuobjdump")
@@ -617,8 +616,10 @@ def test_final_cubin_storage_contract(tmp_path, algorithm):
         assert "cuda_coop_cutlass_load_" not in sass
         assert "cuda_coop_cutlass_store_" not in sass
         assert re.search(r"\bCALL(?:\.[A-Z0-9_]+)*\b", sass) is None
-        # Generic LD/ST instructions can address the shared-memory window;
-        # the final cubin's allocation report is authoritative for capacity.
+        assert re.search(r"\b(?:LD|ST)(?:\.[A-Z0-9_]+)*\b", sass) is None
+        if algorithm == "transpose":
+            assert re.search(r"\bLDS(?:\.[A-Z0-9_]+)*\b", sass) is not None
+            assert re.search(r"\bSTS(?:\.[A-Z0-9_]+)*\b", sass) is not None
         shared_sizes = [
             int(size) for size in re.findall(r"\bSHARED:(\d+)", resources)
         ]

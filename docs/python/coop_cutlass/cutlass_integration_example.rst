@@ -185,9 +185,11 @@ documents the attribute in terms of LLVM bitcode; its compiler accepts the
 NVRTC LTO-IR container as a link input, and the link inlines the wrapper.
 
 The generated C++ contains a wrapper function and a layout-probe template.
-The wrapper converts the 32-bit shared-window address into a generic pointer,
-constructs the CUB object on it, and ends with the barrier that makes the
-scratch reusable. The probe template is explained with step 5:
+The wrapper uses ``__cvta_shared_to_generic`` to convert the 32-bit
+shared-window address into a generic pointer while retaining the compiler's
+knowledge that it points to shared memory. It constructs the CUB object on
+that storage and ends with the barrier that makes the scratch reusable.
+The probe template is explained with step 5:
 
 .. literalinclude:: cutlass_integration_example.py
    :language: python
@@ -282,7 +284,9 @@ set keeps the final cubin. On the same machine, ``cuobjdump --dump-sass``
 shows that the device link inlined the wrapper: the listing contains no
 ``CALL`` and no ``example_block_sum`` symbol, one ``REDUX.SUM`` for the warp
 reductions, and two ``BAR.SYNC``, one inside CUB and one from the wrapper's
-trailing ``__syncthreads()``. The ELF symbol table still contains
+trailing ``__syncthreads()``. Scratch accesses use ``LDS``/``STS`` and global
+input/output accesses use ``LDG``/``STG``; there are no generic ``LD``/``ST``
+instructions. The ELF symbol table still contains
 ``_Z20example_layout_probeILy24ELy4EE`` as a weak one-byte device object:
 the probe instantiation survives the link. ``cuda.coop.cutlass``'s runtime
 tests make the same no-call check with ``cuobjdump`` for each primitive

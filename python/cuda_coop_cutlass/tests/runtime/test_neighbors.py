@@ -390,8 +390,8 @@ def test_undersized_storage():
 def test_final_cubin(tmp_path):
     """Check AdjacentDifference inlining after its runtime oracle succeeds.
 
-    Retained SASS must contain no provider symbol or CALL instruction. This
-    case makes no assertion about Discontinuity code or resource counts.
+    Retained SASS must contain no provider symbol, CALL, or generic LD/ST.
+    This case makes no assertion about Discontinuity or resource counts.
     """
 
     tool = find_nvidia_binary_utility("cuobjdump")
@@ -406,6 +406,7 @@ def test_final_cubin(tmp_path):
         )
         assert "cuda_coop_cutlass_adjacent_difference_" not in sass
         assert re.search(r"\bCALL\b", sass) is None
+        assert re.search(r"\b(?:LD|ST)(?:\.[A-Z0-9_]+)*\b", sass) is None
 
 
 @pytest.mark.parametrize("count", (-1, 193, 1 << 32))
