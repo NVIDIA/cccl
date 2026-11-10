@@ -1313,8 +1313,8 @@ private:
   // complete-tx releases at cluster scope, which (with the block barrier before Step 2) orders this block's reads of
   // its `state` copy before the next publish overwrites it; the fence gives a warp that sends nothing the same
   // guarantee.
-  // TODO(cccl): a non-leader without candidates (`num_local_candidates == 0` from the second pass on) could settle the
-  // whole histogram with a single fenced `complete_tx` instead of reading every bucket, and a block with candidates
+  // TODO(pauleonix): a non-leader without candidates (`num_local_candidates == 0` from the second pass on) could settle
+  // the whole histogram with a single fenced `complete_tx` instead of reading every bucket, and a block with candidates
   // needs no per-warp fence (its `red.async`s already release).
   _CCCL_DEVICE _CCCL_FORCEINLINE void fold_hist_into_leader()
   {
@@ -2954,10 +2954,8 @@ private:
     // Derived from this CTA's
     // head-aligned `num_cluster_chunks` so it matches the partition exactly. Collapses to 1 on the single-CTA path and
     // stays at `num_full_cluster_blocks` for host-exact sizes (the dispatch already matched it).
-    // TODO(cccl): the blocked partition (deterministic path) gives each rank `ceil(chunks / blocks)` chunks, so
-    // trailing ranks below this count can own none (e.g. 16 chunks over 12 ranks: 8 owners); the leader (last rank) is
-    // then one of them. Trimming the count to `ceil(chunks / chunks_per_rank)` (here and in the dispatch's width
-    // search) moves no chunk, but a chunkless leader that only merges may be faster; deciding this needs benchmarks.
+    // TODO(pauleonix): the blocked partition (deterministic path) gives each rank `ceil(chunks / blocks)` chunks, so
+    // trailing ranks below this count can own none (e.g. 16 chunks over 12 ranks: 8 owners).
     layout.num_logical_cluster_blocks = is_single_cta ? 1u : num_full_cluster_blocks;
     if constexpr (enable_runtime_single_cta)
     {
@@ -3151,11 +3149,10 @@ private:
       // `kth_key_bits_local` already holds the splitter digits for passes `0..pass-1`: each block folded the leader's
       // published `kth_bucket` into it at the end of the previous pass (see the end of this loop). Pass 0 needs no
       // filtering (all keys are candidates), so it is handled by the fused first-pass load above.
-      // TODO(cccl): candidates only shrink, so a non-leader whose pass found none could skip all later Step 1s
+      // TODO(pauleonix): candidates only shrink, so a non-leader whose pass found none could skip all later Step 1s
       // (including the overflow re-stream from gmem) and, already in that pass, its own-histogram scan and `hist`
       // reset, without extra barriers (decided after the barrier before Step 2; the straddling CTA never skips, so the
-      // ping-pong parity stays valid). Prototyped: wins for very large segments, small regressions otherwise; the flag
-      // must be made provably warp-uniform or the compiler abandons the uniform datapath.
+      // ping-pong parity stays valid).
       if (!is_first_pass)
       {
         identify_candidates_op_t identify_op(&kth_key_bits_local, pass, total_bits, decomposer_t{});
