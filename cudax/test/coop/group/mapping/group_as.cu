@@ -193,7 +193,7 @@ struct forward_counts
 
 // Validate the fixture itself, including postfix increment in constant evaluation.
 static_assert([] {
-  constexpr forward_counts counts;
+  constexpr forward_counts counts{};
   auto it        = counts.begin();
   const auto old = it++;
 
