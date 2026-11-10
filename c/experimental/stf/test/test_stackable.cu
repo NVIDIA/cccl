@@ -447,9 +447,17 @@ C2H_TEST("stackable: nested push_graph scopes", "[stackable]")
   stf_logical_data_handle lA = stf_stackable_logical_data(ctx, host_data, N * sizeof(double));
   REQUIRE(lA != nullptr);
 
+  // Each scope is also named with stf_stackable_set_scope_symbol, which targets the
+  // current (innermost) scope. The name only affects DOT output and diagnostics (the
+  // label is checked by python/cuda_stf/tests/stf/test_dot_symbols.py), so here the
+  // calls must be accepted at every depth and leave the computation unchanged.
+  REQUIRE(stf_stackable_set_scope_symbol(ctx, "root") == STF_SUCCESS);
+
   // Two nested scopes: each scope adds 1.0, so after popping both we expect 2.0.
   stf_stackable_push_graph(ctx);
   {
+    REQUIRE(stf_stackable_set_scope_symbol(ctx, "outer") == STF_SUCCESS);
+
     stf_task_handle t = stf_stackable_task_create(ctx);
     REQUIRE(t != nullptr);
     stf_stackable_task_add_dep(ctx, t, lA, STF_RW);
@@ -462,6 +470,8 @@ C2H_TEST("stackable: nested push_graph scopes", "[stackable]")
 
     stf_stackable_push_graph(ctx);
     {
+      REQUIRE(stf_stackable_set_scope_symbol(ctx, "inner") == STF_SUCCESS);
+
       stf_task_handle t2 = stf_stackable_task_create(ctx);
       REQUIRE(t2 != nullptr);
       stf_stackable_task_add_dep(ctx, t2, lA, STF_RW);
@@ -473,6 +483,10 @@ C2H_TEST("stackable: nested push_graph scopes", "[stackable]")
       stf_task_destroy(t2);
     }
     stf_stackable_pop(ctx);
+
+    // Back in the outer scope, after tasks were submitted: renaming is accepted and
+    // targets the outer scope, not the popped one.
+    REQUIRE(stf_stackable_set_scope_symbol(ctx, "outer-renamed") == STF_SUCCESS);
   }
   stf_stackable_pop(ctx);
 
