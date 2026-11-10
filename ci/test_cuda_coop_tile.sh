@@ -41,7 +41,8 @@ if [[ "$stage" == host ]]; then
     tests/backends/tile_cpp/compile \
     tests/backends/tile_python/lowering/test_lowerings.py \
     tests/providers/tile/source \
-    tests/integration/packaging/test_tile_header_discovery.py
+    tests/integration/packaging/test_tile_header_discovery.py \
+    tests/integration/docs/test_tile_sphinx.py
 else
   # This compiles public C++ declarations to TileIR without loading a provider.
   # Linking and execution require the separately supplied provider SDK.
@@ -76,4 +77,5 @@ else
       -I "$repo_root/tile/cpp/include" -I "$repo_root/libcudacxx/include" \
       "$repo_root/tile/cpp/test/support/tile_cpp_${name}.cu" -o "$output/$name.tilebc"
   done
+  python -m pytest -q tests/integration/docs/test_tile_cpp_compilation.py
 fi

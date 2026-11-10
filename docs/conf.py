@@ -8,9 +8,12 @@ from datetime import datetime
 # Add extension directory to path
 sys.path.insert(0, os.path.abspath("_ext"))
 
-# Add Python CCCL packages to path for autodoc. cuda-cccl and cuda-stf are
-# separate distributions that both contribute to the shared ``cuda`` namespace.
-for _pkg in ("../python/cuda_cccl", "../python/cuda_stf"):
+# Add Python distributions to the shared cuda namespace for autodoc.
+for _pkg in (
+    "../python/cuda_cccl",
+    "../python/cuda_coop_tile",
+    "../python/cuda_stf",
+):
     python_package_path = os.path.abspath(_pkg)
     if os.path.exists(python_package_path):
         sys.path.insert(0, python_package_path)
@@ -111,9 +114,9 @@ templates_path = ["_templates"]
 
 # Exclude patterns
 exclude_patterns = [
+    "_build",
     "**/AGENTS.md",
     "**/CLAUDE.md",
-    "_build",
     "_repo",
     "tools",
     "VERSION.md",

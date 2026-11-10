@@ -62,7 +62,9 @@ CUDA C++ Tile support
 `CUDA Tile <https://developer.nvidia.com/cuda/tile#section-more-resources>`_ introduces a new way to program GPUs at a higher level than SIMT.
 
 Due to the additional constraints of tile compilation :doc:`CUB <../cub/index>`, :doc:`Thrust <../thrust/index>`
-and :doc:`Cuda Experimental <../cudax/index>` are currently not supported in a tile program.
+and :doc:`Cuda Experimental <../cudax/index>` cannot be used directly as ordinary Tile functions.
+The :doc:`Tile libraries </tile/cpp/index>` expose cooperative CUB operations
+through Tile/SIMT interoperation.
 
 There is partial support for :doc:`libcu++ <../libcudacxx/index>` for tile programs.
 The current support matrix can be found in the :doc:`libcu++ documentation <../libcudacxx/tile>`

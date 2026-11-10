@@ -1,0 +1,155 @@
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="828" viewBox="0 0 1000 828" role="img" aria-labelledby="title desc">
+<title id="title">Radix sort and rank: reordered data versus destination positions</title>
+<desc id="desc">Logical Tile input and output values; complete semantics and constraints are in the accompanying reference.</desc>
+<rect width="1000" height="828" rx="8" fill="#ffffff"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="26" y="32" font-size="26" fill="#132c47" font-weight="700" text-anchor="start">Radix sort and rank: reordered data versus destination positions</text>
+<text x="26" y="60" font-size="16" fill="#29435a" font-weight="400" text-anchor="start">Eight-value semantic example. Unsigned keys make the selected bit fields explicit.</text>
+<text x="26" y="117" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">input keys</text>
+<rect x="228.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">3</text>
+<rect x="306.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">1</text>
+<rect x="384.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">3</text>
+<rect x="462.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<rect x="540.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="576.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">7</text>
+<rect x="618.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="654.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">4</text>
+<rect x="696.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="732.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="774.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="810.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">5</text>
+<text x="26" y="175" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">input payloads</text>
+<rect x="228.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">a</text>
+<rect x="306.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">b</text>
+<rect x="384.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">c</text>
+<rect x="462.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">d</text>
+<rect x="540.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="576.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">e</text>
+<rect x="618.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="654.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">f</text>
+<rect x="696.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="732.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">g</text>
+<rect x="774.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="810.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">h</text>
+<path d="M26 216 H974" stroke="#cbd8e3"/>
+<text x="26" y="245" font-size="20" fill="#132c47" font-weight="600" text-anchor="start">Full-width stable sort</text>
+<text x="26" y="297" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">sorted keys</text>
+<rect x="228.0" y="268" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="264.5" y="296" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<rect x="306.0" y="268" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="342.5" y="296" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">1</text>
+<rect x="384.0" y="268" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="420.5" y="296" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="462.0" y="268" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="498.5" y="296" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">3</text>
+<rect x="540.0" y="268" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="576.5" y="296" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">3</text>
+<rect x="618.0" y="268" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="654.5" y="296" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">4</text>
+<rect x="696.0" y="268" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="732.5" y="296" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">5</text>
+<rect x="774.0" y="268" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="810.5" y="296" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">7</text>
+<text x="26" y="355" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">sorted payloads</text>
+<rect x="228.0" y="326" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="354" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">d</text>
+<rect x="306.0" y="326" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="354" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">b</text>
+<rect x="384.0" y="326" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="354" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">g</text>
+<rect x="462.0" y="326" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="354" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">a</text>
+<rect x="540.0" y="326" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="576.5" y="354" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">c</text>
+<rect x="618.0" y="326" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="654.5" y="354" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">f</text>
+<rect x="696.0" y="326" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="732.5" y="354" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">h</text>
+<rect x="774.0" y="326" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="810.5" y="354" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">e</text>
+<text x="26" y="392" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">The equal key 3 keeps payload c after payload a.</text>
+<path d="M26 429 H974" stroke="#cbd8e3"/>
+<text x="26" y="458" font-size="20" fill="#132c47" font-weight="600" text-anchor="start">Rank one digit: begin_bit = 0, end_bit = 2, radix_bits = 2</text>
+<text x="26" y="510" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">selected digit</text>
+<rect x="228.0" y="481" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">3</text>
+<rect x="306.0" y="481" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">1</text>
+<rect x="384.0" y="481" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">3</text>
+<rect x="462.0" y="481" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<rect x="540.0" y="481" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="576.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">3</text>
+<rect x="618.0" y="481" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="654.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<rect x="696.0" y="481" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="732.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="774.0" y="481" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="810.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">1</text>
+<text x="26" y="568" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">rank at input index</text>
+<rect x="228.0" y="539" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="264.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">5</text>
+<rect x="306.0" y="539" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="342.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="384.0" y="539" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="420.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">6</text>
+<rect x="462.0" y="539" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="498.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<rect x="540.0" y="539" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="576.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">7</text>
+<rect x="618.0" y="539" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="654.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">1</text>
+<rect x="696.0" y="539" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="732.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">4</text>
+<rect x="774.0" y="539" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="810.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">3</text>
+<text x="26" y="605" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">For each original position i, rank[i] is its destination. Keys are not moved.</text>
+<text x="26" y="659" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">digit-sorted keys</text>
+<rect x="228.0" y="630" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="658" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<rect x="306.0" y="630" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="658" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">4</text>
+<rect x="384.0" y="630" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="658" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">1</text>
+<rect x="462.0" y="630" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="658" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">5</text>
+<rect x="540.0" y="630" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="576.5" y="658" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="618.0" y="630" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="654.5" y="658" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">3</text>
+<rect x="696.0" y="630" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="732.5" y="658" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">3</text>
+<rect x="774.0" y="630" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="810.5" y="658" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">7</text>
+<text x="26" y="717" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">digit-sorted payloads</text>
+<rect x="228.0" y="688" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="716" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">d</text>
+<rect x="306.0" y="688" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="716" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">f</text>
+<rect x="384.0" y="688" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="716" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">b</text>
+<rect x="462.0" y="688" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="716" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">h</text>
+<rect x="540.0" y="688" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="576.5" y="716" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">g</text>
+<rect x="618.0" y="688" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="654.5" y="716" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">a</text>
+<rect x="696.0" y="688" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="732.5" y="716" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">c</text>
+<rect x="774.0" y="688" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="810.5" y="716" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">e</text>
+<text x="26" y="754" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">Sorting bits [0, 2) produces the last two rows. Rank alone returns only destination indices.</text>
+<text x="26" y="787" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">Signed and floating-point keys are transformed before sorting; rank accepts integer keys only.</text>
+</g>
+</svg>
