@@ -11,6 +11,7 @@
 #include "provider/families/adjacent_difference.h"
 #include "provider/families/discontinuity.h"
 #include "provider/families/exchange.h"
+#include "provider/families/histogram_rld.h"
 #include "provider/families/reduce.h"
 #include "provider/families/scan.h"
 #include "provider/families/shuffle.h"
@@ -21,7 +22,7 @@ namespace
 {
 static_assert(family_count == 21, "the provider contract must contain exactly 21 primitive families");
 
-constexpr std::array<FamilyDescriptor, 10> registry{{
+constexpr std::array<FamilyDescriptor, 14> registry{{
   {FamilyId::sum,
    "cuda_coop_tile_sum",
    "cuda_coop_tile_sum_impl",
@@ -52,6 +53,46 @@ constexpr std::array<FamilyDescriptor, 10> registry{{
    FamilyRankingPolicy::block_threads_centered_128,
    parse_scan_metadata,
    emit_scan_source},
+  {FamilyId::histogram,
+   "cuda_coop_tile_histogram",
+   "cuda_coop_tile_histogram_impl",
+   "histogram",
+   "histogram",
+   "cub/block/block_histogram.cuh",
+   generated::schema_for("cuda_coop_tile_histogram"),
+   FamilyRankingPolicy::block_threads_centered_128,
+   parse_histogram_metadata,
+   emit_histogram_source},
+  {FamilyId::histogram_256,
+   "cuda_coop_tile_histogram_256",
+   "cuda_coop_tile_histogram_256_impl",
+   "histogram-256",
+   "histogram_256",
+   "cub/block/block_histogram.cuh",
+   generated::schema_for("cuda_coop_tile_histogram_256"),
+   FamilyRankingPolicy::block_threads_centered_128,
+   parse_histogram_metadata,
+   emit_histogram_source},
+  {FamilyId::run_length_decode,
+   "cuda_coop_tile_run_length_decode",
+   "cuda_coop_tile_run_length_decode_impl",
+   "run-length-decode",
+   "run_length_decode",
+   "cub/block/block_run_length_decode.cuh",
+   generated::schema_for("cuda_coop_tile_run_length_decode"),
+   FamilyRankingPolicy::block_threads_centered_128,
+   parse_run_length_decode_metadata,
+   emit_run_length_decode_source},
+  {FamilyId::run_length_decode_with_offsets,
+   "cuda_coop_tile_run_length_decode_with_offsets",
+   "cuda_coop_tile_run_length_decode_with_offsets_impl",
+   "run-length-decode-with-offsets",
+   "run_length_decode_with_offsets",
+   "cub/block/block_run_length_decode.cuh",
+   generated::schema_for("cuda_coop_tile_run_length_decode_with_offsets"),
+   FamilyRankingPolicy::block_threads_centered_128,
+   parse_run_length_decode_metadata,
+   emit_run_length_decode_source},
   {FamilyId::discontinuity_flags,
    "cuda_coop_tile_discontinuity_flags",
    "cuda_coop_tile_discontinuity_flags_impl",
@@ -126,7 +167,7 @@ constexpr std::array<FamilyDescriptor, 10> registry{{
 
 constexpr bool registry_is_complete()
 {
-  if (registry.size() != 10)
+  if (registry.size() != 14)
   {
     return false;
   }

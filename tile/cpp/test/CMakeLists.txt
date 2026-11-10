@@ -8,8 +8,11 @@ foreach (
   scan_prefix
   reduce_axes
   exchange_smoke
+  histogram_smoke
+  histogram_256_smoke
   discontinuity_flags_smoke
   adjacent_shuffle_sm120
+  run_length_decode_sm120
 )
   add_executable("cccl.tile.${_test}" "support/tile_cpp_${_test}.cu")
   cuda_coop_tile_link("cccl.tile.${_test}")

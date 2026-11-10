@@ -41,6 +41,7 @@ add_library(
   tilelib/provider/families/discontinuity.cpp
   tilelib/provider/families/emitter.cpp
   tilelib/provider/families/exchange.cpp
+  tilelib/provider/families/histogram_rld.cpp
   tilelib/provider/families/reduce.cpp
   tilelib/provider/families/scan.cpp
   tilelib/provider/families/shuffle.cpp

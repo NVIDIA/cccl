@@ -457,6 +457,196 @@ def sum(
     reduce, inclusive_sum
     """
 
+def histogram_256(
+    samples: _Tile,
+    /,
+    *,
+    methods: _Methods | None = None,
+) -> _Tile:
+    """Count byte values in one Tile into all 256 bins.
+
+    Parameters
+    ----------
+    samples : Tile
+        ``uint8`` input of shape ``(N,)``. The implementation's worker width
+        must divide both ``N`` and 256.
+        ``N`` must be a positive multiple of 32.
+    methods : collections.abc.Mapping or tuple
+        Must be omitted or empty.
+
+    Returns
+    -------
+    Tile
+        ``int32`` counts of shape ``(256,)``. Bin ``b`` counts input values
+        equal to ``b``. Unused bins are zero, and counts sum to ``N``.
+        Each call starts a new histogram.
+
+    Examples
+    --------
+    For a loaded byte Tile in a ``cuda.tile`` kernel:
+
+    .. code-block:: python
+
+        counts = coop.histogram_256(samples)
+
+    See Also
+    --------
+    histogram
+    """
+
+def histogram(
+    samples: _Tile,
+    /,
+    *,
+    bins: int = 256,
+    methods: _Methods | None = None,
+) -> _Tile:
+    """Count byte values in one Tile into a fixed number of bins.
+
+    Parameters
+    ----------
+    samples : Tile
+        ``uint8`` input of shape ``(N,)``. Every sample must be below
+        ``bins``. Out-of-range values cause undefined behavior.
+        ``N`` must be a positive multiple of 32.
+    bins : int
+        Compile-time number of bins: 32, 64, 128, or 256 (default).
+        The result extent must be a power of two. A supported worker width
+        must divide both ``N`` and ``bins``. For 128 workers, use 128 or
+        256 bins and an input extent divisible by 128.
+    methods : collections.abc.Mapping or tuple
+        Must be omitted or empty. There is no algorithm selector.
+
+    Returns
+    -------
+    Tile
+        ``int32`` counts of shape ``(bins,)``. Bin ``b`` counts input values
+        equal to ``b``. Each call starts at zero; it does not accumulate into
+        an existing histogram. Counts sum to ``N`` for valid input.
+
+    Examples
+    --------
+    For a loaded byte Tile in a kernel admitting 128 workers:
+
+    .. code-block:: python
+
+        counts = coop.histogram(samples, bins=256)
+
+    See Also
+    --------
+    histogram_256
+    """
+
+def run_length_decode(
+    run_values: _Tile,
+    run_lengths: _Tile,
+    /,
+    *,
+    decoded_items: int,
+    decoded_window_offset: int | _Tile = 0,
+    methods: _Methods | None = None,
+) -> _Tile:
+    """Expand runs into a fixed-capacity window of decoded values.
+
+    Parameters
+    ----------
+    run_values : Tile
+        Numeric values of shape ``(RunN,)``. Inputs are unchanged.
+    run_lengths : Tile
+        Matching ``uint32`` or ``uint64`` lengths. Positive runs may be
+        followed by trailing zero-length runs. A zero-length run must not
+        precede a positive run. The sum must fit the length dtype.
+    decoded_items : int
+        Required compile-time output extent, independent of ``RunN``.
+        Both extents must be powers of two, at least 32, and admit a
+        common worker count.
+    decoded_window_offset : int or Tile
+        Starting position in the expanded sequence, defaulting to zero.
+        A constant, runtime integral scalar, or single-element integer Tile
+        converts to the run-length dtype. The offset must be nonnegative
+        and representable in that dtype.
+    methods : collections.abc.Mapping or tuple
+        Must be omitted or empty.
+
+    Returns
+    -------
+    Tile
+        Shape ``(decoded_items,)`` with the run-value dtype. Positions past
+        the expanded sequence are zero, including an entirely out-of-range
+        window or an input with all zero lengths.
+
+    Examples
+    --------
+    Decode a 256-element window from loaded run Tiles:
+
+    .. code-block:: python
+
+        values = coop.run_length_decode(
+            run_values, run_lengths, decoded_items=256,
+            decoded_window_offset=7,
+        )
+
+    See Also
+    --------
+    run_length_decode_with_offsets
+    """
+
+def run_length_decode_with_offsets(
+    run_values: _Tile,
+    run_lengths: _Tile,
+    /,
+    *,
+    decoded_items: int,
+    decoded_window_offset: int | _Tile = 0,
+    methods: _Methods | None = None,
+) -> tuple[_Tile, _Tile]:
+    """Expand runs and return values followed by offsets within each run.
+
+    Parameters
+    ----------
+    run_values : Tile
+        Numeric values of shape ``(RunN,)``. Inputs are unchanged.
+    run_lengths : Tile
+        Matching ``uint32`` or ``uint64`` lengths. Positive runs may be
+        followed by trailing zero-length runs. A zero-length run must not
+        precede a positive run. The sum must fit the length dtype.
+    decoded_items : int
+        Required compile-time output extent, independent of ``RunN``.
+        Both extents must be powers of two, at least 32, and admit a
+        common worker count.
+    decoded_window_offset : int or Tile
+        Starting position in the expanded sequence, defaulting to zero.
+        A constant, runtime integral scalar, or single-element integer Tile
+        converts to the run-length dtype. The offset must be nonnegative
+        and representable in that dtype.
+    methods : collections.abc.Mapping or tuple
+        Must be omitted or empty.
+
+    Returns
+    -------
+    tuple[Tile, Tile]
+        ``(values, relative_offsets)``, both of shape ``(decoded_items,)``.
+        Values retain the value dtype; offsets retain the length dtype and
+        count from the start of the original run, including for a window
+        starting inside a run. Padded values are zero and padded offsets
+        are the maximum value of the length dtype.
+
+    Examples
+    --------
+    Decode a 256-element window from loaded run Tiles:
+
+    .. code-block:: python
+
+        values, offsets = coop.run_length_decode_with_offsets(
+            run_values, run_lengths, decoded_items=256,
+            decoded_window_offset=7,
+        )
+
+    See Also
+    --------
+    run_length_decode
+    """
+
 def discontinuity_flag_heads(
     value: _Tile,
     /,
@@ -925,10 +1115,14 @@ __all__ = [
     "get_cpp_include_path",
     "get_cpp_interface_path",
     "get_cpp_tile_library_path",
+    "histogram",
+    "histogram_256",
     "inclusive_scan",
     "inclusive_sum",
     "reduce",
     "register",
+    "run_length_decode",
+    "run_length_decode_with_offsets",
     "scan",
     "shuffle_down",
     "shuffle_offset",

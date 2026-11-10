@@ -63,6 +63,7 @@ from ._block.exchange import (
     BlockExchangeBlockedToStriped,
     BlockExchangeStripedToBlocked,
 )
+from ._block.histogram import BlockHistogram
 from ._block.reduce import (
     BlockReduce,
     BlockReduceOptions,
@@ -91,6 +92,7 @@ from ._dispatch import (
     dispatch_exchange_striped_to_blocked,
     dispatch_exclusive_scan,
     dispatch_exclusive_sum,
+    dispatch_histogram,
     dispatch_inclusive_scan,
     dispatch_inclusive_sum,
     dispatch_reduce,
@@ -638,6 +640,17 @@ def _shuffle_static_prefix(
         dtype,
         mode=mode,
     )
+
+
+def _histogram_static_prefix(
+    numel: int,
+    bins: int,
+    *,
+    fixed_bins: bool,
+):
+    if fixed_bins:
+        return (numel, _dtype_token(datatype.uint8))
+    return (numel, bins, _dtype_token(datatype.uint8))
 
 
 def _sort_key_static_prefix(
@@ -1498,6 +1511,200 @@ def reduce_impl(
         methods=_require_optional_constant_object(methods, "methods"),
     )
     return _reduce_impl(value, axis, keepdims, broadcast, options=options)
+
+
+def _histogram_impl(samples, methods, *, bins: int, primitive: str):
+    """Lower uint8 samples to a fixed-shape int32 histogram result.
+
+    Validate that the selected width divides both sample and bin extents.
+    The 256-bin convenience function uses its distinct canonical declaration;
+    the general form carries the bin count as a constant.
+    """
+
+    _require_empty_methods(methods, primitive)
+    tile_ty = require_tile_type(samples)
+    shape = tile_ty.shape
+
+    if tile_ty.ndim != 1:
+        raise TileTypeError(f"coop.{primitive} expects a 1D tile")
+    if tile_ty.dtype != datatype.uint8:
+        raise TileTypeError(f"coop.{primitive} expects uint8 input")
+
+    numel = shape[0]
+    decision = dispatch_histogram(
+        numel=numel,
+        dtype=tile_ty.dtype,
+        bins=bins,
+        primitive=primitive,
+    )
+    out_ty = make_tile_ty(datatype.int32, (bins,))
+
+    items_per_thread = numel // decision.block_threads
+
+    BlockHistogram(
+        block_threads=decision.block_threads,
+        items_per_thread=items_per_thread,
+        bins=bins,
+    )
+
+    return _emit_provider_foreign_call(
+        operands=(samples,),
+        output_types=(out_ty,),
+        decl_sym_name=(
+            _PROVIDER_DECL_HISTOGRAM_256
+            if primitive == "histogram_256" and bins == 256
+            else _PROVIDER_DECL_HISTOGRAM
+        ),
+        static_prefix=_histogram_static_prefix(
+            numel,
+            bins,
+            fixed_bins=primitive == "histogram_256" and bins == 256,
+        ),
+    )
+
+
+def histogram_256_impl(samples, methods):
+    return _histogram_impl(
+        samples, methods, bins=256, primitive="histogram_256"
+    )
+
+
+def histogram_impl(samples, bins, methods):
+    bins_val = _require_optional_constant_object(bins, "bins")
+    if isinstance(bins_val, bool) or not isinstance(bins_val, int):
+        raise TileTypeError("coop.histogram bins must be an int")
+    if bins_val not in (32, 64, 128, 256):
+        raise TileTypeError("coop.histogram bins must be 32, 64, 128, or 256")
+    return _histogram_impl(
+        samples, methods, bins=bins_val, primitive="histogram"
+    )
+
+
+def _run_length_decode_impl(
+    run_values,
+    run_lengths,
+    decoded_items,
+    decoded_window_offset,
+    methods,
+    *,
+    with_offsets: bool,
+):
+    primitive = (
+        "run_length_decode_with_offsets"
+        if with_offsets
+        else "run_length_decode"
+    )
+    _require_empty_methods(methods, primitive)
+    value_ty = require_tile_type(run_values)
+    length_ty = require_tile_type(run_lengths)
+    if value_ty.ndim != 1 or length_ty.ndim != 1:
+        raise TileTypeError(f"coop.{primitive} expects 1D run tiles")
+    if value_ty.shape != length_ty.shape:
+        raise TileTypeError(
+            f"coop.{primitive} value and length tiles "
+            "must have matching extents"
+        )
+    if value_ty.dtype not in _DTYPE_TO_TOKEN:
+        raise TileTypeError(f"coop.{primitive} expects numeric run values")
+    if length_ty.dtype not in (datatype.uint32, datatype.uint64):
+        raise TileTypeError(
+            f"coop.{primitive} length dtype must be uint32 or uint64"
+        )
+    extent = _require_optional_constant_object(decoded_items, "decoded_items")
+    if isinstance(extent, bool) or not isinstance(extent, int):
+        raise TileTypeError(f"coop.{primitive} decoded_items must be an int")
+    run_extent = value_ty.shape[0]
+    if not 0 < extent <= 2147483647 or not 0 < run_extent <= 2147483647:
+        raise TileTypeError(
+            f"coop.{primitive} run and decoded extents must be positive "
+            "and fit in int"
+        )
+    if run_extent % 32 or extent % 32:
+        raise TileTypeError(
+            f"coop.{primitive} run and decoded extents must be multiples of 32"
+        )
+    if run_extent & (run_extent - 1) or extent & (extent - 1):
+        raise TileTypeError(
+            f"coop.{primitive} run and decoded extents must be a power of two"
+        )
+    if decoded_window_offset.is_constant():
+        offset = decoded_window_offset.get_constant()
+        if isinstance(offset, bool) or not isinstance(offset, int):
+            raise TileTypeError(
+                f"coop.{primitive} decoded_window_offset must be an integer"
+            )
+        if not 0 <= offset < 1 << length_ty.dtype.bitwidth:
+            raise TileTypeError(
+                f"coop.{primitive} decoded_window_offset must be nonnegative "
+                "and representable in the run-length dtype"
+            )
+    else:
+        offset_ty = require_tile_type(decoded_window_offset)
+        if offset_ty.dtype not in _INTEGER_DTYPES:
+            raise TileTypeError(
+                f"coop.{primitive} decoded_window_offset must be an integer"
+            )
+    offset, _ = _rank0_scalar_tile_operand(
+        decoded_window_offset,
+        length_ty.dtype,
+        primitive=primitive,
+        name="decoded_window_offset",
+        int_value=True,
+    )
+    output_types = (make_tile_ty(value_ty.dtype, (extent,)),)
+    if with_offsets:
+        output_types += (make_tile_ty(length_ty.dtype, (extent,)),)
+    return _emit_provider_foreign_call(
+        operands=(run_values, run_lengths, offset),
+        output_types=output_types,
+        decl_sym_name=(
+            _PROVIDER_DECL_RUN_LENGTH_DECODE_WITH_OFFSETS
+            if with_offsets
+            else _PROVIDER_DECL_RUN_LENGTH_DECODE
+        ),
+        static_prefix=(
+            run_extent,
+            extent,
+            value_ty.dtype,
+            length_ty.dtype,
+            _dtype_token(value_ty.dtype),
+            _dtype_token(length_ty.dtype),
+        ),
+    )
+
+
+def run_length_decode_impl(
+    run_values,
+    run_lengths,
+    decoded_items,
+    decoded_window_offset,
+    methods,
+):
+    return _run_length_decode_impl(
+        run_values,
+        run_lengths,
+        decoded_items,
+        decoded_window_offset,
+        methods,
+        with_offsets=False,
+    )
+
+
+def run_length_decode_with_offsets_impl(
+    run_values,
+    run_lengths,
+    decoded_items,
+    decoded_window_offset,
+    methods,
+):
+    return _run_length_decode_impl(
+        run_values,
+        run_lengths,
+        decoded_items,
+        decoded_window_offset,
+        methods,
+        with_offsets=True,
+    )
 
 
 def discontinuity_flag_heads_impl(value, methods):
