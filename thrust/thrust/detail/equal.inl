@@ -35,20 +35,20 @@ THRUST_NAMESPACE_BEGIN
 _CCCL_EXEC_CHECK_DISABLE
 template <typename System, typename InputIterator1, typename InputIterator2>
 _CCCL_HOST_DEVICE bool
-equal(const thrust::detail::execution_policy_base<System>& system,
+equal(const thrust::detail::execution_policy_base<System>& exec,
       InputIterator1 first1,
       InputIterator1 last1,
       InputIterator2 first2)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::equal");
   using thrust::system::detail::generic::equal;
-  return equal(thrust::detail::derived_cast(thrust::detail::strip_const(system)), first1, last1, first2);
+  return equal(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2);
 } // end equal()
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename System, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
 _CCCL_HOST_DEVICE bool
-equal(const thrust::detail::execution_policy_base<System>& system,
+equal(const thrust::detail::execution_policy_base<System>& exec,
       InputIterator1 first1,
       InputIterator1 last1,
       InputIterator2 first2,
@@ -56,7 +56,7 @@ equal(const thrust::detail::execution_policy_base<System>& system,
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::equal");
   using thrust::system::detail::generic::equal;
-  return equal(thrust::detail::derived_cast(thrust::detail::strip_const(system)), first1, last1, first2, binary_pred);
+  return equal(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, binary_pred);
 } // end equal()
 
 template <typename InputIterator1, typename InputIterator2>

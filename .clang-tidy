@@ -99,13 +99,10 @@ Checks:
   - '-readability-avoid-nested-conditional-operator'
   - '-readability-redundant-declaration'
   - '-readability-avoid-unconditional-preprocessor-if'
-  - '-readability-non-const-parameter'
   - '-readability-redundant-casting'
   - '-readability-simplify-boolean-expr'
   - '-readability-make-member-function-const'
-  - '-readability-avoid-return-with-void-value'
   - '-readability-suspicious-call-argument'
-  - '-readability-inconsistent-declaration-parameter-name'
   # Handled by clang-tidy
   - '-readability-misleading-indentation'
 
