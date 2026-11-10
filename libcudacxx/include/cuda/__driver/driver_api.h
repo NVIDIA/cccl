@@ -67,6 +67,10 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
 
+// Isolate the status-returning driver APIs from the earlier pointer/error-code-returning ABI which was publicly
+// visible.
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
+
 _CCCL_HOST_API inline void __throw_if_failed(
   __driver_status __status,
   const char* __operation_msg,
@@ -1474,6 +1478,8 @@ __cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType 
 #  undef _CCCLRT_DEFAULT_STREAM_WITHOUT_CONTEXT_MESSAGE
 #  undef _CCCLRT_STREAM_ERROR_MESSAGE
 #  undef _CCCLRT_CALL_STREAM_DRIVER_FN
+
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
 _CCCL_END_NAMESPACE_CUDA_DRIVER
 
