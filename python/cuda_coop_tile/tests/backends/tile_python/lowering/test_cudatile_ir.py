@@ -317,6 +317,160 @@ def test_sum_rejects_invalid_axes(monkeypatch, axis, diagnostic):
 
 
 @pytest.mark.link
+def test_radix_sort_keys_static_options_reach_foreign_call_const_args(
+    monkeypatch,
+):
+    tile_library_path = _configure_tile_library(monkeypatch)
+    _configure_imports(monkeypatch)
+
+    global ct, coop
+    ct = importlib.import_module("cuda.tile")
+    coop = importlib.import_module("cuda.coop.tile")
+    from cuda.tile._cext import default_tile_context
+
+    @ct.kernel
+    def radix_kernel(
+        inp: ct.Array,
+        begin_bit_in: ct.Array,
+        end_bit_in: ct.Array,
+        out: ct.Array,
+    ):
+        keys = ct.load(inp, (0,), shape=(128,))
+        begin_bit = ct.load(begin_bit_in, (0,), shape=(1,))
+        end_bit = ct.load(end_bit_in, (0,), shape=(1,))
+        sorted_keys = coop.radix_sort_keys(
+            keys,
+            descending=True,
+            begin_bit=begin_bit,
+            end_bit=end_bit,
+            radix_bits=4,
+            memoize_outer_scan=True,
+            inner_scan_algorithm="warp_scans",
+            smem_config="four_byte",
+        )
+        ct.store(out, (0,), sorted_keys)
+
+    func_ir = _get_final_ir(
+        radix_kernel._pyfunc,
+        (
+            _FakeCudaArray((128,)),
+            _FakeCudaArray((1,)),
+            _FakeCudaArray((1,)),
+            _FakeCudaArray((128,)),
+        ),
+        default_tile_context,
+    )
+    foreign_ops = _preview_foreign_calls(func_ir)
+    assert len(foreign_ops) == 1
+
+    op = foreign_ops[0]
+    assert op.tilelibs[0][0] == tile_library_path
+    assert op.symbol_name == "cuda_coop_tile_radix_sort_keys"
+    constant_args = _constant_args(
+        op,
+        (
+            "N",
+            "T",
+            "Descending",
+            "RadixBits",
+            "MemoizeOuterScan",
+            "InnerScanAlgorithm",
+            "SmemConfig",
+            "DTypeToken",
+        ),
+    )
+    assert constant_args["Descending"] == 1
+    assert constant_args["RadixBits"] == 4
+    assert constant_args["MemoizeOuterScan"] == 1
+    assert constant_args["InnerScanAlgorithm"] == "warp_scans"
+    assert constant_args["SmemConfig"] == "four_byte"
+    assert constant_args["DTypeToken"] == "i32"
+
+    assert len(op.inputs) == 4
+    assert op.inputs[1].get_type().shape == ()
+    assert op.inputs[2].get_type().shape == ()
+
+
+@pytest.mark.link
+def test_radix_sort_pairs_static_options_reach_foreign_call_const_args(
+    monkeypatch,
+):
+    tile_library_path = _configure_tile_library(monkeypatch)
+    _configure_imports(monkeypatch)
+
+    global ct, coop
+    ct = importlib.import_module("cuda.tile")
+    coop = importlib.import_module("cuda.coop.tile")
+    from cuda.tile._cext import default_tile_context
+
+    @ct.kernel
+    def radix_pairs_kernel(
+        keys_in: ct.Array,
+        vals_in: ct.Array,
+        keys_out: ct.Array,
+        vals_out: ct.Array,
+    ):
+        keys = ct.load(keys_in, (0,), shape=(128,))
+        values = ct.load(vals_in, (0,), shape=(128,))
+        sorted_keys, sorted_values = coop.radix_sort_pairs(
+            keys,
+            values,
+            descending=True,
+            begin_bit=0,
+            end_bit=4,
+            radix_bits=4,
+            memoize_outer_scan=False,
+            inner_scan_algorithm="raking",
+            smem_config="eight_byte",
+        )
+        ct.store(keys_out, (0,), sorted_keys)
+        ct.store(vals_out, (0,), sorted_values)
+
+    func_ir = _get_final_ir(
+        radix_pairs_kernel._pyfunc,
+        (
+            _FakeCudaArray((128,), typestr="<u4"),
+            _FakeCudaArray((128,), typestr="<i4"),
+            _FakeCudaArray((128,), typestr="<u4"),
+            _FakeCudaArray((128,), typestr="<i4"),
+        ),
+        default_tile_context,
+    )
+    foreign_ops = _preview_foreign_calls(func_ir)
+    assert len(foreign_ops) == 1
+
+    op = foreign_ops[0]
+    assert op.tilelibs[0][0] == tile_library_path
+    assert op.symbol_name == "cuda_coop_tile_radix_sort_pairs"
+    constant_args = _constant_args(
+        op,
+        (
+            "N",
+            "KeyT",
+            "ValueT",
+            "Descending",
+            "RadixBits",
+            "MemoizeOuterScan",
+            "InnerScanAlgorithm",
+            "SmemConfig",
+            "KeyDTypeToken",
+            "ValueDTypeToken",
+        ),
+    )
+    assert constant_args["Descending"] == 1
+    assert constant_args["RadixBits"] == 4
+    assert constant_args["MemoizeOuterScan"] == 0
+    assert constant_args["InnerScanAlgorithm"] == "raking"
+    assert constant_args["SmemConfig"] == "eight_byte"
+    assert constant_args["KeyDTypeToken"] == "u32"
+    assert constant_args["ValueDTypeToken"] == "i32"
+
+    assert len(op.inputs) == 6
+    assert op.inputs[2].get_type().shape == ()
+    assert op.inputs[3].get_type().shape == ()
+
+
+@pytest.mark.link
 @pytest.mark.parametrize("second_width", [128, 256])
 @pytest.mark.parametrize("reverse", [False, True])
 def test_registered_exchange_inverse_fold_requires_same_width(
@@ -483,6 +637,96 @@ def test_merge_sort_rejects_boolean_valid_items(
         if count is True:
             with pytest.raises(
                 TileTypeError, match="valid_items must be an int"
+            ):
+                _get_final_ir(kernel._pyfunc, arguments, default_tile_context)
+        else:
+            func_ir = _get_final_ir(
+                kernel._pyfunc, arguments, default_tile_context
+            )
+            assert len(_preview_foreign_calls(func_ir)) == 1
+
+
+@pytest.mark.link
+@pytest.mark.parametrize("primitive", ["keys", "pairs", "rank"])
+def test_radix_rejects_extent_beyond_cub_rank_capacity(monkeypatch, primitive):
+    _configure_tile_library(monkeypatch)
+    _configure_imports(monkeypatch)
+    global ct, coop
+    ct = importlib.import_module("cuda.tile")
+    coop = importlib.import_module("cuda.coop.tile")
+    from cuda.tile._cext import default_tile_context
+    from cuda.tile._exception import TileTypeError
+
+    @ct.kernel
+    def kernel(inp: ct.Array, out: ct.Array):
+        keys = ct.load(inp, (0,), shape=(65536,))
+        if primitive == "keys":
+            result = coop.radix_sort_keys(keys)
+        elif primitive == "pairs":
+            result, _ = coop.radix_sort_pairs(keys, keys)
+        else:
+            result = coop.radix_rank_keys(keys)
+        ct.store(out, (0,), result)
+
+    with pytest.raises(TileTypeError, match="tile size must not exceed 65535"):
+        _get_final_ir(
+            kernel._pyfunc,
+            (_FakeCudaArray((65536,)), _FakeCudaArray((65536,))),
+            default_tile_context,
+        )
+
+
+@pytest.mark.link
+@pytest.mark.parametrize("pairs", [False, True])
+@pytest.mark.parametrize("use_methods", [False, True])
+@pytest.mark.parametrize("control", ["begin_bit", "end_bit", "radix_bits"])
+def test_radix_sort_rejects_boolean_integer_controls(
+    monkeypatch, pairs, use_methods, control
+):
+    _configure_tile_library(monkeypatch)
+    _configure_imports(monkeypatch)
+    global ct, coop
+    ct = importlib.import_module("cuda.tile")
+    coop = importlib.import_module("cuda.coop.tile")
+    from cuda.tile._cext import default_tile_context
+    from cuda.tile._exception import TileTypeError
+
+    for value in (True, 1):
+        begin_bit = (
+            value if control == "begin_bit" and not use_methods else None
+        )
+        end_bit = value if control == "end_bit" and not use_methods else None
+        radix_bits = (
+            value if control == "radix_bits" and not use_methods else None
+        )
+        methods = (control, value) if use_methods else None
+
+        @ct.kernel
+        def kernel(inp: ct.Array, out: ct.Array):
+            keys = ct.load(inp, (0,), shape=(128,))
+            if pairs:
+                result, _ = coop.radix_sort_pairs(
+                    keys,
+                    keys,
+                    begin_bit=begin_bit,
+                    end_bit=end_bit,
+                    radix_bits=radix_bits,
+                    methods=methods,
+                )
+            else:
+                result = coop.radix_sort_keys(
+                    keys,
+                    begin_bit=begin_bit,
+                    end_bit=end_bit,
+                    radix_bits=radix_bits,
+                    methods=methods,
+                )
+            ct.store(out, (0,), result)
+
+        arguments = (_FakeCudaArray((128,)), _FakeCudaArray((128,)))
+        if value is True:
+            with pytest.raises(
+                TileTypeError, match=f"{control} must be an int"
             ):
                 _get_final_ir(kernel._pyfunc, arguments, default_tile_context)
         else:

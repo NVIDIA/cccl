@@ -180,6 +180,9 @@ struct exchange_policy
 /**
  * @brief Select a radix-digit capacity in [1, 16], direction, scan strategy, and shared-memory bank
  * width.
+ *
+ * Scratch storage grows exponentially with RadixBits. Values within this range can fail compilation
+ * depending on the worker count and target resources.
  */
 template <size_t RadixBits                  = 4,
           bool Descending                   = false,
@@ -204,6 +207,9 @@ struct merge_sort_policy
 /**
  * @brief Select radix bits per pass in [1, 8], scan strategy, and shared-memory bank width. The bit
  * interval can span several passes.
+ *
+ * Scratch storage grows exponentially with RadixBits. Values within this range can fail compilation
+ * depending on the worker count and target resources.
  */
 template <size_t RadixBits                  = 4,
           bool MemoizeOuterScan             = true,
@@ -704,7 +710,7 @@ template <typename T,
 [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<int, ct::shape<N>>
 radix_rank_call(ct::tile<T, ct::shape<N>> keys, int begin_bit, int end_bit) noexcept
 {
-  static_assert(N > 0, "cuda::coop::tile Radix Rank expects a non-empty tile");
+  static_assert(N > 0 && N % 32 == 0, "cuda::coop::tile Radix Rank expects a positive tile size divisible by 32");
   static_assert(N <= 65535, "cuda::coop::tile Radix Rank tile extent must be at most 65535");
   static_assert(::cuda::std::is_integral_v<T> && !::cuda::std::is_same_v<T, bool>,
                 "cuda::coop::tile Radix Rank key dtype must be a non-bool integer");
@@ -786,7 +792,7 @@ template <size_t Descending,
 [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
 radix_sort_keys_call(ct::tile<T, ct::shape<N>> keys, int begin_bit, int end_bit) noexcept
 {
-  static_assert(N > 0, "cuda::coop::tile Radix Sort expects a non-empty tile");
+  static_assert(N > 0 && N % 32 == 0, "cuda::coop::tile Radix Sort expects a positive tile size divisible by 32");
   static_assert(N <= 65535, "cuda::coop::tile Radix Sort tile extent must be at most 65535");
   return detail::radix_sort_keys_foreign<
     N,
@@ -810,7 +816,7 @@ template <size_t Descending,
 [[nodiscard]] _CCCL_COOP_TILE_API inline radix_sort_pair_result<KeyT, ValueT, N> radix_sort_pairs_call(
   ct::tile<KeyT, ct::shape<N>> keys, ct::tile<ValueT, ct::shape<N>> values, int begin_bit, int end_bit) noexcept
 {
-  static_assert(N > 0, "cuda::coop::tile Radix Sort expects non-empty tiles");
+  static_assert(N > 0 && N % 32 == 0, "cuda::coop::tile Radix Sort expects a positive tile size divisible by 32");
   static_assert(N <= 65535, "cuda::coop::tile Radix Sort tile extent must be at most 65535");
   return detail::radix_sort_pairs_foreign<
     N,
@@ -1525,6 +1531,104 @@ exchange_blocked_to_striped(ct::tile<T, ct::shape<N>> input, exchange_policy<Blo
   return detail::exchange_call<"striped_to_blocked", T, N, BlockThreads>(input);
 }
 
+/**
+ * @brief Return an `int` destination rank per original input item for one stable radix digit.
+ *
+ * Keys must be integral. Overloads accept no bounds, `begin_bit` alone, or `begin_bit, end_bit`
+ * before the policy. Scalar controls use `int`; one or both bounds may instead be shape-one `int`
+ * Tiles. The omitted end is `min(key_bits, begin_bit + RadixBits)`. Signed keys have their sign bit flipped
+ * before extraction, matching Radix Sort's signed-key ordering. Unsigned keys use their original bits.
+ * Require N <= 65535, 0 <= begin_bit < end_bit <= key_bits, and end_bit - begin_bit <= RadixBits.
+ * Invalid runtime bounds trap.
+ *
+ * `N` must be a positive multiple of 32.
+ */
+template <typename T,
+          size_t N,
+          size_t RadixBits                  = 4,
+          bool Descending                   = false,
+          bool MemoizeOuterScan             = true,
+          scan_algorithm InnerScanAlgorithm = scan_algorithm::warp_scans,
+          radix_smem_config SmemConfig      = radix_smem_config::four_byte>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<int, ct::shape<N>> radix_rank_keys(
+  ct::tile<T, ct::shape<N>> keys,
+  radix_rank_policy<RadixBits, Descending, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig> = {}) noexcept
+{
+  return detail::radix_rank_call<T, N, RadixBits, Descending, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig>(
+    keys, 0, detail::default_radix_rank_end<T, RadixBits>(0));
+}
+
+template <typename T,
+          size_t N,
+          size_t RadixBits                  = 4,
+          bool Descending                   = false,
+          bool MemoizeOuterScan             = true,
+          scan_algorithm InnerScanAlgorithm = scan_algorithm::warp_scans,
+          radix_smem_config SmemConfig      = radix_smem_config::four_byte>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<int, ct::shape<N>> radix_rank_keys(
+  ct::tile<T, ct::shape<N>> keys,
+  int begin_bit,
+  radix_rank_policy<RadixBits, Descending, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig> = {}) noexcept
+{
+  return detail::radix_rank_call<T, N, RadixBits, Descending, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig>(
+    keys, begin_bit, detail::default_radix_rank_end<T, RadixBits>(begin_bit));
+}
+
+template <typename T,
+          size_t N,
+          size_t RadixBits                  = 4,
+          bool Descending                   = false,
+          bool MemoizeOuterScan             = true,
+          scan_algorithm InnerScanAlgorithm = scan_algorithm::warp_scans,
+          radix_smem_config SmemConfig      = radix_smem_config::four_byte>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<int, ct::shape<N>> radix_rank_keys(
+  ct::tile<T, ct::shape<N>> keys,
+  int begin_bit,
+  int end_bit,
+  radix_rank_policy<RadixBits, Descending, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig> = {}) noexcept
+{
+  return detail::radix_rank_call<T, N, RadixBits, Descending, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig>(
+    keys, begin_bit, end_bit);
+}
+
+template <typename T,
+          typename BeginControlT,
+          size_t N,
+          size_t RadixBits                  = 4,
+          bool Descending                   = false,
+          bool MemoizeOuterScan             = true,
+          scan_algorithm InnerScanAlgorithm = scan_algorithm::warp_scans,
+          radix_smem_config SmemConfig      = radix_smem_config::four_byte>
+  requires(detail::compatible_i32_control_v<BeginControlT> && detail::shape_one_i32_control_v<BeginControlT>)
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<int, ct::shape<N>> radix_rank_keys(
+  ct::tile<T, ct::shape<N>> keys,
+  BeginControlT begin_bit,
+  radix_rank_policy<RadixBits, Descending, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig> policy = {}) noexcept
+{
+  return ::cuda::coop::tile::radix_rank_keys(keys, detail::normalize_i32_control(begin_bit), policy);
+}
+
+template <typename T,
+          typename BeginControlT,
+          typename EndControlT,
+          size_t N,
+          size_t RadixBits                  = 4,
+          bool Descending                   = false,
+          bool MemoizeOuterScan             = true,
+          scan_algorithm InnerScanAlgorithm = scan_algorithm::warp_scans,
+          radix_smem_config SmemConfig      = radix_smem_config::four_byte>
+  requires(detail::compatible_i32_control_v<BeginControlT> && detail::compatible_i32_control_v<EndControlT>
+           && (detail::shape_one_i32_control_v<BeginControlT> || detail::shape_one_i32_control_v<EndControlT>) )
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<int, ct::shape<N>> radix_rank_keys(
+  ct::tile<T, ct::shape<N>> keys,
+  BeginControlT begin_bit,
+  EndControlT end_bit,
+  radix_rank_policy<RadixBits, Descending, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig> policy = {}) noexcept
+{
+  return ::cuda::coop::tile::radix_rank_keys(
+    keys, detail::normalize_i32_control(begin_bit), detail::normalize_i32_control(end_bit), policy);
+}
+
 namespace detail
 {
 template <size_t Descending, typename T, size_t N>
@@ -1759,6 +1863,318 @@ template <typename KeyT, typename ValueT, typename ValidItemsT, typename OobDefa
   const int scalar_valid_items  = detail::normalize_i32_control(valid_items);
   const KeyT scalar_oob_default = detail::normalize_value_control<KeyT>(oob_default);
   return ::cuda::coop::tile::merge_sort_pairs(keys, values, scalar_valid_items, scalar_oob_default, policy);
+}
+
+namespace detail
+{
+template <size_t Descending,
+          typename T,
+          size_t N,
+          size_t RadixBits,
+          bool MemoizeOuterScan,
+          scan_algorithm InnerScanAlgorithm,
+          radix_smem_config SmemConfig>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> radix_sort_keys(
+  ct::tile<T, ct::shape<N>> keys,
+  int begin_bit,
+  int end_bit,
+  radix_sort_policy<RadixBits, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig>) noexcept
+{
+  return detail::radix_sort_keys_call<Descending, T, N, RadixBits, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig>(
+    keys, begin_bit, end_bit);
+}
+
+template <size_t Descending,
+          typename KeyT,
+          typename ValueT,
+          size_t KeyN,
+          size_t ValueN,
+          size_t RadixBits,
+          bool MemoizeOuterScan,
+          scan_algorithm InnerScanAlgorithm,
+          radix_smem_config SmemConfig>
+[[nodiscard]] _CCCL_COOP_TILE_API inline radix_sort_pair_result<KeyT, ValueT, KeyN> radix_sort_pairs(
+  ct::tile<KeyT, ct::shape<KeyN>> keys,
+  ct::tile<ValueT, ct::shape<ValueN>> values,
+  int begin_bit,
+  int end_bit,
+  radix_sort_policy<RadixBits, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig>) noexcept
+{
+  static_assert(KeyN == ValueN, "cuda::coop::tile Radix Sort key and value tiles must have matching extents");
+  if constexpr (KeyN == ValueN)
+  {
+    return detail::
+      radix_sort_pairs_call<Descending, KeyT, ValueT, KeyN, RadixBits, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig>(
+        keys, values, begin_bit, end_bit);
+  }
+  else
+  {
+    return {};
+  }
+}
+} // namespace detail
+
+/**
+ * @brief Sort keys in ascending radix order over the full key width.
+ *
+ * Overloads optionally accept `cuda::std::less<CompareT>` or `cuda::std::greater<CompareT>` after
+ * `keys`, followed optionally by `begin_bit, end_bit`. The bounds and comparison may each be
+ * omitted independently. Bounds are int scalars or shape-one int Tiles. Require N <= 65535 and 0
+ * <= begin_bit <= end_bit <= key_bits.
+ *
+ * `N` must be a positive multiple of 32.
+ */
+template <typename T,
+          size_t N,
+          size_t RadixBits                  = 4,
+          bool MemoizeOuterScan             = true,
+          scan_algorithm InnerScanAlgorithm = scan_algorithm::warp_scans,
+          radix_smem_config SmemConfig      = radix_smem_config::four_byte>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>>
+radix_sort_keys(ct::tile<T, ct::shape<N>> keys,
+                radix_sort_policy<RadixBits, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig> policy = {}) noexcept
+{
+  return detail::radix_sort_keys<0>(keys, 0, static_cast<int>(sizeof(T) * 8), policy);
+}
+
+template <typename T,
+          size_t N,
+          size_t RadixBits                  = 4,
+          bool MemoizeOuterScan             = true,
+          scan_algorithm InnerScanAlgorithm = scan_algorithm::warp_scans,
+          radix_smem_config SmemConfig      = radix_smem_config::four_byte>
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> radix_sort_keys(
+  ct::tile<T, ct::shape<N>> keys,
+  int begin_bit,
+  int end_bit,
+  radix_sort_policy<RadixBits, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig> policy = {}) noexcept
+{
+  return detail::radix_sort_keys<0>(keys, begin_bit, end_bit, policy);
+}
+
+#  define _CCCL_COOP_TILE_RADIX_SORT_KEYS_COMPARE_OVERLOADS(_Compare, _Descending)                                   \
+    template <typename T,                                                                                            \
+              typename CompareT,                                                                                     \
+              size_t N,                                                                                              \
+                                                                                                                     \
+              size_t RadixBits                  = 4,                                                                 \
+              bool MemoizeOuterScan             = true,                                                              \
+              scan_algorithm InnerScanAlgorithm = scan_algorithm::warp_scans,                                        \
+              radix_smem_config SmemConfig      = radix_smem_config::four_byte>                                      \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> radix_sort_keys(                              \
+      ct::tile<T, ct::shape<N>> keys,                                                                                \
+      _Compare<CompareT>,                                                                                            \
+      radix_sort_policy<RadixBits, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig> policy = {}) noexcept           \
+    {                                                                                                                \
+      detail::validate_functor<T, CompareT>();                                                                       \
+      return detail::radix_sort_keys<_Descending>(keys, 0, static_cast<int>(sizeof(T) * 8), policy);                 \
+    }                                                                                                                \
+    template <typename T,                                                                                            \
+              typename CompareT,                                                                                     \
+              size_t N,                                                                                              \
+                                                                                                                     \
+              size_t RadixBits                  = 4,                                                                 \
+              bool MemoizeOuterScan             = true,                                                              \
+              scan_algorithm InnerScanAlgorithm = scan_algorithm::warp_scans,                                        \
+              radix_smem_config SmemConfig      = radix_smem_config::four_byte>                                      \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> radix_sort_keys(                              \
+      ct::tile<T, ct::shape<N>> keys,                                                                                \
+      _Compare<CompareT>,                                                                                            \
+      int begin_bit,                                                                                                 \
+      int end_bit,                                                                                                   \
+      radix_sort_policy<RadixBits, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig> policy = {}) noexcept           \
+    {                                                                                                                \
+      detail::validate_functor<T, CompareT>();                                                                       \
+      return detail::radix_sort_keys<_Descending>(keys, begin_bit, end_bit, policy);                                 \
+    }                                                                                                                \
+    template <typename T,                                                                                            \
+              typename CompareT,                                                                                     \
+              typename BeginControlT,                                                                                \
+              typename EndControlT,                                                                                  \
+              size_t N,                                                                                              \
+                                                                                                                     \
+              size_t RadixBits                  = 4,                                                                 \
+              bool MemoizeOuterScan             = true,                                                              \
+              scan_algorithm InnerScanAlgorithm = scan_algorithm::warp_scans,                                        \
+              radix_smem_config SmemConfig      = radix_smem_config::four_byte>                                      \
+      requires(detail::compatible_i32_control_v<BeginControlT> && detail::compatible_i32_control_v<EndControlT>      \
+               && (detail::shape_one_i32_control_v<BeginControlT> || detail::shape_one_i32_control_v<EndControlT>) ) \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> radix_sort_keys(                              \
+      ct::tile<T, ct::shape<N>> keys,                                                                                \
+      _Compare<CompareT> compare,                                                                                    \
+      BeginControlT begin_bit,                                                                                       \
+      EndControlT end_bit,                                                                                           \
+      radix_sort_policy<RadixBits, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig> policy = {}) noexcept           \
+    {                                                                                                                \
+      return ::cuda::coop::tile::radix_sort_keys(                                                                    \
+        keys, compare, detail::normalize_i32_control(begin_bit), detail::normalize_i32_control(end_bit), policy);    \
+    }
+
+_CCCL_COOP_TILE_RADIX_SORT_KEYS_COMPARE_OVERLOADS(::cuda::std::less, 0)
+_CCCL_COOP_TILE_RADIX_SORT_KEYS_COMPARE_OVERLOADS(::cuda::std::greater, 1)
+
+#  undef _CCCL_COOP_TILE_RADIX_SORT_KEYS_COMPARE_OVERLOADS
+
+template <typename T,
+          typename BeginControlT,
+          typename EndControlT,
+          size_t N,
+          size_t RadixBits                  = 4,
+          bool MemoizeOuterScan             = true,
+          scan_algorithm InnerScanAlgorithm = scan_algorithm::warp_scans,
+          radix_smem_config SmemConfig      = radix_smem_config::four_byte>
+  requires(detail::compatible_i32_control_v<BeginControlT> && detail::compatible_i32_control_v<EndControlT>
+           && (detail::shape_one_i32_control_v<BeginControlT> || detail::shape_one_i32_control_v<EndControlT>) )
+[[nodiscard]] _CCCL_COOP_TILE_API inline ct::tile<T, ct::shape<N>> radix_sort_keys(
+  ct::tile<T, ct::shape<N>> keys,
+  BeginControlT begin_bit,
+  EndControlT end_bit,
+  radix_sort_policy<RadixBits, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig> policy = {}) noexcept
+{
+  return ::cuda::coop::tile::radix_sort_keys(
+    keys, detail::normalize_i32_control(begin_bit), detail::normalize_i32_control(end_bit), policy);
+}
+
+/**
+ * @brief Sort keys and associated values, preserving equal-digit input order.
+ *
+ * Its overload forms match `radix_sort_keys`, with `values` immediately after `keys`. Key and
+ * value extents must match; dtypes may differ.
+ *
+ * Each input extent must be a positive multiple of 32.
+ */
+template <typename KeyT,
+          typename ValueT,
+          size_t KeyN,
+          size_t ValueN,
+          size_t RadixBits                  = 4,
+          bool MemoizeOuterScan             = true,
+          scan_algorithm InnerScanAlgorithm = scan_algorithm::warp_scans,
+          radix_smem_config SmemConfig      = radix_smem_config::four_byte>
+[[nodiscard]] _CCCL_COOP_TILE_API inline radix_sort_pair_result<KeyT, ValueT, KeyN> radix_sort_pairs(
+  ct::tile<KeyT, ct::shape<KeyN>> keys,
+  ct::tile<ValueT, ct::shape<ValueN>> values,
+  radix_sort_policy<RadixBits, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig> policy = {}) noexcept
+{
+  return detail::radix_sort_pairs<0>(keys, values, 0, static_cast<int>(sizeof(KeyT) * 8), policy);
+}
+
+template <typename KeyT,
+          typename ValueT,
+          size_t KeyN,
+          size_t ValueN,
+          size_t RadixBits                  = 4,
+          bool MemoizeOuterScan             = true,
+          scan_algorithm InnerScanAlgorithm = scan_algorithm::warp_scans,
+          radix_smem_config SmemConfig      = radix_smem_config::four_byte>
+[[nodiscard]] _CCCL_COOP_TILE_API inline radix_sort_pair_result<KeyT, ValueT, KeyN> radix_sort_pairs(
+  ct::tile<KeyT, ct::shape<KeyN>> keys,
+  ct::tile<ValueT, ct::shape<ValueN>> values,
+  int begin_bit,
+  int end_bit,
+  radix_sort_policy<RadixBits, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig> policy = {}) noexcept
+{
+  return detail::radix_sort_pairs<0>(keys, values, begin_bit, end_bit, policy);
+}
+
+#  define _CCCL_COOP_TILE_RADIX_SORT_PAIRS_COMPARE_OVERLOADS(_Compare, _Descending)                                  \
+    template <typename KeyT,                                                                                         \
+              typename ValueT,                                                                                       \
+              typename CompareT,                                                                                     \
+              size_t KeyN,                                                                                           \
+              size_t ValueN,                                                                                         \
+                                                                                                                     \
+              size_t RadixBits                  = 4,                                                                 \
+              bool MemoizeOuterScan             = true,                                                              \
+              scan_algorithm InnerScanAlgorithm = scan_algorithm::warp_scans,                                        \
+              radix_smem_config SmemConfig      = radix_smem_config::four_byte>                                      \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline radix_sort_pair_result<KeyT, ValueT, KeyN> radix_sort_pairs(            \
+      ct::tile<KeyT, ct::shape<KeyN>> keys,                                                                          \
+      ct::tile<ValueT, ct::shape<ValueN>> values,                                                                    \
+      _Compare<CompareT>,                                                                                            \
+      radix_sort_policy<RadixBits, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig> policy = {}) noexcept           \
+    {                                                                                                                \
+      detail::validate_functor<KeyT, CompareT>();                                                                    \
+      return detail::radix_sort_pairs<_Descending>(keys, values, 0, static_cast<int>(sizeof(KeyT) * 8), policy);     \
+    }                                                                                                                \
+    template <typename KeyT,                                                                                         \
+              typename ValueT,                                                                                       \
+              typename CompareT,                                                                                     \
+              size_t KeyN,                                                                                           \
+              size_t ValueN,                                                                                         \
+                                                                                                                     \
+              size_t RadixBits                  = 4,                                                                 \
+              bool MemoizeOuterScan             = true,                                                              \
+              scan_algorithm InnerScanAlgorithm = scan_algorithm::warp_scans,                                        \
+              radix_smem_config SmemConfig      = radix_smem_config::four_byte>                                      \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline radix_sort_pair_result<KeyT, ValueT, KeyN> radix_sort_pairs(            \
+      ct::tile<KeyT, ct::shape<KeyN>> keys,                                                                          \
+      ct::tile<ValueT, ct::shape<ValueN>> values,                                                                    \
+      _Compare<CompareT>,                                                                                            \
+      int begin_bit,                                                                                                 \
+      int end_bit,                                                                                                   \
+      radix_sort_policy<RadixBits, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig> policy = {}) noexcept           \
+    {                                                                                                                \
+      detail::validate_functor<KeyT, CompareT>();                                                                    \
+      return detail::radix_sort_pairs<_Descending>(keys, values, begin_bit, end_bit, policy);                        \
+    }                                                                                                                \
+    template <typename KeyT,                                                                                         \
+              typename ValueT,                                                                                       \
+              typename CompareT,                                                                                     \
+              typename BeginControlT,                                                                                \
+              typename EndControlT,                                                                                  \
+              size_t KeyN,                                                                                           \
+              size_t ValueN,                                                                                         \
+                                                                                                                     \
+              size_t RadixBits                  = 4,                                                                 \
+              bool MemoizeOuterScan             = true,                                                              \
+              scan_algorithm InnerScanAlgorithm = scan_algorithm::warp_scans,                                        \
+              radix_smem_config SmemConfig      = radix_smem_config::four_byte>                                      \
+      requires(detail::compatible_i32_control_v<BeginControlT> && detail::compatible_i32_control_v<EndControlT>      \
+               && (detail::shape_one_i32_control_v<BeginControlT> || detail::shape_one_i32_control_v<EndControlT>) ) \
+    [[nodiscard]] _CCCL_COOP_TILE_API inline radix_sort_pair_result<KeyT, ValueT, KeyN> radix_sort_pairs(            \
+      ct::tile<KeyT, ct::shape<KeyN>> keys,                                                                          \
+      ct::tile<ValueT, ct::shape<ValueN>> values,                                                                    \
+      _Compare<CompareT> compare,                                                                                    \
+      BeginControlT begin_bit,                                                                                       \
+      EndControlT end_bit,                                                                                           \
+      radix_sort_policy<RadixBits, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig> policy = {}) noexcept           \
+    {                                                                                                                \
+      return ::cuda::coop::tile::radix_sort_pairs(                                                                   \
+        keys,                                                                                                        \
+        values,                                                                                                      \
+        compare,                                                                                                     \
+        detail::normalize_i32_control(begin_bit),                                                                    \
+        detail::normalize_i32_control(end_bit),                                                                      \
+        policy);                                                                                                     \
+    }
+
+_CCCL_COOP_TILE_RADIX_SORT_PAIRS_COMPARE_OVERLOADS(::cuda::std::less, 0)
+_CCCL_COOP_TILE_RADIX_SORT_PAIRS_COMPARE_OVERLOADS(::cuda::std::greater, 1)
+
+#  undef _CCCL_COOP_TILE_RADIX_SORT_PAIRS_COMPARE_OVERLOADS
+
+template <typename KeyT,
+          typename ValueT,
+          typename BeginControlT,
+          typename EndControlT,
+          size_t KeyN,
+          size_t ValueN,
+          size_t RadixBits                  = 4,
+          bool MemoizeOuterScan             = true,
+          scan_algorithm InnerScanAlgorithm = scan_algorithm::warp_scans,
+          radix_smem_config SmemConfig      = radix_smem_config::four_byte>
+  requires(detail::compatible_i32_control_v<BeginControlT> && detail::compatible_i32_control_v<EndControlT>
+           && (detail::shape_one_i32_control_v<BeginControlT> || detail::shape_one_i32_control_v<EndControlT>) )
+[[nodiscard]] _CCCL_COOP_TILE_API inline radix_sort_pair_result<KeyT, ValueT, KeyN> radix_sort_pairs(
+  ct::tile<KeyT, ct::shape<KeyN>> keys,
+  ct::tile<ValueT, ct::shape<ValueN>> values,
+  BeginControlT begin_bit,
+  EndControlT end_bit,
+  radix_sort_policy<RadixBits, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig> policy = {}) noexcept
+{
+  return ::cuda::coop::tile::radix_sort_pairs(
+    keys, values, detail::normalize_i32_control(begin_bit), detail::normalize_i32_control(end_bit), policy);
 }
 } // namespace cuda::coop::tile
 

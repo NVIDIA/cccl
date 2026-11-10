@@ -23,6 +23,8 @@ from .discontinuity import (
 )
 from .histogram import BlockHistogram, BlockHistogram256
 from .merge_sort import BlockMergeSortKeys, BlockMergeSortPairs
+from .radix_rank import BlockRadixRank
+from .radix_sort import BlockRadixSortKeys, BlockRadixSortPairs
 from .reduce import BlockReduce, BlockReduceSum
 from .scan import (
     BlockScanExclusiveScan,
@@ -42,6 +44,9 @@ __all__ = [
     "BlockHistogram256",
     "BlockMergeSortKeys",
     "BlockMergeSortPairs",
+    "BlockRadixRank",
+    "BlockRadixSortKeys",
+    "BlockRadixSortPairs",
     "BlockReduce",
     "BlockReduceSum",
     "BlockScanExclusiveScan",
