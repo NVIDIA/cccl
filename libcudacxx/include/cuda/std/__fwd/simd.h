@@ -32,7 +32,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 template <typename _Tp, typename _Abi = native<_Tp>, typename = void>
 class basic_vec;
 
-template <size_t _Bytes, typename _Abi = native<__integer_from<_Bytes>>, typename = void>
+// native<T> is independent of T, we can use unsigned char
+template <size_t _Bytes, typename _Abi = native<unsigned char>, typename = void>
 class basic_mask;
 
 template <typename _Tp, __simd_size_type _Np = __simd_size_v<_Tp, native<_Tp>>>

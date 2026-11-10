@@ -310,7 +310,9 @@ _CCCL_DIAG_POP
 template <typename _TpIn, typename _SrcAccessor, typename _DstAccessor>
 inline constexpr bool __can_stage_in_shared_mem_v =
   ::cuda::is_trivially_copyable_v<::cuda::std::remove_cvref_t<_TpIn>>
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   && ::cuda::std::assignable_from<::cuda::std::remove_cvref_t<_TpIn>&, typename _SrcAccessor::reference>
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   && ::cuda::std::is_assignable_v<typename _DstAccessor::reference, ::cuda::std::remove_cvref_t<_TpIn>&>;
 
 //! @brief Launch the shared-memory tiled transpose kernel.

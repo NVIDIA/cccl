@@ -97,7 +97,8 @@ void add_dependency_test(const StreamType& waiter, const StreamType& waitee)
 
 C2H_CCCLRT_TEST("Can add dependency into a stream", "[stream]")
 {
-  const cudax::stream waiter{cuda::device_ref{0}}, waitee{cuda::device_ref{0}};
+  const cudax::stream waiter{cuda::device_ref{0}};
+  const cudax::stream waitee{cuda::device_ref{0}};
 
   add_dependency_test<cudax::stream>(waiter, waitee);
   add_dependency_test<cudax::stream_ref>(waiter, waitee);

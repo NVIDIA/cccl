@@ -16,7 +16,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/config/memory_resource.h>
+#include <thrust/mr/memory_resource.h>
 #include <thrust/mr/pool.h>
+#include <thrust/mr/pool_options.h>
+
+#include <cuda/std/__cstddef/types.h>
 
 #include <mutex>
 
@@ -40,7 +45,6 @@ struct synchronized_pool_resource : public memory_resource<typename Upstream::po
 
   using void_ptr = typename Upstream::pointer;
 
-public:
   /*! Get the default options for a pool. These are meant to be a sensible set of values for many use cases,
    *      and as such, may be tuned in the future. This function is exposed so that creating a set of options that are
    *      just a slight departure from the defaults is easy.

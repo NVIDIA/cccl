@@ -397,7 +397,6 @@ public:
       ::cuda::std::addressof(this->__union_.__val_), __il, ::cuda::std::forward<_Args>(__args)...);
   }
 
-public:
   // [expected.object.swap], swap
   _CCCL_TEMPLATE(class _Tp2 = _Tp, class _Err2 = _Err)
   _CCCL_REQUIRES(__expected::__can_swap<_Tp2, _Err2>)

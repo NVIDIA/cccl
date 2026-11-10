@@ -166,7 +166,6 @@ template <typename T,
           int BlockDimZ                     = 1>
 class BlockHistogram
 {
-private:
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 

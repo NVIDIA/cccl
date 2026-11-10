@@ -14,4 +14,4 @@
 #endif // no system header
 
 // omp system inherits fill
-#include <thrust/system/cpp/detail/fill.h>
+#include <thrust/system/cpp/detail/fill.h> // IWYU pragma: export

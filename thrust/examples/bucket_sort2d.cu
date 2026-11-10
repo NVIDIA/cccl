@@ -58,7 +58,8 @@ int main()
 
   // allocate storage for a 2D grid
   // of dimensions w x h
-  const unsigned int w = 200, h = 100;
+  const unsigned int w = 200;
+  const unsigned int h = 100;
 
   // the grid data structure keeps a range per grid bucket:
   // each bucket_begin[i] indexes the first element of bucket i's list of points
