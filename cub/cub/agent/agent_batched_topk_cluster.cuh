@@ -101,13 +101,13 @@
 #include <nv/target>
 
 // The L2-free mbarrier synchronization of the multi-CTA cluster top-k path needs PTX ISA 8.6 (`.sync_restrict`
-// fences, `.relaxed` mbarrier operations); otherwise the `barrier.cluster` synchronization is used. Define it to 0
-// to force the `barrier.cluster` path.
-#if __cccl_ptx_isa >= 860
+// fences, `.relaxed` mbarrier operations); otherwise the `barrier.cluster` synchronization is used.
+// Defining `_CCCL_DISABLE_SEGTOPK_MBARRIER_SYNC` forces the `barrier.cluster` path.
+#if __cccl_ptx_isa >= 860 && !defined(_CCCL_DISABLE_SEGTOPK_MBARRIER_SYNC)
 #  define _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() 1
-#else // ^^^ __cccl_ptx_isa >= 860 ^^^ / vvv __cccl_ptx_isa < 860 vvv
+#else // ^^^ mbarrier sync ^^^ / vvv barrier.cluster sync vvv
 #  define _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() 0
-#endif // __cccl_ptx_isa >= 860
+#endif // __cccl_ptx_isa >= 860 && !defined(_CCCL_DISABLE_SEGTOPK_MBARRIER_SYNC)
 
 CUB_NAMESPACE_BEGIN
 
