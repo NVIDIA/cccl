@@ -97,6 +97,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
+#if _CCCL_HAS_NVFP8_UE5M3()
+[[nodiscard]] _CCCL_API constexpr bool isnormal(__nv_fp8_ue5m3 __x) noexcept
+{
+  return ::cuda::std::fpclassify(__x) == FP_NORMAL;
+}
+#endif // _CCCL_HAS_NVFP8_UE5M3()
+
 #if _CCCL_HAS_NVFP8_E8M0()
 [[nodiscard]] _CCCL_API constexpr bool isnormal(__nv_fp8_e8m0 __x) noexcept
 {

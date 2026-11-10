@@ -183,6 +183,13 @@ template <class _Tp>
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
+#if _CCCL_HAS_NVFP8_UE5M3()
+[[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_fp8_ue5m3 __x) noexcept
+{
+  return ::cuda::std::__fpclassify_impl(__x);
+}
+#endif // _CCCL_HAS_NVFP8_UE5M3()
+
 #if _CCCL_HAS_NVFP8_E8M0()
 [[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_fp8_e8m0 __x) noexcept
 {
