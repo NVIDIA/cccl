@@ -60,7 +60,7 @@ _CCCL_HOST_DEVICE inline float frexp_expf(float x, int* expt)
   get_float_word(hx, exp_x);
   *expt = static_cast<int>((hx >> 23) - (0x7f + 127) + k);
   set_float_word(exp_x, (hx & 0x7fffff) | ((0x7f + 127) << 23));
-  return (exp_x);
+  return exp_x;
 }
 
 _CCCL_HOST_DEVICE inline complex<float> ldexp_cexpf(complex<float> z, int expt)
