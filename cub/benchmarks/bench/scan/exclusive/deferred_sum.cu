@@ -9,6 +9,7 @@
 #include <cuda/argument>
 #include <cuda/execution>
 #include <cuda/std/functional>
+#include <cuda/std/limits>
 #include <cuda/std/utility>
 
 #include <cstddef>
@@ -52,6 +53,11 @@ try
   const auto d_input     = thrust::raw_pointer_cast(input.data());
   const auto d_output    = thrust::raw_pointer_cast(output.data());
   const auto d_num_items = thrust::raw_pointer_cast(device_num_items.data());
+  const auto upper_bound =
+    state.get_string("Bounds") == "bounded"
+      ? static_cast<OffsetT>(elements)
+      : (cuda::std::numeric_limits<OffsetT>::max)();
+  const auto count = cuda::args::deferred{d_num_items, cuda::args::bounds(OffsetT{0}, upper_bound)};
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements, "Size");
@@ -67,8 +73,7 @@ try
       cuda::execution::tune(policy_selector<accum_t>{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_RUNTIME_API(
-      cub::DeviceScan::ExclusiveSum, "ExclusiveSum failed", d_input, d_output, cuda::args::deferred{d_num_items}, env);
+    _CCCL_TRY_RUNTIME_API(cub::DeviceScan::ExclusiveSum, "ExclusiveSum failed", d_input, d_output, count, env);
   });
 }
 catch (const std::bad_alloc&)
@@ -81,4 +86,5 @@ using value_types = all_types;
 NVBENCH_BENCH_TYPES(deferred_sum, NVBENCH_TYPE_AXES(value_types, offset_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
+  .add_string_axis("Bounds", {"unbounded", "bounded"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));
