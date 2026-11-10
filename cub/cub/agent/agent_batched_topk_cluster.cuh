@@ -24,20 +24,17 @@
 //!      `state.result` pair (splitter bucket plus early-stop flag) and folds the
 //!      bucket into its own local splitter key.
 //!
-//! Cross-CTA synchronization: with PTX ISA >= 8.6 steps 2
-//! and 3 are one-sided mbarrier handshakes -- the leader waits for the
-//! reductions (`red.async`), then pushes its `state` into every working block's
-//! own copy (`st.async`), which waits for it -- with fences restricted to
-//! shared memory; a relaxed cluster barrier at startup is the only cluster
-//! barrier. Older toolkits rendezvous the cluster with `barrier.cluster` around
-//! each step and every block reads the leader's `state` through DSMEM.
+//! Inter-CTA synchronization: with PTX ISA >= 8.6 steps 2
+//! and 3 are one-sided mbarrier handshakes: The leader waits for the
+//! reductions, then pushes the resulting splitter into the other waiting blocks.
+//! A relaxed cluster barrier at startup is still needed for bootstrapping the mbarriers.
+//! Older toolkits rendezvous the cluster with `barrier.cluster` around
+//! each step and every block pulls the leader's splitter from DSMEM.
 //!
 //! The final filter places each block's output through per-CTA shared-memory
-//! atomics, seeded by a cross-CTA prefix scan of two independent 32-bit DSMEM
+//! atomics, seeded by a cross-CTA prefix scan of two independent I32 DSMEM
 //! reductions (each block's selected-front and candidate-back base offsets)
-//! fused directly into the placement counters; no cluster-wide output cursor is
-//! kept in `state`.
-
+//! fused directly into the placement counters.
 #pragma once
 
 #include <cub/config.cuh>
