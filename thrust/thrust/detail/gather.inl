@@ -23,6 +23,14 @@
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(gather.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(gather.h)
 
+// Some build systems need a hint to know which files we could include
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
+#  include <thrust/system/cpp/detail/gather.h>
+#  include <thrust/system/cuda/detail/gather.h>
+#  include <thrust/system/omp/detail/gather.h>
+#  include <thrust/system/tbb/detail/gather.h>
+#endif
+
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
