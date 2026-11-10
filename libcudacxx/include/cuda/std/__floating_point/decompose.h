@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__bit/integral.h>
 #include <cuda/std/__floating_point/format.h>
 #include <cuda/std/__floating_point/mask.h>
 #include <cuda/std/__floating_point/properties.h>
@@ -53,12 +54,23 @@ template <class _Tp>
 template <__fp_format _Fmt>
 [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE constexpr int __fp_get_exp(__fp_storage_t<_Fmt> __v) noexcept
 {
-  return ::cuda::std::__fp_get_exp_biased<_Fmt>(__v) - __fp_exp_bias_v<_Fmt>;
+  const int __biased = ::cuda::std::__fp_get_exp_biased<_Fmt>(__v);
+  if (__biased == 0)
+  {
+    // A subnormal has no implicit leading one, so its exponent is set by the highest set bit of the mantissa.
+    const auto __mant = static_cast<__fp_storage_t<_Fmt>>(__v & __fp_mant_mask_v<_Fmt>);
+    if (__mant != 0)
+    {
+      return __fp_exp_min_v<_Fmt> + ::cuda::std::bit_width(__mant) - __fp_digits_v<_Fmt>;
+    }
+  }
+  return __biased - __fp_exp_bias_v<_Fmt>;
 }
 
 //! @brief Returns the unbiased exponent of a floating point number
 //! @param __v The floating point number to extract the exponent from
-//! This is effectively the same as @c ilogb but no errors are raised and corner cases handled
+//! This is effectively the same as @c ilogb but no errors are raised and corner cases handled.
+//! The exponent of a subnormal number is the exponent of its highest set bit.
 template <class _Tp>
 [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE constexpr int __fp_get_exp(_Tp __v) noexcept
 {
