@@ -23,8 +23,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__hierarchy/hierarchy_levels.h>
-#include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/cstdint>
 
 #include <cooperative_groups.h>
@@ -33,26 +32,24 @@
 
 namespace cuda::experimental::cuco::detail
 {
-using __index_type = ::cuda::std::int64_t;
-
 #if _CCCL_CUDA_COMPILATION()
 // These helpers are used by bulk kernels launched with one-dimensional grids and blocks.
-[[nodiscard]] _CCCL_DEVICE_API inline __index_type __global_thread_id() noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::size_t __global_thread_id() noexcept
 {
-  return ::cuda::gpu_thread.index_as<__index_type>(::cuda::grid).x;
+  return ::cuda::gpu_thread.index_as<::cuda::std::size_t>(::cuda::grid).x;
 }
 
 //! @brief Whether every thread in the current block owns an input element.
-[[nodiscard]] _CCCL_DEVICE_API inline bool __is_full_tile(__index_type __num_elements) noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline bool __is_full_tile(::cuda::std::size_t __num_elements) noexcept
 {
-  const auto __block_index = ::cuda::block.rank_as<__index_type>(::cuda::grid);
-  const auto __block_size  = ::cuda::gpu_thread.count_as<__index_type>(::cuda::block);
+  const auto __block_index = ::cuda::block.rank_as<::cuda::std::size_t>(::cuda::grid);
+  const auto __block_size  = ::cuda::gpu_thread.count_as<::cuda::std::size_t>(::cuda::block);
   return (__block_index + 1) * __block_size <= __num_elements;
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline __index_type __grid_stride() noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::size_t __grid_stride() noexcept
 {
-  return ::cuda::gpu_thread.dims_as<__index_type>(::cuda::grid).x;
+  return ::cuda::gpu_thread.dims_as<::cuda::std::size_t>(::cuda::grid).x;
 }
 #endif // _CCCL_CUDA_COMPILATION()
 
@@ -74,21 +71,13 @@ struct __tile_size<::cooperative_groups::thread_block_tile<_Size, _ParentCG>>
 template <class _Tile>
 inline constexpr int __tile_size_v = __tile_size<_Tile>::__value;
 
-constexpr _CCCL_HOST_DEVICE_API __index_type __grid_size(
-  __index_type __num,
+constexpr _CCCL_HOST_DEVICE_API ::cuda::std::size_t __grid_size(
+  ::cuda::std::size_t __num,
   int __cg_size    = 1,
   int __stride     = __default_stride,
   int __block_size = __default_block_size) noexcept
 {
-  return ::cuda::ceil_div(__cg_size * __num, __stride * __block_size);
-}
-
-//! @brief Distance helper requiring random access iterators.
-template <class _Iterator>
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __index_type __distance(_Iterator __begin, _Iterator __end)
-{
-  static_assert(::cuda::std::random_access_iterator<_Iterator>, "Input iterator should be a random access iterator.");
-  return __index_type{::cuda::std::distance(__begin, __end)};
+  return ::cuda::ceil_div(static_cast<::cuda::std::size_t>(__cg_size) * __num, __stride * __block_size);
 }
 } // namespace cuda::experimental::cuco::detail
 
