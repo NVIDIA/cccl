@@ -88,10 +88,10 @@ struct __with_property
 };
 
 template <class _Property>
-using __iproperty = typename __with_property<_Property>::template __iproperty<>;
+using __iproperty _CCCL_NODEBUG = typename __with_property<_Property>::template __iproperty<>;
 
 template <class... _Properties>
-using __iproperty_set =
+using __iproperty_set _CCCL_NODEBUG =
   ::cuda::__iset<__iproperty<_Properties>..., __iproperty<::cuda::mr::dynamic_accessibility_property>>;
 
 // Wrap the calls of the allocate and deallocate member functions
@@ -200,7 +200,7 @@ template <class... _Properties>
 using __iasync_resource _CCCL_NODEBUG = __iset<__iresource<_Properties...>, __ibasic_async_resource<>>;
 
 template <class _Property>
-using __try_property_result_t =
+using __try_property_result_t _CCCL_NODEBUG =
   ::cuda::std::conditional_t<!::cuda::std::is_same_v<__property_result_t<_Property>, void>, //
                              ::cuda::std::optional<__property_result_t<_Property>>, //
                              bool>;
@@ -1131,7 +1131,7 @@ template <class _Tp, class... _Properties>
 //!   destination resource type template argument).
 //! @param __src The source resource to cast from.
 //! @return A new type-erased resource wrapper with the destination properties.
-//! @throws __bad_any_cast if the runtime type does not support the destination
+//! @throws std::bad_any_cast if the runtime type does not support the destination
 //!   interface.
 template <class... _DstProperties, class... _SrcProperties>
 [[nodiscard]] _CCCL_HOST_API auto dynamic_resource_cast(any_resource<_SrcProperties...>&& __src)

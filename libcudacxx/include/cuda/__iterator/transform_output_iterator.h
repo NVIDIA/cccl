@@ -51,7 +51,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _Fn, class _Iter>
 class __transform_output_proxy
 {
-private:
   template <class, class>
   friend class transform_output_iterator;
 
@@ -59,7 +58,7 @@ private:
   _Fn& __func_;
 
   template <class _MaybeConstFn, class _Arg>
-  using _Ret = ::cuda::std::invoke_result_t<_MaybeConstFn&, _Arg>;
+  using _Ret _CCCL_NODEBUG = ::cuda::std::invoke_result_t<_MaybeConstFn&, _Arg>;
 
 public:
   _CCCL_EXEC_CHECK_DISABLE

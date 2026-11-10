@@ -17,6 +17,7 @@
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_set_operations.cuh>
 #include <cub/util_debug.cuh>
@@ -66,7 +67,7 @@ _CCCL_KERNEL_ATTRIBUTES void device_set_op_partition_kernel(
                  "cub::DeviceSetOps: partition_idx * items_per_tile overflows the offset type");
     const Offset diag = ::cuda::std::min(partition_idx * items_per_tile, num_keys1 + num_keys2);
     partitions[partition_idx] =
-      balanced_path(keys1, keys2, num_keys1, num_keys2, diag, balanced_path_levels, compare_op);
+      _CUB::detail::set_ops::balanced_path(keys1, keys2, num_keys1, num_keys2, diag, balanced_path_levels, compare_op);
   }
 }
 
@@ -81,7 +82,7 @@ template <typename PolicySelector,
           typename CompareOp,
           typename SetOp,
           typename NumSelectedIteratorT>
-__launch_bounds__(device_policy_getter<PolicySelector, current_tuning_cc().get()>{}().threads_per_block)
+__launch_bounds__(device_policy_getter<PolicySelector, _CUB::detail::current_tuning_cc().get()>{}().threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void device_set_op_sweep_kernel(
     KeysIt1 keys1,
     KeysIt2 keys2,
@@ -99,7 +100,7 @@ __launch_bounds__(device_policy_getter<PolicySelector, current_tuning_cc().get()
     vsmem_t global_temp_storage)
 {
   using agent_t =
-    agent_set_op<device_policy_getter<PolicySelector, current_tuning_cc().get()>,
+    agent_set_op<device_policy_getter<PolicySelector, _CUB::detail::current_tuning_cc().get()>,
                  KeysIt1,
                  KeysIt2,
                  ValuesIt1,
@@ -171,8 +172,7 @@ template <typename KeysIt1,
 
   // Resolve the tuning policy selector from the (optional) tuning environment, defaulting to the type-derived selector.
   using default_policy_selector = policy_selector_from_types<KeysIt1, ValuesIt1, KeysIt2, ValuesIt2, Offset>;
-  using policy_selector_t =
-    ::cuda::std::decay_t<::cuda::std::execution::__query_result_or_t<TuningEnvT, SetOpsPolicy, default_policy_selector>>;
+  using policy_selector_t       = policy_selector_from_tuning_env_t<TuningEnvT, SetOpsPolicy, default_policy_selector>;
 #if _CCCL_HAS_CONCEPTS()
   static_assert(set_ops_policy_selector<policy_selector_t>, "invalid policy selector for set-ops dispatch");
 #endif // _CCCL_HAS_CONCEPTS()
@@ -183,7 +183,7 @@ template <typename KeysIt1,
     return error;
   }
 
-  return dispatch_compute_cap(policy_selector_t{}, cc, [&](auto policy_getter) -> cudaError_t {
+  return _CUB::detail::dispatch_compute_cap(policy_selector_t{}, cc, [&](auto policy_getter) -> cudaError_t {
     using agent_t =
       agent_set_op<decltype(policy_getter),
                    KeysIt1,
@@ -219,7 +219,7 @@ template <typename KeysIt1,
     void* allocations[3]             = {nullptr, nullptr, nullptr};
     const size_t allocation_sizes[3] = {tile_state_bytes, partitions_bytes, vsmem_bytes};
     if (const auto error =
-          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+          CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -249,7 +249,7 @@ template <typename KeysIt1,
       {
         return error;
       }
-      if (const auto error = CubDebug(DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -279,7 +279,7 @@ template <typename KeysIt1,
       {
         return error;
       }
-      if (const auto error = CubDebug(DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -319,7 +319,7 @@ template <typename KeysIt1,
       {
         return error;
       }
-      if (const auto error = CubDebug(DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }

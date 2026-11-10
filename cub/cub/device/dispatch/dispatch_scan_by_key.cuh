@@ -126,7 +126,7 @@ template <typename PolicySelector,
           typename OffsetT,
           typename AccumT,
           typename KeyT = cub::detail::it_value_t<KeysInputIteratorT>>
-__launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_block))
+__launch_bounds__(int(_CUB::detail::current_policy<PolicySelector>().lookback.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceScanByKeyKernel(
     const KeysInputIteratorT d_keys_in,
     KeyT* const d_keys_prev_in,
@@ -139,7 +139,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
     const InitValueT init_value,
     const OffsetT num_items)
 {
-  static constexpr ScanByKeyPolicy policy = current_policy<PolicySelector>();
+  static constexpr ScanByKeyPolicy policy = _CUB::detail::current_policy<PolicySelector>();
   static_assert(
     policy.lookback.load_modifier != CacheLoadModifier::LOAD_LDG,
     "ScanByKeyLookbackPolicy: load_modifier must not be LOAD_LDG, since the memory consistency model does not apply "
@@ -409,7 +409,7 @@ struct dispatch_scan_by_key
     // the necessary size of the blob)
     void* allocations[2] = {};
     if (const auto error =
-          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+          CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -451,7 +451,7 @@ struct dispatch_scan_by_key
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -503,7 +503,7 @@ struct dispatch_scan_by_key
       }
 
       // Sync the stream if specified to flush runtime errors
-      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -515,7 +515,7 @@ struct dispatch_scan_by_key
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT = {})
   {
-    return __invoke(detail::scan_by_key::convert_policy<ActivePolicyT>());
+    return __invoke(_CUB::detail::scan_by_key::convert_policy<ActivePolicyT>());
   }
 
   /**
@@ -615,7 +615,7 @@ struct dispatch_scan_by_key
 
     const ScanByKeyPolicy active_policy = policy_selector(cc);
 
-    detail::log_dispatch("DeviceScanByKey", cc, active_policy);
+    _CUB::detail::log_dispatch("DeviceScanByKey", cc, active_policy);
 
     return dispatch_scan_by_key<
              KeysInputIteratorT,
@@ -712,7 +712,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   const ScanByKeyPolicy active_policy = policy_selector(cc);
 
-  detail::log_dispatch("DeviceScanByKey", cc, active_policy);
+  _CUB::detail::log_dispatch("DeviceScanByKey", cc, active_policy);
 
   // Get device ordinal
   int device_ordinal;
@@ -740,7 +740,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   // the necessary size of the blob)
   void* allocations[2] = {};
   if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -782,7 +782,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   // Sync the stream if specified to flush runtime errors
-  if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+  if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
   {
     return error;
   }
@@ -834,7 +834,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }

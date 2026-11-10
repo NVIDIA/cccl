@@ -71,7 +71,7 @@ class thread_hierarchy
   template <auto x, auto y, auto... subspec>
   struct inner_t<x, y, subspec...>
   {
-    using type = thread_hierarchy<subspec...>;
+    using type _CCCL_NODEBUG = thread_hierarchy<subspec...>;
   };
 
 public:
@@ -122,7 +122,7 @@ public:
    * @param level The level
    * @return The width (0 if width is dynamic)
    */
-  static inline constexpr size_t static_width(size_t level)
+  static constexpr size_t static_width(size_t level)
   {
     size_t data[] = {spec...};
     return data[1 + 2 * level];

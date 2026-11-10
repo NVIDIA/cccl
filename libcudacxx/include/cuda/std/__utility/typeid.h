@@ -78,10 +78,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if !defined(_CCCL_NO_TYPEID) && !defined(_CCCL_USE_TYPEID_FALLBACK)
 
 #  define _CCCL_TYPEID _CCCL_STD_TYPEID
-using type_info        = ::std::type_info;
-using __type_info_ptr  = type_info const*;
-using __type_info_ref  = type_info const&;
-using __type_info_ref_ = type_info const&;
+using type_info                      = ::std::type_info;
+using __type_info_ptr _CCCL_NODEBUG  = type_info const*;
+using __type_info_ref _CCCL_NODEBUG  = type_info const&;
+using __type_info_ref_ _CCCL_NODEBUG = type_info const&;
 
 #else // ^^^ !_CCCL_NO_TYPEID ^^^ / vvv _CCCL_NO_TYPEID vvv
 
@@ -96,7 +96,7 @@ using __type_info_ref_ = type_info const&;
 //    Everything between them is the name of type _Tp.
 
 template <class _Tp>
-using _CCCL_TYPEID_ONLY_SUPPORTS_TYPES = _Tp;
+using _CCCL_TYPEID_ONLY_SUPPORTS_TYPES _CCCL_NODEBUG = _Tp;
 
 // Earlier versions of gcc (before gcc-9) do not treat __PRETTY_FUNCTION__ as a
 // constexpr value after a reference to it has been returned from a function.
@@ -249,7 +249,7 @@ template <auto _Vp>
   // it so the result is just the function's name.
   if constexpr (is_function_v<remove_pointer_t<decltype(_Vp)>> || is_member_function_pointer_v<decltype(_Vp)>)
   {
-    if (__sv.size() != 0 && __sv[0] == '&')
+    if (!__sv.empty() && __sv[0] == '&')
     {
       // substr() technically may throw an exception, but clang-tidy does not realize this is safe
       __sv = __sv.substr(1, static_cast<ptrdiff_t>(__sv.size()));
@@ -271,6 +271,9 @@ static_assert(::cuda::std::__stringof<42>() != ::cuda::std::__stringof<43>());
 // unqualified name is present rather than matching it exactly.
 static_assert(::cuda::std::__stringof<&::cuda::std::__find_stringof>().find("__find_stringof") != -1);
 #endif // !_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF && !_CCCL_BROKEN_MSVC_FUNCSIG && _CCCL_ENABLE_DEBUG_MODE
+
+// The fallback type information now stores and returns string_view instead of __string_view.
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 
 // There are many complications with defining a unique constexpr global object
 // for each type in device code, particularly on Windows. So rather than try,
@@ -394,9 +397,9 @@ struct __type_info_ref_ : __type_info
 }
 
 #  if defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
-using type_info       = __type_info;
-using __type_info_ptr = __type_info_ptr_;
-using __type_info_ref = __type_info_ref_;
+using type_info                     = __type_info;
+using __type_info_ptr _CCCL_NODEBUG = __type_info_ptr_;
+using __type_info_ref _CCCL_NODEBUG = __type_info_ref_;
 #  endif // defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
 
 #  define _CCCL_TYPEID_FALLBACK(...) \
@@ -407,9 +410,9 @@ using __type_info_ref = __type_info_ref_;
 // See comment above about _CCCL_BROKEN_MSVC_FUNCSIG
 #  define _CCCL_TYPEID_FALLBACK _CCCL_STD_TYPEID
 #  if defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
-using type_info       = ::std::type_info;
-using __type_info_ptr = ::std::type_info const*;
-using __type_info_ref = ::std::type_info const&;
+using type_info                     = ::std::type_info;
+using __type_info_ptr _CCCL_NODEBUG = ::std::type_info const*;
+using __type_info_ref _CCCL_NODEBUG = ::std::type_info const&;
 #  endif // defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
 
 #else // ^^^ _CCCL_BROKEN_MSVC_FUNCSIG ^^^ / vvv !__CUDA_ARCH__ && !_CCCL_BROKEN_MSVC_FUNCSIG vvv
@@ -466,9 +469,9 @@ private:
 };
 
 #  if defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
-using type_info       = __type_info;
-using __type_info_ptr = __type_info const*;
-using __type_info_ref = __type_info const&;
+using type_info                     = __type_info;
+using __type_info_ptr _CCCL_NODEBUG = __type_info const*;
+using __type_info_ref _CCCL_NODEBUG = __type_info const&;
 #  endif // defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
 
 template <class _Tp>
@@ -485,6 +488,8 @@ template <class _Tp>
 #  define _CCCL_TYPEID_FALLBACK(...) ::cuda::std::__typeid<::cuda::std::remove_cv_t<__VA_ARGS__>>()
 
 #endif // !defined(__CUDA_ARCH__) && !_CCCL_BROKEN_MSVC_FUNCSIG
+
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
 // if `__pretty_nameof` is constexpr _CCCL_TYPEID_FALLBACK is also constexpr.
 #if !defined(_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF) && (!defined(_CCCL_BROKEN_MSVC_FUNCSIG) || defined(__CUDA_ARCH__))

@@ -14,4 +14,4 @@
 #endif // no system header
 
 // omp system inherits inner_product
-#include <thrust/system/cpp/detail/inner_product.h>
+#include <thrust/system/cpp/detail/inner_product.h> // IWYU pragma: export

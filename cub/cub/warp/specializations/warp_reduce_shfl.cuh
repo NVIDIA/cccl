@@ -21,6 +21,7 @@
 #include <cub/util_type.cuh>
 #include <cub/warp/specializations/warp_reduce_shfl_ptx.cuh>
 #include <cub/warp/specializations/warp_redux.cuh>
+#include <cub/warp/warp_utils.cuh>
 
 #include <cuda/__cmath/ilog.h>
 #include <cuda/__cmath/pow2.h>
@@ -51,36 +52,33 @@ inline constexpr bool is_warp_vote_all_op =
 template <typename T, int LogicalWarpThreads>
 struct WarpReduceShfl
 {
-  static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
+  static_assert(LogicalWarpThreads >= 1 && LogicalWarpThreads <= warp_threads,
+                "LogicalWarpThreads must be in the range [1, 32]");
+
+  static constexpr bool is_power_of_two = ::cuda::is_power_of_two(LogicalWarpThreads);
+  // Non-power-of-two groups occupy the first LogicalWarpThreads physical lanes. Use the explicit last-lane clamp
+  // rather than the shuffle segmentation mask to bound their peers.
+  static constexpr int shuffle_threads = is_power_of_two ? LogicalWarpThreads : warp_threads;
 
   /// Whether the logical warp size and the PTX warp size coincide
   static constexpr bool is_full_warp = (LogicalWarpThreads == warp_threads);
 
   /// The number of warp reduction steps
-  static constexpr int steps = ::cuda::ilog2(LogicalWarpThreads);
+  static constexpr int steps = ::cuda::ceil_ilog2(LogicalWarpThreads);
 
   /// Shared memory storage layout type
   using TempStorage = NullType;
 
   /// Lane index in logical warp
-  int lane_id;
+  int lane_id = _CUB::detail::logical_lane_id<LogicalWarpThreads>();
 
   /// Logical warp index in 32-thread physical warp
-  int warp_id;
+  int warp_id = _CUB::detail::logical_warp_id<LogicalWarpThreads>();
 
   /// 32-thread physical warp member mask of logical warp
-  ::cuda::std::uint32_t member_mask;
+  ::cuda::std::uint32_t member_mask = _CUB::WarpMask<LogicalWarpThreads>(warp_id);
 
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpReduceShfl(TempStorage& /*temp_storage*/)
-      : lane_id(static_cast<int>(::cuda::ptx::get_sreg_laneid()))
-      , warp_id(is_full_warp ? 0 : (lane_id / LogicalWarpThreads))
-      , member_mask(CUB_NS_QUALIFIER::WarpMask<LogicalWarpThreads>(warp_id))
-  {
-    if constexpr (!is_full_warp)
-    {
-      lane_id = lane_id % LogicalWarpThreads;
-    }
-  }
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpReduceShfl(TempStorage& /*temp_storage*/) {}
 
   /**
    * @brief Reduction (specialized for swizzled ReduceByKeyOp<::cuda::std::plus<>> across
@@ -107,7 +105,7 @@ struct WarpReduceShfl
   {
     KeyValuePair<KeyT, ValueT> output;
 
-    KeyT other_key = CUB_NS_QUALIFIER::ShuffleDown<LogicalWarpThreads>(input.key, offset, last_lane, member_mask);
+    KeyT other_key = _CUB::ShuffleDown<shuffle_threads>(input.key, offset, last_lane, member_mask);
 
     output.key   = input.key;
     output.value = ReduceStep(input.value, ::cuda::std::plus<>{}, last_lane, offset);
@@ -167,14 +165,14 @@ struct WarpReduceShfl
   {
     if constexpr (is_shfl_down_op_supported_v<ReductionOp, Tp>)
     {
-      constexpr unsigned shfl_c_base = (warp_threads - LogicalWarpThreads) << 8;
+      constexpr unsigned shfl_c_base = (warp_threads - shuffle_threads) << 8;
       const int shfl_c               = last_lane | shfl_c_base;
-      return CUB_NS_QUALIFIER::detail::shfl_down_op(input, reduction_op, offset, shfl_c, member_mask);
+      return _CUB::detail::shfl_down_op(input, reduction_op, offset, shfl_c, member_mask);
     }
     else
     {
       Tp output = input;
-      Tp tmp    = CUB_NS_QUALIFIER::ShuffleDown<LogicalWarpThreads>(output, offset, last_lane, member_mask);
+      Tp tmp    = _CUB::ShuffleDown<shuffle_threads>(output, offset, last_lane, member_mask);
       // Perform reduction op if valid
       if (offset + lane_id <= last_lane)
       {
@@ -211,7 +209,7 @@ struct WarpReduceShfl
   Reduce(const T input, const int valid_items, ReductionOp reduction_op)
   {
     // Dispatch to more efficient intrinsics when applicable
-    [[maybe_unused]] const int last_lane = (AllValidLanes) ? LogicalWarpThreads - 1 : valid_items - 1;
+    [[maybe_unused]] const int last_lane = AllValidLanes ? LogicalWarpThreads - 1 : valid_items - 1;
 
     if constexpr (is_warp_vote_any_op<ReductionOp, T>)
     {
@@ -231,12 +229,13 @@ struct WarpReduceShfl
         {
           reduce_value = lane_id <= last_lane ? input : ::cuda::identity_element<ReductionOp, T>();
         }
-        if (const auto output = CUB_NS_QUALIFIER::detail::warp_redux(reduce_value, member_mask, reduction_op))
+        if (const auto output = _CUB::detail::warp_redux(reduce_value, member_mask, reduction_op))
         {
           return *output;
         }
       }
-      if constexpr (AllValidLanes && ::cuda::is_trivially_copyable_v<T>)
+      // All logical lanes being valid does not fill the shuffle width for a non-power-of-two group.
+      if constexpr (is_power_of_two && AllValidLanes && ::cuda::is_trivially_copyable_v<T>)
       {
         FullShuffleReduce(reduce_value, reduction_op);
       }

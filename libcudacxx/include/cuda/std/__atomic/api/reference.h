@@ -110,7 +110,7 @@ struct __atomic_ref_pointer
 };
 
 template <typename _Tp, thread_scope _Sco = thread_scope_system>
-using __atomic_ref_impl =
+using __atomic_ref_impl _CCCL_NODEBUG =
   _If<is_pointer_v<_Tp>,
       __atomic_ref_pointer<_Tp, __scope_to_tag<_Sco>>,
       _If<is_floating_point_v<_Tp>,

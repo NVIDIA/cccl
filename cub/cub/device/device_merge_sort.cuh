@@ -23,6 +23,7 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/null_type.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/device/dispatch/dispatch_merge_sort.cuh>
 #include <cub/util_namespace.cuh>
 
@@ -150,9 +151,9 @@ private:
     TuningEnvT)
   {
     using default_policy_selector_t = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
-    using policy_selector_t         = ::cuda::std::decay_t<
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, MergeSortPolicy, default_policy_selector_t>>;
-    return detail::merge_sort::dispatch(
+    using policy_selector_t =
+      detail::policy_selector_from_tuning_env_t<TuningEnvT, MergeSortPolicy, default_policy_selector_t>;
+    return _CUB::detail::merge_sort::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_input_keys,
@@ -178,7 +179,7 @@ private:
   {
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
         return select_tuning_and_dispatch(
           storage,
@@ -378,7 +379,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch(
         storage,
         bytes,
@@ -533,7 +534,7 @@ public:
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
         return select_tuning_and_dispatch(
           storage,
@@ -637,7 +638,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch(
         storage,
         bytes,
@@ -665,7 +666,7 @@ private:
   {
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
         return select_tuning_and_dispatch(
           storage,
@@ -841,7 +842,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch(
         storage,
         bytes,
@@ -870,7 +871,7 @@ private:
   {
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
         return select_tuning_and_dispatch(
           storage,
@@ -1082,7 +1083,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch(
         storage,
         bytes,
@@ -1282,7 +1283,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch(
         storage,
         bytes,
@@ -1459,7 +1460,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch(
         storage,
         bytes,
@@ -1669,7 +1670,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch(
         storage,
         bytes,

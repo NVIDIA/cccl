@@ -107,7 +107,7 @@ struct SimdMin<__nv_bfloat162>
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
                       (return ::__hmin2(a, b);),
-                      (return simd_operation_is_not_supported_before_sm80<__nv_bfloat162>();))
+                      (return _CUB::detail::simd_operation_is_not_supported_before_sm80<__nv_bfloat162>();))
   }
 };
 
@@ -171,7 +171,7 @@ struct SimdMax<__nv_bfloat162>
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
                       (return ::__hmax2(a, b);), //
-                      (return simd_operation_is_not_supported_before_sm80<__nv_bfloat162>();))
+                      (return _CUB::detail::simd_operation_is_not_supported_before_sm80<__nv_bfloat162>();))
   }
 };
 
@@ -194,7 +194,7 @@ struct SimdSum<__half2>
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
                       (return ::__hadd2(a, b);), //
-                      (return simd_operation_is_not_supported_before_sm53<__half2>();))
+                      (return _CUB::detail::simd_operation_is_not_supported_before_sm53<__half2>();))
   }
 };
 
@@ -209,7 +209,7 @@ struct SimdSum<__nv_bfloat162>
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
                       (return ::__hadd2(a, b);), //
-                      (return simd_operation_is_not_supported_before_sm80<__nv_bfloat162>();))
+                      (return _CUB::detail::simd_operation_is_not_supported_before_sm80<__nv_bfloat162>();))
   }
 };
 
@@ -286,7 +286,7 @@ struct SimdMul<__half2>
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
                       (return ::__hmul2(a, b);), //
-                      (return simd_operation_is_not_supported_before_sm53<__half2>();))
+                      (return _CUB::detail::simd_operation_is_not_supported_before_sm53<__half2>();))
   }
 };
 
@@ -301,7 +301,7 @@ struct SimdMul<__nv_bfloat162>
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
                       (return ::__hmul2(a, b);),
-                      (return simd_operation_is_not_supported_before_sm80<__nv_bfloat162>();))
+                      (return _CUB::detail::simd_operation_is_not_supported_before_sm80<__nv_bfloat162>();))
   }
 };
 
@@ -336,13 +336,13 @@ struct VectorTypeX2
 template <>
 struct VectorTypeX2<int16_t>
 {
-  using type = short2;
+  using type _CCCL_NODEBUG = short2;
 };
 
 template <>
 struct VectorTypeX2<uint16_t>
 {
-  using type = ushort2;
+  using type _CCCL_NODEBUG = ushort2;
 };
 
 #  if _CCCL_HAS_NVFP16()
@@ -350,7 +350,7 @@ struct VectorTypeX2<uint16_t>
 template <>
 struct VectorTypeX2<__half>
 {
-  using type = __half2;
+  using type _CCCL_NODEBUG = __half2;
 };
 
 #  endif // _CCCL_HAS_NVFP16()
@@ -360,7 +360,7 @@ struct VectorTypeX2<__half>
 template <>
 struct VectorTypeX2<__nv_bfloat16>
 {
-  using type = __nv_bfloat162;
+  using type _CCCL_NODEBUG = __nv_bfloat162;
 };
 
 #  endif // _CCCL_HAS_NVBF16()
@@ -380,49 +380,49 @@ struct CudaOperatorToSimdX2
 template <typename T>
 struct CudaOperatorToSimdX2<::cuda::minimum<>, T>
 {
-  using type = SimdMin<vector_type_x2_t<T>>;
+  using type _CCCL_NODEBUG = SimdMin<vector_type_x2_t<T>>;
 };
 
 template <typename T>
 struct CudaOperatorToSimdX2<::cuda::minimum<T>, T>
 {
-  using type = SimdMin<vector_type_x2_t<T>>;
+  using type _CCCL_NODEBUG = SimdMin<vector_type_x2_t<T>>;
 };
 
 template <typename T>
 struct CudaOperatorToSimdX2<::cuda::maximum<>, T>
 {
-  using type = SimdMax<vector_type_x2_t<T>>;
+  using type _CCCL_NODEBUG = SimdMax<vector_type_x2_t<T>>;
 };
 
 template <typename T>
 struct CudaOperatorToSimdX2<::cuda::maximum<T>, T>
 {
-  using type = SimdMax<vector_type_x2_t<T>>;
+  using type _CCCL_NODEBUG = SimdMax<vector_type_x2_t<T>>;
 };
 
 template <typename T>
 struct CudaOperatorToSimdX2<::cuda::std::plus<>, T>
 {
-  using type = SimdSum<vector_type_x2_t<T>>;
+  using type _CCCL_NODEBUG = SimdSum<vector_type_x2_t<T>>;
 };
 
 template <typename T>
 struct CudaOperatorToSimdX2<::cuda::std::plus<T>, T>
 {
-  using type = SimdSum<vector_type_x2_t<T>>;
+  using type _CCCL_NODEBUG = SimdSum<vector_type_x2_t<T>>;
 };
 
 template <typename T>
 struct CudaOperatorToSimdX2<::cuda::std::multiplies<>, T>
 {
-  using type = SimdMul<vector_type_x2_t<T>>;
+  using type _CCCL_NODEBUG = SimdMul<vector_type_x2_t<T>>;
 };
 
 template <typename T>
 struct CudaOperatorToSimdX2<::cuda::std::multiplies<T>, T>
 {
-  using type = SimdMul<vector_type_x2_t<T>>;
+  using type _CCCL_NODEBUG = SimdMul<vector_type_x2_t<T>>;
 };
 
 template <typename ReduceOp, typename T>

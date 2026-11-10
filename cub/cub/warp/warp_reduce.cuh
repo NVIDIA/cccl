@@ -26,14 +26,11 @@
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>
-#include <cub/warp/specializations/warp_reduce_smem.cuh>
 
-#include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__type_traits/conditional.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -50,7 +47,8 @@ CUB_NAMESPACE_BEGIN
 //! - A `reduction <http://en.wikipedia.org/wiki/Reduce_(higher-order_function)>`__ (or *fold*) uses a binary combining
 //!   operator to compute a single aggregate from a list of input elements.
 //! - Supports "logical" warps smaller than the physical warp size (e.g., logical warps of 8 threads)
-//! - The number of entrant threads must be an multiple of ``LogicalWarpThreads``
+//! - Power-of-two logical warps partition each hardware warp into independent groups.
+//!   For other sizes, only physical lanes ``[0, LogicalWarpThreads)`` participate in each hardware warp.
 //! - For floating-point types, ``cuda::minimum`` and ``cuda::maximum`` ignore NaN inputs. If all inputs are NaN, the
 //!   result is NaN.
 //!
@@ -97,7 +95,7 @@ CUB_NAMESPACE_BEGIN
 //! Warp Vote Optimizations
 //! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //!
-//! For ``bool`` inputs and power-of-two ``LogicalWarpThreads``, ``WarpReduce`` uses a single warp vote instruction on
+//! For ``bool`` inputs, ``WarpReduce`` uses a single warp vote instruction on
 //! all architectures, including partially-full warp reductions:
 //!
 //! - ``cuda::std::logical_or``: ``__any_sync``
@@ -173,22 +171,18 @@ class WarpReduce
   static_assert(LogicalWarpThreads >= 1 && LogicalWarpThreads <= detail::warp_threads,
                 "LogicalWarpThreads must be in the range [1, 32]");
 
-  static constexpr bool is_full_warp    = (LogicalWarpThreads == detail::warp_threads);
-  static constexpr bool is_power_of_two = ::cuda::is_power_of_two(LogicalWarpThreads);
-
 public:
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
   /// Internal specialization.
-  /// Use SHFL-based reduction if LogicalWarpThreads is a power-of-two
-  using InternalWarpReduce = ::cuda::std::
-    _If<is_power_of_two, detail::WarpReduceShfl<T, LogicalWarpThreads>, detail::WarpReduceSmem<T, LogicalWarpThreads>>;
+  /// Use SHFL-based reduction for every supported logical warp size.
+  using InternalWarpReduce = detail::WarpReduceShfl<T, LogicalWarpThreads>;
 
 #endif // _CCCL_DOXYGEN_INVOKED
 
 private:
   /// Shared memory storage layout type for WarpReduce
-  using _TempStorage = typename InternalWarpReduce::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalWarpReduce::TempStorage;
 
   /// Shared storage reference
   _TempStorage& temp_storage;
@@ -260,7 +254,7 @@ public:
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(const InputType& input)
   {
-    auto thread_reduction = cub::ThreadReduce(input, ::cuda::std::plus<>{});
+    auto thread_reduction = _CUB::ThreadReduce(input, ::cuda::std::plus<>{});
     return InternalWarpReduce{temp_storage}.template Reduce<true>(
       thread_reduction, LogicalWarpThreads, ::cuda::std::plus<>{});
   }
@@ -274,7 +268,7 @@ public:
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(const InputType& input)
   {
-    auto thread_reduction = cub::ThreadReduce(input, ::cuda::maximum<>{});
+    auto thread_reduction = _CUB::ThreadReduce(input, ::cuda::maximum<>{});
     return InternalWarpReduce{temp_storage}.template Reduce<true>(
       thread_reduction, LogicalWarpThreads, ::cuda::maximum<>{});
   }
@@ -288,7 +282,7 @@ public:
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(const InputType& input)
   {
-    auto thread_reduction = cub::ThreadReduce(input, ::cuda::minimum<>{});
+    auto thread_reduction = _CUB::ThreadReduce(input, ::cuda::minimum<>{});
     return InternalWarpReduce{temp_storage}.template Reduce<true>(
       thread_reduction, LogicalWarpThreads, ::cuda::minimum<>{});
   }
@@ -545,7 +539,7 @@ public:
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(const InputType& input, ReductionOp reduction_op)
   {
-    auto thread_reduction = cub::ThreadReduce(input, reduction_op);
+    auto thread_reduction = _CUB::ThreadReduce(input, reduction_op);
     return WarpReduce<T, LogicalWarpThreads>::Reduce(thread_reduction, reduction_op);
   }
   //! @rst
@@ -753,8 +747,7 @@ public:
 template <typename T>
 class WarpReduce<T, 1>
 {
-private:
-  using _TempStorage = cub::NullType;
+  using _TempStorage _CCCL_NODEBUG = cub::NullType;
 
 public:
   struct InternalWarpReduce
@@ -791,7 +784,7 @@ public:
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(const InputType& input)
   {
-    return cub::ThreadReduce(input, ::cuda::std::plus<>{});
+    return _CUB::ThreadReduce(input, ::cuda::std::plus<>{});
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int /* valid_items */)
@@ -808,7 +801,7 @@ public:
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(const InputType& input)
   {
-    return cub::ThreadReduce(input, ::cuda::maximum<>{});
+    return _CUB::ThreadReduce(input, ::cuda::maximum<>{});
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input, int /* valid_items */)
@@ -825,7 +818,7 @@ public:
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(const InputType& input)
   {
-    return cub::ThreadReduce(input, ::cuda::minimum<>{});
+    return _CUB::ThreadReduce(input, ::cuda::minimum<>{});
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(T input, int /* valid_items */)
@@ -855,7 +848,7 @@ public:
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(const InputType& input, ReductionOp reduction_op)
   {
-    return cub::ThreadReduce(input, reduction_op);
+    return _CUB::ThreadReduce(input, reduction_op);
   }
 
   template <typename ReductionOp>

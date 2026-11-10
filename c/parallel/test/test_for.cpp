@@ -50,7 +50,7 @@ struct for_each_run
   {
     *nbytes = 1;
     // only run if scratch is not null
-    return (scratch) ? cccl_device_for(build, args...) : CUDA_SUCCESS;
+    return scratch ? cccl_device_for(build, args...) : CUDA_SUCCESS;
   }
 };
 

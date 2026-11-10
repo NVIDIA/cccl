@@ -38,10 +38,10 @@ template <class _Tp>
 extern __apply_cvref_cv __apply_cv<const volatile _Tp>;
 
 template <class _Tp>
-using __apply_cv_fn = decltype(__apply_cv<_Tp>);
+using __apply_cv_fn _CCCL_NODEBUG = decltype(__apply_cv<_Tp>);
 
 template <class _From, class _To>
-using __copy_cv_t = typename __apply_cv_fn<_From>::template __call<_To>;
+using __copy_cv_t _CCCL_NODEBUG = typename __apply_cv_fn<_From>::template __call<_To>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -55,9 +55,11 @@ int main()
   stackable_ctx sctx;
 
   const size_t sz = 4;
-  ::std::vector<int> X(sz), Y(sz);
+  ::std::vector<int> X(sz);
+  ::std::vector<int> Y(sz);
 
-  ::std::vector<stackable_logical_data<slice<int>>> vecx, vecy;
+  ::std::vector<stackable_logical_data<slice<int>>> vecx;
+  ::std::vector<stackable_logical_data<slice<int>>> vecy;
 
   int expected = 0;
 

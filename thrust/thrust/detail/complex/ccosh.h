@@ -66,8 +66,15 @@ namespace detail::complex
 _CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<double>& z)
 {
   const double huge = 8.98846567431157953864652595395e+307; // 0x1p1023
-  double x, y, h;
-  uint32_t hx, hy, ix, iy, lx, ly;
+  double x;
+  double y;
+  double h;
+  uint32_t hx;
+  uint32_t hy;
+  uint32_t ix;
+  uint32_t iy;
+  uint32_t lx;
+  uint32_t ly;
 
   x = z.real();
   y = z.imag();

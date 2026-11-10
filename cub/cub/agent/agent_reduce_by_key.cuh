@@ -32,8 +32,10 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_operators.cuh>
 
+#include <thrust/type_traits/is_contiguous_iterator.h>
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
+
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 CUB_NAMESPACE_BEGIN
 
@@ -200,29 +202,29 @@ struct AgentReduceByKey
     "yield 32 raking threads");
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
-  // for keys Wrap the native input pointer with
+  // for keys Wrap the native input pointer or contiguous iterator with
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedKeysInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer_v<KeysInputIteratorT>,
+    ::cuda::std::_If<THRUST_NS_QUALIFIER::is_contiguous_iterator_v<KeysInputIteratorT>,
                      CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, KeyInputT, OffsetT>,
                      KeysInputIteratorT>;
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
-  // for values Wrap the native input pointer with
+  // for values Wrap the native input pointer or contiguous iterator with
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedValuesInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer_v<ValuesInputIteratorT>,
+    ::cuda::std::_If<THRUST_NS_QUALIFIER::is_contiguous_iterator_v<ValuesInputIteratorT>,
                      CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
                      ValuesInputIteratorT>;
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
-  // for fixup values Wrap the native input pointer with
+  // for fixup values Wrap the native input pointer or contiguous iterator with
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedFixupInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer_v<AggregatesOutputIteratorT>,
+    ::cuda::std::_If<THRUST_NS_QUALIFIER::is_contiguous_iterator_v<AggregatesOutputIteratorT>,
                      CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
                      AggregatesOutputIteratorT>;
 
@@ -357,9 +359,9 @@ struct AgentReduceByKey
     ReductionOpT reduction_op,
     StreamingContext streaming_context)
       : temp_storage(temp_storage.Alias())
-      , d_keys_in(d_keys_in)
+      , d_keys_in(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_keys_in))
       , d_unique_out(d_unique_out + streaming_context.num_uniques())
-      , d_values_in(d_values_in)
+      , d_values_in(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_values_in))
       , d_aggregates_out(d_aggregates_out + streaming_context.num_uniques())
       , d_num_runs_out(d_num_runs_out)
       , equality_op(equality_op)
@@ -379,9 +381,9 @@ struct AgentReduceByKey
     ReductionOpT reduction_op,
     NullType streaming_context)
       : temp_storage(temp_storage.Alias())
-      , d_keys_in(d_keys_in)
+      , d_keys_in(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_keys_in))
       , d_unique_out(d_unique_out)
-      , d_values_in(d_values_in)
+      , d_values_in(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_values_in))
       , d_aggregates_out(d_aggregates_out)
       , d_num_runs_out(d_num_runs_out)
       , equality_op(equality_op)
@@ -544,7 +546,7 @@ struct AgentReduceByKey
       }
       else
       {
-        tile_predecessor = (tile_idx == 0) ? keys[0] : d_keys_in[tile_offset - 1];
+        tile_predecessor = (tile_idx == 0) ? keys[0] : static_cast<KeyInputT>(d_keys_in[tile_offset - 1]);
       }
     }
 
@@ -679,7 +681,7 @@ struct AgentReduceByKey
     Scatter(scatter_items, head_flags, segment_indices, num_tile_segments, num_segments_prefix);
 
     // Last thread in last tile will output final count (and last pair, if necessary)
-    if ((IsLastTile) && (threadIdx.x == BLOCK_THREADS - 1))
+    if (IsLastTile && (threadIdx.x == BLOCK_THREADS - 1))
     {
       OffsetT num_segments = num_segments_prefix + num_tile_segments;
 

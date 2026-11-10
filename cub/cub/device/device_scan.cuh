@@ -33,6 +33,7 @@
 #include <cub/detail/input_value.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/dispatch_scan_by_key.cuh>
@@ -224,14 +225,14 @@ private:
     cudaStream_t stream,
     PolicySelectorT policy_selector)
   {
-    return detail::scan::dispatch<EnforceInclusive, StableReductionOrder>(
+    return _CUB::detail::scan::dispatch<EnforceInclusive, StableReductionOrder>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       scan_op,
       init,
-      detail::make_num_items_dispatch_arg(num_items),
+      _CUB::detail::make_num_items_dispatch_arg(num_items),
       stream,
       policy_selector);
   }
@@ -307,7 +308,7 @@ private:
   {
     using traits_t = scan_env_traits<InputIteratorT, OutputIteratorT, ScanOpT, InitValueT, NumItemsT, EnvT>;
 
-    return detail::dispatch_with_env_and_tuning<typename traits_t::default_policy_selector_t>(
+    return _CUB::detail::dispatch_with_env_and_tuning<typename traits_t::default_policy_selector_t>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
         return scan_impl_determinism<EnforceInclusive, traits_t::stable_reduction_order>(
           storage, bytes, d_in, d_out, scan_op, init, num_items, stream, policy_selector);
@@ -333,7 +334,7 @@ private:
   {
     using traits_t = scan_env_traits<InputIteratorT, OutputIteratorT, ScanOpT, InitValueT, NumItemsT, EnvT>;
 
-    return detail::dispatch_with_env_and_tuning<typename traits_t::default_policy_selector_t>(
+    return _CUB::detail::dispatch_with_env_and_tuning<typename traits_t::default_policy_selector_t>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
         return scan_impl_determinism<EnforceInclusive, traits_t::stable_reduction_order>(
           storage, bytes, d_in, d_out, scan_op, init, num_items, stream, policy_selector);
@@ -374,10 +375,10 @@ private:
                                                       ScanOpT>;
 
     using policy_selector_t =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, ScanByKeyPolicy, default_policy_selector_t>;
+      detail::policy_selector_from_tuning_env_t<TuningEnvT, ScanByKeyPolicy, default_policy_selector_t>;
 
     // we would not need to override the accumulator type, but we must ensure it's the same as for the policy here
-    return detail::scan_by_key::dispatch</* OverrideAccumT = */ accum_t>(
+    return _CUB::detail::scan_by_key::dispatch</* OverrideAccumT = */ accum_t>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -3390,20 +3391,21 @@ public:
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSumByKey");
 
     using init_value_t = cub::detail::it_value_t<ValuesInputIteratorT>;
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return scan_by_key_impl<tuning_t>(
-        storage,
-        bytes,
-        d_keys_in,
-        d_values_in,
-        d_values_out,
-        equality_op,
-        ::cuda::std::plus<>{},
-        init_value_t{},
-        num_items,
-        stream);
-    });
+    return _CUB::detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_values_in,
+          d_values_out,
+          equality_op,
+          ::cuda::std::plus<>{},
+          init_value_t{},
+          num_items,
+          stream);
+      });
   }
 
   //! @rst
@@ -3517,11 +3519,12 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveScanByKey");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return scan_by_key_impl<tuning_t>(
-        storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, init_value, num_items, stream);
-    });
+    return _CUB::detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, init_value, num_items, stream);
+      });
   }
 
   //! @rst
@@ -3615,20 +3618,21 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveSumByKey");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return scan_by_key_impl<tuning_t>(
-        storage,
-        bytes,
-        d_keys_in,
-        d_values_in,
-        d_values_out,
-        equality_op,
-        ::cuda::std::plus<>{},
-        NullType{},
-        num_items,
-        stream);
-    });
+    return _CUB::detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_values_in,
+          d_values_out,
+          equality_op,
+          ::cuda::std::plus<>{},
+          NullType{},
+          num_items,
+          stream);
+      });
   }
 
   //! @rst
@@ -3731,11 +3735,12 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveScanByKey");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return scan_by_key_impl<tuning_t>(
-        storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, NullType{}, num_items, stream);
-    });
+    return _CUB::detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, NullType{}, num_items, stream);
+      });
   }
 
   //! @}

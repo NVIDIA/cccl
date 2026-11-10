@@ -22,6 +22,7 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/device/dispatch/dispatch_transform.cuh>
 #include <cub/util_namespace.cuh>
 
@@ -86,7 +87,7 @@ CUB_NAMESPACE_END
 namespace cuda
 {
 template <typename T>
-struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::__return_constant<T>> : ::cuda::std::true_type
+struct proclaims_copyable_arguments<_CUB::detail::__return_constant<T>> : ::cuda::std::true_type
 {};
 } // namespace cuda
 
@@ -163,7 +164,7 @@ struct DeviceTransform
       // https://github.com/NVIDIA/cccl/issues/8805 for data. We use choose_signed_offset to just check if it can
       // hold the value passed by the user, but otherwise ignore the chosen signed offset type.
       using offset_t = ::cuda::std::int64_t;
-      if (const cudaError_t error = detail::choose_signed_offset<NumItemsT>::is_exceeding_offset_type(num_items))
+      if (const cudaError_t error = _CUB::detail::choose_signed_offset<NumItemsT>::is_exceeding_offset_type(num_items))
       {
         return error;
       }
@@ -179,13 +180,13 @@ struct DeviceTransform
         RandomAccessIteratorOut>;
 
       using policy_selector =
-        ::cuda::std::execution::__query_result_or_t<tuning_env, TransformPolicy, default_policy_selector>;
+        detail::policy_selector_from_tuning_env_t<tuning_env, TransformPolicy, default_policy_selector>;
 
 #if _CCCL_HAS_CONCEPTS()
       static_assert(detail::transform::transform_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
-      return detail::transform::dispatch<RequiresStableAddress>(
+      return _CUB::detail::transform::dispatch<RequiresStableAddress>(
         ::cuda::std::move(inputs),
         ::cuda::std::move(output),
         static_cast<offset_t>(num_items),

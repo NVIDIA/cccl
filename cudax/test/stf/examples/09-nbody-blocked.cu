@@ -80,7 +80,13 @@ void load_input_file(std::string filename, std::vector<body>& particles)
     return;
   }
 
-  double mass, posX, posY, posZ, velX, velY, velZ;
+  double mass;
+  double posX;
+  double posY;
+  double posZ;
+  double velX;
+  double velY;
+  double velZ;
   size_t ind = 0;
 
   // Loop until we reach the end of the file
@@ -155,7 +161,7 @@ int main(int argc, char** argv)
     }
   }
 
-  cuda_safe_call(cudaHostRegister(&particles[0], BODY_CNT * sizeof(body), cudaHostRegisterPortable));
+  cuda_safe_call(cudaHostRegister(particles.data(), BODY_CNT * sizeof(body), cudaHostRegisterPortable));
 
   const double dt    = 0.005;
   const size_t NITER = 7; // 7000;

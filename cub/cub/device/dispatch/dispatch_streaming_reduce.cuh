@@ -15,6 +15,7 @@
 
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/key_value_pair.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
@@ -218,8 +219,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
 {
   // Resolve the tuning policy from the (optional) tuning environment, defaulting to the type-derived policy
   using default_policy_selector_t = policy_selector_from_types<PerPartitionAccumT, PerPartitionOffsetT, ReductionOpT>;
-  using policy_selector_t =
-    ::cuda::std::execution::__query_result_or_t<TuningEnvT, ReducePolicy, default_policy_selector_t>;
+  using policy_selector_t = policy_selector_from_tuning_env_t<TuningEnvT, ReducePolicy, default_policy_selector_t>;
 
 #  if _CCCL_HAS_CONCEPTS()
   static_assert(reduce_policy_selector<policy_selector_t>);
@@ -250,24 +250,26 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   // Query temporary storage requirements for per-partition reduction
   void* allocations[2]       = {nullptr, nullptr};
   size_t allocation_sizes[2] = {0, 2 * sizeof(GlobalAccumT)};
-  if (const auto error = CubDebug(
-        (reduce::dispatch<PerPartitionAccumT, /* StableReductionOrder */ true, NondeterminismFellBackToRunToRun>(
-          nullptr,
-          allocation_sizes[0],
-          d_indexed_in,
-          ::cuda::make_tabulate_output_iterator(accumulating_out_op),
-          static_cast<PerPartitionOffsetT>(largest_partition_size),
-          reduce_op,
-          init_value,
-          stream,
-          transform_op,
-          policy_selector_t{}))))
+  if (const auto error = CubDebug((
+        _CUB::detail::reduce::
+          dispatch<PerPartitionAccumT, /* StableReductionOrder */ true, NondeterminismFellBackToRunToRun>(
+            nullptr,
+            allocation_sizes[0],
+            d_indexed_in,
+            ::cuda::make_tabulate_output_iterator(accumulating_out_op),
+            static_cast<PerPartitionOffsetT>(largest_partition_size),
+            reduce_op,
+            init_value,
+            stream,
+            transform_op,
+            policy_selector_t{}))))
   {
     return error;
   }
 
   // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
-  if (const auto error = CubDebug(alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  if (const auto error =
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -294,18 +296,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
 
     d_indexed_in = ArgIndexInputIteratorT(d_in + current_partition_offset);
 
-    if (const auto error = CubDebug(
-          (reduce::dispatch<PerPartitionAccumT, /* StableReductionOrder */ true, NondeterminismFellBackToRunToRun>(
-            d_temp_storage,
-            temp_storage_bytes,
-            d_indexed_in,
-            ::cuda::make_tabulate_output_iterator(accumulating_out_op),
-            static_cast<PerPartitionOffsetT>(current_num_items),
-            reduce_op,
-            init_value,
-            stream,
-            transform_op,
-            policy_selector_t{}))))
+    if (const auto error = CubDebug((
+          _CUB::detail::reduce::
+            dispatch<PerPartitionAccumT, /* StableReductionOrder */ true, NondeterminismFellBackToRunToRun>(
+              d_temp_storage,
+              temp_storage_bytes,
+              d_indexed_in,
+              ::cuda::make_tabulate_output_iterator(accumulating_out_op),
+              static_cast<PerPartitionOffsetT>(current_num_items),
+              reduce_op,
+              init_value,
+              stream,
+              transform_op,
+              policy_selector_t{}))))
     {
       return error;
     }
@@ -396,11 +399,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   }();
   auto initial_value = empty_problem_init_t<per_partition_accum_t>{{PerPartitionOffsetT{1}, empty_problem_extremum}};
 
-  return dispatch_streaming_arg_reduce_impl<per_partition_accum_t,
-                                            global_accum_t,
-                                            PerPartitionOffsetT,
-                                            arg_index_input_iterator_t,
-                                            NondeterminismFellBackToRunToRun>(
+  return _CUB::detail::reduce::dispatch_streaming_arg_reduce_impl<
+    per_partition_accum_t,
+    global_accum_t,
+    PerPartitionOffsetT,
+    arg_index_input_iterator_t,
+    NondeterminismFellBackToRunToRun>(
     d_temp_storage,
     temp_storage_bytes,
     d_in,
@@ -477,11 +481,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_minmax
                                MaxExtremumOutIteratorT,
                                MaxIndexOutIteratorT>{d_min_out, d_min_index_out, d_max_out, d_max_index_out});
 
-  return dispatch_streaming_arg_reduce_impl<per_partition_accum_t,
-                                            global_accum_t,
-                                            PerPartitionOffsetT,
-                                            arg_index_input_iterator_t,
-                                            NondeterminismFellBackToRunToRun>(
+  return _CUB::detail::reduce::dispatch_streaming_arg_reduce_impl<
+    per_partition_accum_t,
+    global_accum_t,
+    PerPartitionOffsetT,
+    arg_index_input_iterator_t,
+    NondeterminismFellBackToRunToRun>(
     d_temp_storage,
     temp_storage_bytes,
     d_in,

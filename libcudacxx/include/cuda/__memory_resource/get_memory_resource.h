@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -89,7 +89,14 @@ struct get_memory_resource_t
   }
 };
 
+// The type was renamed from __get_memory_resource_t in CCCL 3.6, so its ABI symbols are already distinct.
+// The variable retained its name, and the Itanium ABI does not encode variable types in symbol names.
+// Only the variable therefore needs this namespace bump.
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
+
 _CCCL_GLOBAL_CONSTANT auto get_memory_resource = get_memory_resource_t{};
+
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
 _CCCL_END_NAMESPACE_CUDA_MR
 
