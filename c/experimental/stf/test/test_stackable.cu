@@ -448,9 +448,8 @@ C2H_TEST("stackable: nested push_graph scopes", "[stackable]")
   REQUIRE(lA != nullptr);
 
   // Each scope is also named with stf_stackable_set_scope_symbol, which targets the
-  // current (innermost) scope. The name only affects DOT output and diagnostics (the
-  // label is checked by python/cuda_stf/tests/stf/test_dot_symbols.py), so here the
-  // calls must be accepted at every depth and leave the computation unchanged.
+  // current (innermost) scope. The name only affects DOT output and diagnostics, so
+  // here the calls must be accepted at every depth and leave the computation unchanged.
   REQUIRE(stf_stackable_set_scope_symbol(ctx, "root") == STF_SUCCESS);
 
   // Two nested scopes: each scope adds 1.0, so after popping both we expect 2.0.
