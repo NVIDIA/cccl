@@ -253,7 +253,7 @@ CUB_TEST("Device scan exclusive-scan tuning can be modified", "[scan][device]", 
   auto num_items = 3;
   auto d_in      = cuda::constant_iterator(1);
   auto d_out     = c2h::device_vector<int>(num_items, thrust::no_init);
-  auto init      = int{42};
+  auto init      = 42;
 
   {
     device_scan_exclusive(d_in, d_out.begin(), block_size_check, init, num_items, stdexec::env<>{});
