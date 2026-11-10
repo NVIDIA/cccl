@@ -66,7 +66,7 @@ int main(int argc, char** argv)
     stop                                         = std::chrono::steady_clock::now();
     const std::chrono::duration<double> duration = stop - start;
 
-    fprintf(stderr, "Elapsed: %.2lf us per task\n", duration.count() * 1000000.0 / static_cast<double>((inner_nloops)));
+    fprintf(stderr, "Elapsed: %.2lf us per task\n", duration.count() * 1000000.0 / static_cast<double>(inner_nloops));
   }
 
   ctx.finalize();

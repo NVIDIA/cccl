@@ -173,7 +173,7 @@ struct AgentRle
   /// among block-warps during any store-related data transpositions (versus each warp having
   /// its own storage)
   static constexpr bool STORE_WARP_TIME_SLICING = AgentRlePolicyT::STORE_WARP_TIME_SLICING;
-  static constexpr int ACTIVE_EXCHANGE_WARPS    = (STORE_WARP_TIME_SLICING) ? 1 : WARPS;
+  static constexpr int ACTIVE_EXCHANGE_WARPS    = STORE_WARP_TIME_SLICING ? 1 : WARPS;
 
   /**
    * Special operator that signals all out-of-bounds items are not equal to everything else,
@@ -464,7 +464,7 @@ struct AgentRle
     //      number of non-trivial runs starts in this thread
     // `thread_aggregate.val`:
     //      number of items in the last non-trivial run in this thread
-    const LengthOffsetPair thread_aggregate = cub::ThreadReduce(lengths_and_num_runs, scan_op);
+    const LengthOffsetPair thread_aggregate = _CUB::ThreadReduce(lengths_and_num_runs, scan_op);
     WarpScanPairs(temp_storage.aliasable.scan_storage.warp_scan[warp_id])
       .Scan(thread_aggregate, thread_inclusive, thread_exclusive_in_warp, identity, scan_op);
 
@@ -855,7 +855,7 @@ struct AgentRle
       LengthOffsetPair lengths_and_num_runs2[ITEMS_PER_THREAD];
 
       // Downsweep scan through lengths_and_num_runs
-      detail::ThreadScanExclusive(lengths_and_num_runs, lengths_and_num_runs2, scan_op, thread_exclusive_in_warp);
+      _CUB::detail::ThreadScanExclusive(lengths_and_num_runs, lengths_and_num_runs2, scan_op, thread_exclusive_in_warp);
 
       // Zip
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -975,7 +975,7 @@ struct AgentRle
       LengthOffsetPair lengths_and_offsets[ITEMS_PER_THREAD];
       OffsetT thread_num_runs_exclusive_in_warp[ITEMS_PER_THREAD];
 
-      detail::ThreadScanExclusive(lengths_and_num_runs, lengths_and_num_runs2, scan_op, thread_exclusive_in_warp);
+      _CUB::detail::ThreadScanExclusive(lengths_and_num_runs, lengths_and_num_runs2, scan_op, thread_exclusive_in_warp);
 
       // Zip
       _CCCL_PRAGMA_UNROLL_FULL()

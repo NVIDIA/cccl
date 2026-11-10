@@ -89,7 +89,6 @@ C2H_CCCLRT_TEST("locality domains", "[device][locality_domain]")
     for (auto dev : cuda::devices)
     {
       auto domains = dev.__locality_domains();
-      REQUIRE(domains.size() >= 1);
       REQUIRE(!domains.empty());
       REQUIRE(domains.data() != nullptr);
     }

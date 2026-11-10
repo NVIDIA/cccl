@@ -312,7 +312,7 @@ private:
 
   static constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
 
-  int lane = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
+  int lane = _CUB::detail::logical_lane_id<LogicalWarpThreads>();
 
   static constexpr int first_half_len  = ::cuda::prev_power_of_two(ItemsPerThread - 1);
   static constexpr int second_half_len = ItemsPerThread - first_half_len;
@@ -351,7 +351,7 @@ private:
       const int other_i      = i + first_half_len;
       KeyT& key              = keys[i];
       KeyT& other_key        = keys[other_i];
-      const bool should_swap = (Reverse) ? compare_op(key, other_key) : compare_op(other_key, key);
+      const bool should_swap = Reverse ? compare_op(key, other_key) : compare_op(other_key, key);
 
       if (should_swap)
       {
@@ -409,7 +409,7 @@ private:
       const int other_i      = i + first_half_len;
       KeyT& key              = keys[i];
       KeyT& other_key        = keys[other_i];
-      const bool should_swap = (Reverse) ? compare_op(key, other_key) : compare_op(other_key, key);
+      const bool should_swap = Reverse ? compare_op(key, other_key) : compare_op(other_key, key);
 
       if (should_swap && other_i * LogicalWarpThreads + lane < valid_items)
       {
@@ -532,8 +532,8 @@ private:
   // A logical warp of 2^n lanes is sorted by a network of n stages.
   static constexpr int num_stages = ::cuda::std::countr_zero(static_cast<unsigned>(LogicalWarpThreads));
 
-  int lane                 = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
-  unsigned int member_mask = CUB_NS_QUALIFIER::detail::warp_mask<LogicalWarpThreads>();
+  int lane                 = _CUB::detail::logical_lane_id<LogicalWarpThreads>();
+  unsigned int member_mask = _CUB::detail::warp_mask<LogicalWarpThreads>();
 
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op) const

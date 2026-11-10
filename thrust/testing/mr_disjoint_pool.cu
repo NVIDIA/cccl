@@ -57,13 +57,13 @@ public:
     REQUIRE(id_to_allocate == 0u);
     REQUIRE(id_to_deallocate == 0u);
     REQUIRE(used_bytes == 0u);
-    REQUIRE(allocation_ids.size() == 0u);
+    REQUIRE(allocation_ids.empty());
   }
 
   void assert_empty_and_reset()
   {
     REQUIRE(used_bytes == 0u);
-    REQUIRE(allocation_ids.size() == 0u);
+    REQUIRE(allocation_ids.empty());
     free_bytes       = 1ull << 63;
     id_to_allocate   = 0;
     id_to_deallocate = 0;
