@@ -42,13 +42,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 
-template <typename _Abi>
-inline constexpr bool __is_enabled_abi_v = false;
-
-// c++ specification sets 1 <= N <= 64
-template <__simd_size_type _Np>
-inline constexpr bool __is_enabled_abi_v<__fixed_size<_Np>> = (_Np >= 1 && _Np <= 64);
-
 //----------------------------------------------------------------------------------------------------------------------
 // __can_generate_v
 

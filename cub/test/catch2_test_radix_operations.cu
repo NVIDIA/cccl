@@ -582,7 +582,7 @@ struct flipped_fp_aggregate_decomposer_t
 CUB_TEST_CASE("Radix operations treat -0/+0 as being equal", "[radix][operations]", CUB_SMALL)
 {
   using traits            = cub::detail::radix::traits_t<fp_aggregate_t>;
-  using conversion_policy = typename traits::bit_ordered_conversion_policy;
+  using conversion_policy = traits::bit_ordered_conversion_policy;
   using decomposer_t      = fp_aggregate_decomposer_t;
   using extractor_t       = cub::detail::radix::custom_digit_extractor_t<decomposer_t>;
 
@@ -611,7 +611,7 @@ CUB_TEST_CASE("Radix operations treat -0/+0 as being equal", "[radix][operations
 CUB_TEST_CASE("Radix operations allow fields permutation", "[radix][operations]", CUB_SMALL)
 {
   using traits            = cub::detail::radix::traits_t<fp_aggregate_t>;
-  using conversion_policy = typename traits::bit_ordered_conversion_policy;
+  using conversion_policy = traits::bit_ordered_conversion_policy;
   using decomposer_t      = flipped_fp_aggregate_decomposer_t;
   using extractor_t       = cub::detail::radix::custom_digit_extractor_t<decomposer_t>;
 

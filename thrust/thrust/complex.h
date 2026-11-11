@@ -66,7 +66,6 @@ THRUST_NAMESPACE_BEGIN
 template <typename T>
 struct complex
 {
-public:
   /*! \p value_type is the type of \p complex's real and imaginary parts.
    */
   using value_type = T;

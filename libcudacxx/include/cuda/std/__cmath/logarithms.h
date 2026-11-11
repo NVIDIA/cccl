@@ -239,12 +239,12 @@ template <class _Tp>
   {
     return FP_ILOGB0;
   }
-  else if (__fp == FP_NAN)
+  if (__fp == FP_NAN)
   {
     return FP_ILOGBNAN;
   }
   // NOLINTEND(bugprone-branch-clone)
-  else if (__fp == FP_INFINITE)
+  if (__fp == FP_INFINITE)
   {
     return numeric_limits<int>::max();
   }
@@ -255,14 +255,11 @@ template <class _Tp>
   {
     return numeric_limits<int>::max();
   }
-  else if (__exp < __fp_exp_min_v<__fmt>)
+  if (__exp < __fp_exp_min_v<__fmt>)
   {
     return numeric_limits<int>::min();
   }
-  else
-  {
-    return __exp;
-  }
+  return __exp;
 }
 
 _CCCL_TEMPLATE(typename _Tp)
@@ -475,11 +472,11 @@ template <class _Tp>
   {
     return ::cuda::std::__fp_neg<_Tp>(::cuda::std::__fp_inf<_Tp>());
   }
-  else if (__fp == FP_NAN)
+  if (__fp == FP_NAN)
   {
     return ::cuda::std::__fp_nan<_Tp>();
   }
-  else if (__fp == FP_INFINITE)
+  if (__fp == FP_INFINITE)
   {
     return ::cuda::std::__fp_inf<_Tp>();
   }

@@ -33,7 +33,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-enum float_round_style // NOLINT(cppcoreguidelines-use-enum-class)
+enum float_round_style // NOLINT(cppcoreguidelines-use-enum-class,readability-enum-initial-value)
 {
   round_indeterminate       = -1,
   round_toward_zero         = 0,
@@ -42,6 +42,7 @@ enum float_round_style // NOLINT(cppcoreguidelines-use-enum-class)
   round_toward_neg_infinity = 3
 };
 
+// NOLINTNEXTLINE(readability-enum-initial-value)
 enum _CCCL_DEPRECATED_IN_CXX23 float_denorm_style // NOLINT(cppcoreguidelines-use-enum-class)
 {
   denorm_indeterminate = -1,

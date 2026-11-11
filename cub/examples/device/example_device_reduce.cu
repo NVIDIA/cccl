@@ -60,7 +60,7 @@ void Initialize(int* h_in, int num_items)
 /**
  * Compute solution
  */
-void Solve(int* h_in, int& h_reference, int num_items)
+void Solve(const int* h_in, int& h_reference, int num_items)
 {
   for (int i = 0; i < num_items; ++i)
   {
@@ -143,10 +143,7 @@ int main(int argc, char** argv)
   AssertEquals(0, compare);
 
   // Cleanup
-  if (h_in)
-  {
-    delete[] h_in;
-  }
+  delete[] h_in;
 
   printf("\n\n");
 

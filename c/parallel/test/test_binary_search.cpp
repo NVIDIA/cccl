@@ -91,7 +91,7 @@ struct binary_search_run
     BuildResultT build, void* scratch, std::size_t* scratch_size, cccl_binary_search_mode_t, Ts... args) const noexcept
   {
     *scratch_size = 1;
-    return (scratch) ? cccl_device_binary_search(build, args...) : CUDA_SUCCESS;
+    return scratch ? cccl_device_binary_search(build, args...) : CUDA_SUCCESS;
   }
 };
 

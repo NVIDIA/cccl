@@ -33,7 +33,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @brief A Feistel cipher for operating on power of two sized problems
 class __feistel_bijection
 {
-private:
   static constexpr uint32_t __num_rounds = 24;
 
   uint64_t __R_bits_{};

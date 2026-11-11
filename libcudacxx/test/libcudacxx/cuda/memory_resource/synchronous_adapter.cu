@@ -18,7 +18,9 @@
 
 template <class Resource>
 constexpr bool same_default_queries =
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   cuda::std::is_same_v<typename cuda::mr::synchronous_resource_adapter<Resource>::default_queries,
+                       // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 false positive.
                        typename Resource::default_queries>;
 
 template <class Resource, class Property>

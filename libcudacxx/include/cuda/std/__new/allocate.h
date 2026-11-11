@@ -115,9 +115,10 @@ _CCCL_HOST_DEVICE_API inline void __cccl_deallocate(void* __ptr, size_t __size, 
   if (__align > __STDCPP_DEFAULT_NEW_ALIGNMENT__)
   {
     const align_val_t __align_val = static_cast<align_val_t>(__align);
-    return ::cuda::std::__do_deallocate_handle_size(__ptr, __size, __align_val);
+    ::cuda::std::__do_deallocate_handle_size(__ptr, __size, __align_val);
+    return;
   }
-  return ::cuda::std::__do_deallocate_handle_size(__ptr, __size);
+  ::cuda::std::__do_deallocate_handle_size(__ptr, __size);
 }
 
 _CCCL_HOST_DEVICE_API inline void __cccl_deallocate_unsized(void* __ptr, size_t __align)
@@ -125,9 +126,10 @@ _CCCL_HOST_DEVICE_API inline void __cccl_deallocate_unsized(void* __ptr, size_t 
   if (__align > __STDCPP_DEFAULT_NEW_ALIGNMENT__)
   {
     const align_val_t __align_val = static_cast<align_val_t>(__align);
-    return ::cuda::std::__cccl_operator_delete(__ptr, __align_val);
+    ::cuda::std::__cccl_operator_delete(__ptr, __align_val);
+    return;
   }
-  return ::cuda::std::__cccl_operator_delete(__ptr);
+  ::cuda::std::__cccl_operator_delete(__ptr);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

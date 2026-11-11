@@ -6,6 +6,7 @@
 #include <thrust/iterator/zip_iterator.h>
 
 #include <cuda/iterator>
+#include <cuda/std/__type_traits/type_list_operations.h>
 #include <cuda/std/type_traits>
 
 #include <vector>

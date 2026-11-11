@@ -53,16 +53,17 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 // gather helpers
 
 template <typename _Range, typename _Ip, typename _IAbi>
-using __default_gather_vec_t = vec<ranges::range_value_t<_Range>, __simd_size_v<_Ip, _IAbi>>;
+using __default_gather_vec_t _CCCL_NODEBUG = vec<ranges::range_value_t<_Range>, __simd_size_v<_Ip, _IAbi>>;
 
 template <typename _Vp, typename _Range, typename _Ip, typename _IAbi>
-using __gather_result_t = conditional_t<is_same_v<_Vp, void>, __default_gather_vec_t<_Range, _Ip, _IAbi>, _Vp>;
+using __gather_result_t _CCCL_NODEBUG =
+  conditional_t<is_same_v<_Vp, void>, __default_gather_vec_t<_Range, _Ip, _IAbi>, _Vp>;
 
 template <typename>
 inline constexpr bool __is_basic_vec_v = false;
 
 template <typename _Tp, typename _Abi>
-inline constexpr bool __is_basic_vec_v<basic_vec<_Tp, _Abi>> = __is_vectorizable_v<_Tp> && __is_enabled_abi_v<_Abi>;
+inline constexpr bool __is_basic_vec_v<basic_vec<_Tp, _Abi>> = __is_enabled_vec_v<_Tp, _Abi>;
 
 //----------------------------------------------------------------------------------------------------------------------
 // gather constraints concept
@@ -80,7 +81,7 @@ _CCCL_CONCEPT __gather_constraints =
 template <typename _Vp, typename _Ptr, typename _Ip, typename _IAbi, typename _Mp>
 struct __gather_generator
 {
-  using __value_type = typename _Vp::value_type;
+  using __value_type _CCCL_NODEBUG = typename _Vp::value_type;
 
   const _Ptr __data_;
   const __simd_size_type __size_;

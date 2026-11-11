@@ -136,6 +136,7 @@ MULTI_GPU_TEST("exclusive_scan single-comm documentation example", c2h::type_lis
     if (const auto& err_str = failed[i]; !err_str.empty())
     {
       INFO("rank: " << i);
+      // NOLINTNEXTLINE(readability-container-size-empty)
       REQUIRE(err_str == ""); // Should print the full error string
     }
   }

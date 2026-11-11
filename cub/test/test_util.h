@@ -104,7 +104,8 @@ struct CommandLineArgs
         continue;
       }
 
-      string key, val;
+      string key;
+      string val;
       const string::size_type pos = arg.find('=');
       if (pos == string::npos)
       {
@@ -331,7 +332,8 @@ inline std::size_t TotalGlobalMem()
 {
   int device = 0;
   CubDebugExit(cudaGetDevice(&device));
-  std::size_t free_mem = 0, total_mem = 0;
+  std::size_t free_mem  = 0;
+  std::size_t total_mem = 0;
   CubDebugExit(cudaMemGetInfo(&free_mem, &total_mem));
   return total_mem;
 }
@@ -856,7 +858,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.x < x)
+    if (b.x < x)
     {
       return false;
     }
@@ -864,7 +866,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.y < y)
+    if (b.y < y)
     {
       return false;
     }
@@ -872,7 +874,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.z < z)
+    if (b.z < z)
     {
       return false;
     }
@@ -886,7 +888,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.x > x)
+    if (b.x > x)
     {
       return false;
     }
@@ -894,7 +896,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.y > y)
+    if (b.y > y)
     {
       return false;
     }
@@ -902,7 +904,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.z > z)
+    if (b.z > z)
     {
       return false;
     }
@@ -1018,7 +1020,7 @@ struct TestBar
     {
       return true;
     }
-    else if (b.x < x)
+    if (b.x < x)
     {
       return false;
     }
@@ -1032,7 +1034,7 @@ struct TestBar
     {
       return true;
     }
-    else if (b.x > x)
+    if (b.x > x)
     {
       return false;
     }
@@ -1103,7 +1105,8 @@ int CompareResults(T* computed, S* reference, OffsetT len, bool verbose = true)
  * Compares the equivalence of two arrays
  */
 template <typename OffsetT>
-int CompareResults(float* computed, float* reference, OffsetT len, bool verbose = true)
+int CompareResults(
+  float* computed, float* reference, OffsetT len, bool verbose = true) // NOLINT(readability-non-const-parameter)
 {
   for (OffsetT i = 0; i < len; i++)
   {
@@ -1142,7 +1145,8 @@ int CompareResults(
  * Compares the equivalence of two arrays
  */
 template <typename OffsetT>
-int CompareResults(double* computed, double* reference, OffsetT len, bool verbose = true)
+int CompareResults(
+  double* computed, double* reference, OffsetT len, bool verbose = true) // NOLINT(readability-non-const-parameter)
 {
   for (OffsetT i = 0; i < len; i++)
   {

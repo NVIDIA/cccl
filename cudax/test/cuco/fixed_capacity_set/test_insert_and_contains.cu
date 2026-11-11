@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cuda/__cccl_config>
+#include <cuda/atomic>
 #include <cuda/buffer>
 #include <cuda/functional>
 #include <cuda/iterator>
@@ -52,6 +53,34 @@ struct matches_insert_and_find
     const bool stored      = i < num_stored;
     const Key expected_key = stored ? static_cast<Key>(key_scale * i) : sentinel;
     return found[i] == expected_key && inserted[i] == static_cast<int>(i >= num_existing && stored);
+  }
+};
+
+// Counts the callbacks per stored key through a non-const call operator. With `stride == 2`, only
+// even keys are counted, at index `key / 2`, so a callback given an odd query key is not counted.
+template <class Key>
+struct record_visit
+{
+  int* visits{};
+  int stride = 1;
+  int calls  = 0;
+
+  _CCCL_DEVICE_API void operator()(Key key) noexcept
+  {
+    ++calls;
+    const int value = static_cast<int>(key);
+    if (value % stride == 0)
+    {
+      cuda::atomic_ref<int, cuda::thread_scope_device>{visits[value / stride]}.fetch_add(1, cuda::memory_order_relaxed);
+    }
+  }
+};
+
+struct is_negative
+{
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(int value) const noexcept
+  {
+    return value < 0;
   }
 };
 
@@ -108,11 +137,20 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
   set.contains_async(context.stream, first, first + num_queries, found.begin());
   REQUIRE(context.matches(found.data(), num_queries, num_keys));
   REQUIRE(set.insert(context.stream, first, first + num_keys) == 0);
+
+  // Each present key is visited exactly once; absent keys and empty ranges invoke no callback.
+  auto visits = cuda::make_buffer<int>(context.stream, context.mr, num_queries, 0);
+  set.for_each(context.stream, first, first, record_visit<key_type>{visits.data()});
+  set.for_each_async(context.stream, first, first, record_visit<key_type>{visits.data()});
+  set.for_each_async(context.stream, first, first + num_queries, record_visit<key_type>{visits.data()});
+  REQUIRE(context.matches(visits.data(), num_queries, num_keys));
   set.contains(context.stream, first, first + num_queries, cuda::discard_iterator{});
 
   set.clear_async(context.stream);
   set.contains(context.stream, first, first + num_queries, found.begin());
   REQUIRE(context.matches(found.data(), num_queries, 0));
+  set.for_each(context.stream, first, first + num_queries, record_visit<key_type>{visits.data()});
+  REQUIRE(context.matches(visits.data(), num_queries, num_keys));
 
   // Duplicates within one launch must be counted once even under contention.
   const auto duplicates = cuda::transform_iterator{cuda::counting_iterator<int>{0}, duplicate_key<key_type>{}};
@@ -134,6 +172,19 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
   set.insert_async(context.stream, first, first + num_keys);
   set.contains(context.stream, first, first + num_queries, found.begin());
   REQUIRE(context.matches(found.data(), num_queries, num_keys));
+
+  // The stencil is negative only for the first half while every key is nonnegative, so the stencil, not the key,
+  // selects the first half.
+  const auto stencil = cuda::counting_iterator<int>{-num_keys / 2};
+  set.clear(context.stream);
+  REQUIRE(set.insert_if(context.stream, first, first + num_keys, stencil, is_negative{}) == num_keys / 2);
+  set.contains(context.stream, first, first + num_queries, found.begin());
+  REQUIRE(context.matches(found.data(), num_queries, num_keys / 2));
+
+  set.clear(context.stream);
+  set.insert_if_async(context.stream, first, first + num_keys, stencil, is_negative{});
+  set.contains(context.stream, first, first + num_queries, found.begin());
+  REQUIRE(context.matches(found.data(), num_queries, num_keys / 2));
 
   set_type full{context.stream, context.mr, cuda::std::size_t{13}, cudax::cuco::empty_key{static_cast<key_type>(-1)}};
   const int capacity = static_cast<int>(full.capacity());
@@ -239,6 +290,11 @@ C2H_TEST(
     first,
     first + num_keys,
     matches_insert_and_find<int>{found.data(), inserted.data(), num_keys, num_keys, -100, 2}));
+
+  // The callback receives the stored even key, not the odd query.
+  auto visits = cuda::make_buffer<int>(context.stream, context.mr, 2 * num_keys, 0);
+  set.for_each(context.stream, queries, queries + 2 * num_keys, record_visit<int>{visits.data(), 2});
+  REQUIRE(context.matches(visits.data(), 2 * num_keys, num_keys));
 }
 
 C2H_TEST("fixed_capacity_set operations on another stream", "[container][stream]", key_types)

@@ -15,6 +15,7 @@
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
 #endif // !CCCL_C_EXPERIMENTAL
 
+#include <cuda.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -73,6 +74,20 @@ typedef enum cccl_serialization_algo_v2_t
 // Required because allocations cross the cccl.c.parallel.v2 shared-library
 // boundary; callers must not free returned buffers themselves.
 CCCL_C_API void cccl_serialization_v2_buffer_free(void* buf);
+
+// Describes the most recent _deserialize, _load or validate_blob failure on the
+// calling thread, or "" if that call set no message. The pointer is owned by the
+// library and valid until the next such call on the same thread.
+CCCL_C_API const char* cccl_serialization_v2_last_error(void);
+
+// Checks a blob header without deserializing it. It returns
+// CUDA_ERROR_INVALID_VALUE if the blob is shorter than a header, has the wrong
+// magic, or was built for a different OS or CPU architecture; and
+// CUDA_ERROR_NO_BINARY_FOR_GPU if the current device cannot run the blob's
+// compute capability. The CUDA runtime version is checked by _load, not here.
+// On failure it sets cccl_serialization_v2_last_error; it does not print to
+// stderr.
+CCCL_C_API CUresult cccl_serialization_v2_validate_blob(const void* buf, size_t size);
 
 CCCL_C_EXTERN_C_END
 // NOLINTEND(modernize-use-using)
