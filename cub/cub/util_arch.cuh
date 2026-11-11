@@ -77,6 +77,15 @@ static_assert(CUB_MAX_DEVICES > 0, "CUB_MAX_DEVICES must be greater than 0.");
 #    define CUB_PTX_SMEM_BANKS CUB_SMEM_BANKS
 #  endif
 
+/// Oversubscription factor
+#  ifndef CUB_SUBSCRIPTION_FACTOR
+#    define _CUB_SUBSCRIPTION_FACTOR_DEFAULTED
+//! Deprecated [Since 3.0]
+#    define CUB_SUBSCRIPTION_FACTOR(unused) (5)
+//! Deprecated [Since 3.0]
+#    define CUB_PTX_SUBSCRIPTION_FACTOR CUB_SUBSCRIPTION_FACTOR(0)
+#  endif
+
 /// Prefer padding overhead vs X-way conflicts greater than this threshold
 #  ifndef CUB_PREFER_CONFLICT_OVER_PADDING
 //! Deprecated [Since 3.0]
@@ -93,13 +102,7 @@ inline constexpr int log2_warp_threads = CUB_PTX_LOG_WARP_THREADS;
 inline constexpr int smem_banks        = CUB_SMEM_BANKS(0);
 inline constexpr int log2_smem_banks   = CUB_PTX_LOG_SMEM_BANKS;
 
-//! Oversubscription factor. Users can override it by defining CUB_SUBSCRIPTION_FACTOR(unused).
-#  ifdef CUB_SUBSCRIPTION_FACTOR
-inline constexpr int subscription_factor = CUB_SUBSCRIPTION_FACTOR(0);
-#  else // CUB_SUBSCRIPTION_FACTOR
-inline constexpr int subscription_factor = 5;
-#  endif // CUB_SUBSCRIPTION_FACTOR
-
+inline constexpr int subscription_factor           = CUB_PTX_SUBSCRIPTION_FACTOR;
 inline constexpr bool prefer_conflict_over_padding = CUB_PTX_PREFER_CONFLICT_OVER_PADDING;
 
 // The maximum amount of shared memory available per thread block for eternity. Every current and future CUDA
