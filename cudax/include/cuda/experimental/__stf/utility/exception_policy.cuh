@@ -133,9 +133,7 @@ struct nullval final
  * - `static std::string name(_Status)`, a short name for reports (`notify`, `store` into text);
  * - `static auto to_exception(_Status, cuda::std::source_location)`, the `std::exception`
  *   derivative that `unwind` throws, `store(std::exception_ptr*)` stores, and a policy that
- *   only handles exceptions receives;
- * - optionally `static bool failed(_Status) noexcept`, for a status type with more than one
- *   success value; it then replaces the comparison with `success()`.
+ *   only handles exceptions receives.
  *
  * `cuda_safe_call.cuh` specializes it for `cudaError_t`, `CUresult`, `cudaOccError`, and, when
  * their headers are available, `cublasStatus_t` and `cusolverStatus_t`.
@@ -167,22 +165,11 @@ struct __status_answer
   bool __passed_   = {};
 };
 
-template <class _Status>
-using __status_failed_of _CCCL_NODEBUG = decltype(status_traits<_Status>::failed(::cuda::std::declval<_Status>()));
-
-// Whether a status reports a failure: the trait's own `failed` when it has one, else a comparison
-// with its success value.
+// Whether a status reports a failure: it differs from its success value.
 template <class _Status>
 [[nodiscard]] bool __status_failed(const _Status __status) noexcept
 {
-  if constexpr (::cuda::std::_IsValidExpansion<__status_failed_of, _Status>::value)
-  {
-    return status_traits<_Status>::failed(__status);
-  }
-  else
-  {
-    return __status != status_traits<_Status>::success();
-  }
+  return __status != status_traits<_Status>::success();
 }
 
 // Re-run a status-returning action up to `__n` times (forever when negative) while its result
