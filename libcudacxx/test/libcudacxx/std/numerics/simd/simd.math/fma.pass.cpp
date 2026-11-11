@@ -22,11 +22,19 @@
 #include "../simd_test_utils.h"
 #include "math_test_utils.h"
 
+// NVCC/MSVC C++17 misresolves dependent qualified math calls. We use a local using-declaration and ADL as workaround
+namespace test_detail
+{
+using simd::fma;
+
 struct fma_function
 {
   template <typename X, typename Y, typename Z>
-  TEST_HOST_DEVICE_FUNC auto operator()(const X& x, const Y& y, const Z& z) const -> decltype(simd::fma(x, y, z));
+  TEST_HOST_DEVICE_FUNC auto operator()(const X& x, const Y& y, const Z& z) const -> decltype(fma(x, y, z));
 };
+} // namespace test_detail
+
+using test_detail::fma_function;
 
 template <int N>
 TEST_HOST_DEVICE_FUNC void test_mixed_arguments()

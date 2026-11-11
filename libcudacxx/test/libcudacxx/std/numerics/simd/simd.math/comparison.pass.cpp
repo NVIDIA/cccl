@@ -22,11 +22,19 @@
 #include "../simd_test_utils.h"
 #include "math_test_utils.h"
 
+// NVCC/MSVC C++17 misresolves dependent qualified math calls. We use a local using-declaration and ADL as workaround
+namespace test_detail
+{
+using simd::isgreater;
+
 struct comparison_function
 {
   template <typename X, typename Y>
-  TEST_HOST_DEVICE_FUNC auto operator()(const X& x, const Y& y) const -> decltype(simd::isgreater(x, y));
+  TEST_HOST_DEVICE_FUNC auto operator()(const X& x, const Y& y) const -> decltype(isgreater(x, y));
 };
+} // namespace test_detail
+
+using test_detail::comparison_function;
 
 template <int N>
 TEST_HOST_DEVICE_FUNC void test_mixed_arguments()
