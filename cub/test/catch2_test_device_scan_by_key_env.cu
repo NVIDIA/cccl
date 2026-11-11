@@ -685,133 +685,99 @@ CUB_TEST("DeviceScan::InclusiveScanByKey can be tuned with user provided memory"
 // The graph launch appends its own stream argument, which cannot be combined with an environment
 #if TEST_LAUNCH != 2
 
-CUB_TEST_CASE("DeviceScan::ExclusiveSumByKey two-phase accepts legacy null streams", "[scan][by_key][device]", CUB_SMALL)
-{
-  constexpr cuda::std::int32_t num_items = 7;
-  const c2h::device_vector<cuda::std::int32_t> d_keys{0, 1, 2, 3, 2, 4, 5};
-  const c2h::device_vector<cuda::std::int32_t> d_in{8, 6, 7, 5, 3, 0, 9};
-  c2h::device_vector<cuda::std::int32_t> d_out(num_items, thrust::no_init);
-  const stream_scope scope{cudaStream_t{}};
-
-  SECTION("nullptr")
-  {
-    device_scan_exclusive_sum_by_key_two_phase(
-      d_keys.begin(), d_in.begin(), d_out.begin(), num_items, key_group_equal{}, nullptr);
-  }
-  SECTION("literal 0")
-  {
-    device_scan_exclusive_sum_by_key_two_phase(
-      d_keys.begin(), d_in.begin(), d_out.begin(), num_items, key_group_equal{}, 0);
-  }
-  SECTION("cudaStream_t{}")
-  {
-    device_scan_exclusive_sum_by_key_two_phase(
-      d_keys.begin(), d_in.begin(), d_out.begin(), num_items, key_group_equal{}, cudaStream_t{});
-  }
-
-  const c2h::device_vector<cuda::std::int32_t> expected{0, 8, 0, 7, 12, 0, 0};
-  REQUIRE(d_out == expected);
-}
-
-CUB_TEST_CASE("DeviceScan::ExclusiveScanByKey two-phase accepts legacy null streams",
+// Before the environment parameter, the two-phase overloads took `cudaStream_t stream = nullptr`, so callers passing
+// nullptr, a literal 0 or cudaStream_t{} for the stream exist. All must keep compiling and keep running on the default
+// stream.
+CUB_TEST_CASE("DeviceScan ByKey two-phase overloads accept legacy null stream arguments",
               "[scan][by_key][device]",
               CUB_SMALL)
 {
   constexpr cuda::std::int32_t num_items = 7;
   const c2h::device_vector<cuda::std::int32_t> d_keys{0, 1, 2, 3, 2, 4, 5};
   const c2h::device_vector<cuda::std::int32_t> d_in{8, 6, 7, 5, 3, 0, 9};
-  c2h::device_vector<cuda::std::int32_t> d_out(num_items, thrust::no_init);
+  c2h::device_vector<cuda::std::int32_t> d_exclusive_sum(num_items, thrust::no_init);
+  c2h::device_vector<cuda::std::int32_t> d_exclusive_scan(num_items, thrust::no_init);
+  c2h::device_vector<cuda::std::int32_t> d_inclusive_sum(num_items, thrust::no_init);
+  c2h::device_vector<cuda::std::int32_t> d_inclusive_scan(num_items, thrust::no_init);
   const stream_scope scope{cudaStream_t{}};
 
   SECTION("nullptr")
   {
-    device_scan_exclusive_scan_by_key_two_phase(
-      d_keys.begin(), d_in.begin(), d_out.begin(), cuda::std::multiplies<>{}, 2, num_items, key_group_equal{}, nullptr);
-  }
-  SECTION("literal 0")
-  {
-    device_scan_exclusive_scan_by_key_two_phase(
-      d_keys.begin(), d_in.begin(), d_out.begin(), cuda::std::multiplies<>{}, 2, num_items, key_group_equal{}, 0);
-  }
-  SECTION("cudaStream_t{}")
-  {
+    device_scan_exclusive_sum_by_key_two_phase(
+      d_keys.begin(), d_in.begin(), d_exclusive_sum.begin(), num_items, key_group_equal{}, nullptr);
     device_scan_exclusive_scan_by_key_two_phase(
       d_keys.begin(),
       d_in.begin(),
-      d_out.begin(),
+      d_exclusive_scan.begin(),
+      cuda::std::multiplies<>{},
+      2,
+      num_items,
+      key_group_equal{},
+      nullptr);
+    device_scan_inclusive_sum_by_key_two_phase(
+      d_keys.begin(), d_in.begin(), d_inclusive_sum.begin(), num_items, key_group_equal{}, nullptr);
+    device_scan_inclusive_scan_by_key_two_phase(
+      d_keys.begin(),
+      d_in.begin(),
+      d_inclusive_scan.begin(),
+      cuda::std::multiplies<>{},
+      num_items,
+      key_group_equal{},
+      nullptr);
+  }
+  SECTION("literal 0")
+  {
+    device_scan_exclusive_sum_by_key_two_phase(
+      d_keys.begin(), d_in.begin(), d_exclusive_sum.begin(), num_items, key_group_equal{}, 0);
+    device_scan_exclusive_scan_by_key_two_phase(
+      d_keys.begin(),
+      d_in.begin(),
+      d_exclusive_scan.begin(),
+      cuda::std::multiplies<>{},
+      2,
+      num_items,
+      key_group_equal{},
+      0);
+    device_scan_inclusive_sum_by_key_two_phase(
+      d_keys.begin(), d_in.begin(), d_inclusive_sum.begin(), num_items, key_group_equal{}, 0);
+    device_scan_inclusive_scan_by_key_two_phase(
+      d_keys.begin(),
+      d_in.begin(),
+      d_inclusive_scan.begin(),
+      cuda::std::multiplies<>{},
+      num_items,
+      key_group_equal{},
+      0);
+  }
+  SECTION("cudaStream_t{}")
+  {
+    device_scan_exclusive_sum_by_key_two_phase(
+      d_keys.begin(), d_in.begin(), d_exclusive_sum.begin(), num_items, key_group_equal{}, cudaStream_t{});
+    device_scan_exclusive_scan_by_key_two_phase(
+      d_keys.begin(),
+      d_in.begin(),
+      d_exclusive_scan.begin(),
       cuda::std::multiplies<>{},
       2,
       num_items,
       key_group_equal{},
       cudaStream_t{});
-  }
-
-  const c2h::device_vector<cuda::std::int32_t> expected{2, 16, 2, 14, 70, 2, 0};
-  REQUIRE(d_out == expected);
-}
-
-CUB_TEST_CASE("DeviceScan::InclusiveSumByKey two-phase accepts legacy null streams", "[scan][by_key][device]", CUB_SMALL)
-{
-  constexpr cuda::std::int32_t num_items = 7;
-  const c2h::device_vector<cuda::std::int32_t> d_keys{0, 1, 2, 3, 2, 4, 5};
-  const c2h::device_vector<cuda::std::int32_t> d_in{8, 6, 7, 5, 3, 0, 9};
-  c2h::device_vector<cuda::std::int32_t> d_out(num_items, thrust::no_init);
-  const stream_scope scope{cudaStream_t{}};
-
-  SECTION("nullptr")
-  {
     device_scan_inclusive_sum_by_key_two_phase(
-      d_keys.begin(), d_in.begin(), d_out.begin(), num_items, key_group_equal{}, nullptr);
-  }
-  SECTION("literal 0")
-  {
-    device_scan_inclusive_sum_by_key_two_phase(
-      d_keys.begin(), d_in.begin(), d_out.begin(), num_items, key_group_equal{}, 0);
-  }
-  SECTION("cudaStream_t{}")
-  {
-    device_scan_inclusive_sum_by_key_two_phase(
-      d_keys.begin(), d_in.begin(), d_out.begin(), num_items, key_group_equal{}, cudaStream_t{});
-  }
-
-  const c2h::device_vector<cuda::std::int32_t> expected{8, 14, 7, 12, 15, 0, 9};
-  REQUIRE(d_out == expected);
-}
-
-CUB_TEST_CASE("DeviceScan::InclusiveScanByKey two-phase accepts legacy null streams",
-              "[scan][by_key][device]",
-              CUB_SMALL)
-{
-  constexpr cuda::std::int32_t num_items = 7;
-  const c2h::device_vector<cuda::std::int32_t> d_keys{0, 1, 2, 3, 2, 4, 5};
-  const c2h::device_vector<cuda::std::int32_t> d_in{8, 6, 7, 5, 3, 0, 9};
-  c2h::device_vector<cuda::std::int32_t> d_out(num_items, thrust::no_init);
-  const stream_scope scope{cudaStream_t{}};
-
-  SECTION("nullptr")
-  {
-    device_scan_inclusive_scan_by_key_two_phase(
-      d_keys.begin(), d_in.begin(), d_out.begin(), cuda::std::multiplies<>{}, num_items, key_group_equal{}, nullptr);
-  }
-  SECTION("literal 0")
-  {
-    device_scan_inclusive_scan_by_key_two_phase(
-      d_keys.begin(), d_in.begin(), d_out.begin(), cuda::std::multiplies<>{}, num_items, key_group_equal{}, 0);
-  }
-  SECTION("cudaStream_t{}")
-  {
+      d_keys.begin(), d_in.begin(), d_inclusive_sum.begin(), num_items, key_group_equal{}, cudaStream_t{});
     device_scan_inclusive_scan_by_key_two_phase(
       d_keys.begin(),
       d_in.begin(),
-      d_out.begin(),
+      d_inclusive_scan.begin(),
       cuda::std::multiplies<>{},
       num_items,
       key_group_equal{},
       cudaStream_t{});
   }
 
-  const c2h::device_vector<cuda::std::int32_t> expected{8, 48, 7, 35, 105, 0, 0};
-  REQUIRE(d_out == expected);
+  REQUIRE(d_exclusive_sum == c2h::device_vector<cuda::std::int32_t>{0, 8, 0, 7, 12, 0, 0});
+  REQUIRE(d_exclusive_scan == c2h::device_vector<cuda::std::int32_t>{2, 16, 2, 14, 70, 2, 0});
+  REQUIRE(d_inclusive_sum == c2h::device_vector<cuda::std::int32_t>{8, 14, 7, 12, 15, 0, 9});
+  REQUIRE(d_inclusive_scan == c2h::device_vector<cuda::std::int32_t>{8, 48, 7, 35, 105, 0, 0});
 }
 
 #endif // TEST_LAUNCH != 2
