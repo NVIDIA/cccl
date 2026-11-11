@@ -116,7 +116,7 @@ __device__ void test_interwarp_synchronizer(Config config)
       const WarpsInBlockMappingResult prev_mapping_result;
 
       const cudax::coop::group_by mapping{2};
-      const cudax::coop::interwarp_synchronizer synchronizer{barrier_ids};
+      cudax::coop::interwarp_synchronizer synchronizer{barrier_ids};
 
       const auto mapping_result  = mapping.map(cuda::warp, parent_group, prev_mapping_result);
       auto synchronizer_instance = synchronizer.make_instance(cuda::warp, parent_group, mapping_result);
@@ -191,7 +191,7 @@ __device__ void test_interwarp_synchronizer(Config config)
       const WarpsInBlockMappingResult prev_mapping_result;
 
       const cudax::coop::group_by mapping{2};
-      const cudax::coop::interwarp_synchronizer synchronizer{barrier_ids};
+      cudax::coop::interwarp_synchronizer synchronizer{barrier_ids};
 
       const auto mapping_result  = mapping.map(cuda::warp, parent_group, prev_mapping_result);
       auto synchronizer_instance = synchronizer.make_instance(cuda::warp, parent_group, mapping_result);

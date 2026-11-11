@@ -12,6 +12,7 @@
 #include <cuda/hierarchy>
 #include <cuda/launch>
 #include <cuda/std/array>
+#include <cuda/std/bit>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/iterator>
@@ -27,112 +28,43 @@
 
 #include "group_testing.cuh"
 
-namespace
+// Mapping reads the const view, whose size may differ from the mutable view's size.
+struct ConstSizedCounts : cuda::std::ranges::view_base
 {
-// Use the same checks for exhaustive and non-exhaustive mapping.
-template <bool Exhaustive, class Mapping, class ParentGroup, class PrevMappingResult>
-__device__ auto map_group_as(const Mapping& mapping, const ParentGroup& parent, const PrevMappingResult& prev)
-{
-  if constexpr (Exhaustive)
-  {
-    return mapping.map(cuda::gpu_thread, parent, prev);
-  }
-  else
-  {
-    return mapping.map(cudax::coop::non_exhaustive, cuda::gpu_thread, parent, prev);
-  }
-}
+  const unsigned* counts;
 
-// Compute expected ranks and lane masks independently of the mapping implementation.
-template <class Range, class Result>
-__device__ void check_mapping_result(const Range& counts, const Result& result, unsigned rank_in_warp)
-{
-  const auto total_units = cuda::std::accumulate(cuda::std::ranges::begin(counts), cuda::std::ranges::end(counts), 0u);
-  const bool is_valid    = rank_in_warp < total_units;
+  __host__ __device__ explicit constexpr ConstSizedCounts(const unsigned* values)
+      : counts{values}
+  {}
 
-  CHECK(result.is_valid() == is_valid);
-
-  // Excluded threads cannot query group ranks, sizes, or lane masks.
-  if (!is_valid)
+  __host__ __device__ constexpr const unsigned* begin() const
   {
-    return;
+    return counts;
   }
 
-  // Find the subgroup containing this thread by walking the requested counts.
-  unsigned group_rank  = 0;
-  unsigned group_start = 0;
-  for (const auto count : counts)
+  __host__ __device__ constexpr const unsigned* end()
   {
-    const auto unit_count = static_cast<unsigned>(count);
-
-    if (rank_in_warp < group_start + unit_count)
-    {
-      const auto lane_mask = unit_count < 32 ? ((1u << unit_count) - 1) << group_start : ~0u;
-
-      CHECK(result.group_count() == cuda::std::ranges::size(counts));
-      CHECK(result.group_rank() == group_rank);
-
-      CHECK(result.unit_count() == unit_count);
-      CHECK(result.unit_rank() == rank_in_warp - group_start);
-
-      CHECK(result.lane_mask() == cuda::device::lane_mask{lane_mask});
-
-      return;
-    }
-
-    group_start += unit_count;
-    ++group_rank;
+    return counts + 2;
   }
-}
 
-// Runtime ranges must preserve their view type and expose dynamic result counts.
-template <bool Exhaustive, class Config, class Range>
-__device__ void test_dynamic_group_as(Config config, Range&& counts)
-{
-  using Mapping = cudax::coop::group_as<cuda::std::views::all_t<Range>>;
+  __host__ __device__ constexpr const unsigned* end() const
+  {
+    return counts + 3;
+  }
 
-  static_assert(!cuda::std::is_default_constructible_v<Mapping>);
-  static_assert(cuda::std::is_constructible_v<Mapping, Range>);
+  __host__ __device__ constexpr cuda::std::size_t size()
+  {
+    return 2;
+  }
 
-  const cudax::coop::group_as mapping{counts};
-  static_assert(cuda::std::is_same_v<cuda::std::remove_const_t<decltype(mapping)>, Mapping>);
-
-  const cudax::coop::this_warp parent{config};
-  const ThreadsInWarpMappingResult prev;
-
-  const auto result = map_group_as<Exhaustive>(mapping, parent, prev);
-  using Result      = decltype(result);
-
-  static_assert(cudax::coop::__group_mapping_result<Result>);
-  static_assert(Result::static_group_count() == cuda::std::dynamic_extent);
-  static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
-
-  static_assert(Result::is_always_exhaustive() == Exhaustive);
-  static_assert(Result::is_always_contiguous());
-
-  check_mapping_result(counts, result, cuda::gpu_thread.rank_as<unsigned>(parent));
-}
-
-template <bool Exhaustive, cuda::std::uint32_t... Counts, class Config>
-__device__ void test_dynamic_group_as(Config config)
-{
-  const cuda::std::uint32_t c_array[]{Counts...};
-  const cuda::std::array array{Counts...};
-
-  // Exercise owning containers and a non-owning view with identical counts.
-  test_dynamic_group_as<Exhaustive>(config, c_array);
-  test_dynamic_group_as<Exhaustive>(config, array);
-  test_dynamic_group_as<Exhaustive>(config, cuda::std::span{c_array, sizeof...(Counts)});
-}
-
-#if _CCCL_STD_VER >= 2020
-// Class-valued template arguments allow array partitions to be passed through cw.
-inline constexpr cuda::std::array static_counts{4, 12, 16};
-inline constexpr cuda::std::array partial_static_counts{4u, 6u, 8u};
-#endif // _CCCL_STD_VER >= 2020
+  __host__ __device__ constexpr cuda::std::size_t size() const
+  {
+    return 3;
+  }
+};
 
 // Exercise runtime and compile-time ranges whose iterators only model forward_iterator.
-struct forward_counts
+struct ForwardCounts
 {
   struct iterator
   {
@@ -193,15 +125,180 @@ struct forward_counts
 
 // Validate the fixture itself, including postfix increment in constant evaluation.
 static_assert([] {
-  constexpr forward_counts counts{};
+  constexpr ForwardCounts counts{};
   auto it        = counts.begin();
   const auto old = it++;
 
   return counts.size() == 3 && old != it && *old == 4 && *it == 12 && it != counts.end();
 }());
 
-static_assert(cuda::std::ranges::forward_range<const forward_counts>);
-static_assert(!cuda::std::ranges::random_access_range<const forward_counts>);
+static_assert(cuda::std::ranges::forward_range<const ForwardCounts>);
+static_assert(!cuda::std::ranges::random_access_range<const ForwardCounts>);
+
+namespace
+{
+// Use the same checks for exhaustive and non-exhaustive mapping.
+template <bool Exhaustive, class Mapping, class ParentGroup, class PrevMappingResult>
+__device__ auto map_group_as(const Mapping& mapping, const ParentGroup& parent, const PrevMappingResult& prev)
+{
+  if constexpr (Exhaustive)
+  {
+    return mapping.map(cuda::gpu_thread, parent, prev);
+  }
+  else
+  {
+    return mapping.map(cudax::coop::non_exhaustive, cuda::gpu_thread, parent, prev);
+  }
+}
+
+// Compute expected ranks and lane masks independently of the mapping implementation.
+template <class Range, class Result, class PrevMappingResult>
+__device__ void check_mapping_result(const Range& counts, const Result& result, const PrevMappingResult& prev)
+{
+  if (!prev.is_valid())
+  {
+    CHECK(!result.is_valid());
+    return;
+  }
+
+  const auto rank        = prev.unit_rank();
+  const auto total_units = cuda::std::accumulate(cuda::std::ranges::begin(counts), cuda::std::ranges::end(counts), 0u);
+  const bool is_valid    = rank < total_units;
+
+  CHECK(result.is_valid() == is_valid);
+
+  // Excluded threads cannot query group ranks, sizes, or lane masks.
+  if (!is_valid)
+  {
+    return;
+  }
+
+  const auto first_lane  = cuda::std::countr_zero(prev.lane_mask().value());
+  const auto group_count = static_cast<unsigned>(cuda::std::ranges::size(counts));
+
+  // Find the subgroup containing this thread by walking the requested counts.
+  unsigned group_rank  = 0;
+  unsigned group_start = 0;
+  for (const auto count : counts)
+  {
+    const auto unit_count = static_cast<unsigned>(count);
+
+    if (rank < group_start + unit_count)
+    {
+      const auto lane_mask = (unit_count < 32) ? ((1u << unit_count) - 1) << (first_lane + group_start) : ~0u;
+
+      CHECK(result.group_count() == prev.group_count() * group_count);
+      CHECK(result.group_rank() == prev.group_rank() * group_count + group_rank);
+
+      CHECK(result.unit_count() == unit_count);
+      CHECK(result.unit_rank() == rank - group_start);
+
+      CHECK(result.lane_mask() == cuda::device::lane_mask{lane_mask});
+
+      return;
+    }
+
+    group_start += unit_count;
+    ++group_rank;
+  }
+}
+
+// Runtime ranges preserve their view type and expose static group counts when their size is known.
+template <bool Exhaustive, cuda::std::size_t ExpectedGroupCount, class Config, class Input, class Range>
+__device__ void test_range_input(Config config, Input&& input, const Range& counts)
+{
+  using Mapping = cudax::coop::group_as<cuda::std::views::all_t<Input>>;
+
+  static_assert(!cuda::std::is_default_constructible_v<Mapping>);
+  static_assert(cuda::std::is_constructible_v<Mapping, Input>);
+
+  const cudax::coop::group_as mapping{cuda::std::forward<Input>(input)};
+  static_assert(cuda::std::is_same_v<cuda::std::remove_const_t<decltype(mapping)>, Mapping>);
+
+  const cudax::coop::this_warp parent{config};
+  const ThreadsInWarpMappingResult prev;
+
+  const auto result = map_group_as<Exhaustive>(mapping, parent, prev);
+  using Result      = decltype(result);
+
+  static_assert(cudax::coop::__group_mapping_result<Result>);
+  static_assert(Result::static_group_count() == ExpectedGroupCount);
+  static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
+
+  static_assert(Result::is_always_exhaustive() == Exhaustive);
+  static_assert(Result::is_always_contiguous());
+
+  check_mapping_result(counts, result, prev);
+}
+
+template <bool Exhaustive, cuda::std::size_t ExpectedGroupCount, class Config, class Range>
+__device__ void test_range_input(Config config, const Range& counts)
+{
+  test_range_input<Exhaustive, ExpectedGroupCount>(config, counts, counts);
+}
+
+template <bool Exhaustive, cuda::std::uint32_t... Counts, class Config>
+__device__ void test_runtime_counts(Config config)
+{
+  const cuda::std::uint32_t c_array[]{Counts...};
+  const cuda::std::array array{Counts...};
+
+  // Array wrappers and fixed-extent spans preserve the static size; dynamic-extent spans do not.
+  test_range_input<Exhaustive, sizeof...(Counts)>(config, c_array);
+  test_range_input<Exhaustive, sizeof...(Counts)>(config, array);
+  test_range_input<Exhaustive, sizeof...(Counts)>(config, cuda::std::span{c_array});
+  test_range_input<Exhaustive, cuda::std::dynamic_extent>(config, cuda::std::span{c_array, sizeof...(Counts)});
+
+  // Rvalue arrays are owned; use the separate C array as the independent reference.
+  test_range_input<Exhaustive, sizeof...(Counts)>(config, cuda::std::array{Counts...}, c_array);
+}
+
+// A fixed-size partition multiplies the previous static group count, while either dynamic input keeps it dynamic.
+template <bool Exhaustive, cuda::std::size_t ExpectedGroupCount, class Config, class Range, class PrevMappingResult>
+__device__ void test_runtime_composition(Config config, Range counts, const PrevMappingResult& prev)
+{
+  const cudax::coop::this_warp parent{config};
+  const cudax::coop::group_as mapping{counts};
+  const auto result = map_group_as<Exhaustive>(mapping, parent, prev);
+  using Result      = decltype(result);
+
+  static_assert(Result::static_group_count() == ExpectedGroupCount);
+  static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
+  static_assert(Result::has_uniform_static_unit_count());
+  static_assert(Result::is_always_exhaustive() == Exhaustive);
+
+  check_mapping_result(counts, result, prev);
+}
+
+template <bool Exhaustive, class Config>
+__device__ void test_runtime_composition(Config config, unsigned last_count)
+{
+  const cudax::coop::this_warp parent{config};
+  const ThreadsInWarpMappingResult prev;
+  const auto static_prev  = cudax::coop::group_by{cuda::std::cw<16>}.map(cuda::gpu_thread, parent, prev);
+  const auto dynamic_prev = cudax::coop::group_by{16}.map(cuda::gpu_thread, parent, prev);
+  const unsigned counts[]{4, last_count};
+
+  test_runtime_composition<Exhaustive, 4>(config, cuda::std::span{counts}, static_prev);
+  test_runtime_composition<Exhaustive, cuda::std::dynamic_extent>(config, cuda::std::span{counts}, dynamic_prev);
+  test_runtime_composition<Exhaustive, cuda::std::dynamic_extent>(config, cuda::std::span{counts, 2}, static_prev);
+  test_runtime_composition<Exhaustive, cuda::std::dynamic_extent>(config, cuda::std::span{counts, 2}, dynamic_prev);
+
+  if constexpr (!Exhaustive)
+  {
+    // Excluded threads from the previous mapping must stay excluded.
+    const auto partial =
+      cudax::coop::take{cuda::std::cw<12>}.map(cudax::coop::non_exhaustive, cuda::gpu_thread, parent, static_prev);
+    const unsigned partial_counts[]{4, 8};
+    test_runtime_composition<false, 4>(config, cuda::std::span{partial_counts}, partial);
+  }
+}
+
+#if _CCCL_STD_VER >= 2020
+// Class-valued template arguments allow array partitions to be passed through cw.
+inline constexpr cuda::std::array static_counts{4, 12, 16};
+inline constexpr cuda::std::array partial_static_counts{4u, 6u, 8u};
+#endif // _CCCL_STD_VER >= 2020
 
 // Sequence and cw inputs must normalize to the same type and retain every static count.
 template <bool Exhaustive, class Config, class Input, cuda::std::size_t... Counts>
@@ -242,7 +339,7 @@ __device__ void test_static_group_as(Config config, Input input, cuda::std::inde
   // Runtime queries must agree with the same independent reference used for dynamic inputs.
   const cuda::std::array counts{Counts...};
 
-  check_mapping_result(counts, result, cuda::gpu_thread.rank_as<unsigned>(parent));
+  check_mapping_result(counts, result, prev);
 }
 
 template <class Config>
@@ -327,52 +424,70 @@ __device__ void test_static_previous_mappings(Config config)
   CHECK(dynamic_result.unit_count() == (dynamic_prev.unit_rank() < 4 ? 4 : 12));
 }
 
+template <bool Exhaustive, class Config>
+__device__ void test_runtime_ranges(Config config)
+{
+  test_runtime_counts<Exhaustive, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1>(
+    config);
+  test_runtime_counts<Exhaustive, 2, 4, 8, 16, 2>(config);
+  test_runtime_counts<Exhaustive, 3, 5, 1, 1, 22>(config);
+  test_runtime_counts<Exhaustive, 31, 1>(config);
+  test_runtime_counts<Exhaustive, 32>(config);
+
+  const ForwardCounts full_counts{};
+  test_range_input<Exhaustive, 3>(config, full_counts);
+
+  // An adaptor's runtime size must not be replaced with its base range's static size.
+  const unsigned counts[]{16, 16, 0};
+  const auto partition = cuda::std::views::take(cuda::std::span{counts}, 2);
+  test_range_input<Exhaustive, cuda::std::dynamic_extent>(config, partition);
+
+  const unsigned const_counts[]{4, 12, 16};
+  const ConstSizedCounts const_partition{const_counts};
+  static_assert(cuda::std::ranges::__static_size_v<ConstSizedCounts> == 2);
+  static_assert(cuda::std::ranges::__static_size_v<const ConstSizedCounts> == 3);
+  test_range_input<Exhaustive, 3>(config, const_partition);
+
+  if constexpr (!Exhaustive)
+  {
+    test_runtime_counts<false, 31>(config);
+    test_runtime_counts<false, 4, 6, 8>(config);
+    test_runtime_counts<false, 2, 2, 3, 1, 14>(config);
+    const ForwardCounts partial_counts{{4, 6, 8}};
+    test_range_input<false, 3>(config, partial_counts);
+  }
+}
+
+template <class Config>
+__device__ void test_compile_time_ranges(Config config)
+{
+  // All static inputs normalize to the same mapping type for equal counts.
+  using FullPartition    = cuda::std::index_sequence<4, 12, 16>;
+  using PartialPartition = cuda::std::index_sequence<4, 6, 8>;
+
+  test_static_group_as<true>(config, cuda::std::integer_sequence<int, 4, 12, 16>{}, FullPartition{});
+  test_static_group_as<true>(config, cuda::std::integer_sequence<unsigned short, 4, 12, 16>{}, FullPartition{});
+  test_static_group_as<true>(config, FullPartition{}, FullPartition{});
+  test_static_group_as<false>(config, cuda::std::integer_sequence<unsigned, 4, 6, 8>{}, PartialPartition{});
+
+#if _CCCL_STD_VER >= 2020
+  // Class-valued cw inputs include both arrays and a forward-only range.
+  test_static_group_as<true>(config, cuda::std::cw<static_counts>, FullPartition{});
+  test_static_group_as<true>(config, cuda::std::cw<ForwardCounts{}>, FullPartition{});
+  test_static_group_as<false>(config, cuda::std::cw<partial_static_counts>, PartialPartition{});
+#endif // _CCCL_STD_VER >= 2020
+}
+
 struct TestKernel
 {
   template <class Config>
   __device__ void operator()(const Config& config)
   {
-    // Runtime counts: C arrays, cuda::std::array, and spans.
-    test_dynamic_group_as<true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1>(
-      config);
-    test_dynamic_group_as<true, 2, 4, 8, 16, 2>(config);
-    test_dynamic_group_as<true, 3, 5, 1, 1, 22>(config);
-    test_dynamic_group_as<true, 31, 1>(config);
-    test_dynamic_group_as<true, 32>(config);
-
-    const forward_counts full_forward_counts{};
-    test_dynamic_group_as<true>(config, full_forward_counts);
-    test_dynamic_group_as<false>(config, full_forward_counts);
-    const forward_counts partial_forward_counts{{4, 6, 8}};
-    test_dynamic_group_as<false>(config, partial_forward_counts);
-
-    // Non-exhaustive mapping also covers partitions that leave trailing threads unassigned.
-    test_dynamic_group_as<false, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1>(
-      config);
-    test_dynamic_group_as<false, 2, 4, 8, 16, 2>(config);
-    test_dynamic_group_as<false, 3, 5, 1, 1, 22>(config);
-    test_dynamic_group_as<false, 31, 1>(config);
-    test_dynamic_group_as<false, 32>(config);
-    test_dynamic_group_as<false, 31>(config);
-    test_dynamic_group_as<false, 4, 6, 8>(config);
-    test_dynamic_group_as<false, 2, 2, 3, 1, 14>(config);
-
-    // All static inputs normalize to the same mapping type for equal counts.
-    using FullPartition    = cuda::std::index_sequence<4, 12, 16>;
-    using PartialPartition = cuda::std::index_sequence<4, 6, 8>;
-
-    test_static_group_as<true>(config, cuda::std::integer_sequence<int, 4, 12, 16>{}, FullPartition{});
-    test_static_group_as<true>(config, cuda::std::integer_sequence<unsigned short, 4, 12, 16>{}, FullPartition{});
-    test_static_group_as<true>(config, FullPartition{}, FullPartition{});
-    test_static_group_as<false>(config, cuda::std::integer_sequence<unsigned, 4, 6, 8>{}, PartialPartition{});
-
-#if _CCCL_STD_VER >= 2020
-    // Class-valued cw inputs include both arrays and a forward-only range.
-    test_static_group_as<true>(config, cuda::std::cw<static_counts>, FullPartition{});
-    test_static_group_as<true>(config, cuda::std::cw<forward_counts{}>, FullPartition{});
-    test_static_group_as<false>(config, cuda::std::cw<partial_static_counts>, PartialPartition{});
-#endif // _CCCL_STD_VER >= 2020
-
+    test_runtime_ranges<true>(config);
+    test_runtime_ranges<false>(config);
+    test_compile_time_ranges(config);
+    test_runtime_composition<true>(config, 12);
+    test_runtime_composition<false>(config, 8);
     test_static_composition(config);
     test_static_group_as_special_cases(config);
     test_static_previous_mappings(config);

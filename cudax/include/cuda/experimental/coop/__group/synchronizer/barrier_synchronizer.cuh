@@ -26,6 +26,7 @@
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__iterator/next.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
@@ -183,6 +184,14 @@ public:
   make_instance(const _Unit&, const _ParentGroup& __parent, const _MappingResult& __mapping_result)
   {
     using _Level = typename _ParentGroup::level_type;
+
+    constexpr auto __static_group_count   = _MappingResult::static_group_count();
+    constexpr auto __static_barrier_count = ::cuda::std::ranges::__static_size_v<_RangeView>;
+    if constexpr (__static_group_count != ::cuda::std::dynamic_extent
+                  && __static_barrier_count != ::cuda::std::dynamic_extent)
+    {
+      static_assert(__static_group_count <= __static_barrier_count, "invalid number of barriers passed");
+    }
 
     static_assert(__is_sufficient_scope_for_v<_Barrier::scope, _Level>,
                   "_Barrier's thread scope is insufficient for group synchronization in _Level");
