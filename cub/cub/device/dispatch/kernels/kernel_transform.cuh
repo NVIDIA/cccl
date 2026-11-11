@@ -1115,7 +1115,9 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
         auto in_vecs = ::cuda::std::tuple{load_in_vec(aligned_ptrs)...};
 
         // must fully unroll to make sure register index is static
-        ::cuda::__uninitialized<output_t[store_vec_size], sizeof(output_t) * store_vec_size> res;
+        // spelling the array type directly as a template argument crashes nvcc 12.0 (cudafe++)
+        using res_array_t = output_t[store_vec_size];
+        ::cuda::__uninitialized<res_array_t, sizeof(output_t) * store_vec_size> res;
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int k = 0; k < store_vec_size; ++k)
         {
