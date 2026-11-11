@@ -259,12 +259,11 @@ struct __sink_at
  * the left forwards by a returned claim, at no cost beyond its own test; any other policy
  * forwards by throwing, at one unwind), and with `*` (n-fold `|`).
  *
- * An operand of `&` or `|` need not be a sink when the other one is: `std::ignore` resumes with
- * a default-constructed result, a raw hook of the shape above is a policy, and anything else is
- * taken as a substitution value, exactly as `subst(value)` (including a user's nullary
- * `nullval`-returning ending, which dies silently -- pair with `notify &` to opt the report back
- * in). A substitution passed as an lvalue can serve a reference result, which the policy refers
- * to rather than copies:
+ * An operand of `&` or `|` need not be a sink when the other one is: a raw hook of the shape
+ * above is a policy, and anything else is taken as a substitution value, exactly as
+ * `subst(value)` (including a user's nullary `nullval`-returning ending, which dies silently --
+ * pair with `notify &` to opt the report back in). A substitution passed as an lvalue can serve
+ * a reference result, which the policy refers to rather than copies:
  *
  * @code
  * int fallback = 42;
@@ -374,7 +373,8 @@ enum class __claim : unsigned char
 };
 
 /**
- * @brief A suppressing handler policy that reports an error and resumes (`std::ignore`).
+ * @brief A handler policy that reports an error and decides nothing: on its own, the expression
+ * takes its default value and a status is left unchanged.
  *
  * `notify ->* callable` reports on `stderr`. A configured copy reports elsewhere:
  * `notify(file)` writes to a `FILE*`, `notify(stream)` to a `std::ostream`. An object rather
@@ -383,7 +383,7 @@ enum class __claim : unsigned char
  * The report carries the location and the exception's message, or "nonstandard exception" for
  * an exception that does not derive from `std::exception` (which reaches a handler as
  * `nullptr`). On the code channel it carries `status_traits<S>::name(status)` and no exception
- * is built. Both hooks return `std::ignore`, marking a resuming policy.
+ * is built. Both hooks answer `void`.
  */
 struct notify_t : basic_sink<notify_t>
 {
@@ -407,7 +407,7 @@ struct notify_t : basic_sink<notify_t>
     return __copy;
   }
 
-  //! @brief Reports the exception and resumes. Writes to the configured `std::ostream` if any,
+  //! @brief Reports the exception and decides nothing. Writes to the configured `std::ostream` if any,
   //! else `__file_` (default `stderr`). The ostream write is best-effort: a stream configured
   //! to throw does not get to end the program from inside a handler.
   template <class _Fn>
@@ -769,9 +769,9 @@ auto subst(_V&& __v)
  * exception through. Counts come from repetition: `retry * 3` re-attempts up to three times
  * and `retry * 3 | subst(fallback)` answers the spent failure. `retry` alone is `retry * 1`.
  *
- * Answers `__fn()`'s value for a non-void callable, or `std::ignore` after a successful
- * re-run of a void callable. A re-attempt chooses a value, so it cannot stand on the left of
- * `&`: `retry & subst(0)` is rejected, and `retry | subst(0)` is the fallback after one re-run.
+ * Answers what `__fn()` returns, `void` included. A re-attempt chooses a value, so it cannot
+ * stand on the left of `&`: `retry & subst(0)` is rejected, and `retry | subst(0)` is the
+ * fallback after one re-run.
  *
  * On the code channel the re-run's status decides: a success is handled, a failure passes
  * through, carrying the latest status. A past result has no action to re-run, so `retry` on
@@ -783,19 +783,11 @@ struct retry_t : basic_sink<retry_t>
   static constexpr bool __produces_value = true;
 
   // decltype(auto), not auto: a reference-returning callable must re-run to the same object,
-  // not to a copy (the ignore branch deduces the object type and returns a copy of the tag).
+  // not to a copy. A throw from the re-run is the forward.
   template <class _Fn>
   decltype(auto) on_thrown(const ::std::exception*, const ::cuda::std::source_location, _Fn& __fn)
   {
-    if constexpr (::cuda::std::is_void_v<decltype(__fn())>)
-    {
-      __fn(); // a throw here IS the decline
-      return ::std::ignore; // resume: the void expression is complete
-    }
-    else
-    {
-      return __fn();
-    }
+    return __fn();
   }
 
   //! @brief The code-channel hook: one re-run of a status-returning action; its status decides.
@@ -1242,15 +1234,7 @@ struct backoff_t : basic_sink<backoff_t>
       ::std::this_thread::sleep_for(::std::chrono::milliseconds{__sleep});
       _CCCL_TRY
       {
-        if constexpr (::cuda::std::is_void_v<decltype(__fn())>)
-        {
-          __fn();
-          return ::std::ignore;
-        }
-        else
-        {
-          return __fn();
-        }
+        return __fn();
       }
       _CCCL_CATCH_ALL
       {
@@ -1382,7 +1366,7 @@ struct circuit_open : ::std::runtime_error
  * @brief Counter-based circuit breaker over a caller-owned failure budget.
  *
  * The budget is a `shared_ptr<int>` holding the number of failures the circuit absorbs before
- * opening. Each exception decrements it (the hook is an effect and answers `std::ignore`); a
+ * opening. Each exception decrements it (the hook is an effect and answers `void`); a
  * success restores it to the value it held at creation. Once the budget is spent, the entry
  * gate refuses further attempts by throwing @ref circuit_open before the callable runs: the
  * failing dependency gets quiet instead of hammering, and callers fail fast instead of piling
@@ -1834,12 +1818,6 @@ using __exception_sink_tag_of _CCCL_NODEBUG = typename _P::__exception_sink_tag;
 template <class _P>
 inline constexpr bool __is_exception_sink_v =
   ::cuda::std::_IsValidExpansion<__exception_sink_tag_of, ::cuda::std::remove_cvref_t<_P>>::value;
-
-// Whether a reaction is `::std::ignore` (compared as the current code does).
-template <class _P>
-inline constexpr bool __is_ignore_v =
-  ::cuda::std::is_same_v<const ::cuda::std::remove_cvref_t<_P>,
-                         const ::cuda::std::remove_reference_t<decltype(::std::ignore)>>;
 
 // Whether a policy's answer type is `nullval` -- it never returns from the exception path. The
 // two-step form keeps `__hook_answer_t` from being named for a hookless policy: `&&` does not
@@ -2394,8 +2372,8 @@ template <class _Expr, class _P, class _Fn>
 _CCCL_FORCEINLINE _Expr
 __interpret_answer(_P& __policy, const ::std::exception* __exception, ::cuda::std::source_location __loc, _Fn& __fn);
 
-// The answer type of `|` and `*` is fixed by the callable alone: the callable's result, or the
-// resume tag for a void callable. The composites below spell it as their declared return type
+// The answer type of `|` and `*` is fixed by the callable alone: the callable's result. The
+// composites below spell it as their declared return type
 // rather than `decltype(auto)`. The difference matters for the capability probes
 // (`__has_exception_hook`, `__hook_answer_t`), which call a hook with the `void (&)()` archetype:
 // a deduced return type forces the body to be instantiated under that archetype, and the body's
@@ -2404,10 +2382,7 @@ __interpret_answer(_P& __policy, const ::std::exception* __exception, ::cuda::st
 // only at a real guard. Without this, `notify & (if_isa<E>(subst(1)) | subst(2))` and any
 // three-arm `a | b | subst(v)` fail to compile while the same alternation outermost compiles.
 template <class _Fn>
-using __composite_answer_t _CCCL_NODEBUG =
-  ::cuda::std::conditional_t<::cuda::std::is_void_v<decltype(::cuda::std::declval<_Fn&>()())>,
-                             decltype(::std::ignore),
-                             decltype(::cuda::std::declval<_Fn&>()())>;
+using __composite_answer_t _CCCL_NODEBUG = decltype(::cuda::std::declval<_Fn&>()());
 
 // The left arm of `|` provably starves the right when both are if_isa wrappers, the left's
 // guard list claims every type the right lists, and the left's inner policy never declines a
@@ -2581,21 +2556,13 @@ struct __policy_or
   }
 
 private:
-  // One arm's answer at the composite's answer type (the resume tag for a void callable).
+  // One arm's answer at the composite's answer type.
   template <class _Fn, class _Arm>
   static _CCCL_FORCEINLINE __composite_answer_t<_Fn>
   __answer(_Arm& __arm, const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
     using _Raw = decltype(__fn());
-    if constexpr (::cuda::std::is_void_v<_Raw>)
-    {
-      __interpret_answer<_Raw>(__arm, __exception, __loc, __fn);
-      return ::std::ignore;
-    }
-    else
-    {
-      return __interpret_answer<_Raw>(__arm, __exception, __loc, __fn);
-    }
+    return __interpret_answer<_Raw>(__arm, __exception, __loc, __fn);
   }
 
   template <class _Fn>
@@ -2660,15 +2627,7 @@ struct __policy_pow
       {
         _CCCL_TRY
         {
-          if constexpr (::cuda::std::is_void_v<_Expr>)
-          {
-            __fn();
-            return ::std::ignore;
-          }
-          else
-          {
-            return __fn();
-          }
+          return __fn();
         }
         _CCCL_CATCH_ALL
         {
@@ -2775,15 +2734,7 @@ struct __policy_pow
           return __self(__self, nullptr, __left - 1);
         }
       };
-      if constexpr (::cuda::std::is_void_v<_Expr>)
-      {
-        __go(__go, __exception, __n_);
-        return ::std::ignore;
-      }
-      else
-      {
-        return __go(__go, __exception, __n_);
-      }
+      return __go(__go, __exception, __n_);
       _CCCL_DIAG_POP
     }
   }
@@ -2903,7 +2854,7 @@ __status_answer<_Status> __interpret_status([[maybe_unused]] const _Status __sta
     __call();
     _CCCL_UNREACHABLE();
   }
-  else if constexpr (::cuda::std::is_void_v<_Answer> || __is_ignore_v<_Answer>)
+  else if constexpr (::cuda::std::is_void_v<_Answer>)
   {
     // Nothing: the status is handled and left unchanged (`subst(success)` is the spelling for
     // mapping it to success).
@@ -3027,7 +2978,7 @@ _CCCL_FORCEINLINE _Expr __interpret_answer(
     __call_hook(__policy, __exception, __loc, __fn);
     _CCCL_UNREACHABLE();
   }
-  else if constexpr (::cuda::std::is_void_v<_Answer> || __is_ignore_v<_Answer>)
+  else if constexpr (::cuda::std::is_void_v<_Answer>)
   {
     // Nothing (a void hook: the effect ran, no decision) or a completed void expression: the
     // expression takes its default value.
@@ -4225,7 +4176,6 @@ public:
   enum class answer_kind
   {
     dies, //!< the hook never returns (answered `nullval`)
-    resumes, //!< resume (answered `std::ignore`)
     effects, //!< side effect only (answered `void`)
     integral, //!< a stored integral or enumeration, with a value range
     floating, //!< a stored floating value (precision loss under a floating body is tolerated)
@@ -4319,10 +4269,6 @@ private:
     if constexpr (::cuda::std::is_void_v<_T>)
     {
       return answer_kind::effects;
-    }
-    else if constexpr (__is_ignore_v<_T>)
-    {
-      return answer_kind::resumes;
     }
     else if constexpr (::cuda::std::is_same_v<_T, nullval>)
     {
@@ -4423,8 +4369,7 @@ private:
             !__never_passes_through_v<_P, ::std::function<::std::any()>>,
             __stored_min<__ans_t>(),
             __stored_max<__ans_t>(),
-            (__skind == answer_kind::own_result || __skind == answer_kind::dies || __skind == answer_kind::resumes
-             || __skind == answer_kind::effects)
+            (__skind == answer_kind::own_result || __skind == answer_kind::dies || __skind == answer_kind::effects)
               ? nullptr
               : &typeid(::cuda::std::remove_cvref_t<__ans_t>),
             type_name<::cuda::std::remove_cvref_t<__ans_t>>,
@@ -4440,7 +4385,7 @@ private:
     ::std::any
     hook(const ::std::exception* __e, ::cuda::std::source_location __loc, ::std::function<::std::any()>& __fn) override
     {
-      if constexpr (__skind == answer_kind::effects || __skind == answer_kind::resumes)
+      if constexpr (__skind == answer_kind::effects)
       {
         static_cast<void>(__call_hook(__p_, __e, __loc, __fn));
         return {};
@@ -4559,8 +4504,7 @@ private:
     [[maybe_unused]] const auto __wanted = type_name<_T>;
     [[maybe_unused]] const auto __stored =
       __p_->answer_name.empty() ? ::std::string_view{"<erased>"} : __p_->answer_name;
-    if (__kind == answer_kind::dies || __kind == answer_kind::resumes || __kind == answer_kind::effects
-        || __kind == answer_kind::own_result)
+    if (__kind == answer_kind::dies || __kind == answer_kind::effects || __kind == answer_kind::own_result)
     {
       return;
     }
@@ -4776,11 +4720,9 @@ public:
     return may_passthrough();
   }
 
-  //! @brief The uniform hook: answers `decltype(fn())`. A void callable answers
-  //! `decltype(::std::ignore)` so the presence-probe archetype stays admissible.
+  //! @brief The uniform hook: answers `decltype(fn())`.
   template <class _Fn, class _Raw = decltype(::cuda::std::declval<_Fn&>()())>
-  auto on_thrown(const ::std::exception* __e, const ::cuda::std::source_location __loc, _Fn& __fn)
-    -> ::cuda::std::conditional_t<::cuda::std::is_void_v<_Raw>, decltype(::std::ignore), _Raw>
+  _Raw on_thrown(const ::std::exception* __e, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
     static_assert(!::cuda::std::is_reference_v<_Raw>,
                   "dynamic cannot serve a reference-returning callable: std::any cannot "
@@ -4807,7 +4749,7 @@ public:
       {
         __check_compatible<_Raw>();
         static_cast<void>(__p_->hook(__e, __loc, __proxy));
-        return ::std::ignore;
+        return;
       }
       else if constexpr (::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Raw>, ::std::any>)
       {
@@ -5231,12 +5173,13 @@ UNITTEST("error sinks")
     throw 42;
   };
 
-  // Effects can be plain lambdas: this one counts, then the chain's final element resumes.
+  // Effects can be plain lambdas: this one counts, and the chain, deciding nothing, takes the
+  // default value.
   int hits        = 0;
   const auto tick = [&hits](const ::std::exception*, ::cuda::std::source_location, auto&) noexcept {
     ++hits;
   };
-  const int ticked = (noop & tick & ::std::ignore)->*[]() -> int {
+  const int ticked = (noop & tick)->*[]() -> int {
     throw ::std::runtime_error("counted");
   };
   EXPECT(ticked == 0);
