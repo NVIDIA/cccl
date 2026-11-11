@@ -25,10 +25,8 @@
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__cmath/traits.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__floating_point/format.h>
-#include <cuda/std/__floating_point/mask.h>
-#include <cuda/std/__floating_point/properties.h>
 #include <cuda/std/__floating_point/storage.h>
+#include <cuda/std/__floating_point/storage_order.h>
 #include <cuda/std/__floating_point/traits.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -107,26 +105,6 @@ template <class _Tp>
   return (::cuda::std::isnan(__xf) || __yf < __xf) ? __y : __x;
 }
 #endif // _CCCL_HAS_NVFP16() && !_CCCL_CTK_AT_LEAST(12, 2)
-
-// The __nv_fp8, __nv_fp6, and __nv_fp4 types have no comparison operators, but their values other than NaN are ordered
-// by their storage. Flipping all bits of negative values and setting the sign bit of positive values maps the
-// sign-magnitude encoding to an unsigned order, in which -0 is less than +0. Unsigned formats are already ordered.
-template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr unsigned __fp_storage_order_key(_Tp __x) noexcept
-{
-  using _Storage        = __fp_storage_of_t<_Tp>;
-  const _Storage __bits = ::cuda::std::__fp_get_storage(__x);
-  if constexpr (__fp_is_signed_v<__fp_format_of_v<_Tp>>)
-  {
-    constexpr _Storage __sign = __fp_sign_mask_of_v<_Tp>;
-    constexpr _Storage __all  = static_cast<_Storage>(__sign | __fp_exp_mant_mask_of_v<_Tp>);
-    return (__bits & __sign) ? static_cast<unsigned>(~__bits & __all) : static_cast<unsigned>(__bits | __sign);
-  }
-  else
-  {
-    return __bits;
-  }
-}
 
 /***********************************************************************************************************************
  * fmax
@@ -220,9 +198,12 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
     }
     else if constexpr (__is_ext_nv_fp_v<_Tp>)
     {
-      // NaN gets the smallest key, so that the other value is returned
-      const unsigned __x_key = ::cuda::std::isnan(__x) ? 0u : ::cuda::std::__fp_storage_order_key(__x) + 1u;
-      const unsigned __y_key = ::cuda::std::isnan(__y) ? 0u : ::cuda::std::__fp_storage_order_key(__y) + 1u;
+      // __half and __nv_bfloat16 are handled above, so the storage is a small integer. Widen it so the NaN sentinel
+      // fits. NaN gets the smallest key, so that the other value is returned.
+      const uint32_t __x_key =
+        ::cuda::std::isnan(__x) ? 0u : static_cast<uint32_t>(::cuda::std::__fp_storage_order_key(__x)) + 1u;
+      const uint32_t __y_key =
+        ::cuda::std::isnan(__y) ? 0u : static_cast<uint32_t>(::cuda::std::__fp_storage_order_key(__y)) + 1u;
       return __x_key < __y_key ? __y : __x;
     }
     else
@@ -376,10 +357,13 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
     }
     else if constexpr (__is_ext_nv_fp_v<_Tp>)
     {
-      // NaN gets the largest key, so that the other value is returned
-      constexpr unsigned __nan_key = 1u << (8 * sizeof(__fp_storage_of_t<_Tp>));
-      const unsigned __x_key       = ::cuda::std::isnan(__x) ? __nan_key : ::cuda::std::__fp_storage_order_key(__x);
-      const unsigned __y_key       = ::cuda::std::isnan(__y) ? __nan_key : ::cuda::std::__fp_storage_order_key(__y);
+      // __half and __nv_bfloat16 are handled above, so the storage is a small integer. Widen it so the NaN sentinel
+      // fits. NaN gets the largest key, so that the other value is returned.
+      constexpr uint32_t __nan_key = 1u << (8 * sizeof(__fp_storage_of_t<_Tp>));
+      const uint32_t __x_key =
+        ::cuda::std::isnan(__x) ? __nan_key : static_cast<uint32_t>(::cuda::std::__fp_storage_order_key(__x));
+      const uint32_t __y_key =
+        ::cuda::std::isnan(__y) ? __nan_key : static_cast<uint32_t>(::cuda::std::__fp_storage_order_key(__y));
       return __y_key < __x_key ? __y : __x;
     }
     else
