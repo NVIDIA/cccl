@@ -93,8 +93,9 @@ TEST_HOST_DEVICE_FUNC void check_exact(const pow_exact_case (&cases)[N])
   {
     const cuda::fp32mp2 r = cuda::pow(cuda::fp32mp2(c.a_hi, c.a_lo), cuda::fp32mp2(c.b_hi, c.b_lo));
     assert(same(r.hi(), c.r));
-    // A zero, infinite or subnormal result carries no lo limb.
-    if (!cuda::std::isnan(c.r) && !cuda::std::isnormal(c.r))
+    // A zero, infinite or subnormal result carries no lo limb, and neither does +-1, which is
+    // exact wherever these tables expect it: a nonzero lo limb would change the value hi + lo.
+    if (!cuda::std::isnan(c.r) && (!cuda::std::isnormal(c.r) || cuda::std::fabs(c.r) == 1.0f))
     {
       assert(r.lo() == 0.0f);
     }
