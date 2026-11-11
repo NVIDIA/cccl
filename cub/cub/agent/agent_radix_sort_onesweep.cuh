@@ -30,6 +30,7 @@
 #include <cub/thread/thread_store.cuh>
 #include <cub/util_ptx.cuh>
 
+#include <cuda/__memory/uninitialized.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__host_stdlib/ostream>
@@ -469,7 +470,9 @@ struct AgentRadixSortOnesweep
     if (!KEYS_ONLY)
     {
       // gather and scatter the values
-      ValueT values[ITEMS_PER_THREAD];
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+      ::cuda::__uninitialized<ValueT[ITEMS_PER_THREAD]> values_storage;
+      auto& values = values_storage.alias();
       LoadValues(block_idx * TILE_ITEMS, values); // NOLINT(bugprone-misplaced-widening-cast)
       if (full_block)
       {
@@ -668,7 +671,9 @@ struct AgentRadixSortOnesweep
     ComputeKeyDigits(digits);
 
     // load values
-    ValueT values[ITEMS_PER_THREAD];
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    ::cuda::__uninitialized<ValueT[ITEMS_PER_THREAD]> values_storage;
+    auto& values = values_storage.alias();
     LoadValues(block_idx * TILE_ITEMS, values); // NOLINT(bugprone-misplaced-widening-cast)
 
     // scatter values
@@ -684,7 +689,9 @@ struct AgentRadixSortOnesweep
     // load keys
     // if warp1 < warp2, all elements of warp1 occur before those of warp2
     // in the source array
-    bit_ordered_type keys[ITEMS_PER_THREAD];
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    ::cuda::__uninitialized<bit_ordered_type[ITEMS_PER_THREAD]> keys_storage;
+    auto& keys = keys_storage.alias();
     LoadKeys(block_idx * TILE_ITEMS, keys); // NOLINT(bugprone-misplaced-widening-cast)
 
     // rank keys

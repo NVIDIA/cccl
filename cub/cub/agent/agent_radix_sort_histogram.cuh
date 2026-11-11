@@ -26,6 +26,7 @@
 #include <cub/thread/thread_reduce.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__memory/uninitialized.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
@@ -263,7 +264,9 @@ struct AgentRadixSortHistogram
            offset += OffsetT{TILE_ITEMS} * gridDim.x)
       {
         OffsetT tile_offset = portion_offset + offset;
-        bit_ordered_type keys[ITEMS_PER_THREAD];
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+        ::cuda::__uninitialized<bit_ordered_type[ITEMS_PER_THREAD]> keys_storage;
+        auto& keys = keys_storage.alias();
         LoadTileKeys(tile_offset, keys);
         AccumulateSharedHistograms(tile_offset, keys);
       }
