@@ -7891,6 +7891,7 @@ UNITTEST("error sinks: ->* yields an action's return verbatim")
     }
     return 0;
   };
+  EXPECT(r == -1);
 };
 
 UNITTEST("error sinks: << treats an action's return as an error code")
