@@ -613,10 +613,7 @@ public:
     {
       return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__val_);
     }
-    else
-    {
-      return _Res{unexpect, this->__union_.__unex_};
-    }
+    return _Res{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -634,10 +631,7 @@ public:
     {
       return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__val_);
     }
-    else
-    {
-      return _Res{unexpect, this->__union_.__unex_};
-    }
+    return _Res{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -655,10 +649,7 @@ public:
     {
       return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__val_));
     }
-    else
-    {
-      return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -676,10 +667,7 @@ public:
     {
       return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__val_));
     }
-    else
-    {
-      return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -698,10 +686,7 @@ public:
     {
       return _Res{in_place_t{}, this->__union_.__val_};
     }
-    else
-    {
-      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
-    }
+    return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -720,10 +705,7 @@ public:
     {
       return _Res{in_place_t{}, this->__union_.__val_};
     }
-    else
-    {
-      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
-    }
+    return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -742,10 +724,7 @@ public:
     {
       return _Res{in_place_t{}, ::cuda::std::move(this->__union_.__val_)};
     }
-    else
-    {
-      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
-    }
+    return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -764,10 +743,7 @@ public:
     {
       return _Res{in_place_t{}, ::cuda::std::move(this->__union_.__val_)};
     }
-    else
-    {
-      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
-    }
+    return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -783,10 +759,7 @@ public:
       ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__val_);
       return expected<void, _Err>{};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
-    }
+    return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -810,10 +783,7 @@ public:
       return expected<_Res, _Err>{
         __expected_construct_from_invoke_tag{}, in_place_t{}, ::cuda::std::forward<_Fun>(__fun), this->__union_.__val_};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
-    }
+    return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -830,10 +800,7 @@ public:
       ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__val_);
       return expected<_Res, _Err>{};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
-    }
+    return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -857,10 +824,7 @@ public:
       return expected<_Res, _Err>{
         __expected_construct_from_invoke_tag{}, in_place_t{}, ::cuda::std::forward<_Fun>(__fun), this->__union_.__val_};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
-    }
+    return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -876,10 +840,7 @@ public:
       ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__val_));
       return expected<_Res, _Err>{};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -905,10 +866,7 @@ public:
         ::cuda::std::forward<_Fun>(__fun),
         ::cuda::std::move(this->__union_.__val_)};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -925,10 +883,7 @@ public:
       ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__val_));
       return expected<_Res, _Err>{};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -955,10 +910,7 @@ public:
         ::cuda::std::forward<_Fun>(__fun),
         ::cuda::std::move(this->__union_.__val_)};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -980,11 +932,8 @@ public:
     {
       return expected<_Tp, _Res>{in_place_t{}, this->__union_.__val_};
     }
-    else
-    {
-      return expected<_Tp, _Res>{
-        __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
-    }
+    return expected<_Tp, _Res>{
+      __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1007,11 +956,8 @@ public:
     {
       return expected<_Tp, _Res>{in_place_t{}, this->__union_.__val_};
     }
-    else
-    {
-      return expected<_Tp, _Res>{
-        __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
-    }
+    return expected<_Tp, _Res>{
+      __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1033,14 +979,11 @@ public:
     {
       return expected<_Tp, _Res>{in_place_t{}, ::cuda::std::move(this->__union_.__val_)};
     }
-    else
-    {
-      return expected<_Tp, _Res>{
-        __expected_construct_from_invoke_tag{},
-        unexpect,
-        ::cuda::std::forward<_Fun>(__fun),
-        ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<_Tp, _Res>{
+      __expected_construct_from_invoke_tag{},
+      unexpect,
+      ::cuda::std::forward<_Fun>(__fun),
+      ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1063,14 +1006,11 @@ public:
     {
       return expected<_Tp, _Res>{in_place_t{}, ::cuda::std::move(this->__union_.__val_)};
     }
-    else
-    {
-      return expected<_Tp, _Res>{
-        __expected_construct_from_invoke_tag{},
-        unexpect,
-        ::cuda::std::forward<_Fun>(__fun),
-        ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<_Tp, _Res>{
+      __expected_construct_from_invoke_tag{},
+      unexpect,
+      ::cuda::std::forward<_Fun>(__fun),
+      ::cuda::std::move(this->__union_.__unex_)};
   }
 
   // [expected.object.eq], equality operators
@@ -1081,17 +1021,11 @@ public:
     {
       return false;
     }
-    else
+    if (__x.__has_val_)
     {
-      if (__x.__has_val_)
-      {
-        return __x.__union_.__val_ == __y.value();
-      }
-      else
-      {
-        return __x.__union_.__unex_ == __y.error();
-      }
+      return __x.__union_.__val_ == __y.value();
     }
+    return __x.__union_.__unex_ == __y.error();
   }
 
 #if _CCCL_STD_VER < 2020
@@ -1111,17 +1045,11 @@ public:
     {
       return false;
     }
-    else
+    if (__x.__has_val_)
     {
-      if (__x.__has_val_)
-      {
-        return __x.__union_.__val_ == __y.value();
-      }
-      else
-      {
-        return __x.__union_.__unex_ == __y.error();
-      }
+      return __x.__union_.__val_ == __y.value();
     }
+    return __x.__union_.__unex_ == __y.error();
   }
 
 #if _CCCL_STD_VER < 2020
@@ -1520,10 +1448,7 @@ public:
     {
       return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
     }
-    else
-    {
-      return _Res{unexpect, this->__union_.__unex_};
-    }
+    return _Res{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1541,10 +1466,7 @@ public:
     {
       return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
     }
-    else
-    {
-      return _Res{unexpect, this->__union_.__unex_};
-    }
+    return _Res{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1562,10 +1484,7 @@ public:
     {
       return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
     }
-    else
-    {
-      return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1583,10 +1502,7 @@ public:
     {
       return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
     }
-    else
-    {
-      return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1604,10 +1520,7 @@ public:
     {
       return _Res{};
     }
-    else
-    {
-      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
-    }
+    return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1625,10 +1538,7 @@ public:
     {
       return _Res{};
     }
-    else
-    {
-      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
-    }
+    return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1646,10 +1556,7 @@ public:
     {
       return _Res{};
     }
-    else
-    {
-      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
-    }
+    return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1667,10 +1574,7 @@ public:
     {
       return _Res{};
     }
-    else
-    {
-      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
-    }
+    return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1684,10 +1588,7 @@ public:
       ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
       return expected<void, _Err>{};
     }
-    else
-    {
-      return expected<void, _Err>{unexpect, this->__union_.__unex_};
-    }
+    return expected<void, _Err>{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1710,10 +1611,7 @@ public:
       return expected<_Res, _Err>{
         __expected_construct_from_invoke_tag{}, in_place_t{}, ::cuda::std::forward<_Fun>(__fun)};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
-    }
+    return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1727,10 +1625,7 @@ public:
       ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
       return expected<void, _Err>{};
     }
-    else
-    {
-      return expected<void, _Err>{unexpect, this->__union_.__unex_};
-    }
+    return expected<void, _Err>{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1753,10 +1648,7 @@ public:
       return expected<_Res, _Err>{
         __expected_construct_from_invoke_tag{}, in_place_t{}, ::cuda::std::forward<_Fun>(__fun)};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
-    }
+    return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1770,10 +1662,7 @@ public:
       ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
       return expected<void, _Err>{};
     }
-    else
-    {
-      return expected<void, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<void, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1796,10 +1685,7 @@ public:
       return expected<_Res, _Err>{
         __expected_construct_from_invoke_tag{}, in_place_t{}, ::cuda::std::forward<_Fun>(__fun)};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1813,10 +1699,7 @@ public:
       ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
       return expected<void, _Err>{};
     }
-    else
-    {
-      return expected<void, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<void, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1839,10 +1722,7 @@ public:
       return expected<_Res, _Err>{
         __expected_construct_from_invoke_tag{}, in_place_t{}, ::cuda::std::forward<_Fun>(__fun)};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1863,11 +1743,8 @@ public:
     {
       return expected<void, _Res>{};
     }
-    else
-    {
-      return expected<void, _Res>{
-        __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
-    }
+    return expected<void, _Res>{
+      __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1889,11 +1766,8 @@ public:
     {
       return expected<void, _Res>{};
     }
-    else
-    {
-      return expected<void, _Res>{
-        __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
-    }
+    return expected<void, _Res>{
+      __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1914,14 +1788,11 @@ public:
     {
       return expected<void, _Res>{};
     }
-    else
-    {
-      return expected<void, _Res>{
-        __expected_construct_from_invoke_tag{},
-        unexpect,
-        ::cuda::std::forward<_Fun>(__fun),
-        ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<void, _Res>{
+      __expected_construct_from_invoke_tag{},
+      unexpect,
+      ::cuda::std::forward<_Fun>(__fun),
+      ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1943,14 +1814,11 @@ public:
     {
       return expected<void, _Res>{};
     }
-    else
-    {
-      return expected<void, _Res>{
-        __expected_construct_from_invoke_tag{},
-        unexpect,
-        ::cuda::std::forward<_Fun>(__fun),
-        ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<void, _Res>{
+      __expected_construct_from_invoke_tag{},
+      unexpect,
+      ::cuda::std::forward<_Fun>(__fun),
+      ::cuda::std::move(this->__union_.__unex_)};
   }
 
   // [expected.void.eq], equality operators
@@ -1961,10 +1829,7 @@ public:
     {
       return false;
     }
-    else
-    {
-      return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ == __y.error());
-    }
+    return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ == __y.error());
   }
 #if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
@@ -1982,10 +1847,7 @@ public:
     {
       return false;
     }
-    else
-    {
-      return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ == __y.error());
-    }
+    return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ == __y.error());
   }
 #if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE

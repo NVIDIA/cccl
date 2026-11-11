@@ -63,14 +63,12 @@ struct segment_index_to_offset_op
     {
       return 0;
     }
-    else if (i < num_segments)
+    if (i < num_segments)
     {
       return segment_size * static_cast<OffsetT>(i - num_empty_segments);
     }
-    else
-    {
-      return num_items;
-    }
+
+    return num_items;
   }
 };
 

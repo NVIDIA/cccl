@@ -21,17 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__utility/in_range.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__simd/abi.h>
 #include <cuda/std/__simd/basic_mask.h>
 #include <cuda/std/__simd/basic_vec.h>
-#include <cuda/std/__simd/exposition.h>
+#include <cuda/std/__simd/permute_dynamic.h> // IWYU pragma: keep
 #include <cuda/std/__simd/type_traits.h>
 #include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__type_traits/void_t.h>
 
@@ -55,31 +55,44 @@ inline constexpr bool __idxmap_nargs_integral_v = false;
 
 template <typename _IdxMap, typename... _Args>
 inline constexpr bool __idxmap_nargs_integral_v<_IdxMap, void_t<invoke_result_t<_IdxMap&, _Args...>>, _Args...> =
-  is_integral_v<remove_cvref_t<invoke_result_t<_IdxMap&, _Args...>>>;
+  is_integral_v<invoke_result_t<_IdxMap&, _Args...>>;
 
 template <typename _IdxMap>
 inline constexpr bool __idxmap_result_is_integral_v =
-  is_invocable_v<remove_cvref_t<_IdxMap>&, __simd_size_type, __simd_size_type>
-    ? __idxmap_nargs_integral_v<remove_cvref_t<_IdxMap>, void, __simd_size_type, __simd_size_type>
-    : __idxmap_nargs_integral_v<remove_cvref_t<_IdxMap>, void, __simd_size_type>;
+  __idxmap_nargs_integral_v<_IdxMap, void, __simd_size_type, __simd_size_type>
+  || __idxmap_nargs_integral_v<_IdxMap, void, __simd_size_type>;
 
 //----------------------------------------------------------------------------------------------------------------------
 // gen-fn: idxmap(i, V::size()) if that expression is well-formed, and idxmap(i) otherwise.
 
-template <typename _IdxMap, __simd_size_type _Idx, __simd_size_type _Size>
-inline constexpr bool __idxmap_invocable_two_args_v =
-  is_invocable_v<_IdxMap&, __simd_size_constant<_Idx>, __simd_size_constant<_Size>>;
+// C++23 allows an index map through an unknown reference, see https://eel.is/c++draft/simd.permute.static#1.1
+// We don't support this feature because it's not supported by nvcc/nvrtc.
 
+// Preserve the mapper's result type so the Mandates are checked before converting to an index.
 template <typename _IdxMap, __simd_size_type _Idx, __simd_size_type _Size>
-[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __simd_size_type __permute_gen_fn() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __permute_gen_fn() noexcept
 {
-  if constexpr (__idxmap_invocable_two_args_v<_IdxMap, _Idx, _Size>)
+  remove_reference_t<_IdxMap> __idxmap{};
+  if constexpr (is_invocable_v<_IdxMap&, __simd_size_type, __simd_size_type>)
   {
-    return static_cast<__simd_size_type>(_IdxMap{}(__simd_size_constant<_Idx>{}, __simd_size_constant<_Size>{}));
+    return __idxmap(_Idx, _Size);
   }
   else
   {
-    return static_cast<__simd_size_type>(_IdxMap{}(__simd_size_constant<_Idx>{}));
+    return __idxmap(_Idx);
+  }
+}
+
+template <__simd_size_type _Size, typename _Index>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL bool __is_valid_static_permute_index(const _Index& __index) noexcept
+{
+  if constexpr (is_unsigned_v<_Index>)
+  {
+    return __index < _Size;
+  }
+  else
+  {
+    return __index == zero_element || __index == uninit_element || (__index >= 0 && __index < _Size);
   }
 }
 
@@ -89,26 +102,25 @@ template <typename _IdxMap, __simd_size_type _Idx, __simd_size_type _Size>
 template <typename _IdxMap, typename _Vp>
 struct __permute_generator
 {
-  using __value_type = typename _Vp::value_type;
+  using __value_type _CCCL_NODEBUG = typename _Vp::value_type;
 
   const _Vp& __v_;
 
   template <__simd_size_type _Idx>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __value_type operator()(__simd_size_constant<_Idx>) const noexcept
   {
-    using __map_t                     = remove_cvref_t<_IdxMap>;
-    constexpr __simd_size_type __size = _Vp::__size;
-    constexpr __simd_size_type __src  = ::cuda::std::simd::__permute_gen_fn<__map_t, _Idx, __size>();
-    static_assert(__src == zero_element || __src == uninit_element || (__src >= 0 && __src < __size),
+    constexpr auto __src = ::cuda::std::simd::__permute_gen_fn<_IdxMap, _Idx, _Vp::__size>();
+    static_assert(::cuda::std::simd::__is_valid_static_permute_index<_Vp::__size>(__src),
                   "cuda::std::simd::permute: idxmap(i) must return zero_element, uninit_element, or a value in [0, "
                   "V::size())");
-    if constexpr (__src == zero_element || __src == uninit_element)
+    constexpr auto __index = static_cast<__simd_size_type>(__src);
+    if constexpr (__index == zero_element || __index == uninit_element)
     {
-      return __value_type{}; // unspecified-value
+      return __value_type{}; // unspecified-value for uninit_element
     }
     else
     {
-      return __v_[__src];
+      return __v_[__index];
     }
   }
 };
@@ -151,52 +163,6 @@ permute(const basic_mask<_Bytes, _Abi>& __v, _IdxMap&&)
   static_assert(_Np >= 0, "cuda::std::simd::permute: N must be non-negative");
   using __result_t = resize_t<_Np, basic_mask<_Bytes, _Abi>>;
   return __result_t{__permute_generator<_IdxMap, basic_mask<_Bytes, _Abi>>{__v}};
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-// [simd.permute.dynamic]
-
-template <typename _Vp, typename _Ip>
-struct __permute_dynamic_generator
-{
-  using __value_type = typename _Vp::value_type;
-
-  const _Vp& __v_;
-  const _Ip& __indices_;
-
-  template <__simd_size_type _Idx>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __value_type operator()(__simd_size_constant<_Idx>) const noexcept
-  {
-    const auto __src = static_cast<__simd_size_type>(__indices_[_Idx]);
-    _CCCL_ASSERT(::cuda::in_range(__src, __simd_size_type{0}, _Vp::size()),
-                 "cuda::std::simd::permute: indices[i] must be in [0, V::size())");
-    return __v_[__src];
-  }
-};
-
-template <typename _Vp, typename _Ip>
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __permute_dynamic_generator<_Vp, _Ip>
-__make_permute_dynamic_generator(const _Vp& __v, const _Ip& __indices) noexcept
-{
-  return __permute_dynamic_generator<_Vp, _Ip>{__v, __indices};
-}
-
-_CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _Up, typename _UAbi)
-_CCCL_REQUIRES(is_integral_v<_Up>)
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr resize_t<__simd_size_v<_Up, _UAbi>, basic_vec<_Tp, _Abi>>
-permute(const basic_vec<_Tp, _Abi>& __v, const basic_vec<_Up, _UAbi>& __indices)
-{
-  using __result_t = resize_t<__simd_size_v<_Up, _UAbi>, basic_vec<_Tp, _Abi>>;
-  return __result_t{::cuda::std::simd::__make_permute_dynamic_generator(__v, __indices)};
-}
-
-_CCCL_TEMPLATE(size_t _Bytes, typename _Abi, typename _Up, typename _UAbi)
-_CCCL_REQUIRES(is_integral_v<_Up>)
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr resize_t<__simd_size_v<_Up, _UAbi>, basic_mask<_Bytes, _Abi>>
-permute(const basic_mask<_Bytes, _Abi>& __v, const basic_vec<_Up, _UAbi>& __indices)
-{
-  using __result_t = resize_t<__simd_size_v<_Up, _UAbi>, basic_mask<_Bytes, _Abi>>;
-  return __result_t{::cuda::std::simd::__make_permute_dynamic_generator(__v, __indices)};
 }
 
 //----------------------------------------------------------------------------------------------------------------------

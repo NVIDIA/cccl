@@ -14,4 +14,4 @@
 #endif // no system header
 
 // this system inherits malloc & free
-#include <thrust/system/detail/sequential/malloc_and_free.h>
+#include <thrust/system/detail/sequential/malloc_and_free.h> // IWYU pragma: export
