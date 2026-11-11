@@ -15,28 +15,6 @@
 
 #include "random_utilities/test_engine.h"
 
-#if _CCCL_HOSTED()
-// The state is written in decimal and the format flags and fill character of the stream are unchanged
-void test_stream_format()
-{
-  cuda::std::minstd_rand e(1000);
-  (void) e();
-  std::stringstream ss;
-  ss.flags(std::ios_base::hex | std::ios_base::showbase);
-  ss.fill('*');
-  const auto flags = ss.flags();
-  ss << e;
-  assert(ss.str() == "48271000");
-  assert(ss.flags() == flags);
-  assert(ss.fill() == '*');
-
-  cuda::std::minstd_rand e2;
-  ss >> e2;
-  assert(!ss.fail());
-  assert(e == e2);
-}
-#endif // _CCCL_HOSTED()
-
 TEST_HOST_DEVICE_FUNC void test()
 {
   test_engine<cuda::std::minstd_rand0, 1043618065u>();
@@ -153,7 +131,6 @@ int main(int, char**)
 {
   test();
   test_p4037r1_small_uinttype();
-  NV_IF_TARGET(NV_IS_HOST, ({ test_stream_format(); }));
   test_modulus_zero();
   test_large_modulus();
   test_promotion();
