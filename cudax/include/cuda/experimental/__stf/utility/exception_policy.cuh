@@ -2627,9 +2627,12 @@ struct __policy_pow
                 "the repeated policy always diverges (unwind, abort, terminate); repetitions after the first are "
                 "unreachable");
 
+  // maybe_unused: `retry`'s loop reads neither the exception nor the location.
   template <class _Fn>
   _CCCL_FORCEINLINE __composite_answer_t<_Fn>
-  on_thrown(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  on_thrown([[maybe_unused]] const ::std::exception* __exception,
+            [[maybe_unused]] const ::cuda::std::source_location __loc,
+            _Fn& __fn)
   {
     using _Expr = decltype(__fn());
     if (__n_ == 0)
@@ -2637,108 +2640,143 @@ struct __policy_pow
       _CCCL_RETHROW; // empty fold: decline with the still-active exception
     }
 
-    // Recurse inside the catch so the exception pointer the clause recovered stays alive for
-    // the next arm (same lifetime rule as `__policy_or`); typed clauses catch once per arm. The recursion is bounded:
-    // `__left` decreases every level and `__left == 1` declines by rethrowing. gcc 14.3+/15's -Winfinite-recursion is
-    // blind to exceptional exits and misreads instantiations whose only normal returns are the recursive calls (e.g. a
-    // never-returning repeated policy).
-    _CCCL_DIAG_PUSH
-    _CCCL_DIAG_SUPPRESS_GCC("-Wpragmas") // gcc < 12 does not know the warning below; without this
-                                         // line the unknown name itself trips -Werror=pragmas
-    _CCCL_DIAG_SUPPRESS_GCC("-Winfinite-recursion")
-    const auto __go = [&](auto& __self, const ::std::exception* __cur, int __left) -> _Expr {
-      // A selecting policy is asked before each repetition. A type-based (pure) claim that says
-      // no would say no to every repetition, so the whole repetition declines at once; a
-      // predicate's no declines this repetition only, since the predicate may have state.
-      [[maybe_unused]] bool __use_claimed = false; // NOLINT(misc-const-correctness): set only when the arm has a claim
-      if constexpr (__has_claim<_P>)
+    if constexpr (::cuda::std::is_same_v<_P, retry_t>)
+    {
+      // `retry` never reads the exception, so its repetition loops: the recursion below would
+      // buy it nothing but a stack frame per failed attempt.
+      // maybe_unused: referenced only inside _CCCL_CATCH_ALL, which the device pass expands to a
+      // discarded branch; CTK <= 12.9's cudafe then reports #177.
+      // NOLINTNEXTLINE(misc-const-correctness) -- decremented in the catch arm, which some instantiations never reach
+      for ([[maybe_unused]] int __left = __n_;;)
       {
-        __claim __c = __claim::__unknown;
-        if constexpr (__nothrow_claim<_P>)
+        _CCCL_TRY
         {
-          __c = __ask_claim(this->__p_, __cur);
-        }
-        else
-        {
-          // A throwing predicate declines this repetition with its own exception, as a throw
-          // from the hook does below.
-          _CCCL_TRY
+          if constexpr (::cuda::std::is_void_v<_Expr>)
           {
-            __c = __ask_claim(this->__p_, __cur);
-          }
-          _CCCL_CATCH (const ::std::exception& __e)
-          {
-            if (__left == 1)
-            {
-              _CCCL_RETHROW;
-            }
-            return __self(__self, &__e, __left - 1);
-          }
-          _CCCL_CATCH_ALL
-          {
-            if (__left == 1)
-            {
-              _CCCL_RETHROW;
-            }
-            return __self(__self, nullptr, __left - 1);
-          }
-        }
-        if (__c == __claim::__no)
-        {
-          if constexpr (__has_pure_claim<_P>)
-          {
-            _CCCL_RETHROW;
+            __fn();
+            return ::std::ignore;
           }
           else
           {
-            if (__left == 1)
-            {
-              _CCCL_RETHROW;
-            }
-            return __self(__self, __cur, __left - 1);
+            return __fn();
           }
         }
-        __use_claimed = (__c == __claim::__yes);
-      }
-      _CCCL_TRY
-      {
-        if constexpr (__has_claim<_P>)
+        _CCCL_CATCH_ALL
         {
-          if (__use_claimed)
+          if (--__left == 0)
           {
-            __claimed_view<_P> __claimed_policy{this->__p_};
-            return __interpret_answer<_Expr>(__claimed_policy, __cur, __loc, __fn);
+            _CCCL_RETHROW;
           }
         }
-        return __interpret_answer<_Expr>(this->__p_, __cur, __loc, __fn);
       }
-      _CCCL_CATCH (const ::std::exception& __e)
-      {
-        if (__left == 1)
-        {
-          _CCCL_RETHROW;
-        }
-        return __self(__self, &__e, __left - 1);
-      }
-      _CCCL_CATCH_ALL
-      {
-        if (__left == 1)
-        {
-          _CCCL_RETHROW;
-        }
-        return __self(__self, nullptr, __left - 1);
-      }
-    };
-    if constexpr (::cuda::std::is_void_v<_Expr>)
-    {
-      __go(__go, __exception, __n_);
-      return ::std::ignore;
+      _CCCL_UNREACHABLE();
     }
     else
     {
-      return __go(__go, __exception, __n_);
+      // Recurse inside the catch so the exception pointer the clause recovered stays alive for
+      // the next arm (same lifetime rule as `__policy_or`); typed clauses catch once per arm. The recursion is bounded:
+      // `__left` decreases every level and `__left == 1` declines by rethrowing. gcc 14.3+/15's -Winfinite-recursion is
+      // blind to exceptional exits and misreads instantiations whose only normal returns are the recursive calls (e.g.
+      // a never-returning repeated policy).
+      _CCCL_DIAG_PUSH
+      _CCCL_DIAG_SUPPRESS_GCC("-Wpragmas") // gcc < 12 does not know the warning below; without this
+                                           // line the unknown name itself trips -Werror=pragmas
+      _CCCL_DIAG_SUPPRESS_GCC("-Winfinite-recursion")
+      const auto __go = [&](auto& __self, const ::std::exception* __cur, int __left) -> _Expr {
+        // A selecting policy is asked before each repetition. A type-based (pure) claim that says
+        // no would say no to every repetition, so the whole repetition declines at once; a
+        // predicate's no declines this repetition only, since the predicate may have state.
+        [[maybe_unused]] bool __use_claimed = false; // NOLINT(misc-const-correctness): set only when the arm has a
+                                                     // claim
+        if constexpr (__has_claim<_P>)
+        {
+          __claim __c = __claim::__unknown;
+          if constexpr (__nothrow_claim<_P>)
+          {
+            __c = __ask_claim(this->__p_, __cur);
+          }
+          else
+          {
+            // A throwing predicate declines this repetition with its own exception, as a throw
+            // from the hook does below.
+            _CCCL_TRY
+            {
+              __c = __ask_claim(this->__p_, __cur);
+            }
+            _CCCL_CATCH (const ::std::exception& __e)
+            {
+              if (__left == 1)
+              {
+                _CCCL_RETHROW;
+              }
+              return __self(__self, &__e, __left - 1);
+            }
+            _CCCL_CATCH_ALL
+            {
+              if (__left == 1)
+              {
+                _CCCL_RETHROW;
+              }
+              return __self(__self, nullptr, __left - 1);
+            }
+          }
+          if (__c == __claim::__no)
+          {
+            if constexpr (__has_pure_claim<_P>)
+            {
+              _CCCL_RETHROW;
+            }
+            else
+            {
+              if (__left == 1)
+              {
+                _CCCL_RETHROW;
+              }
+              return __self(__self, __cur, __left - 1);
+            }
+          }
+          __use_claimed = (__c == __claim::__yes);
+        }
+        _CCCL_TRY
+        {
+          if constexpr (__has_claim<_P>)
+          {
+            if (__use_claimed)
+            {
+              __claimed_view<_P> __claimed_policy{this->__p_};
+              return __interpret_answer<_Expr>(__claimed_policy, __cur, __loc, __fn);
+            }
+          }
+          return __interpret_answer<_Expr>(this->__p_, __cur, __loc, __fn);
+        }
+        _CCCL_CATCH (const ::std::exception& __e)
+        {
+          if (__left == 1)
+          {
+            _CCCL_RETHROW;
+          }
+          return __self(__self, &__e, __left - 1);
+        }
+        _CCCL_CATCH_ALL
+        {
+          if (__left == 1)
+          {
+            _CCCL_RETHROW;
+          }
+          return __self(__self, nullptr, __left - 1);
+        }
+      };
+      if constexpr (::cuda::std::is_void_v<_Expr>)
+      {
+        __go(__go, __exception, __n_);
+        return ::std::ignore;
+      }
+      else
+      {
+        return __go(__go, __exception, __n_);
+      }
+      _CCCL_DIAG_POP
     }
-    _CCCL_DIAG_POP
   }
 
   // The repetition's claim is the repeated policy's, when pure: a no is a no for every
@@ -2762,74 +2800,6 @@ struct __policy_pow
   __status_answer<_Status> on_returned(const _Status __status,
                                        const ::cuda::std::source_location __loc,
                                        _Fn& __fn) noexcept(__status_path_nothrow_v<_P, _Status, _Fn>)
-  {
-    _Status __latest = __status;
-    for (int __i = 0; __i < __n_; ++__i)
-    {
-      const __status_answer<_Status> __answer = __offer_status<_Status>(this->__p_, __latest, __loc, __fn);
-      if (!__answer.__passed_)
-      {
-        return __answer;
-      }
-      __latest = __answer.__value_;
-    }
-    return {__latest, true};
-  }
-};
-
-// `retry * n` repeats in a loop. The recursion above keeps the exception caught in one
-// repetition alive while the next consults it; `retry` never reads the exception, so for it the
-// recursion would buy nothing but a stack frame per failed attempt. The code channel's loop is
-// the general one, which was already iterative.
-template <>
-struct __policy_pow<retry_t>
-    : basic_sink<__policy_pow<retry_t>>
-    , __forwards_success<retry_t>
-{
-  static constexpr bool __needs_future   = true;
-  static constexpr bool __produces_value = true;
-
-  int __n_;
-
-  template <class _Fn>
-  __composite_answer_t<_Fn> on_thrown(const ::std::exception*, const ::cuda::std::source_location, _Fn& __fn)
-  {
-    if (__n_ == 0)
-    {
-      _CCCL_RETHROW; // empty fold: decline with the still-active exception
-    }
-    // maybe_unused: referenced only inside _CCCL_CATCH_ALL, which the device pass expands to a
-    // discarded branch; CTK <= 12.9's cudafe then reports #177.
-    // NOLINTNEXTLINE(misc-const-correctness) -- decremented in the catch arm, which some instantiations never reach
-    for ([[maybe_unused]] int __left = __n_;;)
-    {
-      _CCCL_TRY
-      {
-        if constexpr (::cuda::std::is_void_v<decltype(__fn())>)
-        {
-          __fn();
-          return ::std::ignore;
-        }
-        else
-        {
-          return __fn();
-        }
-      }
-      _CCCL_CATCH_ALL
-      {
-        if (--__left == 0)
-        {
-          _CCCL_RETHROW;
-        }
-      }
-    }
-    _CCCL_UNREACHABLE();
-  }
-
-  template <class _Status, class _Fn>
-  __status_answer<_Status> on_returned(const _Status __status,
-                                       const ::cuda::std::source_location __loc,
-                                       _Fn& __fn) noexcept(__status_path_nothrow_v<retry_t, _Status, _Fn>)
   {
     _Status __latest = __status;
     for (int __i = 0; __i < __n_; ++__i)
@@ -6627,6 +6597,7 @@ UNITTEST("repetition")
   // retry * n repeats in a loop, so a large count costs no stack: fails 20000 times, then
   // succeeds on the last re-attempt.
   {
+    static_assert(::cuda::std::is_same_v<decltype(retry * 2), __policy_pow<retry_t>>);
     int calls     = 0;
     const int got = (retry * 20000)->*[&]() -> int {
       if (++calls <= 20000)
