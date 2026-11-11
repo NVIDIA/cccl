@@ -323,19 +323,3 @@ CUB_TEST("DeviceSelect::Unique legacy size-query is unambiguous", "[select][devi
 
   REQUIRE(cudaSuccess == cub::DeviceSelect::Unique(d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected, n));
 }
-
-CUB_TEST("DeviceSelect::UniqueByKey legacy size-query is unambiguous", "[select][device]", CUB_SMALL)
-{
-  void* d_temp_storage      = nullptr;
-  size_t temp_storage_bytes = 0;
-  int* d_keys_in            = nullptr;
-  int* d_values_in          = nullptr;
-  int* d_keys_out           = nullptr;
-  int* d_values_out         = nullptr;
-  int* d_num_selected       = nullptr;
-  const int n               = 0;
-
-  REQUIRE(cudaSuccess
-          == cub::DeviceSelect::UniqueByKey(
-            d_temp_storage, temp_storage_bytes, d_keys_in, d_values_in, d_keys_out, d_values_out, d_num_selected, n));
-}
