@@ -398,7 +398,8 @@ public:
 
   template <class _OtherIndexType>
   _CCCL_API constexpr void __check_extents_strides_ctor(
-    const extents_type& __ext, [[maybe_unused]] span<_OtherIndexType, extents_type::rank()> __strides) const noexcept
+    [[maybe_unused]] const extents_type& __ext,
+    [[maybe_unused]] span<_OtherIndexType, extents_type::rank()> __strides) const noexcept
   {
     _CCCL_ASSERT(__check_strides(__strides, __rank_sequence),
                  "layout_stride::mapping ctor: all strides must be greater than 0");
@@ -471,7 +472,7 @@ public:
   }
 
   template <class _StridedLayoutMapping>
-  _CCCL_API constexpr void __check_converting_ctor(const _StridedLayoutMapping& __other) const noexcept
+  _CCCL_API constexpr void __check_converting_ctor([[maybe_unused]] const _StridedLayoutMapping& __other) const noexcept
   {
     _CCCL_ASSERT(__check_mapped_strides(__other, __rank_sequence),
                  "layout_stride::mapping converting ctor: all strides must be greater than 0");
