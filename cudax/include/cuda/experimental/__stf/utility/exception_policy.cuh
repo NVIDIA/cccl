@@ -200,52 +200,11 @@ __status_answer<_Status> __retry_status(_Status __latest, _Fn& __fn, const int _
 // (returned). Passing through on purpose (`fwd`) is a treatment; a selector passing a
 // failure through because it is on the other channel is not. Channel-neutral policies cover both.
 //
-// Each property has a default here and is overridden by a sink through a member constant of the
-// same name without the `_v` (`static constexpr bool __produces_value = true;`), stated in the
-// sink itself; a composite computes its members from its arms' traits.
+// Each property has a default in `basic_sink`, which a sink overrides with a member constant of
+// the same name (`static constexpr bool __produces_value = true;`); a composite computes its
+// members from its arms'.
 inline constexpr unsigned __on_thrown   = 1;
 inline constexpr unsigned __on_returned = 2;
-
-template <class _P, class = void>
-inline constexpr unsigned __domain_v = __on_thrown | __on_returned;
-template <class _P>
-inline constexpr unsigned __domain_v<_P, ::cuda::std::void_t<decltype(_P::__domain)>> = _P::__domain;
-
-// Whether the policy re-runs the action, which a past result does not have (rule 3).
-template <class _P, class = void>
-inline constexpr bool __needs_future_v = false;
-template <class _P>
-inline constexpr bool __needs_future_v<_P, ::cuda::std::void_t<decltype(_P::__needs_future)>> = _P::__needs_future;
-
-// Whether the policy's answer is a value standing in for the expression's (rule 3: at most one
-// per `&`, since the left one would be discarded).
-template <class _P, class = void>
-inline constexpr bool __produces_value_v = false;
-template <class _P>
-inline constexpr bool __produces_value_v<_P, ::cuda::std::void_t<decltype(_P::__produces_value)>> =
-  _P::__produces_value;
-
-// Whether the policy always diverges (unwind, abort, terminate): its hook never returns and never
-// passes the failure on. Not detectable from the hook's type, since unwind and fwd both rethrow,
-// so the leaves are marked and `&` carries the mark when its left side always reaches the right.
-// Rule 1b: such a policy cannot stand on the left of `|` or be repeated.
-template <class _P, class = void>
-inline constexpr bool __diverges_v = false;
-template <class _P>
-inline constexpr bool __diverges_v<_P, ::cuda::std::void_t<decltype(_P::__diverges)>> = _P::__diverges;
-
-// Whether the policy contains a selector that matches exceptions by type, or failing statuses by
-// value or type (rule 4: each must match a kind the operand can produce).
-template <class _P, class = void>
-inline constexpr bool __selects_thrown_v = false;
-template <class _P>
-inline constexpr bool __selects_thrown_v<_P, ::cuda::std::void_t<decltype(_P::__selects_thrown)>> =
-  _P::__selects_thrown;
-template <class _P, class = void>
-inline constexpr bool __selects_returned_v = false;
-template <class _P>
-inline constexpr bool __selects_returned_v<_P, ::cuda::std::void_t<decltype(_P::__selects_returned)>> =
-  _P::__selects_returned;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -375,6 +334,26 @@ template <class _Self>
 struct basic_sink
 {
   using __exception_sink_tag _CCCL_NODEBUG = void;
+
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  // The static properties' defaults (see "Static properties" above).
+  // The channels the sink has a treatment for.
+  static constexpr unsigned __domain = __on_thrown | __on_returned;
+  // Whether the sink re-runs the action, which a past result does not have (rule 3).
+  static constexpr bool __needs_future = false;
+  // Whether the sink's answer is a value standing in for the expression's (rule 3: at most one
+  // per `&`, since the left one would be discarded).
+  static constexpr bool __produces_value = false;
+  // Whether the sink always diverges (unwind, abort, terminate): its hook never returns and never
+  // passes the failure on. Not detectable from the hook's type, since unwind and fwd both rethrow,
+  // so the leaves are marked and `&` carries the mark when its left side always reaches the right.
+  // Rule 1b: such a sink cannot stand on the left of `|` or be repeated.
+  static constexpr bool __diverges = false;
+  // Whether the sink contains a selector that matches exceptions by type, or failing statuses by
+  // value or type (rule 4: each must match a kind the operand can produce).
+  static constexpr bool __selects_thrown   = false;
+  static constexpr bool __selects_returned = false;
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief The sink applied from `__loc` rather than from the call site: `s.at(loc) ->* f`.
   __sink_at<_Self> at(const ::cuda::std::source_location __loc) const
@@ -2143,10 +2122,10 @@ struct __if_isa_t
     : basic_sink<__if_isa_t<_P, _Es...>>
     , __forwards_success<_P>
 {
-  static constexpr unsigned __domain       = __on_thrown & __domain_v<_P>;
-  static constexpr bool __produces_value   = __produces_value_v<_P>;
+  static constexpr unsigned __domain       = __on_thrown & _P::__domain;
+  static constexpr bool __produces_value   = _P::__produces_value;
   static constexpr bool __selects_thrown   = true;
-  static constexpr bool __selects_returned = __selects_returned_v<_P>;
+  static constexpr bool __selects_returned = _P::__selects_returned;
 
   using __pure_claim_tag _CCCL_NODEBUG = void;
 
@@ -2265,10 +2244,10 @@ struct __if_monomorphic_t
     : basic_sink<__if_monomorphic_t<_P, _Es...>>
     , __forwards_success<_P>
 {
-  static constexpr unsigned __domain       = __on_thrown & __domain_v<_P>;
-  static constexpr bool __produces_value   = __produces_value_v<_P>;
+  static constexpr unsigned __domain       = __on_thrown & _P::__domain;
+  static constexpr bool __produces_value   = _P::__produces_value;
   static constexpr bool __selects_thrown   = true;
-  static constexpr bool __selects_returned = __selects_returned_v<_P>;
+  static constexpr bool __selects_returned = _P::__selects_returned;
 
   using __pure_claim_tag _CCCL_NODEBUG = void;
 
@@ -2416,18 +2395,18 @@ struct __policy_and
     , __composite_hooks<_L, _R>
 {
   // `&` stops at the left's fwd, so it treats only the channels both sides treat.
-  static constexpr unsigned __domain       = __domain_v<_L> & __domain_v<_R>;
-  static constexpr bool __needs_future     = __needs_future_v<_L> || __needs_future_v<_R>;
-  static constexpr bool __diverges         = __never_passes_through_v<_L> && __diverges_v<_R>;
-  static constexpr bool __produces_value   = __produces_value_v<_L> || __produces_value_v<_R>;
-  static constexpr bool __selects_thrown   = __selects_thrown_v<_L> || __selects_thrown_v<_R>;
-  static constexpr bool __selects_returned = __selects_returned_v<_L> || __selects_returned_v<_R>;
+  static constexpr unsigned __domain       = _L::__domain & _R::__domain;
+  static constexpr bool __needs_future     = _L::__needs_future || _R::__needs_future;
+  static constexpr bool __diverges         = __never_passes_through_v<_L> && _R::__diverges;
+  static constexpr bool __produces_value   = _L::__produces_value || _R::__produces_value;
+  static constexpr bool __selects_thrown   = _L::__selects_thrown || _R::__selects_thrown;
+  static constexpr bool __selects_returned = _L::__selects_returned || _R::__selects_returned;
 
   // A code-channel selector never returns on the exception channel (it passes through by
   // rethrowing) but may handle a status, so the right side is reachable there.
-  static_assert(!__answers_nothing<_L> || __selects_returned_v<_L>,
+  static_assert(!__answers_nothing<_L> || _L::__selects_returned,
                 "policies after a never-returning policy are unreachable");
-  static_assert(!__produces_value_v<_L>,
+  static_assert(!_L::__produces_value,
                 "the left side of & chooses a value (subst, as_expected, defer, retry, a converter) that & would "
                 "discard or override; put the value-producing policy on the right, or use | for a fallback");
 
@@ -2561,17 +2540,17 @@ struct __policy_or
     : basic_sink<__policy_or<_L, _R>>
     , __composite_hooks<_L, _R>
 {
-  static constexpr unsigned __domain       = __domain_v<_L> | __domain_v<_R>;
-  static constexpr bool __needs_future     = __needs_future_v<_L> || __needs_future_v<_R>;
-  static constexpr bool __produces_value   = __produces_value_v<_L> || __produces_value_v<_R>;
-  static constexpr bool __selects_thrown   = __selects_thrown_v<_L> || __selects_thrown_v<_R>;
-  static constexpr bool __selects_returned = __selects_returned_v<_L> || __selects_returned_v<_R>;
+  static constexpr unsigned __domain       = _L::__domain | _R::__domain;
+  static constexpr bool __needs_future     = _L::__needs_future || _R::__needs_future;
+  static constexpr bool __produces_value   = _L::__produces_value || _R::__produces_value;
+  static constexpr bool __selects_thrown   = _L::__selects_thrown || _R::__selects_thrown;
+  static constexpr bool __selects_returned = _L::__selects_returned || _R::__selects_returned;
 
   static_assert(__has_exception_hook<_L> && __has_exception_hook<_R>,
                 "both sides of | must answer the exception path (have an exception hook)");
   static_assert(!__never_passes_through_v<_L>,
                 "the left policy never passes through; alternatives after it are unreachable");
-  static_assert(!__diverges_v<_L>,
+  static_assert(!_L::__diverges,
                 "the left policy always diverges (unwind, abort, terminate); alternatives after it are unreachable");
   static_assert(!__right_arm_starved<_L, _R>,
                 "the left type guard already claims every exception type the right arm lists; "
@@ -2738,11 +2717,11 @@ struct __policy_pow
     : basic_sink<__policy_pow<_P>>
     , __forwards_success<_P>
 {
-  static constexpr unsigned __domain       = __domain_v<_P>;
-  static constexpr bool __needs_future     = __needs_future_v<_P>;
-  static constexpr bool __produces_value   = __produces_value_v<_P>;
-  static constexpr bool __selects_thrown   = __selects_thrown_v<_P>;
-  static constexpr bool __selects_returned = __selects_returned_v<_P>;
+  static constexpr unsigned __domain       = _P::__domain;
+  static constexpr bool __needs_future     = _P::__needs_future;
+  static constexpr bool __produces_value   = _P::__produces_value;
+  static constexpr bool __selects_thrown   = _P::__selects_thrown;
+  static constexpr bool __selects_returned = _P::__selects_returned;
 
   int __n_;
 
@@ -2750,7 +2729,7 @@ struct __policy_pow
                 "the repeated policy must answer the exception path (have an exception hook)");
   static_assert(!__never_passes_through_v<_P>,
                 "the repeated policy never passes through; repetitions after the first are unreachable");
-  static_assert(!__diverges_v<_P>,
+  static_assert(!_P::__diverges,
                 "the repeated policy always diverges (unwind, abort, terminate); repetitions after the first are "
                 "unreachable");
 
@@ -3073,9 +3052,8 @@ __status_answer<_Status> __offer_status(
   [[maybe_unused]] const ::cuda::std::source_location __loc,
   [[maybe_unused]] _Fn& __fn) noexcept(__status_path_nothrow_v<_P, _Status, _Fn>)
 {
-  static_assert(
-    !(__needs_future_v<::cuda::std::remove_cvref_t<_P>> && __is_past_result_v<::cuda::std::remove_cvref_t<_Fn>>),
-    "retry needs an action to repeat; pass a lambda");
+  static_assert(!(_P::__needs_future && __is_past_result_v<::cuda::std::remove_cvref_t<_Fn>>),
+                "retry needs an action to repeat; pass a lambda");
   static_assert(!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_P>, defer_t>,
                 "defer answers an exception_ptr, which no status expression can take; store(&eptr) keeps a "
                 "status's exception");
@@ -3377,16 +3355,16 @@ decltype(auto) __run_under([[maybe_unused]] __on_throw_policy<_Reaction>& __poli
   static_assert(__may_throw || __may_return_status,
                 "a sink has nothing to do for a noexcept callable, which terminates rather than "
                 "throws; call such a callable directly; under <<, a noexcept action must return a status to be fed");
-  static_assert(_Feed || !__selects_returned_v<_P>,
+  static_assert(_Feed || !_P::__selects_returned,
                 "under ->* an action's return is yielded unchecked, so a status selector (if_equal, returned) "
                 "never matches; use << to read the return as an error code");
-  static_assert(!_Feed || __may_return_status || !__selects_returned_v<_P>,
+  static_assert(!_Feed || __may_return_status || !_P::__selects_returned,
                 "a status selector (if_equal, returned) never matches an operand that returns no status; "
                 "remove it, or make the callable return a status");
-  static_assert(!__may_throw || (__domain_v<_P> & __on_thrown) != 0,
+  static_assert(!__may_throw || (_P::__domain & __on_thrown) != 0,
                 "the callable can throw, but the policy has no treatment for exceptions; add a thrown(...) arm "
                 "or a channel-neutral policy with |, or make the callable noexcept");
-  static_assert(!__may_return_status || (__domain_v<_P> & __on_returned) != 0,
+  static_assert(!__may_return_status || (_P::__domain & __on_returned) != 0,
                 "the callable returns a status, but the policy has no treatment for a failing status; add a "
                 "returned(...) arm or a channel-neutral policy with |");
 
@@ -3504,10 +3482,10 @@ template <class _Reaction, class _Status>
 __status_answer<_Status> __offer_past(__on_throw_policy<_Reaction>& __policy, const _Status __status) noexcept(
   __status_path_nothrow_v<_Reaction, _Status, __past_result<_Status>>)
 {
-  static_assert(!__selects_thrown_v<_Reaction>,
+  static_assert(!_Reaction::__selects_thrown,
                 "a type selector (if_isa, if_monomorphic, thrown) never matches a status operand, which cannot "
                 "throw; select statuses with if_equal or returned");
-  static_assert((__domain_v<_Reaction> & __on_returned) != 0,
+  static_assert((_Reaction::__domain & __on_returned) != 0,
                 "a status operand needs a policy with a treatment for a failing status; thrown(...) and defer "
                 "apply to exceptions only (store(&eptr) keeps a status's exception)");
   if (!__status_failed(__status))
@@ -3677,10 +3655,10 @@ struct __if_equal_t
     : basic_sink<__if_equal_t<_P, _Status, _Count>>
     , __forwards_success<_P>
 {
-  static constexpr unsigned __domain       = __on_returned & __domain_v<_P>;
-  static constexpr bool __needs_future     = __needs_future_v<_P>;
-  static constexpr bool __produces_value   = __produces_value_v<_P>;
-  static constexpr bool __selects_thrown   = __selects_thrown_v<_P>;
+  static constexpr unsigned __domain       = __on_returned & _P::__domain;
+  static constexpr bool __needs_future     = _P::__needs_future;
+  static constexpr bool __produces_value   = _P::__produces_value;
+  static constexpr bool __selects_thrown   = _P::__selects_thrown;
   static constexpr bool __selects_returned = true;
 
   __status_set<_Status, _Count> __set_;
@@ -3726,11 +3704,11 @@ struct __thrown_t
     : basic_sink<__thrown_t<_P>>
     , __forwards_success<_P>
 {
-  static constexpr unsigned __domain       = __on_thrown & __domain_v<_P>;
-  static constexpr bool __needs_future     = __needs_future_v<_P>;
-  static constexpr bool __produces_value   = __produces_value_v<_P>;
+  static constexpr unsigned __domain       = __on_thrown & _P::__domain;
+  static constexpr bool __needs_future     = _P::__needs_future;
+  static constexpr bool __produces_value   = _P::__produces_value;
   static constexpr bool __selects_thrown   = true;
-  static constexpr bool __selects_returned = __selects_returned_v<_P>;
+  static constexpr bool __selects_returned = _P::__selects_returned;
 
   template <class _Fn, class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
   decltype(auto) on_thrown(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
@@ -3752,10 +3730,10 @@ struct __returned_t
     : basic_sink<__returned_t<_P>>
     , __forwards_success<_P>
 {
-  static constexpr unsigned __domain       = __on_returned & __domain_v<_P>;
-  static constexpr bool __needs_future     = __needs_future_v<_P>;
-  static constexpr bool __produces_value   = __produces_value_v<_P>;
-  static constexpr bool __selects_thrown   = __selects_thrown_v<_P>;
+  static constexpr unsigned __domain       = __on_returned & _P::__domain;
+  static constexpr bool __needs_future     = _P::__needs_future;
+  static constexpr bool __produces_value   = _P::__produces_value;
+  static constexpr bool __selects_thrown   = _P::__selects_thrown;
   static constexpr bool __selects_returned = true;
 
   template <class _Fn>
@@ -4051,10 +4029,10 @@ template <class _L,
 [[nodiscard]] auto operator&(_L&& __l, noop_t)
 {
   using _NL = __normalized_t<_L>;
-  static_assert(!__produces_value_v<_NL>,
+  static_assert(!_NL::__produces_value,
                 "the left side of & chooses a value (subst, as_expected, defer, retry, a converter) that & would "
                 "discard or override; put the value-producing policy on the right, or use | for a fallback");
-  static_assert(!__answers_nothing<_NL> || __selects_returned_v<_NL>,
+  static_assert(!__answers_nothing<_NL> || _NL::__selects_returned,
                 "policies after a never-returning policy are unreachable");
   if constexpr (__is_dynamic_v<_L>)
   {
@@ -4097,7 +4075,7 @@ template <class _L,
   using _NL = __normalized_t<_L>;
   static_assert(!__never_passes_through_v<_NL>,
                 "the left policy never passes through; alternatives after it are unreachable");
-  static_assert(!__diverges_v<_NL>,
+  static_assert(!_NL::__diverges,
                 "the left policy always diverges (unwind, abort, terminate); alternatives after it are unreachable");
   if constexpr (__is_dynamic_v<_L>)
   {
@@ -4150,11 +4128,11 @@ template <class _A, class _B>
 struct always_t : basic_sink<always_t<_A, _B>>
 {
   // Finalizers never handle: the head alone decides what is treated.
-  static constexpr unsigned __domain       = __domain_v<_A>;
-  static constexpr bool __needs_future     = __needs_future_v<_A> || __needs_future_v<_B>;
-  static constexpr bool __produces_value   = __produces_value_v<_A>;
-  static constexpr bool __selects_thrown   = __selects_thrown_v<_A> || __selects_thrown_v<_B>;
-  static constexpr bool __selects_returned = __selects_returned_v<_A> || __selects_returned_v<_B>;
+  static constexpr unsigned __domain       = _A::__domain;
+  static constexpr bool __needs_future     = _A::__needs_future || _B::__needs_future;
+  static constexpr bool __produces_value   = _A::__produces_value;
+  static constexpr bool __selects_thrown   = _A::__selects_thrown || _B::__selects_thrown;
+  static constexpr bool __selects_returned = _A::__selects_returned || _B::__selects_returned;
 
   _A __head_;
   _B __fin_;
@@ -4509,11 +4487,11 @@ private:
               ? nullptr
               : &typeid(::cuda::std::remove_cvref_t<__ans_t>),
             type_name<::cuda::std::remove_cvref_t<__ans_t>>,
-            __diverges_v<_P>,
-            __produces_value_v<_P>,
-            __needs_future_v<_P>,
-            __selects_thrown_v<_P>,
-            __selects_returned_v<_P>,
+            _P::__diverges,
+            _P::__produces_value,
+            _P::__needs_future,
+            _P::__selects_thrown,
+            _P::__selects_returned,
             __has_on_success_with<_P, ::std::any> || __has_on_success_void<_P>)
         , __p_(::cuda::std::move(__p))
     {}
