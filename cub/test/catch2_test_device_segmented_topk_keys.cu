@@ -773,7 +773,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys run a small multi-CTA segment through
 // Disabled for now: even with empty segments the driver still has to schedule ~INT_MAX
 // clusters, so the launch takes minutes -- too slow for a routine test. Re-enable to validate the
 // maximum-batch launch geometry.
-#  if 0
+#  if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 // Maximum-batch boundary: `num_segments == INT_MAX` through a multi-CTA cluster. A flattened grid.x ==
 // num_segments * cluster_blocks would overrun the 2^31-1 grid-x limit long before num_segments reached INT_MAX; the
 // launch instead keeps num_segments in grid.x and stacks the CTAs in grid.y, so this must dispatch successfully.

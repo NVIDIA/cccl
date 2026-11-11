@@ -16,7 +16,7 @@
 #include __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(memory_resource.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/memory_resource.h>
 #  include <thrust/system/omp/memory_resource.h>
 #  include <thrust/system/tbb/memory_resource.h>

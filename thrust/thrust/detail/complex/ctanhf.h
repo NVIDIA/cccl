@@ -44,14 +44,15 @@
 #include <thrust/complex.h>
 #include <thrust/detail/complex/math_private.h>
 
+#include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/copysign.h>
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/hyperbolic_functions.h>
-#include <cuda/std/__cmath/inverse_trigonometric_functions.h>
 #include <cuda/std/__cmath/isfinite.h>
 #include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/trigonometric_functions.h>
+#include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex

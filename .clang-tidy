@@ -97,9 +97,7 @@ Checks:
   - '-readability-math-missing-parentheses'
   - '-readability-avoid-nested-conditional-operator'
   - '-readability-redundant-declaration'
-  - '-readability-avoid-unconditional-preprocessor-if'
   - '-readability-redundant-casting'
-  - '-readability-simplify-boolean-expr'
   - '-readability-make-member-function-const'
   - '-readability-suspicious-call-argument'
   # Handled by clang-tidy

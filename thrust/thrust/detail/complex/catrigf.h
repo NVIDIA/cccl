@@ -38,6 +38,7 @@
 #include <thrust/detail/config.h>
 
 #include <thrust/complex.h>
+#include <thrust/detail/complex/catrig.h>
 #include <thrust/detail/complex/math_private.h>
 
 #include <cuda/std/__cmath/abs.h>
@@ -50,7 +51,9 @@
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/signbit.h>
-#include <cuda/std/limits>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/cfloat>
+#include <cuda/std/cstdint>
 #include <cuda/std/numbers>
 
 THRUST_NAMESPACE_BEGIN

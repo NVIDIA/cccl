@@ -204,14 +204,10 @@ struct __tuple_constraints
         // [tuple#cnstr]-29.5: either sizeof...(Types) is not 1, or is_constructible_v<T, _UTuple> are false
         return false;
       }
-      else if constexpr (is_convertible_v<_UTuple, _T0>)
+      else
       { // [tuple#cnstr]-21.3: either sizeof...(Types) is not 1, or is_convertible_v<_UTuple, T> are false
         // [tuple#cnstr]-29.5: either sizeof...(Types) is not 1, or is_convertible_v<_UTuple, T> are false
-        return false;
-      }
-      else
-      {
-        return true;
+        return !is_convertible_v<_UTuple, _T0>;
       }
     }
     else

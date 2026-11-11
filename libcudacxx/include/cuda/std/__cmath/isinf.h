@@ -198,6 +198,13 @@ template <class _Tp>
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
+#if _CCCL_HAS_NVFP8_UE5M3()
+[[nodiscard]] _CCCL_API constexpr bool isinf(__nv_fp8_ue5m3) noexcept
+{
+  return false;
+}
+#endif // _CCCL_HAS_NVFP8_UE5M3()
+
 #if _CCCL_HAS_NVFP8_E8M0()
 [[nodiscard]] _CCCL_API constexpr bool isinf(__nv_fp8_e8m0) noexcept
 {

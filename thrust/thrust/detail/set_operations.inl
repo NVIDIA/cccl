@@ -22,7 +22,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(set_operations.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/set_operations.h>
 #  include <thrust/system/cuda/detail/set_operations.h>
 #  include <thrust/system/omp/detail/set_operations.h>

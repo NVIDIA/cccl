@@ -22,7 +22,7 @@ struct mod_n
   T mod;
   _CCCL_HOST_DEVICE bool operator()(T x)
   {
-    return (x % mod == 0) ? true : false;
+    return static_cast<bool>(x % mod == 0);
   }
 };
 

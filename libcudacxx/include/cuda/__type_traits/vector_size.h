@@ -205,6 +205,13 @@ template <>
 inline constexpr ::cuda::std::size_t vector_size_v<::__nv_fp8x4_e5m2> = 4;
 #  endif // _CCCL_HAS_NVFP8_E5M2()
 
+#  if _CCCL_HAS_NVFP8_UE5M3()
+template <>
+inline constexpr ::cuda::std::size_t vector_size_v<::__nv_fp8x2_ue5m3> = 2;
+template <>
+inline constexpr ::cuda::std::size_t vector_size_v<::__nv_fp8x4_ue5m3> = 4;
+#  endif // _CCCL_HAS_NVFP8_UE5M3()
+
 #  if _CCCL_HAS_NVFP8_E8M0()
 template <>
 inline constexpr ::cuda::std::size_t vector_size_v<::__nv_fp8x2_e8m0> = 2;

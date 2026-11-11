@@ -35,12 +35,14 @@
 #include <thrust/detail/config.h>
 
 #include <thrust/complex.h>
+#include <thrust/detail/complex/arithmetic.h>
 #include <thrust/detail/complex/math_private.h>
 
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/hypot.h>
 #include <cuda/std/__cmath/inverse_trigonometric_functions.h>
 #include <cuda/std/__cmath/logarithms.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/numbers>
 
 THRUST_NAMESPACE_BEGIN

@@ -259,7 +259,7 @@ struct agent_batched_topk_cluster
   // leader at the last logical rank and scans ascending; every other config (deterministic-prefer-larger and the
   // whole non-deterministic path) keeps the leader at rank 0 and scans descending, which makes rank 0 last. Matches the
   // `leader_rank` computed in `compute_segment_layout`.
-  static constexpr bool is_scan_descending = !(needs_set_determinism && !is_tie_reversed);
+  static constexpr bool is_scan_descending = !needs_set_determinism || is_tie_reversed;
 
   // The deterministic final scan visits chunks in global-index order and bails early (`final_filter_should_stop`), so
   // keeping the *first-visited* chunks resident lets it skip re-reading the streamed overflow. Ascending visits low
