@@ -22,13 +22,16 @@
 
 #include <cuda/std/__concepts/class_or_enum.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_unbounded_array.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/make_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/auto_cast.h>
 #include <cuda/std/cstddef>
 
@@ -194,6 +197,29 @@ inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto ssize = __ssize::__fn{};
 } // namespace __cpo
+
+// A declaration suffices: a static size must not depend on the object's value.
+template <class _Tp>
+extern _Tp __static_size_object;
+
+_CCCL_DIAG_PUSH
+// This probe intentionally uses a variable template without a definition.
+_CCCL_DIAG_SUPPRESS_CLANG("-Wundefined-var-template")
+
+template <class _Tp, bool = __ssize::__can_ssize<_Tp>, class = void>
+inline constexpr size_t __static_size_impl = dynamic_extent;
+
+template <class _Tp>
+inline constexpr size_t __static_size_impl<
+  _Tp,
+  true,
+  void_t<typename integral_constant<size_t, ::cuda::std::ranges::size(__static_size_object<_Tp>)>::type>> =
+  integral_constant<size_t, ::cuda::std::ranges::size(__static_size_object<_Tp>)>::value;
+
+template <class _Tp>
+inline constexpr size_t __static_size_v = __static_size_impl<remove_cvref_t<_Tp>>;
+
+_CCCL_DIAG_POP
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
