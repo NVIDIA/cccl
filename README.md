@@ -500,6 +500,7 @@ Does your project use CCCL? [Open a PR to add your project to this list!](https:
 - [cuSOLVER](https://developer.nvidia.com/cusolver) - Dense and sparse linear solvers
 - [CUSP](https://github.com/cusplibrary/cusplibrary) - Sparse matrix operations, iterative methods, and algebraic multigrid
 - [cuVS](https://github.com/rapidsai/cuvs) - Approximate clustering and vector search
+- [FINUFFT](https://github.com/flatironinstitute/finufft) - Flatiron Institute Non Uniform FFT
 - [GooFit](https://github.com/GooFit/GooFit) - Library for maximum-likelihood fits
 - [HeavyDB](https://github.com/heavyai/heavydb) - SQL database engine
 - [HOOMD](https://github.com/glotzerlab/hoomd-blue) - Monte Carlo and molecular dynamics simulations
