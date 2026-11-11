@@ -72,7 +72,7 @@ class virtual_group;
 template <class _Hierarchy>
 class coalesced_group;
 
-template <class _Unit, class _Group>
+template <class _Unit, class _Group, class _MappingResult>
 class group_view;
 
 // mappings

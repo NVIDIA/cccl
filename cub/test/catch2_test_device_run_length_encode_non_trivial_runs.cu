@@ -52,11 +52,9 @@ struct index_to_item_op
       // Even number (once)
       return (OffsetT{2} * group);
     }
-    else
-    {
-      // Odd number (repeated twice)
-      return OffsetT{2} * group + OffsetT{1};
-    }
+
+    // Odd number (repeated twice)
+    return OffsetT{2} * group + OffsetT{1};
   }
 };
 

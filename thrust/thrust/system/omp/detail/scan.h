@@ -22,8 +22,8 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__iterator/advance.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__numeric/exclusive_scan.h>
 #include <cuda/std/__numeric/inclusive_scan.h>

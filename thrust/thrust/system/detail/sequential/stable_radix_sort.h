@@ -50,10 +50,7 @@ struct RadixEncoder<char>
     {
       return static_cast<unsigned char>(x) ^ static_cast<unsigned char>(1) << (8 * sizeof(unsigned char) - 1);
     }
-    else
-    {
-      return x;
-    }
+    return x;
   }
 };
 
@@ -164,7 +161,7 @@ inline _CCCL_HOST_DEVICE void radix_shuffle_n(
   const size_t n,
   RandomAccessIterator2 result,
   Integer bit_shift,
-  size_t* histogram)
+  size_t* histogram) // NOLINT(readability-non-const-parameter)
 {
   using KeyType = thrust::detail::it_value_t<RandomAccessIterator1>;
 
@@ -192,7 +189,7 @@ _CCCL_HOST_DEVICE void radix_shuffle_n(
   RandomAccessIterator3 keys_result,
   RandomAccessIterator4 values_result,
   Integer bit_shift,
-  size_t* histogram)
+  size_t* histogram) // NOLINT(readability-non-const-parameter)
 {
   using KeyType = thrust::detail::it_value_t<RandomAccessIterator1>;
 
@@ -303,7 +300,7 @@ _CCCL_HOST_DEVICE void radix_sort(
         }
       }
 
-      flip = (flip) ? false : true;
+      flip = flip ? false : true;
     }
   }
 

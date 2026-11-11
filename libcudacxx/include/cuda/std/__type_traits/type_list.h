@@ -38,7 +38,7 @@
 //! type alias named \c type.
 
 #if !defined(_CCCL_META_UNROLL_LIMIT)
-#  if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVHPC)
+#  if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC)
 #    define _CCCL_META_UNROLL_LIMIT 10
 #  else
 #    define _CCCL_META_UNROLL_LIMIT 16

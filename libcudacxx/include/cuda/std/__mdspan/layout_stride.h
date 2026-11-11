@@ -134,7 +134,7 @@ private:
     if constexpr (is_integral_v<_OtherIndexType>)
     {
       using _CommonType = common_type_t<index_type, _OtherIndexType>;
-      return static_cast<_CommonType>(__stride) > static_cast<_CommonType>((numeric_limits<index_type>::max)());
+      return static_cast<_CommonType>(__stride) > static_cast<_CommonType>(numeric_limits<index_type>::max());
     }
     else
     {
@@ -409,10 +409,7 @@ public:
     {
       return index_type{0};
     }
-    else
-    {
-      return (index_type{1} + ... + ((extents().extent(_Pos) - index_type{1}) * __strides()[_Pos]));
-    }
+    return (index_type{1} + ... + ((extents().extent(_Pos) - index_type{1}) * __strides()[_Pos]));
   }
 
   [[nodiscard]] _CCCL_API constexpr index_type required_span_size() const noexcept

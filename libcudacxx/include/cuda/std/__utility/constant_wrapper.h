@@ -455,6 +455,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT constant_wrapper : __cw_operators
 #if _CCCL_COMPILER(MSVC)
   static constexpr conditional_t<is_class_v<_Tp>, const _Tp&, const _Tp> value = (_Xp);
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+  // NOLINTNEXTLINE(readability-redundant-parentheses)
   static constexpr decltype((_Xp)) value = (_Xp);
 #endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
@@ -472,11 +473,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT constant_wrapper : __cw_operators
 
   _CCCL_HOST_DEVICE_API constexpr operator decltype(value)() const noexcept
   {
+    // NOLINTNEXTLINE(readability-redundant-parentheses)
     return (_Xp);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr decltype(value) __get() noexcept
   {
+    // NOLINTNEXTLINE(readability-redundant-parentheses)
     return (_Xp);
   }
 
