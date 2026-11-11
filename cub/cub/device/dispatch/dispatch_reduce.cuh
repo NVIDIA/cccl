@@ -373,7 +373,11 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") DispatchRe
     const int reduce_device_occupancy = reduce_config.sm_occupancy * sm_count;
 
     // Even-share work distribution
+#if _CUB_HAS_USER_SUBSCRIPTION_FACTOR()
     const int max_blocks = reduce_device_occupancy * detail::subscription_factor;
+#else // _CUB_HAS_USER_SUBSCRIPTION_FACTOR()
+    const int max_blocks = reduce_device_occupancy;
+#endif // _CUB_HAS_USER_SUBSCRIPTION_FACTOR()
     GridEvenShare<OffsetT> even_share;
     even_share.DispatchInit(num_items, max_blocks, reduce_config.tile_size);
 
@@ -684,7 +688,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   }
 
   const int reduce_device_occupancy = sm_occupancy * sm_count;
-  const int max_blocks              = reduce_device_occupancy * detail::subscription_factor;
+#if _CUB_HAS_USER_SUBSCRIPTION_FACTOR()
+  const int max_blocks = reduce_device_occupancy * detail::subscription_factor;
+#else // _CUB_HAS_USER_SUBSCRIPTION_FACTOR()
+  const int max_blocks = reduce_device_occupancy;
+#endif // _CUB_HAS_USER_SUBSCRIPTION_FACTOR()
 
   // NOLINTNEXTLINE(misc-const-correctness)
   [[maybe_unused]] AccumT* d_block_reductions = nullptr; // buffer for per-block aggregates for the two-phase code path

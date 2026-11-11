@@ -78,6 +78,11 @@ static_assert(CUB_MAX_DEVICES > 0, "CUB_MAX_DEVICES must be greater than 0.");
 #  endif
 
 /// Oversubscription factor
+#  if defined(CUB_SUBSCRIPTION_FACTOR) || defined(CUB_PTX_SUBSCRIPTION_FACTOR)
+#    define _CUB_HAS_USER_SUBSCRIPTION_FACTOR() 1
+#  else
+#    define _CUB_HAS_USER_SUBSCRIPTION_FACTOR() 0
+#  endif
 #  ifndef CUB_SUBSCRIPTION_FACTOR
 //! Deprecated [Since 3.0]
 #    define CUB_SUBSCRIPTION_FACTOR(unused) (5)
