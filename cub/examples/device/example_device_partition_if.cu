@@ -202,11 +202,12 @@ int main(int argc, char** argv)
 
   // Check for correctness (and display results, if specified)
   stream.sync();
-  int compare = CompareDeviceResults(h_reference, d_out.data(), num_items, true, g_verbose, stream);
-  printf("\t Data %s ", compare != 0 ? "FAIL" : "PASS");
-  compare = compare | CompareDeviceResults(&num_selected, d_num_selected_out.data(), 1, true, g_verbose, stream);
-  printf("\t Count %s ", compare != 0 ? "FAIL" : "PASS");
-  AssertEquals(0, compare);
+  bool compare = CompareDeviceResults(h_reference, d_out.data(), num_items, true, g_verbose, stream) != 0;
+  printf("\t Data %s ", compare ? "FAIL" : "PASS");
+  compare = (CompareDeviceResults(&num_selected, d_num_selected_out.data(), 1, true, g_verbose, stream) != 0)
+         || compare;
+  printf("\t Count %s ", compare ? "FAIL" : "PASS");
+  AssertEquals(false, compare);
 
   // Cleanup
   delete[] h_in;

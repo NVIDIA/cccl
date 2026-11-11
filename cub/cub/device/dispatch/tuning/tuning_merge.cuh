@@ -88,12 +88,12 @@ struct policy_selector
 {
   int key_size;
   int key_align;
-  int key_is_trivially_relocatable;
+  bool key_is_trivially_relocatable;
   bool key_iterators_are_contiguous;
   bool key_iterator_value_types_are_the_same;
   int value_size; // if 0, then this is a keys-only policy
   int value_align;
-  int value_is_trivially_relocatable;
+  bool value_is_trivially_relocatable;
   bool value_iterators_are_contiguous;
   bool value_iterator_value_types_are_the_same;
   int offset_size;
@@ -102,9 +102,9 @@ struct policy_selector
   {
     const int tune_type_size   = key_size + value_size;
     const int ipt_800_plus     = _CUB::detail::nominal_4B_items_to_items(15, tune_type_size);
-    const bool can_bulk_keys   = (key_size == key_align) && (key_is_trivially_relocatable != 0)
-                              && key_iterators_are_contiguous && key_iterator_value_types_are_the_same;
-    const bool can_bulk_values = (value_size == value_align) && (value_is_trivially_relocatable != 0)
+    const bool can_bulk_keys   = (key_size == key_align) && key_is_trivially_relocatable && key_iterators_are_contiguous
+                              && key_iterator_value_types_are_the_same;
+    const bool can_bulk_values = (value_size == value_align) && value_is_trivially_relocatable
                               && value_iterators_are_contiguous && value_iterator_value_types_are_the_same;
 
     if (cc >= ::cuda::compute_capability{10, 0})

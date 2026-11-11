@@ -82,7 +82,7 @@ struct BlockRakingLayout
 
   /// Whether or not we need bounds checking during raking (the number of reduction elements is not a multiple of the
   /// number of raking threads)
-  static constexpr int UNGUARDED = static_cast<int>(ThreadsPerBlock % RAKING_THREADS == 0);
+  static constexpr bool UNGUARDED = (ThreadsPerBlock % RAKING_THREADS == 0);
 
   /**
    * @brief Shared memory storage type

@@ -261,7 +261,7 @@ struct AgentRadixSortDownsweep
   uint32_t num_bits;
 
   // Whether to short-circuit
-  int short_circuit;
+  bool short_circuit;
 
   DecomposerT decomposer;
 
@@ -581,7 +581,7 @@ struct AgentRadixSortDownsweep
       , d_values_out(d_values_out)
       , current_bit(current_bit)
       , num_bits(num_bits)
-      , short_circuit(1)
+      , short_circuit(true)
       , decomposer(decomposer)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -597,7 +597,7 @@ struct AgentRadixSortDownsweep
       }
     }
 
-    short_circuit = __syncthreads_and(short_circuit);
+    short_circuit = __syncthreads_and(static_cast<int>(short_circuit)) != 0;
   }
 
   /**
@@ -621,7 +621,7 @@ struct AgentRadixSortDownsweep
       , d_values_out(d_values_out)
       , current_bit(current_bit)
       , num_bits(num_bits)
-      , short_circuit(1)
+      , short_circuit(true)
       , decomposer(decomposer)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -646,7 +646,7 @@ struct AgentRadixSortDownsweep
       }
     }
 
-    short_circuit = __syncthreads_and(short_circuit);
+    short_circuit = __syncthreads_and(static_cast<int>(short_circuit)) != 0;
   }
 
   /**
@@ -654,7 +654,7 @@ struct AgentRadixSortDownsweep
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessRegion(OffsetT block_offset, OffsetT block_end)
   {
-    if (short_circuit != 0)
+    if (short_circuit)
     {
       // Copy keys
       Copy(d_keys_in, d_keys_out, block_offset, block_end);

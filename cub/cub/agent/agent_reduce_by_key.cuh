@@ -185,10 +185,10 @@ struct AgentReduceByKey
   };
 
   // Constants
-  static constexpr int BLOCK_THREADS     = AgentReduceByKeyPolicyT::BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD  = AgentReduceByKeyPolicyT::ITEMS_PER_THREAD;
-  static constexpr int TILE_ITEMS        = BLOCK_THREADS * ITEMS_PER_THREAD;
-  static constexpr int TWO_PHASE_SCATTER = static_cast<int>(ITEMS_PER_THREAD > 1);
+  static constexpr int BLOCK_THREADS      = AgentReduceByKeyPolicyT::BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD   = AgentReduceByKeyPolicyT::ITEMS_PER_THREAD;
+  static constexpr int TILE_ITEMS         = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr bool TWO_PHASE_SCATTER = (ITEMS_PER_THREAD > 1);
 
   // The head flagging, scan and scatter require the items in a blocked arrangement
   static_assert(AgentReduceByKeyPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,

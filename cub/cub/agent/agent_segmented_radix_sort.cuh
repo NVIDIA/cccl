@@ -64,7 +64,7 @@ struct AgentSegmentedRadixSort
   static constexpr int BLOCK_THREADS    = SegmentedPolicyT::BLOCK_THREADS;
   static constexpr int RADIX_BITS       = SegmentedPolicyT::RADIX_BITS;
   static constexpr int RADIX_DIGITS     = 1 << RADIX_BITS;
-  static constexpr int KEYS_ONLY        = ::cuda::std::is_same_v<ValueT, NullType>;
+  static constexpr bool KEYS_ONLY       = ::cuda::std::is_same_v<ValueT, NullType>;
 
   using traits           = radix::traits_t<KeyT>;
   using bit_ordered_type = typename traits::bit_ordered_type;
@@ -140,7 +140,7 @@ struct AgentSegmentedRadixSort
       IsDescending ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
     KeyT oob_default = reinterpret_cast<KeyT&>(default_key_bits);
 
-    if (KEYS_ONLY == 0)
+    if (!KEYS_ONLY)
     {
       BlockValueLoadT(temp_storage.values_load).Load(d_values_in, thread_values, num_items);
 
@@ -160,12 +160,12 @@ struct AgentSegmentedRadixSort
         begin_bit,
         end_bit,
         bool_constant_v<IsDescending>,
-        bool_constant_v<(KEYS_ONLY != 0)>,
+        bool_constant_v<KEYS_ONLY>,
         decomposer);
 
     _CUB::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_keys_out, thread_keys, num_items);
 
-    if (KEYS_ONLY == 0)
+    if (!KEYS_ONLY)
     {
       _CUB::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_values_out, thread_values, num_items);
     }

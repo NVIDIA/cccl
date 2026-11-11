@@ -45,7 +45,7 @@ bool g_verbose = false; // Whether to display input/output to console
  * Initialize problem, setting flags at distances of random length
  * chosen from [1..max_segment]
  */
-void Initialize(int* h_in, unsigned char* h_flags, int num_items, int max_segment)
+void Initialize(int* h_in, bool* h_flags, int num_items, int max_segment)
 {
   int key = 0;
   int i   = 0;
@@ -62,12 +62,12 @@ void Initialize(int* h_in, unsigned char* h_flags, int num_items, int max_segmen
     int j = i;
     while (j < cuda::std::min(i + repeat, num_items))
     {
-      h_flags[j] = 0;
+      h_flags[j] = false;
       h_in[j]    = key;
       j++;
     }
 
-    h_flags[i] = 1;
+    h_flags[i] = true;
     i          = j;
     key++;
   }
@@ -85,12 +85,12 @@ void Initialize(int* h_in, unsigned char* h_flags, int num_items, int max_segmen
 /**
  * Solve unique problem
  */
-int Solve(const int* h_in, const unsigned char* h_flags, int* h_reference, int num_items)
+int Solve(const int* h_in, const bool* h_flags, int* h_reference, int num_items)
 {
   int num_selected = 0;
   for (int i = 0; i < num_items; ++i)
   {
-    if (h_flags[i] != 0)
+    if (h_flags[i])
     {
       h_reference[num_selected] = h_in[i];
       num_selected++;
@@ -140,9 +140,9 @@ int main(int argc, char** argv)
   const auto device_memory_resource = cuda::device_default_memory_pool(device);
 
   // Allocate host arrays
-  int* h_in              = new int[num_items];
-  int* h_reference       = new int[num_items];
-  unsigned char* h_flags = new unsigned char[num_items];
+  int* h_in        = new int[num_items];
+  int* h_reference = new int[num_items];
+  bool* h_flags    = new bool[num_items];
 
   // Initialize problem and solution
   Initialize(h_in, h_flags, num_items, max_segment);
@@ -157,7 +157,7 @@ int main(int argc, char** argv)
 
   // Allocate and initialize problem device arrays
   auto d_in    = cuda::make_buffer<int>(stream, device_memory_resource, h_in, h_in + num_items);
-  auto d_flags = cuda::make_buffer<unsigned char>(stream, device_memory_resource, h_flags, h_flags + num_items);
+  auto d_flags = cuda::make_buffer<bool>(stream, device_memory_resource, h_flags, h_flags + num_items);
 
   // Allocate device output array and num selected
   auto d_out              = cuda::make_buffer<int>(stream, device_memory_resource, num_items, cuda::no_init);
@@ -190,11 +190,12 @@ int main(int argc, char** argv)
 
   // Check for correctness (and display results, if specified)
   stream.sync();
-  int compare = CompareDeviceResults(h_reference, d_out.data(), num_items, true, g_verbose, stream);
-  printf("\t Data %s ", compare != 0 ? "FAIL" : "PASS");
-  compare |= CompareDeviceResults(&num_selected, d_num_selected_out.data(), 1, true, g_verbose, stream);
-  printf("\t Count %s ", compare != 0 ? "FAIL" : "PASS");
-  AssertEquals(0, compare);
+  bool compare = CompareDeviceResults(h_reference, d_out.data(), num_items, true, g_verbose, stream) != 0;
+  printf("\t Data %s ", compare ? "FAIL" : "PASS");
+  compare = (CompareDeviceResults(&num_selected, d_num_selected_out.data(), 1, true, g_verbose, stream) != 0)
+         || compare;
+  printf("\t Count %s ", compare ? "FAIL" : "PASS");
+  AssertEquals(false, compare);
 
   // Cleanup
   delete[] h_in;

@@ -411,8 +411,8 @@ _CCCL_HOST_DEVICE SegmentedSortPolicyWrapper<PolicyT> MakeSegmentedSortPolicyWra
 template <typename KeyT, typename ValueT>
 struct policy_hub
 {
-  using DominantT                = ::cuda::std::_If<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
-  static constexpr int KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
+  using DominantT                 = ::cuda::std::_If<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
   struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
@@ -563,11 +563,11 @@ struct policy_hub
       RADIX_BITS>;
 
     static constexpr int ITEMS_PER_SMALL_THREAD  = _CUB::Nominal4BItemsToItems<DominantT>(7);
-    static constexpr int ITEMS_PER_MEDIUM_THREAD = _CUB::Nominal4BItemsToItems<DominantT>((KEYS_ONLY != 0) ? 11 : 7);
+    static constexpr int ITEMS_PER_MEDIUM_THREAD = _CUB::Nominal4BItemsToItems<DominantT>(KEYS_ONLY ? 11 : 7);
 
     using SmallSegmentPolicy =
       agent_sub_warp_merge_sort_policy<BLOCK_THREADS,
-                                       KEYS_ONLY != 0 ? 4 : 8 /* Threads per segment */,
+                                       KEYS_ONLY ? 4 : 8 /* Threads per segment */,
                                        ITEMS_PER_SMALL_THREAD,
                                        WARP_LOAD_DIRECT,
                                        LOAD_DEFAULT>;
@@ -594,11 +594,11 @@ struct policy_hub
       (sizeof(KeyT) > 1) ? 6 : 4>;
 
     static constexpr int ITEMS_PER_SMALL_THREAD  = _CUB::Nominal4BItemsToItems<DominantT>(9);
-    static constexpr int ITEMS_PER_MEDIUM_THREAD = _CUB::Nominal4BItemsToItems<DominantT>((KEYS_ONLY != 0) ? 7 : 11);
+    static constexpr int ITEMS_PER_MEDIUM_THREAD = _CUB::Nominal4BItemsToItems<DominantT>(KEYS_ONLY ? 7 : 11);
 
     using SmallSegmentPolicy =
       agent_sub_warp_merge_sort_policy<BLOCK_THREADS,
-                                       KEYS_ONLY != 0 ? 4 : 2 /* Threads per segment */,
+                                       KEYS_ONLY ? 4 : 2 /* Threads per segment */,
                                        ITEMS_PER_SMALL_THREAD,
                                        WARP_LOAD_TRANSPOSE,
                                        LOAD_DEFAULT>;

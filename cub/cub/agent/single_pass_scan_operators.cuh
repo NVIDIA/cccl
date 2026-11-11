@@ -1398,16 +1398,17 @@ private:
     while (true)
     {
       tile_status.WaitForValid(predecessor_idx, predecessor_status, value, construct_delay());
-      const int my_is_inclusive     = (predecessor_status == StatusWord(SCAN_TILE_INCLUSIVE));
-      const int anchor_is_inclusive = __shfl_sync(0xffffffff, my_is_inclusive, anchor_tile_lane);
-      if (anchor_is_inclusive != 0)
+      const bool my_is_inclusive = (predecessor_status == StatusWord(SCAN_TILE_INCLUSIVE));
+      const bool anchor_is_inclusive =
+        __shfl_sync(0xffffffff, static_cast<int>(my_is_inclusive), anchor_tile_lane) != 0;
+      if (anchor_is_inclusive)
       {
         break;
       }
     }
     _CCCL_IKET_RANGE_POP();
 
-    const int tail_flag = static_cast<int>(static_cast<int>(threadIdx.x) == anchor_tile_lane);
+    const bool tail_flag = (static_cast<int>(threadIdx.x) == anchor_tile_lane);
     exclusive_prefix =
       WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
 
