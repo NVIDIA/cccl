@@ -172,28 +172,6 @@ template <class _Status>
   return __status != status_traits<_Status>::success();
 }
 
-// Re-run a status-returning action up to `__n` times (forever when negative) while its result
-// fails: the first success is handled, exhaustion passes the latest status through.
-template <class _Status, class _Fn>
-__status_answer<_Status> __retry_status(_Status __latest, _Fn& __fn, const int __n)
-{
-  static_assert(::cuda::std::is_same_v<::cuda::std::remove_cvref_t<decltype(__fn())>, _Status>,
-                "re-running on the code channel needs an action that returns the same status type");
-  for (int __left = __n; __left != 0;)
-  {
-    __latest = __fn();
-    if (!__status_failed(__latest))
-    {
-      return {__latest, false};
-    }
-    if (__left > 0)
-    {
-      --__left;
-    }
-  }
-  return {__latest, true};
-}
-
 // --- Static properties, derived through composition -----------------------------------------
 //
 // The channels a policy has a treatment for: an exception (thrown) or a failing status
@@ -778,80 +756,9 @@ auto subst(_V&& __v)
 }
 
 /**
- * @brief Tag for an unbounded re-attempt count: `retry(forever)` re-runs the action until it
- * succeeds.
- */
-struct forever_t
-{};
-//! @brief See @ref forever_t.
-inline constexpr forever_t forever{};
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-// `retry(n)` (and `retry(forever)`, a negative count): up to n re-attempts inside one policy.
-struct __retry_n_t : basic_sink<__retry_n_t>
-{
-  static constexpr bool __needs_future   = true;
-  static constexpr bool __produces_value = true;
-
-  int __n_;
-
-  // The exception channel: re-run while the action throws; exhaustion passes the last
-  // exception through. decltype(auto) for the same reason as retry_t's hook.
-  template <class _Fn>
-  decltype(auto) on_thrown(const ::std::exception*, const ::cuda::std::source_location, _Fn& __fn) const
-  {
-    if (__n_ == 0)
-    {
-      _CCCL_RETHROW;
-    }
-    // maybe_unused: referenced only inside _CCCL_CATCH_ALL, which the device pass expands to a
-    // discarded branch; CTK <= 12.9's cudafe then reports #177.
-    // NOLINTNEXTLINE(misc-const-correctness) -- decremented in the catch arm, which some instantiations never reach
-    for ([[maybe_unused]] int __left = __n_;;)
-    {
-      _CCCL_TRY
-      {
-        if constexpr (::cuda::std::is_void_v<decltype(__fn())>)
-        {
-          __fn();
-          return ::std::ignore;
-        }
-        else
-        {
-          return __fn();
-        }
-      }
-      _CCCL_CATCH_ALL
-      {
-        if (__left > 0)
-        {
-          --__left;
-          if (__left == 0)
-          {
-            _CCCL_RETHROW;
-          }
-        }
-      }
-    }
-    _CCCL_UNREACHABLE();
-  }
-
-  // The code channel: re-run while the action's result fails; exhaustion passes the latest
-  // status through. An exception from a re-run escapes.
-  template <class _Status, class _Fn>
-  __status_answer<_Status> on_returned(const _Status __status, const ::cuda::std::source_location, _Fn& __fn) const
-  {
-    return __retry_status(__status, __fn, __n_);
-  }
-};
-
-#endif // _CCCL_DOXYGEN_INVOKED
-
-/**
  * @brief The unit re-attempt: re-runs the callable once; if the re-run throws, passes that
- * exception through. Counts come from repetition, `retry * 3` re-attempts up to three times
- * and `retry * 3 | subst(fallback)` answers the spent failure, or from a count in one policy:
- * `retry(3)`, or `retry(forever)` until the action succeeds. `retry` alone is `retry * 1`.
+ * exception through. Counts come from repetition: `retry * 3` re-attempts up to three times
+ * and `retry * 3 | subst(fallback)` answers the spent failure. `retry` alone is `retry * 1`.
  *
  * Answers `__fn()`'s value for a non-void callable, or `std::ignore` after a successful
  * re-run of a void callable. A re-attempt chooses a value, so it cannot stand on the left of
@@ -882,27 +789,14 @@ struct retry_t : basic_sink<retry_t>
     }
   }
 
-  //! @brief The code-channel hook: one re-run of a status-returning action.
+  //! @brief The code-channel hook: one re-run of a status-returning action; its status decides.
   template <class _Status, class _Fn>
-  __status_answer<_Status> on_returned(const _Status __status, const ::cuda::std::source_location, _Fn& __fn) const
+  __status_answer<_Status> on_returned(const _Status, const ::cuda::std::source_location, _Fn& __fn) const
   {
-    return __retry_status(__status, __fn, 1);
-  }
-
-  //! @brief Up to `__n` re-attempts in one policy; exhaustion passes the last failure through.
-  //! @param[in] __n The number of re-attempts, non-negative.
-  //! @return The counted re-attempt policy.
-  __retry_n_t operator()(const int __n) const
-  {
-    _CCCL_ASSERT(__n >= 0, "retry(n) requires a non-negative count; use retry(forever) for no bound");
-    return __retry_n_t{{}, __n};
-  }
-
-  //! @brief Re-attempts until the action succeeds.
-  //! @return The unbounded re-attempt policy.
-  __retry_n_t operator()(forever_t) const noexcept
-  {
-    return __retry_n_t{{}, -1};
+    static_assert(::cuda::std::is_same_v<::cuda::std::remove_cvref_t<decltype(__fn())>, _Status>,
+                  "re-running on the code channel needs an action that returns the same status type");
+    const _Status __latest = __fn();
+    return {__latest, __status_failed(__latest)};
   }
 };
 inline constexpr retry_t retry{};
@@ -995,7 +889,7 @@ auto __normalize(_R&& __r);
  * throwing. As a `|` arm this means "not applicable, try the next arm"; inside `&`, false
  * passes the whole sequence through. The predicate takes either nothing or the
  * `const std::exception*` of the failure in flight. A guard can be named and applied to
- * several sinks: `auto transient = when(is_transient); transient(retry(3)) | transient(notify(log))`.
+ * several sinks: `auto transient = when(is_transient); transient(retry * 3) | transient(notify(log))`.
  * The guard holds the predicate by value: an lvalue predicate is copied, so later changes to the
  * original do not reach the guard; pass `std::ref(pred)` to share one predicate object. Each
  * application copies the predicate into the guarded sink.
@@ -8044,30 +7938,18 @@ UNITTEST("error sinks: retry on a status-returning action")
   using namespace cuda::experimental::stf;
   using namespace cuda::experimental::stf::sump;
   int n  = 0;
-  auto c = if_equal(cudaErrorNotReady)(retry(3)) << [&]() noexcept {
+  auto c = if_equal(cudaErrorNotReady)(retry * 3) << [&]() noexcept {
     return ++n < 3 ? cudaErrorNotReady : cudaSuccess;
   };
   EXPECT(!c.forwarded());
   EXPECT(n == 3);
   n       = 0;
-  auto c2 = if_equal(cudaErrorNotReady)(retry(2)) << [&]() noexcept {
+  auto c2 = if_equal(cudaErrorNotReady)(retry * 2) << [&]() noexcept {
     ++n;
     return cudaErrorNotReady;
   };
   EXPECT(c2.status<cudaError_t>() == cudaErrorNotReady); // exhausted: forwarded
   EXPECT(n == 3); // one attempt plus two retries
-};
-
-UNITTEST("error sinks: retry(forever) on a status-returning action")
-{
-  using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::sump;
-  int n        = 0;
-  const auto c = if_equal(cudaErrorNotReady)(retry(forever)) << [&]() noexcept {
-    return ++n < 10 ? cudaErrorNotReady : cudaSuccess;
-  };
-  EXPECT(!c.forwarded());
-  EXPECT(n == 10);
 };
 
 UNITTEST("error sinks: backoff on a status-returning action")
@@ -8195,7 +8077,7 @@ UNITTEST("error sinks: a re-run that throws is offered to the policy")
   using namespace cuda::experimental::stf;
   using namespace cuda::experimental::stf::sump;
   int n        = 0;
-  const auto c = (if_equal(cudaErrorNotReady)(retry(3)) | thrown(subst(cudaSuccess))) << [&]() -> cudaError_t {
+  const auto c = (if_equal(cudaErrorNotReady)(retry * 3) | thrown(subst(cudaSuccess))) << [&]() -> cudaError_t {
     if (++n == 2)
     {
       throw ::std::runtime_error("second attempt");
