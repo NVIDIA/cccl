@@ -85,36 +85,6 @@ struct populate_bicyclic_monoid_input
 namespace
 {
 using c2h::Equals;
-using segmented_scan_test::make_tabulated_host_buffer;
-
-// Enqueues a host-to-device copy. For non-default streams, the copy may still be
-// pending when this returns; callers must keep the host range alive and unchanged
-// until the stream has synchronized or otherwise completed the copy.
-template <typename T, typename HostItems>
-void enqueue_copy_to_device(cuda::stream_ref stream, const HostItems& host_items, cuda::device_buffer<T>& device_items)
-{
-  REQUIRE(host_items.size() == device_items.size());
-  if (device_items.size() == 0)
-  {
-    return;
-  }
-
-  const auto host_span = cuda::std::span<const T>{host_items.data(), host_items.size()};
-
-  if (::c2h::detail::is_default_stream(stream))
-  {
-    const auto device = ::c2h::detail::get_allocation_device(device_items.data());
-    ::c2h::detail::assert_current_device(device.get());
-    stream.sync();
-    auto copy_stream = cuda::stream{device};
-    cuda::copy_bytes(copy_stream, host_span, device_items);
-    copy_stream.sync();
-  }
-  else
-  {
-    cuda::copy_bytes(stream, host_span, device_items);
-  }
-}
 
 template <typename T>
 constexpr unsigned int get_max_elems()
@@ -688,7 +658,6 @@ CUB_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
   auto offsets     = c2h::make_device_buffer<offset_t>(stream, in_offsets_v);
   auto out_offsets = c2h::make_device_buffer<offset_t>(stream, out_offsets_v);
   auto input       = c2h::make_device_buffer<value_t>(stream, h_input);
-  auto output      = c2h::make_device_buffer<value_t>(stream, num_output, cuda::no_init);
 
   constexpr int segments_per_worker = 2;
 
@@ -696,7 +665,7 @@ CUB_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
   const value_t h_init_v{0};
   const cub::NullType d_no_init{};
 
-  auto h_expected = c2h::make_host_buffer<value_t>(stream, output.size(), canary);
+  auto h_expected = c2h::make_host_buffer<value_t>(stream, num_output, canary);
 
   for (cuda::std::size_t segment_id = 0; segment_id < num_segments; ++segment_id)
   {
@@ -729,8 +698,7 @@ CUB_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
 
   SECTION("worker block")
   {
-    const auto h_canaries = c2h::make_host_buffer<value_t>(stream, output.size(), canary);
-    enqueue_copy_to_device(stream, h_canaries, output);
+    auto output = c2h::make_device_buffer<value_t>(stream, num_output, canary);
 
     run_dispatch_scan(
       inclusive_scan_dispatch,
@@ -793,7 +761,6 @@ CUB_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_s
   auto offsets     = c2h::make_device_buffer<offset_t>(stream, in_offsets_v);
   auto out_offsets = c2h::make_device_buffer<offset_t>(stream, out_offsets_v);
   auto input       = c2h::make_device_buffer<value_t>(stream, h_input);
-  auto output      = c2h::make_device_buffer<value_t>(stream, num_output, cuda::no_init);
 
   constexpr int segments_per_worker = 2;
 
@@ -801,7 +768,7 @@ CUB_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_s
   const value_t h_init_v{0};
   const cub::NullType d_no_init{};
 
-  auto h_expected = c2h::make_host_buffer<value_t>(stream, output.size(), canary);
+  auto h_expected = c2h::make_host_buffer<value_t>(stream, num_output, canary);
 
   for (cuda::std::size_t segment_id = 0; segment_id < num_segments; ++segment_id)
   {
@@ -834,8 +801,7 @@ CUB_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_s
 
   SECTION("worker block")
   {
-    const auto h_canaries = c2h::make_host_buffer<value_t>(stream, output.size(), canary);
-    enqueue_copy_to_device(stream, h_canaries, output);
+    auto output = c2h::make_device_buffer<value_t>(stream, num_output, canary);
 
     run_dispatch_scan(
       inclusive_scan_dispatch,

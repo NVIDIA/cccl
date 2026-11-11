@@ -10,8 +10,6 @@
 
 #include <c2h/checked_memory_resource.cuh>
 
-namespace segmented_scan_test
-{
 // Requires: querying the stream's device must succeed.
 template <typename T, typename GeneratorT>
 [[nodiscard]] auto make_tabulated_host_buffer(cuda::stream_ref stream, std::size_t num_items, GeneratorT generator)
@@ -23,4 +21,3 @@ template <typename T, typename GeneratorT>
   }
   return result;
 }
-} // namespace segmented_scan_test

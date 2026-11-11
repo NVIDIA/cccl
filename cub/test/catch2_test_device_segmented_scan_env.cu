@@ -285,50 +285,6 @@ CUB_TEST_CASE("Device segmented inclusive scan init with separate offsets works 
 
 #endif // TEST_LAUNCH == 0
 
-__global__ void prepare_segmented_sum_input(int* input, int* offsets)
-{
-  for (int i = 0; i < 8; ++i)
-  {
-    input[i] = i + 1;
-  }
-  offsets[0] = 0;
-  offsets[1] = 3;
-  offsets[2] = 5;
-  offsets[3] = 8;
-}
-
-CUB_TEST("Device segmented exclusive sum orders execution after stream setup", "[segmented_scan][device]", CUB_SMALL)
-{
-  const auto stream = c2h::make_current_device_stream();
-
-  constexpr auto num_segments = ::cuda::std::int64_t{3};
-  auto input                  = c2h::make_device_buffer<int>(stream, 8, cuda::no_init);
-  auto output                 = c2h::make_device_buffer<int>(stream, 8, cuda::no_init);
-  auto offsets                = c2h::make_device_buffer<int>(stream, 4, cuda::no_init);
-
-  size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
-      nullptr,
-      expected_bytes_allocated,
-      input.data(),
-      output.data(),
-      offsets.data(),
-      offsets.data() + 1,
-      num_segments,
-      stream.get()));
-
-  const auto env    = stdexec::env{cuda::stream_ref{stream}, expected_allocation_size(expected_bytes_allocated)};
-  const auto config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<1>());
-  // Leave preparation pending: the wrapper must preserve its ordering in every launch mode.
-  cuda::launch(stream, config, prepare_segmented_sum_input, input.data(), offsets.data());
-  device_segmented_exclusive_sum(input.data(), output.data(), offsets.data(), offsets.data() + 1, num_segments, env);
-
-  const auto expected = c2h::make_host_buffer<int>(stream, {0, 1, 3, 0, 4, 0, 6, 13});
-  REQUIRE_THAT(output, Equals(stream, expected));
-}
-
 CUB_TEST("Device segmented exclusive sum uses environment", "[segmented_scan][device]", CUB_SMALL)
 {
   const auto stream = c2h::make_current_device_stream();

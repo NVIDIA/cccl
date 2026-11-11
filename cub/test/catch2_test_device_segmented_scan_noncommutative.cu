@@ -89,7 +89,6 @@ struct populate_input
 }; // namespace impl
 
 using c2h::Equals;
-using segmented_scan_test::make_tabulated_host_buffer;
 
 CUB_TEST("Device inclusive segmented scan works with non-commutative operator", "[segmented][scan][device]", CUB_SMALL)
 {
@@ -112,18 +111,14 @@ CUB_TEST("Device inclusive segmented scan works with non-commutative operator", 
 
   auto output = c2h::make_device_buffer<pair_t>(stream, h_input.size(), cuda::no_init);
 
-  auto* const d_input   = input.data();
-  auto* const d_output  = output.data();
-  auto* const d_offsets = offsets.data();
-
   std::size_t tmp_size{};
   const cudaError_t status1 = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
     nullptr,
     tmp_size,
-    d_input,
-    d_output,
-    d_offsets,
-    d_offsets + 1,
+    input.data(),
+    output.data(),
+    offsets.data(),
+    offsets.data() + 1,
     static_cast<::cuda::std::int64_t>(num_segments),
     op_t{},
     stream.get());
@@ -140,10 +135,10 @@ CUB_TEST("Device inclusive segmented scan works with non-commutative operator", 
   const cudaError_t status2 = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
     d_tmp,
     tmp_size,
-    d_input,
-    d_output,
-    d_offsets,
-    d_offsets + 1,
+    input.data(),
+    output.data(),
+    offsets.data(),
+    offsets.data() + 1,
     static_cast<::cuda::std::int64_t>(num_segments),
     op_t{},
     stream.get());
