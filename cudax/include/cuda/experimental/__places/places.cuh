@@ -1244,7 +1244,7 @@ inline augmented_stream stream_pool::next(const exec_place& place)
     }
   }
 
-  if (result.stream == nullptr)
+  if (!result.stream)
   {
     auto active   = place.activate();
     result.stream = cuda_try<cudaStreamCreateWithFlags>(cudaStreamNonBlocking);

@@ -1644,7 +1644,7 @@ public:
   TEST_FUNC TEST_CONSTEXPR_CXX20 friend void iter_swap(Iterator a, Iterator b)
   {
     cuda::std::swap(a.ptr_, b.ptr_);
-    if (a.iter_swaps_ != nullptr)
+    if (a.iter_swaps_)
     {
       ++(*a.iter_swaps_);
     }
@@ -1652,7 +1652,7 @@ public:
 
   TEST_FUNC constexpr friend value_type&& iter_move(Iterator iter)
   {
-    if (iter.iter_moves_ != nullptr)
+    if (iter.iter_moves_)
     {
       ++(*iter.iter_moves_);
     }

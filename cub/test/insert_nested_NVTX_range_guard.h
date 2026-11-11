@@ -22,7 +22,7 @@ struct NestedNVTXRangeGuard
   {
     if (inside_cub_range)
     {
-      if (current_nvtx_range_name != nullptr)
+      if (current_nvtx_range_name)
       {
         FAIL("Nested NVTX range detected. Entered " << current_nvtx_range_name << ". Now entering " << name);
       }

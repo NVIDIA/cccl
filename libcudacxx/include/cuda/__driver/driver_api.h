@@ -745,7 +745,7 @@ struct __ctx_from_stream
     &__result.__ctx_device_,
     &__result.__ctx_green_);
 
-  if (__result.__ctx_green_ != nullptr)
+  if (__result.__ctx_green_)
   {
     __result.__ctx_kind_ = __ctx_from_stream::__kind::__green;
   }

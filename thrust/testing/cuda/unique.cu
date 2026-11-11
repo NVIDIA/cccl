@@ -34,7 +34,7 @@ struct check_valid_item_op
   {
     if (lhs > expected_upper_bound || rhs > expected_upper_bound)
     {
-      if (error_counter != nullptr)
+      if (error_counter)
       {
         atomicAdd(error_counter, 1);
       }
