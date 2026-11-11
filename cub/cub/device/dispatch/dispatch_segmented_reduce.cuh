@@ -548,7 +548,7 @@ template <class AdaptiveKernelSource,
           class ReductionOpT,
           class InitValueT,
           class KernelLauncherFactory>
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_adaptive_segmented_reduce(
+CUB_RUNTIME_FUNCTION cudaError_t invoke_adaptive_segmented_reduce(
   InputIteratorT d_in,
   OutputIteratorT d_out,
   BeginOffsetIteratorT d_begin_offsets,
