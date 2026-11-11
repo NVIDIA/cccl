@@ -31,8 +31,8 @@ TEST_CASE("TestDevicePointerManipulation", "[device_ptr]")
 
   REQUIRE(end - begin == 5);
 
-  begin = begin + (int) 1;
-  begin = begin - (int) 1;
+  begin = begin + 1;
+  begin = begin - 1;
 
   REQUIRE(end - begin == 5);
 
