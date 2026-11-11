@@ -639,11 +639,12 @@ struct SegmentedReducePolicySelector
   __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::SegmentedReducePolicy
   {
     auto rp = cub::ReducePassPolicy{
-      .threads_per_block = 128,
-      .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 11 : 7,
-      .vec_size          = 4,
-      .reduce_algorithm  = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
-      .load_modifier     = cub::LOAD_LDG};
+      .threads_per_block       = 128,
+      .items_per_thread        = cc > cuda::compute_capability{9, 0} ? 11 : 7,
+      .vec_size                = 4,
+      .reduce_algorithm        = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+      .load_modifier           = cub::LOAD_LDG,
+      .oversubscription_factor = 5};
     return {
       .large_reduce  = rp,
       .medium_reduce = {.threads_per_block = rp.threads_per_block,
