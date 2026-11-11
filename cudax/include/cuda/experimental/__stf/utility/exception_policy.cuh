@@ -452,9 +452,10 @@ inline const notify_t notify{};
  *
  * `effect(f)` is the general effect-only sink, of which `notify` and `store` are the named cases.
  * `f` may take nothing, or the failure: on the exception channel a `const std::exception*`
- * (null for a non-standard exception), on the code channel the status value. On its own the
- * operation goes on (the default value, the status unchanged); inside `&` whatever follows
- * decides. A throw from `f` forwards, as from any hook.
+ * (null for a non-standard exception), on the code channel the status value, or a null
+ * `const std::exception*` if that is all `f` takes. On its own the operation goes on (the
+ * default value, the status unchanged); inside `&` whatever follows decides. A throw from `f`
+ * forwards, as from any hook.
  *
  * @code
  * int level = 0;
@@ -486,8 +487,12 @@ struct effect_t : basic_sink<effect_t<_F>>
   }
 
   template <class _Status, class _Fn>
-  void on_returned([[maybe_unused]] const _Status __status, const ::cuda::std::source_location, _Fn&) noexcept(
-    ::cuda::std::is_nothrow_invocable_v<_F&, _Status> || ::cuda::std::is_nothrow_invocable_v<_F&>)
+  void on_returned(
+    [[maybe_unused]] const _Status __status,
+    [[maybe_unused]] const ::cuda::std::source_location __loc,
+    [[maybe_unused]] _Fn& __fn) noexcept(::cuda::std::is_nothrow_invocable_v<_F&, _Status>
+                                         || ::cuda::std::is_nothrow_invocable_v<_F&, const ::std::exception*>
+                                         || ::cuda::std::is_nothrow_invocable_v<_F&>)
   {
     if constexpr (::cuda::std::is_invocable_v<_F&, _Status>)
     {
@@ -495,8 +500,7 @@ struct effect_t : basic_sink<effect_t<_F>>
     }
     else
     {
-      static_assert(::cuda::std::is_invocable_v<_F&>, "effect(f): f takes nothing or the status");
-      __f_();
+      on_thrown(nullptr, __loc, __fn);
     }
   }
 };
@@ -6721,6 +6725,19 @@ UNITTEST("effect")
       seen = s;
     }) << cudaErrorInvalidValue;
     EXPECT(seen == cudaErrorInvalidValue);
+  }
+  // on a status, an f that takes only the exception pointer sees null; a nullary f runs
+  {
+    bool null_seen = false;
+    effect([&](const ::std::exception* e) {
+      null_seen = e == nullptr;
+    }) << cudaErrorInvalidValue;
+    EXPECT(null_seen);
+    int hits = 0;
+    effect([&] {
+      ++hits;
+    }) << cudaErrorInvalidValue;
+    EXPECT(hits == 1);
   }
 #    endif
   // an effect may not stand after a value-chooser: subst(1) & effect is rejected (static); the
