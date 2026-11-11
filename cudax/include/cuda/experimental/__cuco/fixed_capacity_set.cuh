@@ -376,6 +376,51 @@ public:
     __impl_->contains_if_async(__stream, __first, __last, __stencil, __pred, __output_begin, ref());
   }
 
+  //! @brief Applies `__callback_op` to a copy of the stored key equivalent to each query key.
+  //!
+  //! Query keys that are not present in the set contribute no callback invocation. The callback
+  //! receives the stored key, which differs from the query when the key equality predicate treats
+  //! distinct values as equivalent.
+  //! @pre No query key equals the empty sentinel.
+  //! @note Synchronizes the supplied stream. For asynchronous execution use `for_each_async`.
+  //! @note The return value of `__callback_op`, if any, is ignored.
+  //! @note The order in which matches are visited is implementation-defined.
+  //! @throws cuda_error if the operation or stream synchronization fails
+  //! @tparam _InputIt Device-accessible random-access iterator with compatible query keys
+  //! @tparam _CallbackOp Unary callable invocable with `key_type`
+  //! @param[in] __stream Stream used for lookup
+  //! @param[in] __first Beginning of the query range
+  //! @param[in] __last End of the query range
+  //! @param[in] __callback_op Function applied to every matching stored key
+  template <class _InputIt, class _CallbackOp>
+  _CCCL_HOST_API void
+  for_each(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _CallbackOp __callback_op) const
+  {
+    for_each_async(__stream, __first, __last, __callback_op);
+    __stream.sync();
+  }
+
+  //! @brief Asynchronously applies `__callback_op` to a copy of the stored key equivalent to each
+  //! query key.
+  //!
+  //! Query keys that are not present in the set contribute no callback invocation.
+  //! @pre No query key equals the empty sentinel.
+  //! @note The return value of `__callback_op`, if any, is ignored.
+  //! @note The order in which matches are visited is implementation-defined.
+  //! @throws cuda_error if the operation fails to launch
+  //! @tparam _InputIt Device-accessible random-access iterator with compatible query keys
+  //! @tparam _CallbackOp Unary callable invocable with `key_type`
+  //! @param[in] __stream Stream used for lookup
+  //! @param[in] __first Beginning of the query range
+  //! @param[in] __last End of the query range
+  //! @param[in] __callback_op Function applied to every matching stored key
+  template <class _InputIt, class _CallbackOp>
+  _CCCL_HOST_API void
+  for_each_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _CallbackOp __callback_op) const
+  {
+    __impl_->for_each_async(__stream, __first, __last, __callback_op, ref());
+  }
+
   //! @brief Returns the total number of slots.
   //! @return The valid, rounded slot count
   [[nodiscard]] _CCCL_HOST_API size_type capacity() const noexcept
