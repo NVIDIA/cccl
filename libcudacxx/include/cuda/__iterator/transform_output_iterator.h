@@ -213,6 +213,14 @@ public:
     return ::cuda::std::move(__iter());
   }
 
+  // Returns a copy of this iterator with the stored iterator replaced by __iter, keeping the functor. Lets CCCL rebase
+  // iterators onto other storage.
+  _CCCL_EXEC_CHECK_DISABLE
+  [[nodiscard]] _CCCL_API constexpr transform_output_iterator __rebase(_Iter __iter) const
+  {
+    return transform_output_iterator{::cuda::std::move(__iter), __func()};
+  }
+
   //! @brief Returns a proxy that transforms the input upon assignment
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr auto operator*() const noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Iter>)

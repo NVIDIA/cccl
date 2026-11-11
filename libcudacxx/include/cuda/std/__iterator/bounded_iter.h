@@ -116,6 +116,14 @@ public:
     return __current_[__n];
   }
 
+  // Returns a copy of this iterator pointing to __current, with its bounds moved along by the same distance, so it
+  // can dereference the same range of elements relative to __current. Lets CCCL rebase contiguous iterators onto other
+  // storage.
+  [[nodiscard]] _CCCL_API constexpr __bounded_iter __rebase(_Iterator __current) const noexcept
+  {
+    return __bounded_iter(__current, __current - (__current_ - __begin_), __current + (__end_ - __current_));
+  }
+
   // Arithmetic operations.
   //
   // These operations do not check that the resulting iterator is within the bounds, since that

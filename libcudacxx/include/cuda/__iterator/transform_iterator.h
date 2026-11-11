@@ -233,6 +233,14 @@ public:
     return ::cuda::std::move(__iter());
   }
 
+  // Returns a copy of this iterator with the stored iterator replaced by __iter, keeping the functor. Lets CCCL rebase
+  // iterators onto other storage.
+  _CCCL_EXEC_CHECK_DISABLE
+  [[nodiscard]] _CCCL_API constexpr transform_iterator __rebase(_Iter __iter) const
+  {
+    return transform_iterator{::cuda::std::move(__iter), __func()};
+  }
+
   //! @brief Dereferences the stored iterator and applies the stored functor to the result
   _CCCL_EXEC_CHECK_DISABLE
 #ifndef _CCCL_DOXYGEN_INVOKED // Doxygen has issues with the constraint
