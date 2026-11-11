@@ -108,16 +108,16 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
   set_type set{
     context.stream, context.mr, cuda::std::size_t{num_keys} * 2, cudax::cuco::empty_key{static_cast<key_type>(-1)}};
   const auto first = cuda::counting_iterator<key_type>{0};
-  // Offset from the keys so that `pred(stencil[i])` and `pred(first[i])` disagree.
-  const auto stencil = cuda::counting_iterator<int>{1};
-  auto found         = cuda::make_buffer<int>(context.stream, context.mr, num_queries, 7);
+  // Offset from the keys so that `pred(query_stencil[i])` and `pred(first[i])` disagree.
+  const auto query_stencil = cuda::counting_iterator<int>{1};
+  auto found               = cuda::make_buffer<int>(context.stream, context.mr, num_queries, 7);
 
   REQUIRE(set.insert(context.stream, first, first) == 0);
   set.insert_async(context.stream, first, first);
   set.contains(context.stream, first, first, found.begin());
   set.contains_async(context.stream, first, first, found.begin());
-  set.contains_if(context.stream, first, first, stencil, is_odd{}, found.begin());
-  set.contains_if_async(context.stream, first, first, stencil, is_odd{}, found.begin());
+  set.contains_if(context.stream, first, first, query_stencil, is_odd{}, found.begin());
+  set.contains_if_async(context.stream, first, first, query_stencil, is_odd{}, found.begin());
   REQUIRE(context.all_equal(found.data(), num_queries, 7));
 
   set.contains(context.stream, first, first + num_queries, found.begin());
@@ -126,7 +126,7 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
   set.insert_async(context.stream, first + num_keys / 2, first + num_keys);
   set.contains_async(context.stream, first, first + num_queries, found.begin());
   REQUIRE(context.matches(found.data(), num_queries, num_keys));
-  set.contains_if(context.stream, first, first + num_queries, stencil, is_odd{}, found.begin());
+  set.contains_if(context.stream, first, first + num_queries, query_stencil, is_odd{}, found.begin());
   REQUIRE(cuda::std::all_of(
     context.policy(),
     cuda::counting_iterator<int>{0},
