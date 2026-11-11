@@ -2777,6 +2777,74 @@ struct __policy_pow
   }
 };
 
+// `retry * n` repeats in a loop. The recursion above keeps the exception caught in one
+// repetition alive while the next consults it; `retry` never reads the exception, so for it the
+// recursion would buy nothing but a stack frame per failed attempt. The code channel's loop is
+// the general one, which was already iterative.
+template <>
+struct __policy_pow<retry_t>
+    : basic_sink<__policy_pow<retry_t>>
+    , __forwards_success<retry_t>
+{
+  static constexpr bool __needs_future   = true;
+  static constexpr bool __produces_value = true;
+
+  int __n_;
+
+  template <class _Fn>
+  __composite_answer_t<_Fn> on_thrown(const ::std::exception*, const ::cuda::std::source_location, _Fn& __fn)
+  {
+    if (__n_ == 0)
+    {
+      _CCCL_RETHROW; // empty fold: decline with the still-active exception
+    }
+    // maybe_unused: referenced only inside _CCCL_CATCH_ALL, which the device pass expands to a
+    // discarded branch; CTK <= 12.9's cudafe then reports #177.
+    // NOLINTNEXTLINE(misc-const-correctness) -- decremented in the catch arm, which some instantiations never reach
+    for ([[maybe_unused]] int __left = __n_;;)
+    {
+      _CCCL_TRY
+      {
+        if constexpr (::cuda::std::is_void_v<decltype(__fn())>)
+        {
+          __fn();
+          return ::std::ignore;
+        }
+        else
+        {
+          return __fn();
+        }
+      }
+      _CCCL_CATCH_ALL
+      {
+        if (--__left == 0)
+        {
+          _CCCL_RETHROW;
+        }
+      }
+    }
+    _CCCL_UNREACHABLE();
+  }
+
+  template <class _Status, class _Fn>
+  __status_answer<_Status> on_returned(const _Status __status,
+                                       const ::cuda::std::source_location __loc,
+                                       _Fn& __fn) noexcept(__status_path_nothrow_v<retry_t, _Status, _Fn>)
+  {
+    _Status __latest = __status;
+    for (int __i = 0; __i < __n_; ++__i)
+    {
+      const __status_answer<_Status> __answer = __offer_status<_Status>(this->__p_, __latest, __loc, __fn);
+      if (!__answer.__passed_)
+      {
+        return __answer;
+      }
+      __latest = __answer.__value_;
+    }
+    return {__latest, true};
+  }
+};
+
 template <class _P>
 inline constexpr bool __has_pure_claim<__policy_pow<_P>> = __has_pure_claim<_P>;
 
@@ -6554,6 +6622,21 @@ UNITTEST("repetition")
     }
     EXPECT(escaped);
     EXPECT(calls == 4);
+  }
+
+  // retry * n repeats in a loop, so a large count costs no stack: fails 20000 times, then
+  // succeeds on the last re-attempt.
+  {
+    int calls     = 0;
+    const int got = (retry * 20000)->*[&]() -> int {
+      if (++calls <= 20000)
+      {
+        throw ::std::runtime_error("again");
+      }
+      return calls;
+    };
+    EXPECT(got == 20001);
+    EXPECT(calls == 20001);
   }
 
   // p * 0 is fwd: no re-attempts, immediate decline.
