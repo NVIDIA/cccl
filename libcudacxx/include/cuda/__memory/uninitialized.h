@@ -24,7 +24,6 @@
 #include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/extent.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/remove_extent.h>
@@ -45,23 +44,23 @@ struct __uninitialized
 
   [[nodiscard]] _CCCL_API auto data() noexcept -> value_type*
   {
-    return ::cuda::std::launder(reinterpret_cast<value_type*>(__data));
+    return reinterpret_cast<value_type*>(__data);
   }
 
   [[nodiscard]] _CCCL_API auto data() const noexcept -> const value_type*
   {
-    return ::cuda::std::launder(reinterpret_cast<const value_type*>(__data));
+    return reinterpret_cast<const value_type*>(__data);
   }
 
   //! The storage viewed as a `_Tp`. If `_Tp` is an array type, this is a reference to the array `_Up (&)[_Size]`.
   [[nodiscard]] _CCCL_API auto alias() noexcept -> _Tp&
   {
-    return *::cuda::std::launder(reinterpret_cast<_Tp*>(__data));
+    return *reinterpret_cast<_Tp*>(__data);
   }
 
   [[nodiscard]] _CCCL_API auto alias() const noexcept -> const _Tp&
   {
-    return *::cuda::std::launder(reinterpret_cast<const _Tp*>(__data));
+    return *reinterpret_cast<const _Tp*>(__data);
   }
 
   // only available if `_Tp` is an array type
