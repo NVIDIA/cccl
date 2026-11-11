@@ -172,7 +172,18 @@ struct WarpReduceShfl
     else
     {
       Tp output = input;
-      Tp tmp    = _CUB::ShuffleDown<shuffle_threads>(output, offset, last_lane, member_mask);
+      if constexpr (is_full_warp)
+      {
+        // For a full warp, last_lane is uniform across the warp. If offset > last_lane, no lane combines anything in
+        // this step, so skip it with a warp-uniform branch. Otherwise the per-lane check below may be lowered to
+        // predication, so every lane evaluates reduction_op in every step, which is expensive for operators such as
+        // FP64 comparisons on GPUs with a low FP64 rate.
+        if (offset > last_lane)
+        {
+          return output;
+        }
+      }
+      Tp tmp = _CUB::ShuffleDown<shuffle_threads>(output, offset, last_lane, member_mask);
       // Perform reduction op if valid
       if (offset + lane_id <= last_lane)
       {
