@@ -32,11 +32,11 @@ CUB_NAMESPACE_BEGIN
 namespace detail::segmented_reduce
 {
 /// Seeds d_out[0..n) with val. Used as the PDL primary before the adaptive reduce.
-/// Issues ItemsPerThread × 16-byte vector stores to maximise bytes in flight.
-template <typename T, int ItemsPerThread>
+/// Issues ItemsPerThread × VecSize-element vector stores to maximise bytes in flight.
+template <typename T, int ItemsPerThread, int VecSize>
 _CCCL_KERNEL_ATTRIBUTES void AdaptiveSegmentedReduceInitKernel(T* const d_out, const int n, const T val)
 {
-  constexpr int V = 16 / sizeof(T);
+  constexpr int V = VecSize;
   using VecT      = typename ::cuda::vector_type<T, V>::type;
 
   const int tid    = static_cast<int>(blockIdx.x) * blockDim.x + static_cast<int>(threadIdx.x);
@@ -182,14 +182,15 @@ __launch_bounds__(int(::cub::detail::current_policy<PolicySelector>().threads_pe
 {
   constexpr auto policy = ::cub::detail::current_policy<PolicySelector>();
 
-  using T          = typename ::cuda::std::iterator_traits<InputIterator>::value_type;
-  constexpr int V  = 16 / sizeof(T);
+  using T         = typename ::cuda::std::iterator_traits<InputIterator>::value_type;
+  constexpr int V = policy.vec_size;
+  static_assert(V > 0 && (V & (V - 1)) == 0, "vec_size must be a power of two");
   using vecT       = typename ::cuda::vector_type<T, V>::type;
   const T identity = ::cuda::identity_element<ReductionOpT, T>();
 
-  // Elements from p up to the next 16-byte boundary. Uses only the low address bits, which is exact because
-  // 16 divides 2^32 and T is naturally aligned.
-  auto elements_to_16B_boundary = [](const T* p) {
+  // Elements from p up to the next vector boundary. Uses only the low address bits, which is exact because
+  // V is a power of two (so V divides 2^32) and T is naturally aligned.
+  auto elements_to_vec_boundary = [](const T* p) {
     const auto elem_index = static_cast<unsigned>(reinterpret_cast<uintptr_t>(p) / sizeof(T));
     return static_cast<int>((0u - elem_index) & (V - 1));
   };
@@ -255,7 +256,7 @@ __launch_bounds__(int(::cub::detail::current_policy<PolicySelector>().threads_pe
     if (owned_len > 0 && owned_len < policy.medium_segment_size)
     {
       // Prologue: peel up to (V - 1) elements until d_in + element is 16B-aligned.
-      const int prologue = ::cuda::std::min(elements_to_16B_boundary(d_in + owned_begin), owned_len);
+      const int prologue = ::cuda::std::min(elements_to_vec_boundary(d_in + owned_begin), owned_len);
 #pragma unroll
       for (int k = 0; k < V - 1; k++)
       {
@@ -278,8 +279,7 @@ __launch_bounds__(int(::cub::detail::current_policy<PolicySelector>().threads_pe
         if (j + V <= body_end)
         {
           const vecT chunk = *reinterpret_cast<const vecT*>(&d_in[j]);
-          acc =
-            reduction_op(acc, ::cub::ThreadReduce(reinterpret_cast<const T(&)[V]>(chunk), reduction_op));
+          acc = reduction_op(acc, ::cub::ThreadReduce(reinterpret_cast<const T(&)[V]>(chunk), reduction_op));
         }
       }
 
@@ -326,7 +326,7 @@ __launch_bounds__(int(::cub::detail::current_policy<PolicySelector>().threads_pe
       T lane_partial       = identity;
 
       // Peel for alignment, now cooperatively.
-      const int prologue = ::cuda::std::min(elements_to_16B_boundary(d_in + coop_begin), coop_end - coop_begin);
+      const int prologue = ::cuda::std::min(elements_to_vec_boundary(d_in + coop_begin), coop_end - coop_begin);
       if (lane < prologue)
       {
         lane_partial = reduction_op(lane_partial, d_in[coop_begin + lane]);

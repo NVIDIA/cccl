@@ -190,15 +190,32 @@ struct adaptive_segmented_reduce_policy
 {
   int threads_per_block;
   int items_per_thread; // vector loads issued per lane per loop iteration
+  int vec_size; // items per vectorized load (a power of two)
   int small_segment_size; // <= this many elements: summed serially by one thread
   int medium_segment_size; // >= this many elements: drained cooperatively by the warp
 };
 
-struct adaptive_segmented_reduce_default_policy_selector
+struct adaptive_segmented_reduce_policy_selector
 {
-  _CCCL_HOST_DEVICE_API constexpr adaptive_segmented_reduce_policy operator()(::cuda::compute_capability) const
+  int value_size; // sizeof the value type being reduced
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
+    -> adaptive_segmented_reduce_policy
   {
-    return {256, 4, 4, 112};
+    // Use 16-byte vector loads
+    return {256, 4, 16 / value_size, 4, 112};
+  }
+};
+
+// stateless version which can be passed to kernels
+template <typename T>
+struct adaptive_segmented_reduce_policy_selector_from_types
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> adaptive_segmented_reduce_policy
+  {
+    constexpr auto policies = adaptive_segmented_reduce_policy_selector{int{sizeof(T)}};
+    return policies(cc);
   }
 };
 } // namespace detail::segmented_reduce

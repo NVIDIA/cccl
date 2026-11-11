@@ -534,10 +534,10 @@ struct DeviceAdaptiveSegmentedReduceKernelSource
       ReductionOpT,
       InitValueT>)
 
-  static constexpr int InitItemsPerThread =
-    adaptive_segmented_reduce_default_policy_selector{}(::cuda::compute_capability{}).items_per_thread;
+  static constexpr int InitItemsPerThread = PolicySelector{}(::cuda::compute_capability{}).items_per_thread;
+  static constexpr int InitVecSize        = PolicySelector{}(::cuda::compute_capability{}).vec_size;
 
-  CUB_DEFINE_KERNEL_GETTER(InitKernel, AdaptiveSegmentedReduceInitKernel<T, InitItemsPerThread>)
+  CUB_DEFINE_KERNEL_GETTER(InitKernel, AdaptiveSegmentedReduceInitKernel<T, InitItemsPerThread, InitVecSize>)
 };
 
 template <class AdaptiveKernelSource,
@@ -584,9 +584,10 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_adaptive_segmented_reduce(
   // Initialize the output to cover two cases:
   // 1) Empty segments not visited by the kernel; and
   // 2) Segments shared across threads, which will use an atomic.
-  constexpr int V              = 16 / sizeof(T);
   constexpr int ItemsPerThread = KernelSource::InitItemsPerThread;
-  const int init_grid = ::cuda::std::max(1, ::cuda::ceil_div(num_segments, threads_per_block * ItemsPerThread * V));
+  constexpr int VecSize        = KernelSource::InitVecSize;
+  const int init_grid =
+    ::cuda::std::max(1, ::cuda::ceil_div(num_segments, threads_per_block * ItemsPerThread * VecSize));
   if (const auto error = CubDebug(
         launcher_factory(static_cast<::cuda::std::uint32_t>(init_grid), threads_per_block, 0, stream)
           .doit(KernelSource::InitKernel(), static_cast<T*>(d_out), num_segments, static_cast<T>(init))))
@@ -662,7 +663,7 @@ template <
     InitValueT,
     AccumT>,
   typename AdaptiveKernelSource = DeviceAdaptiveSegmentedReduceKernelSource<
-    adaptive_segmented_reduce_default_policy_selector,
+    adaptive_segmented_reduce_policy_selector_from_types<it_value_t<InputIteratorT>>,
     InputIteratorT,
     OutputIteratorT,
     BeginOffsetIteratorT,
