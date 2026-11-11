@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
-// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 /**
@@ -28,8 +28,11 @@
 
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__utility/integer_sequence.h>
+
+#include <nv/target>
 
 #if __cpp_lib_format >= 201907L
 #  include <cuda/std/__concepts/same_as.h>
@@ -109,6 +112,8 @@ CUB_NAMESPACE_BEGIN
 
 //! @brief Thread utility for reading memory using cub::CacheLoadModifier cache modifiers.
 //!        Can be used to load any data type.
+//!
+//! With cub::LOAD_LDG, types that are aligned to 32 bytes are loaded with 32 byte accesses on sm_100 and newer.
 //!
 //! @par Example
 //! @code
@@ -281,6 +286,39 @@ _CUB_LOAD_ALL(LOAD_LDG, global.nc)
 #  undef _CUB_LOAD_8
 #  undef _CUB_LOAD_16
 
+#  if __cccl_ptx_isa >= 900
+//! Define a 32 byte ThreadLoad specialization for LOAD_LDG. 32 byte accesses need the global state space, which only
+//! LOAD_LDG names, and sm_100 or newer, thus older architectures load the word with two 16 byte accesses
+template <>
+_CCCL_DEVICE _CCCL_FORCEINLINE ulonglong4_32a ThreadLoad<LOAD_LDG, ulonglong4_32a const*>(ulonglong4_32a const* ptr)
+{
+  ulonglong4_32a retval;
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_100,
+    (asm volatile("ld.global.nc.v4.u64 {%0, %1, %2, %3}, [%4];" : "=l"(retval.x),
+                  "=l"(retval.y),
+                  "=l"(retval.z),
+                  "=l"(retval.w) : "l"(ptr));),
+    (asm volatile("ld.global.nc.v2.u64 {%0, %1}, [%2];" : "=l"(retval.x), "=l"(retval.y) : "l"(ptr));
+     asm volatile("ld.global.nc.v2.u64 {%0, %1}, [%2];" : "=l"(retval.z), "=l"(retval.w) : "l"(&ptr->z));))
+  return retval;
+}
+#  endif // __cccl_ptx_isa >= 900
+
+namespace detail
+{
+//! The words in which ThreadLoad loads a ``T`` with a PTX cache modifier: the widest words of at most 16 bytes that
+//! ``T`` is aligned to, or 32 byte words with LOAD_LDG if ``T`` is aligned to them
+#  if __cccl_ptx_isa >= 900
+template <CacheLoadModifier Modifier, typename T>
+using thread_load_word_t = ::cuda::std::
+  conditional_t<Modifier == LOAD_LDG && alignof(T) % 32 == 0, ulonglong4_32a, typename UnitWord<T>::DeviceWord>;
+#  else // ^^^ __cccl_ptx_isa >= 900 ^^^ / vvv __cccl_ptx_isa < 900 vvv
+template <CacheLoadModifier Modifier, typename T>
+using thread_load_word_t = typename UnitWord<T>::DeviceWord;
+#  endif // __cccl_ptx_isa < 900
+} // namespace detail
+
 //! ThreadLoad definition for LOAD_DEFAULT modifier on iterator types
 //! deprecated [Since 3.3]
 template <typename RandomAccessIterator>
@@ -374,7 +412,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE detail::it_value_t<RandomAccessIterator> ThreadLo
   }
   else
   {
-    using LoadWord = typename UnitWord<T>::DeviceWord;
+    using LoadWord = detail::thread_load_word_t<MODIFIER, T>;
     // NOLINTNEXTLINE(bugprone-sizeof-expression)
     constexpr int LOAD_MULTIPLE = sizeof(T) / sizeof(LoadWord);
     LoadWord words[LOAD_MULTIPLE];
