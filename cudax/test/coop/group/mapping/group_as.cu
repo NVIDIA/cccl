@@ -131,7 +131,7 @@ inline constexpr cuda::std::array static_counts{4, 12, 16};
 inline constexpr cuda::std::array partial_static_counts{4u, 6u, 8u};
 #endif // _CCCL_STD_VER >= 2020
 
-// Exercise a compile-time range whose iterators only model forward_iterator.
+// Exercise runtime and compile-time ranges whose iterators only model forward_iterator.
 struct forward_counts
 {
   struct iterator
@@ -339,6 +339,12 @@ struct TestKernel
     test_dynamic_group_as<true, 3, 5, 1, 1, 22>(config);
     test_dynamic_group_as<true, 31, 1>(config);
     test_dynamic_group_as<true, 32>(config);
+
+    const forward_counts full_forward_counts{};
+    test_dynamic_group_as<true>(config, full_forward_counts);
+    test_dynamic_group_as<false>(config, full_forward_counts);
+    const forward_counts partial_forward_counts{{4, 6, 8}};
+    test_dynamic_group_as<false>(config, partial_forward_counts);
 
     // Non-exhaustive mapping also covers partitions that leave trailing threads unassigned.
     test_dynamic_group_as<false, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1>(

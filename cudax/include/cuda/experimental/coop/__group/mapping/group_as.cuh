@@ -96,10 +96,11 @@ __group_as_map(const _Unit&, const _PrevMappingResult& __prev_mapping_result, co
   }
 
   ::cuda::std::uint32_t __sum = 0;
+  auto __it                   = ::cuda::std::ranges::cbegin(__unit_counts);
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (::cuda::std::uint32_t __i = 0; __i < __curr_ngroups; ++__i)
+  for (::cuda::std::uint32_t __i = 0; __i < __curr_ngroups; ++__i, ++__it)
   {
-    const auto __i_count = static_cast<::cuda::std::uint32_t>(__unit_counts[__i]);
+    const auto __i_count = static_cast<::cuda::std::uint32_t>(*__it);
     if (__prev_unit_rank < __sum + __i_count)
     {
       const auto __group_rank = __prev_mapping_result.group_rank() * __curr_ngroups + __i;
