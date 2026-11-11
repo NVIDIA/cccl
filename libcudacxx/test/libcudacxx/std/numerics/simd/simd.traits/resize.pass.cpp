@@ -16,9 +16,12 @@
 // template<simd-size-type N, class V> struct resize;
 // template<simd-size-type N, class V> using resize_t = typename resize<N, V>::type;
 
+#include <cuda/__complex_>
 #include <cuda/std/__simd_>
 #include <cuda/std/complex>
 #include <cuda/std/type_traits>
+
+#include <nv/target>
 
 #if _CCCL_HAS_HOST_STD_LIB()
 #  include <complex>
@@ -45,6 +48,8 @@ TEST_HOST_DEVICE_FUNC void test_resize_vec()
 template <typename T>
 TEST_HOST_DEVICE_FUNC void test_resize_vec_all()
 {
+  test_resize_vec<T, 4, 1>();
+  test_resize_vec<T, 4, 3>();
   test_resize_vec<T, 4, 4>();
   test_resize_vec<T, 4, 2>();
   test_resize_vec<T, 2, 8>();
@@ -66,6 +71,8 @@ TEST_HOST_DEVICE_FUNC void test_resize_mask()
 template <typename T>
 TEST_HOST_DEVICE_FUNC void test_resize_mask_all()
 {
+  test_resize_mask<T, 4, 1>();
+  test_resize_mask<T, 4, 3>();
   test_resize_mask<T, 4, 4>();
   test_resize_mask<T, 4, 2>();
   test_resize_mask<T, 2, 8>();
@@ -77,33 +84,53 @@ TEST_HOST_DEVICE_FUNC void test_resize_mask_all()
 template <int N, typename V>
 TEST_HOST_DEVICE_FUNC void test_resize_t_alias()
 {
+  // Check the nested type directly to verify the alias definition.
+  // NOLINTNEXTLINE(cccl-modernize-type-traits)
   static_assert(cuda::std::is_same_v<simd::resize_t<N, V>, typename simd::resize<N, V>::type>);
+}
+
+template <typename T>
+TEST_HOST_DEVICE_FUNC void test_type()
+{
+  test_resize_vec_all<T>();
+  test_resize_mask_all<T>();
 }
 
 TEST_HOST_DEVICE_FUNC void test()
 {
-  // resize basic_vec
-  test_resize_vec_all<char>();
-  test_resize_vec_all<short>();
-  test_resize_vec_all<int>();
-  test_resize_vec_all<long long>();
-  test_resize_vec_all<float>();
-  test_resize_vec_all<double>();
-
-  // resize basic_mask
-  test_resize_mask_all<char>();
-  test_resize_mask_all<int>();
-  test_resize_mask_all<double>();
-  test_resize_mask_all<cuda::std::complex<float>>();
+  // resize basic_vec and basic_mask
+  test_type<int>();
+  test_type<unsigned>();
+  test_type<char>();
+  test_type<short>();
+  test_type<long long>();
+  test_type<char16_t>();
+  test_type<char32_t>();
+  test_type<wchar_t>();
+#if _CCCL_HAS_CHAR8_T()
+  test_type<char8_t>();
+#endif // _CCCL_HAS_CHAR8_T()
+  test_type<float>();
+  test_type<double>();
+  test_type<cuda::std::complex<float>>();
+  test_type<cuda::complex<float>>();
 #if _CCCL_HAS_INT128()
-  test_resize_mask_all<cuda::std::complex<double>>();
+  test_type<__int128_t>();
+  test_type<cuda::std::complex<double>>();
+  test_type<cuda::complex<double>>();
 #endif // _CCCL_HAS_INT128()
 #if _CCCL_HAS_HOST_STD_LIB()
-  test_resize_mask_all<::std::complex<float>>();
+  NV_IF_TARGET(NV_IS_HOST, (test_type<::std::complex<float>>();))
 #  if _CCCL_HAS_INT128()
-  test_resize_mask_all<::std::complex<double>>();
+  NV_IF_TARGET(NV_IS_HOST, (test_type<::std::complex<double>>();))
 #  endif // _CCCL_HAS_INT128()
-#endif // _CCCL_HOST_LIKE()
+#endif // _CCCL_HAS_HOST_STD_LIB()
+#if _CCCL_HAS_NVFP16()
+  test_type<__half>();
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+  test_type<__nv_bfloat16>();
+#endif // _CCCL_HAS_NVBF16()
 
   // resize_t alias matches resize::type
   test_resize_t_alias<8, simd::vec<int, 4>>();

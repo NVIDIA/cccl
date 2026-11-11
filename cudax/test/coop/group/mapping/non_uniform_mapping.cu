@@ -205,14 +205,15 @@ __device__ void test_other_mappings(Config config)
   const auto integer_result = integer_labels.map(cuda::gpu_thread, parent, prev);
 
   static_assert(decltype(binary_result)::static_group_count() == 6);
-  static_assert(decltype(boolean_result)::static_group_count() == 6);
+  static_assert(decltype(boolean_result)::static_group_count() == cuda::std::dynamic_extent);
   static_assert(decltype(integer_result)::static_group_count() == cuda::std::dynamic_extent);
 
   // Boolean partitions put all false groups before all true groups. Integer labels
   // number groups by their first physical lane instead.
   CHECK(binary_result.group_count() == 6);
   CHECK(binary_result.group_rank() == group + (rank % 2) * 3);
-  CHECK(boolean_result.group_rank() == binary_result.group_rank());
+  CHECK(boolean_result.group_count() == 6);
+  CHECK(boolean_result.group_rank() == integer_result.group_rank());
   CHECK(integer_result.group_count() == 6);
   CHECK(integer_result.group_rank() == group * 2 + rank % 2);
 

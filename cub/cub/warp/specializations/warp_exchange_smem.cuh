@@ -52,8 +52,8 @@ class WarpExchangeSmem
   /// Shared storage reference
   _TempStorage& temp_storage;
 
-  const unsigned int lane_id     = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
-  const unsigned int member_mask = CUB_NS_QUALIFIER::detail::warp_mask<LogicalWarpThreads>();
+  const unsigned int lane_id     = _CUB::detail::logical_lane_id<LogicalWarpThreads>();
+  const unsigned int member_mask = _CUB::detail::warp_mask<LogicalWarpThreads>();
 
 public:
   using TempStorage = Uninitialized<_TempStorage>;

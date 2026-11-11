@@ -403,7 +403,9 @@ template <size_t _Np>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_left_fn;
 
 #  define _M0(_N) , class _CCCL_PP_CAT(_, _N)
-#  define _M1(_N) typename _Fn::template __call <
+// Nest through the __type_call alias. EDG-based front ends (nvcc, NVRTC, NVHPC) parse directly nested dependent
+// member template-ids like `typename _Fn::template __call<...>` in time exponential in the nesting depth.
+#  define _M1(_N) __type_call < _Fn,
 #  define _M2(_N) , _CCCL_PP_CAT(_, _N)
 #  define _M3(_N) _M2(_CCCL_PP_DEC(_N)) >
 
