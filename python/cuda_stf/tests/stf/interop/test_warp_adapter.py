@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Tests for ``cuda.stf._experimental.interop.warp``: scopes, tasks, native blocks."""
+"""Tests for ``cuda.stf._experimental.interop.warp``: scopes, tasks, tokens."""
 
 import numpy as np
 import pytest
@@ -16,8 +16,8 @@ from cuda.stf._experimental.interop.warp import (  # noqa: E402
     current_context,
     release_graph_handles,
     scope,
+    scope_token,
     token,
-    warp_native,
     warp_task,
     wrap_stream,
 )
@@ -148,7 +148,7 @@ def test_array_arg_dtype_override():
 
 
 # ---------------------------------------------------------------------------
-# scopes, tasks, native blocks
+# scopes, tasks, tokens
 # ---------------------------------------------------------------------------
 
 
@@ -178,20 +178,22 @@ def test_fork_join_record_replay():
     assert out.numpy()[0] == pytest.approx(ref_a + ref_b)
 
 
-def test_native_blocks_ordered_with_tasks():
-    """native ; task(A) ; task(B) ; native: A and B are siblings, the native
-    blocks are barriers; result equals the sequential one."""
+def test_scope_token_orders_tasks():
+    """k1 ; A ; B ; k4 written with the scope token: k1 and k4 take it
+    read-write, A and B read it and overlap; the result equals the sequential
+    one. The same function runs unrecorded, where every name is a no-op."""
     n = 1 << 14
 
-    def body(ctx, x, y, z):
-        with warp_native(ctx, "k1"):
+    def body(x, y, z):
+        s = scope_token()
+        assert scope_token() is s or current_context() is None  # stable in a scope
+        with warp_task(s.rw(), symbol="k1"):
             wp.launch(scale, dim=n, inputs=[2.0, x])
-        ty, tz = token(ctx, "y"), token(ctx, "z")
-        with warp_task(ctx, ty.rw(), symbol="A"):
+        with warp_task(s.read(), symbol="A"):
             wp.launch(axpy, dim=n, inputs=[1.0, x, y])
-        with warp_task(ctx, tz.rw(), symbol="B"):
+        with warp_task(s.read(), symbol="B"):
             wp.launch(axpy, dim=n, inputs=[1.0, x, z])
-        with warp_native(ctx, "k4"):
+        with warp_task(s.rw(), symbol="k4"):
             wp.launch(axpy, dim=n, inputs=[1.0, y, z])
 
     results = {}
@@ -203,11 +205,11 @@ def test_native_blocks_ordered_with_tasks():
         )
         if arm == "sequential":
             for _ in range(3):
-                body(None, x, y, z)  # no context: every name is a no-op
+                body(x, y, z)  # nothing is recorded
             wp.synchronize()
             topo = None
         else:
-            topo = _record_and_replay(lambda ctx: body(ctx, x, y, z), 3)
+            topo = _record_and_replay(lambda ctx: body(x, y, z), 3)
         results[arm] = float(z.numpy()[0])
     assert results["sequential"] == results["tasks"]
     assert topo == (4, 3)  # k1 -> {A, B} -> k4
@@ -227,46 +229,49 @@ def test_back_to_back_tasks_stay_siblings():
     assert _record_and_replay(frame, 1) == (2, 1)  # no edge between them
 
 
-def test_nested_scope_inner_fork_bit_identical():
-    """A library called from a task opens its own scope and forks inside:
-    the parent sees one node, results are bit-identical, the path is shorter."""
+def test_library_in_its_own_scope_forks_bit_identical():
+    """A library that records its own tasks is given a scope by its caller:
+    the parent sees one node, ordered by what the scope is given; inside, the
+    library's sequence is its own scope token. Results are bit-identical with
+    and without the fork, the path is shorter with it."""
     n = 1 << 14
 
     class Entry:
-        def __init__(self, ctx, fork):
-            self.ctx, self.fork = ctx, fork
+        def __init__(self, fork):
+            self.fork = fork
             self.v = wp.zeros(n, dtype=float)
             self.mass = wp.ones(n, dtype=float)
             self.rows = wp.ones(n, dtype=float)
-            self.t_mass, self.t_rows = token(ctx), token(ctx)
 
         def step(self, forcing):
-            with scope(self.ctx):
-                if self.fork:
-                    with warp_task(self.ctx, self.t_mass.rw()):
-                        wp.launch(scale, dim=n, inputs=[0.999, self.mass])
-                    with warp_task(self.ctx, self.t_rows.rw()):
-                        wp.launch(axpy, dim=n, inputs=[0.001, forcing, self.rows])
-                else:
-                    with warp_native(self.ctx):
-                        wp.launch(scale, dim=n, inputs=[0.999, self.mass])
-                        wp.launch(axpy, dim=n, inputs=[0.001, forcing, self.rows])
-                with warp_native(self.ctx):
-                    wp.launch(axpy, dim=n, inputs=[0.5, self.rows, self.v])
-                    wp.launch(axpy, dim=n, inputs=[0.5, self.mass, self.v])
+            s = scope_token()
+            if self.fork:
+                with warp_task(s.read(), symbol="mass"):
+                    wp.launch(scale, dim=n, inputs=[0.999, self.mass])
+                with warp_task(s.read(), symbol="rows"):
+                    wp.launch(axpy, dim=n, inputs=[0.001, forcing, self.rows])
+            else:
+                with warp_task(s.rw()):
+                    wp.launch(scale, dim=n, inputs=[0.999, self.mass])
+                    wp.launch(axpy, dim=n, inputs=[0.001, forcing, self.rows])
+            with warp_task(s.rw()):
+                wp.launch(axpy, dim=n, inputs=[0.5, self.rows, self.v])
+                wp.launch(axpy, dim=n, inputs=[0.5, self.mass, self.v])
 
     out = {}
     for fork in (False, True):
         ctx = stf.stackable_context()
-        e = Entry(ctx, fork)
+        e = Entry(fork)
         forcing = wp.ones(n, dtype=float)
-        t_e = token(ctx)
         with scope(ctx, launchable=True) as g:
-            with warp_native(ctx, "pre"):
+            s = scope_token()
+            with warp_task(s.rw(), symbol="pre"):
                 wp.launch(scale, dim=n, inputs=[1.5, forcing])
-            with warp_task(ctx, t_e.rw(), symbol="solve"):
+            with scope(writes=(s,), symbol="solve"):
+                assert scope_token() is not s  # the library's own
                 e.step(forcing)
-            with warp_native(ctx, "post"):
+            assert scope_token() is s
+            with warp_task(s.rw(), symbol="post"):
                 wp.launch(axpy, dim=n, inputs=[1.0, e.v, forcing])
             topo = graph_topology(g.graph)
             for _ in range(3):
@@ -316,15 +321,13 @@ def test_capture_while_inside_nested_scope_task():
     reset = wp.full(1, 3, dtype=int)
 
     def frame(ctx):
-        t = token(ctx)
-        with warp_task(ctx, t.rw()):
-            with scope(ctx):
-                with warp_native(ctx):
-                    wp.copy(counter, reset)
-                    wp.capture_while(
-                        counter,
-                        lambda: wp.launch(count_down, dim=n, inputs=[counter, acc]),
-                    )
+        with scope(ctx):
+            with warp_task(ctx):
+                wp.copy(counter, reset)
+                wp.capture_while(
+                    counter,
+                    lambda: wp.launch(count_down, dim=n, inputs=[counter, acc]),
+                )
 
     _record_and_replay(frame, 2)
     assert acc.numpy()[0] == 6.0 and counter.numpy()[0] == 0
@@ -337,22 +340,12 @@ def test_poison_raises_outside_blocks():
     try:
         with pytest.raises(RuntimeError, match="outside warp_task"):
             with scope(ctx, launchable=True):
-                wp.launch(scale, dim=n, inputs=[2.0, y])  # forgot warp_native()
+                wp.launch(scale, dim=n, inputs=[2.0, y])  # forgot warp_task()
     finally:
         ctx.finalize()
     # the current stream is restored after the scope
     wp.launch(scale, dim=n, inputs=[2.0, y])
     wp.synchronize()
-
-
-def test_warp_native_requires_scope():
-    ctx = stf.stackable_context()
-    try:
-        with pytest.raises(RuntimeError, match="open scope"):
-            with warp_native(ctx):
-                pass
-    finally:
-        ctx.finalize()
 
 
 def test_no_context_is_a_no_op():
@@ -365,72 +358,64 @@ def test_no_context_is_a_no_op():
         with warp_task(None, t.rw()) as (s, arrays):
             assert s is wp.get_stream() and arrays == ()
             wp.launch(scale, dim=n, inputs=[2.0, y])
-        with warp_native(None):
+        with warp_task(scope_token().rw()):  # no scope: an inert token, no task
             wp.launch(scale, dim=n, inputs=[2.0, y])
     wp.synchronize()
     assert y.numpy()[0] == 4.0
 
 
-def test_scope_inside_a_block_continues_the_block():
-    """A scope opened inside a block takes over the block's dependencies and
-    the block continues after it: first part -> scope -> second part, whatever
-    the block declares (a token it writes, nothing at all, or the scope token
-    of a native block). The same frame with the scope between explicit blocks
-    is the reference. A task directly inside a block is refused, and
-    current_context() follows the open scopes."""
+def test_library_runs_from_a_scope_from_a_task_and_unrecorded():
+    """The same library code (no context argument) records its own tasks when
+    called from a scope, runs as part of the task when its caller wrapped the
+    call in one, and runs as plain Warp code when nothing is recorded. With an
+    explicit context, a task or a scope inside a task is refused."""
     n = 1 << 16
     expected = (1.01**20 + 1.0) * 1.01**20
 
-    def run(form):
-        ctx = stf.stackable_context()
-        t = token(ctx)
-        y = wp.ones(n, dtype=float)
-        one = wp.ones(n, dtype=float)
-
-        def part():
+    def library(y, one):
+        s = scope_token()
+        with warp_task(s.rw(), symbol="first"):
+            for _ in range(20):
+                wp.launch(scale, dim=n, inputs=[1.01, y])
+        with warp_task(s.read(), symbol="add"):
+            wp.launch(axpy, dim=n, inputs=[1.0, one, y])
+        with warp_task(s.read(), symbol="idle"):
+            pass
+        with scope(symbol="unused"):  # a no-op inside a task, a scope otherwise
+            pass
+        with warp_task(s.rw(), symbol="second"):
             for _ in range(20):
                 wp.launch(scale, dim=n, inputs=[1.01, y])
 
-        def inner():
-            assert current_context() is ctx
-            with scope(ctx):
-                # two tasks that may overlap: one does the work, one is idle
-                with warp_task(ctx, symbol="add"):
-                    wp.launch(axpy, dim=n, inputs=[1.0, one, y])
-                with warp_task(ctx, symbol="idle"):
-                    pass
-
+    def run(form):
+        y = wp.ones(n, dtype=float)
+        one = wp.ones(n, dtype=float)
         assert current_context() is None
-        with scope(ctx, launchable=True) as g:
-            if form == "between":
-                with warp_task(ctx, t.rw()):
-                    part()
-                with scope(ctx, writes=(t,)):
-                    with warp_native(ctx):
-                        wp.launch(axpy, dim=n, inputs=[1.0, one, y])
-                with warp_task(ctx, t.rw()):
-                    part()
-            else:
-                block = {
-                    "task-rw": lambda: warp_task(ctx, t.rw(), symbol="blk"),
-                    "task-nodeps": lambda: warp_task(ctx, symbol="blk"),
-                    "native": lambda: warp_native(ctx, "blk"),
-                }[form]
-                with block():
-                    part()
-                    inner()
-                    part()
-                    with pytest.raises(RuntimeError, match="inside block"):
-                        warp_task(ctx, symbol="nested")
-            g.launch()
+        if form == "unrecorded":
+            library(y, one)
+        else:
+            ctx = stf.stackable_context()
+            with scope(ctx, launchable=True) as g:
+                assert current_context() is ctx
+                if form == "scope":
+                    library(y, one)
+                    assert graph_topology(g.graph) == (41, 41)
+                else:
+                    with warp_task(symbol="caller"):
+                        library(y, one)
+                        with pytest.raises(RuntimeError, match="inside task"):
+                            warp_task(ctx, symbol="nested")
+                        with pytest.raises(RuntimeError, match="inside task"):
+                            with scope(ctx):
+                                pass
+                g.launch()
+            ctx.finalize()
+            release_graph_handles()
         assert current_context() is None
         wp.synchronize()
-        v = float(y.numpy()[0])
-        ctx.finalize()
-        release_graph_handles()
-        return v
+        return float(y.numpy()[0])
 
-    for form in ("between", "task-rw", "task-nodeps", "native"):
+    for form in ("unrecorded", "scope", "task"):
         assert run(form) == pytest.approx(expected, rel=1e-5), form
 
 
@@ -448,7 +433,7 @@ def test_scope_allocations_belong_to_the_level():
         with warp_task(ctx, t.rw()):
             pass
         with scope(ctx, writes=(t,)):
-            with warp_native(ctx):
+            with warp_task(ctx):
                 tmp = wp.zeros(
                     n, dtype=float
                 )  # per-step temporary: dropped inside the scope

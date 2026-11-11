@@ -174,50 +174,45 @@ complete program)::
 ``tensor_arg(task, index)`` and ``tensor_arguments(task)`` convert one or all
 task arguments to tensors if you manage the task block yourself.
 
-**Warp** (``cuda.stf._experimental.interop.warp``) -- Warp work enters a task graph
-through four names, three of them plain cuda.stf API. A *scope* is
-``ctx.graph_scope()`` / ``ctx.launchable_graph_scope()``: a library that wants width
-opens one at its entry, the frame owner opens a launchable one and replays it; a scope
-is a graph for its writer and one node for its parent, so library boundaries and graph
-boundaries coincide (``scope(ctx, launchable=...)`` is the same plus a *scope token*,
-see below). ``warp_task(ctx, *deps)`` is a leaf phase holding many launches: it opens
-``ctx.task(*deps)``, makes the task's CUDA stream the current Warp stream
-(``wp.ScopedStream``) for the block, and yields ``(stream, arrays)`` where ``arrays``
-are ``wp.array`` views of the logical-data arguments. ``warp_native(ctx)`` wraps plain
-Warp code inside a scope that is not a phase of its own: a task holding the scope token
-read-write, ordered after every task before it and before every task after it in that
-scope (tasks read the token, so two tasks with no native block between them stay
-siblings). Plain Warp code inside a scope but outside both is a **record-time error**:
-while a scope is open, Warp's current stream is a poison stream whose handle raises on
-work submission. Everything is a no-op without a context (``ctx=None``, ``token(None)``),
-so the sequential and the task version of a library are the same code::
+**Warp** (``cuda.stf._experimental.interop.warp``) -- Warp work enters a task graph as
+ordinary cuda.stf: tasks, scopes, and tokens or logical data for the order between
+tasks. ``warp_task(ctx, *deps)`` opens ``ctx.task(*deps)``, makes the task's CUDA stream
+the current Warp stream (``wp.ScopedStream``) for the block, and yields
+``(stream, arrays)`` where ``arrays`` are ``wp.array`` views of the logical-data
+arguments. ``scope(ctx, launchable=...)`` is ``ctx.graph_scope()`` /
+``ctx.launchable_graph_scope()``: a flat context for the code inside, one node for its
+parent, ordered by the ``reads`` / ``writes`` it is given. When Warp owns the arrays
+there is no logical data to declare and tokens carry the order: ``token(ctx)``, and
+``scope_token()``, a token of the current scope that is created the first time it is
+asked for and stays the same until the scope closes. Inside a scope every Warp launch
+belongs to a task: plain Warp code outside one is a **record-time error** (Warp's
+current stream is then a poison stream whose handle raises on work submission)::
 
-    from cuda.stf._experimental.interop.warp import current_context, scope, warp_native, warp_task
+    from cuda.stf._experimental.interop.warp import scope, scope_token, warp_task
 
-    with scope(ctx, launchable=True) as g:          # the frame owner
-        with warp_native(ctx, "frame"):
-            example.collide()                       # plain Warp code, in program order
-            solver.step(state_in, state_out)        # may mark tasks inside, see below
+    with scope(ctx, launchable=True) as graph:      # the code that records
+        s = scope_token()
+        with warp_task(s.rw(), symbol="collide"):
+            example.collide()
+        solver.step(state_in, state_out)            # records its own tasks, see below
         for _ in range(frames):
-            g.launch()
+            graph.launch()
 
-    # inside the solver: mark the parts that may overlap, leave the rest as written
-    ctx = current_context()                         # None outside a recording
-    prepare()                                       # runs in the caller's block
-    with scope(ctx):
-        with warp_task(ctx, symbol="solve-a"): ...  # siblings
-        with warp_task(ctx, symbol="solve-b"): ...
-    update()                                        # waits for both
+    # inside the solver: the sequence of the step, and two tasks that may overlap
+    s = scope_token()
+    with warp_task(s.rw()): prepare()
+    with warp_task(s.read(), symbol="solve-a"): ...
+    with warp_task(s.read(), symbol="solve-b"): ...
+    with warp_task(s.rw()): update()                # waits for both
 
-A scope opened inside a block continues that block: the block is ended where the scope
-opens, the tasks of the scope are ordered after that first part, and the block resumes,
-with the same dependencies, when the scope closes. The caller does not need to know
-whether the code it calls marks tasks, and tasks that declare no dependency are joined by
-the code that follows them; dependencies (tokens, logical data) are only needed for an
-order between sibling tasks. ``current_context()`` returns the context of the innermost
-open scope, so a library takes no context argument. By default such a scope is recorded
-in the block's own graph; ``fork_in_place = False`` records it as a nested scope (a CUDA
-child graph) instead.
+The context argument is optional: a scope given a context makes it the current one
+while it is open, and ``warp_task``, ``scope``, ``token`` and ``scope_token`` called
+without one use it (``current_context()``), so a library takes no context argument.
+Called that way they do nothing when no scope is open (the code is not being recorded)
+and inside a task (the code runs as part of that task): the same library code runs
+unrecorded, or from a caller that wraps the whole call in one task. A library that
+records its own tasks is called from a scope; its caller gives it a scope of its own
+(``scope(writes=(s,))``) where the library's sequence must not be the caller's.
 
 When the task stream is capturing (graph scopes), the block runs under a Warp external
 capture so Warp's capture-aware paths (allocations, ``capture_if`` / ``capture_while``)
