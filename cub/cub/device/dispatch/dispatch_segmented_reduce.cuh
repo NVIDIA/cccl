@@ -594,7 +594,7 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_adaptive_segmented_reduce(
     return error;
   }
 
-  if (const auto error = CubDebug(cudaPeekAtLastError()))
+  if (const auto error = CubDebug(::cudaPeekAtLastError()))
   {
     return error;
   }
@@ -609,7 +609,7 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_adaptive_segmented_reduce(
     return error;
   }
 
-  if (const auto error = CubDebug(cudaPeekAtLastError()))
+  if (const auto error = CubDebug(::cudaPeekAtLastError()))
   {
     return error;
   }
