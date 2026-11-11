@@ -343,6 +343,7 @@ struct basic_sink
     return {static_cast<const _Self&>(*this), __loc};
   }
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document: documented above; Sphinx cannot parse `->*` in a noexcept clause
   // Both operators build the carrier from the sink and the call site, then apply the carrier's
   // operator, which ADL finds beside `__on_throw_policy` at instantiation.
   template <class _X>
@@ -360,6 +361,7 @@ struct basic_sink
   {
     return __on_throw_policy<_Self>{::cuda::std::move(__s.__sink_), __s.__loc_}->*::cuda::std::forward<_X>(__x);
   }
+#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 // A selecting policy's answer to "would your hook take the active exception?" (see the claim
