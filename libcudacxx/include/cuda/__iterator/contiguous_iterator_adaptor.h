@@ -72,11 +72,11 @@ template <class _Iter>
 
 //! @brief The iterator that remains after peeling iterator adaptors from `_Iter`.
 template <class _Iter>
-using __unwrapped_iterator_t = decltype(::cuda::__unwrap_iterator_adaptor(::cuda::std::declval<_Iter>()));
+using __unwrapped_iterator_t _CCCL_NODEBUG = decltype(::cuda::__unwrap_iterator_adaptor(::cuda::std::declval<_Iter>()));
 
 //! @brief The value type of the iterator that remains after peeling iterator adaptors from `_Iter`.
 template <class _Iter>
-using __unwrapped_iter_value_t = ::cuda::std::iter_value_t<__unwrapped_iterator_t<_Iter>>;
+using __unwrapped_iter_value_t _CCCL_NODEBUG = ::cuda::std::iter_value_t<__unwrapped_iterator_t<_Iter>>;
 
 //! @brief True when `_Iter` is a raw pointer or opts into contiguous addressing through `pointer_traits::to_address`.
 //! A contiguous iterator tag is not enough: `cuda::std::to_address` also accepts iterators such as `reverse_iterator`

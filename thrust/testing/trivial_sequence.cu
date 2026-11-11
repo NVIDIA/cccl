@@ -31,7 +31,7 @@ void test(Iterator first, Iterator last)
 
   REQUIRE_FALSE(thrust::is_contiguous_iterator_v<Iterator>);
   REQUIRE(thrust::is_contiguous_iterator_v<TrivialIterator>);
-  REQUIRE(cuda::std::__can_to_address<TrivialIterator>);
+  REQUIRE(cuda::std::__has_cuda_std_to_address<TrivialIterator>);
 }
 
 template <class Vector>

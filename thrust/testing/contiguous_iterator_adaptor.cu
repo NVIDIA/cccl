@@ -43,7 +43,7 @@ using transform_input_output_t = thrust::transform_input_output_iterator<plus_on
 template <class Iter, class Pointer>
 void check_contiguous_storage()
 {
-  STATIC_REQUIRE(cuda::std::__can_to_address<Iter>);
+  STATIC_REQUIRE(cuda::std::__has_cuda_std_to_address<Iter>);
   STATIC_REQUIRE(cuda::__is_contiguous_iterator_or_adaptor_v<Iter>);
   STATIC_REQUIRE(cuda::std::is_same_v<cuda::__unwrapped_iterator_t<Iter>, Pointer>);
   STATIC_REQUIRE(cuda::__iter_can_rebind<Iter, cuda::std::remove_pointer_t<Pointer>>);
