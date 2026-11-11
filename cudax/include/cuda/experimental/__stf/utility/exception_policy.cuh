@@ -186,9 +186,6 @@ inline constexpr unsigned __on_returned = 2;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-template <class _Reaction>
-struct __on_throw_policy; // the carrier the operators below build; defined with the runners
-
 // The left operand of a sink's `<<` and `->*`, built by implicit conversion from the sink.
 // Overloaded operators cannot take a defaulted `source_location`, so the converting constructor
 // captures the call site. It accepts exactly `_Self`: a type that converts to `_Self` (any sink
@@ -342,25 +339,19 @@ struct basic_sink
     return {static_cast<const _Self&>(*this), __loc};
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document: documented above; Sphinx cannot parse `->*` in a noexcept clause
-  // Both operators build the carrier from the sink and the call site, then apply the carrier's
-  // operator, which ADL finds beside `__on_throw_policy` at instantiation.
   template <class _X>
   friend auto operator<<(__sink_at<_Self> __s, _X&& __x) noexcept(
-    ::cuda::std::is_nothrow_move_constructible_v<_Self>
-    && noexcept(::cuda::std::declval<__on_throw_policy<_Self>>() << ::cuda::std::declval<_X>()))
+    noexcept(__sink_shift(::cuda::std::move(__s), ::cuda::std::forward<_X>(__x))))
   {
-    return __on_throw_policy<_Self>{::cuda::std::move(__s.__sink_), __s.__loc_} << ::cuda::std::forward<_X>(__x);
+    return __sink_shift(::cuda::std::move(__s), ::cuda::std::forward<_X>(__x));
   }
 
   template <class _X>
   friend decltype(auto) operator->*(__sink_at<_Self> __s, _X&& __x) noexcept(
-    ::cuda::std::is_nothrow_move_constructible_v<_Self>
-    && noexcept(::cuda::std::declval<__on_throw_policy<_Self>>()->*::cuda::std::declval<_X>()))
+    noexcept(__sink_yield(::cuda::std::move(__s), ::cuda::std::forward<_X>(__x))))
   {
-    return __on_throw_policy<_Self>{::cuda::std::move(__s.__sink_), __s.__loc_}->*::cuda::std::forward<_X>(__x);
+    return __sink_yield(::cuda::std::move(__s), ::cuda::std::forward<_X>(__x));
   }
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 // A selecting policy's answer to "would your hook take the active exception?" (see the claim
@@ -4850,6 +4841,30 @@ inline void __check_dynamic_repeated(const dynamic& __p)
 // could silently rebind; with the policies in a non-inline namespace, a bare abort() in
 // this scope can only mean ::abort, which is what callers expect. Policy uses spell
 // sump::abort.
+
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+namespace sump
+{
+// The bodies of the operators every sink inherits from `basic_sink`: build the carrier
+// from the sink and the call site, then apply the carrier's operator. Found by ADL through
+// `__sink_at`.
+template <class _Sink, class _X>
+auto __sink_shift(__sink_at<_Sink>&& __s, _X&& __x) noexcept(
+  ::cuda::std::is_nothrow_move_constructible_v<_Sink>
+  && noexcept(::cuda::std::declval<__on_throw_policy<_Sink>>() << ::cuda::std::declval<_X>()))
+{
+  return __on_throw_policy<_Sink>{::cuda::std::move(__s.__sink_), __s.__loc_} << ::cuda::std::forward<_X>(__x);
+}
+
+template <class _Sink, class _X>
+decltype(auto) __sink_yield(__sink_at<_Sink>&& __s, _X&& __x) noexcept(
+  ::cuda::std::is_nothrow_move_constructible_v<_Sink>
+  && noexcept(::cuda::std::declval<__on_throw_policy<_Sink>>()->*::cuda::std::declval<_X>()))
+{
+  return __on_throw_policy<_Sink>{::cuda::std::move(__s.__sink_), __s.__loc_}->*::cuda::std::forward<_X>(__x);
+}
+} // namespace sump
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * @brief Runs `__step`; if it throws, the exception is kept in `__first` unless one is already
