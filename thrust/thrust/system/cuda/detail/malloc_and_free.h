@@ -18,10 +18,12 @@
 #include <thrust/detail/malloc_and_free.h>
 #include <thrust/detail/malloc_and_free_fwd.h>
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/raw_reference_cast.h>
 #include <thrust/detail/seq.h>
 #include <thrust/system/cuda/detail/util.h>
+#include <thrust/system/cuda/error.h>
 #include <thrust/system/detail/bad_alloc.h>
+
+#include <cuda/std/__cstddef/types.h>
 
 #ifdef THRUST_CACHING_DEVICE_MALLOC
 #  include <cub/util_allocator.cuh>

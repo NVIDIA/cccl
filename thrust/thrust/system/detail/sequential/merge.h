@@ -18,8 +18,9 @@
 #endif // no system header
 #include <thrust/detail/copy.h>
 #include <thrust/detail/function.h>
-#include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
+
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
