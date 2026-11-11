@@ -27,7 +27,6 @@
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/extent.h>
 #include <cuda/std/__type_traits/is_array.h>
-#include <cuda/std/__type_traits/is_unbounded_array.h>
 #include <cuda/std/__type_traits/remove_extent.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -39,8 +38,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _Tp, ::cuda::std::size_t _Alignment = alignof(_Tp)>
 struct __uninitialized
 {
-  static_assert(!::cuda::std::is_unbounded_array_v<_Tp>, "__uninitialized requires a complete type");
-
   //! The type of the stored object, or of the array elements if `_Tp` is an array type
   using value_type = ::cuda::std::remove_extent_t<_Tp>;
 
