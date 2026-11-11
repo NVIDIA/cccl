@@ -34,6 +34,11 @@ DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::ExclusiveScanByKey, device_scan_excl
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::InclusiveSumByKey, device_scan_inclusive_sum_by_key);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::InclusiveScanByKey, device_scan_inclusive_scan_by_key);
 
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_scan_exclusive_sum_by_key_two_phase);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_scan_exclusive_scan_by_key_two_phase);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSumByKey, device_scan_inclusive_sum_by_key_two_phase);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanByKey, device_scan_inclusive_scan_by_key_two_phase);
+
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
 #include "cub_test_macros.h"
@@ -394,21 +399,27 @@ CUB_TEST("Device scan inclusive-scan-by-key uses environment", "[scan][by_key][d
   REQUIRE(d_out == expected);
 }
 
+struct key_group_equal
+{
+  __host__ __device__ bool operator()(cuda::std::int32_t lhs, cuda::std::int32_t rhs) const
+  {
+    return lhs / 2 == rhs / 2;
+  }
+};
+
 #if TEST_LAUNCH == 0
 
 // Explicit-storage calls bypass the launch wrappers, so test them only in the host-launch variant.
 template <class TwoPhaseFn, class EnvT>
-size_t run_two_phase(TwoPhaseFn two_phase, EnvT&& env, cudaStream_t stream = nullptr)
+size_t run_two_phase(TwoPhaseFn two_phase, const EnvT& env, cudaStream_t stream = nullptr)
 {
   size_t temp_storage_bytes = 0;
-  REQUIRE(cudaSuccess == two_phase(nullptr, temp_storage_bytes, cuda::std::forward<EnvT>(env)));
+  REQUIRE(cudaSuccess == two_phase(nullptr, temp_storage_bytes, env));
 
   c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
   {
     const stream_scope scope{stream};
-    REQUIRE(
-      cudaSuccess
-      == two_phase(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, cuda::std::forward<EnvT>(env)));
+    REQUIRE(cudaSuccess == two_phase(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, env));
   }
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaStreamSynchronize(stream));
@@ -435,25 +446,7 @@ void test_two_phase_env_kinds(size_t expected_temp_storage_bytes, TwoPhaseFn two
     const auto mr_env = stdexec::prop{cuda::mr::get_memory_resource_t{}, throwing_memory_resource{}};
     REQUIRE(run_two_phase(two_phase, stdexec::env{mr_env}) == expected_temp_storage_bytes);
   }
-
-  SECTION("legacy nullptr stream")
-  {
-    REQUIRE(run_two_phase(two_phase, nullptr) == expected_temp_storage_bytes);
-  }
-
-  SECTION("legacy literal 0 stream")
-  {
-    REQUIRE(run_two_phase(two_phase, 0) == expected_temp_storage_bytes);
-  }
 }
-
-struct key_group_equal
-{
-  __host__ __device__ bool operator()(cuda::std::int32_t lhs, cuda::std::int32_t rhs) const
-  {
-    return lhs / 2 == rhs / 2;
-  }
-};
 
 CUB_TEST_CASE("DeviceScan::ExclusiveSumByKey works with user provided memory and environment",
               "[scan][by_key][device]",
@@ -469,16 +462,9 @@ CUB_TEST_CASE("DeviceScan::ExclusiveSumByKey works with user provided memory and
           == cub::DeviceScan::ExclusiveSumByKey(
             nullptr, expected_bytes, d_keys.begin(), d_in.begin(), d_out.begin(), num_items));
 
-  test_two_phase_env_kinds(expected_bytes, [&](void* storage, size_t& bytes, auto&& env) {
+  test_two_phase_env_kinds(expected_bytes, [&](void* storage, size_t& bytes, const auto& env) {
     return cub::DeviceScan::ExclusiveSumByKey(
-      storage,
-      bytes,
-      d_keys.begin(),
-      d_in.begin(),
-      d_out.begin(),
-      num_items,
-      key_group_equal{},
-      cuda::std::forward<decltype(env)>(env));
+      storage, bytes, d_keys.begin(), d_in.begin(), d_out.begin(), num_items, key_group_equal{}, env);
   });
 
   const c2h::device_vector<cuda::std::int32_t> expected{0, 8, 0, 7, 12, 0, 0};
@@ -500,7 +486,7 @@ CUB_TEST_CASE("DeviceScan::ExclusiveScanByKey works with user provided memory an
     == cub::DeviceScan::ExclusiveScanByKey(
       nullptr, expected_bytes, d_keys.begin(), d_in.begin(), d_out.begin(), cuda::std::multiplies<>{}, 2, num_items));
 
-  test_two_phase_env_kinds(expected_bytes, [&](void* storage, size_t& bytes, auto&& env) {
+  test_two_phase_env_kinds(expected_bytes, [&](void* storage, size_t& bytes, const auto& env) {
     return cub::DeviceScan::ExclusiveScanByKey(
       storage,
       bytes,
@@ -511,7 +497,7 @@ CUB_TEST_CASE("DeviceScan::ExclusiveScanByKey works with user provided memory an
       2,
       num_items,
       key_group_equal{},
-      cuda::std::forward<decltype(env)>(env));
+      env);
   });
 
   const c2h::device_vector<cuda::std::int32_t> expected{2, 16, 2, 14, 70, 2, 0};
@@ -532,16 +518,9 @@ CUB_TEST_CASE("DeviceScan::InclusiveSumByKey works with user provided memory and
           == cub::DeviceScan::InclusiveSumByKey(
             nullptr, expected_bytes, d_keys.begin(), d_in.begin(), d_out.begin(), num_items));
 
-  test_two_phase_env_kinds(expected_bytes, [&](void* storage, size_t& bytes, auto&& env) {
+  test_two_phase_env_kinds(expected_bytes, [&](void* storage, size_t& bytes, const auto& env) {
     return cub::DeviceScan::InclusiveSumByKey(
-      storage,
-      bytes,
-      d_keys.begin(),
-      d_in.begin(),
-      d_out.begin(),
-      num_items,
-      key_group_equal{},
-      cuda::std::forward<decltype(env)>(env));
+      storage, bytes, d_keys.begin(), d_in.begin(), d_out.begin(), num_items, key_group_equal{}, env);
   });
 
   const c2h::device_vector<cuda::std::int32_t> expected{8, 14, 7, 12, 15, 0, 9};
@@ -563,7 +542,7 @@ CUB_TEST_CASE("DeviceScan::InclusiveScanByKey works with user provided memory an
     == cub::DeviceScan::InclusiveScanByKey(
       nullptr, expected_bytes, d_keys.begin(), d_in.begin(), d_out.begin(), cuda::std::multiplies<>{}, num_items));
 
-  test_two_phase_env_kinds(expected_bytes, [&](void* storage, size_t& bytes, auto&& env) {
+  test_two_phase_env_kinds(expected_bytes, [&](void* storage, size_t& bytes, const auto& env) {
     return cub::DeviceScan::InclusiveScanByKey(
       storage,
       bytes,
@@ -573,7 +552,7 @@ CUB_TEST_CASE("DeviceScan::InclusiveScanByKey works with user provided memory an
       cuda::std::multiplies<>{},
       num_items,
       key_group_equal{},
-      cuda::std::forward<decltype(env)>(env));
+      env);
   });
 
   const c2h::device_vector<cuda::std::int32_t> expected{8, 48, 7, 35, 105, 0, 0};
@@ -702,6 +681,140 @@ CUB_TEST("DeviceScan::InclusiveScanByKey can be tuned with user provided memory"
 }
 
 #endif // TEST_LAUNCH == 0
+
+// The graph launch appends its own stream argument, which cannot be combined with an environment
+#if TEST_LAUNCH != 2
+
+CUB_TEST_CASE("DeviceScan::ExclusiveSumByKey two-phase accepts legacy null streams", "[scan][by_key][device]", CUB_SMALL)
+{
+  constexpr cuda::std::int32_t num_items = 7;
+  const c2h::device_vector<cuda::std::int32_t> d_keys{0, 1, 2, 3, 2, 4, 5};
+  const c2h::device_vector<cuda::std::int32_t> d_in{8, 6, 7, 5, 3, 0, 9};
+  c2h::device_vector<cuda::std::int32_t> d_out(num_items, thrust::no_init);
+  const stream_scope scope{cudaStream_t{}};
+
+  SECTION("nullptr")
+  {
+    device_scan_exclusive_sum_by_key_two_phase(
+      d_keys.begin(), d_in.begin(), d_out.begin(), num_items, key_group_equal{}, nullptr);
+  }
+  SECTION("literal 0")
+  {
+    device_scan_exclusive_sum_by_key_two_phase(
+      d_keys.begin(), d_in.begin(), d_out.begin(), num_items, key_group_equal{}, 0);
+  }
+  SECTION("cudaStream_t{}")
+  {
+    device_scan_exclusive_sum_by_key_two_phase(
+      d_keys.begin(), d_in.begin(), d_out.begin(), num_items, key_group_equal{}, cudaStream_t{});
+  }
+
+  const c2h::device_vector<cuda::std::int32_t> expected{0, 8, 0, 7, 12, 0, 0};
+  REQUIRE(d_out == expected);
+}
+
+CUB_TEST_CASE("DeviceScan::ExclusiveScanByKey two-phase accepts legacy null streams",
+              "[scan][by_key][device]",
+              CUB_SMALL)
+{
+  constexpr cuda::std::int32_t num_items = 7;
+  const c2h::device_vector<cuda::std::int32_t> d_keys{0, 1, 2, 3, 2, 4, 5};
+  const c2h::device_vector<cuda::std::int32_t> d_in{8, 6, 7, 5, 3, 0, 9};
+  c2h::device_vector<cuda::std::int32_t> d_out(num_items, thrust::no_init);
+  const stream_scope scope{cudaStream_t{}};
+
+  SECTION("nullptr")
+  {
+    device_scan_exclusive_scan_by_key_two_phase(
+      d_keys.begin(), d_in.begin(), d_out.begin(), cuda::std::multiplies<>{}, 2, num_items, key_group_equal{}, nullptr);
+  }
+  SECTION("literal 0")
+  {
+    device_scan_exclusive_scan_by_key_two_phase(
+      d_keys.begin(), d_in.begin(), d_out.begin(), cuda::std::multiplies<>{}, 2, num_items, key_group_equal{}, 0);
+  }
+  SECTION("cudaStream_t{}")
+  {
+    device_scan_exclusive_scan_by_key_two_phase(
+      d_keys.begin(),
+      d_in.begin(),
+      d_out.begin(),
+      cuda::std::multiplies<>{},
+      2,
+      num_items,
+      key_group_equal{},
+      cudaStream_t{});
+  }
+
+  const c2h::device_vector<cuda::std::int32_t> expected{2, 16, 2, 14, 70, 2, 0};
+  REQUIRE(d_out == expected);
+}
+
+CUB_TEST_CASE("DeviceScan::InclusiveSumByKey two-phase accepts legacy null streams", "[scan][by_key][device]", CUB_SMALL)
+{
+  constexpr cuda::std::int32_t num_items = 7;
+  const c2h::device_vector<cuda::std::int32_t> d_keys{0, 1, 2, 3, 2, 4, 5};
+  const c2h::device_vector<cuda::std::int32_t> d_in{8, 6, 7, 5, 3, 0, 9};
+  c2h::device_vector<cuda::std::int32_t> d_out(num_items, thrust::no_init);
+  const stream_scope scope{cudaStream_t{}};
+
+  SECTION("nullptr")
+  {
+    device_scan_inclusive_sum_by_key_two_phase(
+      d_keys.begin(), d_in.begin(), d_out.begin(), num_items, key_group_equal{}, nullptr);
+  }
+  SECTION("literal 0")
+  {
+    device_scan_inclusive_sum_by_key_two_phase(
+      d_keys.begin(), d_in.begin(), d_out.begin(), num_items, key_group_equal{}, 0);
+  }
+  SECTION("cudaStream_t{}")
+  {
+    device_scan_inclusive_sum_by_key_two_phase(
+      d_keys.begin(), d_in.begin(), d_out.begin(), num_items, key_group_equal{}, cudaStream_t{});
+  }
+
+  const c2h::device_vector<cuda::std::int32_t> expected{8, 14, 7, 12, 15, 0, 9};
+  REQUIRE(d_out == expected);
+}
+
+CUB_TEST_CASE("DeviceScan::InclusiveScanByKey two-phase accepts legacy null streams",
+              "[scan][by_key][device]",
+              CUB_SMALL)
+{
+  constexpr cuda::std::int32_t num_items = 7;
+  const c2h::device_vector<cuda::std::int32_t> d_keys{0, 1, 2, 3, 2, 4, 5};
+  const c2h::device_vector<cuda::std::int32_t> d_in{8, 6, 7, 5, 3, 0, 9};
+  c2h::device_vector<cuda::std::int32_t> d_out(num_items, thrust::no_init);
+  const stream_scope scope{cudaStream_t{}};
+
+  SECTION("nullptr")
+  {
+    device_scan_inclusive_scan_by_key_two_phase(
+      d_keys.begin(), d_in.begin(), d_out.begin(), cuda::std::multiplies<>{}, num_items, key_group_equal{}, nullptr);
+  }
+  SECTION("literal 0")
+  {
+    device_scan_inclusive_scan_by_key_two_phase(
+      d_keys.begin(), d_in.begin(), d_out.begin(), cuda::std::multiplies<>{}, num_items, key_group_equal{}, 0);
+  }
+  SECTION("cudaStream_t{}")
+  {
+    device_scan_inclusive_scan_by_key_two_phase(
+      d_keys.begin(),
+      d_in.begin(),
+      d_out.begin(),
+      cuda::std::multiplies<>{},
+      num_items,
+      key_group_equal{},
+      cudaStream_t{});
+  }
+
+  const c2h::device_vector<cuda::std::int32_t> expected{8, 48, 7, 35, 105, 0, 0};
+  REQUIRE(d_out == expected);
+}
+
+#endif // TEST_LAUNCH != 2
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
 CUB_TEST("Test ScanByKeyPolicy properties", "[scan][by_key][device]", CUB_SMALL)
