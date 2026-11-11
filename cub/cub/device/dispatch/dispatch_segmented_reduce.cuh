@@ -518,7 +518,7 @@ struct DeviceAdaptiveSegmentedReduceKernelSource
 {
   using T = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
 
-  _CCCL_HOST_DEVICE_API static constexpr adaptive_segmented_reduce_policy GetPolicy(::cuda::compute_capability cc)
+  _CCCL_HOST_DEVICE_API static constexpr adaptive_segmented_reduce_policy GetPolicy(const ::cuda::compute_capability cc)
   {
     return select_policy<PolicySelector>(cc);
   }
@@ -549,15 +549,15 @@ template <class AdaptiveKernelSource,
           class InitValueT,
           class KernelLauncherFactory>
 CUB_RUNTIME_FUNCTION cudaError_t invoke_adaptive_segmented_reduce(
-  InputIteratorT d_in,
-  OutputIteratorT d_out,
-  BeginOffsetIteratorT d_begin_offsets,
-  EndOffsetIteratorT d_end_offsets,
-  int num_segments,
-  ReductionOpT reduction_op,
-  InitValueT init,
-  ::cuda::compute_capability cc,
-  cudaStream_t stream,
+  const InputIteratorT d_in,
+  const OutputIteratorT d_out,
+  const BeginOffsetIteratorT d_begin_offsets,
+  const EndOffsetIteratorT d_end_offsets,
+  const int num_segments,
+  const ReductionOpT reduction_op,
+  const InitValueT init,
+  const ::cuda::compute_capability cc,
+  const cudaStream_t stream,
   KernelLauncherFactory& launcher_factory,
   AdaptiveKernelSource /*kernel_source*/ = {})
 {
@@ -712,8 +712,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     is_adaptive_segmented_reduce_compatible_v<InputIteratorT, InputT, OutputIteratorT, ReductionOpT, AccumT, OffsetT>)
   {
     // Force NVCC to register adaptive kernel symbols at dispatch() instantiation time.
-    [[maybe_unused]] auto _adaptive_reduce_kern = AdaptiveKernelSource::ReduceKernel();
-    [[maybe_unused]] auto _adaptive_init_kern   = AdaptiveKernelSource::InitKernel();
+    [[maybe_unused]] const auto _adaptive_reduce_kern = AdaptiveKernelSource::ReduceKernel();
+    [[maybe_unused]] const auto _adaptive_init_kern   = AdaptiveKernelSource::InitKernel();
 
     NV_IF_TARGET(
       NV_IS_HOST,
