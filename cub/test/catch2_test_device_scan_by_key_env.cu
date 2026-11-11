@@ -18,7 +18,6 @@ struct stream_registry_factory_t;
 #include <cuda/memory_resource>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
-#include <cuda/std/utility>
 #include <cuda/stream>
 
 #include <sstream>
