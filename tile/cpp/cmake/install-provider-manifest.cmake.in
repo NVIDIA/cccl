@@ -1,0 +1,22 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+set(_native "@CUDA_COOP_TILE_INSTALL_LIBRARY_DIR@")
+if (NOT IS_ABSOLUTE "${_native}")
+  set(_native "${CMAKE_INSTALL_PREFIX}/${_native}")
+endif()
+set(_native "$ENV{DESTDIR}${_native}")
+file(SHA256 "${_native}/cuda_coop_tile.tilelib" _tile_library_sha256)
+file(WRITE "${_native}/provider-manifest.json"
+  "{\n"
+  "  \"schema_version\": 5,\n"
+  "  \"distribution\": \"cuda-coop-tile\",\n"
+  "  \"version\": \"native-${_tile_library_sha256}\",\n"
+  "  \"cuda_coop_tile_abi\": 2,\n"
+  "  \"tile_library\": {\n"
+  "    \"filename\": \"cuda_coop_tile.tilelib\",\n"
+  "    \"sha256\": \"${_tile_library_sha256}\"\n"
+  "  }\n"
+  "}\n"
+)

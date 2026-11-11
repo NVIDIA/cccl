@@ -1,0 +1,121 @@
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="712" viewBox="0 0 1000 712" role="img" aria-labelledby="title desc">
+<title id="title">TopK: a defined prefix within the original capacity</title>
+<desc id="desc">Logical Tile input and output values; complete semantics and constraints are in the accompanying reference.</desc>
+<rect width="1000" height="712" rx="8" fill="#ffffff"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="26" y="32" font-size="26" fill="#132c47" font-weight="700" text-anchor="start">TopK: a defined prefix within the original capacity</text>
+<text x="26" y="60" font-size="16" fill="#29435a" font-weight="400" text-anchor="start">Eight-value semantic example. k = 3, valid_items = 6; only the leading six keys participate.</text>
+<text x="26" y="117" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">input keys</text>
+<rect x="228.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">9</text>
+<rect x="306.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="384.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">7</text>
+<rect x="462.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">4</text>
+<rect x="540.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="576.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">1</text>
+<rect x="618.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="654.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">8</text>
+<rect x="696.0" y="88" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="732.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">99</text>
+<rect x="774.0" y="88" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="810.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">100</text>
+<text x="26" y="175" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">input payloads</text>
+<rect x="228.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">a</text>
+<rect x="306.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">b</text>
+<rect x="384.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">c</text>
+<rect x="462.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">d</text>
+<rect x="540.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="576.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">e</text>
+<rect x="618.0" y="146" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="654.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">f</text>
+<rect x="696.0" y="146" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="732.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">g</text>
+<rect x="774.0" y="146" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="810.5" y="174" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">h</text>
+<text x="26" y="212" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">Keys 99 and 100 are outside valid_items and cannot be selected.</text>
+<path d="M26 249 H974" stroke="#cbd8e3"/>
+<text x="26" y="278" font-size="20" fill="#132c47" font-weight="600" text-anchor="start">Largest three: one allowed output order</text>
+<text x="26" y="330" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">max keys</text>
+<rect x="228.0" y="301" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="264.5" y="329" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">8</text>
+<rect x="306.0" y="301" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="342.5" y="329" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">9</text>
+<rect x="384.0" y="301" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="420.5" y="329" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">7</text>
+<rect x="462.0" y="301" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="498.5" y="329" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">?</text>
+<rect x="540.0" y="301" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="576.5" y="329" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">?</text>
+<rect x="618.0" y="301" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="654.5" y="329" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">?</text>
+<rect x="696.0" y="301" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="732.5" y="329" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">?</text>
+<rect x="774.0" y="301" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="810.5" y="329" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">?</text>
+<text x="26" y="388" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">max payloads</text>
+<rect x="228.0" y="359" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="387" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">f</text>
+<rect x="306.0" y="359" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="387" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">a</text>
+<rect x="384.0" y="359" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="387" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">c</text>
+<rect x="462.0" y="359" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="498.5" y="387" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">?</text>
+<rect x="540.0" y="359" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="576.5" y="387" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">?</text>
+<rect x="618.0" y="359" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="654.5" y="387" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">?</text>
+<rect x="696.0" y="359" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="732.5" y="387" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">?</text>
+<rect x="774.0" y="359" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="810.5" y="387" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">?</text>
+<path d="M26 429 H974" stroke="#cbd8e3"/>
+<text x="26" y="458" font-size="20" fill="#132c47" font-weight="600" text-anchor="start">Smallest three: one allowed output order</text>
+<text x="26" y="510" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">min keys</text>
+<rect x="228.0" y="481" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="264.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="306.0" y="481" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="342.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">1</text>
+<rect x="384.0" y="481" width="73.0" height="43" rx="5" fill="#e4f2dc" stroke="#7894af"/>
+<text x="420.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">4</text>
+<rect x="462.0" y="481" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="498.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">?</text>
+<rect x="540.0" y="481" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="576.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">?</text>
+<rect x="618.0" y="481" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="654.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">?</text>
+<rect x="696.0" y="481" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="732.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">?</text>
+<rect x="774.0" y="481" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="810.5" y="509" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">?</text>
+<text x="26" y="568" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">min payloads</text>
+<rect x="228.0" y="539" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">b</text>
+<rect x="306.0" y="539" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">e</text>
+<rect x="384.0" y="539" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">d</text>
+<rect x="462.0" y="539" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="498.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">?</text>
+<rect x="540.0" y="539" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="576.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">?</text>
+<rect x="618.0" y="539" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="654.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">?</text>
+<rect x="696.0" y="539" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="732.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">?</text>
+<rect x="774.0" y="539" width="73.0" height="43" rx="5" fill="#edf0f3" stroke="#7894af"/>
+<text x="810.5" y="567" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">?</text>
+<text x="26" y="605" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">The keys-only functions return the key row; the pairs functions return keys and payloads.</text>
+<text x="26" y="638" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">Only [0, k) is defined. Question marks are unspecified values, not padding or zeros.</text>
+<text x="26" y="671" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">Selected order and tied payload identity are unspecified. Compare selected sets, not positions.</text>
+</g>
+</svg>

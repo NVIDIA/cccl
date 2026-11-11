@@ -19,6 +19,9 @@ These libraries expose the generic, highly-optimized algorithms from the
 :doc:`CCCL C++ libraries </cccl/index>`,
 which have been tuned to provide optimal performance across GPU architectures.
 
+For cooperative operations inside cuTile kernels, see
+:doc:`Tile for Python </tile/python/index>`.
+
 Who is this for?
 ----------------
 

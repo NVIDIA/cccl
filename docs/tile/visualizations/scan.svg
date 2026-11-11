@@ -1,0 +1,88 @@
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="828" viewBox="0 0 1000 828" role="img" aria-labelledby="title desc">
+<title id="title">Scan: a prefix at each position</title>
+<desc id="desc">Logical Tile input and output values; complete semantics and constraints are in the accompanying reference.</desc>
+<rect width="1000" height="828" rx="8" fill="#ffffff"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="26" y="32" font-size="26" fill="#132c47" font-weight="700" text-anchor="start">Scan: a prefix at each position</text>
+<text x="26" y="60" font-size="16" fill="#29435a" font-weight="400" text-anchor="start">Four-value semantic example. Each output keeps the input extent and dtype.</text>
+<text x="26" y="117" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">input</text>
+<rect x="228.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<text x="264.5" y="82" font-size="12" fill="#50677b" font-weight="400" text-anchor="middle">0</text>
+<rect x="306.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">1</text>
+<text x="342.5" y="82" font-size="12" fill="#50677b" font-weight="400" text-anchor="middle">1</text>
+<rect x="384.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">3</text>
+<text x="420.5" y="82" font-size="12" fill="#50677b" font-weight="400" text-anchor="middle">2</text>
+<rect x="462.0" y="88" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="116" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<text x="498.5" y="82" font-size="12" fill="#50677b" font-weight="400" text-anchor="middle">3</text>
+<path d="M26 158 H974" stroke="#cbd8e3"/>
+<text x="26" y="187" font-size="20" fill="#132c47" font-weight="600" text-anchor="start">Addition: include or omit the current input</text>
+<text x="26" y="239" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">exclusive_sum</text>
+<rect x="228.0" y="210" width="73.0" height="43" rx="5" fill="#fff0c7" stroke="#7894af"/>
+<text x="264.5" y="238" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">0</text>
+<rect x="306.0" y="210" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="238" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="384.0" y="210" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="238" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">3</text>
+<rect x="462.0" y="210" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="238" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">6</text>
+<text x="26" y="297" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">inclusive_sum</text>
+<rect x="228.0" y="268" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="296" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="306.0" y="268" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="296" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">3</text>
+<rect x="384.0" y="268" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="296" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">6</text>
+<rect x="462.0" y="268" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="296" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">8</text>
+<text x="26" y="334" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">exclusive[i] = sum(input[:i]); inclusive[i] = sum(input[:i + 1])</text>
+<path d="M26 371 H974" stroke="#cbd8e3"/>
+<text x="26" y="400" font-size="20" fill="#132c47" font-weight="600" text-anchor="start">A prefix value precedes the entire Tile</text>
+<text x="26" y="423" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">prefix_value = 10</text>
+<text x="26" y="479" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">exclusive, prefix 10</text>
+<rect x="228.0" y="450" width="73.0" height="43" rx="5" fill="#fff0c7" stroke="#7894af"/>
+<text x="264.5" y="478" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">10</text>
+<rect x="306.0" y="450" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="478" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">12</text>
+<rect x="384.0" y="450" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="478" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">13</text>
+<rect x="462.0" y="450" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="478" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">16</text>
+<text x="26" y="537" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">inclusive, prefix 10</text>
+<rect x="228.0" y="508" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="536" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">12</text>
+<rect x="306.0" y="508" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="536" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">13</text>
+<rect x="384.0" y="508" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="536" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">16</text>
+<rect x="462.0" y="508" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="536" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">18</text>
+<path d="M26 578 H974" stroke="#cbd8e3"/>
+<text x="26" y="607" font-size="20" fill="#132c47" font-weight="600" text-anchor="start">Other associative operations use the same prefix boundaries</text>
+<text x="26" y="659" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">exclusive product</text>
+<rect x="228.0" y="630" width="73.0" height="43" rx="5" fill="#fff0c7" stroke="#7894af"/>
+<text x="264.5" y="658" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">1</text>
+<rect x="306.0" y="630" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="658" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="384.0" y="630" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="658" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="462.0" y="630" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="658" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">6</text>
+<text x="26" y="717" font-size="16" fill="#132c47" font-weight="600" text-anchor="start">inclusive maximum</text>
+<rect x="228.0" y="688" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="264.5" y="716" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="306.0" y="688" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="342.5" y="716" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">2</text>
+<rect x="384.0" y="688" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="420.5" y="716" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">3</text>
+<rect x="462.0" y="688" width="73.0" height="43" rx="5" fill="#e6f0fb" stroke="#7894af"/>
+<text x="498.5" y="716" font-size="16" fill="#142d46" font-weight="500" text-anchor="middle">3</text>
+<text x="26" y="754" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">exclusive_scan(..., scan_op=&quot;*&quot;, initial_value=1); inclusive_scan(..., scan_op=&quot;max&quot;)</text>
+<text x="26" y="787" font-size="15" fill="#29435a" font-weight="400" text-anchor="start">scan(mode=&quot;exclusive&quot; or &quot;inclusive&quot;) selects the same two boundaries.</text>
+</g>
+</svg>

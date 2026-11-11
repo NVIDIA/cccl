@@ -25,6 +25,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -61,6 +62,7 @@ struct compare_key_prefix_op
 //! the histogram in shared memory is updated. (2) Partitioning scatters the top-k items (key
 //! prefix <= k-th prefix) into shared memory via atomic counters, then each thread reads back
 //! its portion. Supports key-only and key-value selection.
+//! Selection ranks keys by their radix bits in `[begin_bit, end_bit)`, with ties resolved arbitrarily.
 //!
 //! Keys and values are consumed and returned in a blocked arrangement, i.e., thread `t` holds the tile's items
 //! `[t * ItemsPerThread, (t + 1) * ItemsPerThread)`. On a partial tile, the valid items are the tile's first
@@ -301,6 +303,8 @@ class block_topk_air
     bit_ordered_type (&unsigned_keys)[items_per_thread],
     int k,
     int valid_items,
+    int begin_bit,
+    int end_bit,
     int& total_selected,
     int& num_candidates,
     bit_ordered_type& kth_key_prefix,
@@ -308,12 +312,15 @@ class block_topk_air
     DecomposerT decomposer = DecomposerT{})
   {
     // Preconditions
-    constexpr int max_bit = int(sizeof(KeyT) * 8);
+    [[maybe_unused]] constexpr int max_bit = int(sizeof(KeyT) * 8);
     _CCCL_ASSERT(k > 0 && k <= tile_items, "k must be in (0, tile_items]");
     if constexpr (!IsFullTile)
     {
       _CCCL_ASSERT(valid_items > 0 && valid_items <= tile_items, "valid_items must be in [1, tile_items]");
     }
+
+    _CCCL_ASSERT(begin_bit >= 0 && begin_bit < max_bit, "begin_bit must be in [0, max_bit)");
+    _CCCL_ASSERT(end_bit > begin_bit && end_bit <= max_bit, "end_bit must be in (begin_bit, max_bit]");
 
     // We only consider candidates identified in the previous pass, i.e., ((sortkey & prefix_mask) == kth_prefix)
     // With each pass, we identify a wider prefix of the splitter key
@@ -328,10 +335,10 @@ class block_topk_air
     zero_histogram(storage.stage.passes.histogram[0]);
     __syncthreads();
 
-    constexpr int num_passes = ::cuda::ceil_div(max_bit, RadixBits);
-    const auto run_pass      = [&](int pass) -> bool {
-      const int pass_end_bit   = max_bit - pass * RadixBits;
-      const int pass_begin_bit = (::cuda::std::max) (pass_end_bit - RadixBits, 0);
+    const int num_passes = ::cuda::ceil_div(end_bit - begin_bit, RadixBits);
+    const auto run_pass  = [&](int pass) -> bool {
+      const int pass_end_bit   = end_bit - pass * RadixBits;
+      const int pass_begin_bit = (::cuda::std::max) (pass_end_bit - RadixBits, begin_bit);
       return run_radix_pass<SelectDirection, IsFullTile>(
         unsigned_keys,
         valid_items,
@@ -349,12 +356,13 @@ class block_topk_air
 
     if constexpr (UnrollBitPasses)
     {
-      // Fully unrolled, the per-pass shifts, masks, and histogram-buffer selections become
-      // immediates and the compiler can schedule across pass boundaries.
+      // Keep the unroll bound constant for runtime bit ranges. For the default full range,
+      // shifts, masks, and histogram-buffer selections remain compile-time constants.
+      constexpr int max_passes = ::cuda::ceil_div(max_bit, RadixBits);
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int pass = 0; pass < num_passes; ++pass)
+      for (int pass = 0; pass < max_passes; ++pass)
       {
-        if (run_pass(pass))
+        if (pass >= num_passes || run_pass(pass))
         {
           break;
         }
@@ -376,8 +384,13 @@ class block_topk_air
   }
 
   template <detail::topk::select SelectDirection, bool IsFullTile>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-  select_topk(KeyT (&keys)[items_per_thread], ValueT (&values)[items_per_thread], int k, int valid_items)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void select_topk(
+    KeyT (&keys)[items_per_thread],
+    ValueT (&values)[items_per_thread],
+    int k,
+    int valid_items,
+    int begin_bit,
+    int end_bit)
   {
     if constexpr (!IsFullTile)
     {
@@ -389,6 +402,9 @@ class block_topk_air
     {
       return;
     }
+
+    begin_bit = (::cuda::std::max) (begin_bit, 0);
+    end_bit   = (::cuda::std::min) (end_bit, int(sizeof(KeyT) * 8));
 
     // Every valid item is selected. The blocked arrangement already places the valid items in
     // the tile's leading slots, so keys and values can stay where they are.
@@ -472,7 +488,16 @@ class block_topk_air
 
     // Identify the prefix of the k-th key
     get_kth_key_prefix<SelectDirection, IsFullTile>(
-      unsigned_keys, k, valid_items, total_selected, num_candidates, kth_prefix, prefix_mask, decomposer);
+      unsigned_keys,
+      k,
+      valid_items,
+      begin_bit,
+      end_bit,
+      total_selected,
+      num_candidates,
+      kth_prefix,
+      prefix_mask,
+      decomposer);
 
     // Scatter indices of selected items into shared memory (only needed for key-value selection)
     [[maybe_unused]] int scatter_indices[items_per_thread];
@@ -592,17 +617,23 @@ public:
   {}
 
   template <detail::topk::select SelectDirection, bool IsFullTile>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void select_keys(KeyT (&keys)[items_per_thread], int k, int valid_items)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  select_keys(KeyT (&keys)[items_per_thread], int k, int valid_items, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     NullType values[ItemsPerThread];
-    select_topk<SelectDirection, IsFullTile>(keys, values, k, valid_items);
+    select_topk<SelectDirection, IsFullTile>(keys, values, k, valid_items, begin_bit, end_bit);
   }
 
   template <detail::topk::select SelectDirection, bool IsFullTile>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-  select_pairs(KeyT (&keys)[items_per_thread], ValueT (&values)[items_per_thread], int k, int valid_items)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void select_pairs(
+    KeyT (&keys)[items_per_thread],
+    ValueT (&values)[items_per_thread],
+    int k,
+    int valid_items,
+    int begin_bit = 0,
+    int end_bit   = sizeof(KeyT) * 8)
   {
-    select_topk<SelectDirection, IsFullTile>(keys, values, k, valid_items);
+    select_topk<SelectDirection, IsFullTile>(keys, values, k, valid_items, begin_bit, end_bit);
   }
 };
 } // namespace detail
