@@ -100,7 +100,6 @@ faster_count = 0
 slower_count = 0
 
 
-# TODO: replace with Emoji(StrEnum) after EOL of Python 3.10
 class Emoji(str, Enum):
     BLUE = "\U0001f535"
     GREEN = "\U0001f7e2"
