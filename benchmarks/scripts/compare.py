@@ -2,6 +2,7 @@
 
 import argparse
 import os
+from enum import Enum
 
 import cccl
 import numpy as np
@@ -99,6 +100,13 @@ faster_count = 0
 slower_count = 0
 
 
+# TODO: replace with Emoji(StrEnum) after EOL of Python 3.10
+class Emoji(str, Enum):
+    BLUE = "\U0001f535"
+    GREEN = "\U0001f7e2"
+    RED = "\U0001f534"
+
+
 def status(frac_diff, noise_ref, noise_cmp):
     global config_count
     global pass_count
@@ -108,13 +116,13 @@ def status(frac_diff, noise_ref, noise_cmp):
     min_noise = min(noise_ref, noise_cmp)
     if abs(frac_diff) <= min_noise:
         pass_count += 1
-        return "\U0001f535 SAME"
+        return f"{Emoji.BLUE.value} SAME"
     if frac_diff < 0:
         faster_count += 1
-        return "\U0001f7e2 FAST"
+        return f"{Emoji.GREEN.value} FAST"
     if frac_diff > 0:
         slower_count += 1
-        return "\U0001f534 SLOW"
+        return f"{Emoji.RED.value} SLOW"
 
 
 def compare():
