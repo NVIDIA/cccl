@@ -33,6 +33,9 @@ template <__fp_format _Fmt>
 inline constexpr bool __fp_is_signed_v = true;
 
 template <>
+inline constexpr bool __fp_is_signed_v<__fp_format::__fp8_nv_ue5m3> = false;
+
+template <>
 inline constexpr bool __fp_is_signed_v<__fp_format::__fp8_nv_e8m0> = false;
 
 // __fp_exp_nbits_v
@@ -63,6 +66,9 @@ inline constexpr int __fp_exp_nbits_v<__fp_format::__fp8_nv_e4m3> = 4;
 
 template <>
 inline constexpr int __fp_exp_nbits_v<__fp_format::__fp8_nv_e5m2> = 5;
+
+template <>
+inline constexpr int __fp_exp_nbits_v<__fp_format::__fp8_nv_ue5m3> = 5;
 
 template <>
 inline constexpr int __fp_exp_nbits_v<__fp_format::__fp8_nv_e8m0> = 8;
@@ -96,6 +102,9 @@ inline constexpr int __fp_exp_max_v = (1 << __fp_exp_nbits_v<_Fmt>) -2 - __fp_ex
 
 template <>
 inline constexpr int __fp_exp_max_v<__fp_format::__fp8_nv_e4m3> = 8;
+
+template <>
+inline constexpr int __fp_exp_max_v<__fp_format::__fp8_nv_ue5m3> = 16;
 
 template <>
 inline constexpr int __fp_exp_max_v<__fp_format::__fp6_nv_e2m3> = 2;
@@ -134,6 +143,9 @@ inline constexpr int __fp_mant_nbits_v<__fp_format::__fp8_nv_e4m3> = 3;
 
 template <>
 inline constexpr int __fp_mant_nbits_v<__fp_format::__fp8_nv_e5m2> = 2;
+
+template <>
+inline constexpr int __fp_mant_nbits_v<__fp_format::__fp8_nv_ue5m3> = 3;
 
 template <>
 inline constexpr int __fp_mant_nbits_v<__fp_format::__fp8_nv_e8m0> = 0;
@@ -177,6 +189,9 @@ template <>
 inline constexpr bool __fp_has_inf_v<__fp_format::__fp8_nv_e4m3> = false;
 
 template <>
+inline constexpr bool __fp_has_inf_v<__fp_format::__fp8_nv_ue5m3> = false;
+
+template <>
 inline constexpr bool __fp_has_inf_v<__fp_format::__fp8_nv_e8m0> = false;
 
 template <>
@@ -209,6 +224,9 @@ inline constexpr bool __fp_has_nans_v = true;
 
 template <>
 inline constexpr bool __fp_has_nans_v<__fp_format::__fp8_nv_e4m3> = false;
+
+template <>
+inline constexpr bool __fp_has_nans_v<__fp_format::__fp8_nv_ue5m3> = false;
 
 template <>
 inline constexpr bool __fp_has_nans_v<__fp_format::__fp8_nv_e8m0> = false;
