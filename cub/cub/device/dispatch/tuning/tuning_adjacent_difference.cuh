@@ -14,7 +14,10 @@
 #endif // no system header
 
 #include <cub/agent/agent_adjacent_difference.cuh>
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_store.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
@@ -81,7 +84,7 @@ struct policy_selector
 
     return AdjacentDifferencePolicy{
       128,
-      nominal_8B_items_to_items(7, value_type_size),
+      _CUB::detail::nominal_8B_items_to_items(7, value_type_size),
       BLOCK_LOAD_WARP_TRANSPOSE,
       may_alias ? LOAD_CA : LOAD_LDG,
       BLOCK_STORE_WARP_TRANSPOSE};
@@ -114,7 +117,7 @@ struct policy_hub
   {
     using AdjacentDifferencePolicy =
       agent_adjacent_difference_policy<128,
-                                       Nominal8BItemsToItems<ValueT>(7),
+                                       _CUB::Nominal8BItemsToItems<ValueT>(7),
                                        BLOCK_LOAD_WARP_TRANSPOSE,
                                        MayAlias ? LOAD_CA : LOAD_LDG,
                                        BLOCK_STORE_WARP_TRANSPOSE>;

@@ -153,12 +153,14 @@ TEST_HOST_DEVICE_FUNC static bool renormalizing(Src src)
 TEST_HOST_DEVICE_FUNC void run_test()
 {
   // Representative (hi, lo) pairs: regular, near-max, tiny, negative.
-  const float f32[4][2] = {
+  float f32[4][2] = {
     {1.2345678f, 1.0e-9f},
     {0x1.fffffep+126f, -0x1.0p+102f},
     {1.0e-30f, 1.0e-38f},
     {-3.1415927f, 1.5e-8f},
   };
+  // Fast math flushes the subnormal lo; use a normal one.
+  NV_IF_TARGET(NV_IS_DEVICE, (if (TEST_HAS_CUDA_FAST_MATH) { f32[2][1] = 0x1.0p-125f; }))
   for (int i = 0; i < 4; ++i)
   {
     cuda::fp32mp2 sd(f32[i][0], f32[i][1]);

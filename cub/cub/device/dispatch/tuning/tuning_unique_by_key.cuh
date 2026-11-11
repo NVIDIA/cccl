@@ -20,12 +20,13 @@
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/optional>
+#include <cuda/std/__optional/optional.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -133,10 +134,10 @@ _CCCL_HOST_DEVICE constexpr val_size classify_val_size()
 
 template <class KeyT,
           class ValueT,
-          primitive_key PrimitiveKey   = is_primitive_key<KeyT>(),
-          primitive_val PrimitiveAccum = is_primitive_val<ValueT>(),
-          key_size KeySize             = classify_key_size<KeyT>(),
-          val_size AccumSize           = classify_val_size<ValueT>()>
+          primitive_key PrimitiveKey   = _CUB::detail::unique_by_key::is_primitive_key<KeyT>(),
+          primitive_val PrimitiveAccum = _CUB::detail::unique_by_key::is_primitive_val<ValueT>(),
+          key_size KeySize             = _CUB::detail::unique_by_key::classify_key_size<KeyT>(),
+          val_size AccumSize           = _CUB::detail::unique_by_key::classify_val_size<ValueT>()>
 struct sm80_tuning;
 
 // 8-bit key
@@ -325,10 +326,10 @@ struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::no, key_size
 
 template <class KeyT,
           class ValueT,
-          primitive_key PrimitiveKey   = is_primitive_key<KeyT>(),
-          primitive_val PrimitiveAccum = is_primitive_val<ValueT>(),
-          key_size KeySize             = classify_key_size<KeyT>(),
-          val_size AccumSize           = classify_val_size<ValueT>()>
+          primitive_key PrimitiveKey   = _CUB::detail::unique_by_key::is_primitive_key<KeyT>(),
+          primitive_val PrimitiveAccum = _CUB::detail::unique_by_key::is_primitive_val<ValueT>(),
+          key_size KeySize             = _CUB::detail::unique_by_key::classify_key_size<KeyT>(),
+          val_size AccumSize           = _CUB::detail::unique_by_key::classify_val_size<ValueT>()>
 struct sm90_tuning;
 
 // 8-bit key
@@ -537,10 +538,10 @@ struct sm90_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::no, key_size
 
 template <class KeyT,
           class ValueT,
-          primitive_key PrimitiveKey   = is_primitive_key<KeyT>(),
-          primitive_val PrimitiveAccum = is_primitive_val<ValueT>(),
-          key_size KeySize             = classify_key_size<KeyT>(),
-          val_size AccumSize           = classify_val_size<ValueT>()>
+          primitive_key PrimitiveKey   = _CUB::detail::unique_by_key::is_primitive_key<KeyT>(),
+          primitive_val PrimitiveAccum = _CUB::detail::unique_by_key::is_primitive_val<ValueT>(),
+          key_size KeySize             = _CUB::detail::unique_by_key::classify_key_size<KeyT>(),
+          val_size AccumSize           = _CUB::detail::unique_by_key::classify_val_size<ValueT>()>
 struct sm100_tuning;
 
 // 8-bit key
@@ -789,7 +790,7 @@ struct policy_hub
   template <int Nominal4bItemsPerThread, int Threads>
   struct DefaultPolicy
   {
-    static constexpr int items_per_thread = Nominal4BItemsToItems<KeyT>(Nominal4bItemsPerThread);
+    static constexpr int items_per_thread = _CUB::Nominal4BItemsToItems<KeyT>(Nominal4bItemsPerThread);
     using UniqueByKeyPolicyT =
       agent_unique_by_key_policy<Threads,
                                  items_per_thread,
@@ -878,7 +879,7 @@ struct policy_selector
 private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto default_items_per_thread() const -> int
   {
-    return cub::detail::nominal_4B_items_to_items(11, key_size);
+    return _CUB::detail::nominal_4B_items_to_items(11, key_size);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_default_policy() const -> UniqueByKeyPolicy
@@ -1650,7 +1651,7 @@ struct policy_selector_from_hub
 {
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> UniqueByKeyPolicy
   {
-    return convert_policy<typename PolicyHub::MaxPolicy>();
+    return _CUB::detail::unique_by_key::convert_policy<typename PolicyHub::MaxPolicy>();
   }
 };
 

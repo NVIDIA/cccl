@@ -320,7 +320,8 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle pointers", "[device][run_leng
   REQUIRE(out_unique == reference_out);
 }
 
-#if 0 // https://github.com/NVIDIA/cccl/issues/400
+// https://github.com/NVIDIA/cccl/issues/400
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 template<class T>
 struct convertible_from_T {
   T val_;

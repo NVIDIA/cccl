@@ -15,6 +15,7 @@
 
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/key_value_pair.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
@@ -27,6 +28,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/identity.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/limits>
@@ -193,6 +195,7 @@ template <typename PerPartitionAccumT,
           typename GlobalAccumT,
           typename PerPartitionOffsetT,
           typename ArgIndexInputIteratorT,
+          bool NondeterminismFellBackToRunToRun = false,
           typename InputIteratorT,
           typename ResultOutIteratorT,
           typename GlobalOffsetT,
@@ -216,8 +219,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
 {
   // Resolve the tuning policy from the (optional) tuning environment, defaulting to the type-derived policy
   using default_policy_selector_t = policy_selector_from_types<PerPartitionAccumT, PerPartitionOffsetT, ReductionOpT>;
-  using policy_selector_t =
-    ::cuda::std::execution::__query_result_or_t<TuningEnvT, ReducePolicy, default_policy_selector_t>;
+  using policy_selector_t = policy_selector_from_tuning_env_t<TuningEnvT, ReducePolicy, default_policy_selector_t>;
 
 #  if _CCCL_HAS_CONCEPTS()
   static_assert(reduce_policy_selector<policy_selector_t>);
@@ -229,8 +231,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
     max_offset_size - (max_offset_size % PerPartitionOffsetT{4096});
 
   // Whether the given number of items fits into a single partition
-  const bool is_single_partition =
-    static_cast<GlobalOffsetT>(max_partition_size) >= static_cast<GlobalOffsetT>(num_items);
+  const bool is_single_partition = static_cast<GlobalOffsetT>(max_partition_size) >= num_items;
 
   // The largest partition size ever encountered
   const auto largest_partition_size =
@@ -248,23 +249,26 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   // Query temporary storage requirements for per-partition reduction
   void* allocations[2]       = {nullptr, nullptr};
   size_t allocation_sizes[2] = {0, 2 * sizeof(GlobalAccumT)};
-  if (const auto error = CubDebug(reduce::dispatch<PerPartitionAccumT>(
-        nullptr,
-        allocation_sizes[0],
-        d_indexed_in,
-        ::cuda::make_tabulate_output_iterator(accumulating_out_op),
-        static_cast<PerPartitionOffsetT>(largest_partition_size),
-        reduce_op,
-        init_value,
-        stream,
-        transform_op,
-        policy_selector_t{})))
+  if (const auto error = CubDebug((
+        _CUB::detail::reduce::
+          dispatch<PerPartitionAccumT, /* StableReductionOrder */ true, NondeterminismFellBackToRunToRun>(
+            nullptr,
+            allocation_sizes[0],
+            d_indexed_in,
+            ::cuda::make_tabulate_output_iterator(accumulating_out_op),
+            static_cast<PerPartitionOffsetT>(largest_partition_size),
+            reduce_op,
+            init_value,
+            stream,
+            transform_op,
+            policy_selector_t{}))))
   {
     return error;
   }
 
   // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
-  if (const auto error = CubDebug(alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  if (const auto error =
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -281,8 +285,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   accumulating_out_op.d_previous_aggregate = d_global_aggregates;
   accumulating_out_op.d_aggregate_out      = d_global_aggregates + 1;
 
-  for (GlobalOffsetT current_partition_offset = 0; current_partition_offset < static_cast<GlobalOffsetT>(num_items);
-       current_partition_offset += static_cast<GlobalOffsetT>(max_partition_size))
+  // Process at least one (possibly empty) partition, so the result of an empty problem is written as well
+  GlobalOffsetT current_partition_offset = 0;
+  do
   {
     const GlobalOffsetT remaining_items = (num_items - current_partition_offset);
     const GlobalOffsetT current_num_items =
@@ -290,17 +295,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
 
     d_indexed_in = ArgIndexInputIteratorT(d_in + current_partition_offset);
 
-    if (const auto error = CubDebug(reduce::dispatch<PerPartitionAccumT>(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_indexed_in,
-          ::cuda::make_tabulate_output_iterator(accumulating_out_op),
-          static_cast<PerPartitionOffsetT>(current_num_items),
-          reduce_op,
-          init_value,
-          stream,
-          transform_op,
-          policy_selector_t{})))
+    if (const auto error = CubDebug((
+          _CUB::detail::reduce::
+            dispatch<PerPartitionAccumT, /* StableReductionOrder */ true, NondeterminismFellBackToRunToRun>(
+              d_temp_storage,
+              temp_storage_bytes,
+              d_indexed_in,
+              ::cuda::make_tabulate_output_iterator(accumulating_out_op),
+              static_cast<PerPartitionOffsetT>(current_num_items),
+              reduce_op,
+              init_value,
+              stream,
+              transform_op,
+              policy_selector_t{}))))
     {
       return error;
     }
@@ -309,7 +316,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
     const bool next_partition_is_last =
       (remaining_items - current_num_items) <= static_cast<GlobalOffsetT>(max_partition_size);
     accumulating_out_op.advance(current_num_items, next_partition_is_last);
-  }
+    current_partition_offset += static_cast<GlobalOffsetT>(max_partition_size);
+  } while (current_partition_offset < num_items);
 
   return cudaSuccess;
 }
@@ -340,6 +348,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
 //   Tuning environment Environment type
 //
 template <typename PerPartitionOffsetT,
+          bool NondeterminismFellBackToRunToRun = false,
           typename InputIteratorT,
           typename ExtremumOutIteratorT,
           typename IndexOutIteratorT,
@@ -375,7 +384,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
     {
       return ::cuda::std::numeric_limits<input_value_t>::max();
     }
-    else if constexpr (::cuda::std::is_same_v<ReductionOpT, arg_max>
+    // The ArgMax overloads without a comparison operator use cuda::std::greater instead of swap_args<less>
+    else if constexpr ((::cuda::std::is_same_v<ReductionOpT, arg_max>
+                        || ::cuda::std::is_same_v<ReductionOpT, arg_reduce_op<::cuda::std::greater<>>>)
                        && ::cuda::std::numeric_limits<input_value_t>::is_specialized)
     {
       return ::cuda::std::numeric_limits<input_value_t>::lowest();
@@ -387,10 +398,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   }();
   auto initial_value = empty_problem_init_t<per_partition_accum_t>{{PerPartitionOffsetT{1}, empty_problem_extremum}};
 
-  return dispatch_streaming_arg_reduce_impl<per_partition_accum_t,
-                                            global_accum_t,
-                                            PerPartitionOffsetT,
-                                            arg_index_input_iterator_t>(
+  return _CUB::detail::reduce::dispatch_streaming_arg_reduce_impl<
+    per_partition_accum_t,
+    global_accum_t,
+    PerPartitionOffsetT,
+    arg_index_input_iterator_t,
+    NondeterminismFellBackToRunToRun>(
     d_temp_storage,
     temp_storage_bytes,
     d_in,
@@ -432,6 +445,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
 //   Tuning environment type
 //
 template <typename PerPartitionOffsetT,
+          bool NondeterminismFellBackToRunToRun = false,
           typename InputIteratorT,
           typename MinExtremumOutIteratorT,
           typename MinIndexOutIteratorT,
@@ -466,10 +480,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_minmax
                                MaxExtremumOutIteratorT,
                                MaxIndexOutIteratorT>{d_min_out, d_min_index_out, d_max_out, d_max_index_out});
 
-  return dispatch_streaming_arg_reduce_impl<per_partition_accum_t,
-                                            global_accum_t,
-                                            PerPartitionOffsetT,
-                                            arg_index_input_iterator_t>(
+  return _CUB::detail::reduce::dispatch_streaming_arg_reduce_impl<
+    per_partition_accum_t,
+    global_accum_t,
+    PerPartitionOffsetT,
+    arg_index_input_iterator_t,
+    NondeterminismFellBackToRunToRun>(
     d_temp_storage,
     temp_storage_bytes,
     d_in,

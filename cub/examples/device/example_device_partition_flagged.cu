@@ -85,7 +85,7 @@ void Initialize(int* h_in, unsigned char* h_flags, int num_items, int max_segmen
 /**
  * Solve unique problem
  */
-int Solve(int* h_in, unsigned char* h_flags, int* h_reference, int num_items)
+int Solve(const int* h_in, const unsigned char* h_flags, int* h_reference, int num_items)
 {
   int num_selected = 0;
   for (int i = 0; i < num_items; ++i)
@@ -197,18 +197,9 @@ int main(int argc, char** argv)
   AssertEquals(0, compare);
 
   // Cleanup
-  if (h_in)
-  {
-    delete[] h_in;
-  }
-  if (h_reference)
-  {
-    delete[] h_reference;
-  }
-  if (h_flags)
-  {
-    delete[] h_flags;
-  }
+  delete[] h_in;
+  delete[] h_reference;
+  delete[] h_flags;
 
   printf("\n\n");
 

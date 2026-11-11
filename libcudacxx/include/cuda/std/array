@@ -74,7 +74,7 @@ template <class _Tp, size_t _Size>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT array
 {
   // types:
-  using __self                 = array;
+  using __self _CCCL_NODEBUG   = array;
   using value_type             = _Tp;
   using reference              = value_type&;
   using const_reference        = const value_type&;
@@ -230,7 +230,7 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT array<_Tp, 0>
 {
   // types:
-  using __self                 = array;
+  using __self _CCCL_NODEBUG   = array;
   using value_type             = _Tp;
   using reference              = value_type&;
   using const_reference        = const value_type&;
@@ -243,7 +243,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array<_Tp, 0>
   using reverse_iterator       = ::cuda::std::reverse_iterator<iterator>;
   using const_reverse_iterator = ::cuda::std::reverse_iterator<const_iterator>;
 
-  using _CharType = conditional_t<is_const_v<_Tp>, const char, char>;
+  using _CharType _CCCL_NODEBUG = conditional_t<is_const_v<_Tp>, const char, char>;
 
   struct _ArrayInStructT
   {

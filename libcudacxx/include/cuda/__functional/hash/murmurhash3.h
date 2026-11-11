@@ -578,7 +578,6 @@ private:
     return ::cuda::std::bit_cast<__uint128_t>(__h);
   }
 
-private:
   ::cuda::std::uint32_t __seed_;
 };
 
@@ -851,7 +850,6 @@ private:
     return ::cuda::std::bit_cast<__uint128_t>(__h);
   }
 
-private:
   ::cuda::std::uint64_t __seed_;
 };
 

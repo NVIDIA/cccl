@@ -240,27 +240,22 @@ jobs:
               return;
             }
 
-            const reportJob = jobs.find((job) => job.name === "Post SASS comparison results");
-            const checkRunId = reportJob.check_run_url.split("/").pop();
-
             core.setOutput("job_id", job.id);
-            core.setOutput("check_run_id", checkRunId);
 
       - name: Find the report and record approval
         id: approval
         if: steps.job.outputs.job_id != ''
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
-          CHECK_RUN_ID: ${{ steps.job.outputs.check_run_id }}
           SHA: ${{ steps.request.outputs.sha }}
         with:
           retries: 5
           script: |
             const { comment, issue } = context.payload;
-            const checkRunId = process.env.CHECK_RUN_ID;
-            const marker = `<!-- sass-diff-CHECK_RUN_ID:${checkRunId} -->`;
+            // Partial reruns change check IDs even when the report job does not run again.
+            const marker = `<!-- sass-diff-GITHUB_SHA:${process.env.SHA} -->`;
 
-            core.info(`Find report check ${checkRunId} before command ${comment.id}.`);
+            core.info(`Find report for SHA ${process.env.SHA} before command ${comment.id}.`);
 
             const query = `
               query($owner: String!, $repo: String!, $number: Int!, $before: String) {
@@ -319,7 +314,7 @@ jobs:
               return;
             }
 
-            core.info(`Matching SASS report: comment ${report.fullDatabaseId}, check ${checkRunId}.`);
+            core.info(`Matching SASS report: comment ${report.fullDatabaseId}, SHA ${process.env.SHA}.`);
 
             const fs = require("fs");
             fs.writeFileSync(`${process.env.RUNNER_TEMP}/sass-approval`, "");

@@ -38,7 +38,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief Source access order for copy_bytes
-enum class source_access_order
+enum class source_access_order // NOLINT(readability-enum-initial-value)
 {
   //! @brief Access source in stream order
   stream = 0x1,

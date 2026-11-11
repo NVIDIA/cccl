@@ -27,6 +27,7 @@
 
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -59,6 +60,11 @@ struct agent_t
   static constexpr int threads_per_block = ThreadsPerBlock; // also used for kernel launch bounds and dispatch logic
   static constexpr int items_per_tile    = ItemsPerThread * ThreadsPerBlock; // also used by dispatch logic
 
+  // The serial merge produces the items in a blocked arrangement
+  static_assert(StoreAlgorithm != BLOCK_STORE_STRIPED,
+                "MergePolicy: store_algorithm must not be BLOCK_STORE_STRIPED, since the merge produces a blocked "
+                "arrangement");
+
   // key and value type are taken from the first input sequence (consistent with old Thrust behavior)
   using key_type  = it_value_t<KeysIt1>;
   using item_type = it_value_t<ItemsIt1>;
@@ -77,17 +83,29 @@ struct agent_t
                 "MergePolicy: use_bulk_copy_for_values requires both value ranges to be contiguous and have the same "
                 "value type");
 
+  // Bulk copy copies the bytes of the input ranges
+  static_assert(!UseBl2ShForKeys || ::cuda::is_trivially_copyable_v<key_type>,
+                "MergePolicy: use_bulk_copy_for_keys requires a trivially copyable key type");
+  static_assert(!UseBl2ShForItems || ::cuda::is_trivially_copyable_v<item_type>,
+                "MergePolicy: use_bulk_copy_for_values requires a trivially copyable value type");
+  // Bulk copy loads both input ranges into one shared memory buffer, which is then indexed as one array. The second
+  // range only starts at a multiple of the type's size if the size equals the alignment.
+  static_assert(!UseBl2ShForKeys || sizeof(key_type) == alignof(key_type),
+                "MergePolicy: use_bulk_copy_for_keys requires a key type whose size equals its alignment");
+  static_assert(!UseBl2ShForItems || sizeof(item_type) == alignof(item_type),
+                "MergePolicy: use_bulk_copy_for_values requires a value type whose size equals its alignment");
+
   using block_load_to_shared = BlockLoadToShared<ThreadsPerBlock>;
   using block_store_keys     = BlockStore<key_type, ThreadsPerBlock, ItemsPerThread, StoreAlgorithm>;
   using block_store_items    = BlockStore<item_type, ThreadsPerBlock, ItemsPerThread, StoreAlgorithm>;
 
-  static constexpr int bl2sh_minimum_align = cub::detail::LoadToSharedBufferAlignBytes<char>();
+  static constexpr int bl2sh_minimum_align = _CUB::detail::LoadToSharedBufferAlignBytes<char>();
 
   template <typename ValueT>
-  struct alignas(cub::detail::LoadToSharedBufferAlignBytes<ValueT>()) buffer_t
+  struct alignas(_CUB::detail::LoadToSharedBufferAlignBytes<ValueT>()) buffer_t
   {
     // Need extra bytes of padding for TMA because this static buffer has to hold the two dynamically sized buffers.
-    static constexpr int bytes_needed = cub::detail::LoadToSharedBufferSizeBytes<ValueT>(items_per_tile + 1ULL)
+    static constexpr int bytes_needed = _CUB::detail::LoadToSharedBufferSizeBytes<ValueT>(items_per_tile + 1ULL)
                                       + (alignof(ValueT) < bl2sh_minimum_align ? 2 * bl2sh_minimum_align : 0);
 
     char c_array[bytes_needed];
@@ -173,6 +191,8 @@ struct agent_t
       }
     }();
 
+    using ::cuda::std::data;
+
     key_type keys_loc[ItemsPerThread];
     key_type* keys1_shared;
     key_type* keys2_shared;
@@ -184,8 +204,8 @@ struct agent_t
       ::cuda::std::span keys2_src{THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(keys2_in + keys2_beg),
                                   static_cast<::cuda::std::size_t>(keys2_count_tile)};
       ::cuda::std::span keys_buffers{storage.keys_shared.c_array};
-      auto keys1_buffer = keys_buffers.first(cub::detail::LoadToSharedBufferSizeBytes<key_type>(keys1_count_tile));
-      auto keys2_buffer = keys_buffers.last(cub::detail::LoadToSharedBufferSizeBytes<key_type>(keys2_count_tile));
+      auto keys1_buffer = keys_buffers.first(_CUB::detail::LoadToSharedBufferSizeBytes<key_type>(keys1_count_tile));
+      auto keys2_buffer = keys_buffers.last(_CUB::detail::LoadToSharedBufferSizeBytes<key_type>(keys2_count_tile));
       _CCCL_ASSERT(keys1_buffer.end() <= keys2_buffer.begin(),
                    "Keys buffer needs to be appropriately sized (internal)");
       keys1_shared = data(load2sh.CopyAsync(keys1_buffer, keys1_src));
@@ -197,15 +217,15 @@ struct agent_t
     }
     else
     {
-      auto keys1_in_cm = try_make_cache_modified_iterator<LoadModifier>(keys1_in);
-      auto keys2_in_cm = try_make_cache_modified_iterator<LoadModifier>(keys2_in);
-      merge_sort::gmem_to_reg<ThreadsPerBlock, IsFullTile>(
+      auto keys1_in_cm = _CUB::detail::try_make_cache_modified_iterator<LoadModifier>(keys1_in);
+      auto keys2_in_cm = _CUB::detail::try_make_cache_modified_iterator<LoadModifier>(keys2_in);
+      _CUB::detail::merge_sort::gmem_to_reg<ThreadsPerBlock, IsFullTile>(
         keys_loc, keys1_in_cm + keys1_beg, keys2_in_cm + keys2_beg, keys1_count_tile, keys2_count_tile);
       keys1_shared = &storage.keys_shared[0];
       // Needed for using keys1_shared as one big buffer including both ranges in SerialMerge
       keys2_offset = keys1_count_tile;
       keys2_shared = keys1_shared + keys2_offset;
-      merge_sort::reg_to_shared<ThreadsPerBlock>(keys1_shared, keys_loc);
+      _CUB::detail::merge_sort::reg_to_shared<ThreadsPerBlock>(keys1_shared, keys_loc);
       __syncthreads();
     }
 
@@ -223,7 +243,7 @@ struct agent_t
     }
 
     const int keys1_beg_thread =
-      MergePath(keys1_shared, keys2_shared, keys1_count_tile, keys2_count_tile, diag0_thread, compare_op);
+      _CUB::MergePath(keys1_shared, keys2_shared, keys1_count_tile, keys2_count_tile, diag0_thread, compare_op);
     const int keys2_beg_thread = diag0_thread - keys1_beg_thread;
 
     const int keys1_count_thread = keys1_count_tile - keys1_beg_thread;
@@ -231,7 +251,7 @@ struct agent_t
 
     // perform serial merge
     int indices[ItemsPerThread];
-    cub::detail::serial_merge<Unroll>(
+    _CUB::detail::serial_merge<Unroll>(
       keys1_shared,
       keys1_beg_thread,
       keys2_offset + keys2_beg_thread,
@@ -281,8 +301,9 @@ struct agent_t
         ::cuda::std::span items2_src{THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(items2_in + keys2_beg),
                                      static_cast<::cuda::std::size_t>(keys2_count_tile)};
         ::cuda::std::span items_buffers{storage.items_shared.c_array};
-        auto items1_buffer = items_buffers.first(cub::detail::LoadToSharedBufferSizeBytes<item_type>(keys1_count_tile));
-        auto items2_buffer = items_buffers.last(cub::detail::LoadToSharedBufferSizeBytes<item_type>(keys2_count_tile));
+        auto items1_buffer =
+          items_buffers.first(_CUB::detail::LoadToSharedBufferSizeBytes<item_type>(keys1_count_tile));
+        auto items2_buffer = items_buffers.last(_CUB::detail::LoadToSharedBufferSizeBytes<item_type>(keys2_count_tile));
         _CCCL_ASSERT(items1_buffer.end() <= items2_buffer.begin(),
                      "Items buffer needs to be appropriately sized (internal)");
         // block_store_keys above uses shared memory, so make sure all threads are done before we write
@@ -297,9 +318,9 @@ struct agent_t
       else
       {
         {
-          auto items1_in_cm = try_make_cache_modified_iterator<LoadModifier>(items1_in);
-          auto items2_in_cm = try_make_cache_modified_iterator<LoadModifier>(items2_in);
-          merge_sort::gmem_to_reg<ThreadsPerBlock, IsFullTile>(
+          auto items1_in_cm = _CUB::detail::try_make_cache_modified_iterator<LoadModifier>(items1_in);
+          auto items2_in_cm = _CUB::detail::try_make_cache_modified_iterator<LoadModifier>(items2_in);
+          _CUB::detail::merge_sort::gmem_to_reg<ThreadsPerBlock, IsFullTile>(
             items_loc, items1_in_cm + keys1_beg, items2_in_cm + keys2_beg, keys1_count_tile, keys2_count_tile);
           __syncthreads(); // block_store_keys above uses SMEM, so make sure all threads are done before we write to it
           items1_shared = &storage.items_shared[0];
@@ -308,7 +329,7 @@ struct agent_t
             const int items2_offset = keys1_count_tile;
             translate_indices(items2_offset);
           }
-          merge_sort::reg_to_shared<ThreadsPerBlock>(items1_shared, items_loc);
+          _CUB::detail::merge_sort::reg_to_shared<ThreadsPerBlock>(items1_shared, items_loc);
           __syncthreads();
         }
       }

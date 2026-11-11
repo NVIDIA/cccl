@@ -17,13 +17,16 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
-#include <cub/util_device.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/concepts>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/util_device.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 namespace detail::topk
@@ -45,7 +48,7 @@ _CCCL_HOST_DEVICE_API constexpr int calc_bits_per_pass(int key_size)
 template <class KeyT>
 _CCCL_HOST_DEVICE_API constexpr int calc_bits_per_pass()
 {
-  return calc_bits_per_pass(int{sizeof(KeyT)});
+  return _CUB::detail::topk::calc_bits_per_pass(int{sizeof(KeyT)});
 }
 
 struct topk_policy
@@ -94,7 +97,7 @@ struct policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
   {
     constexpr int nominal_4b_items_per_thread = 4;
-    const int bits_per_pass                   = calc_bits_per_pass(key_size);
+    const int bits_per_pass                   = _CUB::detail::topk::calc_bits_per_pass(key_size);
 
     // tunings from cub/benchmarks/bench/topk/keys.cu. These are raw measured values; items_per_thread already
     // accounts for the key size. Only configurations that won for their exact key type and offset width during

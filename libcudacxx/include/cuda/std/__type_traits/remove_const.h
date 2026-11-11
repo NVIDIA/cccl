@@ -43,12 +43,12 @@ using remove_const_t _CCCL_NODEBUG = _CCCL_BUILTIN_REMOVE_CONST(_Tp);
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_const
 {
-  using type = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_const<const _Tp>
 {
-  using type = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 template <class _Tp>

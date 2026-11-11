@@ -138,7 +138,7 @@ private:
     {
       return _Limits::max();
     }
-    else if (__r <= _Limits::lowest())
+    if (__r <= _Limits::lowest())
     {
       return _Limits::min();
     }
@@ -221,7 +221,7 @@ public:
         {
           const double __fac[] = {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880};
           __px                 = -__pr.__mean_;
-          __py                 = ::cuda::std::pow(__pr.__mean_, (double) __tx) / __fac[static_cast<int>(__tx)];
+          __py                 = ::cuda::std::pow(__pr.__mean_, __tx) / __fac[static_cast<int>(__tx)];
         }
         else
         {

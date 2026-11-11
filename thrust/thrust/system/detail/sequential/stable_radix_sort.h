@@ -15,7 +15,6 @@
 
 #include <thrust/copy.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
@@ -23,9 +22,10 @@
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
@@ -50,10 +50,7 @@ struct RadixEncoder<char>
     {
       return static_cast<unsigned char>(x) ^ static_cast<unsigned char>(1) << (8 * sizeof(unsigned char) - 1);
     }
-    else
-    {
-      return x;
-    }
+    return x;
   }
 };
 
@@ -144,7 +141,7 @@ struct bucket_functor
       , histogram(histogram)
   {}
 
-  inline _CCCL_HOST_DEVICE size_t operator()(KeyType key)
+  _CCCL_HOST_DEVICE size_t operator()(KeyType key)
   {
     const EncodedType x = encode(key);
 
@@ -164,7 +161,7 @@ inline _CCCL_HOST_DEVICE void radix_shuffle_n(
   const size_t n,
   RandomAccessIterator2 result,
   Integer bit_shift,
-  size_t* histogram)
+  size_t* histogram) // NOLINT(readability-non-const-parameter)
 {
   using KeyType = thrust::detail::it_value_t<RandomAccessIterator1>;
 
@@ -192,7 +189,7 @@ _CCCL_HOST_DEVICE void radix_shuffle_n(
   RandomAccessIterator3 keys_result,
   RandomAccessIterator4 values_result,
   Integer bit_shift,
-  size_t* histogram)
+  size_t* histogram) // NOLINT(readability-non-const-parameter)
 {
   using KeyType = thrust::detail::it_value_t<RandomAccessIterator1>;
 
@@ -303,7 +300,7 @@ _CCCL_HOST_DEVICE void radix_sort(
         }
       }
 
-      flip = (flip) ? false : true;
+      flip = !flip;
     }
   }
 

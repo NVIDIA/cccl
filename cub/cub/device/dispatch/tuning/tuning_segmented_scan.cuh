@@ -18,10 +18,14 @@
 #include <cub/block/block_store.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_device.cuh>
 
 #include <cuda/__cmath/round_up.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/ostream>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/util_device.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 
@@ -118,7 +122,7 @@ struct policy_selector
       ::cuda::round_up(accum_size + ((max_segments_per_block == 1) ? 0 : 1), accum_align);
 
     const auto block_scaled =
-      scale_mem_bound(nominal_threads_per_block, nominal_items_per_thread, augmented_size_block);
+      _CUB::detail::scale_mem_bound(nominal_threads_per_block, nominal_items_per_thread, augmented_size_block);
 
     const bool large_values = augmented_size_block > 128;
     const auto scan_transposed_blockload =

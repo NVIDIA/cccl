@@ -168,22 +168,10 @@ int main(int argc, char** argv)
   AssertEquals(0, compare);
 
   // Cleanup
-  if (h_keys)
-  {
-    delete[] h_keys;
-  }
-  if (h_reference_keys)
-  {
-    delete[] h_reference_keys;
-  }
-  if (h_values)
-  {
-    delete[] h_values;
-  }
-  if (h_reference_values)
-  {
-    delete[] h_reference_values;
-  }
+  delete[] h_keys;
+  delete[] h_reference_keys;
+  delete[] h_values;
+  delete[] h_reference_values;
 
   printf("\n\n");
 

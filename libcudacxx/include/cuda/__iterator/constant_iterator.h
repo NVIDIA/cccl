@@ -66,7 +66,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _Tp, class _Index>
 class constant_iterator
 {
-private:
   static_assert(::cuda::std::__integer_like<_Index>, "The index type of cuda::constant_iterator must be integer-like!");
 
   // Not a base because then the friend operators would be ambiguous

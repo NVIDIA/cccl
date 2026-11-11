@@ -184,10 +184,7 @@ struct scan_run
     {
       return cccl_device_inclusive_scan(build, temp_storage, temp_storage_nbytes, args...);
     }
-    else
-    {
-      return cccl_device_exclusive_scan(build, temp_storage, temp_storage_nbytes, args...);
-    }
+    return cccl_device_exclusive_scan(build, temp_storage, temp_storage_nbytes, args...);
   }
 };
 
@@ -206,10 +203,7 @@ struct scan_run_future_value
     {
       return cccl_device_inclusive_scan_future_value(build, temp_storage, temp_storage_nbytes, args...);
     }
-    else
-    {
-      return cccl_device_exclusive_scan_future_value(build, temp_storage, temp_storage_nbytes, args...);
-    }
+    return cccl_device_exclusive_scan_future_value(build, temp_storage, temp_storage_nbytes, args...);
   }
 };
 

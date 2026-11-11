@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/agent/agent_radix_sort_downsweep.cuh>
 #include <cub/agent/agent_segmented_radix_sort.cuh>
 #include <cub/agent/agent_sub_warp_merge_sort.cuh>
 #include <cub/detail/device_double_buffer.cuh>
@@ -20,8 +21,11 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_device.cuh>
 #include <cub/warp/warp_reduce.cuh>
+
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::segmented_sort
@@ -133,7 +137,7 @@ template <SortOrder Order,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(current_policy<PolicySelector>().large_segment.threads_per_block)
+__launch_bounds__(_CUB::detail::current_policy<PolicySelector>().large_segment.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedSortFallbackKernel(
     const KeyT* d_keys_in_orig,
     KeyT* d_keys_out_orig,
@@ -144,7 +148,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_segment.threads_per_blo
     const BeginOffsetIteratorT d_begin_offsets,
     const EndOffsetIteratorT d_end_offsets)
 {
-  static constexpr SegmentedSortPolicy active_policy = current_policy<PolicySelector>();
+  static constexpr SegmentedSortPolicy active_policy = _CUB::detail::current_policy<PolicySelector>();
   static constexpr auto large_policy                 = active_policy.large_segment;
   using LargeSegmentPolicyT                          = detail::agent_radix_sort_downsweep_policy<
     0,
@@ -164,6 +168,11 @@ __launch_bounds__(current_policy<PolicySelector>().large_segment.threads_per_blo
     medium_policy.load_algorithm,
     medium_policy.load_modifier,
     medium_policy.store_algorithm>;
+
+  // Medium-sized segments are sorted by the first medium_segment.threads_per_warp threads of the block
+  static_assert(large_policy.threads_per_block >= medium_policy.threads_per_warp,
+                "SegmentedSortPolicy: large_segment.threads_per_block must be at least "
+                "medium_segment.threads_per_warp");
 
   const auto segment_id = static_cast<local_segment_index_t>(blockIdx.x);
   OffsetT segment_begin = d_begin_offsets[segment_id];
@@ -330,7 +339,7 @@ template <SortOrder Order,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(current_policy<PolicySelector>().small_segment.threads_per_block)
+__launch_bounds__(_CUB::detail::current_policy<PolicySelector>().small_segment.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedSortKernelSmall(
     const local_segment_index_t small_segments,
     const local_segment_index_t medium_segments,
@@ -349,7 +358,7 @@ __launch_bounds__(current_policy<PolicySelector>().small_segment.threads_per_blo
   const local_segment_index_t tid = threadIdx.x;
   const local_segment_index_t bid = blockIdx.x;
 
-  static constexpr SegmentedSortPolicy active_policy = current_policy<PolicySelector>();
+  static constexpr SegmentedSortPolicy active_policy = _CUB::detail::current_policy<PolicySelector>();
   static constexpr auto small_policy                 = active_policy.small_segment;
   using SmallPolicyT                                 = agent_sub_warp_merge_sort_policy<
     small_policy.threads_per_block,
@@ -379,6 +388,19 @@ __launch_bounds__(current_policy<PolicySelector>().small_segment.threads_per_blo
   constexpr auto segments_per_medium_block = static_cast<local_segment_index_t>(MediumPolicyT::SEGMENTS_PER_BLOCK);
 
   constexpr auto segments_per_small_block = static_cast<local_segment_index_t>(SmallPolicyT::SEGMENTS_PER_BLOCK);
+
+  // Medium and small segments are sorted by the same kernel launch, which uses small_segment.threads_per_block, and
+  // each block is split into sub-warps of threads_per_warp threads, each sorting one segment
+  static_assert(medium_policy.threads_per_block == small_policy.threads_per_block,
+                "SegmentedSortPolicy: medium_segment.threads_per_block must equal small_segment.threads_per_block");
+  static_assert(medium_policy.threads_per_block >= medium_policy.threads_per_warp
+                  && medium_policy.threads_per_block % medium_policy.threads_per_warp == 0,
+                "SegmentedSortPolicy: medium_segment.threads_per_block must be a positive multiple of "
+                "medium_segment.threads_per_warp");
+  static_assert(small_policy.threads_per_block >= small_policy.threads_per_warp
+                  && small_policy.threads_per_block % small_policy.threads_per_warp == 0,
+                "SegmentedSortPolicy: small_segment.threads_per_block must be a positive multiple of "
+                "small_segment.threads_per_warp");
 
   __shared__ union
   {
@@ -468,7 +490,7 @@ template <SortOrder Order,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(current_policy<PolicySelector>().large_segment.threads_per_block)
+__launch_bounds__(_CUB::detail::current_policy<PolicySelector>().large_segment.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedSortKernelLarge(
     const local_segment_index_t* const d_segments_indices,
     const KeyT* d_keys_in_orig,
@@ -480,8 +502,9 @@ __launch_bounds__(current_policy<PolicySelector>().large_segment.threads_per_blo
     const BeginOffsetIteratorT d_begin_offsets,
     const EndOffsetIteratorT d_end_offsets)
 {
-  static constexpr SegmentedSortRadixSortPolicy large_policy = current_policy<PolicySelector>().large_segment;
-  using LargeSegmentPolicyT                                  = detail::agent_radix_sort_downsweep_policy<
+  static constexpr SegmentedSortRadixSortPolicy large_policy =
+    _CUB::detail::current_policy<PolicySelector>().large_segment;
+  using LargeSegmentPolicyT = detail::agent_radix_sort_downsweep_policy<
     0,
     0,
     void,

@@ -14,8 +14,16 @@
 #endif // no system header
 
 #include <cub/agent/agent_three_way_partition.cuh>
-#include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/detail/delay_constructor.cuh>
 #include <cub/util_arch.cuh>
+
+#include <cuda/std/__utility/swap.h>
+#include <cuda/std/cstdint>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 
@@ -26,13 +34,12 @@ namespace detail::three_way_partition
 using per_partition_offset_t = ::cuda::std::int32_t;
 
 using AccumPackHelperT = detail::three_way_partition::accumulator_pack_t<per_partition_offset_t>;
-using AccumPackT       = typename AccumPackHelperT::pack_t;
+using AccumPackT       = AccumPackHelperT::pack_t;
 using ScanTileStateT   = cub::ScanTileState<AccumPackT>;
 
 template <typename TotalNumItemsT>
 class streaming_context_t
 {
-private:
   bool first_partition = true;
   bool last_partition  = false;
   TotalNumItemsT total_previous_num_items{};
@@ -119,7 +126,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires three_way_partition_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(current_policy<PolicySelector>().lookback.threads_per_block)
+__launch_bounds__(_CUB::detail::current_policy<PolicySelector>().lookback.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionKernel(
     const InputIteratorT d_in,
     const FirstOutputIteratorT d_first_part_out,
@@ -133,7 +140,7 @@ __launch_bounds__(current_policy<PolicySelector>().lookback.threads_per_block)
     const int num_tiles,
     const StreamingContextT streaming_context)
 {
-  static constexpr auto active_policy = current_policy<PolicySelector>();
+  static constexpr auto active_policy = _CUB::detail::current_policy<PolicySelector>();
   using AgentThreeWayPartitionPolicyT = agent_three_way_partition_policy<
     active_policy.lookback.threads_per_block,
     active_policy.lookback.items_per_thread,

@@ -26,8 +26,6 @@
 #  include <thrust/sequence.h>
 #  include <thrust/sort.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
-#  include <thrust/system/cuda/detail/core/agent_launcher.h>
-#  include <thrust/system/cuda/detail/core/util.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/util.h>
 #  include <thrust/type_traits/is_contiguous_iterator.h>

@@ -16,8 +16,10 @@
 #include <disable_nvfp_conversions_and_operators.h>
 // clang-format on
 
+#include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 #include <cuda/type_traits>
@@ -105,10 +107,60 @@ TEST_FUNC constexpr void test_type()
   test_fpclassify(cuda::std::numeric_limits<T>::max(), FP_NORMAL);
 }
 
+// FP64 subnormals are not flushed to zero, so they can be checked for double
+TEST_FUNC constexpr void test_double_subnormal()
+{
+  constexpr double min_normal = cuda::std::numeric_limits<double>::min();
+  constexpr double denorm_min = cuda::std::numeric_limits<double>::denorm_min();
+  test_fpclassify(denorm_min, FP_SUBNORMAL);
+  test_fpclassify(min_normal - denorm_min, FP_SUBNORMAL);
+  test_fpclassify(min_normal, FP_NORMAL);
+}
+
+// Values read through volatile are not folded at compile time, so the device code path for double runs
+TEST_FUNC void test_double_runtime()
+{
+  using limits                 = cuda::std::numeric_limits<double>;
+  const double nan_low_payload = cuda::std::bit_cast<double>(0x7FF0000000000001ull);
+  volatile double values[]     = {
+    0.0,
+    -0.0,
+    limits::denorm_min(),
+    limits::min() - limits::denorm_min(),
+    limits::min(),
+    1.0,
+    limits::max(),
+    limits::infinity(),
+    -limits::infinity(),
+    limits::quiet_NaN(),
+    nan_low_payload};
+  constexpr int expected[] = {
+    FP_ZERO,
+    FP_ZERO,
+    FP_SUBNORMAL,
+    FP_SUBNORMAL,
+    FP_NORMAL,
+    FP_NORMAL,
+    FP_NORMAL,
+    FP_INFINITE,
+    FP_INFINITE,
+    FP_NAN,
+    FP_NAN};
+  for (int i = 0; i < 11; ++i)
+  {
+    const double x = values[i];
+    assert(cuda::std::fpclassify(x) == expected[i]);
+    assert(cuda::std::isinf(x) == (expected[i] == FP_INFINITE));
+    assert(cuda::std::isfinite(x) == (expected[i] != FP_INFINITE && expected[i] != FP_NAN));
+    assert(cuda::std::isnormal(x) == (expected[i] == FP_NORMAL));
+  }
+}
+
 TEST_FUNC constexpr bool test()
 {
   test_type<float>();
   test_type<double>();
+  test_double_subnormal();
 #if _CCCL_HAS_LONG_DOUBLE()
   test_type<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
@@ -124,6 +176,9 @@ TEST_FUNC constexpr bool test()
 #if _CCCL_HAS_NVFP8_E5M2()
   test_type<__nv_fp8_e5m2>();
 #endif // _CCCL_HAS_NVFP8_E5M2
+#if _CCCL_HAS_NVFP8_UE5M3()
+  test_type<__nv_fp8_ue5m3>();
+#endif // _CCCL_HAS_NVFP8_UE5M3
 #if _CCCL_HAS_NVFP8_E8M0()
   test_type<__nv_fp8_e8m0>();
 #endif // _CCCL_HAS_NVFP8_E8M0
@@ -161,6 +216,7 @@ TEST_FUNC constexpr bool test()
 int main(int, char**)
 {
   test();
+  test_double_runtime();
   static_assert(test());
   return 0;
 }

@@ -23,6 +23,7 @@
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/detail/type_size.cuh>
 #include <cub/device/dispatch/tuning/tuning_find.cuh>
 #include <cub/util_arch.cuh>
@@ -56,10 +57,11 @@ template <typename PolicySelector, typename IteratorT, typename OffsetT, typenam
 #if _CCCL_HAS_CONCEPTS()
   requires find_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block)) _CCCL_KERNEL_ATTRIBUTES void find_kernel(
-  IteratorT d_in, OffsetT num_items, OffsetT* found_pos_ptr, PredicateT predicate)
+__launch_bounds__(int(_CUB::detail::current_policy<PolicySelector>().threads_per_block))
+  _CCCL_KERNEL_ATTRIBUTES void find_kernel(
+    IteratorT d_in, OffsetT num_items, OffsetT* found_pos_ptr, PredicateT predicate)
 {
-  constexpr FindIfPolicy policy = current_policy<PolicySelector>();
+  constexpr FindIfPolicy policy = _CUB::detail::current_policy<PolicySelector>();
   using agent_find_t =
     agent_t<policy.threads_per_block,
             policy.items_per_thread,
@@ -99,8 +101,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   TuningEnvT = {})
 {
   using default_policy_selector_t = policy_selector_from_types<it_value_t<InputIteratorT>>;
-  using policy_selector_t =
-    ::cuda::std::execution::__query_result_or_t<TuningEnvT, FindIfPolicy, default_policy_selector_t>;
+  using policy_selector_t = policy_selector_from_tuning_env_t<TuningEnvT, FindIfPolicy, default_policy_selector_t>;
 #if _CCCL_HAS_CONCEPTS()
   static_assert(find_policy_selector<policy_selector_t>);
 #endif // _CCCL_HAS_CONCEPTS()
@@ -115,14 +116,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     && size_of<output_t> == sizeof(OffsetT);
 
   ::cuda::compute_capability cc{};
-  if (const auto error = CubDebug(ptx_compute_cap(cc)))
+  if (const auto error = CubDebug(_CUB::detail::ptx_compute_cap(cc)))
   {
     return error;
   }
 
   const FindIfPolicy active_policy = policy_selector_t{}(cc);
 
-  detail::log_dispatch("DeviceFind", cc, active_policy);
+  _CUB::detail::log_dispatch("DeviceFind", cc, active_policy);
 
   const int tile_size = active_policy.threads_per_block * active_policy.items_per_thread;
   const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
@@ -144,7 +145,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   int find_if_sm_occupancy;
   if (const auto error =
-        CubDebug(cub::MaxSmOccupancy(find_if_sm_occupancy, kernel_ptr, active_policy.threads_per_block)))
+        CubDebug(_CUB::MaxSmOccupancy(find_if_sm_occupancy, kernel_ptr, active_policy.threads_per_block)))
   {
     return error;
   }
@@ -157,7 +158,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   void* allocations[1]             = {};
   const size_t allocation_sizes[1] = {sizeof(OffsetT)};
   if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -216,7 +217,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
 
   // Sync the stream if specified to flush runtime errors
-  return CubDebug(detail::DebugSyncStream(stream));
+  return CubDebug(_CUB::detail::DebugSyncStream(stream));
 }
 } // namespace detail::find
 CUB_NAMESPACE_END

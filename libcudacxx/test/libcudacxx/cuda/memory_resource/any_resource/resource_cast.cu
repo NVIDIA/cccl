@@ -182,14 +182,14 @@ TEST_CASE("dynamic_resource_cast any_resource narrowing", "[container][resource]
   {
     cuda::mr::any_resource<cuda::mr::host_accessible> src{stored};
     CHECK_THROWS_AS(cuda::mr::dynamic_resource_cast<cuda::mr::device_accessible>(::cuda::std::move(src)),
-                    cuda::__bad_any_cast);
+                    std::bad_any_cast);
   }
 
   SECTION("cast to undeclared property throws")
   {
     // extra_property is supported by big_resource but not in the wrapper's interface
     cuda::mr::any_resource<cuda::mr::host_accessible> src{stored};
-    CHECK_THROWS_AS(cuda::mr::dynamic_resource_cast<extra_property>(::cuda::std::move(src)), cuda::__bad_any_cast);
+    CHECK_THROWS_AS(cuda::mr::dynamic_resource_cast<extra_property>(::cuda::std::move(src)), std::bad_any_cast);
   }
 #  endif // _CCCL_HAS_EXCEPTIONS()
 }
@@ -231,7 +231,7 @@ TEST_CASE("dynamic_resource_cast any_synchronous_resource", "[container][resourc
   {
     cuda::mr::any_synchronous_resource<cuda::mr::host_accessible> src{stored};
     CHECK_THROWS_AS(cuda::mr::dynamic_resource_cast<cuda::mr::device_accessible>(::cuda::std::move(src)),
-                    cuda::__bad_any_cast);
+                    std::bad_any_cast);
   }
 #  endif // _CCCL_HAS_EXCEPTIONS()
 }
@@ -254,7 +254,7 @@ TEST_CASE("dynamic_resource_cast resource_ref", "[container][resource]")
   SECTION("invalid cast throws")
   {
     cuda::mr::resource_ref<cuda::mr::host_accessible> ref{stored};
-    CHECK_THROWS_AS(cuda::mr::dynamic_resource_cast<cuda::mr::device_accessible>(&ref), cuda::__bad_any_cast);
+    CHECK_THROWS_AS(cuda::mr::dynamic_resource_cast<cuda::mr::device_accessible>(&ref), std::bad_any_cast);
   }
 #  endif // _CCCL_HAS_EXCEPTIONS()
 }
@@ -277,7 +277,7 @@ TEST_CASE("dynamic_resource_cast synchronous_resource_ref", "[container][resourc
   SECTION("invalid cast throws")
   {
     cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible> ref{stored};
-    CHECK_THROWS_AS(cuda::mr::dynamic_resource_cast<cuda::mr::device_accessible>(&ref), cuda::__bad_any_cast);
+    CHECK_THROWS_AS(cuda::mr::dynamic_resource_cast<cuda::mr::device_accessible>(&ref), std::bad_any_cast);
   }
 #  endif // _CCCL_HAS_EXCEPTIONS()
 }

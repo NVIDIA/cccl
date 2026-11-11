@@ -183,7 +183,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires non_trivial_runs::rle_non_trivial_runs_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_block))
+__launch_bounds__(int(_CUB::detail::current_policy<PolicySelector>().lookback.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceRleSweepKernel(
     const InputIteratorT d_in,
     const OffsetsOutputIteratorT d_offsets_out,
@@ -195,7 +195,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
     const int num_tiles,
     const StreamingContextT streaming_context)
 {
-  static constexpr RleNonTrivialRunsPolicy policy = current_policy<PolicySelector>();
+  static constexpr RleNonTrivialRunsPolicy policy = _CUB::detail::current_policy<PolicySelector>();
   using AgentRlePolicyT =
     agent_rle_policy<policy.lookback.threads_per_block,
                      policy.lookback.items_per_thread,
@@ -378,7 +378,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
     constexpr int items_per_thread  = ActivePolicyT::RleSweepPolicyT::ITEMS_PER_THREAD;
     constexpr auto tile_size        = static_cast<global_offset_t>(threads_per_block * items_per_thread);
 
-    // The upper bound of for the number of items that a single kernel invocation will ever process
+    // The upper bound for the number of items that a single kernel invocation will ever process
     auto capped_num_items_per_invocation = num_items;
     if constexpr (use_streaming_invocation)
     {
@@ -394,9 +394,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
 
     // Number of invocations required to "iterate" over the total input (at least one iteration to process zero items)
     auto const num_partitions =
-      (capped_num_items_per_invocation == 0)
-        ? global_offset_t{1}
-        : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
+      (num_items == 0) ? global_offset_t{1} : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
 
     // Number of input tiles
     const int max_num_tiles = static_cast<int>(::cuda::ceil_div(max_num_items_per_invocation, tile_size));
@@ -415,7 +413,8 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
     // the blob)
     void* allocations[3] = {};
 
-    error = CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+    error =
+      CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
     if (error != cudaSuccess)
     {
       return error;
@@ -461,7 +460,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(_CUB::detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         return error;
@@ -533,7 +532,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(_CUB::detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         return error;
@@ -608,7 +607,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
 
     // Get PTX version
     int ptx_version = 0;
-    error           = CubDebug(PtxVersion(ptx_version));
+    error           = CubDebug(_CUB::PtxVersion(ptx_version));
     if (cudaSuccess != error)
     {
       return error;
@@ -671,13 +670,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   static constexpr int init_kernel_threads = 128;
 
   ::cuda::compute_capability cc{};
-  if (const auto error = CubDebug(ptx_compute_cap(cc)))
+  if (const auto error = CubDebug(_CUB::detail::ptx_compute_cap(cc)))
   {
     return error;
   }
 
   const RleNonTrivialRunsPolicy active_policy = policy_selector(cc);
-  detail::log_dispatch("DeviceRle", cc, active_policy);
+  _CUB::detail::log_dispatch("DeviceRle", cc, active_policy);
 
   const int threads_per_block = active_policy.lookback.threads_per_block;
   const int items_per_thread  = active_policy.lookback.items_per_thread;
@@ -694,9 +693,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   const auto max_num_items_per_invocation =
     use_streaming_invocation ? ::cuda::std::min(capped_num_items_per_invocation, num_items) : num_items;
   const auto num_partitions =
-    (capped_num_items_per_invocation == 0)
-      ? global_offset_t{1}
-      : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
+    (num_items == 0) ? global_offset_t{1} : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
 
   const int max_num_tiles = static_cast<int>(::cuda::ceil_div(max_num_items_per_invocation, tile_size));
 
@@ -710,7 +707,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   void* allocations[3] = {};
   if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -744,7 +741,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     {
       return error;
     }
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -803,7 +800,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }

@@ -73,9 +73,10 @@ struct __validate_uniform_or_per_segment_integral_param
 
   static constexpr bool is_valid_type = ::cuda::args::__is_wrapper_v<Param> || ::cuda::std::is_integral_v<Param>;
 
-  using __value_t = ::cuda::std::conditional_t<args_traits::is_deferred || !args_traits::is_single_value,
-                                               typename args_traits::element_type,
-                                               typename args_traits::value_type>;
+  using __value_t _CCCL_NODEBUG =
+    ::cuda::std::conditional_t<args_traits::is_deferred || !args_traits::is_single_value,
+                               typename args_traits::element_type,
+                               typename args_traits::value_type>;
   static constexpr bool is_integral =
     ::cuda::std::is_integral_v<__value_t> && !::cuda::std::is_same_v<::cuda::std::remove_cvref_t<__value_t>, bool>;
 
@@ -125,9 +126,10 @@ struct __validate_uniform_integral_param
   static constexpr bool is_single_value    = args_traits::is_single_value;
   static constexpr bool is_deferred_single = args_traits::is_deferred && args_traits::is_single_value;
 
-  using __value_t = ::cuda::std::conditional_t<args_traits::is_deferred || !args_traits::is_single_value,
-                                               typename args_traits::element_type,
-                                               typename args_traits::value_type>;
+  using __value_t _CCCL_NODEBUG =
+    ::cuda::std::conditional_t<args_traits::is_deferred || !args_traits::is_single_value,
+                               typename args_traits::element_type,
+                               typename args_traits::value_type>;
   static constexpr bool is_integral =
     ::cuda::std::is_integral_v<__value_t> && !::cuda::std::is_same_v<::cuda::std::remove_cvref_t<__value_t>, bool>;
 
@@ -222,7 +224,7 @@ get_param(const ::cuda::args::deferred<Arg, StaticBounds>& __arg, [[maybe_unused
   // otherwise bind to the proxy).
   using __element_t         = typename ::cuda::args::__traits<::cuda::args::deferred<Arg, StaticBounds>>::element_type;
   const __element_t __value = *::cuda::args::__unwrap(__arg);
-  __assert_param_in_bounds(__arg, __value);
+  _CUB::detail::params::__assert_param_in_bounds(__arg, __value);
   return __value;
 }
 
@@ -234,7 +236,7 @@ get_param(const ::cuda::args::deferred_sequence<Arg, StaticBounds>& __arg, Segme
   // deduced return type.
   using __element_t = typename ::cuda::args::__traits<::cuda::args::deferred_sequence<Arg, StaticBounds>>::element_type;
   const __element_t __value = ::cuda::args::__unwrap(__arg)[__index];
-  __assert_param_in_bounds(__arg, __value);
+  _CUB::detail::params::__assert_param_in_bounds(__arg, __value);
   return __value;
 }
 
@@ -251,7 +253,7 @@ __get_and_clamp_param_to_nonnegative(const Arg& __arg, SegmentIndexT __index) no
   // and the clamp must act on a real value (a `static_cast<proxy>(0)` would form a null proxy that `max` then
   // dereferences).
   using __element_t         = typename ::cuda::args::__traits<Arg>::element_type;
-  const __element_t __value = get_param(__arg, __index);
+  const __element_t __value = _CUB::detail::params::get_param(__arg, __index);
   constexpr auto __lowest   = ::cuda::args::__traits<Arg>::lowest;
   // Use a plain `<` against a same-typed zero, not the integer-only `cmp_*` comparators (which reject character element
   // types, see `__assert_param_in_bounds`); the `is_signed_v` guard skips the test for unsigned types, whose lower
@@ -292,7 +294,7 @@ using bounded_offset_t =
 // and `constant<384>` select the same 32-bit kernel instead of two different ones.
 
 template <auto Value>
-using __static_value_type_t = ::cuda::std::conditional_t<
+using __static_value_type_t _CCCL_NODEBUG = ::cuda::std::conditional_t<
   ::cuda::std::in_range<::cuda::std::int32_t>(Value),
   ::cuda::std::int32_t,
   ::cuda::std::
@@ -301,17 +303,17 @@ using __static_value_type_t = ::cuda::std::conditional_t<
 template <class ElementT, class StaticBounds>
 struct __retype_static_bounds
 {
-  using type = StaticBounds; // no_bounds
+  using type _CCCL_NODEBUG = StaticBounds; // no_bounds
 };
 
 template <class ElementT, auto Lowest, auto Highest>
 struct __retype_static_bounds<ElementT, ::cuda::args::static_bounds<Lowest, Highest>>
 {
-  using type = ::cuda::args::static_bounds<static_cast<ElementT>(Lowest), static_cast<ElementT>(Highest)>;
+  using type _CCCL_NODEBUG = ::cuda::args::static_bounds<static_cast<ElementT>(Lowest), static_cast<ElementT>(Highest)>;
 };
 
 template <class ElementT, class StaticBounds>
-using __retype_static_bounds_t = typename __retype_static_bounds<ElementT, StaticBounds>::type;
+using __retype_static_bounds_t _CCCL_NODEBUG = typename __retype_static_bounds<ElementT, StaticBounds>::type;
 
 //! @brief Plain values carry no `auto` NTTP and pass through unchanged.
 _CCCL_TEMPLATE(class Tp)
@@ -444,8 +446,7 @@ template <typename ParamT, typename SegmentIndexT, typename Functor>
 {
   using supported_list = typename ParamT::supported_options_t;
   auto param_value     = param.get_param(segment_id);
-  return CUB_NS_QUALIFIER::detail::params::dispatch_impl(
-    param_value, supported_list{}, ::cuda::std::forward<Functor>(f));
+  return _CUB::detail::params::dispatch_impl(param_value, supported_list{}, ::cuda::std::forward<Functor>(f));
 }
 } // namespace detail::params
 
