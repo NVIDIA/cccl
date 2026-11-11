@@ -282,6 +282,7 @@ int main(int argc, char** argv)
       copy_array(Un[b], Un1[b]);
     }
 
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0
     // We make sure that the total sum of elements remains constant
     if (iter % 250 == 0)
