@@ -38,7 +38,7 @@ __global__ void init_kernel(int* ptr, int n, int value)
   }
 }
 
-__global__ void check_kernel(int* ptr, int n, int value, int* result)
+__global__ void check_kernel(const int* ptr, int n, int value, int* result)
 {
   const int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   if (tid < n)
@@ -243,7 +243,8 @@ void test_multi_segment_vmm()
   auto place = data_place::device(dev_id);
 
   // Create two physical allocations
-  CUmemGenericAllocationHandle handle1, handle2;
+  CUmemGenericAllocationHandle handle1;
+  CUmemGenericAllocationHandle handle2;
   cuda_try(place.mem_create(&handle1, segment_size));
   cuda_try(place.mem_create(&handle2, segment_size));
 

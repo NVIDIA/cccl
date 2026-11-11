@@ -1185,6 +1185,7 @@ struct translate_t<_To> : basic_sink<translate_t<_To>>
                     "default-constructible");
       _CCCL_THROW(_To);
     }
+    _CCCL_UNREACHABLE(); // NVHPC's front end does not see the _CCCL_THROW above as terminating
   }
 
   // The `_To` for a non-standard exception, which offers nothing to build from: say so when
@@ -1202,6 +1203,7 @@ struct translate_t<_To> : basic_sink<translate_t<_To>>
                     "in for a non-standard exception");
       _CCCL_THROW(_To);
     }
+    _CCCL_UNREACHABLE(); // NVHPC's front end does not see the _CCCL_THROW above as terminating
   }
 };
 
@@ -1231,6 +1233,7 @@ struct translate_t<_From, _To> : basic_sink<translate_t<_From, _To>>
   {
     // The claim was answered yes, so the cast holds.
     translate_t<_To>::__throw_translated(*dynamic_cast<const _From*>(__e));
+    _CCCL_UNREACHABLE(); // nvcc's front end does not propagate [[noreturn]] through the call above
   }
 
   template <class _Fn>
@@ -2519,8 +2522,8 @@ inline constexpr bool __has_pure_claim<__policy_and<_L, _R>> = __has_pure_claim<
 
 // Forward declaration: `|` and `*` reuse this for arm answer interpretation (defined below).
 template <class _Expr, class _P, class _Fn>
-_CCCL_FORCEINLINE _Expr __interpret_answer(
-  _P& __policy, const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn);
+_CCCL_FORCEINLINE _Expr
+__interpret_answer(_P& __policy, const ::std::exception* __exception, ::cuda::std::source_location __loc, _Fn& __fn);
 
 // The answer type of `|` and `*` is fixed by the callable alone: the callable's result, or the
 // resume tag for a void callable. The composites below spell it as their declared return type
@@ -6634,8 +6637,9 @@ UNITTEST("guard translate delay backoff remember")
     EXPECT(notes == 1);
   }
   {
-    int first = 0, second = 0;
-    auto f = [&](const ::std::exception*, const ::cuda::std::source_location, auto&) {
+    int first  = 0;
+    int second = 0;
+    auto f     = [&](const ::std::exception*, const ::cuda::std::source_location, auto&) {
       ++first;
     };
     auto g = [&](const ::std::exception*, const ::cuda::std::source_location, auto&) {
@@ -7994,7 +7998,8 @@ UNITTEST("error sinks: unwind inside a chain stops it")
 {
   using namespace cuda::experimental::stf;
   using namespace cuda::experimental::stf::sump;
-  int a = 0, b = 0;
+  int a      = 0;
+  int b      = 0;
   bool threw = false;
   try
   {

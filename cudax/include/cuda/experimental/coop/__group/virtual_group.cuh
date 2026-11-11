@@ -35,6 +35,7 @@
 
 #include <cuda/experimental/coop/__group/concepts.cuh>
 #include <cuda/experimental/coop/__group/fwd.cuh>
+#include <cuda/experimental/coop/__group/group_view.cuh>
 #include <cuda/experimental/coop/__group/mapping/common.cuh>
 #include <cuda/experimental/coop/__group/mapping/mapping_result.cuh>
 #include <cuda/experimental/coop/__group/queries.cuh>
@@ -49,11 +50,10 @@ template <class _Unit, class _ParentGroup>
 [[nodiscard]] _CCCL_DEVICE_API constexpr auto __make_init_group_mapping_result(const _ParentGroup& __parent_group)
 {
   using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
-  using _InitMappingResult =
-    __mapping_result</*initial static group count*/ 1,
-                     ::cuda::experimental::coop::__static_count_query_group<_Unit, _ParentGroup>(),
-                     /*initial is always exhaustive*/ true,
-                     _ParentMappingResult::is_always_contiguous()>;
+  using _InitMappingResult   = __mapping_result<
+    __uniform_static_unit_count<1, ::cuda::experimental::coop::__static_count_query_group<_Unit, _ParentGroup>()>,
+    /*initial is always exhaustive*/ true,
+    _ParentMappingResult::is_always_contiguous()>;
 
   return _InitMappingResult{
     /*initial group count*/ 1,
@@ -154,6 +154,14 @@ public:
   virtual_group(virtual_group&&)                 = delete;
   virtual_group& operator=(const virtual_group&) = delete;
   virtual_group& operator=(virtual_group&&)      = delete;
+
+  //! @brief Invokes the callable with a view specialized for this group's static unit count.
+  //! Counts that are only known at runtime remain dynamic.
+  template <class _Fn>
+  _CCCL_DEVICE_API decltype(auto) with_static_unit_count(_Fn&& __fn) const
+  {
+    return ::cuda::experimental::coop::__with_static_unit_count(*this, ::cuda::std::forward<_Fn>(__fn));
+  }
 
   [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const
   {

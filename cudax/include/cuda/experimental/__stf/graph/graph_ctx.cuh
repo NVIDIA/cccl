@@ -206,7 +206,7 @@ private:
  */
 class graph_ctx : public backend_ctx<graph_ctx>
 {
-  using backend_impl = typename backend_ctx<graph_ctx>::impl;
+  using backend_impl = backend_ctx<graph_ctx>::impl;
 
   class impl : public backend_impl
   {
@@ -722,6 +722,7 @@ private:
     // fprintf(stderr, "Instantiate stage %ld\n", stage);
     display_graph_info(g);
 
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0
         ::std::string name = "stage" + ::std::to_string(stage) + ".dot";
         cudaGraphDebugDotPrint(g, name.c_str(), cudaGraphDebugDotFlagsVerbose);
@@ -806,7 +807,8 @@ UNITTEST("set_symbol on graph_task and graph_task<>")
   // task lives in its own block, since a task holds its data locked until it ends.
   graph_ctx ctx;
 
-  double X[1024], Y[1024];
+  double X[1024];
+  double Y[1024];
   auto lX = ctx.logical_data(X);
   auto lY = ctx.logical_data(Y);
 

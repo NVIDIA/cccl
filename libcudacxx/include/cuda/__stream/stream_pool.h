@@ -332,8 +332,9 @@ private:
   //! @param[in] __desired The value to store if `__ptr` holds `__expected`
   //!
   //! @return `true` if `__desired` was stored, `false` otherwise, including spuriously
-  _CCCL_HOST_API static bool
-  __advance(::cuda::std::size_t* __ptr, ::cuda::std::size_t& __expected, ::cuda::std::size_t __desired) noexcept
+  _CCCL_HOST_API static bool __advance(::cuda::std::size_t* __ptr, // NOLINT(readability-non-const-parameter)
+                                       ::cuda::std::size_t& __expected,
+                                       ::cuda::std::size_t __desired) noexcept
   {
     return _CUDA_STREAM_POOL_ATOMIC(
       __atomic_compare_exchange_n)(__ptr, &__expected, __desired, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED);

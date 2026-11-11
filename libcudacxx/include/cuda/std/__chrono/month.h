@@ -34,7 +34,6 @@ namespace chrono
 {
 class month
 {
-private:
   unsigned char __month_;
 
   _CCCL_API constexpr void __add_clamped(long long __add) noexcept

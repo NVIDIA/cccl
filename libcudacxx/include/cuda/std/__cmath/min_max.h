@@ -173,14 +173,11 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
       {
         return __y;
       }
-      else if (::cuda::std::isnan(__y))
+      if (::cuda::std::isnan(__y))
       {
         return __x;
       }
-      else
-      {
-        return __x < __y ? __y : __x;
-      }
+      return __x < __y ? __y : __x;
     }
 }
 
@@ -315,7 +312,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
       {
         return __y;
       }
-      else if (::cuda::std::isnan(__y))
+      if (::cuda::std::isnan(__y))
       {
         return __x;
       }

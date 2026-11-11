@@ -288,6 +288,7 @@ C2H_TEST("graph_buffer move semantics", "[graph][graph_buffer]")
   REQUIRE(buf2.data() == original_data);
   REQUIRE(buf2.size() == original_size);
   REQUIRE(buf1.data() == nullptr);
+  // NOLINTNEXTLINE(readability-container-size-empty)
   REQUIRE(buf1.size() == 0);
 
   // Move assign — create a second buffer and move-assign over it
@@ -314,6 +315,7 @@ C2H_TEST("graph_buffer empty buffer", "[graph][graph_buffer]")
   cudax::graph_buffer<int> buf(pb, mr, 0, cuda::no_init);
 
   REQUIRE(buf.data() == nullptr);
+  // NOLINTNEXTLINE(readability-container-size-empty)
   REQUIRE(buf.size() == 0);
   REQUIRE(buf.empty());
 

@@ -31,6 +31,7 @@
 
 namespace cuda::experimental::stf::reserved
 {
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0
 /**
  * @brief Implementation of a cartesian product of multiple iterators
@@ -99,6 +100,7 @@ UNITTEST("cartesian product") {
 
 #endif
 
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0
 class RangeIterator {
 public:
@@ -430,7 +432,7 @@ class StridedRange
 public:
   using value_type      = size_t;
   using iterator        = StridedRangeIterator;
-  using difference_type = typename iterator::difference_type;
+  using difference_type = iterator::difference_type;
 
   _CCCL_HOST_DEVICE explicit StridedRange(value_type start, value_type end, difference_type stride)
       : start_(start)

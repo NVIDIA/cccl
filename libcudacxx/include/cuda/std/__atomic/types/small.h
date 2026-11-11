@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__atomic/functions/generic_rmw.h>
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/types/base.h>
 #include <cuda/std/__atomic/types/common.h>
@@ -167,13 +168,38 @@ _CCCL_HOST_DEVICE_API bool __atomic_compare_exchange_strong_dispatch(
   }
 }
 
+template <class _Sto, class _Up, class _Sco, class _Op>
+_CCCL_HOST_DEVICE_API auto __atomic_small_fetch_update(_Sto* __a, _Up __val, memory_order __order, _Sco, _Op __op)
+  -> __atomic_underlying_t<_Sto>
+{
+  using _Tp       = __atomic_underlying_t<_Sto>;
+  auto __expected = ::cuda::std::__atomic_load_dispatch(&__a->__a_value, memory_order_relaxed, _Sco{});
+  while (true)
+  {
+    const auto __old     = __atomic_small_from_32<_Tp>(__expected);
+    const auto __desired = ::cuda::std::__atomic_small_to_32(__op(__val, __old));
+    if (::cuda::std::__atomic_compare_exchange_weak_dispatch(
+          &__a->__a_value, &__expected, __desired, __order, __order, _Sco{}))
+    {
+      return __old;
+    }
+  }
+}
+
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
 _CCCL_HOST_DEVICE_API auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
-  return __atomic_small_from_32<_Tp>(::cuda::std::__atomic_fetch_add_dispatch(
-    &__a->__a_value, ::cuda::std::__atomic_small_to_32(__delta), __order, _Sco{}));
+  if constexpr (__atomic_is_small_floating_point_v<_Tp>)
+  {
+    return ::cuda::std::__atomic_small_fetch_update(__a, __delta, __order, _Sco{}, __cuda_atomic_op_fetch_add{});
+  }
+  else
+  {
+    return __atomic_small_from_32<_Tp>(::cuda::std::__atomic_fetch_add_dispatch(
+      &__a->__a_value, ::cuda::std::__atomic_small_to_32(__delta), __order, _Sco{}));
+  }
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
@@ -181,8 +207,15 @@ _CCCL_HOST_DEVICE_API auto __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta, m
   -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
-  return __atomic_small_from_32<_Tp>(::cuda::std::__atomic_fetch_sub_dispatch(
-    &__a->__a_value, ::cuda::std::__atomic_small_to_32(__delta), __order, _Sco{}));
+  if constexpr (__atomic_is_small_floating_point_v<_Tp>)
+  {
+    return ::cuda::std::__atomic_small_fetch_update(__a, __delta, __order, _Sco{}, __cuda_atomic_op_fetch_sub{});
+  }
+  else
+  {
+    return __atomic_small_from_32<_Tp>(::cuda::std::__atomic_fetch_sub_dispatch(
+      &__a->__a_value, ::cuda::std::__atomic_small_to_32(__delta), __order, _Sco{}));
+  }
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
