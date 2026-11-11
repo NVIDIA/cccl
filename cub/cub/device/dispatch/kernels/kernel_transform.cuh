@@ -27,7 +27,7 @@
 #include <cuda/__functional/always_true_false.h>
 #include <cuda/__memcpy_async/elect_one.h>
 #include <cuda/__memory/align_down.h>
-#include <cuda/__memory/uninitialized_array.h>
+#include <cuda/__memory/uninitialized.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/elect_sync.h>
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
@@ -285,7 +285,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   using output_array_t                  = ::cuda::std::conditional_t<can_vectorize_store, output_t, result_t>;
   constexpr auto output_array_alignment = can_vectorize_store ? sizeof(output_t) * VecSize : alignof(result_t);
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-  ::cuda::__uninitialized_array<output_array_t, ItemsPerThread, output_array_alignment> output;
+  ::cuda::__uninitialized<output_array_t[ItemsPerThread], output_array_alignment> output;
 
   auto provide_array = [&](auto... inputs) {
     // load inputs
@@ -333,9 +333,8 @@ _CCCL_DEVICE void transform_kernel_vectorized(
       output[i] = f(inputs[i]...);
     }
   };
-  provide_array(::cuda::__uninitialized_array<it_value_t<RandomAccessIteratorsIn>,
-                                              ItemsPerThread,
-                                              sizeof(it_value_t<RandomAccessIteratorsIn>) * VecSize>{}...);
+  provide_array(::cuda::__uninitialized<it_value_t<RandomAccessIteratorsIn>[ItemsPerThread],
+                                        sizeof(it_value_t<RandomAccessIteratorsIn>) * VecSize>{}...);
 
   // write output
   if constexpr (can_vectorize_store)
@@ -1085,7 +1084,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
           // natural alignment on bigger types (e.g. 32 bytes). If input is narrower, we will waste a few (0-16)
           // registers
           constexpr ::cuda::std::size_t in_vec_align = (::cuda::std::max) (alignof(T), alignof(int4));
-          ::cuda::__uninitialized_array<T, store_vec_size, in_vec_align> in_vec;
+          ::cuda::__uninitialized<T[store_vec_size], in_vec_align> in_vec;
           constexpr int in_vec_bytes = int{sizeof(T)} * store_vec_size;
           // since store_vec_size is pow2, sizeof(T) is pow2, in_vec_bytes must be pow2
           // if in_vec_bytes is a multiple of 16, we do vectorised load from smem into reg
@@ -1111,7 +1110,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         auto in_vecs = ::cuda::std::tuple{load_in_vec(aligned_ptrs)...};
 
         // must fully unroll to make sure register index is static
-        ::cuda::__uninitialized_array<output_t, store_vec_size, sizeof(output_t) * store_vec_size> res;
+        ::cuda::__uninitialized<output_t[store_vec_size], sizeof(output_t) * store_vec_size> res;
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int k = 0; k < store_vec_size; ++k)
         {
