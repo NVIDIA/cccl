@@ -172,18 +172,7 @@ struct WarpReduceShfl
     else
     {
       Tp output = input;
-      if constexpr (is_full_warp)
-      {
-        // For a full warp, last_lane is uniform across the warp. If offset > last_lane, no lane combines anything in
-        // this step, so skip it with a warp-uniform branch. Otherwise the per-lane check below may be lowered to
-        // predication, so every lane evaluates reduction_op in every step, which is expensive for operators such as
-        // FP64 comparisons on GPUs with a low FP64 rate.
-        if (offset > last_lane)
-        {
-          return output;
-        }
-      }
-      Tp tmp = _CUB::ShuffleDown<shuffle_threads>(output, offset, last_lane, member_mask);
+      Tp tmp    = _CUB::ShuffleDown<shuffle_threads>(output, offset, last_lane, member_mask);
       // Perform reduction op if valid
       if (offset + lane_id <= last_lane)
       {
@@ -199,6 +188,21 @@ struct WarpReduceShfl
   {
     // capture clause prevents regressions
     ::cuda::static_for<steps>([&, value = input, reduction_op](const int step) mutable {
+      // static_for passes an integral_constant, so step, and offset = 1 << step, are compile-time constants and thus
+      // warp-uniform. last_lane is warp-uniform too: WarpReduce requires every lane to pass the same valid_items. Both
+      // have to be uniform to branch here, because a full warp's shuffle mask covers every lane and ReduceStep's
+      // shuffle must be executed by all of them or by none. A step with offset > last_lane combines nothing. Skipping
+      // it before ReduceStep keeps the per-lane check in there from being lowered to predication, which would
+      // evaluate reduction_op on every lane, including lanes with nothing to combine. That is expensive for operators
+      // such as FP64 comparisons on GPUs with a low FP64 rate.
+      if constexpr (is_full_warp)
+      {
+        const int offset = 1 << step;
+        if (offset > last_lane)
+        {
+          return;
+        }
+      }
       value = ReduceStep(value, reduction_op, last_lane, 1u << step);
       input = value;
     });
