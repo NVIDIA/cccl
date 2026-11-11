@@ -711,38 +711,33 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   if constexpr (
     is_adaptive_segmented_reduce_compatible_v<InputIteratorT, InputT, OutputIteratorT, ReductionOpT, AccumT, OffsetT>)
   {
-    // Force NVCC to register adaptive kernel symbols at dispatch() instantiation time.
-    [[maybe_unused]] const auto _adaptive_reduce_kern = AdaptiveKernelSource::ReduceKernel();
-    [[maybe_unused]] const auto _adaptive_init_kern   = AdaptiveKernelSource::InitKernel();
-
     // The kernel walks segments in chunks of 32 (one per lane), so keep seg_base + 32 within int range.
-    NV_IF_TARGET(
-      NV_IS_HOST,
-      (if (cc.get() >= 90 && num_segments <= ::cuda::std::numeric_limits<int>::max() - 32) {
-        if constexpr (::cuda::std::is_pointer_v<BeginOffsetIteratorT> && ::cuda::std::is_pointer_v<EndOffsetIteratorT>)
+    if (cc.get() >= 90 && num_segments <= ::cuda::std::numeric_limits<int>::max() - 32)
+    {
+      if constexpr (::cuda::std::is_pointer_v<BeginOffsetIteratorT> && ::cuda::std::is_pointer_v<EndOffsetIteratorT>)
+      {
+        if (d_begin_offsets + 1 == d_end_offsets)
         {
-          if (d_begin_offsets + 1 == d_end_offsets)
+          if (d_temp_storage == nullptr)
           {
-            if (d_temp_storage == nullptr)
-            {
-              temp_storage_bytes = 1;
-              return cudaSuccess;
-            }
-            return invoke_adaptive_segmented_reduce<AdaptiveKernelSource>(
-              d_in,
-              d_out,
-              d_begin_offsets,
-              d_end_offsets,
-              static_cast<int>(num_segments),
-              reduction_op,
-              init,
-              cc,
-              stream,
-              launcher_factory,
-              adaptive_kernel_source);
+            temp_storage_bytes = 1;
+            return cudaSuccess;
           }
+          return invoke_adaptive_segmented_reduce<AdaptiveKernelSource>(
+            d_in,
+            d_out,
+            d_begin_offsets,
+            d_end_offsets,
+            static_cast<int>(num_segments),
+            reduction_op,
+            init,
+            cc,
+            stream,
+            launcher_factory,
+            adaptive_kernel_source);
         }
-      }))
+      }
+    }
   }
 
   const SegmentedReducePolicy active_policy = policy_selector(cc);
