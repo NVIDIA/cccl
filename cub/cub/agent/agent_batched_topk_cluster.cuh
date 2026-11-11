@@ -1256,6 +1256,8 @@ private:
   // work: `arrive`, then the work, then `wait`. A single-CTA "cluster" has no arrival latency to hide and no cross-CTA
   // state, so it takes the whole `__syncthreads()` at `arrive` and its `wait` is a no-op. In the multi-CTA case the
   // work between the two must touch only block-local state (a cross-CTA read before `wait` may miss a peer's writes).
+  // The mbarrier path arrives relaxed behind a fence that releases only shared memory, so the arrival does not wait
+  // for global memory.
   _CCCL_DEVICE _CCCL_FORCEINLINE static void cluster_or_block_arrive(bool is_single_cta)
   {
     if (is_single_cta)
@@ -1264,7 +1266,12 @@ private:
     }
     else
     {
+#if _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC()
+      ::cuda::ptx::fence_sync_restrict(::cuda::ptx::sem_release, ::cuda::ptx::space_shared, ::cuda::ptx::scope_cluster);
+      NV_IF_TARGET(NV_PROVIDES_SM_90, (::__cluster_barrier_arrive_relaxed();));
+#else // ^^^ _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() ^^^ / vvv !_CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() vvv
       cluster_arrive();
+#endif // _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC()
     }
   }
   _CCCL_DEVICE _CCCL_FORCEINLINE static void cluster_or_block_wait(bool is_single_cta)
@@ -3684,21 +3691,7 @@ private:
     // `run_radix_passes`' first pass, so the cluster-arrival latency overlaps the fused first-pass load + histogram.
     // Safe because nothing between here and that wait touches another rank's DSMEM (the first-pass histogram writes
     // only block-local `hist`; the leader's `state` and the scan counters are untouched until later).
-#if _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC()
-    // The mbarrier path arrives relaxed behind a fence that releases only shared memory, so the arrival does not wait
-    // for global memory.
-    if (is_single_cta)
-    {
-      __syncthreads();
-    }
-    else
-    {
-      ::cuda::ptx::fence_sync_restrict(::cuda::ptx::sem_release, ::cuda::ptx::space_shared, ::cuda::ptx::scope_cluster);
-      NV_IF_TARGET(NV_PROVIDES_SM_90, (::__cluster_barrier_arrive_relaxed();));
-    }
-#else // ^^^ _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() ^^^ / vvv !_CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() vvv
     cluster_or_block_arrive(is_single_cta);
-#endif // _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC()
 
     [[maybe_unused]] const bool is_ok =
       detail::params::dispatch_discrete(select_directions, segment_id, [this](auto direction_tag) {
