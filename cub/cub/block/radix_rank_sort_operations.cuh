@@ -22,6 +22,7 @@
 #include <cub/detail/numeric_traits.cuh>
 
 #include <cuda/__bit/bitfield.h>
+#include <cuda/__memory/uninitialized.h>
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cstddef/types.h>
@@ -496,7 +497,9 @@ struct traits_t<T, false /* is_fundamental */>
   template <class DecomposerT>
   static _CCCL_HOST_DEVICE bit_ordered_type min_raw_binary_key(DecomposerT decomposer)
   {
-    T val{};
+    // zero-initialized like `T val{}`, but without requiring T to be default constructible
+    ::cuda::__uninitialized<T> storage{};
+    T& val = storage.alias();
     _CUB::detail::radix::min_raw_binary_key(decomposer, val);
     return val;
   }
@@ -504,7 +507,9 @@ struct traits_t<T, false /* is_fundamental */>
   template <class DecomposerT>
   static _CCCL_HOST_DEVICE bit_ordered_type max_raw_binary_key(DecomposerT decomposer)
   {
-    T val{};
+    // zero-initialized like `T val{}`, but without requiring T to be default constructible
+    ::cuda::__uninitialized<T> storage{};
+    T& val = storage.alias();
     _CUB::detail::radix::max_raw_binary_key(decomposer, val);
     return val;
   }
@@ -512,7 +517,8 @@ struct traits_t<T, false /* is_fundamental */>
   template <class DecomposerT>
   static _CCCL_HOST_DEVICE int default_end_bit(DecomposerT decomposer)
   {
-    T aggregate{};
+    ::cuda::__uninitialized<T> storage{};
+    T& aggregate = storage.alias();
     return _CUB::detail::radix::default_end_bit(decomposer, aggregate);
   }
 
