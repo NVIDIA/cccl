@@ -163,8 +163,8 @@ class dynamic; // defined below; the composites consult its metadata when they a
 template <class _Status>
 struct __status_answer
 {
-  _Status __value_;
-  bool __passed_;
+  _Status __value_ = {};
+  bool __passed_   = {};
 };
 
 template <class _Status>
@@ -259,35 +259,9 @@ inline constexpr bool __selects_returned_v = false;
 template <class _P>
 inline constexpr bool __selects_returned_v<_P, ::cuda::std::void_t<decltype(_P::__selects_returned)>> =
   _P::__selects_returned;
-
-// Composition of the properties above: a function rather than `|`/`||`, whose operands coincide
-// when both sides of a composite are the same policy type.
-constexpr unsigned __either(const unsigned __a, const unsigned __b) noexcept
-{
-  return __a | __b;
-}
-constexpr bool __either(const bool __a, const bool __b) noexcept
-{
-  return __a || __b;
-}
-constexpr unsigned __both(const unsigned __a, const unsigned __b) noexcept
-{
-  return __a & __b;
-}
 #endif // _CCCL_DOXYGEN_INVOKED
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-// How the left operand of `<<` and `->*` holds its sink: by value, unless the sink type says
-// otherwise. `dynamic` specializes this (after its definition) so that a named erased sink is
-// viewed rather than copied, since copying one clones its model.
-template <class _Self>
-struct __sink_storage
-{
-  using type _CCCL_NODEBUG = _Self;
-};
-template <class _Self>
-using __sink_storage_t _CCCL_NODEBUG = typename __sink_storage<_Self>::type;
-
 // The left operand of a sink's `<<` and `->*`, built by implicit conversion from the sink.
 // Overloaded operators cannot take a defaulted `source_location`, so the converting constructor
 // captures the call site. It accepts exactly `_Self`: a type that converts to `_Self` (any sink
@@ -298,12 +272,12 @@ struct __sink_at
   template <class _U, ::cuda::std::enable_if_t<::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_U>, _Self>, int> = 0>
   // NOLINTNEXTLINE(bugprone-forwarding-reference-overload)
   __sink_at(_U&& __u, const ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept(
-    ::cuda::std::is_nothrow_constructible_v<__sink_storage_t<_Self>, _U&&>)
+    ::cuda::std::is_nothrow_constructible_v<_Self, _U&&>)
       : __sink_(::cuda::std::forward<_U>(__u))
       , __loc_(__loc)
   {}
 
-  __sink_storage_t<_Self> __sink_;
+  _Self __sink_;
   ::cuda::std::source_location __loc_;
 };
 #endif // _CCCL_DOXYGEN_INVOKED
@@ -324,9 +298,9 @@ struct __sink_at
  *   chain's status type), `void` feeds nothing, and a type without `status_traits` is a compile
  *   error. The expression is a carrier, which records the chain. A sink applied by name is copied
  *   into each expression; the library's stateful sinks keep their state behind a pointer, so the
- *   copies share it. A named non-const `dynamic` is viewed instead of copied, so one model serves
- *   every expression that names it; a custom model with mutable state synchronizes its own
- *   concurrent use. To keep one chain across statements, name the carrier the first `<<` returns:
+ *   copies share it. Copies of a `dynamic` share its model, so one model serves every expression
+ *   that names it; a custom model with mutable state synchronizes its own concurrent use. To keep
+ *   one chain across statements, name the carrier the first `<<` returns:
  *   `auto s = p << a; s << b;`.
  *   C++17 sequences the left side of `<<`, its handling included, before the right, so each
  *   operand runs after the previous one was handled. The carrier records the first status that
@@ -2452,12 +2426,12 @@ struct __policy_and
     , __composite_hooks<_L, _R>
 {
   // `&` stops at the left's fwd, so it treats only the channels both sides treat.
-  static constexpr unsigned __domain       = __both(__domain_v<_L>, __domain_v<_R>);
-  static constexpr bool __needs_future     = __either(__needs_future_v<_L>, __needs_future_v<_R>);
+  static constexpr unsigned __domain       = __domain_v<_L> & __domain_v<_R>;
+  static constexpr bool __needs_future     = __needs_future_v<_L> || __needs_future_v<_R>;
   static constexpr bool __diverges         = __never_passes_through_v<_L> && __diverges_v<_R>;
-  static constexpr bool __produces_value   = __either(__produces_value_v<_L>, __produces_value_v<_R>);
-  static constexpr bool __selects_thrown   = __either(__selects_thrown_v<_L>, __selects_thrown_v<_R>);
-  static constexpr bool __selects_returned = __either(__selects_returned_v<_L>, __selects_returned_v<_R>);
+  static constexpr bool __produces_value   = __produces_value_v<_L> || __produces_value_v<_R>;
+  static constexpr bool __selects_thrown   = __selects_thrown_v<_L> || __selects_thrown_v<_R>;
+  static constexpr bool __selects_returned = __selects_returned_v<_L> || __selects_returned_v<_R>;
 
   // A code-channel selector never returns on the exception channel (it passes through by
   // rethrowing) but may handle a status, so the right side is reachable there.
@@ -2597,11 +2571,11 @@ struct __policy_or
     : basic_sink<__policy_or<_L, _R>>
     , __composite_hooks<_L, _R>
 {
-  static constexpr unsigned __domain       = __either(__domain_v<_L>, __domain_v<_R>);
-  static constexpr bool __needs_future     = __either(__needs_future_v<_L>, __needs_future_v<_R>);
-  static constexpr bool __produces_value   = __either(__produces_value_v<_L>, __produces_value_v<_R>);
-  static constexpr bool __selects_thrown   = __either(__selects_thrown_v<_L>, __selects_thrown_v<_R>);
-  static constexpr bool __selects_returned = __either(__selects_returned_v<_L>, __selects_returned_v<_R>);
+  static constexpr unsigned __domain       = __domain_v<_L> | __domain_v<_R>;
+  static constexpr bool __needs_future     = __needs_future_v<_L> || __needs_future_v<_R>;
+  static constexpr bool __produces_value   = __produces_value_v<_L> || __produces_value_v<_R>;
+  static constexpr bool __selects_thrown   = __selects_thrown_v<_L> || __selects_thrown_v<_R>;
+  static constexpr bool __selects_returned = __selects_returned_v<_L> || __selects_returned_v<_R>;
 
   static_assert(__has_exception_hook<_L> && __has_exception_hook<_R>,
                 "both sides of | must answer the exception path (have an exception hook)");
@@ -3907,12 +3881,6 @@ inline constexpr bool __is_dynamic_v = ::cuda::std::is_same_v<::cuda::std::remov
 inline void __check_dynamic_left_of_or(const dynamic& __p);
 inline void __check_dynamic_left_of_and(const dynamic& __p);
 inline void __check_dynamic_repeated(const dynamic& __p);
-struct __dynamic_view; // the left operand of a named `dynamic`'s `<<` and `->*`; defined after it
-template <>
-struct __sink_storage<dynamic>
-{
-  using type _CCCL_NODEBUG = __dynamic_view;
-};
 #endif // !_CCCL_DOXYGEN_INVOKED
 
 /**
@@ -4193,10 +4161,10 @@ struct always_t : basic_sink<always_t<_A, _B>>
 {
   // Finalizers never handle: the head alone decides what is treated.
   static constexpr unsigned __domain       = __domain_v<_A>;
-  static constexpr bool __needs_future     = __either(__needs_future_v<_A>, __needs_future_v<_B>);
+  static constexpr bool __needs_future     = __needs_future_v<_A> || __needs_future_v<_B>;
   static constexpr bool __produces_value   = __produces_value_v<_A>;
-  static constexpr bool __selects_thrown   = __either(__selects_thrown_v<_A>, __selects_thrown_v<_B>);
-  static constexpr bool __selects_returned = __either(__selects_returned_v<_A>, __selects_returned_v<_B>);
+  static constexpr bool __selects_thrown   = __selects_thrown_v<_A> || __selects_thrown_v<_B>;
+  static constexpr bool __selects_returned = __selects_returned_v<_A> || __selects_returned_v<_B>;
 
   _A __head_;
   _B __fin_;
@@ -4328,7 +4296,7 @@ auto always(_A&& __a, _B&& __b, _Cs&&... __cs)
  * or never returns to the left of `&`.
  *
  * Custom runtime policies derive from the public @ref sink_base and implement
- * `hook` (and `clone`); `on_success` defaults to identity. Erasure records the static
+ * `hook`; `on_success` defaults to identity. Erasure records the static
  * properties the checks use (`produces_value`, `diverges`, `may_passthrough`, the selector
  * flags), so an erased policy is checked exactly as its static form. Hand-written models
  * default to `own_result` with permissive flags, which pass every check. Erased |-composites are
@@ -4358,7 +4326,7 @@ public:
 
   //! @brief The erasure surface. Public: custom runtime policies derive from
   //! it and implement `hook` (forward by throwing; hand back `std::any`,
-  //! empty meaning "no value") and `clone`; `on_success` defaults to identity.
+  //! empty meaning "no value"); `on_success` defaults to identity.
   struct sink_base
   {
     const answer_kind kind;
@@ -4419,8 +4387,7 @@ public:
         , answer_name(__answer_name)
         , has_success_hook(__has_success_hook)
     {}
-    virtual ~sink_base()             = default;
-    virtual sink_base* clone() const = 0;
+    virtual ~sink_base() = default;
     virtual ::std::any hook(const ::std::exception*, ::cuda::std::source_location, ::std::function<::std::any()>&) = 0;
     virtual ::std::any on_success(::std::any __boxed)
     {
@@ -4561,11 +4528,6 @@ private:
         , __p_(::cuda::std::move(__p))
     {}
 
-    sink_base* clone() const override
-    {
-      return new __model(*this); // a fresh policy copy: re-armed state
-    }
-
     ::std::any
     hook(const ::std::exception* __e, ::cuda::std::source_location __loc, ::std::function<::std::any()>& __fn) override
     {
@@ -4631,14 +4593,8 @@ private:
     }
   };
 
-  ::std::unique_ptr<sink_base> __p_;
-
-  // A `dynamic` with no model, for `__dynamic_view` to hold when it views another `dynamic`
-  // rather than owning one. Never reaches a hook.
-  friend struct __dynamic_view;
-  struct __hollow_t
-  {};
-  explicit dynamic(__hollow_t) noexcept {}
+  // Shared: copies of a `dynamic` are cheap and serve one model.
+  ::std::shared_ptr<sink_base> __p_;
 
   [[noreturn]] void __throw_mismatch(::std::string_view __stored, ::std::string_view __wanted) const
   {
@@ -4855,7 +4811,7 @@ public:
   // Constrained above; the check only recognizes std::enable_if, not cuda::std::enable_if_t.
   // NOLINTNEXTLINE(bugprone-forwarding-reference-overload)
   dynamic(_P&& __p)
-      : __p_(new __model<__normalized_t<_P>>(__normalize(::cuda::std::forward<_P>(__p))))
+      : __p_(::std::make_shared<__model<__normalized_t<_P>>>(__normalize(::cuda::std::forward<_P>(__p))))
   {}
 
   //! @brief Adopt a custom model derived from @ref sink_base.
@@ -4863,20 +4819,6 @@ public:
       : __p_(::std::move(__custom))
   {
     _CCCL_ASSERT(__p_, "dynamic requires a non-null model");
-  }
-
-  dynamic(const dynamic& __other)
-      : __p_(__other.__p_->clone())
-  {}
-  dynamic(dynamic&&) noexcept            = default;
-  dynamic& operator=(dynamic&&) noexcept = default;
-  dynamic& operator=(const dynamic& __other)
-  {
-    if (this != &__other)
-    {
-      __p_.reset(__other.__p_->clone());
-    }
-    return *this;
   }
 
   [[nodiscard]] answer_kind kind() const noexcept
@@ -5007,59 +4949,6 @@ public:
 };
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-// The left operand of a `dynamic`'s `<<` and `->*`. A `dynamic` is a heap object: copying it
-// clones the model and allocates. A non-const lvalue is viewed, an rvalue is moved in (a
-// pointer move), and a const lvalue is copied, since its hooks would run on a const object.
-// Sink-tagged, with the same hooks as `dynamic`, so the carrier treats it as one.
-struct __dynamic_view
-{
-  using __exception_sink_tag _CCCL_NODEBUG = void;
-
-  __dynamic_view(dynamic& __d) noexcept
-      : __owned_(dynamic::__hollow_t{})
-      , __ref_(&__d)
-  {}
-  __dynamic_view(dynamic&& __d) noexcept
-      : __owned_(::cuda::std::move(__d))
-      , __ref_(&__owned_)
-  {}
-  __dynamic_view(const dynamic& __d)
-      : __owned_(__d)
-      , __ref_(&__owned_)
-  {}
-  __dynamic_view(__dynamic_view&& __other) noexcept
-      : __owned_(::cuda::std::move(__other.__owned_))
-      , __ref_(__other.__ref_ == &__other.__owned_ ? &__owned_ : __other.__ref_)
-  {}
-  __dynamic_view(const __dynamic_view&)            = delete;
-  __dynamic_view& operator=(const __dynamic_view&) = delete;
-  __dynamic_view& operator=(__dynamic_view&&)      = delete;
-
-  template <class _Fn>
-  _CCCL_FORCEINLINE auto on_thrown(const ::std::exception* __e, const ::cuda::std::source_location __loc, _Fn& __fn)
-    -> decltype(::cuda::std::declval<dynamic&>().on_thrown(__e, __loc, __fn))
-  {
-    return __ref_->on_thrown(__e, __loc, __fn);
-  }
-  _CCCL_FORCEINLINE void on_enter()
-  {
-    __ref_->on_enter();
-  }
-  template <class _R>
-  _CCCL_FORCEINLINE _R on_success(_R&& __r)
-  {
-    return __ref_->on_success(::cuda::std::forward<_R>(__r));
-  }
-  _CCCL_FORCEINLINE void on_success()
-  {
-    __ref_->on_success();
-  }
-
-private:
-  dynamic __owned_;
-  dynamic* __ref_;
-};
-
 inline void __check_dynamic_left_of_or(const dynamic& __p)
 {
   if (__p.diverges())
@@ -5120,19 +5009,17 @@ namespace sump
 template <class _Sink, class _X>
 auto __sink_shift(__sink_at<_Sink>&& __s, _X&& __x) noexcept(
   ::cuda::std::is_nothrow_move_constructible_v<_Sink>
-  && noexcept(::cuda::std::declval<__on_throw_policy<__sink_storage_t<_Sink>>>() << ::cuda::std::declval<_X>()))
+  && noexcept(::cuda::std::declval<__on_throw_policy<_Sink>>() << ::cuda::std::declval<_X>()))
 {
-  return __on_throw_policy<__sink_storage_t<_Sink>>{::cuda::std::move(__s.__sink_), __s.__loc_}
-      << ::cuda::std::forward<_X>(__x);
+  return __on_throw_policy<_Sink>{::cuda::std::move(__s.__sink_), __s.__loc_} << ::cuda::std::forward<_X>(__x);
 }
 
 template <class _Sink, class _X>
 decltype(auto) __sink_yield(__sink_at<_Sink>&& __s, _X&& __x) noexcept(
   ::cuda::std::is_nothrow_move_constructible_v<_Sink>
-  && noexcept(::cuda::std::declval<__on_throw_policy<__sink_storage_t<_Sink>>>()->*::cuda::std::declval<_X>()))
+  && noexcept(::cuda::std::declval<__on_throw_policy<_Sink>>()->*::cuda::std::declval<_X>()))
 {
-  return __on_throw_policy<__sink_storage_t<_Sink>>{::cuda::std::move(__s.__sink_), __s.__loc_}
-           ->*::cuda::std::forward<_X>(__x);
+  return __on_throw_policy<_Sink>{::cuda::std::move(__s.__sink_), __s.__loc_}->*::cuda::std::forward<_X>(__x);
 }
 } // namespace sump
 #endif // _CCCL_DOXYGEN_INVOKED
@@ -7391,10 +7278,6 @@ UNITTEST("type erasure")
       halving_sink()
           : sink_base(dynamic::answer_kind::own_result, false)
       {}
-      sink_base* clone() const override
-      {
-        return new halving_sink();
-      }
       ::std::any hook(const ::std::exception*, ::cuda::std::source_location, ::std::function<::std::any()>&) override
       {
         return ::std::any(21);
@@ -7482,50 +7365,45 @@ UNITTEST("type erasure")
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
 
-UNITTEST("a named dynamic is viewed by ->* and <<, not cloned")
+UNITTEST("copies of a dynamic share one model")
 {
   using namespace cuda::experimental::stf;
   using namespace cuda::experimental::stf::sump;
 #  if _CCCL_HAS_EXCEPTIONS()
-  static int clones = 0;
+  static int models = 0;
   struct counting_sink final : dynamic::sink_base
   {
+    int calls = 0;
     counting_sink()
         : sink_base(dynamic::answer_kind::own_result, false)
-    {}
-    sink_base* clone() const override
     {
-      ++clones;
-      return new counting_sink();
+      ++models;
     }
     ::std::any hook(const ::std::exception*, ::cuda::std::source_location, ::std::function<::std::any()>&) override
     {
-      return ::std::any(7);
+      return ::std::any(++calls);
     }
   };
   const auto boom = []() -> int {
     throw ::std::runtime_error("x");
   };
 
-  // A non-const lvalue is viewed: no clone per guarded call.
-  dynamic d{::std::unique_ptr<dynamic::sink_base>(new counting_sink())};
-  clones = 0;
-  EXPECT((d->*boom) == 7);
-  EXPECT((d->*boom) == 7);
-  d << [] {}; // the same capture serves `<<`
-  EXPECT(clones == 0);
-  // An rvalue is moved in: no clone either.
-  EXPECT((dynamic{::std::unique_ptr<dynamic::sink_base>(new counting_sink())}->*boom) == 7);
-  EXPECT(clones == 0);
-  // A const lvalue is copied, as before: its hooks must not run on a const object.
+  // Every expression that names the sink reaches the same model, whose state carries over.
+  models = 0;
+  const dynamic d{::std::unique_ptr<dynamic::sink_base>(new counting_sink())};
+  EXPECT((d->*boom) == 1);
+  EXPECT((d->*boom) == 2);
+  d << [] {};
   const dynamic& cd = d;
-  EXPECT((cd->*boom) == 7);
-  EXPECT(clones == 1);
-  // Copying a dynamic still clones.
-  const dynamic copy = d;
-  EXPECT(clones == 2);
-  EXPECT((copy->*boom) == 7);
-  EXPECT(clones == 3);
+  EXPECT((cd->*boom) == 3);
+  // A copy shares the model rather than building another.
+  const dynamic copy = d; // NOLINT(performance-unnecessary-copy-initialization): the copy is under test
+  EXPECT((copy->*boom) == 4);
+  EXPECT((d->*boom) == 5);
+  EXPECT(models == 1);
+  // A temporary has its own model.
+  EXPECT((dynamic{::std::unique_ptr<dynamic::sink_base>(new counting_sink())}->*boom) == 1);
+  EXPECT(models == 2);
 #  endif
 };
 
@@ -7572,14 +7450,14 @@ UNITTEST("a dynamic over a policy without a success hook passes the value unboxe
   };
 
   // No success hook (noop, notify, subst, ...): the value is not boxed, so it is not copied.
-  dynamic unhooked = noop;
-  copies           = 0;
+  const dynamic unhooked = noop;
+  copies                 = 0;
   EXPECT((unhooked->*make).v == 3);
   EXPECT(copies == 0);
 
   // A policy with a success hook still sees the value, through the box.
   static_assert(__has_on_success_with<__ut_counting_success, ::std::any>);
-  dynamic hooked              = __ut_counting_success{};
+  const dynamic hooked        = __ut_counting_success{};
   __ut_counting_success::seen = 0;
   EXPECT((hooked->*make).v == 3);
   EXPECT(__ut_counting_success::seen == 1);
@@ -8208,6 +8086,18 @@ UNITTEST("error sinks: retry on a status-returning action")
   };
   EXPECT(c2.status<cudaError_t>() == cudaErrorNotReady); // exhausted: forwarded
   EXPECT(n == 3); // one attempt plus two retries
+};
+
+UNITTEST("error sinks: retry(forever) on a status-returning action")
+{
+  using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::sump;
+  int n        = 0;
+  const auto c = if_equal(cudaErrorNotReady)(retry(forever)) << [&]() noexcept {
+    return ++n < 10 ? cudaErrorNotReady : cudaSuccess;
+  };
+  EXPECT(!c.forwarded());
+  EXPECT(n == 10);
 };
 
 UNITTEST("error sinks: backoff on a status-returning action")
