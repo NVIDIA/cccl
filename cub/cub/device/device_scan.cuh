@@ -186,7 +186,7 @@ inline constexpr bool is_num_items_v = ::cuda::std::is_integral_v<NumItemsT> || 
 //!      :start-after: example-begin exclusive-sum-tuning
 //!      :end-before: example-end exclusive-sum-tuning
 //!
-//! All ByKey algorithms in DeviceScan that accept an environment can be tuned by passing a custom :ref:`policy
+//! All ByKey algorithms in DeviceScan can be tuned by passing a custom :ref:`policy
 //! selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::ScanByKeyPolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_scan_by_key_env_api.cu
@@ -2784,8 +2784,7 @@ public:
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
-  //!   Supports customization of the stream via `cuda::get_stream` and of the tuning via `cuda::execution::tune`.
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
@@ -2810,7 +2809,7 @@ public:
   //!   Default is cuda::std::equal_to<>{}.
   //!
   //! @param[in] env
-  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
@@ -2830,7 +2829,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSumByKey");
     using init_value_t = cub::detail::it_value_t<ValuesInputIteratorT>;
     const init_value_t init_value{};
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -2957,8 +2956,7 @@ public:
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
-  //!   Supports customization of the stream via `cuda::get_stream` and of the tuning via `cuda::execution::tune`.
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //!  @param[in] d_temp_storage
   //!    @devicestorage
@@ -2991,7 +2989,7 @@ public:
   //!    Default is cuda::std::equal_to<>{}.
   //!
   //!  @param[in] env
-  //!    **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!    **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
@@ -3013,7 +3011,7 @@ public:
     const EnvT& env         = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScanByKey");
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -3096,8 +3094,7 @@ public:
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
-  //!   Supports customization of the stream via `cuda::get_stream` and of the tuning via `cuda::execution::tune`.
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //!  @param[in] d_temp_storage
   //!    @devicestorage
@@ -3122,7 +3119,7 @@ public:
   //!    Default is cuda::std::equal_to<>{}.
   //!
   //!  @param[in] env
-  //!    **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!    **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
@@ -3140,7 +3137,7 @@ public:
     const EnvT& env         = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSumByKey");
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -3259,8 +3256,7 @@ public:
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
-  //!   Supports customization of the stream via `cuda::get_stream` and of the tuning via `cuda::execution::tune`.
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //!  @param[in] d_temp_storage
   //!    @devicestorage
@@ -3288,7 +3284,7 @@ public:
   //!    Default is cuda::std::equal_to<>{}.
   //!
   //!  @param[in] env
-  //!    **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!    **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
@@ -3308,7 +3304,7 @@ public:
     const EnvT& env         = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanByKey");
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
       env,
