@@ -203,6 +203,87 @@ void append_selected_cccl_paths(
   return {};
 }
 
+void append_cuda_root_include_paths(
+  const fs::path& root, std::vector<std::string>* out, std::unordered_set<std::string>* seen)
+{
+  for (const fs::path& relative :
+       {fs::path("bin/nvrtc/include"), fs::path("nvrtc/include"), fs::path("include"), fs::path("bin/include")})
+  {
+    const fs::path candidate = root / relative;
+    if (is_file_path(candidate / "nvrtc.h") || is_file_path(candidate / "cuda_runtime.h"))
+    {
+      push_unique_existing_path(candidate, out, seen);
+    }
+  }
+}
+
+[[nodiscard]] bool toolkit_contains_nvrtc(const fs::path& root, const fs::path& loaded)
+{
+  for (const fs::path& relative :
+       {fs::path("bin/nvrtc/lib64"),
+        fs::path("nvrtc/lib64"),
+        fs::path("lib64"),
+        fs::path("lib"),
+        fs::path("bin/x64"),
+        fs::path("bin/x86_64"),
+        fs::path("bin/arm64"),
+        fs::path("bin")})
+  {
+    const fs::path directory = root / relative;
+    std::vector<fs::path> candidates{directory / loaded.filename()};
+#if !defined(_WIN32)
+    candidates.push_back(directory / "libnvrtc.so");
+    const std::string filename = loaded.filename().string();
+    const std::string prefix   = "libnvrtc.so.";
+    if (filename.compare(0, prefix.size(), prefix) == 0)
+    {
+      candidates.push_back(directory / filename.substr(0, filename.find('.', prefix.size())));
+    }
+#endif
+    for (const fs::path& candidate : candidates)
+    {
+      std::error_code ec;
+      if (fs::equivalent(candidate, loaded, ec) && !ec)
+      {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+[[nodiscard]] bool same_cuda_toolkit_inputs(const fs::path& first, const fs::path& second)
+{
+  std::error_code ec;
+  const fs::path loaded = fs::canonical(nvrtc_module_path(), ec);
+  if (ec || loaded.empty() || !toolkit_contains_nvrtc(first, loaded) || !toolkit_contains_nvrtc(second, loaded))
+  {
+    return false;
+  }
+
+  std::vector<std::string> first_includes;
+  std::vector<std::string> second_includes;
+  std::unordered_set<std::string> first_seen;
+  std::unordered_set<std::string> second_seen;
+  append_cuda_root_include_paths(first, &first_includes, &first_seen);
+  append_cuda_root_include_paths(second, &second_includes, &second_seen);
+  if (first_includes.size() != second_includes.size() || !include_paths_contain_file(first_includes, "cuda_runtime.h"))
+  {
+    return false;
+  }
+  // Compiler-created toolkit mirrors can have distinct root directories while
+  // referring to the same headers and compiler library. Preserve header search
+  // order and compare whole include directories, not just header versions.
+  for (size_t index = 0; index < first_includes.size(); ++index)
+  {
+    if (!fs::equivalent(first_includes[index], second_includes[index], ec) || ec)
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
 [[nodiscard]] std::string configured_cuda_root(fs::path* selected)
 {
   selected->clear();
@@ -220,7 +301,8 @@ void append_selected_cccl_paths(
     {
       return std::string("[LP-TOOLKIT-001] ") + variable + " does not name a CUDA toolkit directory: " + value;
     }
-    if (!selected->empty() && !fs::equivalent(candidate, *selected, ec))
+    if (!selected->empty() && !fs::equivalent(candidate, *selected, ec)
+        && !same_cuda_toolkit_inputs(candidate, *selected))
     {
       return std::string("[LP-TOOLKIT-001] conflicting CUDA toolkit roots: ") + selected_variable + "="
            + selected->string() + ", " + variable + "=" + candidate.string();
@@ -229,20 +311,6 @@ void append_selected_cccl_paths(
     selected_variable = variable;
   }
   return {};
-}
-
-void append_cuda_root_include_paths(
-  const fs::path& root, std::vector<std::string>* out, std::unordered_set<std::string>* seen)
-{
-  for (const fs::path& relative :
-       {fs::path("bin/nvrtc/include"), fs::path("nvrtc/include"), fs::path("include"), fs::path("bin/include")})
-  {
-    const fs::path candidate = root / relative;
-    if (is_file_path(candidate / "nvrtc.h") || is_file_path(candidate / "cuda_runtime.h"))
-    {
-      push_unique_existing_path(candidate, out, seen);
-    }
-  }
 }
 
 void append_cuda_include_path(std::vector<std::string>* out, std::unordered_set<std::string>* seen)
@@ -319,36 +387,10 @@ bool validate_provider_configuration(std::string* out_error)
     *out_error = "[LP-TOOLKIT-001] cannot determine the loaded NVRTC library for CUDA toolkit " + selected.string();
     return false;
   }
-  for (const fs::path& relative :
-       {fs::path("bin/nvrtc/lib64"),
-        fs::path("nvrtc/lib64"),
-        fs::path("lib64"),
-        fs::path("lib"),
-        fs::path("bin/x64"),
-        fs::path("bin/x86_64"),
-        fs::path("bin/arm64"),
-        fs::path("bin")})
+  if (toolkit_contains_nvrtc(selected, loaded))
   {
-    const fs::path directory = selected / relative;
-    std::vector<fs::path> candidates{directory / loaded.filename()};
-#if !defined(_WIN32)
-    candidates.push_back(directory / "libnvrtc.so");
-    const std::string filename = loaded.filename().string();
-    const std::string prefix   = "libnvrtc.so.";
-    if (filename.compare(0, prefix.size(), prefix) == 0)
-    {
-      candidates.push_back(directory / filename.substr(0, filename.find('.', prefix.size())));
-    }
-#endif
-    for (const fs::path& candidate : candidates)
-    {
-      std::error_code ec;
-      if (fs::equivalent(candidate, loaded, ec) && !ec)
-      {
-        emit_trace_line("[coop_linkage_provider][trace] toolkit=" + selected.string() + " nvrtc=" + loaded.string());
-        return true;
-      }
-    }
+    emit_trace_line("[coop_linkage_provider][trace] toolkit=" + selected.string() + " nvrtc=" + loaded.string());
+    return true;
   }
   *out_error =
     "[LP-TOOLKIT-001] loaded NVRTC " + loaded.string() + " does not belong to the selected CUDA toolkit "

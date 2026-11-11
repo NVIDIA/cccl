@@ -58,6 +58,33 @@ toolkit installed elsewhere, add its library directory before compiling:
 
    export LD_LIBRARY_PATH="/path/to/cuda-13.5/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
+.. _tile-windows-toolkit-setup:
+
+On Windows, add the toolkit's native DLL directory to ``PATH`` before starting
+the build. TileIRAS needs this directory to load the provider's NVRTC dependency
+and its builtins. For a CUDA 13.5 x64 toolkit, use the same PowerShell session
+for setup and compilation:
+
+.. code-block:: powershell
+
+   $env:CUDA_ROOT = 'C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.5'
+   $env:CUDA_HOME = $env:CUDA_ROOT
+   $env:CUDA_PATH = $env:CUDA_ROOT
+   $env:CUDA_TOOLKIT_PATH = $env:CUDA_ROOT
+   $cudaDllDir = Join-Path $env:CUDA_ROOT 'bin\x64'
+   $env:PATH = "$cudaDllDir;$env:CUDA_ROOT\bin;$env:PATH"
+   & "$env:CUDA_ROOT\bin\nvcc.exe" --version
+
+For native Windows ARM64, use ``bin\arm64`` instead of ``bin\x64``. Keep any
+``CUDA_COOP_TILE_CUDA_ROOT`` override aligned with this selection. Pass the
+same ``nvcc.exe`` path as ``CMAKE_CUDA_COMPILER`` when configuring the consumer
+build; selecting a compiler in CMake does not configure its DLL search path.
+This setup also applies before building the provider from source.
+
+In the compiler process, the native provider accepts a compiler-created
+toolkit mirror when it refers to the same CUDA include directories and loaded
+NVRTC file. Roots selecting different headers or runtime libraries are rejected.
+
 .. code-block:: cpp
 
    #include <cuda/coop/tile.cuh>

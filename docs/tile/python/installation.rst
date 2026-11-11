@@ -57,11 +57,25 @@ Select the toolkit before starting Python. For a Linux toolkit installation:
 Keep ``CUDA_ROOT`` set because cuTile compiler launch paths may remove
 ``CUDA_HOME`` and ``CUDA_PATH`` from the compiler subprocess environment.
 
+On Windows, apply the :ref:`Windows toolkit setup <tile-windows-toolkit-setup>`
+in the same PowerShell session before starting Python. The compiler child
+inherits ``PATH``; adding a DLL directory only inside the Python process does
+not configure that child's dependency search.
+
 cuTile selects its compiler independently and can prefer an installed
 TileIRAS Python package over ``PATH``. That compiler must be compatible with
 the provider. The provider checks explicit toolkit roots and loaded NVRTC;
 those checks alone do not validate cuTile's compiler selection or final linker.
 Run the :doc:`programming` examples to exercise the complete compilation path.
+
+Keep the toolkit roots aligned before starting Python. In the compiler child,
+the native provider accepts a compiler-created toolkit mirror when it refers
+to the same CUDA include directories and loaded NVRTC file. Roots selecting
+different headers or runtime libraries are rejected.
+
+CUDA 13.5.37 compiler wheels also have an nvJitLink discovery limitation that
+a DLL ``PATH`` update alone does not resolve; use a complete toolkit
+installation for this version.
 
 Check the installation
 ----------------------
