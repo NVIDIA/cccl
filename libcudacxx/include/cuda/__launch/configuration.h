@@ -250,7 +250,7 @@ class _CCCL_DECLSPEC_EMPTY_BASES dynamic_shared_memory_option
     : __dyn_smem_option_base<_Tp>
     , public __detail::launch_option
 {
-  using __base_type = __dyn_smem_option_base<_Tp>;
+  using __base_type _CCCL_NODEBUG = __dyn_smem_option_base<_Tp>;
 
   static_assert(::cuda::std::rank_v<_Tp> <= 1,
                 "multidimensional arrays cannot be used with dynamic shared "
@@ -789,7 +789,7 @@ template <typename... _Args>
 namespace __detail
 {
 template <typename _Dimensions, typename... _Options>
-inline unsigned int constexpr kernel_config_count_attr_space(const kernel_config<_Dimensions, _Options...>&) noexcept
+unsigned int constexpr kernel_config_count_attr_space(const kernel_config<_Dimensions, _Options...>&) noexcept
 {
   return (0 + ... + _Options::needs_attribute_space);
 }

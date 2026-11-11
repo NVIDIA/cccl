@@ -131,13 +131,13 @@ struct deduce_execution_policy;
 template <bool b, size_t s>
 struct deduce_execution_policy<b, s>
 {
-  using type = thread_hierarchy_spec<b, s>;
+  using type _CCCL_NODEBUG = thread_hierarchy_spec<b, s>;
 };
 
 template <bool b, size_t s, typename T, typename... Ts>
 struct deduce_execution_policy<b, s, T, Ts...>
 {
-  using type = typename deduce_execution_policy<b, s, Ts...>::type;
+  using type _CCCL_NODEBUG = typename deduce_execution_policy<b, s, Ts...>::type;
 };
 
 template <bool b, size_t s, auto... P, typename... Ts>
@@ -145,7 +145,7 @@ struct deduce_execution_policy<b, s, thread_hierarchy_spec<P...>, Ts...>
 {
   static_assert(::cuda::std::is_same_v<typename deduce_execution_policy<b, s, Ts...>::type, thread_hierarchy_spec<b, s>>,
                 "Only one argument of type deduce_execution_policy<...> is allowed.");
-  using type = thread_hierarchy_spec<b, s, P...>;
+  using type _CCCL_NODEBUG = thread_hierarchy_spec<b, s, P...>;
 };
 } // namespace reserved
 
@@ -312,7 +312,7 @@ public:
    */
 #ifndef _CCCL_DOXYGEN_INVOKED // doxygen fails to parse this
   template <size_t level>
-  static inline constexpr bool is_synchronizable = [] {
+  static constexpr bool is_synchronizable = [] {
     if constexpr (level > 0)
     {
       return thread_hierarchy_spec<lower_levels...>::template is_synchronizable<level - 1>;
@@ -332,7 +332,7 @@ public:
    * @param level The level
    * @return The width (0 if width is dynamic)
    */
-  static inline constexpr size_t static_width(size_t level)
+  static constexpr size_t static_width(size_t level)
   {
     const size_t data[] = {width, lower_levels...};
     return data[2 * level];

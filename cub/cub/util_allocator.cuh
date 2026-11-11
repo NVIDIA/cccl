@@ -157,10 +157,8 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
       {
         return (a.d_ptr < b.d_ptr);
       }
-      else
-      {
-        return (a.device < b.device);
-      }
+
+      return (a.device < b.device);
     }
 
     // Comparison functor for comparing allocation sizes
@@ -170,10 +168,8 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
       {
         return (a.bytes < b.bytes);
       }
-      else
-      {
-        return (a.device < b.device);
-      }
+
+      return (a.device < b.device);
     }
   };
 
@@ -460,7 +456,8 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
           const cudaError_t event_status = cudaEventQuery(block_itr->ready_event);
           if (event_status != cudaErrorNotReady)
           {
-            CubDebug(event_status);
+            // This should probably be handled probably, but the class is deprecated so oh well.
+            static_cast<void>(CubDebug(event_status));
             is_reusable = true;
           }
         }
@@ -530,7 +527,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
 #endif
 
         error = cudaSuccess; // Reset the error we will return
-        cudaGetLastError(); // Reset CUDART's error
+        static_cast<void>(cudaGetLastError()); // Reset CUDART's error
 
         // Lock
         mutex.lock();
@@ -727,7 +724,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
           mutex.unlock();
           if (entrypoint_device != device)
           {
-            CubDebug(cudaSetDevice(entrypoint_device));
+            static_cast<void>(CubDebug(cudaSetDevice(entrypoint_device)));
           }
           return error;
         }
@@ -906,7 +903,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
   {
     if (!skip_cleanup)
     {
-      FreeAllCached();
+      static_cast<void>(FreeAllCached());
     }
   }
 };

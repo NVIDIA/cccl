@@ -14,4 +14,4 @@
 #endif // no system header
 
 // omp system inherits uninitialized_fill
-#include <thrust/system/cpp/detail/uninitialized_fill.h>
+#include <thrust/system/cpp/detail/uninitialized_fill.h> // IWYU pragma: export

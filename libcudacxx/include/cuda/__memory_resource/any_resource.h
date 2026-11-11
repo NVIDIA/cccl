@@ -29,6 +29,7 @@
 #  include <cuda/__utility/basic_any.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__optional/optional.h>
+#  include <cuda/std/__type_traits/is_void.h>
 #  include <cuda/std/__type_traits/type_list_operations.h>
 #  include <cuda/std/__utility/delegate_constructors.h>
 #  include <cuda/std/__utility/forward.h>
@@ -53,13 +54,13 @@ struct __with_property
   template <class _Ty, class _ReturnType = __property_result_t<_Property>>
   _CCCL_PUBLIC_HOST_API static _ReturnType __get_property(const _Ty& __obj)
   {
-    if constexpr (!::cuda::std::is_same_v<__property_result_t<_Property>, void>)
+    if constexpr (!::cuda::std::is_void_v<__property_result_t<_Property>>)
     {
       return get_property(__obj, _Property());
     }
     else
     {
-      return void();
+      return;
     }
   }
 
@@ -69,13 +70,15 @@ struct __with_property
     _CCCL_HOST_API friend auto get_property([[maybe_unused]] const __iproperty& __obj, _Property)
       -> __property_result_t<_Property>
     {
-      if constexpr (!::cuda::std::is_same_v<__property_result_t<_Property>, void>)
+      if constexpr (!::cuda::std::is_void_v<__property_result_t<_Property>>)
       {
         return ::cuda::__virtcall<&__get_property<__iproperty>>(&__obj);
       }
       else
       {
-        return void();
+        // For whatever reason MSVC does not like a bare "return" here, even though
+        // __property_result_t is exactly void.
+        return void(); // NOLINT(readability-avoid-return-with-void-value)
       }
     }
 
@@ -86,10 +89,10 @@ struct __with_property
 };
 
 template <class _Property>
-using __iproperty = typename __with_property<_Property>::template __iproperty<>;
+using __iproperty _CCCL_NODEBUG = typename __with_property<_Property>::template __iproperty<>;
 
 template <class... _Properties>
-using __iproperty_set =
+using __iproperty_set _CCCL_NODEBUG =
   ::cuda::__iset<__iproperty<_Properties>..., __iproperty<::cuda::mr::dynamic_accessibility_property>>;
 
 // Wrap the calls of the allocate and deallocate member functions
@@ -198,8 +201,8 @@ template <class... _Properties>
 using __iasync_resource _CCCL_NODEBUG = __iset<__iresource<_Properties...>, __ibasic_async_resource<>>;
 
 template <class _Property>
-using __try_property_result_t =
-  ::cuda::std::conditional_t<!::cuda::std::is_same_v<__property_result_t<_Property>, void>, //
+using __try_property_result_t _CCCL_NODEBUG =
+  ::cuda::std::conditional_t<!::cuda::std::is_void_v<__property_result_t<_Property>>, //
                              ::cuda::std::optional<__property_result_t<_Property>>, //
                              bool>;
 
@@ -211,7 +214,7 @@ struct __with_try_get_property
     -> __try_property_result_t<_Property>
   {
     auto __prop = ::cuda::__dynamic_any_cast<const __iproperty<_Property>*>(&__self);
-    if constexpr (::cuda::std::is_same_v<__property_result_t<_Property>, void>)
+    if constexpr (::cuda::std::is_void_v<__property_result_t<_Property>>)
     {
       return __prop != nullptr;
     }
@@ -1110,7 +1113,7 @@ template <class _Tp, class... _Properties>
 //!   destination resource type template argument).
 //! @param __src The source resource to cast from.
 //! @return A new type-erased resource wrapper with the destination properties.
-//! @throws __bad_any_cast if the runtime type does not support the destination
+//! @throws std::bad_any_cast if the runtime type does not support the destination
 //!   interface.
 template <class... _DstProperties, class... _SrcProperties>
 [[nodiscard]] _CCCL_HOST_API auto dynamic_resource_cast(any_resource<_SrcProperties...>&& __src)

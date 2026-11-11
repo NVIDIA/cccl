@@ -25,11 +25,7 @@ template <typename Comparator, unsigned int FilterArch>
 bool arch_filter(const cudaDeviceProp& props)
 {
   const int act_arch = props.major * 10 + props.minor;
-  if (Comparator()(act_arch, FilterArch))
-  {
-    return true;
-  }
-  return false;
+  return static_cast<bool>(Comparator()(act_arch, FilterArch));
 }
 
 inline bool skip_host_exec(bool (* /* filter */)(const cudaDeviceProp&))

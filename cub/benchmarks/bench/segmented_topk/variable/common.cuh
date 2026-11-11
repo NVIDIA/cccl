@@ -26,7 +26,7 @@ using segment_size_t = cuda::std::int32_t;
 
 enum class pattern_kind : int
 {
-  random = 0,
+  random,
   quantized_random,
   relu_quantized,
   tie_heavy,
@@ -162,7 +162,8 @@ using max_segment_size_list = nvbench::enum_type_list< //
   2048,
   4096,
   8192
-#if 0 // need these, waiting for implementation to catch up
+// need these, waiting for implementation to catch up
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
   ,
   16384,
   32768,

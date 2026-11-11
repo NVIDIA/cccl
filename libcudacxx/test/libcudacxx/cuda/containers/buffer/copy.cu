@@ -155,82 +155,104 @@ C2H_CCCLRT_TEST("make_buffer variants", "[container][buffer]")
 {
   const cuda::stream stream{cuda::device_ref{0}};
   const cuda::buffer<int, cuda::mr::device_accessible, other_property> input{
-    stream,
-    cuda::device_default_memory_pool(cuda::device_ref{0}),
-    {int(1), int(42), int(1337), int(0), int(12), int(-1)}};
+    stream, cuda::device_default_memory_pool(cuda::device_ref{0}), {1, 42, 1337, 0, 12, -1}};
 
   // straight from a resource
   auto buf = cuda::make_buffer(input.stream(), cuda::device_default_memory_pool(cuda::device_ref{0}), input);
   CHECK(equal_range(buf));
+  // nvcc requires typename for these nested types of deduced buffer variables.
+  // NOLINTBEGIN(readability-redundant-typename)
   static_assert(
     ::cuda::mr::synchronous_resource_with<typename decltype(buf)::__resource_t, cuda::mr::device_accessible>);
   static_assert(
     !::cuda::mr::synchronous_resource_with<typename decltype(buf)::__resource_t, cuda::mr::host_accessible>);
   static_assert(!::cuda::mr::synchronous_resource_with<typename decltype(buf)::__resource_t, other_property>);
+  // NOLINTEND(readability-redundant-typename)
 
   auto buf2 = cuda::make_buffer<int, cuda::mr::device_accessible>(
     input.stream(), cuda::device_default_memory_pool(cuda::device_ref{0}), input);
   CHECK(equal_range(buf2));
+  // nvcc requires typename for these nested types of deduced buffer variables.
+  // NOLINTBEGIN(readability-redundant-typename)
   static_assert(
     ::cuda::mr::synchronous_resource_with<typename decltype(buf2)::__resource_t, cuda::mr::device_accessible>);
   static_assert(!::cuda::mr::synchronous_resource_with<typename decltype(buf2)::__resource_t, other_property>);
   static_assert(
     !::cuda::mr::synchronous_resource_with<typename decltype(buf2)::__resource_t, cuda::mr::host_accessible>);
+  // NOLINTEND(readability-redundant-typename)
 
   // from any resource
   auto any_res = cuda::mr::any_resource<cuda::mr::device_accessible, other_property>(
     cuda::device_default_memory_pool(cuda::device_ref{0}));
   auto buf3 = cuda::make_buffer(input.stream(), any_res, input);
   CHECK(equal_range(buf3));
+  // nvcc requires typename for these nested types of deduced buffer variables.
+  // NOLINTBEGIN(readability-redundant-typename)
   static_assert(
     ::cuda::mr::synchronous_resource_with<typename decltype(buf3)::__resource_t, cuda::mr::device_accessible>);
   static_assert(::cuda::mr::synchronous_resource_with<typename decltype(buf3)::__resource_t, other_property>);
   static_assert(
     !::cuda::mr::synchronous_resource_with<typename decltype(buf3)::__resource_t, cuda::mr::host_accessible>);
+  // NOLINTEND(readability-redundant-typename)
 
   auto buf4 = cuda::make_buffer<int, cuda::mr::device_accessible>(input.stream(), any_res, input);
   CHECK(equal_range(buf4));
+  // nvcc requires typename for these nested types of deduced buffer variables.
+  // NOLINTBEGIN(readability-redundant-typename)
   static_assert(
     ::cuda::mr::synchronous_resource_with<typename decltype(buf4)::__resource_t, cuda::mr::device_accessible>);
   static_assert(!::cuda::mr::synchronous_resource_with<typename decltype(buf4)::__resource_t, other_property>);
   static_assert(
     !::cuda::mr::synchronous_resource_with<typename decltype(buf4)::__resource_t, cuda::mr::host_accessible>);
+  // NOLINTEND(readability-redundant-typename)
 
   // from a resource reference
   auto res_ref = cuda::mr::resource_ref<cuda::mr::device_accessible, other_property>{any_res};
   auto buf5    = cuda::make_buffer(input.stream(), res_ref, input);
   CHECK(equal_range(buf5));
+  // nvcc requires typename for these nested types of deduced buffer variables.
+  // NOLINTBEGIN(readability-redundant-typename)
   static_assert(
     ::cuda::mr::synchronous_resource_with<typename decltype(buf5)::__resource_t, cuda::mr::device_accessible>);
   static_assert(::cuda::mr::synchronous_resource_with<typename decltype(buf5)::__resource_t, other_property>);
   static_assert(
     !::cuda::mr::synchronous_resource_with<typename decltype(buf5)::__resource_t, cuda::mr::host_accessible>);
+  // NOLINTEND(readability-redundant-typename)
 
   auto buf6 = cuda::make_buffer<int, cuda::mr::device_accessible>(input.stream(), res_ref, input);
   CHECK(equal_range(buf6));
+  // nvcc requires typename for these nested types of deduced buffer variables.
+  // NOLINTBEGIN(readability-redundant-typename)
   static_assert(
     ::cuda::mr::synchronous_resource_with<typename decltype(buf6)::__resource_t, cuda::mr::device_accessible>);
   static_assert(!::cuda::mr::synchronous_resource_with<typename decltype(buf6)::__resource_t, other_property>);
   static_assert(
     !::cuda::mr::synchronous_resource_with<typename decltype(buf6)::__resource_t, cuda::mr::host_accessible>);
+  // NOLINTEND(readability-redundant-typename)
 
   auto shared_res =
     cuda::mr::make_shared_resource<cuda::device_memory_pool_ref>(cuda::device_default_memory_pool(cuda::device_ref{0}));
   auto buf7 = cuda::make_buffer(input.stream(), shared_res, input);
   CHECK(equal_range(buf7));
+  // nvcc requires typename for these nested types of deduced buffer variables.
+  // NOLINTBEGIN(readability-redundant-typename)
   static_assert(
     ::cuda::mr::synchronous_resource_with<typename decltype(buf7)::__resource_t, cuda::mr::device_accessible>);
   static_assert(!::cuda::mr::synchronous_resource_with<typename decltype(buf7)::__resource_t, other_property>);
   static_assert(
     !::cuda::mr::synchronous_resource_with<typename decltype(buf7)::__resource_t, cuda::mr::host_accessible>);
+  // NOLINTEND(readability-redundant-typename)
 
   auto buf8 = cuda::make_buffer<int, cuda::mr::device_accessible>(input.stream(), shared_res, input);
   CHECK(equal_range(buf8));
+  // nvcc requires typename for these nested types of deduced buffer variables.
+  // NOLINTBEGIN(readability-redundant-typename)
   static_assert(
     ::cuda::mr::synchronous_resource_with<typename decltype(buf8)::__resource_t, cuda::mr::device_accessible>);
   static_assert(!::cuda::mr::synchronous_resource_with<typename decltype(buf8)::__resource_t, other_property>);
   static_assert(
     !::cuda::mr::synchronous_resource_with<typename decltype(buf8)::__resource_t, cuda::mr::host_accessible>);
+  // NOLINTEND(readability-redundant-typename)
 }
 
 C2H_CCCLRT_TEST("cuda::buffer make_buffer uses the explicit device", "[container][buffer][multi_gpu]")
@@ -316,8 +338,7 @@ C2H_CCCLRT_TEST("make_buffer with legacy resource", "[container][buffer]")
 {
   const cuda::stream stream{cuda::device_ref{0}};
   auto resource = cuda::mr::legacy_pinned_memory_resource{};
-  const cuda::buffer<int, cuda::mr::host_accessible> input{
-    stream, resource, {int(1), int(42), int(1337), int(0), int(12), int(-1)}};
+  const cuda::buffer<int, cuda::mr::host_accessible> input{stream, resource, {1, 42, 1337, 0, 12, -1}};
   auto buf = cuda::make_buffer(input.stream(), resource, input);
   CHECK(equal_range(buf));
 }

@@ -44,6 +44,7 @@
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -91,7 +92,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It begin, int items)
     _CCCL_PRAGMA_NOUNROLL()
     for (int offset = threadIdx.x * PrefetchStride; offset < items_bytes; offset += BlockDim * PrefetchStride)
     {
-      prefetch(reinterpret_cast<const char*>(::cuda::std::to_address(begin)) + offset);
+      _CUB::detail::transform::prefetch(reinterpret_cast<const char*>(::cuda::std::to_address(begin)) + offset);
     }
   }
 }
@@ -152,10 +153,10 @@ _CCCL_DEVICE void transform_kernel_prefetch(
   }
 
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-  (..., prefetch_tile<ThreadsPerBlock, PrefetchByteStride>(ins, valid_items));
+  (..., _CUB::detail::transform::prefetch_tile<ThreadsPerBlock, PrefetchByteStride>(ins, valid_items));
 
   auto process_tile = [&](auto full_tile, auto... ins2 /* nvcc fails to compile when just using the captured ins */) {
-    unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
+    _CUB::detail::transform::unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
       const int idx = j * ThreadsPerBlock + threadIdx.x;
       if (full_tile || idx < valid_items)
       {
@@ -256,7 +257,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   // if we cannot vectorize or don't have a full tile, fall back to prefetch kernel
   if (!can_vectorize || valid_items != tile_size)
   {
-    transform_kernel_prefetch<ThreadsPerBlock, PrefetchByteStride, PrefetchUnrollFactor>(
+    _CUB::detail::transform::transform_kernel_prefetch<ThreadsPerBlock, PrefetchByteStride, PrefetchUnrollFactor>(
       num_items,
       num_elem_per_thread_prefetch,
       ::cuda::always_true{},
@@ -295,7 +296,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
       {
         // TODO(bgruber): we could add a max_load_store_size to the policy to avoid huge load types and huge alignment
         // requirements
-        using load_t   = decltype(load_store_type<sizeof(value_t) * VecSize>());
+        using load_t   = decltype(_CUB::detail::transform::load_store_type<sizeof(value_t) * VecSize>());
         auto in_vec    = reinterpret_cast<const load_t*>(in) + threadIdx.x;
         auto input_vec = reinterpret_cast<load_t*>(input.data());
         _CCCL_PRAGMA_UNROLL_FULL()
@@ -340,7 +341,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   if constexpr (can_vectorize_store)
   {
     // vector path
-    using store_t   = decltype(load_store_type<sizeof(output_t) * VecSize>());
+    using store_t   = decltype(_CUB::detail::transform::load_store_type<sizeof(output_t) * VecSize>());
     auto output_vec = reinterpret_cast<const store_t*>(output.data());
     auto out_vec    = reinterpret_cast<store_t*>(out) + threadIdx.x;
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -483,12 +484,14 @@ _CCCL_DEVICE void memcpy_async_maybe_unaligned(void* dst, const void* src, unsig
     _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(dst_ptr + head_bytes), "");
     _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(src_ptr + head_bytes), "");
     _CCCL_ASSERT(aligned_bytes_to_copy % ldgsts_size_and_align == 0, "");
-    memcpy_async_aligned<ThreadsPerBlock>(dst_ptr + head_bytes, src_ptr + head_bytes, aligned_bytes_to_copy);
+    _CUB::detail::transform::memcpy_async_aligned<ThreadsPerBlock>(
+      dst_ptr + head_bytes, src_ptr + head_bytes, aligned_bytes_to_copy);
   }
 
   // TODO(bgruber): ahendriksen suggested to copy elements instead of bytes, but it generates about 20 instructions more
   // ahendriksen: we perform both loads first and then both writes. this reduces the total latency
-  char head_byte, tail_byte;
+  char head_byte;
+  char tail_byte;
   if (threadIdx.x < head_bytes)
   {
     head_byte = src_ptr[threadIdx.x];
@@ -538,7 +541,7 @@ copy_and_return_smem_dst(AlignedPtr aligned_ptr, int& smem_offset, Offset offset
   }
 
   smem_offset += bytes_to_copy; // leaves aligned address for follow-up copy
-  memcpy_async_aligned<ThreadsPerBlock>(dst, src, bytes_to_copy);
+  _CUB::detail::transform::memcpy_async_aligned<ThreadsPerBlock>(dst, src, bytes_to_copy);
   const char* const dst_start_of_data = dst + (alignof(T) < ldgsts_size_and_align ? aligned_ptr.head_padding : 0);
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(dst_start_of_data), "");
   return reinterpret_cast<const T*>(dst_start_of_data);
@@ -567,7 +570,7 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(src), "");
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(dst), "");
   const int bytes_to_copy = int{sizeof(T)} * valid_items;
-  memcpy_async_maybe_unaligned<ThreadsPerBlock>(dst, src, bytes_to_copy, head_padding);
+  _CUB::detail::transform::memcpy_async_maybe_unaligned<ThreadsPerBlock>(dst, src, bytes_to_copy, head_padding);
 
   // add ldgsts_size_and_align to account for this tile's head padding
   smem_offset += ldgsts_size_and_align + int{sizeof(T)} * tile_size;
@@ -595,6 +598,11 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   // SMEM is 16-byte aligned by default
   extern __shared__ char smem[];
   static_assert(ldgsts_size_and_align <= 16);
+  // the code assumes tile_size (in elements) is a multiple of ldgsts_size_and_align, so tile offsets stay aligned for
+  // any input type
+  static_assert(ThreadsPerBlock % ldgsts_size_and_align == 0,
+                "TransformPolicy: async_copy.threads_per_block must be a multiple of 16 when algorithm is "
+                "TransformAlgorithm::ldgsts");
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<ldgsts_size_and_align>(smem), "");
 
   // constexpr int ThreadsPerBlock = Policy.async_copy.ThreadsPerBlock;
@@ -608,8 +616,9 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   // TODO(bgruber): if we used SMEM offsets instead of pointers, we need less registers (but no perf increase)
   [[maybe_unused]] const auto smem_ptrs = ::cuda::std::tuple<const InTs*...>{
-    (inner_blocks ? copy_and_return_smem_dst<ThreadsPerBlock>(aligned_ptrs, smem_offset, offset, smem, valid_items)
-                  : copy_and_return_smem_dst_fallback<ThreadsPerBlock>(
+    (inner_blocks ? _CUB::detail::transform::copy_and_return_smem_dst<ThreadsPerBlock>(
+                      aligned_ptrs, smem_offset, offset, smem, valid_items)
+                  : _CUB::detail::transform::copy_and_return_smem_dst_fallback<ThreadsPerBlock>(
                       aligned_ptrs, smem_offset, offset, smem, valid_items, tile_size))...};
 
   asm volatile("cp.async.wait_group %0;" : : "n"(0)); // same as: __pipeline_wait_prior(0);
@@ -621,7 +630,7 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   // TODO(bgruber): fbusato suggests to move the valid_items and smem_base_ptrs by threadIdx.x before the loop below
 
   auto process_tile = [&](auto full_tile) {
-    unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
+    _CUB::detail::transform::unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
       const int idx = j * ThreadsPerBlock + threadIdx.x;
       if (full_tile || idx < valid_items)
       {
@@ -697,7 +706,8 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
   }
 
   // ahendriksen: we perform both loads first and then both writes. this reduces the total latency
-  char head_byte, tail_byte;
+  char head_byte;
+  char tail_byte;
   if (threadIdx.x < head_bytes)
   {
     head_byte = src_ptr[threadIdx.x];
@@ -739,7 +749,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   _CCCL_IKET_RANGE_PUSH(Load);
 
   // constexpr int ThreadsPerBlock       = Policy.async_copy.ThreadsPerBlock;
-  constexpr int bulk_copy_alignment = transform::bulk_copy_alignment(current_tuning_cc());
+  constexpr int bulk_copy_alignment = _CUB::detail::transform::bulk_copy_alignment(_CUB::detail::current_tuning_cc());
 
   // add padding after a tile in shared memory to make space for the next tile's head padding, and retain alignment
   constexpr int max_alignment = ::cuda::std::max({int{alignof(InTs)}...});
@@ -968,7 +978,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(src), "");
         _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(dst), "");
         const int bytes_to_copy = int{sizeof(T)} * valid_items;
-        bulk_copy_maybe_unaligned<bulk_copy_alignment>(
+        _CUB::detail::transform::bulk_copy_maybe_unaligned<bulk_copy_alignment>(
           dst, src, bytes_to_copy, aligned_ptr.head_padding, bar, total_copied, elected);
 
         // add padding to account for this tile's head padding
@@ -1007,7 +1017,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     StoreVecSize == 0
       || (::cuda::is_power_of_two(StoreVecSize) && (StoreVecSize == 1 || StoreVecSize * out_size <= 16)),
     "store_vec_size must be 0 (auto) or a power of two, and (unless 1 = scalar) store_vec_size * sizeof(output) <= 16");
-  constexpr int store_vec_size = StoreVecSize == 0 ? auto_ublkcp_store_vec_size(out_size) : StoreVecSize;
+  constexpr int store_vec_size =
+    StoreVecSize == 0 ? _CUB::detail::transform::auto_ublkcp_store_vec_size(out_size) : StoreVecSize;
   // compile time eligibility for the vectorized store (STG.128):
   // 1. there are no predicates
   // 2. memory layout is contiguous
@@ -1043,7 +1054,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     {
       // store_vec_size: element count for vectorized store. default = 16 / sizeof(output). must be pow2
       // Shrinking store_vec_size narrows the store but also reduces register pressure
-      using store_t      = decltype(load_store_type<store_vec_size * out_size>());
+      using store_t      = decltype(_CUB::detail::transform::load_store_type<store_vec_size * out_size>());
       auto* out_vec      = reinterpret_cast<store_t*>(out);
       const int num_vecs = valid_items / store_vec_size;
       for (auto v = static_cast<int>(threadIdx.x); v < num_vecs; v += ThreadsPerBlock)
@@ -1092,7 +1103,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
           // this ensures load_store_type<in_vec_bytes> never fail
           else
           {
-            using sub_t                              = decltype(load_store_type<in_vec_bytes>());
+            using sub_t = decltype(_CUB::detail::transform::load_store_type<in_vec_bytes>());
             *reinterpret_cast<sub_t*>(in_vec.data()) = reinterpret_cast<const sub_t*>(base)[v];
           }
           return in_vec;
@@ -1139,7 +1150,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   // fallback when we can't vectorize
 
   auto process_tile = [&](auto full_tile) {
-    unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
+    _CUB::detail::transform::unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
       // TODO(bgruber): fbusato suggests to hoist threadIdx.x out of the loop below
       const int idx = j * ThreadsPerBlock + threadIdx.x;
       if (full_tile || idx < valid_items)
@@ -1214,7 +1225,7 @@ template <typename It>
 _CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr, int alignment) -> kernel_arg<It>
 {
   kernel_arg<It> arg;
-  arg.aligned_ptr = make_aligned_base_ptr(ptr, alignment);
+  arg.aligned_ptr = _CUB::detail::transform::make_aligned_base_ptr(ptr, alignment);
   return arg;
 }
 
@@ -1222,7 +1233,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int get_threads_per_block_helper() noexcept
 {
-  constexpr TransformPolicy policy = current_policy<PolicySelector>();
+  constexpr TransformPolicy policy = _CUB::detail::current_policy<PolicySelector>();
   if constexpr (policy.algorithm == TransformAlgorithm::prefetch)
   {
     return policy.prefetch.threads_per_block;
@@ -1240,7 +1251,7 @@ template <typename PolicySelector>
 // need a variable template to force constant evaluation of get_threads_per_block_helper(), otherwise nvcc will give us
 // a "bad attribute argument substitution" error
 template <typename PolicySelector>
-inline constexpr int get_threads_per_block = get_threads_per_block_helper<PolicySelector>();
+inline constexpr int get_threads_per_block = _CUB::detail::transform::get_threads_per_block_helper<PolicySelector>();
 
 // There is only one kernel for all algorithms, that dispatches based on the selected policy. It must be instantiated
 // with the same arguments for each algorithm. Only the device compiler will then select the implementation. This
@@ -1265,13 +1276,13 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
 {
   _CCCL_ASSERT(blockDim.y == 1 && blockDim.z == 1, "transform_kernel only supports 1D blocks");
 
-  static constexpr TransformPolicy policy = current_policy<PolicySelector>();
+  static constexpr TransformPolicy policy = _CUB::detail::current_policy<PolicySelector>();
 
   if constexpr (policy.algorithm == TransformAlgorithm::prefetch)
   {
-    transform_kernel_prefetch<policy.prefetch.threads_per_block,
-                              policy.prefetch.prefetch_byte_stride,
-                              policy.prefetch.unroll_factor>(
+    _CUB::detail::transform::transform_kernel_prefetch<policy.prefetch.threads_per_block,
+                                                       policy.prefetch.prefetch_byte_stride,
+                                                       policy.prefetch.unroll_factor>(
       num_items,
       num_elem_per_thread,
       ::cuda::std::move(pred),
@@ -1284,11 +1295,12 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
     static_assert(::cuda::std::is_same_v<Predicate, ::cuda::always_true>,
                   "Cannot vectorize transform with a predicate");
 
-    transform_kernel_vectorized</*policy*/ policy.vectorized.threads_per_block,
-                                policy.vectorized.items_per_thread,
-                                policy.vectorized.vec_size,
-                                policy.prefetch.prefetch_byte_stride,
-                                policy.prefetch.unroll_factor>(
+    _CUB::detail::transform::transform_kernel_vectorized<
+      /*policy*/ policy.vectorized.threads_per_block,
+      policy.vectorized.items_per_thread,
+      policy.vectorized.vec_size,
+      policy.prefetch.prefetch_byte_stride,
+      policy.prefetch.unroll_factor>(
       num_items,
       num_elem_per_thread,
       can_vectorize,
@@ -1298,9 +1310,15 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
   }
   else if constexpr (policy.algorithm == TransformAlgorithm::ldgsts)
   { // NOLINT(bugprone-branch-clone)
+    // we cannot static_assert on nvc++, but custom tunings are unlikely there
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
+    static_assert(::cuda::std::__always_false_v<Offset>,
+                  "TransformPolicy: algorithm must not be TransformAlgorithm::ldgsts when compiling for < sm_80");
+#endif
     NV_IF_TARGET(
       NV_PROVIDES_SM_80,
-      (transform_kernel_ldgsts</*policy*/ policy.async_copy.threads_per_block, policy.async_copy.unroll_factor>(
+      (_CUB::detail::transform::transform_kernel_ldgsts</*policy*/ policy.async_copy.threads_per_block,
+                                                        policy.async_copy.unroll_factor>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),
@@ -1310,11 +1328,16 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
   }
   else if constexpr (policy.algorithm == TransformAlgorithm::ublkcp)
   {
+    // we cannot static_assert on nvc++, but custom tunings are unlikely there
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 900
+    static_assert(::cuda::std::__always_false_v<Offset>,
+                  "TransformPolicy: algorithm must not be TransformAlgorithm::ublkcp when compiling for < sm_90");
+#endif
     NV_IF_TARGET(
       NV_PROVIDES_SM_90,
-      (transform_kernel_ublkcp<policy.async_copy.threads_per_block,
-                               policy.async_copy.unroll_factor,
-                               policy.async_copy.store_vec_size>(
+      (_CUB::detail::transform::transform_kernel_ublkcp<policy.async_copy.threads_per_block,
+                                                        policy.async_copy.unroll_factor,
+                                                        policy.async_copy.store_vec_size>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),

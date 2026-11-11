@@ -59,7 +59,7 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer capacity and resize", "[container][buf
   {
     buffer_t buf{stream, resource};
     REQUIRE(buf.empty());
-    REQUIRE(buf.size() == 0);
+    REQUIRE(buf.size() == 0); // NOLINT(readability-container-size-empty): Test size() directly.
     REQUIRE(buf.capacity() == 0);
     REQUIRE(buf.capacity_bytes() == 0);
     REQUIRE(buf.data() == nullptr);
@@ -190,7 +190,7 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer capacity and resize", "[container][buf
     buffer_t moved{cuda::std::move(input)};
     REQUIRE(moved.size() == 4);
     REQUIRE(moved.capacity() == values.size());
-    REQUIRE(input.size() == 0);
+    REQUIRE(input.size() == 0); // NOLINT(readability-container-size-empty): Test size() after moving.
     REQUIRE(input.capacity() == 0);
     check_prefix(moved, cuda::std::array<int, 4>{1, 42, 1337, 0});
 
@@ -200,7 +200,7 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer capacity and resize", "[container][buf
 
     REQUIRE(assigned.size() == 4);
     REQUIRE(assigned.capacity() == values.size());
-    REQUIRE(moved.size() == 0);
+    REQUIRE(moved.size() == 0); // NOLINT(readability-container-size-empty): Test size() after moving.
     REQUIRE(moved.capacity() == 0);
     check_prefix(assigned, cuda::std::array<int, 4>{1, 42, 1337, 0});
 

@@ -160,10 +160,10 @@ class zip_view : public view_interface<zip_view<_Views...>>
   tuple<_Views...> __views_;
 
   template <bool _OtherConst>
-  using __iterator = ::cuda::zip_iterator<iterator_t<__maybe_const<_OtherConst, _Views>>...>;
+  using __iterator _CCCL_NODEBUG = ::cuda::zip_iterator<iterator_t<__maybe_const<_OtherConst, _Views>>...>;
 
   template <bool _OtherConst>
-  using __sentinel = __zip_sentinel<_OtherConst, _Views...>;
+  using __sentinel _CCCL_NODEBUG = __zip_sentinel<_OtherConst, _Views...>;
 
 public:
   _CCCL_HIDE_FROM_ABI zip_view() = default;
@@ -251,7 +251,7 @@ template <bool _Const, class... _Views>
 class __zip_sentinel
 {
   template <class... _Iters>
-  using __iterator = ::cuda::zip_iterator<_Iters...>;
+  using __iterator _CCCL_NODEBUG = ::cuda::zip_iterator<_Iters...>;
 
   template <bool, class...>
   friend class __zip_sentinel;
@@ -358,6 +358,33 @@ _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(zip_view)
 
 template <class... _Views>
 inline constexpr bool enable_borrowed_range<zip_view<_Views...>> = (enable_borrowed_range<_Views> && ...);
+
+template <class... _Views>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL size_t __zip_static_size() noexcept
+{
+  // A zero-sized input makes the zip empty, even if other input sizes are dynamic.
+  if constexpr (((__static_size_v<_Views> == 0) || ...))
+  {
+    return size_t{0};
+  }
+  else if constexpr (((__static_size_v<_Views> != dynamic_extent) && ...))
+  {
+    size_t __size = dynamic_extent;
+    ((__size = (__static_size_v<_Views> < __size) ? __static_size_v<_Views> : __size), ...);
+    return __size;
+  }
+  else
+  {
+    return dynamic_extent;
+  }
+}
+
+template <class... _Views>
+inline constexpr size_t __static_size_v<zip_view<_Views...>> = ::cuda::std::ranges::__zip_static_size<_Views...>();
+
+template <class... _Views>
+inline constexpr size_t __static_size_v<const zip_view<_Views...>> =
+  (range<const zip_view<_Views...>>) ? ::cuda::std::ranges::__zip_static_size<const _Views...>() : dynamic_extent;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 

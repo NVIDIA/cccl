@@ -38,7 +38,7 @@
 //! type alias named \c type.
 
 #if !defined(_CCCL_META_UNROLL_LIMIT)
-#  if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVHPC)
+#  if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC)
 #    define _CCCL_META_UNROLL_LIMIT 10
 #  else
 #    define _CCCL_META_UNROLL_LIMIT 16
@@ -55,15 +55,15 @@ template <class... _Ts>
 struct __type_list;
 
 template <class _Ty>
-using __type = typename _Ty::type;
+using __type _CCCL_NODEBUG = typename _Ty::type;
 
 //! \brief Evaluate a meta-callable with the given arguments
 template <class _Fn, class... _Ts>
-using __type_call = typename _Fn::template __call<_Ts...>;
+using __type_call _CCCL_NODEBUG = typename _Fn::template __call<_Ts...>;
 
 //! \brief Evaluate a unary meta-callable with the given argument
 template <class _Fn, class _Ty>
-using __type_call1 = typename _Fn::template __call<_Ty>;
+using __type_call1 _CCCL_NODEBUG = typename _Fn::template __call<_Ty>;
 
 namespace __detail
 {
@@ -78,7 +78,7 @@ struct __type_call_indirect_fn
 //! \brief Evaluate a meta-callable with the given arguments, with an indirection
 //! to avoid the dreaded "pack expansion argument for non-pack parameter" error.
 template <class _Fn, class... _Ts>
-using __type_call_indirect = //
+using __type_call_indirect _CCCL_NODEBUG = //
   typename __detail::__type_call_indirect_fn<sizeof(
     __type_list<_Fn, _Ts...>*)>::template __call<_Fn::template __call, _Ts...>;
 
@@ -110,13 +110,13 @@ constexpr size_t const __type_list<_Ts...>::__size;
 
 //! \brief Given a type list and a list of types, append the types to the list.
 template <class _List, class... _Ts>
-using __type_push_back = __type_call<_List, __type_quote<__type_list>, _Ts...>;
+using __type_push_back _CCCL_NODEBUG = __type_call<_List, __type_quote<__type_list>, _Ts...>;
 
 // Implementation for indexing into a list of types:
 #  if _CCCL_HAS_PACK_INDEXING()
 
 template <size_t _Ip, class... _Ts>
-using __type_index_c = _Ts...[_Ip];
+using __type_index_c _CCCL_NODEBUG = _Ts...[_Ip];
 
 // Versions of nvcc prior to 12.0 have trouble with pack expansion into
 // __type_pack_element in an alias template, so we use the fall-back
@@ -136,7 +136,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_index_fn
 } // namespace __detail
 
 template <size_t _Ip, class... _Ts>
-using __type_index_c = __type_call<__detail::__type_index_fn<_Ip>, _Ts...>;
+using __type_index_c _CCCL_NODEBUG = __type_call<__detail::__type_index_fn<_Ip>, _Ts...>;
 
 #  else // ^^^ _CCCL_BUILTIN_TYPE_PACK_ELEMENT ^^^ / vvv !_CCCL_BUILTIN_TYPE_PACK_ELEMENT vvv
 
@@ -205,14 +205,15 @@ struct __type_index_select_fn<true> // Fast implementation for smaller indices
 #    if !_CCCL_COMPILER(MSVC)
 
 template <size_t _Ip, class... _Ts>
-using __type_index_c =
+using __type_index_c _CCCL_NODEBUG =
   __type_call<__detail::__type_index_select_fn<(_Ip < _CCCL_META_UNROLL_LIMIT)>, integral_constant<size_t, _Ip>, _Ts...>;
 
 #    else // ^^^ !_CCCL_COMPILER(MSVC) ^^^ / vvv _CCCL_COMPILER(MSVC) vvv
 
 // Simplify the implementation for MSVC, which has trouble with the above
 template <size_t _Ip, class... _Ts>
-using __type_index_c = __detail::__type_index_large_size_fn::__call<integral_constant<size_t, _Ip>, _Ts...>;
+using __type_index_c _CCCL_NODEBUG =
+  __detail::__type_index_large_size_fn::__call<integral_constant<size_t, _Ip>, _Ts...>;
 
 #    endif // !_CCCL_COMPILER(MSVC)
 
@@ -230,11 +231,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_at_fn
 
 //! \brief Given a type list and an index, return the type at that index.
 template <size_t _Ip, class _List>
-using __type_at_c = __type_call1<_List, __detail::__type_at_fn<_Ip>>;
+using __type_at_c _CCCL_NODEBUG = __type_call1<_List, __detail::__type_at_fn<_Ip>>;
 
 //! \brief Given a type list return the type at the front of the list.
 template <class _List>
-using __type_front = __type_at_c<0, _List>;
+using __type_front _CCCL_NODEBUG = __type_at_c<0, _List>;
 
 namespace __detail
 {
@@ -284,7 +285,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_find_if_fn
 //! If no type in the list satisfies the predicate, \c __type_find_if returns an
 //! empty type list.
 template <class _List, class _Fn>
-using __type_find_if = __type_call1<_List, __detail::__type_find_if_fn<_Fn>>;
+using __type_find_if _CCCL_NODEBUG = __type_call1<_List, __detail::__type_find_if_fn<_Fn>>;
 
 #endif // _CCCL_DOXYGEN_INVOKED
 

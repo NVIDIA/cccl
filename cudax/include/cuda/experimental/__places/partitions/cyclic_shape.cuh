@@ -35,7 +35,7 @@ using ::cuda::experimental::stf::each;
 using ::cuda::experimental::stf::pos4;
 
 // Naming the tuple outside the class template avoids an NVCC 12.0 frontend crash.
-using __cyclic_shape_bounds = ::std::tuple<size_t, size_t, size_t>;
+using __cyclic_shape_bounds _CCCL_NODEBUG = ::std::tuple<size_t, size_t, size_t>;
 
 /**
  * @brief An cyclic shape is a shape or rank 'dimensions' where the bounds are
@@ -119,7 +119,6 @@ public:
   // Iterator class for cyclic_shape
   class iterator
   {
-  private:
     cyclic_shape* shape;
     size_t index;
     ::std::array<size_t, dimensions> current; // Array to store the current position in each dimension

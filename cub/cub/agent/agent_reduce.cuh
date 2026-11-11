@@ -278,7 +278,7 @@ struct AgentReduceImpl
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduceImpl(
     TempStorage& temp_storage, InputIteratorT d_in, ReductionOp reduction_op, TransformOp transform_op, int lane_id)
       : temp_storage(temp_storage.Alias())
-      , d_in(try_make_cache_modified_iterator<AgentReducePolicy::LOAD_MODIFIER>(d_in))
+      , d_in(_CUB::detail::try_make_cache_modified_iterator<AgentReducePolicy::LOAD_MODIFIER>(d_in))
       , reduction_op(reduction_op)
       , transform_op(transform_op)
       , lane_id(lane_id)
@@ -297,44 +297,30 @@ struct AgentReduceImpl
   template <int IsFirstTile, bool CanVectorize>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeFullTile(AccumT& thread_aggregate, OffsetT block_offset)
   {
+    // load items in striped fashion and reduce items within each thread stripe
+    AccumT items[ITEMS_PER_THREAD];
     if constexpr (CanVectorize)
     {
-      // Take the pointer from the cache modified iterator and rewrap it as a vector iterator
-      const auto d_vec_in = CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, VectorT, OffsetT>(
-        reinterpret_cast<VectorT*>(d_in.ptr + block_offset + lane_id * vec_size));
-
-      // Load items as vector items
-      alignas(VectorT) InputT input_items[ITEMS_PER_THREAD];
-      VectorT* vec_items = reinterpret_cast<VectorT*>(input_items);
-
-      // Alias items as an array of VectorT and load it in striped fashion
-      static constexpr int words = ITEMS_PER_THREAD / vec_size;
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < words; ++i)
-      {
-        vec_items[i] = d_vec_in[NumThreads * i];
-      }
+      InputT input_items[ITEMS_PER_THREAD];
+      // IsAligned checked that the range starts aligned to VectorT, and full tiles are whole tiles further
+      // lane_id is the warp lane for a warp agent and the block thread id otherwise.
+      _CUB::detail::load_direct_striped_vectorized_aligned<NumThreads, vec_size, LOAD_MODIFIER>(
+        static_cast<int>(lane_id), d_in.ptr + block_offset, input_items);
 
       // Convert from input type to output type
-      AccumT items[ITEMS_PER_THREAD];
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ITEMS_PER_THREAD; ++i)
       {
         items[i] = transform_op(input_items[i]);
       }
-
-      // Reduce items within each thread stripe
-      thread_aggregate =
-        IsFirstTile ? cub::ThreadReduce(items, reduction_op) : cub::ThreadReduce(items, reduction_op, thread_aggregate);
     }
     else
     {
-      // Scalar path: load items in striped fashion and reduce items within each thread stripe
-      AccumT items[ITEMS_PER_THREAD];
-      load_transform_direct_striped<NumThreads>(lane_id, d_in + block_offset, items, transform_op);
-      thread_aggregate =
-        IsFirstTile ? cub::ThreadReduce(items, reduction_op) : cub::ThreadReduce(items, reduction_op, thread_aggregate);
+      _CUB::detail::load_transform_direct_striped<NumThreads>(lane_id, d_in + block_offset, items, transform_op);
     }
+    // Reduce items within each thread stripe
+    thread_aggregate =
+      IsFirstTile ? cub::ThreadReduce(items, reduction_op) : cub::ThreadReduce(items, reduction_op, thread_aggregate);
   }
 
   /**

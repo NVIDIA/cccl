@@ -52,7 +52,7 @@ void test_adjacent_difference(
   cuda::std::fill(policy, output.begin(), output.end(), -1);
   { // non contiguous input
     auto res = cuda::std::adjacent_difference(
-      policy, cuda::counting_iterator{int{1}}, cuda::counting_iterator{int{size + 1}}, output.begin());
+      policy, cuda::counting_iterator{1}, cuda::counting_iterator{int{size + 1}}, output.begin());
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }

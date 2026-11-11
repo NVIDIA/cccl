@@ -13,12 +13,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/type_traits.h>
-
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/cstddef>
-#include <cuda/std/limits>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace random::detail

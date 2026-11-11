@@ -7,7 +7,7 @@
 
   namespace cuda::experimental::coop {
 
-  using /*interwarp-barrier-id-type*/ = int;
+  using /*interwarp-barrier-id-type*/ = cuda::std::uint32_t;
 
   template <typename RangeView>
   class interwarp_synchronizer
@@ -18,13 +18,12 @@
     template <typename Range>
       requires cuda::std::same_as<RangeView, cuda::std::ranges::views::all_t<Range>>
     __device__ interwarp_synchronizer(Range&& barrier_ids)
-      noexcept(noexcept(cuda::std::ranges::views::all(cuda::std::forward<Range>(barrier_ids))))
       : /*barrier_ids_*/{cuda::std::ranges::views::all(cuda::std::forward<Range>(barrier_ids))}
     {}
 
     template <typename Unit, typename ParentGroup, typename MappingResult>
     [[nodiscard]] __device__
-    auto make_instance(const Unit&, const ParentGroup&, const MappingResult&) const noexcept;
+    auto make_instance(const Unit&, const ParentGroup&, const MappingResult&) const;
   };
 
   template <typename Range>

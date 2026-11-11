@@ -22,6 +22,7 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/device/dispatch/dispatch_transform.cuh>
 #include <cub/util_namespace.cuh>
 
@@ -86,7 +87,7 @@ CUB_NAMESPACE_END
 namespace cuda
 {
 template <typename T>
-struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::__return_constant<T>> : ::cuda::std::true_type
+struct proclaims_copyable_arguments<_CUB::detail::__return_constant<T>> : ::cuda::std::true_type
 {};
 } // namespace cuda
 
@@ -116,13 +117,14 @@ CUB_NAMESPACE_BEGIN
 //! @endrst
 struct DeviceTransform
 {
-  template <detail::transform::requires_stable_address StableAddress = detail::transform::requires_stable_address::no,
-            typename... RandomAccessIteratorsIn,
-            typename RandomAccessIteratorOut,
-            typename NumItemsT,
-            typename Predicate,
-            typename TransformOp,
-            typename Env>
+  template <
+    detail::transform::requires_stable_address RequiresStableAddress = detail::transform::requires_stable_address::no,
+    typename... RandomAccessIteratorsIn,
+    typename RandomAccessIteratorOut,
+    typename NumItemsT,
+    typename Predicate,
+    typename TransformOp,
+    typename Env>
   CUB_RUNTIME_FUNCTION static cudaError_t __transform_internal(
     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
     RandomAccessIteratorOut output,
@@ -137,7 +139,7 @@ struct DeviceTransform
     if constexpr (::cuda::std::is_same_v<Predicate, ::cuda::always_true>
                   && detail::__is_cuda_zip_transform<inputs_t, TransformOp>)
     {
-      return __transform_internal<StableAddress>(
+      return __transform_internal<RequiresStableAddress>(
         ::cuda::std::move(::cuda::std::get<0>(inputs).__iterators()),
         ::cuda::std::move(output),
         num_items,
@@ -148,7 +150,7 @@ struct DeviceTransform
     else if constexpr (::cuda::std::is_same_v<Predicate, ::cuda::always_true>
                        && detail::__is_thrust_zip_transform<inputs_t, TransformOp>)
     {
-      return __transform_internal<StableAddress>(
+      return __transform_internal<RequiresStableAddress>(
         ::cuda::std::get<0>(inputs).get_iterator_tuple(),
         ::cuda::std::move(output),
         num_items,
@@ -162,7 +164,7 @@ struct DeviceTransform
       // https://github.com/NVIDIA/cccl/issues/8805 for data. We use choose_signed_offset to just check if it can
       // hold the value passed by the user, but otherwise ignore the chosen signed offset type.
       using offset_t = ::cuda::std::int64_t;
-      if (const cudaError_t error = detail::choose_signed_offset<NumItemsT>::is_exceeding_offset_type(num_items))
+      if (const cudaError_t error = _CUB::detail::choose_signed_offset<NumItemsT>::is_exceeding_offset_type(num_items))
       {
         return error;
       }
@@ -171,20 +173,20 @@ struct DeviceTransform
 
       using tuning_env = ::cuda::std::execution::
         __query_result_or_t<Env, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
-      using default_policy_selector =
-        detail::transform::policy_selector_from_types<StableAddress == detail::transform::requires_stable_address::yes,
-                                                      ::cuda::std::is_same_v<Predicate, ::cuda::always_true>,
-                                                      inputs_t,
-                                                      RandomAccessIteratorOut>;
+      using default_policy_selector = detail::transform::policy_selector_from_types<
+        RequiresStableAddress == detail::transform::requires_stable_address::yes,
+        ::cuda::std::is_same_v<Predicate, ::cuda::always_true>,
+        inputs_t,
+        RandomAccessIteratorOut>;
 
       using policy_selector =
-        ::cuda::std::execution::__query_result_or_t<tuning_env, TransformPolicy, default_policy_selector>;
+        detail::policy_selector_from_tuning_env_t<tuning_env, TransformPolicy, default_policy_selector>;
 
 #if _CCCL_HAS_CONCEPTS()
       static_assert(detail::transform::transform_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
-      return detail::transform::dispatch<StableAddress>(
+      return _CUB::detail::transform::dispatch<RequiresStableAddress>(
         ::cuda::std::move(inputs),
         ::cuda::std::move(output),
         static_cast<offset_t>(num_items),
@@ -196,13 +198,14 @@ struct DeviceTransform
   }
 
   // TODO(bgruber): we want to eventually forward the output tuple to the kernel and optimize writing multiple streams
-  template <detail::transform::requires_stable_address StableAddress = detail::transform::requires_stable_address::no,
-            typename... RandomAccessIteratorsIn,
-            typename... RandomAccessIteratorsOut,
-            typename NumItemsT,
-            typename Predicate,
-            typename TransformOp,
-            typename Env>
+  template <
+    detail::transform::requires_stable_address RequiresStableAddress = detail::transform::requires_stable_address::no,
+    typename... RandomAccessIteratorsIn,
+    typename... RandomAccessIteratorsOut,
+    typename NumItemsT,
+    typename Predicate,
+    typename TransformOp,
+    typename Env>
   CUB_RUNTIME_FUNCTION static cudaError_t __transform_internal(
     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
     ::cuda::std::tuple<RandomAccessIteratorsOut...> outputs,
@@ -211,7 +214,7 @@ struct DeviceTransform
     TransformOp transform_op,
     const Env& env)
   {
-    return __transform_internal<StableAddress>(
+    return __transform_internal<RequiresStableAddress>(
       ::cuda::std::move(inputs),
       ::cuda::make_zip_iterator(::cuda::std::move(outputs)),
       num_items,

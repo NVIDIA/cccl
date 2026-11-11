@@ -22,7 +22,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(adjacent_difference.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/adjacent_difference.h>
 #  include <thrust/system/cuda/detail/adjacent_difference.h>
 #  include <thrust/system/omp/detail/adjacent_difference.h>

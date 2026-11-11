@@ -21,7 +21,7 @@
 #include <thrust/universal_allocator.h>
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/vector.h>
 #  include <thrust/system/cuda/vector.h>
 #  include <thrust/system/omp/vector.h>

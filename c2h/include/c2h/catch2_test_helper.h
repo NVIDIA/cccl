@@ -7,6 +7,7 @@
 
 #include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
 #include <cuda/buffer>
+#include <cuda/std/__type_traits/type_list_operations.h>
 #include <cuda/std/bit>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
@@ -152,7 +153,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 {
   const auto bits = SafeBitCast<uint16_t>(val);
   // commented bit is always true, leaving for documentation:
-  return (((bits >= 0x7C01) && (bits <= 0x7FFF)) || ((bits >= 0xFC01) /*&& (bits <= 0xFFFFFFFF)*/));
+  return (((bits >= 0x7C01) && (bits <= 0x7FFF)) || (bits >= 0xFC01) /*&& (bits <= 0xFFFFFFFF)*/);
 }
 
 #endif // TEST_HALF_T()
@@ -168,7 +169,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 {
   const auto bits = SafeBitCast<uint16_t>(val);
   // commented bit is always true, leaving for documentation:
-  return (((bits >= 0x7F81) && (bits <= 0x7FFF)) || ((bits >= 0xFF81) /*&& (bits <= 0xFFFFFFFF)*/));
+  return (((bits >= 0x7F81) && (bits <= 0x7FFF)) || (bits >= 0xFF81) /*&& (bits <= 0xFFFFFFFF)*/);
 }
 
 #endif // TEST_BF_T()
@@ -543,7 +544,7 @@ struct vector_matcher : Catch::Matchers::MatcherGenericBase
   bool match(OtherVec const& actual_vec) const // TODO(Bgruber): remove const?
   {
     comparison_result = compare_vectors(actual_vec, expected_vec);
-    return comparison_result.total_mismatches == 0;
+    return comparison_result.actual_size == comparison_result.expected_size && comparison_result.total_mismatches == 0;
   }
 
   // See the note on CustomEqualsRangeMatcher::describe above.

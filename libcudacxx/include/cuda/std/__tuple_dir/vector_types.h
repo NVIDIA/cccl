@@ -39,7 +39,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
     struct tuple_element<_Ip, __name##__size##__VA_ARGS__>                                          \
     {                                                                                               \
       static_assert(_Ip < __size, "tuple_element index out of range");                              \
-      using type = __type;                                                                          \
+      using type _CCCL_NODEBUG = __type;                                                            \
     };
 
 #  define _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(__name, __type) \
@@ -125,6 +125,10 @@ _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_fp8x, __nv_fp8_e5m2, 2, _e5m2)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_fp8x, __nv_fp8_e5m2, 4, _e5m2)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_fp8x, __nv_fp8_e4m3, 2, _e4m3)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_fp8x, __nv_fp8_e4m3, 4, _e4m3)
+#    if _CCCL_HAS_NVFP8_UE5M3()
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_fp8x, __nv_fp8_ue5m3, 2, _ue5m3)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_fp8x, __nv_fp8_ue5m3, 4, _ue5m3)
+#    endif // _CCCL_HAS_NVFP8_UE5M3()
 #    if _CCCL_CTK_AT_LEAST(12, 8)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_fp8x, __nv_fp8_e8m0, 2, _e8m0)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_fp8x, __nv_fp8_e8m0, 4, _e8m0)
