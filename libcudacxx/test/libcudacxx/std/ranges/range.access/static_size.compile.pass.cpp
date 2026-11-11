@@ -216,7 +216,7 @@ TEST_FUNC constexpr void test_cvref()
 
 TEST_FUNC constexpr void test_size_queries()
 {
-  constexpr auto dynamic = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr auto dynamic = cuda::std::dynamic_extent;
 
   // Array extents do not depend on element cv-qualifiers or default construction.
   test_cvref<int[3], 3, 3, 3>();
@@ -250,11 +250,11 @@ TEST_FUNC constexpr void test_size_queries()
 
 TEST_FUNC constexpr void test_wrappers()
 {
-  namespace ranges       = cuda::std::ranges;
-  constexpr auto dynamic = cuda::std::dynamic_extent;
-  using Array            = cuda::std::array<int, 5>;
-  using Static           = ranges::ref_view<Array>;
-  using Dynamic          = cuda::std::span<int>;
+  namespace ranges                        = cuda::std::ranges;
+  [[maybe_unused]] constexpr auto dynamic = cuda::std::dynamic_extent;
+  using Array                             = cuda::std::array<int, 5>;
+  using Static                            = ranges::ref_view<Array>;
+  using Dynamic                           = cuda::std::span<int>;
 
   // views::all wraps lvalues by reference and owns rvalues without changing their sizes.
   test_cvref<ranges::views::all_t<int (&)[3]>, 3>();
@@ -284,10 +284,10 @@ TEST_FUNC constexpr void test_wrappers()
 
 TEST_FUNC constexpr void test_adaptors()
 {
-  namespace ranges       = cuda::std::ranges;
-  constexpr auto dynamic = cuda::std::dynamic_extent;
-  using Static           = ranges::ref_view<cuda::std::array<int, 5>>;
-  using Dynamic          = cuda::std::span<int>;
+  namespace ranges                        = cuda::std::ranges;
+  [[maybe_unused]] constexpr auto dynamic = cuda::std::dynamic_extent;
+  using Static                            = ranges::ref_view<cuda::std::array<int, 5>>;
+  using Dynamic                           = cuda::std::span<int>;
 
   test_cvref<ranges::empty_view<int>, 0, 0, 0>();
   test_cvref<ranges::single_view<int>, 1, 1, 1>();
@@ -327,10 +327,10 @@ TEST_FUNC constexpr void test_adaptors()
 
 TEST_FUNC constexpr void test_zip()
 {
-  namespace ranges       = cuda::std::ranges;
-  constexpr auto dynamic = cuda::std::dynamic_extent;
-  using Static           = ranges::ref_view<cuda::std::array<int, 5>>;
-  using Dynamic          = cuda::std::span<int>;
+  namespace ranges                        = cuda::std::ranges;
+  [[maybe_unused]] constexpr auto dynamic = cuda::std::dynamic_extent;
+  using Static                            = ranges::ref_view<cuda::std::array<int, 5>>;
+  using Dynamic                           = cuda::std::span<int>;
 
   test_cvref<decltype(ranges::views::zip()), 0, 0, 0>();
   test_cvref<ranges::zip_view<Static>, 5>();
@@ -347,14 +347,14 @@ TEST_FUNC constexpr void test_zip()
 
 TEST_FUNC constexpr void test_empty_views()
 {
-  namespace ranges       = cuda::std::ranges;
-  constexpr auto dynamic = cuda::std::dynamic_extent;
-  using Empty            = ranges::ref_view<cuda::std::array<int, 0>>;
-  using Dynamic          = cuda::std::span<int>;
-  using Filter           = ranges::filter_view<Empty, IsEven>;
-  using TakeWhile        = ranges::take_while_view<Empty, IsEven>;
-  using DropWhile        = ranges::drop_while_view<Empty, IsEven>;
-  using Infinite         = ranges::iota_view<int>;
+  namespace ranges                        = cuda::std::ranges;
+  [[maybe_unused]] constexpr auto dynamic = cuda::std::dynamic_extent;
+  using Empty                             = ranges::ref_view<cuda::std::array<int, 0>>;
+  using Dynamic                           = cuda::std::span<int>;
+  using Filter                            = ranges::filter_view<Empty, IsEven>;
+  using TakeWhile                         = ranges::take_while_view<Empty, IsEven>;
+  using DropWhile                         = ranges::drop_while_view<Empty, IsEven>;
+  using Infinite                          = ranges::iota_view<int>;
 
   // Cardinality can be known even when ranges::size is unavailable.
   static_assert(!ranges::sized_range<Filter>);
