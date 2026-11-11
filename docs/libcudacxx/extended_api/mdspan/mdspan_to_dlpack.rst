@@ -87,7 +87,6 @@ Constraints
 -----------
 
 - The accessor ``data_handle_type`` must be a pointer type.
-- ``__nv_fp8_ue5m3`` and its vector types are unsupported because DLPack has no corresponding data type code.
 
 Runtime errors
 --------------

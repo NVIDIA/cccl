@@ -215,9 +215,6 @@ __global__ void test_kernel()
   test_shuffle_type<uint8_t>();
   test_shuffle_type<uint16_t>();
   test_shuffle_type<uint64_t>();
-#if _CCCL_HAS_NVFP8_UE5M3()
-  test_shuffle_type<__nv_fp8_ue5m3>();
-#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP6_E3M2()
   test_shuffle_type<__nv_fp6_e3m2>();
 #endif // _CCCL_HAS_NVFP6_E3M2()

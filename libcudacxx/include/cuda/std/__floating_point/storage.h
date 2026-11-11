@@ -37,9 +37,8 @@ template <__fp_format _Fmt>
 [[nodiscard]] _CCCL_API constexpr auto __fp_storage_type_impl() noexcept
 {
   if constexpr (_Fmt == __fp_format::__fp8_nv_e4m3 || _Fmt == __fp_format::__fp8_nv_e5m2
-                || _Fmt == __fp_format::__fp8_nv_ue5m3 || _Fmt == __fp_format::__fp8_nv_e8m0
-                || _Fmt == __fp_format::__fp6_nv_e2m3 || _Fmt == __fp_format::__fp6_nv_e3m2
-                || _Fmt == __fp_format::__fp4_nv_e2m1)
+                || _Fmt == __fp_format::__fp8_nv_e8m0 || _Fmt == __fp_format::__fp6_nv_e2m3
+                || _Fmt == __fp_format::__fp6_nv_e3m2 || _Fmt == __fp_format::__fp4_nv_e2m1)
   {
     return uint8_t{};
   }
@@ -134,14 +133,6 @@ template <class _Tp>
     return __ret;
   }
 #endif // _CCCL_HAS_NVFP8_E5M2()
-#if _CCCL_HAS_NVFP8_UE5M3()
-  else if constexpr (is_same_v<_Tp, __nv_fp8_ue5m3>)
-  {
-    _Tp __ret{};
-    __ret.__x = __v;
-    return __ret;
-  }
-#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E8M0()
   else if constexpr (is_same_v<_Tp, __nv_fp8_e8m0>)
   {
@@ -232,12 +223,6 @@ template <class _Tp>
     return __v.__x;
   }
 #endif // _CCCL_HAS_NVFP8_E5M2()
-#if _CCCL_HAS_NVFP8_UE5M3()
-  else if constexpr (is_same_v<_Tp, __nv_fp8_ue5m3>)
-  {
-    return __v.__x;
-  }
-#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E8M0()
   else if constexpr (is_same_v<_Tp, __nv_fp8_e8m0>)
   {

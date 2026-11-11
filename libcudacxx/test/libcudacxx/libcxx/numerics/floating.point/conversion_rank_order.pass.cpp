@@ -46,9 +46,6 @@ static_assert(fp_conv_rank_order_v<float, __nv_fp8_e4m3> == fp_conv_rank_order::
 #if _CCCL_HAS_NVFP8_E5M2()
 static_assert(fp_conv_rank_order_v<float, __nv_fp8_e5m2> == fp_conv_rank_order::__greater);
 #endif // _CCCL_HAS_NVFP8_E5M2()
-#if _CCCL_HAS_NVFP8_UE5M3()
-static_assert(fp_conv_rank_order_v<float, __nv_fp8_ue5m3> == fp_conv_rank_order::__greater);
-#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E8M0()
 static_assert(fp_conv_rank_order_v<float, __nv_fp8_e8m0> == fp_conv_rank_order::__unordered);
 #endif // _CCCL_HAS_NVFP8_E8M0()
@@ -79,9 +76,6 @@ static_assert(fp_conv_rank_order_v<double, __nv_fp8_e4m3> == fp_conv_rank_order:
 #if _CCCL_HAS_NVFP8_E5M2()
 static_assert(fp_conv_rank_order_v<double, __nv_fp8_e5m2> == fp_conv_rank_order::__greater);
 #endif // _CCCL_HAS_NVFP8_E5M2()
-#if _CCCL_HAS_NVFP8_UE5M3()
-static_assert(fp_conv_rank_order_v<double, __nv_fp8_ue5m3> == fp_conv_rank_order::__greater);
-#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E8M0()
 static_assert(fp_conv_rank_order_v<double, __nv_fp8_e8m0> == fp_conv_rank_order::__greater);
 #endif // _CCCL_HAS_NVFP8_E8M0()
@@ -113,9 +107,6 @@ static_assert(fp_conv_rank_order_v<long double, __nv_fp8_e4m3> == fp_conv_rank_o
 #  if _CCCL_HAS_NVFP8_E5M2()
 static_assert(fp_conv_rank_order_v<long double, __nv_fp8_e5m2> == fp_conv_rank_order::__greater);
 #  endif // _CCCL_HAS_NVFP8_E5M2()
-#  if _CCCL_HAS_NVFP8_UE5M3()
-static_assert(fp_conv_rank_order_v<long double, __nv_fp8_ue5m3> == fp_conv_rank_order::__greater);
-#  endif // _CCCL_HAS_NVFP8_UE5M3()
 #  if _CCCL_HAS_NVFP8_E8M0()
 static_assert(fp_conv_rank_order_v<long double, __nv_fp8_e8m0> == fp_conv_rank_order::__greater);
 #  endif // _CCCL_HAS_NVFP8_E8M0()
@@ -148,9 +139,6 @@ static_assert(fp_conv_rank_order_v<__half, __nv_fp8_e4m3> == fp_conv_rank_order:
 #  if _CCCL_HAS_NVFP8_E5M2()
 static_assert(fp_conv_rank_order_v<__half, __nv_fp8_e5m2> == fp_conv_rank_order::__greater);
 #  endif // _CCCL_HAS_NVFP8_E5M2()
-#  if _CCCL_HAS_NVFP8_UE5M3()
-static_assert(fp_conv_rank_order_v<__half, __nv_fp8_ue5m3> == fp_conv_rank_order::__unordered);
-#  endif // _CCCL_HAS_NVFP8_UE5M3()
 #  if _CCCL_HAS_NVFP8_E8M0()
 static_assert(fp_conv_rank_order_v<__half, __nv_fp8_e8m0> == fp_conv_rank_order::__unordered);
 #  endif // _CCCL_HAS_NVFP8_E8M0()
@@ -183,9 +171,6 @@ static_assert(fp_conv_rank_order_v<__nv_bfloat16, __nv_fp8_e4m3> == fp_conv_rank
 #  if _CCCL_HAS_NVFP8_E5M2()
 static_assert(fp_conv_rank_order_v<__nv_bfloat16, __nv_fp8_e5m2> == fp_conv_rank_order::__greater);
 #  endif // _CCCL_HAS_NVFP8_E5M2()
-#  if _CCCL_HAS_NVFP8_UE5M3()
-static_assert(fp_conv_rank_order_v<__nv_bfloat16, __nv_fp8_ue5m3> == fp_conv_rank_order::__greater);
-#  endif // _CCCL_HAS_NVFP8_UE5M3()
 #  if _CCCL_HAS_NVFP8_E8M0()
 static_assert(fp_conv_rank_order_v<__nv_bfloat16, __nv_fp8_e8m0> == fp_conv_rank_order::__unordered);
 #  endif // _CCCL_HAS_NVFP8_E8M0()
@@ -218,9 +203,6 @@ static_assert(fp_conv_rank_order_v<__nv_fp8_e4m3, __nv_fp8_e4m3> == fp_conv_rank
 #  if _CCCL_HAS_NVFP8_E5M2()
 static_assert(fp_conv_rank_order_v<__nv_fp8_e4m3, __nv_fp8_e5m2> == fp_conv_rank_order::__unordered);
 #  endif // _CCCL_HAS_NVFP8_E5M2()
-#  if _CCCL_HAS_NVFP8_UE5M3()
-static_assert(fp_conv_rank_order_v<__nv_fp8_e4m3, __nv_fp8_ue5m3> == fp_conv_rank_order::__unordered);
-#  endif // _CCCL_HAS_NVFP8_UE5M3()
 #  if _CCCL_HAS_NVFP8_E8M0()
 static_assert(fp_conv_rank_order_v<__nv_fp8_e4m3, __nv_fp8_e8m0> == fp_conv_rank_order::__unordered);
 #  endif // _CCCL_HAS_NVFP8_E8M0()
@@ -253,9 +235,6 @@ static_assert(fp_conv_rank_order_v<__nv_fp8_e5m2, __nv_fp8_e4m3> == fp_conv_rank
 #  if _CCCL_HAS_NVFP8_E5M2()
 static_assert(fp_conv_rank_order_v<__nv_fp8_e5m2, __nv_fp8_e5m2> == fp_conv_rank_order::__equal);
 #  endif // _CCCL_HAS_NVFP8_E5M2()
-#  if _CCCL_HAS_NVFP8_UE5M3()
-static_assert(fp_conv_rank_order_v<__nv_fp8_e5m2, __nv_fp8_ue5m3> == fp_conv_rank_order::__unordered);
-#  endif // _CCCL_HAS_NVFP8_UE5M3()
 #  if _CCCL_HAS_NVFP8_E8M0()
 static_assert(fp_conv_rank_order_v<__nv_fp8_e5m2, __nv_fp8_e8m0> == fp_conv_rank_order::__unordered);
 #  endif // _CCCL_HAS_NVFP8_E8M0()
@@ -269,41 +248,6 @@ static_assert(fp_conv_rank_order_v<__nv_fp8_e5m2, __nv_fp6_e3m2> == fp_conv_rank
 static_assert(fp_conv_rank_order_v<__nv_fp8_e5m2, __nv_fp4_e2m1> == fp_conv_rank_order::__greater);
 #  endif // _CCCL_HAS_NVFP4_E2M1()
 #endif // _CCCL_HAS_NVFP8_E5M2()
-
-#if _CCCL_HAS_NVFP8_UE5M3()
-static_assert(fp_conv_rank_order_v<__nv_fp8_ue5m3, float> == fp_conv_rank_order::__less);
-static_assert(fp_conv_rank_order_v<__nv_fp8_ue5m3, double> == fp_conv_rank_order::__less);
-#  if _CCCL_HAS_LONG_DOUBLE()
-static_assert(fp_conv_rank_order_v<__nv_fp8_ue5m3, long double> == fp_conv_rank_order::__less);
-#  endif // _CCCL_HAS_LONG_DOUBLE()
-#  if _CCCL_HAS_NVFP16()
-static_assert(fp_conv_rank_order_v<__nv_fp8_ue5m3, __half> == fp_conv_rank_order::__unordered);
-#  endif // _CCCL_HAS_NVFP16()
-#  if _CCCL_HAS_NVBF16()
-static_assert(fp_conv_rank_order_v<__nv_fp8_ue5m3, __nv_bfloat16> == fp_conv_rank_order::__less);
-#  endif // _CCCL_HAS_NVBF16()
-#  if _CCCL_HAS_NVFP8_E4M3()
-static_assert(fp_conv_rank_order_v<__nv_fp8_ue5m3, __nv_fp8_e4m3> == fp_conv_rank_order::__unordered);
-#  endif // _CCCL_HAS_NVFP8_E4M3()
-#  if _CCCL_HAS_NVFP8_E5M2()
-static_assert(fp_conv_rank_order_v<__nv_fp8_ue5m3, __nv_fp8_e5m2> == fp_conv_rank_order::__unordered);
-#  endif // _CCCL_HAS_NVFP8_E5M2()
-#  if _CCCL_HAS_NVFP8_UE5M3()
-static_assert(fp_conv_rank_order_v<__nv_fp8_ue5m3, __nv_fp8_ue5m3> == fp_conv_rank_order::__equal);
-#  endif // _CCCL_HAS_NVFP8_UE5M3()
-#  if _CCCL_HAS_NVFP8_E8M0()
-static_assert(fp_conv_rank_order_v<__nv_fp8_ue5m3, __nv_fp8_e8m0> == fp_conv_rank_order::__unordered);
-#  endif // _CCCL_HAS_NVFP8_E8M0()
-#  if _CCCL_HAS_NVFP6_E2M3()
-static_assert(fp_conv_rank_order_v<__nv_fp8_ue5m3, __nv_fp6_e2m3> == fp_conv_rank_order::__unordered);
-#  endif // _CCCL_HAS_NVFP6_E2M3()
-#  if _CCCL_HAS_NVFP6_E3M2()
-static_assert(fp_conv_rank_order_v<__nv_fp8_ue5m3, __nv_fp6_e3m2> == fp_conv_rank_order::__unordered);
-#  endif // _CCCL_HAS_NVFP6_E3M2()
-#  if _CCCL_HAS_NVFP4_E2M1()
-static_assert(fp_conv_rank_order_v<__nv_fp8_ue5m3, __nv_fp4_e2m1> == fp_conv_rank_order::__unordered);
-#  endif // _CCCL_HAS_NVFP4_E2M1()
-#endif // _CCCL_HAS_NVFP8_UE5M3()
 
 #if _CCCL_HAS_NVFP8_E8M0()
 static_assert(fp_conv_rank_order_v<__nv_fp8_e8m0, float> == fp_conv_rank_order::__unordered);
@@ -323,9 +267,6 @@ static_assert(fp_conv_rank_order_v<__nv_fp8_e8m0, __nv_fp8_e4m3> == fp_conv_rank
 #  if _CCCL_HAS_NVFP8_E5M2()
 static_assert(fp_conv_rank_order_v<__nv_fp8_e8m0, __nv_fp8_e5m2> == fp_conv_rank_order::__unordered);
 #  endif // _CCCL_HAS_NVFP8_E5M2()
-#  if _CCCL_HAS_NVFP8_UE5M3()
-static_assert(fp_conv_rank_order_v<__nv_fp8_e8m0, __nv_fp8_ue5m3> == fp_conv_rank_order::__unordered);
-#  endif // _CCCL_HAS_NVFP8_UE5M3()
 #  if _CCCL_HAS_NVFP8_E8M0()
 static_assert(fp_conv_rank_order_v<__nv_fp8_e8m0, __nv_fp8_e8m0> == fp_conv_rank_order::__equal);
 #  endif // _CCCL_HAS_NVFP8_E8M0()
@@ -358,9 +299,6 @@ static_assert(fp_conv_rank_order_v<__nv_fp6_e2m3, __nv_fp8_e4m3> == fp_conv_rank
 #  if _CCCL_HAS_NVFP8_E5M2()
 static_assert(fp_conv_rank_order_v<__nv_fp6_e2m3, __nv_fp8_e5m2> == fp_conv_rank_order::__unordered);
 #  endif // _CCCL_HAS_NVFP8_E5M2()
-#  if _CCCL_HAS_NVFP8_UE5M3()
-static_assert(fp_conv_rank_order_v<__nv_fp6_e2m3, __nv_fp8_ue5m3> == fp_conv_rank_order::__unordered);
-#  endif // _CCCL_HAS_NVFP8_UE5M3()
 #  if _CCCL_HAS_NVFP8_E8M0()
 static_assert(fp_conv_rank_order_v<__nv_fp6_e2m3, __nv_fp8_e8m0> == fp_conv_rank_order::__unordered);
 #  endif // _CCCL_HAS_NVFP8_E8M0()
@@ -393,9 +331,6 @@ static_assert(fp_conv_rank_order_v<__nv_fp6_e3m2, __nv_fp8_e4m3> == fp_conv_rank
 #  if _CCCL_HAS_NVFP8_E5M2()
 static_assert(fp_conv_rank_order_v<__nv_fp6_e3m2, __nv_fp8_e5m2> == fp_conv_rank_order::__less);
 #  endif // _CCCL_HAS_NVFP8_E5M2()
-#  if _CCCL_HAS_NVFP8_UE5M3()
-static_assert(fp_conv_rank_order_v<__nv_fp6_e3m2, __nv_fp8_ue5m3> == fp_conv_rank_order::__unordered);
-#  endif // _CCCL_HAS_NVFP8_UE5M3()
 #  if _CCCL_HAS_NVFP8_E8M0()
 static_assert(fp_conv_rank_order_v<__nv_fp6_e3m2, __nv_fp8_e8m0> == fp_conv_rank_order::__unordered);
 #  endif // _CCCL_HAS_NVFP8_E8M0()
@@ -428,9 +363,6 @@ static_assert(fp_conv_rank_order_v<__nv_fp4_e2m1, __nv_fp8_e4m3> == fp_conv_rank
 #  if _CCCL_HAS_NVFP8_E5M2()
 static_assert(fp_conv_rank_order_v<__nv_fp4_e2m1, __nv_fp8_e5m2> == fp_conv_rank_order::__less);
 #  endif // _CCCL_HAS_NVFP8_E5M2()
-#  if _CCCL_HAS_NVFP8_UE5M3()
-static_assert(fp_conv_rank_order_v<__nv_fp4_e2m1, __nv_fp8_ue5m3> == fp_conv_rank_order::__unordered);
-#  endif // _CCCL_HAS_NVFP8_UE5M3()
 #  if _CCCL_HAS_NVFP8_E8M0()
 static_assert(fp_conv_rank_order_v<__nv_fp4_e2m1, __nv_fp8_e8m0> == fp_conv_rank_order::__unordered);
 #  endif // _CCCL_HAS_NVFP8_E8M0()

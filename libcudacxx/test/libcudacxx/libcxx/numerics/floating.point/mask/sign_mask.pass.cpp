@@ -41,7 +41,6 @@ static_assert(test_fp_sign_mask<cuda::std::__fp_format::__bfloat16>(0x8000u));
 static_assert(test_fp_sign_mask<cuda::std::__fp_format::__fp80_x86>(__uint128_t(0x8000ull) << 64));
 #endif // _CCCL_HAS_INT128()
 static_assert(test_fp_sign_mask<cuda::std::__fp_format::__fp8_nv_e4m3>(0x80u));
-static_assert(test_fp_sign_mask<cuda::std::__fp_format::__fp8_nv_ue5m3>(0x00u));
 static_assert(test_fp_sign_mask<cuda::std::__fp_format::__fp8_nv_e5m2>(0x80u));
 static_assert(test_fp_sign_mask<cuda::std::__fp_format::__fp8_nv_e8m0>(0x00u));
 static_assert(test_fp_sign_mask<cuda::std::__fp_format::__fp6_nv_e2m3>(0x20u));

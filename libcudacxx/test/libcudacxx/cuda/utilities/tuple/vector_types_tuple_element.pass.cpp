@@ -82,11 +82,6 @@ TEST_FUNC constexpr bool test()
   test<__nv_bfloat162, __nv_bfloat16, 2>();
 #endif // _CCCL_HAS_NVBF16()
 
-#if _CCCL_HAS_NVFP8_UE5M3()
-  test<__nv_fp8x2_ue5m3, __nv_fp8_ue5m3, 2>();
-  test<__nv_fp8x4_ue5m3, __nv_fp8_ue5m3, 4>();
-#endif // _CCCL_HAS_NVFP8_UE5M3()
-
   test<dim3, unsigned int, 3, 0>();
   test<dim3, unsigned int, 3, 1>();
   test<dim3, unsigned int, 3, 2>();

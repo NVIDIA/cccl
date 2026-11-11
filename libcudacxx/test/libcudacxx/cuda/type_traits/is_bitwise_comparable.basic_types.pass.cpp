@@ -68,10 +68,6 @@ TEST_FUNC void test_basic_types()
   test_is_not_bitwise_comparable<__nv_fp8_e4m3>();
   test_is_not_bitwise_comparable<__nv_fp8x2_e4m3>();
 #endif // _CCCL_HAS_NVFP8_E4M3()
-#if _CCCL_HAS_NVFP8_UE5M3()
-  test_is_not_bitwise_comparable<__nv_fp8_ue5m3>();
-  test_is_not_bitwise_comparable<__nv_fp8x2_ue5m3>();
-#endif // _CCCL_HAS_NVFP8_UE5M3()
 }
 
 int main(int, char**)

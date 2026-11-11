@@ -109,13 +109,6 @@ template <typename _ElementType>
     return ::DLDataType{::kDLFloat4_e2m1fn, 4, 1};
   }
 #    endif // _CCCL_HAS_NVFP4_E2M1()
-#    if _CCCL_HAS_NVFP8_UE5M3()
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::__nv_fp8_ue5m3>)
-  {
-    static_assert(::cuda::std::__always_false_v<_ElementType>, "DLPack has no data type code for __nv_fp8_ue5m3");
-    return ::DLDataType{};
-  }
-#    endif // _CCCL_HAS_NVFP8_UE5M3()
   //--------------------------------------------------------------------------------------------------------------------
   // Floating-point types (after specific types)
   else if constexpr (::cuda::is_floating_point_v<_ElementType>)

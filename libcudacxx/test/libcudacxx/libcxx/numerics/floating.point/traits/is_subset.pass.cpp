@@ -173,15 +173,6 @@ static_assert(__fp_is_subset_v<__fp_format::__fp4_nv_e2m1, __fp_format::__fp6_nv
 static_assert(__fp_is_subset_v<__fp_format::__fp4_nv_e2m1, __fp_format::__fp6_nv_e3m2>);
 static_assert(__fp_is_subset_v<__fp_format::__fp4_nv_e2m1, __fp_format::__fp4_nv_e2m1>);
 
-static_assert(__fp_is_subset_v<__fp_format::__fp8_nv_ue5m3, __fp_format::__fp8_nv_ue5m3>);
-static_assert(__fp_is_subset_v<__fp_format::__fp8_nv_ue5m3, __fp_format::__binary32>);
-static_assert(__fp_is_subset_v<__fp_format::__fp8_nv_ue5m3, __fp_format::__bfloat16>);
-static_assert(!__fp_is_subset_v<__fp_format::__fp8_nv_ue5m3, __fp_format::__binary16>);
-static_assert(!__fp_is_subset_v<__fp_format::__binary16, __fp_format::__fp8_nv_ue5m3>);
-static_assert(!__fp_is_subset_v<__fp_format::__fp8_nv_ue5m3, __fp_format::__fp8_nv_e4m3>);
-static_assert(!__fp_is_subset_v<__fp_format::__fp8_nv_e4m3, __fp_format::__fp8_nv_ue5m3>);
-static_assert(!__fp_is_subset_v<__fp_format::__fp6_nv_e3m2, __fp_format::__fp8_nv_ue5m3>);
-
 int main(int, char**)
 {
   return 0;

@@ -122,21 +122,6 @@ static_assert(!cuda::std::__fp_has_inf_v<cuda::std::__fp_format::__fp8_nv_e4m3>)
 static_assert(cuda::std::__fp_has_nan_v<cuda::std::__fp_format::__fp8_nv_e4m3>);
 static_assert(!cuda::std::__fp_has_nans_v<cuda::std::__fp_format::__fp8_nv_e4m3>);
 
-// fp8_nv_ue5m3
-
-static_assert(!cuda::std::__fp_is_signed_v<cuda::std::__fp_format::__fp8_nv_ue5m3>);
-static_assert(cuda::std::__fp_exp_nbits_v<cuda::std::__fp_format::__fp8_nv_ue5m3> == 5);
-static_assert(cuda::std::__fp_exp_bias_v<cuda::std::__fp_format::__fp8_nv_ue5m3> == 15);
-static_assert(cuda::std::__fp_exp_min_v<cuda::std::__fp_format::__fp8_nv_ue5m3> == -14);
-static_assert(cuda::std::__fp_exp_max_v<cuda::std::__fp_format::__fp8_nv_ue5m3> == 16);
-static_assert(cuda::std::__fp_mant_nbits_v<cuda::std::__fp_format::__fp8_nv_ue5m3> == 3);
-static_assert(cuda::std::__fp_has_implicit_bit_v<cuda::std::__fp_format::__fp8_nv_ue5m3>);
-static_assert(cuda::std::__fp_digits_v<cuda::std::__fp_format::__fp8_nv_ue5m3> == 4);
-static_assert(cuda::std::__fp_has_denorm_v<cuda::std::__fp_format::__fp8_nv_ue5m3>);
-static_assert(!cuda::std::__fp_has_inf_v<cuda::std::__fp_format::__fp8_nv_ue5m3>);
-static_assert(cuda::std::__fp_has_nan_v<cuda::std::__fp_format::__fp8_nv_ue5m3>);
-static_assert(!cuda::std::__fp_has_nans_v<cuda::std::__fp_format::__fp8_nv_ue5m3>);
-
 // fp8_nv_e5m2
 
 static_assert(cuda::std::__fp_is_signed_v<cuda::std::__fp_format::__fp8_nv_e5m2>);

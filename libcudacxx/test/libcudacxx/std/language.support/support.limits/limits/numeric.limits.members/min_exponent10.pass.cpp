@@ -72,9 +72,6 @@ int main(int, char**)
 #if _CCCL_HAS_NVFP8_E4M3()
   test<__nv_fp8_e4m3, -2>();
 #endif // _CCCL_HAS_NVFP8_E4M3()
-#if _CCCL_HAS_NVFP8_UE5M3()
-  test<__nv_fp8_ue5m3, -4>();
-#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E5M2()
   test<__nv_fp8_e5m2, -5>();
 #endif // _CCCL_HAS_NVFP8_E5M2()
