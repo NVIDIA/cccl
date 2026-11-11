@@ -300,7 +300,7 @@ _CCCL_HOST_DEVICE void radix_sort(
         }
       }
 
-      flip = flip ? false : true;
+      flip = !flip;
     }
   }
 

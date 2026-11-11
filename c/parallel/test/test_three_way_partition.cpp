@@ -79,7 +79,7 @@ struct three_way_partition_build
 
   static constexpr bool should_check_sass(int cc_major)
   {
-    return !DisableSassCheck && !(DisableSassCheckOnSm120 && cc_major >= 12);
+    return !DisableSassCheck && (!DisableSassCheckOnSm120 || cc_major < 12);
   }
 };
 
