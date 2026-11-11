@@ -58,11 +58,14 @@ class exec_place;
 /**
  * @brief Computes the CUDA device in which the stream was created
  *
- * Capture-safe on CTK >= 12.8: `cudaStreamGetDevice` succeeds during
- * thread-local, relaxed and global capture, on device and green-context
- * streams alike, without invalidating the capture.
- * Answering from a guess instead of the query is what put transient events
- * in the wrong device's context on multi-GPU systems
+ * While @p stream is capturing, the query is only made with a CTK 13
+ * runtime, where `cudaStreamGetDevice` succeeds during thread-local, relaxed
+ * and global capture without invalidating it. With a CTK 12 runtime the
+ * answer depends on the driver: `cudaStreamGetDevice` (12.8, 12.9) is
+ * rejected with `cudaErrorStreamCaptureUnsupported` on some of them, so the
+ * current device is returned instead. That guess is only correct when the
+ * capturing thread's current device is the stream's device; a wrong one puts
+ * transient events in the wrong device's context on multi-GPU systems
  * (`cudaErrorInvalidResourceHandle` at event-record time).
  */
 inline int get_device_from_stream(cudaStream_t stream)
@@ -72,17 +75,17 @@ inline int get_device_from_stream(cudaStream_t stream)
     return cuda_try<cudaGetDevice>();
   }
 
-#if _CCCL_CTK_AT_LEAST(12, 8)
+#if _CCCL_CTK_AT_LEAST(13, 0)
   return cuda_try<cudaStreamGetDevice>(stream);
 #else
-  // cuStreamGetCtx during capture is unverified on pre-12.8 toolkits: keep
-  // the conservative current-device fallback there. Only correct on
-  // single-device systems.
   if (is_stream_capturing(stream))
   {
     return cuda_try<cudaGetDevice>();
   }
 
+#  if _CCCL_CTK_AT_LEAST(12, 8)
+  return cuda_try<cudaStreamGetDevice>(stream);
+#  else
   auto stream_driver = CUstream(stream);
 
   CUcontext ctx = cuda_try<cuStreamGetCtx>(stream_driver);
@@ -92,6 +95,7 @@ inline int get_device_from_stream(cudaStream_t stream)
   static_cast<void>(cuda_try<cuCtxPopCurrent>());
 
   return static_cast<int>(stream_dev);
+#  endif
 #endif
 }
 
