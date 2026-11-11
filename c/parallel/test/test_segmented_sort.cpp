@@ -78,7 +78,7 @@ struct segmented_sort_build
 {
   static bool should_check_sass(int cc_major)
   {
-    return !(DisableSassCheckOnSm120 && cc_major >= 12);
+    return !DisableSassCheckOnSm120 || cc_major < 12;
   }
 
   CUresult operator()(

@@ -98,7 +98,6 @@ Checks:
   - '-readability-avoid-nested-conditional-operator'
   - '-readability-redundant-declaration'
   - '-readability-redundant-casting'
-  - '-readability-simplify-boolean-expr'
   - '-readability-make-member-function-const'
   - '-readability-suspicious-call-argument'
   # Handled by clang-tidy
