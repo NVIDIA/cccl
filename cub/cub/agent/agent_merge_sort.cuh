@@ -23,7 +23,7 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <cuda/__memory/uninitialized_array.h>
+#include <cuda/__memory/uninitialized.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/is_same.h>
 
@@ -148,7 +148,7 @@ struct AgentBlockSort
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(OffsetT tile_base, int num_remaining)
   {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-    ::cuda::__uninitialized_array<ValueT, ITEMS_PER_THREAD> items_storage;
+    ::cuda::__uninitialized<ValueT[ITEMS_PER_THREAD]> items_storage;
     auto& items_local = items_storage.alias();
 
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
@@ -169,7 +169,7 @@ struct AgentBlockSort
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-    ::cuda::__uninitialized_array<KeyT, ITEMS_PER_THREAD> keys_storage;
+    ::cuda::__uninitialized<KeyT[ITEMS_PER_THREAD]> keys_storage;
     auto& keys_local = keys_storage.alias();
     if constexpr (IsLastTile)
     {
@@ -520,7 +520,7 @@ struct AgentMerge
 
     // load keys1 & keys2
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-    ::cuda::__uninitialized_array<KeyT, ITEMS_PER_THREAD> keys_storage;
+    ::cuda::__uninitialized<KeyT[ITEMS_PER_THREAD]> keys_storage;
     auto& keys_local = keys_storage.alias();
     if (ping)
     {
@@ -537,7 +537,7 @@ struct AgentMerge
     // preload items into registers already
     //
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-    [[maybe_unused]] ::cuda::__uninitialized_array<ValueT, ITEMS_PER_THREAD> items_storage;
+    [[maybe_unused]] ::cuda::__uninitialized<ValueT[ITEMS_PER_THREAD]> items_storage;
     [[maybe_unused]] auto& items_local = items_storage.alias();
     if constexpr (!KEYS_ONLY)
     {
