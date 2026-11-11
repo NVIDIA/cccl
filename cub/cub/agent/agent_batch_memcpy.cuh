@@ -57,7 +57,7 @@ struct agent_batch_memcpy_policy
   static constexpr uint32_t BLOCK_THREADS         = ThreadsPerBlock;
   static constexpr uint32_t BUFFERS_PER_THREAD    = BuffersPerThread;
   static constexpr uint32_t TLEV_BYTES_PER_THREAD = TlevBytesPerThread;
-  static constexpr uint32_t PREFER_POW2_BITS      = PreferPow2Bits;
+  static constexpr bool PREFER_POW2_BITS          = PreferPow2Bits;
   static constexpr uint32_t BLOCK_LEVEL_TILE_SIZE = BlockLevelTileSize;
   static constexpr uint32_t WARP_LEVEL_THRESHOLD  = WarpLevelThreshold;
   static constexpr uint32_t BLOCK_LEVEL_THRESHOLD = BlockLevelThreshold;
@@ -527,7 +527,7 @@ class AgentBatchMemcpy
 
   static constexpr uint32_t BLOCK_LEVEL_THRESHOLD = AgentMemcpySmallBuffersPolicyT::BLOCK_LEVEL_THRESHOLD;
 
-  static constexpr uint32_t BUFFER_STABLE_PARTITION = false;
+  static constexpr bool BUFFER_STABLE_PARTITION = false;
 
   // Constants
   enum class size_class : uint32_t

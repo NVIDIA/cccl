@@ -88,12 +88,12 @@ struct policy_selector
 {
   int key_size;
   int key_align;
-  int key_is_trivially_relocatable;
+  bool key_is_trivially_relocatable;
   bool key_iterators_are_contiguous;
   bool key_iterator_value_types_are_the_same;
   int value_size; // if 0, then this is a keys-only policy
   int value_align;
-  int value_is_trivially_relocatable;
+  bool value_is_trivially_relocatable;
   bool value_iterators_are_contiguous;
   bool value_iterator_value_types_are_the_same;
   int offset_size;

@@ -411,8 +411,8 @@ _CCCL_HOST_DEVICE SegmentedSortPolicyWrapper<PolicyT> MakeSegmentedSortPolicyWra
 template <typename KeyT, typename ValueT>
 struct policy_hub
 {
-  using DominantT                = ::cuda::std::_If<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
-  static constexpr int KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
+  using DominantT                 = ::cuda::std::_If<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
   struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {

@@ -25,7 +25,7 @@ volatile ::std::sig_atomic_t should_abort = 0;
 
 void cleanupRoutine(int /*unused*/)
 {
-  ::std::_Exit(should_abort ? EXIT_SUCCESS : EXIT_FAILURE);
+  ::std::_Exit((should_abort != 0) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 int main()

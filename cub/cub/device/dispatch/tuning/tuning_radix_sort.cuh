@@ -1713,12 +1713,12 @@ struct policy_hub
     static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5;
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
     static constexpr int SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5;
-    static constexpr int OFFSET_64BIT           = sizeof(OffsetT) == 8 ? 1 : 0;
+    static constexpr bool OFFSET_64BIT          = sizeof(OffsetT) == 8;
     static constexpr int FLOAT_KEYS             = ::cuda::std::is_same_v<KeyT, float> ? 1 : 0;
 
     using OnesweepPolicyKey32 = detail::agent_radix_sort_onesweep_policy<
       384,
-      KEYS_ONLY ? 20 - OFFSET_64BIT - FLOAT_KEYS
+      KEYS_ONLY ? 20 - static_cast<int>(OFFSET_64BIT) - FLOAT_KEYS
                 : (sizeof(ValueT) < 8 ? (OFFSET_64BIT ? 17 : 23) : (OFFSET_64BIT ? 29 : 30)),
       DominantT,
       1,
@@ -1853,7 +1853,7 @@ struct policy_selector
   type_t key_type;
 
   // Whether this is a keys-only (or key-value) sort
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int __keys_only() const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool __keys_only() const
   {
     return value_size == 0;
   }
@@ -1882,7 +1882,7 @@ struct policy_selector
 
     const auto onesweep_policy_key32 = _CUB::detail::radix_sort::make_reg_scaled_radix_sort_onesweep_policy(
       384,
-      __keys_only() ? 20 - offset_64bit - key_is_float
+      __keys_only() ? 20 - static_cast<int>(offset_64bit) - static_cast<int>(key_is_float)
                     : (value_size < 8 ? (offset_64bit ? 17 : 23) : (offset_64bit ? 29 : 30)),
       __dominant_size(),
       RADIX_SORT_STORE_DIRECT,

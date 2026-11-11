@@ -240,7 +240,7 @@ struct CommandLineArgs
     {
       int deviceCount;
       error = CubDebug(cudaGetDeviceCount(&deviceCount));
-      if (error)
+      if (error != cudaSuccess)
       {
         break;
       }
@@ -260,7 +260,7 @@ struct CommandLineArgs
       }
 
       error = CubDebug(cudaSetDevice(dev));
-      if (error)
+      if (error != cudaSuccess)
       {
         break;
       }
@@ -269,13 +269,13 @@ struct CommandLineArgs
 
       int ptx_version = 0;
       error           = CubDebug(CUB_NS_QUALIFIER::PtxVersion(ptx_version));
-      if (error)
+      if (error != cudaSuccess)
       {
         break;
       }
 
       error = CubDebug(cudaGetDeviceProperties(&deviceProp, dev));
-      if (error)
+      if (error != cudaSuccess)
       {
         break;
       }
@@ -288,14 +288,14 @@ struct CommandLineArgs
 
       int memoryClockRate{};
       error = CubDebug(cudaDeviceGetAttribute(&memoryClockRate, cudaDevAttrMemoryClockRate, dev));
-      if (error)
+      if (error != cudaSuccess)
       {
         break;
       }
 
       int memoryBusWidth{};
       error = CubDebug(cudaDeviceGetAttribute(&memoryBusWidth, cudaDevAttrGlobalMemoryBusWidth, dev));
-      if (error)
+      if (error != cudaSuccess)
       {
         break;
       }
@@ -317,7 +317,7 @@ struct CommandLineArgs
           (unsigned long long) device_total_physmem / 1024 / 1024,
           device_giga_bandwidth,
           memoryClockRate,
-          (deviceProp.ECCEnabled) ? "on" : "off");
+          (deviceProp.ECCEnabled != 0) ? "on" : "off");
         fflush(stdout);
       }
 

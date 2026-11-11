@@ -138,9 +138,9 @@ int main(int argc, char** argv)
 
   // Check for correctness (and display results, if specified)
   stream.sync();
-  const int compare = CompareDeviceResults(&h_reference, d_out.data(), 1, g_verbose, g_verbose, stream);
+  const bool compare = CompareDeviceResults(&h_reference, d_out.data(), 1, g_verbose, g_verbose, stream) != 0;
   printf("\t%s", compare ? "FAIL" : "PASS");
-  AssertEquals(0, compare);
+  AssertEquals(false, compare);
 
   // Cleanup
   delete[] h_in;

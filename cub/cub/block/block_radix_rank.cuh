@@ -924,7 +924,7 @@ struct BlockRadixRankMatchEarlyCounts
   static constexpr int RADIX_DIGITS            = 1 << RadixBits;
   static constexpr int BINS_PER_THREAD         = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS;
   static constexpr int BINS_TRACKED_PER_THREAD = BINS_PER_THREAD;
-  static constexpr int FULL_BINS               = BINS_PER_THREAD * BLOCK_THREADS == RADIX_DIGITS;
+  static constexpr bool FULL_BINS              = BINS_PER_THREAD * BLOCK_THREADS == RADIX_DIGITS;
   static constexpr int WARP_THREADS            = detail::warp_threads;
   static constexpr int PARTIAL_WARP_THREADS    = BLOCK_THREADS % WARP_THREADS;
   static constexpr int BLOCK_WARPS             = BLOCK_THREADS / WARP_THREADS;

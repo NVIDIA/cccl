@@ -116,7 +116,7 @@ template <class _Tp>
 
   const auto __storage = ::cuda::std::__fp_get_storage(__x);
   return ((__storage & __fp_exp_mask_of_v<__half>) == __fp_exp_mask_of_v<__half>)
-      && (__storage & __fp_mant_mask_of_v<__half>);
+      && ((__storage & __fp_mant_mask_of_v<__half>) != 0);
 }
 #endif // _CCCL_HAS_NVFP16()
 
@@ -132,7 +132,7 @@ template <class _Tp>
 
   const auto __storage = ::cuda::std::__fp_get_storage(__x);
   return ((__storage & __fp_exp_mask_of_v<__nv_bfloat16>) == __fp_exp_mask_of_v<__nv_bfloat16>)
-      && (__storage & __fp_mant_mask_of_v<__nv_bfloat16>);
+      && ((__storage & __fp_mant_mask_of_v<__nv_bfloat16>) != 0);
 }
 #endif // _CCCL_HAS_NVBF16()
 
@@ -147,7 +147,7 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool isnan(__nv_fp8_e5m2 __x) noexcept
 {
   return ((__x.__x & __fp_exp_mask_of_v<__nv_fp8_e5m2>) == __fp_exp_mask_of_v<__nv_fp8_e5m2>)
-      && (__x.__x & __fp_mant_mask_of_v<__nv_fp8_e5m2>);
+      && ((__x.__x & __fp_mant_mask_of_v<__nv_fp8_e5m2>) != 0);
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 

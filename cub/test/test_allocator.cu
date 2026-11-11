@@ -33,7 +33,7 @@ using namespace cub;
 // is okay for the tests here. Do not use this pattern in production code.
 
 // Once launched, this kernel will block the stream until `flag` updates to non-zero.
-__global__ void block_stream(const volatile cuda::std::int32_t* flag)
+__global__ void block_stream(const volatile bool* flag)
 {
   while (!(*flag))
   {
@@ -56,20 +56,20 @@ struct blocking_kernel
   void block()
   {
     _CubLog("Blocking Stream %lld\n", reinterpret_cast<long long>(m_stream));
-    m_host_flag = 0;
+    m_host_flag = false;
     block_stream<<<1, 1, 0, m_stream>>>(m_device_flag);
   }
 
   void unblock()
   {
-    volatile cuda::std::int32_t& flag = m_host_flag;
-    flag                              = 1;
+    volatile bool& flag = m_host_flag;
+    flag                = true;
     _CubLog("Unblocking Stream %lld\n", reinterpret_cast<long long>(m_stream));
   }
 
 private:
-  cuda::std::int32_t m_host_flag{};
-  cuda::std::int32_t* m_device_flag{};
+  bool m_host_flag{};
+  bool* m_device_flag{};
   cudaStream_t m_stream{nullptr};
 };
 
