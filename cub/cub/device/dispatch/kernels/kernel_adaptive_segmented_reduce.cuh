@@ -26,6 +26,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -381,6 +382,14 @@ __launch_bounds__(int(::cub::detail::current_policy<PolicySelector>().threads_pe
         if constexpr (::cuda::__is_cuda_std_plus_v<ReductionOpT>)
         {
           ref.fetch_add(acc, ::cuda::memory_order_relaxed);
+        }
+        else if constexpr (::cuda::std::is_floating_point_v<T>)
+        {
+          // fetch_min/max do not match the NaN semantics of cuda::minimum/maximum
+          T old = ref.load(::cuda::memory_order_relaxed);
+          while (!ref.compare_exchange_weak(old, reduction_op(old, acc), ::cuda::memory_order_relaxed))
+          {
+          }
         }
         else if constexpr (::cuda::__is_cuda_minimum_v<ReductionOpT>)
         {
