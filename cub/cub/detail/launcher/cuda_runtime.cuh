@@ -129,8 +129,6 @@ struct TripleChevronFactory
     return ::cudaMemcpyAsync(dst, src, num_bytes, kind, stream);
   }
 
-  // TODO(bgruber): this is very similar to thrust::cuda_cub::core::get_max_shared_memory_per_block. We should unify
-  // this.
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION cudaError_t MaxSharedMemory(int& max_shared_memory) const
   {
     int device = 0;

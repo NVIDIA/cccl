@@ -15,7 +15,8 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
-#include <cuda/std/cstdlib> // for malloc & free
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__cstdlib/malloc.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential

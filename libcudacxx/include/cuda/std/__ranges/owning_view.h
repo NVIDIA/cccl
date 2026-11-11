@@ -158,6 +158,14 @@ _CCCL_CTAD_SUPPORTED_FOR_TYPE(owning_view);
 template <class _Rp>
 inline constexpr bool enable_borrowed_range<owning_view<_Rp>> = enable_borrowed_range<_Rp>;
 
+// This view preserves the size of its underlying range.
+template <class _Range>
+inline constexpr size_t __static_size_v<owning_view<_Range>> = __static_size_v<_Range>;
+
+template <class _Range>
+inline constexpr size_t __static_size_v<const owning_view<_Range>> =
+  (range<const owning_view<_Range>>) ? __static_size_v<const _Range> : dynamic_extent;
+
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>

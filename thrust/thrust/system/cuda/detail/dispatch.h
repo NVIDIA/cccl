@@ -23,8 +23,7 @@
 #include <cuda/std/limits>
 
 #if _CCCL_HOSTED()
-#  include <stdexcept>
-#  include <string>
+#  include <stdexcept> // IWYU pragma: keep
 #endif // _CCCL_HOSTED()
 
 THRUST_NAMESPACE_BEGIN
