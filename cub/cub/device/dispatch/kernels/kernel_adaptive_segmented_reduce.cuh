@@ -168,8 +168,9 @@ template <class PolicySelector,
           class EndOffsetIteratorT,
           class ReductionOpT,
           class InitValueT>
-_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block),
-                                          2048 / int(current_policy<PolicySelector>().threads_per_block)) //
+_CCCL_KERNEL_ATTRIBUTES
+__launch_bounds__(int(::cub::detail::current_policy<PolicySelector>().threads_per_block),
+                  2048 / int(::cub::detail::current_policy<PolicySelector>().threads_per_block)) //
   void DeviceAdaptiveSegmentedReduceKernel(
     const InputIterator d_in,
     const OutputIterator d_out,
@@ -179,7 +180,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(current_policy<PolicySelector>().t
     ReductionOpT reduction_op,
     const InitValueT init)
 {
-  constexpr auto policy = current_policy<PolicySelector>();
+  constexpr auto policy = ::cub::detail::current_policy<PolicySelector>();
 
   using T          = typename ::cuda::std::iterator_traits<InputIterator>::value_type;
   constexpr int V  = 16 / sizeof(T);
@@ -198,7 +199,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(current_policy<PolicySelector>().t
   const int num_warps  = gridDim.x * (policy.threads_per_block / 32);
   const int local_warp = threadIdx.x >> 5;
 
-  using WarpReduceT = cub::WarpReduce<T>;
+  using WarpReduceT = ::cub::WarpReduce<T>;
   __shared__ typename WarpReduceT::TempStorage warp_temp[policy.threads_per_block / 32];
 
   // Assign one contiguous chunk of the input to each warp.
@@ -218,7 +219,8 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(current_policy<PolicySelector>().t
   int seg = 0;
   if (lane < 2)
   {
-    seg = FindSegment(num_segments, d_end_offsets, (lane == 0) ? warp_begin : (warp_end - 1));
+    seg = ::cub::detail::segmented_reduce::FindSegment(
+      num_segments, d_end_offsets, (lane == 0) ? warp_begin : (warp_end - 1));
   }
   const int first_seg = __shfl_sync(0xffffffffu, seg, 0);
   const int last_seg  = __shfl_sync(0xffffffffu, seg, 1);
@@ -276,7 +278,8 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(current_policy<PolicySelector>().t
         if (j + V <= body_end)
         {
           const vecT chunk = *reinterpret_cast<const vecT*>(&d_in[j]);
-          acc              = reduction_op(acc, cub::ThreadReduce(reinterpret_cast<const T(&)[V]>(chunk), reduction_op));
+          acc =
+            reduction_op(acc, ::cub::ThreadReduce(reinterpret_cast<const T(&)[V]>(chunk), reduction_op));
         }
       }
 
@@ -292,7 +295,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(current_policy<PolicySelector>().t
             if (jj + V <= body_end)
             {
               const vecT chunk = *reinterpret_cast<const vecT*>(&d_in[jj]);
-              acc = reduction_op(acc, cub::ThreadReduce(reinterpret_cast<const T(&)[V]>(chunk), reduction_op));
+              acc = reduction_op(acc, ::cub::ThreadReduce(reinterpret_cast<const T(&)[V]>(chunk), reduction_op));
             }
           }
         }
@@ -340,9 +343,10 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(current_policy<PolicySelector>().t
           const int rem_u = rem - V * 32 * u;
           if (rem_u >= V)
           {
-            const vecT chunk = cub::ThreadLoad<cub::LOAD_LDG>(reinterpret_cast<const vecT*>(&d_in[coop_end - rem_u]));
+            const vecT chunk =
+              ::cub::ThreadLoad<::cub::LOAD_LDG>(reinterpret_cast<const vecT*>(&d_in[coop_end - rem_u]));
             lane_partial =
-              reduction_op(lane_partial, cub::ThreadReduce(reinterpret_cast<const T(&)[V]>(chunk), reduction_op));
+              reduction_op(lane_partial, ::cub::ThreadReduce(reinterpret_cast<const T(&)[V]>(chunk), reduction_op));
           }
         }
       }

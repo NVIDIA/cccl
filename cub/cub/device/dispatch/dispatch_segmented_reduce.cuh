@@ -520,7 +520,7 @@ struct DeviceAdaptiveSegmentedReduceKernelSource
 
   _CCCL_HOST_DEVICE_API static constexpr adaptive_segmented_reduce_policy GetPolicy(const ::cuda::compute_capability cc)
   {
-    return select_policy<PolicySelector>(cc);
+    return ::cub::detail::select_policy<PolicySelector>(cc);
   }
 
   CUB_DEFINE_KERNEL_GETTER(
@@ -614,7 +614,7 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_adaptive_segmented_reduce(
     return error;
   }
 
-  return CubDebug(detail::DebugSyncStream(stream));
+  return CubDebug(::cub::detail::DebugSyncStream(stream));
 }
 
 // select the accumulator type using an overload set, so __accumulator_t is not instantiated when
