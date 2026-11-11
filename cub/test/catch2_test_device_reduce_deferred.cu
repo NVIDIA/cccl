@@ -18,6 +18,7 @@
 #include <cuda/argument>
 #include <cuda/iterator>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/cstddef>
 #include <cuda/std/functional>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
@@ -428,8 +429,8 @@ CUB_TEST("DeviceReduce entry points sharing reduce dispatch accept deferred num_
   constexpr count_t num_items = 1'000;
 
   c2h::device_vector<value_t> input(capacity, value_t{2});
-  input[num_items]     = value_t{1};
-  input[num_items + 1] = value_t{3};
+  input[num_items]                                     = value_t{1};
+  input[static_cast<cuda::std::size_t>(num_items) + 1] = value_t{3};
   const c2h::device_vector<count_t> device_num_items(1, num_items);
   c2h::device_vector<value_t> output(1, value_t{-1});
 
@@ -575,8 +576,8 @@ CUB_TEST("DeviceReduce environment entry points accept deferred num_items", "[de
 
   constexpr count_t num_items = 1'000;
   c2h::device_vector<value_t> input(num_items + 2, value_t{2});
-  input[num_items]     = value_t{1};
-  input[num_items + 1] = value_t{3};
+  input[num_items]                                     = value_t{1};
+  input[static_cast<cuda::std::size_t>(num_items) + 1] = value_t{3};
   const c2h::device_vector<count_t> device_num_items(1, num_items);
   c2h::device_vector<value_t> output(1, value_t{-1});
 

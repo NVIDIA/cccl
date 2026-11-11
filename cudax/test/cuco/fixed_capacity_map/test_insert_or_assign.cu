@@ -70,8 +70,10 @@ struct matches_payload
   [[nodiscard]] _CCCL_DEVICE_API bool operator()(int i) const noexcept
   {
     const auto value = values[i];
-    return duplicates ? (value >= i + offset && value < count + offset && (value - offset) % 17 == i)
-                      : value == i + offset;
+    return duplicates
+           ? (value >= static_cast<Value>(i) + offset && value < static_cast<Value>(count) + offset
+              && (value - offset) % 17 == i)
+           : value == static_cast<Value>(i) + offset;
   }
 };
 

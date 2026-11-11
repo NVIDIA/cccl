@@ -183,7 +183,7 @@ C2H_TEST("fixed_capacity_map for_each", "[container]", key_types, mapped_types, 
   map.insert(stream, pairs, pairs + num_keys);
 
   // Query present keys [0, num_keys) and absent keys [num_keys, 2 * num_keys)
-  auto visits = ::cuda::make_buffer<int>(stream, mr, 2 * num_keys, 0);
+  auto visits = ::cuda::make_buffer<int>(stream, mr, ::cuda::std::size_t{2} * num_keys, 0);
 
   map.for_each(stream,
                cuda::counting_iterator<key_type>{0},
@@ -197,7 +197,7 @@ C2H_TEST("fixed_capacity_map for_each", "[container]", key_types, mapped_types, 
     visited_once_iff_present{visits.data(), num_keys}));
 
   // A callback with a non-const call operator is accepted
-  auto mutable_visits = ::cuda::make_buffer<int>(stream, mr, 2 * num_keys, 0);
+  auto mutable_visits = ::cuda::make_buffer<int>(stream, mr, ::cuda::std::size_t{2} * num_keys, 0);
   map.for_each(stream,
                cuda::counting_iterator<key_type>{0},
                cuda::counting_iterator<key_type>{2 * num_keys},
@@ -220,7 +220,7 @@ C2H_TEST("fixed_capacity_map for_each", "[container]", key_types, mapped_types, 
     ::thrust::cuda::par.on(stream.get()), empty_visits.data(), empty_visits.data() + num_keys, is_zero{}));
 
   // The async overload only enqueues the work; the caller synchronizes
-  auto async_visits = ::cuda::make_buffer<int>(stream, mr, 2 * num_keys, 0);
+  auto async_visits = ::cuda::make_buffer<int>(stream, mr, ::cuda::std::size_t{2} * num_keys, 0);
   map.for_each_async(stream,
                      cuda::counting_iterator<key_type>{0},
                      cuda::counting_iterator<key_type>{2 * num_keys},
@@ -234,7 +234,7 @@ C2H_TEST("fixed_capacity_map for_each", "[container]", key_types, mapped_types, 
     visited_once_iff_present{async_visits.data(), num_keys}));
 
   // The device-side ref API visits the same slots as the host API
-  auto ref_visits = ::cuda::make_buffer<int>(stream, mr, 2 * num_keys, 0);
+  auto ref_visits = ::cuda::make_buffer<int>(stream, mr, ::cuda::std::size_t{2} * num_keys, 0);
   {
     constexpr int block_size = 128;
     const auto num_threads   = 2 * num_keys * cg_size;

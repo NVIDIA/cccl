@@ -109,7 +109,7 @@ C2H_TEST("fixed_capacity_map insert and contains", "[container]", key_types, cg_
   map.insert(stream, __pairs, __pairs + num_keys);
 
   // Query present keys [0, num_keys) and absent keys [num_keys, 2 * num_keys)
-  auto found = ::cuda::make_buffer<int>(stream, mr, 2 * num_keys, 0);
+  auto found = ::cuda::make_buffer<int>(stream, mr, ::cuda::std::size_t{2} * num_keys, 0);
   map.contains(
     stream, cuda::counting_iterator<key_type>{0}, cuda::counting_iterator<key_type>{2 * num_keys}, found.begin());
 

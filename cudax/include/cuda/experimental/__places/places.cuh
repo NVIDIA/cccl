@@ -365,7 +365,8 @@ public:
     const int devid = p.pimpl_->get_device_ordinal();
     EXPECT(devid >= -2, "Data place with device id ", devid, " does not refer to a device.");
     _CCCL_ASSERT(devid < cuda_try<cudaGetDeviceCount>(), "Invalid device id");
-    return devid + 2;
+    const auto index = static_cast<long long>(devid) + 2;
+    return static_cast<size_t>(index);
   }
 
   /**

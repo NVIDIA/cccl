@@ -245,9 +245,10 @@ TEST_CASE("fill_bytes handles layout_left device mdspan", "[fill_bytes][layout_l
   constexpr int cols = 456;
   using extents_t    = cuda::std::extents<int, rows, cols>;
 
-  auto input           = make_host_data<uint16_t>(rows * cols, 0xCD);
+  auto input           = make_host_data<uint16_t>(static_cast<cuda::std::size_t>(rows) * cols, 0xCD);
   const uint16_t value = 0x1234;
-  test_impl<cuda::std::layout_left>(input, contiguous_fill_bytes<uint16_t>(rows * cols, value), extents_t{}, value);
+  test_impl<cuda::std::layout_left>(
+    input, contiguous_fill_bytes<uint16_t>(static_cast<cuda::std::size_t>(rows) * cols, value), extents_t{}, value);
 }
 
 TEST_CASE("fill_bytes handles singleton dimensions", "[fill_bytes][singleton]")
@@ -256,10 +257,12 @@ TEST_CASE("fill_bytes handles singleton dimensions", "[fill_bytes][singleton]")
   constexpr int cols = 4;
   using extents_t    = cuda::std::extents<int, rows, 1, cols>;
 
-  auto input           = make_host_data<uint16_t>(rows * cols, 0xCD);
+  auto input           = make_host_data<uint16_t>(static_cast<cuda::std::size_t>(rows) * cols, 0xCD);
   constexpr auto value = uint16_t{0x1234};
-  test_impl(input, contiguous_fill_bytes<uint16_t>(rows * cols, value), extents_t{}, value);
-  test_impl<cuda::std::layout_left>(input, contiguous_fill_bytes<uint16_t>(rows * cols, value), extents_t{}, value);
+  test_impl(
+    input, contiguous_fill_bytes<uint16_t>(static_cast<cuda::std::size_t>(rows) * cols, value), extents_t{}, value);
+  test_impl<cuda::std::layout_left>(
+    input, contiguous_fill_bytes<uint16_t>(static_cast<cuda::std::size_t>(rows) * cols, value), extents_t{}, value);
 }
 
 TEST_CASE("fill_bytes preserves padding bytes in strided row-major destination layouts", "[fill_bytes][stride]")
@@ -280,7 +283,7 @@ TEST_CASE("fill_bytes preserves padding bytes in strided row-major destination l
   {
     for (int col = 0; col < cols; ++col)
     {
-      fill_expected_element<uint16_t>(expected, row * ld + col, value);
+      fill_expected_element<uint16_t>(expected, static_cast<cuda::std::size_t>(row) * ld + col, value);
     }
   }
   test_impl_stride(input, expected, extents_t{}, strides, value);
@@ -304,7 +307,7 @@ TEST_CASE("fill_bytes preserves padding bytes in strided column-major destinatio
   {
     for (int col = 0; col < cols; ++col)
     {
-      fill_expected_element<uint16_t>(expected, row + col * ld, value);
+      fill_expected_element<uint16_t>(expected, row + static_cast<cuda::std::size_t>(col) * ld, value);
     }
   }
   test_impl_stride(input, expected, extents_t{}, strides, value);
@@ -402,7 +405,8 @@ TEST_CASE("fill_bytes preserves surrounding bytes in strided subviews with offse
   {
     for (int col = 0; col < cols; ++col)
     {
-      fill_expected_element<uint32_t>(expected, offset + row + col * ld, value);
+      fill_expected_element<uint32_t>(
+        expected, static_cast<cuda::std::size_t>(offset) + row + static_cast<cuda::std::size_t>(col) * ld, value);
     }
   }
   test_impl_stride(input, expected, extents_t{}, strides, value, offset);
