@@ -102,7 +102,7 @@ struct iterate_thread_store
   template <CacheStoreModifier MODIFIER, typename T>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void Store(T* ptr, T* vals)
   {
-    ThreadStore<MODIFIER>(ptr + COUNT, vals[COUNT]);
+    _CUB::ThreadStore<MODIFIER>(ptr + COUNT, vals[COUNT]);
     iterate_thread_store<COUNT + 1, MAX>::template Store<MODIFIER>(ptr, vals);
   }
 
@@ -130,7 +130,7 @@ struct iterate_thread_store<MAX, MAX>
 template <CacheStoreModifier MODIFIER, typename T, size_t... Is>
 _CCCL_DEVICE _CCCL_FORCEINLINE void store_helper(T* ptr, T* vals, ::cuda::std::index_sequence<Is...>)
 {
-  (ThreadStore<MODIFIER>(ptr + Is, vals[Is]), ...);
+  (_CUB::ThreadStore<MODIFIER>(ptr + Is, vals[Is]), ...);
 }
 
 template <typename T, size_t... Is>
@@ -220,10 +220,12 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void dereference_helper(volatile T* ptr, T* vals,
     _CUB_STORE_1(cub_modifier, ptx_modifier)
 
 //! Define ThreadStore specializations for the various Cache load modifiers
+// NOLINTBEGIN(readability-non-const-parameter)
 _CUB_STORE_ALL(STORE_WB, wb)
 _CUB_STORE_ALL(STORE_CG, cg)
 _CUB_STORE_ALL(STORE_CS, cs)
 _CUB_STORE_ALL(STORE_WT, wt)
+// NOLINTEND(readability-non-const-parameter)
 
 // Macro cleanup
 #  undef _CUB_STORE_ALL
@@ -281,7 +283,8 @@ ThreadStoreVolatilePtr(T* ptr, T val, ::cuda::std::false_type /*is_primitive*/)
     reinterpret_cast<ShuffleWord*>(words)[i] = reinterpret_cast<ShuffleWord*>(&val)[i];
   }
 
-  detail::iterate_thread_store<0, VOLATILE_MULTIPLE>::Dereference(reinterpret_cast<volatile VolatileWord*>(ptr), words);
+  _CUB::detail::iterate_thread_store<0, VOLATILE_MULTIPLE>::Dereference(
+    reinterpret_cast<volatile VolatileWord*>(ptr), words);
 }
 
 //! ThreadStore definition for STORE_VOLATILE modifier on pointer types
@@ -290,7 +293,7 @@ template <typename T>
 CCCL_DEPRECATED_BECAUSE("Use ThreadStore<STORE_VOLATILE>(ptr, val) instead") _CCCL_DEVICE _CCCL_FORCEINLINE void
 ThreadStore(T* ptr, T val, detail::constant_t<STORE_VOLATILE> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
-  ThreadStoreVolatilePtr(ptr, val, detail::bool_constant_v<detail::is_primitive<T>::value>);
+  _CUB::ThreadStoreVolatilePtr(ptr, val, detail::bool_constant_v<detail::is_primitive<T>::value>);
 }
 
 //! ThreadStore definition for generic modifiers on pointer types
@@ -314,7 +317,7 @@ ThreadStore(T* ptr, T val, detail::constant_t<MODIFIER> /*modifier*/, ::cuda::st
     reinterpret_cast<ShuffleWord*>(words)[i] = reinterpret_cast<ShuffleWord*>(&val)[i];
   }
 
-  detail::iterate_thread_store<0, DEVICE_MULTIPLE>::template Store<CacheStoreModifier(MODIFIER)>(
+  _CUB::detail::iterate_thread_store<0, DEVICE_MULTIPLE>::template Store<CacheStoreModifier(MODIFIER)>(
     reinterpret_cast<DeviceWord*>(ptr), words);
 }
 
@@ -349,13 +352,14 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStore(OutputIteratorT itr, T val)
 
     if constexpr (MODIFIER == STORE_VOLATILE)
     {
-      detail::dereference_helper(reinterpret_cast<volatile StoreWord*>(::cuda::std::to_address(itr)),
-                                 words,
-                                 ::cuda::std::make_index_sequence<WORD_MULTIPLE>{});
+      _CUB::detail::dereference_helper(
+        reinterpret_cast<volatile StoreWord*>(::cuda::std::to_address(itr)),
+        words,
+        ::cuda::std::make_index_sequence<WORD_MULTIPLE>{});
     }
     else
     {
-      detail::store_helper<MODIFIER>(
+      _CUB::detail::store_helper<MODIFIER>(
         reinterpret_cast<StoreWord*>(::cuda::std::to_address(itr)),
         words,
         ::cuda::std::make_index_sequence<WORD_MULTIPLE>{});

@@ -87,6 +87,16 @@ struct ThreadsInWarpMappingResult
     return 32;
   }
 
+  __device__ static constexpr bool has_uniform_static_unit_count()
+  {
+    return true;
+  }
+
+  __device__ static constexpr cuda::std::size_t static_unit_count(cuda::std::size_t)
+  {
+    return 32;
+  }
+
   __device__ unsigned unit_count() const
   {
     return 32;

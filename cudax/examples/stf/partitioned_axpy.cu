@@ -84,15 +84,16 @@ int main()
   // 2. Run STF tasks over logical data placed by the same policy
   stream_ctx ctx;
 
-  ::std::vector<double> X(N), Y(N);
+  ::std::vector<double> X(N);
+  ::std::vector<double> Y(N);
   for (size_t i = 0; i < N; i++)
   {
     X[i] = X0(i);
     Y[i] = Y0(i);
   }
 
-  auto lX = ctx.logical_data(&X[0], N);
-  auto lY = ctx.logical_data(&Y[0], N);
+  auto lX = ctx.logical_data(X.data(), N);
+  auto lY = ctx.logical_data(Y.data(), N);
 
   const double alpha = 3.14;
 

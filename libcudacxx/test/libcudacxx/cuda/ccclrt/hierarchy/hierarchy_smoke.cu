@@ -342,7 +342,7 @@ C2H_TEST("Dims queries indexing and ambient hierarchy", "[hierarchy]")
 }
 
 template <typename Hierarchy>
-__global__ void rank_kernel_optimized(Hierarchy hierarchy, unsigned int* out)
+__global__ void rank_kernel_optimized(Hierarchy hierarchy, unsigned int* out) // NOLINT(readability-non-const-parameter)
 {
   auto thread_id = cuda::gpu_thread.rank(cuda::block, hierarchy);
   out[thread_id] = thread_id;

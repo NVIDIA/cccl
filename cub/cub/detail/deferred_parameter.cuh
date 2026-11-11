@@ -42,7 +42,7 @@ template <typename NumItemsT>
 {
   using offset_t         = num_items_offset_t<NumItemsT>;
   const auto upper_bound = ::cuda::args::__highest_(num_items);
-  assert_num_items_nonnegative(upper_bound);
+  _CUB::detail::assert_num_items_nonnegative(upper_bound);
   return static_cast<offset_t>(upper_bound);
 }
 
@@ -60,7 +60,7 @@ template <typename NumItemsT>
   {
     using offset_t   = choose_offset_t<typename args_traits_t::value_type>;
     const auto value = ::cuda::args::__unwrap(num_items);
-    assert_num_items_nonnegative(value);
+    _CUB::detail::assert_num_items_nonnegative(value);
     return static_cast<offset_t>(value);
   }
 }
@@ -100,7 +100,7 @@ parameter_from_host(::cuda::args::deferred<SourceT, StaticBoundsT> parameter) no
 #  endif
 
 template <typename TargetT, typename ParameterT>
-using parameter_from_host_t = decltype(parameter_from_host<TargetT>(::cuda::std::declval<ParameterT>()));
+using parameter_from_host_t = decltype(_CUB::detail::parameter_from_host<TargetT>(::cuda::std::declval<ParameterT>()));
 
 template <typename NumItemsT>
 [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE constexpr auto
@@ -118,10 +118,10 @@ make_num_items_kernel_arg(NumItemsT num_items) noexcept
   }
   else
   {
-    assert_num_items_nonnegative(::cuda::args::__unwrap(num_items));
+    _CUB::detail::assert_num_items_nonnegative(::cuda::args::__unwrap(num_items));
   }
 
-  return parameter_from_host<num_items_offset_t<NumItemsT>>(num_items);
+  return _CUB::detail::parameter_from_host<num_items_offset_t<NumItemsT>>(num_items);
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
@@ -131,14 +131,14 @@ template <typename TargetT, typename ParameterT>
 {
   if constexpr (::cuda::std::is_same_v<ParameterT, TargetT>)
   {
-    assert_num_items_nonnegative(parameter);
+    _CUB::detail::assert_num_items_nonnegative(parameter);
     return parameter;
   }
   else
   {
     using element_t       = typename ::cuda::args::__traits<ParameterT>::element_type;
     const element_t value = parameter[0];
-    assert_num_items_nonnegative(value);
+    _CUB::detail::assert_num_items_nonnegative(value);
     return static_cast<TargetT>(value);
   }
 }
@@ -149,7 +149,7 @@ parameter_from_device(::cuda::args::deferred<SourceT, StaticBoundsT> parameter) 
 {
   using element_t       = typename ::cuda::args::__traits<decltype(parameter)>::element_type;
   const element_t value = ::cuda::args::__unwrap(parameter)[0];
-  assert_num_items_nonnegative(value);
+  _CUB::detail::assert_num_items_nonnegative(value);
   _CCCL_ASSERT(::cuda::std::cmp_greater_equal(value, ::cuda::args::__lowest_(parameter))
                  && ::cuda::std::cmp_less_equal(value, ::cuda::args::__highest_(parameter)),
                "deferred num_items is outside its declared bounds");

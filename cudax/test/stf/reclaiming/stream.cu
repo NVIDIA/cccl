@@ -51,7 +51,6 @@ class one_block_allocator : public block_allocator_interface
 public:
   one_block_allocator() = default;
 
-public:
   // Note that this allocates memory immediately, so we just do not modify the event list and ignore it
   void* allocate(backend_ctx_untyped&, const data_place& memory_node, ::std::ptrdiff_t& s, event_list&) override
   {

@@ -982,20 +982,50 @@ struct as_expected_t
 };
 inline constexpr as_expected_t as_expected{};
 
+namespace detail
+{
+template <class _R>
+auto __normalize(_R&& __r);
+} // namespace detail
+
 /**
- * @brief Predicate guard for an exception-path sequence.
+ * @brief Predicate guard: `when(pred)(s)` restricts the sink `s` to the cases where `pred` holds.
  *
+ * `when(pred)` is itself a sink, the guard; applying it to a sink `s` yields `when(pred) & s`.
  * There is no runtime "nop" answer on the exception path: a hook either accepts or forwards.
  * A true predicate contributes a void effect answer so `&` continues; false forwards by
  * throwing. As a `|` arm this means "not applicable, try the next arm"; inside `&`, false
- * passes the whole sequence through. `if_isa` remains separate because its typed claims support
- * the starved-arm theorem, while arbitrary predicates do not.
+ * passes the whole sequence through. The predicate takes either nothing or the
+ * `const std::exception*` of the failure in flight. A guard can be named and applied to
+ * several sinks: `auto transient = when(is_transient); transient(retry(3)) | transient(notify(log))`.
+ * The guard holds the predicate by value: an lvalue predicate is copied, so later changes to the
+ * original do not reach the guard; pass `std::ref(pred)` to share one predicate object. Each
+ * application copies the predicate into the guarded sink.
+ * `if_isa` remains separate because its typed claims support the starved-arm theorem, while
+ * arbitrary predicates do not.
  */
 template <class _Pred>
-struct when_t
+struct when
 {
-  _CUDAX_STF_SINK(when_t)
+  _CUDAX_STF_SINK(when)
   _Pred __pred_;
+
+  explicit when(_Pred __pred)
+      : __pred_(::cuda::std::move(__pred))
+  {}
+
+  //! @brief Applies the guard to a sink: `when(pred)(s)` is `when(pred) & s`.
+  template <class _P>
+  auto operator()(_P&& __p) const&
+  {
+    return *this & detail::__normalize(::cuda::std::forward<_P>(__p));
+  }
+
+  template <class _P>
+  auto operator()(_P&& __p) &&
+  {
+    return ::cuda::std::move(*this) & detail::__normalize(::cuda::std::forward<_P>(__p));
+  }
 
   static constexpr bool __nothrow_pred =
     ::cuda::std::is_invocable_v<_Pred&, const ::std::exception*>
@@ -1052,13 +1082,103 @@ struct when_t
 };
 
 /**
- * @brief Boundary translation: catches a `_From` (catch-clause rules: same or publicly
- * derived) and throws a `_To` (a `std::exception` derivative) -- constructed from the caught
- * `_From` when such a constructor exists, default-constructed otherwise. Anything that is not a `_From` forwards
- * untouched, so `translate<low, high> | ...` ladders compose; a following arm sees the `_To`.
+ * @brief Boundary translation. `translate<To>` replaces every failure by a `To` built from it;
+ * `translate<From, To>` does so only for a `From` (catch-clause rules: same or publicly
+ * derived) and forwards anything else untouched.
+ *
+ * `To` is a `std::exception` derivative, constructed from the caught exception when such a
+ * constructor exists, from its `what()` otherwise, default-constructed failing both. The
+ * one-type form claims everything, a non-standard exception included, for which `To` is
+ * built from the message "non-standard exception" when it takes a `const char*`, and
+ * default-constructed otherwise. Restrict the source with a selector, as in
+ * `if_isa<cuda_error>(translate<device_error>)`. A following `|` arm sees the `To`, so
+ * `translate<low, high> | if_isa<high>(...)` ladders compose.
  */
-template <class _From, class _To>
+template <class... _Ts>
 struct translate_t
+{
+  static_assert(sizeof...(_Ts) == 1 || sizeof...(_Ts) == 2,
+                "translate<To> replaces every exception; translate<From, To> replaces a From");
+};
+
+template <class _To>
+struct translate_t<_To>
+{
+  static_assert(::cuda::std::is_base_of_v<::std::exception, _To>,
+                "translate: the target type must derive from std::exception");
+
+  _CUDAX_STF_SINK(translate_t)
+  using __pure_claim_tag _CCCL_NODEBUG = void;
+
+  //! Everything is claimed; the funnel pointer, null or not, says how to build the `_To`.
+  __claim __claims(const ::std::exception*) const noexcept
+  {
+    return __claim::__yes;
+  }
+
+  template <class _Fn>
+  [[noreturn]] nullval __claimed(const ::std::exception* __e, const ::cuda::std::source_location, _Fn&) const
+  {
+    if (__e)
+    {
+      __throw_translated(*__e);
+    }
+    __throw_translated();
+    _CCCL_UNREACHABLE();
+  }
+
+  template <class _Fn>
+  [[noreturn]] nullval on_thrown(const ::std::exception* __e, const ::cuda::std::source_location __loc, _Fn& __fn) const
+  {
+    __claimed(__e, __loc, __fn);
+    _CCCL_UNREACHABLE(); // nvcc's front end does not propagate [[noreturn]] through the call above
+  }
+
+  // Builds and throws the `_To`: from the caught `_From` when such a constructor exists, from
+  // its `what()` otherwise, default-constructed failing both. Shared with `translate_t<_From, _To>`.
+  template <class _From>
+  [[noreturn]] static void __throw_translated(const _From& __from)
+  {
+    if constexpr (::cuda::std::is_constructible_v<_To, const _From&>)
+    {
+      _CCCL_THROW(_To, __from);
+    }
+    else if constexpr (::cuda::std::is_base_of_v<::std::exception, _From>
+                       && ::cuda::std::is_constructible_v<_To, const char*>)
+    {
+      _CCCL_THROW(_To, __from.what()); // carry the message across the translation
+    }
+    else
+    {
+      static_assert(::cuda::std::is_default_constructible_v<_To>,
+                    "translate: To must be constructible from the caught exception, from its what(), or "
+                    "default-constructible");
+      _CCCL_THROW(_To);
+    }
+    _CCCL_UNREACHABLE(); // NVHPC's front end does not see the _CCCL_THROW above as terminating
+  }
+
+  // The `_To` for a non-standard exception, which offers nothing to build from: say so when
+  // `_To` takes a message, default-construct otherwise.
+  [[noreturn]] static void __throw_translated()
+  {
+    if constexpr (::cuda::std::is_constructible_v<_To, const char*>)
+    {
+      _CCCL_THROW(_To, "non-standard exception");
+    }
+    else
+    {
+      static_assert(::cuda::std::is_default_constructible_v<_To>,
+                    "translate<To>: To must be constructible from a const char* or default-constructible to stand "
+                    "in for a non-standard exception");
+      _CCCL_THROW(_To);
+    }
+    _CCCL_UNREACHABLE(); // NVHPC's front end does not see the _CCCL_THROW above as terminating
+  }
+};
+
+template <class _From, class _To>
+struct translate_t<_From, _To>
 {
   // The target must be a std::exception: the rest of the algebra reports through what(), and so
   // does _CCCL_THROW in a build without exceptions.
@@ -1082,7 +1202,9 @@ struct translate_t
   template <class _Fn>
   [[noreturn]] nullval __claimed(const ::std::exception* __e, const ::cuda::std::source_location, _Fn&) const
   {
-    __throw_translated(*dynamic_cast<const _From*>(__e)); // the claim was answered yes: the cast holds
+    // The claim was answered yes, so the cast holds.
+    translate_t<_To>::__throw_translated(*dynamic_cast<const _From*>(__e));
+    _CCCL_UNREACHABLE(); // nvcc's front end does not propagate [[noreturn]] through the call above
   }
 
   template <class _Fn>
@@ -1093,7 +1215,7 @@ struct translate_t
       // The funnel pointer decides for std-derived exceptions, no rethrow needed.
       if (const auto* __from = dynamic_cast<const _From*>(__e))
       {
-        __throw_translated(*__from);
+        translate_t<_To>::__throw_translated(*__from);
       }
       _CCCL_RETHROW; // decline: a std exception that is not a _From
     }
@@ -1104,42 +1226,17 @@ struct translate_t
     }
     _CCCL_CATCH (const _From& __from)
     {
-      __throw_translated(__from);
+      translate_t<_To>::__throw_translated(__from);
     }
     _CCCL_CATCH_FALLTHROUGH // decline: not a _From either
     _CCCL_UNREACHABLE();
   }
-
-private:
-  [[noreturn]] static void __throw_translated(const _From& __from)
-  {
-    if constexpr (::cuda::std::is_constructible_v<_To, const _From&>)
-    {
-      _CCCL_THROW(_To, __from);
-    }
-    else if constexpr (::cuda::std::is_base_of_v<::std::exception, _From>
-                       && ::cuda::std::is_constructible_v<_To, const char*>)
-    {
-      _CCCL_THROW(_To, __from.what()); // carry the message across the translation
-    }
-    else if constexpr (::cuda::std::is_default_constructible_v<_To>)
-    {
-      _CCCL_THROW(_To);
-    }
-    else
-    {
-      static_assert(!::cuda::std::is_same_v<_From, _From>,
-                    "translate<From, To>: To must be constructible from const From&, from "
-                    "From::what(), or default-constructible");
-    }
-    _CCCL_UNREACHABLE();
-  }
 };
 
-//! @brief Translates: catches a `_From` (catch-clause rules), throws a `_To` -- constructed from
-//! the caught `_From` when possible, default-constructed otherwise. Anything else forwards.
-template <class _From, class _To>
-inline constexpr translate_t<_From, _To> translate{};
+//! @brief Translates: `translate<To>` replaces every exception by a `To` built from it;
+//! `translate<From, To>` replaces a `From` and forwards anything else. See @ref translate_t.
+template <class... _Ts>
+inline constexpr translate_t<_Ts...> translate{};
 
 /**
  * @brief Throws a stored exception with the active exception nested as its cause.
@@ -2396,7 +2493,7 @@ struct __policy_and : __composite_hooks<_L, _R>
   }
 
   // The code channel, as on the exception channel: `_L` runs first, and a status it passes
-  // through leaves the composite without reaching `_R` (which is what makes `when(gate, p)` a
+  // through leaves the composite without reaching `_R` (which is what makes `when(gate)(p)` a
   // gate); otherwise `_R` answers. A throw from either side ends the matter.
   template <
     class _Status,
@@ -2452,8 +2549,8 @@ inline constexpr bool __has_pure_claim<__policy_and<_L, _R>> = __has_pure_claim<
 
 // Forward declaration: `|` and `*` reuse this for arm answer interpretation (defined below).
 template <class _Expr, class _P, class _Fn>
-_CCCL_FORCEINLINE _Expr __interpret_answer(
-  _P& __policy, const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn);
+_CCCL_FORCEINLINE _Expr
+__interpret_answer(_P& __policy, const ::std::exception* __exception, ::cuda::std::source_location __loc, _Fn& __fn);
 
 // The answer type of `|` and `*` is fixed by the callable alone: the callable's result, or the
 // resume tag for a void callable. The composites below spell it as their declared return type
@@ -4124,18 +4221,6 @@ template <class _P,
 [[nodiscard]] auto operator*(int __n, _P&& __p)
 {
   return ::cuda::std::forward<_P>(__p) * __n;
-}
-
-/**
- * @brief Restricts a policy with a runtime predicate.
- *
- * Returns `when_t{pred} & p`: as a `|` arm, false means the next alternative gets the
- * exception; inside a larger `&`, false passes the whole sequence through.
- */
-template <class _Pred, class _P>
-auto when(_Pred&& __pred, _P&& __p)
-{
-  return when_t<_Pred>{::cuda::std::forward<_Pred>(__pred)} & detail::__normalize(::cuda::std::forward<_P>(__p));
 }
 
 /**
@@ -6071,14 +6156,20 @@ UNITTEST("alternation and repetition nested under & and |")
 
   // An alternation of two sequences, each ending in a value answer.
   int effects     = 0;
-  const auto tick = when(
-    [&](const ::std::exception*) {
-      ++effects;
-      return true;
-    },
-    noop);
+  const auto tick = when([&](const ::std::exception*) {
+    ++effects;
+    return true;
+  })(noop);
   EXPECT((((tick & if_isa<key>(subst(1))) | (tick & subst(2)))->*throw_boom) == 2);
   EXPECT(effects == 2);
+
+  // A named selector applies to several sinks; each application copies the predicate.
+  int asked        = 0;
+  const auto gated = when([&](const ::std::exception*) {
+    return ++asked > 1;
+  });
+  EXPECT(((gated(subst(1)) | gated(subst(2)) | subst(3))->*throw_boom) == 2);
+  EXPECT(asked == 2);
 
   // The outermost forms that always worked still do.
   EXPECT(((notify(quiet) & if_isa<key>(subst(1)) | subst(2))->*throw_boom) == 2);
@@ -6091,6 +6182,14 @@ UNITTEST("alternation and repetition nested under & and |")
   };
   EXPECT(&r == &cell);
 #  endif // _CCCL_HAS_EXCEPTIONS()
+};
+
+// A test exception that forwards its message, at namespace scope on purpose: nvcc <= 12.9 in
+// C++20 mode infers __host__ __device__ for a local class's special members inside an extended
+// lambda, and the inherited std::runtime_error constructor is host-only (error #20011).
+struct __ut_tagged_error : ::std::runtime_error
+{
+  using ::std::runtime_error::runtime_error;
 };
 
 UNITTEST("selecting arms decline by return")
@@ -6154,11 +6253,9 @@ UNITTEST("selecting arms decline by return")
   EXPECT(two.__claims(&b) == __claim::__yes);
   const ::std::overflow_error other("other");
   EXPECT(two.__claims(&other) == __claim::__no);
-  auto guarded = when(
-    [](const ::std::exception*) {
-      return true;
-    },
-    subst(1));
+  auto guarded = when([](const ::std::exception*) {
+    return true;
+  })(subst(1));
   static_assert(__has_claim<decltype(guarded)>);
   static_assert(!__has_pure_claim<decltype(guarded)>);
   static_assert(!__has_claim<decltype(notify & subst(1))>);
@@ -6188,25 +6285,41 @@ UNITTEST("selecting arms decline by return")
   EXPECT(((translate<key, boom> | if_isa<boom>(subst(5)) | subst(0))->*throw_boom) == 5);
   EXPECT(((translate<key, boom> | if_isa<boom>(subst(5)) | subst(0))->*throw_other) == 0);
 
+  // The one-type form replaces every exception, a non-standard one included; a selector
+  // restricts the source.
+  static_assert(::cuda::std::is_same_v<decltype(translate<boom>), const translate_t<boom>>);
+  static_assert(__has_pure_claim<decltype(translate<boom>)>);
+  EXPECT(((translate<boom> | if_isa<boom>(subst(5)) | subst(0))->*throw_key) == 5);
+  EXPECT(((translate<boom> | if_isa<boom>(subst(5)) | subst(0))->*throw_other) == 5);
+  EXPECT(((translate<boom> | if_isa<boom>(subst(5)) | subst(0))->*throw_int) == 5);
+  EXPECT(((if_isa<key>(translate<boom>) | if_isa<boom>(subst(5)) | subst(0))->*throw_key) == 5);
+  EXPECT(((if_isa<key>(translate<boom>) | if_isa<boom>(subst(5)) | subst(0))->*throw_other) == 0);
+  // The message crosses the translation when To takes a const char*; boom above does not, so
+  // it is default-constructed.
+  const auto first_char = thrown([](const ::std::exception& e) {
+    return int(e.what()[0]);
+  });
+  EXPECT(((translate<__ut_tagged_error> | first_char)->*throw_key) == int('k'));
+  EXPECT(((translate<boom> | first_char)->*throw_key) == int('b'));
+  // A non-standard exception has no message; a To that takes one gets a fixed text.
+  EXPECT(((translate<__ut_tagged_error> | first_char)->*throw_int) == int('n'));
+  EXPECT(((translate<boom> | first_char)->*throw_int) == int('b'));
+
   // A predicate is evaluated exactly once, whether it claims or declines.
   int evals = 0;
-  EXPECT(((when(
-             [&](const ::std::exception*) {
-               ++evals;
-               return false;
-             },
-             subst(1))
+  EXPECT(((when([&](const ::std::exception*) {
+             ++evals;
+             return false;
+           })(subst(1))
            | subst(2))
             ->*throw_boom)
          == 2);
   EXPECT(evals == 1);
   evals = 0;
-  EXPECT(((when(
-             [&](const ::std::exception*) {
-               ++evals;
-               return true;
-             },
-             subst(1))
+  EXPECT(((when([&](const ::std::exception*) {
+             ++evals;
+             return true;
+           })(subst(1))
            | subst(2))
             ->*throw_boom)
          == 1);
@@ -6219,12 +6332,12 @@ UNITTEST("selecting arms decline by return")
     ++thrown;
     throw ::std::invalid_argument("predicate");
   };
-  static_assert(!detail::__nothrow_claim<decltype(when(bad_pred, subst(1)))>);
+  static_assert(!detail::__nothrow_claim<decltype(when(bad_pred)(subst(1)))>);
   static_assert(detail::__nothrow_claim<decltype(two)>);
-  EXPECT(((when(bad_pred, subst(1)) | if_isa<::std::invalid_argument>(subst(3)) | subst(0))->*throw_boom) == 3);
+  EXPECT(((when(bad_pred)(subst(1)) | if_isa<::std::invalid_argument>(subst(3)) | subst(0))->*throw_boom) == 3);
   EXPECT(thrown == 1);
   thrown = 0;
-  EXPECT(((when(bad_pred, subst(1)) * 2 | if_isa<::std::invalid_argument>(subst(4)) | subst(0))->*throw_boom) == 4);
+  EXPECT(((when(bad_pred)(subst(1)) * 2 | if_isa<::std::invalid_argument>(subst(4)) | subst(0))->*throw_boom) == 4);
   EXPECT(thrown == 2);
 
   // An effect ahead of a selecting arm still runs when that arm declines: the sequence's claim
@@ -6237,11 +6350,9 @@ UNITTEST("selecting arms decline by return")
   // repetition and may claim on a later one.
   EXPECT(((if_isa<key>(subst(1)) * 3 | subst(0))->*throw_boom) == 0);
   int asked = 0;
-  EXPECT(((when(
-             [&](const ::std::exception*) {
-               return ++asked >= 3;
-             },
-             subst(7))
+  EXPECT(((when([&](const ::std::exception*) {
+             return ++asked >= 3;
+           })(subst(7))
              * 5
            | subst(0))
             ->*throw_boom)
@@ -6254,13 +6365,10 @@ UNITTEST("selecting arms decline by return")
   // Void callables through the same paths.
   ::std::ostringstream quiet;
   int ran = 0;
-  (if_isa<key>(notify(quiet))
-   | if_isa<boom>(when(
-     [&](const ::std::exception*) {
-       ++ran;
-       return true;
-     },
-     notify(quiet))))
+  (if_isa<key>(notify(quiet)) | if_isa<boom>(when([&](const ::std::exception*) {
+     ++ran;
+     return true;
+   })(notify(quiet))))
       ->*[] {
             throw boom();
           };
@@ -6657,10 +6765,10 @@ UNITTEST("guard translate delay backoff remember")
     const auto is_low = [](const ::std::exception* __exception) {
       return __exception && dynamic_cast<const __ut_low_error*>(__exception);
     };
-    const int claimed = (when(is_low, subst(1)) | subst(2))->*[]() -> int {
+    const int claimed = (when(is_low)(subst(1)) | subst(2))->*[]() -> int {
       throw __ut_low_error("low");
     };
-    const int declined = (when(is_low, subst(1)) | subst(2))->*[]() -> int {
+    const int declined = (when(is_low)(subst(1)) | subst(2))->*[]() -> int {
       throw __ut_high_error("high");
     };
     EXPECT(claimed == 1);
@@ -6668,11 +6776,9 @@ UNITTEST("guard translate delay backoff remember")
   }
   {
     const int claimed =
-      (when(
-         [](const ::std::exception* __exception) {
-           return !__exception;
-         },
-         subst(5))
+      (when([](const ::std::exception* __exception) {
+         return !__exception;
+       })(subst(5))
        | subst(6))
         ->*[]() -> int {
       throw 42;
@@ -6681,20 +6787,16 @@ UNITTEST("guard translate delay backoff remember")
   }
   {
     const int accepted =
-      when(
-        [] {
-          return true;
-        },
-        subst(3))
+      when([] {
+        return true;
+      })(subst(3))
         ->*[]() -> int {
       throw __ut_low_error("low");
     };
     const int declined =
-      (when(
-         [] {
-           return false;
-         },
-         subst(3))
+      (when([] {
+         return false;
+       })(subst(3))
        | subst(4))
         ->*[]() -> int {
       throw __ut_low_error("low");
@@ -6875,8 +6977,9 @@ UNITTEST("guard translate delay backoff remember")
     EXPECT(notes == 1);
   }
   {
-    int first = 0, second = 0;
-    auto f = [&](const ::std::exception*, const ::cuda::std::source_location, auto&) {
+    int first  = 0;
+    int second = 0;
+    auto f     = [&](const ::std::exception*, const ::cuda::std::source_location, auto&) {
       ++first;
     };
     auto g = [&](const ::std::exception*, const ::cuda::std::source_location, auto&) {
@@ -7535,13 +7638,10 @@ UNITTEST("type erasure")
   }
   // Dynamic and static policies side by side in one expression.
   {
-    const int x =
-      when(
-        [] {
-          return true;
-        },
-        dynamic(subst(11)))
-        ->*[]() -> int {
+    const int x = when([] {
+                    return true;
+                  })(dynamic(subst(11)))
+                    ->*[]() -> int {
       throw ::std::runtime_error("x");
     };
     EXPECT(x == 11);
@@ -7589,11 +7689,9 @@ UNITTEST("type erasure")
   {
     // A stored int that FITS the unsigned body converts.
     const unsigned x =
-      dynamic(when(
-                [] {
-                  return true;
-                },
-                subst(7))
+      dynamic(when([] {
+                return true;
+              })(subst(7))
               | subst(0u))
         ->*[]() -> unsigned {
       throw ::std::runtime_error("x");
@@ -7605,11 +7703,9 @@ UNITTEST("type erasure")
     bool failed = false;
     try
     {
-      dynamic(when(
-                [] {
-                  return true;
-                },
-                subst(-1))
+      dynamic(when([] {
+                return true;
+              })(subst(-1))
               | subst(0))
           ->*[]() -> unsigned {
         throw ::std::runtime_error("x");
@@ -7626,11 +7722,9 @@ UNITTEST("type erasure")
     bool failed = false;
     try
     {
-      dynamic(when(
-                [] {
-                  return true;
-                },
-                subst(1.5))
+      dynamic(when([] {
+                return true;
+              })(subst(1.5))
               | subst(0))
           ->*[]() -> int {
         throw ::std::runtime_error("x");
@@ -8203,11 +8297,9 @@ UNITTEST("error sinks: & stops at the first fwd on both channels")
   using namespace cuda::experimental::stf::sump;
   ::std::ostringstream log;
   bool gate = false;
-  EXPECT(((when(
-             [&] {
-               return gate;
-             },
-             notify(log))
+  EXPECT(((when([&] {
+             return gate;
+           })(notify(log))
            | fwd)
           << cudaErrorInvalidValue)
            .status<cudaError_t>()
@@ -8298,7 +8390,8 @@ UNITTEST("error sinks: unwind inside a chain stops it")
 {
   using namespace cuda::experimental::stf;
   using namespace cuda::experimental::stf::sump;
-  int a = 0, b = 0;
+  int a      = 0;
+  int b      = 0;
   bool threw = false;
   try
   {
@@ -8578,9 +8671,9 @@ UNITTEST("error sinks: composites and the bridge on a code")
   const auto gate = [&] {
     return open;
   };
-  EXPECT(((when(gate, noop) | fwd) << cudaErrorInvalidValue).forwarded());
+  EXPECT(((when(gate)(noop) | fwd) << cudaErrorInvalidValue).forwarded());
   open = true;
-  EXPECT(!((when(gate, noop) | fwd) << cudaErrorInvalidValue).forwarded());
+  EXPECT(!((when(gate)(noop) | fwd) << cudaErrorInvalidValue).forwarded());
   // The text targets of store take the trait's name, allocation-bounded for a span.
   char buffer[64]{};
   store(::cuda::std::span<char>(buffer)) << cudaErrorInvalidValue;

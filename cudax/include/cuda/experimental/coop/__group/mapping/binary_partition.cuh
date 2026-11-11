@@ -67,7 +67,9 @@ public:
         : ::cuda::std::dynamic_extent;
 
     using _MappingResult =
-      __mapping_result<__static_ngroups, ::cuda::std::dynamic_extent, _PrevMappingResult::is_always_exhaustive(), false>;
+      __mapping_result<__uniform_static_unit_count<__static_ngroups, ::cuda::std::dynamic_extent>,
+                       _PrevMappingResult::is_always_exhaustive(),
+                       false>;
 
     if constexpr (!_PrevMappingResult::is_always_exhaustive())
     {
