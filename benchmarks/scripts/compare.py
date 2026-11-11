@@ -6,7 +6,6 @@ import os
 import cccl
 import numpy as np
 import pandas as pd
-from colorama import Fore
 
 
 def get_filenames_map(arr):
@@ -109,13 +108,13 @@ def status(frac_diff, noise_ref, noise_cmp):
     min_noise = min(noise_ref, noise_cmp)
     if abs(frac_diff) <= min_noise:
         pass_count += 1
-        return Fore.BLUE + "SAME" + Fore.RESET
+        return "\U0001f535 SAME"
     if frac_diff < 0:
         faster_count += 1
-        return Fore.GREEN + "FAST" + Fore.RESET
+        return "\U0001f7e2 FAST"
     if frac_diff > 0:
         slower_count += 1
-        return Fore.RED + "SLOW" + Fore.RESET
+        return "\U0001f534 SLOW"
 
 
 def compare():
