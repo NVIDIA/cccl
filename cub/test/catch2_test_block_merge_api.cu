@@ -16,6 +16,7 @@ _CCCL_KERNEL_ATTRIBUTES void merge_sorted_runs(const int* input, int* output)
 
   const int tid  = static_cast<int>(threadIdx.x);
   const int base = static_cast<int>(blockIdx.x) * 512;
+
   for (int i = tid; i < 512; i += 128)
   {
     keys[i] = input[base + i];
@@ -59,6 +60,7 @@ CUB_TEST("BlockMerge API example", "[block][merge][api]", CUB_SMALL)
   c2h::device_vector<int> input(tiles * count);
   c2h::gen(C2H_SEED(2), input, -31, 31);
   c2h::host_vector<int> sorted_runs = input;
+
   for (int run = 0; run < tiles * 16; ++run)
   {
     std::sort(sorted_runs.begin() + run * 32, sorted_runs.begin() + (run + 1) * 32);
@@ -66,11 +68,13 @@ CUB_TEST("BlockMerge API example", "[block][merge][api]", CUB_SMALL)
   input = sorted_runs;
 
   c2h::host_vector<int> expected = sorted_runs;
+
   for (int tile = 0; tile < tiles; ++tile)
   {
     std::sort(expected.begin() + tile * count, expected.begin() + (tile + 1) * count);
   }
   c2h::device_vector<int> output(input.size());
+
   merge_sorted_runs<<<tiles, 128>>>(thrust::raw_pointer_cast(input.data()), thrust::raw_pointer_cast(output.data()));
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());

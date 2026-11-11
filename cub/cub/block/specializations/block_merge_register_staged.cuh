@@ -24,9 +24,13 @@ namespace detail
 template <typename MergePolicy>
 class block_merge_register_staged
 {
-  using key_t                                    = typename MergePolicy::key_t;
-  using layout_t                                 = typename MergePolicy::layout_t;
-  using window_t                                 = typename MergePolicy::window_t;
+  using key_t _CCCL_NODEBUG    = typename MergePolicy::key_t;
+  using layout_t _CCCL_NODEBUG = typename MergePolicy::layout_t;
+  using window_t _CCCL_NODEBUG = typename MergePolicy::window_t;
+
+  template <typename CompareOp>
+  using cursor_t _CCCL_NODEBUG = typename MergePolicy::template cursor_t<CompareOp>;
+
   static constexpr unsigned int items_per_thread = MergePolicy::items_per_thread;
   static constexpr unsigned int pair_capacity    = items_per_thread + 2;
   const unsigned int linear_tid;
@@ -37,6 +41,7 @@ class block_merge_register_staged
     {
       return 0;
     }
+
     const int lane   = static_cast<int>(linear_tid) & 31;
     const int offset = offsets[(::cuda::std::min) (lane, runs)];
     int mask         = 0;
@@ -50,11 +55,14 @@ class block_merge_register_staged
       const int shuffled_end = ::__shfl_sync(0xffffffffu, offset, end_lane & 31);
       const int end          = end_lane >= 32 ? offsets[runs] : shuffled_end;
       int length             = lane < pairs ? end - begin : 0;
+
       for (int distance = 16; distance > 0; distance >>= 1)
       {
         length = (::cuda::std::max) (length, ::__shfl_xor_sync(0xffffffffu, length, distance));
       }
+
       const int threads = 1 << layout_t::pair_thread_log(log_runs, round);
+
       mask |= length <= (static_cast<int>(items_per_thread) + 1) * threads ? 1 << round : 0;
     }
     return mask;
@@ -77,9 +85,11 @@ class block_merge_register_staged
     const auto pair       = layout_t::pair_bounds(offsets, runs, pair_id, span);
     const auto window     = layout_t::pair_window(pair.end - pair.begin, log_threads, lane);
     const int count       = window.end - window.begin;
+
     if (count > 0)
     {
-      typename MergePolicy::template cursor_t<CompareOp> cursor(keys, pair, window.begin, compare_op);
+      cursor_t<CompareOp> cursor(keys, pair, window.begin, compare_op);
+
       _CCCL_PRAGMA_UNROLL_FULL()
       for (unsigned int item = 0; item < pair_capacity; ++item)
       {
@@ -104,15 +114,18 @@ class block_merge_register_staged
     CompareOp compare_op)
   {
     int position = window.begin;
+
     while (position < window.end)
     {
       const auto pair = layout_t::find_pair(position, offsets, runs, span, round);
       const int stop  = (::cuda::std::min) (window.end, pair.end);
-      typename MergePolicy::template cursor_t<CompareOp> cursor(keys, pair, position - pair.begin, compare_op);
+      cursor_t<CompareOp> cursor(keys, pair, position - pair.begin, compare_op);
+
       _CCCL_PRAGMA_UNROLL_FULL()
       for (unsigned int item = 0; item < items_per_thread; ++item)
       {
         const int rank = window.begin + static_cast<int>(item);
+
         if (rank >= position && rank < stop)
         {
           out[item] = cursor.next();
@@ -123,7 +136,7 @@ class block_merge_register_staged
   }
 
 public:
-  using storage_t = typename MergePolicy::template storage_t<1>;
+  using storage_t _CCCL_NODEBUG = typename MergePolicy::template storage_t<1>;
 
   _CCCL_DEVICE_API block_merge_register_staged(storage_t&, unsigned int tid)
       : linear_tid(tid)
@@ -134,6 +147,7 @@ public:
   merge(key_t* keys, const int* offsets, int runs, key_t (&out)[items_per_thread], CompareOp compare_op)
   {
     const int total = offsets[runs];
+
     if (runs == 1)
     {
       MergePolicy::load(keys, linear_tid, total, out);
@@ -144,10 +158,12 @@ public:
     {
       out[item] = key_t{};
     }
+
     const int effective      = layout_t::effective_runs(runs);
     const int log_runs       = 31 - ::__clz(static_cast<unsigned int>(effective));
     const int fit            = this->pair_fit_mask(offsets, runs, effective, log_runs);
     const auto thread_window = layout_t::thread_window(linear_tid, total);
+
     for (int span = 1, round = 0; span < effective; span *= 2, ++round)
     {
       const bool last   = 2 * span >= effective;

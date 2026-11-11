@@ -54,6 +54,7 @@ template <typename OffsetT>
 _CCCL_KERNEL_ATTRIBUTES void check_merge_paths(const merge_path_case<OffsetT>* cases, OffsetT* result, int count)
 {
   const int tid = static_cast<int>(threadIdx.x);
+
   if (tid < count)
   {
     const auto test = cases[tid];
@@ -94,6 +95,7 @@ CUB_TEST(
   if constexpr ((std::numeric_limits<offset_t>::max)() >= 2048)
   {
     const offset_t maximum = (std::numeric_limits<offset_t>::max)();
+
     for (offset_t diagonal : {offset_t{0}, offset_t{1024}, offset_t(maximum - 2048), offset_t(maximum - 512), maximum})
     {
       add(maximum - 1024, 1024, diagonal, {0, 0}, {0, 0}, (std::min) (diagonal, offset_t(maximum - 1024)));
@@ -103,6 +105,7 @@ CUB_TEST(
   {
     // Each input run exceeds INT_MAX; no actual memory is read by the iterator.
     const offset_t count = (offset_t{1} << 31) + 17;
+
     for (offset_t diagonal : {offset_t{0}, offset_t{1}, count - 1, count, count + 257, 2 * count})
     {
       add(count, count, diagonal, {0, 2}, {1, 2}, (diagonal + 1) / 2);
@@ -110,6 +113,7 @@ CUB_TEST(
   }
   c2h::device_vector<merge_path_case<offset_t>> d_cases = cases;
   c2h::device_vector<offset_t> result(cases.size());
+
   check_merge_paths<<<1, 64>>>(
     thrust::raw_pointer_cast(d_cases.data()), thrust::raw_pointer_cast(result.data()), static_cast<int>(cases.size()));
   REQUIRE(cudaSuccess == cudaPeekAtLastError());

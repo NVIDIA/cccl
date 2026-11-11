@@ -78,12 +78,13 @@ template <typename KeyIt1, typename KeyIt2, typename OffsetT = int, typename Com
 block_merge_path(KeyIt1 keys1, KeyIt2 keys2, OffsetT count1, OffsetT count2, OffsetT diagonal, CompareOp compare_op)
 {
   static_assert(::cuda::std::is_integral_v<OffsetT>);
-  using CounterT         = ::cuda::std::conditional_t<(sizeof(OffsetT) < sizeof(int)), int, OffsetT>;
-  const CounterT a_count = count1;
-  const CounterT b_count = count2;
-  const CounterT target  = diagonal;
-  CounterT first         = target < b_count ? CounterT{0} : target - b_count;
-  CounterT last          = (::cuda::std::min) (target, a_count);
+  using CounterT _CCCL_NODEBUG = ::cuda::std::conditional_t<(sizeof(OffsetT) < sizeof(int)), int, OffsetT>;
+  const CounterT a_count       = count1;
+  const CounterT b_count       = count2;
+  const CounterT target        = diagonal;
+  CounterT first               = target < b_count ? CounterT{0} : target - b_count;
+  CounterT last                = (::cuda::std::min) (target, a_count);
+
   if (first < last)
   {
     const float prediction =
@@ -94,6 +95,7 @@ block_merge_path(KeyIt1 keys1, KeyIt2 keys2, OffsetT count1, OffsetT count2, Off
       prediction >= static_cast<float>(last) ? last - CounterT{1} : static_cast<CounterT>(prediction);
     const CounterT pivot = ::cuda::std::clamp(estimate, first, last - CounterT{1});
     const auto left      = compare_op(keys2[target - CounterT{1} - pivot], keys1[pivot]);
+
     if (left)
     {
       last = pivot;
@@ -110,7 +112,9 @@ block_merge_path(KeyIt1 keys1, KeyIt2 keys2, OffsetT count1, OffsetT count2, Off
       {
         break;
       }
+
       const CounterT index = left ? pivot - distance : pivot + distance;
+
       if (compare_op(keys2[target - CounterT{1} - index], keys1[index]))
       {
         last = index;
@@ -130,6 +134,7 @@ block_merge_path(KeyIt1 keys1, KeyIt2 keys2, OffsetT count1, OffsetT count2, Off
     }
   }
   const CounterT span = last - first;
+
   return static_cast<OffsetT>(
     first + CUB_NS_QUALIFIER::MergePath(keys1 + first, keys2 + (target - last), span, span, span, compare_op));
 }
@@ -161,6 +166,7 @@ struct block_merge_layout
   {
     const int begin = static_cast<int>(tid * ItemsPerThread);
     const int end   = (::cuda::std::min) (begin + static_cast<int>(ItemsPerThread), total);
+
     return {begin, (::cuda::std::max) (begin, end)};
   }
 
@@ -175,6 +181,7 @@ struct block_merge_layout
     {
       return runs;
     }
+
     const int padded = 1 << (32 - ::__clz(static_cast<unsigned int>(runs - 1)));
     // A lone unmatched run does not benefit from padding.
     const bool pad = UseWarpPairs && full_warps && (runs & (runs - 1)) != 0 && ((runs - 1) & (runs - 2)) != 0
@@ -190,6 +197,7 @@ struct block_merge_layout
   [[nodiscard]] _CCCL_DEVICE_API static block_merge_pair pair_bounds(const int* offsets, int runs, int pair, int span)
   {
     const int begin = 2 * pair * span;
+
     return {offsets[(::cuda::std::min) (begin, runs)],
             offsets[(::cuda::std::min) (begin + span, runs)],
             offsets[(::cuda::std::min) (begin + 2 * span, runs)]};
@@ -201,9 +209,11 @@ struct block_merge_layout
     const int live = (runs + span - 1) >> round;
     int lo         = 0;
     int hi         = (live + 1) >> 1;
+
     while (hi - lo > 1)
     {
       const int mid = lo + (hi - lo) / 2;
+
       if (offsets[mid * 2 * span] <= position)
       {
         lo = mid;
@@ -224,16 +234,20 @@ struct block_merge_layout
   {
     constexpr int items = static_cast<int>(ItemsPerThread);
     const int threads   = 1 << log_threads;
+
     if (count <= items * threads)
     {
       const int begin = (::cuda::std::min) (items * lane, count);
+
       return {begin, (::cuda::std::min) (begin + items, count)};
     }
+
     const int stride    = count <= (items + 1) * threads ? items : ((count >> log_threads) - 1) | 1;
     const int remainder = count - stride * threads;
     const int pairs     = remainder >> 1;
     const int odd       = remainder & 1;
     const int begin     = stride * lane + 2 * (::cuda::std::min) (lane, pairs) + (lane > pairs ? odd : 0);
+
     return {begin, begin + stride + (lane < pairs ? 2 : (lane == pairs ? odd : 0))};
   }
 };
@@ -271,6 +285,7 @@ public:
   {
     const bool take2  = index2 < end2 && (index1 >= end1 || compare_op(key2, key1));
     const KeyT result = take2 ? key2 : key1;
+
     if (take2)
     {
       key2 = keys[++index2];
@@ -288,21 +303,24 @@ public:
 template <typename KeyT, unsigned int BlockThreads, unsigned int ItemsPerThread, bool UseWarpPairs = false>
 struct block_merge_policy
 {
-  using key_t    = KeyT;
-  using layout_t = CUB_NS_QUALIFIER::detail::block_merge_layout<BlockThreads, ItemsPerThread, UseWarpPairs>;
-  using window_t = CUB_NS_QUALIFIER::detail::block_merge_window;
+  using key_t _CCCL_NODEBUG = KeyT;
+  using layout_t _CCCL_NODEBUG =
+    CUB_NS_QUALIFIER::detail::block_merge_layout<BlockThreads, ItemsPerThread, UseWarpPairs>;
+  using window_t _CCCL_NODEBUG = CUB_NS_QUALIFIER::detail::block_merge_window;
+
   static constexpr unsigned int items_per_thread = ItemsPerThread;
 
   template <unsigned int Slots>
-  using storage_t = CUB_NS_QUALIFIER::detail::block_merge_storage<KeyT, Slots>;
+  using storage_t _CCCL_NODEBUG = CUB_NS_QUALIFIER::detail::block_merge_storage<KeyT, Slots>;
 
   template <typename CompareOp>
-  using cursor_t = CUB_NS_QUALIFIER::detail::block_merge_cursor<KeyT, CompareOp>;
+  using cursor_t _CCCL_NODEBUG = CUB_NS_QUALIFIER::detail::block_merge_cursor<KeyT, CompareOp>;
 
   template <unsigned int Items>
   _CCCL_DEVICE_API static void load(const KeyT* keys, unsigned int tid, int total, KeyT (&out)[Items])
   {
     const unsigned int begin = tid * Items;
+
     _CCCL_PRAGMA_UNROLL_FULL()
     for (unsigned int item = 0; item < Items; ++item)
     {
@@ -372,12 +390,13 @@ private:
                                     / (::cuda::std::max) (1u, block_threads),
                 "Tile size must fit in the int run offsets");
 
-  using merge_policy_t    = CUB_NS_QUALIFIER::detail::block_merge_policy<KeyT, block_threads, ItemsPerThread>;
-  using ping_pong_t       = CUB_NS_QUALIFIER::detail::block_merge_ping_pong<merge_policy_t>;
-  using register_staged_t = CUB_NS_QUALIFIER::detail::block_merge_register_staged<merge_policy_t>;
+  using merge_policy_t _CCCL_NODEBUG =
+    CUB_NS_QUALIFIER::detail::block_merge_policy<KeyT, block_threads, ItemsPerThread>;
+  using ping_pong_t _CCCL_NODEBUG       = CUB_NS_QUALIFIER::detail::block_merge_ping_pong<merge_policy_t>;
+  using register_staged_t _CCCL_NODEBUG = CUB_NS_QUALIFIER::detail::block_merge_register_staged<merge_policy_t>;
 
   // Delegate type for the selected algorithm.
-  using internal_block_merge_t =
+  using internal_block_merge_t _CCCL_NODEBUG =
     ::cuda::std::conditional_t<Algorithm == BlockMergeAlgorithm::PING_PONG, ping_pong_t, register_staged_t>;
   using temp_storage_t _CCCL_NODEBUG = typename internal_block_merge_t::storage_t;
 

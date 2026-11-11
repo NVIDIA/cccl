@@ -23,13 +23,17 @@ namespace detail
 template <typename MergePolicy>
 class block_merge_ping_pong
 {
-  using key_t                                    = typename MergePolicy::key_t;
-  using layout_t                                 = typename MergePolicy::layout_t;
-  using window_t                                 = typename MergePolicy::window_t;
+  using key_t _CCCL_NODEBUG    = typename MergePolicy::key_t;
+  using layout_t _CCCL_NODEBUG = typename MergePolicy::layout_t;
+  using window_t _CCCL_NODEBUG = typename MergePolicy::window_t;
+
+  template <typename CompareOp>
+  using cursor_t _CCCL_NODEBUG = typename MergePolicy::template cursor_t<CompareOp>;
+
   static constexpr unsigned int items_per_thread = MergePolicy::items_per_thread;
 
 public:
-  using storage_t = typename MergePolicy::template storage_t<layout_t::tile_size + 1>;
+  using storage_t _CCCL_NODEBUG = typename MergePolicy::template storage_t<layout_t::tile_size + 1>;
 
 private:
   storage_t& temp_storage;
@@ -52,12 +56,15 @@ private:
     const auto pair       = layout_t::pair_bounds(offsets, runs, pair_id, span);
     const auto window     = layout_t::pair_window(pair.end - pair.begin, log_threads, lane);
     const int count       = window.end - window.begin;
+
     if (count == 0)
     {
       return;
     }
-    typename MergePolicy::template cursor_t<CompareOp> cursor(input, pair, window.begin, compare_op);
+
+    cursor_t<CompareOp> cursor(input, pair, window.begin, compare_op);
     constexpr int capacity = static_cast<int>(items_per_thread) + 2;
+
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < capacity; ++item)
     {
@@ -85,11 +92,13 @@ private:
     CompareOp compare_op)
   {
     int position = window.begin;
+
     while (position < window.end)
     {
       const auto pair = layout_t::find_pair(position, offsets, runs, span, round);
       const int count = (::cuda::std::min) (window.end, pair.end) - position;
-      typename MergePolicy::template cursor_t<CompareOp> cursor(input, pair, position - pair.begin, compare_op);
+      cursor_t<CompareOp> cursor(input, pair, position - pair.begin, compare_op);
+
       _CCCL_PRAGMA_UNROLL_FULL()
       for (unsigned int item = 0; item < items_per_thread; ++item)
       {
@@ -119,6 +128,7 @@ public:
     const auto window   = layout_t::thread_window(linear_tid, total);
     key_t* input        = keys;
     key_t* output       = temp_storage.keys;
+
     if (linear_tid == 0)
     {
       output[total] = key_t{};
@@ -136,8 +146,9 @@ public:
       // All reads from input and writes to output finish before exchanging them.
       ::__syncthreads();
       key_t* previous = input;
-      input           = output;
-      output          = previous;
+
+      input  = output;
+      output = previous;
     }
     return input;
   }
@@ -147,6 +158,7 @@ public:
   merge(key_t* keys, const int* offsets, int runs, key_t (&out)[items_per_thread], CompareOp compare_op)
   {
     const key_t* result = this->merge_to_shared(keys, offsets, runs, compare_op);
+
     MergePolicy::load(result, linear_tid, offsets[runs], out);
   }
 };
