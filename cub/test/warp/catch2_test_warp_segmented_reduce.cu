@@ -30,6 +30,13 @@ __global__ void warp_reduce_kernel(T* in, T* out, ActionT action)
   warp_reduce_t warp_reduce(storage[warp_id]);
   auto result = action(tid, warp_reduce, thread_data);
 
+  // shfl.sync waits for lanes in its mask until they execute it or exit, so a lane that skipped one of the reduction's
+  // shuffles would let the test pass when it exits right away. Requiring convergence here makes such a lane deadlock.
+  if constexpr (LogicalWarpThreads == cub::detail::warp_threads)
+  {
+    __syncwarp();
+  }
+
   // Write warp aggregate
   out[tid] = result;
 }
