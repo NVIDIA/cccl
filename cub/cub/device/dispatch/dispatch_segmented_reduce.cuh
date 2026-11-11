@@ -715,7 +715,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     if constexpr (::cuda::std::is_pointer_v<BeginOffsetIteratorT> && ::cuda::std::is_pointer_v<EndOffsetIteratorT>)
     {
       // The kernel walks segments in chunks of 32 (one per lane), so keep seg_base + 32 within int range.
-      if (cc.get() >= 90 && num_segments <= ::cuda::std::numeric_limits<int>::max() - 32
+      if (use_adaptive_segmented_reduce(cc) && num_segments <= ::cuda::std::numeric_limits<int>::max() - 32
           && d_begin_offsets + 1 == d_end_offsets)
       {
         if (d_temp_storage == nullptr)

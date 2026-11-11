@@ -195,6 +195,12 @@ struct adaptive_segmented_reduce_policy
   int medium_segment_size; // >= this many elements: drained cooperatively by the warp
 };
 
+// The adaptive kernel was only benchmarked on and tuned for sm_90.
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool use_adaptive_segmented_reduce(::cuda::compute_capability cc)
+{
+  return cc >= ::cuda::compute_capability{9, 0} && cc < ::cuda::compute_capability{10, 0};
+}
+
 struct adaptive_segmented_reduce_policy_selector
 {
   int value_size; // sizeof the value type being reduced
