@@ -257,10 +257,10 @@ _CCCL_KERNEL_ATTRIBUTES void check_wide_group_offsets_kernel()
   auto double_iterator = double_hash.template make_iterator<bucket_size>(tile, 0, capacity);
 
   // The stride exceeds int, and lanes 4 through 7 have offsets exceeding uint32_t.
-  CHECK(*linear_iterator == 6 * stride + lane_offset);
-  CHECK(*double_iterator == 6 * stride + lane_offset);
+  CHECK(*linear_iterator == (6 * stride) + lane_offset);
+  CHECK(*double_iterator == (6 * stride) + lane_offset);
   CHECK(*(++linear_iterator) == lane_offset);
-  CHECK(*(++double_iterator) == 5 * stride + lane_offset);
+  CHECK(*(++double_iterator) == (5 * stride) + lane_offset);
 }
 
 C2H_TEST("cuco group probing computes strides and lane offsets at index width", "[probing][overflow][cg]")
