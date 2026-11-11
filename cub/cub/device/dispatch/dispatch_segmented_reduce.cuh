@@ -586,8 +586,7 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_adaptive_segmented_reduce(
   // 2) Segments shared across threads, which will use an atomic.
   constexpr int V              = 16 / sizeof(T);
   constexpr int ItemsPerThread = KernelSource::InitItemsPerThread;
-  const int init_grid =
-    ::cuda::std::max(1, static_cast<int>(::cuda::ceil_div(num_segments, threads_per_block * ItemsPerThread * V)));
+  const int init_grid = ::cuda::std::max(1, ::cuda::ceil_div(num_segments, threads_per_block * ItemsPerThread * V));
   if (const auto error = CubDebug(
         launcher_factory(static_cast<::cuda::std::uint32_t>(init_grid), threads_per_block, 0, stream)
           .doit(KernelSource::InitKernel(), static_cast<T*>(d_out), num_segments, static_cast<T>(init))))
