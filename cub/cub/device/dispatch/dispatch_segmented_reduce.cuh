@@ -561,10 +561,10 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_adaptive_segmented_reduce(
   KernelLauncherFactory& launcher_factory,
   AdaptiveKernelSource /*kernel_source*/ = {})
 {
-  using KernelSource = AdaptiveKernelSource;
-  using T            = typename KernelSource::T;
-  const auto policy  = KernelSource::GetPolicy(cc);
-  const int THREADS  = policy.threads_per_block;
+  using KernelSource          = AdaptiveKernelSource;
+  using T                     = typename KernelSource::T;
+  const auto policy           = KernelSource::GetPolicy(cc);
+  const int threads_per_block = policy.threads_per_block;
 
   int num_sms = 0;
   if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(num_sms)))
@@ -574,7 +574,7 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_adaptive_segmented_reduce(
 
   int blocks_per_sm = 0;
   if (const auto error =
-        CubDebug(launcher_factory.MaxSmOccupancy(blocks_per_sm, KernelSource::ReduceKernel(), THREADS)))
+        CubDebug(launcher_factory.MaxSmOccupancy(blocks_per_sm, KernelSource::ReduceKernel(), threads_per_block)))
   {
     return error;
   }
@@ -587,9 +587,9 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_adaptive_segmented_reduce(
   constexpr int V              = 16 / sizeof(T);
   constexpr int ItemsPerThread = KernelSource::InitItemsPerThread;
   const int init_grid =
-    ::cuda::std::max(1, static_cast<int>(::cuda::ceil_div(num_segments, THREADS * ItemsPerThread * V)));
+    ::cuda::std::max(1, static_cast<int>(::cuda::ceil_div(num_segments, threads_per_block * ItemsPerThread * V)));
   if (const auto error = CubDebug(
-        launcher_factory(static_cast<::cuda::std::uint32_t>(init_grid), THREADS, 0, stream)
+        launcher_factory(static_cast<::cuda::std::uint32_t>(init_grid), threads_per_block, 0, stream)
           .doit(KernelSource::InitKernel(), static_cast<T*>(d_out), num_segments, static_cast<T>(init))))
   {
     return error;
@@ -602,7 +602,8 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_adaptive_segmented_reduce(
 
   // Launch the reduction as a PDL-dependent kernel to overlap with the init.
   if (const auto error = CubDebug(
-        launcher_factory(static_cast<::cuda::std::uint32_t>(grid), THREADS, 0, stream, /*dependent_launch=*/true)
+        launcher_factory(
+          static_cast<::cuda::std::uint32_t>(grid), threads_per_block, 0, stream, /*dependent_launch=*/true)
           .doit(
             KernelSource::ReduceKernel(), d_in, d_out, d_begin_offsets, d_end_offsets, num_segments, reduction_op, init)))
   {
