@@ -213,7 +213,6 @@ module = [
   "cuda.pathfinder.*",
   # Third-party dependencies of benchmarks/scripts that are not installed in
   # the pre-commit environment.
-  "colorama",
   "compileiq.*",
   "fpzip",
   "matplotlib",
