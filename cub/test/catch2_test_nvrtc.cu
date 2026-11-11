@@ -209,12 +209,19 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
       using block_store_t = cub::BlockStore<int, threads_per_block, items_per_thread>;
       using block_store_storage_t = block_store_t::TempStorage;
 
+      // Radix sort upsweep pass over the 4 lowest bits
+      using radix_sort_upsweep_policy_t =
+        cub::detail::agent_radix_sort_upsweep_policy<threads_per_block, items_per_thread, int, cub::LOAD_DEFAULT, 4>;
+      using radix_sort_upsweep_t = cub::detail::radix_sort::AgentRadixSortUpsweep<radix_sort_upsweep_policy_t, int, int>;
+      using radix_sort_upsweep_storage_t = radix_sort_upsweep_t::TempStorage;
+
       __shared__ block_load_storage_t block_load_storage;
       __shared__ block_exchange_storage_t block_exchange_storage;
       __shared__ block_reduce_storage_t block_reduce_storage;
       __shared__ block_scan_storage_t block_scan_storage;
       __shared__ block_radix_sort_storage_t block_radix_sort_storage;
       __shared__ block_store_storage_t block_store_storage;
+      __shared__ radix_sort_upsweep_storage_t radix_sort_upsweep_storage;
 
       // Test block load
       block_load_t(block_load_storage).Load(ptr, items);
@@ -225,6 +232,17 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
         {
           atomicAdd(errors, 1);
         }
+      }
+
+      // Test radix sort upsweep: each of the 16 digits occurs 32 times in the 4 lowest bits of 0, ..., 511
+      radix_sort_upsweep_t radix_sort_upsweep(radix_sort_upsweep_storage, ptr, 0, 4);
+      radix_sort_upsweep.ProcessRegion(0, items_per_thread * threads_per_block);
+      __syncthreads();
+      int digit_counts[1];
+      radix_sort_upsweep.ExtractCounts(digit_counts);
+      if (threadIdx.x < 16 && digit_counts[0] != items_per_thread * threads_per_block / 16)
+      {
+        atomicAdd(errors, 1);
       }
 
       // Test block exchange

@@ -319,7 +319,8 @@ struct AgentRadixSortUpsweep
     __syncthreads();
 
     // Bucket tile of keys
-    cuda::static_for<KEYS_PER_THREAD>([&](auto ic) {
+    // `int` instead of `auto`: NVRTC < 13.2 rejects generic lambdas in device code without -default-device
+    cuda::static_for<KEYS_PER_THREAD>([&](const int ic) {
       Bucket(keys[ic]);
     });
   }
