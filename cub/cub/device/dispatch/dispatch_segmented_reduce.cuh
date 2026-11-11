@@ -715,10 +715,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     [[maybe_unused]] const auto _adaptive_reduce_kern = AdaptiveKernelSource::ReduceKernel();
     [[maybe_unused]] const auto _adaptive_init_kern   = AdaptiveKernelSource::InitKernel();
 
+    // The kernel walks segments in chunks of 32 (one per lane), so keep seg_base + 32 within int range.
     NV_IF_TARGET(
       NV_IS_HOST,
-      (if (cc.get() >= 90
-           && num_segments <= static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<int>::max() - 32)) {
+      (if (cc.get() >= 90 && num_segments <= ::cuda::std::numeric_limits<int>::max() - 32) {
         if constexpr (::cuda::std::is_pointer_v<BeginOffsetIteratorT> && ::cuda::std::is_pointer_v<EndOffsetIteratorT>)
         {
           if (d_begin_offsets + 1 == d_end_offsets)
