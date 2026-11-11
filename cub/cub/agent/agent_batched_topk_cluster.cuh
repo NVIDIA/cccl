@@ -186,7 +186,7 @@ struct smem_block_tile_layout
 
 // Widest cluster a policy allows before the hardware ceiling: the leader's per-pass histogram fold (one 32-bit count
 // per bucket from every other CTA) must fit one mbarrier transaction count, and a non-zero `max_blocks_per_cluster`
-// narrows that further. Used by the dispatch to clamp the launch and by the agent to reject a too-wide explicit cap.
+// narrows that further. Used by the dispatch to clamp the launch.
 // The fold bound only matters for the mbarrier-based synchronization (`barrier.cluster` has no transaction count); it
 // is applied on both paths so that they select the same launch shapes. It only binds in edge cases: below 14 bits per
 // pass it is at least 32 CTAs, wider than any launchable cluster.
@@ -357,12 +357,7 @@ struct agent_batched_topk_cluster
   static_assert(tie_break_items_per_thread_clamped >= 1, "tie_break_items_per_thread_clamped must be positive");
   static_assert(copy_items_per_thread_clamped >= 1, "copy_items_per_thread_clamped must be positive");
 
-  static constexpr int num_buckets = 1 << policy.bits_per_pass;
-  // `effective_max_cluster_blocks` would otherwise narrow a too-wide explicit cap silently.
-  static_assert(policy.max_blocks_per_cluster
-                  <= effective_max_cluster_blocks(policy.bits_per_pass, policy.max_blocks_per_cluster),
-                "cluster_topk_policy: max_blocks_per_cluster is too wide for bits_per_pass, since the leader's "
-                "per-pass histogram fold must fit one mbarrier transaction count");
+  static constexpr int num_buckets     = 1 << policy.bits_per_pass;
   using smem_layout_t                  = smem_block_tile_layout<key_t, policy.chunk_bytes, policy.load_align_bytes>;
   static constexpr int max_chunk_items = smem_layout_t::max_chunk_items;
   static constexpr int num_load_align_items = smem_layout_t::num_load_align_items;

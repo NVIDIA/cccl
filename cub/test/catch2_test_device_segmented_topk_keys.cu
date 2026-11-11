@@ -1086,9 +1086,9 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys synchronize a multi-CTA cluster",
   constexpr auto direction          = cub::detail::topk::select::max;
   using selector = cluster_tuning_selector<4, 0, 0, cluster_test_chunk_bytes, 0, 0, /*bits_per_pass=*/11>;
 
-  constexpr cuda::std::int64_t segment_size = 4096;
-  constexpr cuda::std::int64_t static_max_k = 512;
-  constexpr cuda::std::int64_t num_segments = 2;
+  constexpr cuda::std::int64_t segment_size        = 4096;
+  static constexpr cuda::std::int64_t static_max_k = 512;
+  constexpr cuda::std::int64_t num_segments        = 2;
 
   // Fills the segments with `make_key(i)`, runs the cluster top-k and checks a sorted reference.
   const auto check = [&](cuda::std::int64_t k, auto make_key) {
