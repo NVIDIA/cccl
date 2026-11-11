@@ -147,6 +147,7 @@ struct AgentBlockSort
   template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(OffsetT tile_base, int num_remaining)
   {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     ::cuda::__uninitialized_array<ValueT, ITEMS_PER_THREAD> items_storage;
     auto& items_local = items_storage.alias();
 
@@ -167,6 +168,7 @@ struct AgentBlockSort
       __syncthreads();
     }
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     ::cuda::__uninitialized_array<KeyT, ITEMS_PER_THREAD> keys_storage;
     auto& keys_local = keys_storage.alias();
     if constexpr (IsLastTile)
@@ -517,6 +519,7 @@ struct AgentMerge
     const int num_keys2 = static_cast<int>(keys2_end - keys2_beg);
 
     // load keys1 & keys2
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     ::cuda::__uninitialized_array<KeyT, ITEMS_PER_THREAD> keys_storage;
     auto& keys_local = keys_storage.alias();
     if (ping)
@@ -533,6 +536,7 @@ struct AgentMerge
 
     // preload items into registers already
     //
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     [[maybe_unused]] ::cuda::__uninitialized_array<ValueT, ITEMS_PER_THREAD> items_storage;
     [[maybe_unused]] auto& items_local = items_storage.alias();
     if constexpr (!KEYS_ONLY)
