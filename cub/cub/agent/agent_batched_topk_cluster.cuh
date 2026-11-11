@@ -842,14 +842,22 @@ private:
   }
 
   // Adds `num_local_selected_for_scan`/`num_local_tied_for_scan` into the selected/tie placement counters of the CTA at
-  // cluster rank `target_rank` through DSMEM (mirrors the Step 2 histogram reduction: `mapa` to `target_rank`, then a
-  // cluster-scope `red.add` per counter).
+  // cluster rank `target_rank` through DSMEM (mirrors the Step 2 histogram reduction). The mbarrier path uses one
+  // `red.async` per counter, both completing on the target's `prefix_mbar` (8 bytes per push); the `barrier.cluster`
+  // path uses `mapa` to `target_rank`, then a cluster-scope `red.add` per counter.
   // Two independent 32-bit reductions rather than one 64-bit one: `red.add.u64` on shared memory is emulated with a
   // CAS spin loop, whereas `red.add.u32` is a native shared-memory atomic. Drives the cross-CTA selected/tied
   // prefix scan (see `prime_placement_counters`).
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   add_remote_prefix(unsigned target_rank, offset_t num_local_selected_for_scan, offset_t num_local_tied_for_scan)
   {
+#if _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC()
+    _TempStorage* const remote = map_to_rank(&temp_storage, target_rank);
+    ::cuda::ptx::red_async(
+      ::cuda::ptx::op_add, &remote->selected_offset_counter, num_local_selected_for_scan, &remote->prefix_mbar);
+    ::cuda::ptx::red_async(
+      ::cuda::ptx::op_add, &remote->tie_offset_counter, num_local_tied_for_scan, &remote->prefix_mbar);
+#else // ^^^ _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() ^^^ / vvv !_CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() vvv
     const ::cuda::std::uint32_t own_selected =
       static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(&temp_storage.selected_offset_counter));
     const ::cuda::std::uint32_t own_tied =
@@ -869,6 +877,7 @@ private:
                  :
                  : "r"(remote_tied), "r"(num_local_tied_for_scan)
                  : "memory");
+#endif // _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC()
   }
 
   // Parallel prefix sum (cub::BlockScan) over the leader's merged histogram
@@ -1430,17 +1439,6 @@ private:
     // counts, which only working (non-leader) ranks have.
     const bool pushes_prefixes = _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() || num_local_selected_for_scan != offset_t{0}
                               || num_local_tied_for_scan != offset_t{0};
-    const auto push_prefixes   = [&](unsigned rank) {
-#if _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC()
-      _TempStorage* const remote = map_to_rank(&temp_storage, rank);
-      ::cuda::ptx::red_async(
-        ::cuda::ptx::op_add, &remote->selected_offset_counter, num_local_selected_for_scan, &remote->prefix_mbar);
-      ::cuda::ptx::red_async(
-        ::cuda::ptx::op_add, &remote->tie_offset_counter, num_local_tied_for_scan, &remote->prefix_mbar);
-#else // ^^^ _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() ^^^ / vvv !_CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC() vvv
-      add_remote_prefix(rank, num_local_selected_for_scan, num_local_tied_for_scan);
-#endif // _CCCL_SEGTOPK_ENABLE_MBARRIER_SYNC()
-    };
     if (pushes_prefixes)
     {
       _CCCL_ASSERT(cluster_block_rank < layout.num_logical_cluster_blocks,
@@ -1451,7 +1449,7 @@ private:
         _CCCL_PRAGMA_NOUNROLL()
         for (unsigned rank = threadIdx.x; rank < cluster_block_rank; rank += policy.threads_per_block)
         {
-          push_prefixes(rank);
+          add_remote_prefix(rank, num_local_selected_for_scan, num_local_tied_for_scan);
         }
       }
       else
@@ -1461,7 +1459,7 @@ private:
         for (unsigned rank = cluster_block_rank + 1u + threadIdx.x; rank < layout.num_logical_cluster_blocks;
              rank += policy.threads_per_block)
         {
-          push_prefixes(rank);
+          add_remote_prefix(rank, num_local_selected_for_scan, num_local_tied_for_scan);
         }
       }
     }
