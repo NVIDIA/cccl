@@ -13,12 +13,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/device/dispatch/tuning/tuning_segmented_reduce.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
-#include <cuda/__device/compute_capability.h>
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__type_traits/vector_type.h>
 #include <cuda/atomic>
@@ -31,22 +31,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_reduce
 {
-struct adaptive_segmented_reduce_policy
-{
-  int threads_per_block;
-  int items_per_thread; // vector loads issued per lane per loop iteration
-  int small_segment_size; // <= this many elements: summed serially by one thread
-  int medium_segment_size; // >= this many elements: drained cooperatively by the warp
-};
-
-struct adaptive_segmented_reduce_default_policy_selector
-{
-  _CCCL_HOST_DEVICE_API constexpr adaptive_segmented_reduce_policy operator()(::cuda::compute_capability) const
-  {
-    return {256, 4, 4, 112};
-  }
-};
-
 /// Seeds d_out[0..n) with val. Used as the PDL primary before the adaptive reduce.
 /// Issues ItemsPerThread × 16-byte vector stores to maximise bytes in flight.
 template <typename T, int ItemsPerThread>

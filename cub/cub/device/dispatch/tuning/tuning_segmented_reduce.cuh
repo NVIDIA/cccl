@@ -15,6 +15,7 @@
 
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
@@ -183,6 +184,22 @@ struct policy_hub
   };
 
   using MaxPolicy = Policy500;
+};
+
+struct adaptive_segmented_reduce_policy
+{
+  int threads_per_block;
+  int items_per_thread; // vector loads issued per lane per loop iteration
+  int small_segment_size; // <= this many elements: summed serially by one thread
+  int medium_segment_size; // >= this many elements: drained cooperatively by the warp
+};
+
+struct adaptive_segmented_reduce_default_policy_selector
+{
+  _CCCL_HOST_DEVICE_API constexpr adaptive_segmented_reduce_policy operator()(::cuda::compute_capability) const
+  {
+    return {256, 4, 4, 112};
+  }
 };
 } // namespace detail::segmented_reduce
 
