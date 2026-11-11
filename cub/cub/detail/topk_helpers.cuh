@@ -24,6 +24,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/climits>
 
 CUB_NAMESPACE_BEGIN
@@ -58,23 +59,13 @@ template <int BitsPerPass>
 template <typename T, int BitsPerPass>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
 {
-  int start_bit = int{sizeof(T)} * CHAR_BIT - (pass + 1) * BitsPerPass;
-  if (start_bit < 0)
-  {
-    start_bit = 0;
-  }
-  return start_bit;
+  return ::cuda::std::max(0, (int{sizeof(T)} * CHAR_BIT) - ((pass + 1) * BitsPerPass));
 }
 
 template <int BitsPerPass>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_start_bit(const int total_bits, const int pass)
 {
-  int start_bit = total_bits - (pass + 1) * BitsPerPass;
-  if (start_bit < 0)
-  {
-    start_bit = 0;
-  }
-  return start_bit;
+  return ::cuda::std::max(0, total_bits - ((pass + 1) * BitsPerPass));
 }
 
 // Bit-vector for accumulating prefix digits via funnel shift. Each pass shifts the existing

@@ -40,6 +40,7 @@
 #include <thrust/complex.h>
 #include <thrust/detail/complex/math_private.h>
 
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/copysign.h>
 #include <cuda/std/__cmath/hypot.h>
@@ -179,10 +180,7 @@ do_hard_work(double x, double y, double* rx, int* B_is_usable, double* B, double
    * be so because of rounding errors.  So we will make certain it is
    * so.
    */
-  if (A < 1)
-  {
-    A = 1;
-  }
+  A = ::cuda::std::max(A, 1.0);
 
   if (A < A_crossover)
   {
