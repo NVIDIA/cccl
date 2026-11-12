@@ -97,6 +97,7 @@ class __mwc_engine
       __sum[__i]            = static_cast<result_type>(__word);
       __carry               = __word >> 32;
     }
+
     constexpr auto __mod = __modulus();
     if (__carry || !__less(__sum, __mod))
     {
