@@ -12,6 +12,7 @@
 #include <thrust/logical.h>
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
+#include <thrust/sequence.h>
 
 #include <cuda/functional>
 #include <cuda/iterator>
