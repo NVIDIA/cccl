@@ -42,7 +42,7 @@ struct ConstSizedCounts : cuda::std::ranges::view_base
     return counts;
   }
 
-  __host__ __device__ constexpr const unsigned* end()
+  __host__ __device__ constexpr const unsigned* end() // NOLINT(readability-make-member-function-const)
   {
     return counts + 2;
   }
@@ -52,7 +52,7 @@ struct ConstSizedCounts : cuda::std::ranges::view_base
     return counts + 3;
   }
 
-  __host__ __device__ constexpr cuda::std::size_t size()
+  __host__ __device__ constexpr cuda::std::size_t size() // NOLINT(readability-make-member-function-const)
   {
     return 2;
   }
