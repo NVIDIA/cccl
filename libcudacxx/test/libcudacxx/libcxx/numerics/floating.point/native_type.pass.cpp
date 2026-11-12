@@ -47,6 +47,7 @@ int main(int, char**)
   test_fp_native_type<cuda::std::__fp_format::__fp80_x86, void>();
 #endif // ^^^ no native __fp80_x86 ^^^
   test_fp_native_type<cuda::std::__fp_format::__fp8_nv_e4m3, void>();
+  test_fp_native_type<cuda::std::__fp_format::__fp8_nv_ue5m3, void>();
   test_fp_native_type<cuda::std::__fp_format::__fp8_nv_e5m2, void>();
   test_fp_native_type<cuda::std::__fp_format::__fp8_nv_e8m0, void>();
   test_fp_native_type<cuda::std::__fp_format::__fp6_nv_e2m3, void>();

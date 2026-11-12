@@ -45,7 +45,7 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
 
   while (keys1_begin < keys1_end)
   {
-    const OffsetT mid = cub::MidPoint<OffsetT>(keys1_begin, keys1_end);
+    const OffsetT mid = _CUB::MidPoint<OffsetT>(keys1_begin, keys1_end);
     // pull copies of the keys before calling binary_pred so proxy references are unwrapped
     const detail::it_value_t<KeyIt1> key1 = keys1[mid];
     const detail::it_value_t<KeyIt2> key2 = keys2[diag - 1 - mid];
@@ -110,7 +110,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
   int (&indices)[ItemsPerThread],
   CompareOp compare_op)
 {
-  serial_merge<Unroll>(
+  _CUB::detail::serial_merge<Unroll>(
     keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, output[0]);
 }
 } // namespace detail
@@ -138,7 +138,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   CompareOp compare_op,
   KeyT oob_default)
 {
-  detail::serial_merge(
+  _CUB::detail::serial_merge(
     keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, oob_default);
 }
 
@@ -153,7 +153,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   int (&indices)[ItemsPerThread],
   CompareOp compare_op)
 {
-  detail::serial_merge(keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op);
+  _CUB::detail::serial_merge(keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op);
 }
 
 /**
@@ -456,7 +456,7 @@ public:
     }
     else
     {
-      detail::stable_odd_even_sort<Unroll>(keys, items, compare_op);
+      _CUB::detail::stable_odd_even_sort<Unroll>(keys, items, compare_op);
 
       // each thread has sorted keys
       // merge sort keys in shared memory
@@ -835,7 +835,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      const int idx                 = ItemsPerThread * linear_tid + item;
+      const int idx                 = (ItemsPerThread * linear_tid) + item;
       temp_storage.keys_shared[idx] = keys[item];
     }
     if (linear_tid == 0)
@@ -852,7 +852,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      const int idx                  = ItemsPerThread * linear_tid + item;
+      const int idx                  = (ItemsPerThread * linear_tid) + item;
       temp_storage.items_shared[idx] = items[item];
     }
 
@@ -898,7 +898,7 @@ private:
       _CCCL_PRAGMA_UNROLL(unroll)
       for (int item = 1; item < ItemsPerThread; ++item)
       {
-        if (ItemsPerThread * linear_tid + item < valid_items)
+        if ((ItemsPerThread * linear_tid) + item < valid_items)
         {
           max_key = compare_op(max_key, keys[item]) ? keys[item] : max_key;
         }
@@ -908,7 +908,7 @@ private:
         }
       }
 
-      detail::stable_odd_even_sort<Unroll>(keys, items, compare_op);
+      _CUB::detail::stable_odd_even_sort<Unroll>(keys, items, compare_op);
     }
 
     MergeRounds<true>(keys, items, compare_op, valid_items);
@@ -986,7 +986,7 @@ private:
       const int keys1_count = keys1_end - keys1_beg;
       const int keys2_count = keys2_end - keys2_beg;
 
-      const int partition_diag = MergePath(
+      const int partition_diag = _CUB::MergePath(
         &temp_storage.keys_shared[keys1_beg],
         &temp_storage.keys_shared[keys2_beg],
         keys1_count,
@@ -998,7 +998,7 @@ private:
       const int keys2_beg_loc   = keys2_beg + diag - partition_diag;
       const int keys1_count_loc = keys1_end - keys1_beg_loc;
       const int keys2_count_loc = keys2_end - keys2_beg_loc;
-      detail::serial_merge<Unroll>(
+      _CUB::detail::serial_merge<Unroll>(
         &temp_storage.keys_shared[0],
         keys1_beg_loc,
         keys2_beg_loc,
@@ -1124,11 +1124,11 @@ class BlockMergeSort
 
 public:
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSort()
-      : BlockMergeSortStrategyT(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      : BlockMergeSortStrategyT(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   _CCCL_DEVICE _CCCL_FORCEINLINE explicit BlockMergeSort(typename BlockMergeSortStrategyT::TempStorage& temp_storage)
-      : BlockMergeSortStrategyT(temp_storage, RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      : BlockMergeSortStrategyT(temp_storage, _CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
 private:

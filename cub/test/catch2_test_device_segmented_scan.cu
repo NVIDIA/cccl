@@ -94,7 +94,7 @@ bool check_segment(const c2h::host_vector<ValueT>& h_output,
         const float act_av = (act_v > float{0}) ? act_v : -act_v;
 
         const float eps = float{1} / float{128};
-        correct         = correct && (adiff < 3 * eps + 5 * eps * (::cuda::std::max(ref_av, act_av)));
+        correct         = correct && (adiff < (3 * eps) + (5 * eps * (::cuda::std::max(ref_av, act_av))));
       }
     }
     else

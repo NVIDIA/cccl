@@ -30,7 +30,7 @@ int main()
   int host_data[N];
   for (size_t i = 0; i < N; i++)
   {
-    host_data[i] = static_cast<int>(i * 3 + 7);
+    host_data[i] = static_cast<int>((i * 3) + 7);
   }
 
   auto lConst = ctx.logical_data(host_data).set_symbol("const_data");
@@ -71,7 +71,7 @@ int main()
   // Verify the read-only host buffer was not modified
   for (size_t i = 0; i < N; i++)
   {
-    EXPECT(host_data[i] == static_cast<int>(i * 3 + 7));
+    EXPECT(host_data[i] == static_cast<int>((i * 3) + 7));
   }
 
   return 0;

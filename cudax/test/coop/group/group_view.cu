@@ -47,7 +47,7 @@ __device__ void test_group_view(Config config, Level level)
     other = view;
     view  = cuda::std::move(other);
 
-    const cudax::coop::group_view<typename View::unit_type, View> nested{view};
+    const cudax::coop::group_view<typename View::unit_type, View, typename View::__mapping_result_type> nested{view};
     static_assert(nested.static_count(level) == g.static_count(level));
     REQUIRE(nested.count(level) == g.count(level));
     REQUIRE(nested.template count_as<unsigned>(level) == g.template count_as<unsigned>(level));
@@ -370,7 +370,7 @@ __device__ void test_nonuniform_group_view(Config config)
   check(nested_threads, cuda::gpu_thread, 128);
 
   // Exercise the conversion from a view while retaining the original group type.
-  const cudax::coop::group_view<cuda::thread_level, cuda::std::remove_cv_t<decltype(group)>> converted{
+  const cudax::coop::group_view<cuda::thread_level, cuda::std::remove_cv_t<decltype(group)>, Threads> converted{
     cuda::gpu_thread, warps};
 
   check(converted, cuda::gpu_thread, 128);

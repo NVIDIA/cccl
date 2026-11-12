@@ -215,7 +215,7 @@ void test_sorted_heterogeneous(Variant variant, HostVariant host_variant)
   c2h::host_vector<int> values_h(values_num_items);
   for (int i = 0; i < values_num_items; ++i)
   {
-    values_h[i] = i * 7 - 10; // includes values before, inside, and after the range
+    values_h[i] = (i * 7) - 10; // includes values before, inside, and after the range
   }
 
   const c2h::device_vector<heterogeneous_key> range_d = range_h;
@@ -261,7 +261,7 @@ void test_sorted_uint32_limit(Variant variant, HostVariant host_variant)
   CAPTURE(range_num_items, values_num_items, tile_size);
 
   const auto range  = cuda::counting_iterator<value_type>{0};
-  const auto values = cuda::counting_iterator<value_type>{range_num_items - values_num_items / 2};
+  const auto values = cuda::counting_iterator<value_type>{range_num_items - (values_num_items / 2)};
 
   c2h::device_vector<value_type> offsets_d(values_num_items, max_count);
   variant(range,

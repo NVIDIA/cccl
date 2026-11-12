@@ -26,14 +26,12 @@ struct clamp
     {
       return lo;
     }
-    else if (x < hi)
+    if (x < hi)
     {
       return x;
     }
-    else
-    {
-      return hi;
-    }
+
+    return hi;
   }
 };
 

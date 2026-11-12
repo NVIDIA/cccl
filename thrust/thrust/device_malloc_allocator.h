@@ -33,7 +33,7 @@ THRUST_NAMESPACE_BEGIN
 template <typename>
 class device_ptr;
 template <typename T>
-device_ptr<T> device_malloc(std::size_t n);
+device_ptr<T> device_malloc(std::size_t n); // NOLINT(readability-redundant-declaration)
 #endif // _CCCL_DOXYGEN_INVOKED
 
 /*! \addtogroup allocators Allocators
@@ -181,7 +181,7 @@ public:
    */
   size_type max_size() const
   {
-    return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T);
+    return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T); // NOLINT(readability-redundant-parentheses)
   } // end max_size()
 
   /*! Compares against another \p device_malloc_allocator for equality.

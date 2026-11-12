@@ -104,7 +104,11 @@ struct pair_t
 };
 
 template <bool DESCENDING, typename Key>
-void Initialize(GenMode gen_mode, Key* h_keys, int* h_reference_ranks, int num_items, int num_bits)
+void Initialize(GenMode gen_mode,
+                Key* h_keys,
+                int* h_reference_ranks, // NOLINT(readability-non-const-parameter)
+                int num_items,
+                int num_bits)
 {
   const std::unique_ptr<pair_t<Key>[]> h_pairs_storage(new pair_t<Key>[num_items]);
   pair_t<Key>* h_pairs = h_pairs_storage.get();

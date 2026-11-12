@@ -153,7 +153,7 @@ private:
   _TempStorage& temp_storage;
 
   // TODO(bgruber): can we use signed int here? Only these variables are unsigned:
-  unsigned int linear_tid  = RowMajorTid(BlockDimX, BlockDimY, BlockDimZ);
+  unsigned int linear_tid  = _CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ);
   unsigned int lane_id     = ::cuda::ptx::get_sreg_laneid();
   unsigned int warp_id     = WARPS == 1 ? 0 : linear_tid / WARP_THREADS;
   unsigned int warp_offset = warp_id * WARP_TIME_SLICED_ITEMS;
@@ -182,12 +182,12 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = linear_tid * ItemsPerThread + i; // NOLINT(misc-const-correctness)
+      int item_offset = (linear_tid * ItemsPerThread) + i; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncthreads();
@@ -195,7 +195,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = i * BLOCK_THREADS + linear_tid; // NOLINT(misc-const-correctness)
+      int item_offset = (i * BLOCK_THREADS) + linear_tid; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
@@ -233,12 +233,12 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
         {
-          int item_offset = lane_id * ItemsPerThread + i; // NOLINT(misc-const-correctness)
+          int item_offset = (lane_id * ItemsPerThread) + i; // NOLINT(misc-const-correctness)
           if constexpr (INSERT_PADDING)
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
           }
-          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+          _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
       }
 
@@ -296,7 +296,7 @@ private:
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncwarp(0xffffffff);
@@ -332,12 +332,12 @@ private:
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ItemsPerThread; i++)
       {
-        int item_offset = i + lane_id * ItemsPerThread; // NOLINT(misc-const-correctness)
+        int item_offset = i + (lane_id * ItemsPerThread); // NOLINT(misc-const-correctness)
         if constexpr (INSERT_PADDING)
         {
           item_offset += item_offset >> LOG_SMEM_BANKS;
         }
-        detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+        _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
       }
 
       __syncwarp(0xffffffff);
@@ -345,7 +345,7 @@ private:
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ItemsPerThread; i++)
       {
-        int item_offset = i * WARP_TIME_SLICED_THREADS + lane_id; // NOLINT(misc-const-correctness)
+        int item_offset = (i * WARP_TIME_SLICED_THREADS) + lane_id; // NOLINT(misc-const-correctness)
         if constexpr (INSERT_PADDING)
         {
           item_offset += item_offset >> LOG_SMEM_BANKS;
@@ -364,12 +364,12 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
         {
-          int item_offset = i + lane_id * ItemsPerThread; // NOLINT(misc-const-correctness)
+          int item_offset = i + (lane_id * ItemsPerThread); // NOLINT(misc-const-correctness)
           if constexpr (INSERT_PADDING)
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
           }
-          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+          _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
 
         __syncwarp(0xffffffff);
@@ -377,7 +377,7 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
         {
-          int item_offset = i * WARP_TIME_SLICED_THREADS + lane_id; // NOLINT(misc-const-correctness)
+          int item_offset = (i * WARP_TIME_SLICED_THREADS) + lane_id; // NOLINT(misc-const-correctness)
           if constexpr (INSERT_PADDING)
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
@@ -405,12 +405,12 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = i * BLOCK_THREADS + linear_tid; // NOLINT(misc-const-correctness)
+      int item_offset = (i * BLOCK_THREADS) + linear_tid; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncthreads();
@@ -419,7 +419,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = linear_tid * ItemsPerThread + i; // NOLINT(misc-const-correctness)
+      int item_offset = (linear_tid * ItemsPerThread) + i; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
@@ -469,7 +469,7 @@ private:
             {
               item_offset += item_offset >> LOG_SMEM_BANKS;
             }
-            detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+            _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
           }
         }
       }
@@ -481,7 +481,7 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
         {
-          int item_offset = lane_id * ItemsPerThread + i; // NOLINT(misc-const-correctness)
+          int item_offset = (lane_id * ItemsPerThread) + i; // NOLINT(misc-const-correctness)
           if constexpr (INSERT_PADDING)
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
@@ -521,7 +521,7 @@ private:
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncwarp(0xffffffff);
@@ -534,7 +534,7 @@ private:
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      detail::uninitialized_copy_single(output_items + i, temp_storage.buff[item_offset]);
+      _CUB::detail::uninitialized_copy_single(output_items + i, temp_storage.buff[item_offset]);
     }
   }
 
@@ -562,12 +562,12 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
         {
-          int item_offset = i * WARP_TIME_SLICED_THREADS + lane_id; // NOLINT(misc-const-correctness)
+          int item_offset = (i * WARP_TIME_SLICED_THREADS) + lane_id; // NOLINT(misc-const-correctness)
           if constexpr (INSERT_PADDING)
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
           }
-          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+          _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
 
         __syncwarp(0xffffffff);
@@ -575,7 +575,7 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
         {
-          int item_offset = i + lane_id * ItemsPerThread; // NOLINT(misc-const-correctness)
+          int item_offset = i + (lane_id * ItemsPerThread); // NOLINT(misc-const-correctness)
           if constexpr (INSERT_PADDING)
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
@@ -611,7 +611,7 @@ private:
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
-      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncthreads();
@@ -619,7 +619,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = linear_tid * ItemsPerThread + i; // NOLINT(misc-const-correctness)
+      int item_offset = (linear_tid * ItemsPerThread) + i; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
@@ -664,7 +664,7 @@ private:
           {
             item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
           }
-          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+          _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
       }
 
@@ -675,7 +675,7 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
         {
-          int item_offset = lane_id * ItemsPerThread + i; // NOLINT(misc-const-correctness)
+          int item_offset = (lane_id * ItemsPerThread) + i; // NOLINT(misc-const-correctness)
           if constexpr (INSERT_PADDING)
           {
             item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
@@ -718,7 +718,7 @@ private:
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
-      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncthreads();
@@ -726,7 +726,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = i * BLOCK_THREADS + linear_tid; // NOLINT(misc-const-correctness)
+      int item_offset = (i * BLOCK_THREADS) + linear_tid; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
@@ -772,7 +772,7 @@ private:
           {
             item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
           }
-          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+          _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
       }
 
@@ -1270,7 +1270,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = i * BLOCK_THREADS + linear_tid; // NOLINT(misc-const-correctness)
+      int item_offset = (i * BLOCK_THREADS) + linear_tid; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
@@ -1357,7 +1357,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = i * BLOCK_THREADS + linear_tid; // NOLINT(misc-const-correctness)
+      int item_offset = (i * BLOCK_THREADS) + linear_tid; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;

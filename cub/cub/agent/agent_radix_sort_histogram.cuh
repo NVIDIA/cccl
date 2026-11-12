@@ -101,7 +101,7 @@ struct AgentRadixSortHistogram
   static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
   static constexpr int RADIX_BITS       = AgentRadixSortHistogramPolicy::RADIX_BITS;
   static constexpr int RADIX_DIGITS     = 1 << RADIX_BITS;
-  static constexpr int MAX_NUM_PASSES   = (sizeof(KeyT) * 8 + RADIX_BITS - 1) / RADIX_BITS;
+  static constexpr int MAX_NUM_PASSES   = ((sizeof(KeyT) * 8) + RADIX_BITS - 1) / RADIX_BITS;
   static constexpr int NUM_PARTS        = AgentRadixSortHistogramPolicy::NUM_PARTS;
 
   using traits                 = radix::traits_t<KeyT>;
@@ -186,11 +186,11 @@ struct AgentRadixSortHistogram
     const bool full_tile = num_items - tile_offset >= TILE_ITEMS;
     if (full_tile)
     {
-      LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_keys_in + tile_offset, keys);
+      _CUB::LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_keys_in + tile_offset, keys);
     }
     else
     {
-      LoadDirectStriped<BLOCK_THREADS>(
+      _CUB::LoadDirectStriped<BLOCK_THREADS>(
         threadIdx.x, d_keys_in + tile_offset, keys, num_items - tile_offset, Twiddle::DefaultKey(decomposer));
     }
 
@@ -230,7 +230,7 @@ struct AgentRadixSortHistogram
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int pass = 0; pass < num_passes; ++pass)
       {
-        OffsetT count = cub::ThreadReduce(s.bins[pass][bin], ::cuda::std::plus<>{});
+        OffsetT count = _CUB::ThreadReduce(s.bins[pass][bin], ::cuda::std::plus<>{});
         if (count > 0)
         {
           // Using cuda::atomic<> here would also require using it in
@@ -238,7 +238,7 @@ struct AgentRadixSortHistogram
           // (ExclusiveSum, Onesweep) don't need atomic
           // access. Therefore, atomicAdd() is used, until
           // cuda::atomic_ref<> becomes available.
-          atomicAdd(&d_bins_out[pass * RADIX_DIGITS + bin], count);
+          atomicAdd(&d_bins_out[(pass * RADIX_DIGITS) + bin], count);
         }
       }
     }

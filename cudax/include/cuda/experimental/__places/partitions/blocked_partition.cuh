@@ -67,8 +67,8 @@ public:
     // If first = second, this means it's an empty shape. This may happen
     // when there are more entries in grid_dims than in the shape for
     // example
-    bounds[target_dim].first  = ::cuda::std::min(dim_beg + part_size * place_position.x, dim_end);
-    bounds[target_dim].second = ::cuda::std::min(dim_beg + part_size * (place_position.x + 1), dim_end);
+    bounds[target_dim].first  = ::cuda::std::min(dim_beg + (part_size * place_position.x), dim_end);
+    bounds[target_dim].second = ::cuda::std::min(dim_beg + (part_size * (place_position.x + 1)), dim_end);
 
     return box(bounds);
   }
