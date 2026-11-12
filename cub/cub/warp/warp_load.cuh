@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2011-2021, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 //! @file
@@ -86,11 +86,9 @@ enum WarpLoadAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
   //! - The following conditions will prevent vectorization and loading will fall
   //!   back to cub::WARP_LOAD_DIRECT:
   //!
-  //!   - ``ItemsPerThread`` is odd
   //!   - The ``InputIteratorT`` is not a simple pointer type
-  //!   - The block input offset is not quadword-aligned
-  //!   - The data type ``T`` is not a built-in primitive or CUDA vector type
-  //!     (e.g., ``short``, ``int2``, ``double``, ``float2``, etc.)
+  //!   - The block input offset is not aligned to the vector access width
+  //!   - The value type of the input is volatile or not trivially copyable
   //! @endrst
   WARP_LOAD_VECTORIZE,
 
@@ -137,7 +135,7 @@ namespace detail
 #if _CCCL_HOSTED()
 inline ::std::ostream& operator<<(::std::ostream& os, WarpLoadAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
@@ -145,12 +143,12 @@ CUB_NAMESPACE_END
 
 #if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
 template <::cuda::std::same_as<char> CharT>
-struct std::formatter<CUB_NS_QUALIFIER::WarpLoadAlgorithm, CharT> : formatter<const CharT*, CharT>
+struct std::formatter<_CUB::WarpLoadAlgorithm, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const CUB_NS_QUALIFIER::WarpLoadAlgorithm& algo, FmtCtx& ctx) const
+  auto format(const _CUB::WarpLoadAlgorithm& algo, FmtCtx& ctx) const
   {
-    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+    return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(algo), ctx);
   }
 };
 #endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
@@ -252,7 +250,6 @@ class WarpLoad
 {
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
 
-private:
   /*****************************************************************************
    * Algorithmic variants
    ****************************************************************************/
@@ -275,20 +272,20 @@ private:
     template <typename InputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr, InputT (&items)[ItemsPerThread])
     {
-      LoadDirectBlocked(linear_tid, block_itr, items);
+      _CUB::LoadDirectBlocked(linear_tid, block_itr, items);
     }
 
     template <typename InputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr, InputT (&items)[ItemsPerThread], int valid_items)
     {
-      LoadDirectBlocked(linear_tid, block_itr, items, valid_items);
+      _CUB::LoadDirectBlocked(linear_tid, block_itr, items, valid_items);
     }
 
     template <typename InputIteratorT, typename DefaultT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void
     Load(InputIteratorT block_itr, InputT (&items)[ItemsPerThread], int valid_items, DefaultT oob_default)
     {
-      LoadDirectBlocked(linear_tid, block_itr, items, valid_items, oob_default);
+      _CUB::LoadDirectBlocked(linear_tid, block_itr, items, valid_items, oob_default);
     }
   };
 
@@ -306,20 +303,20 @@ private:
     template <typename InputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr, InputT (&items)[ItemsPerThread])
     {
-      LoadDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items);
+      _CUB::LoadDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items);
     }
 
     template <typename InputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr, InputT (&items)[ItemsPerThread], int valid_items)
     {
-      LoadDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items);
+      _CUB::LoadDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items);
     }
 
     template <typename InputIteratorT, typename DefaultT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void
     Load(InputIteratorT block_itr, InputT (&items)[ItemsPerThread], int valid_items, DefaultT oob_default)
     {
-      LoadDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items, oob_default);
+      _CUB::LoadDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items, oob_default);
     }
   };
 
@@ -336,38 +333,38 @@ private:
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputT* block_ptr, InputT (&items)[ItemsPerThread])
     {
-      InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_ptr, items);
+      _CUB::LoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_ptr, items);
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void Load(const InputT* block_ptr, InputT (&items)[ItemsPerThread])
     {
-      InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_ptr, items);
+      _CUB::LoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_ptr, items);
     }
 
     template <CacheLoadModifier MODIFIER, typename ValueType, typename OffsetT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void
     Load(CacheModifiedInputIterator<MODIFIER, ValueType, OffsetT> block_itr, InputT (&items)[ItemsPerThread])
     {
-      InternalLoadDirectBlockedVectorized<MODIFIER>(linear_tid, block_itr.ptr, items);
+      _CUB::LoadDirectBlockedVectorized<MODIFIER>(linear_tid, block_itr.ptr, items);
     }
 
     template <typename InputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr, InputT (&items)[ItemsPerThread])
     {
-      LoadDirectBlocked(linear_tid, block_itr, items);
+      _CUB::LoadDirectBlocked(linear_tid, block_itr, items);
     }
 
     template <typename InputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr, InputT (&items)[ItemsPerThread], int valid_items)
     {
-      LoadDirectBlocked(linear_tid, block_itr, items, valid_items);
+      _CUB::LoadDirectBlocked(linear_tid, block_itr, items, valid_items);
     }
 
     template <typename InputIteratorT, typename DefaultT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void
     Load(InputIteratorT block_itr, InputT (&items)[ItemsPerThread], int valid_items, DefaultT oob_default)
     {
-      LoadDirectBlocked(linear_tid, block_itr, items, valid_items, oob_default);
+      _CUB::LoadDirectBlocked(linear_tid, block_itr, items, valid_items, oob_default);
     }
   };
 
@@ -393,14 +390,14 @@ private:
     template <typename InputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr, InputT (&items)[ItemsPerThread])
     {
-      LoadDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items);
+      _CUB::LoadDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items);
       WarpExchangeT(temp_storage).StripedToBlocked(items, items);
     }
 
     template <typename InputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Load(InputIteratorT block_itr, InputT (&items)[ItemsPerThread], int valid_items)
     {
-      LoadDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items);
+      _CUB::LoadDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items);
       WarpExchangeT(temp_storage).StripedToBlocked(items, items);
     }
 
@@ -408,7 +405,7 @@ private:
     _CCCL_DEVICE _CCCL_FORCEINLINE void
     Load(InputIteratorT block_itr, InputT (&items)[ItemsPerThread], int valid_items, DefaultT oob_default)
     {
-      LoadDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items, oob_default);
+      _CUB::LoadDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items, oob_default);
       WarpExchangeT(temp_storage).StripedToBlocked(items, items);
     }
   };
@@ -442,7 +439,7 @@ private:
   _TempStorage& temp_storage;
 
   /// Linear thread-id
-  int linear_tid = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
+  int linear_tid = _CUB::detail::logical_lane_id<LogicalWarpThreads>();
 
 public:
   /// @smemstorage{WarpLoad}

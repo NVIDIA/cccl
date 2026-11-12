@@ -11,6 +11,7 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
@@ -46,7 +47,7 @@ __device__ void test_group_view(Config config, Level level)
     other = view;
     view  = cuda::std::move(other);
 
-    const cudax::coop::group_view<typename View::unit_type, View> nested{view};
+    const cudax::coop::group_view<typename View::unit_type, View, typename View::__mapping_result_type> nested{view};
     static_assert(nested.static_count(level) == g.static_count(level));
     REQUIRE(nested.count(level) == g.count(level));
     REQUIRE(nested.template count_as<unsigned>(level) == g.template count_as<unsigned>(level));
@@ -273,6 +274,130 @@ C2H_TEST("Group View", "[group_view]")
       cuda::grid_dims<2>(), cuda::cluster_dims<3>(), cuda::block_dims<128>(), cuda::cooperative_launch{});
     cuda::launch(stream, config_cluster, TestKernel{});
   }
+
+  stream.sync();
+}
+
+// Map a four-block grid into two groups containing one and three blocks.
+// The flags let the view tests check that conversion preserves the mapping guarantees.
+template <bool Exhaustive, bool Contiguous>
+struct UnequalStaticCounts
+{
+  template <class Unit, class Parent, class Prev>
+  __device__ auto map(const Unit&, const Parent&, const Prev& prev) const
+  {
+    using Result    = cudax::coop::__mapping_result<cudax::coop::__static_unit_counts<1, 3>, Exhaustive, Contiguous>;
+    const auto rank = prev.unit_rank();
+
+    return Result{rank == 0 ? 0u : 1u, rank == 0 ? 0u : rank - 1, prev.lane_mask()};
+  }
+};
+
+template <bool Static, bool Exhaustive, bool Contiguous, class Config>
+__device__ void test_nonuniform_group_view(Config config)
+{
+  const cudax::coop::this_grid parent{config};
+  const cudax::coop::virtual_group group{cuda::block, parent, UnequalStaticCounts<Exhaustive, Contiguous>{}};
+
+  // A view with the same unit type must preserve the original mapping result type.
+  const cudax::coop::group_view same_unit{group};
+  using Original = typename decltype(group)::__mapping_result_type;
+
+  static_assert(cuda::std::is_same_v<typename decltype(same_unit)::__mapping_result_type, Original>);
+
+  // Expected group membership is independent of the unit used by the view.
+  const auto block_rank = cuda::block.rank_as<unsigned>(cuda::grid);
+  const auto group_rank = block_rank == 0 ? 0u : 1u;
+  const auto blocks     = block_rank == 0 ? 1u : 3u;
+  const auto rank       = block_rank == 0 ? 0u : block_rank - 1;
+
+  // All conversions retain the group metadata and scale unit counts and ranks.
+  const auto check = [&](const auto& view, auto unit, unsigned units_per_block) {
+    const auto result = view.__mapping_result();
+    using Result      = decltype(result);
+
+    static_assert(Result::static_group_count() == 2);
+    static_assert(Result::is_always_exhaustive() == Exhaustive);
+    static_assert(Result::is_always_contiguous() == Contiguous);
+
+    CHECK(result.is_valid());
+    CHECK(result.group_count() == 2);
+    CHECK(result.group_rank() == group_rank);
+    CHECK(result.unit_count() == blocks * units_per_block);
+
+    if constexpr (cuda::std::is_same_v<decltype(unit), cuda::block_level>)
+    {
+      CHECK(result.unit_rank() == rank);
+    }
+    else
+    {
+      CHECK(result.unit_rank() == rank * units_per_block + unit.template rank_as<unsigned>(cuda::block));
+    }
+
+    CHECK(result.lane_mask() == group.__mapping_result().lane_mask());
+  };
+
+  check(same_unit, cuda::block, 1);
+
+  // With 128 threads per block, the groups contain four and twelve warps.
+  // Static dimensions preserve those counts; runtime dimensions require dynamic counts.
+  const cudax::coop::group_view warps{cuda::warp, group};
+  using Warps = typename decltype(warps)::__mapping_result_type;
+
+  static_assert(Warps::has_uniform_static_unit_count() == !Static);
+  static_assert(Warps::static_unit_count() == cuda::std::dynamic_extent);
+  static_assert(Warps::static_unit_count(0) == (Static ? 4 : cuda::std::dynamic_extent));
+  static_assert(Warps::static_unit_count(1) == (Static ? 12 : cuda::std::dynamic_extent));
+
+  check(warps, cuda::warp, 4);
+
+  // Direct conversion to threads scales each original block count by 128.
+  const cudax::coop::group_view threads{cuda::gpu_thread, group};
+  using Threads = typename decltype(threads)::__mapping_result_type;
+
+  static_assert(Threads::has_uniform_static_unit_count() == !Static);
+  static_assert(Threads::static_unit_count(0) == (Static ? 128 : cuda::std::dynamic_extent));
+  static_assert(Threads::static_unit_count(1) == (Static ? 384 : cuda::std::dynamic_extent));
+
+  check(threads, cuda::gpu_thread, 128);
+
+  // Converting blocks to warps to threads must match direct conversion, including
+  // the result type and the fallback when block dimensions are dynamic.
+  const cudax::coop::group_view nested_threads{cuda::gpu_thread, warps};
+
+  static_assert(cuda::std::is_same_v<typename decltype(nested_threads)::__mapping_result_type, Threads>);
+
+  check(nested_threads, cuda::gpu_thread, 128);
+
+  // Exercise the conversion from a view while retaining the original group type.
+  const cudax::coop::group_view<cuda::thread_level, cuda::std::remove_cv_t<decltype(group)>, Threads> converted{
+    cuda::gpu_thread, warps};
+
+  check(converted, cuda::gpu_thread, 128);
+}
+
+struct NonuniformViewKernel
+{
+  template <class Config>
+  __device__ void operator()(Config config) const
+  {
+    constexpr bool is_static = decltype(cuda::gpu_thread.extents(cuda::block, config))::rank_dynamic() == 0;
+
+    // Check that conversion preserves both strong and conservative mapping guarantees.
+    test_nonuniform_group_view<is_static, true, true>(config);
+    test_nonuniform_group_view<is_static, false, false>(config);
+  }
+};
+
+C2H_TEST("Group View preserves per-group static unit counts", "[group_view]")
+{
+  const cuda::stream stream{cuda::devices[0]};
+
+  // Static block dimensions allow per-group counts to be recomputed at compile time.
+  cuda::launch(stream, cuda::make_config(cuda::grid_dims<4>(), cuda::block_dims<128>()), NonuniformViewKernel{});
+
+  // The same launch shape with runtime dimensions exercises the dynamic fallback.
+  cuda::launch(stream, cuda::make_config(cuda::grid_dims<4>(), cuda::block_dims(128)), NonuniformViewKernel{});
 
   stream.sync();
 }

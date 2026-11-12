@@ -39,11 +39,22 @@
 
 namespace cuda::experimental::coop
 {
+template <::cuda::std::size_t _StaticGroupCount, ::cuda::std::size_t _StaticUnitCount>
+struct __uniform_static_unit_count;
+
+template <::cuda::std::size_t... _StaticUnitCounts>
+struct __static_unit_counts;
+
+template <class _CountsTag, bool _IsAlwaysExhaustive, bool _IsAlwaysContiguous>
+struct __mapping_result;
+
 template <::cuda::std::size_t _StaticGroupCount,
-          ::cuda::std::size_t _StaticCount,
+          ::cuda::std::size_t _StaticUnitCount,
           bool _IsAlwaysExhaustive,
           bool _IsAlwaysContiguous>
-struct __mapping_result
+struct __mapping_result<__uniform_static_unit_count<_StaticGroupCount, _StaticUnitCount>,
+                        _IsAlwaysExhaustive,
+                        _IsAlwaysContiguous>
 {
   ::cuda::std::uint32_t __group_count_;
   ::cuda::std::uint32_t __group_rank_;
@@ -88,12 +99,34 @@ struct __mapping_result
     {
       _CCCL_ASSERT(is_valid(), "getting group rank of thread that is not part of the group is UB");
     }
-    return __group_rank_;
+
+    if constexpr (_StaticGroupCount == 1)
+    {
+      return 0;
+    }
+    else
+    {
+      return __group_rank_;
+    }
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool has_uniform_static_unit_count()
+  {
+    return true;
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count()
   {
-    return _StaticCount;
+    return _StaticUnitCount;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count(::cuda::std::size_t __i)
+  {
+    if constexpr (_StaticGroupCount != ::cuda::std::dynamic_extent)
+    {
+      _CCCL_ASSERT(__i < _StaticGroupCount, "__i out of range");
+    }
+    return _StaticUnitCount;
   }
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_count() const
@@ -103,14 +136,137 @@ struct __mapping_result
       _CCCL_ASSERT(is_valid(), "getting unit count of thread that is not part of the group is UB");
     }
 
-    if constexpr (_StaticCount != ::cuda::std::dynamic_extent)
+    if constexpr (_StaticUnitCount != ::cuda::std::dynamic_extent)
     {
-      return static_cast<::cuda::std::uint32_t>(_StaticCount);
+      return static_cast<::cuda::std::uint32_t>(_StaticUnitCount);
     }
     else
     {
       return __unit_count_;
     }
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_rank() const
+  {
+    if constexpr (!_IsAlwaysExhaustive)
+    {
+      _CCCL_ASSERT(is_valid(), "getting unit rank of thread that is not part of the group is UB");
+    }
+
+    if constexpr (_StaticUnitCount == 1)
+    {
+      return 0;
+    }
+    else
+    {
+      return __unit_rank_;
+    }
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::device::lane_mask lane_mask() const
+  {
+    if constexpr (!_IsAlwaysExhaustive)
+    {
+      _CCCL_ASSERT(is_valid(), "getting lane mask of thread that is not part of the group is UB");
+    }
+    return __lane_mask_;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API bool is_valid() const
+  {
+    if constexpr (_IsAlwaysExhaustive)
+    {
+      return true;
+    }
+    else
+    {
+      return __unit_rank_ != __invalid_count_or_rank;
+    }
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive()
+  {
+    return _IsAlwaysExhaustive;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous()
+  {
+    return _IsAlwaysContiguous;
+  }
+};
+
+template <::cuda::std::size_t... _StaticUnitCounts, bool _IsAlwaysExhaustive, bool _IsAlwaysContiguous>
+struct __mapping_result<__static_unit_counts<_StaticUnitCounts...>, _IsAlwaysExhaustive, _IsAlwaysContiguous>
+{
+  static constexpr ::cuda::std::size_t _StaticGroupCount = sizeof...(_StaticUnitCounts);
+
+  static_assert(_StaticGroupCount > 0, "per-group unit counts require at least one group");
+  static_assert(((_StaticUnitCounts != ::cuda::std::dynamic_extent) && ...),
+                "per-group unit counts must be statically known");
+
+  ::cuda::std::uint32_t __group_rank_;
+  ::cuda::std::uint32_t __unit_rank_;
+  ::cuda::device::lane_mask __lane_mask_;
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result __invalid()
+  {
+    return {__invalid_count_or_rank, __invalid_count_or_rank, ::cuda::device::lane_mask::none()};
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_count()
+  {
+    return _StaticGroupCount;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_count() const
+  {
+    if constexpr (!_IsAlwaysExhaustive)
+    {
+      _CCCL_ASSERT(is_valid(), "getting group count of thread that is not part of the group is UB");
+    }
+    return static_cast<::cuda::std::uint32_t>(_StaticGroupCount);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_rank() const
+  {
+    if constexpr (!_IsAlwaysExhaustive)
+    {
+      _CCCL_ASSERT(is_valid(), "getting group rank of thread that is not part of the group is UB");
+    }
+    return __group_rank_;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool has_uniform_static_unit_count()
+  {
+    return ((static_unit_count(0) == _StaticUnitCounts) && ...);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count()
+  {
+    if constexpr (has_uniform_static_unit_count())
+    {
+      return static_unit_count(0);
+    }
+    else
+    {
+      return ::cuda::std::dynamic_extent;
+    }
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count(::cuda::std::size_t __i)
+  {
+    _CCCL_ASSERT(__i < _StaticGroupCount, "__i out of range");
+    constexpr ::cuda::std::size_t __counts[]{_StaticUnitCounts...};
+    return __counts[__i];
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_count() const
+  {
+    if constexpr (!_IsAlwaysExhaustive)
+    {
+      _CCCL_ASSERT(is_valid(), "getting unit count of thread that is not part of the group is UB");
+    }
+    return static_cast<::cuda::std::uint32_t>(static_unit_count(__group_rank_));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_rank() const

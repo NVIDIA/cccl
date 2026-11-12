@@ -58,7 +58,7 @@ warp_reduce_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::span<T> out
   auto inputs = cuda::std::array<T, Batches>{};
   for (int batch_idx = 0; batch_idx < Batches; ++batch_idx)
   {
-    inputs[batch_idx] = input_md(logical_warp_id * Batches + batch_idx, lane_id);
+    inputs[batch_idx] = input_md((logical_warp_id * Batches) + batch_idx, lane_id);
   }
 
   constexpr int out_per_thread = cuda::ceil_div(Batches, LogicalWarpThreads);
@@ -80,11 +80,11 @@ warp_reduce_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::span<T> out
   {
     const auto batch_idx =
       (Mode == WarpReduceBatchedMode::ToBlocked)
-        ? (idx + lane_id * out_per_thread)
-        : (idx * LogicalWarpThreads + lane_id);
+        ? (idx + (lane_id * out_per_thread))
+        : ((idx * LogicalWarpThreads) + lane_id);
     if (batch_idx < Batches)
     {
-      output[static_cast<std::size_t>(logical_warp_id) * Batches + batch_idx] = outputs[idx];
+      output[(static_cast<std::size_t>(logical_warp_id) * Batches) + batch_idx] = outputs[idx];
     }
   }
 }
@@ -101,7 +101,7 @@ __global__ void sum_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::spa
   auto inputs = cuda::std::array<T, Batches>{};
   for (int batch_idx = 0; batch_idx < Batches; ++batch_idx)
   {
-    inputs[batch_idx] = input_md(logical_warp_id * Batches + batch_idx, lane_id);
+    inputs[batch_idx] = input_md((logical_warp_id * Batches) + batch_idx, lane_id);
   }
 
   constexpr int out_per_thread = cuda::ceil_div(Batches, LogicalWarpThreads);
@@ -123,11 +123,11 @@ __global__ void sum_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::spa
   {
     const auto batch_idx =
       (Mode == WarpReduceBatchedMode::ToBlocked)
-        ? (idx + lane_id * out_per_thread)
-        : (idx * LogicalWarpThreads + lane_id);
+        ? (idx + (lane_id * out_per_thread))
+        : ((idx * LogicalWarpThreads) + lane_id);
     if (batch_idx < Batches)
     {
-      output[static_cast<std::size_t>(logical_warp_id) * Batches + batch_idx] = outputs[idx];
+      output[(static_cast<std::size_t>(logical_warp_id) * Batches) + batch_idx] = outputs[idx];
     }
   }
 }
@@ -157,7 +157,7 @@ warp_reduce_batched_cond_part_kernel(input_2d_mdspan_t<T> input_md, cuda::std::s
     auto inputs = cuda::std::array<T, Batches>{};
     for (int batch_idx = 0; batch_idx < Batches; ++batch_idx)
     {
-      inputs[batch_idx] = input_md(participant_idx * Batches + batch_idx, lane_id);
+      inputs[batch_idx] = input_md((participant_idx * Batches) + batch_idx, lane_id);
     }
 
     constexpr int out_per_thread = cuda::ceil_div(Batches, LogicalWarpThreads);
@@ -179,11 +179,11 @@ warp_reduce_batched_cond_part_kernel(input_2d_mdspan_t<T> input_md, cuda::std::s
     {
       const auto batch_idx =
         (Mode == WarpReduceBatchedMode::ToBlocked)
-          ? (idx + lane_id * out_per_thread)
-          : (idx * LogicalWarpThreads + lane_id);
+          ? (idx + (lane_id * out_per_thread))
+          : ((idx * LogicalWarpThreads) + lane_id);
       if (batch_idx < Batches)
       {
-        output[static_cast<std::size_t>(participant_idx) * Batches + batch_idx] = outputs[idx];
+        output[(static_cast<std::size_t>(participant_idx) * Batches) + batch_idx] = outputs[idx];
       }
     }
   }

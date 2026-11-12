@@ -62,9 +62,10 @@ struct gelu_op
   template <class T>
   __host__ __device__ T operator()(T v) const
   {
-    constexpr float k0 = 0.7978845608028654f, k1 = 0.044715f;
-    const float f = to_f(v);
-    return from_f<T>(0.5f * f * (1.0f + ::cuda::std::tanh(k0 * (f + k1 * f * f * f))));
+    constexpr float k0 = 0.7978845608028654f;
+    constexpr float k1 = 0.044715f;
+    const float f      = to_f(v);
+    return from_f<T>(0.5f * f * (1.0f + ::cuda::std::tanh(k0 * (f + (k1 * f * f * f)))));
   }
 };
 struct sin_op

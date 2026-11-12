@@ -67,7 +67,7 @@ template <int TileSize, typename Fn, typename Out, typename... Ins, ::cuda::std:
   // would need num_items > TileSize * 2^32 (>= 2^40 elements), more than any device can hold.
   const ::cuda::std::int64_t num_blocks = ::cuda::ceil_div(num_items, ::cuda::std::int64_t{TileSize});
 
-  cub::detail::transform::tile::transform_kernel<TileSize, Fn>
+  _CUB::detail::transform::tile::transform_kernel<TileSize, Fn>
     <<<static_cast<unsigned>(num_blocks), 1, 0, stream>>>(num_items, output, ::cuda::std::get<Idx>(inputs)...);
 
   return CubDebug(::cudaGetLastError());
@@ -86,7 +86,7 @@ inline constexpr bool tile_dispatch_eligible_v =
 [[nodiscard]] CUB_RUNTIME_FUNCTION inline bool device_supports_tile()
 {
   ::cuda::compute_capability cc{};
-  return cub::detail::ptx_compute_cap(cc) == ::cudaSuccess && cc >= ::cuda::compute_capability{8, 0};
+  return _CUB::detail::ptx_compute_cap(cc) == ::cudaSuccess && cc >= ::cuda::compute_capability{8, 0};
 }
 
 // Runtime precondition the tile hook checks before dispatching: 16-byte pointer alignment + num_items % 16 == 0
@@ -139,10 +139,10 @@ dispatch(::cuda::std::tuple<InIters...> inputs, OutIter output, OffsetT num_item
   static_assert(::cuda::std::is_trivially_default_constructible_v<tile_op_t>,
                 "tile_operator type must be trivially default constructible");
 
-  constexpr int tile_size =
-    cub::detail::transform::tile::pick_tile_size<::cuda::std::iter_value_t<OutIter>,
-                                                 ::cuda::std::iter_value_t<InIters>...>(tile_mufu_heavy_v<TransformOp>);
-  return cub::detail::transform::tile::launch_impl<tile_size, tile_op_t>(
+  constexpr int tile_size = _CUB::detail::transform::tile::pick_tile_size<::cuda::std::iter_value_t<OutIter>,
+                                                                          ::cuda::std::iter_value_t<InIters>...>(
+    tile_mufu_heavy_v<TransformOp>);
+  return _CUB::detail::transform::tile::launch_impl<tile_size, tile_op_t>(
     in_ptrs,
     out_ptr,
     static_cast<::cuda::std::int64_t>(num_items),

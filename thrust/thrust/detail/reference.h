@@ -41,7 +41,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(iter_swap.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/assign_value.h>
 #  include <thrust/system/cpp/detail/get_value.h>
 #  include <thrust/system/cpp/detail/iter_swap.h>
@@ -70,7 +70,6 @@ struct is_wrapped_reference;
 template <typename Element, typename Pointer, typename Derived>
 class reference
 {
-private:
   using derived_type = std::conditional_t<std::is_same_v<Derived, use_default>, reference, Derived>;
 
 public:
@@ -515,7 +514,6 @@ class tagged_reference
     : public thrust::
         reference<Element, thrust::pointer<Element, Tag, tagged_reference<Element, Tag>>, tagged_reference<Element, Tag>>
 {
-private:
   using base_type = thrust::
     reference<Element, thrust::pointer<Element, Tag, tagged_reference<Element, Tag>>, tagged_reference<Element, Tag>>;
 

@@ -41,7 +41,6 @@ public:
 
   class param_type
   {
-  private:
     double __p_ = 0.5;
 
   public:

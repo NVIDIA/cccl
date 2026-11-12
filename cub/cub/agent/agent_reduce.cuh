@@ -278,7 +278,7 @@ struct AgentReduceImpl
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduceImpl(
     TempStorage& temp_storage, InputIteratorT d_in, ReductionOp reduction_op, TransformOp transform_op, int lane_id)
       : temp_storage(temp_storage.Alias())
-      , d_in(try_make_cache_modified_iterator<AgentReducePolicy::LOAD_MODIFIER>(d_in))
+      , d_in(_CUB::detail::try_make_cache_modified_iterator<AgentReducePolicy::LOAD_MODIFIER>(d_in))
       , reduction_op(reduction_op)
       , transform_op(transform_op)
       , lane_id(lane_id)
@@ -304,7 +304,7 @@ struct AgentReduceImpl
       InputT input_items[ITEMS_PER_THREAD];
       // IsAligned checked that the range starts aligned to VectorT, and full tiles are whole tiles further
       // lane_id is the warp lane for a warp agent and the block thread id otherwise.
-      detail::load_direct_striped_vectorized_aligned<NumThreads, vec_size, LOAD_MODIFIER>(
+      _CUB::detail::load_direct_striped_vectorized_aligned<NumThreads, vec_size, LOAD_MODIFIER>(
         static_cast<int>(lane_id), d_in.ptr + block_offset, input_items);
 
       // Convert from input type to output type
@@ -316,7 +316,7 @@ struct AgentReduceImpl
     }
     else
     {
-      load_transform_direct_striped<NumThreads>(lane_id, d_in + block_offset, items, transform_op);
+      _CUB::detail::load_transform_direct_striped<NumThreads>(lane_id, d_in + block_offset, items, transform_op);
     }
     // Reduce items within each thread stripe
     thread_aggregate =

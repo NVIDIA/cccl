@@ -38,7 +38,7 @@ using namespace cuda::experimental::stf;
 
 __global__ void axpy(size_t start, size_t cnt, double a, const double* x, double* y)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (size_t i = tid; i < cnt; i += nthreads)
@@ -84,7 +84,8 @@ int main()
   // 2. Run STF tasks over logical data placed by the same policy
   stream_ctx ctx;
 
-  ::std::vector<double> X(N), Y(N);
+  ::std::vector<double> X(N);
+  ::std::vector<double> Y(N);
   for (size_t i = 0; i < N; i++)
   {
     X[i] = X0(i);
@@ -122,7 +123,7 @@ int main()
 
   for (size_t i = 0; i < N; i++)
   {
-    if (fabs(Y[i] - (Y0(i) + alpha * X0(i))) > 0.0001)
+    if (fabs(Y[i] - (Y0(i) + (alpha * X0(i)))) > 0.0001)
     {
       fprintf(stderr, "Verification FAILED at %zu\n", i);
       return 1;

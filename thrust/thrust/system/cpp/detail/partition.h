@@ -14,4 +14,4 @@
 #endif // no system header
 
 // this system inherits partition
-#include <thrust/system/detail/sequential/partition.h>
+#include <thrust/system/detail/sequential/partition.h> // IWYU pragma: export

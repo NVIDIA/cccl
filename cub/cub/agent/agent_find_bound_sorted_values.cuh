@@ -127,11 +127,11 @@ struct agent_t
     const int needles_count  = total_in_tile - haystack_count;
 
     {
-      const auto d_range_cm = cub::detail::try_make_cache_modified_iterator<LoadModifier>(d_range + range_beg);
+      const auto d_range_cm = _CUB::detail::try_make_cache_modified_iterator<LoadModifier>(d_range + range_beg);
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < ItemsPerThread; ++item)
       {
-        const int idx = ThreadsPerBlock * item + threadIdx.x;
+        const int idx = (ThreadsPerBlock * item) + threadIdx.x;
         if (idx < haystack_count)
         {
           storage.haystack[idx] = d_range_cm[idx];
@@ -140,11 +140,11 @@ struct agent_t
     }
 
     {
-      auto d_values_cm = cub::detail::try_make_cache_modified_iterator<LoadModifier>(d_values + values_beg);
+      auto d_values_cm = _CUB::detail::try_make_cache_modified_iterator<LoadModifier>(d_values + values_beg);
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < ItemsPerThread; ++item)
       {
-        const int idx = ThreadsPerBlock * item + threadIdx.x;
+        const int idx = (ThreadsPerBlock * item) + threadIdx.x;
         if (idx < needles_count)
         {
           storage.needles[idx] = d_values_cm[idx];
@@ -184,7 +184,7 @@ struct agent_t
     }
 
     const int i0 =
-      cub::MergePath(storage.haystack, storage.needles, haystack_count, needles_count, d0_thread, partition_comp);
+      _CUB::MergePath(storage.haystack, storage.needles, haystack_count, needles_count, d0_thread, partition_comp);
     const int j0 = d0_thread - i0;
 
     int i                  = i0;

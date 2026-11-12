@@ -32,7 +32,6 @@ namespace chrono
 {
 class month_weekday
 {
-private:
   chrono::month __month_;
   chrono::weekday_indexed __weekday_indexed_;
 

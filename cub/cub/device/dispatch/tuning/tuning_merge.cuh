@@ -101,7 +101,7 @@ struct policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> MergePolicy
   {
     const int tune_type_size   = key_size + value_size;
-    const int ipt_800_plus     = nominal_4B_items_to_items(15, tune_type_size);
+    const int ipt_800_plus     = _CUB::detail::nominal_4B_items_to_items(15, tune_type_size);
     const bool can_bulk_keys   = (key_size == key_align) && key_is_trivially_relocatable && key_iterators_are_contiguous
                               && key_iterator_value_types_are_the_same;
     const bool can_bulk_values = (value_size == value_align) && value_is_trivially_relocatable
@@ -116,7 +116,7 @@ struct policy_selector
     {
       const bool should_bl2sh_keys = key_size != 8;
       const bool should_bl2sh_pairs =
-        !(key_size == 8 && value_size == 8)
+        (key_size != 8 || value_size != 8)
         && (key_size != 16 || (key_size == 16 && value_size == 1 && offset_size == 4)
             || (key_size == 16 && value_size == 8));
       // TODO(bgruber): consider not using a combined should_bl2sh flag. Kept to avoid SASS diffs
@@ -148,12 +148,12 @@ struct policy_selector
 
     if (cc >= ::cuda::compute_capability{6, 0})
     {
-      const int ipt_600 = nominal_4B_items_to_items(15, tune_type_size);
+      const int ipt_600 = _CUB::detail::nominal_4B_items_to_items(15, tune_type_size);
       return MergePolicy{512, ipt_600, LOAD_DEFAULT, BLOCK_STORE_WARP_TRANSPOSE, false, false};
     }
 
     // default is SM52
-    const int ipt_520 = nominal_4B_items_to_items(13, tune_type_size);
+    const int ipt_520 = _CUB::detail::nominal_4B_items_to_items(13, tune_type_size);
     return MergePolicy{512, ipt_520, LOAD_LDG, BLOCK_STORE_WARP_TRANSPOSE, false, false};
   }
 };

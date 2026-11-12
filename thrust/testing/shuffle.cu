@@ -272,16 +272,19 @@ TEST_CASE("TestShuffleIteratorStateless", "[shuffle]")
 
 double inverse_erf(double x)
 {
-  double tt1, tt2, lnx, sgn;
+  double tt1;
+  double tt2;
+  double lnx;
+  double sgn;
   sgn = (x < 0) ? -1.0 : 1.0;
 
   x   = (1 - x) * (1 + x);
   lnx = cuda::std::log(x);
 
-  tt1 = 2 / (cuda::std::__numbers<double>::__pi() * 0.147) + 0.5f * lnx;
-  tt2 = 1 / (0.147) * lnx;
+  tt1 = (2 / (cuda::std::__numbers<double>::__pi() * 0.147)) + (0.5f * lnx);
+  tt2 = 1 / 0.147 * lnx;
 
-  return (sgn * cuda::std::sqrt(-tt1 + cuda::std::sqrt(tt1 * tt1 - tt2)));
+  return (sgn * cuda::std::sqrt(-tt1 + cuda::std::sqrt((tt1 * tt1) - tt2)));
 }
 
 // Individual input keys should be permuted to output locations with uniform
@@ -308,7 +311,7 @@ void test_shuffle_key_position_base()
   }
 
   const double mu    = (n - 1) / 2.0;
-  const double sigma = cuda::std::sqrt((n * n - 1) / 12.0);
+  const double sigma = cuda::std::sqrt(((n * n) - 1) / 12.0);
   double zmax        = 0.0;
   for (size_t i = 0; i < n; ++i)
   {
@@ -318,7 +321,7 @@ void test_shuffle_key_position_base()
   }
 
   const double alpha = 0.05;
-  const double zcrit = inverse_erf(1.0 - alpha / (2.0 * n)) * cuda::std::sqrt(2.0);
+  const double zcrit = inverse_erf(1.0 - (alpha / (2.0 * n))) * cuda::std::sqrt(2.0);
   REQUIRE(zmax < zcrit);
 }
 template <typename Vector>

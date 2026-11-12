@@ -34,7 +34,8 @@ int main()
   context ctx;
 
   const int N = 1024 * 1024 * 32;
-  double *X, *Y;
+  double* X;
+  double* Y;
 
   X = new double[N];
   Y = new double[N];
@@ -67,7 +68,7 @@ int main()
   for (size_t ind = 0; ind < N; ind++)
   {
     // Y should be Y0 + NITER alpha X0
-    assert(fabs(Y[ind] - (Y0(ind) + NITER * alpha * X0(ind))) < 0.0001);
+    assert(fabs(Y[ind] - (Y0(ind) + (NITER * alpha * X0(ind)))) < 0.0001);
 
     // X should be X0
     assert(fabs(X[ind] - X0(ind)) < 0.0001);

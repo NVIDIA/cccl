@@ -60,7 +60,7 @@ void Initialize(int* h_in, int num_items)
 /**
  * Solve exclusive-scan problem
  */
-int Solve(int* h_in, int* h_reference, int num_items)
+int Solve(const int* h_in, int* h_reference, int num_items)
 {
   int inclusive = 0;
   int aggregate = 0;
@@ -142,14 +142,8 @@ int main(int argc, char** argv)
   AssertEquals(0, compare);
 
   // Cleanup
-  if (h_in)
-  {
-    delete[] h_in;
-  }
-  if (h_reference)
-  {
-    delete[] h_reference;
-  }
+  delete[] h_in;
+  delete[] h_reference;
 
   printf("\n\n");
 

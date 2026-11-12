@@ -55,7 +55,7 @@ struct unary_transform_run
   CUresult operator()(BuildResultT build, void* scratch, size_t* scratch_size, Ts... args) const noexcept
   {
     *scratch_size = 1;
-    return (scratch) ? cccl_device_unary_transform(build, args...) : CUDA_SUCCESS;
+    return scratch ? cccl_device_unary_transform(build, args...) : CUDA_SUCCESS;
   }
 };
 
@@ -65,7 +65,7 @@ struct binary_transform_run
   CUresult operator()(BuildResultT build, void* scratch, size_t* scratch_size, Ts... args) const noexcept
   {
     *scratch_size = 1;
-    return (scratch) ? cccl_device_binary_transform(build, args...) : CUDA_SUCCESS;
+    return scratch ? cccl_device_binary_transform(build, args...) : CUDA_SUCCESS;
   }
 };
 
@@ -1013,7 +1013,7 @@ C2H_TEST("Transform build result has serialization metadata populated", "[transf
       build_info.get_libcudacxx_path(),
       build_info.get_ctk_path()));
 
-  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK(build.cc == (build_info.get_cc_major() * 10) + build_info.get_cc_minor());
   CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
   CHECK(build.payload_size > 0);
   CHECK(build.runtime_policy != nullptr);

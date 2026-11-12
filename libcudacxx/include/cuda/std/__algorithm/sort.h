@@ -633,7 +633,7 @@ __bitset_partition(_RandomAccessIterator __first, _RandomAccessIterator __last, 
   uint64_t __right_bitset     = 0;
 
   // Reminder: length = __lm1 - __first + 1.
-  while (__lm1 - __first >= 2 * __detail::__block_size - 1)
+  while (__lm1 - __first >= (2 * __detail::__block_size) - 1)
   {
     // Record the comparison outcomes for the elements currently on the left
     // side.
@@ -954,13 +954,10 @@ _CCCL_API void __introsort(
         __last = __i;
         continue;
       }
-      else
+      if (__fs)
       {
-        if (__fs)
-        {
-          __first = ++__i;
-          continue;
-        }
+        __first = ++__i;
+        continue;
       }
     }
     // Sort the left partition recursively and the right partition with tail recursion elimination.
@@ -980,11 +977,11 @@ _CCCL_API _Number __log2i(_Number __n)
   }
   if (sizeof(__n) <= sizeof(uint32_t))
   {
-    return sizeof(uint32_t) * CHAR_BIT - 1 - ::cuda::std::countl_zero(static_cast<uint32_t>(__n));
+    return (sizeof(uint32_t) * CHAR_BIT) - 1 - ::cuda::std::countl_zero(static_cast<uint32_t>(__n));
   }
   if (sizeof(__n) <= sizeof(uint64_t))
   {
-    return sizeof(uint64_t) * CHAR_BIT - 1 - ::cuda::std::countl_zero(static_cast<uint64_t>(__n));
+    return (sizeof(uint64_t) * CHAR_BIT) - 1 - ::cuda::std::countl_zero(static_cast<uint64_t>(__n));
   }
 
   _Number __log2 = 0;
