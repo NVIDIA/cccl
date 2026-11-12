@@ -174,6 +174,9 @@ using local_inner = cuda::std::decay_t<local_decay<T>>;
 
 static_assert(cuda::std::is_same_v<const_volatile<int>, const volatile int>);
 static_assert(cuda::std::is_same_v<volatile_const<void>, const volatile void>);
+// CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use simplified type alias [cccl-simplify-type-traits]
+// CHECK-MESSAGES-NOT: warning:
+// CHECK-FIXES-LABEL: - DiagnosticName: cccl-simplify-type-traits
 static_assert(cuda::std::is_same_v<const_volatile<int&>, int&>);
 static_assert(cuda::std::is_same_v<volatile_const<int()>, int()>);
 static_assert(cuda::std::is_same_v<const_cv<const volatile int[3]>, int[3]>);
@@ -488,6 +491,9 @@ static_assert(cuda::std::is_same_v<repeated_add_volatile_t<int>, volatile int>);
 static_assert(cuda::std::is_same_v<repeated_add_volatile_t<int()>, int()>);
 static_assert(cuda::std::is_same_v<repeated_add_cv_t<int>, const volatile int>);
 static_assert(cuda::std::is_same_v<repeated_add_cv_t<void>, const volatile void>);
+// CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use simplified type alias [cccl-simplify-type-traits]
+// CHECK-MESSAGES-NOT: warning:
+// CHECK-FIXES-LABEL: - DiagnosticName: cccl-simplify-type-traits
 static_assert(cuda::std::is_same_v<repeated_remove_const_t<const volatile int>, volatile int>);
 static_assert(cuda::std::is_same_v<repeated_remove_volatile_t<const volatile int>, const int>);
 static_assert(cuda::std::is_same_v<repeated_remove_cv_t<const volatile int>, int>);

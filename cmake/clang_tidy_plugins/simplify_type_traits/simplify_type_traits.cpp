@@ -290,8 +290,7 @@ public:
     // ==========================================================================================
 
     {
-      const auto void_arg =
-        hasTypeLoc(loc(qualType(builtinType(), voidType(), unless(isConstQualified()), unless(isVolatileQualified()))));
+      const auto void_arg = hasTypeLoc(loc(qualType(builtinType(), voidType())));
       const auto has_void_arg =
         anyOf(hasTemplateArgumentLoc(/*Index=*/0, void_arg), hasTemplateArgumentLoc(/*Index=*/1, void_arg));
 

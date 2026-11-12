@@ -60,15 +60,29 @@ inline constexpr bool alias_first = cuda::std::is_same_v<void_alias, void>;
 // CHECK-FIXES-NEXT: ReplacementText: ''
 
 inline constexpr bool const_void = cuda::std::is_same_v<int, const void>;
+// CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use simplified type alias [cccl-simplify-type-traits]
+// CHECK-MESSAGES-NOT: warning:
+// CHECK-FIXES-LABEL: - DiagnosticName: cccl-simplify-type-traits
 
 inline constexpr bool volatile_void = cuda::std::is_same_v<volatile void, int>;
+// CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use simplified type alias [cccl-simplify-type-traits]
+// CHECK-MESSAGES-NOT: warning:
+// CHECK-FIXES-LABEL: - DiagnosticName: cccl-simplify-type-traits
 
 inline constexpr bool cv_void = cuda::std::is_same_v<const volatile void, const volatile void>;
+// CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use simplified type alias [cccl-simplify-type-traits]
+// CHECK-MESSAGES-NOT: warning:
+// CHECK-FIXES-LABEL: - DiagnosticName: cccl-simplify-type-traits
 
-// Qualified void arguments remain unchanged.
 inline constexpr bool qualified_next = cuda::std::is_same_v<void volatile, const int>;
+// CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use simplified type alias [cccl-simplify-type-traits]
+// CHECK-MESSAGES-NOT: warning:
+// CHECK-FIXES-LABEL: - DiagnosticName: cccl-simplify-type-traits
 
 inline constexpr bool qualified_previous = cuda::std::is_same_v<int volatile, void const>;
+// CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use simplified type alias [cccl-simplify-type-traits]
+// CHECK-MESSAGES-NOT: warning:
+// CHECK-FIXES-LABEL: - DiagnosticName: cccl-simplify-type-traits
 
 // Commas inside retained template arguments are not removal boundaries.
 inline constexpr bool nested_next = cuda::std::is_same_v<void, cuda::std::is_same<int, int>>;
