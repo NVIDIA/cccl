@@ -68,6 +68,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(uint2* ptr, uint2 val)
     (asm volatile("st.cg.v2.u32 [%0], {%1, %2};" : : "l"(ptr), "r"(val.x), "r"(val.y) : "memory");));
 }
 
+// NOLINTNEXTLINE(readability-non-const-parameter)
 _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned long long* ptr, unsigned long long val)
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
@@ -75,6 +76,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned long long* ptr, unsig
                     (asm volatile("st.cg.u64 [%0], %1;" : : "l"(ptr), "l"(val) : "memory");));
 }
 
+// NOLINTNEXTLINE(readability-non-const-parameter)
 _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned int* ptr, unsigned int val)
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
@@ -82,6 +84,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned int* ptr, unsigned in
                     (asm volatile("st.cg.u32 [%0], %1;" : : "l"(ptr), "r"(val) : "memory");));
 }
 
+// NOLINTNEXTLINE(readability-non-const-parameter)
 _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned short* ptr, unsigned short val)
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
@@ -89,6 +92,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned short* ptr, unsigned 
                     (asm volatile("st.cg.u16 [%0], %1;" : : "l"(ptr), "h"(val) : "memory");));
 }
 
+// NOLINTNEXTLINE(readability-non-const-parameter)
 _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned char* ptr, unsigned char val)
 {
   NV_IF_ELSE_TARGET(
@@ -165,6 +169,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_release(uint2* ptr, uint2 val)
     }));
 }
 
+// NOLINTNEXTLINE(readability-non-const-parameter)
 _CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned long long* ptr, unsigned long long val)
 {
   NV_IF_ELSE_TARGET(
@@ -174,6 +179,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned long long* ptr, unsig
     }));
 }
 
+// NOLINTNEXTLINE(readability-non-const-parameter)
 _CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned int* ptr, unsigned int val)
 {
   NV_IF_ELSE_TARGET(
@@ -183,6 +189,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned int* ptr, unsigned in
     }));
 }
 
+// NOLINTNEXTLINE(readability-non-const-parameter)
 _CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned short* ptr, unsigned short val)
 {
   NV_IF_ELSE_TARGET(
@@ -192,6 +199,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned short* ptr, unsigned 
     }));
 }
 
+// NOLINTNEXTLINE(readability-non-const-parameter)
 _CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned char* ptr, unsigned char val)
 {
   NV_IF_ELSE_TARGET(

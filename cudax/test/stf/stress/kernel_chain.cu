@@ -16,7 +16,7 @@ using namespace cuda::experimental::stf;
 
 __global__ void swap_kernel(slice<double> dst, slice<double> src)
 {
-  const size_t tid      = threadIdx.x + blockIdx.x * blockDim.x;
+  const size_t tid      = threadIdx.x + (blockIdx.x * blockDim.x);
   const size_t nthreads = blockDim.x * gridDim.x;
   const size_t n        = dst.size();
 
@@ -72,5 +72,5 @@ int main(int argc, char** argv)
   ctx.finalize();
 
   const std::chrono::duration<double> duration = stop - start;
-  fprintf(stderr, "Elapsed: %.2lf us per task pair\n", duration.count() * 1000000.0 / static_cast<double>((iter_cnt)));
+  fprintf(stderr, "Elapsed: %.2lf us per task pair\n", duration.count() * 1000000.0 / static_cast<double>(iter_cnt));
 }

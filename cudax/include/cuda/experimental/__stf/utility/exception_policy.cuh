@@ -1155,6 +1155,7 @@ struct translate_t<_To>
                     "default-constructible");
       _CCCL_THROW(_To);
     }
+    _CCCL_UNREACHABLE(); // NVHPC's front end does not see the _CCCL_THROW above as terminating
   }
 
   // The `_To` for a non-standard exception, which offers nothing to build from: say so when
@@ -1172,6 +1173,7 @@ struct translate_t<_To>
                     "in for a non-standard exception");
       _CCCL_THROW(_To);
     }
+    _CCCL_UNREACHABLE(); // NVHPC's front end does not see the _CCCL_THROW above as terminating
   }
 };
 
@@ -1202,6 +1204,7 @@ struct translate_t<_From, _To>
   {
     // The claim was answered yes, so the cast holds.
     translate_t<_To>::__throw_translated(*dynamic_cast<const _From*>(__e));
+    _CCCL_UNREACHABLE(); // nvcc's front end does not propagate [[noreturn]] through the call above
   }
 
   template <class _Fn>

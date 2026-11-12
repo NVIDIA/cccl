@@ -963,8 +963,8 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
       {42.4f, 1ll << 60} //
     };
 
-    constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
-    constexpr int end_bit   = sizeof(long long int) * 8 + 4; // 68
+    constexpr int begin_bit = (sizeof(long long int) * 8) - 4; // 60
+    constexpr int end_bit   = (sizeof(long long int) * 8) + 4; // 68
 
     // Decomposition orders the bits as follows:
     //
@@ -1017,8 +1017,8 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     constexpr int num_items         = 2;
     c2h::device_vector<custom_t> in = {{42.4f, 1ll << 60}, {24.2f, 1ll << 61}};
 
-    constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
-    constexpr int end_bit   = sizeof(long long int) * 8 + 4; // 68
+    constexpr int begin_bit = (sizeof(long long int) * 8) - 4; // 60
+    constexpr int end_bit   = (sizeof(long long int) * 8) + 4; // 68
 
     // Decomposition orders the bits as follows:
     //
@@ -1076,8 +1076,8 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
 
     c2h::device_vector<int> vals_in = {1, 0};
 
-    constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
-    constexpr int end_bit   = sizeof(long long int) * 8 + 4; // 68
+    constexpr int begin_bit = (sizeof(long long int) * 8) - 4; // 60
+    constexpr int end_bit   = (sizeof(long long int) * 8) + 4; // 68
 
     // Decomposition orders the bits as follows:
     //
@@ -1161,8 +1161,8 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
 
     c2h::device_vector<int> vals_in = {1, 0};
 
-    constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
-    constexpr int end_bit   = sizeof(long long int) * 8 + 4; // 68
+    constexpr int begin_bit = (sizeof(long long int) * 8) - 4; // 60
+    constexpr int end_bit   = (sizeof(long long int) * 8) + 4; // 68
 
     // Decomposition orders the bits as follows:
     //
@@ -1248,8 +1248,8 @@ CUB_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
       {42.4f, 1ll << 60} //
     };
 
-    constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
-    constexpr int end_bit   = sizeof(long long int) * 8 + 4; // 68
+    constexpr int begin_bit = (sizeof(long long int) * 8) - 4; // 60
+    constexpr int end_bit   = (sizeof(long long int) * 8) + 4; // 68
 
     // Decomposition orders the bits as follows:
     //
@@ -1311,8 +1311,8 @@ CUB_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
       {24.2f, 1ll << 61} //
     };
 
-    constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
-    constexpr int end_bit   = sizeof(long long int) * 8 + 4; // 68
+    constexpr int begin_bit = (sizeof(long long int) * 8) - 4; // 60
+    constexpr int end_bit   = (sizeof(long long int) * 8) + 4; // 68
 
     // Decomposition orders the bits as follows:
     //
@@ -1375,8 +1375,8 @@ CUB_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
 
     c2h::device_vector<int> vals_buf = {1, 0};
 
-    constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
-    constexpr int end_bit   = sizeof(long long int) * 8 + 4; // 68
+    constexpr int begin_bit = (sizeof(long long int) * 8) - 4; // 60
+    constexpr int end_bit   = (sizeof(long long int) * 8) + 4; // 68
 
     // Decomposition orders the bits as follows:
     //
@@ -1450,8 +1450,8 @@ CUB_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
 
     c2h::device_vector<int> vals_buf = {1, 0};
 
-    constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
-    constexpr int end_bit   = sizeof(long long int) * 8 + 4; // 68
+    constexpr int begin_bit = (sizeof(long long int) * 8) - 4; // 60
+    constexpr int end_bit   = (sizeof(long long int) * 8) + 4; // 68
 
     // Decomposition orders the bits as follows:
     //

@@ -207,7 +207,7 @@ public:
   //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockAdjacentDifference()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @brief Collective constructor using the specified memory allocation as temporary storage
@@ -220,7 +220,7 @@ public:
   //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockAdjacentDifference(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}
@@ -504,7 +504,7 @@ public:
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = ItemsPerThread - 1; item > 0; item--)
       {
-        const int idx = linear_tid * ItemsPerThread + item;
+        const int idx = (linear_tid * ItemsPerThread) + item;
 
         if (idx < valid_items)
         {
@@ -630,7 +630,7 @@ public:
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = ItemsPerThread - 1; item > 0; item--)
       {
-        const int idx = linear_tid * ItemsPerThread + item;
+        const int idx = (linear_tid * ItemsPerThread) + item;
 
         if (idx < valid_items)
         {
@@ -941,7 +941,7 @@ public:
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < ItemsPerThread; item++)
       {
-        const int idx = linear_tid * ItemsPerThread + item;
+        const int idx = (linear_tid * ItemsPerThread) + item;
 
         // Right element of input[valid_items - 1] is out of bounds.
         // According to the API it's copied into output array

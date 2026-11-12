@@ -109,7 +109,7 @@ __device__ void test_group_by_counts(Config config)
 
   // The total is the sum of the complete subgroups in each input group.
   using Result               = decltype(result);
-  constexpr auto group_count = 4 / N + 12 / N + 16 / N;
+  constexpr auto group_count = (4 / N) + (12 / N) + (16 / N);
 
   static_assert(Result::static_group_count() == (Static ? group_count : cuda::std::dynamic_extent));
   static_assert(Result::has_uniform_static_unit_count());
@@ -121,13 +121,13 @@ __device__ void test_group_by_counts(Config config)
   CHECK(result.is_valid() == (rank < counts[group] / N * N));
   if (result.is_valid())
   {
-    const unsigned offsets[]{0, 4 / N, 4 / N + 12 / N};
+    const unsigned offsets[]{0, 4 / N, (4 / N) + (12 / N)};
 
     CHECK(result.group_count() == group_count);
-    CHECK(result.group_rank() == offsets[group] + rank / N);
+    CHECK(result.group_rank() == offsets[group] + (rank / N));
     CHECK(result.unit_count() == N);
     CHECK(result.unit_rank() == rank % N);
-    CHECK(result.lane_mask() == cuda::device::lane_mask{(~0u >> (32 - N)) << (starts[group] + rank / N * N)});
+    CHECK(result.lane_mask() == cuda::device::lane_mask{(~0u >> (32 - N)) << (starts[group] + (rank / N * N))});
   }
 
   // A unit excluded by an earlier mapping must remain excluded.
@@ -205,16 +205,17 @@ __device__ void test_other_mappings(Config config)
   const auto integer_result = integer_labels.map(cuda::gpu_thread, parent, prev);
 
   static_assert(decltype(binary_result)::static_group_count() == 6);
-  static_assert(decltype(boolean_result)::static_group_count() == 6);
+  static_assert(decltype(boolean_result)::static_group_count() == cuda::std::dynamic_extent);
   static_assert(decltype(integer_result)::static_group_count() == cuda::std::dynamic_extent);
 
   // Boolean partitions put all false groups before all true groups. Integer labels
   // number groups by their first physical lane instead.
   CHECK(binary_result.group_count() == 6);
-  CHECK(binary_result.group_rank() == group + (rank % 2) * 3);
-  CHECK(boolean_result.group_rank() == binary_result.group_rank());
+  CHECK(binary_result.group_rank() == group + ((rank % 2) * 3));
+  CHECK(boolean_result.group_count() == 6);
+  CHECK(boolean_result.group_rank() == integer_result.group_rank());
   CHECK(integer_result.group_count() == 6);
-  CHECK(integer_result.group_rank() == group * 2 + rank % 2);
+  CHECK(integer_result.group_rank() == (group * 2) + (rank % 2));
 
   CHECK(binary_result.unit_count() == counts[group] / 2);
   CHECK(boolean_result.unit_count() == counts[group] / 2);
@@ -246,7 +247,7 @@ __device__ void test_other_mappings(Config config)
   if (reshaped.is_valid())
   {
     CHECK(reshaped.group_count() == 6);
-    CHECK(reshaped.group_rank() == group * 2 + (rank != 0));
+    CHECK(reshaped.group_rank() == (group * 2) + (rank != 0));
     CHECK(reshaped.unit_count() == (rank == 0 ? 1 : 3));
     CHECK(reshaped.unit_rank() == (rank == 0 ? 0 : rank - 1));
   }

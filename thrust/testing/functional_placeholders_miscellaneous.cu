@@ -12,7 +12,7 @@ struct saxpy_reference
 
   _CCCL_HOST_DEVICE T operator()(const T& x, const T& y) const
   {
-    return a * x + y;
+    return (a * x) + y;
   }
 
   T a;
@@ -36,7 +36,7 @@ struct TestFunctionalPlaceholdersValue
     thrust::transform(x.begin(), x.end(), y.begin(), reference.begin(), saxpy_reference<T>(a));
 
     using namespace thrust::placeholders;
-    thrust::transform(x.begin(), x.end(), y.begin(), result.begin(), a * _1 + _2);
+    thrust::transform(x.begin(), x.end(), y.begin(), result.begin(), (a * _1) + _2);
 
     ASSERT_ALMOST_EQUAL(reference, result);
   }

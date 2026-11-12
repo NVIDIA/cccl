@@ -38,7 +38,7 @@ public:
   {}
 
   [[nodiscard]] _CCCL_HOST_API void*
-  allocate_sync(std::size_t bytes, std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment)
+  allocate_sync(std::size_t bytes, std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment) const
   {
     return ::c2h::detail::checked_device_allocate(m_device, bytes, alignment);
   }
@@ -46,7 +46,7 @@ public:
   _CCCL_HOST_API void deallocate_sync(
     void* ptr,
     [[maybe_unused]] std::size_t bytes,
-    [[maybe_unused]] std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
+    [[maybe_unused]] std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment) const noexcept
   {
     ::c2h::detail::checked_device_deallocate(m_device, ptr);
   }
@@ -163,7 +163,7 @@ public:
   {}
 
   [[nodiscard]] _CCCL_HOST_API void*
-  allocate_sync(std::size_t bytes, std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment)
+  allocate_sync(std::size_t bytes, std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment) const
   {
     return ::c2h::detail::checked_host_allocate(m_device, bytes, alignment);
   }

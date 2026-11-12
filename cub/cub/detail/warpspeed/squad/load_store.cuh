@@ -324,7 +324,7 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
         asm volatile("" : "+l"(srcSmem));
 #  endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
         // Copy a subset of the first 16 bytes
-        squadStoreMasked16B(
+        _CUB::detail::warpspeed::squadStoreMasked16B(
           squad,
           cpAsyncOobInfo.ptrGmemStartAlignDown,
           srcSmem,
@@ -341,7 +341,7 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
 #  endif // _CCCL_CUDA_COMPILER(NVHPC)
 
         // Copy a subset of the last 16 bytes
-        squadStoreMasked16B(
+        _CUB::detail::warpspeed::squadStoreMasked16B(
           squad,
           cpAsyncOobInfo.ptrGmemEndAlignDown,
           ptrSmemMiddle + cpAsyncOobInfo.underCopySizeBytes,
@@ -353,7 +353,7 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
     else
     {
       // Copy a subset of the first 16 bytes
-      squadStoreMasked16B(
+      _CUB::detail::warpspeed::squadStoreMasked16B(
         squad,
         cpAsyncOobInfo.ptrGmemStartAlignDown,
         srcSmem,
@@ -377,7 +377,7 @@ _CCCL_DEVICE_API void squadLoadSmem(Squad squad, AccumT (&outReg)[ElemPerThread]
   _CCCL_IKET_RANGE_PUSH(LoadSmem);
   for (int i = 0; i < ElemPerThread; ++i)
   {
-    const int elem_idx = squad.threadRank() * ElemPerThread + i;
+    const int elem_idx = (squad.threadRank() * ElemPerThread) + i;
     outReg[i]          = smemBuf[elem_idx];
   }
   _CCCL_IKET_RANGE_POP();
@@ -389,7 +389,7 @@ _CCCL_DEVICE_API void squadStoreSmem(Squad squad, OutputT* smemBuf, const AccumT
   _CCCL_IKET_RANGE_PUSH(StoreSmem);
   for (int i = 0; i < ElemPerThread; ++i)
   {
-    const int elem_idx = squad.threadRank() * ElemPerThread + i;
+    const int elem_idx = (squad.threadRank() * ElemPerThread) + i;
     smemBuf[elem_idx]  = inReg[i];
   }
   _CCCL_IKET_RANGE_POP();
@@ -402,7 +402,7 @@ squadStoreSmemPartial(Squad squad, OutputT* smemBuf, const AccumT (&inReg)[ElemP
   _CCCL_IKET_RANGE_PUSH(StoreSmem);
   for (int i = 0; i < ElemPerThread; ++i)
   {
-    const int elem_idx = squad.threadRank() * ElemPerThread + i;
+    const int elem_idx = (squad.threadRank() * ElemPerThread) + i;
     if (beginIndex <= elem_idx && elem_idx < endIndex)
     {
       smemBuf[elem_idx - beginIndex] = inReg[i];

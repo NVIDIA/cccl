@@ -15,7 +15,6 @@
 
 #include <thrust/copy.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
@@ -23,9 +22,10 @@
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
@@ -48,12 +48,9 @@ struct RadixEncoder<char>
   {
     if (::cuda::std::numeric_limits<char>::is_signed)
     {
-      return static_cast<unsigned char>(x) ^ static_cast<unsigned char>(1) << (8 * sizeof(unsigned char) - 1);
+      return static_cast<unsigned char>(x) ^ static_cast<unsigned char>(1) << ((8 * sizeof(unsigned char)) - 1);
     }
-    else
-    {
-      return x;
-    }
+    return x;
   }
 };
 
@@ -62,7 +59,7 @@ struct RadixEncoder<signed char>
 {
   _CCCL_HOST_DEVICE unsigned char operator()(signed char x) const
   {
-    return static_cast<unsigned char>(x) ^ static_cast<unsigned char>(1) << (8 * sizeof(unsigned char) - 1);
+    return static_cast<unsigned char>(x) ^ static_cast<unsigned char>(1) << ((8 * sizeof(unsigned char)) - 1);
   }
 };
 
@@ -71,7 +68,7 @@ struct RadixEncoder<short>
 {
   _CCCL_HOST_DEVICE unsigned short operator()(short x) const
   {
-    return static_cast<unsigned short>(x) ^ static_cast<unsigned short>(1) << (8 * sizeof(unsigned short) - 1);
+    return static_cast<unsigned short>(x) ^ static_cast<unsigned short>(1) << ((8 * sizeof(unsigned short)) - 1);
   }
 };
 
@@ -80,7 +77,7 @@ struct RadixEncoder<int>
 {
   _CCCL_HOST_DEVICE unsigned int operator()(int x) const
   {
-    return x ^ static_cast<unsigned int>(1) << (8 * sizeof(unsigned int) - 1);
+    return x ^ static_cast<unsigned int>(1) << ((8 * sizeof(unsigned int)) - 1);
   }
 };
 
@@ -89,7 +86,7 @@ struct RadixEncoder<long>
 {
   _CCCL_HOST_DEVICE unsigned long operator()(long x) const
   {
-    return x ^ static_cast<unsigned long>(1) << (8 * sizeof(unsigned long) - 1);
+    return x ^ static_cast<unsigned long>(1) << ((8 * sizeof(unsigned long)) - 1);
   }
 };
 
@@ -98,7 +95,7 @@ struct RadixEncoder<long long>
 {
   _CCCL_HOST_DEVICE unsigned long long operator()(long long x) const
   {
-    return x ^ static_cast<unsigned long long>(1) << (8 * sizeof(unsigned long long) - 1);
+    return x ^ static_cast<unsigned long long>(1) << ((8 * sizeof(unsigned long long)) - 1);
   }
 };
 
@@ -164,7 +161,7 @@ inline _CCCL_HOST_DEVICE void radix_shuffle_n(
   const size_t n,
   RandomAccessIterator2 result,
   Integer bit_shift,
-  size_t* histogram)
+  size_t* histogram) // NOLINT(readability-non-const-parameter)
 {
   using KeyType = thrust::detail::it_value_t<RandomAccessIterator1>;
 
@@ -192,7 +189,7 @@ _CCCL_HOST_DEVICE void radix_shuffle_n(
   RandomAccessIterator3 keys_result,
   RandomAccessIterator4 values_result,
   Integer bit_shift,
-  size_t* histogram)
+  size_t* histogram) // NOLINT(readability-non-const-parameter)
 {
   using KeyType = thrust::detail::it_value_t<RandomAccessIterator1>;
 
@@ -225,7 +222,7 @@ _CCCL_HOST_DEVICE void radix_sort(
   using Encoder     = RadixEncoder<KeyType>;
   using EncodedType = decltype(::cuda::std::declval<Encoder>()(::cuda::std::declval<KeyType>()));
 
-  const unsigned int NumHistograms = (8 * sizeof(EncodedType) + (RadixBits - 1)) / RadixBits;
+  const unsigned int NumHistograms = ((8 * sizeof(EncodedType)) + (RadixBits - 1)) / RadixBits;
   const unsigned int HistogramSize = 1 << RadixBits;
 
   const EncodedType BitMask = static_cast<EncodedType>((1 << RadixBits) - 1);
@@ -303,7 +300,7 @@ _CCCL_HOST_DEVICE void radix_sort(
         }
       }
 
-      flip = (flip) ? false : true;
+      flip = !flip;
     }
   }
 

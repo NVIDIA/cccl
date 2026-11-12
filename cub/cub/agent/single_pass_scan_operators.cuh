@@ -182,24 +182,24 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay([[maybe_unused]] unsigned int n
 template <unsigned int Delay = 350, unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting()
 {
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (delay<Delay, GridThreshold>();), (__threadfence_block();));
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (_CUB::detail::delay<Delay, GridThreshold>();), (__threadfence_block();));
 }
 
 template <unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting([[maybe_unused]] unsigned int ns)
 {
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (delay<GridThreshold>(ns);), (__threadfence_block();));
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (_CUB::detail::delay<GridThreshold>(ns);), (__threadfence_block();));
 }
 
 template <unsigned int Delay = 350>
 _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting()
 {
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (always_delay(Delay);), (__threadfence_block();));
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (_CUB::detail::always_delay(Delay);), (__threadfence_block();));
 }
 
 _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting([[maybe_unused]] unsigned int ns)
 {
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (always_delay(ns);), (__threadfence_block();));
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (_CUB::detail::always_delay(ns);), (__threadfence_block();));
 }
 
 template <unsigned int L2WriteLatency>
@@ -215,7 +215,7 @@ struct no_delay_constructor_t
 
   _CCCL_DEVICE _CCCL_FORCEINLINE no_delay_constructor_t(unsigned int /* seed */)
   {
-    delay<L2WriteLatency>();
+    _CUB::detail::delay<L2WriteLatency>();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
@@ -233,9 +233,9 @@ struct reduce_by_key_delay_constructor_t
     {
       NV_DISPATCH_TARGET(
         NV_IS_EXACTLY_SM_80,
-        (delay<Delay, GridThreshold>();),
+        (_CUB::detail::delay<Delay, GridThreshold>();),
         NV_PROVIDES_SM_70,
-        (delay<0, GridThreshold>();),
+        (_CUB::detail::delay<0, GridThreshold>();),
         NV_IS_DEVICE,
         (__threadfence_block();));
     }
@@ -243,7 +243,7 @@ struct reduce_by_key_delay_constructor_t
 
   _CCCL_DEVICE _CCCL_FORCEINLINE reduce_by_key_delay_constructor_t(unsigned int /* seed */)
   {
-    delay<L2WriteLatency>();
+    _CUB::detail::delay<L2WriteLatency>();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
@@ -259,13 +259,13 @@ struct fixed_delay_constructor_t
   {
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
-      delay_or_prevent_hoisting<Delay>();
+      _CUB::detail::delay_or_prevent_hoisting<Delay>();
     }
   };
 
   _CCCL_DEVICE _CCCL_FORCEINLINE fixed_delay_constructor_t(unsigned int /* seed */)
   {
-    delay<L2WriteLatency>();
+    _CUB::detail::delay<L2WriteLatency>();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
@@ -283,14 +283,14 @@ struct exponential_backoff_constructor_t
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
-      always_delay_or_prevent_hoisting(delay);
+      _CUB::detail::always_delay_or_prevent_hoisting(delay);
       delay <<= 1;
     }
   };
 
   _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backoff_constructor_t(unsigned int /* seed */)
   {
-    always_delay<L2WriteLatency>();
+    _CUB::detail::always_delay<L2WriteLatency>();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
@@ -313,12 +313,12 @@ struct exponential_backoff_jitter_constructor_t
 
     _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
     {
-      return (seed = (a * seed + c) % m) % (max + 1 - min) + min;
+      return ((seed = ((a * seed) + c) % m) % (max + 1 - min)) + min;
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
-      always_delay_or_prevent_hoisting(next(0, max_delay));
+      _CUB::detail::always_delay_or_prevent_hoisting(next(0, max_delay));
       max_delay <<= 1;
     }
   };
@@ -328,7 +328,7 @@ struct exponential_backoff_jitter_constructor_t
   _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backoff_jitter_constructor_t(unsigned int seed)
       : seed(seed)
   {
-    always_delay<L2WriteLatency>();
+    _CUB::detail::always_delay<L2WriteLatency>();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
@@ -351,13 +351,13 @@ struct exponential_backoff_jitter_window_constructor_t
 
     _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
     {
-      return (seed = (a * seed + c) % m) % (max + 1 - min) + min;
+      return ((seed = ((a * seed) + c) % m) % (max + 1 - min)) + min;
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
       unsigned int next_max_delay = max_delay << 1;
-      always_delay_or_prevent_hoisting(next(max_delay, next_max_delay));
+      _CUB::detail::always_delay_or_prevent_hoisting(next(max_delay, next_max_delay));
       max_delay = next_max_delay;
     }
   };
@@ -366,7 +366,7 @@ struct exponential_backoff_jitter_window_constructor_t
   _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backoff_jitter_window_constructor_t(unsigned int seed)
       : seed(seed)
   {
-    always_delay<L2WriteLatency>();
+    _CUB::detail::always_delay<L2WriteLatency>();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
@@ -389,13 +389,13 @@ struct exponential_backon_jitter_window_constructor_t
 
     _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
     {
-      return (seed = (a * seed + c) % m) % (max + 1 - min) + min;
+      return ((seed = ((a * seed) + c) % m) % (max + 1 - min)) + min;
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
       const int prev_delay = max_delay >> 1;
-      always_delay_or_prevent_hoisting(next(prev_delay, max_delay));
+      _CUB::detail::always_delay_or_prevent_hoisting(next(prev_delay, max_delay));
       max_delay = prev_delay;
     }
   };
@@ -406,7 +406,7 @@ struct exponential_backon_jitter_window_constructor_t
   _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backon_jitter_window_constructor_t(unsigned int seed)
       : seed(seed)
   {
-    always_delay<L2WriteLatency>();
+    _CUB::detail::always_delay<L2WriteLatency>();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
@@ -430,12 +430,12 @@ struct exponential_backon_jitter_constructor_t
 
     _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
     {
-      return (seed = (a * seed + c) % m) % (max + 1 - min) + min;
+      return ((seed = ((a * seed) + c) % m) % (max + 1 - min)) + min;
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
-      always_delay_or_prevent_hoisting(next(0, max_delay));
+      _CUB::detail::always_delay_or_prevent_hoisting(next(0, max_delay));
       max_delay >>= 1;
     }
   };
@@ -446,7 +446,7 @@ struct exponential_backon_jitter_constructor_t
   _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backon_jitter_constructor_t(unsigned int seed)
       : seed(seed)
   {
-    always_delay<L2WriteLatency>();
+    _CUB::detail::always_delay<L2WriteLatency>();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
@@ -465,7 +465,7 @@ struct exponential_backon_constructor_t
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
-      always_delay_or_prevent_hoisting(delay);
+      _CUB::detail::always_delay_or_prevent_hoisting(delay);
       delay >>= 1;
     }
   };
@@ -474,7 +474,7 @@ struct exponential_backon_constructor_t
 
   _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backon_constructor_t(unsigned int /* seed */)
   {
-    always_delay<L2WriteLatency>();
+    _CUB::detail::always_delay<L2WriteLatency>();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
@@ -557,7 +557,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr size_t num_tiles_to_num_tile_state
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_allocation_size(
   size_t& temp_storage_bytes, size_t bytes_per_description, size_t bytes_per_payload, size_t num_tiles)
 {
-  const size_t num_tile_states = num_tiles_to_num_tile_states(num_tiles);
+  const size_t num_tile_states = _CUB::detail::num_tiles_to_num_tile_states(num_tiles);
   const size_t allocation_sizes[]{
     // bytes needed for tile status descriptors
     num_tile_states * bytes_per_description,
@@ -568,7 +568,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_allocation_size(
   // Set the necessary size of the blob
   temp_storage_bytes   = 0;
   void* allocations[3] = {};
-  return alias_temporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes);
+  return _CUB::detail::alias_temporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes);
 };
 
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_init(
@@ -579,7 +579,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_init(
   size_t temp_storage_bytes,
   void* (&allocations)[3])
 {
-  const size_t num_tile_states = num_tiles_to_num_tile_states(num_tiles);
+  const size_t num_tile_states = _CUB::detail::num_tiles_to_num_tile_states(num_tiles);
   const size_t allocation_sizes[]{
     // bytes needed for tile status descriptors
     num_tile_states * bytes_per_description,
@@ -589,7 +589,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_init(
     num_tile_states * bytes_per_payload};
 
   // Set the necessary size of the blob
-  return alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+  return _CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
 }
 } // namespace detail
 
@@ -681,7 +681,7 @@ struct ScanTileState<T, true>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static constexpr cudaError_t
   AllocationSize(int num_tiles, size_t& temp_storage_bytes)
   {
-    return detail::tile_state_allocation_size(
+    return _CUB::detail::tile_state_allocation_size(
       temp_storage_bytes, description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
   }
 
@@ -715,21 +715,21 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::relaxed), void>
   StoreStatus(TxnWord* ptr, TxnWord alias)
   {
-    detail::store_relaxed(ptr, alias);
+    _CUB::detail::store_relaxed(ptr, alias);
   }
 
   template <MemoryOrder Order>
   _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::acquire_release), void>
   StoreStatus(TxnWord* ptr, TxnWord alias)
   {
-    detail::store_release(ptr, alias);
+    _CUB::detail::store_release(ptr, alias);
   }
 
   template <MemoryOrder Order>
   _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::relaxed), TxnWord>
   LoadStatus(TxnWord* ptr)
   {
-    return detail::load_relaxed(ptr);
+    return _CUB::detail::load_relaxed(ptr);
   }
 
   template <MemoryOrder Order>
@@ -737,7 +737,8 @@ private:
   LoadStatus(TxnWord* ptr)
   {
     // For pre-volta we hoist the memory barrier to outside the loop, i.e., after reading a valid state
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (return detail::load_acquire(ptr);), (return detail::load_relaxed(ptr);));
+    NV_IF_ELSE_TARGET(
+      NV_PROVIDES_SM_70, (return _CUB::detail::load_acquire(ptr);), (return _CUB::detail::load_relaxed(ptr);));
   }
 
 public:
@@ -769,7 +770,7 @@ public:
     TxnWord value{};
     auto* const descriptor = reinterpret_cast<TileDescriptor*>(&value);
     descriptor->status     = StatusWord(SCAN_TILE_INVALID);
-    detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, value);
+    _CUB::detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, value);
   }
 
   /**
@@ -876,7 +877,7 @@ struct ScanTileState<T, false>
     do
     {
       void* allocations[3] = {};
-      error                = detail::tile_state_init(
+      error                = _CUB::detail::tile_state_init(
         description_bytes_per_tile, payload_bytes_per_tile, num_tiles, d_temp_storage, temp_storage_bytes, allocations);
       if (cudaSuccess != error)
       {
@@ -903,7 +904,7 @@ struct ScanTileState<T, false>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static constexpr cudaError_t
   AllocationSize(int num_tiles, size_t& temp_storage_bytes)
   {
-    return detail::tile_state_allocation_size(
+    return _CUB::detail::tile_state_allocation_size(
       temp_storage_bytes, description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
   }
   /**
@@ -932,8 +933,8 @@ struct ScanTileState<T, false>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
   {
     // Update tile inclusive value
-    ThreadStore<STORE_CG>(d_tile_inclusive + TILE_STATUS_PADDING + tile_idx, tile_inclusive);
-    detail::store_release(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_INCLUSIVE));
+    _CUB::ThreadStore<STORE_CG>(d_tile_inclusive + TILE_STATUS_PADDING + tile_idx, tile_inclusive);
+    _CUB::detail::store_release(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_INCLUSIVE));
   }
 
   /**
@@ -943,14 +944,14 @@ struct ScanTileState<T, false>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
   {
     // Update tile partial value
-    ThreadStore<STORE_CG>(d_tile_partial + TILE_STATUS_PADDING + tile_idx, tile_partial);
-    detail::store_release(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_PARTIAL));
+    _CUB::ThreadStore<STORE_CG>(d_tile_partial + TILE_STATUS_PADDING + tile_idx, tile_partial);
+    _CUB::detail::store_release(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_PARTIAL));
   }
 
   //! Reset the specified tile to not-yet-set.
   _CCCL_DEVICE_API void __set_invalid(int tile_idx)
   {
-    detail::store_relaxed(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_INVALID));
+    _CUB::detail::store_relaxed(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_INVALID));
   }
 
   /**
@@ -963,7 +964,7 @@ struct ScanTileState<T, false>
     {
       delay();
       //_CCCL_IKET_RANGE_PUSH(LoadTileStatus);
-      status = detail::load_relaxed(d_tile_status + TILE_STATUS_PADDING + tile_idx);
+      status = _CUB::detail::load_relaxed(d_tile_status + TILE_STATUS_PADDING + tile_idx);
       //_CCCL_IKET_RANGE_POP();
       __threadfence();
     } while (__any_sync(0xffffffff, (status == SCAN_TILE_INVALID)));
@@ -971,11 +972,11 @@ struct ScanTileState<T, false>
     //_CCCL_IKET_RANGE_PUSH(LoadTileAggr);
     if (status == StatusWord(SCAN_TILE_PARTIAL))
     {
-      value = ThreadLoad<LOAD_CG>(d_tile_partial + TILE_STATUS_PADDING + tile_idx);
+      value = _CUB::ThreadLoad<LOAD_CG>(d_tile_partial + TILE_STATUS_PADDING + tile_idx);
     }
     else if (status == StatusWord(SCAN_TILE_INCLUSIVE))
     {
-      value = ThreadLoad<LOAD_CG>(d_tile_inclusive + TILE_STATUS_PADDING + tile_idx);
+      value = _CUB::ThreadLoad<LOAD_CG>(d_tile_inclusive + TILE_STATUS_PADDING + tile_idx);
     }
     //_CCCL_IKET_RANGE_POP();
   }
@@ -1151,7 +1152,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
+    _CUB::detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, KeyValuePairT tile_partial)
@@ -1164,7 +1165,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
+    _CUB::detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
   /**
@@ -1195,7 +1196,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     {
       delay_or_prevent_hoisting();
       // _CCCL_IKET_RANGE_PUSH(LoadTileStates);
-      TxnWord alias = detail::load_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
+      TxnWord alias = _CUB::detail::load_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
       // _CCCL_IKET_RANGE_POP();
       tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
 
@@ -1238,7 +1239,7 @@ template <typename T,
 struct TilePrefixCallbackOp
 {
   // Parameterized warp reduce
-  using WarpReduceT = WarpReduce<T, (1 << (5))>;
+  using WarpReduceT = WarpReduce<T, (1 << 5)>;
 
   // Temporary storage type
   struct _TempStorage
@@ -1326,7 +1327,7 @@ private:
     // Update our status with our tile-aggregate
     if (threadIdx.x == 0)
     {
-      detail::uninitialized_copy_single(&temp_storage.block_aggregate, block_aggregate);
+      _CUB::detail::uninitialized_copy_single(&temp_storage.block_aggregate, block_aggregate);
 
       tile_status.SetPartial(tile_idx, block_aggregate);
     }
@@ -1362,9 +1363,9 @@ private:
       inclusive_prefix = scan_op(exclusive_prefix, block_aggregate);
       tile_status.SetInclusive(tile_idx, inclusive_prefix);
 
-      detail::uninitialized_copy_single(&temp_storage.exclusive_prefix, exclusive_prefix);
+      _CUB::detail::uninitialized_copy_single(&temp_storage.exclusive_prefix, exclusive_prefix);
 
-      detail::uninitialized_copy_single(&temp_storage.inclusive_prefix, inclusive_prefix);
+      _CUB::detail::uninitialized_copy_single(&temp_storage.inclusive_prefix, inclusive_prefix);
     }
     _CCCL_IKET_RANGE_POP();
 
@@ -1380,7 +1381,7 @@ private:
     _CCCL_IKET_RANGE_PUSH(SetPartial);
     if (threadIdx.x == 0)
     {
-      detail::uninitialized_copy_single(&temp_storage.block_aggregate, block_aggregate);
+      _CUB::detail::uninitialized_copy_single(&temp_storage.block_aggregate, block_aggregate);
       tile_status.SetPartial(tile_idx, block_aggregate);
     }
     _CCCL_IKET_RANGE_POP();
@@ -1421,8 +1422,8 @@ private:
         tile_status.SetInclusive(tile_idx, inclusive_prefix);
       }
 
-      detail::uninitialized_copy_single(&temp_storage.exclusive_prefix, exclusive_prefix);
-      detail::uninitialized_copy_single(&temp_storage.inclusive_prefix, inclusive_prefix);
+      _CUB::detail::uninitialized_copy_single(&temp_storage.exclusive_prefix, exclusive_prefix);
+      _CUB::detail::uninitialized_copy_single(&temp_storage.inclusive_prefix, inclusive_prefix);
     }
     _CCCL_IKET_RANGE_POP();
 

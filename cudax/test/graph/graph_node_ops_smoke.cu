@@ -219,7 +219,7 @@ C2H_TEST("graph host_launch with arguments", "[graph][host_launch]")
   int* pr  = result.get();
   cudax::host_launch(
     pb,
-    [](int* x, int* y, int* r) {
+    [](const int* x, const int* y, int* r) {
       *r = *x + *y;
     },
     pa,

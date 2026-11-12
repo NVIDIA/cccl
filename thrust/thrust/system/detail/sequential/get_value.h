@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN

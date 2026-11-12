@@ -14,4 +14,4 @@
 #endif // no system header
 
 // this system inherits reduce
-#include <thrust/system/detail/sequential/reduce.h>
+#include <thrust/system/detail/sequential/reduce.h> // IWYU pragma: export

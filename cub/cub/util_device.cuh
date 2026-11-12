@@ -136,7 +136,7 @@ CUB_RUNTIME_FUNCTION inline int device_count_uncached()
 // TODO(bgruber): remove in CCCL 4.0
 _CCCL_HOST inline int device_count_cached_value()
 {
-  static const int count = device_count_uncached();
+  static const int count = _CUB::detail::device_count_uncached();
   return count;
 }
 
@@ -145,8 +145,9 @@ CUB_RUNTIME_FUNCTION inline int device_count()
 {
   int result = -1;
 
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST, ({ result = detail::device_count_cached_value(); }), ({ result = detail::device_count_uncached(); }));
+  NV_IF_ELSE_TARGET(NV_IS_HOST, ({ result = _CUB::detail::device_count_cached_value(); }), ({
+                      result = _CUB::detail::device_count_uncached();
+                    }));
 
   return result;
 }
@@ -160,14 +161,14 @@ CUB_RUNTIME_FUNCTION inline int device_count()
  */
 CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") CUB_RUNTIME_FUNCTION inline int DeviceCountUncached()
 {
-  return detail::device_count_uncached();
+  return _CUB::detail::device_count_uncached();
 }
 
 // TODO(bgruber): remove in CCCL 4.0
 // Host code. This is a separate function to avoid defining a local static in a host/device function.
 CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") _CCCL_HOST inline int DeviceCountCachedValue()
 {
-  return detail::device_count_cached_value();
+  return _CUB::detail::device_count_cached_value();
 }
 
 // TODO(bgruber): remove in CCCL 4.0
@@ -182,7 +183,7 @@ CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") _CCCL_HOST inline in
  */
 CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") CUB_RUNTIME_FUNCTION inline int DeviceCount()
 {
-  return detail::device_count();
+  return _CUB::detail::device_count();
 }
 
 #  if _CCCL_HOSTED()
@@ -226,7 +227,7 @@ public:
   _CCCL_HOST PerDeviceAttributeCache()
       : entries_()
   {
-    _CCCL_ASSERT(detail::device_count() <= detail::max_devices, "");
+    _CCCL_ASSERT(_CUB::detail::device_count() <= detail::max_devices, "");
   }
 
   /**
@@ -238,7 +239,7 @@ public:
   template <typename Invocable>
   _CCCL_HOST DevicePayload operator()(Invocable&& f, int device)
   {
-    if (device >= detail::device_count() || device < 0)
+    if (device >= _CUB::detail::device_count() || device < 0)
     {
       return DevicePayload{0, cudaErrorInvalidDevice};
     }
@@ -335,7 +336,7 @@ template <class T = void>
 _CCCL_HOST cudaError_t PtxVersionUncached(int& ptx_version, int device)
 {
   const SwitchDevice sd(device);
-  return PtxVersionUncached<T>(ptx_version);
+  return _CUB::PtxVersionUncached<T>(ptx_version);
 }
 
 #  if _CCCL_HOSTED()
@@ -365,10 +366,10 @@ _CCCL_HOST cudaError_t PtxVersion(int& ptx_version, int device)
 {
   // Note: the ChainedPolicy pruning (i.e., invoke_static) requites that there's an exact match between one of the
   // architectures in __CUDA_ARCH__ and the runtime queried ptx version.
-  auto const payload = GetPerDeviceAttributeCache<PtxVersionCacheTag>()(
+  auto const payload = _CUB::GetPerDeviceAttributeCache<PtxVersionCacheTag>()(
     // If this call fails, then we get the error code back in the payload, which we check with `CubDebug` below.
     [=](int& pv) {
-      return PtxVersionUncached<T>(pv, device);
+      return _CUB::PtxVersionUncached<T>(pv, device);
     },
     device);
 
@@ -395,10 +396,10 @@ CUB_RUNTIME_FUNCTION cudaError_t PtxVersion(int& ptx_version)
   cudaError_t result = cudaErrorUnknown;
 #  if _CCCL_HOSTED()
   NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (result = PtxVersion<T>(ptx_version, CurrentDevice());),
-                    (result = PtxVersionUncached<T>(ptx_version);));
+                    (result = _CUB::PtxVersion<T>(ptx_version, _CUB::CurrentDevice());),
+                    (result = _CUB::PtxVersionUncached<T>(ptx_version);));
 #  else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
-  result = PtxVersionUncached<T>(ptx_version);
+  result = _CUB::PtxVersionUncached<T>(ptx_version);
 #  endif // !_CCCL_HOSTED()
   return result;
 }
@@ -415,7 +416,7 @@ CUB_RUNTIME_FUNCTION cudaError_t ptx_compute_cap(::cuda::compute_capability& cc)
   cc = ::cuda::compute_capability{NV_TARGET_MINIMUM_SM_INTEGER};
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
   int ptx_version = 0;
-  if (const auto error = PtxVersion<T>(ptx_version))
+  if (const auto error = _CUB::PtxVersion<T>(ptx_version))
   {
     return error;
   }
@@ -439,7 +440,7 @@ CUB_RUNTIME_FUNCTION cudaError_t ptx_compute_cap(::cuda::compute_capability& cc)
 /**
  * \brief Retrieves the SM version (i.e. compute capability) of \p device (major * 100 + minor * 10)
  */
-CUB_RUNTIME_FUNCTION inline cudaError_t SmVersionUncached(int& sm_version, int device = CurrentDevice())
+CUB_RUNTIME_FUNCTION inline cudaError_t SmVersionUncached(int& sm_version, int device = _CUB::CurrentDevice())
 {
   cudaError_t error = cudaSuccess;
   do
@@ -457,7 +458,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersionUncached(int& sm_version, int d
     {
       break;
     }
-    sm_version = major * 100 + minor * 10;
+    sm_version = (major * 100) + (minor * 10);
   } while (false);
 
   return error;
@@ -469,17 +470,17 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersionUncached(int& sm_version, int d
  * \note This function may cache the result internally.
  * \note This function is thread safe.
  */
-CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = CurrentDevice())
+CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = _CUB::CurrentDevice())
 {
   cudaError_t result = cudaErrorUnknown;
 #  if _CCCL_HOSTED()
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     ({
-                      auto const payload = GetPerDeviceAttributeCache<SmVersionCacheTag>()(
+                      auto const payload = _CUB::GetPerDeviceAttributeCache<SmVersionCacheTag>()(
                         // If this call fails, then we get the error code back in the payload, which we check with
                         // `CubDebug` below.
                         [=](int& pv) {
-                          return SmVersionUncached(pv, device);
+                          return _CUB::SmVersionUncached(pv, device);
                         },
                         device);
 
@@ -490,9 +491,9 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = 
 
                       result = payload.error;
                     }),
-                    (result = SmVersionUncached(sm_version, device);));
+                    (result = _CUB::SmVersionUncached(sm_version, device);));
 #  else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
-  result = SmVersionUncached(sm_version, device);
+  result = _CUB::SmVersionUncached(sm_version, device);
 #  endif // !_CCCL_HOSTED()
 
   return result;
@@ -558,7 +559,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t DebugSyncStream([[maybe_unused]] cudaStr
 {
 #  ifdef CUB_DEBUG_SYNC
   NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (_CubLog("%s", "Synchronizing...\n"); return SyncStream(stream);),
+                    (_CubLog("%s", "Synchronizing...\n"); return _CUB::SyncStream(stream);),
                     (_CubLog("%s", "WARNING: Skipping CUB debug synchronization in device code"); return cudaSuccess;));
 #  else // ^^^ CUB_DEBUG_SYNC / !CUB_DEBUG_SYNC vvv
   return cudaSuccess;
