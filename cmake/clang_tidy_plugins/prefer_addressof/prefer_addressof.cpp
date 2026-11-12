@@ -9,6 +9,7 @@
 #include <clang/ASTMatchers/ASTMatchers.h>
 #include <clang/Lex/Lexer.h>
 #include <clang/Sema/HeuristicResolver.h>
+#include <common/matchers.h>
 #include <common/names.h>
 #include <common/type_traits.h>
 #include <llvm/ADT/StringRef.h>
@@ -164,6 +165,8 @@ AST_MATCHER_P(Expr, hasHeuristicType, TypeMatcher, inner) // NOLINT
 
 class PreferAddressofCheck final : public ClangTidyCheck
 {
+  static constexpr StringRef IGNORE_TEST_FILES_OPTION{"IgnoreTestFiles"};
+
   static constexpr StringRef BIND{""};
   static constexpr StringRef OPERAND_BIND{"o"};
 
@@ -171,6 +174,7 @@ public:
   PreferAddressofCheck(StringRef name, ClangTidyContext* context)
       : ClangTidyCheck{name, context}
       , inserter_{utils::IncludeSorter::IS_LLVM, areDiagsSelfContained()}
+      , ignore_test_files_{Options.get(IGNORE_TEST_FILES_OPTION, /*Default=*/true)}
   {}
 
   [[nodiscard]] std::optional<TraversalKind> getCheckTraversalKind() const override
@@ -231,10 +235,14 @@ public:
                         mapAnyOf(unresolvedLookupExpr, unresolvedMemberExpr).with(refersOnlyToFunctions()))))
         .bind(OPERAND_BIND);
 
+    // Check tests can opt in because their inputs also reside in test directories.
+    const auto file_filter = ignore_test_files_ ? stmt(unless(util::isExpansionInTestOrExampleFile())) : stmt();
+
     finder->addMatcher(
       mapAnyOf(unaryOperator, cxxOperatorCallExpr)
         .with(isTypeDependent(),
               hasOperatorName("&"),
+              file_filter,
               hasUnaryOperand(operand),
               // This is actually wrong (if you think about it, passing result of arbitrary
               // operator&() to asm is exactly the kind of scenario we *should* be warning
@@ -271,6 +279,7 @@ public:
 
 private:
   utils::IncludeInserter inserter_;
+  bool ignore_test_files_;
 };
 
 class PreferAddressofCheckModule final : public ClangTidyModule

@@ -4,6 +4,7 @@
 // clang-format off
 // CLANG_TIDY_CONFIG_BEGIN
 // Checks: cccl-prefer-addressof
+// CheckOptions: cccl-prefer-addressof.IgnoreTestFiles=false
 // CLANG_TIDY_CONFIG_END
 
 #include <cuda/std/memory>
