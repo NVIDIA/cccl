@@ -467,16 +467,6 @@ struct effect_t : basic_sink<effect_t<_F>>
 {
   _F __f_;
 
-  // The exception channel's failure is the exception pointer, handled as the code channel
-  // handles a status.
-  template <class _Fn>
-  void on_thrown(const ::std::exception* __exception,
-                 const ::cuda::std::source_location __loc,
-                 _Fn& __fn) noexcept(noexcept(on_returned(__exception, __loc, __fn)))
-  {
-    on_returned(__exception, __loc, __fn);
-  }
-
   // maybe_unused: when f is nullary, only the discarded constexpr branch reads the failure;
   // gcc 9 reports it as set-but-unused.
   template <class _Status, class _Fn>
@@ -492,6 +482,17 @@ struct effect_t : basic_sink<effect_t<_F>>
       static_assert(::cuda::std::is_invocable_v<_F&>, "effect(f): f takes nothing or the failure");
       __f_();
     }
+  }
+
+  // The exception channel's failure is the exception pointer, handled as the code channel
+  // handles a status. Declared after on_returned: GCC 9 resolves a noexcept-specifier's names
+  // at the point of declaration rather than in the complete class.
+  template <class _Fn>
+  void on_thrown(const ::std::exception* __exception,
+                 const ::cuda::std::source_location __loc,
+                 _Fn& __fn) noexcept(noexcept(on_returned(__exception, __loc, __fn)))
+  {
+    on_returned(__exception, __loc, __fn);
   }
 };
 
