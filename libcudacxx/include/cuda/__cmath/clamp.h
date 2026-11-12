@@ -22,10 +22,9 @@
 #endif // no system header
 
 #include <cuda/__cmath/min_max.h>
-#include <cuda/std/__cmath/isnan.h>
+#include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/std/__cmath/traits.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__floating_point/cast.h>
-#include <cuda/std/__floating_point/traits.h>
 #include <cuda/std/__type_traits/is_extended_arithmetic.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -45,16 +44,13 @@ _CCCL_REQUIRES(::cuda::std::__is_extended_arithmetic_v<_Tp>)
 {
   // The branches are identical when assertions are disabled.
   // NOLINTBEGIN(bugprone-branch-clone)
-  if constexpr (::cuda::std::__is_ext_nv_fp_v<_Tp>)
+  if constexpr (::cuda::is_floating_point_v<_Tp>)
   {
-    _CCCL_ASSERT(!(::cuda::std::__fp_cast<float>(__hi) < ::cuda::std::__fp_cast<float>(__lo)),
-                 "Bad bounds passed to cuda::clamp");
+    _CCCL_ASSERT(!::cuda::std::isless(__hi, __lo), "Bad bounds passed to cuda::clamp");
   }
   else
   {
-    // Ordered comparisons with NaN are not constant expressions
-    _CCCL_ASSERT(::cuda::std::isnan(__lo) || ::cuda::std::isnan(__hi) || !(__hi < __lo),
-                 "Bad bounds passed to cuda::clamp");
+    _CCCL_ASSERT(!(__hi < __lo), "Bad bounds passed to cuda::clamp");
   }
   // NOLINTEND(bugprone-branch-clone)
   return ::cuda::max(::cuda::min(__v, __hi), __lo);
