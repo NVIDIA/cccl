@@ -41,7 +41,7 @@ def test_bound_merge_sort_preserves_computation(dtype, num_items, cuda_stream):
         d_in_keys=d_in, d_out_keys=d_out, op=OpKind.LESS
     )
     portable = compute.deserialize(compute.serialize(algorithm))
-    executable = portable.bind(device_id=cuda_stream.device.device_id)
+    executable = portable.clone(device_id=cuda_stream.device.device_id)
 
     arguments = dict(
         d_in_keys=d_in,
@@ -73,7 +73,7 @@ def test_bound_merge_sort_queries_and_executes_without_device_lookup(
         portable = compute.deserialize(compute.serialize(portable))
         assert portable._bound_build_result is None
     original_binding = portable._bound_build_result
-    bound = portable.bind(device_id=Device().device_id)
+    bound = portable.clone(device_id=Device().device_id)
     assert portable._bound_build_result is original_binding
 
     # Serialization omits the binding, including for an already bound object.
@@ -115,7 +115,7 @@ def test_bound_reduce_preserves_computation(dtype, num_items, cuda_stream):
         d_in=d_in, d_out=d_out, op=OpKind.PLUS, h_init=h_init
     )
     portable = compute.deserialize(compute.serialize(algorithm))
-    executable = portable.bind(device_id=cuda_stream.device.device_id)
+    executable = portable.clone(device_id=cuda_stream.device.device_id)
 
     arguments = dict(
         d_in=d_in,
@@ -171,7 +171,7 @@ def test_bound_select_preserves_computation(dtype, num_items, cuda_stream):
         cond=positive_op,
     )
     portable = compute.deserialize(compute.serialize(algorithm))
-    executable = portable.bind(device_id=cuda_stream.device.device_id)
+    executable = portable.clone(device_id=cuda_stream.device.device_id)
 
     arguments = dict(
         d_in=d_in,
@@ -246,7 +246,7 @@ def test_merge_sort_original_remains_usable(dtype, roundtrip, cuda_stream):
         d_original_out.copy_to_host(stream=cuda_stream), expected_original
     )
 
-    executable = original.bind(device_id=cuda_stream.device.device_id)
+    executable = original.clone(device_id=cuda_stream.device.device_id)
     _execute_with_workspace(executable, bound_arguments, cuda_stream)
     np.testing.assert_array_equal(
         d_bound_out.copy_to_host(stream=cuda_stream), np.sort(h_bound)
@@ -308,7 +308,7 @@ def test_reduce_original_remains_usable(dtype, roundtrip, cuda_stream):
         d_original_out.copy_to_host(stream=cuda_stream), expected_original
     )
 
-    executable = original.bind(device_id=cuda_stream.device.device_id)
+    executable = original.clone(device_id=cuda_stream.device.device_id)
     _execute_with_workspace(executable, bound_arguments, cuda_stream)
     expected_bound = np.asarray(
         [np.add.reduce(h_bound, dtype=dtype, initial=h_bound_init[0])], dtype=dtype
@@ -373,7 +373,7 @@ def test_select_original_remains_usable(dtype, roundtrip, cuda_stream):
         expected_original,
     )
 
-    executable = original.bind(device_id=cuda_stream.device.device_id)
+    executable = original.clone(device_id=cuda_stream.device.device_id)
     _execute_with_workspace(executable, bound_arguments, cuda_stream)
     expected_bound = h_bound[h_bound > 0]
     bound_count = int(d_bound_count.copy_to_host(stream=cuda_stream)[0])
@@ -397,7 +397,7 @@ def test_select_original_remains_usable(dtype, roundtrip, cuda_stream):
 
 
 def _run_independent_executables(original, device_id, run):
-    executables = [original.bind(device_id=device_id) for _ in range(2)]
+    executables = [original.clone(device_id=device_id) for _ in range(2)]
     assert executables[0] is not executables[1]
     assert all(executable is not original for executable in executables)
     barrier = threading.Barrier(2, timeout=60)
@@ -596,7 +596,7 @@ def test_bound_merge_sort_serialization_roundtrip(
     algorithm = compute.make_merge_sort(
         d_in_keys=d_before_in, d_out_keys=d_before_out, op=OpKind.LESS
     )
-    bound = algorithm.bind(device_id=cuda_stream.device.device_id)
+    bound = algorithm.clone(device_id=cuda_stream.device.device_id)
     if execute_before_serialization:
         arguments = dict(
             d_in_keys=d_before_in,
@@ -614,7 +614,7 @@ def test_bound_merge_sort_serialization_roundtrip(
 
     blob = compute.serialize(bound)
     portable = compute.deserialize(blob)
-    rebound = portable.bind(device_id=cuda_stream.device.device_id)
+    rebound = portable.clone(device_id=cuda_stream.device.device_id)
 
     # Use new buffers and a different input size after reconstruction.
     h_after = rng.integers(-100, 101, size=129).astype(dtype)
@@ -650,7 +650,7 @@ def test_bound_reduce_serialization_roundtrip(
     algorithm = compute.make_reduce_into(
         d_in=d_before_in, d_out=d_before_out, op=OpKind.PLUS, h_init=h_before_init
     )
-    bound = algorithm.bind(device_id=cuda_stream.device.device_id)
+    bound = algorithm.clone(device_id=cuda_stream.device.device_id)
     if execute_before_serialization:
         arguments = dict(
             d_in=d_before_in,
@@ -671,7 +671,7 @@ def test_bound_reduce_serialization_roundtrip(
 
     blob = compute.serialize(bound)
     portable = compute.deserialize(blob)
-    rebound = portable.bind(device_id=cuda_stream.device.device_id)
+    rebound = portable.clone(device_id=cuda_stream.device.device_id)
 
     h_after = rng.integers(-100, 101, size=129).astype(dtype)
     h_after_init = np.asarray([-11], dtype=dtype)
@@ -713,7 +713,7 @@ def test_bound_select_serialization_roundtrip(
         d_num_selected_out=d_before_count,
         cond=positive_op,
     )
-    bound = algorithm.bind(device_id=cuda_stream.device.device_id)
+    bound = algorithm.clone(device_id=cuda_stream.device.device_id)
     if execute_before_serialization:
         arguments = dict(
             d_in=d_before_in,
@@ -734,7 +734,7 @@ def test_bound_select_serialization_roundtrip(
 
     blob = compute.serialize(bound)
     portable = compute.deserialize(blob)
-    rebound = portable.bind(device_id=cuda_stream.device.device_id)
+    rebound = portable.clone(device_id=cuda_stream.device.device_id)
 
     h_after = rng.integers(-100, 101, size=129).astype(dtype)
     d_after_in = DeviceArray.from_numpy(h_after, stream=cuda_stream)
@@ -770,7 +770,7 @@ def test_bound_merge_sort_outlives_portable(dtype, cuda_stream):
         d_in_keys=d_in, d_out_keys=d_out, op=OpKind.LESS
     )
     portable = compute.deserialize(compute.serialize(algorithm))
-    executable = portable.bind(device_id=cuda_stream.device.device_id)
+    executable = portable.clone(device_id=cuda_stream.device.device_id)
     del portable
     gc.collect()
 
@@ -798,7 +798,7 @@ def test_bound_reduce_outlives_portable(dtype, cuda_stream):
         d_in=d_in, d_out=d_out, op=OpKind.PLUS, h_init=h_init
     )
     portable = compute.deserialize(compute.serialize(algorithm))
-    executable = portable.bind(device_id=cuda_stream.device.device_id)
+    executable = portable.clone(device_id=cuda_stream.device.device_id)
     del portable
     gc.collect()
 
@@ -829,7 +829,7 @@ def test_bound_select_outlives_portable(dtype, cuda_stream):
         d_in=d_in, d_out=d_out, d_num_selected_out=d_count, cond=positive_op
     )
     portable = compute.deserialize(compute.serialize(algorithm))
-    executable = portable.bind(device_id=cuda_stream.device.device_id)
+    executable = portable.clone(device_id=cuda_stream.device.device_id)
     del portable
     gc.collect()
 
@@ -850,11 +850,19 @@ def test_bound_select_outlives_portable(dtype, cuda_stream):
     )
 
 
-"""Test "Repeated binding preserves computation." invariant"""
+"""Test "Clone binding depends only on the latest device_id and preserves computation." invariant"""
 
 
+@pytest.mark.parametrize(
+    "source_bound", [False, True], ids=["unbound-source", "bound-source"]
+)
+@pytest.mark.parametrize(
+    "target_bound", [False, True], ids=["unbound-clone", "bound-clone"]
+)
 @pytest.mark.parametrize("dtype", [np.int32, np.float64])
-def test_bound_merge_sort_can_bind_again(dtype, cuda_stream):
+def test_merge_sort_clone_binding_transitions(
+    dtype, source_bound, target_bound, cuda_stream
+):
     rng = np.random.default_rng(42)
     h_in = rng.integers(-50, 51, size=257).astype(dtype)
     d_in = DeviceArray.from_numpy(h_in, stream=cuda_stream)
@@ -863,7 +871,9 @@ def test_bound_merge_sort_can_bind_again(dtype, cuda_stream):
         d_in_keys=d_in, d_out_keys=d_out, op=OpKind.LESS
     )
     portable = compute.deserialize(compute.serialize(algorithm))
-    executable = portable.bind(device_id=cuda_stream.device.device_id)
+    source_device_id = cuda_stream.device.device_id if source_bound else None
+    target_device_id = cuda_stream.device.device_id if target_bound else None
+    executable = portable.clone(device_id=source_device_id)
     arguments = dict(
         d_in_keys=d_in,
         d_in_values=None,
@@ -876,18 +886,33 @@ def test_bound_merge_sort_can_bind_again(dtype, cuda_stream):
     _execute_with_workspace(executable, arguments, cuda_stream)
     np.testing.assert_array_equal(d_out.copy_to_host(stream=cuda_stream), np.sort(h_in))
 
-    rebound = executable.bind(device_id=cuda_stream.device.device_id)
+    original_binding = executable._bound_build_result
+    cloned = executable.clone(device_id=target_device_id)
+    assert executable._bound_build_result is original_binding
+    assert (cloned._bound_build_result is not None) == target_bound
+    restored = cloned.clone(device_id=source_device_id)
+    assert (restored._bound_build_result is not None) == source_bound
+    assert (cloned._bound_build_result is not None) == target_bound
     h_after = rng.integers(-100, 101, size=h_in.size).astype(dtype)
     d_in.copy_from_host(h_after, stream=cuda_stream)
-    d_out.copy_from_host(np.full_like(h_after, 999), stream=cuda_stream)
-    _execute_with_workspace(rebound, arguments, cuda_stream)
-    np.testing.assert_array_equal(
-        d_out.copy_to_host(stream=cuda_stream), np.sort(h_after)
-    )
+    for executor in (cloned, executable, restored):
+        d_out.copy_from_host(np.full_like(h_after, 999), stream=cuda_stream)
+        _execute_with_workspace(executor, arguments, cuda_stream)
+        np.testing.assert_array_equal(
+            d_out.copy_to_host(stream=cuda_stream), np.sort(h_after)
+        )
 
 
+@pytest.mark.parametrize(
+    "source_bound", [False, True], ids=["unbound-source", "bound-source"]
+)
+@pytest.mark.parametrize(
+    "target_bound", [False, True], ids=["unbound-clone", "bound-clone"]
+)
 @pytest.mark.parametrize("dtype", [np.int32, np.float64])
-def test_bound_reduce_can_bind_again(dtype, cuda_stream):
+def test_reduce_clone_binding_transitions(
+    dtype, source_bound, target_bound, cuda_stream
+):
     rng = np.random.default_rng(42)
     h_in = rng.integers(-50, 51, size=257).astype(dtype)
     h_init = np.asarray([37], dtype=dtype)
@@ -897,7 +922,9 @@ def test_bound_reduce_can_bind_again(dtype, cuda_stream):
         d_in=d_in, d_out=d_out, op=OpKind.PLUS, h_init=h_init
     )
     portable = compute.deserialize(compute.serialize(algorithm))
-    executable = portable.bind(device_id=cuda_stream.device.device_id)
+    source_device_id = cuda_stream.device.device_id if source_bound else None
+    target_device_id = cuda_stream.device.device_id if target_bound else None
+    executable = portable.clone(device_id=source_device_id)
     arguments = dict(
         d_in=d_in,
         d_out=d_out,
@@ -912,22 +939,37 @@ def test_bound_reduce_can_bind_again(dtype, cuda_stream):
     )
     np.testing.assert_array_equal(d_out.copy_to_host(stream=cuda_stream), expected)
 
-    rebound = executable.bind(device_id=cuda_stream.device.device_id)
+    original_binding = executable._bound_build_result
+    cloned = executable.clone(device_id=target_device_id)
+    assert executable._bound_build_result is original_binding
+    assert (cloned._bound_build_result is not None) == target_bound
+    restored = cloned.clone(device_id=source_device_id)
+    assert (restored._bound_build_result is not None) == source_bound
+    assert (cloned._bound_build_result is not None) == target_bound
     h_after = rng.integers(-100, 101, size=h_in.size).astype(dtype)
     h_init[0] = -11
     expected_after = np.asarray(
         [np.add.reduce(h_after, dtype=dtype, initial=h_init[0])], dtype=dtype
     )
     d_in.copy_from_host(h_after, stream=cuda_stream)
-    d_out.copy_from_host(expected_after + 1, stream=cuda_stream)
-    _execute_with_workspace(rebound, arguments, cuda_stream)
-    np.testing.assert_array_equal(
-        d_out.copy_to_host(stream=cuda_stream), expected_after
-    )
+    for executor in (cloned, executable, restored):
+        d_out.copy_from_host(expected_after + 1, stream=cuda_stream)
+        _execute_with_workspace(executor, arguments, cuda_stream)
+        np.testing.assert_array_equal(
+            d_out.copy_to_host(stream=cuda_stream), expected_after
+        )
 
 
+@pytest.mark.parametrize(
+    "source_bound", [False, True], ids=["unbound-source", "bound-source"]
+)
+@pytest.mark.parametrize(
+    "target_bound", [False, True], ids=["unbound-clone", "bound-clone"]
+)
 @pytest.mark.parametrize("dtype", [np.int32, np.float64])
-def test_bound_select_can_bind_again(dtype, cuda_stream):
+def test_select_clone_binding_transitions(
+    dtype, source_bound, target_bound, cuda_stream
+):
     positive_op = _make_is_positive_op(dtype, cuda_stream.device)
     rng = np.random.default_rng(42)
     h_in = rng.integers(-50, 51, size=257).astype(dtype)
@@ -938,7 +980,9 @@ def test_bound_select_can_bind_again(dtype, cuda_stream):
         d_in=d_in, d_out=d_out, d_num_selected_out=d_count, cond=positive_op
     )
     portable = compute.deserialize(compute.serialize(algorithm))
-    executable = portable.bind(device_id=cuda_stream.device.device_id)
+    source_device_id = cuda_stream.device.device_id if source_bound else None
+    target_device_id = cuda_stream.device.device_id if target_bound else None
+    executable = portable.clone(device_id=source_device_id)
     arguments = dict(
         d_in=d_in,
         d_out=d_out,
@@ -955,15 +999,22 @@ def test_bound_select_can_bind_again(dtype, cuda_stream):
         d_out.copy_to_host(stream=cuda_stream)[:count], expected
     )
 
-    rebound = executable.bind(device_id=cuda_stream.device.device_id)
+    original_binding = executable.partitioner._bound_build_result
+    cloned = executable.clone(device_id=target_device_id)
+    assert executable.partitioner._bound_build_result is original_binding
+    assert (cloned.partitioner._bound_build_result is not None) == target_bound
+    restored = cloned.clone(device_id=source_device_id)
+    assert (restored.partitioner._bound_build_result is not None) == source_bound
+    assert (cloned.partitioner._bound_build_result is not None) == target_bound
     h_after = rng.integers(-100, 101, size=h_in.size).astype(dtype)
     d_in.copy_from_host(h_after, stream=cuda_stream)
-    d_out.copy_from_host(np.full_like(h_after, 999), stream=cuda_stream)
-    d_count.copy_from_host(np.zeros(2, dtype=np.uint64), stream=cuda_stream)
-    _execute_with_workspace(rebound, arguments, cuda_stream)
-    expected_after = h_after[h_after > 0]
-    count_after = int(d_count.copy_to_host(stream=cuda_stream)[0])
-    assert count_after == expected_after.size
-    np.testing.assert_array_equal(
-        d_out.copy_to_host(stream=cuda_stream)[:count_after], expected_after
-    )
+    for executor in (cloned, executable, restored):
+        d_out.copy_from_host(np.full_like(h_after, 999), stream=cuda_stream)
+        d_count.copy_from_host(np.zeros(2, dtype=np.uint64), stream=cuda_stream)
+        _execute_with_workspace(executor, arguments, cuda_stream)
+        expected_after = h_after[h_after > 0]
+        count_after = int(d_count.copy_to_host(stream=cuda_stream)[0])
+        assert count_after == expected_after.size
+        np.testing.assert_array_equal(
+            d_out.copy_to_host(stream=cuda_stream)[:count_after], expected_after
+        )
