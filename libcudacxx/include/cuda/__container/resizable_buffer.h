@@ -35,8 +35,14 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 template <class _Tp, class... _Properties>
-_CCCL_HOST_API auto __acquire_resizable_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info);
+class __resizable_buffer;
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
+
+template <class _Tp, class... _Properties>
+_CCCL_HOST_API ::cuda::__resizable_buffer<_Tp, _Properties...>
+__acquire_resizable_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info);
 
 _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 
@@ -95,13 +101,25 @@ private:
   [[nodiscard]] _CCCL_HOST_API __resizable_buffer<_Up, _Properties...> __as_type() &&
   {
     auto __alloc = ::cuda::std::move(*this).__release();
-    return ::cuda::__acquire_resizable_buffer<_Up, _Properties...>(
-      {__alloc.stream,
-       ::cuda::std::move(__alloc.mr),
-       reinterpret_cast<_Up*>(__alloc.ptr),
-       __alloc.capacity * sizeof(_Tp) / sizeof(_Up),
-       __alloc.size * sizeof(_Tp) / sizeof(_Up),
-       __alloc.alignment});
+    ::cuda::__allocation_info<_Up, _Properties...> __new_alloc{
+      __alloc.stream,
+      ::cuda::std::move(__alloc.mr),
+      reinterpret_cast<_Up*>(__alloc.ptr),
+      __alloc.capacity * sizeof(_Tp) / sizeof(_Up),
+      __alloc.size * sizeof(_Tp) / sizeof(_Up),
+      __alloc.alignment};
+    try
+    {
+      return ::cuda::__acquire_resizable_buffer<_Up, _Properties...>(::cuda::std::move(__new_alloc));
+    }
+    catch (...)
+    {
+      *this = ::cuda::std::move([&]() noexcept {
+        __alloc.mr = ::cuda::std::move(__new_alloc.mr);
+        return ::cuda::__acquire_resizable_buffer<_Tp, _Properties...>(::cuda::std::move(__alloc));
+      }());
+      throw;
+    }
   }
 
 public:
@@ -297,7 +315,8 @@ _CCCL_END_NAMESPACE_ABI_VER4_BUMP
 //! @throw std::invalid_argument if size exceeds capacity, alignment is invalid,
 //! the pointer is misaligned or null with nonzero capacity, or capacity overflows.
 template <class _Tp, class... _Properties>
-_CCCL_HOST_API auto __acquire_resizable_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info)
+_CCCL_HOST_API ::cuda::__resizable_buffer<_Tp, _Properties...>
+__acquire_resizable_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info)
 {
   if (__info.size > __info.capacity)
   {

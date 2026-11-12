@@ -224,13 +224,25 @@ private:
   [[nodiscard]] _CCCL_HOST_API buffer<_Up, _Properties...> __as_type() &&
   {
     auto __alloc = ::cuda::std::move(*this).__release();
-    return ::cuda::__acquire_buffer<_Up, _Properties...>(
-      {__alloc.stream,
-       ::cuda::std::move(__alloc.mr),
-       reinterpret_cast<_Up*>(__alloc.ptr),
-       __alloc.capacity * sizeof(_Tp) / sizeof(_Up),
-       __alloc.size * sizeof(_Tp) / sizeof(_Up),
-       __alloc.alignment});
+    ::cuda::__allocation_info<_Up, _Properties...> __new_alloc{
+      __alloc.stream,
+      ::cuda::std::move(__alloc.mr),
+      reinterpret_cast<_Up*>(__alloc.ptr),
+      __alloc.capacity * sizeof(_Tp) / sizeof(_Up),
+      __alloc.size * sizeof(_Tp) / sizeof(_Up),
+      __alloc.alignment};
+    try
+    {
+      return ::cuda::__acquire_buffer<_Up, _Properties...>(::cuda::std::move(__new_alloc));
+    }
+    catch (...)
+    {
+      *this = ::cuda::std::move([&]() noexcept {
+        __alloc.mr = ::cuda::std::move(__new_alloc.mr);
+        return ::cuda::__acquire_buffer<_Tp, _Properties...>(::cuda::std::move(__alloc));
+      }());
+      throw;
+    }
   }
 
 public:

@@ -56,7 +56,7 @@ struct __allocation_info
     __pointer_type __ptr,
     __size_type __capacity,
     __size_type __size,
-    __size_type __alignment)
+    __size_type __alignment) noexcept
       : stream(__stream)
       , mr(::cuda::std::move(__mr))
       , ptr(__ptr)
