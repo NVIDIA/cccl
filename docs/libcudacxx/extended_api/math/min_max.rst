@@ -65,3 +65,5 @@ Example
         kernel<<<1, 1>>>();
         cudaDeviceSynchronize();
     }
+
+`See it on Godbolt 🔗 <https://godbolt.org/z/v9aK1xx4z>`__
