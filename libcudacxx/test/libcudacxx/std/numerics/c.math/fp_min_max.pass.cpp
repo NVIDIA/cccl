@@ -317,8 +317,15 @@ TEST_FUNC bool test(float val)
   test<signed long long>(static_cast<signed long long>(val));
   test<unsigned long long>(static_cast<unsigned long long>(val));
 #if _CCCL_HAS_INT128()
+#  if TEST_CUDA_COMPILER(CLANG)
+  // Clang's NVPTX backend cannot lower runtime conversions from 128-bit integers to double.
+  NV_IF_TARGET(NV_IS_HOST,
+               (test<__int128_t>(static_cast<__int128_t>(static_cast<int>(val)));
+                test<__uint128_t>(static_cast<__uint128_t>(static_cast<int>(val)));))
+#  else // TEST_CUDA_COMPILER(CLANG)
   test<__int128_t>(static_cast<__int128_t>(static_cast<int>(val)));
   test<__uint128_t>(static_cast<__uint128_t>(static_cast<int>(val)));
+#  endif // !TEST_CUDA_COMPILER(CLANG)
 #endif // _CCCL_HAS_INT128()
 
   test_fp64_edge_cases(val);
