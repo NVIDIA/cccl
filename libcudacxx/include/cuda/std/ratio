@@ -122,7 +122,7 @@ __ratio_add(intmax_t __n1, intmax_t __d1, intmax_t __n2, intmax_t __d2) noexcept
   {
     return __ratio_result{INTMAX_MIN, INTMAX_MIN};
   }
-  const intmax_t __sum     = __n1 * __scale1 + __n2 * __scale2;
+  const intmax_t __sum     = (__n1 * __scale1) + (__n2 * __scale2);
   const intmax_t __gcd_sum = ::cuda::std::__ratio_gcd(__sum, __d2);
   return ::cuda::std::__ratio_multiply(__gcd_n, __scale2, __sum / __gcd_sum, __d2 / __gcd_sum);
 }

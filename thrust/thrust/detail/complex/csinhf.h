@@ -37,7 +37,6 @@
 #include <thrust/detail/config.h>
 
 #include <thrust/complex.h>
-#include <thrust/detail/complex/cexp.h>
 #include <thrust/detail/complex/cexpf.h>
 #include <thrust/detail/complex/math_private.h>
 
@@ -46,7 +45,8 @@
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/hyperbolic_functions.h>
 #include <cuda/std/__cmath/trigonometric_functions.h>
-#include <cuda/std/limits>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex

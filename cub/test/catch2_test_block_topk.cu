@@ -54,7 +54,7 @@ __global__ void topk_kernel(cuda::std::span<const KeyT> g_in, cuda::std::span<Ke
 
   for (int i = 0; i < ItemsPerThread; ++i)
   {
-    const int idx = static_cast<int>(threadIdx.x) * ItemsPerThread + i;
+    const int idx = (static_cast<int>(threadIdx.x) * ItemsPerThread) + i;
     if (idx < k)
     {
       g_top[idx] = keys[i];
@@ -125,7 +125,7 @@ CUB_TEST(
 
   CAPTURE(c2h::type_name<key_t>(), select_max);
 
-  const int num_valid = tile_size / 2 + 7;
+  const int num_valid = (tile_size / 2) + 7;
   const c2h::host_vector<key_t> h_in_partial(h_in.begin(), h_in.begin() + num_valid);
 
   SECTION("full tile, blocked input")

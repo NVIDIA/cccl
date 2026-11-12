@@ -20,7 +20,7 @@ using namespace cuda::experimental::stf;
 
 int X0(int i)
 {
-  return 17 * i + 45;
+  return (17 * i) + 45;
 }
 
 __global__ void dummy() {}
@@ -88,7 +88,7 @@ int main()
   ctx.host_launch(lX.read())->*[](auto x) {
     for (int i = 0; i < static_cast<int>(x.size()); i++)
     {
-      EXPECT(x(i) == 3 * X0(i) + 2);
+      EXPECT(x(i) == (3 * X0(i)) + 2);
     }
   };
 

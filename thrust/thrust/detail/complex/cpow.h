@@ -10,7 +10,6 @@
 #include <thrust/detail/complex/cexp.h>
 #include <thrust/detail/complex/clog.h>
 
-#include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__type_traits/common_type.h>
 

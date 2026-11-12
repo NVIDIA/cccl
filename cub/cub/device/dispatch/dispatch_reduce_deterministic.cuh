@@ -225,7 +225,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     last_chunk_grid_size = ::cuda::std::min(max_blocks, last_chunk_tile_grid_size);
   }
 
-  const int reduce_grid_size = chunk_grid_size * (num_chunks - 1) + last_chunk_grid_size;
+  const int reduce_grid_size = (chunk_grid_size * (num_chunks - 1)) + last_chunk_grid_size;
 
   // Temporary storage allocation requirements
   void* allocations[1]             = {};
@@ -256,8 +256,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     const int num_current_items =
       ((chunk_index + 1 == num_chunks) && has_partial_chunk) ? partial_chunk_size : num_items_per_chunk;
 
-    const auto current_grid_size =
-      static_cast<int>(num_current_items == num_items_per_chunk ? chunk_grid_size : last_chunk_grid_size);
+    const auto current_grid_size = num_current_items == num_items_per_chunk ? chunk_grid_size : last_chunk_grid_size;
 
     // An immediate problem size is passed as the current chunk size; a deferred problem size is read on device and
     // `num_current_items` holds the worst-case chunk size, which must not be passed to the kernel.

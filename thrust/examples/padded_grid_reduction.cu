@@ -78,7 +78,7 @@ int main()
   {
     for (int j = 0; j < n; j++)
     {
-      data[static_cast<std::size_t>(i) * n_padded + j] = dist(rng);
+      data[(static_cast<std::size_t>(i) * n_padded) + j] = dist(rng);
     }
   }
 

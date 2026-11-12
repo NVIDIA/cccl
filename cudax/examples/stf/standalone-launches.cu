@@ -20,7 +20,7 @@ using namespace cuda::experimental::stf;
 
 int X0(int i)
 {
-  return i * i + 12;
+  return (i * i) + 12;
 }
 
 int main()

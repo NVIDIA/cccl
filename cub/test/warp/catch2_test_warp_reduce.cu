@@ -82,7 +82,7 @@ __global__ void warp_reduce_multiple_items_kernel(T* input, T* output, Reduction
   T thread_data[num_items_per_thread];
   for (int i = 0; i < num_items_per_thread; ++i)
   {
-    thread_data[i] = input[threadIdx.x * num_items_per_thread + i];
+    thread_data[i] = input[(threadIdx.x * num_items_per_thread) + i];
   }
   warp_reduce_function<LogicalWarpThreads>(thread_data, output, reduction_op);
 }
@@ -245,10 +245,10 @@ void compute_host_reference(
     {
       auto start =
         h_in.begin()
-        + (i * warp_size + j * logical_warp_threads) * items_per_thread; // NOLINT(bugprone-misplaced-widening-cast)
+        + ((i * warp_size) + (j * logical_warp_threads)) * items_per_thread; // NOLINT(bugprone-misplaced-widening-cast)
       auto end = start + static_cast<long>(items_per_logical_warp) * items_per_thread;
       // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
-      h_out[i * logical_warps + j] = static_cast<T>(std::accumulate(start, end, identity, PredefinedOp{}));
+      h_out[(i * logical_warps) + j] = static_cast<T>(std::accumulate(start, end, identity, PredefinedOp{}));
     }
   }
 }

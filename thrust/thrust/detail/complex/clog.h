@@ -35,12 +35,14 @@
 #include <thrust/detail/config.h>
 
 #include <thrust/complex.h>
+#include <thrust/detail/complex/arithmetic.h>
 #include <thrust/detail/complex/math_private.h>
 
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/hypot.h>
 #include <cuda/std/__cmath/inverse_trigonometric_functions.h>
 #include <cuda/std/__cmath/logarithms.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/numbers>
 
 THRUST_NAMESPACE_BEGIN
@@ -136,12 +138,12 @@ _CCCL_HOST_DEVICE inline complex<double> clog(const complex<double>& z)
 
   if (ax >= 1.0)
   {
-    return (complex<double>(::cuda::std::log1p((ax - 1) * (ax + 1) + ay * ay) * 0.5, ::cuda::std::atan2(y, x)));
+    return (complex<double>(::cuda::std::log1p(((ax - 1) * (ax + 1)) + (ay * ay)) * 0.5, ::cuda::std::atan2(y, x)));
   }
 
-  if (ax * ax + ay * ay <= 0.7)
+  if ((ax * ax) + (ay * ay) <= 0.7)
   {
-    return (complex<double>(::cuda::std::log(ax * ax + ay * ay) * 0.5, ::cuda::std::atan2(y, x)));
+    return (complex<double>(::cuda::std::log((ax * ax) + (ay * ay)) * 0.5, ::cuda::std::atan2(y, x)));
   }
 
   /*

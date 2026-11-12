@@ -16,8 +16,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/detail/sequential/general_copy.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/cstring>
 
 #include <nv/target>
