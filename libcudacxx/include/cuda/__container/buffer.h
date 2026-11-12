@@ -209,8 +209,10 @@ private:
 
   //! @brief Converts a buffer of \p _Tp into a buffer of \p _Up that owns the
   //! same allocation. Shared implementation of `as_bytes()` and `as_type()`.
+  //!
   //! @return A buffer of `size() * sizeof(_Tp) / sizeof(_Up)` elements with the same data
   //! pointer, memory resource, stream and alignment.
+  //!
   //! @warning After a successful call, the buffer can only be assigned to or
   //! destroyed.
   template <class _Up>
@@ -802,10 +804,12 @@ public:
   }
 
   //! @brief Releases ownership of the allocation without deallocating it.
+  //!
   //! @return The stream, memory resource, pointer, capacity, element count and alignment
   //! of the allocation. The caller becomes responsible for deallocating `ptr`
   //! with `mr.deallocate(stream, ptr, bytes, alignment)`, where `bytes` is
   //! `size * sizeof(T)` rounded up to a multiple of `alignment`.
+  //!
   //! @warning After this call, the buffer can only be assigned to or destroyed.
   [[nodiscard]] _CCCL_HOST_API __allocation_info_t release() && noexcept
   {
@@ -814,10 +818,13 @@ public:
 
   //! @brief Converts the buffer into a buffer of bytes that owns the same
   //! allocation.
+  //!
   //! @tparam _Byte One of `std::byte`, `cuda::std::byte`, `char` or
   //! `unsigned char`.
+  //!
   //! @return A buffer of `size() * sizeof(T)` bytes with the same data
   //! pointer, memory resource, stream and alignment.
+  //!
   //! @warning After this call, the buffer can only be assigned to or destroyed.
   _CCCL_TEMPLATE(class _Byte)
   _CCCL_REQUIRES(__is_buffer_byte_type_v<_Byte>)
@@ -829,11 +836,14 @@ public:
   //! @brief Converts a buffer of bytes into a buffer of \p _Up that owns the
   //! same allocation. Only available if `T` is one of `std::byte`,
   //! `cuda::std::byte`, `char` or `unsigned char`.
+  //!
   //! @return A buffer of `size() / sizeof(_Up)` elements with the same data
   //! pointer, memory resource, stream and alignment.
+  //!
   //! @throw std::invalid_argument if `size()` is not a multiple of
   //! `sizeof(_Up)` or if `alignment()` is less than `alignof(_Up)`. The buffer
   //! is left unchanged in that case.
+  //!
   //! @warning After a successful call, the buffer can only be assigned to or
   //! destroyed.
   _CCCL_TEMPLATE(class _Up)
@@ -1318,10 +1328,13 @@ _CCCL_HOST_API auto make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& 
 #  endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a buffer that takes ownership of an existing allocation.
+//!
 //! @param __info The allocation info to acquire.
+//!
 //! @pre \p __info.ptr is not owned by anything else and can be deallocated with
 //! `__info.mr.deallocate(__info.stream, __info.ptr, bytes, __info.alignment)`, where `bytes` is
 //! `__info.size * sizeof(T)` rounded up to a multiple of \p __info.alignment.
+//!
 //! @throw std::invalid_argument if \p __info.alignment is not a power of two that
 //! is at least `alignof(T)`, if \p __info.ptr is not aligned to \p __info.alignment,
 //! if \p __info.ptr is null and \p __info.size is not zero, if \p __info.capacity does not

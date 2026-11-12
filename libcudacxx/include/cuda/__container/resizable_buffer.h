@@ -159,9 +159,11 @@ public:
   }
 
   //! @brief Releases ownership of the allocation without deallocating it.
+  //!
   //! @return The stream, memory resource, pointer, capacity, logical size and
   //! alignment. The caller must deallocate using `capacity * sizeof(T)` rounded
   //! up to a multiple of the alignment.
+  //!
   //! @warning After this call, the buffer can only be assigned to or destroyed.
   [[nodiscard]] _CCCL_HOST_API typename __base_t::__allocation_info_t release() && noexcept
   {
@@ -172,7 +174,9 @@ public:
 
   //! @brief Converts to a byte buffer owning the same allocation, preserving
   //! the stream, resource and alignment and scaling size and capacity to bytes.
+  //!
   //! @tparam _Byte One of `std::byte`, `cuda::std::byte`, `char` or `unsigned char`.
+  //!
   //! @warning After this call, the buffer can only be assigned to or destroyed.
   _CCCL_TEMPLATE(class _Byte)
   _CCCL_REQUIRES(__is_buffer_byte_type_v<_Byte>)
@@ -185,9 +189,11 @@ public:
   //! preserving the stream, resource and alignment and scaling size and capacity.
   //! Only available if `T` is one of `std::byte`, `cuda::std::byte`, `char` or
   //! `unsigned char`. The resulting size and capacity are divided by `sizeof(_Up)`.
+  //!
   //! @throw std::invalid_argument if size or capacity is not a multiple of
   //! `sizeof(_Up)`, or alignment is less than `alignof(_Up)`. The buffer is left
   //! unchanged in that case.
+  //!
   //! @warning After a successful call, the buffer can only be assigned to or destroyed.
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__is_buffer_byte_type_v<_Tp, _Up>)
