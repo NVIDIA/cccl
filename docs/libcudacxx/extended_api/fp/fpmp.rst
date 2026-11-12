@@ -371,8 +371,19 @@ is ``0``, but ``rsqrt(0)`` is NaN rather than infinity, both return NaN for ``+i
 argument and for NaN, and on the device both return NaN for a subnormal argument. Code that can
 meet such arguments should test for them before the call, and scale a subnormal argument by an
 even power of two (and the result back by its square root) around it. The math functions below
-return the C99 Annex F values for infinities, NaN and arguments outside their domain; the sign of
-a zero result is not always preserved.
+return the C99 Annex F values for infinities, NaN and arguments outside their domain, except for
+the sign of a zero result, covered next.
+
+The sign of zero is not tracked, by the arithmetic or by the math functions. A pair is stored
+renormalized, and the renormalization adds the two limbs, which turns a ``-0`` high limb into
+``+0``: every zero result of ``+``, ``-``, ``*`` and ``fma`` is ``+0``, including ``(-0) + (-0)``,
+``(-0) * 1`` and ``x * (-0)``, where IEEE 754 gives ``-0``. A zero from ``/`` or from a math
+function carries whichever sign its evaluation happens to leave: ``sin(-0)`` and ``atan(-0)``
+return ``+0`` where C99 Annex F has ``-0``, ``fp32mp2`` ``trunc(-0.5)`` returns ``+0`` while
+``fp64mp2`` returns ``-0``, and ``fp32mp2`` ``floor(-0)`` is ``-0`` on the host and ``+0`` on the
+device. Only the operations that act on the sign bit itself keep it: unary negation, ``fabs``,
+``copysign`` and construction from a built-in ``-0.0``. ``signbit`` reports the high limb. Code
+that distinguishes ``-0`` from ``+0`` has to take the sign from the operands, before the arithmetic.
 
 ``renormalize(x)`` restores the non-overlap invariant, ``|lo| <= ulp(hi)/2``, which only ``low``
 accuracy can leave broken; see :ref:`accuracy levels <libcudacxx-extended-api-fp-fpmp-accuracy>`
