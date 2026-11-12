@@ -957,8 +957,10 @@ __internal_fpmp2_atan(const float __x_hi, const float __x_lo, float* __res_hi, f
   const float __ah  = __absx.hi();
   const float __al  = __absx.lo();
   const bool __fold = (__ah > __sqrt13) && (__ah < __sqrt3);
-  const bool __inv  = !(__ah < __sqrt3);
-  const bool __cap  = !(__ah < 0x1p64f);
+  /* Written so that NaN selects the direct range (every comparison false) and flows through to
+   * the result; the negated forms sent it to the reciprocal range, whose cap made it pi/2. */
+  const bool __inv  = __ah >= __sqrt3;
+  const bool __cap  = __ah >= 0x1p64f;
 
   float __nl, __de;
   const float __nh = ::cuda::__fpmp_fast_two_sum(::cuda::__fpmp_sub_rn(__ah, 1.0f), __al, &__nl);

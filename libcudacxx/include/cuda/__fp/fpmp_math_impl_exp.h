@@ -610,12 +610,43 @@ __internal_fpmp2_log_finish(const fp32mp2_low __log_m, const int __e, float* __r
  * Does not handle NaN, +-0, or negative inputs.
  * --------------------------------------------------------------------
  */
+/*
+ * log, log2 and log10 outside (0, +inf): +-0 -> -inf, +inf -> +inf, a negative argument or NaN -> NaN
+ * (C99 Annex F). The core assumes a positive finite input and is left alone; the callers run it
+ * unconditionally and select the special value afterwards, which costs an integer range test and
+ * two selects, no branch. __is_special is true for +-0, negative, +-inf and NaN high limbs (a
+ * subnormal positive limb is not special: the core rescales it).
+ */
+_CCCL_FPMP_CORE_API bool __internal_fpmp2_log_is_special(const float __x_hi) noexcept
+{
+  const uint32_t __xb = ::cuda::std::bit_cast<uint32_t>(__x_hi);
+  return (__xb - 1u) >= 0x7F7FFFFFu;
+}
+_CCCL_FPMP_CORE_API float __internal_fpmp2_log_special_value(const float __x_hi) noexcept
+{
+  const uint32_t __xb = ::cuda::std::bit_cast<uint32_t>(__x_hi);
+  const uint32_t __rb = ((__xb & 0x7FFFFFFFu) == 0u) ? 0xFF800000u /* -inf */
+                      : (__xb == 0x7F800000u) ? 0x7F800000u /* +inf */
+                                               : 0x7FC00000u; /* NaN: negative, -inf or NaN */
+  return ::cuda::std::bit_cast<float>(__rb);
+}
+_CCCL_FPMP_CORE_API void __internal_fpmp2_log_select(
+  const float __x_hi, const float __r_hi, const float __r_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  const bool __special = ::cuda::__internal_fpmp2_log_is_special(__x_hi);
+  const float __sv     = ::cuda::__internal_fpmp2_log_special_value(__x_hi);
+  *__res_hi            = __special ? __sv : __r_hi;
+  *__res_lo            = __special ? ((__sv != __sv) ? __sv : 0.0f) : __r_lo;
+}
+
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_log(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
   int __e;
   const fp32mp2_low __log_m = ::cuda::__internal_fpmp2_log_core(__x_hi, __x_lo, 0.0f, &__e);
-  ::cuda::__internal_fpmp2_log_finish(__log_m, __e, __res_hi, __res_lo);
+  float __r_hi, __r_lo;
+  ::cuda::__internal_fpmp2_log_finish(__log_m, __e, &__r_hi, &__r_lo);
+  ::cuda::__internal_fpmp2_log_select(__x_hi, __r_hi, __r_lo, __res_hi, __res_lo);
 } // __internal_fpmp2_log
 
 /*
@@ -834,8 +865,7 @@ __internal_fpmp2_log2(const float __x_hi, const float __x_lo, float* __res_hi, f
   int __e;
   const __ffloat __log_m  = ::cuda::__internal_fpmp2_log_core(__x_hi, __x_lo, 0.0f, &__e);
   const __ffloat __result = renormalize(__log_m * __inv_ln2 + ::cuda::__fpmp_int2fp_rn<float>(__e));
-  *__res_hi               = __result.hi();
-  *__res_lo               = __result.lo();
+  ::cuda::__internal_fpmp2_log_select(__x_hi, __result.hi(), __result.lo(), __res_hi, __res_lo);
 } // __internal_fpmp2_log2
 
 /*
@@ -888,8 +918,7 @@ __internal_fpmp2_log10(const float __x_hi, const float __x_lo, float* __res_hi, 
   __p_lo             = ::cuda::__fpmp_fma_rn(__e_f, __log10_2_lo, __p_lo);
 
   const __ffloat __result = renormalize(__log_m * __inv_ln10 + __ffloat(__p_hi, __p_lo));
-  *__res_hi               = __result.hi();
-  *__res_lo               = __result.lo();
+  ::cuda::__internal_fpmp2_log_select(__x_hi, __result.hi(), __result.lo(), __res_hi, __res_lo);
 } // __internal_fpmp2_log10
 
 /*

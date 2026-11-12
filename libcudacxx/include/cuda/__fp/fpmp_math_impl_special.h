@@ -775,6 +775,13 @@ __internal_fpmp2_boys_f0(const float __a_hi, const float __a_lo, float* __res_hi
 
   if (__a_hi < 2.0f)
   {
+    if (__a_hi < -94.0f)
+    {
+      /* F0(a) >= exp(-a) / (2 |a|) for a < 0 passes FLT_MAX near a = -94: +inf from there to -inf. */
+      *__res_hi = ::cuda::std::__fp_inf<float>();
+      *__res_lo = 0.0f;
+      return;
+    }
     /* degree 13 in x = a - 1 (fit error 2^-54.9, terms sum to 1.67 x the value) */
     constexpr __ffloat __c[14] = {
       __ffloat(0x1.7e5fbb9495fb9p-1),
@@ -1028,17 +1035,26 @@ __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res
   const __ffloat __p = renormalize(__ffloat(__x_hi, __x_lo));
 
   /* normcdfinv(0) = -inf, normcdfinv(1) = +inf, both limbs read */
-  if (__p.hi() < 0.0f || (__p.hi() == 0.0f && __p.lo() <= 0.0f))
+  /* Domain: p in [0, 1]. Outside it, or NaN, the result is NaN (one range test, false for NaN);
+   * exactly 0 and 1 give -inf and +inf, a pair just outside them NaN. */
+  if (!(__p.hi() >= 0.0f && __p.hi() <= 1.0f))
   {
-    *__res_hi = -::cuda::std::__fp_inf<float>();
-    *__res_lo = 0.0f;
+    const float __nan_val = (__p.hi() != __p.hi()) ? __p.hi() + __p.lo() : ::cuda::std::__fp_nan<float>();
+    *__res_hi             = __nan_val;
+    *__res_lo             = __nan_val;
     return;
   }
-  if (__p.hi() > 1.0f || (__p.hi() == 1.0f && __p.lo() >= 0.0f))
+  if (__p.hi() == 0.0f || __p.hi() == 1.0f)
   {
-    *__res_hi = ::cuda::std::__fp_inf<float>();
-    *__res_lo = 0.0f;
-    return;
+    const bool __at_end = (__p.hi() == 0.0f) ? (__p.lo() <= 0.0f) : (__p.lo() >= 0.0f);
+    const bool __outside = (__p.hi() == 0.0f) ? (__p.lo() < 0.0f) : (__p.lo() > 0.0f);
+    if (__at_end)
+    {
+      const float __inf = ::cuda::std::__fp_inf<float>();
+      *__res_hi         = __outside ? ::cuda::std::__fp_nan<float>() : ((__p.hi() == 0.0f) ? -__inf : __inf);
+      *__res_lo         = __outside ? *__res_hi : 0.0f;
+      return;
+    }
   }
 
   const __ffloat __a   = sub<fpmp2_accuracy::high>(__p * 2.0f, 1.0f);

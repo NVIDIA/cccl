@@ -1104,8 +1104,10 @@ __fpmp2_floor(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _Fp
     const _FpType __lo_floor = ::cuda::__fpmp_internal_floor<_FpType>(__x_lo);
     _FpType __t_hi = __x_hi, __t_lo = _FpType(0);
     ::cuda::__fpmp2_acc<_FpType>(__lo_floor, &__t_hi, &__t_lo);
-    *__res_hi = __t_hi;
-    *__res_lo = __t_lo;
+    /* +-inf is integral already; the accumulate above would turn it into NaN (inf - inf). */
+    const bool __finite = __abs_hi < ::cuda::std::__fp_inf<_FpType>();
+    *__res_hi           = __finite ? __t_hi : __x_hi;
+    *__res_lo           = __finite ? __t_lo : _FpType(0);
     return;
   }
 
@@ -1155,8 +1157,10 @@ __fpmp2_ceil(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _FpT
     const _FpType __lo_ceil = ::cuda::__fpmp_internal_ceil<_FpType>(__x_lo);
     _FpType __t_hi = __x_hi, __t_lo = _FpType(0);
     ::cuda::__fpmp2_acc<_FpType>(__lo_ceil, &__t_hi, &__t_lo);
-    *__res_hi = __t_hi;
-    *__res_lo = __t_lo;
+    /* +-inf is integral already; the accumulate above would turn it into NaN (inf - inf). */
+    const bool __finite = __abs_hi < ::cuda::std::__fp_inf<_FpType>();
+    *__res_hi           = __finite ? __t_hi : __x_hi;
+    *__res_lo           = __finite ? __t_lo : _FpType(0);
     return;
   }
 
@@ -1209,8 +1213,10 @@ __fpmp2_trunc(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _Fp
                                                      : ::cuda::__fpmp_internal_floor<_FpType>(__x_lo);
     _FpType __t_hi = __x_hi, __t_lo = _FpType(0);
     ::cuda::__fpmp2_acc<_FpType>(__lo_trunc, &__t_hi, &__t_lo);
-    *__res_hi = __t_hi;
-    *__res_lo = __t_lo;
+    /* +-inf is integral already; the accumulate above would turn it into NaN (inf - inf). */
+    const bool __finite = __abs_hi < ::cuda::std::__fp_inf<_FpType>();
+    *__res_hi           = __finite ? __t_hi : __x_hi;
+    *__res_lo           = __finite ? __t_lo : _FpType(0);
     return;
   }
 
@@ -1302,7 +1308,11 @@ __fpmp2_round(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _Fp
               ? ((__afr >= __half) ? __s : __zero)
               : ((__afr > __half) ? -__s : __zero);
     }
-    *__res_hi = ::cuda::__fpmp_two_sum(__x_hi, __i + __adj, __res_lo);
+    _FpType __r_lo;
+    const _FpType __r_hi = ::cuda::__fpmp_two_sum(__x_hi, __i + __adj, &__r_lo);
+    const bool __finite  = __abs_hi < ::cuda::std::__fp_inf<_FpType>(); /* +-inf: two_sum gives NaN */
+    *__res_hi            = __finite ? __r_hi : __x_hi;
+    *__res_lo            = __finite ? __r_lo : _FpType(0);
     return;
   }
 
@@ -1419,8 +1429,10 @@ __fpmp2_rint(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _FpT
 
     _FpType __t_hi = __x_hi, __t_lo = _FpType(0);
     ::cuda::__fpmp2_acc<_FpType>(__lo_r, &__t_hi, &__t_lo);
-    *__res_hi = __t_hi;
-    *__res_lo = __t_lo;
+    /* +-inf is integral already; the accumulate above would turn it into NaN (inf - inf). */
+    const bool __finite = __abs_hi < ::cuda::std::__fp_inf<_FpType>();
+    *__res_hi           = __finite ? __t_hi : __x_hi;
+    *__res_lo           = __finite ? __t_lo : _FpType(0);
     return;
   }
 
