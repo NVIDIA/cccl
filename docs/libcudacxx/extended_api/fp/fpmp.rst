@@ -365,6 +365,15 @@ the product takes 6 instead of 8 at ``mid``, and its error stays below ``2u²`` 
 with the converted ``c`` reaches ``3u²``; the quotient is the same value, one instruction cheaper. The :ref:`error bounds
 <libcudacxx-extended-api-fp-fpmp-error-bounds>` page lists each case.
 
+``sqrt`` and ``rsqrt`` are kept as short as the arithmetic itself and take no branch for special
+arguments: they expect a positive, finite argument whose high limb is a normal number. ``sqrt(0)``
+is ``0``, but ``rsqrt(0)`` is NaN rather than infinity, both return NaN for ``+inf``, for a negative
+argument and for NaN, and on the device both return NaN for a subnormal argument. Code that can
+meet such arguments should test for them before the call, and scale a subnormal argument by an
+even power of two (and the result back by its square root) around it. The math functions below
+return the C99 Annex F values for infinities, NaN and arguments outside their domain; the sign of
+a zero result is not always preserved.
+
 ``renormalize(x)`` restores the non-overlap invariant, ``|lo| <= ulp(hi)/2``, which only ``low``
 accuracy can leave broken; see :ref:`accuracy levels <libcudacxx-extended-api-fp-fpmp-accuracy>`
 above. Converting up out of ``low`` applies it automatically, so the explicit call is for
