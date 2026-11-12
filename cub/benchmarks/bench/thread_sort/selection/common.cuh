@@ -41,7 +41,7 @@ __global__ void selection_benchmark_kernel(int num_iterations, ActionT action)
   __shared__ volatile KeyT output[BlockSize];
   KeyT keys[ItemsPerThread];
   const auto tid = threadIdx.x;
-  uint32_t seed  = cuda::ptx::get_sreg_clock() + (tid + 7) % warp_threads;
+  uint32_t seed  = cuda::ptx::get_sreg_clock() + ((tid + 7) % warp_threads);
 
 #pragma unroll 1
   for (int iter = 0; iter < num_iterations; ++iter)

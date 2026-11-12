@@ -16,6 +16,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/ranges>
 #include <cuda/std/span>
+#include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
 #include <cuda/type_traits>
@@ -89,7 +90,15 @@ struct WarpsInBlockMappingResult
   }
 };
 
-template <class Config>
+struct MutableBarrierId
+{
+  __host__ __device__ int operator()(int id)
+  {
+    return id;
+  }
+};
+
+template <bool MutableOnly, class Config>
 __device__ void test_interwarp_synchronizer(Config config)
 {
   const auto& hierarchy = config.hierarchy();
@@ -105,6 +114,7 @@ __device__ void test_interwarp_synchronizer(Config config)
 
     // Test constructor from range of barrier ids.
     {
+      // NOLINTNEXTLINE(readability-redundant-parentheses)
       static_assert(cuda::std::is_constructible_v<Synchronizer, decltype((barrier_ids))>);
       [[maybe_unused]] const cudax::coop::interwarp_synchronizer synchronizer{barrier_ids};
     }
@@ -115,9 +125,18 @@ __device__ void test_interwarp_synchronizer(Config config)
       const WarpsInBlockMappingResult prev_mapping_result;
 
       const cudax::coop::group_by mapping{2};
-      const cudax::coop::interwarp_synchronizer synchronizer{barrier_ids};
+      using View = cuda::std::conditional_t<MutableOnly, NonConstView<const int>, cuda::std::span<const int, 4>>;
+      using RangeSynchronizer     = cudax::coop::interwarp_synchronizer<View>;
+      using QualifiedSynchronizer = cuda::std::conditional_t<MutableOnly, RangeSynchronizer, const RangeSynchronizer>;
+      QualifiedSynchronizer synchronizer{View{barrier_ids, 4}};
 
-      const auto mapping_result  = mapping.map(cuda::warp, parent_group, prev_mapping_result);
+      const auto mapping_result = mapping.map(cuda::warp, parent_group, prev_mapping_result);
+      static_assert(
+        can_make_synchronizer_instance<const RangeSynchronizer,
+                                       cuda::warp_level,
+                                       decltype(parent_group),
+                                       decltype(mapping_result)>
+        == !MutableOnly);
       auto synchronizer_instance = synchronizer.make_instance(cuda::warp, parent_group, mapping_result);
 
       // Test that synchronizer instance has the expected barrier id.
@@ -190,9 +209,27 @@ __device__ void test_interwarp_synchronizer(Config config)
       const WarpsInBlockMappingResult prev_mapping_result;
 
       const cudax::coop::group_by mapping{2};
-      const cudax::coop::interwarp_synchronizer synchronizer{barrier_ids};
+      auto ids = [&] {
+        if constexpr (MutableOnly)
+        {
+          return cuda::std::views::transform(barrier_ids, MutableBarrierId{});
+        }
+        else
+        {
+          return barrier_ids;
+        }
+      }();
+      using RangeSynchronizer     = cudax::coop::interwarp_synchronizer<decltype(ids)>;
+      using QualifiedSynchronizer = cuda::std::conditional_t<MutableOnly, RangeSynchronizer, const RangeSynchronizer>;
+      QualifiedSynchronizer synchronizer{cuda::std::move(ids)};
 
-      const auto mapping_result  = mapping.map(cuda::warp, parent_group, prev_mapping_result);
+      const auto mapping_result = mapping.map(cuda::warp, parent_group, prev_mapping_result);
+      static_assert(
+        can_make_synchronizer_instance<const RangeSynchronizer,
+                                       cuda::warp_level,
+                                       decltype(parent_group),
+                                       decltype(mapping_result)>
+        == !MutableOnly);
       auto synchronizer_instance = synchronizer.make_instance(cuda::warp, parent_group, mapping_result);
 
       // Test that synchronizer instance has the expected barrier id.
@@ -250,7 +287,8 @@ struct TestKernel
   template <class Config>
   __device__ void operator()(const Config& config)
   {
-    test_interwarp_synchronizer(config);
+    test_interwarp_synchronizer<false>(config);
+    test_interwarp_synchronizer<true>(config);
   }
 };
 

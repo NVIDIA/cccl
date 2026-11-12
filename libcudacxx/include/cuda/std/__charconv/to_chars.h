@@ -70,17 +70,17 @@ template <class _Tp>
       __r += 1;
       break;
     }
-    else if (__uv < __ubase_2)
+    if (__uv < __ubase_2)
     {
       __r += 2;
       break;
     }
-    else if (__uv < __ubase_3)
+    if (__uv < __ubase_3)
     {
       __r += 3;
       break;
     }
-    else if (__uv < __ubase_4)
+    if (__uv < __ubase_4)
     {
       __r += 4;
       break;
@@ -200,7 +200,8 @@ _CCCL_API constexpr to_chars_result to_chars(char*, char*, bool, int = 10) noexc
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_floating_point_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr to_chars_result to_chars(char* __first, char* __last, _Tp __value) noexcept
+[[nodiscard]] _CCCL_API constexpr to_chars_result
+to_chars(char* __first, char* __last, _Tp __value) noexcept // NOLINT(readability-non-const-parameter)
 {
   static_assert(::cuda::std::__always_false_v<_Tp>,
                 "cuda::std::to_chars for floating point types is not yet implemented");
@@ -212,8 +213,8 @@ _CCCL_REQUIRES(is_floating_point_v<_Tp>)
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_floating_point_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr to_chars_result
-to_chars(char* __first, char* __last, _Tp __value, chars_format __fmt) noexcept
+[[nodiscard]] _CCCL_API constexpr to_chars_result to_chars(
+  char* __first, char* __last, _Tp __value, chars_format __fmt) noexcept // NOLINT(readability-non-const-parameter)
 {
   static_assert(::cuda::std::__always_false_v<_Tp>,
                 "cuda::std::to_chars for floating point types is not yet implemented");
@@ -226,8 +227,12 @@ to_chars(char* __first, char* __last, _Tp __value, chars_format __fmt) noexcept
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_floating_point_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr to_chars_result
-to_chars(char* __first, char* __last, _Tp __value, chars_format __fmt, int __prec) noexcept
+[[nodiscard]] _CCCL_API constexpr to_chars_result to_chars(
+  char* __first, // NOLINT(readability-non-const-parameter)
+  char* __last, // NOLINT(readability-non-const-parameter)
+  _Tp __value,
+  chars_format __fmt,
+  int __prec) noexcept
 {
   static_assert(::cuda::std::__always_false_v<_Tp>,
                 "cuda::std::to_chars for floating point types is not yet implemented");

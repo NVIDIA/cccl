@@ -265,7 +265,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceRadixSort") Dispatc
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   InvokeSingleTile(SingleTileKernelT single_tile_kernel, ActivePolicyT policy = {})
   {
-    return __invoke_single_tile(single_tile_kernel, detail::radix_sort::convert_policy(policy).single_tile);
+    return __invoke_single_tile(single_tile_kernel, _CUB::detail::radix_sort::convert_policy(policy).single_tile);
   }
 
 private:
@@ -316,7 +316,7 @@ private:
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -389,7 +389,7 @@ public:
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -411,7 +411,7 @@ public:
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -453,7 +453,7 @@ public:
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -499,7 +499,7 @@ public:
       // FIXME(bgruber): we should actually convert upsweep_policy, scan_policy, and downsweep_policy, since they could
       // be different from those inside policy. But this is already so far out of any supported scenario that I am
       // willing to cut this corner.
-      const auto p = detail::radix_sort::convert_policy(policy);
+      const auto p = _CUB::detail::radix_sort::convert_policy(policy);
       return __init_pass_config(
         upsweep_kernel,
         scan_kernel,
@@ -559,7 +559,7 @@ public:
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeOnesweep(ActivePolicyT policy = {})
   {
-    return __invoke_onesweep(detail::radix_sort::convert_policy(policy));
+    return __invoke_onesweep(_CUB::detail::radix_sort::convert_policy(policy));
   }
 
 private:
@@ -598,8 +598,8 @@ private:
     };
     constexpr int NUM_ALLOCATIONS      = sizeof(allocation_sizes) / sizeof(allocation_sizes[0]);
     void* allocations[NUM_ALLOCATIONS] = {};
-    if (const auto error =
-          detail::alias_temporaries<NUM_ALLOCATIONS>(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes))
+    if (const auto error = _CUB::detail::alias_temporaries<NUM_ALLOCATIONS>(
+          d_temp_storage, temp_storage_bytes, allocations, allocation_sizes))
     {
       return error;
     }
@@ -710,7 +710,7 @@ private:
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -795,7 +795,7 @@ private:
           return error;
         }
 
-        if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+        if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
         {
           return error;
         }
@@ -864,7 +864,7 @@ public:
       scan_kernel,
       downsweep_kernel,
       alt_downsweep_kernel,
-      detail::radix_sort::convert_policy(policy));
+      _CUB::detail::radix_sort::convert_policy(policy));
   }
 
 private:
@@ -939,12 +939,12 @@ private:
       (is_overwrite_okay) ? 0 : num_items * kernel_source.KeySize(),
 
       // bytes needed for 3rd values buffer
-      (is_overwrite_okay || (KEYS_ONLY)) ? 0 : num_items * kernel_source.ValueSize(),
+      (is_overwrite_okay || KEYS_ONLY) ? 0 : num_items * kernel_source.ValueSize(),
     };
 
     // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
     if (const auto error =
-          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+          CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -968,15 +968,15 @@ private:
 
     DoubleBuffer<KeyT> d_keys_remaining_passes(
       (is_overwrite_okay || is_num_passes_odd) ? d_keys.Alternate() : static_cast<KeyT*>(allocations[1]),
-      (is_overwrite_okay)   ? d_keys.Current()
-      : (is_num_passes_odd) ? static_cast<KeyT*>(allocations[1])
-                            : d_keys.Alternate());
+      (is_overwrite_okay) ? d_keys.Current()
+      : is_num_passes_odd ? static_cast<KeyT*>(allocations[1])
+                          : d_keys.Alternate());
 
     DoubleBuffer<ValueT> d_values_remaining_passes(
       (is_overwrite_okay || is_num_passes_odd) ? d_values.Alternate() : static_cast<ValueT*>(allocations[2]),
-      (is_overwrite_okay)   ? d_values.Current()
-      : (is_num_passes_odd) ? static_cast<ValueT*>(allocations[2])
-                            : d_values.Alternate());
+      (is_overwrite_okay) ? d_values.Current()
+      : is_num_passes_odd ? static_cast<ValueT*>(allocations[2])
+                          : d_values.Alternate());
 
     // Run first pass, consuming from the input's current buffers
     int current_bit = begin_bit;
@@ -1042,7 +1042,7 @@ public:
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
 #else // CUB_DEBUG_LOG
-    detail::log("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
+    _CUB::detail::log("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
 #endif // CUB_DEBUG_LOG
     if (const auto error = CubDebug(cudaMemcpyAsync(
           d_keys.Alternate(), d_keys.Current(), num_items * kernel_source.KeySize(), cudaMemcpyDefault, stream)))
@@ -1050,7 +1050,7 @@ public:
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -1062,7 +1062,8 @@ public:
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
 #else // CUB_DEBUG_LOG
-      detail::log("Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
+      _CUB::detail::log(
+        "Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
 #endif // CUB_DEBUG_LOG
       if (const auto error = CubDebug(cudaMemcpyAsync(
             d_values.Alternate(), d_values.Current(), num_items * kernel_source.ValueSize(), cudaMemcpyDefault, stream)))
@@ -1070,7 +1071,7 @@ public:
         return error;
       }
 
-      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -1089,7 +1090,7 @@ public:
     {
       _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
       {
-        return detail::radix_sort::convert_policy<ActivePolicyT>();
+        return _CUB::detail::radix_sort::convert_policy<ActivePolicyT>();
       }
     };
     return __invoke(policy_getter{});
@@ -1114,7 +1115,7 @@ public:
     if (begin_bit == end_bit)
     {
       bool has_uva = false;
-      if (const auto error = detail::HasUVA(has_uva))
+      if (const auto error = _CUB::detail::HasUVA(has_uva))
       {
         return error;
       }
@@ -1383,7 +1384,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -1409,7 +1410,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
 #else // CUB_DEBUG_LOG
-    detail::log("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
+    _CUB::detail::log("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
 #endif // CUB_DEBUG_LOG
     if (const auto error = CubDebug(cudaMemcpyAsync(
           d_keys.Alternate(), d_keys.Current(), num_items * kernel_source.KeySize(), cudaMemcpyDefault, stream)))
@@ -1417,7 +1418,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -1429,7 +1430,8 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
 #else // CUB_DEBUG_LOG
-      detail::log("Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
+      _CUB::detail::log(
+        "Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
 #endif // CUB_DEBUG_LOG
       if (const auto error = CubDebug(cudaMemcpyAsync(
             d_values.Alternate(), d_values.Current(), num_items * kernel_source.ValueSize(), cudaMemcpyDefault, stream)))
@@ -1437,7 +1439,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
         return error;
       }
 
-      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -1499,7 +1501,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -1521,7 +1523,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -1563,7 +1565,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -1632,12 +1634,12 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
       (can_overwrite_source_buffer) ? 0 : num_items * kernel_source.KeySize(),
 
       // bytes needed for 3rd values buffer
-      (can_overwrite_source_buffer || (keys_only)) ? 0 : num_items * kernel_source.ValueSize(),
+      (can_overwrite_source_buffer || keys_only) ? 0 : num_items * kernel_source.ValueSize(),
     };
 
     // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
     if (const auto error =
-          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+          CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -1662,13 +1664,13 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     DoubleBuffer<KeyT> d_keys_remaining_passes(
       (can_overwrite_source_buffer || is_num_passes_odd) ? d_keys.Alternate() : static_cast<KeyT*>(allocations[1]),
       (can_overwrite_source_buffer) ? d_keys.Current()
-      : (is_num_passes_odd)         ? static_cast<KeyT*>(allocations[1])
+      : is_num_passes_odd           ? static_cast<KeyT*>(allocations[1])
                                     : d_keys.Alternate());
 
     DoubleBuffer<ValueT> d_values_remaining_passes(
       (can_overwrite_source_buffer || is_num_passes_odd) ? d_values.Alternate() : static_cast<ValueT*>(allocations[2]),
       (can_overwrite_source_buffer) ? d_values.Current()
-      : (is_num_passes_odd)         ? static_cast<ValueT*>(allocations[2])
+      : is_num_passes_odd           ? static_cast<ValueT*>(allocations[2])
                                     : d_values.Alternate());
 
     // Run first pass, consuming from the input's current buffers
@@ -1754,8 +1756,8 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     };
     constexpr int num_allocations      = sizeof(allocation_sizes) / sizeof(allocation_sizes[0]);
     void* allocations[num_allocations] = {};
-    if (const auto error =
-          detail::alias_temporaries<num_allocations>(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes))
+    if (const auto error = _CUB::detail::alias_temporaries<num_allocations>(
+          d_temp_storage, temp_storage_bytes, allocations, allocation_sizes))
     {
       return error;
     }
@@ -1850,7 +1852,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -1935,7 +1937,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
           return error;
         }
 
-        if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+        if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
         {
           return error;
         }
@@ -1975,7 +1977,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     if (begin_bit == end_bit)
     {
       bool has_uva = false;
-      if (const auto error = detail::HasUVA(has_uva))
+      if (const auto error = _CUB::detail::HasUVA(has_uva))
       {
         return error;
       }
@@ -2047,7 +2049,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   const auto cc = description.__compute_capability();
 
-  detail::log_dispatch("DeviceRadixSort", cc, policy_selector(cc));
+  _CUB::detail::log_dispatch("DeviceRadixSort", cc, policy_selector(cc));
 
   dispatch_impl<KeyT, ValueT, OffsetT, DecomposerT, KernelSource, KernelLauncherFactory> impl{
     d_temp_storage,
@@ -2064,7 +2066,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     launcher_factory,
     description};
 
-  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+  return _CUB::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     return impl.invoke(policy_getter);
   });
 }

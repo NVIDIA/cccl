@@ -14,4 +14,4 @@
 #endif // no system header
 
 // omp system inherits mismatch
-#include <thrust/system/cpp/detail/mismatch.h>
+#include <thrust/system/cpp/detail/mismatch.h> // IWYU pragma: export

@@ -76,10 +76,16 @@ template <typename Derived, typename InputIt, typename StencilIt, typename Outpu
     equality_op_t{},
     num_items,
     stream);
-  _CUDA_CUB_RET_IF_FAIL(status);
+  if (CubDebug(status))
+  {
+    return status;
+  }
 
   status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-  _CUDA_CUB_RET_IF_FAIL(status);
+  if (CubDebug(status))
+  {
+    return status;
+  }
 
   // Return if we're only querying temporary storage requirements
   if (d_temp_storage == nullptr)
@@ -109,11 +115,17 @@ template <typename Derived, typename InputIt, typename StencilIt, typename Outpu
     equality_op_t{},
     num_items,
     stream);
-  _CUDA_CUB_RET_IF_FAIL(status);
+  if (CubDebug(status))
+  {
+    return status;
+  }
 
   // Get number of selected items
   status = cuda_cub::synchronize(policy);
-  _CUDA_CUB_RET_IF_FAIL(status);
+  if (CubDebug(status))
+  {
+    return status;
+  }
   num_selected = static_cast<std::size_t>(get_value(policy, d_num_selected_out));
 
   return status;

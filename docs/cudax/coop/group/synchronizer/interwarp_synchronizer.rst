@@ -22,6 +22,12 @@
     {}
 
     template <typename Unit, typename ParentGroup, typename MappingResult>
+      requires (!cuda::std::ranges::range<const RangeView>)
+    [[nodiscard]] __device__
+    auto make_instance(const Unit&, const ParentGroup&, const MappingResult&);
+
+    template <typename Unit, typename ParentGroup, typename MappingResult>
+      requires cuda::std::ranges::range<const RangeView>
     [[nodiscard]] __device__
     auto make_instance(const Unit&, const ParentGroup&, const MappingResult&) const;
   };
@@ -59,8 +65,8 @@ Examples
   {
     // Interwarp synchronizer from a list of barrier IDs.
     cuda::std::array array{1, 3, 5, 7};
-    cudax::coop::interwarp_synchronizer s1{array};
+    const cudax::coop::interwarp_synchronizer s1{array};
 
     // Interwarp synchronizer from an infinite iota range.
-    cudax::coop::interwarp_synchronizer s2{cuda::std::ranges::views::iota(1)};
+    const cudax::coop::interwarp_synchronizer s2{cuda::std::ranges::views::iota(1)};
   }

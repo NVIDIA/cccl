@@ -137,7 +137,7 @@ template <typename PolicySelectorT,
           typename ValueT>
 __launch_bounds__(
   device_merge_sort_vsmem_helper_t<
-    device_policy_getter<PolicySelectorT, current_tuning_cc().get()>,
+    device_policy_getter<PolicySelectorT, _CUB::detail::current_tuning_cc().get()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -159,7 +159,7 @@ __launch_bounds__(
     vsmem_t vsmem)
 {
   using vsmem_adapted_agents = device_merge_sort_vsmem_helper_t<
-    device_policy_getter<PolicySelectorT, current_tuning_cc().get()>,
+    device_policy_getter<PolicySelectorT, _CUB::detail::current_tuning_cc().get()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -182,8 +182,8 @@ __launch_bounds__(
   agent_block_sort_t agent(
     ping,
     temp_storage,
-    try_make_cache_modified_iterator<active_policy.load_modifier>(keys_in),
-    try_make_cache_modified_iterator<active_policy.load_modifier>(items_in),
+    _CUB::detail::try_make_cache_modified_iterator<active_policy.load_modifier>(keys_in),
+    _CUB::detail::try_make_cache_modified_iterator<active_policy.load_modifier>(items_in),
     keys_count,
     keys_out,
     items_out,
@@ -210,7 +210,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
   const int items_per_tile)
 {
   const OffsetT partition_idx =
-    static_cast<OffsetT>(blockDim.x * blockIdx.x + threadIdx.x); // NOLINT(bugprone-misplaced-widening-cast)
+    static_cast<OffsetT>((blockDim.x * blockIdx.x) + threadIdx.x); // NOLINT(bugprone-misplaced-widening-cast)
   if (partition_idx < num_partitions)
   {
     AgentPartition<KeyIteratorT, OffsetT, CompareOpT, KeyT>{
@@ -239,7 +239,7 @@ template <typename PolicySelectorT,
           typename ValueT>
 __launch_bounds__(
   device_merge_sort_vsmem_helper_t<
-    device_policy_getter<PolicySelectorT, current_tuning_cc().get()>,
+    device_policy_getter<PolicySelectorT, _CUB::detail::current_tuning_cc().get()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -261,7 +261,7 @@ __launch_bounds__(
     vsmem_t vsmem)
 {
   using vsmem_adapted_agents = device_merge_sort_vsmem_helper_t<
-    device_policy_getter<PolicySelectorT, current_tuning_cc().get()>,
+    device_policy_getter<PolicySelectorT, _CUB::detail::current_tuning_cc().get()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -284,10 +284,10 @@ __launch_bounds__(
   agent_merge_t agent(
     ping,
     temp_storage,
-    try_make_cache_modified_iterator<active_policy.load_modifier>(keys_ping),
-    try_make_cache_modified_iterator<active_policy.load_modifier>(items_ping),
-    try_make_cache_modified_iterator<active_policy.load_modifier>(keys_pong),
-    try_make_cache_modified_iterator<active_policy.load_modifier>(items_pong),
+    _CUB::detail::try_make_cache_modified_iterator<active_policy.load_modifier>(keys_ping),
+    _CUB::detail::try_make_cache_modified_iterator<active_policy.load_modifier>(items_ping),
+    _CUB::detail::try_make_cache_modified_iterator<active_policy.load_modifier>(keys_pong),
+    _CUB::detail::try_make_cache_modified_iterator<active_policy.load_modifier>(items_pong),
     keys_count,
     keys_pong,
     items_pong,

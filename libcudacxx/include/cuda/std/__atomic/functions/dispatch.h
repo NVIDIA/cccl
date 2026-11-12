@@ -29,6 +29,7 @@
 #include <cuda/std/__atomic/functions/host.h>
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__type_traits/copy_cv.h>
+#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/cassert>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -418,7 +419,10 @@ template <class _Backend, class _Type, class _Up, class _Sco>
 [[nodiscard]] _CCCL_HOST_DEVICE_API __unv<_Type>
 __cuda_atomic_fetch_add_dispatch(_Backend __backend, _Type* __ptr, _Up __op, memory_order __order, _Sco __scope)
 {
-  __op                  = __op * __atomic_ptr_skip_t<_Type>::__skip;
+  if constexpr (is_pointer_v<__unv<_Type>>)
+  {
+    __op = __op * __atomic_ptr_skip_t<_Type>::__skip;
+  }
   using __value_type    = __unv<_Type>;
   using __proxy_t       = __cuda_atomic_deduce_arithmetic_t<__value_type>;
   using __proxy_pointee = __copy_cv_t<_Type, __proxy_t>;
@@ -660,9 +664,11 @@ template <class _Backend, class _Type, class _Up, class _Sco>
 [[nodiscard]] _CCCL_HOST_DEVICE_API __unv<_Type>
 __cuda_atomic_fetch_sub_dispatch(_Backend __backend, _Type* __ptr, _Up __op, memory_order __order, _Sco __scope)
 {
-  using __value_type    = __unv<_Type>;
-  constexpr auto __skip = __atomic_ptr_skip_t<__value_type>::__skip;
-  __op                  = __op * __skip;
+  using __value_type = __unv<_Type>;
+  if constexpr (is_pointer_v<__value_type>)
+  {
+    __op = __op * __atomic_ptr_skip_t<__value_type>::__skip;
+  }
   using __proxy_type    = __cuda_atomic_deduce_arithmetic_t<__value_type>;
   using __proxy_pointee = __copy_cv_t<_Type, __proxy_type>;
   using __proxy_operand = __cuda_atomic_deduce_arithmetic_tag_t<__value_type>;

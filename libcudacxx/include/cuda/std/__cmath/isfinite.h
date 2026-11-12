@@ -79,8 +79,28 @@ template <class _Tp>
 #endif // ^^^ !_CCCL_BUILTIN_ISFINITE ^^^
 }
 
+[[nodiscard]] _CCCL_API constexpr bool __isfinite_storage(double __x) noexcept
+{
+  auto __storage = ::cuda::std::__fp_get_storage(__x);
+#if !_CCCL_TILE_COMPILATION() // asm statement is unsupported in tile code
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    // See __isinf_storage
+    NV_IF_TARGET(NV_PROVIDES_SM_100, ([&] {
+                   asm("mov.b64 %0, %0;" : "+l"(__storage));
+                 }();))
+  }
+#endif // !_CCCL_TILE_COMPILATION()
+  return (__storage & __fp_exp_mask_of_v<double>) != __fp_exp_mask_of_v<double>;
+}
+
 [[nodiscard]] _CCCL_API constexpr bool isfinite(double __x) noexcept
 {
+  // See isnan(double): use an integer comparison on GPUs with slow FP64
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__isfinite_storage(__x);)
+  }
 #if defined(_CCCL_BUILTIN_ISFINITE)
   return _CCCL_BUILTIN_ISFINITE(__x);
 #else // ^^^ _CCCL_BUILTIN_ISFINITE ^^^ / vvv !_CCCL_BUILTIN_ISFINITE vvv
@@ -136,6 +156,13 @@ template <class _Tp>
   return (__x.__x & __fp_exp_mask_of_v<__nv_fp8_e5m2>) != __fp_exp_mask_of_v<__nv_fp8_e5m2>;
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
+
+#if _CCCL_HAS_NVFP8_UE5M3()
+[[nodiscard]] _CCCL_API constexpr bool isfinite(__nv_fp8_ue5m3 __x) noexcept
+{
+  return __x.__x != __fp_exp_mant_mask_of_v<__nv_fp8_ue5m3>;
+}
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 
 #if _CCCL_HAS_NVFP8_E8M0()
 [[nodiscard]] _CCCL_API constexpr bool isfinite(__nv_fp8_e8m0 __x) noexcept

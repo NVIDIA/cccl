@@ -38,6 +38,7 @@
 #include <thrust/detail/config.h>
 
 #include <thrust/complex.h>
+#include <thrust/detail/complex/catrig.h>
 #include <thrust/detail/complex/math_private.h>
 
 #include <cuda/std/__cmath/abs.h>
@@ -50,7 +51,9 @@
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/signbit.h>
-#include <cuda/std/limits>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/cfloat>
+#include <cuda/std/cstdint>
 #include <cuda/std/numbers>
 
 THRUST_NAMESPACE_BEGIN
@@ -140,7 +143,7 @@ do_hard_work(float x, float y, float* rx, int* B_is_usable, float* B, float* sqr
   }
   else
   {
-    *rx = ::cuda::std::logf(A + ::cuda::std::sqrtf(A * A - 1));
+    *rx = ::cuda::std::logf(A + ::cuda::std::sqrtf((A * A) - 1));
   }
 
   *new_y = y;
@@ -231,7 +234,7 @@ _CCCL_HOST_DEVICE inline complex<float> casinhf(complex<float> z)
 
   if (x == 0 && y == 0)
   {
-    return (z);
+    return z;
   }
 
   raise_inexact();
@@ -239,7 +242,7 @@ _CCCL_HOST_DEVICE inline complex<float> casinhf(complex<float> z)
   const float SQRT_6_EPSILON = 8.4572793338e-4f; /*  0xddb3d7.0p-34 */
   if (ax < SQRT_6_EPSILON / 4 && ay < SQRT_6_EPSILON / 4)
   {
-    return (z);
+    return z;
   }
 
   do_hard_work(ax, ay, &rx, &B_is_usable, &B, &sqrt_A2my2, &new_y);
@@ -420,7 +423,7 @@ _CCCL_HOST_DEVICE inline complex<float> clog_for_large_values(complex<float> z)
     return (complex<float>(::cuda::std::logf(::cuda::std::hypotf(x, y)), ::cuda::std::atan2f(y, x)));
   }
 
-  return (complex<float>(::cuda::std::logf(ax * ax + ay * ay) / 2, ::cuda::std::atan2f(y, x)));
+  return (complex<float>(::cuda::std::logf((ax * ax) + (ay * ay)) / 2, ::cuda::std::atan2f(y, x)));
 }
 
 /*
@@ -445,7 +448,7 @@ _CCCL_HOST_DEVICE inline float sum_squares(float x, float y)
     return (x * x);
   }
 
-  return (x * x + y * y);
+  return ((x * x) + (y * y));
 }
 
 _CCCL_HOST_DEVICE inline float real_part_reciprocal(float x, float y)
@@ -474,12 +477,12 @@ _CCCL_HOST_DEVICE inline float real_part_reciprocal(float x, float y)
   }
   if (ix <= (BIAS + FLT_MAX_EXP / 2 - CUTOFF) << 23)
   {
-    return (x / (x * x + y * y));
+    return (x / ((x * x) + (y * y)));
   }
   set_float_word(scale, 0x7f800000 - ix);
   x *= scale;
   y *= scale;
-  return (x / (x * x + y * y) * scale);
+  return (x / ((x * x) + (y * y)) * scale);
 }
 
 _CCCL_HOST_DEVICE inline complex<float> catanhf(complex<float> z)
@@ -531,7 +534,7 @@ _CCCL_HOST_DEVICE inline complex<float> catanhf(complex<float> z)
   if (ax < SQRT_3_EPSILON / 2 && ay < SQRT_3_EPSILON / 2)
   {
     raise_inexact();
-    return (z);
+    return z;
   }
 
   if (ax == 1 && ay < FLT_EPSILON)
@@ -553,7 +556,7 @@ _CCCL_HOST_DEVICE inline complex<float> catanhf(complex<float> z)
   }
   else
   {
-    ry = ::cuda::std::atan2f(2 * ay, (1 - ax) * (1 + ax) - ay * ay) / 2;
+    ry = ::cuda::std::atan2f(2 * ay, ((1 - ax) * (1 + ax)) - (ay * ay)) / 2;
   }
 
   return (complex<float>(::cuda::std::copysignf(rx, x), ::cuda::std::copysignf(ry, y)));
