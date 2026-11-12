@@ -51,6 +51,18 @@ inline constexpr bool enable_borrowed_range<NonConstView<T>> = true;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
+template <class Mapping, class, class... Args>
+inline constexpr bool can_map_group_impl = false;
+
+template <class Mapping, class... Args>
+inline constexpr bool can_map_group_impl<
+  Mapping,
+  cuda::std::void_t<decltype(cuda::std::declval<Mapping&>().map(cuda::std::declval<const Args&>()...))>,
+  Args...> = true;
+
+template <class Mapping, class... Args>
+inline constexpr bool can_map_group = can_map_group_impl<Mapping, void, Args...>;
+
 template <class Synchronizer, class Unit, class Parent, class Result, class = void>
 inline constexpr bool can_make_synchronizer_instance = false;
 
