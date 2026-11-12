@@ -288,7 +288,7 @@ LoadDirectBlockedVectorized(int linear_tid, const InputT* block_src_ptr, T (&dst
       // Load into an array of vectors in thread-blocked order. The items are read back as InputT, which can be aligned
       // more strictly than vector_t
       alignas(InputT) alignas(vector_t) vector_t vec_items[vectors_per_thread];
-      const vector_t* vec_ptr = reinterpret_cast<const vector_t*>(block_src_ptr) + linear_tid * vectors_per_thread;
+      const vector_t* vec_ptr = reinterpret_cast<const vector_t*>(block_src_ptr) + (linear_tid * vectors_per_thread);
 
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < vectors_per_thread; i++)

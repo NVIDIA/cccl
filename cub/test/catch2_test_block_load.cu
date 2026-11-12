@@ -327,7 +327,7 @@ __global__ void load_direct_blocked_vectorized_kernel(InputIteratorT input, T* o
     static_cast<int>(threadIdx.x), input, data);
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    output[threadIdx.x * ItemsPerThread + i] = data[i];
+    output[(threadIdx.x * ItemsPerThread) + i] = data[i];
   }
 }
 
@@ -351,7 +351,7 @@ __global__ void load_direct_blocked_vectorized_type_first_kernel(T* input, T* ou
   cub::LoadDirectBlockedVectorized<T, ItemsPerThread>(static_cast<int>(threadIdx.x), input, data);
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    output[threadIdx.x * ItemsPerThread + i] = data[i];
+    output[(threadIdx.x * ItemsPerThread) + i] = data[i];
   }
 }
 
