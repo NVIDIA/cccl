@@ -411,7 +411,7 @@ private:
 namespace reserved
 {
 template <auto... spec>
-_CCCL_KERNEL_ATTRIBUTES void unit_test_thread_hierarchy(thread_hierarchy<spec...> h)
+__global__ static void unit_test_thread_hierarchy(thread_hierarchy<spec...> h) // NOLINT(cccl-hide-from-abi)
 {
   assert(h.size(0) == 2);
   assert(h.size(1) == 2 * 32);
@@ -447,7 +447,7 @@ UNITTEST("thread hierarchy indexing")
 namespace reserved
 {
 template <auto... spec>
-_CCCL_KERNEL_ATTRIBUTES void unit_test_thread_hierarchy_sync(thread_hierarchy<spec...> h)
+__global__ static void unit_test_thread_hierarchy_sync(thread_hierarchy<spec...> h) // NOLINT(cccl-hide-from-abi)
 {
   assert(h.rank(1, 0) == threadIdx.x);
   assert(h.rank(0, -1) == blockIdx.x);
@@ -486,7 +486,7 @@ UNITTEST("thread hierarchy sync")
 namespace reserved
 {
 template <auto... spec>
-_CCCL_KERNEL_ATTRIBUTES void unit_test_thread_hierarchy_inner_sync(thread_hierarchy<spec...> h)
+__global__ static void unit_test_thread_hierarchy_inner_sync(thread_hierarchy<spec...> h) // NOLINT(cccl-hide-from-abi)
 {
   h.inner().sync();
   auto h_inner = h.inner();

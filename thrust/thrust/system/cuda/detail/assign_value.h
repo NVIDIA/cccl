@@ -58,7 +58,7 @@ _CCCL_HOST_DEVICE_API void assign_value(execution_policy<DerivedPolicy>& exec, P
     Pointer1 dst;
     Pointer2 src;
 
-    _CCCL_HOST_API void operator()() const
+    _CCCL_HOST void operator()() const
     {
       if constexpr (::cuda::std::is_same_v<V1, V2>)
       {

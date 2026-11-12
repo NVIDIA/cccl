@@ -37,7 +37,7 @@ _CCCL_HOST_DEVICE_API thrust::detail::it_value_t<Pointer> get_value(execution_po
   // NV_IF_TARGET switch. See also NVBug 881631.
   struct HostPath
   {
-    _CCCL_HOST_API auto operator()(execution_policy<DerivedPolicy>& exec, Pointer ptr)
+    _CCCL_HOST auto operator()(execution_policy<DerivedPolicy>& exec, Pointer ptr)
     {
       // implemented with assign_value, which requires a type with a default constructor
       thrust::detail::it_value_t<Pointer> result;

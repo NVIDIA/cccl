@@ -291,7 +291,7 @@ public:
   _CCCL_TEMPLATE(class T)
   _CCCL_REQUIRES(::cuda::__iter_can_rebind<Iterator, T>)
   // NOLINTNEXTLINE(readability-identifier-naming): libcu++ calls this by name
-  _CCCL_HOST_DEVICE void __rebind(T* ptr)
+  _CCCL_HOST_DEVICE_API void __rebind(T* ptr)
   {
     ::cuda::__rebind_iterator_adaptor(this->base_reference(), ptr);
   }

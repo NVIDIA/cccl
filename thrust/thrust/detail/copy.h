@@ -34,8 +34,6 @@ _CCCL_HOST_API OutputIterator copy(InputIterator first, InputIterator last, Outp
 template <typename InputIterator, typename Size, typename OutputIterator>
 _CCCL_HOST_API OutputIterator copy_n(InputIterator first, Size n, OutputIterator result);
 
-// NOLINTEND(readability-redundant-declaration)
-
 namespace detail
 {
 template <typename FromSystem, typename ToSystem, typename InputIterator, typename OutputIterator>
@@ -54,6 +52,8 @@ _CCCL_HOST_DEVICE_API OutputIterator two_system_copy_n(
   Size n,
   OutputIterator result);
 } // namespace detail
+
+// NOLINTEND(readability-redundant-declaration)
 
 THRUST_NAMESPACE_END
 

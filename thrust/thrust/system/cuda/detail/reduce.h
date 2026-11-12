@@ -34,8 +34,8 @@ THRUST_NAMESPACE_BEGIN
 
 // Forward declare generic reduce circumvent circular dependency.
 template <typename DerivedPolicy, typename InputIterator, typename T, typename BinaryFunction>
-T _CCCL_HOST_DEVICE_API reduce(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec, // NOLINT(readability-redundant-declaration)
+T _CCCL_HOST_DEVICE_API reduce( // NOLINT(readability-redundant-declaration)
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
   T init,

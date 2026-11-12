@@ -883,7 +883,7 @@ UNITTEST("logical_data_untyped moveable")
 #  if _CCCL_CUDA_COMPILATION()
 namespace reserved
 {
-_CCCL_KERNEL_ATTRIBUTES void dummy() {}
+__global__ static void dummy() {} // NOLINT(cccl-hide-from-abi)
 } // namespace reserved
 
 UNITTEST("copyable stream_ctx")

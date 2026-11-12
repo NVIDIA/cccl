@@ -372,8 +372,8 @@ _CCCL_HOST_DEVICE_API OutputIterator copy_if( // NOLINT(readability-redundant-de
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename Predicate>
-_CCCL_HOST_API OutputIterator copy_if(
-  InputIterator first, // NOLINT(readability-redundant-declaration)
+_CCCL_HOST_API OutputIterator copy_if( // NOLINT(readability-redundant-declaration)
+  InputIterator first,
   InputIterator last,
   OutputIterator result,
   Predicate pred);
@@ -522,8 +522,8 @@ _CCCL_HOST_DEVICE_API OutputIterator copy_if( // NOLINT(readability-redundant-de
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
-_CCCL_HOST_API OutputIterator copy_if(
-  InputIterator1 first, // NOLINT(readability-redundant-declaration)
+_CCCL_HOST_API OutputIterator copy_if( // NOLINT(readability-redundant-declaration)
+  InputIterator1 first,
   InputIterator1 last,
   InputIterator2 stencil,
   OutputIterator result,

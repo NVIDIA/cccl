@@ -1528,20 +1528,20 @@ _CCCL_HOST_API inline auto stackable_ctx::repeat_graph_scope(
 namespace reserved
 {
 template <typename T>
-_CCCL_KERNEL_ATTRIBUTES void kernel_set(T* addr, T val)
+__global__ static void kernel_set(T* addr, T val) // NOLINT(cccl-hide-from-abi)
 {
   printf("SETTING ADDR %p at %d\n", addr, val);
   *addr = val;
 }
 
 template <typename T>
-_CCCL_KERNEL_ATTRIBUTES void kernel_add(T* addr, T val)
+__global__ static void kernel_add(T* addr, T val) // NOLINT(cccl-hide-from-abi)
 {
   *addr += val;
 }
 
 template <typename T>
-_CCCL_KERNEL_ATTRIBUTES void kernel_check_value(T* addr, T val)
+__global__ static void kernel_check_value(T* addr, T val) // NOLINT(cccl-hide-from-abi)
 {
   printf("CHECK %d EXPECTED %d\n", *addr, val);
   if (*addr != val)

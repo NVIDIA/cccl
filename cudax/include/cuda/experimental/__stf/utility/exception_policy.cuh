@@ -2568,7 +2568,7 @@ inline constexpr bool __has_pure_claim<__policy_and<_L, _R>> = __has_pure_claim<
 
 // Forward declaration: `|` and `*` reuse this for arm answer interpretation (defined below).
 template <class _Expr, class _P, class _Fn>
-_CCCL_FORCEINLINE _Expr
+_CCCL_HOST_API _CCCL_FORCEINLINE _Expr
 __interpret_answer(_P& __policy, const ::std::exception* __exception, ::cuda::std::source_location __loc, _Fn& __fn);
 
 // The answer type of `|` and `*` is fixed by the callable alone: the callable's result, or the
@@ -8006,8 +8006,8 @@ _CCCL_HOST_API auto operator->*(with_location<exit> where, F&& f)
     int exceptions = ::std::uncaught_exceptions();
 
     // F can be a reference, so preserve its value category.
-    _CCCL_HOST result(F&& f,
-                      ::cuda::std::source_location loc) // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    _CCCL_HOST result(F&& f, // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+                      ::cuda::std::source_location loc)
         : f(::cuda::std::forward<F>(f))
         , loc(loc)
     {}

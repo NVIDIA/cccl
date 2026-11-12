@@ -37,8 +37,8 @@ namespace cuda_cub
 {
 // Forward declare since we need it in the implementation non_trivial_cross_system_copy_n
 template <class System, class InputIterator, class Size, class OutputIterator>
-OutputIterator _CCCL_HOST_DEVICE_API copy_n(
-  execution_policy<System>& system, // NOLINT(readability-redundant-declaration)
+OutputIterator _CCCL_HOST_DEVICE_API copy_n( // NOLINT(readability-redundant-declaration)
+  execution_policy<System>& system,
   InputIterator first,
   Size n,
   OutputIterator result);

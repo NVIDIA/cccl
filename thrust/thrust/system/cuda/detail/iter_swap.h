@@ -53,7 +53,7 @@ _CCCL_HOST_DEVICE_API inline void iter_swap(thrust::cuda::execution_policy<Deriv
   // NV_IF_TARGET switch. See also NVBug 881631.
   struct host_path
   {
-    _CCCL_HOST_API void operator()(execution_policy<DerivedPolicy>& exec, Pointer1 a, Pointer2 b) const
+    _CCCL_HOST void operator()(execution_policy<DerivedPolicy>& exec, Pointer1 a, Pointer2 b) const
     {
       const cudaError status =
         detail::triple_chevron(1, 1, 0, stream(exec)).doit(detail::iter_swap_kernel<Pointer1, Pointer2>, a, b);

@@ -284,7 +284,7 @@ private:
 namespace reserved
 {
 template <typename T>
-_CCCL_KERNEL_ATTRIBUTES void unit_test_range_func(T n)
+__global__ static void unit_test_range_func(T n) // NOLINT(cccl-hide-from-abi)
 {
   const Range range(n);
   int sum = 0;
@@ -507,7 +507,7 @@ UNITTEST("StridedRange loop")
 };
 
 template <typename T>
-_CCCL_KERNEL_ATTRIBUTES void unit_test_strided_range_func(T n)
+__global__ static void unit_test_strided_range_func(T n) // NOLINT(cccl-hide-from-abi)
 {
   const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
