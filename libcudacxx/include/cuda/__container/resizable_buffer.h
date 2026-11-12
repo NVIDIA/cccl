@@ -100,7 +100,7 @@ private:
   template <class _Up>
   [[nodiscard]] _CCCL_HOST_API __resizable_buffer<_Up, _Properties...> __as_type() &&
   {
-    auto __alloc = ::cuda::std::move(*this).__release();
+    auto __alloc = ::cuda::std::move(*this).__release_allocation();
     ::cuda::__allocation_info<_Up, _Properties...> __new_alloc{
       __alloc.stream,
       ::cuda::std::move(__alloc.mr),
@@ -183,9 +183,9 @@ public:
   //! up to a multiple of the alignment.
   //!
   //! @warning After this call, the buffer can only be assigned to or destroyed.
-  [[nodiscard]] _CCCL_HOST_API typename __base_t::__allocation_info_t __release() && noexcept
+  [[nodiscard]] _CCCL_HOST_API typename __base_t::__allocation_info_t __release_allocation() && noexcept
   {
-    auto __alloc     = ::cuda::std::move(static_cast<__base_t&>(*this)).__release();
+    auto __alloc     = ::cuda::std::move(static_cast<__base_t&>(*this)).__release_allocation();
     __alloc.capacity = ::cuda::std::exchange(__capacity_, 0);
     return __alloc;
   }

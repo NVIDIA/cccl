@@ -223,7 +223,7 @@ private:
   template <class _Up>
   [[nodiscard]] _CCCL_HOST_API buffer<_Up, _Properties...> __as_type() &&
   {
-    auto __alloc = ::cuda::std::move(*this).__release();
+    auto __alloc = ::cuda::std::move(*this).__release_allocation();
     ::cuda::__allocation_info<_Up, _Properties...> __new_alloc{
       __alloc.stream,
       ::cuda::std::move(__alloc.mr),
@@ -828,7 +828,7 @@ public:
   //! `size * sizeof(T)` rounded up to a multiple of `alignment`.
   //!
   //! @warning After this call, the buffer can only be assigned to or destroyed.
-  [[nodiscard]] _CCCL_HOST_API __allocation_info_t __release() && noexcept
+  [[nodiscard]] _CCCL_HOST_API __allocation_info_t __release_allocation() && noexcept
   {
     return ::cuda::std::move(__buf_).__release_allocation();
   }
