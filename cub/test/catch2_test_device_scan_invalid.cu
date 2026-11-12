@@ -98,7 +98,7 @@ struct merge_segments_op
       : error_counts_{error_counts}
   {}
 
-  __device__ bool check_inputs(segment left, segment right)
+  __device__ bool check_inputs(segment left, segment right) const
   {
     // Can't avoid left == right check due to potential zero-initialized segments.
     if (left.end != right.begin || left == right)
@@ -123,7 +123,7 @@ struct merge_segments_op
     return false;
   }
 
-  __host__ __device__ segment operator()(segment left, segment right)
+  __host__ __device__ segment operator()(segment left, segment right) const
   {
     bool error_found = false;
     NV_IF_TARGET(NV_IS_DEVICE, (error_found = check_inputs(left, right);));
@@ -133,7 +133,7 @@ struct merge_segments_op
     }
     return {left.begin, right.end};
   }
-  __host__ __device__ primitive_t operator()(primitive_t p_left, primitive_t p_right)
+  __host__ __device__ primitive_t operator()(primitive_t p_left, primitive_t p_right) const
   {
     const auto left  = dangerous_bit_cast<segment>(p_left);
     const auto right = dangerous_bit_cast<segment>(p_right);
