@@ -107,7 +107,7 @@ struct tracking_resource
 template <class Buf, class = void>
 inline constexpr bool has_release = false;
 template <class Buf>
-inline constexpr bool has_release<Buf, cuda::std::void_t<decltype(cuda::std::declval<Buf>().release())>> = true;
+inline constexpr bool has_release<Buf, cuda::std::void_t<decltype(cuda::std::declval<Buf>().__release())>> = true;
 
 template <class Buf, class Byte, class = void>
 inline constexpr bool has_as_bytes = false;
@@ -162,7 +162,7 @@ C2H_CCCLRT_TEST("cuda::buffer release, acquire and byte conversion", "[container
       const auto* allocation = buf.data();
       const auto alignment   = buf.alignment();
 
-      auto released = cuda::std::move(buf).release();
+      auto released = cuda::std::move(buf).__release();
       CHECK(released.ptr == allocation);
       CHECK(released.capacity == 6);
       CHECK(released.size == 6);
@@ -182,7 +182,7 @@ C2H_CCCLRT_TEST("cuda::buffer release, acquire and byte conversion", "[container
     SECTION("release of an empty buffer")
     {
       Buffer buf{stream, resource, 0, cuda::no_init};
-      auto released = cuda::std::move(buf).release();
+      auto released = cuda::std::move(buf).__release();
       CHECK(released.ptr == nullptr);
       CHECK(released.capacity == 0);
       CHECK(released.size == 0);
@@ -337,7 +337,7 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer release, acquire and byte conversion",
       const auto size        = GENERATE(cuda::std::size_t{0}, cuda::std::size_t{3}, cuda::std::size_t{6});
       buf.resize_unsynchronized(size, cuda::no_init);
 
-      auto released = cuda::std::move(buf).release();
+      auto released = cuda::std::move(buf).__release();
       CHECK(released.ptr == allocation);
       CHECK(released.size == size);
       CHECK(released.capacity == 6);
@@ -403,7 +403,7 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer release, acquire and byte conversion",
     {
       Buffer buf{stream, resource, 512, cuda::no_init, env};
       buf.resize_unsynchronized(1, cuda::no_init);
-      auto released      = cuda::std::move(buf).release();
+      auto released      = cuda::std::move(buf).__release();
       auto acquired      = cuda::__acquire_resizable_buffer(cuda::std::move(released));
       auto bytes         = cuda::std::move(acquired).template as_bytes<cuda::std::byte>();
       Buffer const typed = cuda::std::move(bytes).template as_type<T>();
@@ -414,7 +414,7 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer release, acquire and byte conversion",
     SECTION("empty allocation round trips")
     {
       Buffer buf{stream, resource, 0, cuda::no_init, env};
-      auto released = cuda::std::move(buf).release();
+      auto released = cuda::std::move(buf).__release();
       CHECK(released.ptr == nullptr);
       CHECK(released.size == 0);
       CHECK(released.capacity == 0);

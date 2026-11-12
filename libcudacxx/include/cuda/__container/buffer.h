@@ -811,7 +811,7 @@ public:
   //! `size * sizeof(T)` rounded up to a multiple of `alignment`.
   //!
   //! @warning After this call, the buffer can only be assigned to or destroyed.
-  [[nodiscard]] _CCCL_HOST_API __allocation_info_t release() && noexcept
+  [[nodiscard]] _CCCL_HOST_API __allocation_info_t __release() && noexcept
   {
     return ::cuda::std::move(__buf_).__release_allocation();
   }
