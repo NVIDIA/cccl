@@ -9,6 +9,10 @@
 
 #include <cuda/std/memory>
 
+// Exercise the check inside its supported namespace.
+namespace cuda::std::test
+{
+
 // CHECK-MESSAGES-NOT: {{:[0-9]+:[0-9]+: warning:}}
 
 template <typename T>
@@ -220,4 +224,6 @@ inline void instantiate(int& integer, unrelated& object)
 
 // CHECK-FIXES-NOT: #include
 // CHECK-FIXES-NOT: DiagnosticName:
+} // namespace cuda::std::test
+
 // clang-format on

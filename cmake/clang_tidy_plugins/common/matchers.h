@@ -7,10 +7,18 @@
 
 namespace clang::tidy::cccl::util
 {
-using file_matching_type = decltype(ast_matchers::isExpansionInFileMatching(""));
+using namespace ast_matchers;
+
+using file_matching_type = decltype(isExpansionInFileMatching(""));
 
 AST_MATCHER_FUNCTION(file_matching_type, isExpansionInTestOrExampleFile)
 {
-  return ast_matchers::isExpansionInFileMatching(".*/(test|c2h|examples)/.*");
+  return isExpansionInFileMatching(".*/(test|c2h|examples)/.*");
+}
+
+AST_MATCHER_FUNCTION(DeclarationMatcher, isInNamespaceCudaStd)
+{
+  // Require a namespace boundary so cuda::std_extra does not match.
+  return hasDeclContext(namespaceDecl(matchesName("^::cuda::std($|::)")));
 }
 } // namespace clang::tidy::cccl::util

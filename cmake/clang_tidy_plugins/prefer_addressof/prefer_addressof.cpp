@@ -251,7 +251,8 @@ public:
               //
               // Those are templated, but due to a series of prior type unwrapping and checking
               // we are pretty confident that the types passed to PTX are OK.
-              unless(hasAncestor(asmStmt())))
+              unless(hasAncestor(asmStmt())),
+              hasAncestor(util::isInNamespaceCudaStd()))
         .bind(BIND),
       this);
   }

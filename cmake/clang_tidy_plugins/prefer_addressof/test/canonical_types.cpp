@@ -9,6 +9,10 @@
 
 #include <cuda/std/memory>
 
+// Exercise the check inside its supported namespace.
+namespace cuda::std::test
+{
+
 // CHECK-MESSAGES-NOT: {{:[0-9]+:[0-9]+: warning:}}
 
 template <class T>
@@ -91,6 +95,8 @@ auto pointee_address(pointer_alias<T> value)
   // CHECK-FIXES-NEXT: ReplacementText: {{'?}}::cuda::std::addressof(*value){{'?}}{{$}}
 }
 
+} // namespace cuda::std::test
+
 // Model proxy declarations without requiring a Thrust device backend.
 namespace thrust
 {
@@ -125,6 +131,8 @@ struct reference {};
 }
 }
 
+namespace cuda::std::test
+{
 template <class T>
 auto thrust_reference_address(thrust::reference<T>& value)
 {
@@ -229,4 +237,6 @@ auto derived_proxy_address(derived_proxy<T>& value)
 
 // CHECK-FIXES-NOT: #include
 // CHECK-FIXES-NOT: DiagnosticName:
+} // namespace cuda::std::test
+
 // clang-format on
