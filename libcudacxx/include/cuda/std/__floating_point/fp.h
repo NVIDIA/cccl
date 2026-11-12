@@ -36,7 +36,6 @@
 #include <cuda/std/__floating_point/overflow_handler.h>
 #include <cuda/std/__floating_point/properties.h>
 #include <cuda/std/__floating_point/storage.h>
-#include <cuda/std/__floating_point/storage_order.h>
 #include <cuda/std/__floating_point/traits.h>
 // IWYU pragma: end_exports
 

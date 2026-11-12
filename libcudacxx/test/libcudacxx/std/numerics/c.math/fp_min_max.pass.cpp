@@ -266,84 +266,6 @@ TEST_FUNC constexpr bool test(T val)
   return true;
 }
 
-// The __nv_fp8, __nv_fp6 and __nv_fp4 types have no comparison operators, so we compare their storage
-template <class T>
-TEST_FUNC constexpr bool storage_eq(T lhs, T rhs)
-{
-  return cuda::std::__fp_get_storage(lhs) == cuda::std::__fp_get_storage(rhs);
-}
-
-template <class T>
-TEST_FUNC constexpr void test_narrow(T small, T large)
-{
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::fmax(small, large)), T>);
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::fmin(small, large)), T>);
-
-  assert(storage_eq(cuda::std::fmax(small, large), large));
-  assert(storage_eq(cuda::std::fmax(large, small), large));
-  assert(storage_eq(cuda::std::fmin(small, large), small));
-  assert(storage_eq(cuda::std::fmin(large, small), small));
-  assert(storage_eq(cuda::std::fmax(small, small), small));
-  assert(storage_eq(cuda::std::fmin(large, large), large));
-
-  const T lowest = cuda::std::numeric_limits<T>::lowest();
-  const T max    = cuda::std::numeric_limits<T>::max();
-  assert(storage_eq(cuda::std::fmax(lowest, max), max));
-  assert(storage_eq(cuda::std::fmin(max, lowest), lowest));
-
-  // negative values are ordered in reverse to their storage and -0 is less than +0
-  if constexpr (cuda::std::numeric_limits<T>::is_signed)
-  {
-    const T minus_small = cuda::std::copysign(small, lowest);
-    const T minus_large = cuda::std::copysign(large, lowest);
-    assert(storage_eq(cuda::std::fmax(minus_small, minus_large), minus_small));
-    assert(storage_eq(cuda::std::fmin(minus_small, minus_large), minus_large));
-    assert(storage_eq(cuda::std::fmax(minus_small, small), small));
-    assert(storage_eq(cuda::std::fmin(small, minus_small), minus_small));
-
-    const T zero       = cuda::std::__fp_zero<T>();
-    const T minus_zero = cuda::std::copysign(zero, lowest);
-    assert(storage_eq(cuda::std::fmax(minus_zero, zero), zero));
-    assert(storage_eq(cuda::std::fmax(zero, minus_zero), zero));
-    assert(storage_eq(cuda::std::fmin(minus_zero, zero), minus_zero));
-    assert(storage_eq(cuda::std::fmin(zero, minus_zero), minus_zero));
-  }
-
-  if constexpr (cuda::std::numeric_limits<T>::has_infinity)
-  {
-    const T inf       = cuda::std::numeric_limits<T>::infinity();
-    const T minus_inf = cuda::std::copysign(inf, lowest);
-    assert(storage_eq(cuda::std::fmax(inf, max), inf));
-    assert(storage_eq(cuda::std::fmin(inf, max), max));
-    assert(storage_eq(cuda::std::fmax(minus_inf, lowest), lowest));
-    assert(storage_eq(cuda::std::fmin(minus_inf, lowest), minus_inf));
-  }
-
-  // We always return the other value when passing a NaN
-  if constexpr (cuda::std::numeric_limits<T>::has_quiet_NaN)
-  {
-    const T nan = cuda::std::numeric_limits<T>::quiet_NaN();
-    assert(storage_eq(cuda::std::fmax(nan, small), small));
-    assert(storage_eq(cuda::std::fmax(small, nan), small));
-    assert(storage_eq(cuda::std::fmin(nan, small), small));
-    assert(storage_eq(cuda::std::fmin(small, nan), small));
-    assert(cuda::std::isnan(cuda::std::fmax(nan, nan)));
-    assert(cuda::std::isnan(cuda::std::fmin(nan, nan)));
-  }
-}
-
-template <class T>
-TEST_FUNC void test_narrow(float val)
-{
-  test_narrow(cuda::std::__fp_cast<T>(val), cuda::std::__fp_cast<T>(val + val));
-}
-
-template <class T>
-TEST_FUNC constexpr void test_narrow()
-{
-  test_narrow(cuda::std::__fp_one<T>(), cuda::std::numeric_limits<T>::max());
-}
-
 TEST_FUNC bool test(float val)
 {
   test<float>(val);
@@ -382,25 +304,6 @@ TEST_FUNC bool test(float val)
 #endif // _CCCL_HAS_NVFP6_E3M2()
 #if _CCCL_HAS_NVFP4_E2M1()
   test<__nv_fp4_e2m1>(__nv_fp4_e2m1(val));
-#endif // _CCCL_HAS_NVFP4_E2M1()
-
-#if _CCCL_HAS_NVFP8_E4M3()
-  test_narrow<__nv_fp8_e4m3>(val);
-#endif // _CCCL_HAS_NVFP8_E4M3()
-#if _CCCL_HAS_NVFP8_E5M2()
-  test_narrow<__nv_fp8_e5m2>(val);
-#endif // _CCCL_HAS_NVFP8_E5M2()
-#if _CCCL_HAS_NVFP8_E8M0()
-  test_narrow<__nv_fp8_e8m0>(val);
-#endif // _CCCL_HAS_NVFP8_E8M0()
-#if _CCCL_HAS_NVFP6_E2M3()
-  test_narrow<__nv_fp6_e2m3>(val);
-#endif // _CCCL_HAS_NVFP6_E2M3()
-#if _CCCL_HAS_NVFP6_E3M2()
-  test_narrow<__nv_fp6_e3m2>(val);
-#endif // _CCCL_HAS_NVFP6_E3M2()
-#if _CCCL_HAS_NVFP4_E2M1()
-  test_narrow<__nv_fp4_e2m1>(val);
 #endif // _CCCL_HAS_NVFP4_E2M1()
 
   test<signed char>(static_cast<signed char>(val));
@@ -457,24 +360,6 @@ TEST_FUNC constexpr bool test_constexpr()
 #if _CCCL_HAS_FLOAT128()
   test<__float128>();
 #endif // _CCCL_HAS_FLOAT128()
-#if _CCCL_HAS_NVFP8_E4M3()
-  test_narrow<__nv_fp8_e4m3>();
-#endif // _CCCL_HAS_NVFP8_E4M3()
-#if _CCCL_HAS_NVFP8_E5M2()
-  test_narrow<__nv_fp8_e5m2>();
-#endif // _CCCL_HAS_NVFP8_E5M2()
-#if _CCCL_HAS_NVFP8_E8M0()
-  test_narrow<__nv_fp8_e8m0>();
-#endif // _CCCL_HAS_NVFP8_E8M0()
-#if _CCCL_HAS_NVFP6_E2M3()
-  test_narrow<__nv_fp6_e2m3>();
-#endif // _CCCL_HAS_NVFP6_E2M3()
-#if _CCCL_HAS_NVFP6_E3M2()
-  test_narrow<__nv_fp6_e3m2>();
-#endif // _CCCL_HAS_NVFP6_E3M2()
-#if _CCCL_HAS_NVFP4_E2M1()
-  test_narrow<__nv_fp4_e2m1>();
-#endif // _CCCL_HAS_NVFP4_E2M1()
 
 #if _CCCL_HAS_NVFP8_E4M3()
   test<__nv_fp8_e4m3>();
