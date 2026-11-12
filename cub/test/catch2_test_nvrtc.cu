@@ -91,6 +91,7 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
     #include <cub/util_type.cuh>
     #include <cub/util_vsmem.cuh>
 
+    #include <thrust/detail/raw_reference_cast.h>
     #include <thrust/iterator/constant_iterator.h>
     #include <thrust/iterator/counting_iterator.h>
     #include <thrust/iterator/discard_iterator.h>
@@ -314,6 +315,15 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
 
       // Test block store
       block_store_t(block_store_storage).Store(ptr, items);
+
+      // Test thrust::raw_reference_cast on a zip iterator reference, as used by CUB's transform kernel
+      const auto zip_refs =
+        thrust::raw_reference_cast(thrust::make_zip_iterator(ptr, ptr + threads_per_block)[threadIdx.x]);
+      if (&::cuda::std::get<0>(zip_refs) != ptr + threadIdx.x
+          || &::cuda::std::get<1>(zip_refs) != ptr + threads_per_block + threadIdx.x)
+      {
+        atomicAdd(errors, 1);
+      }
     }
 )asdf";
   const char* name = "test";

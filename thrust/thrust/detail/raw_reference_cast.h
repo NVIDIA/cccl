@@ -159,6 +159,12 @@ _CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T&&
   return ::cuda::std::forward<T>(t);
 }
 
+namespace detail
+{
+template <typename ResultTuple>
+struct raw_reference_caster;
+} // namespace detail
+
 template <typename... Ts>
 _CCCL_HOST_DEVICE auto raw_reference_cast(detail::tuple_of_iterator_references<Ts...> t) ->
   typename detail::raw_reference<detail::tuple_of_iterator_references<Ts...>>::type
@@ -167,16 +173,27 @@ _CCCL_HOST_DEVICE auto raw_reference_cast(detail::tuple_of_iterator_references<T
   {
     using ResultTuple =
       ::cuda::std::tuple<typename detail::raw_reference_detail::raw_reference_tuple_helper<Ts>::type...>;
-    return ::cuda::std::apply(
-      [](auto&&... refs) {
-        return ResultTuple{raw_reference_cast(::cuda::std::forward<decltype(refs)>(refs))...};
-      },
-      static_cast<::cuda::std::tuple<Ts...>&>(t));
+    return ::cuda::std::apply(detail::raw_reference_caster<ResultTuple>{}, static_cast<::cuda::std::tuple<Ts...>&>(t));
   }
   else
   {
     return t;
   }
 }
+
+namespace detail
+{
+// Calls raw_reference_cast on each element of a tuple of references. A function object rather than a generic lambda,
+// which NVRTC < 13.2 rejects in device code without -default-device.
+template <typename ResultTuple>
+struct raw_reference_caster
+{
+  template <typename... Refs>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API ResultTuple operator()(Refs&&... refs) const
+  {
+    return ResultTuple{raw_reference_cast(::cuda::std::forward<Refs>(refs))...};
+  }
+};
+} // namespace detail
 
 THRUST_NAMESPACE_END
