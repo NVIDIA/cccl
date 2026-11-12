@@ -155,6 +155,16 @@ template <typename T>
     index + 1 < type_loc.getNumArgs() ? type_loc.getArgLoc(index + 1) : NO_ARG));
 }
 
+template <typename ExprT>
+[[nodiscard]] FixItHint remove_parameter(const MatchFinder::MatchResult& result, const ExprT& expr, std::uint32_t index)
+{
+  constexpr std::optional<TemplateArgumentLoc> NO_ARG = std::nullopt;
+  const auto args                                     = expr.template_arguments();
+
+  return FixItHint::CreateRemoval(remove_node(
+    result, index > 0 ? args[index - 1] : NO_ARG, args[index], index + 1 < args.size() ? args[index + 1] : NO_ARG));
+}
+
 class SimplifyTypeTraitsCheck final : public ClangTidyCheck
 {
   static constexpr StringRef SIMPLIFYING_BIND{""};
@@ -169,6 +179,8 @@ class SimplifyTypeTraitsCheck final : public ClangTidyCheck
   static constexpr StringRef BOOL_LITERAL_BIND{"l"};
 
   static constexpr StringRef MAKE_INDEX_SEQUENCE_BIND{"m"};
+
+  static constexpr StringRef IS_SAME_VOID_BIND{"v"};
 
 public:
   using ClangTidyCheck::ClangTidyCheck;
@@ -274,6 +286,24 @@ public:
                    .bind(MAKE_INDEX_SEQUENCE_BIND),
                  hasTemplateArgumentLoc(/*Index=*/0, isSizeOfTypePack()))),
       this);
+
+    // ==========================================================================================
+
+    {
+      const auto void_arg =
+        hasTypeLoc(loc(qualType(builtinType(), voidType(), unless(isConstQualified()), unless(isVolatileQualified()))));
+      const auto has_void_arg =
+        anyOf(hasTemplateArgumentLoc(/*Index=*/0, void_arg), hasTemplateArgumentLoc(/*Index=*/1, void_arg));
+
+      finder->addMatcher(
+        traverse(
+          TK_IgnoreUnlessSpelledInSource,
+          expr(
+            anyOf(declRefExpr(to(varDecl(hasName("::cuda::std::is_same_v"))), has_void_arg),
+                  unresolvedLookupExpr(hasAnyDeclaration(namedDecl(hasName("::cuda::std::is_same_v"))), has_void_arg)))
+            .bind(IS_SAME_VOID_BIND)),
+        this);
+    }
   }
 
   void check(const MatchFinder::MatchResult& result) override
@@ -402,6 +432,41 @@ public:
         << FixItHint::CreateReplacement(
              CharSourceRange::getCharRange(outer_loc->getBeginLoc(), outer_loc->getLAngleLoc()), alias_name)
         << FixItHint::CreateReplacement(size->getSourceRange(), pack->getNameAsString() + "...");
+      return;
+    }
+
+    if (const auto* const expr = nodes.getNodeAs<Expr>(IS_SAME_VOID_BIND))
+    {
+      const auto emit_fix = [&](const auto& ref) {
+        const auto* args = ref.getTemplateArgs();
+        const auto first = args[0].getArgument().getAsType();
+        // Important: NOT first->isBuiltinType(), as this call isa<BuiltinType> on the
+        // *canonical* type. If first is a type alias:
+        //
+        // using void_alias = void; // <- first
+        // cuda::std::is_same_v<void_alias, void>;
+        //
+        // Then the canonical type is void. Instead we want to ask whether the instantaneous
+        // type in the template ("void_alias") is void. Now technically, with the above
+        // removing void_alias is also correct, since both are demonstrably void but we should
+        // follow the letter of the law here and only remove the literal "void" from the
+        // arguments.
+        const auto index = isa<BuiltinType>(first) && first->isVoidType() ? 0U : 1U;
+
+        diag(ref.getBeginLoc(), "use simplified type alias") //
+          << FixItHint::CreateReplacement(
+               CharSourceRange::getCharRange(ref.getBeginLoc(), ref.getLAngleLoc()), "::cuda::std::is_void_v")
+          << remove_parameter(result, ref, index);
+      };
+
+      if (const auto* const ref = dyn_cast<DeclRefExpr>(expr))
+      {
+        emit_fix(*ref);
+      }
+      else
+      {
+        emit_fix(*cast<UnresolvedLookupExpr>(expr));
+      }
       return;
     }
 

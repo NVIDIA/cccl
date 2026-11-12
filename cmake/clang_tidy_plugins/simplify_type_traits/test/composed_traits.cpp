@@ -183,7 +183,7 @@ static_assert(cuda::std::is_same_v<reference_cvref<const volatile int(&)[3]>, in
 static_assert(cuda::std::is_same_v<decay_reference<const int(&)[3]>, const int*>);
 static_assert(cuda::std::is_same_v<decay_reference<int(&)()>, int(*)()>);
 static_assert(cuda::std::is_same_v<decay_decay<const int[3]>, const int*>);
-static_assert(cuda::std::is_same_v<decay_decay<void>, void>);
+static_assert(cuda::std::is_void_v<decay_decay<void>>);
 static_assert(cuda::std::is_same_v<unwrap_decay<const cuda::std::reference_wrapper<int>&>, int&>);
 static_assert(cuda::std::is_same_v<unwrap_decay<const int&>, int>);
 static_assert(cuda::std::is_same_v<pointer_reference<const int&>, const int*>);
@@ -192,7 +192,7 @@ static_assert(cuda::std::is_same_v<pointer_reference<void>, void*>);
 static_assert(cuda::std::is_same_v<pointer_reference<int() const>, int() const>);
 static_assert(cuda::std::is_same_v<lvalue_rvalue<int&&>, int&>);
 static_assert(cuda::std::is_same_v<rvalue_lvalue<int>, int&>);
-static_assert(cuda::std::is_same_v<lvalue_rvalue<void>, void>);
+static_assert(cuda::std::is_void_v<lvalue_rvalue<void>>);
 static_assert(cuda::std::is_same_v<rvalue_lvalue<int() const>, int() const>);
 static_assert(cuda::std::is_same_v<concrete_cv, const volatile int>);
 static_assert(cuda::std::is_same_v<concrete_decay, const int*>);
@@ -275,11 +275,11 @@ template <typename T>
 using local_inner = cuda::std::remove_cv_t<local_decay<T>>;
 
 static_assert(cuda::std::is_same_v<cv_decay<const int(&)[3]>, const int*>);
-static_assert(cuda::std::is_same_v<cv_decay<void>, void>);
+static_assert(cuda::std::is_void_v<cv_decay<void>>);
 static_assert(cuda::std::is_same_v<cv_decay<int() const>, int() const>);
 static_assert(cuda::std::is_same_v<reference_decay<int(&)()>, int(*)()>);
 static_assert(cuda::std::is_same_v<reference_decay<const int(&)[3]>, const int*>);
-static_assert(cuda::std::is_same_v<reference_decay<void>, void>);
+static_assert(cuda::std::is_void_v<reference_decay<void>>);
 static_assert(cuda::std::is_same_v<cvref_decay<const volatile int&>, int>);
 static_assert(cuda::std::is_same_v<cvref_decay<const int(&)[3]>, const int*>);
 static_assert(cuda::std::is_same_v<cvref_decay<int() const>, int() const>);
@@ -363,13 +363,13 @@ using local_outer = local_all<cuda::std::remove_extent_t<T>>;
 
 static_assert(cuda::std::is_same_v<all_all<const int[2][3]>, const int>);
 static_assert(cuda::std::is_same_v<all_all<int*>, int*>);
-static_assert(cuda::std::is_same_v<all_all<void>, void>);
+static_assert(cuda::std::is_void_v<all_all<void>>);
 static_assert(cuda::std::is_same_v<all_one<volatile int[][3]>, volatile int>);
 static_assert(cuda::std::is_same_v<all_one<int(&)[2][3]>, int(&)[2][3]>);
 static_assert(cuda::std::is_same_v<all_one<int()>, int()>);
 static_assert(cuda::std::is_same_v<one_all<const volatile int[2][3]>, const volatile int>);
 static_assert(cuda::std::is_same_v<one_all<int(&)[2][3]>, int(&)[2][3]>);
-static_assert(cuda::std::is_same_v<one_all<void>, void>);
+static_assert(cuda::std::is_void_v<one_all<void>>);
 static_assert(cuda::std::is_same_v<concrete_all_all, const int>);
 static_assert(cuda::std::is_same_v<concrete_all_one, volatile int>);
 static_assert(cuda::std::is_same_v<concrete_one_all, int(&)[2][3]>);
@@ -497,7 +497,7 @@ static_assert(cuda::std::is_same_v<repeated_remove_reference_t<const int&&>, con
 static_assert(cuda::std::is_same_v<repeated_remove_cvref_t<const volatile int&>, int>);
 static_assert(cuda::std::is_same_v<repeated_remove_cvref_t<const int(&)[3]>, int[3]>);
 static_assert(cuda::std::is_same_v<repeated_add_lvalue_reference_t<int&&>, int&>);
-static_assert(cuda::std::is_same_v<repeated_add_lvalue_reference_t<void>, void>);
+static_assert(cuda::std::is_void_v<repeated_add_lvalue_reference_t<void>>);
 static_assert(cuda::std::is_same_v<repeated_add_rvalue_reference_t<int>, int&&>);
 static_assert(cuda::std::is_same_v<repeated_add_rvalue_reference_t<int&>, int&>);
 static_assert(cuda::std::is_same_v<repeated_add_rvalue_reference_t<int() const>, int() const>);
