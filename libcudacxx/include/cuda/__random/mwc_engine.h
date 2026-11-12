@@ -221,6 +221,7 @@ public:
       }
       return;
     }
+
     // One transition multiplies the state by b^-1 = a*b^(lag-1) modulo m
     __state __power{};
     __power[_Lag - 1] = _Multiplier;
