@@ -414,10 +414,11 @@ CUB_TEST_CASE("LoadDirectBlockedVectorized converts the items to the destination
 }
 
 template <int ThreadsInBlock, int VecSize, cub::CacheLoadModifier Modifier, int ItemsPerThread, typename InputT, typename T>
-__global__ void load_direct_striped_vectorized_kernel(const InputT* input, T* output)
+__global__ void load_direct_striped_vectorized_kernel(const InputT* input, int block_offset, T* output)
 {
   T data[ItemsPerThread];
-  cub::LoadDirectStripedVectorized<ThreadsInBlock, VecSize, Modifier>(static_cast<int>(threadIdx.x), input, data);
+  cub::LoadDirectStripedVectorized<ThreadsInBlock, VecSize, Modifier>(
+    static_cast<int>(threadIdx.x), input, block_offset, data);
   for (int i = 0; i < ItemsPerThread; i++)
   {
     output[(threadIdx.x + ThreadsInBlock * (i / VecSize)) * VecSize + i % VecSize] = data[i];
@@ -425,7 +426,8 @@ __global__ void load_direct_striped_vectorized_kernel(const InputT* input, T* ou
 }
 
 template <int VecSize, cub::CacheLoadModifier Modifier = cub::CacheLoadModifier::LOAD_DEFAULT, typename T, typename InputT>
-void test_load_direct_striped_vectorized(const c2h::device_vector<T>& d_expected, const InputT* input)
+void test_load_direct_striped_vectorized(
+  const c2h::device_vector<T>& d_expected, const InputT* input, int block_offset = 0)
 {
   constexpr int items_per_thread = 8;
   constexpr int threads_in_block = 64;
@@ -433,7 +435,7 @@ void test_load_direct_striped_vectorized(const c2h::device_vector<T>& d_expected
 
   c2h::device_vector<T> d_output(d_expected.size(), thrust::no_init);
   load_direct_striped_vectorized_kernel<threads_in_block, VecSize, Modifier, items_per_thread>
-    <<<1, threads_in_block>>>(input, thrust::raw_pointer_cast(d_output.data()));
+    <<<1, threads_in_block>>>(input, block_offset, thrust::raw_pointer_cast(d_output.data()));
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(d_expected == d_output);
@@ -459,6 +461,24 @@ CUB_TEST("LoadDirectStripedVectorized loads a striped arrangement of vectors of 
   test_load_direct_striped_vectorized<2>(d_expected, input);
   test_load_direct_striped_vectorized<4>(d_expected, input);
   test_load_direct_striped_vectorized<4, cub::CacheLoadModifier::LOAD_LDG>(d_expected, input);
+}
+
+// block_offset is a multiple of the vectors, thus the vectors keep the alignment of the input
+CUB_TEST(
+  "LoadDirectStripedVectorized loads the vectors block_offset items after the input", "[load][block]", CUB_SMALL, types)
+{
+  using type              = c2h::get<0, TestType>;
+  constexpr int tile_size = 8 * 64;
+
+  const int offset       = GENERATE(0, 1);
+  const int block_offset = GENERATE_COPY(8, 3 * tile_size);
+  c2h::device_vector<type> d_input(offset + block_offset + tile_size);
+  c2h::gen(C2H_SEED(1), d_input);
+  const c2h::device_vector<type> d_expected(d_input.begin() + offset + block_offset, d_input.end());
+  const type* input = thrust::raw_pointer_cast(d_input.data()) + offset;
+
+  test_load_direct_striped_vectorized<4>(d_expected, input, block_offset);
+  test_load_direct_striped_vectorized<4, cub::CacheLoadModifier::LOAD_LDG>(d_expected, input, block_offset);
 }
 
 CUB_TEST_CASE("LoadDirectStripedVectorized converts the items to the destination type", "[load][block]", CUB_SMALL)

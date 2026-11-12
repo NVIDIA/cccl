@@ -415,7 +415,8 @@ load_direct_striped_vectorized_aligned(int linear_tid, const InputT* block_src_p
 } // namespace detail
 
 //! @rst
-//! Load a linear segment of items into a striped arrangement of vectors across the thread block.
+//! Load a linear segment of items into a striped arrangement of vectors across the thread block, from ``block_offset``
+//! items after ``block_src_ptr``.
 //!
 //! .. versionadded:: 3.6.0
 //!
@@ -424,8 +425,9 @@ load_direct_striped_vectorized_aligned(int linear_tid, const InputT* block_src_p
 //! (*i* + (*block-threads* * (*items-per-thread* / ``VecSize`` - 1))). With ``VecSize == 1``, this is the arrangement
 //! of ``LoadDirectStriped``.
 //!
-//! Each vector is loaded as a ``CubVector<InputT, VecSize>::Type``. The following conditions will prevent
-//! vectorization and the same arrangement is loaded item by item:
+//! Each vector is loaded as a ``CubVector<InputT, VecSize>::Type``. ``block_offset`` must be a multiple of ``VecSize``,
+//! so that the vectors have the alignment of ``block_src_ptr``. The following conditions will prevent vectorization and
+//! the same arrangement is loaded item by item:
 //!
 //! - ``block_src_ptr`` is not aligned to the vector access width
 //! - ``InputT`` is volatile or not trivially copyable
@@ -450,12 +452,18 @@ load_direct_striped_vectorized_aligned(int linear_tid, const InputT* block_src_p
 //! @tparam ItemsPerThread
 //!   **[inferred]** The number of items partitioned onto each thread.
 //!
+//! @tparam OffsetT
+//!   **[inferred]** The integral type of ``block_offset``
+//!
 //! @param[in] linear_tid
 //!   A suitable 1D thread-identifier for the calling thread (e.g., `(threadIdx.y * blockDim.x) + linear_tid` for 2D
 //!   thread blocks)
 //!
 //! @param[in] block_src_ptr
-//!   The thread block's base pointer for loading from
+//!   The base pointer whose alignment is tested
+//!
+//! @param[in] block_offset
+//!   The offset of the thread block's vectors from ``block_src_ptr``
 //!
 //! @param[out] dst_items
 //!   Destination to load data into
@@ -464,12 +472,16 @@ template <int ThreadsPerBlock,
           CacheLoadModifier Modifier = LOAD_DEFAULT,
           typename InputT,
           typename T,
-          int ItemsPerThread>
-_CCCL_DEVICE _CCCL_FORCEINLINE void
-LoadDirectStripedVectorized(int linear_tid, const InputT* block_src_ptr, T (&dst_items)[ItemsPerThread])
+          int ItemsPerThread,
+          typename OffsetT>
+_CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStripedVectorized(
+  int linear_tid, const InputT* block_src_ptr, OffsetT block_offset, T (&dst_items)[ItemsPerThread])
 {
   static_assert(ItemsPerThread % VecSize == 0, "VecSize must evenly divide ItemsPerThread");
   constexpr int vec_size = static_cast<int>(VecSize);
+
+  // The vectors start a whole number of vectors after block_src_ptr, thus they have its alignment
+  const InputT* const tile_src_ptr = block_src_ptr + block_offset;
 
   // TODO(bgruber): remove the check for is_primitive<InputT> in CCCL 4.0
   constexpr bool can_vectorize =
@@ -479,27 +491,18 @@ LoadDirectStripedVectorized(int linear_tid, const InputT* block_src_ptr, T (&dst
     if (::cuda::std::is_sufficiently_aligned<alignof(typename CubVector<InputT, vec_size>::Type)>(block_src_ptr))
     {
       _CUB::detail::load_direct_striped_vectorized_aligned<ThreadsPerBlock, VecSize, Modifier>(
-        linear_tid, block_src_ptr, dst_items);
+        linear_tid, tile_src_ptr, dst_items);
       return;
     }
   }
 
   // Load the same arrangement item by item
-  const InputT* thread_src_ptr = block_src_ptr + static_cast<unsigned int>(linear_tid) * vec_size;
+  const InputT* thread_src_ptr = tile_src_ptr + static_cast<unsigned int>(linear_tid) * vec_size;
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ItemsPerThread / vec_size; i++)
   {
-    if constexpr (Modifier != LOAD_DEFAULT)
-    {
-      _CUB::LoadDirectBlocked(i * ThreadsPerBlock,
-                              CacheModifiedInputIterator<Modifier, InputT, int>(thread_src_ptr),
-                              reinterpret_cast<T(&)[vec_size]>(dst_items[i * vec_size]));
-    }
-    else
-    {
-      _CUB::LoadDirectBlocked(
-        i * ThreadsPerBlock, thread_src_ptr, reinterpret_cast<T(&)[vec_size]>(dst_items[i * vec_size]));
-    }
+    _CUB::LoadDirectBlocked(
+      i * ThreadsPerBlock, thread_src_ptr, reinterpret_cast<T(&)[vec_size]>(dst_items[i * vec_size]));
   }
 }
 
@@ -1249,13 +1252,13 @@ public:
                     && ::cuda::std::is_same_v<detail::it_value_t<RandomAccessIterator>, T>)
       {
         _CUB::LoadDirectStripedVectorized<ThreadsPerBlock, vec_size, RandomAccessIterator::__modifier>(
-          linear_tid, block_src_it.ptr, dst_items);
+          linear_tid, block_src_it.ptr, 0, dst_items);
       }
       else if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIterator>
                          && ::cuda::std::is_same_v<detail::it_value_t<RandomAccessIterator>, T>)
       {
         _CUB::LoadDirectStripedVectorized<ThreadsPerBlock, vec_size, LOAD_DEFAULT>(
-          linear_tid, ::cuda::std::to_address(block_src_it), dst_items);
+          linear_tid, ::cuda::std::to_address(block_src_it), 0, dst_items);
       }
       else
       {
