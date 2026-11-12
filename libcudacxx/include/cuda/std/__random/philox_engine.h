@@ -261,6 +261,9 @@ public:
     unsigned long long __increment       = __z / word_count;
     const unsigned long long __remainder = __z % word_count;
     size_t __carry                       = 0;
+    // A word only wraps around to its old value if it receives both a digit of 2^w - 1 and an incoming carry. Since
+    // __increment < 2^64 / n with n >= 2, every digit above the lowest one is below 2^w - 1 unless w < 32.
+    constexpr bool __needs_equal_carry_check = word_size < 32;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (size_t __j = 0; __j < word_count; ++__j)
     {
@@ -268,11 +271,9 @@ public:
       {
         break;
       }
-      // Check both additions: a word of 2^w - 1 plus a carry wraps around to the old value of __x_[__j]
-      const result_type __sum     = (__x_[__j] + (__increment & max())) & max();
-      const result_type __new_x_j = (__sum + __carry) & max();
-      __carry                     = (__sum < __x_[__j] || __new_x_j < __sum) ? 1 : 0;
-      __x_[__j]                   = __new_x_j;
+      const result_type __new_x_j = static_cast<result_type>((__x_[__j] + (__increment & max()) + __carry) & max());
+      __carry   = (__new_x_j < __x_[__j]) || (__needs_equal_carry_check && __carry != 0 && __new_x_j == __x_[__j]);
+      __x_[__j] = __new_x_j;
       if constexpr (word_size < 64)
       {
         __increment >>= word_size;
