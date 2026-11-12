@@ -821,7 +821,7 @@ public:
   _CCCL_REQUIRES(__is_buffer_byte_type_v<_Byte>)
   [[nodiscard]] _CCCL_HOST_API buffer<_Byte, _Properties...> as_bytes() && noexcept
   {
-    return std::move(*this).template __as_type<_Byte>();
+    return ::cuda::std::move(*this).template __as_type<_Byte>();
   }
 
   //! @brief Converts a buffer of bytes into a buffer of \p _Up that owns the
