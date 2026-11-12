@@ -465,7 +465,7 @@ public:
     return __replace_allocation(__stream_, __count);
   }
 
-  _CCCL_HOST_API static __uninitialized_async_buffer
+  [[nodiscard]] _CCCL_HOST_API static __uninitialized_async_buffer
   __adopt_allocation(::cuda::__allocation_info<_Tp, _Properties...>&& __info)
   {
     __uninitialized_async_buffer __ret{
@@ -478,12 +478,9 @@ public:
         _CCCL_THROW(::std::invalid_argument, "cuda::__uninitialized_async_buffer: Null buffer with nonzero count");
       }
     }
-    else
+    else if (!::cuda::is_aligned(__info.ptr, __info.alignment))
     {
-      if (!::cuda::is_aligned(__info.ptr, __info.alignment))
-      {
-        _CCCL_THROW(::std::invalid_argument, "cuda::__uninitialized_async_buffer: Invalid alignment");
-      }
+      _CCCL_THROW(::std::invalid_argument, "cuda::__uninitialized_async_buffer: Invalid alignment");
     }
     __ret.__count_ = __info.capacity;
     __ret.__buf_   = __info.ptr;

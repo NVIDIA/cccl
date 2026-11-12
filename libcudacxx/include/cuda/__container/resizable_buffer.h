@@ -41,7 +41,7 @@ class __resizable_buffer;
 _CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
 template <class _Tp, class... _Properties>
-_CCCL_HOST_API auto __acquire_resizable_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info)
+[[nodiscard]] _CCCL_HOST_API auto __acquire_resizable_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info)
   -> ::cuda::__resizable_buffer<_Tp, _Properties...>;
 
 _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
@@ -108,17 +108,17 @@ private:
       __alloc.capacity * sizeof(_Tp) / sizeof(_Up),
       __alloc.size * sizeof(_Tp) / sizeof(_Up),
       __alloc.alignment};
-    try
+    _CCCL_TRY
     {
       return ::cuda::__acquire_resizable_buffer<_Up, _Properties...>(::cuda::std::move(__new_alloc));
     }
-    catch (...)
+    _CCCL_CATCH_ALL
     {
       *this = ::cuda::std::move([&]() noexcept {
         __alloc.mr = ::cuda::std::move(__new_alloc.mr);
         return ::cuda::__acquire_resizable_buffer<_Tp, _Properties...>(::cuda::std::move(__alloc));
       }());
-      throw;
+      _CCCL_RETHROW;
     }
   }
 
@@ -315,7 +315,7 @@ _CCCL_END_NAMESPACE_ABI_VER4_BUMP
 //! @throw std::invalid_argument if size exceeds capacity, alignment is invalid,
 //! the pointer is misaligned or null with nonzero capacity, or capacity overflows.
 template <class _Tp, class... _Properties>
-_CCCL_HOST_API auto __acquire_resizable_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info)
+[[nodiscard]] _CCCL_HOST_API auto __acquire_resizable_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info)
   -> ::cuda::__resizable_buffer<_Tp, _Properties...>
 {
   if (__info.size > __info.capacity)

@@ -50,7 +50,7 @@ struct __allocation_info
   __size_type size;
   __size_type alignment;
 
-  __allocation_info(
+  _CCCL_HOST_API __allocation_info(
     ::cuda::stream_ref __stream,
     __resource_type __mr,
     __pointer_type __ptr,

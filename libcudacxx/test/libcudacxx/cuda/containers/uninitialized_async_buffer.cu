@@ -125,21 +125,21 @@ C2H_TEST_LIST(
     static_assert(
       cuda::std::is_same_v<decltype(released), cuda::__allocation_info<TestType, cuda::mr::device_accessible>>);
     static_assert(cuda::std::is_nothrow_move_constructible_v<decltype(released)>);
-    CHECK(released.ptr == ptr);
-    CHECK(released.capacity == count);
-    CHECK(released.size == count);
-    CHECK(released.alignment == alignment);
-    CHECK(released.stream == cuda::stream_ref{stream});
-    CHECK(input.data() == nullptr);
-    CHECK(input.size() == 0);
-    CHECK(input.alignment() == alignof(TestType));
-    CHECK(input.stream() == cuda::stream_ref{cuda::invalid_stream});
+    REQUIRE(released.ptr == ptr);
+    REQUIRE(released.capacity == count);
+    REQUIRE(released.size == count);
+    REQUIRE(released.alignment == alignment);
+    REQUIRE(released.stream == cuda::stream_ref{stream});
+    REQUIRE(input.data() == nullptr);
+    REQUIRE(input.size() == 0);
+    REQUIRE(input.alignment() == alignof(TestType));
+    REQUIRE(input.stream() == cuda::stream_ref{cuda::invalid_stream});
 
     auto acquired = __uninitialized_async_buffer::__adopt_allocation(cuda::std::move(released));
-    CHECK(acquired.data() == ptr);
-    CHECK(acquired.size() == count);
-    CHECK(acquired.alignment() == alignment);
-    CHECK(acquired.stream() == cuda::stream_ref{stream});
+    REQUIRE(acquired.data() == ptr);
+    REQUIRE(acquired.size() == count);
+    REQUIRE(acquired.alignment() == alignment);
+    REQUIRE(acquired.stream() == cuda::stream_ref{stream});
   }
 
   SECTION("conversion")

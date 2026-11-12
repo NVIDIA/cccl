@@ -86,7 +86,7 @@ class buffer;
 _CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
 template <class _Tp, class... _Properties>
-_CCCL_HOST_API ::cuda::buffer<_Tp, _Properties...>
+[[nodiscard]] _CCCL_HOST_API ::cuda::buffer<_Tp, _Properties...>
 __acquire_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info);
 
 _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
