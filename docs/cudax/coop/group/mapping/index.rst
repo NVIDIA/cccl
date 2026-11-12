@@ -11,6 +11,7 @@ Group Mappings
   group_as
   take
   binary_partition
+  labeled_partition
   composite_mapping
 
 Group mappings define how a parent group's units are assigned to subgroups, independently of the synchronization mechanism. To communicate this information, they are required to accept and return types that satisfy the *group mapping result* concept.
@@ -127,4 +128,5 @@ The implementation comes with several predefined mappings that should cover most
 - :doc:`group_as <group_as>` splits each group into subgroups with individually specified sizes.
 - :doc:`take <take>` selects the first specified number of units from each group.
 - :doc:`binary_partition <binary_partition>` splits threads within a warp into two groups based on a predicate.
+- :doc:`labeled_partition <labeled_partition>` groups threads within a warp by equal integral or enumeration labels.
 - :doc:`composite_mapping <composite_mapping>` applies multiple mappings in sequence, composed with the pipe operator (``|``).
