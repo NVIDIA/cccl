@@ -146,9 +146,8 @@ public:
       // All reads from input and writes to output finish before exchanging them.
       ::__syncthreads();
       key_t* previous = input;
-
-      input  = output;
-      output = previous;
+      input           = output;
+      output          = previous;
     }
     return input;
   }

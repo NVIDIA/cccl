@@ -114,7 +114,6 @@ block_merge_path(KeyIt1 keys1, KeyIt2 keys2, OffsetT count1, OffsetT count2, Off
       }
 
       const CounterT index = left ? pivot - distance : pivot + distance;
-
       if (compare_op(keys2[target - CounterT{1} - index], keys1[index]))
       {
         last = index;
@@ -213,7 +212,6 @@ struct block_merge_layout
     while (hi - lo > 1)
     {
       const int mid = lo + (hi - lo) / 2;
-
       if (offsets[mid * 2 * span] <= position)
       {
         lo = mid;

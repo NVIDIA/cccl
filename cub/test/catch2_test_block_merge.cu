@@ -115,7 +115,6 @@ _CCCL_KERNEL_ATTRIBUTES void merge_runs(
     for (int i = 0; i < Geometry::items; ++i)
     {
       const int rank = tid * Geometry::items + i;
-
       output[(block * reuse_count + repeat) * count + rank] =
         shared_output ? (rank < data.offsets[runs] ? merged[rank] : T{}) : items[i];
     }
@@ -161,7 +160,6 @@ template <typename T>
   for (int runs = 1; runs <= max_runs; ++runs)
   {
     const auto cuts = boundaries.begin() + (runs - 1) * offset_stride;
-
     for (int run = 0; run <= runs; ++run)
     {
       cuts[run] = total * run / runs;
@@ -180,8 +178,7 @@ template <typename T>
   for (int runs = 1; runs <= max_runs; ++runs)
   {
     const auto cuts = boundaries.begin() + (runs - 1) * offset_stride;
-
-    cuts[runs] = total;
+    cuts[runs]      = total;
 
     for (int run = 1; run < runs; ++run)
     {
@@ -202,7 +199,6 @@ template <typename T>
   {
     const int populated_run = runs / 2;
     const auto cuts         = boundaries.begin() + (runs - 1) * offset_stride;
-
     for (int run = populated_run + 1; run <= runs; ++run)
     {
       cuts[run] = total;
@@ -236,7 +232,6 @@ void check_runs(c2h::host_vector<T> input,
     }
 
     const auto merged = expected.begin() + tile * reuse_count * capacity;
-
     std::copy_n(keys, total, merged);
     std::stable_sort(merged, merged + total, compare);
 
@@ -408,7 +403,6 @@ CUB_TEST("BlockMerge merges already ordered runs", "[block][merge]", CUB_SMALL, 
   for (int tile = 0; tile < max_runs; ++tile)
   {
     const auto first = input.begin() + tile * capacity;
-
     std::stable_sort(first, first + capacity, compare);
   }
 
