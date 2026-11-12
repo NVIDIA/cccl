@@ -677,22 +677,18 @@ struct unwind_t : basic_sink<unwind_t>
   }
 };
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-#endif // _CCCL_DOXYGEN_INVOKED
 inline constexpr unwind_t unwind{};
 
 /**
  * @brief Value-substitution policy; `subst(v)` is the documented spelling for what a bare
  * value standing in a composite also means.
  *
- * The exception hook answers, in order: the result of invoking the stored value as a handler
- * `(const std::exception*, source_location, Fn&)` when that is well-formed (so
- * `subst([](const std::exception* e, auto, auto&){ ... })` reacts to the exception; a handler
- * stored in subst must not throw); else the result of invoking it as a nullary callable, a
- * lazy fallback computed only on the exception path (`subst([]{ return expensive(); })`); else
- * the stored value itself, forwarded out and owned if the policy owns it, referred to if it
- * holds an lvalue reference (so a replacement passed as an lvalue can stand in for a reference
- * result).
+ * On either channel the answer is the result of invoking the stored value as a nullary
+ * callable, a lazy fallback computed only on failure (`subst([]{ return expensive(); })`, which
+ * must not throw); else the stored value itself, forwarded out and owned if the policy owns it,
+ * referred to if it holds an lvalue reference (so a replacement passed as an lvalue can stand in
+ * for a reference result). A reaction that inspects the exception is a raw hook instead:
+ * `noop & [](const std::exception* e, auto, auto&) { ... }`, or `thrown(hook)` on its own.
  */
 template <class _V>
 struct subst_t : basic_sink<subst_t<_V>>
@@ -701,31 +697,11 @@ struct subst_t : basic_sink<subst_t<_V>>
 
   _V __v_;
 
-  // A raw hook gets the failure; anything else answers as on the code channel.
-  template <class _Fn>
-  decltype(auto)
-  on_thrown(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn) noexcept
-  {
-    if constexpr (::cuda::std::is_invocable_v<_V&, const ::std::exception*, ::cuda::std::source_location, _Fn&>)
-    {
-      return __v_(__exception, __loc, __fn);
-    }
-    else
-    {
-      return on_returned(__exception, __loc, __fn);
-    }
-  }
-
-  //! @brief The code-channel hook: answers the stored value, or the result of invoking a stored
-  //! nullary callable. The answer must be of the status type (`subst(cudaSuccess)`, not
-  //! `subst(0)`). A stored exception-aware handler receives the status's exception instead.
-  template <class _Status,
-            class _Fn,
-            class _Self = _V,
-            ::cuda::std::enable_if_t<
-              !::cuda::std::is_invocable_v<_Self&, const ::std::exception*, ::cuda::std::source_location, _Fn&>,
-              int> = 0>
-  decltype(auto) on_returned(const _Status, const ::cuda::std::source_location, _Fn&) noexcept
+  //! @brief The hook on either channel: answers the stored value, or the result of invoking a
+  //! stored nullary callable. On a status the answer must be of the status type
+  //! (`subst(cudaSuccess)`, not `subst(0)`).
+  template <class _Failure, class _Fn>
+  decltype(auto) on_returned(const _Failure, const ::cuda::std::source_location, _Fn&) noexcept
   {
     if constexpr (::cuda::std::is_invocable_v<_V&>)
     {
@@ -735,6 +711,14 @@ struct subst_t : basic_sink<subst_t<_V>>
     {
       return ::cuda::std::forward<_V>(__v_);
     }
+  }
+
+  // The exception channel's failure is the exception pointer, answered as on the code channel.
+  template <class _Fn>
+  decltype(auto)
+  on_thrown(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn) noexcept
+  {
+    return on_returned(__exception, __loc, __fn);
   }
 };
 
@@ -5873,7 +5857,7 @@ UNITTEST("policy inventory")
   using namespace cuda::experimental::stf;
   using namespace cuda::experimental::stf::sump;
 #  if _CCCL_HAS_EXCEPTIONS()
-  // subst: eager value, lazy callable, and exception-aware callable.
+  // subst: eager value and lazy callable; a raw hook reacts to the exception.
   int lazy_calls = 0;
   const int s1   = subst([&lazy_calls] {
                    ++lazy_calls;
@@ -5894,13 +5878,15 @@ UNITTEST("policy inventory")
   EXPECT(s2 == 5);
   EXPECT(lazy_calls == 1);
 
-  const int s3 = subst([](const ::std::exception* e, ::cuda::std::source_location, auto&) noexcept {
-                   return e ? 1 : 2;
-                 })
-                   ->*[]() -> int {
+  const int s3 =
+    (noop &
+     [](const ::std::exception* e, ::cuda::std::source_location, auto&) noexcept {
+       return e ? 1 : 2;
+     })
+      ->*[]() -> int {
     throw 42;
   };
-  EXPECT(s3 == 2); // non-std exception: handler sees nullptr
+  EXPECT(s3 == 2); // non-std exception: the hook sees nullptr
 
   // defer composes now: report, then capture.
   ::std::ostringstream noted;
