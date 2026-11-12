@@ -58,7 +58,7 @@ using cudax::out;
  */
 __global__ void vectorAdd(cudax::span<const float> A, cudax::span<const float> B, cudax::span<float> C)
 {
-  const int i = static_cast<int>(blockDim.x * blockIdx.x + threadIdx.x);
+  const int i = static_cast<int>((blockDim.x * blockIdx.x) + threadIdx.x);
 
   if (i < A.size())
   {

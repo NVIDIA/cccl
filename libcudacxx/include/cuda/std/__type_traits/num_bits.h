@@ -67,6 +67,12 @@ template <typename _Tp, typename _RawTp = remove_cvref_t<_Tp>>
     return 8;
   }
 #endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_UE5M3()
+  else if constexpr (is_same_v<_RawTp, __nv_fp8_ue5m3>)
+  {
+    return 8;
+  }
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E8M0()
   else if constexpr (is_same_v<_RawTp, __nv_fp8_e8m0>)
   {

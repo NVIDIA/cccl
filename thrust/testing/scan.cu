@@ -413,12 +413,12 @@ void test_scan_mixed_types()
   thrust::exclusive_scan(d_input.begin(), d_input.end(), d_float_output.begin(), (float) 3.5);
   REQUIRE(d_float_output == h_float_output);
 
-  thrust::exclusive_scan(h_input.begin(), h_input.end(), h_float_output.begin(), (int) 3);
-  thrust::exclusive_scan(d_input.begin(), d_input.end(), d_float_output.begin(), (int) 3);
+  thrust::exclusive_scan(h_input.begin(), h_input.end(), h_float_output.begin(), 3);
+  thrust::exclusive_scan(d_input.begin(), d_input.end(), d_float_output.begin(), 3);
   REQUIRE(d_float_output == h_float_output);
 
-  thrust::exclusive_scan(h_input.begin(), h_input.end(), h_int_output.begin(), (int) 3);
-  thrust::exclusive_scan(d_input.begin(), d_input.end(), d_int_output.begin(), (int) 3);
+  thrust::exclusive_scan(h_input.begin(), h_input.end(), h_int_output.begin(), 3);
+  thrust::exclusive_scan(d_input.begin(), d_input.end(), d_int_output.begin(), 3);
   REQUIRE(d_int_output == h_int_output);
 
   thrust::exclusive_scan(h_input.begin(), h_input.end(), h_int_output.begin(), (float) 3.5);

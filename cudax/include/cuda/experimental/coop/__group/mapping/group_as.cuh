@@ -54,9 +54,17 @@ template <bool _Exhaustive, class _Unit, class _PrevMappingResult, class _Range>
 [[nodiscard]] _CCCL_DEVICE_API auto
 __group_as_map(const _Unit&, const _PrevMappingResult& __prev_mapping_result, const _Range& __unit_counts)
 {
-  // todo(dabayer): Make group count potentially statically-known when _Range has a known static size.
+  using ::cuda::std::dynamic_extent;
+
+  constexpr auto __prev_static_group_count = _PrevMappingResult::static_group_count();
+  constexpr auto __curr_static_group_count = ::cuda::std::ranges::__static_size_v<const _Range>;
+  constexpr auto __static_group_count =
+    (__prev_static_group_count != dynamic_extent && __curr_static_group_count != dynamic_extent)
+      ? __prev_static_group_count * __curr_static_group_count
+      : dynamic_extent;
+
   using _MappingResult =
-    __mapping_result<__uniform_static_unit_count<::cuda::std::dynamic_extent, ::cuda::std::dynamic_extent>,
+    __mapping_result<__uniform_static_unit_count<__static_group_count, dynamic_extent>,
                      _Exhaustive,
                      _PrevMappingResult::is_always_contiguous()>;
 
@@ -96,10 +104,11 @@ __group_as_map(const _Unit&, const _PrevMappingResult& __prev_mapping_result, co
   }
 
   ::cuda::std::uint32_t __sum = 0;
+  auto __it                   = ::cuda::std::ranges::cbegin(__unit_counts);
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (::cuda::std::uint32_t __i = 0; __i < __curr_ngroups; ++__i)
+  for (::cuda::std::uint32_t __i = 0; __i < __curr_ngroups; ++__i, ++__it)
   {
-    const auto __i_count = static_cast<::cuda::std::uint32_t>(__unit_counts[__i]);
+    const auto __i_count = static_cast<::cuda::std::uint32_t>(*__it);
     if (__prev_unit_rank < __sum + __i_count)
     {
       const auto __group_rank = __prev_mapping_result.group_rank() * __curr_ngroups + __i;

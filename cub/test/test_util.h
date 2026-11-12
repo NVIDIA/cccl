@@ -311,7 +311,7 @@ struct CommandLineArgs
           dev,
           deviceProp.name,
           ptx_version,
-          deviceProp.major * 100 + deviceProp.minor * 10,
+          (deviceProp.major * 100) + (deviceProp.minor * 10),
           deviceProp.multiProcessorCount,
           (unsigned long long) device_free_physmem / 1024 / 1024,
           (unsigned long long) device_total_physmem / 1024 / 1024,
@@ -858,7 +858,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.x < x)
+    if (b.x < x)
     {
       return false;
     }
@@ -866,7 +866,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.y < y)
+    if (b.y < y)
     {
       return false;
     }
@@ -874,7 +874,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.z < z)
+    if (b.z < z)
     {
       return false;
     }
@@ -888,7 +888,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.x > x)
+    if (b.x > x)
     {
       return false;
     }
@@ -896,7 +896,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.y > y)
+    if (b.y > y)
     {
       return false;
     }
@@ -904,7 +904,7 @@ struct TestFoo
     {
       return true;
     }
-    else if (b.z > z)
+    if (b.z > z)
     {
       return false;
     }
@@ -1020,7 +1020,7 @@ struct TestBar
     {
       return true;
     }
-    else if (b.x < x)
+    if (b.x < x)
     {
       return false;
     }
@@ -1034,7 +1034,7 @@ struct TestBar
     {
       return true;
     }
-    else if (b.x > x)
+    if (b.x > x)
     {
       return false;
     }
@@ -1105,7 +1105,8 @@ int CompareResults(T* computed, S* reference, OffsetT len, bool verbose = true)
  * Compares the equivalence of two arrays
  */
 template <typename OffsetT>
-int CompareResults(float* computed, float* reference, OffsetT len, bool verbose = true)
+int CompareResults(
+  float* computed, float* reference, OffsetT len, bool verbose = true) // NOLINT(readability-non-const-parameter)
 {
   for (OffsetT i = 0; i < len; i++)
   {
@@ -1144,7 +1145,8 @@ int CompareResults(
  * Compares the equivalence of two arrays
  */
 template <typename OffsetT>
-int CompareResults(double* computed, double* reference, OffsetT len, bool verbose = true)
+int CompareResults(
+  double* computed, double* reference, OffsetT len, bool verbose = true) // NOLINT(readability-non-const-parameter)
 {
   for (OffsetT i = 0; i < len; i++)
   {

@@ -179,7 +179,7 @@ private:
     params.poolProps.location.id = device_ordinal(memory_node);
     params.accessDescs           = desc.data();
     params.accessDescCount       = size_t(ndevices);
-    params.bytesize              = size_t(s);
+    params.bytesize              = s;
 
     out = cuda_try<cudaGraphAddMemAllocNode>(graph, input_nodes.data(), input_nodes.size(), &params);
 
@@ -726,6 +726,7 @@ private:
     // fprintf(stderr, "Instantiate stage %ld\n", stage);
     display_graph_info(g);
 
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0
         ::std::string name = "stage" + ::std::to_string(stage) + ".dot";
         cudaGraphDebugDotPrint(g, name.c_str(), cudaGraphDebugDotFlagsVerbose);

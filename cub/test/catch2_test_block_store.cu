@@ -15,7 +15,7 @@ struct output_idx
 {
   static __device__ int get(int item)
   {
-    return static_cast<int>(threadIdx.x) * ItemsPerThread + item;
+    return (static_cast<int>(threadIdx.x) * ItemsPerThread) + item;
   }
 };
 
@@ -24,7 +24,7 @@ struct output_idx<ItemsPerThread, ThreadsInBlock, cub::BlockStoreAlgorithm::BLOC
 {
   static __device__ int get(int item)
   {
-    return static_cast<int>(threadIdx.x) + ThreadsInBlock * item;
+    return static_cast<int>(threadIdx.x) + (ThreadsInBlock * item);
   }
 };
 
@@ -263,7 +263,7 @@ CUB_TEST("Block store works with 12-byte types", "[store][block]", CUB_SMALL, it
   c2h::host_vector<type> h_input(GENERATE_COPY(take(10, random(0, tile_size))));
   for (int i = 0; i < static_cast<int>(h_input.size()); ++i)
   {
-    h_input[i] = type{i, 3 * i + 1, -i};
+    h_input[i] = type{i, (3 * i) + 1, -i};
   }
   c2h::device_vector<type> d_input = h_input;
   c2h::device_vector<type> d_output(d_input.size());
@@ -338,7 +338,7 @@ template <typename T, typename OutputIteratorT>
 __global__ void vectorized_full_tile_store_kernel(const int* input, OutputIteratorT output)
 {
   // construct each item from an int, so T need not be default constructible
-  const int* thread_input = input + threadIdx.x * vectorized_items_per_thread;
+  const int* thread_input = input + (threadIdx.x * vectorized_items_per_thread);
   T data[vectorized_items_per_thread] = {T(thread_input[0]), T(thread_input[1]), T(thread_input[2]), T(thread_input[3])};
   cub::BlockStore<T, vectorized_threads_in_block, vectorized_items_per_thread, cub::BLOCK_STORE_VECTORIZE>().Store(
     output, data);

@@ -285,6 +285,14 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES take_view(_Range&&, range_difference_t<_Range>)
 template <class _Tp>
 inline constexpr bool enable_borrowed_range<take_view<_Tp>> = enable_borrowed_range<_Tp>;
 
+// A runtime count cannot change the size of an empty range.
+template <class _View>
+inline constexpr size_t __static_size_v<take_view<_View>> = (__static_size_v<_View> == 0) ? 0 : dynamic_extent;
+
+template <class _View>
+inline constexpr size_t __static_size_v<const take_view<_View>> =
+  (range<const take_view<_View>> && __static_size_v<const _View> == 0) ? 0 : dynamic_extent;
+
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS

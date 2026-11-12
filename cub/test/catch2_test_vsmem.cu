@@ -265,11 +265,9 @@ struct dispatch_dummy_algorithm_t
       {
         return cudaSuccess;
       }
-      else
-      {
-        temp_storage_bytes = 0;
-        return cudaSuccess;
-      }
+
+      temp_storage_bytes = 0;
+      return cudaSuccess;
     }
 
     // Compute launch configurations

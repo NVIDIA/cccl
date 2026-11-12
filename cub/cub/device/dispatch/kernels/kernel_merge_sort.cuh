@@ -210,7 +210,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
   const int items_per_tile)
 {
   const OffsetT partition_idx =
-    static_cast<OffsetT>(blockDim.x * blockIdx.x + threadIdx.x); // NOLINT(bugprone-misplaced-widening-cast)
+    static_cast<OffsetT>((blockDim.x * blockIdx.x) + threadIdx.x); // NOLINT(bugprone-misplaced-widening-cast)
   if (partition_idx < num_partitions)
   {
     AgentPartition<KeyIteratorT, OffsetT, CompareOpT, KeyT>{
