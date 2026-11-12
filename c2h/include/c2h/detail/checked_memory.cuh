@@ -81,7 +81,7 @@ inline cudaError_t check_free_device_memory(std::size_t bytes)
       const double total_GiB     = static_cast<double>(info.total) / (1024 * 1024 * 1024);
       const double free_GiB      = static_cast<double>(info.free) / (1024 * 1024 * 1024);
       const double requested_GiB = static_cast<double>(bytes) / (1024 * 1024 * 1024);
-      const double padded_GiB    = requested_GiB + static_cast<double>(padding) / (1024 * 1024 * 1024);
+      const double padded_GiB    = requested_GiB + (static_cast<double>(padding) / (1024 * 1024 * 1024));
 
       std::cerr << "Device memory allocation failed due to insufficient free device memory.\n";
 

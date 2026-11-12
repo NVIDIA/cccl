@@ -103,7 +103,7 @@ cub_minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt las
   // Round tmp_size up to the alignment of offset_t so the index slots are properly aligned.
   const auto aligned_tmp_size = ::cuda::round_up(tmp_size, alignof(offset_t));
   // Allocate: the algorithm's temporary storage followed by two index slots (min, max).
-  thrust::detail::temporary_array<char, Derived> tmp(policy, aligned_tmp_size + 2 * sizeof(offset_t));
+  thrust::detail::temporary_array<char, Derived> tmp(policy, aligned_tmp_size + (2 * sizeof(offset_t)));
   void* const tmp_ptr       = static_cast<void*>(tmp.data().get());
   offset_t* const min_index = thrust::detail::aligned_reinterpret_cast<offset_t*>(tmp.data().get() + aligned_tmp_size);
   offset_t* const max_index = min_index + 1;

@@ -290,7 +290,7 @@ struct index_to_custom_output_op
 {
   int* d_ok_count;
 
-  __host__ __device__ __forceinline__ custom_output_t operator()(int index)
+  __host__ __device__ __forceinline__ custom_output_t operator()(int index) const
   {
     return custom_output_t{d_ok_count, index};
   }
