@@ -52,12 +52,12 @@ namespace cuda::experimental::coop
 {
 template <bool _Exhaustive, class _Unit, class _PrevMappingResult, class _Range>
 [[nodiscard]] _CCCL_DEVICE_API auto
-__group_as_map(const _Unit&, const _PrevMappingResult& __prev_mapping_result, const _Range& __unit_counts)
+__group_as_map(const _Unit&, const _PrevMappingResult& __prev_mapping_result, _Range& __unit_counts)
 {
   using ::cuda::std::dynamic_extent;
 
   constexpr auto __prev_static_group_count = _PrevMappingResult::static_group_count();
-  constexpr auto __curr_static_group_count = ::cuda::std::ranges::__static_size_v<const _Range>;
+  constexpr auto __curr_static_group_count = ::cuda::std::ranges::__static_size_v<_Range>;
   constexpr auto __static_group_count =
     (__prev_static_group_count != dynamic_extent && __curr_static_group_count != dynamic_extent)
       ? __prev_static_group_count * __curr_static_group_count
@@ -85,26 +85,26 @@ __group_as_map(const _Unit&, const _PrevMappingResult& __prev_mapping_result, co
   if constexpr (_Exhaustive)
   {
     _CCCL_ASSERT(
-      ::cuda::std::accumulate(::cuda::std::ranges::cbegin(__unit_counts), ::cuda::std::ranges::cend(__unit_counts), 0u)
+      ::cuda::std::accumulate(::cuda::std::ranges::begin(__unit_counts), ::cuda::std::ranges::end(__unit_counts), 0u)
         == __prev_nunits,
       "group_as mapping would produce units without a group during exhaustive mapping");
   }
   else
   {
     _CCCL_ASSERT(
-      ::cuda::std::accumulate(::cuda::std::ranges::cbegin(__unit_counts), ::cuda::std::ranges::cend(__unit_counts), 0u)
+      ::cuda::std::accumulate(::cuda::std::ranges::begin(__unit_counts), ::cuda::std::ranges::end(__unit_counts), 0u)
         <= __prev_nunits,
       "group_as mapping requires more units than are available");
 
     if (__prev_unit_rank >= ::cuda::std::accumulate(
-          ::cuda::std::ranges::cbegin(__unit_counts), ::cuda::std::ranges::cend(__unit_counts), 0u))
+          ::cuda::std::ranges::begin(__unit_counts), ::cuda::std::ranges::end(__unit_counts), 0u))
     {
       return _MappingResult::__invalid();
     }
   }
 
   ::cuda::std::uint32_t __sum = 0;
-  auto __it                   = ::cuda::std::ranges::cbegin(__unit_counts);
+  auto __it                   = ::cuda::std::ranges::begin(__unit_counts);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (::cuda::std::uint32_t __i = 0; __i < __curr_ngroups; ++__i, ++__it)
   {
@@ -142,14 +142,32 @@ public:
       : __unit_counts_{::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__unit_counts))}
   {}
 
-  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
+  _CCCL_TEMPLATE(class _Unit, class _ParentGroup, class _PrevMappingResult)
+  _CCCL_REQUIRES((!::cuda::std::ranges::range<const _RangeView>) )
+  [[nodiscard]] _CCCL_DEVICE_API auto
+  map(const _Unit& __unit, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result)
+  {
+    return ::cuda::experimental::coop::__group_as_map<true>(__unit, __prev_mapping_result, __unit_counts_);
+  }
+
+  _CCCL_TEMPLATE(class _Unit, class _ParentGroup, class _PrevMappingResult)
+  _CCCL_REQUIRES((!::cuda::std::ranges::range<const _RangeView>) )
+  [[nodiscard]] _CCCL_DEVICE_API auto map(
+    const non_exhaustive_t&, const _Unit& __unit, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result)
+  {
+    return ::cuda::experimental::coop::__group_as_map<false>(__unit, __prev_mapping_result, __unit_counts_);
+  }
+
+  _CCCL_TEMPLATE(class _Unit, class _ParentGroup, class _PrevMappingResult)
+  _CCCL_REQUIRES(::cuda::std::ranges::range<const _RangeView>)
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const _Unit& __unit, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const
   {
     return ::cuda::experimental::coop::__group_as_map<true>(__unit, __prev_mapping_result, __unit_counts_);
   }
 
-  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
+  _CCCL_TEMPLATE(class _Unit, class _ParentGroup, class _PrevMappingResult)
+  _CCCL_REQUIRES(::cuda::std::ranges::range<const _RangeView>)
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const non_exhaustive_t&,
       const _Unit& __unit,
