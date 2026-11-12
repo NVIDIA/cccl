@@ -21,7 +21,7 @@ Defined in the ``<cuda/cmath>`` header.
 
 The functions return the smaller and the larger of two values, respectively. Contrary to ``cuda::std::min`` and ``cuda::std::max``, which take their arguments by reference and return a reference to one of them, the functions take and return values. This lets the compiler compute the result in registers, instead of selecting the address of an argument and loading the result from it.
 
-For floating-point types, the values are compared like with ``cuda::std::fmin`` and ``cuda::std::fmax``.
+The result is the same as with :ref:`cuda::minimum and cuda::maximum <libcudacxx-extended-api-functional-maximum-minimum>`, so floating-point values are compared like with ``cuda::std::fmin`` and ``cuda::std::fmax``.
 
 **Parameters**
 
