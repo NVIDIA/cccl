@@ -7,6 +7,10 @@
 #include <cub/device/dispatch/dispatch_segmented_sort_lrb.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
 
+#include <thrust/copy.h>
+
+#include <cuda/iterator>
+
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -16,6 +20,7 @@
 #include <vector>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 #include <c2h/catch2_test_helper.h>
 #include <c2h/device_and_stream.h>
 
@@ -477,6 +482,249 @@ CUB_TEST("Tiny walk dispatch bounds ID buffers by the number of items", "[segmen
   const auto [tiny_offsets, tiny_ids] = run(tiny_begins, tiny_ends, d_tiny_in, d_tiny_out);
   REQUIRE(tiny_offsets == c2h::host_vector<unsigned>(capacities::size + 2, 0));
   REQUIRE(c2h::host_vector<int>(d_tiny_out) == tiny_expected);
+}
+
+// Storage smaller than the queried size fails before any launch and leaves out unwritten; an unaligned pointer
+// with the queried size succeeds.
+CUB_TEST("Tiny walk dispatch rejects too-small temporary storage", "[segmented][sort][device]", CUB_SMALL)
+{
+  using capacities     = irregular_expansion::capacities;
+  constexpr int cutoff = capacity::tiny_walk_policy::inline_cutoff;
+  const c2h::host_vector<int> begins{1, 4, 4 + cutoff + 1}, ends{3, 4 + cutoff, 4 + cutoff + 1};
+  c2h::host_vector<int> input(ends.back(), -99);
+  for (size_t segment = 0; segment < begins.size(); ++segment)
+  {
+    for (int i = begins[segment]; i < ends[segment]; ++i)
+    {
+      input[i] = ends[segment] - i;
+    }
+  }
+  auto expected = c2h::host_vector<int>(input.size(), -99);
+  std::copy(input.begin() + begins[0], input.begin() + ends[0], expected.begin() + begins[0]);
+  std::sort(expected.begin() + begins[0], expected.begin() + ends[0]);
+  c2h::device_vector<int> d_begins = begins, d_ends = ends, d_in = input, d_out(input.size(), -99);
+  capacity::partition_result result;
+  const auto run = [&](void* storage, size_t& bytes) {
+    return capacity::dispatch_tiny_sort_and_partition<capacities>(
+      storage,
+      bytes,
+      thrust::raw_pointer_cast(d_begins.data()),
+      thrust::raw_pointer_cast(d_ends.data()),
+      static_cast<cuda::std::int64_t>(input.size()),
+      static_cast<unsigned>(begins.size()),
+      thrust::raw_pointer_cast(d_in.data()),
+      thrust::raw_pointer_cast(d_out.data()),
+      result);
+  };
+  size_t required_bytes = 0;
+  REQUIRE(run(nullptr, required_bytes) == cudaSuccess);
+  REQUIRE(required_bytes > 0);
+  c2h::device_vector<unsigned char> storage(required_bytes + 1);
+  for (const size_t too_small : {size_t{0}, required_bytes - 1})
+  {
+    size_t bytes = too_small;
+    REQUIRE(run(thrust::raw_pointer_cast(storage.data()), bytes) == cudaErrorInvalidValue);
+  }
+  REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
+  REQUIRE(c2h::host_vector<int>(d_out) == c2h::host_vector<int>(input.size(), -99));
+  size_t bytes = required_bytes;
+  REQUIRE(run(thrust::raw_pointer_cast(storage.data()) + 1, bytes) == cudaSuccess);
+  REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
+  REQUIRE(c2h::host_vector<int>(d_out) == expected);
+  c2h::host_vector<unsigned> offsets(capacities::size + 2);
+  REQUIRE(cudaMemcpy(offsets.data(), result.bin_offsets, offsets.size() * sizeof(unsigned), cudaMemcpyDeviceToHost)
+          == cudaSuccess);
+  REQUIRE(offsets == c2h::host_vector<unsigned>{0, 1, 1, 1, 1});
+}
+
+// Segments past 2^32 keys, one straddling it, must be read and written with the full 64-bit offsets.
+CUB_TEST("Capacity sort indexes keys past 2^32 with 64-bit offsets",
+         "[segmented][sort][device][skip-cs-memcheck][skip-cs-racecheck][skip-cs-initcheck]",
+         CUB_LARGE)
+try
+{
+  using key_type = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
+  using capacities =
+    typename capacity::group_merge_sort_kernels_t<key_type>::template capacities_t<cub::detail::policy_getter, sm90_cc>;
+  constexpr int walk_ipt = capacity::tiny_walk_policy::items_per_thread;
+  // The first segment straddles 2^32 and the last one overflows.
+  std::vector<int> lengths{
+    capacity::tiny_walk_policy::inline_cutoff + 1, 0, 1, 2, walk_ipt, walk_ipt + 1, 2 * walk_ipt, 2 * walk_ipt + 1};
+  for (const int bound : capacities::bounds)
+  {
+    for (const int delta : {-1, 0, 1})
+    {
+      lengths.push_back(bound + delta);
+    }
+  }
+  constexpr long long window_begin = (1ll << 32) - 2;
+  constexpr key_type gap_key       = 0xA5;
+  c2h::host_vector<long long> begins, ends;
+  long long position = window_begin;
+  for (const int length : lengths)
+  {
+    begins.push_back(position);
+    position += length;
+    ends.push_back(position);
+    ++position;
+  }
+  const long long num_items = position;
+  CAPTURE(num_items, lengths.size());
+  c2h::host_vector<key_type> window(num_items - window_begin, gap_key);
+  std::mt19937 random{12345};
+  std::uniform_int_distribution<int> random_key{0, 255};
+  for (size_t segment = 0; segment < lengths.size(); ++segment)
+  {
+    for (long long i = begins[segment]; i < ends[segment]; ++i)
+    {
+      window[i - window_begin] = static_cast<key_type>(random_key(random));
+    }
+  }
+  c2h::host_vector<key_type> expected(window.size(), gap_key);
+  for (size_t segment = 0; segment < lengths.size(); ++segment)
+  {
+    if (lengths[segment] <= capacities::bounds.back())
+    {
+      const auto first = begins[segment] - window_begin;
+      const auto last  = ends[segment] - window_begin;
+      std::copy(window.begin() + first, window.begin() + last, expected.begin() + first);
+      std::sort(expected.begin() + first, expected.begin() + last);
+    }
+  }
+  c2h::device_vector<key_type> d_in(num_items), d_out(num_items);
+  thrust::copy(window.begin(), window.end(), d_in.begin() + window_begin);
+  thrust::fill(d_out.begin() + window_begin, d_out.end(), gap_key);
+  c2h::device_vector<long long> d_begins = begins, d_ends = ends;
+  capacity::partition_result result;
+  size_t bytes   = 0;
+  const auto run = [&](void* storage) {
+    return capacity::dispatch(
+      storage,
+      bytes,
+      thrust::raw_pointer_cast(d_begins.data()),
+      thrust::raw_pointer_cast(d_ends.data()),
+      static_cast<cuda::std::int64_t>(num_items),
+      static_cast<unsigned>(lengths.size()),
+      thrust::raw_pointer_cast(d_in.data()),
+      thrust::raw_pointer_cast(d_out.data()),
+      result);
+  };
+  const auto query_status = run(nullptr);
+  cuda::compute_capability cc{};
+  REQUIRE(cub::detail::ptx_compute_cap(cc) == cudaSuccess);
+  if (cc < cuda::compute_capability{9, 0})
+  {
+    REQUIRE(query_status == cudaErrorNotSupported);
+    return;
+  }
+  REQUIRE(query_status == cudaSuccess);
+  c2h::device_vector<unsigned char> storage(bytes);
+  REQUIRE(run(thrust::raw_pointer_cast(storage.data())) == cudaSuccess);
+  REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
+  c2h::host_vector<key_type> output(window.size());
+  thrust::copy(d_out.begin() + window_begin, d_out.end(), output.begin());
+  REQUIRE(output == expected);
+}
+catch (...)
+{
+  c2h::skip_if_allocation_failure();
+}
+
+// Leading segments are empty at offset zero; the rest come from a short list.
+struct listed_segment_offset_op
+{
+  unsigned first_listed;
+  const int* listed_offsets;
+
+  __host__ __device__ int operator()(unsigned segment) const
+  {
+    return segment < first_listed ? 0 : listed_offsets[segment - first_listed];
+  }
+};
+
+// With UINT_MAX segments the last tile ends at the largest segment count, so tile bounds and segment IDs must not
+// wrap. Begin and end offsets come from separate generated iterators.
+CUB_TEST("Capacity sort handles UINT_MAX segments",
+         "[segmented][sort][device][skip-cs-memcheck][skip-cs-racecheck][skip-cs-initcheck]",
+         CUB_LARGE)
+{
+  using capacities =
+    typename capacity::group_merge_sort_kernels_t<int>::template capacities_t<cub::detail::policy_getter, sm90_cc>;
+  constexpr int cutoff = capacity::tiny_walk_policy::inline_cutoff;
+  // The last listed segment overflows.
+  const std::vector<int> lengths{
+    0, 1, 2, cutoff - 1, cutoff, cutoff + 1, capacities::bounds.back(), capacities::bounds.back() + 1};
+  constexpr unsigned num_segments = cuda::std::numeric_limits<unsigned>::max();
+  const unsigned first_listed     = num_segments - static_cast<unsigned>(lengths.size());
+  c2h::host_vector<int> begins, ends, input(1, -99);
+  for (const int length : lengths)
+  {
+    begins.push_back(static_cast<int>(input.size()));
+    for (int i = 0; i < length; ++i)
+    {
+      input.push_back(length - i);
+    }
+    ends.push_back(static_cast<int>(input.size()));
+    input.push_back(-99);
+  }
+  c2h::host_vector<int> expected(input.size(), -99);
+  std::vector<unsigned> expected_ids;
+  for (size_t segment = 0; segment < lengths.size(); ++segment)
+  {
+    if (lengths[segment] >= cutoff)
+    {
+      expected_ids.push_back(first_listed + static_cast<unsigned>(segment));
+    }
+    if (lengths[segment] <= capacities::bounds.back())
+    {
+      std::copy(input.begin() + begins[segment], input.begin() + ends[segment], expected.begin() + begins[segment]);
+      std::sort(expected.begin() + begins[segment], expected.begin() + ends[segment]);
+    }
+  }
+  c2h::device_vector<int> d_listed_begins = begins, d_listed_ends = ends, d_in = input, d_out(input.size(), -99);
+  const auto d_begins = cuda::transform_iterator(
+    cuda::counting_iterator(0u),
+    listed_segment_offset_op{first_listed, thrust::raw_pointer_cast(d_listed_begins.data())});
+  const auto d_ends = cuda::transform_iterator(
+    cuda::counting_iterator(0u),
+    listed_segment_offset_op{first_listed, thrust::raw_pointer_cast(d_listed_ends.data())});
+  capacity::partition_result result;
+  size_t bytes   = 0;
+  const auto run = [&](void* storage) {
+    return capacity::dispatch(
+      storage,
+      bytes,
+      d_begins,
+      d_ends,
+      static_cast<cuda::std::int64_t>(input.size()),
+      num_segments,
+      thrust::raw_pointer_cast(d_in.data()),
+      thrust::raw_pointer_cast(d_out.data()),
+      result);
+  };
+  const auto query_status = run(nullptr);
+  cuda::compute_capability cc{};
+  REQUIRE(cub::detail::ptx_compute_cap(cc) == cudaSuccess);
+  if (cc < cuda::compute_capability{9, 0})
+  {
+    REQUIRE(query_status == cudaErrorNotSupported);
+    return;
+  }
+  REQUIRE(query_status == cudaSuccess);
+  c2h::device_vector<unsigned char> storage(bytes);
+  REQUIRE(run(thrust::raw_pointer_cast(storage.data())) == cudaSuccess);
+  REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
+  REQUIRE(c2h::host_vector<int>(d_out) == expected);
+  c2h::host_vector<unsigned> offsets(capacities::size + 2);
+  REQUIRE(cudaMemcpy(offsets.data(), result.bin_offsets, offsets.size() * sizeof(unsigned), cudaMemcpyDeviceToHost)
+          == cudaSuccess);
+  REQUIRE(offsets.back() - offsets[capacities::size] == 1);
+  c2h::host_vector<unsigned> ids(offsets.back());
+  REQUIRE(
+    cudaMemcpy(ids.data(), result.segment_ids, ids.size() * sizeof(unsigned), cudaMemcpyDeviceToHost) == cudaSuccess);
+  std::vector<unsigned> sorted_ids(ids.begin(), ids.end());
+  std::sort(sorted_ids.begin(), sorted_ids.end());
+  REQUIRE(sorted_ids == expected_ids);
 }
 
 // Exercise capacity boundaries and all launch groups, including repeated work and untouched overflow.
