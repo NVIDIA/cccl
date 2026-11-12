@@ -123,7 +123,7 @@ __device__ void check_binary_partition(
 
   const auto lane = cuda::gpu_thread.rank_as<unsigned>(cuda::warp);
   const bool pred = ((true_mask >> lane) & 1u) != 0;
-  const auto mask = (pred) ? true_mask : ~true_mask;
+  const auto mask = pred ? true_mask : ~true_mask;
   REQUIRE(result.is_valid());
   REQUIRE(result.group_count() == 2);
   REQUIRE(result.group_rank() == static_cast<unsigned>(pred));
