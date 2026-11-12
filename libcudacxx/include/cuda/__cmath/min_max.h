@@ -21,8 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__type_traits/is_floating_point.h>
-#include <cuda/std/__cmath/min_max.h>
+#include <cuda/__functional/maximum.h>
+#include <cuda/__functional/minimum.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_extended_arithmetic.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -31,8 +31,8 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-//! @brief Returns the smaller of two values. Floating-point values are compared like with `cuda::std::fmin`, so NaN is
-//! only returned if both values are NaN.
+//! @brief Returns the smaller of two values, like `cuda::minimum`. Floating-point values are compared like with
+//! `cuda::std::fmin`, so NaN is only returned if both values are NaN.
 //! @param[in] __a The first value.
 //! @param[in] __b The second value.
 //! @return The smaller of `__a` and `__b`.
@@ -40,14 +40,7 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(::cuda::std::__is_extended_arithmetic_v<_Tp>)
 [[nodiscard]] _CCCL_TRIVIAL_API constexpr _Tp min(_Tp __a, _Tp __b) noexcept
 {
-  if constexpr (::cuda::is_floating_point_v<_Tp>)
-  {
-    return ::cuda::std::fmin(__a, __b);
-  }
-  else
-  {
-    return (__b < __a) ? __b : __a;
-  }
+  return ::cuda::minimum<_Tp>{}(__a, __b);
 }
 
 // Mixed argument types must select a deleted overload rather than fail deduction, otherwise nvcc with MSVC considers
@@ -57,8 +50,8 @@ _CCCL_TEMPLATE(int = 0, class _Tp, class _Up)
 _CCCL_REQUIRES((!::cuda::std::is_same_v<_Tp, _Up>) )
 _CCCL_API _Tp min(_Tp, _Up) = delete;
 
-//! @brief Returns the larger of two values. Floating-point values are compared like with `cuda::std::fmax`, so NaN is
-//! only returned if both values are NaN.
+//! @brief Returns the larger of two values, like `cuda::maximum`. Floating-point values are compared like with
+//! `cuda::std::fmax`, so NaN is only returned if both values are NaN.
 //! @param[in] __a The first value.
 //! @param[in] __b The second value.
 //! @return The larger of `__a` and `__b`.
@@ -66,14 +59,7 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(::cuda::std::__is_extended_arithmetic_v<_Tp>)
 [[nodiscard]] _CCCL_TRIVIAL_API constexpr _Tp max(_Tp __a, _Tp __b) noexcept
 {
-  if constexpr (::cuda::is_floating_point_v<_Tp>)
-  {
-    return ::cuda::std::fmax(__a, __b);
-  }
-  else
-  {
-    return (__a < __b) ? __b : __a;
-  }
+  return ::cuda::maximum<_Tp>{}(__a, __b);
 }
 
 // See cuda::min
