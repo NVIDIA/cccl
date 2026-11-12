@@ -42,11 +42,8 @@ struct ConstPropagatingBarrierView : NonConstView<Barrier>
   }
 };
 
-namespace cuda::std::ranges
-{
 template <class Barrier>
-inline constexpr bool enable_borrowed_range<::ConstPropagatingBarrierView<Barrier>> = true;
-} // namespace cuda::std::ranges
+inline constexpr bool cuda::std::ranges::enable_borrowed_range<::ConstPropagatingBarrierView<Barrier>> = true;
 
 namespace
 {
