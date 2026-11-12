@@ -77,6 +77,7 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
     #include <cub/warp/warp_load.cuh>
     #include <cub/warp/warp_store.cuh>
     #include <cub/warp/warp_merge_sort.cuh>
+    #include <cub/warp/warp_bitonic_sort.cuh>
     #include <cub/util_arch.cuh>
     #include <cub/util_cpp_dialect.cuh>
     #include <cub/util_debug.cuh>
@@ -123,12 +124,16 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
       using warp_store_t = cub::WarpStore<int, items_per_thread>;
       using warp_store_storage_t = warp_store_t::TempStorage;
 
+      using warp_bitonic_sort_t = cub::detail::WarpBitonicSort<int, items_per_thread>;
+      using warp_bitonic_sort_storage_t = warp_bitonic_sort_t::TempStorage;
+
       __shared__ warp_load_storage_t warp_load_storage;
       __shared__ warp_exchange_storage_t warp_exchange_storage;
       __shared__ warp_reduce_storage_t warp_reduce_storage;
       __shared__ warp_merge_sort_storage_t warp_merge_sort_storage;
       __shared__ warp_scan_storage_t warp_scan_storage;
       __shared__ warp_store_storage_t warp_store_storage;
+      __shared__ warp_bitonic_sort_storage_t warp_bitonic_sort_storage;
 
       int items[items_per_thread];
       if (threadIdx.x < 32)
@@ -181,6 +186,36 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
         for (int i = 0; i < items_per_thread; i++)
         {
           if (items[i] != (i + threadIdx.x * items_per_thread))
+          {
+            atomicAdd(errors, 1);
+          }
+        }
+
+        // Test warp bitonic sort of all items, then of the first 100 items (striped arrangement)
+        int bitonic_keys[items_per_thread];
+        for (int i = 0; i < items_per_thread; i++)
+        {
+          bitonic_keys[i] = (32 * items_per_thread - 1) - (i * 32 + threadIdx.x);
+        }
+        warp_bitonic_sort_t(warp_bitonic_sort_storage).Sort(bitonic_keys, ::cuda::std::less<>{});
+        for (int i = 0; i < items_per_thread; i++)
+        {
+          if (bitonic_keys[i] != (i * 32 + threadIdx.x))
+          {
+            atomicAdd(errors, 1);
+          }
+        }
+
+        constexpr int bitonic_valid_items = 100;
+        for (int i = 0; i < items_per_thread; i++)
+        {
+          bitonic_keys[i] = (32 * items_per_thread - 1) - (i * 32 + threadIdx.x);
+        }
+        warp_bitonic_sort_t(warp_bitonic_sort_storage).Sort(bitonic_keys, ::cuda::std::less<>{}, bitonic_valid_items);
+        for (int i = 0; i < items_per_thread; i++)
+        {
+          const int idx = i * 32 + threadIdx.x;
+          if (idx < bitonic_valid_items && bitonic_keys[i] != (32 * items_per_thread - bitonic_valid_items) + idx)
           {
             atomicAdd(errors, 1);
           }

@@ -25,6 +25,7 @@
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/popcount.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/swap.h>
@@ -538,9 +539,7 @@ private:
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op) const
   {
-    ::cuda::static_for<num_stages>([&](auto stage) {
-      merge_stage<CompareOp, Reverse, true, stage()>(keys, values, compare_op);
-    });
+    ::cuda::static_for<num_stages>(merge_stage_op_t<CompareOp, Reverse, true>{*this, keys, values, compare_op});
   }
 
   template <typename CompareOp, bool Reverse>
@@ -556,9 +555,8 @@ private:
   template <typename CompareOp, bool Reverse>
   _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
   {
-    ::cuda::static_for<num_stages>([&](auto stage) {
-      merge_stage<CompareOp, Reverse, false, stage()>(keys, values, compare_op, valid_items);
-    });
+    ::cuda::static_for<num_stages>(
+      merge_stage_op_t<CompareOp, Reverse, false>{*this, keys, values, compare_op, valid_items});
   }
 
   template <typename CompareOp, bool Reverse>
@@ -569,6 +567,25 @@ private:
       merge_stage<CompareOp, Reverse, false, num_stages - 1>(keys, values, compare_op, valid_items);
     }
   }
+
+  // Runs stage `Stage` of the sorting network for cuda::static_for. A function object rather than a generic lambda,
+  // which NVRTC < 13.2 rejects in device code without -default-device. The pointers are held by reference: holding
+  // them by value changes the generated SASS.
+  template <typename CompareOp, bool Reverse, bool Full>
+  struct merge_stage_op_t
+  {
+    const WarpBitonicSort& warp_sort;
+    KeyT*& keys;
+    ValueT*& values;
+    CompareOp& compare_op;
+    int valid_items = -1;
+
+    template <int Stage>
+    _CCCL_DEVICE_API void operator()(::cuda::std::integral_constant<int, Stage>) const
+    {
+      warp_sort.template merge_stage<CompareOp, Reverse, Full, Stage>(keys, values, compare_op, valid_items);
+    }
+  };
 
   //! @brief Single stage of the bitonic sorting network operating across logical warp lanes via shuffles.
   //!
