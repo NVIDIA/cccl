@@ -842,7 +842,7 @@ public:
     {
       _CCCL_THROW(::std::invalid_argument, "cuda::buffer::as_type: size or alignment is incompatible with _Up");
     }
-    return std::move(*this).template __as_type<_Up>();
+    return ::cuda::std::move(*this).template __as_type<_Up>();
   }
 
   //! @brief Destroys the buffer, deallocates the buffer and destroys the memory
