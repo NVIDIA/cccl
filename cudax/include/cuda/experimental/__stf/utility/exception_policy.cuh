@@ -452,10 +452,9 @@ inline const notify_t notify{};
  *
  * `effect(f)` is the general effect-only sink, of which `notify` and `store` are the named cases.
  * `f` may take nothing, or the failure: on the exception channel a `const std::exception*`
- * (null for a non-standard exception), on the code channel the status value, or a null
- * `const std::exception*` if that is all `f` takes. On its own the operation goes on (the
- * default value, the status unchanged); inside `&` whatever follows decides. A throw from `f`
- * forwards, as from any hook.
+ * (null for a non-standard exception), on the code channel the status value. On its own the
+ * operation goes on (the default value, the status unchanged); inside `&` whatever follows
+ * decides. A throw from `f` forwards, as from any hook.
  *
  * @code
  * int level = 0;
@@ -468,31 +467,20 @@ struct effect_t : basic_sink<effect_t<_F>>
 {
   _F __f_;
 
-  // maybe_unused: when f is nullary, only the discarded constexpr branch reads the failure;
-  // gcc 9 reports it as set-but-unused.
+  // The exception channel's failure is the exception pointer, handled as the code channel
+  // handles a status.
   template <class _Fn>
-  void
-  on_thrown([[maybe_unused]] const ::std::exception* __exception, const ::cuda::std::source_location, _Fn&) noexcept(
+  void on_thrown(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn) noexcept(
     ::cuda::std::is_nothrow_invocable_v<_F&, const ::std::exception*> || ::cuda::std::is_nothrow_invocable_v<_F&>)
   {
-    if constexpr (::cuda::std::is_invocable_v<_F&, const ::std::exception*>)
-    {
-      __f_(__exception);
-    }
-    else
-    {
-      static_assert(::cuda::std::is_invocable_v<_F&>, "effect(f): f takes nothing or the failure");
-      __f_();
-    }
+    on_returned(__exception, __loc, __fn);
   }
 
+  // maybe_unused: when f is nullary, only the discarded constexpr branch reads the failure;
+  // gcc 9 reports it as set-but-unused.
   template <class _Status, class _Fn>
-  void on_returned(
-    [[maybe_unused]] const _Status __status,
-    [[maybe_unused]] const ::cuda::std::source_location __loc,
-    [[maybe_unused]] _Fn& __fn) noexcept(::cuda::std::is_nothrow_invocable_v<_F&, _Status>
-                                         || ::cuda::std::is_nothrow_invocable_v<_F&, const ::std::exception*>
-                                         || ::cuda::std::is_nothrow_invocable_v<_F&>)
+  void on_returned([[maybe_unused]] const _Status __status, const ::cuda::std::source_location, _Fn&) noexcept(
+    ::cuda::std::is_nothrow_invocable_v<_F&, _Status> || ::cuda::std::is_nothrow_invocable_v<_F&>)
   {
     if constexpr (::cuda::std::is_invocable_v<_F&, _Status>)
     {
@@ -500,7 +488,8 @@ struct effect_t : basic_sink<effect_t<_F>>
     }
     else
     {
-      on_thrown(nullptr, __loc, __fn);
+      static_assert(::cuda::std::is_invocable_v<_F&>, "effect(f): f takes nothing or the failure");
+      __f_();
     }
   }
 };
@@ -591,13 +580,12 @@ struct noop_t : basic_sink<noop_t>
   void on_thrown(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const noexcept
   {}
 
-  //! @brief The code-channel hook: "keep". The status is handled and yielded unchanged, so a `|`
-  //! stops here: `if_equal(cudaErrorNotReady)(noop) | unwind` yields the not-ready code.
+  //! @brief The code-channel hook: decide nothing, which on a status means "keep". The status is
+  //! handled and yielded unchanged, so a `|` stops here: `if_equal(cudaErrorNotReady)(noop) | unwind`
+  //! yields the not-ready code.
   template <class _Status, class _Fn>
-  __status_answer<_Status> on_returned(const _Status __status, const ::cuda::std::source_location, _Fn&) const noexcept
-  {
-    return {__status, false};
-  }
+  void on_returned(const _Status, const ::cuda::std::source_location, _Fn&) const noexcept
+  {}
 };
 inline constexpr noop_t noop{};
 
@@ -711,22 +699,18 @@ struct subst_t : basic_sink<subst_t<_V>>
 
   _V __v_;
 
+  // A raw hook gets the failure; anything else answers as on the code channel.
   template <class _Fn>
-  decltype(auto) on_thrown([[maybe_unused]] const ::std::exception* __exception,
-                           [[maybe_unused]] const ::cuda::std::source_location __loc,
-                           [[maybe_unused]] _Fn& __fn) noexcept
+  decltype(auto)
+  on_thrown(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn) noexcept
   {
     if constexpr (::cuda::std::is_invocable_v<_V&, const ::std::exception*, ::cuda::std::source_location, _Fn&>)
     {
       return __v_(__exception, __loc, __fn);
     }
-    else if constexpr (::cuda::std::is_invocable_v<_V&>)
-    {
-      return __v_();
-    }
     else
     {
-      return ::cuda::std::forward<_V>(__v_);
+      return on_returned(__exception, __loc, __fn);
     }
   }
 
@@ -1167,14 +1151,15 @@ struct delay_t : basic_sink<delay_t<_Duration>>
   _Duration __duration_;
 
   template <class _Fn>
-  void on_thrown(const ::std::exception*, const ::cuda::std::source_location, _Fn&)
+  void on_thrown(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
-    ::std::this_thread::sleep_for(__duration_);
+    on_returned(__exception, __loc, __fn);
   }
 
-  //! @brief The code-channel hook: the same sleep, an effect.
-  template <class _Status, class _Fn>
-  void on_returned(const _Status, const ::cuda::std::source_location, _Fn&)
+  //! @brief The hook on either channel: sleep, an effect. The exception channel's failure is
+  //! the exception pointer.
+  template <class _Failure, class _Fn>
+  void on_returned(const _Failure, const ::cuda::std::source_location, _Fn&)
   {
     ::std::this_thread::sleep_for(__duration_);
   }
@@ -6726,13 +6711,8 @@ UNITTEST("effect")
     }) << cudaErrorInvalidValue;
     EXPECT(seen == cudaErrorInvalidValue);
   }
-  // on a status, an f that takes only the exception pointer sees null; a nullary f runs
+  // on a status, a nullary f runs
   {
-    bool null_seen = false;
-    effect([&](const ::std::exception* e) {
-      null_seen = e == nullptr;
-    }) << cudaErrorInvalidValue;
-    EXPECT(null_seen);
     int hits = 0;
     effect([&] {
       ++hits;
