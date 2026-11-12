@@ -470,8 +470,9 @@ struct effect_t : basic_sink<effect_t<_F>>
   // The exception channel's failure is the exception pointer, handled as the code channel
   // handles a status.
   template <class _Fn>
-  void on_thrown(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn) noexcept(
-    ::cuda::std::is_nothrow_invocable_v<_F&, const ::std::exception*> || ::cuda::std::is_nothrow_invocable_v<_F&>)
+  void on_thrown(const ::std::exception* __exception,
+                 const ::cuda::std::source_location __loc,
+                 _Fn& __fn) noexcept(noexcept(on_returned(__exception, __loc, __fn)))
   {
     on_returned(__exception, __loc, __fn);
   }
@@ -6701,6 +6702,21 @@ UNITTEST("effect")
     };
     EXPECT(v == 7);
     EXPECT(what == "seen");
+  }
+  // the exception hook is noexcept exactly when the code-channel hook it forwards to is
+  {
+    const auto quiet = []() noexcept {};
+    const auto loud  = [] {};
+    using quiet_t    = decltype(effect(quiet));
+    using loud_t     = decltype(effect(loud));
+    static_assert(noexcept(::cuda::std::declval<quiet_t&>().on_thrown(
+      ::cuda::std::declval<const ::std::exception*>(),
+      ::cuda::std::declval<::cuda::std::source_location>(),
+      ::cuda::std::declval<void (&)()>())));
+    static_assert(!noexcept(::cuda::std::declval<loud_t&>().on_thrown(
+      ::cuda::std::declval<const ::std::exception*>(),
+      ::cuda::std::declval<::cuda::std::source_location>(),
+      ::cuda::std::declval<void (&)()>())));
   }
 #    ifdef _CUDAX_STF_CUDA_STATUS_TRAITS_AVAILABLE
   // on a status: sees the code; the status is left unchanged
