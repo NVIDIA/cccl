@@ -243,7 +243,7 @@ CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative
 
   const auto stream = c2h::make_current_device_stream();
 
-  const unsigned num_items = block_size * items_per_thread * 101 + 1;
+  const unsigned num_items = (block_size * items_per_thread * 101) + 1;
   const auto h_offsets =
     c2h::make_host_buffer<offset_t>(stream, {0u, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items});
   const std::size_t num_segments = h_offsets.size() - 1;
