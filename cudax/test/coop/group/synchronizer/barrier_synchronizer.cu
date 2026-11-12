@@ -42,8 +42,12 @@ struct ConstPropagatingBarrierView : NonConstView<Barrier>
   }
 };
 
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
+
 template <class Barrier>
-inline constexpr bool cuda::std::ranges::enable_borrowed_range<::ConstPropagatingBarrierView<Barrier>> = true;
+inline constexpr bool enable_borrowed_range<ConstPropagatingBarrierView<Barrier>> = true;
+
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 namespace
 {

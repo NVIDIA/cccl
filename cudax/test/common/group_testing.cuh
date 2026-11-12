@@ -44,8 +44,12 @@ struct NonConstView : cuda::std::ranges::view_base
   }
 };
 
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
+
 template <class T>
-inline constexpr bool cuda::std::ranges::enable_borrowed_range<::NonConstView<T>> = true;
+inline constexpr bool enable_borrowed_range<NonConstView<T>> = true;
+
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 template <class Synchronizer, class Unit, class Parent, class Result, class = void>
 inline constexpr bool can_make_synchronizer_instance = false;
