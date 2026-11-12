@@ -80,8 +80,13 @@ inline constexpr bool __is_buffer_byte_type_v =
                              char,
                              unsigned char>;
 
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 template <class _Tp, class... _Properties>
-_CCCL_HOST_API ::cuda::buffer<_tp, _Properties...>
+class buffer;
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
+
+template <class _Tp, class... _Properties>
+_CCCL_HOST_API ::cuda::buffer<_Tp, _Properties...>
 __acquire_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info);
 
 _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
@@ -132,8 +137,8 @@ public:
   template <class, class...>
   friend class buffer;
 
-  friend ::cuda::buffer<_tp, _Properties...>::cuda::__acquire_buffer<_Tp, _Properties...>(
-    ::cuda::__allocation_info<_Tp, _Properties...>&& __info);
+  friend _CCCL_HOST_API auto ::cuda::__acquire_buffer<_Tp, _Properties...>(
+    ::cuda::__allocation_info<_Tp, _Properties...>&& __info) -> ::cuda::buffer<_Tp, _Properties...>;
 
   // For now we require trivially copyable type to simplify the implementation
   static_assert(::cuda::is_trivially_copyable_v<_Tp>, "cuda::buffer requires T to be trivially copyable.");
@@ -218,7 +223,7 @@ private:
   template <class _Up>
   [[nodiscard]] _CCCL_HOST_API buffer<_Up, _Properties...> __as_type() &&
   {
-    auto __alloc = ::cuda::std::move(*this).release();
+    auto __alloc = ::cuda::std::move(*this).__release();
     return ::cuda::__acquire_buffer<_Up, _Properties...>(
       {__alloc.stream,
        ::cuda::std::move(__alloc.mr),
@@ -1340,7 +1345,7 @@ _CCCL_HOST_API auto make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& 
 //! if \p __info.ptr is null and \p __info.size is not zero, if \p __info.capacity does not
 //! equal \p __info.size, or if the allocation size overflows.
 template <class _Tp, class... _Properties>
-[[nodiscard]] _CCCL_HOST_API ::cuda::buffer<_tp, _Properties...>
+[[nodiscard]] _CCCL_HOST_API ::cuda::buffer<_Tp, _Properties...>
 __acquire_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info)
 {
   using __buffer_type = ::cuda::buffer<_Tp, _Properties...>;

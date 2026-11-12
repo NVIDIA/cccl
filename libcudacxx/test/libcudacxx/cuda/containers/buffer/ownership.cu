@@ -131,7 +131,7 @@ C2H_CCCLRT_TEST("cuda::buffer release, acquire and byte conversion", "[container
 
   static_assert(has_release<Buffer>);
   static_assert(!has_release<Buffer&>);
-  static_assert(cuda::std::is_nothrow_invocable_v<decltype(&Buffer::release), Buffer&&>);
+  static_assert(cuda::std::is_nothrow_invocable_v<decltype(&Buffer::__release), Buffer&&>);
 
   static_assert(has_as_bytes<Buffer, cuda::std::byte>);
   static_assert(has_as_bytes<Buffer, std::byte>);
@@ -301,7 +301,7 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer release, acquire and byte conversion",
 
   static_assert(has_release<Buffer>);
   static_assert(!has_release<Buffer&>);
-  static_assert(cuda::std::is_nothrow_invocable_v<decltype(&Buffer::release), Buffer&&>);
+  static_assert(cuda::std::is_nothrow_invocable_v<decltype(&Buffer::__release), Buffer&&>);
   static_assert(has_as_bytes<Buffer, cuda::std::byte>);
   static_assert(has_as_bytes<Buffer, std::byte>);
   static_assert(has_as_bytes<Buffer, char>);

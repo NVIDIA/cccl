@@ -94,7 +94,7 @@ private:
   template <class _Up>
   [[nodiscard]] _CCCL_HOST_API __resizable_buffer<_Up, _Properties...> __as_type() &&
   {
-    auto __alloc = ::cuda::std::move(*this).release();
+    auto __alloc = ::cuda::std::move(*this).__release();
     return ::cuda::__acquire_resizable_buffer<_Up, _Properties...>(
       {__alloc.stream,
        ::cuda::std::move(__alloc.mr),
