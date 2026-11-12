@@ -410,43 +410,34 @@ The same argument-matching rules described above for the object-based API apply
 to a deserialized algorithm: the dtypes, iterator kinds, and operator you pass
 when invoking it must match those used when it was originally built.
 
-For repeated execution on a known device, explicitly bind the reconstructed
-algorithm once:
+Use ``clone`` on a deserialized or ``make_*`` executor to obtain independent
+mutable host-side argument state while sharing compiled code:
 
 .. code-block:: python
 
-   portable = cuda.compute.deserialize(blob)
-   executable = portable.bind(device_id=0)
+   executor = cuda.compute.deserialize(blob)
+   bound_executor = executor.clone(device_id=0)
+   unbound_executor = bound_executor.clone(device_id=None)
 
-``bind`` returns a new algorithm object with the same call signature, loads the
-selected device's compiled code without recompiling, and leaves ``portable``
-unchanged. Calls to ``executable`` reuse that loaded result directly, avoiding
-the device query and build-result lookup otherwise performed on every call.
-The selected device must be current when calling ``executable``; it does not
-switch devices during execution. Binding itself restores the previously current
-CUDA context, including if loading fails.
+``device_id`` is required and keyword-only. An integer binds the clone to that
+device, loading code once without recompiling; calls then skip device queries
+and build-result lookups. The device must be current during execution. Cloning
+restores the previous CUDA context even on failure.
 
-Each binding has independent argument state, so separate threads can bind the
-same portable algorithm and use their own executable. Loaded code is shared
-between bindings for the same device. Each individual executable must still be
-used by one thread at a time. Binding also works on algorithms returned by
-``make_*`` factories, including ahead-of-time builds. Serializing a bound object
-preserves the portable compiled artifact, not its device binding.
+``None`` clears any binding on the copy, including in nested algorithms, without
+device access or code loading. The unbound copy resolves the current device when
+called. Cloning leaves the source unchanged, and serialization omits bindings.
+
+Use each executor from one thread at a time (see
+:ref:`Free-threaded Python <cuda.compute.free_threading>`). For concurrent use,
+give each thread its own clone; deserializing separately also works but loads
+native build state independently.
 
 Blobs are versioned and self-describing, but they are not a long-term storage
 format: compatibility across ``cuda-cccl`` versions is not guaranteed, and
 loading a blob produced by a different version may be rejected with a clear
 error. Persist the inputs needed to rebuild (or re-serialize) rather than
 relying on old blobs surviving an upgrade.
-
-The same threading rules also apply: like any other reusable algorithm object,
-a deserialized algorithm must be used by one thread at a time unless access is
-externally serialized (see :ref:`Free-threaded Python <cuda.compute.free_threading>`).
-For concurrent use, call :func:`deserialize <cuda.compute.algorithms.deserialize>`
-in each thread — reconstruction performs no recompilation, so per-thread
-deserialization from one shared blob is cheap. (Currently each deserialized
-object loads its native build state independently; a future release may share
-that state behind the scenes.)
 
 .. _cuda.compute.ahead_of_time_compilation:
 

@@ -539,11 +539,10 @@ build targets compute capabilities with no GPU queried, and a deserialized
 wrapper is reconstructed without a device binding — so its device is known only
 at call time. Each call resolves the per-device loaded result from a dictionary
 inside the per-cc build results, where a completed lookup also takes no explicit
-lock. Calling ``bind(device_id=...)`` on either kind of wrapper returns a new
-wrapper with an explicit device binding and the same execution fast path as a
-default build. Binding copies the schema's per-call descriptors, recursively
-binds nested algorithms, and shares the ``_PerCCBuildResults`` mapping so repeated
-bindings reuse its loaded results. The original wrapper remains unchanged.
+lock. ``clone(device_id=...)`` copies per-call descriptors recursively while
+sharing ``_PerCCBuildResults``. An integer selects the bound fast path;
+``None`` clears bindings without device queries or code loading, deferring
+device resolution to each call. The source wrapper is unchanged.
 
 Design requirements
 +++++++++++++++++++
