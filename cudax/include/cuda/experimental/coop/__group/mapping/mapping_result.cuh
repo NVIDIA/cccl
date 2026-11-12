@@ -99,7 +99,15 @@ struct __mapping_result<__uniform_static_unit_count<_StaticGroupCount, _StaticUn
     {
       _CCCL_ASSERT(is_valid(), "getting group rank of thread that is not part of the group is UB");
     }
-    return __group_rank_;
+
+    if constexpr (_StaticGroupCount == 1)
+    {
+      return 0;
+    }
+    else
+    {
+      return __group_rank_;
+    }
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool has_uniform_static_unit_count()
@@ -144,7 +152,15 @@ struct __mapping_result<__uniform_static_unit_count<_StaticGroupCount, _StaticUn
     {
       _CCCL_ASSERT(is_valid(), "getting unit rank of thread that is not part of the group is UB");
     }
-    return __unit_rank_;
+
+    if constexpr (_StaticUnitCount == 1)
+    {
+      return 0;
+    }
+    else
+    {
+      return __unit_rank_;
+    }
   }
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::device::lane_mask lane_mask() const

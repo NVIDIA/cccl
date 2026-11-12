@@ -79,15 +79,14 @@
 #include <thrust/complex.h>
 #include <thrust/detail/complex/math_private.h>
 
-#include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/copysign.h>
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/hyperbolic_functions.h>
-#include <cuda/std/__cmath/inverse_trigonometric_functions.h>
 #include <cuda/std/__cmath/isfinite.h>
 #include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/trigonometric_functions.h>
+#include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
@@ -167,10 +166,10 @@ _CCCL_HOST_DEVICE inline complex<double> ctanh(const complex<double>& z)
 
   /* Kahan's algorithm */
   t     = ::cuda::std::tan(y);
-  beta  = 1.0 + t * t; /* = 1 / cos^2(y) */
+  beta  = 1.0 + (t * t); /* = 1 / cos^2(y) */
   s     = ::cuda::std::sinh(x);
-  rho   = ::cuda::std::sqrt(1.0 + s * s); /* = cosh(x) */
-  denom = 1.0 + beta * s * s;
+  rho   = ::cuda::std::sqrt(1.0 + (s * s)); /* = cosh(x) */
+  denom = 1.0 + (beta * s * s);
   return (complex<double>((beta * rho * s) / denom, t / denom));
 }
 // NOLINTEND(misc-redundant-expression)

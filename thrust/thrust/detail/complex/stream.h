@@ -8,6 +8,13 @@
 
 #include <thrust/complex.h>
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
+
+#if _CCCL_HOSTED()
+#  include <ios>
+#endif // _CCCL_HOSTED()
+
 THRUST_NAMESPACE_BEGIN
 template <typename ValueType, class CharT, class Traits>
 std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const complex<ValueType>& z)

@@ -13,11 +13,16 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/type_traits.h>
-#include <thrust/functional.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 #include <thrust/system/detail/sequential/partition.h>
 #include <thrust/system/detail/sequential/stable_radix_sort.h>
+
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential

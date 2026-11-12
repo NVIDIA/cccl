@@ -145,7 +145,7 @@ public:
 {
   int __dmi         = static_cast<int>(static_cast<unsigned>(__lhs.month())) - 1 + __rhs.count();
   const int __years = (__dmi >= 0 ? __dmi : __dmi - 11) / 12;
-  __dmi             = __dmi - __years * 12 + 1;
+  __dmi             = __dmi - (__years * 12) + 1;
   return (__lhs.year() + years(__years)) / chrono::month(static_cast<unsigned>(__dmi));
 }
 

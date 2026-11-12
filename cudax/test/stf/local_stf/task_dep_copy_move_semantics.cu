@@ -26,7 +26,7 @@ using namespace cuda::experimental::stf;
 // Simple kernel for testing - defined outside to avoid device lambda nesting issues
 __global__ void double_values_kernel(int* out, const int* in, int n)
 {
-  const int idx = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int idx = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   if (idx < n)
   {
     out[idx] = in[idx] * 2;

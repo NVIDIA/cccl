@@ -24,7 +24,7 @@ using namespace cuda::experimental::stf;
 
 __global__ void axpy(slice<int> y, slice<const int> x, int a)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int i = tid; i < x.size(); i += nthreads)
@@ -44,7 +44,7 @@ void mytask(graph_ctx ctx, int /*id*/)
 
   ctx.parallel_for(lX.shape(), lX.write(), lY.write())->*[] __device__(size_t i, auto x, auto y) {
     x(i) = (1 + i);
-    y(i) = (2 + i * i);
+    y(i) = (2 + (i * i));
   };
 
   /* Compute Y = Y + alpha X */
@@ -59,7 +59,7 @@ void mytask(graph_ctx ctx, int /*id*/)
     for (size_t i = 0; i < N; i++)
     {
       EXPECT(x(i) == 1 + i);
-      EXPECT(y(i) == 2 + i * i + 200 * alpha * x(i));
+      EXPECT(y(i) == 2 + (i * i) + (200 * alpha * x(i)));
     }
   };
 }

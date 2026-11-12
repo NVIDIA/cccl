@@ -14,6 +14,9 @@
 #endif // no system header
 
 #include <thrust/system/cuda/error.h>
+#include <thrust/system/error_code.h>
+
+#include <string>
 
 THRUST_NAMESPACE_BEGIN
 

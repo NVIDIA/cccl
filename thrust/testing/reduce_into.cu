@@ -98,7 +98,7 @@ TEST_CASE("TestReduceIntoMixedTypesHost", "[reduce_into]")
 
   // float -> int should use using plus<int> operator by default
   thrust::host_vector<int> int_output(1);
-  thrust::reduce_into(float_input.begin(), float_input.end(), int_output.begin(), int(0));
+  thrust::reduce_into(float_input.begin(), float_input.end(), int_output.begin(), 0);
   REQUIRE(int_output[0] == 10);
 
   // int -> float should use using plus<float> operator by default
@@ -115,7 +115,7 @@ TEST_CASE("TestReduceIntoMixedTypesDevice", "[reduce_into]")
 
   // float -> int should use using plus<int> operator by default
   thrust::device_vector<int> int_output(1);
-  thrust::reduce_into(float_input.begin(), float_input.end(), int_output.begin(), int(0));
+  thrust::reduce_into(float_input.begin(), float_input.end(), int_output.begin(), 0);
   REQUIRE(int_output[0] == 10);
 
   // int -> float should use using plus<float> operator by default

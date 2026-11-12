@@ -348,12 +348,7 @@ struct segment_checker
       return true;
     }
 
-    if (!this->check_results(segment_begin, segment_size, ValueT{}))
-    {
-      return false;
-    }
-
-    return true;
+    return this->check_results(segment_begin, segment_size, ValueT{});
   }
 
 private:
@@ -1576,9 +1571,9 @@ struct generate_edge_case_offsets_dispatch
     add_segments(a_lot_of, single_thread_segment_size - 1);
     add_segments(a_lot_of, single_thread_segment_size);
     add_segments(a_lot_of, single_thread_segment_size + 1);
-    add_segments(a_lot_of, single_thread_segment_size * 2 - 1);
+    add_segments(a_lot_of, (single_thread_segment_size * 2) - 1);
     add_segments(a_lot_of, single_thread_segment_size * 2);
-    add_segments(a_lot_of, single_thread_segment_size * 2 + 1);
+    add_segments(a_lot_of, (single_thread_segment_size * 2) + 1);
     add_segments(a_bunch_of, small_segment_max_segment_size - 1);
     add_segments(a_bunch_of, small_segment_max_segment_size);
     add_segments(a_bunch_of, small_segment_max_segment_size + 1);

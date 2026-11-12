@@ -25,7 +25,7 @@ void test_buddy()
   std::vector<logical_data<slice<char>>> data;
   for (size_t i = 0; i < 10; i++)
   {
-    const size_t s = (1 + i % 8) * 1024ULL * 1024ULL;
+    const size_t s = (1 + (i % 8)) * 1024ULL * 1024ULL;
     auto l         = ctx.logical_data(shape_of<slice<char>>(s));
     data.push_back(l);
 
