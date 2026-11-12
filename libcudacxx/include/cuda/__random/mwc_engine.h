@@ -41,26 +41,28 @@ _CCCL_BEGIN_NAMESPACE(cuda::experimental)
 template <int _Lag, ::cuda::std::uint32_t _Multiplier>
 class __mwc_engine
 {
-  using __uint64 _CCCL_NODEBUG = ::cuda::std::uint64_t;
-  using __state _CCCL_NODEBUG  = ::cuda::std::array<::cuda::std::uint32_t, _Lag + 1>;
+  static_assert(_Lag > 0, "Lag must be positive");
+
+  using __state_t _CCCL_NODEBUG = ::cuda::std::uint32_t;
+  using __state _CCCL_NODEBUG   = ::cuda::std::array<__state_t, _Lag + 1>;
 
   __state __state_{};
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr __uint64 __splitmix(__uint64& __seed) noexcept
+  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::uint64_t __splitmix(::cuda::std::uint64_t& __seed) noexcept
   {
-    __uint64 __value = (__seed += 0x9E3779B97F4A7C15ull);
-    __value          = (__value ^ (__value >> 30)) * 0xBF58476D1CE4E5B9ull;
-    __value          = (__value ^ (__value >> 27)) * 0x94D049BB133111EBull;
+    ::cuda::std::uint64_t __value = (__seed += 0x9E3779B97F4A7C15ull);
+    __value                       = (__value ^ (__value >> 30)) * 0xBF58476D1CE4E5B9ull;
+    __value                       = (__value ^ (__value >> 27)) * 0x94D049BB133111EBull;
     return __value ^ (__value >> 31);
   }
 
-  _CCCL_HOST_DEVICE_API constexpr void __map_carry() noexcept
+  _CCCL_API constexpr void __map_carry() noexcept
   {
-    __state_[_Lag] = 1 + static_cast<result_type>((__uint64{__state_[_Lag]} * (_Multiplier - 2)) >> 32);
+    __state_[_Lag] = 1 + static_cast<result_type>((::cuda::std::uint64_t{__state_[_Lag]} * (_Multiplier - 2)) >> 32);
   }
 
   // (consteval) Compute modulo m = a * 2^(32*lag) - 1 without native 128-bit types
-  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL __state __modulus() noexcept
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL __state __modulus() noexcept
   {
     __state __mod{};
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -72,49 +74,51 @@ class __mwc_engine
     return __mod;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr bool __less(const __state& __lhs, const __state& __rhs) noexcept
+  [[nodiscard]] _CCCL_API static constexpr bool __less(const __state& __lhs, const __state& __rhs) noexcept
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __i = _Lag; __i >= 0; --__i)
     {
-      if (__lhs[__i] != __rhs[__i])
+      if (__lhs[__i] < __rhs[__i])
       {
-        return __lhs[__i] < __rhs[__i];
+        return true;
+      }
+      if (__lhs[__i] > __rhs[__i])
+      {
+        return false;
       }
     }
     return false;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr __state
-  __add_mod(const __state& __lhs, const __state& __rhs) noexcept
+  [[nodiscard]] _CCCL_API static constexpr __state __add_mod(const __state& __lhs, const __state& __rhs) noexcept
   {
     __state __sum{};
-    __uint64 __carry = 0;
+    ::cuda::std::uint64_t __carry = 0;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __i = 0; __i <= _Lag; ++__i)
     {
-      const __uint64 __word = __uint64{__lhs[__i]} + __rhs[__i] + __carry;
-      __sum[__i]            = static_cast<result_type>(__word);
-      __carry               = __word >> 32;
+      const ::cuda::std::uint64_t __word = ::cuda::std::uint64_t{__lhs[__i]} + __rhs[__i] + __carry;
+      __sum[__i]                         = static_cast<result_type>(__word);
+      __carry                            = __word >> 32;
     }
 
     constexpr auto __mod = __modulus();
     if (__carry || !__less(__sum, __mod))
     {
-      __uint64 __borrow = 0;
+      ::cuda::std::uint64_t __borrow = 0;
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int __i = 0; __i <= _Lag; ++__i)
       {
-        const __uint64 __sub = __uint64{__mod[__i]} + __borrow;
-        __borrow             = __uint64{__sum[__i]} < __sub;
-        __sum[__i]           = static_cast<result_type>(__uint64{__sum[__i]} - __sub);
+        const ::cuda::std::uint64_t __sub = ::cuda::std::uint64_t{__mod[__i]} + __borrow;
+        __borrow                          = ::cuda::std::uint64_t{__sum[__i]} < __sub;
+        __sum[__i]                        = static_cast<result_type>(::cuda::std::uint64_t{__sum[__i]} - __sub);
       }
     }
     return __sum;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr __state
-  __multiply_mod(const __state& __lhs, const __state& __rhs) noexcept
+  [[nodiscard]] _CCCL_API static constexpr __state __multiply_mod(const __state& __lhs, const __state& __rhs) noexcept
   {
     __state __factor = __lhs;
     __state __product{};
@@ -136,30 +140,30 @@ class __mwc_engine
 
 public:
   //! @brief unsigned 32-bit output type
-  using result_type _CCCL_NODEBUG = ::cuda::std::uint32_t;
+  using result_type _CCCL_NODEBUG = __state_t;
 
   //! @brief The default seed
-  static constexpr __uint64 default_seed = 1;
+  static constexpr ::cuda::std::uint64_t default_seed = 1;
 
   //! @brief Returns the smallest possible output
-  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type min() noexcept
+  [[nodiscard]] _CCCL_API static constexpr result_type min() noexcept
   {
     return 0;
   }
 
   //! @brief Returns the largest possible output
-  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type max() noexcept
+  [[nodiscard]] _CCCL_API static constexpr result_type max() noexcept
   {
     return ::cuda::std::numeric_limits<result_type>::max();
   }
 
   //! @brief Initializes the engine with @c default_seed
-  _CCCL_HOST_DEVICE_API constexpr __mwc_engine() noexcept
+  _CCCL_API constexpr __mwc_engine() noexcept
       : __mwc_engine(default_seed)
   {}
 
   //! @brief Initializes the whole state with @p __seed
-  _CCCL_HOST_DEVICE_API constexpr explicit __mwc_engine(const __uint64 __seed) noexcept
+  _CCCL_API constexpr explicit __mwc_engine(const ::cuda::std::uint64_t __seed) noexcept
   {
     seed(__seed);
   }
@@ -167,13 +171,13 @@ public:
   //! @brief Initializes the state from a seed sequence
   _CCCL_TEMPLATE(class _Sseq)
   _CCCL_REQUIRES(::cuda::std::__is_seed_sequence<_Sseq, __mwc_engine>)
-  _CCCL_HOST_DEVICE_API constexpr explicit __mwc_engine(_Sseq& __seq)
+  _CCCL_API constexpr explicit __mwc_engine(_Sseq& __seq)
   {
     seed(__seq);
   }
 
   //! @brief Seeds the state with SplitMix64, mapping the carry to [1, multiplier - 2]
-  _CCCL_HOST_DEVICE_API constexpr void seed(__uint64 __seed = default_seed) noexcept
+  _CCCL_API constexpr void seed(::cuda::std::uint64_t __seed = default_seed) noexcept
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __i = 0; __i <= _Lag; ++__i)
@@ -186,7 +190,7 @@ public:
   //! @brief Generates lag + 1 words from @p __seq and maps the last word to a valid carry
   _CCCL_TEMPLATE(class _Sseq)
   _CCCL_REQUIRES(::cuda::std::__is_seed_sequence<_Sseq, __mwc_engine>)
-  _CCCL_HOST_DEVICE_API constexpr void seed(_Sseq& __seq)
+  _CCCL_API constexpr void seed(_Sseq& __seq)
   {
     __state __words{};
     __seq.generate(__words.begin(), __words.end());
@@ -195,10 +199,10 @@ public:
   }
 
   //! @brief Returns the most recent XOR result, then advances the state
-  _CCCL_HOST_DEVICE_API constexpr result_type operator()() noexcept
+  _CCCL_API constexpr result_type operator()() noexcept
   {
-    const result_type __result = __state_[_Lag - 1] ^ __state_[_Lag];
-    const __uint64 __next      = __uint64{_Multiplier} * __state_[0] + __state_[_Lag];
+    const result_type __result         = __state_[_Lag - 1] ^ __state_[_Lag];
+    const ::cuda::std::uint64_t __next = ::cuda::std::uint64_t{_Multiplier} * __state_[0] + __state_[_Lag];
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __i = 0; __i < _Lag - 1; ++__i)
     {
@@ -210,7 +214,7 @@ public:
   }
 
   //! @brief Advances by @p __count outputs in O(log(__count)) time
-  _CCCL_HOST_DEVICE_API constexpr void discard(unsigned long long __count) noexcept
+  _CCCL_API constexpr void discard(unsigned long long __count) noexcept
   {
     // Direct stepping avoids modular arithmetic overhead for short skips
     if (__count < 16)
@@ -240,16 +244,14 @@ public:
   }
 
   //! @brief Compares the engine states
-  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
-  operator==(const __mwc_engine& __lhs, const __mwc_engine& __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator==(const __mwc_engine& __lhs, const __mwc_engine& __rhs) noexcept
   {
     return __lhs.__state_ == __rhs.__state_;
   }
 
 #if _CCCL_STD_VER <= 2017
   //! @brief Returns whether the engine states differ
-  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
-  operator!=(const __mwc_engine& __lhs, const __mwc_engine& __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const __mwc_engine& __lhs, const __mwc_engine& __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
@@ -315,11 +317,11 @@ public:
 
 //! @brief Experimental scrambled multiply-with-carry engine with 64-bit state and 32-bit output
 //! The period is approximately 2^63. Prefer discard-based stream partitioning
-using mwc64x32 _CCCL_NODEBUG = __mwc_engine<1, 0xFFF145F8u>;
+using mwc64x32 = __mwc_engine<1, 0xFFF145F8u>;
 
 //! @brief Experimental scrambled multiply-with-carry engine with 128-bit state and 32-bit output
 //! The period is approximately 2^127
-using mwc128x32 _CCCL_NODEBUG = __mwc_engine<3, 0xFFCCCC66u>;
+using mwc128x32 = __mwc_engine<3, 0xFFCCCC66u>;
 _CCCL_END_NAMESPACE(cuda::experimental)
 
 #include <cuda/std/__cccl/epilogue.h>

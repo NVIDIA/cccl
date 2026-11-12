@@ -32,15 +32,15 @@ using rng_types = nvbench::type_list<mwc64x32, mwc128x32>;
 template <class Engine>
 __global__ void initialize(Engine* states, const uint64_t seed)
 {
-  const auto index = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
-  states[index]    = Engine{seed + index};
+  const auto tid = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+  states[tid]    = Engine{seed + tid};
 }
 
 template <class Engine>
 __global__ void generate(const Engine* initial_states, const uint32_t samples_per_thread)
 {
-  const auto index  = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
-  auto engine       = initial_states[index];
+  const auto tid    = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+  auto engine       = initial_states[tid];
   uint32_t checksum = 0;
   for (uint32_t i = 0; i < samples_per_thread; ++i)
   {
