@@ -73,7 +73,7 @@ struct BaseDigitExtractor<KeyT, true>
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits ProcessFloatMinusZero(UnsignedBits key)
   {
     const UnsignedBits TWIDDLED_MINUS_ZERO_BITS =
-      TraitsT::TwiddleIn(UnsignedBits(1) << UnsignedBits(8 * sizeof(UnsignedBits) - 1));
+      TraitsT::TwiddleIn(UnsignedBits(1) << UnsignedBits((8 * sizeof(UnsignedBits)) - 1));
     const UnsignedBits TWIDDLED_ZERO_BITS = TraitsT::TwiddleIn(0);
     return key == TWIDDLED_MINUS_ZERO_BITS ? TWIDDLED_ZERO_BITS : key;
   }

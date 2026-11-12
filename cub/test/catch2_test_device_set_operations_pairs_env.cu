@@ -115,7 +115,7 @@ inline auto values_for(const c2h::device_vector<int>& keys, int source_bit) -> c
   c2h::host_vector<int> values(keys_h.size());
   for (std::size_t i = 0; i < keys_h.size(); ++i)
   {
-    values[i] = keys_h[i] * 2 + source_bit;
+    values[i] = (keys_h[i] * 2) + source_bit;
   }
   return c2h::device_vector<int>(values);
 }
@@ -143,7 +143,7 @@ void check_pairs(const c2h::device_vector<int>& keys1,
   {
     const int key = keys_out_h[i];
     CAPTURE(i, key, values_out_h[i]);
-    REQUIRE((values_out_h[i] == key * 2 || values_out_h[i] == key * 2 + 1));
+    REQUIRE((values_out_h[i] == key * 2 || values_out_h[i] == (key * 2) + 1));
     if (Op::values_from_first_input_only)
     {
       REQUIRE(values_out_h[i] == key * 2);

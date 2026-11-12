@@ -60,7 +60,7 @@ void Initialize(int* h_in, int num_items)
 /**
  * Solve exclusive-scan problem
  */
-int Solve(int* h_in, int* h_reference, int num_items)
+int Solve(const int* h_in, int* h_reference, int num_items)
 {
   int inclusive = 0;
   int aggregate = 0;

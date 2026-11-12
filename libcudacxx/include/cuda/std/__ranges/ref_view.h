@@ -113,6 +113,13 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES ref_view(_Range&) -> ref_view<_Range>;
 template <class _Tp>
 inline constexpr bool enable_borrowed_range<ref_view<_Tp>> = true;
 
+// This view preserves the size of its underlying range.
+template <class _Range>
+inline constexpr size_t __static_size_v<ref_view<_Range>> = __static_size_v<_Range>;
+
+template <class _Range>
+inline constexpr size_t __static_size_v<const ref_view<_Range>> = __static_size_v<_Range>;
+
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>

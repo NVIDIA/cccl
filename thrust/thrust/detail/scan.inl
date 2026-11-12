@@ -27,7 +27,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(scan_by_key.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/scan.h>
 #  include <thrust/system/cpp/detail/scan_by_key.h>
 #  include <thrust/system/cuda/detail/scan.h>

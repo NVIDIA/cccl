@@ -46,14 +46,11 @@ struct hierarchy_query_result
     {
       return x;
     }
-    else if (__i == 1)
+    if (__i == 1)
     {
       return y;
     }
-    else
-    {
-      return z;
-    }
+    return z;
   }
   [[nodiscard]] _CCCL_API constexpr const _Tp& operator[](::cuda::std::size_t __i) const noexcept
   {
@@ -61,14 +58,11 @@ struct hierarchy_query_result
     {
       return x;
     }
-    else if (__i == 1)
+    if (__i == 1)
     {
       return y;
     }
-    else
-    {
-      return z;
-    }
+    return z;
   }
 
   // Hide SFINAE conversion operators from Doxygen. The _CCCL_TEMPLATE/_CCCL_REQUIRES

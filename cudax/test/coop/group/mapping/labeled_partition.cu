@@ -56,7 +56,7 @@ struct rank_label_fn
     }
     else
     {
-      return static_cast<Label>(static_cast<Label>(Modulus - 1 - rank % Modulus) << Shift);
+      return static_cast<Label>(static_cast<Label>(Modulus - 1 - (rank % Modulus)) << Shift);
     }
   }
 
@@ -189,7 +189,7 @@ __device__ void test_previous_partitions(Config config, const NonExhaustive&... 
     {
       for (unsigned other_rank = lane % 8 % Modulus; other_rank < count; other_rank += Modulus)
       {
-        mask |= 1u << (lane / 8 * 8 + other_rank);
+        mask |= 1u << ((lane / 8 * 8) + other_rank);
       }
     }
     check_partition(result, 4 * Modulus, mask);

@@ -57,7 +57,7 @@ int main()
     ctx.parallel_for(box(N), lX.rw(), lS.read(), lmax_err.reduce(reducer::maxval<double>{}))
         ->*[] __device__(size_t i, auto x, auto s, auto& max_err) {
               const double x_old = x(i);
-              const double x_new = 0.5 * (x_old + s(i) / x_old);
+              const double x_new = 0.5 * (x_old + (s(i) / x_old));
               x(i)               = x_new;
               max_err            = fabs(x_new - x_old);
             };

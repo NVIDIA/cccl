@@ -41,7 +41,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(iter_swap.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/assign_value.h>
 #  include <thrust/system/cpp/detail/get_value.h>
 #  include <thrust/system/cpp/detail/iter_swap.h>

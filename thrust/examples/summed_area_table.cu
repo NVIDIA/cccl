@@ -27,7 +27,7 @@ struct transpose_index
     const size_t i = linear_index / n;
     const size_t j = linear_index % n;
 
-    return m * j + i;
+    return (m * j) + i;
   }
 };
 
@@ -81,7 +81,7 @@ void print(size_t m, size_t n, thrust::device_vector<T>& d_data)
   {
     for (size_t j = 0; j < n; j++)
     {
-      std::cout << std::setw(8) << h_data[i * n + j] << " ";
+      std::cout << std::setw(8) << h_data[(i * n) + j] << " ";
     }
     std::cout << "\n";
   }

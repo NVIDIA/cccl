@@ -222,7 +222,7 @@ C2H_TEST("BinarySearch build result has serialization metadata populated", "[bin
       build_info.get_libcudacxx_path(),
       build_info.get_ctk_path()));
 
-  CHECK(build.transform.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK(build.transform.cc == (build_info.get_cc_major() * 10) + build_info.get_cc_minor());
   CHECK((build.transform.payload != nullptr && build.transform.payload_kind == CCCL_PAYLOAD_CUBIN));
   CHECK(build.transform.payload_size > 0);
   REQUIRE(build.transform.transform_kernel_lowered_name != nullptr);
