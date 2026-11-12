@@ -52,7 +52,7 @@ struct group_merge_policy
 struct group_merge_policies
 {
   group_merge_policy warp;
-  group_merge_policy small;
+  group_merge_policy small_block;
   group_merge_policy large;
 };
 
@@ -60,13 +60,13 @@ struct group_merge_policies
 struct lrb_policy
 {
   partition_policy partition;
-  group_merge_policies group_merge;
+  group_merge_policies group_merge{};
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const lrb_policy& lhs, const lrb_policy& rhs) noexcept
   {
     return lhs.partition.block_threads == rhs.partition.block_threads && lhs.group_merge.warp == rhs.group_merge.warp
-        && lhs.group_merge.small == rhs.group_merge.small && lhs.group_merge.large == rhs.group_merge.large;
+        && lhs.group_merge.small_block == rhs.group_merge.small_block && lhs.group_merge.large == rhs.group_merge.large;
   }
 };
 

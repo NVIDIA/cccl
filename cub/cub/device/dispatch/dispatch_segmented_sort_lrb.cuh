@@ -41,7 +41,7 @@ _CCCL_HOST_DEVICE_API constexpr bool can_use_lrb(::cuda::compute_capability cc)
 template <typename Key, typename PolicySelector = policy_selector<Key>>
 using group_merge_sort_kernels_t = sort_kernel_list_t<
   sort_kernel_t<agent_group_merge, group_merge_policy_selector<PolicySelector, &group_merge_policies::warp>>,
-  sort_kernel_t<agent_group_merge, group_merge_policy_selector<PolicySelector, &group_merge_policies::small>>,
+  sort_kernel_t<agent_group_merge, group_merge_policy_selector<PolicySelector, &group_merge_policies::small_block>>,
   sort_kernel_t<agent_group_merge, group_merge_policy_selector<PolicySelector, &group_merge_policies::large>>>;
 
 // Query or use temporary storage, then count, prefix, and scatter IDs into capacity bins.
