@@ -17,7 +17,7 @@
 
 #include <cub/block/block_merge_sort.cuh>
 #include <cub/detail/null_type.cuh>
-#include <cub/detail/segmented_sort_entries.cuh>
+#include <cub/detail/segmented_sort_lrb.cuh>
 #include <cub/thread/thread_sort.cuh>
 
 #include <cuda/__cmath/ilog.h>
@@ -26,19 +26,19 @@
 #include <cuda/__cmath/round_down.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/functional>
-#include <cuda/std/utility>
+#include <cuda/std/__utility/integer_sequence.h>
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::segmented_sort_capacity
+namespace detail::segmented_sort_lrb
 {
 // Enumerate the supported thread/IPT pairs and their capacities in strictly increasing capacity order.
 template <typename PolicyGetter>
 struct group_merge_expansion
 {
-  inline static constexpr auto policy = PolicyGetter{}();
+  static constexpr auto policy = PolicyGetter{}();
   static_assert(policy.min_threads > 0 && ::cuda::is_power_of_two(policy.min_threads));
   static_assert(policy.max_threads >= policy.min_threads && ::cuda::is_power_of_two(policy.max_threads)
                 && policy.max_threads <= policy.block_threads);
@@ -60,9 +60,9 @@ struct group_merge_expansion
   template <int Bin>
   struct bin_selection
   {
-    inline static constexpr bin_config chosen = enumerate_shape(Bin);
-    static constexpr int capacity             = chosen.threads_per_segment * chosen.items_per_thread;
-    using type                                = bin_shape<chosen.threads_per_segment, chosen.items_per_thread>;
+    static constexpr bin_config chosen = enumerate_shape(Bin);
+    static constexpr int capacity      = chosen.threads_per_segment * chosen.items_per_thread;
+    using type                         = bin_shape<chosen.threads_per_segment, chosen.items_per_thread>;
   };
   // Build the capacity-list type from the selected configurations.
   template <::cuda::std::size_t... BinIndices>
@@ -76,9 +76,9 @@ struct group_merge_expansion
 // Sort segments cooperatively using thread-local sorting and merges across threads.
 // Warp groups have independent shared key storage and never use CTA barriers.
 template <typename PolicyGetter>
-struct group_merge_implementation
+struct agent_group_merge
 {
-  inline static constexpr auto policy    = PolicyGetter{}();
+  static constexpr auto policy           = PolicyGetter{}();
   using expansion                        = group_merge_expansion<PolicyGetter>;
   static constexpr bool is_warp          = policy.max_threads <= 32;
   static constexpr int threads_per_group = is_warp ? 32 : policy.block_threads;
@@ -264,6 +264,6 @@ struct group_merge_implementation
     }
   }
 };
-} // namespace detail::segmented_sort_capacity
+} // namespace detail::segmented_sort_lrb
 
 CUB_NAMESPACE_END
