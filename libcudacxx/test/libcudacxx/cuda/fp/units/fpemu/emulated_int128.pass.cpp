@@ -12,7 +12,7 @@
 // UNSUPPORTED: force-tile
 // error: calling a __host__ __device__ function in tile is not allowed
 
-#define _CCCL_FPEMU_FORCE_EMULATED_INT128
+// ADDITIONAL_COMPILE_DEFINITIONS: _CCCL_FPEMU_FORCE_EMULATED_INT128
 
 #include <cuda/fpemu>
 #include <cuda/std/cassert>
