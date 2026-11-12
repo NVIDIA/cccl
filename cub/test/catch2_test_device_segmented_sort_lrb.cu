@@ -16,8 +16,22 @@
 #include <c2h/catch2_test_helper.h>
 #include <c2h/device_and_stream.h>
 
-namespace capacity    = cub::detail::segmented_sort_capacity;
+namespace capacity    = cub::detail::segmented_sort_lrb;
 constexpr int sm90_cc = cuda::compute_capability{9, 0}.get();
+
+// Exercise host/device projections with architecture-dependent private settings.
+template <typename Key>
+struct test_policy_selector
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const
+  {
+    auto policy                                   = capacity::policy_selector<Key>{}(cc);
+    policy.partition.block_threads                = cc >= cuda::compute_capability{10, 0} ? 128 : 256;
+    policy.group_merge.warp.min_ipt               = cc >= cuda::compute_capability{10, 0} ? 10 : 9;
+    policy.group_merge.large.grid_size_multiplier = 1;
+    return policy;
+  }
+};
 
 // Irregular capacities exercise bin selection independently of rectangular tuning.
 struct irregular_expansion
@@ -38,12 +52,15 @@ CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[se
     REQUIRE(config.threads_per_segment == (4 << bin_idx));
     REQUIRE(config.items_per_thread == (bin_idx == 1 ? 10 : 9));
   }
-  static_assert(
-    capacity::group_merge_tuning_arch_selector{}(cuda::compute_capability{8, 9}) == cuda::compute_capability{8, 9});
-  static_assert(
-    capacity::group_merge_tuning_arch_selector{}(cuda::compute_capability{9, 0}) == cuda::compute_capability{9, 0});
-  static_assert(
-    capacity::group_merge_tuning_arch_selector{}(cuda::compute_capability{12, 0}) == cuda::compute_capability{12, 0});
+  using policies     = test_policy_selector<int>;
+  using kernels      = capacity::group_merge_sort_kernels_t<int, policies>;
+  using sm90_policy  = cub::detail::policy_getter<policies, cuda::compute_capability{9, 0}.get()>;
+  using sm100_policy = cub::detail::policy_getter<policies, cuda::compute_capability{10, 0}.get()>;
+  static_assert(sm90_policy{}().partition.block_threads == 256);
+  static_assert(sm100_policy{}().partition.block_threads == 128);
+  static_assert(kernels::capacities_t<sm90_policy>::size == 77);
+  static_assert(kernels::capacities_t<sm100_policy>::size == 71);
+
   using capacities = capacity::capacity_list<3, 10, 21>;
   static_assert(capacities::first_fit(3) == 0 && capacities::first_fit(4) == 1);
   static_assert(capacities::first_fit(21) == 2 && capacities::first_fit(22) == 3);
@@ -88,9 +105,10 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
          CUB_SMALL,
          c2h::type_list<int, double>)
 {
-  using key_type             = c2h::get<0, TestType>;
-  using kernels_t            = capacity::group_merge_sort_kernels_t<key_type>;
-  using capacities           = typename kernels_t::template capacities_t<cub::detail::policy_getter, sm90_cc>;
+  using key_type  = c2h::get<0, TestType>;
+  using kernels_t = capacity::group_merge_sort_kernels_t<key_type>;
+  using capacities =
+    typename kernels_t::template capacities_t<cub::detail::policy_getter<capacity::policy_selector<key_type>, sm90_cc>>;
   using warp_kernel_t        = typename kernels_t::template kernel_t<0>;
   using warp_policy_getter_t = cub::detail::policy_getter<typename warp_kernel_t::policy_selector, sm90_cc>;
   using warp_expansion       = typename warp_kernel_t::template expansion_t<warp_policy_getter_t>;
@@ -185,7 +203,9 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
     using kernel_t            = typename kernels_t::template kernel_t<i>;
     using policy_getter_t     = cub::detail::policy_getter<typename kernel_t::policy_selector, sm90_cc>;
     using kernel_capacities_t = typename kernel_t::template capacities_t<policy_getter_t>;
-    constexpr int first_bin   = kernels_t::template kernel_bin_begin_idx<sm90_cc>(i);
+    constexpr int first_bin =
+      kernels_t::template kernel_bin_begin_idx<cub::detail::policy_getter<capacity::policy_selector<key_type>, sm90_cc>>(
+        i);
     constexpr int lower_bound = first_bin ? capacities::bounds[static_cast<size_t>(first_bin - 1)] : 0;
     auto retry                = expected;
     for (size_t segment = 0; segment < lengths.size(); ++segment)
@@ -197,7 +217,7 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
     }
     d_out = retry;
     REQUIRE(
-      capacity::launch_sort_kernel<kernel_t, sm90_cc>(
+      capacity::launch_sort_kernel<kernel_t>(
         {result.bin_offsets + first_bin, result.segment_ids},
         thrust::raw_pointer_cast(d_begins.data()),
         thrust::raw_pointer_cast(d_ends.data()),
@@ -205,7 +225,8 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
         thrust::raw_pointer_cast(d_out.data()),
         1,
         stream,
-        cub::detail::TripleChevronFactory{})
+        cub::detail::TripleChevronFactory{},
+        policy_getter_t{})
       == cudaSuccess);
     REQUIRE(cudaStreamSynchronize(stream) == cudaSuccess);
     REQUIRE(c2h::host_vector<key_type>(d_out) == expected);
@@ -213,6 +234,29 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   retry_kernel(cuda::std::integral_constant<int, 0>{});
   retry_kernel(cuda::std::integral_constant<int, 1>{});
   retry_kernel(cuda::std::integral_constant<int, 2>{});
+  // A different private aggregate must drive matching partition and sorting settings on both sides.
+  thrust::fill(d_out.begin(), d_out.end(), key_type{-99});
+  const auto run_custom = [&](void* workspace) {
+    return capacity::
+      dispatch<key_type, long long*, long long*, cub::detail::TripleChevronFactory, test_policy_selector<key_type>>(
+        workspace,
+        bytes,
+        thrust::raw_pointer_cast(d_begins.data()),
+        thrust::raw_pointer_cast(d_ends.data()),
+        static_cast<unsigned>(lengths.size()),
+        thrust::raw_pointer_cast(d_in.data()),
+        thrust::raw_pointer_cast(d_out.data()),
+        result,
+        stream);
+  };
+  REQUIRE(run_custom(nullptr) == cudaSuccess);
+  storage.resize(bytes);
+  REQUIRE(run_custom(thrust::raw_pointer_cast(storage.data())) == cudaSuccess);
+  REQUIRE(cudaStreamSynchronize(stream) == cudaSuccess);
+  REQUIRE(c2h::host_vector<key_type>(d_out) == expected);
+  // Restore the default workspace size before testing default-policy reuse.
+  REQUIRE(run(nullptr) == cudaSuccess);
+  storage.resize(bytes);
   // Prefixes and scatter cursors must reset on a subsequent invocation.
   thrust::fill(d_out.begin(), d_out.end(), key_type{-99});
   REQUIRE(run(thrust::raw_pointer_cast(storage.data())) == cudaSuccess);

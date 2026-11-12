@@ -1177,8 +1177,8 @@ struct lrb_sort_launcher_t
     const int* ends) const
   {
     using key_type = unwrap_value_t<KeyT>;
-    cub::detail::segmented_sort_capacity::partition_result result;
-    return cub::detail::segmented_sort_capacity::dispatch(
+    cub::detail::segmented_sort_lrb::partition_result result;
+    return cub::detail::segmented_sort_lrb::dispatch(
       storage,
       bytes,
       begins,
@@ -1221,7 +1221,7 @@ void call_cub_segmented_sort_api(
     {
       SKIP("The internal LRB backend currently supports only host launches.");
     }
-    else if constexpr (!cub::detail::segmented_sort_capacity::can_use_lrb<unwrap_value_t<KeyT>>(
+    else if constexpr (!cub::detail::segmented_sort_lrb::can_use_lrb<unwrap_value_t<KeyT>>(
                          ::cuda::compute_capability{9, 0})
                        || !cuda::std::is_same_v<ValueT, cub::NullType>)
     {
@@ -1235,13 +1235,14 @@ void call_cub_segmented_sort_api(
       }
       ::cuda::compute_capability cc{};
       REQUIRE(cudaSuccess == CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY{}.PtxComputeCap(cc));
-      if (!cub::detail::segmented_sort_capacity::can_use_lrb<unwrap_value_t<KeyT>>(cc))
+      if (!cub::detail::segmented_sort_lrb::can_use_lrb<unwrap_value_t<KeyT>>(cc))
       {
         SKIP("The internal LRB backend requires a compiled SM90-or-newer target.");
       }
-      using kernels_t = cub::detail::segmented_sort_capacity::group_merge_sort_kernels_t<unwrap_value_t<KeyT>>;
-      using capacities_t =
-        typename kernels_t::template capacities_t<cub::detail::policy_getter, cuda::compute_capability{9, 0}.get()>;
+      using kernels_t    = cub::detail::segmented_sort_lrb::group_merge_sort_kernels_t<unwrap_value_t<KeyT>>;
+      using capacities_t = typename kernels_t::template capacities_t<
+        cub::detail::policy_getter<cub::detail::segmented_sort_lrb::policy_selector<unwrap_value_t<KeyT>>,
+                                   cuda::compute_capability{9, 0}.get()>>;
       c2h::host_vector<int> begins(num_segments), ends(num_segments);
       if (num_segments)
       {
@@ -1402,7 +1403,7 @@ void test_segments_derived(const c2h::device_vector<int>& d_offsets_vec)
   // Unsupported LRB configurations skip in the API helper; omit their unreachable validation.
   if constexpr (!test_lrb
                 || (test_host_launch
-                    && cub::detail::segmented_sort_capacity::can_use_lrb<unwrap_value_t<KeyT>>(
+                    && cub::detail::segmented_sort_lrb::can_use_lrb<unwrap_value_t<KeyT>>(
                       ::cuda::compute_capability{9, 0})
                     && cuda::std::is_same_v<ValueT, cub::NullType>) )
   {

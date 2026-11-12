@@ -19,20 +19,20 @@
 #include <cub/util_arch.cuh>
 #include <cub/util_namespace.cuh>
 
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 #include <cuda/std/tuple>
-#include <cuda/std/utility>
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::segmented_sort_capacity
+namespace detail::segmented_sort_lrb
 {
 // Ordered capacity bounds supplied by sorting kernels; partition finds the smallest fitting bin.
 template <int... Bounds>
 struct capacity_list
 {
   static constexpr int size = sizeof...(Bounds);
-  inline static constexpr ::cuda::std::array<int, size> bounds{{Bounds...}};
+  static constexpr ::cuda::std::array<int, size> bounds{{Bounds...}};
 
   // Require nonempty, positive, strictly increasing bounds for binary-search routing.
   _CCCL_HOST_DEVICE_API static constexpr bool valid()
@@ -119,6 +119,8 @@ struct sort_kernel_t
 {
   using policy_selector = PolicySelector;
   template <typename PolicyGetter>
+  using selected_policy_getter = typename PolicySelector::template getter<PolicyGetter>;
+  template <typename PolicyGetter>
   using implementation_t = Implementation<PolicyGetter>;
   template <typename PolicyGetter>
   using expansion_t = typename implementation_t<PolicyGetter>::expansion;
@@ -135,16 +137,16 @@ struct sort_kernel_list_t
   using kernels_t = ::cuda::std::tuple<Kernels...>;
   template <::cuda::std::size_t KernelIndex>
   using kernel_t = ::cuda::std::tuple_element_t<KernelIndex, kernels_t>;
-  template <template <typename, int> class PolicyGetter, int CC>
+  template <typename PolicyGetter>
   using capacities_t = typename concatenate_capacities<
-    typename Kernels::template capacities_t<PolicyGetter<typename Kernels::policy_selector, CC>>...>::type;
+    typename Kernels::template capacities_t<typename Kernels::template selected_policy_getter<PolicyGetter>>...>::type;
 
   // First global bin index for the selected kernel; local bin indices start at zero.
-  template <int CC>
+  template <typename PolicyGetter>
   _CCCL_HOST_DEVICE_API static constexpr int kernel_bin_begin_idx(int kernel_idx)
   {
     constexpr int kernel_bin_counts[] = {
-      Kernels::template capacities_t<policy_getter<typename Kernels::policy_selector, CC>>::size...};
+      Kernels::template capacities_t<typename Kernels::template selected_policy_getter<PolicyGetter>>::size...};
     int first_bin_idx = 0;
     for (int i = 0; i < kernel_idx; ++i)
     {
@@ -160,6 +162,6 @@ struct partition_result
   unsigned* bin_offsets{}; // Bounded bin count + 2 offsets, including overflow's end.
   unsigned* segment_ids{};
 };
-} // namespace detail::segmented_sort_capacity
+} // namespace detail::segmented_sort_lrb
 
 CUB_NAMESPACE_END
