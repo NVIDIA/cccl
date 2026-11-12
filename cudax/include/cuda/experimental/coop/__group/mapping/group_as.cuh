@@ -76,30 +76,26 @@ __group_as_map(const _Unit&, const _PrevMappingResult& __prev_mapping_result, _R
     }
   }
 
-  const auto __prev_nunits    = __prev_mapping_result.unit_count();
   const auto __prev_unit_rank = __prev_mapping_result.unit_rank();
   const auto __curr_ngroups   = static_cast<::cuda::std::uint32_t>(::cuda::std::ranges::size(__unit_counts));
   const auto __ngroups        = __prev_mapping_result.group_count() * __curr_ngroups;
 
-  // If the mapping is exhaustive, check the preconditions, otherwise remove the last partial group.
-  if constexpr (_Exhaustive)
+  if constexpr (::cuda::std::ranges::common_range<_Range>)
   {
-    _CCCL_ASSERT(
-      ::cuda::std::accumulate(::cuda::std::ranges::begin(__unit_counts), ::cuda::std::ranges::end(__unit_counts), 0u)
-        == __prev_nunits,
-      "group_as mapping would produce units without a group during exhaustive mapping");
-  }
-  else
-  {
-    _CCCL_ASSERT(
-      ::cuda::std::accumulate(::cuda::std::ranges::begin(__unit_counts), ::cuda::std::ranges::end(__unit_counts), 0u)
-        <= __prev_nunits,
-      "group_as mapping requires more units than are available");
-
-    if (__prev_unit_rank >= ::cuda::std::accumulate(
-          ::cuda::std::ranges::begin(__unit_counts), ::cuda::std::ranges::end(__unit_counts), 0u))
+    const auto __prev_nunits = __prev_mapping_result.unit_count();
+    if constexpr (_Exhaustive)
     {
-      return _MappingResult::__invalid();
+      _CCCL_ASSERT(
+        ::cuda::std::accumulate(::cuda::std::ranges::begin(__unit_counts), ::cuda::std::ranges::end(__unit_counts), 0u)
+          == __prev_nunits,
+        "group_as mapping would produce units without a group during exhaustive mapping");
+    }
+    else
+    {
+      _CCCL_ASSERT(
+        ::cuda::std::accumulate(::cuda::std::ranges::begin(__unit_counts), ::cuda::std::ranges::end(__unit_counts), 0u)
+          <= __prev_nunits,
+        "group_as mapping requires more units than are available");
     }
   }
 
@@ -122,6 +118,10 @@ __group_as_map(const _Unit&, const _PrevMappingResult& __prev_mapping_result, _R
       return _MappingResult{__ngroups, __group_rank, __n, __rank, __lane_mask};
     }
     __sum += __i_count;
+  }
+  if constexpr (!_Exhaustive)
+  {
+    return _MappingResult::__invalid();
   }
   _CCCL_UNREACHABLE();
 }
