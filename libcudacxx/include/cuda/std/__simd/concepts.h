@@ -66,32 +66,12 @@ _CCCL_CONCEPT __simd_vec_type = _CCCL_REQUIRES_EXPR(
 
 // [simd.expos], constexpr-wrapper-like concept
 
-// __has_non_static_value_v is a workaround for NVCC + GCC <= 12
-// "invalid use of non-static data member '_Tp::value'"
-// when the data member is non-static, the value cannot be evaluated at compile-time value
-template <typename _Tp, typename = void>
-inline constexpr bool __has_non_static_value_v = false;
-
 template <typename _Tp>
-inline constexpr bool __has_non_static_value_v<_Tp, void_t<decltype(&_Tp::value)>> =
-  is_member_pointer_v<decltype(&_Tp::value)>;
-
-template <typename _Tp, typename = void>
-inline constexpr bool __constexpr_wrapper_value_matches_v = false;
-
-template <typename _Tp>
-inline constexpr bool __constexpr_wrapper_value_matches_v<
-  _Tp,
-  // Reject non-static members before constant-expression substitution for NVCC + GCC <= 12
-  void_t<decltype(_Tp::value),
-         enable_if_t<!__has_non_static_value_v<_Tp>>,
-         enable_if_t<(_Tp() == _Tp::value) && (static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value)>>> = true;
-
-template <typename _Tp>
-_CCCL_CONCEPT __constexpr_wrapper_like = _CCCL_REQUIRES_EXPR(
-  (_Tp))(requires(__constexpr_wrapper_value_matches_v<_Tp>),
-         requires(convertible_to<_Tp, decltype(_Tp::value)>),
-         requires(equality_comparable_with<_Tp, decltype(_Tp::value)>));
+_CCCL_CONCEPT __constexpr_wrapper_like = _CCCL_REQUIRES_EXPR((_Tp))(
+  requires(convertible_to<_Tp, decltype(_Tp::value)>),
+  requires(equality_comparable_with<_Tp, decltype(_Tp::value)>),
+  declval<char (&)[(_Tp() == _Tp::value) ? 1 : -1]>(),
+  declval<char (&)[(static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value) ? 1 : -1]>());
 
 // Covers all integral types including character types (char16_t, char32_t, wchar_t, char8_t),
 // which are excluded by __cccl_is_integer_v
