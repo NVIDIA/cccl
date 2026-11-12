@@ -24,6 +24,7 @@
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__random/is_seed_sequence.h>
 #include <cuda/std/__random/is_valid.h>
+#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/climits>
@@ -351,7 +352,8 @@ public:
     const _CharT __fill                       = __os.fill();
     __os.flags(_Ostream::dec | _Ostream::left);
     __os.fill(__os.widen(' '));
-    __os << __e.__x_;
+    // Promote, so that an unsigned char state is written as a number and not as a character
+    __os << static_cast<common_type_t<_UIntType, unsigned>>(__e.__x_);
     __os.flags(__flags);
     __os.fill(__fill);
     return __os;
@@ -363,11 +365,19 @@ public:
     using _Istream                            = ::std::basic_istream<_CharT, _Traits>;
     const typename _Istream::fmtflags __flags = __is.flags();
     __is.flags(_Istream::dec | _Istream::skipws);
-    _UIntType __t;
+    // Read an unsigned char state as a number and not as a character
+    common_type_t<_UIntType, unsigned> __t{};
     __is >> __t;
+    if constexpr (sizeof(_UIntType) < sizeof(unsigned))
+    {
+      if (!__is.fail() && __t > _Mp)
+      {
+        __is.setstate(_Istream::failbit);
+      }
+    }
     if (!__is.fail())
     {
-      __e.__x_ = __t;
+      __e.__x_ = static_cast<_UIntType>(__t);
     }
     __is.flags(__flags);
     return __is;

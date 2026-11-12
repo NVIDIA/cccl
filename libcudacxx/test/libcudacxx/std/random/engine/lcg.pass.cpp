@@ -127,10 +127,45 @@ TEST_HOST_DEVICE_FUNC void test_p4037r1_small_uinttype()
   static_assert(E::modulus == 13u);
 }
 
+#if _CCCL_HOSTED()
+// P4037R1: an unsigned char state is written and read as a decimal number, not as a character
+void test_p4037r1_small_uinttype_stream()
+{
+  using E = cuda::std::linear_congruential_engine<unsigned char, 5u, 1u, 0u>;
+  E e(42);
+  e.discard(10001);
+  std::stringstream ss;
+  ss << e;
+  assert(ss.str() == "3");
+
+  // 32 is the space character, which would be skipped if the state was read as a character
+  E w(32);
+  std::stringstream ws;
+  ws << w;
+  assert(ws.str() == "32");
+  E r;
+  ws >> r;
+  assert(!ws.fail());
+  assert(r == w);
+
+  // A value that does not fit into unsigned char is rejected and leaves the engine unchanged
+  std::stringstream big("256");
+  E b;
+  big >> b;
+  assert(big.fail());
+  assert(b == E{});
+
+  test_save_restore<E>();
+}
+#endif // _CCCL_HOSTED()
+
 int main(int, char**)
 {
   test();
   test_p4037r1_small_uinttype();
+#if _CCCL_HOSTED()
+  NV_IF_TARGET(NV_IS_HOST, ({ test_p4037r1_small_uinttype_stream(); }));
+#endif // _CCCL_HOSTED()
   test_modulus_zero();
   test_large_modulus();
   test_promotion();
