@@ -81,7 +81,8 @@ inline constexpr bool __is_buffer_byte_type_v =
                              unsigned char>;
 
 template <class _Tp, class... _Properties>
-_CCCL_HOST_API auto __acquire_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info);
+_CCCL_HOST_API ::cuda::buffer<_tp, _Properties...>
+__acquire_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info);
 
 _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 //! @rst
@@ -131,7 +132,8 @@ public:
   template <class, class...>
   friend class buffer;
 
-  friend auto ::cuda::__acquire_buffer<_Tp, _Properties...>(::cuda::__allocation_info<_Tp, _Properties...>&& __info);
+  friend ::cuda::buffer<_tp, _Properties...>::cuda::__acquire_buffer<_Tp, _Properties...>(
+    ::cuda::__allocation_info<_Tp, _Properties...>&& __info);
 
   // For now we require trivially copyable type to simplify the implementation
   static_assert(::cuda::is_trivially_copyable_v<_Tp>, "cuda::buffer requires T to be trivially copyable.");
@@ -1325,7 +1327,8 @@ _CCCL_HOST_API auto make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& 
 //! if \p __info.ptr is null and \p __info.size is not zero, if \p __info.capacity does not
 //! equal \p __info.size, or if the allocation size overflows.
 template <class _Tp, class... _Properties>
-_CCCL_HOST_API auto __acquire_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info)
+[[nodiscard]] _CCCL_HOST_API ::cuda::buffer<_tp, _Properties...>
+__acquire_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info)
 {
   using __buffer_type = ::cuda::buffer<_Tp, _Properties...>;
 

@@ -39,16 +39,31 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _Tp, class... _Properties>
 struct __allocation_info
 {
-  using __resource_t _CCCL_NODEBUG = ::cuda::mr::any_resource<_Properties...>;
-  using __pointer_t _CCCL_NODEBUG  = _Tp*;
-  using __size_type _CCCL_NODEBUG  = ::cuda::std::size_t;
+  using __resource_type _CCCL_NODEBUG = ::cuda::mr::any_resource<_Properties...>;
+  using __pointer_type _CCCL_NODEBUG  = _Tp*;
+  using __size_type _CCCL_NODEBUG     = ::cuda::std::size_t;
 
   ::cuda::stream_ref stream;
-  __resource_t mr;
-  __pointer_t ptr       = nullptr;
-  __size_type capacity  = 0;
-  __size_type size      = 0;
-  __size_type alignment = alignof(_Tp);
+  __resource_type mr;
+  __pointer_type ptr;
+  __size_type capacity;
+  __size_type size;
+  __size_type alignment;
+
+  __allocation_info(
+    ::cuda::stream_ref __stream,
+    __resource_type __mr,
+    __pointer_type __ptr,
+    __size_type __capacity,
+    __size_type __size,
+    __size_type __alignment)
+      : stream(__stream)
+      , mr(::cuda::std::move(__mr))
+      , ptr(__ptr)
+      , capacity(__capacity)
+      , size(__size)
+      , alignment(__alignment)
+  {}
 };
 
 _CCCL_END_NAMESPACE_CUDA
