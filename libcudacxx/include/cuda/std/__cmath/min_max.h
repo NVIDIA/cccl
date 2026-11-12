@@ -26,8 +26,6 @@
 #include <cuda/std/__cmath/traits.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/storage.h>
-#include <cuda/std/__floating_point/storage_order.h>
-#include <cuda/std/__floating_point/traits.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_extended_arithmetic.h>
@@ -196,16 +194,6 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
     {
       return static_cast<double>(__x < __y ? __y : __x);
     }
-    else if constexpr (__is_ext_nv_fp_v<_Tp>)
-    {
-      // __half and __nv_bfloat16 are handled above, so the storage is a small integer. Widen it so the NaN sentinel
-      // fits. NaN gets the smallest key, so that the other value is returned.
-      const uint32_t __x_key =
-        ::cuda::std::isnan(__x) ? 0u : static_cast<uint32_t>(::cuda::std::__fp_storage_order_key(__x)) + 1u;
-      const uint32_t __y_key =
-        ::cuda::std::isnan(__y) ? 0u : static_cast<uint32_t>(::cuda::std::__fp_storage_order_key(__y)) + 1u;
-      return __x_key < __y_key ? __y : __x;
-    }
     else
     {
       _CCCL_IF_NOT_CONSTEVAL_DEFAULT
@@ -354,17 +342,6 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
     if constexpr (is_integral_v<_Tp>)
     {
       return static_cast<double>(__y < __x ? __y : __x);
-    }
-    else if constexpr (__is_ext_nv_fp_v<_Tp>)
-    {
-      // __half and __nv_bfloat16 are handled above, so the storage is a small integer. Widen it so the NaN sentinel
-      // fits. NaN gets the largest key, so that the other value is returned.
-      constexpr uint32_t __nan_key = 1u << (8 * sizeof(__fp_storage_of_t<_Tp>));
-      const uint32_t __x_key =
-        ::cuda::std::isnan(__x) ? __nan_key : static_cast<uint32_t>(::cuda::std::__fp_storage_order_key(__x));
-      const uint32_t __y_key =
-        ::cuda::std::isnan(__y) ? __nan_key : static_cast<uint32_t>(::cuda::std::__fp_storage_order_key(__y));
-      return __y_key < __x_key ? __y : __x;
     }
     else
     {
