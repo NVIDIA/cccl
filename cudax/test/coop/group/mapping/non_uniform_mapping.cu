@@ -77,6 +77,40 @@ __device__ void test_result_storage()
   CHECK(uniform.unit_count() == 8);
 }
 
+template <unsigned GroupRank, bool Exhaustive, bool Contiguous>
+__device__ void test_per_group_result()
+{
+  using Result =
+    cudax::coop::__mapping_result<cudax::coop::__per_group_count<3, GroupRank, 12>, Exhaustive, Contiguous>;
+
+  static_assert(cudax::coop::__group_mapping_result<Result>);
+  static_assert(Result::static_group_count() == 3);
+  static_assert(Result::has_uniform_static_unit_count());
+  static_assert(Result::static_unit_count() == 12);
+  static_assert(Result::static_unit_count(GroupRank) == 12);
+  static_assert(Result::is_always_exhaustive() == Exhaustive);
+  static_assert(Result::is_always_contiguous() == Contiguous);
+
+  for (unsigned rank = 0; rank < 12; ++rank)
+  {
+    const auto mask = cuda::device::lane_mask{0x55u};
+    const Result result{rank, mask};
+
+    CHECK(result.is_valid());
+    CHECK(result.group_count() == 3);
+    CHECK(result.group_rank() == GroupRank);
+    CHECK(result.unit_count() == 12);
+    CHECK(result.unit_rank() == rank);
+    CHECK(result.lane_mask() == mask);
+  }
+
+  if constexpr (Exhaustive)
+  {
+    constexpr Result result{11, cuda::device::lane_mask::all()};
+    static_assert(result.group_rank() == GroupRank);
+  }
+}
+
 template <unsigned N, bool Static, bool Exhaustive, bool Contiguous = true, class Config>
 __device__ void test_group_by_counts(Config config)
 {
@@ -285,6 +319,11 @@ struct TestKernel
   __device__ void operator()(const Config& config)
   {
     test_other_mappings(config);
+
+    test_per_group_result<0, true, true>();
+    test_per_group_result<1, true, false>();
+    test_per_group_result<2, false, true>();
+    test_per_group_result<2, false, false>();
 
     // Storage must preserve both exhaustive and contiguous guarantees independently.
     test_result_storage<true, true>();

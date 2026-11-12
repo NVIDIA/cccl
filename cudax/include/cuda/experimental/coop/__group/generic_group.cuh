@@ -205,12 +205,12 @@ public:
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  [[nodiscard]] _CCCL_DEVICE_API _Tp rank_as(const _ParentGroup& __parent) const
+  [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp rank_as(const _ParentGroup& __parent) const
   {
     return __rank_as_impl<_Tp>(__mapping_result_, __hier_, __parent);
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API auto rank(const _ParentGroup& __parent) const
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto rank(const _ParentGroup& __parent) const
   {
     return __rank_as_impl<typename level_type::__product_type>(__mapping_result_, __hier_, __parent);
   }

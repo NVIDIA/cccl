@@ -138,20 +138,13 @@ _CCCL_DEVICE_API decltype(auto) __with_static_unit_count_range(const _Group& __g
   }
   else
   {
-    using _StaticMappingResult = ::cuda::experimental::coop::__mapping_result<
-      __uniform_static_unit_count<_MappingResult::static_group_count(), _MappingResult::static_unit_count(_First)>,
+    using _PerGroupMappingResult = ::cuda::experimental::coop::__mapping_result<
+      __per_group_count<_MappingResult::static_group_count(), _First, _MappingResult::static_unit_count(_First)>,
       _MappingResult::is_always_exhaustive(),
       _MappingResult::is_always_contiguous()>;
 
-    const _StaticMappingResult __static_mapping_result{
-      __mapping_result.group_count(),
-      __mapping_result.group_rank(),
-      __mapping_result.unit_count(),
-      __mapping_result.unit_rank(),
-      __mapping_result.lane_mask()};
-
-    return ::cuda::std::forward<_Fn>(__fn)(
-      group_view<_Unit, _Group, _StaticMappingResult>{__group, __static_mapping_result});
+    return ::cuda::std::forward<_Fn>(__fn)(group_view<_Unit, _Group, _PerGroupMappingResult>{
+      __group, _PerGroupMappingResult{__mapping_result.unit_rank(), __mapping_result.lane_mask()}});
   }
 }
 

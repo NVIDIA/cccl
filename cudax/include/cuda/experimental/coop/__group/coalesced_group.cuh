@@ -254,7 +254,7 @@ public:
   }
 
   template <class _Tp, class _MappingResult, class _InLevel>
-  [[nodiscard]] _CCCL_DEVICE_API static _Tp
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp
   __rank_as_impl(const _MappingResult&, const _Hierarchy& __hier, const _InLevel& __in_level)
   {
     if constexpr (::cuda::std::is_same_v<_InLevel, level_type>)
@@ -269,14 +269,14 @@ public:
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API _Tp rank_as(const _InLevel& __in_level) const
+  [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp rank_as(const _InLevel& __in_level) const
   {
     return __rank_as_impl<_Tp>(__mapping_result_, __hier_, __in_level);
   }
 
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API auto rank(const _InLevel& __in_level) const
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto rank(const _InLevel& __in_level) const
   {
     return __rank_as_impl<typename _InLevel::__product_type>(__mapping_result_, __hier_, __in_level);
   }
