@@ -41,6 +41,20 @@ AST_MATCHER_P(TemplateSpecializationTypeLoc, templateArgumentLocCountIs, unsigne
 }
 #endif
 
+// LLVM 22's hasTemplateArgumentLoc does not support UnresolvedLookupExpr.
+AST_POLYMORPHIC_MATCHER_P2(
+  hasExprTemplateArgumentLoc,
+  AST_POLYMORPHIC_SUPPORTED_TYPES(DeclRefExpr, UnresolvedLookupExpr),
+  unsigned,
+  index,
+  TemplateArgumentLocMatcher, // NOLINT
+  inner_matcher)
+{
+  const auto arguments = Node.template_arguments();
+
+  return index < arguments.size() && inner_matcher.matches(arguments[index], Finder, Builder);
+}
+
 AST_MATCHER(QualType, isSizeT)
 {
   static_cast<void>(Builder);
@@ -292,7 +306,7 @@ public:
     {
       const auto void_arg = hasTypeLoc(loc(qualType(builtinType(), voidType())));
       const auto has_void_arg =
-        anyOf(hasTemplateArgumentLoc(/*Index=*/0, void_arg), hasTemplateArgumentLoc(/*Index=*/1, void_arg));
+        anyOf(hasExprTemplateArgumentLoc(/*Index=*/0, void_arg), hasExprTemplateArgumentLoc(/*Index=*/1, void_arg));
 
       finder->addMatcher(
         traverse(
