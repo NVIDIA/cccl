@@ -1515,7 +1515,7 @@ __fpmp2_neg<double>(const double __x_hi, const double __x_lo, double* __res_hi, 
 // addition at every level with (c, 0) as the second operand, up to the sign of a zero
 // low limb; low skips the closing renormalization.
 template <fpmp2_accuracy _Acc, typename _FpType>
-_CCCL_TRIVIAL_HOST_DEVICE_API void __fpmp2_add_limb(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void __fpmp2_add_limb(
   const _FpType __x_hi, const _FpType __x_lo, const _FpType __c, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
   _FpType __hi = __x_hi;
@@ -1537,7 +1537,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API void __fpmp2_add_limb(
 // the renormalization. high is Algorithm 7 of Joldes, Muller & Popescu (2017), 10
 // operations, measured at most 1.5u^2.
 template <fpmp2_accuracy _Acc, typename _FpType>
-_CCCL_TRIVIAL_HOST_DEVICE_API void __fpmp2_mul_limb(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void __fpmp2_mul_limb(
   const _FpType __x_hi, const _FpType __x_lo, const _FpType __c, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
   _FpType __p_lo;
@@ -1568,7 +1568,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API void __fpmp2_mul_limb(
 // and to first order the relative error is below 5u^2; it measures 4.0u^2 at most (3.5u^2
 // for squares) against 5.0u^2 for the default product.
 template <typename _FpType>
-_CCCL_TRIVIAL_HOST_DEVICE_API void __fpmp2_high_mul(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void __fpmp2_high_mul(
   const _FpType __x_hi,
   const _FpType __x_lo,
   const _FpType __y_hi,

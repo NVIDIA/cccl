@@ -971,7 +971,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_ceil(const _FpType __x) no
 // An exactly zero product comes out as +0; the addend cannot be -0, since clang folds
 // fma(x, y, -0) back into a plain multiply.
 template <typename _FpType>
-_CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_mul_rn_nocontract(const _FpType __x, const _FpType __y) noexcept
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE _FpType __fpmp_mul_rn_nocontract(const _FpType __x, const _FpType __y) noexcept
 {
   return ::cuda::__fpmp_fma_rn(__x, __y, _FpType{0});
 }

@@ -527,7 +527,7 @@ __fpmp2_rsqrt<double>(const double __a_hi, const double __a_lo, double* __res_hi
 // the term that multiplies the divisor's zero low limb, which for finite operands leaves
 // the value unchanged up to the sign of a zero low limb. high keeps the scaled division.
 template <fpmp2_accuracy _Acc, typename _FpType>
-_CCCL_TRIVIAL_HOST_DEVICE_API void __fpmp2_div_limb(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void __fpmp2_div_limb(
   const _FpType __a_hi, const _FpType __a_lo, const _FpType __c, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
   if constexpr (_Acc == fpmp2_accuracy::high)
