@@ -224,7 +224,7 @@ struct CommandLineArgs
   /**
    * The number of pairs parsed
    */
-  int ParsedArgc()
+  int ParsedArgc() const
   {
     return (int) keys.size();
   }
@@ -1398,7 +1398,7 @@ struct CpuTimer
     getrusage(RUSAGE_SELF, &stop);
   }
 
-  float ElapsedMillis()
+  float ElapsedMillis() const
   {
     const float sec  = static_cast<float>(stop.ru_utime.tv_sec - start.ru_utime.tv_sec);
     const float usec = static_cast<float>(stop.ru_utime.tv_usec - start.ru_utime.tv_usec);
@@ -1426,17 +1426,17 @@ struct GpuTimer
     CubDebugExit(cudaEventDestroy(stop));
   }
 
-  void Start()
+  void Start() // NOLINT(readability-make-member-function-const)
   {
     CubDebugExit(cudaEventRecord(start, nullptr));
   }
 
-  void Stop()
+  void Stop() // NOLINT(readability-make-member-function-const)
   {
     CubDebugExit(cudaEventRecord(stop, nullptr));
   }
 
-  float ElapsedMillis()
+  float ElapsedMillis() const
   {
     float elapsed;
     CubDebugExit(cudaEventSynchronize(stop));

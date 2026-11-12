@@ -247,7 +247,7 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type",
   end_offset_it.state.linear_id    = 1;
   end_offset_it.state.segment_size = segment_size;
 
-  operation_t op = make_operation("op", get_reduce_op(get_type_info<TestType>().type));
+  const operation_t op = make_operation("op", get_reduce_op(get_type_info<TestType>().type));
   value_t<TestType> init{0};
 
   auto& build_cache    = get_cache<SegmentedReduce_SumOverRows_Fixture_Tag>();
@@ -402,8 +402,8 @@ extern "C" __device__ void {0}(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {{
 
   const std::string plus_pair_op_src = std::format(plus_pair_op_template, device_op_name);
 
-  operation_t op = make_operation(device_op_name, plus_pair_op_src);
-  const pair v0  = pair{4, 2};
+  const operation_t op = make_operation(device_op_name, plus_pair_op_src);
+  const pair v0        = pair{4, 2};
   value_t<pair> init{v0};
 
   auto& build_cache    = get_cache<SegmentedReduce_CustomTypes_Fixture_Tag>();
@@ -471,10 +471,10 @@ extern "C" __device__ void {0}(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {{
 
   const std::string plus_pair_op_src = std::format(plus_pair_op_template, device_op_name);
 
-  operation_t op_state = make_operation(device_op_name, plus_pair_op_src);
-  cccl_op_t op         = op_state;
-  op.type              = cccl_op_kind_t::CCCL_PLUS;
-  const pair v0        = pair{4, 2};
+  const operation_t op_state = make_operation(device_op_name, plus_pair_op_src);
+  cccl_op_t op               = op_state;
+  op.type                    = cccl_op_kind_t::CCCL_PLUS;
+  const pair v0              = pair{4, 2};
   value_t<pair> init{v0};
 
   auto& build_cache    = get_cache<SegmentedReduce_CustomTypes_WellKnown_Fixture_Tag>();
@@ -636,7 +636,7 @@ C2H_TEST("SegmentedReduce works with input iterators", "[segmented_reduce]")
   input_transposed_iterator_it.state.n_rows    = n_rows;
   input_transposed_iterator_it.state.n_cols    = n_cols;
 
-  operation_t op = make_operation("op", get_reduce_op(get_type_info<ValueT>().type));
+  const operation_t op = make_operation("op", get_reduce_op(get_type_info<ValueT>().type));
   value_t<ValueT> init{0};
 
   auto& build_cache    = get_cache<SegmentedReduce_InputIterators_Fixture_Tag>();
@@ -720,7 +720,7 @@ C2H_TEST("segmented_reduce can work with floating point types", "[segmented_redu
   end_offset_it.state.linear_id = 1;
   end_offset_it.state.row_size  = row_size;
 
-  operation_t op = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const operation_t op = make_operation("op", get_reduce_op(get_type_info<T>().type));
   value_t<T> init{0};
 
   auto& build_cache    = get_cache<SegmentedReduce_SumOverRows_FloatingPointTypes_Fixture_Tag>();
@@ -1121,7 +1121,7 @@ void run_guaranteed_max_seg_size_test(
   end_offset_it.state.linear_id    = 1;
   end_offset_it.state.segment_size = segment_size;
 
-  operation_t op = make_operation("op", get_reduce_op(get_type_info<TestType>().type));
+  const operation_t op = make_operation("op", get_reduce_op(get_type_info<TestType>().type));
   value_t<TestType> init{0};
 
   segmented_reduce_guaranteed<GuaranteedMaxSegmentSize>(
