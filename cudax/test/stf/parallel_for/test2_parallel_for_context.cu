@@ -48,7 +48,7 @@ int main()
     {
       for (size_t jj = 0; jj < 2; jj++)
       {
-        sy(i, j) += sx(2 * i + ii, 2 * j + jj);
+        sy(i, j) += sx((2 * i) + ii, (2 * j) + jj);
       }
     }
   };

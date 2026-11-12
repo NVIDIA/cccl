@@ -77,7 +77,7 @@ CUB_TEST("ThreadLoad loads types aligned to 32 bytes", "[thread][load]", CUB_SMA
   {
     for (int j = 0; j < 8; j++)
     {
-      h_input[i].values[j] = 8 * i + j;
+      h_input[i].values[j] = (8 * i) + j;
     }
   }
   const c2h::device_vector<T> d_input(h_input);
@@ -93,7 +93,7 @@ CUB_TEST("ThreadLoad loads types aligned to 32 bytes", "[thread][load]", CUB_SMA
   {
     for (int j = 0; j < 8; j++)
     {
-      REQUIRE(h_output[i].values[j] == 8 * i + j);
+      REQUIRE(h_output[i].values[j] == (8 * i) + j);
     }
   }
 }

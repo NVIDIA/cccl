@@ -61,7 +61,7 @@ inline void init_genrand(unsigned int s)
   mt[0] = s & 0xffffffff;
   for (mti = 1; mti < static_cast<int>(N); mti++)
   {
-    mt[mti] = (1812433253 * (mt[mti - 1] ^ (mt[mti - 1] >> 30)) + mti);
+    mt[mti] = ((1812433253 * (mt[mti - 1] ^ (mt[mti - 1] >> 30))) + mti);
 
     /* See Knuth TAOCP Vol2. 3rd Ed. P.106 for mtiplier. */
     /* In the previous versions, MSBs of the seed affect   */

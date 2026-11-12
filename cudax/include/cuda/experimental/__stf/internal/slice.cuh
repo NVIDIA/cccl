@@ -836,7 +836,7 @@ void for_each_contiguous_hunk(const mdspan<T, P...>& s, F&& f)
     }
     for (size_t i = 0; i < s.extent(dim); ++i)
     {
-      self(self, base + i * s.stride(dim), dim + 1);
+      self(self, base + (i * s.stride(dim)), dim + 1);
     }
   };
   rec(rec, s.data_handle(), c);

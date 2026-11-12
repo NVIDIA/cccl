@@ -29,8 +29,8 @@ void test_pstl_mdspan_copy(const Policy& policy, cuda::stream_ref stream)
   {
     for (int col = 0; col < cols; ++col)
     {
-      input[row * cols + col]    = row * cols + col;
-      expected[row + col * rows] = row * cols + col;
+      input[(row * cols) + col]    = (row * cols) + col;
+      expected[row + (col * rows)] = (row * cols) + col;
     }
   }
 

@@ -166,8 +166,8 @@ struct RleLookaheadPolicy
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t
   dyn_smem_bytes(int key_size, int key_align) const noexcept
   {
-    return static_cast<::cuda::std::size_t>(key_ring_stages) * slot_stride(key_size, key_align) * key_size
-         + static_cast<::cuda::std::size_t>(pos_ring_stages) * tile_size() * sizeof(detail::rle::encode::position_t);
+    return (static_cast<::cuda::std::size_t>(key_ring_stages) * slot_stride(key_size, key_align) * key_size)
+         + (static_cast<::cuda::std::size_t>(pos_ring_stages) * tile_size() * sizeof(detail::rle::encode::position_t));
   }
 
   static constexpr ::cuda::std::size_t static_smem_budget = 8 * 1024;

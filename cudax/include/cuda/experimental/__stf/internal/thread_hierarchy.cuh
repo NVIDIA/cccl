@@ -125,7 +125,7 @@ public:
   static constexpr size_t static_width(size_t level)
   {
     size_t data[] = {spec...};
-    return data[1 + 2 * level];
+    return data[1 + (2 * level)];
   }
 
   _CCCL_HOST_DEVICE const ::std::array<size_t, 3>& get_config() const
@@ -145,7 +145,7 @@ public:
        const int nblocks  = launch_config[1];
        const int nthreads = launch_config[2];
 
-       int global_id = tid + bid * nthreads + devid * nblocks * nthreads;
+       int global_id = tid + (bid * nthreads) + (devid * nblocks * nthreads);
 
        // An entry at level l represents a total of width[level] * width[level+1] ... * width[depth - 1] threads.
        size_t level_effective_size      = 1;
@@ -417,11 +417,11 @@ __global__ void unit_test_thread_hierarchy(thread_hierarchy<spec...> h)
   assert(h.size(1) == 2 * 32);
 
   // Rank within the whole system
-  assert(h.rank(1, -1) == 32 + threadIdx.x + blockIdx.x * blockDim.x);
-  assert(h.rank(1) == 32 + threadIdx.x + blockIdx.x * blockDim.x);
+  assert(h.rank(1, -1) == 32 + threadIdx.x + (blockIdx.x * blockDim.x));
+  assert(h.rank(1) == 32 + threadIdx.x + (blockIdx.x * blockDim.x));
 
   assert(h.rank(0, -1) == 1); // device
-  assert(h.rank(1, 0) == threadIdx.x + blockIdx.x * blockDim.x);
+  assert(h.rank(1, 0) == threadIdx.x + (blockIdx.x * blockDim.x));
 }
 } // end namespace reserved
 

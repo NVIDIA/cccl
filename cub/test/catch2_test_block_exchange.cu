@@ -123,7 +123,7 @@ blocked_to_striped_reference(const c2h::host_vector<T>& input, int block_threads
   {
     for (int item = 0; item < items_per_thread; ++item)
     {
-      output[tid * items_per_thread + item] = input[item * block_threads + tid];
+      output[(tid * items_per_thread) + item] = input[(item * block_threads) + tid];
     }
   }
   return output;
@@ -138,10 +138,10 @@ striped_to_blocked_reference(const c2h::host_vector<T>& input, int block_threads
   {
     for (int item = 0; item < items_per_thread; ++item)
     {
-      const int output_offset = tid * items_per_thread + item;
+      const int output_offset = (tid * items_per_thread) + item;
       const int input_tid     = output_offset % block_threads;
       const int input_item    = output_offset / block_threads;
-      output[output_offset]   = input[input_tid * items_per_thread + input_item];
+      output[output_offset]   = input[(input_tid * items_per_thread) + input_item];
     }
   }
   return output;
@@ -160,7 +160,7 @@ blocked_to_warp_striped_reference(const c2h::host_vector<T>& input, int block_th
     const int lane_id     = tid % warp_threads;
     for (int item = 0; item < items_per_thread; ++item)
     {
-      output[tid * items_per_thread + item] = input[warp_offset + item * warp_threads + lane_id];
+      output[(tid * items_per_thread) + item] = input[warp_offset + (item * warp_threads) + lane_id];
     }
   }
   return output;
@@ -180,9 +180,9 @@ warp_striped_to_blocked_reference(const c2h::host_vector<T>& input, int block_th
     const int output_offset = lane_id * items_per_thread;
     for (int item = 0; item < items_per_thread; ++item)
     {
-      const int input_tid                   = (output_offset + item) % warp_threads;
-      const int input_item                  = (output_offset + item) / warp_threads;
-      output[tid * items_per_thread + item] = input[warp_offset + input_tid * items_per_thread + input_item];
+      const int input_tid                     = (output_offset + item) % warp_threads;
+      const int input_item                    = (output_offset + item) / warp_threads;
+      output[(tid * items_per_thread) + item] = input[warp_offset + (input_tid * items_per_thread) + input_item];
     }
   }
   return output;
@@ -204,8 +204,8 @@ scatter_to_striped_reference(const c2h::host_vector<T>& input, int block_threads
   {
     for (int item = 0; item < items_per_thread; ++item)
     {
-      const int output_offset = tid * items_per_thread + item;
-      const int rank          = item * block_threads + tid;
+      const int output_offset = (tid * items_per_thread) + item;
+      const int rank          = (item * block_threads) + tid;
       output[output_offset]   = input[tile_size - 1 - rank];
     }
   }
@@ -223,8 +223,8 @@ void require_valid_scatter_outputs(
   {
     for (int item = 0; item < items_per_thread; ++item)
     {
-      const int output_offset = tid * items_per_thread + item;
-      const int rank          = item * block_threads + tid;
+      const int output_offset = (tid * items_per_thread) + item;
+      const int rank          = (item * block_threads) + tid;
       const int input_offset  = tile_size - 1 - rank;
       if (input_offset % 2 == 0)
       {

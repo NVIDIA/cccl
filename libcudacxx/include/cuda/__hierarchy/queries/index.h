@@ -67,7 +67,7 @@ struct __index_query_native
     hierarchy_query_result<_Tp> __ret{};
     for (::cuda::std::size_t __i = 0; __i < 3; ++__i)
     {
-      __ret[__i] = __curr_idx[__i] + ((__i < __curr_exts.rank()) ? __curr_exts.extent(__i) : 1) * __next_idx[__i];
+      __ret[__i] = __curr_idx[__i] + (((__i < __curr_exts.rank()) ? __curr_exts.extent(__i) : 1) * __next_idx[__i]);
     }
     return __ret;
   }
@@ -99,7 +99,7 @@ struct __index_query_native<warp_level, block_level>
   template <class _Tp>
   [[nodiscard]] _CCCL_DEVICE_API static hierarchy_query_result<_Tp> __call() noexcept
   {
-    const auto __thread_rank = (threadIdx.z * blockDim.y + threadIdx.y) * blockDim.x + threadIdx.x;
+    const auto __thread_rank = (((threadIdx.z * blockDim.y) + threadIdx.y) * blockDim.x) + threadIdx.x;
     return {static_cast<_Tp>(__thread_rank / 32), 0, 0};
   }
 };
@@ -165,7 +165,7 @@ template <class _Tp, class _Unit, class _NextLevel, class _Level, class _Hierarc
     hierarchy_query_result<_Tp> __ret{};
     for (::cuda::std::size_t __i = 0; __i < 3; ++__i)
     {
-      __ret[__i] = __curr_idx[__i] + ((__i < __curr_exts.rank()) ? __curr_exts.extent(__i) : 1) * __next_idx[__i];
+      __ret[__i] = __curr_idx[__i] + (((__i < __curr_exts.rank()) ? __curr_exts.extent(__i) : 1) * __next_idx[__i]);
     }
     return __ret;
   }
@@ -218,7 +218,7 @@ struct __index_query<warp_level, _Level>
     const auto __block_exts = __extents_query<thread_level, block_level>::template __call<unsigned>(__hier);
     const auto __thread_idx = __index_query<thread_level, block_level>::template __call<unsigned>(__hier);
     const auto __thread_rank =
-      (__thread_idx.z * __block_exts.extent(1) + __thread_idx.y) * __block_exts.extent(0) + __thread_idx.x;
+      (((__thread_idx.z * __block_exts.extent(1)) + __thread_idx.y) * __block_exts.extent(0)) + __thread_idx.x;
     const auto __warp_rank = __thread_rank / 32;
 
     if constexpr (::cuda::std::is_same_v<_Level, block_level>)
@@ -230,7 +230,7 @@ struct __index_query<warp_level, _Level>
       const auto __thread_count = __block_exts.extent(0) * __block_exts.extent(1) * __block_exts.extent(2);
       const auto __warp_count   = ::cuda::ceil_div(__thread_count, 32);
       const auto __next_idx     = __index_query<block_level, _Level>::template __call<_Tp>(__hier);
-      return {static_cast<_Tp>(__next_idx.x * __warp_count + __warp_rank), __next_idx.y, __next_idx.z};
+      return {static_cast<_Tp>((__next_idx.x * __warp_count) + __warp_rank), __next_idx.y, __next_idx.z};
     }
   }
 };

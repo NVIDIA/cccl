@@ -16,7 +16,7 @@ using namespace cuda::experimental::stf;
 
 __global__ void gpu_merge_hashtable(hashtable A, const hashtable B)
 {
-  unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+  unsigned int threadid = (blockIdx.x * blockDim.x) + threadIdx.x;
   while (threadid < B.get_capacity())
   {
     if (B.addr[threadid].key != reserved::kEmpty)
@@ -73,12 +73,12 @@ class hashtable_fusion_t : public stream_reduction_operator<hashtable>
 // A kernel to fill the hashtable with some fictitious values
 __global__ void fill_table(size_t dev_id, size_t cnt, hashtable h)
 {
-  const unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+  const unsigned int threadid = (blockIdx.x * blockDim.x) + threadIdx.x;
   const unsigned int nthreads = blockDim.x * gridDim.x;
 
   for (unsigned int i = threadid; i < cnt; i += nthreads)
   {
-    const uint32_t key   = dev_id * 1000 + i;
+    const uint32_t key   = (dev_id * 1000) + i;
     const uint32_t value = 2 * i;
 
     const reserved::KeyValue kvs(key, value);
@@ -110,7 +110,7 @@ int main()
     {
       for (unsigned i = 0; i < 10; i++)
       {
-        const uint32_t key   = static_cast<uint32_t>(dev_id * 1000 + i);
+        const uint32_t key   = static_cast<uint32_t>((dev_id * 1000) + i);
         const uint32_t value = 2 * i;
 
         EXPECT(h.get(key) == value);

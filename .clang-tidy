@@ -94,7 +94,6 @@ Checks:
   - '-readability-magic-numbers'
   - '-readability-use-concise-preprocessor-directives'
   - '-readability-uppercase-literal-suffix'
-  - '-readability-math-missing-parentheses'
   - '-readability-avoid-nested-conditional-operator'
   - '-readability-redundant-declaration'
   - '-readability-make-member-function-const'
