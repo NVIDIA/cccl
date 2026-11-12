@@ -231,17 +231,17 @@ private:
       __alloc.capacity * sizeof(_Tp) / sizeof(_Up),
       __alloc.size * sizeof(_Tp) / sizeof(_Up),
       __alloc.alignment};
-    try
+    _CCCL_TRY
     {
       return ::cuda::__acquire_buffer<_Up, _Properties...>(::cuda::std::move(__new_alloc));
     }
-    catch (...)
+    _CCCL_CATCH_ALL
     {
       *this = ::cuda::std::move([&]() noexcept {
         __alloc.mr = ::cuda::std::move(__new_alloc.mr);
         return ::cuda::__acquire_buffer<_Tp, _Properties...>(::cuda::std::move(__alloc));
       }());
-      throw;
+      _CCCL_RETHROW;
     }
   }
 
