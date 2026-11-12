@@ -59,6 +59,7 @@ ReduceAlgorithm: TypeAlias = Literal[
     "raking",
     "warp_reductions",
 ]
+ScanAlgorithm: TypeAlias = Literal["raking", "raking_memoize", "warp_scans"]
 ReduceOperator: TypeAlias = Literal[
     "+",
     "sum",
@@ -79,6 +80,25 @@ ReduceOperator: TypeAlias = Literal[
     "^",
     "bit_xor",
 ]
+SumScanOperator: TypeAlias = Literal["+", "sum", "add", "plus"]
+NonSumScanOperator: TypeAlias = Literal[
+    "*",
+    "mul",
+    "multiply",
+    "multiplies",
+    "min",
+    "minimum",
+    "max",
+    "maximum",
+    "&",
+    "bit_and",
+    "|",
+    "bit_or",
+    "^",
+    "bit_xor",
+]
+ScanOperator: TypeAlias = SumScanOperator | NonSumScanOperator
+ScanMode: TypeAlias = Literal["exclusive", "inclusive"]
 TempStorageSharing: TypeAlias = Literal["shared", "exclusive"]
 
 class CompilerScalarLike(Protocol):
@@ -114,6 +134,22 @@ CommonNumericScalar: TypeAlias = (
 )
 
 _CommonNumericT = TypeVar("_CommonNumericT", bound=CommonNumericScalar)
+
+class _ExactScalar(Protocol[_ItemT]):
+    """Match a seed's exact scalar type without widening the input type.
+
+    The writable ``__class__`` member makes the type parameter invariant, so
+    a seed cannot widen the input type. Invariance also keeps NumPy float64,
+    a float subclass, out of the Python ``float`` arm. The separate ``int``
+    and ``float`` arms let ``ContextualInitialValue`` accept ordinary Python
+    literals. The compiler still checks literal values and runtime dtypes.
+    """
+
+    __class__: type[_ItemT]  # type: ignore[assignment]
+
+ContextualInitialValue: TypeAlias = (
+    _ExactScalar[_ItemT] | _ExactScalar[int] | _ExactScalar[float]
+)
 _ReadableItemT_co = TypeVar(
     "_ReadableItemT_co", bound=CommonNumericScalar, covariant=True
 )
@@ -191,9 +227,15 @@ class TempStorageLike(Protocol):
 
 __all__ = [
     "BlockLoadStoreAlgorithm",
+    "ContextualInitialValue",
     "LoadStoreAlgorithm",
+    "NonSumScanOperator",
     "ReduceAlgorithm",
     "ReduceOperator",
+    "ScanAlgorithm",
+    "ScanMode",
+    "ScanOperator",
+    "SumScanOperator",
     "SynchronizableGroupKind",
     "TempStorageLike",
     "TempStorageSharing",

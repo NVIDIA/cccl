@@ -1,0 +1,104 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Run the qualified Scan documentation examples against NumPy results.
+
+The examples exercise a compiled callback on local arrays and a runtime
+valid_items count with a separate aggregate output. Begin/end markers select
+the code shown in the public reference.
+"""
+
+import pytest
+
+cuda = pytest.importorskip("numba_cuda_mlir.cuda")
+if not cuda.is_available():
+    pytest.skip("requires a CUDA-capable runtime", allow_module_level=True)
+
+pytestmark = [
+    pytest.mark.backend_numba_mlir,
+    pytest.mark.runtime,
+    pytest.mark.gpu,
+    pytest.mark.filterwarnings(
+        "ignore::numba_cuda_mlir.numba_cuda.core.errors.NumbaPerformanceWarning"
+    ),
+]
+
+
+def test_qualified_inclusive_scan_example():
+    # qualified-inclusive-scan-example-begin
+    import numpy as np
+    from numba_cuda_mlir import cuda, types
+
+    import cuda.coop.numba_mlir as numba_coop
+
+    @cuda.jit(device=True)
+    def maximum(left, right):
+        if left > right:
+            return left
+        return right
+
+    @cuda.jit
+    def running_maximum(source, destination):
+        block = numba_coop.this_block()
+        items = cuda.local.array(2, dtype=types.int32)
+        for item in range(2):
+            items[item] = source[2 * cuda.threadIdx.x + item]
+        prefixes = numba_coop.inclusive_scan(block, items, scan_op=maximum)
+        for item in range(2):
+            destination[2 * cuda.threadIdx.x + item] = prefixes[item]
+
+    values = ((np.arange(128, dtype=np.int32) * 17) % 113) - 51
+    source = cuda.to_device(values)
+    destination = cuda.device_array_like(source)
+    running_maximum[1, 64](source, destination)
+    expected = np.maximum.accumulate(values)
+    np.testing.assert_array_equal(destination.copy_to_host(), expected)
+    # qualified-inclusive-scan-example-end
+
+
+def test_qualified_exclusive_scan_example():
+    """Check partial prefixes and input aggregates for each logical warp.
+
+    Only valid lanes write prefix results, leaving sentinel values elsewhere.
+    Every lane receives the sum of valid inputs as its aggregate; the initial
+    value contributes to the exclusive prefixes but not to that aggregate.
+    """
+
+    # qualified-exclusive-scan-example-begin
+    import numpy as np
+    from numba_cuda_mlir import cuda
+
+    import cuda.coop.numba_mlir as numba_coop
+
+    @cuda.jit
+    def partial_prefixes(source, destination, totals, initial, valid):
+        thread = cuda.threadIdx.x
+        group = numba_coop.this_warp().group_by(8)
+        aggregate = numba_coop.ThreadData(items_per_thread=1)
+        prefix = numba_coop.exclusive_scan(
+            group,
+            source[thread],
+            initial_value=initial,
+            valid_items=valid,
+            aggregate_output=aggregate,
+        )
+        if group.rank() < valid:
+            destination[thread] = prefix
+        totals[thread] = aggregate[0]
+
+    values = (np.arange(64, dtype=np.int32) % 13) + 1
+    source = cuda.to_device(values)
+    destination = cuda.to_device(np.full_like(values, -1))
+    totals = cuda.device_array_like(source)
+    initial = np.int32(11)
+    valid = np.int64(5)
+    partial_prefixes[1, 64](source, destination, totals, initial, valid)
+    expected = np.full_like(values, -1).reshape(8, 8)
+    valid_values = values.reshape(8, 8)[:, :valid]
+    expected[:, 0] = initial
+    expected[:, 1:valid] = initial + np.cumsum(valid_values[:, :-1], axis=1)
+    expected_totals = np.repeat(valid_values.sum(axis=1), 8)
+    np.testing.assert_array_equal(destination.copy_to_host(), expected.ravel())
+    np.testing.assert_array_equal(totals.copy_to_host(), expected_totals)
+    # qualified-exclusive-scan-example-end
