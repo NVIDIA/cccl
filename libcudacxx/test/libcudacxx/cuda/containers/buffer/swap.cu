@@ -32,10 +32,12 @@ C2H_CCCLRT_TEST("cuda::buffer swap", "[container][buffer]", test_types)
 
   const cuda::stream stream{cuda::device_ref{0}};
   Resource resource = extract_properties<Buffer>::get_resource();
+  // NOLINTBEGIN(cccl-simplify-type-traits)
   STATIC_REQUIRE(
     cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().swap(cuda::std::declval<Buffer&>())), void>);
   STATIC_REQUIRE(
     cuda::std::is_same_v<decltype(swap(cuda::std::declval<Buffer&>(), cuda::std::declval<Buffer&>())), void>);
+  // NOLINTEND(cccl-simplify-type-traits)
   STATIC_REQUIRE(noexcept(cuda::std::declval<Buffer&>().swap(cuda::std::declval<Buffer&>())));
   STATIC_REQUIRE(noexcept(swap(cuda::std::declval<Buffer&>(), cuda::std::declval<Buffer&>())));
 
