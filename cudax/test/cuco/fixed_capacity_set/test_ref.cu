@@ -124,12 +124,14 @@ struct exercise_ref
       if constexpr (Ref::cg_size == 1)
       {
         success  = !ref.contains(key) && success;
+        success  = ref.find(key) == ref.end() && success;
         success  = count_for_each<false>(ref, group, key) == 0 && success;
         inserted = ref.insert(key);
       }
       else
       {
         success  = !ref.contains(group, key) && success;
+        success  = ref.find(group, key) == ref.end() && success;
         success  = count_for_each<true>(ref, group, key) == 0 && success;
         inserted = ref.insert(group, key);
       }
@@ -138,9 +140,14 @@ struct exercise_ref
       // Also exercise the cooperative overloads when cg_size is one.
       success = ref.contains(group, key) && success;
       success = !ref.insert(group, key) && success;
-      success = count_for_each<true>(ref, group, key) == 1 && success;
+      static_assert(cuda::std::is_same_v<decltype(ref.find(group, key)), typename Ref::const_iterator>);
+      const auto found = ref.find(group, key);
+      success          = found != ref.end() && ref.key_eq()(key, *found) && success;
+      success          = count_for_each<true>(ref, group, key) == 1 && success;
       if constexpr (Ref::cg_size == 1)
       {
+        static_assert(cuda::std::is_same_v<decltype(ref.find(key)), typename Ref::const_iterator>);
+        success = ref.find(key) == found && success;
         success = count_for_each<false>(ref, group, key) == 1 && success;
       }
       group.sync();
@@ -149,11 +156,13 @@ struct exercise_ref
     const auto absent = make_ref_key<key_type>(capacity);
     success           = !ref.insert(group, absent) && success;
     success           = !ref.contains(group, absent) && success;
+    success           = ref.find(group, absent) == ref.end() && success;
     success           = count_for_each<true>(ref, group, absent) == 0 && success;
     if constexpr (Ref::cg_size == 1)
     {
       success = !ref.insert(absent) && success;
       success = !ref.contains(absent) && success;
+      success = ref.find(absent) == ref.end() && success;
       success = count_for_each<false>(ref, group, absent) == 0 && success;
     }
     group.sync();
