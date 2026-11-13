@@ -199,7 +199,7 @@ TEST_CASE("copy_bytes 2D", "[copy_bytes][2d][basic]")
   {
     for (int j = 0; j < N; ++j)
     {
-      expected[i + static_cast<std::size_t>(j) * M] = static_cast<int>(static_cast<std::size_t>(i) * N + j);
+      expected[i + (static_cast<std::size_t>(j) * M)] = static_cast<int>((static_cast<std::size_t>(i) * N) + j);
     }
   }
   // tensorA:      (4,8):(8,1)
@@ -213,7 +213,7 @@ TEST_CASE("copy_bytes 2D", "[copy_bytes][2d][basic]")
   {
     for (int j = 0; j < N; ++j)
     {
-      expected[static_cast<std::size_t>(i) * N + j] = static_cast<int>(i + static_cast<std::size_t>(j) * M);
+      expected[(static_cast<std::size_t>(i) * N) + j] = static_cast<int>(i + (static_cast<std::size_t>(j) * M));
     }
   }
   // tensorA:      (4,8):(1,4)
@@ -297,7 +297,7 @@ TEST_CASE("copy_bytes 3D", "[copy_bytes][3d]")
     {
       for (int k = 0; k < D2; ++k)
       {
-        expected[i + static_cast<std::size_t>(j) * D0 + static_cast<std::size_t>(k) * D0 * D1] = p++;
+        expected[i + (static_cast<std::size_t>(j) * D0) + (static_cast<std::size_t>(k) * D0 * D1)] = p++;
       }
     }
   }
@@ -382,7 +382,7 @@ TEST_CASE("copy_bytes 2D strided, padded layout", "[copy_bytes][2d][stride][row]
   {
     for (int j = 0; j < N; ++j)
     {
-      host_data[static_cast<std::size_t>(i) * N * 2 + j] = static_cast<int>(static_cast<std::size_t>(i) * N + j);
+      host_data[(static_cast<std::size_t>(i) * N * 2) + j] = static_cast<int>((static_cast<std::size_t>(i) * N) + j);
     }
   }
   using src_extents                      = cuda::std::extents<int, M, N>;
@@ -407,7 +407,7 @@ TEST_CASE("copy_bytes 2D strided, padded column-major", "[copy_bytes][2d][stride
   {
     for (int j = 0; j < N; ++j)
     {
-      input_data[i + static_cast<std::size_t>(j) * Ld] = k++;
+      input_data[i + (static_cast<std::size_t>(j) * Ld)] = k++;
     }
   }
   using extents                          = cuda::std::extents<int, M, N>;
@@ -440,8 +440,8 @@ TEST_CASE("copy_bytes 3D strided, permutation", "[copy_bytes][3d][stride][permut
     {
       for (int k = 0; k < D2; ++k)
       {
-        const int src_offset = i * (D1 * D2) + j * D2 + k; // row-major
-        const int dst_offset = i + j * (D2 * D0) + k * D0; // strides {1, 8, 2}
+        const int src_offset = (i * (D1 * D2)) + (j * D2) + k; // row-major
+        const int dst_offset = i + (j * (D2 * D0)) + (k * D0); // strides {1, 8, 2}
         expected[dst_offset] = input_data[src_offset];
       }
     }
@@ -472,7 +472,7 @@ TEST_CASE("copy_bytes 3D strided, tile_size > 1 with different stride order", "[
     {
       for (int k = 0; k < D2; ++k)
       {
-        const int src_offset   = i * (D1 * D2) + j * D2 + k; // row-major
+        const int src_offset   = (i * (D1 * D2)) + (j * D2) + k; // row-major
         input_data[src_offset] = src_offset;
       }
     }
@@ -484,8 +484,8 @@ TEST_CASE("copy_bytes 3D strided, tile_size > 1 with different stride order", "[
     {
       for (int k = 0; k < D2; ++k)
       {
-        const int src_offset = i * (D1 * D2) + j * D2 + k; // row-major
-        const int dst_offset = i * 8 + j * 16 + k; // strides {8, 16, 1}
+        const int src_offset = (i * (D1 * D2)) + (j * D2) + k; // row-major
+        const int dst_offset = (i * 8) + (j * 16) + k; // strides {8, 16, 1}
         expected[dst_offset] = src_offset;
       }
     }
@@ -518,8 +518,8 @@ TEST_CASE("copy_bytes strided subviews with offsets", "[copy_bytes][stride][offs
   {
     for (int j = 0; j < N; ++j)
     {
-      input[SrcOffset + static_cast<std::size_t>(i) * SrcLd + j]    = value;
-      expected[DstOffset + i + static_cast<std::size_t>(j) * DstLd] = value;
+      input[SrcOffset + (static_cast<std::size_t>(i) * SrcLd) + j]    = value;
+      expected[DstOffset + i + (static_cast<std::size_t>(j) * DstLd)] = value;
       ++value;
     }
   }

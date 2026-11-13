@@ -18,14 +18,14 @@
 
 #include <cub/util_device.cuh>
 
+#include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__host_stdlib/cstdio>
 
 #include <nv/target>
 
 #if _CCCL_HOSTED()
 #  include <thrust/system/cuda/error.h>
-#  include <thrust/system_error.h>
-
+#  include <thrust/system/system_error.h> // IWYU pragma: keep
 #endif // _CCCL_HOSTED()
 
 THRUST_NAMESPACE_BEGIN

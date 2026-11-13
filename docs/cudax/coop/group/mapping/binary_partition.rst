@@ -26,7 +26,7 @@
 Overview
 --------
 
-``cuda::experimental::coop::binary_partition`` is a mapping that splits units from the previous mapping result into 2 groups based on a boolean value. The boolean value is obtained by invoking the ``/*fn_*/`` callable with the previous mapping result. It is possible that all of the units will end up in the same group. Currently, it can only be used to group threads within the warp level.
+``cuda::experimental::coop::binary_partition`` is a mapping that splits units from the previous mapping result into 2 groups based on a boolean value. The boolean value is obtained by invoking the ``/*fn_*/`` callable with the previous mapping result. The callable result must be implicitly convertible to ``bool``. It is possible that all of the units will end up in the same group. Currently, it can only be used to group threads within the warp level.
 
 The returned mapping result is always exhaustive.
 
@@ -44,5 +44,7 @@ Examples
   __global__ void kernel()
   {
     // Creates a mapping that splits units into even/odd groups.
-    cudax::coop::binary_partition m{[](const auto& prev_mapping_result){ return prev_mapping_result.unit_rank() % 2 == 1; }};
+    const cudax::coop::binary_partition m{[](const auto& prev_mapping_result) {
+      return prev_mapping_result.unit_rank() % 2 == 1;
+    }};
   }

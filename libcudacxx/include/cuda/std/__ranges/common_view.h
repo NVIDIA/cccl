@@ -161,6 +161,14 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES common_view(_Range&&) -> common_view<::cuda::st
 template <class _View>
 inline constexpr bool enable_borrowed_range<common_view<_View>> = enable_borrowed_range<_View>;
 
+// This view preserves the size of its underlying range.
+template <class _View>
+inline constexpr size_t __static_size_v<common_view<_View>> = __static_size_v<_View>;
+
+template <class _View>
+inline constexpr size_t __static_size_v<const common_view<_View>> =
+  (range<const common_view<_View>>) ? __static_size_v<const _View> : dynamic_extent;
+
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS

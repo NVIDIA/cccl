@@ -36,6 +36,25 @@ struct duplicate_key
   }
 };
 
+struct is_odd
+{
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(int value) const noexcept
+  {
+    return value % 2 != 0;
+  }
+};
+
+struct matches_even_membership
+{
+  const int* results;
+  int num_present;
+
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(int i) const noexcept
+  {
+    return results[i] == static_cast<int>(i < num_present && i % 2 == 0);
+  }
+};
+
 // Input `i` finds the stored key `key_scale * i` when `i < num_stored`, and the sentinel otherwise.
 // It reports an insertion only when `num_existing <= i < num_stored`.
 template <class Key>
@@ -111,8 +130,10 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
   const auto first    = cuda::counting_iterator<key_type>{0};
   const auto sentinel = static_cast<key_type>(-1);
   const auto indices  = cuda::counting_iterator<int>{0};
-  auto found          = cuda::make_buffer<int>(context.stream, context.mr, num_queries, 7);
-  auto found_keys     = cuda::make_buffer<key_type>(context.stream, context.mr, num_queries, key_type{7});
+  // Offset from the keys so that `pred(query_stencil[i])` and `pred(first[i])` disagree.
+  const auto query_stencil = cuda::counting_iterator<int>{1};
+  auto found               = cuda::make_buffer<int>(context.stream, context.mr, num_queries, 7);
+  auto found_keys          = cuda::make_buffer<key_type>(context.stream, context.mr, num_queries, key_type{7});
   const auto insert_and_find_matches = [&](int count, int num_existing, int num_stored) {
     return cuda::std::all_of(
       context.policy(),
@@ -125,6 +146,8 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
   set.insert_async(context.stream, first, first);
   set.contains(context.stream, first, first, found.begin());
   set.contains_async(context.stream, first, first, found.begin());
+  set.contains_if(context.stream, first, first, query_stencil, is_odd{}, found.begin());
+  set.contains_if_async(context.stream, first, first, query_stencil, is_odd{}, found.begin());
   set.insert_and_find(context.stream, first, first, found_keys.begin(), found.begin());
   set.insert_and_find_async(context.stream, first, first, found_keys.begin(), found.begin());
   REQUIRE(context.all_equal(found.data(), num_queries, 7));
@@ -136,6 +159,12 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
   set.insert_async(context.stream, first + num_keys / 2, first + num_keys);
   set.contains_async(context.stream, first, first + num_queries, found.begin());
   REQUIRE(context.matches(found.data(), num_queries, num_keys));
+  set.contains_if(context.stream, first, first + num_queries, query_stencil, is_odd{}, found.begin());
+  REQUIRE(cuda::std::all_of(
+    context.policy(),
+    cuda::counting_iterator<int>{0},
+    cuda::counting_iterator<int>{num_queries},
+    matches_even_membership{found.data(), num_keys}));
   REQUIRE(set.insert(context.stream, first, first + num_keys) == 0);
 
   // Each present key is visited exactly once; absent keys and empty ranges invoke no callback.
@@ -251,7 +280,7 @@ struct make_heterogeneous_key
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API Key operator()(int i) const noexcept
   {
-    return Key{2 * i + offset};
+    return Key{(2 * i) + offset};
   }
 };
 

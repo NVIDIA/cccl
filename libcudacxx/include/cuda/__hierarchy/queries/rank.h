@@ -110,7 +110,7 @@ struct __rank_query_native<block_level, grid_level>
   template <class _Tp>
   [[nodiscard]] _CCCL_DEVICE_API static _Tp __call() noexcept
   {
-    return static_cast<_Tp>((static_cast<_Tp>(blockIdx.z) * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x);
+    return static_cast<_Tp>((((static_cast<_Tp>(blockIdx.z) * gridDim.y) + blockIdx.y) * gridDim.x) + blockIdx.x);
   }
 };
 

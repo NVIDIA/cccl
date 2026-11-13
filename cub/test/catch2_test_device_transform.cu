@@ -752,10 +752,10 @@ CUB_TEST("DeviceTransform::Transform buffer start alignment",
     10, // try to hit sub-size-alignment, small and full tile code paths
     130,
     100'000,
-    128 * 22 /* blackwell u8 tilesize */ + 2,
-    128 * 11 /* blackwell u16 tilesize */ + 2,
-    128 * 6 /* blackwell u32 tilesize */ + 2,
-    128 * 3 /* blackwell u64 tilesize */ + 2);
+    (128 * 22) /* blackwell u8 tilesize */ + 2,
+    (128 * 11) /* blackwell u16 tilesize */ + 2,
+    (128 * 6) /* blackwell u32 tilesize */ + 2,
+    (128 * 3) /* blackwell u64 tilesize */ + 2);
 
   // we should hit byte offsets up until 64 (128 is the highest bulk_copy_alignment)
   const int offset_a = GENERATE(1, 2, 4, 8, 15, 16, 32, 64, 127);
@@ -935,7 +935,7 @@ __global__ void fill_pdl_kernel(T* data, size_t n, T value)
 
   for (int j = 0; j < ItemsPerPthread; j++)
   {
-    const int i = threadIdx.x + j * ThreadsPerBlock;
+    const int i = threadIdx.x + (j * ThreadsPerBlock);
     if (i < n)
     {
       data[i] = value;

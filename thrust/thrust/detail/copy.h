@@ -16,6 +16,7 @@
 
 THRUST_NAMESPACE_BEGIN
 
+// NOLINTBEGIN(readability-redundant-declaration)
 template <typename System, typename InputIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator
 copy(const thrust::detail::execution_policy_base<System>& exec,
@@ -32,6 +33,8 @@ OutputIterator copy(InputIterator first, InputIterator last, OutputIterator resu
 
 template <typename InputIterator, typename Size, typename OutputIterator>
 OutputIterator copy_n(InputIterator first, Size n, OutputIterator result);
+
+// NOLINTEND(readability-redundant-declaration)
 
 namespace detail
 {

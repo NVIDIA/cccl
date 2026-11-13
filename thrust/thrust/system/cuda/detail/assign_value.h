@@ -16,10 +16,13 @@
 #if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/detail/raw_pointer_cast.h>
+#  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #  include <thrust/system/cuda/detail/cross_system.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/util.h>
+
+#  include <cuda/std/__type_traits/is_same.h>
 
 #  include <nv/target>
 
