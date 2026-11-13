@@ -217,7 +217,7 @@ public:
     _CCCL_ASSERT(p.get(2) >= 0 && pz < z, "invalid position");
     _CCCL_ASSERT(p.get(3) >= 0 && pt < t, "invalid position");
 
-    return px + x * (py + y * (pz + pt * z));
+    return px + (x * (py + (y * (pz + (pt * z)))));
   }
 
   /// Get the maximum dimension that is not 1
@@ -394,7 +394,6 @@ public:
   // Iterator class for box
   class iterator
   {
-  private:
     box iterated; // A copy of the box being iterated
     ::std::array<::std::ptrdiff_t, dimensions> current; // Array to store the current position in each dimension
 
@@ -723,7 +722,7 @@ UNITTEST("pos4 dim4 interaction")
   const size_t index = d.get_index(p);
 
   // Verify index calculation
-  const size_t expected = 50000 + large_dim * (50000 + large_dim * (50000 + 50000 * large_dim));
+  const size_t expected = 50000 + (large_dim * (50000 + (large_dim * (50000 + (50000 * large_dim)))));
   EXPECT(index == expected);
 
   // Test near the boundaries

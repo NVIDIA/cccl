@@ -37,7 +37,7 @@ struct voronoi_site_selector
   {}
 
   // To decide I have to change my current Voronoi site
-  __host__ __device__ int min_voro(int x_i, int y_i, int p, int q)
+  __host__ __device__ int min_voro(int x_i, int y_i, int p, int q) const
   {
     if (q == m * n)
     {
@@ -46,22 +46,20 @@ struct voronoi_site_selector
 
     // coordinates of points p and q
     const int y_q = q / m;
-    const int x_q = q - y_q * m;
+    const int x_q = q - (y_q * m);
     const int y_p = p / m;
-    const int x_p = p - y_p * m;
+    const int x_p = p - (y_p * m);
 
     // squared distances
-    const int d_iq = (x_i - x_q) * (x_i - x_q) + (y_i - y_q) * (y_i - y_q);
-    const int d_ip = (x_i - x_p) * (x_i - x_p) + (y_i - y_p) * (y_i - y_p);
+    const int d_iq = ((x_i - x_q) * (x_i - x_q)) + ((y_i - y_q) * (y_i - y_q));
+    const int d_ip = ((x_i - x_p) * (x_i - x_p)) + ((y_i - y_p) * (y_i - y_p));
 
     if (d_iq < d_ip)
     {
       return q; // q is closer
     }
-    else
-    {
-      return p;
-    }
+
+    return p;
   }
 
   // For each point p+{-k,0,k}, we keep the Site with minimum distance
@@ -74,7 +72,7 @@ struct voronoi_site_selector
 
     // Current point coordinates
     const int y = i / m;
-    const int x = i - y * m;
+    const int x = i - (y * m);
 
     if (x >= k)
     {
@@ -129,7 +127,7 @@ void print(int m, int n, const thrust::device_vector<T>& d_data)
   {
     for (int j = 0; j < n; j++)
     {
-      std::cout << std::setw(4) << h_data[i * n + j] << " ";
+      std::cout << std::setw(4) << h_data[(i * n) + j] << " ";
     }
     std::cout << "\n";
   }
@@ -138,7 +136,7 @@ void print(int m, int n, const thrust::device_vector<T>& d_data)
 void generate_random_sites(thrust::host_vector<int>& t, int Nb, int m, int n)
 {
   thrust::default_random_engine rng;
-  thrust::uniform_int_distribution<int> dist(0, m * n - 1);
+  thrust::uniform_int_distribution<int> dist(0, (m * n) - 1);
 
   for (int k = 0; k < Nb; k++)
   {

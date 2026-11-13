@@ -80,7 +80,8 @@ struct ValidateEngineEqual
     bool result = true;
 
     // test from default constructor
-    Engine e0, e1;
+    Engine e0;
+    Engine e1;
     result &= (e0 == e1);
 
     // advance engines
@@ -89,11 +90,13 @@ struct ValidateEngineEqual
     result &= (e0 == e1);
 
     // test from identical seeds
-    Engine e2(13), e3(13);
+    Engine e2(13);
+    Engine e3(13);
     result &= (e2 == e3);
 
     // test different seeds aren't equal
-    Engine e4(7), e5(13);
+    Engine e4(7);
+    Engine e5(13);
     result &= !(e4 == e5);
 
     // test reseeding engine to the same seed causes equality
@@ -112,7 +115,8 @@ struct ValidateEngineUnequal
     bool result = true;
 
     // test from default constructor
-    Engine e0, e1;
+    Engine e0;
+    Engine e1;
     result &= !(e0 != e1);
 
     // advance engines
@@ -121,11 +125,13 @@ struct ValidateEngineUnequal
     result &= !(e0 != e1);
 
     // test from identical seeds
-    Engine e2(13), e3(13);
+    Engine e2(13);
+    Engine e3(13);
     result &= !(e2 != e3);
 
     // test different seeds aren't equal
-    Engine e4(7), e5(13);
+    Engine e4(7);
+    Engine e5(13);
     result &= (e4 != e5);
 
     // test reseeding engine to the same seed causes equality
@@ -133,7 +139,8 @@ struct ValidateEngineUnequal
     result &= !(e4 != e5);
 
     // test different discards causes inequality
-    Engine e6(13), e7(13);
+    Engine e6(13);
+    Engine e7(13);
     e6.discard(500);
     e7.discard(1000);
     result &= (e6 != e7);
@@ -652,21 +659,30 @@ void validate_distribution_characteristic()
     // test Distribution with same range as engine
 
     // test host
-    thrust::generate(h.begin(), h.end(), Validator(Distribution((engine_traits::min) (), (engine_traits::max) ())));
+    thrust::generate(
+      h.begin(),
+      h.end(),
+      Validator(
+        Distribution((engine_traits::min) (), (engine_traits::max) ()))); // NOLINT(readability-redundant-parentheses)
 
     REQUIRE(h[0]);
 
     // test device
-    thrust::generate(d.begin(), d.end(), Validator(Distribution((engine_traits::min) (), (engine_traits::max) ())));
+    thrust::generate(
+      d.begin(),
+      d.end(),
+      Validator(
+        Distribution((engine_traits::min) (), (engine_traits::max) ()))); // NOLINT(readability-redundant-parentheses)
 
     REQUIRE(d[0]);
 
     // test Distribution with smaller range than engine
 
     // test host
-    const typename Distribution::result_type engine_range = (engine_traits::max) () - (engine_traits::min) ();
-    const typename Distribution::result_type smaller_min  = engine_range / 3;
-    const typename Distribution::result_type smaller_max  = engine_range - smaller_min;
+    const typename Distribution::result_type engine_range =
+      (engine_traits::max) () - (engine_traits::min) (); // NOLINT(readability-redundant-parentheses)
+    const typename Distribution::result_type smaller_min = engine_range / 3;
+    const typename Distribution::result_type smaller_max = engine_range - smaller_min;
 
     thrust::generate(h.begin(), h.end(), Validator(Distribution(smaller_min, smaller_max)));
 
@@ -800,7 +816,7 @@ void validate_distribution_with_engine()
 TEST_CASE("TestDistributionsWithCudaStdPhilox", "[random]")
 {
   using engine      = cuda::std::philox4x32;
-  using uint_dist   = thrust::random::uniform_int_distribution<typename engine::result_type>;
+  using uint_dist   = thrust::random::uniform_int_distribution<engine::result_type>;
   using float_dist  = thrust::random::uniform_real_distribution<float>;
   using double_dist = thrust::random::normal_distribution<double>;
 

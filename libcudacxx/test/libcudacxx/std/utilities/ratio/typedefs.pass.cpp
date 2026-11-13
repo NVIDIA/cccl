@@ -10,7 +10,9 @@
 
 #include <cuda/std/ratio>
 
-int main(int, char**)
+#include "test_macros.h"
+
+TEST_FUNC constexpr bool test()
 {
   static_assert(cuda::std::atto::num == 1 && cuda::std::atto::den == 1000000000000000000ULL);
   static_assert(cuda::std::femto::num == 1 && cuda::std::femto::den == 1000000000000000ULL);
@@ -28,6 +30,14 @@ int main(int, char**)
   static_assert(cuda::std::tera::num == 1000000000000ULL && cuda::std::tera::den == 1);
   static_assert(cuda::std::peta::num == 1000000000000000ULL && cuda::std::peta::den == 1);
   static_assert(cuda::std::exa::num == 1000000000000000000ULL && cuda::std::exa::den == 1);
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }

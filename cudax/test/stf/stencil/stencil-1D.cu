@@ -27,10 +27,10 @@ public:
   data_block(size_t beg, size_t end, size_t ghost_size)
       : ghost_size(ghost_size)
       , block_size(end - beg + 1)
-      , array(new T[block_size + 2 * ghost_size])
+      , array(new T[block_size + (2 * ghost_size)])
       , left_interface(new T[ghost_size])
       , right_interface(new T[ghost_size])
-      , handle(ctx.logical_data(array.get(), block_size + 2 * ghost_size))
+      , handle(ctx.logical_data(array.get(), block_size + (2 * ghost_size)))
       , left_handle(ctx.logical_data(left_interface.get(), ghost_size))
       , right_handle(ctx.logical_data(right_interface.get(), ghost_size))
   {}
@@ -45,7 +45,6 @@ public:
     return array.get();
   }
 
-public:
   size_t ghost_size;
   size_t block_size;
   std::unique_ptr<T[]> array;
@@ -65,7 +64,7 @@ public:
 template <typename T>
 __global__ void copy_kernel(size_t cnt, T* dst, const T* src)
 {
-  for (int idx = static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x); idx < cnt;
+  for (int idx = static_cast<int>(threadIdx.x + (blockIdx.x * blockDim.x)); idx < cnt;
        idx += static_cast<int>(blockDim.x * gridDim.x))
   {
     dst[idx] = src[idx];
@@ -75,11 +74,11 @@ __global__ void copy_kernel(size_t cnt, T* dst, const T* src)
 template <typename T>
 __global__ void stencil_kernel(size_t cnt, size_t ghost_size, T* array, const T* array1)
 {
-  for (int idx = static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x); idx < cnt;
+  for (int idx = static_cast<int>(threadIdx.x + (blockIdx.x * blockDim.x)); idx < cnt;
        idx += static_cast<int>(blockDim.x * gridDim.x))
   {
     const int idx2 = static_cast<int>(idx + ghost_size);
-    array[idx2]    = 0.9 * array1[idx2] + 0.05 * array1[idx2 - 1] + 0.05 * array1[idx2 + 1];
+    array[idx2]    = (0.9 * array1[idx2]) + (0.05 * array1[idx2 - 1]) + (0.05 * array1[idx2 + 1]);
   }
 }
 
@@ -125,7 +124,7 @@ template <typename T>
 void copy_array(data_block<T>& bn, data_block<T>& bn1)
 {
   ctx.task(bn1.handle.rw(), bn.handle.read())
-      ->*[sz = bn.block_size + 2 * bn.ghost_size](cudaStream_t stream, auto s1, auto s2) {
+      ->*[sz = bn.block_size + (2 * bn.ghost_size)](cudaStream_t stream, auto s1, auto s2) {
             copy_kernel<<<256, 64, 0, stream>>>(sz, s1.data_handle(), s2.data_handle());
           };
 }

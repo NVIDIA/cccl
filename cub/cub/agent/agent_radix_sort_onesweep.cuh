@@ -19,6 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/block/block_load.cuh>
 #include <cub/block/block_radix_rank.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
@@ -81,7 +82,7 @@ namespace detail
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 inline ::std::ostream& operator<<(::std::ostream& os, RadixSortStoreAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
@@ -89,12 +90,12 @@ CUB_NAMESPACE_END
 
 #if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
 template <::cuda::std::same_as<char> CharT>
-struct std::formatter<CUB_NS_QUALIFIER::RadixSortStoreAlgorithm, CharT> : formatter<const CharT*, CharT>
+struct std::formatter<_CUB::RadixSortStoreAlgorithm, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const CUB_NS_QUALIFIER::RadixSortStoreAlgorithm& algo, FmtCtx& ctx) const
+  auto format(const _CUB::RadixSortStoreAlgorithm& algo, FmtCtx& ctx) const
   {
-    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+    return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(algo), ctx);
   }
 };
 #endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
@@ -272,7 +273,7 @@ struct AgentRadixSortOnesweep
 
   _CCCL_DEVICE _CCCL_FORCEINLINE int ThreadBin(int u)
   {
-    return threadIdx.x * BINS_PER_THREAD + u;
+    return (threadIdx.x * BINS_PER_THREAD) + u;
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void LookbackPartial(int (&bins)[BINS_PER_THREAD])
@@ -286,7 +287,7 @@ struct AgentRadixSortOnesweep
         // write the local sum into the bin
         AtomicOffsetT& loc   = d_lookback[block_idx * RADIX_DIGITS + bin];
         PortionOffsetT value = bins[u] | LOOKBACK_PARTIAL_MASK;
-        ThreadStore<STORE_VOLATILE>(&loc, value);
+        _CUB::ThreadStore<STORE_VOLATILE>(&loc, value);
       }
     }
   }
@@ -340,7 +341,7 @@ struct AgentRadixSortOnesweep
           do
           {
             __threadfence_block(); // prevent hoisting loads from loop
-            value_j = ThreadLoad<LOAD_VOLATILE>(&loc_j);
+            value_j = _CUB::ThreadLoad<LOAD_VOLATILE>(&loc_j);
           } while (value_j == 0);
 
           inc_sum += value_j & LOOKBACK_VALUE_MASK;
@@ -352,7 +353,7 @@ struct AgentRadixSortOnesweep
         }
         AtomicOffsetT& loc_i   = d_lookback[block_idx * RADIX_DIGITS + bin];
         PortionOffsetT value_i = inc_sum | LOOKBACK_GLOBAL_MASK;
-        ThreadStore<STORE_VOLATILE>(&loc_i, value_i);
+        _CUB::ThreadStore<STORE_VOLATILE>(&loc_i, value_i);
         s.global_offsets[bin] += inc_sum - bins[u];
       }
     }
@@ -363,11 +364,11 @@ struct AgentRadixSortOnesweep
   {
     if (full_block)
     {
-      LoadDirectWarpStriped(threadIdx.x, d_keys_in + tile_offset, keys);
+      _CUB::LoadDirectWarpStriped(threadIdx.x, d_keys_in + tile_offset, keys);
     }
     else
     {
-      LoadDirectWarpStriped(
+      _CUB::LoadDirectWarpStriped(
         threadIdx.x, d_keys_in + tile_offset, keys, num_items - tile_offset, Twiddle::DefaultKey(decomposer));
     }
 
@@ -382,12 +383,12 @@ struct AgentRadixSortOnesweep
   {
     if (full_block)
     {
-      LoadDirectWarpStriped(threadIdx.x, d_values_in + tile_offset, values);
+      _CUB::LoadDirectWarpStriped(threadIdx.x, d_values_in + tile_offset, values);
     }
     else
     {
       const int tile_items = num_items - tile_offset;
-      LoadDirectWarpStriped(threadIdx.x, d_values_in + tile_offset, values, tile_items);
+      _CUB::LoadDirectWarpStriped(threadIdx.x, d_values_in + tile_offset, values, tile_items);
     }
   }
 
@@ -457,12 +458,12 @@ struct AgentRadixSortOnesweep
     }
     if (full_block)
     {
-      StoreDirectWarpStriped(threadIdx.x, d_keys_out + global_offset, keys);
+      _CUB::StoreDirectWarpStriped(threadIdx.x, d_keys_out + global_offset, keys);
     }
     else
     {
       const int tile_items = num_items - block_idx * TILE_ITEMS;
-      StoreDirectWarpStriped(threadIdx.x, d_keys_out + global_offset, keys, tile_items);
+      _CUB::StoreDirectWarpStriped(threadIdx.x, d_keys_out + global_offset, keys, tile_items);
     }
 
     if (!KEYS_ONLY)
@@ -472,17 +473,17 @@ struct AgentRadixSortOnesweep
       LoadValues(block_idx * TILE_ITEMS, values); // NOLINT(bugprone-misplaced-widening-cast)
       if (full_block)
       {
-        StoreDirectWarpStriped(threadIdx.x, d_values_out + global_offset, values);
+        _CUB::StoreDirectWarpStriped(threadIdx.x, d_values_out + global_offset, values);
       }
       else
       {
         const int tile_items = num_items - block_idx * TILE_ITEMS;
-        StoreDirectWarpStriped(threadIdx.x, d_values_out + global_offset, values, tile_items);
+        _CUB::StoreDirectWarpStriped(threadIdx.x, d_values_out + global_offset, values, tile_items);
       }
     }
 
     // exit early
-    ThreadExit();
+    _CUB::ThreadExit();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void
@@ -546,7 +547,7 @@ struct AgentRadixSortOnesweep
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
-      const int idx              = threadIdx.x + u * BLOCK_THREADS;
+      const int idx              = threadIdx.x + (u * BLOCK_THREADS);
       const bit_ordered_type key = s.keys_out[idx];
       OffsetT global_idx         = idx + s.global_offsets[Digit(key)];
       if (FullTile || idx < tile_items)
@@ -565,7 +566,7 @@ struct AgentRadixSortOnesweep
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
-      const int idx      = threadIdx.x + u * BLOCK_THREADS;
+      const int idx      = threadIdx.x + (u * BLOCK_THREADS);
       ValueT value       = s.values_out[idx];
       OffsetT global_idx = idx + s.global_offsets[digits[u]];
       if (FullTile || idx < tile_items)
@@ -601,7 +602,7 @@ struct AgentRadixSortOnesweep
       num_writes = __shfl_sync(WARP_MASK, num_writes, last_lane);
       if (lane < num_writes)
       {
-        ThreadStore<CACHE_MODIFIER>(&d_keys_out[global_idx], key_out);
+        _CUB::ThreadStore<CACHE_MODIFIER>(&d_keys_out[global_idx], key_out);
       }
       warp_offset += num_writes;
     }
@@ -612,7 +613,7 @@ struct AgentRadixSortOnesweep
         int idx              = warp_offset + lane;
         bit_ordered_type key = s.keys_out[idx];
         OffsetT global_idx   = idx + s.global_offsets[Digit(key)];
-        ThreadStore<CACHE_MODIFIER>(&d_keys_out[global_idx], Twiddle::Out(key, decomposer));
+        _CUB::ThreadStore<CACHE_MODIFIER>(&d_keys_out[global_idx], Twiddle::Out(key, decomposer));
       }
     }
   }
@@ -655,7 +656,7 @@ struct AgentRadixSortOnesweep
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
-      const int idx = threadIdx.x + u * BLOCK_THREADS;
+      const int idx = threadIdx.x + (u * BLOCK_THREADS);
       digits[u]     = Digit(s.keys_out[idx]);
     }
   }

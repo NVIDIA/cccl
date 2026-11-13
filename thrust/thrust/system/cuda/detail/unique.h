@@ -26,7 +26,6 @@
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
-#  include <thrust/system/cuda/detail/core/agent_launcher.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
@@ -40,14 +39,14 @@
 THRUST_NAMESPACE_BEGIN
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ForwardIterator unique(
+_CCCL_HOST_DEVICE ForwardIterator unique( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
   BinaryPredicate binary_pred);
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE OutputIterator unique_copy(
+_CCCL_HOST_DEVICE OutputIterator unique_copy( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -55,7 +54,8 @@ _CCCL_HOST_DEVICE OutputIterator unique_copy(
   BinaryPredicate binary_pred);
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
+_CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator>
+unique_count( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,

@@ -44,7 +44,7 @@ struct basic_test_single_dim
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
   }
 
-  void run()
+  void run() const
   {
     auto dims = cuda::make_hierarchy(cuda::block_dims<block_size>(), cuda::grid_dims<grid_size>());
     static_assert(cuda::gpu_thread.dims(cuda::grid, dims).x == grid_size * block_size);
@@ -93,7 +93,7 @@ struct basic_test_multi_dim
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
   }
 
-  void run()
+  void run() const
   {
     auto dims_multidim = cuda::make_hierarchy(cuda::block_dims<2, 3, 4>(), cuda::grid_dims<16, 4, 1>());
 
@@ -137,7 +137,7 @@ struct basic_test_mixed
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
   }
 
-  void run()
+  void run() const
   {
     auto dims_mixed = cuda::make_hierarchy(cuda::block_dims<block_size>(), cuda::grid_dims(dim3(8, 4, 2)));
 
@@ -175,7 +175,7 @@ struct basic_test_cluster
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
   }
 
-  void run()
+  void run() const
   {
     SECTION("Static cluster dims")
     {
@@ -305,13 +305,13 @@ __global__ void kernel(Hierarchy hierarchy)
   const auto grid_index = cuda::gpu_thread.index_as<unsigned long long>(cuda::grid, hierarchy);
   REQUIRE_DEVICE(
     grid_index.x
-    == static_cast<unsigned long long>(grid.block_index().x) * block.dim_threads().x + block.thread_index().x);
+    == (static_cast<unsigned long long>(grid.block_index().x) * block.dim_threads().x) + block.thread_index().x);
   REQUIRE_DEVICE(
     grid_index.y
-    == static_cast<unsigned long long>(grid.block_index().y) * block.dim_threads().y + block.thread_index().y);
+    == (static_cast<unsigned long long>(grid.block_index().y) * block.dim_threads().y) + block.thread_index().y);
   REQUIRE_DEVICE(
     grid_index.z
-    == static_cast<unsigned long long>(grid.block_index().z) * block.dim_threads().z + block.thread_index().z);
+    == (static_cast<unsigned long long>(grid.block_index().z) * block.dim_threads().z) + block.thread_index().z);
 
   REQUIRE_DEVICE(grid.block_rank() == cuda::block.rank(cuda::grid, hierarchy));
   REQUIRE_DEVICE(block.thread_rank() == cuda::gpu_thread.rank(cuda::block, hierarchy));
@@ -342,7 +342,7 @@ C2H_TEST("Dims queries indexing and ambient hierarchy", "[hierarchy]")
 }
 
 template <typename Hierarchy>
-__global__ void rank_kernel_optimized(Hierarchy hierarchy, unsigned int* out)
+__global__ void rank_kernel_optimized(Hierarchy hierarchy, unsigned int* out) // NOLINT(readability-non-const-parameter)
 {
   auto thread_id = cuda::gpu_thread.rank(cuda::block, hierarchy);
   out[thread_id] = thread_id;

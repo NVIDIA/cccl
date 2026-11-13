@@ -24,7 +24,7 @@ using namespace cuda::experimental::stf;
 
 __global__ void axpy(double a, slice<const double> x, slice<double> y)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int i = tid; i < x.size(); i += nthreads)
@@ -47,7 +47,8 @@ int main()
 {
   graph_ctx ctx;
   const size_t N = 16;
-  double X[N], Y[N];
+  double X[N];
+  double Y[N];
 
   for (size_t i = 0; i < N; i++)
   {
@@ -70,7 +71,7 @@ int main()
     for (size_t ind = 0; ind < hX.extent(0); ind++)
     {
       // Y should be Y0 + alpha X0
-      EXPECT(fabs(hY(ind) - (Y0(ind) + alpha * X0(ind))) < 0.0001);
+      EXPECT(fabs(hY(ind) - (Y0(ind) + (alpha * X0(ind)))) < 0.0001);
 
       // X should be X0
       EXPECT(fabs(hX(ind) - X0(ind)) < 0.0001);

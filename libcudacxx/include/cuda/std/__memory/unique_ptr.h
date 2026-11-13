@@ -444,7 +444,6 @@ public:
     return *this;
   }
 
-public:
   _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEXPR_CXX20 ~unique_ptr()
   {
     reset();

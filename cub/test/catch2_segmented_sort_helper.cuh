@@ -63,14 +63,12 @@ struct segment_index_to_offset_op
     {
       return 0;
     }
-    else if (i < num_segments)
+    if (i < num_segments)
     {
       return segment_size * static_cast<OffsetT>(i - num_empty_segments);
     }
-    else
-    {
-      return num_items;
-    }
+
+    return num_items;
   }
 };
 
@@ -96,7 +94,6 @@ struct short_key_verification_helper
   // Holding the histogram of the keys being sorted for verification
   c2h::host_vector<std::size_t> keys_histogram{};
 
-public:
   void prepare_verification_data(const c2h::device_vector<key_t>& in_keys)
   {
     const c2h::host_vector<key_t> h_in{in_keys};
@@ -138,7 +135,6 @@ public:
 template <typename KeyT>
 class segmented_verification_helper
 {
-private:
   using key_t = KeyT;
   const std::size_t sequence_length{};
 
@@ -352,12 +348,7 @@ struct segment_checker
       return true;
     }
 
-    if (!this->check_results(segment_begin, segment_size, ValueT{}))
-    {
-      return false;
-    }
-
-    return true;
+    return this->check_results(segment_begin, segment_size, ValueT{});
   }
 
 private:
@@ -1580,9 +1571,9 @@ struct generate_edge_case_offsets_dispatch
     add_segments(a_lot_of, single_thread_segment_size - 1);
     add_segments(a_lot_of, single_thread_segment_size);
     add_segments(a_lot_of, single_thread_segment_size + 1);
-    add_segments(a_lot_of, single_thread_segment_size * 2 - 1);
+    add_segments(a_lot_of, (single_thread_segment_size * 2) - 1);
     add_segments(a_lot_of, single_thread_segment_size * 2);
-    add_segments(a_lot_of, single_thread_segment_size * 2 + 1);
+    add_segments(a_lot_of, (single_thread_segment_size * 2) + 1);
     add_segments(a_bunch_of, small_segment_max_segment_size - 1);
     add_segments(a_bunch_of, small_segment_max_segment_size);
     add_segments(a_bunch_of, small_segment_max_segment_size + 1);

@@ -11,6 +11,7 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/cstddef>
 #include <cuda/std/span>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
@@ -23,7 +24,11 @@
 
 namespace
 {
-template <class Mapping1, class Mapping2, class Config, class... NonExhaustive>
+template <cuda::std::size_t ExpectedGroupCount = cuda::std::dynamic_extent,
+          class Mapping1,
+          class Mapping2,
+          class Config,
+          class... NonExhaustive>
 __device__ void test_composite_mapping(
   const Mapping1& mapping1, const Mapping2& mapping2, Config config, const NonExhaustive&... non_exhaustive)
 {
@@ -57,12 +62,13 @@ __device__ void test_composite_mapping(
     static_assert(cudax::coop::__group_mapping_result<decltype(mapping.map(
                     non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result))>);
 
-    auto result  = mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result);
-    using Result = decltype(result);
+    const auto result = mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result);
+    using Result      = decltype(result);
 
     const auto rank_in_warp = cuda::gpu_thread.rank_as<unsigned>(parent_group);
 
-    static_assert(Result::static_group_count() == cuda::std::dynamic_extent);
+    static_assert(Result::static_group_count() == ExpectedGroupCount);
+    static_assert(Result::static_group_rank() == (ExpectedGroupCount == 1 ? 0 : cuda::std::dynamic_extent));
     CHECK(result.group_count() == 16);
     CHECK(result.group_rank() == (rank_in_warp / 4 * 2 + (rank_in_warp % 4 > 0)));
 
@@ -80,6 +86,7 @@ __device__ void test_composite_mapping(
 
   // Test operator|.
   {
+    // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
     auto mapping = mapping1 | mapping2;
 
     static_assert(cuda::std::is_same_v<Mapping, decltype(mapping)>);
@@ -91,6 +98,7 @@ __device__ void test_composite_mapping(
     static_assert(cuda::std::is_same_v<decltype(mapping2_ref), const Mapping2&>);
   }
   {
+    // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
     auto mapping = cudax::coop::composite_mapping{mapping1} | mapping2;
 
     static_assert(cuda::std::is_same_v<Mapping, decltype(mapping)>);
@@ -102,6 +110,7 @@ __device__ void test_composite_mapping(
     static_assert(cuda::std::is_same_v<decltype(mapping2_ref), const Mapping2&>);
   }
   {
+    // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
     auto mapping = mapping1 | cudax::coop::composite_mapping{mapping2};
 
     static_assert(cuda::std::is_same_v<Mapping, decltype(mapping)>);
@@ -113,6 +122,7 @@ __device__ void test_composite_mapping(
     static_assert(cuda::std::is_same_v<decltype(mapping2_ref), const Mapping2&>);
   }
   {
+    // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
     auto mapping = cudax::coop::composite_mapping{mapping1} | cudax::coop::composite_mapping{mapping2};
 
     static_assert(cuda::std::is_same_v<Mapping, decltype(mapping)>);
@@ -154,6 +164,7 @@ __device__ void test_non_exhaustive_composite_mapping(Config config)
   using Result      = decltype(result);
 
   static_assert(Result::static_group_count() == 10);
+  static_assert(Result::static_group_rank() == cuda::std::dynamic_extent);
   static_assert(Result::static_unit_count() == 2);
   static_assert(!Result::is_always_exhaustive());
   static_assert(Result::is_always_contiguous());
@@ -190,8 +201,8 @@ struct TestKernel
       const cudax::coop::group_by mapping1{cuda::std::cw<4>};
       constexpr unsigned counts2[]{1, 3};
       const cudax::coop::group_as mapping2{counts2};
-      test_composite_mapping(mapping1, mapping2, config);
-      test_composite_mapping(mapping1, mapping2, config, cudax::coop::non_exhaustive);
+      test_composite_mapping<16>(mapping1, mapping2, config);
+      test_composite_mapping<16>(mapping1, mapping2, config, cudax::coop::non_exhaustive);
     }
     {
       const cudax::coop::group_by mapping1{4};
@@ -203,14 +214,14 @@ struct TestKernel
     {
       const cudax::coop::group_by mapping1{cuda::std::cw<4>};
       constexpr unsigned counts2[]{1, 3};
-      const cudax::coop::group_as mapping2{counts2};
+      const cudax::coop::group_as mapping2{cuda::std::span{counts2, 2}};
       test_composite_mapping(mapping1, mapping2, config);
       test_composite_mapping(mapping1, mapping2, config, cudax::coop::non_exhaustive);
     }
     {
       const cudax::coop::group_by mapping1{4};
       constexpr unsigned counts2[]{1, 3};
-      const cudax::coop::group_as mapping2{counts2};
+      const cudax::coop::group_as mapping2{cuda::std::span{counts2, 2}};
       test_composite_mapping(mapping1, mapping2, config);
       test_composite_mapping(mapping1, mapping2, config, cudax::coop::non_exhaustive);
     }

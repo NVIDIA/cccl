@@ -103,7 +103,7 @@ struct assign_n
 template <int N>
 struct verify_n
 {
-  __device__ void operator()(int* pi) const noexcept
+  __device__ void operator()(const int* pi) const noexcept
   {
     REQUIRE_DEVICE(*pi == N);
   }

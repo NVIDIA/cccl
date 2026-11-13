@@ -42,7 +42,7 @@ struct reduce_by_key_functor
 {
   AssociativeOperator binary_op;
 
-  using result_type = typename ::cuda::std::tuple<ValueType, TailFlagType>;
+  using result_type = ::cuda::std::tuple<ValueType, TailFlagType>;
 
   _CCCL_HOST_DEVICE reduce_by_key_functor(AssociativeOperator _binary_op)
       : binary_op(_binary_op)

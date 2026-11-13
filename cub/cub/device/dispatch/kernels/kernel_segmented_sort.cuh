@@ -137,7 +137,7 @@ template <SortOrder Order,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(current_policy<PolicySelector>().large_segment.threads_per_block)
+__launch_bounds__(_CUB::detail::current_policy<PolicySelector>().large_segment.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedSortFallbackKernel(
     const KeyT* d_keys_in_orig,
     KeyT* d_keys_out_orig,
@@ -148,7 +148,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_segment.threads_per_blo
     const BeginOffsetIteratorT d_begin_offsets,
     const EndOffsetIteratorT d_end_offsets)
 {
-  static constexpr SegmentedSortPolicy active_policy = current_policy<PolicySelector>();
+  static constexpr SegmentedSortPolicy active_policy = _CUB::detail::current_policy<PolicySelector>();
   static constexpr auto large_policy                 = active_policy.large_segment;
   using LargeSegmentPolicyT                          = detail::agent_radix_sort_downsweep_policy<
     0,
@@ -339,7 +339,7 @@ template <SortOrder Order,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(current_policy<PolicySelector>().small_segment.threads_per_block)
+__launch_bounds__(_CUB::detail::current_policy<PolicySelector>().small_segment.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedSortKernelSmall(
     const local_segment_index_t small_segments,
     const local_segment_index_t medium_segments,
@@ -358,7 +358,7 @@ __launch_bounds__(current_policy<PolicySelector>().small_segment.threads_per_blo
   const local_segment_index_t tid = threadIdx.x;
   const local_segment_index_t bid = blockIdx.x;
 
-  static constexpr SegmentedSortPolicy active_policy = current_policy<PolicySelector>();
+  static constexpr SegmentedSortPolicy active_policy = _CUB::detail::current_policy<PolicySelector>();
   static constexpr auto small_policy                 = active_policy.small_segment;
   using SmallPolicyT                                 = agent_sub_warp_merge_sort_policy<
     small_policy.threads_per_block,
@@ -412,7 +412,7 @@ __launch_bounds__(current_policy<PolicySelector>().small_segment.threads_per_blo
   if (bid < medium_blocks)
   {
     const local_segment_index_t sid_within_block  = tid / threads_per_medium_segment;
-    const local_segment_index_t medium_segment_id = bid * segments_per_medium_block + sid_within_block;
+    const local_segment_index_t medium_segment_id = (bid * segments_per_medium_block) + sid_within_block;
 
     if (medium_segment_id < medium_segments)
     {
@@ -433,7 +433,8 @@ __launch_bounds__(current_policy<PolicySelector>().small_segment.threads_per_blo
   else
   {
     const local_segment_index_t sid_within_block = tid / threads_per_small_segment;
-    const local_segment_index_t small_segment_id = (bid - medium_blocks) * segments_per_small_block + sid_within_block;
+    const local_segment_index_t small_segment_id =
+      ((bid - medium_blocks) * segments_per_small_block) + sid_within_block;
 
     if (small_segment_id < small_segments)
     {
@@ -490,7 +491,7 @@ template <SortOrder Order,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(current_policy<PolicySelector>().large_segment.threads_per_block)
+__launch_bounds__(_CUB::detail::current_policy<PolicySelector>().large_segment.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedSortKernelLarge(
     const local_segment_index_t* const d_segments_indices,
     const KeyT* d_keys_in_orig,
@@ -502,8 +503,9 @@ __launch_bounds__(current_policy<PolicySelector>().large_segment.threads_per_blo
     const BeginOffsetIteratorT d_begin_offsets,
     const EndOffsetIteratorT d_end_offsets)
 {
-  static constexpr SegmentedSortRadixSortPolicy large_policy = current_policy<PolicySelector>().large_segment;
-  using LargeSegmentPolicyT                                  = detail::agent_radix_sort_downsweep_policy<
+  static constexpr SegmentedSortRadixSortPolicy large_policy =
+    _CUB::detail::current_policy<PolicySelector>().large_segment;
+  using LargeSegmentPolicyT = detail::agent_radix_sort_downsweep_policy<
     0,
     0,
     void,

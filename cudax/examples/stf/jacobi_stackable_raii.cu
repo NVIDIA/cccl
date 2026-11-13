@@ -55,7 +55,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
       A(i, j) = (i == j) ? 1.0 : -1.0;
     };
 
-  cudaEvent_t start, stop;
+  cudaEvent_t start;
+  cudaEvent_t stop;
 
   cuda_safe_call(cudaEventCreate(&start));
   cuda_safe_call(cudaEventCreate(&stop));

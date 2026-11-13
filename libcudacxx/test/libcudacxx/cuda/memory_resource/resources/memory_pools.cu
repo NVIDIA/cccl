@@ -692,7 +692,7 @@ C2H_CCCLRT_TEST("device_memory_pool::enable_access", "[memory_resource]")
   if (cuda::devices.size() > 1)
   {
     auto peers = cuda::devices[0].peers();
-    if (peers.size() > 0)
+    if (!peers.empty())
     {
       cuda::device_memory_pool pool{cuda::devices[0]};
       CHECK(pool.is_accessible_from(cuda::devices[0]));

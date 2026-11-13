@@ -22,12 +22,12 @@ struct transpose_index
       , n(_n)
   {}
 
-  __host__ __device__ size_t operator()(size_t linear_index)
+  __host__ __device__ size_t operator()(size_t linear_index) const
   {
     const size_t i = linear_index / n;
     const size_t j = linear_index % n;
 
-    return m * j + i;
+    return (m * j) + i;
   }
 };
 
@@ -40,7 +40,7 @@ struct row_index
       : n(_n)
   {}
 
-  __host__ __device__ size_t operator()(size_t i)
+  __host__ __device__ size_t operator()(size_t i) const
   {
     return i / n;
   }
@@ -81,7 +81,7 @@ void print(size_t m, size_t n, thrust::device_vector<T>& d_data)
   {
     for (size_t j = 0; j < n; j++)
     {
-      std::cout << std::setw(8) << h_data[i * n + j] << " ";
+      std::cout << std::setw(8) << h_data[(i * n) + j] << " ";
     }
     std::cout << "\n";
   }

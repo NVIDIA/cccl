@@ -12,6 +12,7 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/bit>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
@@ -49,14 +50,14 @@ struct rank_label_fn
 {
   __device__ Label label(unsigned rank) const
   {
-    // Reverse label values so group ranks cannot be obtained by sorting labels.
+    // Exercise labels whose values differ from their order of appearance.
     if constexpr (cuda::std::is_enum_v<Label>)
     {
       return static_cast<Label>(rank_label_fn<cuda::std::underlying_type_t<Label>, Modulus, Shift>{}.label(rank));
     }
     else
     {
-      return static_cast<Label>(static_cast<Label>(Modulus - 1 - rank % Modulus) << Shift);
+      return static_cast<Label>(static_cast<Label>(Modulus - 1 - (rank % Modulus)) << Shift);
     }
   }
 
@@ -67,14 +68,50 @@ struct rank_label_fn
   }
 };
 
+struct MutableLabelFn
+{
+  unsigned* calls;
+
+  template <class MappingResult>
+  __device__ int operator()(const MappingResult& mapping_result) &
+  {
+    ++*calls;
+    return static_cast<int>(mapping_result.unit_rank() % 2);
+  }
+};
+
+struct OverloadedLabelFn : MutableLabelFn
+{
+  using MutableLabelFn::operator();
+
+  template <class MappingResult>
+  __device__ int operator()(const MappingResult& mapping_result) const&
+  {
+    ++*calls;
+    return static_cast<int>(mapping_result.unit_rank() % 3);
+  }
+};
+
+struct ConstOnlyLabelFn
+{
+  unsigned* calls;
+
+  template <class MappingResult>
+  __device__ int operator()(const MappingResult&) & = delete;
+
+  template <class MappingResult>
+  __device__ int operator()(const MappingResult& mapping_result) const&
+  {
+    ++*calls;
+    return static_cast<int>(mapping_result.unit_rank() % 2);
+  }
+};
+
 enum class bool_label : bool
 {
   false_value = false,
   true_value  = true
 };
-
-template <class Label>
-inline constexpr bool is_boolean_label = cuda::std::is_same_v<Label, bool> || cuda::std::is_same_v<Label, bool_label>;
 
 enum class signed_label : cuda::std::int8_t
 {
@@ -85,116 +122,175 @@ enum class wide_label : cuda::std::uint64_t
 {
 };
 
-template <class Config, class LabelFn, class... NonExhaustive>
-__device__ void test_labeled_partition(Config config, LabelFn label_fn, const NonExhaustive&... non_exhaustive)
+// All lanes participate, including lanes excluded by a previous mapping.
+template <class Result>
+__device__ void check_partition(const Result& result, unsigned group_count, unsigned mask)
 {
-  using Mapping = cudax::coop::labeled_partition<LabelFn>;
-  using Label   = decltype(label_fn.label(0));
-
-  // Test construction and class template argument deduction.
+  const auto valid = result.is_valid();
+  const auto rank  = valid ? result.group_rank() : 0u;
+  REQUIRE(valid == (mask != 0));
+  if (valid)
   {
-    static_assert(cuda::std::is_constructible_v<Mapping, LabelFn>);
-    const cudax::coop::labeled_partition mapping{label_fn};
-    static_assert(cuda::std::is_same_v<decltype(mapping), const Mapping>);
+    REQUIRE(result.group_count() == group_count);
+    REQUIRE(result.lane_mask() == cuda::device::lane_mask{mask});
+    REQUIRE(result.unit_count() == cuda::std::popcount(mask));
+    REQUIRE(result.unit_rank() == cuda::std::popcount(mask & cuda::device::lane_mask::all_less().value()));
+    REQUIRE(rank < group_count);
   }
+  for (int other_lane = 0; other_lane < 32; ++other_lane)
+  {
+    const auto other_rank = __shfl_sync(0xffffffffu, rank, other_lane);
+    const auto other_mask = __shfl_sync(0xffffffffu, mask, other_lane);
+    if (valid && other_mask != 0)
+    {
+      // Every group has one distinct rank; the assignment order is unspecified.
+      REQUIRE((rank == other_rank) == (mask == other_mask));
+    }
+  }
+}
 
+template <unsigned Count, class Config, class Mapping, class LabelFn, class... NonExhaustive>
+__device__ void
+check_labeled_partition(Config config, Mapping& mapping, LabelFn label_fn, const NonExhaustive&... non_exhaustive)
+{
   const cudax::coop::this_warp parent_group{config};
-  const ThreadsInWarpMappingResult prev_mapping_result;
+  const ThreadsInWarpMappingResult initial_mapping_result;
+  const cudax::coop::take prefix{cuda::std::cw<Count>};
+  const auto prev_mapping_result =
+    prefix.map(cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, initial_mapping_result);
 
-  static_assert(cudax::coop::__group_mapping_result<decltype(cuda::std::declval<Mapping>().map(
-                  non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result))>);
-
-  Mapping mapping{label_fn};
   const auto result = mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result);
   using Result      = decltype(result);
 
-  const auto lane  = cuda::gpu_thread.rank_as<unsigned>(cuda::warp);
-  const auto label = label_fn.label(lane);
-
-  unsigned lane_mask_ref = 0;
-  unsigned unit_count    = 0;
-  unsigned unit_rank     = 0;
-  unsigned first_lane    = 32;
-  for (unsigned other_lane = 0; other_lane < 32; ++other_lane)
-  {
-    if (label_fn.label(other_lane) == label)
-    {
-      lane_mask_ref |= 1u << other_lane;
-      ++unit_count;
-      unit_rank += other_lane < lane;
-      if (first_lane == 32)
-      {
-        first_lane = other_lane;
-      }
-    }
-  }
-
-  if constexpr (is_boolean_label<Label>)
-  {
-    // Boolean labels preserve the two logical bins, including an empty bin.
-    static_assert(Result::static_group_count() == 2);
-    REQUIRE(result.group_count() == 2);
-    REQUIRE(result.group_rank() == static_cast<unsigned>(label));
-  }
-  else
-  {
-    unsigned group_count = 0;
-    unsigned group_rank  = 0;
-    for (unsigned other_lane = 0; other_lane < 32; ++other_lane)
-    {
-      bool is_first = true;
-      for (unsigned preceding_lane = 0; preceding_lane < other_lane; ++preceding_lane)
-      {
-        if (label_fn.label(preceding_lane) == label_fn.label(other_lane))
-        {
-          is_first = false;
-        }
-      }
-      if (is_first)
-      {
-        ++group_count;
-        group_rank += other_lane < first_lane;
-      }
-    }
-
-    static_assert(Result::static_group_count() == cuda::std::dynamic_extent);
-    REQUIRE(result.group_count() == group_count);
-    REQUIRE(result.group_rank() == group_rank);
-  }
-
+  static_assert(cudax::coop::__group_mapping_result<Result>);
+  static_assert(Result::static_group_count() == cuda::std::dynamic_extent);
+  static_assert(Result::static_group_rank() == cuda::std::dynamic_extent);
   static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
-  REQUIRE(result.unit_count() == unit_count);
-  REQUIRE(result.unit_rank() == unit_rank);
-  REQUIRE(result.lane_mask() == cuda::device::lane_mask{lane_mask_ref});
-  REQUIRE(result.is_valid());
-  static_assert(Result::is_always_exhaustive());
+  static_assert(Result::is_always_exhaustive() == (Count == 32));
   static_assert(!Result::is_always_contiguous());
+
+  const auto lane      = cuda::gpu_thread.rank_as<unsigned>(cuda::warp);
+  unsigned mask        = 0;
+  unsigned group_count = 0;
+  for (unsigned other_lane = 0; other_lane < Count; ++other_lane)
+  {
+    if (lane < Count && label_fn.label(other_lane) == label_fn.label(lane))
+    {
+      mask |= 1u << other_lane;
+    }
+    bool is_first = true;
+    for (unsigned preceding_lane = 0; preceding_lane < other_lane; ++preceding_lane)
+    {
+      if (label_fn.label(preceding_lane) == label_fn.label(other_lane))
+      {
+        is_first = false;
+      }
+    }
+    group_count += is_first;
+  }
+  check_partition(result, group_count, mask);
+
+  if constexpr (Count < 32)
+  {
+    // An entirely excluded input must remain invalid for every lane.
+    using PreviousResult = cuda::std::remove_cv_t<decltype(prev_mapping_result)>;
+    const auto invalid_result =
+      mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, PreviousResult::__invalid());
+    REQUIRE(!invalid_result.is_valid());
+  }
 }
 
-template <class Config, class... NonExhaustive>
+template <bool ConstCallable,
+          unsigned Count,
+          class Config,
+          class LabelFn,
+          class MutableReferenceFn,
+          class ConstReferenceFn,
+          class... NonExhaustive>
+__device__ void test_label_callable(
+  Config config,
+  LabelFn label_fn,
+  MutableReferenceFn mutable_reference_fn,
+  ConstReferenceFn const_reference_fn,
+  const NonExhaustive&... non_exhaustive)
+{
+  using Mapping = cudax::coop::labeled_partition<LabelFn>;
+  cudax::coop::labeled_partition mapping{label_fn};
+  static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
+  static_assert(cuda::std::is_constructible_v<Mapping, LabelFn>);
+
+  const cudax::coop::this_warp parent_group{config};
+  const ThreadsInWarpMappingResult initial;
+  const auto prev =
+    cudax::coop::take{cuda::std::cw<Count>}.map(cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, initial);
+  using Parent   = decltype(parent_group);
+  using Previous = decltype(prev);
+  static_assert(can_map_group<Mapping, NonExhaustive..., cuda::thread_level, Parent, Previous>);
+  static_assert(can_map_group<const Mapping, NonExhaustive..., cuda::thread_level, Parent, Previous> == ConstCallable);
+  using UncallableMapping = cudax::coop::labeled_partition<int>;
+  static_assert(!can_map_group<UncallableMapping, NonExhaustive..., cuda::thread_level, Parent, Previous>);
+  static_assert(!can_map_group<const UncallableMapping, NonExhaustive..., cuda::thread_level, Parent, Previous>);
+
+  check_labeled_partition<Count>(config, mapping, mutable_reference_fn, non_exhaustive...);
+  if constexpr (ConstCallable)
+  {
+    check_labeled_partition<Count>(config, cuda::std::as_const(mapping), const_reference_fn, non_exhaustive...);
+  }
+}
+
+template <unsigned Count = 32, class Config, class LabelFn, class... NonExhaustive>
+__device__ void test_labeled_partition(Config config, LabelFn label_fn, const NonExhaustive&... non_exhaustive)
+{
+  test_label_callable<true, Count>(config, label_fn, label_fn, label_fn, non_exhaustive...);
+}
+
+template <unsigned Count, class Config, class... NonExhaustive>
+__device__ void test_callable_qualification(Config config, const NonExhaustive&... non_exhaustive)
+{
+  const rank_label_fn<int, 2> pairs;
+  const rank_label_fn<int, 3> triples;
+  const auto expected_calls = (cuda::gpu_thread.rank_as<unsigned>(cuda::warp) < Count) ? 1u : 0u;
+
+  unsigned calls = 0;
+  test_label_callable<false, Count>(config, MutableLabelFn{&calls}, pairs, pairs, non_exhaustive...);
+  REQUIRE(calls == expected_calls);
+
+  calls = 0;
+  test_label_callable<true, Count>(config, OverloadedLabelFn{{&calls}}, pairs, triples, non_exhaustive...);
+  REQUIRE(calls == 2 * expected_calls);
+
+  calls = 0;
+  test_label_callable<true, Count>(config, ConstOnlyLabelFn{&calls}, pairs, pairs, non_exhaustive...);
+  REQUIRE(calls == 2 * expected_calls);
+}
+
+template <class Label, unsigned Modulus, class Config, class... NonExhaustive>
 __device__ void test_previous_partitions(Config config, const NonExhaustive&... non_exhaustive)
 {
   const cudax::coop::this_warp parent_group{config};
   const ThreadsInWarpMappingResult initial_mapping_result;
   const auto lane = cuda::gpu_thread.rank_as<unsigned>(cuda::warp);
 
-  // Equal labels in different input tiles must remain in separate groups.
+  // Equal labels in different tiles remain separate, including when half the lanes are excluded.
+  for (unsigned count = 8; count >= 4; count /= 2)
   {
     const cudax::coop::group_by tiles{cuda::std::cw<8>};
-    const auto prev_mapping_result = tiles.map(cuda::gpu_thread, parent_group, initial_mapping_result);
-    cudax::coop::labeled_partition mapping{rank_label_fn<int, 3>{}};
+    const auto tiled_result = tiles.map(cuda::gpu_thread, parent_group, initial_mapping_result);
+    const cudax::coop::take prefix{count};
+    const auto prev_mapping_result =
+      prefix.map(cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, tiled_result);
+    cudax::coop::labeled_partition mapping{rank_label_fn<Label, Modulus>{}};
     const auto result = mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result);
 
-    const auto local_rank = lane % 8;
-    const auto label_rank = local_rank % 3;
-    const auto mask       = (label_rank == 0 ? 0x49u : (label_rank == 1 ? 0x92u : 0x24u)) << (lane / 8 * 8);
-
-    REQUIRE(result.group_count() == 12);
-    REQUIRE(result.group_rank() == lane / 8 * 3 + label_rank);
-    REQUIRE(result.unit_count() == (label_rank == 2 ? 2 : 3));
-    REQUIRE(result.unit_rank() == local_rank / 3);
-    REQUIRE(result.lane_mask() == cuda::device::lane_mask{mask});
-    REQUIRE(result.is_valid());
+    unsigned mask = 0;
+    if (lane % 8 < count)
+    {
+      for (unsigned other_rank = lane % 8 % Modulus; other_rank < count; other_rank += Modulus)
+      {
+        mask |= 1u << ((lane / 8 * 8) + other_rank);
+      }
+    }
+    check_partition(result, 4 * Modulus, mask);
   }
 
   // Ranks and labels are relative to a sparse input group, not physical lanes.
@@ -202,86 +298,22 @@ __device__ void test_previous_partitions(Config config, const NonExhaustive&... 
     auto even_rank = [](const auto& previous) {
       return previous.unit_rank() % 2 == 0;
     };
-    cudax::coop::binary_partition partition{even_rank};
+    const cudax::coop::binary_partition partition{even_rank};
     const auto prev_mapping_result = partition.map(cuda::gpu_thread, parent_group, initial_mapping_result);
-    cudax::coop::labeled_partition mapping{rank_label_fn<int, 3>{}};
+    cudax::coop::labeled_partition mapping{rank_label_fn<Label, Modulus>{}};
     const auto result = mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result);
 
-    unsigned mask       = 0;
-    unsigned unit_count = 0;
-    unsigned unit_rank  = 0;
+    unsigned mask = 0;
     for (unsigned other_lane = 0; other_lane < 32; ++other_lane)
     {
-      if (other_lane % 2 == lane % 2 && other_lane / 2 % 3 == lane / 2 % 3)
+      if (other_lane % 2 == lane % 2 && other_lane / 2 % Modulus == lane / 2 % Modulus)
       {
         mask |= 1u << other_lane;
-        ++unit_count;
-        unit_rank += other_lane < lane;
       }
     }
 
-    REQUIRE(result.group_count() == 6);
-    REQUIRE(result.group_rank() == (lane / 2 % 3) * 2 + lane % 2);
-    REQUIRE(result.unit_count() == unit_count);
-    REQUIRE(result.unit_rank() == unit_rank);
-    REQUIRE(result.lane_mask() == cuda::device::lane_mask{mask});
-    REQUIRE(result.is_valid());
+    check_partition(result, 2 * Modulus, mask);
   }
-}
-
-template <class Config, class LabelFn, class... NonExhaustive>
-__device__ void test_excluded_units(Config config, LabelFn label_fn, const NonExhaustive&... non_exhaustive)
-{
-  const cudax::coop::this_warp parent_group{config};
-  const ThreadsInWarpMappingResult initial_mapping_result;
-  const cudax::coop::take prefix{cuda::std::cw<17>};
-  const auto prev_mapping_result =
-    prefix.map(cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, initial_mapping_result);
-
-  cudax::coop::labeled_partition mapping{label_fn};
-  const auto result = mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result);
-  using Result      = decltype(result);
-
-  static_assert(!Result::is_always_exhaustive());
-  static_assert(!Result::is_always_contiguous());
-  const auto lane = cuda::gpu_thread.rank_as<unsigned>(cuda::warp);
-  REQUIRE(result.is_valid() == (lane < 17));
-  if (lane < 17)
-  {
-    const auto label = label_fn.label(lane);
-    unsigned mask    = 0;
-    unsigned count   = 0;
-    unsigned rank    = 0;
-    for (unsigned other_lane = 0; other_lane < 17; ++other_lane)
-    {
-      if (label_fn.label(other_lane) == label)
-      {
-        mask |= 1u << other_lane;
-        ++count;
-        rank += other_lane < lane;
-      }
-    }
-
-    if constexpr (is_boolean_label<decltype(label_fn.label(0))>)
-    {
-      REQUIRE(result.group_count() == 2);
-      REQUIRE(result.group_rank() == static_cast<unsigned>(label));
-    }
-    else
-    {
-      REQUIRE(result.group_count() == 3);
-      REQUIRE(result.group_rank() == lane % 3);
-    }
-    REQUIRE(result.unit_count() == count);
-    REQUIRE(result.unit_rank() == rank);
-    REQUIRE(result.lane_mask() == cuda::device::lane_mask{mask});
-  }
-
-  // An entirely excluded input must remain invalid for every lane.
-  using PreviousResult = cuda::std::remove_cv_t<decltype(prev_mapping_result)>;
-  const auto invalid_result =
-    mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, PreviousResult::__invalid());
-  REQUIRE(!invalid_result.is_valid());
 }
 
 template <class Config, class... NonExhaustive>
@@ -295,6 +327,8 @@ __device__ void test_labels(Config config, const NonExhaustive&... non_exhaustiv
   test_labeled_partition(config, rank_label_fn<bool_label, 2>{}, non_exhaustive...);
 
   test_labeled_partition(config, constant_label_fn<int>{-7}, non_exhaustive...);
+  const int label = -7;
+  test_labeled_partition(config, constant_label_fn<const int&>{label}, non_exhaustive...);
   test_labeled_partition(config, rank_label_fn<int, 32>{}, non_exhaustive...);
   test_labeled_partition(config, rank_label_fn<int, 3>{}, non_exhaustive...);
   test_labeled_partition(config, rank_label_fn<cuda::std::int8_t, 3>{}, non_exhaustive...);
@@ -313,10 +347,17 @@ __device__ void test_labels(Config config, const NonExhaustive&... non_exhaustiv
   test_labeled_partition(config, rank_label_fn<__uint128_t, 3, 80>{}, non_exhaustive...);
 #endif // _CCCL_HAS_INT128()
 
-  test_previous_partitions(config, non_exhaustive...);
-  test_excluded_units(config, rank_label_fn<bool, 2>{}, non_exhaustive...);
-  test_excluded_units(config, rank_label_fn<bool_label, 2>{}, non_exhaustive...);
-  test_excluded_units(config, rank_label_fn<int, 3>{}, non_exhaustive...);
+  test_callable_qualification<32>(config, non_exhaustive...);
+  test_callable_qualification<17>(config, non_exhaustive...);
+
+  test_previous_partitions<bool, 2>(config, non_exhaustive...);
+  test_previous_partitions<bool_label, 2>(config, non_exhaustive...);
+  test_previous_partitions<int, 3>(config, non_exhaustive...);
+  test_labeled_partition<17>(config, constant_label_fn<bool>{true}, non_exhaustive...);
+  test_labeled_partition<17>(config, constant_label_fn<bool>{false}, non_exhaustive...);
+  test_labeled_partition<17>(config, rank_label_fn<bool, 2>{}, non_exhaustive...);
+  test_labeled_partition<17>(config, rank_label_fn<bool_label, 2>{}, non_exhaustive...);
+  test_labeled_partition<17>(config, rank_label_fn<int, 3>{}, non_exhaustive...);
 }
 
 struct test_kernel

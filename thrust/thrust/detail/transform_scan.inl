@@ -24,7 +24,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(transform_scan.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/transform_scan.h>
 #  include <thrust/system/cuda/detail/transform_scan.h>
 #  include <thrust/system/omp/detail/transform_scan.h>

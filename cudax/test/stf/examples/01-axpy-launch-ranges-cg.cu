@@ -29,7 +29,8 @@ int main()
   stream_ctx ctx;
 
   const int N = 128;
-  double X[N], Y[N];
+  double X[N];
+  double Y[N];
 
   for (int ind = 0; ind < N; ind++)
   {
@@ -64,7 +65,7 @@ int main()
     {
       // Y should be Y0 + alpha X0
       // fprintf(stderr, "Y[%ld] = %lf - expect %lf\n", ind, Y(ind), (Y0(ind) + alpha * X0(ind)));
-      EXPECT(fabs(Y(ind) - (Y0(ind) + alpha * X0(ind))) < 0.0001);
+      EXPECT(fabs(Y(ind) - (Y0(ind) + (alpha * X0(ind)))) < 0.0001);
 
       // X should be X0
       EXPECT(fabs(X(ind) - X0(ind)) < 0.0001);

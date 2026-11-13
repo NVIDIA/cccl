@@ -219,13 +219,15 @@ The supported query kinds are:
 
   // Super-level queries.
   constexpr auto a = group.static_count(/*parent-group-or-qlevel*/); // (1), always constexpr
-  const auto b     = group.count_as<T>(/*parent-group-or-qlevel*/);  // (2)
-  const auto c     = group.rank_as<T>(/*parent-group-or-qlevel*/);   // (3)
+  constexpr auto f = group.static_rank(/*parent-group-or-qlevel*/);  // (2), always constexpr
+  const auto b     = group.count_as<T>(/*parent-group-or-qlevel*/);  // (3)
+  const auto c     = group.rank_as<T>(/*parent-group-or-qlevel*/);   // (4)
 
-  const auto d     = group.count(/*parent-group-or-qlevel*/);        // (4)
-  const auto e     = group.rank(/*parent-group-or-qlevel*/);         // (5)
+  const auto d     = group.count(/*parent-group-or-qlevel*/);        // (5)
+  const auto e     = group.rank(/*parent-group-or-qlevel*/);         // (6)
 
 #. Queries the statically known number of ``group`` groups made from ``group``'s parent group or contained within the ``qlevel`` level. When equal to ``cuda::std::dynamic_extent``, the value is known only at runtime.
+#. Queries the current group's rank known at compile time, returned as ``cuda::std::size_t``. Returns ``0`` for a statically known single group and ``cuda::std::dynamic_extent`` when the rank is known only at runtime.
 #. Queries the number of ``group`` groups made from ``group``'s parent group or contained within the ``qlevel`` level, returned as type ``T``.
 #. Queries the current ``group``'s rank within the ``group``'s parent group or the ``qlevel`` level. Returns a value in the range ``[0, group.count(/*parent-group-or-qlevel*/))`` as type ``T``.
 #. Equivalent to ``group.count_as</*default-T*/>(/*parent-group-or-qlevel*/)``.
