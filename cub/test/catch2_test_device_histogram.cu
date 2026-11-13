@@ -257,6 +257,11 @@ auto setup_bin_levels_for_range(const array<int, ActiveChannels>& num_levels, Le
 
   const auto min_bin_width = max_level / (max_level_count - 1);
 
+  // Shift alternating interior levels while retaining at least one unit of
+  // separation, so integral fixtures exercise the non-uniform search path.
+  const LevelT quarter_width     = static_cast<LevelT>(min_bin_width / LevelT{4});
+  const LevelT perturbation_step = quarter_width > LevelT{0} ? quarter_width : LevelT{1};
+
   array<c2h::host_vector<LevelT>, ActiveChannels> levels;
   for (size_t c = 0; c < ActiveChannels; ++c)
   {
@@ -269,7 +274,12 @@ auto setup_bin_levels_for_range(const array<int, ActiveChannels>& num_levels, Le
       // The last level is taken from the range instead of being computed, because `lower + num_bins * min_bin_width`
       // rounds up beyond max_level and thus yields infinity when max_level is the maximum of a floating point LevelT,
       // see NVIDIA/cccl#1793.
-      levels[c][l] = (l == num_bins) ? upper : static_cast<LevelT>(lower + l * min_bin_width);
+      auto level = (l == num_bins) ? upper : static_cast<LevelT>(lower + l * min_bin_width);
+      if (l > 0 && l < num_levels[c] - 1 && l % 2 == 0)
+      {
+        level = static_cast<LevelT>(level + perturbation_step);
+      }
+      levels[c][l] = level;
       if (l > 0)
       {
         REQUIRE(levels[c][l - 1] < levels[c][l]);
@@ -573,15 +583,15 @@ CUB_TEST("DeviceHistogram::Histogram* basic use", "[histogram][device]", CUB_SMA
 {
   using sample_t = c2h::get<0, TestType>;
   using level_t  = cs::conditional_t<cuda::is_floating_point_v<sample_t>, sample_t, int>;
-  // Max for int8/uint8 is 2^8, for half_t is 2^10, for bfloat16_t is 2^7 (only integers up to 2^8 are exactly
-  // representable). Beyond, we would need a different level generation
+  // Integral RANGE fixtures need room to perturb interior levels while keeping them strictly ordered. Limit 8-bit
+  // samples and bfloat16 levels to values that remain exactly representable with a two-unit base bin width.
 #if TEST_BF_T()
-  constexpr int max = sizeof(sample_t) == 1 || cuda::std::is_same_v<sample_t, bfloat16_t> ? 126 : 1024;
+  constexpr bool has_narrow_levels = sizeof(sample_t) == 1 || cuda::std::is_same_v<sample_t, bfloat16_t>;
 #else // ^^^ TEST_BF_T() ^^^ / vvv !TEST_BF_T() vvv
-  constexpr int max = sizeof(sample_t) == 1 ? 126 : 1024;
+  constexpr bool has_narrow_levels = sizeof(sample_t) == 1;
 #endif // !TEST_BF_T()
-  const auto max_level       = level_t{max};
-  const auto max_level_count = max + 1;
+  const auto max_level       = level_t{has_narrow_levels ? 126 : 1024};
+  const auto max_level_count = (has_narrow_levels ? 63 : 512) + 1;
   test_even_and_range<sample_t, 4, 3, int>(max_level, max_level_count, 1920, 1080);
 }
 
@@ -599,7 +609,7 @@ CUB_TEST("DeviceHistogram::Histogram* large levels", "[histogram][device]", CUB_
 {
   using sample_t             = c2h::get<0, TestType>;
   using level_t              = sample_t;
-  const auto max_level_count = 128;
+  const auto max_level_count = sizeof(sample_t) == 1 ? 64 : 128;
   auto max_level             = cuda::std::numeric_limits<level_t>::max();
   if constexpr (sizeof(sample_t) > sizeof(int))
   {
@@ -613,7 +623,7 @@ CUB_TEST("DeviceHistogram::Histogram* odd image sizes", "[histogram][device]", C
   using sample_t                = int;
   using level_t                 = int;
   constexpr sample_t max_level  = 256;
-  constexpr int max_level_count = 256 + 1;
+  constexpr int max_level_count = 128 + 1;
 
   using P      = cs::pair<int, int>;
   const auto p = GENERATE(P{1920, 0}, P{0, 0}, P{0, 1080}, P{1, 1}, P{15, 1}, P{1, 15}, P{10000, 1}, P{1, 10000});
@@ -623,7 +633,7 @@ CUB_TEST("DeviceHistogram::Histogram* odd image sizes", "[histogram][device]", C
 CUB_TEST("DeviceHistogram::Histogram* entropy", "[histogram][device]", CUB_SMALL)
 {
   const int entropy_reduction = GENERATE(-1, 3, 5); // entropy_reduction = -1 -> all samples == 0
-  test_even_and_range<int, 4, 3, int>(256, 256 + 1, 1920, 1080, entropy_reduction);
+  test_even_and_range<int, 4, 3, int>(256, 128 + 1, 1920, 1080, entropy_reduction);
 }
 
 template <int Channels, int ActiveChannels>
@@ -641,7 +651,7 @@ CUB_TEST_LIST("DeviceHistogram::Histogram* channel configs",
               ChannelConfig<4, 3>,
               ChannelConfig<4, 4>)
 {
-  test_even_and_range<int, TestType::channels, TestType::active_channels, int, int, int>(256, 256 + 1, 128, 32);
+  test_even_and_range<int, TestType::channels, TestType::active_channels, int, int, int>(256, 128 + 1, 128, 32);
 }
 
 // Testing only HistogramEven is fine, because HistogramRange shares the loading logic and the different binning
@@ -693,7 +703,7 @@ CUB_TEST("DeviceHistogram::Histogram* down-conversion size_t to int", "[histogra
   if constexpr (sizeof(size_t) != sizeof(int))
   {
     using offset_t = cs::make_signed_t<size_t>;
-    test_even_and_range<unsigned char, 4, 3, int>(256, 256 + 1, offset_t{1920}, offset_t{1080});
+    test_even_and_range<unsigned char, 4, 3, int>(256, 128 + 1, offset_t{1920}, offset_t{1080});
   }
 }
 
