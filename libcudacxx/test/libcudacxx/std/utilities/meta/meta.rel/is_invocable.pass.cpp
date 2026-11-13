@@ -57,6 +57,25 @@ struct Sink
   {}
 };
 
+#if TEST_CUDA_COMPILER(NVCC)
+// Extended __host__ __device__ lambdas keep their call operator in host code, so they must be accepted and give the
+// same results as in device code.
+template <class Fn>
+TEST_FUNC void test_host_device_lambda(Fn&&)
+{
+  static_assert(cuda::std::is_invocable<Fn, Tag>::value);
+  static_assert(cuda::std::is_invocable<Fn, DerFromTag>::value);
+  static_assert(!cuda::std::is_invocable<Fn>::value);
+  static_assert(!cuda::std::is_invocable<Fn, int>::value);
+  static_assert(!cuda::std::is_invocable<Fn, Tag, Tag>::value);
+
+  static_assert(cuda::std::is_invocable_r<int, Fn, Tag>::value);
+  static_assert(cuda::std::is_invocable_r<Implicit, Fn, Tag>::value);
+  static_assert(!cuda::std::is_invocable_r<Explicit, Fn, Tag>::value);
+  static_assert(!cuda::std::is_invocable_r<int, Fn, int>::value);
+}
+#endif // TEST_CUDA_COMPILER(NVCC)
+
 int main(int, char**)
 {
   using AbominableFunc = void(...) const;
@@ -258,5 +277,16 @@ int main(int, char**)
     static_assert(cuda::std::is_invocable_r_v<void, Fn>);
     static_assert(!cuda::std::is_invocable_r_v<int, Fn>);
   }
+#if TEST_CUDA_COMPILER(NVCC)
+  {
+    // extended host device lambda
+    test_host_device_lambda([] TEST_FUNC(Tag) {
+      return 42;
+    });
+    test_host_device_lambda([] TEST_FUNC(Tag) -> int {
+      return 42;
+    });
+  }
+#endif // TEST_CUDA_COMPILER(NVCC)
   return 0;
 }
