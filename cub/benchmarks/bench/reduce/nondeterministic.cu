@@ -14,6 +14,7 @@
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 3:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
 // %RANGE% TUNE_ITEMS_PER_VEC_LOAD_POW2 ipv 1:2:1
+// %RANGE% TUNE_OVERSUBSCRIPTION_FACTOR osf 1:5:1
 
 #if !TUNE_BASE
 template <typename AccumT>
@@ -28,7 +29,8 @@ struct policy_selector
       items,
       1 << TUNE_ITEMS_PER_VEC_LOAD_POW2,
       cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
-      cub::LOAD_DEFAULT};
+      cub::LOAD_DEFAULT,
+      TUNE_OVERSUBSCRIPTION_FACTOR};
     return {policy, {}};
   }
 };

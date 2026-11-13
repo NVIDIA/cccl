@@ -19,6 +19,7 @@
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_operators.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_macro.cuh>
 
@@ -38,13 +39,16 @@ struct ReducePassPolicy
   int vec_size; //!< Number of items per vectorized load
   BlockReduceAlgorithm reduce_algorithm; //!< The @ref BlockReduceAlgorithm to use
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
+  int oversubscription_factor = _CUB::detail::subscription_factor; //!< Multiple of the number of thread blocks that can
+                                                                   //!< be resident on the device at the same time to
+                                                                   //!< launch for the multi-tile pass
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const ReducePassPolicy& lhs, const ReducePassPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.vec_size == rhs.vec_size && lhs.reduce_algorithm == rhs.reduce_algorithm
-        && lhs.load_modifier == rhs.load_modifier;
+        && lhs.load_modifier == rhs.load_modifier && lhs.oversubscription_factor == rhs.oversubscription_factor;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -56,9 +60,11 @@ struct ReducePassPolicy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const ReducePassPolicy& p)
   {
-    return os << "ReducePassPolicy { .threads_per_block = " << p.threads_per_block
-              << ", .items_per_thread = " << p.items_per_thread << ", .vec_size = " << p.vec_size
-              << ", .reduce_algorithm = " << p.reduce_algorithm << ", .load_modifier = " << p.load_modifier << " }";
+    return os
+        << "ReducePassPolicy { .threads_per_block = " << p.threads_per_block
+        << ", .items_per_thread = " << p.items_per_thread << ", .vec_size = " << p.vec_size
+        << ", .reduce_algorithm = " << p.reduce_algorithm << ", .load_modifier = " << p.load_modifier
+        << ", .oversubscription_factor = " << p.oversubscription_factor << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -687,6 +693,11 @@ struct policy_selector
     }
 
     auto policy = get_two_phase_tuning(cc);
+    if (cc == ::cuda::compute_capability{12, 0})
+    {
+      // Launching more thread blocks than can be resident at the same time is slower on SM120 (RTX 5090)
+      policy.multi_tile.oversubscription_factor = 1;
+    }
     if (determinism == __determinism_t::__not_guaranteed)
     {
       policy.multi_tile.reduce_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;

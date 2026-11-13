@@ -60,7 +60,7 @@ struct fixed_reduce_policy_selector_t
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ReducePolicy
   {
-    const auto policy = cub::ReducePassPolicy{32, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
+    const auto policy = cub::ReducePassPolicy{32, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT, 5};
     return {policy, policy};
   }
 };
@@ -116,7 +116,7 @@ struct fixed_deterministic_reduce_policy_selector_t
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ReducePolicy
   {
-    const auto policy = cub::ReducePassPolicy{32, 1, 1, cub::BLOCK_REDUCE_RAKING, cub::LOAD_DEFAULT};
+    const auto policy = cub::ReducePassPolicy{32, 1, 1, cub::BLOCK_REDUCE_RAKING, cub::LOAD_DEFAULT, 5};
     return {policy, policy};
   }
 };

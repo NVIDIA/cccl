@@ -668,11 +668,12 @@ struct ReducePolicySelector
   __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::ReducePolicy
   {
     auto pass = cub::ReducePassPolicy{
-      .threads_per_block = 256,
-      .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 20 : 16,
-      .vec_size          = 4,
-      .reduce_algorithm  = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
-      .load_modifier     = cub::LOAD_LDG};
+      .threads_per_block       = 256,
+      .items_per_thread        = cc > cuda::compute_capability{9, 0} ? 20 : 16,
+      .vec_size                = 4,
+      .reduce_algorithm        = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+      .load_modifier           = cub::LOAD_LDG,
+      .oversubscription_factor = 5};
     return {.multi_tile = pass, .single_tile = pass};
   }
 };

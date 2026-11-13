@@ -25,7 +25,7 @@ struct custom_policy_selector
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::ReducePolicy
   {
-    const auto p = cub::ReducePassPolicy{BlockSize, ItemsPerThread, 1, cub::BLOCK_REDUCE_RAKING, cub::LOAD_DEFAULT};
+    const auto p = cub::ReducePassPolicy{BlockSize, ItemsPerThread, 1, cub::BLOCK_REDUCE_RAKING, cub::LOAD_DEFAULT, 5};
     return {p, p};
   }
 };
