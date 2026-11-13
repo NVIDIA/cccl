@@ -1243,7 +1243,8 @@ void call_cub_segmented_sort_api(
       using capacities_t = typename kernels_t::template capacities_t<
         cub::detail::policy_getter<cub::detail::segmented_sort_lrb::policy_selector<unwrap_value_t<KeyT>>,
                                    cuda::compute_capability{9, 0}.get()>>;
-      c2h::host_vector<int> begins(num_segments), ends(num_segments);
+      c2h::host_vector<int> begins(num_segments);
+      c2h::host_vector<int> ends(num_segments);
       if (num_segments)
       {
         REQUIRE(cudaSuccess

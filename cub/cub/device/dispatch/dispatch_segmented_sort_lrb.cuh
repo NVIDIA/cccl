@@ -32,7 +32,7 @@ namespace detail::segmented_sort_lrb
 {
 // Shared architecture and key-width eligibility for internal dispatch and its tests.
 template <typename Key>
-_CCCL_HOST_DEVICE_API constexpr bool can_use_lrb(::cuda::compute_capability cc)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool can_use_lrb(::cuda::compute_capability cc) noexcept
 {
   return sizeof(Key) <= 8 && cc >= ::cuda::compute_capability{9, 0};
 }
@@ -66,7 +66,7 @@ _CCCL_HOST_API cudaError_t dispatch_partition(
 {
   constexpr int total_bins = Capacities::size + 1;
   // One allocation holds counts, offsets (with an end sentinel), and cursors; the other holds IDs.
-  const size_t sizes[] = {sizeof(unsigned) * (3 * total_bins + 1), sizeof(unsigned) * size_t{num_segments}};
+  const size_t sizes[] = {sizeof(unsigned) * ((3 * total_bins) + 1), sizeof(unsigned) * size_t{num_segments}};
   void* allocations[2]{};
   if (const auto error = CubDebug(alias_temporaries(temp_storage, temp_storage_bytes, allocations, sizes)))
   {
@@ -85,7 +85,7 @@ _CCCL_HOST_API cudaError_t dispatch_partition(
     return error;
   }
   const unsigned block_threads = static_cast<unsigned>(tuning.block_threads);
-  const unsigned grid_size     = num_segments / block_threads + (num_segments % block_threads != 0);
+  const unsigned grid_size     = (num_segments / block_threads) + (num_segments % block_threads != 0);
   if (num_segments)
   {
     if (const auto error = CubDebug(

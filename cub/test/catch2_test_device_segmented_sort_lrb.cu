@@ -66,7 +66,8 @@ CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[se
   static_assert(capacities::first_fit(21) == 2 && capacities::first_fit(22) == 3);
   const c2h::host_vector<int> begins{5, 7, 9, 20, 30, 40, 50, 60, 90};
   const c2h::host_vector<int> ends{4, 7, 10, 23, 34, 50, 61, 81, 112};
-  c2h::device_vector<int> d_begins = begins, d_ends = ends;
+  c2h::device_vector<int> d_begins = begins;
+  c2h::device_vector<int> d_ends   = ends;
   capacity::partition_result result;
   size_t bytes   = 0;
   const auto run = [&](void* storage, unsigned count) {
@@ -131,8 +132,10 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   using small_capacities      = typename small_kernel_t::template capacities_t<small_policy_getter_t>;
   lengths.insert(lengths.end(), 1000, small_capacities::bounds.back());
   lengths.insert(lengths.end(), 7, capacities::bounds.back() - 1);
-  c2h::host_vector<long long> begins, ends;
-  c2h::host_vector<key_type> input, expected;
+  c2h::host_vector<long long> begins;
+  c2h::host_vector<long long> ends;
+  c2h::host_vector<key_type> input;
+  c2h::host_vector<key_type> expected;
   std::mt19937 random{12345};
   std::uniform_int_distribution<int> random_key{-100000, 100000};
   for (size_t segment = 0; segment < lengths.size(); ++segment)
@@ -146,7 +149,7 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
       // Alternate random, duplicate-heavy, and descending inputs, including negative doubles.
       const int value = segment % 3 == 0 ? random_key(random)
                       : segment % 3 == 1 ? random_key(random) % 7
-                                         : (length - i) % 257 - 128;
+                                         : ((length - i) % 257) - 128;
       input.push_back(static_cast<key_type>(value) / key_type{4});
     }
     ends.push_back(input.size());
@@ -161,8 +164,10 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
     std::copy(input.begin() + begins[segment], input.begin() + ends[segment], expected.begin() + begins[segment]);
     std::stable_sort(expected.begin() + begins[segment], expected.begin() + ends[segment]);
   }
-  c2h::device_vector<key_type> d_in      = input, d_out(input.size(), key_type{-99});
-  c2h::device_vector<long long> d_begins = begins, d_ends = ends;
+  c2h::device_vector<key_type> d_in = input;
+  c2h::device_vector<key_type> d_out(input.size(), key_type{-99});
+  c2h::device_vector<long long> d_begins = begins;
+  c2h::device_vector<long long> d_ends   = ends;
   capacity::partition_result result;
   size_t bytes              = 0;
   const auto stream_owner   = c2h::make_current_device_stream();
@@ -274,7 +279,8 @@ CUB_TEST("Capacity sort orders infinities and treats signed zeros as equivalent"
   const key_type infinity = std::numeric_limits<key_type>::infinity();
   const c2h::host_vector<key_type> input{infinity, -key_type{0}, 3, -infinity, key_type{0}, -7, -1, 1};
   const c2h::host_vector<key_type> expected{-infinity, -7, -1, 0, 0, 1, 3, infinity};
-  c2h::device_vector<key_type> d_in = input, d_out(input.size());
+  c2h::device_vector<key_type> d_in = input;
+  c2h::device_vector<key_type> d_out(input.size());
   c2h::device_vector<int> d_offsets = c2h::host_vector<int>{0, static_cast<int>(input.size())};
   const auto stream_owner           = c2h::make_current_device_stream();
   const cudaStream_t stream         = stream_owner.get();

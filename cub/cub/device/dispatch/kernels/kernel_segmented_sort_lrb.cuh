@@ -21,6 +21,7 @@
 #include <cub/util_arch.cuh>
 
 #include <cuda/atomic>
+#include <cuda/std/__type_traits/conditional.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -34,7 +35,11 @@ template <typename Capacities,
           typename EndIterator,
           typename PolicySelector = partition_policy_selector>
 __launch_bounds__(current_policy<PolicySelector>().block_threads) _CCCL_KERNEL_ATTRIBUTES void partition_kernel(
-  BeginIterator begins, EndIterator ends, unsigned num_segments, unsigned* counts_or_cursors, unsigned* ids)
+  BeginIterator begins,
+  EndIterator ends,
+  unsigned num_segments,
+  unsigned* counts_or_cursors,
+  ::cuda::std::conditional_t<Scatter, unsigned, const unsigned>* ids)
 {
   constexpr int total_bins = Capacities::size + 1;
   __shared__ unsigned bin_counts_shared[total_bins];
@@ -44,7 +49,7 @@ __launch_bounds__(current_policy<PolicySelector>().block_threads) _CCCL_KERNEL_A
     bin_counts_shared[bin_idx] = 0;
   }
   __syncthreads();
-  const unsigned seg_id                         = blockIdx.x * blockDim.x + threadIdx.x;
+  const unsigned seg_id                         = (blockIdx.x * blockDim.x) + threadIdx.x;
   int bin_idx                                   = -1;
   [[maybe_unused]] unsigned segment_rank_in_bin = 0;
   if (seg_id < num_segments)

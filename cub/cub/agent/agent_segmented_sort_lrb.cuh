@@ -63,14 +63,14 @@ struct agent_t
         const auto config                  = lookup_bin_config<typename implementation_t::expansion>(bin_idx);
         const unsigned segments_per_group  = threads_per_group / config.threads_per_segment;
         const unsigned num_segments_in_bin = partition.bin_offsets[bin_idx + 1] - partition.bin_offsets[bin_idx];
-        prefix += num_segments_in_bin / segments_per_group + (num_segments_in_bin % segments_per_group != 0);
+        prefix += (num_segments_in_bin / segments_per_group) + (num_segments_in_bin % segments_per_group != 0);
         bin_work_offsets[bin_idx + 1] = prefix;
       }
     }
     __syncthreads();
     const unsigned thread_idx_in_group = threadIdx.x % threads_per_group;
     const auto first_work_id =
-      static_cast<unsigned long long>(blockIdx.x) * groups_per_block + threadIdx.x / threads_per_group;
+      (static_cast<unsigned long long>(blockIdx.x) * groups_per_block) + (threadIdx.x / threads_per_group);
     const auto work_stride = static_cast<unsigned long long>(gridDim.x) * groups_per_block;
     // Each work item assigns one group up to segments_per_group segments from one bin.
     for (auto work_id = first_work_id; work_id < bin_work_offsets[num_kernel_bins]; work_id += work_stride)
@@ -80,7 +80,7 @@ struct agent_t
       int last  = num_kernel_bins;
       while (first < last)
       {
-        const int mid = first + (last - first) / 2;
+        const int mid = first + ((last - first) / 2);
         if (work_id >= bin_work_offsets[mid])
         {
           first = mid + 1;
@@ -94,8 +94,8 @@ struct agent_t
       const auto config                 = lookup_bin_config<typename implementation_t::expansion>(bin_idx);
       const unsigned segments_per_group = threads_per_group / config.threads_per_segment;
       const auto segment_idx =
-        partition.bin_offsets[bin_idx] + (work_id - bin_work_offsets[bin_idx]) * segments_per_group
-        + thread_idx_in_group / config.threads_per_segment;
+        partition.bin_offsets[bin_idx] + ((work_id - bin_work_offsets[bin_idx]) * segments_per_group)
+        + (thread_idx_in_group / config.threads_per_segment);
       implementation_t::invoke(
         segment_idx < partition.bin_offsets[bin_idx + 1] ? segment_idx : ~0u,
         config,
