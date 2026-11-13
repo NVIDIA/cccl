@@ -7,15 +7,18 @@
 #include <cuda/buffer>
 #include <cuda/functional>
 #include <cuda/hierarchy>
+#include <cuda/iterator>
 #include <cuda/launch>
 #include <cuda/std/bit>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
 #include <cuda/std/span>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 #include <cuda/type_traits>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
+#include <cuda/experimental/__cuco/fixed_capacity_set.cuh>
 #include <cuda/experimental/__cuco/fixed_capacity_set_ref.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 
@@ -227,4 +230,106 @@ C2H_TEST("fixed_capacity_set CUDA-trivially-copyable key", "[container][ref]", c
                ref,
                results.data());
   REQUIRE(context.all_equal(results.data(), 1, 1));
+}
+
+struct offset_hash
+{
+  int offset = 0;
+  int seed   = 0;
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API cuda::std::uint64_t operator()(int key) const noexcept
+  {
+    // Index reduction uses the high hash bits, so spread them with a Fibonacci multiplier.
+    return (static_cast<cuda::std::uint64_t>(key - offset) * 0x9E3779B97F4A7C15ULL)
+         + static_cast<cuda::std::uint64_t>(seed);
+  }
+};
+
+struct offset_equal
+{
+  int offset;
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator()(int probe_key, int stored_key) const noexcept
+  {
+    return probe_key - offset == stored_key;
+  }
+};
+
+// Queries `i + offset` for each `i`, which only the rebound predicate and hash map back to stored key `i`.
+struct contains_offset_keys
+{
+  template <class Ref, class Hash>
+  _CCCL_DEVICE_API void operator()(Ref ref, Hash hash, int offset, int* found) const
+  {
+    const auto group    = cooperative_groups::tiled_partition<Ref::cg_size>(cooperative_groups::this_thread_block());
+    const int index     = static_cast<int>(threadIdx.x) / Ref::cg_size;
+    const auto rebound  = ref.rebind_key_eq(offset_equal{offset}).rebind_hash_function(hash);
+    const bool contains = rebound.contains(group, index + offset);
+    if (group.thread_rank() == 0)
+    {
+      found[index] = static_cast<int>(contains);
+    }
+  }
+};
+
+using probing_kinds = c2h::type_list<int_c<0>, int_c<1>>;
+
+C2H_TEST("fixed_capacity_set_ref rebind", "[container][ref][rebind]", key_types, cg_sizes, probing_kinds)
+{
+  using key_type                              = c2h::get<0, TestType>;
+  [[maybe_unused]] constexpr int cg_size      = c2h::get<1, TestType>::value;
+  [[maybe_unused]] constexpr int probing_kind = c2h::get<2, TestType>::value;
+  using probing_type =
+    cuda::std::conditional_t<probing_kind == 0,
+                             cudax::cuco::linear_probing<cg_size, offset_hash>,
+                             cudax::cuco::double_hashing<cg_size, offset_hash>>;
+  using set_type =
+    cudax::cuco::fixed_capacity_set<key_type,
+                                    cuda::std::dynamic_extent,
+                                    cuda::thread_scope_device,
+                                    cuda::std::equal_to<key_type>,
+                                    probing_type>;
+
+  constexpr int num_keys = 32;
+  constexpr int offset   = 64;
+  test_context context;
+  const auto make_hash = [](int hash_offset) {
+    if constexpr (probing_kind == 0)
+    {
+      return offset_hash{hash_offset, 0};
+    }
+    else
+    {
+      return cuda::std::tuple<offset_hash, offset_hash>{offset_hash{hash_offset, 0}, offset_hash{hash_offset, 1}};
+    }
+  };
+  set_type set{
+    context.stream,
+    context.mr,
+    cuda::std::size_t{2 * num_keys},
+    cudax::cuco::empty_key{static_cast<key_type>(-1)},
+    {},
+    probing_type{make_hash(0)}};
+  const auto first = cuda::counting_iterator<key_type>{0};
+  REQUIRE(set.insert(context.stream, first, first + num_keys) == num_keys);
+
+  const auto hash    = make_hash(offset);
+  const auto ref     = set.ref();
+  const auto rebound = ref.rebind_key_eq(offset_equal{offset}).rebind_hash_function(hash);
+  static_assert(cuda::std::is_same_v<typename decltype(rebound)::key_equal, offset_equal>);
+  static_assert(cuda::std::is_same_v<typename decltype(rebound)::probing_scheme_type, probing_type>);
+  REQUIRE(rebound.data() == ref.data());
+  REQUIRE(rebound.capacity() == ref.capacity());
+  REQUIRE(rebound.empty_key_sentinel() == ref.empty_key_sentinel());
+
+  auto found = cuda::make_buffer<int>(context.stream, context.mr, 2 * num_keys, -1);
+  cuda::launch(
+    context.stream,
+    cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<2 * num_keys * cg_size>()),
+    contains_offset_keys{},
+    ref,
+    hash,
+    offset,
+    found.data());
+  REQUIRE(context.matches(found.data(), 2 * num_keys, num_keys));
 }
