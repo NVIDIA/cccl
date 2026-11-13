@@ -175,10 +175,15 @@ public:
   _CCCL_REQUIRES(__is_buffer_byte_type_v<_Byte>)
   [[nodiscard]] _CCCL_HOST_API __resizable_buffer<_Byte, _Properties...> as_bytes() && noexcept
   {
-    return ::cuda::__buffer_as_type_impl<_Tp, _Byte, ::cuda::__resizable_buffer>(
-      ::cuda::std::move(*this),
-      ::cuda::__acquire_resizable_buffer<_Tp, _Properties...>,
-      ::cuda::__acquire_resizable_buffer<_Byte, _Properties...>);
+    auto const __acquire_old = ::cuda::__acquire_resizable_buffer<_Tp, _Properties...>;
+    auto const __acquire_new = ::cuda::__acquire_resizable_buffer<_Byte, _Properties...>;
+    return ::cuda::__buffer_as_type_impl<
+      _Tp,
+      _Byte,
+      ::cuda::__resizable_buffer,
+      decltype(__acquire_old),
+      decltype(__acquire_new),
+      _Properties...>(::cuda::std::move(*this), ::cuda::std::move(__acquire_old), ::cuda::std::move(__acquire_new));
   }
 
   //! @brief Converts a byte buffer to a typed buffer owning the same allocation,
@@ -201,10 +206,15 @@ public:
       _CCCL_THROW(::std::invalid_argument,
                   "cuda::__resizable_buffer::as_type: size, capacity or alignment is incompatible with _Up");
     }
-    return ::cuda::__buffer_as_type_impl<_Tp, _Up, ::cuda::__resizable_buffer>(
-      ::cuda::std::move(*this),
-      ::cuda::__acquire_resizable_buffer<_Tp, _Properties...>,
-      ::cuda::__acquire_resizable_buffer<_Up, _Properties...>);
+    auto const __acquire_old = ::cuda::__acquire_resizable_buffer<_Tp, _Properties...>;
+    auto const __acquire_new = ::cuda::__acquire_resizable_buffer<_Up, _Properties...>;
+    return ::cuda::__buffer_as_type_impl<
+      _Tp,
+      _Up,
+      ::cuda::__resizable_buffer,
+      decltype(__acquire_old),
+      decltype(__acquire_new),
+      _Properties...>(::cuda::std::move(*this), ::cuda::std::move(__acquire_old), ::cuda::std::move(__acquire_new));
   }
 
   //! @brief Returns the number of elements that fit in the current allocation

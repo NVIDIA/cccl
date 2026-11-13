@@ -853,10 +853,11 @@ public:
   _CCCL_REQUIRES(__is_buffer_byte_type_v<_Byte>)
   [[nodiscard]] _CCCL_HOST_API buffer<_Byte, _Properties...> as_bytes() && noexcept
   {
-    return ::cuda::__buffer_as_type_impl<_Tp, _Byte, ::cuda::buffer>(
-      ::cuda::std::move(*this),
-      ::cuda::__acquire_buffer<_Tp, _Properties...>,
-      ::cuda::__acquire_buffer<_Byte, _Properties...>);
+    auto const __acquire_old = ::cuda::__acquire_buffer<_Tp, _Properties...>;
+    auto const __acquire_new = ::cuda::__acquire_buffer<_Byte, _Properties...>;
+    return ::cuda::
+      __buffer_as_type_impl<_Tp, _Byte, ::cuda::buffer, decltype(__acquire_old), decltype(__acquire_new), _Properties...>(
+        ::cuda::std::move(*this), ::cuda::std::move(__acquire_old), ::cuda::std::move(__acquire_new));
   }
 
   //! @brief Converts a buffer of bytes into a buffer of \p _Up that owns the
@@ -880,10 +881,11 @@ public:
     {
       _CCCL_THROW(::std::invalid_argument, "cuda::buffer::as_type: size or alignment is incompatible with _Up");
     }
-    return ::cuda::__buffer_as_type_impl<_Tp, _Up, ::cuda::buffer>(
-      ::cuda::std::move(*this),
-      ::cuda::__acquire_buffer<_Tp, _Properties...>,
-      ::cuda::__acquire_buffer<_Up, _Properties...>);
+    auto const __acquire_old = ::cuda::__acquire_buffer<_Tp, _Properties...>;
+    auto const __acquire_new = ::cuda::__acquire_buffer<_Up, _Properties...>;
+    return ::cuda::
+      __buffer_as_type_impl<_Tp, _Up, ::cuda::buffer, decltype(__acquire_old), decltype(__acquire_new), _Properties...>(
+        ::cuda::std::move(*this), ::cuda::std::move(__acquire_old), ::cuda::std::move(__acquire_new));
   }
 
   //! @brief Destroys the buffer, deallocates the buffer and destroys the memory
