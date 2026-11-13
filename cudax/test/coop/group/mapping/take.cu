@@ -64,6 +64,7 @@ __device__ void test_take(Config config, const NonExhaustive&... non_exhaustive)
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == ThreadsInWarpMappingResult::static_group_count());
+      static_assert(Result::static_group_rank() == ThreadsInWarpMappingResult::static_group_rank());
       static_assert(Result::static_unit_count() == N);
       static_assert(Result::is_always_exhaustive()
                     == (sizeof...(NonExhaustive) == 0
@@ -120,6 +121,7 @@ __device__ void test_take(Config config, const NonExhaustive&... non_exhaustive)
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == ThreadsInWarpMappingResult::static_group_count());
+      static_assert(Result::static_group_rank() == ThreadsInWarpMappingResult::static_group_rank());
       static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
       static_assert(Result::is_always_exhaustive() == (sizeof...(NonExhaustive) == 0));
       static_assert(Result::is_always_contiguous());
