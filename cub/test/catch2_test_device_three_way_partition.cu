@@ -8,6 +8,7 @@
 #include <thrust/partition.h>
 #include <thrust/random.h>
 #include <thrust/reduce.h>
+#include <thrust/sequence.h>
 #include <thrust/shuffle.h>
 #include <thrust/tabulate.h>
 

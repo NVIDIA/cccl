@@ -16,8 +16,8 @@
 #if _CCCL_CUDA_COMPILATION()
 #  include <thrust/system/cuda/config.h>
 
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/transform.h>
-#  include <thrust/system/cuda/execution_policy.h>
 
 #  include <cuda/__functional/address_stability.h>
 #  include <cuda/__iterator/counting_iterator.h>

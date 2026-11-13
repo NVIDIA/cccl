@@ -18,9 +18,11 @@
 
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/iterator/iterator_traits.h>
-#  include <thrust/system/cuda/detail/dispatch.h>
+#  include <thrust/merge.h>
+#  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__utility/pair.h>

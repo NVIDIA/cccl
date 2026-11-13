@@ -17,18 +17,18 @@
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_reduce.cuh>
-#  include <cub/util_math.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/raw_reference_cast.h>
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/functional.h>
+#  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
+#  include <thrust/transform_reduce.h>
 
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
 

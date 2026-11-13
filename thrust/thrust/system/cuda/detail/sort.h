@@ -16,28 +16,28 @@
 #if _CCCL_CUDA_COMPILATION()
 #  include <thrust/system/cuda/config.h>
 
+#  include <cub/detail/double_buffer.cuh>
 #  include <cub/device/device_merge_sort.cuh>
 #  include <cub/device/device_radix_sort.cuh>
 
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/detail/trivial_sequence.h>
-#  include <thrust/extrema.h>
-#  include <thrust/sequence.h>
+#  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/sort.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
+#  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/util.h>
 #  include <thrust/type_traits/is_contiguous_iterator.h>
 
 #  include <cuda/__cmath/round_up.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__memory/pointer_traits.h>
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
-#  include <cuda/std/__type_traits/is_arithmetic.h>
-#  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN

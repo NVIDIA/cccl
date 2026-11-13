@@ -14,7 +14,9 @@
 
 #if _CCCL_CUDA_COMPILATION()
 #  include <cub/device/device_transform.cuh>
+#  include <cub/util_namespace.cuh>
 
+#  include <thrust/generate.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/util.h>

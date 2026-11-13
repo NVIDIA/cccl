@@ -16,16 +16,21 @@
 #if _CCCL_CUDA_COMPILATION()
 #  include <thrust/system/cuda/config.h>
 
+#  include <cub/detail/choose_offset.cuh>
 #  include <cub/device/device_find.cuh>
 
 #  include <thrust/detail/temporary_array.h>
+#  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__functional/not_fn.h>
 #  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub

@@ -16,13 +16,16 @@
 #if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/iterator/zip_iterator.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/parallel_for.h>
 #  include <thrust/system/cuda/detail/transform.h>
 #  include <thrust/type_traits/is_trivially_relocatable.h>
 
 #  include <cuda/__functional/address_stability.h>
+#  include <cuda/std/__algorithm/iter_swap.h>
 #  include <cuda/std/__iterator/distance.h>
-#  include <cuda/std/__iterator/iter_swap.h>
+#  include <cuda/std/__tuple_dir/get.h>
+#  include <cuda/std/__tuple_dir/tuple.h>
 #  include <cuda/std/__utility/swap.h>
 
 THRUST_NAMESPACE_BEGIN

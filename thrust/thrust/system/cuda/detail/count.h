@@ -16,6 +16,7 @@
 #if _CCCL_CUDA_COMPILATION()
 #  include <thrust/system/cuda/config.h>
 
+#  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/iterator/transform_iterator.h>
 #  include <thrust/system/cuda/detail/reduce.h>
 #  include <thrust/system/cuda/detail/util.h>

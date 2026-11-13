@@ -17,23 +17,25 @@
 
 #  include <thrust/system/cuda/config.h>
 
-#  include <cub/device/device_reduce.cuh>
-#  include <cub/iterator/cache_modified_input_iterator.cuh>
-#  include <cub/util_math.cuh>
+#  include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
+#  include <cub/util_temporary_storage.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/raw_reference_cast.h>
+#  include <thrust/detail/execution_policy.h>
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/detail/type_traits.h>
 #  include <thrust/detail/type_traits/iterator/is_output_iterator.h>
-#  include <thrust/functional.h>
 #  include <thrust/iterator/iterator_traits.h>
+#  include <thrust/system/cuda/detail/cdp_dispatch.h>
+#  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
 #  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__type_traits/conditional.h>
 #  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/cstdint>
 
@@ -327,7 +329,7 @@ template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, 
 
 THRUST_NAMESPACE_END
 
-#  include <thrust/memory.h>
-#  include <thrust/reduce.h>
+#  include <thrust/memory.h> // IWYU pragma: keep
+#  include <thrust/reduce.h> // IWYU pragma: keep
 
 #endif

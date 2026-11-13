@@ -14,9 +14,16 @@
 #endif // no system header
 
 #if _CCCL_CUDA_COMPILATION()
+#  include <cub/detail/null_type.cuh>
+
+#  include <thrust/functional.h>
+#  include <thrust/remove.h>
+#  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/copy_if.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 
 #  include <cuda/__functional/equal_to_value.h>
+#  include <cuda/std/__functional/not_fn.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
