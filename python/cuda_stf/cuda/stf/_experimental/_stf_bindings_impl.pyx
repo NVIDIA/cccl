@@ -421,6 +421,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     stf_logical_data_handle stf_stackable_logical_data_empty(stf_ctx_handle ctx, size_t length)
     stf_logical_data_handle stf_stackable_logical_data_no_export_empty(stf_ctx_handle ctx, size_t length)
     stf_logical_data_handle stf_stackable_token(stf_ctx_handle ctx)
+    stf_error_t stf_stackable_set_scope_symbol(stf_ctx_handle ctx, const char* symbol)
     stf_error_t stf_stackable_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol)
     stf_error_t stf_stackable_logical_data_set_read_only(stf_logical_data_handle ld)
     stf_error_t stf_stackable_logical_data_push(
@@ -5174,6 +5175,12 @@ cdef class stackable_context:
         if out._ld == NULL:
             _raise_last_error("failed to create stackable token")
         return out
+
+    def set_scope_symbol(self, str name):
+        """Name the current (innermost) scope for DOT output and diagnostics
+        (the default is the source location of the push). Call it right
+        after opening the scope."""
+        _check(stf_stackable_set_scope_symbol(self._ctx, name.encode()), "stf_stackable_set_scope_symbol")
 
     def task(self, *args, symbol=None):
         """Create a task on the head (innermost) scope of this context."""
