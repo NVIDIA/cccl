@@ -22,7 +22,7 @@ concurrency:
 # Caller permissions must cover the reusable workflow (intersection applies).
 permissions:
   contents: read
-  id-token: write          # OIDC → Vault → nvcr.io image pull
+  id-token: write          # OIDC -> Vault -> nvcr.io image pull
   security-events: write   # publish redacted SARIF to code scanning
   actions: read
 
@@ -40,18 +40,18 @@ jobs:
       enable-sast-scan: true
       secret-runs-on: linux-amd64-cpu4
       # Set failure_policy explicitly so enforcement can't drift with upstream defaults.
-      #   unverified — fail on verified/live secrets (183); warn on unverified (185)  [default]
-      #   strict     — fail on any finding (verified or unverified)
-      #   all        — warn only; never fail the job on findings
+      #   unverified: fail on verified/live secrets (183); warn on unverified (185)  [default]
+      #   strict:     fail on any finding (verified or unverified)
+      #   all:        warn only; never fail the job on findings
       secret-failure-policy: unverified
       # Both resolve to build-mode none, so no toolchain is needed. CodeQL never fails the job.
       sast-languages: '["python","c-cpp"]'
       # Must be an Actions *variable*: a reusable workflow's inputs cannot read secrets.
       nspect-id: ${{ vars.NSPECT_ID }}
       vuln-runs-on: linux-amd64-cpu4
-      # report-only (default) — findings warn; fail-on-vulnerability — any finding fails. Errors always fail.
+      # report-only (default): findings warn. fail-on-vulnerability: any finding fails. Errors always fail.
       vuln-failure-policy: report-only
       vuln-upload-report: true
       malware-runs-on: linux-amd64-cpu4
-      # strict (default) — SUSPICIOUS fails too; malicious-only — it only warns. MALICIOUS always fails.
+      # strict (default): SUSPICIOUS fails too. malicious-only: it only warns. MALICIOUS always fails.
       malware-failure-policy: strict
