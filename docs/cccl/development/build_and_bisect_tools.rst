@@ -35,35 +35,35 @@ Build a single CUB test locally::
 
   ci/util/build_and_test_targets.sh \
     --preset cub-cpp20 \
-    --build-targets "cub.cpp20.test.iterator"
+    --build-targets "cub.test.iterator"
 
 Build the same test for SM90 using a CMake option::
 
   ci/util/build_and_test_targets.sh \
     --preset cub-cpp20 \
     --cmake-options "-DCMAKE_CUDA_ARCHITECTURES=90" \
-    --build-targets "cub.cpp20.test.iterator"
+    --build-targets "cub.test.iterator"
 
 Build the test for SM90 with a configure override::
 
   ci/util/build_and_test_targets.sh \
     --configure-override "ci/build_cub.sh -configure -arch 90" \
-    --build-targets "cub.cpp20.test.iterator"
+    --build-targets "cub.test.iterator"
 
 Build **and run** a single CUB test locally::
 
   ci/util/build_and_test_targets.sh \
     --preset cub-cpp20 \
-    --build-targets "cub.cpp20.test.iterator" \
-    --ctest-targets "cub.cpp20.test.iterator"
+    --build-targets "cub.test.iterator" \
+    --ctest-targets "cub.test.iterator"
 
 Build and run a single CUB test in a devcontainer with specific CTK and host::
 
   .devcontainer/launch.sh -d --cuda 12.3 --host gcc12 --gpus all -- \
     ci/util/build_and_test_targets.sh \
       --preset cub-cpp20 \
-      --build-targets "cub.cpp20.test.iterator" \
-      --ctest-targets "cub.cpp20.test.iterator"
+      --build-targets "cub.test.iterator" \
+      --ctest-targets "cub.test.iterator"
 
 Precompile the libcudacxx lit suite::
 
@@ -125,16 +125,16 @@ Local CUB bisection from latest release to origin/main::
 
   ci/util/git_bisect.sh \
     --preset cub-cpp20 \
-    --build-targets "cub.cpp20.test.iterator" \
-    --ctest-targets "cub.cpp20.test.iterator"
+    --build-targets "cub.test.iterator" \
+    --ctest-targets "cub.test.iterator"
 
 Devcontainer CUB bisection from last week::
 
   .devcontainer/launch.sh -d --cuda 12.3 --host gcc12 --gpus all -- \
     ci/util/git_bisect.sh \
       --preset cub-cpp20 \
-      --build-targets "cub.cpp20.test.iterator" \
-      --ctest-targets "cub.cpp20.test.iterator" \
+      --build-targets "cub.test.iterator" \
+      --ctest-targets "cub.test.iterator" \
       --good-ref -7d
 
 Compute-sanitizer example for regression introduced between 3-4 weeks ago::
@@ -144,8 +144,8 @@ Compute-sanitizer example for regression introduced between 3-4 weeks ago::
     --env C2H_SEED_COUNT_OVERRIDE=1 \
     -- ci/util/git_bisect.sh \
       --preset "cub-cpp20" \
-      --build-targets "cub.cpp20.test.iterator" \
-      --ctest-targets "cub.cpp20.test.iterator" \
+      --build-targets "cub.test.iterator" \
+      --ctest-targets "cub.test.iterator" \
       --good-ref -28d \
       --bad-ref -21d
 
