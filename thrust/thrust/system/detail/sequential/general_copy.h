@@ -21,7 +21,7 @@
 
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_assignable.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_void.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
@@ -36,7 +36,7 @@ struct reference_is_assignable
   template <typename OI>
   static constexpr bool h()
   {
-    if constexpr (::cuda::std::is_same_v<thrust::detail::it_reference_t<OI>, void>)
+    if constexpr (::cuda::std::is_void_v<thrust::detail::it_reference_t<OI>>)
     {
       return true;
     }

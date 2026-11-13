@@ -91,8 +91,10 @@ TEST_CASE("TestTabulateOutputIteratorTraits", "[tabulate_output_iterator]")
                                                                                thrust::random_access_traversal_tag>;
 
   static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
+  // NOLINTBEGIN(cccl-simplify-type-traits)
   static_assert(cuda::std::is_same_v<traits::value_type, void>);
   static_assert(cuda::std::is_same_v<traits::pointer, void>);
+  // NOLINTEND(cccl-simplify-type-traits)
   static_assert(cuda::std::is_same_v<traits::reference, thrust::detail::tabulate_output_iterator_proxy<Op, ptrdiff_t>>);
   static_assert(cuda::std::is_same_v<traits::iterator_category, category>);
 

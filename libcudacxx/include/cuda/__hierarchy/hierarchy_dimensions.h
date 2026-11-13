@@ -37,6 +37,7 @@
 #  include <cuda/std/__type_traits/conditional.h>
 #  include <cuda/std/__type_traits/fold.h>
 #  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__type_traits/is_void.h>
 #  include <cuda/std/__type_traits/type_list.h>
 #  include <cuda/std/__utility/integer_sequence.h>
 
@@ -93,7 +94,7 @@ struct __make_hierarchy
   [[nodiscard]] _CCCL_API constexpr auto operator()(const _Levels2&... __ls) const noexcept
   {
     using _UnitOrDefault = ::cuda::std::conditional_t<
-      ::cuda::std::is_same_v<void, _LUnit>,
+      ::cuda::std::is_void_v<_LUnit>,
       __default_unit_below<::cuda::std::__type_index_c<sizeof...(_Levels2) - 1, __level_type_of<_Levels2>...>>,
       _LUnit>;
     if constexpr (__can_stack<_UnitOrDefault, _Levels2...>)
@@ -268,7 +269,7 @@ public:
   {}
 
   _CCCL_TEMPLATE(class _BottomUnit2 = _BottomUnit)
-  _CCCL_REQUIRES((!::cuda::std::is_same_v<void, _BottomUnit2>) )
+  _CCCL_REQUIRES((!::cuda::std::is_void_v<_BottomUnit2>) )
   _CCCL_API constexpr hierarchy(const _BottomUnit2&, const _LevelDescs&... __lds) noexcept
       : __descs_(__lds...)
   {}
@@ -278,7 +279,7 @@ public:
   {}
 
   _CCCL_TEMPLATE(class _BottomUnit2 = _BottomUnit)
-  _CCCL_REQUIRES((!::cuda::std::is_same_v<void, _BottomUnit2>) )
+  _CCCL_REQUIRES((!::cuda::std::is_void_v<_BottomUnit2>) )
   _CCCL_API constexpr hierarchy(const _BottomUnit2&, const ::cuda::std::tuple<_LevelDescs...>& __lds) noexcept
       : __descs_(__lds)
   {}

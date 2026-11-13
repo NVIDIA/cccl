@@ -450,6 +450,13 @@ public:
 
     if (const auto* const expr = nodes.getNodeAs<Expr>(IS_SAME_VOID_BIND))
     {
+      constexpr auto repl = StringRef{"::cuda::std::is_void_v"};
+
+      if (util::is_trait_definition(*expr, repl, varDecl, result.Context))
+      {
+        return;
+      }
+
       const auto emit_fix = [&](const auto& ref) {
         const auto* args = ref.getTemplateArgs();
         const auto first = args[0].getArgument().getAsType();
@@ -467,8 +474,7 @@ public:
         const auto index = isa<BuiltinType>(first) && first->isVoidType() ? 0U : 1U;
 
         diag(ref.getBeginLoc(), "use simplified type alias") //
-          << FixItHint::CreateReplacement(
-               CharSourceRange::getCharRange(ref.getBeginLoc(), ref.getLAngleLoc()), "::cuda::std::is_void_v")
+          << FixItHint::CreateReplacement(CharSourceRange::getCharRange(ref.getBeginLoc(), ref.getLAngleLoc()), repl)
           << remove_parameter(result, ref, index);
       };
 
