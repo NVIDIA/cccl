@@ -164,6 +164,7 @@ check_labeled_partition(Config config, Mapping& mapping, LabelFn label_fn, const
 
   static_assert(cudax::coop::__group_mapping_result<Result>);
   static_assert(Result::static_group_count() == cuda::std::dynamic_extent);
+  static_assert(Result::static_group_rank() == cuda::std::dynamic_extent);
   static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
   static_assert(Result::is_always_exhaustive() == (Count == 32));
   static_assert(!Result::is_always_contiguous());
