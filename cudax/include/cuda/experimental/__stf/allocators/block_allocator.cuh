@@ -92,6 +92,24 @@ public:
   virtual event_list deinit(backend_ctx_untyped&) = 0;
 
   /**
+   * @brief Whether allocations are stream-ordered
+   *
+   * True (the default) when the allocation happens outside the context's
+   * dependency graph and the events reported by allocate() / deallocate() can
+   * be waited for from a stream (stream-ordered CUDA calls, or no events at
+   * all). False when the allocator records nodes in a CUDA graph: such an
+   * allocation is only usable by work that depends on those nodes, so it
+   * cannot serve a raw allocation whose users are not tracked by the context.
+   * Composite allocators report the property of the allocator they draw from.
+   *
+   * @param ctx Untyped backend context (some allocators fall back to its uncached allocator)
+   */
+  virtual bool allocation_is_stream_ordered([[maybe_unused]] backend_ctx_untyped& ctx) const
+  {
+    return true;
+  }
+
+  /**
    * @brief String representation of the allocator
    *
    * This method returns a string representation of the allocator.
@@ -147,6 +165,11 @@ public:
   event_list deinit(backend_ctx_untyped& bctx)
   {
     return pimpl->deinit(bctx);
+  }
+
+  bool allocation_is_stream_ordered(backend_ctx_untyped& bctx) const
+  {
+    return pimpl->allocation_is_stream_ordered(bctx);
   }
 
   ::std::string to_string() const

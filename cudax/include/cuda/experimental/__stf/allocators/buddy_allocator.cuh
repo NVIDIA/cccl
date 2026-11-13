@@ -316,6 +316,11 @@ public:
     return result;
   }
 
+  bool allocation_is_stream_ordered(backend_ctx_untyped& ctx) const override
+  {
+    return (root_allocator ? root_allocator : ctx.get_uncached_allocator()).allocation_is_stream_ordered(ctx);
+  }
+
   ::std::string to_string() const override
   {
     return "buddy allocator";
