@@ -204,7 +204,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
 
     // Enforce the resource limits in the number of threads per block
     _CCCL_ASSERT(int(l2_size) <= kernel_limits.block_size_limit, "invalid level 2 size");
-    _CCCL_ASSERT(int(l0_size) <= ndevs, "invalid level 0 size");
+    _CCCL_ASSERT(l0_size <= ndevs, "invalid level 0 size");
 
     /* Merge blocks and devices */
     this->add_level({::std::make_pair(hw_scope::device, l0_size)});

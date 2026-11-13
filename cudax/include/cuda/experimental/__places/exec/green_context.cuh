@@ -197,7 +197,7 @@ public:
     }
 
     /* Make sure we aren't requesting more SMs than the GPU has available */
-    const int max_SMs = cuda_try<cudaDeviceGetAttribute>(cudaDevAttrMultiProcessorCount, devid);
+    [[maybe_unused]] const int max_SMs = cuda_try<cudaDeviceGetAttribute>(cudaDevAttrMultiProcessorCount, devid);
     assert(max_SMs >= int(numsm));
 
     /* Determine the device's resources */

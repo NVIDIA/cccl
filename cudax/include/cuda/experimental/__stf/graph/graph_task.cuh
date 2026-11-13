@@ -93,6 +93,10 @@ template <>
 class graph_task<> : public task
 {
 public:
+  // NVCC infers device support for defaulted special members of this host-only type.
+  _CCCL_EXEC_CHECK_DISABLE
+  ~graph_task() = default;
+
   graph_task(backend_ctx_untyped ctx,
              cudaGraph_t g,
              ::std::mutex& graph_mutex,
@@ -105,7 +109,9 @@ public:
       , ctx(mv(ctx))
   {}
 
-  graph_task(graph_task&&)            = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  graph_task(graph_task&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
   graph_task& operator=(graph_task&&) = default;
 
   // Tasks are move-only

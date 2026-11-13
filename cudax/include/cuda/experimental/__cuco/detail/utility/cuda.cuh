@@ -88,7 +88,10 @@ template <class _Iterator>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __index_type __distance(_Iterator __begin, _Iterator __end)
 {
   static_assert(::cuda::std::random_access_iterator<_Iterator>, "Input iterator should be a random access iterator.");
-  return __index_type{::cuda::std::distance(__begin, __end)};
+
+  // REVIEWER: There is a warning about narrow conversion from __uint128_t to uint64_t, is it fine to just static cast
+  //           it here? Won't that cause bugs?
+  return static_cast<__index_type>(::cuda::std::distance(__begin, __end));
 }
 } // namespace cuda::experimental::cuco::detail
 

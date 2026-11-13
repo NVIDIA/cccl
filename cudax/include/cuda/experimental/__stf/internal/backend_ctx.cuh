@@ -653,6 +653,16 @@ protected:
 public:
   backend_ctx_untyped() = delete;
 
+  // NVCC infers device support for defaulted special members of this host-only type.
+  _CCCL_EXEC_CHECK_DISABLE
+  backend_ctx_untyped(const backend_ctx_untyped&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  backend_ctx_untyped(backend_ctx_untyped&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  backend_ctx_untyped& operator=(const backend_ctx_untyped&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  backend_ctx_untyped& operator=(backend_ctx_untyped&&) = default;
+
   backend_ctx_untyped(::std::shared_ptr<impl> impl)
       : pimpl(mv(impl))
   {

@@ -165,7 +165,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
                   ::cuda::std::size_t __rank_idx,
                   ::cuda::std::size_t __col) {
       return ::cuda::std::span<::cuda::std::size_t>{
-        __h_counts.data() + ((__rank_idx * __num_columns) + __col) * __comm_size, __comm_size};
+        __h_counts.data() + ((__rank_idx * __num_columns) + __col) * __comm_size,
+        static_cast<::cuda::std::size_t>(__comm_size)};
     };
 
   {

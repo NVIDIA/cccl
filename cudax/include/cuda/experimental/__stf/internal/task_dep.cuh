@@ -49,15 +49,19 @@ class task_dep_untyped
 {
 public:
   // Copy constructor
+  _CCCL_EXEC_CHECK_DISABLE
   task_dep_untyped(const task_dep_untyped&) = default;
 
   // Move constructor
+  _CCCL_EXEC_CHECK_DISABLE
   task_dep_untyped(task_dep_untyped&&) noexcept = default;
 
   // Copy assignment operator
+  _CCCL_EXEC_CHECK_DISABLE
   task_dep_untyped& operator=(const task_dep_untyped& other) = default;
 
   // Move assignment operator
+  _CCCL_EXEC_CHECK_DISABLE
   task_dep_untyped& operator=(task_dep_untyped&& other) noexcept = default;
 
   // dependency with an explicit data_place

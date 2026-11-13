@@ -81,6 +81,8 @@ if (CCCL_ENABLE_UNSTABLE)
     "Enable the CUDA Experimental developer build."
     ${CCCL_TOPLEVEL_PROJECT}
   )
+  # Make sure cudax/include is added as non-system include path.
+  set(cudax_NO_IMPORTED_TARGETS TRUE)
 else()
   # Always off if unstable disabled:
   # Note that this doesn't override the cache variable, but rather creates a new

@@ -179,10 +179,13 @@ public:
   task(const task& rhs)
       : pimpl(rhs.pimpl)
   {}
+  _CCCL_EXEC_CHECK_DISABLE
   task(task&&) = default;
 
+  _CCCL_EXEC_CHECK_DISABLE
   task& operator=(const task& rhs) = default;
-  task& operator=(task&& rhs)      = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  task& operator=(task&& rhs) = default;
 
   explicit operator bool() const
   {

@@ -26,6 +26,7 @@
 #include <cuda/__container/simple_vector.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__optional/optional.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
@@ -65,6 +66,18 @@ struct _PerCommSplitters
 {
   _Buffer<_Splitter<_Tp>> __I_j;
   _Buffer<_Tp> __probes;
+
+  _CCCL_HOST_API _PerCommSplitters(_Buffer<_Splitter<_Tp>> __intervals, _Buffer<_Tp> __probe_buffer)
+      : __I_j{::cuda::std::move(__intervals)}
+      , __probes{::cuda::std::move(__probe_buffer)}
+  {}
+
+  // NVCC infers device support for defaulted special members of this host-only type.
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI _PerCommSplitters(_PerCommSplitters&&) = default;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI ~_PerCommSplitters() = default;
 };
 
 template <class _Tp, template <class> class _Buffer>
@@ -79,6 +92,18 @@ struct _PerCommSamplingScratch
   // __samples_size[rank] gives the filled length of that rank's slot. Written on the device by
   // the sampling kernel, then all-gathered.
   _Buffer<::cuda::std::size_t> __samples_size;
+
+  _CCCL_HOST_API _PerCommSamplingScratch(_Buffer<_Tp> __samples, _Buffer<::cuda::std::size_t> __sizes)
+      : __all_samples{::cuda::std::move(__samples)}
+      , __samples_size{::cuda::std::move(__sizes)}
+  {}
+
+  // NVCC infers device support for defaulted special members of this host-only type.
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI _PerCommSamplingScratch(_PerCommSamplingScratch&&) = default;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI ~_PerCommSamplingScratch() = default;
 };
 
 template <template <class> class _Buffer>
@@ -95,6 +120,19 @@ struct _PerCommHistogrammingResult
 {
   _PerCommSplitters<_Tp, _Buffer> __splitters{};
   _Buffer<::cuda::std::uint64_t> __hist{};
+
+  _CCCL_HOST_API _PerCommHistogrammingResult(_PerCommSplitters<_Tp, _Buffer> __splitter_buffers,
+                                             _Buffer<::cuda::std::uint64_t> __histogram)
+      : __splitters{::cuda::std::move(__splitter_buffers)}
+      , __hist{::cuda::std::move(__histogram)}
+  {}
+
+  // NVCC infers device support for defaulted special members of this host-only type.
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI _PerCommHistogrammingResult(_PerCommHistogrammingResult&&) = default;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI ~_PerCommHistogrammingResult() = default;
 };
 
 template <class _Tp, template <class> class _Buffer>
