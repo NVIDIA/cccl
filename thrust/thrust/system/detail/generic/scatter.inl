@@ -13,10 +13,11 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/copy.h>
-#include <thrust/functional.h>
-#include <thrust/iterator/iterator_traits.h>
+#include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/system/detail/generic/scatter.h>
+
+#include <cuda/std/__functional/identity.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic

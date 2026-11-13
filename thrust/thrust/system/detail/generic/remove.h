@@ -16,7 +16,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/detail/generic/tag.h>
+#include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
@@ -68,4 +68,4 @@ _CCCL_HOST_DEVICE_API OutputIterator remove_copy_if(
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
-#include <thrust/system/detail/generic/remove.inl>
+#include <thrust/system/detail/generic/remove.inl> // IWYU pragma: export

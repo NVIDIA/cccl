@@ -12,9 +12,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/internal_functional.h>
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/replace.h>
@@ -22,6 +21,11 @@
 #include <thrust/system/detail/generic/scan_by_key.h>
 #include <thrust/transform.h>
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__functional/not_fn.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN

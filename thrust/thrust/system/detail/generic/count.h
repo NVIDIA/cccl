@@ -15,7 +15,6 @@
 
 #include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
@@ -33,4 +32,4 @@ count_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Inp
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
-#include <thrust/system/detail/generic/count.inl>
+#include <thrust/system/detail/generic/count.inl> // IWYU pragma: export

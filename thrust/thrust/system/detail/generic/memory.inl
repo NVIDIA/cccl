@@ -13,10 +13,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/malloc_and_free_fwd.h>
+#include <thrust/detail/pointer.h>
 #include <thrust/detail/static_assert.h>
 
-#include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_void.h>
 
 THRUST_NAMESPACE_BEGIN
