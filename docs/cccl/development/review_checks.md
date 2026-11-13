@@ -497,6 +497,17 @@ a compile definition, flag, or gating macro to one such file, check every siblin
 structurally similar target for the same addition — adding it to only one silently skips the check
 for the others. Siblings are recognizable by near-identical file names and structure.
 
+## test.nvrtc-coverage (important, new public device-side interfaces in `cub/cub/{block,warp,thread,iterator}/`)
+
+When a diff adds a public CUB device-side interface — a header under
+`cub/cub/{block,warp,thread,iterator}/`, a new block/warp/thread primitive in an existing header, a
+new public member of an existing primitive, or a new algorithm/backend of one (e.g. a
+`BlockReduceAlgorithm` enumerator, even if implemented under `specializations/`) — flag it unless
+`cub/test/catch2_test_nvrtc.cu` is updated to include the header and instantiate and call the new
+interface in the test kernel (templates are only checked when instantiated). CUB's header and unit
+tests are never compiled with NVRTC, so constructs NVRTC rejects pass CI and break NVRTC users.
+Internal headers reachable only via internal code (`agent/`, `device/dispatch/`) are exempt.
+
 ## perf.intrinsic-wrapper-codegen-parity (important, new generic wrappers over device intrinsics in libcudacxx/cub)
 
 <!-- provenance:
