@@ -111,5 +111,3 @@ binary_search(RandomAccessIterator first, RandomAccessIterator last, const T& va
 } // namespace system::detail::generic::scalar
 
 THRUST_NAMESPACE_END
-
-#include <thrust/system/detail/generic/scalar/binary_search.inl>

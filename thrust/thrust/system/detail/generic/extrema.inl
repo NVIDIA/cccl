@@ -12,15 +12,17 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/get_iterator_value.h>
 #include <thrust/extrema.h>
-#include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/transform_reduce.h>
 
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN

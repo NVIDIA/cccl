@@ -13,14 +13,19 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/copy_if.h>
-#include <thrust/detail/internal_functional.h>
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/range/head_flags.h>
 #include <thrust/detail/temporary_array.h>
+#include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/system/detail/generic/unique_by_key.h>
-#include <thrust/transform.h>
 #include <thrust/unique.h>
+
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic

@@ -12,7 +12,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/detail/generic/tag.h>
+#include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
@@ -27,4 +27,4 @@ _CCCL_HOST_DEVICE_API ForwardIterator uninitialized_copy_n(
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
-#include <thrust/system/detail/generic/uninitialized_copy.inl>
+#include <thrust/system/detail/generic/uninitialized_copy.inl> // IWYU pragma: export

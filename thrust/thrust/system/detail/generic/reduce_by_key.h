@@ -13,8 +13,6 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
-#include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/generic/tag.h>
 
 #include <cuda/std/__utility/pair.h>
 
@@ -68,4 +66,4 @@ _CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
-#include <thrust/system/detail/generic/reduce_by_key.inl>
+#include <thrust/system/detail/generic/reduce_by_key.inl> // IWYU pragma: export

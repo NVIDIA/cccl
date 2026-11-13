@@ -3,16 +3,19 @@
 
 #include <thrust/detail/config.h>
 
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/random_bijection.h>
 #include <thrust/detail/temporary_array.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
-#include <thrust/random.h>
 #include <thrust/scan.h>
+#include <thrust/shuffle.h>
 #include <thrust/system/detail/generic/shuffle.h>
 
-#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstdint>
 

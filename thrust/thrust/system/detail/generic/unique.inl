@@ -14,13 +14,12 @@
 #endif // no system header
 #include <thrust/detail/copy_if.h>
 #include <thrust/detail/count.h>
-#include <thrust/detail/internal_functional.h>
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/range/head_flags.h>
 #include <thrust/detail/temporary_array.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/unique.h>
-#include <thrust/transform.h>
 #include <thrust/unique.h>
 
 #include <cuda/std/__functional/operations.h>

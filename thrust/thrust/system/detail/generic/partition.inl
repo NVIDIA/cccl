@@ -14,7 +14,7 @@
 #endif // no system header
 
 #include <thrust/count.h>
-#include <thrust/detail/internal_functional.h>
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/temporary_array.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/transform_iterator.h>
