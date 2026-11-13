@@ -75,6 +75,17 @@ struct record_visit
   }
 };
 
+template <class Key>
+struct is_below
+{
+  int bound;
+
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(Key key) const noexcept
+  {
+    return static_cast<int>(key) < bound;
+  }
+};
+
 struct is_negative
 {
   [[nodiscard]] _CCCL_DEVICE_API bool operator()(int value) const noexcept
@@ -133,6 +144,11 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
     cuda::counting_iterator<int>{num_queries},
     matches_even_membership{found.data(), num_keys}));
   REQUIRE(set.insert(context.stream, first, first + num_keys) == 0);
+  auto retrieved = cuda::make_buffer<key_type>(context.stream, context.mr, num_queries, cuda::no_init);
+  // Stored keys are distinct, so `num_keys` keys below `num_keys` are exactly the inserted keys.
+  const auto retrieved_end = set.retrieve_all(context.stream, retrieved.data());
+  REQUIRE(retrieved_end - retrieved.data() == num_keys);
+  REQUIRE(cuda::std::all_of(context.policy(), retrieved.data(), retrieved_end, is_below<key_type>{num_keys}));
 
   // Each present key is visited exactly once; absent keys and empty ranges invoke no callback.
   auto visits = cuda::make_buffer<int>(context.stream, context.mr, num_queries, 0);
@@ -147,6 +163,7 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
   REQUIRE(context.matches(found.data(), num_queries, 0));
   set.for_each(context.stream, first, first + num_queries, record_visit<key_type>{visits.data()});
   REQUIRE(context.matches(visits.data(), num_queries, num_keys));
+  REQUIRE(set.retrieve_all(context.stream, retrieved.data()) == retrieved.data());
 
   // Duplicates within one launch must be counted once even under contention.
   const auto duplicates = cuda::transform_iterator{cuda::counting_iterator<int>{0}, duplicate_key<key_type>{}};
@@ -177,6 +194,9 @@ C2H_TEST("fixed_capacity_set insert and contains", "[container]", key_types, cg_
   REQUIRE(full.insert(context.stream, first, first + capacity) == full.capacity());
   REQUIRE(full.insert(context.stream, first, first + capacity) == 0);
   REQUIRE(full.insert(context.stream, first + capacity, first + capacity + 1) == 0);
+  const auto full_end = full.retrieve_all(context.stream, retrieved.data());
+  REQUIRE(full_end - retrieved.data() == capacity);
+  REQUIRE(cuda::std::all_of(context.policy(), retrieved.data(), full_end, is_below<key_type>{capacity}));
   full.insert_async(context.stream, first + capacity, first + capacity + 1);
   full.contains(context.stream, first, first + capacity + 1, found.begin());
   REQUIRE(context.matches(found.data(), capacity + 1, capacity));
@@ -347,7 +367,7 @@ C2H_TEST("fixed_capacity_set custom key atomic storage regression", "[container]
 
 C2H_TEST("fixed_capacity_set large input regression", "[container][.large]", cg_sizes)
 {
-  // The upstream 1.2B-key regression needs over 20 GiB. Opt in with '[.large]'.
+  // The upstream 1.2B-key regression needs about 30 GiB. Opt in with '[.large]'.
   using key_type        = cuda::std::int64_t;
   constexpr int cg_size = c2h::get<0, TestType>::value;
   using set_type =
@@ -366,4 +386,9 @@ C2H_TEST("fixed_capacity_set large input regression", "[container][.large]", cg_
   REQUIRE(set.insert(context.stream, first, first + num_keys) == num_keys);
   set.contains(context.stream, first, first + num_keys, found.begin());
   REQUIRE(cuda::std::all_of(context.policy(), found.begin(), found.end(), cuda::std::identity{}));
+  auto retrieved           = cuda::make_buffer<key_type>(context.stream, context.mr, num_keys, cuda::no_init);
+  const auto retrieved_end = set.retrieve_all(context.stream, retrieved.data());
+  REQUIRE(static_cast<cuda::std::size_t>(retrieved_end - retrieved.data()) == num_keys);
+  REQUIRE(cuda::std::all_of(
+    context.policy(), retrieved.data(), retrieved_end, is_below<key_type>{static_cast<int>(num_keys)}));
 }

@@ -421,6 +421,22 @@ public:
     __impl_->for_each_async(__stream, __first, __last, __callback_op, ref());
   }
 
+  //! @brief Copies every stored key to the output range.
+  //!
+  //! @pre The output range can hold every stored key.
+  //! @note Synchronizes the supplied stream.
+  //! @note The output order is implementation-defined and may differ between calls.
+  //! @throws cuda_error if the operation or stream synchronization fails
+  //! @tparam _OutputIt Device-accessible random-access iterator assignable from `key_type`
+  //! @param[in] __stream Stream used for retrieval
+  //! @param[out] __output_begin Beginning of the output range
+  //! @return Iterator past the last written key
+  template <class _OutputIt>
+  [[nodiscard]] _CCCL_HOST_API _OutputIt retrieve_all(::cuda::stream_ref __stream, _OutputIt __output_begin) const
+  {
+    return __impl_->retrieve_all(__stream, __output_begin);
+  }
+
   //! @brief Returns the total number of slots.
   //! @return The valid, rounded slot count
   [[nodiscard]] _CCCL_HOST_API size_type capacity() const noexcept
