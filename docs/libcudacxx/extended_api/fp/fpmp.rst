@@ -386,7 +386,9 @@ hardware where FP64 is rationed:
 - **Rounding, magnitude and scaling** — ``ceil``, ``floor``, ``trunc``, ``round``, ``fabs``,
   ``ldexp``, ``scalbn``
 - **Minimum, maximum and remainder** — ``fmin``, ``fmax``, ``min``, ``max``, ``fmod``,
-  ``remainder``
+  ``remainder`` (``fmod``, ``remainder`` and ``remquo`` are exact on sparse pairs, whose tail sits
+  far below the head, in ``fp32mp2_high``; the other levels compute on the pair rounded to 53
+  significant bits, as a ``double`` would)
 - **Probability** — ``normcdf``, ``normcdfinv``, and ``icdf`` for ``fp32mp2`` only, which turns a 32- or 64-bit
   uniform integer into a Gaussian variate. Taking an integer rather than a pair, it is the one
   function here that ADL cannot find, so it has to be written ``cuda::icdf(bits)``, and its

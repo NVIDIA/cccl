@@ -382,7 +382,25 @@
       the former ::fmod(double,double) round-trip bit-for-bit - but
       without any fp64 instructions.  (A 48-bit window rounded away the
       bottom of lo, which fmod's inherent cancellation then amplified to
-      ~27-bit results.)  remainder adds the round-to-
+      ~27-bit results.)  A sparse pair - a tail more than 29 binades below
+      the head, as arithmetic leaves it when a head lands on a power of
+      two - carries more than 53 bits, and rounding it would move the
+      remainder by the whole amount dropped; such an operand takes an
+      exact reduction instead: the divisor and the running remainder on
+      two 64-bit words in the frame of the finer operand (the divisor
+      fits 126 bits there for tails down to 2^-102 ulp(hi); beyond that
+      the 53-bit window applies), the dividend limb by limb in 64-bit
+      arithmetic.  Dense pairs never take that path.  In that level every
+      result is the nearest pair (head and tail each rounded to nearest
+      even), so a result whose head has few bits keeps the tail bits the
+      pair can hold.  fmod, remainder and remquo take the exact path in
+      fpmp2_accuracy::high only; mid and low round the operands to the
+      53-bit window and the result to 48 bits as before, which keeps
+      their size (fmod 277 against 1087 SASS lines, 22 against 32
+      registers) and speed (remainder 210 against 239 clk/ev) where they
+      were - the exact block weighs on a caller's register budget even
+      when it is never entered.
+      remainder adds the round-to-
       nearest-even step (compare 2*ia vs My, ties broken by the parity of
       the accumulated quotient) and the |x| < |y| short-circuit.  Special
       cases: NaN or x = +-inf or y = 0 -> NaN; y = +-inf -> x.
@@ -496,10 +514,12 @@
       Exact on the limb pair, no FP64.  fdim compares the pairs
       lexicographically and takes the accurate difference (+0 when
       x <= y, NaN propagated, +inf when the difference overflows).
-      remquo shares remainder's integer reduction and reports the low
-      bits of rint(x / y) with the sign of x / y, modulo what the
-      platform's own remquo uses (2^3 on the device as CUDA's, 2^31 on
-      the host as glibc's).  The four integer roundings convert the
+      remquo's remainder is remainder's, bit for bit at every level
+      (same core, see above); its quotient is the low bits of
+      rint(x / y) with the sign of x / y, modulo what the platform's
+      own remquo uses (2^3 on the device as CUDA's, 2^31 on the host as
+      glibc's), so that the fp32mp2 and the scalar / fp64mp2 results
+      agree on each platform.  The four integer roundings convert the
       exact rint / round of the pair limb by limb; NaN, infinities and
       |x| >= 2^63 go to the platform's conversion of the high limb, as
       the scalar functions do.  The classification predicates,
@@ -1160,7 +1180,14 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 fmod(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc>& __y) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_fmod(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_fmod(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_fmod(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -1169,7 +1196,14 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 remainder(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc>& __y) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_remainder(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_remainder(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_remainder(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -1224,7 +1258,14 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 remquo(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc>& __y, int* __quo) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_remquo(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo, __quo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_remquo(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo, __quo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_remquo(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo, __quo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 

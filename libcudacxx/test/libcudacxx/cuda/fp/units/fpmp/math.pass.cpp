@@ -217,6 +217,40 @@ TEST_HOST_DEVICE_FUNC void test_host_device(double tol)
     assert(check_int(quo, ref_quo));
   }
 
+  // fmod, remainder and remquo are exact on sparse pairs (a tail far below
+  // the head, more than 53 significant bits in all) in fp32mp2_high, and
+  // compute on the pair rounded to 53 bits in the other levels, where rounding
+  // the input moves the remainder by the amount dropped.
+  //   x = 2^60 + 2^-20 (81 bits), y = 3: 2^60 = 3 k + 1 with k = 5 mod 8, so
+  //   both remainders are 1 + 2^-20 and the quotient's low bits are 5 (the
+  //   53-bit route gives 1).
+  //   x = 2^40 - (2^8 + 2^-14) (55 bits), y = 768 = 3 * 2^8: 2^40 = 768 k' +
+  //   2^8 with k' = (2^32 - 1) / 3 = 5 mod 8, so x = 768 k' - 2^-14: fmod is
+  //   768 - 2^-14, remainder -2^-14 (the 53-bit route rounds the 2^-14 away).
+  if constexpr (::cuda::std::is_same_v<MP2, cuda::fp32mp2>)
+  {
+    using HP = cuda::fp32mp2_high;
+    const MP2 xs(0x1p+60f, 0x1p-20f);
+    const MP2 ys(3.0f, 0.0f);
+    const HP xsh(0x1p+60f, 0x1p-20f);
+    const HP ysh(3.0f, 0.0f);
+    assert(static_cast<double>(fmod(xsh, ysh)) == 1.0 + 0x1p-20);
+    assert(static_cast<double>(remainder(xsh, ysh)) == 1.0 + 0x1p-20);
+    assert(static_cast<double>(fmod(xs, ys)) == 1.0); // the 53-bit route
+    assert(static_cast<double>(remainder(xs, ys)) == 1.0);
+    int qs = 0;
+    assert(static_cast<double>(remquo(xsh, ysh, &qs)) == 1.0 + 0x1p-20);
+    assert((qs & 7) == 5);
+
+    const HP xbh(0x1p+40f, -(0x1p+8f + 0x1p-14f));
+    const HP ybh(768.0f, 0.0f);
+    assert(static_cast<double>(fmod(xbh, ybh)) == 768.0 - 0x1p-14);
+    assert(static_cast<double>(remainder(xbh, ybh)) == -0x1p-14);
+    int qb = 0;
+    assert(static_cast<double>(remquo(xbh, ybh, &qb)) == -0x1p-14);
+    assert((qb & 7) == 5);
+  }
+
 #undef CHECK_1A
 #undef CHECK_2A
 }
