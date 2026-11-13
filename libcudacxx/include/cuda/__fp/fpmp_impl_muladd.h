@@ -1534,32 +1534,24 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void __fpmp2_add_limb(
 
 // x * c, 6 operations. With x_hi and c scaled into [1, 2), |x_lo * c + residual| < 4u, so
 // the one fma rounds by at most 2u^2: relative error below 2u^2 to first order. low skips
-// the renormalization. high is Algorithm 7 of Joldes, Muller & Popescu (2017), 10
-// operations, measured at most 1.5u^2.
+// the renormalization; mid and high are the same code. (Algorithm 7 of Joldes, Muller &
+// Popescu 2017 measures at most 1.5u^2 but takes 10 operations, one more than the pair
+// product at high.)
 template <fpmp2_accuracy _Acc, typename _FpType>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void __fpmp2_mul_limb(
   const _FpType __x_hi, const _FpType __x_lo, const _FpType __c, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
   _FpType __p_lo;
   const _FpType __p_hi = ::cuda::__fpmp_two_mult_fma(__x_hi, __c, &__p_lo);
-  if constexpr (_Acc == fpmp2_accuracy::high)
+  const _FpType __lo   = ::cuda::__fpmp_fma_rn(__x_lo, __c, __p_lo);
+  if constexpr (_Acc == fpmp2_accuracy::low)
   {
-    _FpType __t_lo;
-    const _FpType __t_hi = ::cuda::__fpmp_fast_two_sum(__p_hi, ::cuda::__fpmp_mul_rn_nocontract(__x_lo, __c), &__t_lo);
-    *__res_hi            = ::cuda::__fpmp_fast_two_sum(__t_hi, ::cuda::__fpmp_add_rn(__t_lo, __p_lo), __res_lo);
+    *__res_hi = __p_hi;
+    *__res_lo = __lo;
   }
   else
   {
-    const _FpType __lo = ::cuda::__fpmp_fma_rn(__x_lo, __c, __p_lo);
-    if constexpr (_Acc == fpmp2_accuracy::low)
-    {
-      *__res_hi = __p_hi;
-      *__res_lo = __lo;
-    }
-    else
-    {
-      *__res_hi = ::cuda::__fpmp_fast_two_sum(__p_hi, __lo, __res_lo);
-    }
+    *__res_hi = ::cuda::__fpmp_fast_two_sum(__p_hi, __lo, __res_lo);
   }
 }
 
