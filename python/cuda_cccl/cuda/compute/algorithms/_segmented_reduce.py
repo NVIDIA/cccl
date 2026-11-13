@@ -38,6 +38,12 @@ class _SegmentedReduce(Serializable):
         "end_offsets_in_cccl",
         "h_init_cccl",
         "op_cccl",
+        # Perf: see _Reduce's identical cache for rationale. Stateless op
+        # state is a constant (b"" by definition) once seen for a given op
+        # object, so __call__ can skip re-deriving it on repeat calls.
+        # Holds a strong reference (not a bare id) so identity can never
+        # false-positive against a GC'd-and-reused object.
+        "_last_stateless_op",
     ]
 
     __serialization_schema__ = (
@@ -71,6 +77,7 @@ class _SegmentedReduce(Serializable):
 
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
+        self._last_stateless_op: Callable | OpAdapter | None = None
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceSegmentedReduceBuildResult,
             d_in,
@@ -91,6 +98,126 @@ class _SegmentedReduce(Serializable):
                 compute_capability=compute_capability,
             ),
         )
+
+    def _after_deserialize(self) -> None:
+        # deserialize() bypasses __init__ (see Serializable.deserialize),
+        # where this cache is otherwise initialized -- without this, a
+        # deserialized _SegmentedReduce would raise AttributeError the
+        # first time __call__ reads it.
+        self._last_stateless_op = None
+
+    def set_op(self, op: Callable | OpAdapter) -> None:
+        """Explicitly rebind this reducer's operator.
+
+        ``execute()`` (unlike ``__call__``) never re-derives op state on its
+        own -- if the operator or its captured state has changed since
+        construction or the last ``set_op()``, you must call this first, or
+        ``execute()`` will silently launch with stale op state. Call this
+        only when it has actually changed; it is not needed after every
+        ``execute()``.
+        """
+        op_adapter = make_op_adapter(op)
+        self.op_cccl.state = op_adapter.get_state()
+        # Perf: invalidate __call__'s stateless-op cache -- a RawOp with
+        # state still reports is_stateful=False, so without this, a later
+        # __call__ with the same (now stale) op object would see the
+        # identity match and skip rebinding, launching with this op's state
+        # instead of that op's.
+        self._last_stateless_op = None
+
+    def set_h_init(self, h_init) -> None:
+        """Explicitly rebind this reducer's initial value.
+
+        The underlying ``Value`` object points directly at ``h_init``'s host
+        buffer, so mutating that same array object in place is picked up
+        automatically. What is NOT picked up automatically is passing a
+        *different* array object as the initial value on a later
+        ``execute()`` call: ``execute()`` has no ``h_init`` parameter and
+        never re-reads it, so the pointer keeps referencing whichever buffer
+        was bound by ``__init__`` or the last ``set_h_init()``. Call this
+        whenever you swap in a new ``h_init`` object, or ``execute()`` will
+        silently launch against the old one.
+        """
+        self.h_init_cccl.state = to_cccl_value_state(h_init)
+
+    def execute(
+        self,
+        *,
+        temp_storage,
+        d_in,
+        d_out,
+        num_segments: int,
+        start_offsets_in,
+        end_offsets_in,
+        max_segment_size: int | None = None,
+        stream=None,
+    ):
+        """Minimal per-call path: updates only the ``d_in``/``d_out``/offset
+        pointer state and issues the launch. Unlike ``__call__``, this never
+        re-derives op state or ``h_init`` state -- construct with the right
+        initial values (or call ``set_op``/``set_h_init`` beforehand) and
+        reuse this for repeat calls against the same op/h_init. This is the
+        deliberately-unsafe-by-default counterpart to ``__call__``: it trades
+        the implicit per-call re-derivation (and its correctness margin for
+        mutated/varying op or h_init) for the lower fixed cost of a call
+        where op and h_init are call-invariant, which is the common case in
+        a hot loop. Use ``__call__`` (via ``segmented_reduce``/the object
+        returned by ``make_segmented_reduce``) if you can't make that
+        guarantee.
+        """
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
+
+        if num_segments > np.iinfo(np.int32).max:
+            raise RuntimeError(
+                "Segmented sort does not currently support more than 2^31-1 segments."
+            )
+
+        if max_segment_size is None:
+            max_segment_size = 0  # CCCL.c treats 0 as "not specified"
+
+        if max_segment_size > 0:
+            try:
+                from .._build_info import USING_V2  # type: ignore[import-not-found]
+            except ImportError:
+                USING_V2 = False
+            if USING_V2:
+                import warnings
+
+                warnings.warn(
+                    "max_segment_size is not used by the v2 backend and will be ignored",
+                    stacklevel=2,
+                )
+
+        set_cccl_iterator_state(self.d_in_cccl, d_in)
+        set_cccl_iterator_state(self.d_out_cccl, d_out)
+        set_cccl_iterator_state(self.start_offsets_in_cccl, start_offsets_in)
+        set_cccl_iterator_state(self.end_offsets_in_cccl, end_offsets_in)
+
+        stream_handle = validate_and_get_stream(stream)
+
+        if temp_storage is None:
+            temp_storage_bytes = 0
+            d_temp_storage = 0
+        else:
+            temp_storage_bytes = temp_storage.nbytes
+            d_temp_storage = get_data_pointer(temp_storage)
+
+        temp_storage_bytes = self.loaded_build_result.compute(
+            d_temp_storage,
+            temp_storage_bytes,
+            self.d_in_cccl,
+            self.d_out_cccl,
+            num_segments,
+            self.start_offsets_in_cccl,
+            self.end_offsets_in_cccl,
+            self.op_cccl,
+            self.h_init_cccl,
+            max_segment_size,
+            stream_handle,
+        )
+        return temp_storage_bytes
 
     def __call__(
         self,
@@ -137,8 +264,12 @@ class _SegmentedReduce(Serializable):
         set_cccl_iterator_state(self.start_offsets_in_cccl, start_offsets_in)
         set_cccl_iterator_state(self.end_offsets_in_cccl, end_offsets_in)
 
+        # Update op state for stateful ops; see _Reduce.__call__ for the
+        # stateless-op caching rationale.
         op_adapter = make_op_adapter(op)
-        self.op_cccl.state = op_adapter.get_state()
+        if op_adapter.is_stateful or op is not self._last_stateless_op:
+            self.op_cccl.state = op_adapter.get_state()
+            self._last_stateless_op = None if op_adapter.is_stateful else op
 
         self.h_init_cccl.state = to_cccl_value_state(h_init)
 
