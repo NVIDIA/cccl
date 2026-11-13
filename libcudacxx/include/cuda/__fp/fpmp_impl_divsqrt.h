@@ -254,88 +254,30 @@ template <typename _FpType>
 _CCCL_FPMP_CORE_API void
 __fpmp2_rsqrt(const _FpType __a_hi, const _FpType __a_lo, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
-  if constexpr (sizeof(_FpType) == 4)
-  {
-    const _FpType __half = static_cast<_FpType>(0.5);
-    const _FpType __one  = static_cast<_FpType>(1.0);
-    const _FpType __r    = ::cuda::__fpmp_rsqrt_rn(__a_hi);
-    /* High word.  y = RN(sqrt(a_hi + a_lo)) from one Newton step on the exact
-     * residual (as in __fpmp2_sqrt); q = r (1 + (1 - y r)) is 1/y to about
-     * an ulp, and q (1 - e / (2 y^2)) with e = a - y^2 moves it to about an
-     * ulp of 1 / sqrt(a).  The seed's accuracy drops out here. */
-    _FpType __y       = ::cuda::__fpmp_mul_rn(__a_hi, __r);
-    const _FpType __h = ::cuda::__fpmp_mul_rn(__half, __r);
-    _FpType __s       = ::cuda::__fpmp_fma_rn(__y, -__y, __a_hi);
-    __y               = ::cuda::__fpmp_fma_rn(__h, __s + __a_lo, __y);
-    __s               = ::cuda::__fpmp_fma_rn(__y, -__y, __a_hi); /* exact */
-    const _FpType __e = ::cuda::__fpmp_add_rn(__s, __a_lo);
-    const _FpType __d = ::cuda::__fpmp_fma_rn(-__y, __r, __one);
-    _FpType __q       = ::cuda::__fpmp_fma_rn(__r, __d, __r);
-    const _FpType __v = ::cuda::__fpmp_mul_rn(::cuda::__fpmp_mul_rn(__e, __q), __q); /* e / y^2 */
-    __q               = ::cuda::__fpmp_fma_rn(-__half * __q, __v, __q);
-    /* Low word: the Newton correction (q/2) sigma (1 + 3 sigma / 4) with the
-     * residual sigma = 1 - a q^2 accumulated EXACTLY -- the products as
-     * error-free pairs, the 2^-24-sized terms through two error-free sums
-     * -- because sigma is about 2 ulps and any plain rounding of it
-     * would cost ~1 u^2 of the result.  The previous form rounded it three
-     * times and added (3/2) eps^2 of the seed error eps: 13.4 u^2 on the
-     * device for fp32mp2, 5.1 u^2 for fp64mp2 (whose rsqrt() is close to
-     * correctly rounded), 7.7 u^2 on the host.  Host model against
-     * binary128: 1.5 u^2 max, 0.21 u^2 mean for any seed.  38 operations
-     * against 15; the operation is far cheaper than any math function. */
-    /* sigma = 1 - ((a_hi q) q + (a_lo q) q): the products are ordered so that
-     * every intermediate is O(sqrt a), O(1) or O(2^-24) -- forming q^2 first
-     * flushes its low part for a > 2^102 (fp32) and cost 44 bits at 1e32. */
-    _FpType __ml, __nl, __f1, __f2;
-    const _FpType __mh = ::cuda::__fpmp_two_mult_fma(__a_hi, __q, &__ml); /* ~ sqrt a */
-    const _FpType __nh = ::cuda::__fpmp_two_mult_fma(__mh, __q, &__nl); /* ~ 1 */
-    const _FpType __s0 = __one - __nh; /* exact: n_h within a few ulps of 1 */
-    const _FpType __s1 = ::cuda::__fpmp_two_sum(__s0, -__nl, &__f1);
-    const _FpType __lq = ::cuda::__fpmp_mul_rn(__a_lo, __q); /* ~ 2^-24 sqrt a */
-    const _FpType __w  = ::cuda::__fpmp_fma_rn(-__ml, __q, -::cuda::__fpmp_mul_rn(__lq, __q));
-    const _FpType __s2 = ::cuda::__fpmp_two_sum(__s1, __w, &__f2);
-    const _FpType __sl = __f1 + __f2;
-    const _FpType __hq = ::cuda::__fpmp_mul_rn(__half, __q);
-    const _FpType __dh = ::cuda::__fpmp_mul_rn(__hq, __s2);
-    const _FpType __dl = ::cuda::__fpmp_fma_rn(
-      __hq,
-      __sl,
-      ::cuda::__fpmp_fma_rn(
-        __dh, ::cuda::__fpmp_mul_rn(static_cast<_FpType>(0.75), __s2), ::cuda::__fpmp_fma_rn(__hq, __s2, -__dh)));
-    *__res_hi = ::cuda::__fpmp_fast_two_sum(__q, __dh + __dl, __res_lo);
-  }
-  else
-  {
-    /* fp64mp2: the original Nagai form, kept by choice.  With the device's
-     * near-correctly-rounded rsqrt() seed it reads 2.0 u^2 on the test suite
-     * (5.1 u^2 over 80 binades, 7.7 u^2 on the host); the exact-residual
-     * form above did not improve it there and cost 60 % of the throughput
-     * of an FP64-bound operation.  15 operations. */
-    _FpType __z_hi, __z_lo;
-    _FpType __r, __s, __e;
-    _FpType __one  = static_cast<_FpType>(1.0);
-    _FpType __half = static_cast<_FpType>(0.5);
-    __r            = ::cuda::__fpmp_rsqrt_rn(__a_hi);
-    __e            = ::cuda::__fpmp_mul_rn(__a_hi, __r);
-    __s            = ::cuda::__fpmp_fma_rn(__e, -__r, __one);
-    __e            = ::cuda::__fpmp_fma_rn(__a_hi, __r, -__e);
-    __s            = ::cuda::__fpmp_fma_rn(__e, -__r, __s);
-    __e            = ::cuda::__fpmp_mul_rn(__a_lo, __r);
-    __s            = ::cuda::__fpmp_fma_rn(__e, -__r, __s);
-    __e            = ::cuda::__fpmp_mul_rn(__half, __r);
-    __z_hi         = ::cuda::__fpmp_mul_rn(__e, __s);
-    __z_lo         = ::cuda::__fpmp_fma_rn(__e, __s, -__z_hi);
-    __s            = ::cuda::__fpmp_add_rn(__r, __z_hi);
-    __r            = ::cuda::__fpmp_add_rn(__r, -__s);
-    __r            = ::cuda::__fpmp_add_rn(__r, __z_hi);
-    __r            = ::cuda::__fpmp_add_rn(__r, __z_lo);
-    __e            = ::cuda::__fpmp_add_rn(__s, __r);
-    __z_lo         = ::cuda::__fpmp_add_rn(__s - __e, __r);
-    __z_hi         = __e;
+  _FpType __z_hi, __z_lo;
+  _FpType __r, __s, __e;
+  _FpType __one  = static_cast<_FpType>(1.0);
+  _FpType __half = static_cast<_FpType>(0.5);
+  __r            = ::cuda::__fpmp_rsqrt_rn(__a_hi);
+  __e            = ::cuda::__fpmp_mul_rn(__a_hi, __r);
+  __s            = ::cuda::__fpmp_fma_rn(__e, -__r, __one);
+  __e            = ::cuda::__fpmp_fma_rn(__a_hi, __r, -__e);
+  __s            = ::cuda::__fpmp_fma_rn(__e, -__r, __s);
+  __e            = ::cuda::__fpmp_mul_rn(__a_lo, __r);
+  __s            = ::cuda::__fpmp_fma_rn(__e, -__r, __s);
+  __e            = ::cuda::__fpmp_mul_rn(__half, __r);
+  __z_hi         = ::cuda::__fpmp_mul_rn(__e, __s);
+  __z_lo         = ::cuda::__fpmp_fma_rn(__e, __s, -__z_hi);
+  __s            = ::cuda::__fpmp_add_rn(__r, __z_hi);
+  __r            = ::cuda::__fpmp_add_rn(__r, -__s);
+  __r            = ::cuda::__fpmp_add_rn(__r, __z_hi);
+  __r            = ::cuda::__fpmp_add_rn(__r, __z_lo);
+  __e            = ::cuda::__fpmp_add_rn(__s, __r);
+  __z_lo         = ::cuda::__fpmp_add_rn(__s - __e, __r);
+  __z_hi         = __e;
 
-    *__res_hi = __z_hi;
-    *__res_lo = __z_lo;
-  }
+  *__res_hi = __z_hi;
+  *__res_lo = __z_lo;
 } // __fpmp2_rsqrt
 
 /* Compute high-accuracy square root. Newton-Raphson
