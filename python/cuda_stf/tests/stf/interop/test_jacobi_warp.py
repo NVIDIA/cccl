@@ -33,7 +33,7 @@ import cuda.stf._experimental as stf
 
 wp = pytest.importorskip("warp")
 
-from cuda.stf._experimental.interop.warp import get_arg_warp, wrap_stream
+from cuda.stf._experimental.interop.warp import get_arg_warp, wrap_stream  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Warp kernels. Line-for-line equivalents of the Numba versions in
