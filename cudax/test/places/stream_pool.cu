@@ -166,6 +166,108 @@ void test_reset_survives_with_fresh_registry()
   fprintf(stderr, "test_reset_survives_with_fresh_registry: PASSED\n");
 }
 
+// get_device_from_stream must answer from the stream, not from the calling
+// thread's current device, and it must do so while the stream is capturing
+// without invalidating the capture (the query is made from event insertion
+// paths that run under capture). Device 0 stays current throughout; the
+// stream is created on each of the first two devices.
+void test_device_from_capturing_stream(int ndevs)
+{
+  const cudaStreamCaptureMode modes[] = {
+    cudaStreamCaptureModeGlobal, cudaStreamCaptureModeThreadLocal, cudaStreamCaptureModeRelaxed};
+
+  for (int d = 0; d < ndevs && d < 2; d++)
+  {
+    cudaStream_t stream;
+    cuda_try(cudaSetDevice(d));
+    cuda_try(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+    cuda_try(cudaSetDevice(0));
+
+    _CCCL_ASSERT(get_device_from_stream(stream) == d, "stream must report the device it was created on");
+
+    for (const auto mode : modes)
+    {
+      cuda_try(cudaStreamBeginCapture(stream, mode));
+      _CCCL_ASSERT(get_device_from_stream(stream) == d, "device query under capture must answer from the stream");
+
+      cudaStreamCaptureStatus status;
+      cuda_try(cudaStreamIsCapturing(stream, &status));
+      _CCCL_ASSERT(status == cudaStreamCaptureStatusActive, "device query must not invalidate the capture");
+
+      cudaGraph_t graph;
+      cuda_try(cudaStreamEndCapture(stream, &graph));
+      cuda_try(cudaGraphDestroy(graph));
+    }
+
+    cuda_try(cudaStreamDestroy(stream));
+  }
+
+  fprintf(stderr, "test_device_from_capturing_stream: PASSED\n");
+}
+
+// Streams created with cuGreenCtxStreamCreate are the case the original
+// cuStreamGetCtx does not support on CUDA 12 drivers: the device must still
+// be found, with and without capture, and from a thread whose current device
+// is another one.
+void test_device_from_green_context_stream(int ndevs)
+{
+#if _CCCL_CTK_AT_LEAST(12, 5)
+  int driver_version = 0;
+  cuda_try(cudaDriverGetVersion(&driver_version));
+  if (driver_version < 12050)
+  {
+    fprintf(stderr, "test_device_from_green_context_stream: skipped (driver < 12.5)\n");
+    return;
+  }
+
+  for (int d = 0; d < ndevs && d < 2; d++)
+  {
+    CUdevice dev;
+    cuda_try(cuDeviceGet(&dev, d));
+
+    // A green context over one group of SMs; skipped where the device cannot provide one.
+    CUdevResource sm_resource;
+    CUdevResource sm_group;
+    CUdevResource sm_remaining;
+    unsigned int ngroups = 1;
+    CUdevResourceDesc desc;
+    CUgreenCtx green_ctx;
+    if (cuDeviceGetDevResource(dev, &sm_resource, CU_DEV_RESOURCE_TYPE_SM) != CUDA_SUCCESS
+        || cuDevSmResourceSplitByCount(&sm_group, &ngroups, &sm_resource, &sm_remaining, 0, 1) != CUDA_SUCCESS
+        || cuDevResourceGenerateDesc(&desc, &sm_group, 1) != CUDA_SUCCESS
+        || cuGreenCtxCreate(&green_ctx, desc, dev, CU_GREEN_CTX_DEFAULT_STREAM) != CUDA_SUCCESS)
+    {
+      fprintf(stderr, "test_device_from_green_context_stream: device %d skipped (no green context)\n", d);
+      continue;
+    }
+
+    CUstream green_stream;
+    cuda_try(cuGreenCtxStreamCreate(&green_stream, green_ctx, CU_STREAM_NON_BLOCKING, 0));
+    const auto stream = cudaStream_t(green_stream);
+
+    cuda_try(cudaSetDevice(0));
+    _CCCL_ASSERT(get_device_from_stream(stream) == d, "green-context stream must report its device");
+
+    cuda_try(cudaStreamBeginCapture(stream, cudaStreamCaptureModeRelaxed));
+    _CCCL_ASSERT(get_device_from_stream(stream) == d, "green-context stream device under capture");
+    cudaStreamCaptureStatus status;
+    cuda_try(cudaStreamIsCapturing(stream, &status));
+    _CCCL_ASSERT(status == cudaStreamCaptureStatusActive, "device query must not invalidate the capture");
+    cudaGraph_t graph;
+    cuda_try(cudaStreamEndCapture(stream, &graph));
+    cuda_try(cudaGraphDestroy(graph));
+
+    cuda_try(cuStreamDestroy(green_stream));
+    cuda_try(cuGreenCtxDestroy(green_ctx));
+  }
+
+  fprintf(stderr, "test_device_from_green_context_stream: PASSED\n");
+#else
+  (void) ndevs;
+  fprintf(stderr, "test_device_from_green_context_stream: skipped (CTK < 12.5)\n");
+#endif
+}
+
 int main()
 {
   int ndevs;
@@ -174,6 +276,8 @@ int main()
   test_basic_pick_stream();
   test_pick_stream_computation_hint();
   test_pick_stream_specific_device(ndevs);
+  test_device_from_capturing_stream(ndevs);
+  test_device_from_green_context_stream(ndevs);
   test_launch_kernel_on_picked_stream();
   test_round_robin_streams();
   test_two_handles_isolation();
