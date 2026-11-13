@@ -625,9 +625,11 @@ _CCCL_FPMP_CORE_API bool __internal_fpmp2_log_is_special(const float __x_hi) noe
 _CCCL_FPMP_CORE_API float __internal_fpmp2_log_special_value(const float __x_hi) noexcept
 {
   const uint32_t __xb = ::cuda::std::bit_cast<uint32_t>(__x_hi);
-  const uint32_t __rb = ((__xb & 0x7FFFFFFFu) == 0u) ? 0xFF800000u /* -inf */
-                      : (__xb == 0x7F800000u) ? 0x7F800000u /* +inf */
-                                               : 0x7FC00000u; /* NaN: negative, -inf or NaN */
+  const uint32_t __rb =
+    ((__xb & 0x7FFFFFFFu) == 0u) ? 0xFF800000u /* -inf */
+    : (__xb == 0x7F800000u)
+      ? 0x7F800000u /* +inf */
+      : 0x7FC00000u; /* NaN: negative, -inf or NaN */
   return ::cuda::std::bit_cast<float>(__rb);
 }
 _CCCL_FPMP_CORE_API void __internal_fpmp2_log_select(

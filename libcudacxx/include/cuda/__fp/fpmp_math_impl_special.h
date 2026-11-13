@@ -1046,7 +1046,7 @@ __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res
   }
   if (__p.hi() == 0.0f || __p.hi() == 1.0f)
   {
-    const bool __at_end = (__p.hi() == 0.0f) ? (__p.lo() <= 0.0f) : (__p.lo() >= 0.0f);
+    const bool __at_end  = (__p.hi() == 0.0f) ? (__p.lo() <= 0.0f) : (__p.lo() >= 0.0f);
     const bool __outside = (__p.hi() == 0.0f) ? (__p.lo() < 0.0f) : (__p.lo() > 0.0f);
     if (__at_end)
     {
