@@ -200,6 +200,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
@@ -962,6 +963,39 @@ public:
     return *this;
   }
 
+  // Compound assignment with a wide scalar, so that a constant that fits one limb reaches the
+  // single-limb kernels through the mixed operators instead of being converted to a pair for
+  // operator+=(const fpmp2&). Constrained to the scalars the pair converts from implicitly, so
+  // these accept nothing that operator rejects.
+  _CCCL_TEMPLATE(typename _Tp)
+  _CCCL_REQUIRES(__fpmp2_is_wide_scalar_v<_Tp, _FpType> _CCCL_AND ::cuda::std::is_convertible_v<_Tp, fpmp2>)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2& operator+=(const _Tp __c) noexcept
+  {
+    *this = *this + __c;
+    return *this;
+  }
+  _CCCL_TEMPLATE(typename _Tp)
+  _CCCL_REQUIRES(__fpmp2_is_wide_scalar_v<_Tp, _FpType> _CCCL_AND ::cuda::std::is_convertible_v<_Tp, fpmp2>)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2& operator-=(const _Tp __c) noexcept
+  {
+    *this = *this - __c;
+    return *this;
+  }
+  _CCCL_TEMPLATE(typename _Tp)
+  _CCCL_REQUIRES(__fpmp2_is_wide_scalar_v<_Tp, _FpType> _CCCL_AND ::cuda::std::is_convertible_v<_Tp, fpmp2>)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2& operator*=(const _Tp __c) noexcept
+  {
+    *this = *this * __c;
+    return *this;
+  }
+  _CCCL_TEMPLATE(typename _Tp)
+  _CCCL_REQUIRES(__fpmp2_is_wide_scalar_v<_Tp, _FpType> _CCCL_AND ::cuda::std::is_convertible_v<_Tp, fpmp2>)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2& operator/=(const _Tp __c) noexcept
+  {
+    *this = *this / __c;
+    return *this;
+  }
+
   // (neg)
   [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2 operator-() const noexcept
   {
@@ -1056,8 +1090,11 @@ public:
     return *this;
   }
 
-  // Mixed arithmetic: a scalar that one limb holds exactly (__fpmp2_is_limb_v) takes the
-  // single-limb kernels; a scalar dividend or any other scalar is converted to the pair.
+  // Mixed arithmetic: a scalar that one limb holds exactly takes the single-limb kernels, by
+  // its type (__fpmp2_is_limb_v) or, for a wide scalar the compiler knows the value of, by
+  // that value (__fpmp2_value_fits_limb); a scalar dividend or any other scalar is converted
+  // to the pair. The value test sits behind _CCCL_IS_CONSTANT_P so that it never executes: a
+  // run-time scalar is converted with no test.
   // === mul ===
   _CCCL_TEMPLATE(typename _T1, typename _T2)
   _CCCL_REQUIRES(((::cuda::std::is_same_v<_T1, fpmp2> || ::cuda::std::is_same_v<_T2, fpmp2>)
@@ -1077,6 +1114,20 @@ public:
     }
     else
     {
+      if constexpr (__fpmp2_is_wide_scalar_v<_T2, _FpType>)
+      {
+        if (_CCCL_IS_CONSTANT_P(__y) && ::cuda::__fpmp2_value_fits_limb<_FpType>(__y))
+        {
+          return __x * static_cast<_FpType>(__y);
+        }
+      }
+      else if constexpr (__fpmp2_is_wide_scalar_v<_T1, _FpType>)
+      {
+        if (_CCCL_IS_CONSTANT_P(__x) && ::cuda::__fpmp2_value_fits_limb<_FpType>(__x))
+        {
+          return __y * static_cast<_FpType>(__x);
+        }
+      }
       return fpmp2(__x) * fpmp2(__y);
     }
   }
@@ -1095,6 +1146,13 @@ public:
     }
     else
     {
+      if constexpr (__fpmp2_is_wide_scalar_v<_T2, _FpType>)
+      {
+        if (_CCCL_IS_CONSTANT_P(__y) && ::cuda::__fpmp2_value_fits_limb<_FpType>(__y))
+        {
+          return __x / static_cast<_FpType>(__y);
+        }
+      }
       return fpmp2(__x) / fpmp2(__y);
     }
   }
@@ -1117,6 +1175,20 @@ public:
     }
     else
     {
+      if constexpr (__fpmp2_is_wide_scalar_v<_T2, _FpType>)
+      {
+        if (_CCCL_IS_CONSTANT_P(__y) && ::cuda::__fpmp2_value_fits_limb<_FpType>(__y))
+        {
+          return __x + static_cast<_FpType>(__y);
+        }
+      }
+      else if constexpr (__fpmp2_is_wide_scalar_v<_T1, _FpType>)
+      {
+        if (_CCCL_IS_CONSTANT_P(__x) && ::cuda::__fpmp2_value_fits_limb<_FpType>(__x))
+        {
+          return __y + static_cast<_FpType>(__x);
+        }
+      }
       return fpmp2(__x) + fpmp2(__y);
     }
   }
@@ -1142,6 +1214,20 @@ public:
     }
     else
     {
+      if constexpr (__fpmp2_is_wide_scalar_v<_T2, _FpType>)
+      {
+        if (_CCCL_IS_CONSTANT_P(__y) && ::cuda::__fpmp2_value_fits_limb<_FpType>(__y))
+        {
+          return __x - static_cast<_FpType>(__y);
+        }
+      }
+      else if constexpr (__fpmp2_is_wide_scalar_v<_T1, _FpType>)
+      {
+        if (_CCCL_IS_CONSTANT_P(__x) && ::cuda::__fpmp2_value_fits_limb<_FpType>(__x))
+        {
+          return static_cast<_FpType>(__x) - __y;
+        }
+      }
       return fpmp2(__x) - fpmp2(__y);
     }
   }
@@ -1539,6 +1625,20 @@ _CCCL_REQUIRES(((__fpmp_is_fpmp2_v<_T1> || __fpmp_is_fpmp2_v<_T2>)
   }
   else
   {
+    if constexpr (__fpmp2_is_wide_scalar_v<_T2, _Fp>)
+    {
+      if (_CCCL_IS_CONSTANT_P(__y) && ::cuda::__fpmp2_value_fits_limb<_Fp>(__y))
+      {
+        return ::cuda::__fpmp2_add_scalar<_Acc>(__x, static_cast<_Fp>(__y));
+      }
+    }
+    else if constexpr (__fpmp2_is_wide_scalar_v<_T1, _Fp>)
+    {
+      if (_CCCL_IS_CONSTANT_P(__x) && ::cuda::__fpmp2_value_fits_limb<_Fp>(__x))
+      {
+        return ::cuda::__fpmp2_add_scalar<_Acc>(__y, static_cast<_Fp>(__x));
+      }
+    }
     return add<_Acc>(mp2(__x), mp2(__y));
   }
 }
@@ -1580,6 +1680,20 @@ _CCCL_REQUIRES(((__fpmp_is_fpmp2_v<_T1> || __fpmp_is_fpmp2_v<_T2>)
   }
   else
   {
+    if constexpr (__fpmp2_is_wide_scalar_v<_T2, _Fp>)
+    {
+      if (_CCCL_IS_CONSTANT_P(__y) && ::cuda::__fpmp2_value_fits_limb<_Fp>(__y))
+      {
+        return ::cuda::__fpmp2_add_scalar<_Acc>(__x, -static_cast<_Fp>(__y));
+      }
+    }
+    else if constexpr (__fpmp2_is_wide_scalar_v<_T1, _Fp>)
+    {
+      if (_CCCL_IS_CONSTANT_P(__x) && ::cuda::__fpmp2_value_fits_limb<_Fp>(__x))
+      {
+        return ::cuda::__fpmp2_add_scalar<_Acc>(-__y, static_cast<_Fp>(__x));
+      }
+    }
     return sub<_Acc>(mp2(__x), mp2(__y));
   }
 }
@@ -1621,6 +1735,20 @@ _CCCL_REQUIRES(((__fpmp_is_fpmp2_v<_T1> || __fpmp_is_fpmp2_v<_T2>)
   }
   else
   {
+    if constexpr (__fpmp2_is_wide_scalar_v<_T2, _Fp>)
+    {
+      if (_CCCL_IS_CONSTANT_P(__y) && ::cuda::__fpmp2_value_fits_limb<_Fp>(__y))
+      {
+        return ::cuda::__fpmp2_mul_scalar<_Acc>(__x, static_cast<_Fp>(__y));
+      }
+    }
+    else if constexpr (__fpmp2_is_wide_scalar_v<_T1, _Fp>)
+    {
+      if (_CCCL_IS_CONSTANT_P(__x) && ::cuda::__fpmp2_value_fits_limb<_Fp>(__x))
+      {
+        return ::cuda::__fpmp2_mul_scalar<_Acc>(__y, static_cast<_Fp>(__x));
+      }
+    }
     return mul<_Acc>(mp2(__x), mp2(__y));
   }
 }
@@ -1658,6 +1786,13 @@ _CCCL_REQUIRES(((__fpmp_is_fpmp2_v<_T1> || __fpmp_is_fpmp2_v<_T2>)
   }
   else
   {
+    if constexpr (__fpmp2_is_wide_scalar_v<_T2, _Fp>)
+    {
+      if (_CCCL_IS_CONSTANT_P(__y) && ::cuda::__fpmp2_value_fits_limb<_Fp>(__y))
+      {
+        return ::cuda::__fpmp2_div_scalar<_Acc>(__x, static_cast<_Fp>(__y));
+      }
+    }
     return div<_Acc>(mp2(__x), mp2(__y));
   }
 }

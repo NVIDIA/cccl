@@ -287,9 +287,17 @@ IEEE-754 ``float``-to-``double`` analogy rather than from the paper. ``fp32mp2``
 Conversions are one thing and mixed arithmetic another. A binary operator between an ``fpmp2``
 and a built-in scalar yields the pair, so ``some_fp32mp2 + some_double`` compiles rather than
 being rejected as an expression over two types neither of which contains the other. A scalar that
-one limb holds exactly — the limb type itself, ``float`` for ``fp64mp2``, and integers up to the
-limb's significand width — is used as it is; any other scalar is converted **into** the pair
-first. The ``double`` is brought into ``float`` exponent
+one limb holds exactly is used as it is; any other scalar is converted **into** the pair first.
+One limb holds a scalar exactly by its type — the limb type itself, ``float`` for ``fp64mp2``,
+and integers up to the limb's significand width. A constant of a wider type counts too when its
+value fits: a ``double`` that is zero or a normal ``float``, such as the ``2.0`` in ``y * 2.0``,
+and an integer of magnitude at most ``2^24`` (``2^53`` for ``fp64mp2``), such as the ``2`` in
+``y + 2``. That choice is made at compile time, where the compiler can see the value
+(``__builtin_constant_p``: GCC, Clang, and nvcc and NVRTC from CUDA 13.4), so a scalar known only
+at run time is always converted and pays no test. Sums, differences and quotients are the same
+either way. A product by a constant that is not a power of two can differ in its last bits where
+the compiler does not see the value, as in an unoptimized build; both results are within their
+bounds. The ``double`` is brought into ``float`` exponent
 range as it goes, so one too large for that arrives as infinity and the addition yields NaN.
 Mixing two accuracy levels, ``fp32mp2`` with ``fp32mp2_low``, matches no overload and falls back
 on built-in ``double`` arithmetic. Where the other operand is a ``double`` whose magnitude is not
@@ -312,8 +320,10 @@ the ``__fpmp_fp128`` conversions are the only ones.
 
 The same rule reaches the compound forms: ``+=``, ``-=``, ``*=`` and ``/=`` have overloads taking
 a scalar that one limb holds exactly, and they are constrained the same way. ``acc += 1.5f`` on an
-``fp32mp2`` takes the single-limb path; ``acc += 1.5`` does not, because the ``double`` generally
-needs both limbs.
+``fp32mp2`` takes the single-limb path, and so does ``acc += 2``: an integer the pair converts
+from implicitly is accepted, and this constant fits one limb. ``acc += 1.5`` is rejected, because
+a ``double`` generally needs both limbs; under ``CCCL_FPMP_EXPLICIT_CASTS=0`` it compiles and
+takes the single-limb path, since the constant ``1.5`` is a ``float``.
 
 Setting ``CCCL_FPMP_EXPLICIT_CASTS=0`` restores the fully implicit model, which is worth
 considering when ``fpmp2`` is being dropped into a large existing ``double`` codebase and the edit
