@@ -45,6 +45,7 @@
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/hyperbolic_functions.h>
 #include <cuda/std/__cmath/trigonometric_functions.h>
+#include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
@@ -105,19 +106,17 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<dou
       h = ::cuda::std::exp(::cuda::std::fabs(x)) * 0.5;
       return (thrust::complex<double>(h * ::cuda::std::cos(y), ::cuda::std::copysign(h, x) * ::cuda::std::sin(y)));
     }
-    else if (ix < 0x4096bbaa)
+    if (ix < 0x4096bbaa)
     {
       /* x < 1455: scale to avoid overflow */
       thrust::complex<double> z_ = ldexp_cexp(thrust::complex<double>(::cuda::std::fabs(x), y), -1);
       z_.imag(::cuda::std::copysign(z_.imag(), x));
       return z_;
     }
-    else
-    {
-      /* x >= 1455: the result always overflows */
-      h = huge * x;
-      return (thrust::complex<double>(h * h * ::cuda::std::cos(y), h * ::cuda::std::sin(y)));
-    }
+
+    /* x >= 1455: the result always overflows */
+    h = huge * x;
+    return (thrust::complex<double>(h * h * ::cuda::std::cos(y), h * ::cuda::std::sin(y)));
   }
 
   /*

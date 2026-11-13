@@ -16,7 +16,7 @@ using namespace cuda::experimental::stf;
 // Insert the key/values in kvs into the hashtable
 __global__ void gpu_hashtable_insert_kernel(hashtable h, const reserved::KeyValue* kvs, unsigned int numkvs)
 {
-  const unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+  const unsigned int threadid = (blockIdx.x * blockDim.x) + threadIdx.x;
   if (threadid < numkvs)
   {
     h.insert(kvs[threadid]);
@@ -47,7 +47,7 @@ int main()
   for (uint32_t i = 0; i < 16; i++)
   {
     kvs_array[i].key   = i * 10;
-    kvs_array[i].value = 17 + i * 14;
+    kvs_array[i].value = 17 + (i * 14);
   }
   auto h_kvs_array = ctx.logical_data(make_slice(&kvs_array[0], 16));
 
@@ -60,6 +60,6 @@ int main()
   // Thanks to the write-back mechanism on lh, h has been updated
   for (size_t i = 0; i < 16; i++)
   {
-    assert(h.get(i * 10) == 17 + i * 14);
+    assert(h.get(i * 10) == 17 + (i * 14));
   }
 }

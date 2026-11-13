@@ -23,6 +23,7 @@
 
 #include <cuda/hierarchy>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/all.h>
@@ -193,9 +194,18 @@ public:
 
   template <class _Unit, class _ParentGroup, class _MappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
-  make_instance(const _Unit&, const _ParentGroup&, const _MappingResult& __mapping_result) const
+  make_instance(const _Unit&, const _ParentGroup&, const _MappingResult& __mapping_result)
   {
     using _Level = typename _ParentGroup::level_type;
+
+    constexpr auto __static_group_count      = _MappingResult::static_group_count();
+    constexpr auto __static_barrier_id_count = ::cuda::std::ranges::__static_size_v<_RangeView>;
+    if constexpr (__static_group_count != ::cuda::std::dynamic_extent
+                  && __static_barrier_id_count != ::cuda::std::dynamic_extent)
+    {
+      static_assert(__static_group_count <= __static_barrier_id_count,
+                    "insufficient amount of warp barrier ids were passed");
+    }
 
     static_assert(::cuda::std::is_same_v<_Unit, warp_level> && ::cuda::std::is_same_v<_Level, block_level>,
                   "interwarp_synchronizer can be only used to group warps within a single block");

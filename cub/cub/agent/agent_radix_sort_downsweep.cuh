@@ -364,7 +364,7 @@ struct AgentRadixSortDownsweep
     {
       if constexpr (LOAD_WARP_STRIPED)
       {
-        LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values);
+        _CUB::LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values);
       }
       else
       {
@@ -379,7 +379,7 @@ struct AgentRadixSortDownsweep
       const OffsetT load_valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
       if constexpr (LOAD_WARP_STRIPED)
       {
-        LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values, load_valid_items);
+        _CUB::LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values, load_valid_items);
       }
       else
       {
@@ -410,7 +410,7 @@ struct AgentRadixSortDownsweep
     {
       if constexpr (LOAD_WARP_STRIPED)
       {
-        LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys);
+        _CUB::LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys);
       }
       else
       {
@@ -425,7 +425,7 @@ struct AgentRadixSortDownsweep
       const OffsetT load_valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
       if constexpr (LOAD_WARP_STRIPED)
       {
-        LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, load_valid_items, default_key);
+        _CUB::LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, load_valid_items, default_key);
       }
       else
       {
@@ -528,9 +528,9 @@ struct AgentRadixSortDownsweep
     {
       T items[ITEMS_PER_THREAD];
 
-      LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items);
+      _CUB::LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items);
       __syncthreads();
-      StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items);
+      _CUB::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items);
 
       block_offset += TILE_ITEMS;
     }
@@ -542,9 +542,9 @@ struct AgentRadixSortDownsweep
 
       T items[ITEMS_PER_THREAD];
 
-      LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items, valid_items);
+      _CUB::LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items, valid_items);
       __syncthreads();
-      StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items, valid_items);
+      _CUB::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items, valid_items);
     }
   }
 

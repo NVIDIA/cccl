@@ -17,7 +17,7 @@
 
 #include <cub/block/block_merge_sort.cuh>
 #include <cub/detail/null_type.cuh>
-#include <cub/detail/segmented_sort_entries.cuh>
+#include <cub/detail/segmented_sort_lrb.cuh>
 #include <cub/thread/thread_sort.cuh>
 
 #include <cuda/__cmath/ilog.h>
@@ -26,50 +26,58 @@
 #include <cuda/__cmath/round_down.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/functional>
-#include <cuda/std/utility>
+#include <cuda/std/__utility/integer_sequence.h>
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::segmented_sort_capacity
+namespace detail::segmented_sort_lrb
 {
 // Enumerate the supported thread/IPT pairs and their capacities in strictly increasing capacity order.
 template <typename PolicyGetter>
 struct group_merge_expansion
 {
-  inline static constexpr auto policy = PolicyGetter{}();
+  static constexpr auto policy = PolicyGetter{}();
+
   static_assert(policy.min_threads > 0 && ::cuda::is_power_of_two(policy.min_threads));
   static_assert(policy.max_threads >= policy.min_threads && ::cuda::is_power_of_two(policy.max_threads)
                 && policy.max_threads <= policy.block_threads);
   static_assert(policy.min_ipt > 0 && policy.max_ipt >= policy.min_ipt);
+
   static constexpr int ipt_choices    = policy.max_ipt - policy.min_ipt + 1;
   static constexpr int thread_choices = ::cuda::ilog2(policy.max_threads) - ::cuda::ilog2(policy.min_threads) + 1;
   static_assert(thread_choices == 1 || policy.max_ipt < 2 * policy.min_ipt,
                 "GroupMerge policy: with multiple thread counts, max_ipt must be < 2 * min_ipt so that threads * ipt "
                 "strictly increases across bins (bin order must equal capacity order)");
+
   static constexpr int size = thread_choices * ipt_choices;
+
   // Map a local bin to its thread/IPT pair during compile-time expansion.
-  _CCCL_HOST_DEVICE_API static constexpr bin_config enumerate_shape(int bin_idx)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr bin_config enumerate_shape(int bin_idx) noexcept
   {
     const int thread_config_idx = bin_idx / ipt_choices;
     const int ipt_config_idx    = bin_idx % ipt_choices;
     return {policy.min_threads * ::cuda::ipow(2, thread_config_idx), policy.min_ipt + ipt_config_idx};
   }
+
   // Select each pair once and reuse it for its capacity and configuration type.
   template <int Bin>
   struct bin_selection
   {
-    inline static constexpr bin_config chosen = enumerate_shape(Bin);
-    static constexpr int capacity             = chosen.threads_per_segment * chosen.items_per_thread;
-    using type                                = bin_shape<chosen.threads_per_segment, chosen.items_per_thread>;
+    static constexpr bin_config chosen = enumerate_shape(Bin);
+    static constexpr int capacity      = chosen.threads_per_segment * chosen.items_per_thread;
+    using type                         = bin_shape<chosen.threads_per_segment, chosen.items_per_thread>;
   };
+
   // Build the capacity-list type from the selected configurations.
   template <::cuda::std::size_t... BinIndices>
   static auto expand(::cuda::std::index_sequence<BinIndices...>)
     -> capacity_list<bin_selection<BinIndices>::capacity...>;
+
   using capacities = decltype(expand(::cuda::std::make_index_sequence<size>{}));
+
   template <int Bin>
   using shape_for_bin = typename bin_selection<Bin>::type;
 };
@@ -77,12 +85,13 @@ struct group_merge_expansion
 // Sort segments cooperatively using thread-local sorting and merges across threads.
 // Warp groups have independent shared key storage and never use CTA barriers.
 template <typename PolicyGetter>
-struct group_merge_implementation
+struct agent_group_merge
 {
-  inline static constexpr auto policy    = PolicyGetter{}();
+  static constexpr auto policy           = PolicyGetter{}();
   using expansion                        = group_merge_expansion<PolicyGetter>;
   static constexpr bool is_warp          = policy.max_threads <= 32;
   static constexpr int threads_per_group = is_warp ? 32 : policy.block_threads;
+
   static_assert(policy.block_threads > 0 && policy.block_threads <= 1024);
   static_assert(policy.grid_size_multiplier > 0 && policy.min_blocks_per_sm > 0);
   static_assert(policy.block_threads % 32 == 0);
@@ -92,12 +101,13 @@ struct group_merge_implementation
 
   // Dynamic shared memory for key exchange/merging, including one prefetch slot per group.
   template <typename Key>
-  _CCCL_HOST_DEVICE_API static constexpr size_t scratch_bytes()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr size_t scratch_bytes() noexcept
   {
-    return sizeof(Key) * (policy.block_threads * policy.max_ipt + (is_warp ? policy.block_threads / 32 : 1));
+    return sizeof(Key) * ((policy.block_threads * policy.max_ipt) + (is_warp ? policy.block_threads / 32 : 1));
   }
+
   // Synchronize the scheduling group: one full warp or the whole block.
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE static void sync()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE static void sync() noexcept
   {
     if constexpr (is_warp)
     {
@@ -125,25 +135,29 @@ struct group_merge_implementation
     Key* keys_shared)
   {
     const ::cuda::std::conditional_t<Descending, ::cuda::std::greater<Key>, ::cuda::std::less<Key>> compare_op{};
+
     const int thread_idx_in_group = threadIdx.x % threads_per_group;
     if constexpr (is_warp)
     {
-      keys_shared += (threadIdx.x / 32) * (32 * policy.max_ipt + 1);
+      keys_shared += (threadIdx.x / 32) * ((32 * policy.max_ipt) + 1);
     }
     const int thread_idx_in_segment = thread_idx_in_group % config.threads_per_segment;
     const int segment_begin_idx_shared =
       ::cuda::round_down(thread_idx_in_group, config.threads_per_segment) * ItemsPerThread;
+
     const bool active               = segment_idx != ~0u;
     const unsigned input_segment_id = active ? bins.segment_ids[segment_idx] : 0;
     const auto begin =
       active ? begins[input_segment_id] : ::cuda::std::remove_cvref_t<decltype(begins[input_segment_id])>{};
     const int segment_size = active ? static_cast<int>(ends[input_segment_id] - begin) : 0;
+
     Key keys[ItemsPerThread];
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      const int local                               = item * config.threads_per_segment + thread_idx_in_segment;
+      const int local                               = (item * config.threads_per_segment) + thread_idx_in_segment;
       keys_shared[segment_begin_idx_shared + local] = local < segment_size ? in[begin + local] : Key{};
     }
+
     // SerialMerge prefetches one unused key beyond its runs.
     if (thread_idx_in_group == 0)
     {
@@ -152,14 +166,15 @@ struct group_merge_implementation
     sync();
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      keys[item] = keys_shared[segment_begin_idx_shared + thread_idx_in_segment * ItemsPerThread + item];
+      keys[item] = keys_shared[segment_begin_idx_shared + (thread_idx_in_segment * ItemsPerThread) + item];
     }
+
     if (thread_idx_in_segment * ItemsPerThread < segment_size)
     {
       Key max_key = keys[0];
       for (int item = 1; item < ItemsPerThread; ++item)
       {
-        if (thread_idx_in_segment * ItemsPerThread + item < segment_size)
+        if ((thread_idx_in_segment * ItemsPerThread) + item < segment_size)
         {
           max_key = ::cuda::std::max(max_key, keys[item], compare_op);
         }
@@ -171,21 +186,22 @@ struct group_merge_implementation
       NullType values[ItemsPerThread];
       StableOddEvenSort(keys, values, compare_op);
     }
+
     for (int merged_threads = 2; merged_threads <= config.threads_per_segment; merged_threads *= 2)
     {
       sync();
       for (int item = 0; item < ItemsPerThread; ++item)
       {
-        keys_shared[thread_idx_in_group * ItemsPerThread + item] = keys[item];
+        keys_shared[(thread_idx_in_group * ItemsPerThread) + item] = keys[item];
       }
       sync();
       const int start                  = (thread_idx_in_group & ~(merged_threads - 1)) * ItemsPerThread;
       const int segment_end_idx_shared = segment_begin_idx_shared + segment_size;
       const int keys1_beg_shared       = (::cuda::std::min) (segment_end_idx_shared, start);
       const int keys1_end_shared =
-        (::cuda::std::min) (segment_end_idx_shared, keys1_beg_shared + merged_threads / 2 * ItemsPerThread);
+        (::cuda::std::min) (segment_end_idx_shared, keys1_beg_shared + (merged_threads / 2 * ItemsPerThread));
       const int keys2_end_shared =
-        (::cuda::std::min) (segment_end_idx_shared, keys1_end_shared + merged_threads / 2 * ItemsPerThread);
+        (::cuda::std::min) (segment_end_idx_shared, keys1_end_shared + (merged_threads / 2 * ItemsPerThread));
       const int diag           = (::cuda::std::min) (keys2_end_shared - keys1_beg_shared,
                                                      (thread_idx_in_group & (merged_threads - 1)) * ItemsPerThread);
       const int partition_diag = MergePath(
@@ -210,12 +226,12 @@ struct group_merge_implementation
     sync();
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      keys_shared[thread_idx_in_group * ItemsPerThread + item] = keys[item];
+      keys_shared[(thread_idx_in_group * ItemsPerThread) + item] = keys[item];
     }
     sync();
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      const int local = item * config.threads_per_segment + thread_idx_in_segment;
+      const int local = (item * config.threads_per_segment) + thread_idx_in_segment;
       if (local < segment_size)
       {
         out[begin + local] = keys_shared[segment_begin_idx_shared + local];
@@ -265,6 +281,6 @@ struct group_merge_implementation
     }
   }
 };
-} // namespace detail::segmented_sort_capacity
+} // namespace detail::segmented_sort_lrb
 
 CUB_NAMESPACE_END

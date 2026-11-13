@@ -103,7 +103,7 @@ class __uninitialized_async_buffer
   //! @brief Determines the allocation size given the alignment and size of `T`
   [[nodiscard]] _CCCL_HOST_API size_t __get_allocation_size(const size_t __count) const noexcept
   {
-    return (__count * sizeof(_Tp) + (__alignment_ - 1)) & ~(__alignment_ - 1);
+    return ((__count * sizeof(_Tp)) + (__alignment_ - 1)) & ~(__alignment_ - 1);
   }
 
   //! @brief Determines the properly aligned start of the buffer given the

@@ -19,23 +19,23 @@
 #include <cub/util_arch.cuh>
 #include <cub/util_namespace.cuh>
 
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 #include <cuda/std/tuple>
-#include <cuda/std/utility>
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::segmented_sort_capacity
+namespace detail::segmented_sort_lrb
 {
 // Ordered capacity bounds supplied by sorting kernels; partition finds the smallest fitting bin.
 template <int... Bounds>
 struct capacity_list
 {
   static constexpr int size = sizeof...(Bounds);
-  inline static constexpr ::cuda::std::array<int, size> bounds{{Bounds...}};
+  static constexpr ::cuda::std::array<int, size> bounds{{Bounds...}};
 
   // Require nonempty, positive, strictly increasing bounds for binary-search routing.
-  _CCCL_HOST_DEVICE_API static constexpr bool valid()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr bool valid() noexcept
   {
     for (int i = 0; i < size; ++i)
     {
@@ -50,7 +50,8 @@ struct capacity_list
 
   // Find the smallest capacity covering length; size denotes the implicit overflow bin.
   template <int Begin = 0, int End = size, typename Offset>
-  _CCCL_HOST_DEVICE_API static constexpr int first_fit([[maybe_unused]] Offset length)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr int
+  first_fit([[maybe_unused]] Offset length) noexcept(noexcept(length <= bounds[0]))
   {
     if constexpr (Begin == End)
     {
@@ -58,7 +59,7 @@ struct capacity_list
     }
     else
     {
-      constexpr int mid = Begin + (End - Begin) / 2;
+      constexpr int mid = Begin + ((End - Begin) / 2);
       return length <= bounds[mid] ? first_fit<Begin, mid>(length) : first_fit<mid + 1, End>(length);
     }
   }
@@ -70,7 +71,7 @@ struct concatenate_capacities;
 template <typename List>
 struct concatenate_capacities<List>
 {
-  using type = List;
+  using type _CCCL_NODEBUG = List;
 };
 template <int... Left, int... Right, typename... Rest>
 struct concatenate_capacities<capacity_list<Left...>, capacity_list<Right...>, Rest...>
@@ -97,7 +98,7 @@ struct bin_config
 // An expansion enumerates a sorter's bins: capacities and a shape_for_bin<Bin> type.
 // The runtime local bin selects a leaf whose configuration is known at compile time.
 template <typename Expansion, int Begin = 0, int End = Expansion::capacities::size>
-_CCCL_HOST_DEVICE_API constexpr bin_config lookup_bin_config(int bin_idx)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bin_config lookup_bin_config(int bin_idx) noexcept
 {
   static_assert(Begin < End);
   if constexpr (End - Begin == 1)
@@ -107,7 +108,7 @@ _CCCL_HOST_DEVICE_API constexpr bin_config lookup_bin_config(int bin_idx)
   }
   else
   {
-    constexpr int mid = Begin + (End - Begin) / 2;
+    constexpr int mid = Begin + ((End - Begin) / 2);
     return bin_idx < mid ? lookup_bin_config<Expansion, Begin, mid>(bin_idx)
                          : lookup_bin_config<Expansion, mid, End>(bin_idx);
   }
@@ -118,6 +119,8 @@ template <template <typename> class Implementation, typename PolicySelector>
 struct sort_kernel_t
 {
   using policy_selector = PolicySelector;
+  template <typename PolicyGetter>
+  using selected_policy_getter = typename PolicySelector::template getter<PolicyGetter>;
   template <typename PolicyGetter>
   using implementation_t = Implementation<PolicyGetter>;
   template <typename PolicyGetter>
@@ -135,16 +138,16 @@ struct sort_kernel_list_t
   using kernels_t = ::cuda::std::tuple<Kernels...>;
   template <::cuda::std::size_t KernelIndex>
   using kernel_t = ::cuda::std::tuple_element_t<KernelIndex, kernels_t>;
-  template <template <typename, int> class PolicyGetter, int CC>
+  template <typename PolicyGetter>
   using capacities_t = typename concatenate_capacities<
-    typename Kernels::template capacities_t<PolicyGetter<typename Kernels::policy_selector, CC>>...>::type;
+    typename Kernels::template capacities_t<typename Kernels::template selected_policy_getter<PolicyGetter>>...>::type;
 
   // First global bin index for the selected kernel; local bin indices start at zero.
-  template <int CC>
-  _CCCL_HOST_DEVICE_API static constexpr int kernel_bin_begin_idx(int kernel_idx)
+  template <typename PolicyGetter>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr int kernel_bin_begin_idx(int kernel_idx) noexcept
   {
     constexpr int kernel_bin_counts[] = {
-      Kernels::template capacities_t<policy_getter<typename Kernels::policy_selector, CC>>::size...};
+      Kernels::template capacities_t<typename Kernels::template selected_policy_getter<PolicyGetter>>::size...};
     int first_bin_idx = 0;
     for (int i = 0; i < kernel_idx; ++i)
     {
@@ -160,6 +163,6 @@ struct partition_result
   unsigned* bin_offsets{}; // Bounded bin count + 2 offsets, including overflow's end.
   unsigned* segment_ids{};
 };
-} // namespace detail::segmented_sort_capacity
+} // namespace detail::segmented_sort_lrb
 
 CUB_NAMESPACE_END

@@ -780,7 +780,7 @@ public:
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, true>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -789,7 +789,7 @@ public:
         {
           if ((static_cast<unsigned long long>(num_rows) * row_stride_bytes) < static_cast<unsigned long long>(INT_MAX))
           {
-            return detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
+            return _CUB::detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
               storage,
               bytes,
               d_samples,
@@ -806,7 +806,7 @@ public:
           }
         }
 
-        return detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
+        return _CUB::detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
           storage,
           bytes,
           d_samples,
@@ -1508,7 +1508,7 @@ public:
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, false>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -1517,7 +1517,7 @@ public:
         {
           if ((static_cast<unsigned long long>(num_rows) * row_stride_bytes) < static_cast<unsigned long long>(INT_MAX))
           {
-            return detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
+            return _CUB::detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
               storage,
               bytes,
               d_samples,
@@ -1533,7 +1533,7 @@ public:
           }
         }
 
-        return detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
+        return _CUB::detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
           storage,
           bytes,
           d_samples,
@@ -2072,13 +2072,13 @@ public:
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, true>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) -> cudaError_t {
         if constexpr (sizeof(OffsetT) > sizeof(int))
         {
           if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
           {
-            return detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
+            return _CUB::detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
               storage,
               bytes,
               d_samples,
@@ -2095,7 +2095,7 @@ public:
           }
         }
 
-        return detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
+        return _CUB::detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
           storage,
           bytes,
           d_samples,
@@ -2536,13 +2536,13 @@ public:
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, false>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) -> cudaError_t {
         if constexpr (sizeof(OffsetT) > sizeof(int))
         {
           if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
           {
-            return detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
+            return _CUB::detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
               storage,
               bytes,
               d_samples,
@@ -2558,7 +2558,7 @@ public:
           }
         }
 
-        return detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
+        return _CUB::detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
           storage,
           bytes,
           d_samples,

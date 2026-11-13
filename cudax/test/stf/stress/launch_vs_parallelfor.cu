@@ -35,6 +35,7 @@ int main(int argc, char** argv)
 
   const size_t N = size_t(N0) * 1024 * 1024;
 
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0
     auto number_devices = 1;
     auto all_devs = exec_place::repeat<blocked_partition>(exec_place::device(0), number_devices);

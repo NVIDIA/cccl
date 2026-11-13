@@ -173,7 +173,7 @@ private:
     using default_policy_selector_t = detail::segmented_sort::policy_selector_from_types<KeyT, ValueT>;
     using policy_selector_t =
       detail::policy_selector_from_tuning_env_t<TuningEnvT, SegmentedSortPolicy, default_policy_selector_t>;
-    if constexpr (detail::segmented_sort_capacity::can_use_lrb<KeyT, ValueT, policy_selector_t>(
+    if constexpr (detail::segmented_sort_lrb::can_use_lrb<KeyT, ValueT, policy_selector_t>(
                     ::cuda::compute_capability{9, 0}))
     {
       ::cuda::compute_capability cc{};
@@ -182,9 +182,10 @@ private:
         return error;
       }
       return detail::dispatch_compute_cap(
-        detail::segmented_sort_capacity::group_merge_tuning_arch_selector{}, cc, [&](auto arch) -> cudaError_t {
-          if constexpr (detail::segmented_sort_capacity::can_use_lrb<KeyT, ValueT, policy_selector_t>(
-                          decltype(arch){}()))
+        detail::segmented_sort_lrb::backend_selector<KeyT, ValueT, policy_selector_t>{},
+        cc,
+        [&](auto use_lrb) -> cudaError_t {
+          if constexpr (decltype(use_lrb){}())
           {
             if (num_items < 0 || num_segments < 0)
             {
@@ -198,7 +199,7 @@ private:
             }
             // TODO: Make LRB overflow handling capturable by removing its host count readback.
             // Capture state does not select a different backend.
-            return detail::segmented_sort_capacity::dispatch<Order, offset_t>(
+            return detail::segmented_sort_lrb::dispatch<Order, offset_t>(
               d_temp_storage,
               temp_storage_bytes,
               d_keys,
@@ -212,7 +213,7 @@ private:
           }
           else
           {
-            return detail::segmented_sort::dispatch<Order, offset_t>(
+            return _CUB::detail::segmented_sort::dispatch<Order, offset_t>(
               d_temp_storage,
               temp_storage_bytes,
               d_keys,
@@ -233,7 +234,7 @@ private:
     }
     else
     {
-      return detail::segmented_sort::dispatch<Order, offset_t>(
+      return _CUB::detail::segmented_sort::dispatch<Order, offset_t>(
         d_temp_storage,
         temp_storage_bytes,
         d_keys,
@@ -449,7 +450,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
         return sort_keys<SortOrder::Ascending>(
           storage, bytes, d_keys_in, d_keys_out, num_items, num_segments, d_begin_offsets, d_end_offsets, stream, tuning);
@@ -551,7 +552,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return sort_keys<SortOrder::Ascending>(
           d_temp_storage,
@@ -695,7 +696,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
         return sort_keys<SortOrder::Descending>(
           storage, bytes, d_keys_in, d_keys_out, num_items, num_segments, d_begin_offsets, d_end_offsets, stream, tuning);
@@ -797,7 +798,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return sort_keys<SortOrder::Descending>(
           d_temp_storage,
@@ -951,7 +952,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
         return sort_keys<SortOrder::Ascending>(
           storage, bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream, true, tuning);
@@ -1059,7 +1060,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return sort_keys<SortOrder::Ascending>(
           d_temp_storage,
@@ -1214,7 +1215,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
         return sort_keys<SortOrder::Descending>(
           storage, bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream, true, tuning);
@@ -1322,7 +1323,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return sort_keys<SortOrder::Descending>(
           d_temp_storage,
@@ -1469,7 +1470,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
         return sort_keys<SortOrder::Ascending>(
           storage, bytes, d_keys_in, d_keys_out, num_items, num_segments, d_begin_offsets, d_end_offsets, stream, tuning);
@@ -1572,7 +1573,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return sort_keys<SortOrder::Ascending>(
           d_temp_storage,
@@ -1719,7 +1720,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
         return sort_keys<SortOrder::Descending>(
           storage, bytes, d_keys_in, d_keys_out, num_items, num_segments, d_begin_offsets, d_end_offsets, stream, tuning);
@@ -1823,7 +1824,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return sort_keys<SortOrder::Descending>(
           d_temp_storage,
@@ -1980,7 +1981,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
         return sort_keys<SortOrder::Ascending>(
           storage, bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream, true, tuning);
@@ -2090,7 +2091,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return sort_keys<SortOrder::Ascending>(
           d_temp_storage,
@@ -2246,7 +2247,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
         return sort_keys<SortOrder::Descending>(
           storage, bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream, true, tuning);
@@ -2356,7 +2357,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return sort_keys<SortOrder::Descending>(
           d_temp_storage,
@@ -2601,7 +2602,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
         return sort_pairs<SortOrder::Ascending>(
           storage,
@@ -2730,7 +2731,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return sort_pairs<SortOrder::Ascending>(
           d_temp_storage,
@@ -2900,7 +2901,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
         return sort_pairs<SortOrder::Descending>(
           storage,
@@ -3029,7 +3030,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return sort_pairs<SortOrder::Descending>(
           d_temp_storage,
@@ -3206,7 +3207,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
         return sort_pairs<SortOrder::Ascending>(
           storage,
@@ -3339,7 +3340,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return sort_pairs<SortOrder::Ascending>(
           d_temp_storage,
@@ -3514,7 +3515,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
         return sort_pairs<SortOrder::Descending>(
           storage,
@@ -3647,7 +3648,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return sort_pairs<SortOrder::Descending>(
           d_temp_storage,
@@ -3817,7 +3818,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
         return sort_pairs<SortOrder::Ascending>(
           storage,
@@ -3946,7 +3947,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return sort_pairs<SortOrder::Ascending>(
           d_temp_storage,
@@ -4116,7 +4117,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
         return sort_pairs<SortOrder::Descending>(
           storage,
@@ -4245,7 +4246,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return sort_pairs<SortOrder::Descending>(
           d_temp_storage,
@@ -4423,7 +4424,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
         return sort_pairs<SortOrder::Ascending>(
           storage,
@@ -4556,7 +4557,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return sort_pairs<SortOrder::Ascending>(
           d_temp_storage,
@@ -4732,7 +4733,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
         return sort_pairs<SortOrder::Descending>(
           storage,
@@ -4865,7 +4866,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return sort_pairs<SortOrder::Descending>(
           d_temp_storage,

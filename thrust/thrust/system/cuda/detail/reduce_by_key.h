@@ -28,7 +28,6 @@
 #  include <thrust/detail/type_traits/iterator/is_output_iterator.h>
 #  include <thrust/functional.h>
 #  include <thrust/iterator/iterator_traits.h>
-#  include <thrust/system/cuda/detail/core/util.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
@@ -46,7 +45,8 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2>
+reduce_by_key( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -113,10 +113,16 @@ THRUST_RUNTIME_FUNCTION cudaError_t dispatch_reduce_by_key(
     reduction_op,
     num_items,
     stream);
-  _CUDA_CUB_RET_IF_FAIL(status);
+  if (CubDebug(status))
+  {
+    return status;
+  }
 
   status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-  _CUDA_CUB_RET_IF_FAIL(status);
+  if (CubDebug(status))
+  {
+    return status;
+  }
 
   // Return if we're only querying temporary storage requirements
   if (d_temp_storage == nullptr)
@@ -149,11 +155,17 @@ THRUST_RUNTIME_FUNCTION cudaError_t dispatch_reduce_by_key(
     reduction_op,
     num_items,
     stream);
-  _CUDA_CUB_RET_IF_FAIL(status);
+  if (CubDebug(status))
+  {
+    return status;
+  }
 
   // Get number of selected items
   status = cuda_cub::synchronize(policy);
-  _CUDA_CUB_RET_IF_FAIL(status);
+  if (CubDebug(status))
+  {
+    return status;
+  }
   num_selected = static_cast<NumSelectedT>(get_value(policy, d_num_unique_keys_out));
   return status;
 }
