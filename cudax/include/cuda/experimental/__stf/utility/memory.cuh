@@ -1133,7 +1133,7 @@ private:
       for (auto i : each(0, small_cap))
       {
         using result_t = decltype(f(::std::integral_constant<size_t, 0>()));
-        if constexpr (::cuda::std::is_same_v<result_t, void>)
+        if constexpr (::cuda::std::is_void_v<result_t>)
         {
           f(i);
         }
