@@ -337,8 +337,6 @@ nvrtcResult result = nvrtcCompileProgram(program, sizeof(options) / sizeof(optio
 nvrtcDestroyProgram(&program);
 ```
 
-Use `--std=c++20` instead if your program requires C++20, and select a GPU architecture supported by your CUDA Toolkit with `--gpu-architecture`.
-These include paths match those used by the [CUB NVRTC test](cub/test/catch2_test_nvrtc.cu).
 
 Starting with CUDA Toolkit 13.3, NVRTC can also extract and use its bundled CUDA and CCCL headers by passing `--use-bundled-headers=/<path-to-extract-headers>` to `nvrtcCompileProgram`.
 This option installs the headers into the specified directory if needed and automatically adds the appropriate include paths.
