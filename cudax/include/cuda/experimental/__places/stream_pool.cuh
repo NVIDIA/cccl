@@ -28,12 +28,13 @@
 #  pragma system_header
 #endif
 
+#include <cuda/__driver/driver_api.h>
+#include <cuda/__runtime/ensure_current_context.h>
+
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
-#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <memory>
 #include <mutex>
-#include <tuple>
 #include <vector>
 
 #include <cuda.h>
@@ -60,16 +61,24 @@ class exec_place;
 /**
  * @brief Computes the CUDA device in which the stream was created
  *
- * The device is read from the stream's context through the driver API
- * (`cuStreamGetCtx`, then `cuCtxGetDevice` on that context). This is the
- * path `stream_and_event::insert_dependency` has always run on captured
- * streams, and it is accepted during thread-local, relaxed and global
- * capture without invalidating it (verified on drivers 580 and 595).
+ * The device is read from the stream's context through the driver API: the
+ * context is looked up with `cuStreamGetCtx`, made current, and asked for its
+ * device with `cuCtxGetDevice`. This is the path
+ * `stream_and_event::insert_dependency` has always run on captured streams,
+ * and it is accepted during thread-local, relaxed and global capture without
+ * invalidating it (verified on drivers 580 and 595).
  *
- * `cudaStreamGetDevice` is deliberately not used: whether it is permitted
- * during capture depends on the driver, not on the toolkit (rejected with
- * `cudaErrorStreamCaptureUnsupported` by cudart 12.9 on driver 595 and by
- * cudart 13.0 on driver 580, accepted on driver 615).
+ * `cudaStreamGetDevice` / `cuStreamGetDevice` are deliberately not used:
+ * whether they are permitted during capture depends on the driver, not on the
+ * toolkit (rejected with `cudaErrorStreamCaptureUnsupported` by cudart 12.9 on
+ * driver 595 and by cudart 13.0 on driver 580, accepted on driver 615), and a
+ * rejection invalidates the capture, so there is no way to try them first.
+ *
+ * On drivers 12.5 and newer the context comes from `cuStreamGetCtx_v2`: for a
+ * stream created in a green context the original `cuStreamGetCtx` returns
+ * `CUDA_ERROR_NOT_SUPPORTED` on CUDA 12 drivers, while the v2 query reports
+ * the green context, whose device is read through `cuCtxFromGreenCtx`. Older
+ * drivers have no green-context streams, so the original query is enough.
  *
  * Answering from a guess (the current device) instead of a query is what put
  * transient events in the wrong device's context on multi-GPU systems
@@ -82,19 +91,26 @@ inline int get_device_from_stream(cudaStream_t stream)
     return cuda_try<cudaGetDevice>();
   }
 
-  CUcontext ctx = cuda_try<cuStreamGetCtx>(CUstream(stream));
-
-  cuda_try<cuCtxPushCurrent>(ctx);
-  // Restoring the thread's context is not a release: if it fails, everything after runs on the
-  // wrong context and fails somewhere unrelated. Report and abort.
-  SCOPE(exit)
+  const auto stream_driver = CUstream(stream);
+  CUcontext ctx            = nullptr;
+#if _CCCL_CTK_AT_LEAST(12, 5)
+  // NOLINTNEXTLINE(readability-magic-numbers, bugprone-argument-comment)
+  if (::cuda::__driver::__version_at_least(12, 5))
   {
-    ON_THROW(abort)
-    {
-      ::std::ignore = cuda_try<cuCtxPopCurrent>();
-    };
-  };
-  return static_cast<int>(cuda_try<cuCtxGetDevice>());
+    const auto from_stream = ::cuda::__driver::__streamGetCtx_v2(stream_driver);
+    ctx                    = from_stream.__ctx_kind_ == ::cuda::__driver::__ctx_from_stream::__kind::__green
+                             ? ::cuda::__driver::__ctxFromGreenCtx(from_stream.__ctx_green_)
+                             : from_stream.__ctx_device_;
+  }
+  else
+#endif // _CCCL_CTK_AT_LEAST(12, 5)
+  {
+    ctx = ::cuda::__driver::__streamGetCtx(stream_driver);
+  }
+
+  // Makes ctx current for the query and restores the previous context on scope exit.
+  const ::cuda::__ensure_current_context guard(ctx);
+  return ::cuda::__driver::__cudevice_to_ordinal(::cuda::__driver::__ctxGetDevice());
 }
 
 /** Sentinel for "no stream" / empty slot. Distinct from any value returned by cuStreamGetId. */
