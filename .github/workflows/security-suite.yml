@@ -4,8 +4,9 @@
 # CI security scanning via the NVIDIA/security-workflows suite: Pulse secret scan,
 # Pulse OSS vulnerability scan (SCA), Pulse malware scan, and CodeQL SAST.
 # Replaces secret-scan-pulse.yml. Pulse runs on Linux nv-gha-runners (OIDC/Vault).
+# Pinned by commit SHA to the security-workflows v0.6.0 release.
 
-name: Security Suite (Pulse + CodeQL)
+name: Security Suite (Secret, Vulnerability, Malware, SAST)
 
 on:
   push:
@@ -30,7 +31,7 @@ jobs:
     name: Security Suite
     # Pulse needs nv-gha-runners + Vault/nvcr vars; skip on forks.
     if: github.repository == 'NVIDIA/cccl'
-    uses: NVIDIA/security-workflows/.github/workflows/security-suite.yml@0659a2e36defdf66209a135d216f40a63b7aec94  # v0.5.0
+    uses: NVIDIA/security-workflows/.github/workflows/security-suite.yml@d8189f3176942de7ffe2c48bcd7bb5fbdee2dd15  # v0.6.0
     with:
       enable-secret-scan: true
       # The Charon tenant authorizes only these refs; workflow_dispatch has no branch filter.
