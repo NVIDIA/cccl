@@ -78,3 +78,31 @@ are no regression/improvement rows.
 The reusable workflow uses the sticky-comment header
 `compile-time-bench-<config-id>` with `hide_and_recreate: true`, so previous
 comments for the same config are archived as outdated.
+
+## Nightly third-party reports
+
+The MatX, PyTorch, and RAPIDS workflows collect NVCC traces locally and upload
+only the CSVs and `summary.json` produced by `summarize_third_party.py`. Each
+slice retains its top 100 entries by total time across the complete dataset:
+
+- whole-TU compilation (context only, includes non-CCCL work), inclusive;
+- CCCL header processing, exclusive;
+- CCCL function-body parsing, inclusive;
+- CCCL template instantiations, inclusive;
+- CCCL template instantiations grouped by primary template, inclusive.
+
+Reports include both inclusive and exclusive metrics. Header paths from fetched
+CCCL checkouts and the PyTorch CUDA installation are normalized to CCCL source
+paths; symbol slices require a CCCL owning namespace (`cuda`, `thrust`, `cub`,
+or `cccl`), rather than a CCCL type in someone else's template arguments.
+RAPIDS saves tests-OFF and tests-ON reports separately, removing each phase's
+traces after summarization to avoid counting unchanged OFF traces in ON.
+Partial reports are uploaded after build failures, and unreadable traces or
+missing CCCL data fail preprocessing with diagnostics in `summary.json`.
+Artifacts are retained for 90 days. Raw traces are not uploaded.
+
+The third-party reader streams JSON entries and drops non-CCCL symbol text
+before building the timing tree, so multi-gigabyte individual traces do not
+require a full JSON document in memory. All duration intervals remain available
+for exclusive-time calculations. Reports are checkpointed every 25 input traces
+with `complete: false` and a coverage warning until preprocessing finishes.
