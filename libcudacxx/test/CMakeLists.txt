@@ -102,13 +102,14 @@ set(
   LIBCUDACXX_CODEGEN_FILECHECK_TESTS
   ""
   CACHE STRING
-  "Semicolon-separated libcu++ FileCheck codegen suites to enable (all, atomics-ptx, atomics-sass, simd-ptx, simd-sass, warp-sass)."
+  "Semicolon-separated libcu++ FileCheck codegen suites to enable (all, atomics-ptx, atomics-sass, random-sass, simd-ptx, simd-sass, warp-sass)."
 )
 set(
   libcudacxx_codegen_filecheck_valid_suites
   all
   atomics-ptx
   atomics-sass
+  random-sass
   simd-ptx
   simd-sass
   warp-sass
@@ -139,6 +140,12 @@ if (LIBCUDACXX_CODEGEN_FILECHECK_TESTS)
   endif()
   if (
     all IN_LIST LIBCUDACXX_CODEGEN_FILECHECK_TESTS
+    OR random-sass IN_LIST LIBCUDACXX_CODEGEN_FILECHECK_TESTS
+  )
+    set(libcudacxx_codegen_filecheck_random_sass ON)
+  endif()
+  if (
+    all IN_LIST LIBCUDACXX_CODEGEN_FILECHECK_TESTS
     OR simd-ptx IN_LIST LIBCUDACXX_CODEGEN_FILECHECK_TESTS
   )
     set(libcudacxx_codegen_filecheck_simd_ptx ON)
@@ -161,6 +168,9 @@ if (LIBCUDACXX_CODEGEN_FILECHECK_TESTS)
     OR libcudacxx_codegen_filecheck_atomics_sass
   )
     add_subdirectory(atomic_codegen)
+  endif()
+  if (libcudacxx_codegen_filecheck_random_sass)
+    add_subdirectory(random_codegen)
   endif()
   if (
     libcudacxx_codegen_filecheck_simd_ptx
