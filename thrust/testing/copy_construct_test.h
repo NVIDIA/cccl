@@ -9,16 +9,16 @@
 // system they claim to target.
 struct CopyConstructTest
 {
-  CopyConstructTest() = default;
+  _CCCL_HIDE_FROM_ABI CopyConstructTest() = default;
 
-  _CCCL_HOST_DEVICE CopyConstructTest(const CopyConstructTest&)
+  _CCCL_HOST_DEVICE_API CopyConstructTest(const CopyConstructTest&)
   {
     NV_IF_TARGET(NV_IS_DEVICE,
                  (copy_constructed_on_device = true; copy_constructed_on_host = false;),
                  (copy_constructed_on_device = false; copy_constructed_on_host = true;));
   }
 
-  CopyConstructTest& operator=(const CopyConstructTest&) = default;
+  _CCCL_HIDE_FROM_ABI CopyConstructTest& operator=(const CopyConstructTest&) = default;
 
   bool copy_constructed_on_host{false};
   bool copy_constructed_on_device{false};
@@ -26,7 +26,7 @@ struct CopyConstructTest
 
 struct is_copy_constructed_on_device
 {
-  _CCCL_HOST_DEVICE bool operator()(const CopyConstructTest& t) const
+  _CCCL_HOST_DEVICE_API bool operator()(const CopyConstructTest& t) const
   {
     return t.copy_constructed_on_device;
   }
@@ -34,7 +34,7 @@ struct is_copy_constructed_on_device
 
 struct is_copy_constructed_on_host
 {
-  _CCCL_HOST_DEVICE bool operator()(const CopyConstructTest& t) const
+  _CCCL_HOST_DEVICE_API bool operator()(const CopyConstructTest& t) const
   {
     return t.copy_constructed_on_host;
   }

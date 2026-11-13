@@ -34,7 +34,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator
+_CCCL_HOST_DEVICE_API OutputIterator
 copy(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
      InputIterator first,
      InputIterator last,
@@ -47,7 +47,7 @@ copy(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator copy_n(
+_CCCL_HOST_DEVICE_API OutputIterator copy_n(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, Size n, OutputIterator result)
 {
   _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<DerivedPolicy>(), "thrust::copy_n");
@@ -59,7 +59,7 @@ namespace detail
 {
 _CCCL_EXEC_CHECK_DISABLE // because we might call e.g. std::ostream_iterator's constructor
 template <typename System1, typename System2, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator two_system_copy(
+_CCCL_HOST_DEVICE_API OutputIterator two_system_copy(
   const thrust::execution_policy<System1>& system1,
   const thrust::execution_policy<System2>& system2,
   InputIterator first,
@@ -80,7 +80,7 @@ _CCCL_HOST_DEVICE OutputIterator two_system_copy(
 
 _CCCL_EXEC_CHECK_DISABLE // because we might call e.g. std::ostream_iterator's constructor
 template <typename System1, typename System2, typename InputIterator, typename Size, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator two_system_copy_n(
+_CCCL_HOST_DEVICE_API OutputIterator two_system_copy_n(
   const thrust::execution_policy<System1>& system1,
   const thrust::execution_policy<System2>& system2,
   InputIterator first,
@@ -101,7 +101,7 @@ _CCCL_HOST_DEVICE OutputIterator two_system_copy_n(
 } // namespace detail
 
 template <typename InputIterator, typename OutputIterator>
-OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result)
+_CCCL_HOST_API OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result)
 {
   using System1 = typename thrust::iterator_system<InputIterator>::type;
   using System2 = typename thrust::iterator_system<OutputIterator>::type;
@@ -117,7 +117,7 @@ OutputIterator copy(InputIterator first, InputIterator last, OutputIterator resu
 } // end copy()
 
 template <typename InputIterator, typename Size, typename OutputIterator>
-OutputIterator copy_n(InputIterator first, Size n, OutputIterator result)
+_CCCL_HOST_API OutputIterator copy_n(InputIterator first, Size n, OutputIterator result)
 {
   using System1 = typename thrust::iterator_system<InputIterator>::type;
   using System2 = typename thrust::iterator_system<OutputIterator>::type;

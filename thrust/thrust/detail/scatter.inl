@@ -35,7 +35,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename RandomAccessIterator>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 scatter(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
         InputIterator1 first,
         InputIterator1 last,
@@ -53,7 +53,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename InputIterator3,
           typename RandomAccessIterator>
-_CCCL_HOST_DEVICE void scatter_if(
+_CCCL_HOST_DEVICE_API void scatter_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -73,7 +73,7 @@ template <typename DerivedPolicy,
           typename InputIterator3,
           typename RandomAccessIterator,
           typename Predicate>
-_CCCL_HOST_DEVICE void scatter_if(
+_CCCL_HOST_DEVICE_API void scatter_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -89,7 +89,7 @@ _CCCL_HOST_DEVICE void scatter_if(
 } // end scatter_if()
 
 template <typename InputIterator1, typename InputIterator2, typename RandomAccessIterator>
-void scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map, RandomAccessIterator result)
+_CCCL_HOST_API void scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map, RandomAccessIterator result)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::scatter");
   using thrust::system::detail::generic::select_system;
@@ -106,7 +106,7 @@ void scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map, Rand
 } // end scatter()
 
 template <typename InputIterator1, typename InputIterator2, typename InputIterator3, typename RandomAccessIterator>
-void scatter_if(
+_CCCL_HOST_API void scatter_if(
   InputIterator1 first, InputIterator1 last, InputIterator2 map, InputIterator3 stencil, RandomAccessIterator output)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::scatter_if");
@@ -130,12 +130,13 @@ template <typename InputIterator1,
           typename InputIterator3,
           typename RandomAccessIterator,
           typename Predicate>
-void scatter_if(InputIterator1 first,
-                InputIterator1 last,
-                InputIterator2 map,
-                InputIterator3 stencil,
-                RandomAccessIterator output,
-                Predicate pred)
+_CCCL_HOST_API void scatter_if(
+  InputIterator1 first,
+  InputIterator1 last,
+  InputIterator2 map,
+  InputIterator3 stencil,
+  RandomAccessIterator output,
+  Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::scatter_if");
   using thrust::system::detail::generic::select_system;

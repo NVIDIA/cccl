@@ -83,7 +83,7 @@ public:
   /**
    * \brief Constructor.
    */
-  _CCCL_FORCEINLINE GridEvenShare() = default;
+  _CCCL_HIDE_FROM_ABI GridEvenShare() = default;
 
   /**
    * @brief Dispatch initializer. To be called prior to kernel launch.
@@ -98,7 +98,7 @@ public:
    * @param tile_items
    *   Number of data items per input tile
    */
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void DispatchInit(OffsetT num_items_, int max_grid_size, int tile_items)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void DispatchInit(OffsetT num_items_, int max_grid_size, int tile_items)
   {
     if (num_items_ <= 0 || max_grid_size <= 0 || tile_items <= 0)
     {
@@ -129,7 +129,7 @@ public:
    *        consecutive sequence of input tiles.
    */
   template <int TileItems>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(int block_id, detail::constant_t<GRID_MAPPING_RAKE> /*strategy_tag*/)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void BlockInit(int block_id, detail::constant_t<GRID_MAPPING_RAKE> /*strategy_tag*/)
   {
     block_stride = TileItems;
     if (block_id < big_shares)
@@ -154,7 +154,7 @@ public:
    *        of input tiles.
    */
   template <int TileItems>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   BlockInit(int block_id, detail::constant_t<GRID_MAPPING_STRIP_MINE> /*strategy_tag*/)
   {
     block_stride = grid_size * OffsetT{TileItems};
@@ -168,7 +168,7 @@ public:
    *        separated by a stride equal to the the extent of the grid.
    */
   template <int TileItems, GridMappingStrategy STRATEGY>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void BlockInit()
   {
     BlockInit<TileItems>(blockIdx.x, detail::constant_v<STRATEGY>);
   }
@@ -185,7 +185,7 @@ public:
    *   Threadblock end offset (exclusive)
    */
   template <int TileItems, typename OffsetT1 = OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(OffsetT1 block_offset, OffsetT1 block_end)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void BlockInit(OffsetT1 block_offset, OffsetT1 block_end)
   {
     this->block_offset = block_offset;
     this->block_end    = block_end;

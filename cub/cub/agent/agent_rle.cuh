@@ -186,13 +186,13 @@ struct AgentRle
     OffsetT num_remaining;
     EqualityOpT equality_op;
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE OobInequalityOp(OffsetT num_remaining, EqualityOpT equality_op)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE OobInequalityOp(OffsetT num_remaining, EqualityOpT equality_op)
         : num_remaining(num_remaining)
         , equality_op(equality_op)
     {}
 
     template <typename Index>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T first, T second, Index idx)
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool operator()(T first, T second, Index idx)
     {
       if (!LastTile || (idx < num_remaining))
       {
@@ -325,7 +325,7 @@ struct AgentRle
    *   Streaming context providing context about this partition for streaming invocations
    */
   template <typename StreamingContext>
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentRle(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentRle(
     TempStorage& temp_storage,
     InputIteratorT d_in,
     OffsetsOutputIteratorT d_offsets_out,
@@ -348,7 +348,7 @@ struct AgentRle
   //---------------------------------------------------------------------
 
   template <bool FirstTile, bool LastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeSelections(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InitializeSelections(
     OffsetT tile_offset,
     OffsetT num_remaining,
     T (&items)[ITEMS_PER_THREAD],
@@ -436,7 +436,7 @@ struct AgentRle
   /**
    * Scan of allocations
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void WarpScanAllocations(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void WarpScanAllocations(
     LengthOffsetPair& tile_aggregate,
     LengthOffsetPair& warp_aggregate,
     LengthOffsetPair& warp_exclusive_in_tile,
@@ -521,7 +521,7 @@ struct AgentRle
   /**
    * Two-phase scatter, specialized for warp time-slicing
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterTwoPhase(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterTwoPhase(
     OffsetT tile_num_runs_exclusive_in_global,
     OffsetT warp_num_runs_aggregate,
     OffsetT warp_num_runs_exclusive_in_tile,
@@ -591,7 +591,7 @@ struct AgentRle
   /**
    * Two-phase scatter
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterTwoPhase(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterTwoPhase(
     OffsetT tile_num_runs_exclusive_in_global,
     OffsetT warp_num_runs_aggregate,
     OffsetT warp_num_runs_exclusive_in_tile,
@@ -657,7 +657,7 @@ struct AgentRle
   /**
    * Direct scatter
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterDirect(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterDirect(
     OffsetT tile_num_runs_exclusive_in_global,
     OffsetT warp_num_runs_aggregate,
     OffsetT warp_num_runs_exclusive_in_tile,
@@ -702,7 +702,7 @@ struct AgentRle
   /**
    * Scatter
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Scatter(
     OffsetT tile_num_runs_aggregate,
     OffsetT tile_num_runs_exclusive_in_global,
     OffsetT warp_num_runs_aggregate,
@@ -758,7 +758,7 @@ struct AgentRle
    *   Global list of tile status
    */
   template <bool LastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE LengthOffsetPair
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE LengthOffsetPair
   ConsumeTile(OffsetT num_items, OffsetT num_remaining, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_status)
   {
     if (tile_idx == 0)
@@ -1020,7 +1020,7 @@ struct AgentRle
    *   Output iterator type for recording number of items selected
    */
   template <typename NumRunsIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ConsumeRange(int num_tiles, ScanTileStateT& tile_status, NumRunsIteratorT d_num_runs_out)
   {
     // Blocks are launched in increasing order, so just assign one tile per block

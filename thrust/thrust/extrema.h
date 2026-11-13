@@ -76,7 +76,7 @@ using ::cuda::std::min;
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator min_element(
+_CCCL_HOST_DEVICE_API ForwardIterator min_element(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
 /*! \p min_element finds the smallest element in the range <tt>[first, last)</tt>.
@@ -117,7 +117,7 @@ _CCCL_HOST_DEVICE ForwardIterator min_element(
  *  \endverbatim
  */
 template <typename ForwardIterator>
-ForwardIterator min_element(ForwardIterator first, ForwardIterator last);
+_CCCL_HOST_API ForwardIterator min_element(ForwardIterator first, ForwardIterator last);
 
 /*! \p min_element finds the smallest element in the range <tt>[first, last)</tt>.
  *  It returns the first iterator \c i in <tt>[first, last)</tt>
@@ -185,7 +185,7 @@ ForwardIterator min_element(ForwardIterator first, ForwardIterator last);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ForwardIterator min_element(
+_CCCL_HOST_DEVICE_API ForwardIterator min_element(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -251,7 +251,7 @@ _CCCL_HOST_DEVICE ForwardIterator min_element(
  *  \endverbatim
  */
 template <typename ForwardIterator, typename BinaryPredicate>
-ForwardIterator min_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
+_CCCL_HOST_API ForwardIterator min_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
 
 /*! \p max_element finds the largest element in the range <tt>[first, last)</tt>.
  *  It returns the first iterator \c i in <tt>[first, last)</tt>
@@ -295,7 +295,7 @@ ForwardIterator min_element(ForwardIterator first, ForwardIterator last, BinaryP
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator max_element(
+_CCCL_HOST_DEVICE_API ForwardIterator max_element(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
 /*! \p max_element finds the largest element in the range <tt>[first, last)</tt>.
@@ -335,7 +335,7 @@ _CCCL_HOST_DEVICE ForwardIterator max_element(
  *  \endverbatim
  */
 template <typename ForwardIterator>
-ForwardIterator max_element(ForwardIterator first, ForwardIterator last);
+_CCCL_HOST_API ForwardIterator max_element(ForwardIterator first, ForwardIterator last);
 
 /*! \p max_element finds the largest element in the range <tt>[first, last)</tt>.
  *  It returns the first iterator \c i in <tt>[first, last)</tt>
@@ -403,7 +403,7 @@ ForwardIterator max_element(ForwardIterator first, ForwardIterator last);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ForwardIterator max_element(
+_CCCL_HOST_DEVICE_API ForwardIterator max_element(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -469,7 +469,7 @@ _CCCL_HOST_DEVICE ForwardIterator max_element(
  *  \endverbatim
  */
 template <typename ForwardIterator, typename BinaryPredicate>
-ForwardIterator max_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
+_CCCL_HOST_API ForwardIterator max_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
 
 // TODO(bgruber): with CCCL 4.0, we should return the last maximum to conform to the C++ standard
 /*! \p minmax_element finds the smallest and largest elements in the range <tt>[first, last)</tt>.
@@ -512,7 +512,7 @@ ForwardIterator max_element(ForwardIterator first, ForwardIterator last, BinaryP
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
 // TODO(bgruber): with CCCL 4.0, we should return the last maximum to conform to the C++ standard
@@ -551,7 +551,8 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_ele
  *  \endverbatim
  */
 template <typename ForwardIterator>
-::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator first, ForwardIterator last);
+_CCCL_HOST_API ::cuda::std::pair<ForwardIterator, ForwardIterator>
+minmax_element(ForwardIterator first, ForwardIterator last);
 
 // TODO(bgruber): with CCCL 4.0, we should return the last maximum to conform to the C++ standard
 /*! \p minmax_element finds the smallest and largest elements in the range <tt>[first, last)</tt>.
@@ -619,7 +620,7 @@ template <typename ForwardIterator>
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -684,7 +685,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_ele
  *  \endverbatim
  */
 template <typename ForwardIterator, typename BinaryPredicate>
-::cuda::std::pair<ForwardIterator, ForwardIterator>
+_CCCL_HOST_API ::cuda::std::pair<ForwardIterator, ForwardIterator>
 minmax_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
 
 /*! \} // end extrema

@@ -22,12 +22,12 @@ THRUST_NAMESPACE_BEGIN
 
 namespace system
 {
-error_code make_error_code(cuda::errc::errc_t e)
+_CCCL_HOST_API error_code make_error_code(cuda::errc::errc_t e)
 {
   return error_code(static_cast<int>(e), cuda_category());
 } // end make_error_code()
 
-error_condition make_error_condition(cuda::errc::errc_t e)
+_CCCL_HOST_API error_condition make_error_condition(cuda::errc::errc_t e)
 {
   return error_condition(static_cast<int>(e), cuda_category());
 } // end make_error_condition()
@@ -37,14 +37,14 @@ namespace cuda_cub::detail
 class cuda_error_category : public error_category
 {
 public:
-  cuda_error_category() = default;
+  _CCCL_HIDE_FROM_ABI cuda_error_category() = default;
 
-  const char* name() const override
+  _CCCL_HOST_API const char* name() const override
   {
     return "cuda";
   }
 
-  std::string message(int ev) const override
+  _CCCL_HOST_API std::string message(int ev) const override
   {
     char const* const unknown_str  = "unknown error";
     char const* const unknown_name = "cudaErrorUnknown";
@@ -53,7 +53,7 @@ public:
     return std::string(c_name ? c_name : unknown_name) + ": " + (c_str ? c_str : unknown_str);
   }
 
-  error_condition default_error_condition(int ev) const override
+  _CCCL_HOST_API error_condition default_error_condition(int ev) const override
   {
     using namespace cuda::errc;
 
@@ -67,7 +67,7 @@ public:
 }; // end cuda_error_category
 } // end namespace cuda_cub::detail
 
-const error_category& cuda_category()
+_CCCL_PUBLIC_HOST_API const error_category& cuda_category()
 {
   static const thrust::system::cuda_cub::detail::cuda_error_category result;
   return result;

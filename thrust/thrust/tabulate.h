@@ -67,7 +67,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename UnaryOperation>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 tabulate(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
          ForwardIterator first,
          ForwardIterator last,
@@ -110,7 +110,7 @@ tabulate(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename ForwardIterator, typename UnaryOperation>
-void tabulate(ForwardIterator first, ForwardIterator last, UnaryOperation unary_op);
+_CCCL_HOST_API void tabulate(ForwardIterator first, ForwardIterator last, UnaryOperation unary_op);
 
 /*! \} // end transformations
  */

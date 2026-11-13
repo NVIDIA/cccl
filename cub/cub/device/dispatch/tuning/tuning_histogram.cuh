@@ -59,7 +59,7 @@ struct HistogramPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const HistogramPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const HistogramPolicy& p)
   {
     return os
         << "HistogramPolicy { .threads_per_block = " << p.threads_per_block << ", .pixels_per_thread = "

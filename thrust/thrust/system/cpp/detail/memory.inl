@@ -22,20 +22,20 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::cpp
 {
-pointer<void> malloc(std::size_t n)
+_CCCL_HOST_API pointer<void> malloc(std::size_t n)
 {
   tag t;
   return pointer<void>(thrust::system::detail::sequential::malloc(t, n));
 } // end malloc()
 
 template <typename T>
-pointer<T> malloc(std::size_t n)
+_CCCL_HOST_API pointer<T> malloc(std::size_t n)
 {
   pointer<void> raw_ptr = thrust::system::cpp::malloc(sizeof(T) * n);
   return pointer<T>(reinterpret_cast<T*>(raw_ptr.get()));
 } // end malloc()
 
-void free(pointer<void> ptr)
+_CCCL_HOST_API void free(pointer<void> ptr)
 {
   tag t;
   thrust::system::detail::sequential::free(t, ptr);

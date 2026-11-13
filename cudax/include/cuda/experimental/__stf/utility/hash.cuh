@@ -82,7 +82,7 @@ inline constexpr bool has_std_hash_v = has_std_hash<E>::value;
  * Taken from WG21 P0814R0
  */
 template <typename T>
-void hash_combine(size_t& seed, const T& val)
+_CCCL_HOST_API void hash_combine(size_t& seed, const T& val)
 {
   if constexpr (reserved::has_std_hash_v<T>)
   {
@@ -117,7 +117,7 @@ void hash_combine(size_t& seed, const T& val)
 //! \param[in] vals The values to hash and combine.
 //! \return The combined hash value as a `size_t`.
 template <typename... Ts>
-size_t hash_all(const Ts&... vals)
+_CCCL_HOST_API size_t hash_all(const Ts&... vals)
 {
   if constexpr (sizeof...(Ts) == 1)
   {
@@ -165,7 +165,7 @@ struct hash<::std::pair<T1, T2>>
    * @param p The pair to hash.
    * @return size_t The hash value of the tuple.
    */
-  size_t operator()(const ::std::pair<T1, T2>& p) const
+  _CCCL_HOST_API size_t operator()(const ::std::pair<T1, T2>& p) const
   {
     return cuda::experimental::stf::hash_all(p.first, p.second);
   }
@@ -191,7 +191,7 @@ struct hash<::std::tuple<Ts...>>
    * @param p The tuple to hash.
    * @return size_t The hash value of the tuple.
    */
-  size_t operator()(const ::std::tuple<Ts...>& p) const
+  _CCCL_HOST_API size_t operator()(const ::std::tuple<Ts...>& p) const
   {
     return ::std::apply(cuda::experimental::stf::hash_all<Ts...>, p);
   }

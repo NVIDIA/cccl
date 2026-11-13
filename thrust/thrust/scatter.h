@@ -87,7 +87,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename RandomAccessIterator>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 scatter(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
         InputIterator1 first,
         InputIterator1 last,
@@ -149,7 +149,7 @@ scatter(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename RandomAccessIterator>
-void scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map, RandomAccessIterator result);
+_CCCL_HOST_API void scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map, RandomAccessIterator result);
 
 /*! \p scatter_if conditionally copies elements from a source range into an
  *  output array according to a map. For each iterator \c i in the
@@ -215,7 +215,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename InputIterator3,
           typename RandomAccessIterator>
-_CCCL_HOST_DEVICE void scatter_if(
+_CCCL_HOST_DEVICE_API void scatter_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -278,7 +278,7 @@ _CCCL_HOST_DEVICE void scatter_if(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename InputIterator3, typename RandomAccessIterator>
-void scatter_if(
+_CCCL_HOST_API void scatter_if(
   InputIterator1 first, InputIterator1 last, InputIterator2 map, InputIterator3 stencil, RandomAccessIterator output);
 
 /*! \p scatter_if conditionally copies elements from a source range into an
@@ -360,7 +360,7 @@ template <typename DerivedPolicy,
           typename InputIterator3,
           typename RandomAccessIterator,
           typename Predicate>
-_CCCL_HOST_DEVICE void scatter_if(
+_CCCL_HOST_DEVICE_API void scatter_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -442,12 +442,13 @@ template <typename InputIterator1,
           typename InputIterator3,
           typename RandomAccessIterator,
           typename Predicate>
-void scatter_if(InputIterator1 first,
-                InputIterator1 last,
-                InputIterator2 map,
-                InputIterator3 stencil,
-                RandomAccessIterator output,
-                Predicate pred);
+_CCCL_HOST_API void scatter_if(
+  InputIterator1 first,
+  InputIterator1 last,
+  InputIterator2 map,
+  InputIterator3 stencil,
+  RandomAccessIterator output,
+  Predicate pred);
 
 /*! \} // end scattering
  */

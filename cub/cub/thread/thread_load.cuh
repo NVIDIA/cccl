@@ -85,7 +85,7 @@ namespace detail
 #endif // _CCCL_HOSTED()
 
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
-inline ::std::ostream& operator<<(::std::ostream& os, CacheLoadModifier modifier)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, CacheLoadModifier modifier)
 {
   return os << _CUB::detail::to_string(modifier);
 }
@@ -98,7 +98,7 @@ template <::cuda::std::same_as<char> CharT>
 struct std::formatter<_CUB::CacheLoadModifier, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const _CUB::CacheLoadModifier& modifier, FmtCtx& ctx) const
+  _CCCL_HOST_API auto format(const _CUB::CacheLoadModifier& modifier, FmtCtx& ctx) const
   {
     return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(modifier), ctx);
   }
@@ -143,7 +143,7 @@ CUB_NAMESPACE_BEGIN
 //! @tparam RandomAccessIterator
 //!   <b>[inferred]</b> The input's iterator type \iterator
 template <CacheLoadModifier MODIFIER, typename RandomAccessIterator>
-_CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::it_value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr);
+_CCCL_DEVICE_API _CCCL_FORCEINLINE cub::detail::it_value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr);
 
 //@}
 
@@ -152,14 +152,14 @@ _CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::it_value_t<RandomAccessIterator> Thr
 namespace detail
 {
 template <CacheLoadModifier MODIFIER, typename T, int... Is>
-_CCCL_DEVICE _CCCL_FORCEINLINE void
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
 UnrolledThreadLoadImpl(T const* src, T* dst, ::cuda::std::integer_sequence<int, Is...>)
 {
   ((dst[Is] = _CUB::ThreadLoad<MODIFIER>(src + Is)), ...);
 }
 
 template <typename RandomAccessIterator, typename T, int... Is>
-_CCCL_DEVICE _CCCL_FORCEINLINE void
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
 UnrolledCopyImpl(RandomAccessIterator src, T* dst, ::cuda::std::integer_sequence<int, Is...>)
 {
   ((dst[Is] = src[Is]), ...);
@@ -167,40 +167,40 @@ UnrolledCopyImpl(RandomAccessIterator src, T* dst, ::cuda::std::integer_sequence
 } // namespace detail
 
 template <int Count, CacheLoadModifier MODIFIER, typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE void UnrolledThreadLoad(T const* src, T* dst)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void UnrolledThreadLoad(T const* src, T* dst)
 {
   _CUB::detail::UnrolledThreadLoadImpl<MODIFIER>(src, dst, ::cuda::std::make_integer_sequence<int, Count>{});
 }
 
 template <int Count, typename RandomAccessIterator, typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE void UnrolledCopy(RandomAccessIterator src, T* dst)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void UnrolledCopy(RandomAccessIterator src, T* dst)
 {
   _CUB::detail::UnrolledCopyImpl(src, dst, ::cuda::std::make_integer_sequence<int, Count>{});
 }
 
 //! Define a uint4 (16B) ThreadLoad specialization for the given Cache load modifier
-#  define _CUB_LOAD_16(cub_modifier, ptx_modifier)                                                               \
-    template <>                                                                                                  \
-    _CCCL_DEVICE _CCCL_FORCEINLINE uint4 ThreadLoad<cub_modifier, uint4 const*>(uint4 const* ptr)                \
-    {                                                                                                            \
-      uint4 retval;                                                                                              \
-      asm volatile("ld." #ptx_modifier ".v4.u32 {%0, %1, %2, %3}, [%4];"                                         \
-                   : "=r"(retval.x), "=r"(retval.y), "=r"(retval.z), "=r"(retval.w)                              \
-                   : "l"(ptr));                                                                                  \
-      return retval;                                                                                             \
-    }                                                                                                            \
-    template <>                                                                                                  \
-    _CCCL_DEVICE _CCCL_FORCEINLINE ulonglong2 ThreadLoad<cub_modifier, ulonglong2 const*>(ulonglong2 const* ptr) \
-    {                                                                                                            \
-      ulonglong2 retval;                                                                                         \
-      asm volatile("ld." #ptx_modifier ".v2.u64 {%0, %1}, [%2];" : "=l"(retval.x), "=l"(retval.y) : "l"(ptr));   \
-      return retval;                                                                                             \
+#  define _CUB_LOAD_16(cub_modifier, ptx_modifier)                                                                   \
+    template <>                                                                                                      \
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE uint4 ThreadLoad<cub_modifier, uint4 const*>(uint4 const* ptr)                \
+    {                                                                                                                \
+      uint4 retval;                                                                                                  \
+      asm volatile("ld." #ptx_modifier ".v4.u32 {%0, %1, %2, %3}, [%4];"                                             \
+                   : "=r"(retval.x), "=r"(retval.y), "=r"(retval.z), "=r"(retval.w)                                  \
+                   : "l"(ptr));                                                                                      \
+      return retval;                                                                                                 \
+    }                                                                                                                \
+    template <>                                                                                                      \
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE ulonglong2 ThreadLoad<cub_modifier, ulonglong2 const*>(ulonglong2 const* ptr) \
+    {                                                                                                                \
+      ulonglong2 retval;                                                                                             \
+      asm volatile("ld." #ptx_modifier ".v2.u64 {%0, %1}, [%2];" : "=l"(retval.x), "=l"(retval.y) : "l"(ptr));       \
+      return retval;                                                                                                 \
     }
 
 //! Define a uint2 (8B) ThreadLoad specialization for the given Cache load modifier
 #  define _CUB_LOAD_8(cub_modifier, ptx_modifier)                                                              \
     template <>                                                                                                \
-    _CCCL_DEVICE _CCCL_FORCEINLINE ushort4 ThreadLoad<cub_modifier, ushort4 const*>(ushort4 const* ptr)        \
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE ushort4 ThreadLoad<cub_modifier, ushort4 const*>(ushort4 const* ptr)    \
     {                                                                                                          \
       ushort4 retval;                                                                                          \
       asm volatile("ld." #ptx_modifier ".v4.u16 {%0, %1, %2, %3}, [%4];"                                       \
@@ -209,14 +209,14 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void UnrolledCopy(RandomAccessIterator src, T* ds
       return retval;                                                                                           \
     }                                                                                                          \
     template <>                                                                                                \
-    _CCCL_DEVICE _CCCL_FORCEINLINE uint2 ThreadLoad<cub_modifier, uint2 const*>(uint2 const* ptr)              \
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE uint2 ThreadLoad<cub_modifier, uint2 const*>(uint2 const* ptr)          \
     {                                                                                                          \
       uint2 retval;                                                                                            \
       asm volatile("ld." #ptx_modifier ".v2.u32 {%0, %1}, [%2];" : "=r"(retval.x), "=r"(retval.y) : "l"(ptr)); \
       return retval;                                                                                           \
     }                                                                                                          \
     template <>                                                                                                \
-    _CCCL_DEVICE _CCCL_FORCEINLINE unsigned long long ThreadLoad<cub_modifier, unsigned long long const*>(     \
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned long long ThreadLoad<cub_modifier, unsigned long long const*>( \
       unsigned long long const* ptr)                                                                           \
     {                                                                                                          \
       unsigned long long retval;                                                                               \
@@ -225,42 +225,43 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void UnrolledCopy(RandomAccessIterator src, T* ds
     }
 
 //! Define a uint (4B) ThreadLoad specialization for the given Cache load modifier
-#  define _CUB_LOAD_4(cub_modifier, ptx_modifier)                                                                      \
-    template <>                                                                                                        \
-    _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int ThreadLoad<cub_modifier, unsigned int const*>(unsigned int const* ptr) \
-    {                                                                                                                  \
-      unsigned int retval;                                                                                             \
-      asm volatile("ld." #ptx_modifier ".u32 %0, [%1];" : "=r"(retval) : "l"(ptr));                                    \
-      return retval;                                                                                                   \
-    }
-
-//! Define a unsigned short (2B) ThreadLoad specialization for the given Cache load modifier
-#  define _CUB_LOAD_2(cub_modifier, ptx_modifier)                                                  \
+#  define _CUB_LOAD_4(cub_modifier, ptx_modifier)                                                  \
     template <>                                                                                    \
-    _CCCL_DEVICE _CCCL_FORCEINLINE unsigned short ThreadLoad<cub_modifier, unsigned short const*>( \
-      unsigned short const* ptr)                                                                   \
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned int ThreadLoad<cub_modifier, unsigned int const*>( \
+      unsigned int const* ptr)                                                                     \
     {                                                                                              \
-      unsigned short retval;                                                                       \
-      asm volatile("ld." #ptx_modifier ".u16 %0, [%1];" : "=h"(retval) : "l"(ptr));                \
+      unsigned int retval;                                                                         \
+      asm volatile("ld." #ptx_modifier ".u32 %0, [%1];" : "=r"(retval) : "l"(ptr));                \
       return retval;                                                                               \
     }
 
+//! Define a unsigned short (2B) ThreadLoad specialization for the given Cache load modifier
+#  define _CUB_LOAD_2(cub_modifier, ptx_modifier)                                                      \
+    template <>                                                                                        \
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned short ThreadLoad<cub_modifier, unsigned short const*>( \
+      unsigned short const* ptr)                                                                       \
+    {                                                                                                  \
+      unsigned short retval;                                                                           \
+      asm volatile("ld." #ptx_modifier ".u16 %0, [%1];" : "=h"(retval) : "l"(ptr));                    \
+      return retval;                                                                                   \
+    }
+
 //! Define an unsigned char (1B) ThreadLoad specialization for the given Cache load modifier
-#  define _CUB_LOAD_1(cub_modifier, ptx_modifier)                                                \
-    template <>                                                                                  \
-    _CCCL_DEVICE _CCCL_FORCEINLINE unsigned char ThreadLoad<cub_modifier, unsigned char const*>( \
-      unsigned char const* ptr)                                                                  \
-    {                                                                                            \
-      unsigned short retval;                                                                     \
-      asm volatile(                                                                              \
-        "{"                                                                                      \
-        "   .reg .u8 datum;"                                                                     \
-        "    ld." #ptx_modifier ".u8 datum, [%1];"                                               \
-        "    cvt.u16.u8 %0, datum;"                                                              \
-        "}"                                                                                      \
-        : "=h"(retval)                                                                           \
-        : "l"(ptr));                                                                             \
-      return (unsigned char) retval;                                                             \
+#  define _CUB_LOAD_1(cub_modifier, ptx_modifier)                                                    \
+    template <>                                                                                      \
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned char ThreadLoad<cub_modifier, unsigned char const*>( \
+      unsigned char const* ptr)                                                                      \
+    {                                                                                                \
+      unsigned short retval;                                                                         \
+      asm volatile(                                                                                  \
+        "{"                                                                                          \
+        "   .reg .u8 datum;"                                                                         \
+        "    ld." #ptx_modifier ".u8 datum, [%1];"                                                   \
+        "    cvt.u16.u8 %0, datum;"                                                                  \
+        "}"                                                                                          \
+        : "=h"(retval)                                                                               \
+        : "l"(ptr));                                                                                 \
+      return (unsigned char) retval;                                                                 \
     }
 
 //! Define powers-of-two ThreadLoad specializations for the given Cache load modifier
@@ -322,7 +323,8 @@ using thread_load_word_t = typename UnitWord<T>::DeviceWord;
 //! ThreadLoad definition for LOAD_DEFAULT modifier on iterator types
 //! deprecated [Since 3.3]
 template <typename RandomAccessIterator>
-CCCL_DEPRECATED_BECAUSE("Use *itr instead") _CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::it_value_t<RandomAccessIterator>
+CCCL_DEPRECATED_BECAUSE("Use *itr instead") _CCCL_DEVICE_API
+_CCCL_FORCEINLINE cub::detail::it_value_t<RandomAccessIterator>
 ThreadLoad(RandomAccessIterator itr,
            detail::constant_t<LOAD_DEFAULT> /*modifier*/,
            ::cuda::std::false_type /*is_pointer*/)
@@ -333,7 +335,7 @@ ThreadLoad(RandomAccessIterator itr,
 //! ThreadLoad definition for LOAD_DEFAULT modifier on pointer types
 //! deprecated [Since 3.3]
 template <typename T>
-CCCL_DEPRECATED_BECAUSE("Use *itr instead") _CCCL_DEVICE _CCCL_FORCEINLINE T
+CCCL_DEPRECATED_BECAUSE("Use *itr instead") _CCCL_DEVICE_API _CCCL_FORCEINLINE T
 ThreadLoad(const T* ptr, detail::constant_t<LOAD_DEFAULT> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
   return *ptr;
@@ -342,7 +344,7 @@ ThreadLoad(const T* ptr, detail::constant_t<LOAD_DEFAULT> /*modifier*/, ::cuda::
 //! ThreadLoad definition for LOAD_VOLATILE modifier on primitive pointer types
 //! deprecated [Since 3.3]
 template <typename T>
-CCCL_DEPRECATED_BECAUSE("Use ThreadLoad<LOAD_VOLATILE>(ptr) instead") _CCCL_DEVICE _CCCL_FORCEINLINE T
+CCCL_DEPRECATED_BECAUSE("Use ThreadLoad<LOAD_VOLATILE>(ptr) instead") _CCCL_DEVICE_API _CCCL_FORCEINLINE T
 ThreadLoadVolatilePointer(const T* ptr, ::cuda::std::true_type /*is_primitive*/)
 {
   T retval = *reinterpret_cast<const volatile T*>(ptr);
@@ -352,7 +354,7 @@ ThreadLoadVolatilePointer(const T* ptr, ::cuda::std::true_type /*is_primitive*/)
 //! ThreadLoad definition for LOAD_VOLATILE modifier on non-primitive pointer types
 //! deprecated [Since 3.3]
 template <typename T>
-CCCL_DEPRECATED_BECAUSE("Use ThreadLoad<LOAD_VOLATILE>(ptr) instead") _CCCL_DEVICE _CCCL_FORCEINLINE T
+CCCL_DEPRECATED_BECAUSE("Use ThreadLoad<LOAD_VOLATILE>(ptr) instead") _CCCL_DEVICE_API _CCCL_FORCEINLINE T
 ThreadLoadVolatilePointer(const T* ptr, ::cuda::std::false_type /*is_primitive*/)
 {
   // Word type for memcpying
@@ -368,7 +370,7 @@ ThreadLoadVolatilePointer(const T* ptr, ::cuda::std::false_type /*is_primitive*/
 //! ThreadLoad definition for LOAD_VOLATILE modifier on pointer types
 //! deprecated [Since 3.3]
 template <typename T>
-CCCL_DEPRECATED_BECAUSE("Use ThreadLoad<LOAD_VOLATILE>(ptr) instead") _CCCL_DEVICE _CCCL_FORCEINLINE T
+CCCL_DEPRECATED_BECAUSE("Use ThreadLoad<LOAD_VOLATILE>(ptr) instead") _CCCL_DEVICE_API _CCCL_FORCEINLINE T
 ThreadLoad(const T* ptr, detail::constant_t<LOAD_VOLATILE> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
   return _CUB::ThreadLoadVolatilePointer(ptr, detail::bool_constant_v<detail::is_primitive_v<T>>);
@@ -377,7 +379,7 @@ ThreadLoad(const T* ptr, detail::constant_t<LOAD_VOLATILE> /*modifier*/, ::cuda:
 //! ThreadLoad definition for generic modifiers on pointer types
 //! deprecated [Since 3.3]
 template <typename T, CacheLoadModifier MODIFIER>
-CCCL_DEPRECATED_BECAUSE("Use ThreadLoad(ptr) instead") _CCCL_DEVICE _CCCL_FORCEINLINE T
+CCCL_DEPRECATED_BECAUSE("Use ThreadLoad(ptr) instead") _CCCL_DEVICE_API _CCCL_FORCEINLINE T
 ThreadLoad(T const* ptr, detail::constant_t<MODIFIER> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
   using DeviceWord              = typename UnitWord<T>::DeviceWord;
@@ -390,7 +392,7 @@ ThreadLoad(T const* ptr, detail::constant_t<MODIFIER> /*modifier*/, ::cuda::std:
 }
 
 template <CacheLoadModifier MODIFIER, typename RandomAccessIterator>
-_CCCL_DEVICE _CCCL_FORCEINLINE detail::it_value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE detail::it_value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr)
 {
   using T = detail::it_value_t<RandomAccessIterator>;
   if constexpr (!THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIterator> || MODIFIER == LOAD_DEFAULT)

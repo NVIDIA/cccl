@@ -64,7 +64,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename Generator>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 generate(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
          ForwardIterator first,
          ForwardIterator last,
@@ -106,7 +106,7 @@ generate(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename ForwardIterator, typename Generator>
-void generate(ForwardIterator first, ForwardIterator last, Generator gen);
+_CCCL_HOST_API void generate(ForwardIterator first, ForwardIterator last, Generator gen);
 
 /*! \p generate_n assigns the result of invoking \p gen, a function object that takes no arguments,
  *  to each element in the range <tt>[first,first + n)</tt>. The return value is <tt>first + n</tt>.
@@ -148,7 +148,7 @@ void generate(ForwardIterator first, ForwardIterator last, Generator gen);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename OutputIterator, typename Size, typename Generator>
-_CCCL_HOST_DEVICE OutputIterator generate_n(
+_CCCL_HOST_DEVICE_API OutputIterator generate_n(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, OutputIterator first, Size n, Generator gen);
 
 /*! \p generate_n assigns the result of invoking \p gen, a function object that takes no arguments,
@@ -186,7 +186,7 @@ _CCCL_HOST_DEVICE OutputIterator generate_n(
  *  \endverbatim
  */
 template <typename OutputIterator, typename Size, typename Generator>
-OutputIterator generate_n(OutputIterator first, Size n, Generator gen);
+_CCCL_HOST_API OutputIterator generate_n(OutputIterator first, Size n, Generator gen);
 
 /*! \} // end transformations
  */

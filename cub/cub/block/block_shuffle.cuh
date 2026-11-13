@@ -75,7 +75,7 @@ private:
   unsigned int linear_tid;
 
   /// Internal storage allocator
-  _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
   {
     __shared__ _TempStorage private_storage;
     return private_storage;
@@ -91,7 +91,7 @@ public:
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //! @endrst
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockShuffle()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockShuffle()
       : temp_storage(PrivateStorage())
       , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
@@ -108,7 +108,7 @@ public:
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockShuffle(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockShuffle(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
       , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
@@ -142,7 +142,7 @@ public:
   //!
   //! @param[in] distance
   //!   Offset distance (may be negative)
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Offset(T input, T& output, int distance = 1)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Offset(T input, T& output, int distance = 1)
   {
     temp_storage[linear_tid] = input;
 
@@ -176,7 +176,7 @@ public:
   //!
   //! @param[in] distance
   //!   Offset distance (`0 < distance < `BLOCK_THREADS`)
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Rotate(T input, T& output, unsigned int distance = 1)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Rotate(T input, T& output, unsigned int distance = 1)
   {
     temp_storage[linear_tid] = input;
 
@@ -212,7 +212,7 @@ public:
   //!   The item ``prev[0]`` is not updated for *thread*\ :sub:`0`.
   //!   @endrst
   template <int ItemsPerThread>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Up(T (&input)[ItemsPerThread], T (&prev)[ItemsPerThread])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Up(T (&input)[ItemsPerThread], T (&prev)[ItemsPerThread])
   {
     temp_storage[linear_tid] = input[ItemsPerThread - 1];
 
@@ -257,7 +257,7 @@ public:
   //!   The item ``input[ItemsPerThread - 1]`` from *thread*\ :sub:`BLOCK_THREADS - 1`, provided to all threads
   //!   @endrst
   template <int ItemsPerThread>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Up(T (&input)[ItemsPerThread], T (&prev)[ItemsPerThread], T& block_suffix)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Up(T (&input)[ItemsPerThread], T (&prev)[ItemsPerThread], T& block_suffix)
   {
     Up(input, prev);
     block_suffix = temp_storage[BLOCK_THREADS - 1];
@@ -284,7 +284,7 @@ public:
   //!   The value ``prev[0]`` is not updated for *thread*\ :sub:`BLOCK_THREADS - 1`.
   //!   @endrst
   template <int ItemsPerThread>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Down(T (&input)[ItemsPerThread], T (&prev)[ItemsPerThread])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Down(T (&input)[ItemsPerThread], T (&prev)[ItemsPerThread])
   {
     temp_storage[linear_tid] = input[0];
 
@@ -328,7 +328,7 @@ public:
   //!   The item ``input[0]`` from *thread*\ :sub:`0`, provided to all threads
   //!   @endrst
   template <int ItemsPerThread>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Down(T (&input)[ItemsPerThread], T (&prev)[ItemsPerThread], T& block_prefix)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Down(T (&input)[ItemsPerThread], T (&prev)[ItemsPerThread], T& block_prefix)
   {
     Down(input, prev);
     block_prefix = temp_storage[0];

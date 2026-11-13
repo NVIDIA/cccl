@@ -28,7 +28,7 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
 template <class Derived, class InputIt, class OutputIt, class TransformOp, class ScanOp>
-OutputIt _CCCL_HOST_DEVICE transform_inclusive_scan(
+OutputIt _CCCL_HOST_DEVICE_API transform_inclusive_scan(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -49,7 +49,7 @@ OutputIt _CCCL_HOST_DEVICE transform_inclusive_scan(
 }
 
 template <class Derived, class InputIt, class OutputIt, class TransformOp, class InitialValueType, class ScanOp>
-OutputIt _CCCL_HOST_DEVICE transform_inclusive_scan(
+OutputIt _CCCL_HOST_DEVICE_API transform_inclusive_scan(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -71,7 +71,7 @@ OutputIt _CCCL_HOST_DEVICE transform_inclusive_scan(
 }
 
 template <class Derived, class InputIt, class OutputIt, class TransformOp, class InitialValueType, class ScanOp>
-OutputIt _CCCL_HOST_DEVICE transform_exclusive_scan(
+OutputIt _CCCL_HOST_DEVICE_API transform_exclusive_scan(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,

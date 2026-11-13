@@ -45,7 +45,7 @@ namespace detail
 #  define THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER(NAME, CUB_FN)             \
     _CCCL_EXEC_CHECK_DISABLE                                                  \
     template <typename... Args>                                               \
-    _CCCL_HOST_DEVICE cudaError_t NAME(Args&&... args)                        \
+    _CCCL_HOST_DEVICE_API cudaError_t NAME(Args&&... args)                    \
     {                                                                         \
       return cub::detail::DeviceSetOps::CUB_FN(static_cast<Args&&>(args)...); \
     }
@@ -124,7 +124,7 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> set_oper
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class ItemsIt1, class ItemsIt2, class OutputIt, class CompareOp>
-OutputIt _CCCL_HOST_DEVICE set_difference(
+OutputIt _CCCL_HOST_DEVICE_API set_difference(
   execution_policy<Derived>& policy,
   ItemsIt1 items1_first,
   ItemsIt1 items1_last,
@@ -159,7 +159,7 @@ OutputIt _CCCL_HOST_DEVICE set_difference(
 }
 
 template <class Derived, class ItemsIt1, class ItemsIt2, class OutputIt>
-OutputIt _CCCL_HOST_DEVICE set_difference(
+OutputIt _CCCL_HOST_DEVICE_API set_difference(
   execution_policy<Derived>& policy,
   ItemsIt1 items1_first,
   ItemsIt1 items1_last,
@@ -176,7 +176,7 @@ OutputIt _CCCL_HOST_DEVICE set_difference(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class ItemsIt1, class ItemsIt2, class OutputIt, class CompareOp>
-OutputIt _CCCL_HOST_DEVICE set_intersection(
+OutputIt _CCCL_HOST_DEVICE_API set_intersection(
   execution_policy<Derived>& policy,
   ItemsIt1 items1_first,
   ItemsIt1 items1_last,
@@ -211,7 +211,7 @@ OutputIt _CCCL_HOST_DEVICE set_intersection(
 }
 
 template <class Derived, class ItemsIt1, class ItemsIt2, class OutputIt>
-OutputIt _CCCL_HOST_DEVICE set_intersection(
+OutputIt _CCCL_HOST_DEVICE_API set_intersection(
   execution_policy<Derived>& policy,
   ItemsIt1 items1_first,
   ItemsIt1 items1_last,
@@ -228,7 +228,7 @@ OutputIt _CCCL_HOST_DEVICE set_intersection(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class ItemsIt1, class ItemsIt2, class OutputIt, class CompareOp>
-OutputIt _CCCL_HOST_DEVICE set_symmetric_difference(
+OutputIt _CCCL_HOST_DEVICE_API set_symmetric_difference(
   execution_policy<Derived>& policy,
   ItemsIt1 items1_first,
   ItemsIt1 items1_last,
@@ -263,7 +263,7 @@ OutputIt _CCCL_HOST_DEVICE set_symmetric_difference(
 }
 
 template <class Derived, class ItemsIt1, class ItemsIt2, class OutputIt>
-OutputIt _CCCL_HOST_DEVICE set_symmetric_difference(
+OutputIt _CCCL_HOST_DEVICE_API set_symmetric_difference(
   execution_policy<Derived>& policy,
   ItemsIt1 items1_first,
   ItemsIt1 items1_last,
@@ -280,7 +280,7 @@ OutputIt _CCCL_HOST_DEVICE set_symmetric_difference(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class ItemsIt1, class ItemsIt2, class OutputIt, class CompareOp>
-OutputIt _CCCL_HOST_DEVICE set_union(
+OutputIt _CCCL_HOST_DEVICE_API set_union(
   execution_policy<Derived>& policy,
   ItemsIt1 items1_first,
   ItemsIt1 items1_last,
@@ -315,7 +315,7 @@ OutputIt _CCCL_HOST_DEVICE set_union(
 }
 
 template <class Derived, class ItemsIt1, class ItemsIt2, class OutputIt>
-OutputIt _CCCL_HOST_DEVICE set_union(
+OutputIt _CCCL_HOST_DEVICE_API set_union(
   execution_policy<Derived>& policy,
   ItemsIt1 items1_first,
   ItemsIt1 items1_last,
@@ -345,7 +345,7 @@ template <class Derived,
           class KeysOutputIt,
           class ItemsOutputIt,
           class CompareOp>
-::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_difference_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE_API set_difference_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -401,7 +401,7 @@ template <class Derived,
 }
 
 template <class Derived, class KeysIt1, class KeysIt2, class ItemsIt1, class ItemsIt2, class KeysOutputIt, class ItemsOutputIt>
-::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_difference_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE_API set_difference_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -437,7 +437,7 @@ template <class Derived,
           class KeysOutputIt,
           class ItemsOutputIt,
           class CompareOp>
-::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_intersection_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE_API set_intersection_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -491,7 +491,7 @@ template <class Derived,
 }
 
 template <class Derived, class KeysIt1, class KeysIt2, class ItemsIt1, class ItemsIt2, class KeysOutputIt, class ItemsOutputIt>
-::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_intersection_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE_API set_intersection_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -525,7 +525,7 @@ template <class Derived,
           class KeysOutputIt,
           class ItemsOutputIt,
           class CompareOp>
-::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_symmetric_difference_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE_API set_symmetric_difference_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -581,7 +581,7 @@ template <class Derived,
 }
 
 template <class Derived, class KeysIt1, class KeysIt2, class ItemsIt1, class ItemsIt2, class KeysOutputIt, class ItemsOutputIt>
-::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_symmetric_difference_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE_API set_symmetric_difference_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -617,7 +617,7 @@ template <class Derived,
           class KeysOutputIt,
           class ItemsOutputIt,
           class CompareOp>
-::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE_API set_union_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -673,7 +673,7 @@ template <class Derived,
 }
 
 template <class Derived, class KeysIt1, class KeysIt2, class ItemsIt1, class ItemsIt2, class KeysOutputIt, class ItemsOutputIt>
-::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE_API set_union_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,

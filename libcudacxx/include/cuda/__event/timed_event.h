@@ -60,10 +60,10 @@ public:
       : event(no_init)
   {}
 
-  timed_event(timed_event&&) noexcept            = default;
-  timed_event(const timed_event&)                = delete;
-  timed_event& operator=(timed_event&&) noexcept = default;
-  timed_event& operator=(const timed_event&)     = delete;
+  _CCCL_HIDE_FROM_ABI timed_event(timed_event&&) noexcept            = default;
+  timed_event(const timed_event&)                                    = delete;
+  _CCCL_HIDE_FROM_ABI timed_event& operator=(timed_event&&) noexcept = default;
+  timed_event& operator=(const timed_event&)                         = delete;
 
   //! @brief Construct a `timed_event` object from a native `cudaEvent_t` handle.
   //!

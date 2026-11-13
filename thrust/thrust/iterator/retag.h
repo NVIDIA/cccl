@@ -41,7 +41,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename Tag, typename Iterator>
-_CCCL_HOST_DEVICE unspecified_iterator_type reinterpret_tag(Iterator iter);
+_CCCL_HOST_DEVICE_API unspecified_iterator_type reinterpret_tag(Iterator iter);
 
 /*! \p retag returns a copy of an iterator and changes the type of the result's system tag.
  *  \tparam Tag \p Tag shall be convertible to <tt>thrust::iterator_system<Iterator>::type</tt>,
@@ -59,7 +59,7 @@ _CCCL_HOST_DEVICE unspecified_iterator_type reinterpret_tag(Iterator iter);
  *  \endverbatim
  */
 template <typename Tag, typename Iterator>
-_CCCL_HOST_DEVICE unspecified_iterator_type retag(Iterator iter);
+_CCCL_HOST_DEVICE_API unspecified_iterator_type retag(Iterator iter);
 #endif
 
 //! \} // iterator_tag_utilities

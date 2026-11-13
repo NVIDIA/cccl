@@ -31,7 +31,7 @@ namespace cuda_cub
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class OutputIterator, class Size, class T>
-OutputIterator _CCCL_HOST_DEVICE
+OutputIterator _CCCL_HOST_DEVICE_API
 fill_n(execution_policy<Derived>& policy, OutputIterator first, Size count, const T& value)
 {
   THRUST_CDP_DISPATCH(
@@ -47,7 +47,7 @@ fill_n(execution_policy<Derived>& policy, OutputIterator first, Size count, cons
 }
 
 template <class Derived, class ForwardIterator, class T>
-void _CCCL_HOST_DEVICE
+void _CCCL_HOST_DEVICE_API
 fill(execution_policy<Derived>& policy, ForwardIterator first, ForwardIterator last, const T& value)
 {
   cuda_cub::fill_n(policy, first, ::cuda::std::distance(first, last), value);

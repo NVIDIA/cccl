@@ -110,7 +110,7 @@ C2H_TEST("stf_logical_data_with_place - device place (data on current device)", 
   stf_ctx_handle ctx = stf_ctx_create();
   REQUIRE(ctx != nullptr);
 
-  float* d_raw    = nullptr;
+  float* d_raw    = nullptr; // NOLINT(misc-const-correctness)
   cudaError_t err = cudaMalloc(&d_raw, N * sizeof(float));
   REQUIRE(err == cudaSuccess);
   const std::unique_ptr<void, decltype(&cudaFree)> d_data_owner(d_raw, cudaFree);

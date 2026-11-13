@@ -18,7 +18,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2>
-_CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
+_CCCL_HOST_DEVICE_API ForwardIterator2 swap_ranges(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator1 first1,
   ForwardIterator1 last1,

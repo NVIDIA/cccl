@@ -41,7 +41,7 @@ struct execution_policy : cpp::execution_policy<Derived>
   using tag_type = tag;
 
   // allow conversion to tag when it is not a successor
-  operator tag() const
+  _CCCL_HOST_API operator tag() const
   {
     return tag();
   }

@@ -51,7 +51,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST device_ptr_memory_resource()
+  _CCCL_HOST_API device_ptr_memory_resource()
       : m_upstream(mr::get_global_resource<Upstream>())
   {}
 
@@ -63,18 +63,18 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST device_ptr_memory_resource(Upstream* upstream)
+  _CCCL_HOST_API device_ptr_memory_resource(Upstream* upstream)
       : m_upstream(upstream)
   {}
 
-  [[nodiscard]] _CCCL_HOST pointer do_allocate( // NOLINT(google-default-arguments)
+  [[nodiscard]] _CCCL_HOST_API pointer do_allocate( // NOLINT(google-default-arguments)
     std::size_t bytes,
     std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     return pointer(m_upstream->do_allocate(bytes, alignment).get());
   }
 
-  _CCCL_HOST void do_deallocate(pointer p, std::size_t bytes, std::size_t alignment) override
+  _CCCL_HOST_API void do_deallocate(pointer p, std::size_t bytes, std::size_t alignment) override
   {
     m_upstream->do_deallocate(upstream_ptr(p.get()), bytes, alignment);
   }
@@ -121,23 +121,23 @@ public:
   };
 
   /*! Default constructor has no effect. */
-  device_allocator() = default;
+  _CCCL_HIDE_FROM_ABI device_allocator() = default;
 
   /*! Copy constructor has no effect. */
-  _CCCL_HOST_DEVICE device_allocator(const device_allocator& other)
+  _CCCL_HOST_DEVICE_API device_allocator(const device_allocator& other)
       : base(other)
   {}
 
   /*! Constructor from other \p device_allocator has no effect. */
   template <typename U>
-  _CCCL_HOST_DEVICE device_allocator(const device_allocator<U>& other)
+  _CCCL_HOST_DEVICE_API device_allocator(const device_allocator<U>& other)
       : base(other)
   {}
 
-  device_allocator& operator=(const device_allocator&) = default;
+  _CCCL_HIDE_FROM_ABI device_allocator& operator=(const device_allocator&) = default;
 
   /*! Destructor has no effect. */
-  ~device_allocator() = default;
+  _CCCL_HIDE_FROM_ABI ~device_allocator() = default;
 };
 
 /*! \} // allocators

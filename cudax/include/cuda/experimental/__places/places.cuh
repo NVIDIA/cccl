@@ -106,7 +106,7 @@ inline constexpr replicate_over_t<axes...> replicate_over{};
 class data_place
 {
   template <typename T>
-  static ::std::shared_ptr<data_place_interface> make_static_instance()
+  _CCCL_HOST_API static ::std::shared_ptr<data_place_interface> make_static_instance()
   {
     static T instance;
     // Build the aliasing shared_ptr exactly once and hand out copies. Besides
@@ -121,25 +121,25 @@ class data_place
   }
 
 public:
-  explicit data_place(::std::shared_ptr<data_place_interface> impl)
+  _CCCL_HOST_API explicit data_place(::std::shared_ptr<data_place_interface> impl)
       : pimpl_(mv(impl))
   {}
   /**
    * @brief Default constructor. The object is initialized as invalid.
    */
-  data_place()
+  _CCCL_HOST_API data_place()
       : pimpl_(make_static_instance<data_place_invalid>())
   {}
 
-  data_place(const data_place&)            = default;
-  data_place(data_place&&)                 = default;
-  data_place& operator=(const data_place&) = default;
-  data_place& operator=(data_place&&)      = default;
+  _CCCL_HIDE_FROM_ABI data_place(const data_place&)            = default;
+  _CCCL_HIDE_FROM_ABI data_place(data_place&&)                 = default;
+  _CCCL_HIDE_FROM_ABI data_place& operator=(const data_place&) = default;
+  _CCCL_HIDE_FROM_ABI data_place& operator=(data_place&&)      = default;
 
   /**
    * @brief Represents an invalid `data_place` object.
    */
-  static data_place invalid()
+  _CCCL_HOST_API static data_place invalid()
   {
     return data_place(make_static_instance<data_place_invalid>());
   }
@@ -148,7 +148,7 @@ public:
    * @brief Represents the host CPU as the `data_place` (pinned host memory, or
    * memory which should be pinned by CUDASTF).
    */
-  static data_place host()
+  _CCCL_HOST_API static data_place host()
   {
     return data_place(make_static_instance<data_place_host>());
   }
@@ -156,14 +156,14 @@ public:
   /**
    * @brief Represents a managed memory location as the `data_place`.
    */
-  static data_place managed()
+  _CCCL_HOST_API static data_place managed()
   {
     return data_place(make_static_instance<data_place_managed>());
   }
 
   /// This actually does not define a data_place, but means that we should use
   /// the data place affine to the execution place
-  static data_place affine()
+  _CCCL_HOST_API static data_place affine()
   {
     return data_place(make_static_instance<data_place_affine>());
   }
@@ -172,13 +172,13 @@ public:
    * @brief Constant representing a placeholder that lets the library automatically select a GPU device as the
    * `data_place`.
    */
-  static data_place device_auto()
+  _CCCL_HOST_API static data_place device_auto()
   {
     return data_place(make_static_instance<data_place_device_auto>());
   }
 
   /** @brief Data is placed on device with index dev_id. */
-  static data_place device(int dev_id = 0)
+  _CCCL_HOST_API static data_place device(int dev_id = 0)
   {
     static int const ndevs = cuda_try<cudaGetDeviceCount>();
 
@@ -198,7 +198,7 @@ public:
   /**
    * @brief Select the embedded memory of the current device as `data_place`.
    */
-  static data_place current_device()
+  _CCCL_HOST_API static data_place current_device()
   {
     return device(cuda_try<cudaGetDevice>());
   }
@@ -209,9 +209,9 @@ public:
   template <
     typename partitioner_t,
     typename = ::cuda::std::enable_if_t<::cuda::std::is_class_v<partitioner_t>> /*, typename scalar_exec_place_t */>
-  static data_place composite(partitioner_t p, const exec_place& g);
+  _CCCL_HOST_API static data_place composite(partitioner_t p, const exec_place& g);
 
-  static data_place composite(partition_mapper f, const exec_place& grid);
+  _CCCL_HOST_API static data_place composite(partition_mapper f, const exec_place& grid);
 
   /**
    * @brief Replicated data place: one full copy of the data in the affine
@@ -221,7 +221,7 @@ public:
    * place's affine data place (a plain place, not replicated): a live
    * replicated place always has at least two instances.
    */
-  static data_place replicated(const exec_place& grid);
+  _CCCL_HOST_API static data_place replicated(const exec_place& grid);
 
   /**
    * @brief Deferred replicated data place: replicated over the grid of
@@ -231,7 +231,7 @@ public:
    * always replicates over every grid axis (axis grouping requires the
    * explicit replicate_over overload).
    */
-  static data_place replicated();
+  _CCCL_HOST_API static data_place replicated();
 
   /**
    * @brief Axis-grouped replication: one copy per coordinate of the
@@ -245,10 +245,10 @@ public:
    * grid of the all-axes overload.
    */
   template <size_t... axes>
-  static data_place replicated(const exec_place& grid, replicate_over_t<axes...>);
+  _CCCL_HOST_API static data_place replicated(const exec_place& grid, replicate_over_t<axes...>);
 
 #if _CCCL_CTK_AT_LEAST(12, 4)
-  static data_place green_ctx(const green_ctx_view& gc_view);
+  _CCCL_HOST_API static data_place green_ctx(const green_ctx_view& gc_view);
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   /**
@@ -260,7 +260,7 @@ public:
   static data_place locality_domain(const locality_domain_view& view);
   static data_place locality_domain(int dev_id, int domain_id);
 
-  bool operator==(const data_place& rhs) const
+  _CCCL_HOST_API bool operator==(const data_place& rhs) const
   {
     // Same pointer means same place
     if (pimpl_.get() == rhs.pimpl_.get())
@@ -270,88 +270,88 @@ public:
     return pimpl_->cmp(*rhs.pimpl_) == 0;
   }
 
-  bool operator!=(const data_place& rhs) const
+  _CCCL_HOST_API bool operator!=(const data_place& rhs) const
   {
     return !(*this == rhs);
   }
 
   // To use in a ::std::map indexed by data_place
-  bool operator<(const data_place& rhs) const
+  _CCCL_HOST_API bool operator<(const data_place& rhs) const
   {
     return pimpl_->cmp(*rhs.pimpl_) < 0;
   }
 
-  bool operator>(const data_place& rhs) const
+  _CCCL_HOST_API bool operator>(const data_place& rhs) const
   {
     return rhs < *this;
   }
 
-  bool operator<=(const data_place& rhs) const
+  _CCCL_HOST_API bool operator<=(const data_place& rhs) const
   {
     return !(rhs < *this);
   }
 
-  bool operator>=(const data_place& rhs) const
+  _CCCL_HOST_API bool operator>=(const data_place& rhs) const
   {
     return !(*this < rhs);
   }
 
   // Defined later after data_place_composite is complete
-  bool is_composite() const;
-  bool is_replicated() const noexcept;
+  _CCCL_HOST_API bool is_composite() const;
+  _CCCL_HOST_API bool is_replicated() const noexcept;
 
   //! Number of data instances a dependency at this place resolves to
-  size_t instance_count() const;
+  _CCCL_HOST_API size_t instance_count() const;
   //! Data place of the r-th instance (r < instance_count()); *this when
   //! the place resolves to a single instance
-  data_place member(size_t r) const;
+  _CCCL_HOST_API data_place member(size_t r) const;
   //! Instance index the given (linear) grid place resolves to; 0 when the
   //! place resolves to a single instance. With axis-grouped replication,
   //! places differing only along SHARED axes map to the same instance.
-  size_t instance_of(size_t place_index) const;
+  _CCCL_HOST_API size_t instance_of(size_t place_index) const;
 
-  bool is_invalid() const
+  _CCCL_HOST_API bool is_invalid() const
   {
     const auto& ref = *pimpl_;
     return typeid(ref) == typeid(data_place_invalid);
   }
 
-  bool is_host() const
+  _CCCL_HOST_API bool is_host() const
   {
     const auto& ref = *pimpl_;
     return typeid(ref) == typeid(data_place_host);
   }
 
-  bool is_managed() const
+  _CCCL_HOST_API bool is_managed() const
   {
     const auto& ref = *pimpl_;
     return typeid(ref) == typeid(data_place_managed);
   }
 
-  bool is_affine() const
+  _CCCL_HOST_API bool is_affine() const
   {
     const auto& ref = *pimpl_;
     return typeid(ref) == typeid(data_place_affine);
   }
 
-  bool is_device() const
+  _CCCL_HOST_API bool is_device() const
   {
     const auto& ref = *pimpl_;
     return typeid(ref) == typeid(data_place_device);
   }
 
-  bool is_device_auto() const
+  _CCCL_HOST_API bool is_device_auto() const
   {
     const auto& ref = *pimpl_;
     return typeid(ref) == typeid(data_place_device_auto);
   }
 
-  bool is_resolved() const
+  _CCCL_HOST_API bool is_resolved() const
   {
     return pimpl_->is_resolved();
   }
 
-  ::std::string to_string() const
+  _CCCL_HOST_API ::std::string to_string() const
   {
     return pimpl_->to_string();
   }
@@ -360,7 +360,7 @@ public:
    * @brief Returns an index guaranteed to be >= 0 (0 for managed CPU, 1 for pinned CPU,  2 for device 0, 3 for device
    * 1, ...). Requires that `p` is initialized and different from `data_place::invalid()`.
    */
-  friend size_t to_index(const data_place& p)
+  _CCCL_HOST_API friend size_t to_index(const data_place& p)
   {
     const int devid = p.pimpl_->get_device_ordinal();
     EXPECT(devid >= -2, "Data place with device id ", devid, " does not refer to a device.");
@@ -372,7 +372,7 @@ public:
    * @brief Inverse of `to_index`: converts an index back to a `data_place`.
    * Index 0 -> managed, 1 -> host, 2 -> device(0), 3 -> device(1), ...
    */
-  friend data_place from_index(size_t n)
+  _CCCL_HOST_API friend data_place from_index(size_t n)
   {
     if (n == 0)
     {
@@ -389,37 +389,37 @@ public:
    * @brief Returns the device ordinal (0 = first GPU, 1 = second GPU, ... and by convention the CPU is -1)
    * Requires that `p` is initialized.
    */
-  friend int device_ordinal(const data_place& p)
+  _CCCL_HOST_API friend int device_ordinal(const data_place& p)
   {
     return p.pimpl_->get_device_ordinal();
   }
 
-  const partition_mapper& get_partitioner() const
+  _CCCL_HOST_API const partition_mapper& get_partitioner() const
   {
     return pimpl_->get_partitioner();
   }
 
   // Defined later after exec_place is complete
-  exec_place affine_exec_place() const;
+  _CCCL_HOST_API exec_place affine_exec_place() const;
 
   /**
    * @brief Compute a hash value for this data place
    *
    * Used by std::hash specialization for unordered containers.
    */
-  size_t hash() const
+  _CCCL_HOST_API size_t hash() const
   {
     return pimpl_->hash();
   }
 
-  augmented_stream getDataStream(exec_place_resources& res) const;
+  _CCCL_HOST_API augmented_stream getDataStream(exec_place_resources& res) const;
 
   /**
    * @brief Get the underlying interface pointer
    *
    * This is primarily for internal use and backward compatibility.
    */
-  const ::std::shared_ptr<data_place_interface>& get_impl() const
+  _CCCL_HOST_API const ::std::shared_ptr<data_place_interface>& get_impl() const
   {
     return pimpl_;
   }
@@ -430,7 +430,7 @@ public:
    * Standalone call: the place does not need to be activated first, and the
    * calling thread's current device is left unchanged.
    */
-  CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const
+  _CCCL_HOST_API CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const
   {
     return pimpl_->mem_create(handle, size);
   }
@@ -441,7 +441,7 @@ public:
    * Standalone call: the place does not need to be activated first, and the
    * calling thread's current device is left unchanged.
    */
-  void* allocate(::std::ptrdiff_t size, cudaStream_t stream = nullptr) const
+  _CCCL_HOST_API void* allocate(::std::ptrdiff_t size, cudaStream_t stream = nullptr) const
   {
     return pimpl_->allocate(size, stream);
   }
@@ -461,7 +461,7 @@ public:
    * @throws std::invalid_argument if the product of the extents and elemsize
    * overflows size_t or exceeds PTRDIFF_MAX
    */
-  void* allocate_nd(dim4 data_dims, size_t elemsize, cudaStream_t stream = nullptr) const
+  _CCCL_HOST_API void* allocate_nd(dim4 data_dims, size_t elemsize, cudaStream_t stream = nullptr) const
   {
     // An unchecked x*y*z*t*elemsize product can wrap: an ordinary place would
     // then silently return a tiny allocation for an astronomically large
@@ -490,7 +490,7 @@ public:
    * Standalone call: the place does not need to be activated first, and the
    * calling thread's current device is left unchanged.
    */
-  void deallocate(void* ptr, size_t size, cudaStream_t stream = nullptr) const
+  _CCCL_HOST_API void deallocate(void* ptr, size_t size, cudaStream_t stream = nullptr) const
   {
     pimpl_->deallocate(ptr, size, stream);
   }
@@ -498,7 +498,7 @@ public:
   /**
    * @brief Returns true if allocation/deallocation is stream-ordered
    */
-  bool allocation_is_stream_ordered() const
+  _CCCL_HOST_API bool allocation_is_stream_ordered() const
   {
     return pimpl_->allocation_is_stream_ordered();
   }
@@ -508,9 +508,9 @@ private:
 };
 
 /** Declarations for unqualified lookup (friends are only found via ADL when a \c data_place argument is present). */
-inline data_place from_index(size_t n);
-inline size_t to_index(const data_place& p);
-inline int device_ordinal(const data_place& p);
+_CCCL_HOST_API inline data_place from_index(size_t n);
+_CCCL_HOST_API inline size_t to_index(const data_place& p);
+_CCCL_HOST_API inline int device_ordinal(const data_place& p);
 
 // Forward declaration
 class exec_place_scope;
@@ -531,12 +531,12 @@ public:
   class impl : public ::std::enable_shared_from_this<impl>
   {
   public:
-    impl()                       = default;
-    impl(const impl&)            = delete;
-    impl& operator=(const impl&) = delete;
-    virtual ~impl()              = default;
+    _CCCL_HIDE_FROM_ABI impl()          = default;
+    impl(const impl&)                   = delete;
+    impl& operator=(const impl&)        = delete;
+    _CCCL_HIDE_FROM_ABI virtual ~impl() = default;
 
-    explicit impl(data_place place)
+    _CCCL_HOST_API explicit impl(data_place place)
         : affine(mv(place))
     {}
 
@@ -547,7 +547,7 @@ public:
      *
      * For scalar places, returns dim4(1, 1, 1, 1).
      */
-    virtual dim4 get_dims() const
+    _CCCL_HOST_API virtual dim4 get_dims() const
     {
       return dim4(1, 1, 1, 1);
     }
@@ -555,7 +555,7 @@ public:
     /**
      * @brief Get the total number of places in this grid
      */
-    virtual size_t size() const
+    _CCCL_HOST_API virtual size_t size() const
     {
       return 1;
     }
@@ -566,7 +566,7 @@ public:
      * For scalar places, idx must be 0 and returns shared_from_this().
      * For grids, returns the impl of the stored sub-place.
      */
-    virtual ::std::shared_ptr<impl> get_place(size_t idx);
+    _CCCL_HOST_API virtual ::std::shared_ptr<impl> get_place(size_t idx);
 
     // ===== Activation/deactivation (indexed) =====
 
@@ -585,27 +585,27 @@ public:
 
     // ===== Properties =====
 
-    virtual bool is_host() const
+    _CCCL_HOST_API virtual bool is_host() const
     {
       return false;
     }
 
-    virtual bool is_device() const
+    _CCCL_HOST_API virtual bool is_device() const
     {
       return false;
     }
 
-    virtual data_place affine_data_place() const
+    _CCCL_HOST_API virtual data_place affine_data_place() const
     {
       return affine;
     }
 
-    virtual ::std::string to_string() const
+    _CCCL_HOST_API virtual ::std::string to_string() const
     {
       return "exec(" + affine.to_string() + ")";
     }
 
-    virtual void set_affine_data_place(data_place place)
+    _CCCL_HOST_API virtual void set_affine_data_place(data_place place)
     {
       affine = mv(place);
     }
@@ -616,7 +616,7 @@ public:
      * @brief Three-way comparison
      * @return -1 if *this < rhs, 0 if *this == rhs, 1 if *this > rhs
      */
-    virtual int cmp(const impl& rhs) const
+    _CCCL_HOST_API virtual int cmp(const impl& rhs) const
     {
       if (typeid(*this) != typeid(rhs))
       {
@@ -625,7 +625,7 @@ public:
       return (rhs.affine < affine) - (affine < rhs.affine);
     }
 
-    virtual size_t hash() const
+    _CCCL_HOST_API virtual size_t hash() const
     {
       return affine.hash();
     }
@@ -654,7 +654,7 @@ public:
      *                        derived overrides that need access to the
      *                        public-facing place).
      */
-    [[nodiscard]] virtual stream_pool&
+    [[nodiscard]] _CCCL_HOST_API virtual stream_pool&
     get_stream_pool(bool for_computation, exec_place_resources& res, [[maybe_unused]] const exec_place& self) const
     {
       auto& slot = res.get(this);
@@ -670,7 +670,7 @@ public:
   };
 
   template <typename T>
-  static ::std::shared_ptr<impl> make_static_instance()
+  _CCCL_HOST_API static ::std::shared_ptr<impl> make_static_instance()
   {
     static T instance;
     // Build the aliasing shared_ptr exactly once and hand out copies.
@@ -684,9 +684,9 @@ public:
     return handle;
   }
 
-  exec_place() = default;
+  _CCCL_HIDE_FROM_ABI exec_place() = default;
 
-  bool operator==(const exec_place& rhs) const
+  _CCCL_HOST_API bool operator==(const exec_place& rhs) const
   {
     if (pimpl.get() == rhs.pimpl.get())
     {
@@ -695,32 +695,32 @@ public:
     return pimpl->cmp(*rhs.pimpl) == 0;
   }
 
-  bool operator!=(const exec_place& rhs) const
+  _CCCL_HOST_API bool operator!=(const exec_place& rhs) const
   {
     return !(*this == rhs);
   }
 
-  bool operator<(const exec_place& rhs) const
+  _CCCL_HOST_API bool operator<(const exec_place& rhs) const
   {
     return pimpl->cmp(*rhs.pimpl) < 0;
   }
 
-  bool operator>(const exec_place& rhs) const
+  _CCCL_HOST_API bool operator>(const exec_place& rhs) const
   {
     return rhs < *this;
   }
 
-  bool operator<=(const exec_place& rhs) const
+  _CCCL_HOST_API bool operator<=(const exec_place& rhs) const
   {
     return !(rhs < *this);
   }
 
-  bool operator>=(const exec_place& rhs) const
+  _CCCL_HOST_API bool operator>=(const exec_place& rhs) const
   {
     return !(*this < rhs);
   }
 
-  size_t hash() const
+  _CCCL_HOST_API size_t hash() const
   {
     return pimpl->hash();
   }
@@ -732,7 +732,7 @@ public:
    *
    * For scalar places (host, single device), returns dim4(1, 1, 1, 1).
    */
-  dim4 get_dims() const
+  _CCCL_HOST_API dim4 get_dims() const
   {
     return pimpl->get_dims();
   }
@@ -740,7 +740,7 @@ public:
   /**
    * @brief Get the total number of places in this grid
    */
-  size_t size() const
+  _CCCL_HOST_API size_t size() const
   {
     return pimpl->size();
   }
@@ -750,7 +750,7 @@ public:
    *
    * For scalar places, idx must be 0 and returns the place itself.
    */
-  exec_place get_place(size_t idx) const
+  _CCCL_HOST_API exec_place get_place(size_t idx) const
   {
     return exec_place(pimpl->get_place(idx));
   }
@@ -758,7 +758,7 @@ public:
   /**
    * @brief Get the sub-place at the given multi-dimensional position
    */
-  exec_place get_place(pos4 p) const
+  _CCCL_HOST_API exec_place get_place(pos4 p) const
   {
     return get_place(get_dims().get_index(p));
   }
@@ -799,21 +799,21 @@ public:
    * @param idx The index of the sub-place to activate (default 0 for scalar places)
    * @return An exec_place_scope guard that manages the activation lifetime
    */
-  inline exec_place_scope activate(size_t idx = 0) const;
+  _CCCL_HOST_API inline exec_place_scope activate(size_t idx = 0) const;
 
   // ===== Properties =====
 
-  ::std::string to_string() const
+  _CCCL_HOST_API ::std::string to_string() const
   {
     return pimpl->to_string();
   }
 
-  data_place affine_data_place() const
+  _CCCL_HOST_API data_place affine_data_place() const
   {
     return pimpl->affine_data_place();
   }
 
-  void set_affine_data_place(data_place place)
+  _CCCL_HOST_API void set_affine_data_place(data_place place)
   {
     pimpl->set_affine_data_place(mv(place));
   }
@@ -824,58 +824,60 @@ public:
    * `res`; self-contained places (cuda_stream, green-context) ignore `res`
    * and return their embedded pool.
    */
-  stream_pool& get_stream_pool(bool for_computation, exec_place_resources& res) const
+  _CCCL_HOST_API stream_pool& get_stream_pool(bool for_computation, exec_place_resources& res) const
   {
     return pimpl->get_stream_pool(for_computation, res, *this);
   }
 
   /// @brief Convenience overload taking an `async_resources_handle`. Defined
   /// inline in `__stf/internal/async_resources_handle.cuh`.
-  inline stream_pool& get_stream_pool(bool for_computation, ::cuda::experimental::stf::async_resources_handle& h) const;
+  _CCCL_HOST_API inline stream_pool&
+  get_stream_pool(bool for_computation, ::cuda::experimental::stf::async_resources_handle& h) const;
 
-  augmented_stream getStream(exec_place_resources& res, bool for_computation = true) const;
+  _CCCL_HOST_API augmented_stream getStream(exec_place_resources& res, bool for_computation = true) const;
 
   /// @brief Convenience overload taking an `async_resources_handle`. Defined
   /// inline in `__stf/internal/async_resources_handle.cuh`.
-  inline augmented_stream getStream(::cuda::experimental::stf::async_resources_handle& h,
-                                    bool for_computation = true) const;
+  _CCCL_HOST_API inline augmented_stream
+  getStream(::cuda::experimental::stf::async_resources_handle& h, bool for_computation = true) const;
 
-  cudaStream_t pick_stream(exec_place_resources& res, bool for_computation = true) const
+  _CCCL_HOST_API cudaStream_t pick_stream(exec_place_resources& res, bool for_computation = true) const
   {
     return getStream(res, for_computation).stream;
   }
 
   /// @brief Convenience overload taking an `async_resources_handle`. Defined
   /// inline in `__stf/internal/async_resources_handle.cuh`.
-  inline cudaStream_t pick_stream(::cuda::experimental::stf::async_resources_handle& h,
-                                  bool for_computation = true) const;
+  _CCCL_HOST_API inline cudaStream_t
+  pick_stream(::cuda::experimental::stf::async_resources_handle& h, bool for_computation = true) const;
 
   /// @brief Number of streams in this place's pool (slots, not initialized).
-  inline size_t stream_pool_size(exec_place_resources& res) const;
+  _CCCL_HOST_API inline size_t stream_pool_size(exec_place_resources& res) const;
 
   /// @brief Convenience overload taking an `async_resources_handle`. Defined
   /// inline in `__stf/internal/async_resources_handle.cuh`.
-  inline size_t stream_pool_size(::cuda::experimental::stf::async_resources_handle& h) const;
+  _CCCL_HOST_API inline size_t stream_pool_size(::cuda::experimental::stf::async_resources_handle& h) const;
 
   /// @brief Materialize all streams in the pool as a vector. Triggers lazy
   /// creation of every empty slot.
-  ::std::vector<cudaStream_t> pick_all_streams(exec_place_resources& res) const;
+  _CCCL_HOST_API ::std::vector<cudaStream_t> pick_all_streams(exec_place_resources& res) const;
 
   /// @brief Convenience overload taking an `async_resources_handle`. Defined
   /// inline in `__stf/internal/async_resources_handle.cuh`.
-  ::std::vector<cudaStream_t> pick_all_streams(::cuda::experimental::stf::async_resources_handle& h) const;
+  _CCCL_HOST_API ::std::vector<cudaStream_t>
+  pick_all_streams(::cuda::experimental::stf::async_resources_handle& h) const;
 
-  const ::std::shared_ptr<impl>& get_impl() const
+  _CCCL_HOST_API const ::std::shared_ptr<impl>& get_impl() const
   {
     return pimpl;
   }
 
-  bool is_host() const
+  _CCCL_HOST_API bool is_host() const
   {
     return pimpl->is_host();
   }
 
-  bool is_device() const
+  _CCCL_HOST_API bool is_device() const
   {
     return pimpl->is_device();
   }
@@ -884,7 +886,7 @@ public:
    * @brief Get the dimension along a specific axis
    * @deprecated Use get_dims().get(axis_id) instead
    */
-  size_t grid_dim(int axis_id) const
+  _CCCL_HOST_API size_t grid_dim(int axis_id) const
   {
     return get_dims().get(axis_id);
   }
@@ -893,7 +895,7 @@ public:
    * @brief Get all dimensions
    * @deprecated Use get_dims() instead
    */
-  dim4 grid_dims() const
+  _CCCL_HOST_API dim4 grid_dims() const
   {
     return get_dims();
   }
@@ -902,7 +904,7 @@ public:
    * @brief Returns *this for compatibility
    * @deprecated All places are grids now; use exec_place methods directly
    */
-  const exec_place& as_grid() const
+  _CCCL_HOST_API const exec_place& as_grid() const
   {
     EXPECT(size() > 1, "as_grid() called on scalar exec_place");
     return *this;
@@ -911,10 +913,10 @@ public:
   /* These helper methods provide convenient way to express execution places,
    * for example exec_place::host or exec_place::device(4).
    */
-  static exec_place host();
-  static exec_place device_auto();
+  _CCCL_HOST_API static exec_place host();
+  _CCCL_HOST_API static exec_place device_auto();
 
-  static exec_place device(int devid);
+  _CCCL_HOST_API static exec_place device(int devid);
 
 // Green contexts are only supported since CUDA 12.4
 #if _CCCL_CTK_AT_LEAST(12, 4)
@@ -925,7 +927,7 @@ public:
    * @param use_green_ctx_data_place If true, use a green context data place as the
    *        affine data place. If false (default), use a regular device data place instead.
    */
-  static exec_place green_ctx(const green_ctx_view& gc_view, bool use_green_ctx_data_place = false);
+  _CCCL_HOST_API static exec_place green_ctx(const green_ctx_view& gc_view, bool use_green_ctx_data_place = false);
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   /**
@@ -959,19 +961,19 @@ public:
    * @param devid The device ordinal of the context, or -1 to derive it from the context
    * @param pool_size Number of streams in the place's stream pool
    */
-  static exec_place cuda_context(CUcontext ctx, int devid = -1, size_t pool_size = impl::pool_size);
+  _CCCL_HOST_API static exec_place cuda_context(CUcontext ctx, int devid = -1, size_t pool_size = impl::pool_size);
 
   /**
    * @brief Returns the currently active device.
    *
    * @return exec_place
    */
-  static exec_place current_device()
+  _CCCL_HOST_API static exec_place current_device()
   {
     return exec_place::device(cuda_try<cudaGetDevice>());
   }
 
-  static exec_place all_devices();
+  _CCCL_HOST_API static exec_place all_devices();
 
   /**
    * @brief Returns a grid of execution places over all locality domains of a device
@@ -1001,12 +1003,12 @@ public:
   //! @return exec_place grid with one place per locality domain per device
   static exec_place all_locality_domains(locality_domain_sm_split split = locality_domain_sm_split::backfill);
 
-  static exec_place n_devices(size_t n, dim4 dims);
+  _CCCL_HOST_API static exec_place n_devices(size_t n, dim4 dims);
 
-  static exec_place n_devices(size_t n);
+  _CCCL_HOST_API static exec_place n_devices(size_t n);
 
   // For debug purpose on a machine with a single GPU, for example
-  static exec_place repeat(const exec_place& e, size_t cnt);
+  _CCCL_HOST_API static exec_place repeat(const exec_place& e, size_t cnt);
 
   template <typename... Args>
   auto partition_by_scope(Args&&... args);
@@ -1025,9 +1027,9 @@ public:
    *
    */
   template <typename Fun>
-  auto operator->*(Fun&& fun) const;
+  _CCCL_HOST_API auto operator->*(Fun&& fun) const;
 
-  exec_place(::std::shared_ptr<impl> pimpl)
+  _CCCL_HOST_API exec_place(::std::shared_ptr<impl> pimpl)
       : pimpl(mv(pimpl))
   {}
 
@@ -1073,7 +1075,7 @@ public:
   /**
    * @brief Default constructor creates an inactive scope.
    */
-  exec_place_scope() = default;
+  _CCCL_HIDE_FROM_ABI exec_place_scope() = default;
 
   /**
    * @brief Constructs the guard and activates the sub-place at the given index.
@@ -1081,7 +1083,7 @@ public:
    * @param place The execution place (or grid) containing the sub-place to activate
    * @param idx The index of the sub-place to activate (default 0 for scalar places)
    */
-  exec_place_scope(exec_place place, size_t idx = 0)
+  _CCCL_HOST_API exec_place_scope(exec_place place, size_t idx = 0)
       : place_(mv(place))
       , idx_(idx)
       , current_(place_.get_place(idx_))
@@ -1094,7 +1096,7 @@ public:
    * Use data_place::affine_exec_place() to get the exec_place first.
    */
   template <typename T = void>
-  exec_place_scope(const data_place&)
+  _CCCL_HOST_API exec_place_scope(const data_place&)
   {
     static_assert(!::cuda::std::is_same_v<T, T>,
                   "exec_place_scope cannot be constructed from data_place; "
@@ -1109,7 +1111,7 @@ public:
   //! Returning to the device we came from must always succeed; if it does not, continuing would
   //! run every subsequent launch on the wrong device. deactivate() reaches cuda_try and can also
   //! allocate, so report and abort rather than propagate out of a destructor.
-  ~exec_place_scope()
+  _CCCL_HOST_API ~exec_place_scope()
   {
     if (place_.get_impl())
     {
@@ -1125,7 +1127,7 @@ public:
   exec_place_scope& operator=(const exec_place_scope&) = delete;
 
   // Movable (like unique_lock)
-  exec_place_scope(exec_place_scope&& other) noexcept
+  _CCCL_HOST_API exec_place_scope(exec_place_scope&& other) noexcept
       : place_(mv(other.place_))
       , idx_(other.idx_)
       , current_(mv(other.current_))
@@ -1134,7 +1136,7 @@ public:
     other.place_ = exec_place(); // Mark other as inactive
   }
 
-  exec_place_scope& operator=(exec_place_scope&& other) noexcept
+  _CCCL_HOST_API exec_place_scope& operator=(exec_place_scope&& other) noexcept
   {
     if (this != &other)
     {
@@ -1158,7 +1160,7 @@ public:
   /**
    * @brief Get the currently active sub-place
    */
-  const exec_place& place() const
+  _CCCL_HOST_API const exec_place& place() const
   {
     return current_;
   }
@@ -1166,7 +1168,7 @@ public:
   /**
    * @brief Get the index within the grid (0 for scalar places)
    */
-  size_t index() const
+  _CCCL_HOST_API size_t index() const
   {
     return idx_;
   }
@@ -1174,7 +1176,7 @@ public:
   /**
    * @brief Check if this scope is active (not moved-from)
    */
-  bool is_active() const
+  _CCCL_HOST_API bool is_active() const
   {
     return place_.get_impl() != nullptr;
   }
@@ -1185,7 +1187,7 @@ public:
    * After calling reset(), the destructor becomes a no-op.
    * Calling reset() on an inactive scope is safe (no-op).
    */
-  void reset()
+  _CCCL_HOST_API void reset()
   {
     if (place_.get_impl())
     {
@@ -1204,19 +1206,19 @@ private:
   exec_place prev_; // Previous state to restore
 };
 
-inline exec_place_scope exec_place::activate(size_t idx) const
+_CCCL_HOST_API inline exec_place_scope exec_place::activate(size_t idx) const
 {
   return exec_place_scope(*this, idx);
 }
 
 template <typename Fun>
-auto exec_place::operator->*(Fun&& fun) const
+_CCCL_HOST_API auto exec_place::operator->*(Fun&& fun) const
 {
   auto active = activate();
   return ::cuda::std::forward<Fun>(fun)();
 }
 
-inline augmented_stream stream_pool::next(const exec_place& place)
+_CCCL_HOST_API inline augmented_stream stream_pool::next(const exec_place& place)
 {
   _CCCL_ASSERT(pimpl, "stream_pool::next called on empty pool");
   const ::std::scoped_lock locker(pimpl->mtx);
@@ -1262,17 +1264,17 @@ inline augmented_stream stream_pool::next(const exec_place& place)
   return result;
 }
 
-inline augmented_stream exec_place::getStream(exec_place_resources& res, bool for_computation) const
+_CCCL_HOST_API inline augmented_stream exec_place::getStream(exec_place_resources& res, bool for_computation) const
 {
   return get_stream_pool(for_computation, res).next(*this);
 }
 
-inline size_t exec_place::stream_pool_size(exec_place_resources& res) const
+_CCCL_HOST_API inline size_t exec_place::stream_pool_size(exec_place_resources& res) const
 {
   return get_stream_pool(true, res).size();
 }
 
-inline ::std::vector<cudaStream_t> exec_place::pick_all_streams(exec_place_resources& res) const
+_CCCL_HOST_API inline ::std::vector<cudaStream_t> exec_place::pick_all_streams(exec_place_resources& res) const
 {
   auto& pool = get_stream_pool(true, res);
   ::std::vector<cudaStream_t> result;
@@ -1292,12 +1294,12 @@ inline ::std::vector<cudaStream_t> exec_place::pick_all_streams(exec_place_resou
 class exec_place_host_impl : public exec_place::impl
 {
 public:
-  exec_place_host_impl()
+  _CCCL_HOST_API exec_place_host_impl()
       : exec_place::impl(data_place::host())
   {}
 
   // Grid interface - host is a 1-element grid
-  ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
+  _CCCL_HOST_API ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for host exec_place");
     // This singleton is owned by the permanent shared_ptr created once in
@@ -1309,29 +1311,30 @@ public:
   }
 
   // Activation - no-op for host
-  exec_place activate(size_t idx) const override
+  _CCCL_HOST_API exec_place activate(size_t idx) const override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for host exec_place");
     return exec_place();
   }
 
-  void deactivate(const exec_place& prev, size_t idx) const override
+  _CCCL_HOST_API void deactivate(const exec_place& prev, size_t idx) const override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for host exec_place");
     _CCCL_ASSERT(!prev.get_impl(), "Host deactivate expects empty prev");
   }
 
-  bool is_host() const override
+  _CCCL_HOST_API bool is_host() const override
   {
     return true;
   }
 
-  data_place affine_data_place() const override
+  _CCCL_HOST_API data_place affine_data_place() const override
   {
     return data_place::host();
   }
 
-  stream_pool& get_stream_pool(bool for_computation, exec_place_resources& res, const exec_place&) const override
+  _CCCL_HOST_API stream_pool&
+  get_stream_pool(bool for_computation, exec_place_resources& res, const exec_place&) const override
   {
     // Forward to the current device place: host work that needs a CUDA stream
     // borrows the current device's pool entry from the same registry.
@@ -1339,13 +1342,13 @@ public:
     return cur.get_stream_pool(for_computation, res);
   }
 
-  ::std::string to_string() const override
+  _CCCL_HOST_API ::std::string to_string() const override
   {
     return "host";
   }
 };
 
-inline exec_place exec_place::host()
+_CCCL_HOST_API inline exec_place exec_place::host()
 {
   return exec_place(make_static_instance<exec_place_host_impl>());
 }
@@ -1354,26 +1357,26 @@ inline exec_place exec_place::host()
 class exec_place_device_auto_impl : public exec_place::impl
 {
 public:
-  exec_place_device_auto_impl()
+  _CCCL_HOST_API exec_place_device_auto_impl()
       : exec_place::impl(data_place::device_auto())
   {}
 
-  exec_place activate(size_t) const override
+  _CCCL_HOST_API exec_place activate(size_t) const override
   {
     _CCCL_THROW(::std::logic_error, "activate() called on device_auto exec_place - should be resolved first");
   }
 
-  void deactivate(const exec_place&, size_t) const override
+  _CCCL_HOST_API void deactivate(const exec_place&, size_t) const override
   {
     _CCCL_THROW(::std::logic_error, "deactivate() called on device_auto exec_place - should be resolved first");
   }
 
-  bool is_device() const override
+  _CCCL_HOST_API bool is_device() const override
   {
     return true;
   }
 
-  ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
+  _CCCL_HOST_API ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for device_auto exec_place");
     // This singleton is owned by the permanent shared_ptr created once in
@@ -1384,13 +1387,13 @@ public:
     return shared_from_this();
   }
 
-  ::std::string to_string() const override
+  _CCCL_HOST_API ::std::string to_string() const override
   {
     return "device_auto";
   }
 };
 
-inline exec_place exec_place::device_auto()
+_CCCL_HOST_API inline exec_place exec_place::device_auto()
 {
   return make_static_instance<exec_place_device_auto_impl>();
 }
@@ -1415,7 +1418,7 @@ public:
   class impl : public exec_place::impl
   {
   public:
-    explicit impl(int devid)
+    _CCCL_HOST_API explicit impl(int devid)
         : exec_place::impl(data_place::device(devid))
         , devid_(devid)
     {
@@ -1426,9 +1429,9 @@ public:
     }
 
     // Grid interface - device is a 1-element grid
-    ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override;
+    _CCCL_HOST_API ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override;
 
-    exec_place activate(size_t idx) const override
+    _CCCL_HOST_API exec_place activate(size_t idx) const override
     {
       _CCCL_ASSERT(idx == 0, "Index out of bounds for device exec_place");
       auto old_dev_id = cuda_try<cudaGetDevice>();
@@ -1439,7 +1442,7 @@ public:
       return exec_place::device(old_dev_id);
     }
 
-    void deactivate(const exec_place& prev, size_t idx) const override
+    _CCCL_HOST_API void deactivate(const exec_place& prev, size_t idx) const override
     {
       _CCCL_ASSERT(idx == 0, "Index out of bounds for device exec_place");
       auto current_dev_id  = cuda_try<cudaGetDevice>();
@@ -1450,17 +1453,17 @@ public:
       }
     }
 
-    bool is_device() const override
+    _CCCL_HOST_API bool is_device() const override
     {
       return true;
     }
 
-    int get_devid() const
+    _CCCL_HOST_API int get_devid() const
     {
       return devid_;
     }
 
-    ::std::string to_string() const override
+    _CCCL_HOST_API ::std::string to_string() const override
     {
       return "device(" + ::std::to_string(devid_) + ")";
     }
@@ -1470,7 +1473,7 @@ public:
   };
 };
 
-inline exec_place exec_place::device(int devid)
+_CCCL_HOST_API inline exec_place exec_place::device(int devid)
 {
   static const int ndevices = cuda_try<cudaGetDeviceCount>();
   // One process-global ``shared_ptr`` per device, created exactly once in this
@@ -1579,7 +1582,7 @@ UNITTEST("exec_place_scope reset")
 class exec_place_grid_impl : public exec_place::impl
 {
 public:
-  exec_place_grid_impl(::std::vector<exec_place> _places)
+  _CCCL_HOST_API exec_place_grid_impl(::std::vector<exec_place> _places)
       : dims_(_places.size(), 1, 1, 1)
       , places_(mv(_places))
   {
@@ -1587,7 +1590,7 @@ public:
     _CCCL_ASSERT(dims_.x > 0, "Grid dimensions must be positive");
   }
 
-  exec_place_grid_impl(::std::vector<exec_place> _places, const dim4& _dims)
+  _CCCL_HOST_API exec_place_grid_impl(::std::vector<exec_place> _places, const dim4& _dims)
       : dims_(_dims)
       , places_(mv(_places))
   {
@@ -1607,17 +1610,17 @@ public:
 
   // ===== Grid interface =====
 
-  dim4 get_dims() const override
+  _CCCL_HOST_API dim4 get_dims() const override
   {
     return dims_;
   }
 
-  size_t size() const override
+  _CCCL_HOST_API size_t size() const override
   {
     return dims_.size();
   }
 
-  ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
+  _CCCL_HOST_API ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
     EXPECT(idx < places_.size(), "Index out of bounds");
     return places_[idx].get_impl();
@@ -1625,13 +1628,13 @@ public:
 
   // ===== Activation (delegates to sub-places) =====
 
-  exec_place activate(size_t idx) const override
+  _CCCL_HOST_API exec_place activate(size_t idx) const override
   {
     EXPECT(idx < places_.size(), "Index out of bounds");
     return places_[idx].get_impl()->activate(0);
   }
 
-  void deactivate(const exec_place& prev, size_t idx) const override
+  _CCCL_HOST_API void deactivate(const exec_place& prev, size_t idx) const override
   {
     EXPECT(idx < places_.size(), "Index out of bounds");
     places_[idx].get_impl()->deactivate(prev, 0);
@@ -1639,7 +1642,7 @@ public:
 
   // ===== Properties =====
 
-  ::std::string to_string() const override
+  _CCCL_HOST_API ::std::string to_string() const override
   {
     return "grid(" + ::std::to_string(dims_.x) + "x" + ::std::to_string(dims_.y) + "x" + ::std::to_string(dims_.z) + "x"
          + ::std::to_string(dims_.t) + ")";
@@ -1647,7 +1650,7 @@ public:
 
   // ===== Comparison =====
 
-  int cmp(const exec_place::impl& rhs) const override
+  _CCCL_HOST_API int cmp(const exec_place::impl& rhs) const override
   {
     if (typeid(*this) != typeid(rhs))
     {
@@ -1666,7 +1669,7 @@ public:
     return (other.places_ < places_) - (places_ < other.places_);
   }
 
-  size_t hash() const override
+  _CCCL_HOST_API size_t hash() const override
   {
     size_t h = ::cuda::experimental::stf::hash<dim4>{}(dims_);
     for (const auto& p : places_)
@@ -1678,7 +1681,8 @@ public:
 
   // ===== Stream management =====
 
-  stream_pool& get_stream_pool(bool for_computation, exec_place_resources& res, const exec_place&) const override
+  _CCCL_HOST_API stream_pool&
+  get_stream_pool(bool for_computation, exec_place_resources& res, const exec_place&) const override
   {
     _CCCL_ASSERT(!for_computation, "Expected data transfer stream pool");
     _CCCL_ASSERT(!places_.empty(), "Grid must have at least one place");
@@ -1695,7 +1699,7 @@ private:
 
 //! Creates a grid of execution places with specified dimensions
 //! Returns the single element if size == 1 (no grid wrapper needed)
-inline exec_place make_grid(::std::vector<exec_place> places, const dim4& dims)
+_CCCL_HOST_API inline exec_place make_grid(::std::vector<exec_place> places, const dim4& dims)
 {
   if (places.empty())
   {
@@ -1718,7 +1722,7 @@ inline exec_place make_grid(::std::vector<exec_place> places, const dim4& dims)
 
 //! Creates a linear grid from a vector of execution places
 //! Returns the single element if size == 1 (no grid wrapper needed)
-inline exec_place make_grid(::std::vector<exec_place> places)
+_CCCL_HOST_API inline exec_place make_grid(::std::vector<exec_place> places)
 {
   _CCCL_ASSERT(!places.empty(), "invalid places");
   const size_t n = places.size();
@@ -1770,7 +1774,7 @@ _CCCL_HOST_API inline exec_place exec_place::collapse_axes(const size_t first_ax
 
 // === data_place::affine_exec_place implementation ===
 
-inline exec_place data_place::affine_exec_place() const
+_CCCL_HOST_API inline exec_place data_place::affine_exec_place() const
 {
   if (is_host())
   {
@@ -1804,13 +1808,13 @@ inline exec_place data_place::affine_exec_place() const
 
 // === Deferred implementations for get_place() ===
 
-inline ::std::shared_ptr<exec_place::impl> exec_place::impl::get_place(size_t idx)
+_CCCL_HOST_API inline ::std::shared_ptr<exec_place::impl> exec_place::impl::get_place(size_t idx)
 {
   _CCCL_ASSERT(idx == 0, "Index out of bounds for scalar exec_place");
   return shared_from_this();
 }
 
-inline ::std::shared_ptr<exec_place::impl> exec_place_device::impl::get_place(size_t idx)
+_CCCL_HOST_API inline ::std::shared_ptr<exec_place::impl> exec_place_device::impl::get_place(size_t idx)
 {
   _CCCL_ASSERT(idx == 0, "Index out of bounds for device exec_place");
   // These device impls are always owned by the per-device ``shared_ptr``
@@ -1823,7 +1827,7 @@ inline ::std::shared_ptr<exec_place::impl> exec_place_device::impl::get_place(si
 
 //! Creates a grid by replicating an execution place multiple times
 //! Returns the original place if cnt == 1 (no grid wrapper needed)
-inline exec_place exec_place::repeat(const exec_place& e, size_t cnt)
+_CCCL_HOST_API inline exec_place exec_place::repeat(const exec_place& e, size_t cnt)
 {
   if (cnt == 1)
   {
@@ -1834,7 +1838,7 @@ inline exec_place exec_place::repeat(const exec_place& e, size_t cnt)
 
 /* Get the first N available devices */
 //! Returns single device if n == 1 (no grid wrapper needed)
-inline exec_place exec_place::n_devices(size_t n, dim4 dims)
+_CCCL_HOST_API inline exec_place exec_place::n_devices(size_t n, dim4 dims)
 {
   const int ndevs = cuda_try<cudaGetDeviceCount>();
 
@@ -1852,20 +1856,20 @@ inline exec_place exec_place::n_devices(size_t n, dim4 dims)
 
 /* Get the first N available devices */
 //! Returns single device if n == 1 (no grid wrapper needed)
-inline exec_place exec_place::n_devices(size_t n)
+_CCCL_HOST_API inline exec_place exec_place::n_devices(size_t n)
 {
   return n_devices(n, dim4(n, 1, 1, 1));
 }
 
 //! Returns all available devices, or single device if only one GPU
-inline exec_place exec_place::all_devices()
+_CCCL_HOST_API inline exec_place exec_place::all_devices()
 {
   return n_devices(cuda_try<cudaGetDeviceCount>());
 }
 
 //! Creates a cyclic partition of an execution place grid with specified strides
 //! Returns single place if partition contains only one element
-inline exec_place partition_cyclic(exec_place e_place, dim4 strides, pos4 tile_id)
+_CCCL_HOST_API inline exec_place partition_cyclic(exec_place e_place, dim4 strides, pos4 tile_id)
 {
   dim4 g_dims = e_place.get_dims();
 
@@ -1913,7 +1917,7 @@ inline exec_place partition_cyclic(exec_place e_place, dim4 strides, pos4 tile_i
 //!
 //! example :
 //! auto sub_g = partition_tile(g, dim4(2,2), dim4(0,1))
-inline exec_place partition_tile(exec_place e_place, dim4 tile_sizes, pos4 tile_id)
+_CCCL_HOST_API inline exec_place partition_tile(exec_place e_place, dim4 tile_sizes, pos4 tile_id)
 {
   const dim4 g_dims = e_place.get_dims();
 
@@ -1975,38 +1979,38 @@ inline exec_place partition_tile(exec_place e_place, dim4 tile_sizes, pos4 tile_
 class data_place_composite final : public data_place_interface
 {
 public:
-  data_place_composite(exec_place grid, partition_mapper partitioner_func)
+  _CCCL_HOST_API data_place_composite(exec_place grid, partition_mapper partitioner_func)
       : grid_(mv(grid))
       , partitioner_func_(mv(partitioner_func))
   {}
 
-  bool is_resolved() const override
+  _CCCL_HOST_API bool is_resolved() const override
   {
     return true;
   }
 
-  bool is_composite() const override
+  _CCCL_HOST_API bool is_composite() const override
   {
     return true;
   }
 
-  int get_device_ordinal() const override
+  _CCCL_HOST_API int get_device_ordinal() const override
   {
     return data_place_interface::composite;
   }
 
-  ::std::string to_string() const override
+  _CCCL_HOST_API ::std::string to_string() const override
   {
     return "composite";
   }
 
-  size_t hash() const override
+  _CCCL_HOST_API size_t hash() const override
   {
     // Composite places don't support hashing
     _CCCL_THROW(::std::logic_error, "hash() not supported for composite data_place");
   }
 
-  int cmp(const data_place_interface& other) const override
+  _CCCL_HOST_API int cmp(const data_place_interface& other) const override
   {
     if (typeid(*this) != typeid(other))
     {
@@ -2026,7 +2030,7 @@ public:
     return (grid_ < o.grid_) ? -1 : 1;
   }
 
-  void* allocate(::std::ptrdiff_t, cudaStream_t) const override
+  _CCCL_HOST_API void* allocate(::std::ptrdiff_t, cudaStream_t) const override
   {
     // A byte count alone does not carry the tensor geometry the partitioner
     // needs (it maps element coordinates to places), so there is no meaningful
@@ -2036,32 +2040,32 @@ public:
                 "allocate through a logical data");
   }
 
-  void* allocate_nd(dim4 data_dims, size_t elemsize, cudaStream_t) const override
+  _CCCL_HOST_API void* allocate_nd(dim4 data_dims, size_t elemsize, cudaStream_t) const override
   {
     return allocate_composite_data_place(*this, data_dims, elemsize);
   }
 
-  void deallocate(void* ptr, size_t, cudaStream_t) const override
+  _CCCL_HOST_API void deallocate(void* ptr, size_t, cudaStream_t) const override
   {
     deallocate_composite_data_place(ptr);
   }
 
-  bool allocation_is_stream_ordered() const override
+  _CCCL_HOST_API bool allocation_is_stream_ordered() const override
   {
     return false;
   }
 
-  ::std::shared_ptr<void> get_affine_exec_impl() const override
+  _CCCL_HOST_API ::std::shared_ptr<void> get_affine_exec_impl() const override
   {
     return grid_.get_impl();
   }
 
-  const partition_mapper& get_partitioner() const override
+  _CCCL_HOST_API const partition_mapper& get_partitioner() const override
   {
     return partitioner_func_;
   }
 
-  const exec_place& get_grid() const
+  _CCCL_HOST_API const exec_place& get_grid() const
   {
     return grid_;
   }
@@ -2087,29 +2091,29 @@ public:
   //! Bit a of \p axes_mask set = grid axis a is REPLICATED; unset axes are
   //! SHARED (their fibers use one common instance). The default replicates
   //! over every axis (one copy per grid member).
-  explicit data_place_replicated(exec_place grid, unsigned axes_mask = all_axes)
+  _CCCL_HOST_API explicit data_place_replicated(exec_place grid, unsigned axes_mask = all_axes)
       : grid_(mv(grid))
       , deferred_(false)
       , axes_mask_(axes_mask)
   {}
 
   //! Deferred form: the grid is bound at task acquisition
-  data_place_replicated()
+  _CCCL_HOST_API data_place_replicated()
       : deferred_(true)
       , axes_mask_(all_axes)
   {}
 
-  bool is_resolved() const override
+  _CCCL_HOST_API bool is_resolved() const override
   {
     return true;
   }
 
-  bool is_replicated() const noexcept override
+  _CCCL_HOST_API bool is_replicated() const noexcept override
   {
     return true;
   }
 
-  size_t instance_count() const override
+  _CCCL_HOST_API size_t instance_count() const override
   {
     if (deferred_)
     {
@@ -2129,7 +2133,7 @@ public:
 
   //! Instance index of a linear grid place: mixed radix over the
   //! REPLICATED axes (dimension 0 fastest); shared-axis coordinates drop out
-  size_t instance_of(size_t place_index) const
+  _CCCL_HOST_API size_t instance_of(size_t place_index) const
   {
     if (deferred_)
     {
@@ -2151,7 +2155,7 @@ public:
   }
 
   //! Linear grid place of the instance's representative (shared coords = 0)
-  size_t representative_place(size_t instance_index) const
+  _CCCL_HOST_API size_t representative_place(size_t instance_index) const
   {
     if (deferred_)
     {
@@ -2172,7 +2176,7 @@ public:
 
   //! Every fiber member of every instance must live at the SAME affine data
   //! place -- "share" only means something where a common memory exists
-  void validate_colocation() const
+  _CCCL_HOST_API void validate_colocation() const
   {
     const size_t total = grid_.size();
     for (size_t p = 0; p < total; p++)
@@ -2191,27 +2195,27 @@ public:
     }
   }
 
-  bool is_deferred() const noexcept
+  _CCCL_HOST_API bool is_deferred() const noexcept
   {
     return deferred_;
   }
 
-  int get_device_ordinal() const override
+  _CCCL_HOST_API int get_device_ordinal() const override
   {
     return data_place_interface::composite;
   }
 
-  ::std::string to_string() const override
+  _CCCL_HOST_API ::std::string to_string() const override
   {
     return deferred_ ? "replicated(deferred)" : "replicated";
   }
 
-  size_t hash() const override
+  _CCCL_HOST_API size_t hash() const override
   {
     _CCCL_THROW(::std::logic_error, "hash() not supported for replicated data_place");
   }
 
-  int cmp(const data_place_interface& other) const override
+  _CCCL_HOST_API int cmp(const data_place_interface& other) const override
   {
     if (typeid(*this) != typeid(other))
     {
@@ -2232,17 +2236,17 @@ public:
     return (grid_ < o.grid_) ? -1 : (grid_ != o.grid_);
   }
 
-  void* allocate(::std::ptrdiff_t, cudaStream_t) const override
+  _CCCL_HOST_API void* allocate(::std::ptrdiff_t, cudaStream_t) const override
   {
     _CCCL_THROW(::std::runtime_error, "replicated data_place: allocate through a logical data");
   }
 
-  void deallocate(void*, size_t, cudaStream_t) const override
+  _CCCL_HOST_API void deallocate(void*, size_t, cudaStream_t) const override
   {
     _CCCL_THROW(::std::runtime_error, "replicated data_place: instances deallocate through their member places");
   }
 
-  bool allocation_is_stream_ordered() const override
+  _CCCL_HOST_API bool allocation_is_stream_ordered() const override
   {
     // Instances at this place are one ordinary allocation per member, so
     // teardown is stream-ordered exactly when every member's is: report
@@ -2257,12 +2261,12 @@ public:
     return true;
   }
 
-  ::std::shared_ptr<void> get_affine_exec_impl() const override
+  _CCCL_HOST_API ::std::shared_ptr<void> get_affine_exec_impl() const override
   {
     return grid_.get_impl();
   }
 
-  const exec_place& get_grid() const noexcept
+  _CCCL_HOST_API const exec_place& get_grid() const noexcept
   {
     return grid_;
   }
@@ -2276,7 +2280,7 @@ private:
 };
 
 //! Whether this replicated data place still needs its grid bound
-inline bool replicated_is_deferred(const data_place& dp)
+_CCCL_HOST_API inline bool replicated_is_deferred(const data_place& dp)
 {
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- the caller checked the kind
   const auto* rep = static_cast<const data_place_replicated*>(dp.get_impl().get());
@@ -2284,29 +2288,29 @@ inline bool replicated_is_deferred(const data_place& dp)
 }
 
 //! Grid of a replicated data place
-inline const exec_place& replicated_grid(const data_place& dp)
+_CCCL_HOST_API inline const exec_place& replicated_grid(const data_place& dp)
 {
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) -- the caller checked the kind
   const auto* rep = static_cast<const data_place_replicated*>(dp.get_impl().get());
   return rep->get_grid();
 }
 
-inline bool data_place::is_composite() const
+_CCCL_HOST_API inline bool data_place::is_composite() const
 {
   return pimpl_->is_composite();
 }
 
-inline bool data_place::is_replicated() const noexcept
+_CCCL_HOST_API inline bool data_place::is_replicated() const noexcept
 {
   return pimpl_->is_replicated();
 }
 
-inline size_t data_place::instance_count() const
+_CCCL_HOST_API inline size_t data_place::instance_count() const
 {
   return pimpl_->instance_count();
 }
 
-inline data_place data_place::member(size_t r) const
+_CCCL_HOST_API inline data_place data_place::member(size_t r) const
 {
   _CCCL_ASSERT(r < instance_count(), "member index out of range");
   if (instance_count() == 1)
@@ -2318,7 +2322,7 @@ inline data_place data_place::member(size_t r) const
   return rep->get_grid().get_place(rep->representative_place(r)).affine_data_place();
 }
 
-inline size_t data_place::instance_of(size_t place_index) const
+_CCCL_HOST_API inline size_t data_place::instance_of(size_t place_index) const
 {
   if (!is_replicated())
   {
@@ -2329,12 +2333,12 @@ inline size_t data_place::instance_of(size_t place_index) const
   return rep->instance_of(place_index);
 }
 
-inline data_place data_place::composite(partition_mapper f, const exec_place& grid)
+_CCCL_HOST_API inline data_place data_place::composite(partition_mapper f, const exec_place& grid)
 {
   return data_place(::std::make_shared<data_place_composite>(grid, mv(f)));
 }
 
-inline data_place data_place::replicated(const exec_place& grid)
+_CCCL_HOST_API inline data_place data_place::replicated(const exec_place& grid)
 {
   if (!grid.get_impl())
   {
@@ -2351,13 +2355,13 @@ inline data_place data_place::replicated(const exec_place& grid)
   return data_place(::std::make_shared<data_place_replicated>(grid));
 }
 
-inline data_place data_place::replicated()
+_CCCL_HOST_API inline data_place data_place::replicated()
 {
   return data_place(::std::make_shared<data_place_replicated>());
 }
 
 template <size_t... axes>
-data_place data_place::replicated(const exec_place& grid, replicate_over_t<axes...>)
+_CCCL_HOST_API data_place data_place::replicated(const exec_place& grid, replicate_over_t<axes...>)
 {
   static_assert(sizeof...(axes) >= 1, "replicate_over needs at least one axis");
   static_assert(((axes < 4) && ...), "grid axes are 0..3");
@@ -2380,12 +2384,12 @@ data_place data_place::replicated(const exec_place& grid, replicate_over_t<axes.
 
 // User-visible API when the same partitioner as the one of the grid
 template <typename partitioner_t, typename>
-data_place data_place::composite(partitioner_t, const exec_place& g)
+_CCCL_HOST_API data_place data_place::composite(partitioner_t, const exec_place& g)
 {
   return data_place::composite(partition_mapper(&partitioner_t::get_executor), g);
 }
 
-inline augmented_stream data_place::getDataStream(exec_place_resources& res) const
+_CCCL_HOST_API inline augmented_stream data_place::getDataStream(exec_place_resources& res) const
 {
   return affine_exec_place().getStream(res, false);
 }
@@ -2598,7 +2602,7 @@ UNITTEST("dim4 very large total size calculation")
 template <>
 struct hash<data_place>
 {
-  ::std::size_t operator()(const data_place& k) const
+  _CCCL_HOST_API ::std::size_t operator()(const data_place& k) const
   {
     return k.hash();
   }
@@ -2610,7 +2614,7 @@ struct hash<data_place>
 template <>
 struct hash<exec_place>
 {
-  ::std::size_t operator()(const exec_place& k) const
+  _CCCL_HOST_API ::std::size_t operator()(const exec_place& k) const
   {
     return k.hash();
   }

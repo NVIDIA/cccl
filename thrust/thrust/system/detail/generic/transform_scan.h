@@ -22,7 +22,7 @@ template <typename ExecutionPolicy,
           typename OutputIterator,
           typename UnaryFunction,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator transform_inclusive_scan(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -36,7 +36,7 @@ template <typename ExecutionPolicy,
           typename UnaryFunction,
           typename T,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator transform_inclusive_scan(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -51,7 +51,7 @@ template <typename ExecutionPolicy,
           typename UnaryFunction,
           typename T,
           typename AssociativeOperator>
-_CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator transform_exclusive_scan(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator first,
   InputIterator last,

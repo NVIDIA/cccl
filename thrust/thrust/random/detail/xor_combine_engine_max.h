@@ -22,7 +22,7 @@ THRUST_NAMESPACE_BEGIN
 namespace random::detail
 {
 template <typename UIntType>
-_CCCL_HOST_DEVICE constexpr auto lshift(UIntType lhs, UIntType rhs) -> UIntType
+_CCCL_HOST_DEVICE_API constexpr auto lshift(UIntType lhs, UIntType rhs) -> UIntType
 {
   const bool shift_will_overflow = rhs >= ::cuda::std::numeric_limits<UIntType>::digits;
   if (shift_will_overflow)
@@ -33,13 +33,13 @@ _CCCL_HOST_DEVICE constexpr auto lshift(UIntType lhs, UIntType rhs) -> UIntType
 }
 
 template <typename UIntType>
-_CCCL_HOST_DEVICE constexpr auto two_to_the_power(UIntType p) -> UIntType
+_CCCL_HOST_DEVICE_API constexpr auto two_to_the_power(UIntType p) -> UIntType
 {
   return lshift(UIntType{1}, p);
 }
 
 template <typename UIntType>
-_CCCL_HOST_DEVICE constexpr auto log2(UIntType n) -> UIntType
+_CCCL_HOST_DEVICE_API constexpr auto log2(UIntType n) -> UIntType
 {
   UIntType cur = 0;
   while (n > 1)
@@ -119,7 +119,7 @@ struct xor_combine_engine_max_aux_2
 {
   using constants = xor_combine_engine_max_aux_constants<ResultType, A, B, D>;
 
-  _CCCL_HOST_DEVICE static constexpr ResultType compute_value()
+  _CCCL_HOST_DEVICE_API static constexpr ResultType compute_value()
   {
     // if k is odd...
     if constexpr (constants::k % 2 == 1)

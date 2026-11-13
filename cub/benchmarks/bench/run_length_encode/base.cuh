@@ -11,7 +11,7 @@
 
 //! @tparam RunLengthT Offset type large enough to represent the longest run in the sequence
 template <class T, class OffsetT, class RunLengthT>
-void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT>)
+_CCCL_HOST_API void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT>)
 {
   // Offset type large enough to represent any offset into the input sequence and the total number of runs
   using offset_t = cub::detail::choose_signed_offset_t<OffsetT>;

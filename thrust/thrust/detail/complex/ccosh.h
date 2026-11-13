@@ -64,7 +64,7 @@ namespace detail::complex
 // finite y and propagates a NaN or raises invalid for an infinite y. C99 Annex G specifies
 // the complex functions in these terms.
 // NOLINTBEGIN(misc-redundant-expression)
-_CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<double>& z)
+_CCCL_HOST_DEVICE_API inline thrust::complex<double> ccosh(const thrust::complex<double>& z)
 {
   const double huge = 8.98846567431157953864652595395e+307; // 0x1p1023
   double x;
@@ -194,7 +194,7 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<dou
 }
 // NOLINTEND(misc-redundant-expression)
 
-_CCCL_HOST_DEVICE inline thrust::complex<double> ccos(const thrust::complex<double>& z)
+_CCCL_HOST_DEVICE_API inline thrust::complex<double> ccos(const thrust::complex<double>& z)
 {
   /* ccos(z) = ccosh(I * z) */
   return (ccosh(thrust::complex<double>(-z.imag(), z.real())));
@@ -202,7 +202,7 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccos(const thrust::complex<doub
 } // namespace detail::complex
 
 template <typename ValueType>
-_CCCL_HOST_DEVICE inline complex<ValueType> cos(const complex<ValueType>& z)
+_CCCL_HOST_DEVICE_API inline complex<ValueType> cos(const complex<ValueType>& z)
 {
   const ValueType re = z.real();
   const ValueType im = z.imag();
@@ -210,7 +210,7 @@ _CCCL_HOST_DEVICE inline complex<ValueType> cos(const complex<ValueType>& z)
 }
 
 template <typename ValueType>
-_CCCL_HOST_DEVICE inline complex<ValueType> cosh(const complex<ValueType>& z)
+_CCCL_HOST_DEVICE_API inline complex<ValueType> cosh(const complex<ValueType>& z)
 {
   const ValueType re = z.real();
   const ValueType im = z.imag();
@@ -218,13 +218,13 @@ _CCCL_HOST_DEVICE inline complex<ValueType> cosh(const complex<ValueType>& z)
 }
 
 template <>
-_CCCL_HOST_DEVICE inline thrust::complex<double> cos(const thrust::complex<double>& z)
+_CCCL_HOST_DEVICE_API inline thrust::complex<double> cos(const thrust::complex<double>& z)
 {
   return detail::complex::ccos(z);
 }
 
 template <>
-_CCCL_HOST_DEVICE inline thrust::complex<double> cosh(const thrust::complex<double>& z)
+_CCCL_HOST_DEVICE_API inline thrust::complex<double> cosh(const thrust::complex<double>& z)
 {
   return detail::complex::ccosh(z);
 }

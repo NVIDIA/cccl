@@ -37,7 +37,7 @@ THRUST_NAMESPACE_BEGIN
 // XXX declare generic copy_if interface
 // to avoid circulular dependency from thrust/copy.h
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if( // NOLINT(readability-redundant-declaration)
+_CCCL_HOST_DEVICE_API OutputIterator copy_if( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -49,7 +49,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if( // NOLINT(readability-redundant-declaration)
+_CCCL_HOST_DEVICE_API OutputIterator copy_if( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -162,7 +162,7 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if_with_stencil(
 //-------------------------
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIterator, class OutputIterator, class Predicate>
-OutputIterator _CCCL_HOST_DEVICE copy_if(
+OutputIterator _CCCL_HOST_DEVICE_API copy_if(
   execution_policy<Derived>& policy, InputIterator first, InputIterator last, OutputIterator result, Predicate pred)
 {
   THRUST_CDP_DISPATCH((return detail::copy_if_with_stencil</* InPlace */ false>(
@@ -172,7 +172,7 @@ OutputIterator _CCCL_HOST_DEVICE copy_if(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIterator, class StencilIterator, class OutputIterator, class Predicate>
-OutputIterator _CCCL_HOST_DEVICE copy_if(
+OutputIterator _CCCL_HOST_DEVICE_API copy_if(
   execution_policy<Derived>& policy,
   InputIterator first,
   InputIterator last,

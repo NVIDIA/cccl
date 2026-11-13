@@ -54,7 +54,7 @@ namespace detail::complex
  * Input:  ln(DBL_MAX) <= x < ln(2 * DBL_MAX / DBL_MIN_DENORM) ~= 1454.91
  * Output: 2**1023 <= y < 2**1024
  */
-_CCCL_HOST_DEVICE inline double frexp_exp(double x, int* expt)
+_CCCL_HOST_DEVICE_API inline double frexp_exp(double x, int* expt)
 {
   const uint32_t k  = 1799; /* constant for reduction */
   const double kln2 = 1246.97177782734161156; /* k * ln2 */
@@ -75,7 +75,7 @@ _CCCL_HOST_DEVICE inline double frexp_exp(double x, int* expt)
   return exp_x;
 }
 
-_CCCL_HOST_DEVICE inline complex<double> ldexp_cexp(complex<double> z, int expt)
+_CCCL_HOST_DEVICE_API inline complex<double> ldexp_cexp(complex<double> z, int expt)
 {
   double x;
   double y;
@@ -107,7 +107,7 @@ _CCCL_HOST_DEVICE inline complex<double> ldexp_cexp(complex<double> z, int expt)
 // finite y and propagates a NaN or raises invalid for an infinite y. C99 Annex G specifies
 // the complex functions in these terms.
 // NOLINTBEGIN(misc-redundant-expression)
-_CCCL_HOST_DEVICE inline complex<double> cexp(const complex<double>& z)
+_CCCL_HOST_DEVICE_API inline complex<double> cexp(const complex<double>& z)
 {
   double x;
   double y;
@@ -178,13 +178,13 @@ _CCCL_HOST_DEVICE inline complex<double> cexp(const complex<double>& z)
 } // namespace detail::complex
 
 template <typename ValueType>
-_CCCL_HOST_DEVICE inline complex<ValueType> exp(const complex<ValueType>& z)
+_CCCL_HOST_DEVICE_API inline complex<ValueType> exp(const complex<ValueType>& z)
 {
   return polar(::cuda::std::exp(z.real()), z.imag());
 }
 
 template <>
-_CCCL_HOST_DEVICE inline complex<double> exp(const complex<double>& z)
+_CCCL_HOST_DEVICE_API inline complex<double> exp(const complex<double>& z)
 {
   return detail::complex::cexp(z);
 }

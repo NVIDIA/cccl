@@ -42,7 +42,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename MR, typename DerivedPolicy>
-_CCCL_HOST MR* get_per_device_resource(const thrust::detail::execution_policy_base<DerivedPolicy>& system)
+_CCCL_HOST_API MR* get_per_device_resource(const thrust::detail::execution_policy_base<DerivedPolicy>& system)
 {
   using thrust::system::detail::generic::get_per_device_resource;
 
@@ -91,23 +91,23 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST per_device_allocator()
+  _CCCL_HOST_API per_device_allocator()
       : base(get_per_device_resource<Upstream>(ExecutionPolicy()))
   {}
 
   /*! Copy constructor. Copies the memory resource pointer. */
-  _CCCL_HOST_DEVICE per_device_allocator(const per_device_allocator& other)
+  _CCCL_HOST_DEVICE_API per_device_allocator(const per_device_allocator& other)
       : base(other)
   {}
 
   /*! Conversion constructor from an allocator of a different type. Copies the memory resource pointer. */
   template <typename U>
-  _CCCL_HOST_DEVICE per_device_allocator(const per_device_allocator<U, Upstream, ExecutionPolicy>& other)
+  _CCCL_HOST_DEVICE_API per_device_allocator(const per_device_allocator<U, Upstream, ExecutionPolicy>& other)
       : base(other)
   {}
 
   /*! Destructor. */
-  _CCCL_HOST_DEVICE ~per_device_allocator() {}
+  _CCCL_HOST_DEVICE_API ~per_device_allocator() {}
 };
 
 THRUST_NAMESPACE_END

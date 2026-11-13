@@ -230,7 +230,7 @@ THRUST_RUNTIME_FUNCTION InputIt inplace_partition(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class StencilIt, class SelectedOutIt, class RejectedOutIt, class Predicate>
-::cuda::std::pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE partition_copy(
+::cuda::std::pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE_API partition_copy(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -249,7 +249,7 @@ template <class Derived, class InputIt, class StencilIt, class SelectedOutIt, cl
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class SelectedOutIt, class RejectedOutIt, class Predicate>
-::cuda::std::pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE partition_copy(
+::cuda::std::pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE_API partition_copy(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -268,7 +268,7 @@ template <class Derived, class InputIt, class SelectedOutIt, class RejectedOutIt
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class StencilIt, class SelectedOutIt, class RejectedOutIt, class Predicate>
-::cuda::std::pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE stable_partition_copy(
+::cuda::std::pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE_API stable_partition_copy(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -287,7 +287,7 @@ template <class Derived, class InputIt, class StencilIt, class SelectedOutIt, cl
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class SelectedOutIt, class RejectedOutIt, class Predicate>
-::cuda::std::pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE stable_partition_copy(
+::cuda::std::pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE_API stable_partition_copy(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -308,7 +308,7 @@ template <class Derived, class InputIt, class SelectedOutIt, class RejectedOutIt
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class Iterator, class StencilIt, class Predicate>
-Iterator _CCCL_HOST_DEVICE
+Iterator _CCCL_HOST_DEVICE_API
 partition(execution_policy<Derived>& policy, Iterator first, Iterator last, StencilIt stencil, Predicate predicate)
 {
   THRUST_CDP_DISPATCH((last = detail::inplace_partition(policy, first, last, stencil, predicate);),
@@ -318,7 +318,7 @@ partition(execution_policy<Derived>& policy, Iterator first, Iterator last, Sten
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class Iterator, class Predicate>
-Iterator _CCCL_HOST_DEVICE
+Iterator _CCCL_HOST_DEVICE_API
 partition(execution_policy<Derived>& policy, Iterator first, Iterator last, Predicate predicate)
 {
   THRUST_CDP_DISPATCH(
@@ -329,7 +329,7 @@ partition(execution_policy<Derived>& policy, Iterator first, Iterator last, Pred
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class Iterator, class StencilIt, class Predicate>
-Iterator _CCCL_HOST_DEVICE stable_partition(
+Iterator _CCCL_HOST_DEVICE_API stable_partition(
   execution_policy<Derived>& policy, Iterator first, Iterator last, StencilIt stencil, Predicate predicate)
 {
   auto ret = last;
@@ -345,7 +345,7 @@ Iterator _CCCL_HOST_DEVICE stable_partition(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class Iterator, class Predicate>
-Iterator _CCCL_HOST_DEVICE
+Iterator _CCCL_HOST_DEVICE_API
 stable_partition(execution_policy<Derived>& policy, Iterator first, Iterator last, Predicate predicate)
 {
   auto ret = last;
@@ -371,7 +371,7 @@ struct __is_partitioned_fn
   // Not const-qualified: a const operator() would propagate const onto pred
   // and reject predicates whose own operator() is non-const (Thrust permits these).
   template <class Tuple>
-  [[nodiscard]] _CCCL_HOST_DEVICE bool operator()(const Tuple& tuple)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator()(const Tuple& tuple)
   {
     const bool lhs = pred(thrust::raw_reference_cast(::cuda::std::get<0>(tuple)));
     const bool rhs = pred(thrust::raw_reference_cast(::cuda::std::get<1>(tuple)));
@@ -385,7 +385,7 @@ struct __is_partitioned_fn
 // launch overhead roughly in half for typical inputs.
 // See: https://github.com/NVIDIA/cccl/issues/8085
 template <class Derived, class ItemsIt, class Predicate>
-bool _CCCL_HOST_DEVICE
+bool _CCCL_HOST_DEVICE_API
 is_partitioned(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, Predicate predicate)
 {
   if (first == last)

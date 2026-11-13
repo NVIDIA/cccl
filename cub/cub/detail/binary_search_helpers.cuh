@@ -34,7 +34,7 @@ struct comp_wrapper_t
   CompareOpT op;
 
   template <typename Value, typename Output>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(::cuda::std::tuple<Value, Output> args) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()(::cuda::std::tuple<Value, Output> args) const
   {
     using DifferenceT = ::cuda::std::iter_difference_t<RangeIteratorT>;
     const auto last   = first + static_cast<DifferenceT>(num_items);
@@ -44,7 +44,7 @@ struct comp_wrapper_t
 };
 
 template <typename Mode, typename RangeIteratorT, typename RangeNumItemsT, typename CompareOpT>
-_CCCL_HOST_DEVICE auto make_comp_wrapper(RangeIteratorT first, RangeNumItemsT num_items, CompareOpT comp)
+_CCCL_HOST_DEVICE_API auto make_comp_wrapper(RangeIteratorT first, RangeNumItemsT num_items, CompareOpT comp)
 {
   return comp_wrapper_t<RangeIteratorT, RangeNumItemsT, CompareOpT, Mode>{first, num_items, comp};
 }
@@ -52,7 +52,7 @@ _CCCL_HOST_DEVICE auto make_comp_wrapper(RangeIteratorT first, RangeNumItemsT nu
 struct lower_bound
 {
   template <typename RangeIteratorT, typename DifferenceT, typename T, typename CompareOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static DifferenceT
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE static DifferenceT
   Linear(RangeIteratorT first, DifferenceT num_items, const T& value, CompareOpT comp)
   {
     DifferenceT retval = 0;
@@ -65,7 +65,7 @@ struct lower_bound
   }
 
   template <typename RangeIteratorT, typename T, typename CompareOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static ::cuda::std::ptrdiff_t
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE static ::cuda::std::ptrdiff_t
   Invoke(RangeIteratorT first, RangeIteratorT last, const T& value, CompareOpT comp)
   {
     return ::cuda::std::lower_bound(first, last, value, comp) - first;
@@ -75,7 +75,7 @@ struct lower_bound
 struct upper_bound
 {
   template <typename RangeIteratorT, typename DifferenceT, typename T, typename CompareOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static DifferenceT
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE static DifferenceT
   Linear(RangeIteratorT first, DifferenceT num_items, const T& value, CompareOpT comp)
   {
     DifferenceT retval = 0;
@@ -88,7 +88,7 @@ struct upper_bound
   }
 
   template <typename RangeIteratorT, typename T, typename CompareOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static ::cuda::std::ptrdiff_t
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE static ::cuda::std::ptrdiff_t
   Invoke(RangeIteratorT first, RangeIteratorT last, const T& value, CompareOpT comp)
   {
     return ::cuda::std::upper_bound(first, last, value, comp) - first;
@@ -103,7 +103,7 @@ struct binary_search_transform_op_t
   CompareOpT op;
 
   template <typename Value>
-  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::ptrdiff_t operator()(const Value& value) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::ptrdiff_t operator()(const Value& value) const
   {
     using DifferenceT = ::cuda::std::iter_difference_t<RangeIteratorT>;
     const auto count  = static_cast<DifferenceT>(num_items);
@@ -118,7 +118,8 @@ struct binary_search_transform_op_t
 };
 
 template <typename Mode, typename RangeIteratorT, typename RangeNumItemsT, typename CompareOpT>
-_CCCL_HOST_DEVICE auto make_binary_search_transform_op(RangeIteratorT first, RangeNumItemsT num_items, CompareOpT comp)
+_CCCL_HOST_DEVICE_API auto
+make_binary_search_transform_op(RangeIteratorT first, RangeNumItemsT num_items, CompareOpT comp)
 {
   return binary_search_transform_op_t<RangeIteratorT, RangeNumItemsT, CompareOpT, Mode>{first, num_items, comp};
 }

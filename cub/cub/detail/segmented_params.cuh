@@ -164,7 +164,7 @@ struct __validate_uniform_integral_param
 // behavior. Compiled out when assertions are disabled (the bounds are not even computed). Gated on the argument's
 // integer element type: `bool` and character types are excluded, matching the `cmp_*` comparators.
 template <typename Arg, typename Value>
-_CCCL_HOST_DEVICE constexpr void
+_CCCL_HOST_DEVICE_API constexpr void
 __assert_param_in_bounds([[maybe_unused]] const Arg& __arg, [[maybe_unused]] const Value& __value) noexcept
 {
   using __element_t = typename ::cuda::args::__traits<Arg>::element_type;
@@ -188,7 +188,7 @@ __assert_param_in_bounds([[maybe_unused]] const Arg& __arg, [[maybe_unused]] con
 //! @return The single argument value, or the sequence element at the given index.
 _CCCL_TEMPLATE(class Tp, class SegmentIndexT)
 _CCCL_REQUIRES((!::cuda::args::__is_wrapper_v<::cuda::std::remove_cvref_t<Tp>>) )
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto get_param(Tp&& __arg, [[maybe_unused]] SegmentIndexT __index) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_param(Tp&& __arg, [[maybe_unused]] SegmentIndexT __index) noexcept
 {
   if constexpr (::cuda::args::__traits<::cuda::std::remove_cvref_t<Tp>>::is_single_value)
   {
@@ -201,21 +201,21 @@ _CCCL_REQUIRES((!::cuda::args::__is_wrapper_v<::cuda::std::remove_cvref_t<Tp>>) 
 }
 
 template <auto Value, typename Tp, typename SegmentIndexT>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 get_param(const ::cuda::args::constant<Value, Tp>& __arg, [[maybe_unused]] SegmentIndexT __index) noexcept
 {
   return ::cuda::args::__unwrap(__arg);
 }
 
 template <typename Arg, typename StaticBounds, typename SegmentIndexT>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 get_param(const ::cuda::args::immediate<Arg, StaticBounds>& __arg, [[maybe_unused]] SegmentIndexT __index) noexcept
 {
   return ::cuda::args::__unwrap(__arg);
 }
 
 template <typename Arg, typename StaticBounds, typename SegmentIndexT>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 get_param(const ::cuda::args::deferred<Arg, StaticBounds>& __arg, [[maybe_unused]] SegmentIndexT __index) noexcept
 {
   // A single `deferred` wraps a handle to a device-side value (a pointer or input iterator), not the value itself;
@@ -229,7 +229,7 @@ get_param(const ::cuda::args::deferred<Arg, StaticBounds>& __arg, [[maybe_unused
 }
 
 template <typename Arg, typename StaticBounds, typename SegmentIndexT>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 get_param(const ::cuda::args::deferred_sequence<Arg, StaticBounds>& __arg, SegmentIndexT __index) noexcept
 {
   // Materialize into the scalar element type: `handle[index]` may yield a proxy reference that must not leak into the
@@ -246,7 +246,7 @@ get_param(const ::cuda::args::deferred_sequence<Arg, StaticBounds>& __arg, Segme
 // negative value as a huge unsigned one. A negative count thus becomes "no work". Deferred forms are range-checked
 // against their declared bounds by `get_param` in debug builds.
 template <typename Arg, typename SegmentIndexT>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 __get_and_clamp_param_to_nonnegative(const Arg& __arg, SegmentIndexT __index) noexcept
 {
   // Materialize into the scalar element type: the generic `get_param` may yield a proxy reference for fancy iterators,
@@ -318,7 +318,7 @@ using __retype_static_bounds_t _CCCL_NODEBUG = typename __retype_static_bounds<E
 //! @brief Plain values carry no `auto` NTTP and pass through unchanged.
 _CCCL_TEMPLATE(class Tp)
 _CCCL_REQUIRES((!::cuda::args::__is_wrapper_v<::cuda::std::remove_cvref_t<Tp>>) )
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr ::cuda::std::remove_cvref_t<Tp> normalize_param(Tp&& __arg) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::remove_cvref_t<Tp> normalize_param(Tp&& __arg) noexcept
 {
   return ::cuda::std::forward<Tp>(__arg);
 }
@@ -326,7 +326,7 @@ _CCCL_REQUIRES((!::cuda::args::__is_wrapper_v<::cuda::std::remove_cvref_t<Tp>>) 
 //! @brief Compile-time constants: integer values are re-wrapped with a value-chosen element type. Everything else
 //! (enumerators, pointers) already spells its type in any constant expression and is kept as is.
 template <auto Value, class Tp>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 normalize_param([[maybe_unused]] ::cuda::args::constant<Value, Tp> __arg) noexcept
 {
   if constexpr (::cuda::std::__cccl_is_integer_v<::cuda::std::remove_cv_t<decltype(Value)>>)
@@ -341,13 +341,14 @@ normalize_param([[maybe_unused]] ::cuda::args::constant<Value, Tp> __arg) noexce
 }
 
 template <auto Value>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto normalize_param(::cuda::args::__constant_sequence<Value> __arg) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+normalize_param(::cuda::args::__constant_sequence<Value> __arg) noexcept
 {
   return __arg;
 }
 
 template <class Arg, class StaticBounds>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 normalize_param(const ::cuda::args::immediate<Arg, StaticBounds>& __arg) noexcept
 {
   using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<Arg>, StaticBounds>;
@@ -355,7 +356,7 @@ normalize_param(const ::cuda::args::immediate<Arg, StaticBounds>& __arg) noexcep
 }
 
 template <class Arg, class StaticBounds>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 normalize_param(const ::cuda::args::__immediate_sequence<Arg, StaticBounds>& __arg) noexcept
 {
   using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<Arg>, StaticBounds>;
@@ -364,7 +365,7 @@ normalize_param(const ::cuda::args::__immediate_sequence<Arg, StaticBounds>& __a
 }
 
 template <class Arg, class StaticBounds>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 normalize_param(const ::cuda::args::deferred<Arg, StaticBounds>& __arg) noexcept
 {
   using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<Arg>, StaticBounds>;
@@ -373,7 +374,7 @@ normalize_param(const ::cuda::args::deferred<Arg, StaticBounds>& __arg) noexcept
 }
 
 template <class Arg, class StaticBounds>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 normalize_param(const ::cuda::args::deferred_sequence<Arg, StaticBounds>& __arg) noexcept
 {
   using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<Arg>, StaticBounds>;
@@ -406,7 +407,7 @@ struct static_discrete_param
   using supported_options_t = supported_options<T, Value>;
 
   template <typename SegmentIndexT>
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr T get_param(SegmentIndexT) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr T get_param(SegmentIndexT) const noexcept
   {
     return Value;
   }
@@ -424,7 +425,7 @@ struct static_discrete_param
 //! @param[in] f Functor invoked with the matched compile-time constant.
 //! @return `true` if the value matches one of the supported options.
 template <typename T, T... Opts, typename Functor>
-[[nodiscard]] _CCCL_HOST_DEVICE bool
+[[nodiscard]] _CCCL_HOST_DEVICE_API bool
 dispatch_impl(T val, [[maybe_unused]] supported_options<T, Opts...> __supported_options, Functor&& f)
 {
   const bool match_found =
@@ -442,7 +443,7 @@ dispatch_impl(T val, [[maybe_unused]] supported_options<T, Opts...> __supported_
 //! @param[in] f Functor invoked with the matched compile-time constant.
 //! @return `true` if the parameter value matches one of its supported options.
 template <typename ParamT, typename SegmentIndexT, typename Functor>
-[[nodiscard]] _CCCL_HOST_DEVICE bool dispatch_discrete(ParamT param, SegmentIndexT segment_id, Functor&& f)
+[[nodiscard]] _CCCL_HOST_DEVICE_API bool dispatch_discrete(ParamT param, SegmentIndexT segment_id, Functor&& f)
 {
   using supported_list = typename ParamT::supported_options_t;
   auto param_value     = param.get_param(segment_id);
