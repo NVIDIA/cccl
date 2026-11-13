@@ -240,6 +240,12 @@ public:
     return __count_as_impl<typename level_type::__product_type>(__mapping_result_, __hier_, __parent);
   }
 
+  //! @brief Returns the group rank within the parent known at compile time, or @c cuda::std::dynamic_extent.
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_rank(const _ParentGroup&)
+  {
+    return _MappingResult::static_group_rank();
+  }
+
   template <class _Tp, class _QueryMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp
   __rank_as_impl(const _QueryMappingResult& __mapping_result, const _Hierarchy&, const _ParentGroup&)

@@ -38,7 +38,7 @@ __global__ __launch_bounds__(64) void WarpReduceBatchedOverviewKernel(int* out)
   const int lane_id = static_cast<int>(threadIdx.x) % 32;
   if (lane_id < num_batches)
   {
-    out[warp_id * num_batches + lane_id] = result;
+    out[(warp_id * num_batches) + lane_id] = result;
   }
 }
 
@@ -136,10 +136,10 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedReduceToStripedApiKernel(i
     for (int i = 0; i < max_out_per_thread; ++i)
     {
       // Striped
-      const int batch_idx = i * logical_warp_threads + logical_lane_id;
+      const int batch_idx = (i * logical_warp_threads) + logical_lane_id;
       if (batch_idx < num_batches)
       {
-        out[participant_idx * num_batches + batch_idx] = results[i];
+        out[(participant_idx * num_batches) + batch_idx] = results[i];
       }
     }
   }
@@ -197,10 +197,10 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedReduceToBlockedApiKernel(i
     for (int i = 0; i < max_out_per_thread; ++i)
     {
       // Blocked
-      const int batch_idx = logical_lane_id * max_out_per_thread + i;
+      const int batch_idx = (logical_lane_id * max_out_per_thread) + i;
       if (batch_idx < num_batches)
       {
-        out[participant_idx * num_batches + batch_idx] = results[i];
+        out[(participant_idx * num_batches) + batch_idx] = results[i];
       }
     }
   }
@@ -241,7 +241,7 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedSumApiKernel(int* out)
   const int logical_lane_id = tid % logical_warp_threads;
   if (logical_lane_id < num_batches)
   {
-    out[logical_warp_id * num_batches + logical_lane_id] = result;
+    out[(logical_warp_id * num_batches) + logical_lane_id] = result;
   }
 }
 
@@ -285,10 +285,10 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedSumToStripedApiKernel(int*
   for (int i = 0; i < max_out_per_thread; ++i)
   {
     // Striped
-    const int batch_idx = i * logical_warp_threads + logical_lane_id;
+    const int batch_idx = (i * logical_warp_threads) + logical_lane_id;
     if (batch_idx < num_batches)
     {
-      out[logical_warp_id * num_batches + batch_idx] = results[i];
+      out[(logical_warp_id * num_batches) + batch_idx] = results[i];
     }
   }
 }
@@ -333,10 +333,10 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedSumToBlockedApiKernel(int*
   for (int i = 0; i < max_out_per_thread; ++i)
   {
     // Blocked
-    const int batch_idx = logical_lane_id * max_out_per_thread + i;
+    const int batch_idx = (logical_lane_id * max_out_per_thread) + i;
     if (batch_idx < num_batches)
     {
-      out[logical_warp_id * num_batches + batch_idx] = results[i];
+      out[(logical_warp_id * num_batches) + batch_idx] = results[i];
     }
   }
 }

@@ -135,7 +135,7 @@ _CCCL_DEVICE_API void check_sequence(Iterator iterator, unsigned initial, unsign
   unsigned visited = 0;
   for (int probe = 0; probe < probes; ++probe)
   {
-    const auto expected = (initial + static_cast<unsigned>(probe) * step) % capacity;
+    const auto expected = (initial + (static_cast<unsigned>(probe) * step)) % capacity;
     CHECK(*iterator == expected);
     visited |= 1u << static_cast<unsigned>(*iterator);
     ++iterator;
@@ -176,7 +176,7 @@ check_probing_kernel(Hasher first_hash, Hasher second_hash, int key, unsigned fi
   const auto group_double =
     double_hash.template make_iterator<BucketSize>(tile, key, dynamic_capacity{groups * stride});
   const auto static_group_double = double_hash.template make_iterator<BucketSize>(tile, key, group_capacity{});
-  const auto initial             = first * stride + lane * BucketSize;
+  const auto initial             = (first * stride) + (lane * BucketSize);
   check_sequence(group_linear, initial, stride, groups * stride, groups);
   check_sequence(static_group_linear, initial, stride, groups * stride, groups);
   check_sequence(group_double, initial, step * stride, groups * stride, groups);
@@ -257,10 +257,10 @@ _CCCL_KERNEL_ATTRIBUTES void check_wide_group_offsets_kernel()
   auto double_iterator = double_hash.template make_iterator<bucket_size>(tile, 0, capacity);
 
   // The stride exceeds int, and lanes 4 through 7 have offsets exceeding uint32_t.
-  CHECK(*linear_iterator == 6 * stride + lane_offset);
-  CHECK(*double_iterator == 6 * stride + lane_offset);
+  CHECK(*linear_iterator == (6 * stride) + lane_offset);
+  CHECK(*double_iterator == (6 * stride) + lane_offset);
   CHECK(*(++linear_iterator) == lane_offset);
-  CHECK(*(++double_iterator) == 5 * stride + lane_offset);
+  CHECK(*(++double_iterator) == (5 * stride) + lane_offset);
 }
 
 C2H_TEST("cuco group probing computes strides and lane offsets at index width", "[probing][overflow][cg]")

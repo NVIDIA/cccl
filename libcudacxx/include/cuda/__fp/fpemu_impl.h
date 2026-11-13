@@ -421,7 +421,7 @@ struct __fpemu_uint128
   uint64_t __lo_;
   uint64_t __hi_;
 
-  ::cuda::__fpemu_uint128() = default;
+  _CCCL_HIDE_FROM_ABI __fpemu_uint128() = default;
 
   _CCCL_HOST_DEVICE_API constexpr __fpemu_uint128(uint64_t __value) noexcept
       : __lo_(__value)

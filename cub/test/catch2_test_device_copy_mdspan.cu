@@ -173,7 +173,7 @@ struct is_42
 
 CUB_TEST("DeviceCopy::Copy: 2D strided mdspan", "[copy][mdspan]", CUB_SMALL)
 {
-  constexpr size_t num_items = (2 * 100 + 20) * 100;
+  constexpr size_t num_items = ((2 * 100) + 20) * 100;
   c2h::device_vector<int> d_input(num_items, thrust::no_init);
   c2h::device_vector<int> d_output(num_items, thrust::no_init);
   thrust::sequence(d_input.begin(), d_input.end(), 0);
@@ -201,13 +201,13 @@ CUB_TEST("DeviceCopy::Copy: 2D strided mdspan", "[copy][mdspan]", CUB_SMALL)
   // Count elements that weren't overwritten (should remain as 42s)
   // Due to strided layout, not all elements in the contiguous buffer are accessed
   auto count = thrust::count_if(d_output.begin(), d_output.end(), cuda::equal_to_value<int>{42});
-  constexpr size_t expected_untouched = num_items - (100 * 100 - 1);
+  constexpr size_t expected_untouched = num_items - ((100 * 100) - 1);
   REQUIRE(count == expected_untouched);
 }
 
 CUB_TEST("DeviceCopy::Copy: 2D strided mdspan + contiguous mdspan", "[copy][mdspan]", CUB_SMALL)
 {
-  constexpr size_t num_items = (2 * 100 + 20) * 100;
+  constexpr size_t num_items = ((2 * 100) + 20) * 100;
   c2h::device_vector<int> d_input(num_items, thrust::no_init);
   c2h::device_vector<int> d_output(num_items, thrust::no_init);
   thrust::sequence(d_input.begin(), d_input.end(), 0);

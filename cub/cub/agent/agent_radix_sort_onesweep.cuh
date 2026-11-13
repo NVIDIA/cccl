@@ -273,7 +273,7 @@ struct AgentRadixSortOnesweep
 
   _CCCL_DEVICE _CCCL_FORCEINLINE int ThreadBin(int u)
   {
-    return threadIdx.x * BINS_PER_THREAD + u;
+    return (threadIdx.x * BINS_PER_THREAD) + u;
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void LookbackPartial(int (&bins)[BINS_PER_THREAD])
@@ -547,7 +547,7 @@ struct AgentRadixSortOnesweep
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
-      const int idx              = threadIdx.x + u * BLOCK_THREADS;
+      const int idx              = threadIdx.x + (u * BLOCK_THREADS);
       const bit_ordered_type key = s.keys_out[idx];
       OffsetT global_idx         = idx + s.global_offsets[Digit(key)];
       if (FullTile || idx < tile_items)
@@ -566,7 +566,7 @@ struct AgentRadixSortOnesweep
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
-      const int idx      = threadIdx.x + u * BLOCK_THREADS;
+      const int idx      = threadIdx.x + (u * BLOCK_THREADS);
       ValueT value       = s.values_out[idx];
       OffsetT global_idx = idx + s.global_offsets[digits[u]];
       if (FullTile || idx < tile_items)
@@ -656,7 +656,7 @@ struct AgentRadixSortOnesweep
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
-      const int idx = threadIdx.x + u * BLOCK_THREADS;
+      const int idx = threadIdx.x + (u * BLOCK_THREADS);
       digits[u]     = Digit(s.keys_out[idx]);
     }
   }
