@@ -305,6 +305,43 @@ In this scenario, compiling CCCL 3.0 with CTK 12.x targeting architectures below
 - C++17
 - C++20
 
+### NVRTC
+
+[NVRTC](https://docs.nvidia.com/cuda/nvrtc/index.html) compiles CUDA C++ device code at runtime.
+Only functionality that can be used from device code is available:
+
+- **libcu++:** Device-callable APIs from `<cuda/std/*>` and `<cuda/*>` headers can be used with NVRTC.
+- **CUB:** Include the specific thread-, warp-, or block-level headers needed by a kernel, such as `<cub/block/block_reduce.cuh>`.
+  The umbrella header `<cub/cub.cuh>` and device-wide algorithms in `<cub/device/*>` are not supported with NVRTC because they require host code.
+- **Thrust:** Host containers and algorithms that dispatch work from the host cannot be used in an NVRTC program.
+
+For example, compile a kernel using headers from a CCCL checkout as follows. Replace the paths with your checkout and CUDA Toolkit locations:
+
+```cpp
+const char* source = R"(
+#include <cuda/std/limits>
+extern "C" __global__ void set_max(int* out) {
+  *out = cuda::std::numeric_limits<int>::max();
+}
+)";
+nvrtcProgram program;
+nvrtcCreateProgram(&program, source, "kernel.cu", 0, nullptr, nullptr);
+const char* options[] = {
+  "--std=c++17",
+  "--include-path=/<path-to-cccl>/libcudacxx/include",
+  "--include-path=/<path-to-cccl>/cub",
+  "--include-path=/<path-to-cccl>/thrust",
+  "--include-path=/<path-to-cuda>/include"
+};
+nvrtcResult result = nvrtcCompileProgram(program, sizeof(options) / sizeof(options[0]), options);
+nvrtcDestroyProgram(&program);
+```
+
+
+Starting with CUDA Toolkit 13.3, NVRTC can also extract and use its bundled CUDA and CCCL headers by passing `--use-bundled-headers=/<path-to-extract-headers>` to `nvrtcCompileProgram`.
+This option installs the headers into the specified directory if needed and automatically adds the appropriate include paths.
+See the [NVRTC bundled headers documentation](https://docs.nvidia.com/cuda/nvrtc/index.html#bundled-headers-cuda-13-3) for details.
+
 ### Testing Strategy
 
 CCCL's testing strategy strikes a balance between testing as many configurations as possible and maintaining reasonable CI times.
