@@ -108,8 +108,7 @@ public:
   {
     // Calibration is diagnostic only; allocation failures must not interfere
     // with task teardown.
-    ON_THROW(notify, loc)
-    {
+    sump::notify.at(loc)->*[&]() {
       auto key = ::std::pair{t.get_symbol(), get_data_footprint(t)};
 
       auto it = statistics.find(key);
@@ -150,8 +149,7 @@ public:
     int device                             = -1,
     const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
   {
-    ON_THROW(notify, loc)
-    {
+    sump::notify.at(loc)->*[&]() {
       cuda_try<cudaEventRecord>(end_event, stream);
       cuda_try<cudaEventSynchronize>(end_event);
       const float milliseconds = cuda_try<cudaEventElapsedTime>(start_event, end_event);

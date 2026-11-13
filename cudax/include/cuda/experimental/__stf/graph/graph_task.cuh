@@ -55,13 +55,12 @@ namespace reserved
  * destroyed for the same reason. Without `owns_graph`, EndCapture returns the context's own
  * graph, which is left alone.
  *
- * Runs under `ON_THROW(abort)`: a failing status query must not be mistaken for "not capturing",
+ * Runs under `sump::abort`: a failing status query must not be mistaken for "not capturing",
  * and with an exception already in flight a second failure has nowhere to go.
  */
 inline void abandon_capture(cudaStream_t stream, bool owns_graph, cudaGraph_t leftover = nullptr) noexcept
 {
-  ON_THROW(abort)
-  {
+  sump::abort->*[&]() {
     if (cuda_try<cudaStreamIsCapturing>(stream) != cudaStreamCaptureStatusNone)
     {
       cudaGraph_t discarded = cuda_try<cudaStreamEndCapture>(stream);
@@ -163,8 +162,7 @@ public:
 
     // DOT tracing and set_ready_prereqs must not throw after capture has begun,
     // or the stream would be left capturing. Abort instead.
-    ON_THROW(abort)
-    {
+    sump::abort->*[&]() {
       if (dot.is_tracing())
       {
         dot.template add_vertex<task, logical_data_untyped>(*this);
@@ -187,8 +185,7 @@ public:
   //! construction is unusable. Report and abort.
   graph_task<>& end_uncleared() noexcept
   {
-    ON_THROW(abort)
-    {
+    sump::abort->*[&]() {
 #if _CCCL_CTK_AT_LEAST(12, 3)
       // On the capture path, graph_mutex was acquired in start() and lives in
       // capture_lock_. Move it into a local unique_lock so RAII releases it at

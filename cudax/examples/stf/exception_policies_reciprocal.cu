@@ -58,8 +58,7 @@ int main()
   for (size_t w = 0; w < n_workers; ++w)
   {
     workers.emplace_back([&, w] {
-      reports[w] = ON_THROW(defer)
-      {
+      reports[w] = sump::defer->*[&]() {
         const size_t lo = w * chunk;
         const size_t hi = ::std::min(xs.size(), lo + chunk);
         for (size_t i = lo; i < hi; ++i)
@@ -88,8 +87,7 @@ int main()
     {
       if (report)
       {
-        ON_THROW(if_isa<::std::domain_error>(notify))
-        {
+        sump::if_isa<::std::domain_error>(sump::notify)->*[&]() {
           ::std::rethrow_exception(report);
         };
       }

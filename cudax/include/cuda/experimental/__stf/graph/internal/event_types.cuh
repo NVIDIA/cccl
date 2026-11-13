@@ -189,8 +189,7 @@ inline void fork_from_graph_node(
   event_list& previous_prereqs,
   const char* prereq_string) noexcept
 {
-  ON_THROW(abort)
-  {
+  sump::abort->*[&]() {
     auto gnp = reserved::graph_event(n, stage, g);
     // The label becomes a string only here, inside the guard: a by-value std::string parameter
     // would be constructed by the caller, after the node is in the graph but before this

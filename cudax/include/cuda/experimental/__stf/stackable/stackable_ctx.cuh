@@ -1126,8 +1126,7 @@ public:
     // pair to tear the node down cleanly. finalize_after_launch handles
     // the no-launch case correctly. This function is noexcept and runs from the destructor, so
     // a failure in either step is reported and the program ends.
-    ON_THROW(abort)
-    {
+    sump::abort->*[&]() {
       ensure_prepared_();
     };
     ctx_.pop_epilogue(sump::abort);

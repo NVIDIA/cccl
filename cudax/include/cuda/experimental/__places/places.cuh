@@ -65,6 +65,7 @@ class async_resources_handle;
 
 namespace cuda::experimental::places
 {
+namespace sump = ::cuda::experimental::stf::sump;
 using ::cuda::experimental::stf::box;
 using ::cuda::experimental::stf::cuda_safe_call;
 using ::cuda::experimental::stf::cuda_try;
@@ -1113,8 +1114,7 @@ public:
   {
     if (place_.get_impl())
     {
-      ON_THROW(abort)
-      {
+      sump::abort->*[&]() {
         place_.get_impl()->deactivate(prev_, idx_);
       };
     }
@@ -1141,8 +1141,7 @@ public:
       if (place_.get_impl())
       {
         // This operator is noexcept, so a throwing deactivate() would terminate without a report.
-        ON_THROW(abort)
-        {
+        sump::abort->*[&]() {
           place_.get_impl()->deactivate(prev_, idx_);
         };
       }
@@ -1189,8 +1188,7 @@ public:
   {
     if (place_.get_impl())
     {
-      ON_THROW(abort)
-      {
+      sump::abort->*[&]() {
         place_.get_impl()->deactivate(prev_, idx_);
       };
       place_ = exec_place(); // Mark as inactive

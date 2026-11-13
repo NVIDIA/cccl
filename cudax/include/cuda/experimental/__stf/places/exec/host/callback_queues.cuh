@@ -273,8 +273,7 @@ public:
   static void* callback_queue_worker(void* args)
   {
     // pthread calls this, so an exception must not leave it either.
-    ON_THROW(abort)
-    {
+    sump::abort->*[&]() {
       // fprintf(stderr, "CALLBACK RUNNING...\n");
       auto* const cbq = static_cast<callback_queue*>(args);
       cudaCallbackQueueProgress(cbq, 1);
@@ -300,8 +299,7 @@ inline void callback_dispatcher(cudaStream_t, cudaError_t, void* userData)
 {
   // The CUDA runtime calls this back, so an exception must not leave it; it would also strand
   // the queue mutex.
-  ON_THROW(abort)
-  {
+  sump::abort->*[&]() {
     auto* const cb_             = static_cast<cb*>(userData);
     callback_queue* const queue = cb_->queue;
 
@@ -315,8 +313,7 @@ inline void callback_dispatcher(cudaStream_t, cudaError_t, void* userData)
 
 inline void cudagraph_callback_dispatcher(void* userData)
 {
-  ON_THROW(abort)
-  {
+  sump::abort->*[&]() {
     auto* const cb_ = static_cast<cb*>(userData);
 
     callback_queue* const queue = cb_->queue;

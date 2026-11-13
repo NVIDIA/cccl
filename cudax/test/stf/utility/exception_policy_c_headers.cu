@@ -17,8 +17,7 @@
  * scope, and C headers may mask library functions with function-like macros.
  * This test includes the C and C++ library headers BEFORE the STF header and
  * exercises the spellings that could collide: SCOPE's tokens paste into a
- * fully qualified path (no unqualified lookup to hijack), ON_THROW injects
- * the policy namespace for the policy expression only, and the qualified
+ * fully qualified path (no unqualified lookup to hijack), and the qualified
  * eh names resolve regardless of what is in scope. Pins the
  * current lookup strategy against refactors that would weaken it.
  */
@@ -50,12 +49,11 @@ int main()
   }
   _CCCL_ASSERT(order == 2, "SCOPE guards must run despite C headers");
 
-  // The macro's namespace injection: plain `abort` inside ON_THROW means the policy.
-  const int v = ON_THROW(abort)
-  {
+  // The qualified policy: `sump::abort` is the sink even with the C library's abort in scope.
+  const int v = sump::abort->*[&]() {
     return 42;
   };
-  _CCCL_ASSERT(v == 42, "ON_THROW(abort) must compile and pass the value through");
+  _CCCL_ASSERT(v == 42, "sump::abort must compile and pass the value through");
 
   // The function form with qualified policies.
   const int w = sump::terminate->*[] {
