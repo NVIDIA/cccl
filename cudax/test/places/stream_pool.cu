@@ -223,21 +223,32 @@ void test_device_from_green_context_stream(int ndevs)
     CUdevice dev;
     cuda_try(cuDeviceGet(&dev, d));
 
-    // A green context over one group of SMs; skipped where the device cannot provide one.
+    // A green context over one group of SMs. Only CUDA_ERROR_NOT_SUPPORTED means the device cannot
+    // provide one and skips the device; any other error is a test failure.
     CUdevResource sm_resource;
+    CUresult res = cuDeviceGetDevResource(dev, &sm_resource, CU_DEV_RESOURCE_TYPE_SM);
+    if (res == CUDA_ERROR_NOT_SUPPORTED)
+    {
+      fprintf(stderr, "test_device_from_green_context_stream: device %d skipped (no SM resource)\n", d);
+      continue;
+    }
+    cuda_try(res);
+
     CUdevResource sm_group;
     CUdevResource sm_remaining;
     unsigned int ngroups = 1;
+    cuda_try(cuDevSmResourceSplitByCount(&sm_group, &ngroups, &sm_resource, &sm_remaining, 0, 1));
     CUdevResourceDesc desc;
+    cuda_try(cuDevResourceGenerateDesc(&desc, &sm_group, 1));
+
     CUgreenCtx green_ctx;
-    if (cuDeviceGetDevResource(dev, &sm_resource, CU_DEV_RESOURCE_TYPE_SM) != CUDA_SUCCESS
-        || cuDevSmResourceSplitByCount(&sm_group, &ngroups, &sm_resource, &sm_remaining, 0, 1) != CUDA_SUCCESS
-        || cuDevResourceGenerateDesc(&desc, &sm_group, 1) != CUDA_SUCCESS
-        || cuGreenCtxCreate(&green_ctx, desc, dev, CU_GREEN_CTX_DEFAULT_STREAM) != CUDA_SUCCESS)
+    res = cuGreenCtxCreate(&green_ctx, desc, dev, CU_GREEN_CTX_DEFAULT_STREAM);
+    if (res == CUDA_ERROR_NOT_SUPPORTED)
     {
       fprintf(stderr, "test_device_from_green_context_stream: device %d skipped (no green context)\n", d);
       continue;
     }
+    cuda_try(res);
 
     CUstream green_stream;
     cuda_try(cuGreenCtxStreamCreate(&green_stream, green_ctx, CU_STREAM_NON_BLOCKING, 0));
