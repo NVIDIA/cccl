@@ -279,9 +279,6 @@ struct cluster_topk_policy
                                  //!< shared-memory budget: the hardware opt-in budget). A smaller cap shrinks each
                                  //!< CTA's resident capacity (and thus its dynamic shared-memory request), so a smaller
                                  //!< segment overflows into the streaming path.
-  bool wave_aware_cluster_width = false; //!< After the launch shape is chosen (fully resident or streaming), also try
-                                         //!< narrower clusters (8, 4, 2, 1 CTAs) at the largest shared memory and keep
-                                         //!< the width that minimizes `waves / sqrt(width)`.
 
   // Equality/streaming make this a regular type (required by the `policy_selector` concept / `dispatch_compute_cap`).
   _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const cluster_topk_policy& lhs, const cluster_topk_policy& rhs)
@@ -294,8 +291,7 @@ struct cluster_topk_policy
         && lhs.tie_break_items_per_thread == rhs.tie_break_items_per_thread
         && lhs.copy_items_per_thread == rhs.copy_items_per_thread
         && lhs.max_blocks_per_cluster == rhs.max_blocks_per_cluster
-        && lhs.max_chunk_slots_per_block == rhs.max_chunk_slots_per_block
-        && lhs.wave_aware_cluster_width == rhs.wave_aware_cluster_width;
+        && lhs.max_chunk_slots_per_block == rhs.max_chunk_slots_per_block;
   }
 
   _CCCL_HOST_DEVICE_API friend constexpr bool operator!=(const cluster_topk_policy& lhs, const cluster_topk_policy& rhs)
@@ -314,8 +310,8 @@ struct cluster_topk_policy
         << ", .single_block_max_seg_size = " << p.single_block_max_seg_size << ", .bits_per_pass = " << p.bits_per_pass
         << ", .histogram_items_per_thread = " << p.histogram_items_per_thread << ", .tie_break_items_per_thread = "
         << p.tie_break_items_per_thread << ", .copy_items_per_thread = " << p.copy_items_per_thread
-        << ", .max_blocks_per_cluster = " << p.max_blocks_per_cluster << ", .max_chunk_slots_per_block = "
-        << p.max_chunk_slots_per_block << ", .wave_aware_cluster_width = " << p.wave_aware_cluster_width << " }";
+        << ", .max_blocks_per_cluster = " << p.max_blocks_per_cluster
+        << ", .max_chunk_slots_per_block = " << p.max_chunk_slots_per_block << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -2024,8 +2020,7 @@ make_sm120_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
     return _CUB::detail::batched_topk::make_cluster_policy();
   }
 
-  auto policy                     = _CUB::detail::batched_topk::make_cluster_policy();
-  policy.wave_aware_cluster_width = true;
+  auto policy = _CUB::detail::batched_topk::make_cluster_policy();
   if (static_max_segment_size <= 16 * 1024)
   {
     // Segments up to 16K keys run the single-CTA path, with 10-bit digits.

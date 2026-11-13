@@ -180,8 +180,10 @@ struct policy_selector_from_types
     // The SM 12.0 tunings (baseline and cluster) were measured on keys-only, non-deterministic requests only.
     const bool has_sm120_keys_tuning =
       !deterministic && ::cuda::std::is_same_v<ValueT, NullType> && cc == ::cuda::compute_capability{12, 0};
-    const bool baseline_can_cover = has_sm120_keys_tuning ? baseline_can_cover_for<_CUB::detail::batched_topk::make_sm120_baseline_policy>
-                                                          : baseline_can_cover_for<_CUB::detail::batched_topk::make_baseline_policy>;
+    const bool baseline_can_cover =
+      has_sm120_keys_tuning
+        ? baseline_can_cover_for<_CUB::detail::batched_topk::make_sm120_baseline_policy>
+        : baseline_can_cover_for<_CUB::detail::batched_topk::make_baseline_policy>;
 
     topk_algorithm backend = topk_algorithm::unsupported;
     if (deterministic || !baseline_can_cover)
@@ -225,7 +227,10 @@ struct policy_selector_from_types
       : has_sm103_keys_tuning
         ? _CUB::detail::batched_topk::make_sm103_keys_cluster_policy(StaticMaxSegSize, MaxK)
         : _CUB::detail::batched_topk::make_cluster_policy();
-    return topk_policy{backend, has_sm120_keys_tuning ? _CUB::detail::batched_topk::make_sm120_baseline_policy() : _CUB::detail::batched_topk::make_baseline_policy(), cluster};
+    return topk_policy{backend,
+                       has_sm120_keys_tuning ? _CUB::detail::batched_topk::make_sm120_baseline_policy()
+                                             : _CUB::detail::batched_topk::make_baseline_policy(),
+                       cluster};
   }
 };
 
@@ -482,52 +487,6 @@ _CCCL_HOST_API ::cuda::std::expected<cluster_launch_shape, cudaError_t> select_c
         return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(cudaErrorInvalidValue);
       }
       dynamic_smem_bytes = max_dynamic_smem_bytes;
-    }
-
-    if (policy.wave_aware_cluster_width)
-    {
-      // Narrower clusters fit more segments per wave. Minimize waves / sqrt(width) (per-segment time scales
-      // sub-linearly with width), ties toward the narrower cluster, which has cheaper cluster-wide synchronization.
-      const auto current_cpw =
-        _CUB::detail::batched_topk::probe_clusters_per_wave(kernel_ptr, stream, threads_per_block, cluster_blocks, dynamic_smem_bytes);
-      if (!current_cpw)
-      {
-        return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(current_cpw.error());
-      }
-      auto best_waves =
-        ::cuda::ceil_div(num_segments, static_cast<::cuda::std::uint64_t>(*current_cpw > 0 ? *current_cpw : 1));
-      int best_blocks = cluster_blocks;
-      for (int candidate_blocks = 8; candidate_blocks >= 1; candidate_blocks /= 2)
-      {
-        if (candidate_blocks >= cluster_blocks)
-        {
-          continue;
-        }
-        const auto cpw =
-          _CUB::detail::batched_topk::probe_clusters_per_wave(kernel_ptr, stream, threads_per_block, candidate_blocks, max_dynamic_smem_bytes);
-        if (!cpw)
-        {
-          return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(cpw.error());
-        }
-        if (*cpw <= 0)
-        {
-          continue; // not launchable at this width
-        }
-        const auto waves = ::cuda::ceil_div(num_segments, static_cast<::cuda::std::uint64_t>(*cpw));
-        // waves / sqrt(blocks) compared squared, in floating point: the integer products can overflow for large batches
-        const double candidate_score = static_cast<double>(waves) * static_cast<double>(waves) * best_blocks;
-        const double best_score = static_cast<double>(best_waves) * static_cast<double>(best_waves) * candidate_blocks;
-        if (candidate_score <= best_score)
-        {
-          best_waves  = waves;
-          best_blocks = candidate_blocks;
-        }
-      }
-      if (best_blocks != cluster_blocks)
-      {
-        cluster_blocks     = best_blocks;
-        dynamic_smem_bytes = max_dynamic_smem_bytes;
-      }
     }
   }
 
