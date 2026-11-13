@@ -273,8 +273,10 @@ Three things follow from the table before any type-specific advice:
 1. Multiplication costs one instruction more at ``high`` than at ``mid``, so ``high`` is paid for
    mostly on additions and divisions. A scalar that one limb holds exactly - ``float`` for
    ``fp32mp2``, ``float`` or ``double`` for ``fp64mp2`` - is cheaper as it is than converted to
-   a pair. A constant of a wider type whose value fits one limb, such as those in ``y * 2.0``
-   and ``y + 2``, takes the same path.
+   a pair, except in a product at ``high``: that takes 10 instructions against the pair
+   product's 9, for a smaller error. A constant of a wider type whose value fits one limb, such
+   as those in ``y * 2.0`` and ``y + 2``, takes the same path; an integer constant comes out
+   cheaper at ``high`` too, since the pair path converts it first.
 
 2. Division is the expensive basic operation, and the one ``high`` makes most expensive.
 

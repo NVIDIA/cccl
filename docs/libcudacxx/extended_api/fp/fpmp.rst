@@ -371,9 +371,10 @@ directly, so an ``fpmp2`` combines with a built-in scalar without a cast on the 
 With a scalar ``c`` that one limb holds exactly, ``x + c``, ``x - c``, ``c - x``, ``x * c`` and
 ``x / c`` skip the arithmetic on the zero low limb that converting ``c`` to a pair would add. The
 sum is the same value as with the converted ``c``, at 10 instead of 20 instructions at ``high``;
-the product takes 6 instead of 8 at ``mid``, and its error stays below ``2u²`` where the product
-with the converted ``c`` reaches ``3u²``; the quotient is the same value, one instruction cheaper. The :ref:`error bounds
-<libcudacxx-extended-api-fp-fpmp-error-bounds>` page lists each case.
+the product takes 6 instead of 8 at ``mid`` but 10 instead of 9 at ``high``, and its error stays
+below ``2u²`` where the product with the converted ``c`` reaches ``3u²``; the quotient is the same
+value, one instruction cheaper. The :ref:`error bounds <libcudacxx-extended-api-fp-fpmp-error-bounds>`
+page lists each case.
 
 ``renormalize(x)`` restores the non-overlap invariant, ``|lo| <= ulp(hi)/2``, which only ``low``
 accuracy can leave broken; see :ref:`accuracy levels <libcudacxx-extended-api-fp-fpmp-accuracy>`
