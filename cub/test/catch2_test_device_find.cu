@@ -263,7 +263,7 @@ struct index_to_value
 {
   __host__ __device__ NotDefaultConstructible operator()(int i)
   {
-    return NotDefaultConstructible{static_cast<int>(i)};
+    return NotDefaultConstructible{i};
   }
 };
 

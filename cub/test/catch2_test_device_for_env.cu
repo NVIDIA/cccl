@@ -45,7 +45,7 @@ struct square_idx_op
 {
   int* d_ptr;
 
-  __device__ void operator()(int i)
+  __device__ void operator()(int i) const
   {
     d_ptr[i] *= d_ptr[i];
   }
@@ -55,7 +55,7 @@ struct odd_count_op
 {
   int* d_count;
 
-  __device__ void operator()(int i)
+  __device__ void operator()(int i) const
   {
     if (i % 2 == 1)
     {
@@ -72,7 +72,7 @@ struct store_coords_op
 
   __device__ void operator()(int index, int x, int y) const
   {
-    output[index] = x * 10 + y;
+    output[index] = (x * 10) + y;
   }
 };
 
@@ -95,6 +95,17 @@ struct for_each_tuning
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ForPolicy
   {
     return {ThreadsPerBlock, 2};
+  }
+};
+
+template <int ThreadsPerBlock>
+struct for_each_tuning_transformer
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::ForPolicy policy) const
+    -> cub::ForPolicy
+  {
+    policy.threads_per_block = ThreadsPerBlock;
+    return policy;
   }
 };
 
@@ -971,6 +982,30 @@ CUB_TEST("DeviceFor::ForEachInLayout two-phase API propagates tuning", "[for][de
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   void* const d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachInLayout(d_temp_storage, temp_storage_bytes, mapping, op, env));
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+#endif // TEST_LAUNCH == 0
+
+// DeviceFor::Bulk allocates no temporary storage, so it cannot be driven through a launch wrapper
+#if TEST_LAUNCH == 0
+
+CUB_TEST("DeviceFor::Bulk tuning can be modified", "[for][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_check_t op{thrust::raw_pointer_cast(d_block_size.data())};
+
+  {
+    REQUIRE(cudaSuccess == cub::DeviceFor::Bulk(4, op, cuda::std::execution::env<>{}));
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
+  const auto env = cuda::execution::tune(for_each_tuning_transformer<target_block_size>{});
+
+  REQUIRE(cudaSuccess == cub::DeviceFor::Bulk(4, op, env));
   REQUIRE(d_block_size[0] == target_block_size);
 }
 

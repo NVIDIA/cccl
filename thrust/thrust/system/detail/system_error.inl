@@ -13,7 +13,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/system/error_code.h>
 #include <thrust/system/system_error.h>
+
+#include <cuda/std/__host_stdlib/stdexcept>
+
+#include <string>
 
 THRUST_NAMESPACE_BEGIN
 

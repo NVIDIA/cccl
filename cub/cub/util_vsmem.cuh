@@ -52,7 +52,6 @@ struct vsmem_t
 template <typename AgentT>
 class vsmem_helper_impl
 {
-private:
   // Per-block virtual shared memory may be padded to make sure vsmem is an integer multiple of `line_size`
   static constexpr ::cuda::std::size_t line_size = 128;
 
@@ -187,7 +186,7 @@ template <typename DefaultAgentPolicyT,
           typename DefaultAgentT,
           typename FallbackAgentPolicyT = DefaultAgentPolicyT,
           typename FallbackAgentT       = DefaultAgentT,
-          bool UseFallbackPolicy        = use_fallback_agent<DefaultAgentT, FallbackAgentT>()>
+          bool UseFallbackPolicy        = _CUB::detail::use_fallback_agent<DefaultAgentT, FallbackAgentT>()>
 struct vsmem_helper_with_fallback_impl : public vsmem_helper_impl<DefaultAgentT>
 {
   using agent_t        = DefaultAgentT;

@@ -19,6 +19,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
+#include <cuda/type_traits>
 
 #include <cuda/experimental/coop/group>
 
@@ -44,6 +45,16 @@ struct WarpsInBlockMappingResult
   }
 
   __device__ static constexpr ::cuda::std::size_t static_unit_count()
+  {
+    return cuda::std::dynamic_extent;
+  }
+
+  __device__ static constexpr bool has_uniform_static_unit_count()
+  {
+    return true;
+  }
+
+  __device__ static constexpr cuda::std::size_t static_unit_count(cuda::std::size_t)
   {
     return cuda::std::dynamic_extent;
   }
@@ -79,7 +90,15 @@ struct WarpsInBlockMappingResult
   }
 };
 
-template <class Config>
+struct MutableBarrierId
+{
+  __host__ __device__ int operator()(int id)
+  {
+    return id;
+  }
+};
+
+template <bool MutableOnly, class Config>
 __device__ void test_interwarp_synchronizer(Config config)
 {
   const auto& hierarchy = config.hierarchy();
@@ -95,6 +114,7 @@ __device__ void test_interwarp_synchronizer(Config config)
 
     // Test constructor from range of barrier ids.
     {
+      // NOLINTNEXTLINE(readability-redundant-parentheses)
       static_assert(cuda::std::is_constructible_v<Synchronizer, decltype((barrier_ids))>);
       [[maybe_unused]] const cudax::coop::interwarp_synchronizer synchronizer{barrier_ids};
     }
@@ -105,9 +125,18 @@ __device__ void test_interwarp_synchronizer(Config config)
       const WarpsInBlockMappingResult prev_mapping_result;
 
       const cudax::coop::group_by mapping{2};
-      const cudax::coop::interwarp_synchronizer synchronizer{barrier_ids};
+      using View = cuda::std::conditional_t<MutableOnly, NonConstView<const int>, cuda::std::span<const int, 4>>;
+      using RangeSynchronizer     = cudax::coop::interwarp_synchronizer<View>;
+      using QualifiedSynchronizer = cuda::std::conditional_t<MutableOnly, RangeSynchronizer, const RangeSynchronizer>;
+      QualifiedSynchronizer synchronizer{View{barrier_ids, 4}};
 
-      const auto mapping_result  = mapping.map(cuda::warp, parent_group, prev_mapping_result);
+      const auto mapping_result = mapping.map(cuda::warp, parent_group, prev_mapping_result);
+      static_assert(
+        can_make_synchronizer_instance<const RangeSynchronizer,
+                                       cuda::warp_level,
+                                       decltype(parent_group),
+                                       decltype(mapping_result)>
+        == !MutableOnly);
       auto synchronizer_instance = synchronizer.make_instance(cuda::warp, parent_group, mapping_result);
 
       // Test that synchronizer instance has the expected barrier id.
@@ -115,7 +144,11 @@ __device__ void test_interwarp_synchronizer(Config config)
                == static_cast<unsigned>(barrier_ids[mapping_result.group_rank()])));
 
       using SynchronizerInstance = decltype(synchronizer_instance);
-      using ArrivalToken         = typename SynchronizerInstance::arrival_token;
+
+      static_assert(cuda::is_trivially_copyable_v<SynchronizerInstance>);
+      static_assert(cuda::std::is_trivially_destructible_v<SynchronizerInstance>);
+
+      using ArrivalToken = typename SynchronizerInstance::arrival_token;
 
       // Test arrival_token type.
       static_assert(cuda::std::is_move_constructible_v<ArrivalToken>);
@@ -148,15 +181,6 @@ __device__ void test_interwarp_synchronizer(Config config)
         cuda::std::
           is_same_v<void, decltype(synchronizer_instance.do_wait_aligned(hierarchy, cuda::std::move(arrival_token_a)))>);
       synchronizer_instance.do_wait_aligned(hierarchy, cuda::std::move(arrival_token_a));
-
-      // Test view().
-      static_assert(cuda::std::is_same_v<decltype(synchronizer_instance), decltype(synchronizer_instance.view())>);
-      auto synchronizer_instance_view = synchronizer_instance.view();
-      synchronizer_instance_view.do_sync(hierarchy);
-      synchronizer_instance_view.do_sync_aligned(hierarchy);
-      synchronizer_instance_view.do_wait(hierarchy, synchronizer_instance_view.do_arrive(hierarchy));
-      synchronizer_instance_view.do_wait_aligned(hierarchy, synchronizer_instance_view.do_arrive_aligned(hierarchy));
-      (void) synchronizer_instance_view.view();
 
       // Test deinit(...);
       static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.deinit(mapping_result, hierarchy))>);
@@ -185,9 +209,27 @@ __device__ void test_interwarp_synchronizer(Config config)
       const WarpsInBlockMappingResult prev_mapping_result;
 
       const cudax::coop::group_by mapping{2};
-      const cudax::coop::interwarp_synchronizer synchronizer{barrier_ids};
+      auto ids = [&] {
+        if constexpr (MutableOnly)
+        {
+          return cuda::std::views::transform(barrier_ids, MutableBarrierId{});
+        }
+        else
+        {
+          return barrier_ids;
+        }
+      }();
+      using RangeSynchronizer     = cudax::coop::interwarp_synchronizer<decltype(ids)>;
+      using QualifiedSynchronizer = cuda::std::conditional_t<MutableOnly, RangeSynchronizer, const RangeSynchronizer>;
+      QualifiedSynchronizer synchronizer{cuda::std::move(ids)};
 
-      const auto mapping_result  = mapping.map(cuda::warp, parent_group, prev_mapping_result);
+      const auto mapping_result = mapping.map(cuda::warp, parent_group, prev_mapping_result);
+      static_assert(
+        can_make_synchronizer_instance<const RangeSynchronizer,
+                                       cuda::warp_level,
+                                       decltype(parent_group),
+                                       decltype(mapping_result)>
+        == !MutableOnly);
       auto synchronizer_instance = synchronizer.make_instance(cuda::warp, parent_group, mapping_result);
 
       // Test that synchronizer instance has the expected barrier id.
@@ -195,7 +237,11 @@ __device__ void test_interwarp_synchronizer(Config config)
                == mapping_result.group_rank() + 1));
 
       using SynchronizerInstance = decltype(synchronizer_instance);
-      using ArrivalToken         = typename SynchronizerInstance::arrival_token;
+
+      static_assert(cuda::is_trivially_copyable_v<SynchronizerInstance>);
+      static_assert(cuda::std::is_trivially_destructible_v<SynchronizerInstance>);
+
+      using ArrivalToken = typename SynchronizerInstance::arrival_token;
 
       // Test arrival_token type.
       static_assert(cuda::std::is_move_constructible_v<ArrivalToken>);
@@ -229,15 +275,6 @@ __device__ void test_interwarp_synchronizer(Config config)
           is_same_v<void, decltype(synchronizer_instance.do_wait_aligned(hierarchy, cuda::std::move(arrival_token_a)))>);
       synchronizer_instance.do_wait_aligned(hierarchy, cuda::std::move(arrival_token_a));
 
-      // Test view().
-      static_assert(cuda::std::is_same_v<decltype(synchronizer_instance), decltype(synchronizer_instance.view())>);
-      auto synchronizer_instance_view = synchronizer_instance.view();
-      synchronizer_instance_view.do_sync(hierarchy);
-      synchronizer_instance_view.do_sync_aligned(hierarchy);
-      synchronizer_instance_view.do_wait(hierarchy, synchronizer_instance_view.do_arrive(hierarchy));
-      synchronizer_instance_view.do_wait_aligned(hierarchy, synchronizer_instance_view.do_arrive_aligned(hierarchy));
-      (void) synchronizer_instance_view.view();
-
       // Test deinit(...);
       static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.deinit(mapping_result, hierarchy))>);
       synchronizer_instance.deinit(mapping_result, hierarchy);
@@ -250,7 +287,8 @@ struct TestKernel
   template <class Config>
   __device__ void operator()(const Config& config)
   {
-    test_interwarp_synchronizer(config);
+    test_interwarp_synchronizer<false>(config);
+    test_interwarp_synchronizer<true>(config);
   }
 };
 

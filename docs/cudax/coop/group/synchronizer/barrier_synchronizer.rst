@@ -21,6 +21,14 @@
 
     template <typename Unit, typename ParentGroup, typename MappingResult>
     [[nodiscard]] __device__
+    auto make_instance(const Unit&, const ParentGroup&, const MappingResult&);
+
+    template <typename Unit, typename ParentGroup, typename MappingResult>
+      requires cuda::std::ranges::sized_range<const RangeView>
+        && cuda::std::ranges::forward_range<const RangeView>
+        && cuda::std::same_as<cuda::std::ranges::range_reference_t<const RangeView>,
+                             cuda::std::ranges::range_reference_t<RangeView>>
+    [[nodiscard]] __device__
     auto make_instance(const Unit&, const ParentGroup&, const MappingResult&) const;
   };
 
@@ -44,6 +52,8 @@ The barrier at position ``i`` in the range is assigned to the group with rank ``
 
 Users should always rely on template argument deduction and never set the template arguments themselves.
 
+.. note:: Before reusing the barrier storage, the user is required to synchronize the parent group to make sure all of the synchronizer instance barriers were properly destroyed.
+
 Examples
 --------
 
@@ -63,11 +73,11 @@ Examples
   {
     // Barrier synchronizer that uses an array of block-scope barriers placed in shared memory.
     __shared__ cuda::barrier<cuda::thread_scope_block> block_barriers[8];
-    cudax::coop::barrier_synchronizer s1{block_barriers};
+    const cudax::coop::barrier_synchronizer s1{block_barriers};
 
     // Barrier synchronizer from a span of 64 device-scope barriers placed in global memory.
-    cudax::coop::barrier_synchronizer s2{cuda::std::span{device_barriers, 64}};
+    const cudax::coop::barrier_synchronizer s2{cuda::std::span{device_barriers, 64}};
 
     // A non-contiguous view assigns barriers in reverse order.
-    cudax::coop::barrier_synchronizer s3{block_barriers | cuda::std::ranges::views::reverse};
+    const cudax::coop::barrier_synchronizer s3{block_barriers | cuda::std::ranges::views::reverse};
   }

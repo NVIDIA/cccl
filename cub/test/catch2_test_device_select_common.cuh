@@ -30,7 +30,7 @@ struct mod_n
   T mod;
   __host__ __device__ bool operator()(T x)
   {
-    return (x % mod == 0) ? true : false;
+    return static_cast<bool>(x % mod == 0);
   }
 };
 

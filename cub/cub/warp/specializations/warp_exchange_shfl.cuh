@@ -181,7 +181,7 @@ class WarpExchangeShfl
     const InputT recv_val = __shfl_xor_sync(mask, send_val, NumEntries, LogicalWarpThreads);
     (xor_bit_set ? vals[IDX] : vals[IDX + NumEntries]) = recv_val;
 
-    constexpr int next_idx = IDX + 1 + ((IDX + 1) % NumEntries == 0) * NumEntries;
+    constexpr int next_idx = IDX + 1 + (((IDX + 1) % NumEntries == 0) * NumEntries);
     if constexpr (next_idx < ItemsPerThread)
     {
       transpose_foreach<NumEntries, next_idx>(vals, xor_bit_set, mask);
@@ -217,8 +217,8 @@ class WarpExchangeShfl
     ((output_items[Is] = vals[Is]), ...);
   }
 
-  const unsigned int lane_id     = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
-  const unsigned int member_mask = CUB_NS_QUALIFIER::detail::warp_mask<LogicalWarpThreads>();
+  const unsigned int lane_id     = _CUB::detail::logical_lane_id<LogicalWarpThreads>();
+  const unsigned int member_mask = _CUB::detail::warp_mask<LogicalWarpThreads>();
 
 public:
   using TempStorage = NullType;

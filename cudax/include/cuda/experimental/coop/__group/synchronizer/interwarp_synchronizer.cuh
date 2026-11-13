@@ -23,6 +23,7 @@
 
 #include <cuda/hierarchy>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/all.h>
@@ -106,11 +107,6 @@ public:
     do_sync_aligned(__hier);
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API __interwarp_synchronizer_instance view() const
-  {
-    return *this;
-  }
-
   template <class _MappingResult, class _Hierarchy>
   _CCCL_DEVICE_API void deinit(const _MappingResult&, const _Hierarchy&)
   {}
@@ -176,11 +172,6 @@ public:
     do_sync_aligned(__hier);
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API __interwarp_synchronizer_instance view() const
-  {
-    return *this;
-  }
-
   template <class _MappingResult, class _Hierarchy>
   _CCCL_DEVICE_API void deinit(const _MappingResult&, const _Hierarchy&)
   {}
@@ -194,18 +185,20 @@ class interwarp_synchronizer
 
   _RangeView __barrier_ids_;
 
-public:
-  _CCCL_TEMPLATE(class _Range)
-  _CCCL_REQUIRES(::cuda::std::is_same_v<_RangeView, ::cuda::std::ranges::views::all_t<_Range>>)
-  _CCCL_DEVICE_API interwarp_synchronizer(_Range&& __barrier_ids)
-      : __barrier_ids_{::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__barrier_ids))}
-  {}
-
-  template <class _Unit, class _ParentGroup, class _MappingResult>
-  [[nodiscard]] _CCCL_DEVICE_API auto
-  make_instance(const _Unit&, const _ParentGroup&, const _MappingResult& __mapping_result) const
+  template <class _Range, class _Unit, class _ParentGroup, class _MappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API static auto
+  __make_instance(_Range& __barrier_ids, const _Unit&, const _ParentGroup&, const _MappingResult& __mapping_result)
   {
     using _Level = typename _ParentGroup::level_type;
+
+    constexpr auto __static_group_count      = _MappingResult::static_group_count();
+    constexpr auto __static_barrier_id_count = ::cuda::std::ranges::__static_size_v<_Range>;
+    if constexpr (__static_group_count != ::cuda::std::dynamic_extent
+                  && __static_barrier_id_count != ::cuda::std::dynamic_extent)
+    {
+      static_assert(__static_group_count <= __static_barrier_id_count,
+                    "insufficient amount of warp barrier ids were passed");
+    }
 
     static_assert(::cuda::std::is_same_v<_Unit, warp_level> && ::cuda::std::is_same_v<_Level, block_level>,
                   "interwarp_synchronizer can be only used to group warps within a single block");
@@ -220,30 +213,53 @@ public:
       return _SynchronizerInstance{0, 0};
     }
 
-    if constexpr (::cuda::std::ranges::sized_range<_RangeView>)
+    if constexpr (::cuda::std::ranges::sized_range<_Range>)
     {
-      _CCCL_ASSERT(__mapping_result.group_count() <= ::cuda::std::ranges::size(__barrier_ids_),
+      _CCCL_ASSERT(__mapping_result.group_count() <= ::cuda::std::ranges::size(__barrier_ids),
                    "insufficient amount of warp barrier ids were passed");
 
-      auto __it = ::cuda::std::ranges::begin(__barrier_ids_);
+      auto __it = ::cuda::std::ranges::begin(__barrier_ids);
       ::cuda::std::ranges::advance(__it, __mapping_result.group_rank());
       return _SynchronizerInstance{static_cast<__interwarp_barrier_id>(*__it), __mapping_result.unit_count() * 32};
     }
     else
     {
       ::cuda::std::uint32_t __i = 0;
-      auto __it                 = ::cuda::std::ranges::begin(__barrier_ids_);
+      auto __it                 = ::cuda::std::ranges::begin(__barrier_ids);
       do
       {
         if (__i > 0)
         {
           ++__it;
         }
-        _CCCL_ASSERT(__it != ::cuda::std::ranges::end(__barrier_ids_),
+        _CCCL_ASSERT(__it != ::cuda::std::ranges::end(__barrier_ids),
                      "insufficient amount of warp barrier ids were passed");
       } while (__i++ < __mapping_result.group_rank());
       return _SynchronizerInstance{static_cast<__interwarp_barrier_id>(*__it), __mapping_result.unit_count() * 32};
     }
+  }
+
+public:
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(::cuda::std::is_same_v<_RangeView, ::cuda::std::ranges::views::all_t<_Range>>)
+  _CCCL_DEVICE_API interwarp_synchronizer(_Range&& __barrier_ids)
+      : __barrier_ids_{::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__barrier_ids))}
+  {}
+
+  _CCCL_TEMPLATE(class _Unit, class _ParentGroup, class _MappingResult)
+  _CCCL_REQUIRES((!::cuda::std::ranges::range<const _RangeView>) )
+  [[nodiscard]] _CCCL_DEVICE_API auto
+  make_instance(const _Unit& __unit, const _ParentGroup& __parent, const _MappingResult& __mapping_result)
+  {
+    return __make_instance(__barrier_ids_, __unit, __parent, __mapping_result);
+  }
+
+  _CCCL_TEMPLATE(class _Unit, class _ParentGroup, class _MappingResult)
+  _CCCL_REQUIRES(::cuda::std::ranges::range<const _RangeView>)
+  [[nodiscard]] _CCCL_DEVICE_API auto
+  make_instance(const _Unit& __unit, const _ParentGroup& __parent, const _MappingResult& __mapping_result) const
+  {
+    return __make_instance(__barrier_ids_, __unit, __parent, __mapping_result);
   }
 };
 

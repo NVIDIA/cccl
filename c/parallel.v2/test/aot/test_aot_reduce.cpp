@@ -317,6 +317,82 @@ bool build_and_serialize(std::vector<char>& out_blob)
     }
   }
 
+  // Diagnostics: a failure leaves a description behind, and a later success clears it.
+  {
+    auto last_error_contains = [](const char* needle) {
+      return strstr(cccl_serialization_v2_last_error(), needle) != nullptr;
+    };
+
+    if (cccl_serialization_v2_validate_blob(buf, size) != CUDA_SUCCESS)
+    {
+      fprintf(stderr, "FAIL: validate_blob rejected a valid blob\n");
+      return false;
+    }
+
+    std::vector<char> bad_magic(static_cast<char*>(buf), static_cast<char*>(buf) + size);
+    bad_magic[0] = 'X';
+    cccl_device_reduce_build_result_t unchanged{};
+    if (cccl_serialization_v2_validate_blob(bad_magic.data(), bad_magic.size()) != CUDA_ERROR_INVALID_VALUE
+        || !last_error_contains("bad magic"))
+    {
+      fprintf(stderr, "FAIL: validate_blob should report a bad magic\n");
+      return false;
+    }
+    if (cccl_device_reduce_deserialize(&unchanged, bad_magic.data(), bad_magic.size()) == CUDA_SUCCESS
+        || !last_error_contains("bad magic"))
+    {
+      fprintf(stderr, "FAIL: deserialize should report a bad magic through last_error\n");
+      return false;
+    }
+    if (cccl_serialization_v2_validate_blob(buf, 4) != CUDA_ERROR_INVALID_VALUE || !last_error_contains("truncated"))
+    {
+      fprintf(stderr, "FAIL: validate_blob should report a truncated header\n");
+      return false;
+    }
+
+    // The OS/architecture tag sits after magic[8] and algo_tag.
+    std::vector<char> other_os(static_cast<char*>(buf), static_cast<char*>(buf) + size);
+    uint32_t bogus_os_arch = 0xdeadbeef;
+    std::memcpy(other_os.data() + 8 + sizeof(uint32_t), &bogus_os_arch, sizeof(bogus_os_arch));
+    if (cccl_serialization_v2_validate_blob(other_os.data(), other_os.size()) != CUDA_ERROR_INVALID_VALUE
+        || !last_error_contains("different OS/architecture"))
+    {
+      fprintf(stderr, "FAIL: validate_blob should report a different OS/architecture\n");
+      return false;
+    }
+
+    // The compute capability sits after magic[8], algo_tag and os_arch_tag.
+    uint32_t other_major_cc = (cc_major == 7 ? 8 : 7) * 10 + 5;
+    std::vector<char> wrong_cc(static_cast<char*>(buf), static_cast<char*>(buf) + size);
+    std::memcpy(wrong_cc.data() + 8 + 2 * sizeof(uint32_t), &other_major_cc, sizeof(other_major_cc));
+    if (cccl_serialization_v2_validate_blob(wrong_cc.data(), wrong_cc.size()) != CUDA_ERROR_NO_BINARY_FOR_GPU
+        || !last_error_contains("compute-capability major"))
+    {
+      fprintf(stderr, "FAIL: validate_blob should report a compute-capability mismatch\n");
+      return false;
+    }
+    // deserialize needs no GPU and accepts it; load is what rejects it.
+    cccl_device_reduce_build_result_t wrong_cc_build{};
+    if (cccl_device_reduce_deserialize(&wrong_cc_build, wrong_cc.data(), wrong_cc.size()) != CUDA_SUCCESS
+        || cccl_device_reduce_load(&wrong_cc_build, cudart_path) != CUDA_ERROR_NO_BINARY_FOR_GPU
+        || !last_error_contains("compute-capability major"))
+    {
+      fprintf(stderr, "FAIL: load should report a compute-capability mismatch through last_error\n");
+      return false;
+    }
+    cccl_device_reduce_cleanup(&wrong_cc_build);
+
+    cccl_device_reduce_build_result_t ok_build{};
+    if (cccl_device_reduce_deserialize(&ok_build, buf, size) != CUDA_SUCCESS
+        || cccl_serialization_v2_last_error()[0] != '\0')
+    {
+      fprintf(stderr, "FAIL: a successful deserialize should clear last_error\n");
+      return false;
+    }
+    cccl_device_reduce_cleanup(&ok_build);
+    printf("[diagnostics] bad magic, truncated header and compute-capability mismatch are described\n");
+  }
+
   // Misuse is reported, not crashed on or leaked: load of an already loaded
   // result, and serialize with null output pointers.
   if (cccl_device_reduce_load(&deser_build, cudart_path) != CUDA_ERROR_INVALID_VALUE)

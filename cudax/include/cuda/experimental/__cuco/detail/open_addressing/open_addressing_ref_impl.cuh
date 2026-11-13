@@ -24,7 +24,6 @@
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/device_reference.h>
 
-#include <cuda/__atomic/atomic.h>
 #include <cuda/__barrier/barrier.h>
 #include <cuda/__barrier/barrier_block_scope.h>
 #include <cuda/__cmath/pow2.h>
@@ -47,6 +46,7 @@
 
 #include <cuda/experimental/__cuco/detail/bitwise_compare.cuh>
 #include <cuda/experimental/__cuco/detail/equal_wrapper.cuh>
+#include <cuda/experimental/__cuco/detail/utility/atomic.cuh>
 #include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
 #include <cuda/experimental/__cuco/detail/utility/traits.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
@@ -1161,12 +1161,11 @@ public:
     using packed_type =
       ::cuda::std::__make_nbit_uint_t<sizeof(__value_type) * ::cuda::std::numeric_limits<unsigned char>::digits>;
 
-    auto __slot_ref             = ::cuda::atomic_ref<packed_type, _Scope>{*reinterpret_cast<packed_type*>(__address)};
+    auto* const __slot_ptr      = reinterpret_cast<packed_type*>(__address);
     auto __expected_packed      = ::cuda::std::bit_cast<packed_type>(__expected);
     const auto __desired_packed = ::cuda::std::bit_cast<packed_type>(__native_value(__desired));
 
-    const auto success =
-      __slot_ref.compare_exchange_strong(__expected_packed, __desired_packed, ::cuda::memory_order_relaxed);
+    const auto success = detail::__atomic_compare_exchange<_Scope>(__slot_ptr, __expected_packed, __desired_packed);
 
     if (success)
     {
@@ -1203,28 +1202,26 @@ public:
     auto __expected_key     = __expected.first;
     auto __expected_payload = empty_value_sentinel();
 
-    ::cuda::atomic_ref<__key_type, _Scope> key_ref(__address->first);
-    ::cuda::atomic_ref<mapped_type, _Scope> payload_ref(__address->second);
-
     const auto key_cas_success =
-      key_ref.compare_exchange_strong(__expected_key, __key_type{__desired.first}, ::cuda::memory_order_relaxed);
+      detail::__atomic_compare_exchange<_Scope>(&__address->first, __expected_key, __key_type{__desired.first});
     auto payload_cas_success =
-      payload_ref.compare_exchange_strong(__expected_payload, __desired.second, ::cuda::memory_order_relaxed);
+      detail::__atomic_compare_exchange<_Scope>(&__address->second, __expected_payload, mapped_type{__desired.second});
 
     // if __key success
     if (key_cas_success)
     {
       while (!payload_cas_success)
       {
-        payload_cas_success = payload_ref.compare_exchange_strong(
-          __expected_payload = empty_value_sentinel(), __desired.second, ::cuda::memory_order_relaxed);
+        __expected_payload  = empty_value_sentinel();
+        payload_cas_success = detail::__atomic_compare_exchange<_Scope>(
+          &__address->second, __expected_payload, mapped_type{__desired.second});
       }
       return __insert_result::__success;
     }
     else if (payload_cas_success)
     {
       // This is insert-specific, cannot for `erase` operations
-      payload_ref.store(empty_value_sentinel(), ::cuda::memory_order_relaxed);
+      detail::__atomic_store(&__address->second, empty_value_sentinel());
     }
 
     // Our __key was already present in the slot, so our __key is a duplicate
@@ -1253,16 +1250,14 @@ public:
   {
     using mapped_type = ::cuda::std::decay_t<decltype(empty_value_sentinel())>;
 
-    ::cuda::atomic_ref<__key_type, _Scope> key_ref(__address->first);
     auto __expected_key = __expected.first;
     const auto success =
-      key_ref.compare_exchange_strong(__expected_key, __key_type{__desired.first}, ::cuda::memory_order_relaxed);
+      detail::__atomic_compare_exchange<_Scope>(&__address->first, __expected_key, __key_type{__desired.first});
 
     // if __key success
     if (success)
     {
-      ::cuda::atomic_ref<mapped_type, _Scope> payload_ref(__address->second);
-      payload_ref.store(__desired.second, ::cuda::memory_order_relaxed);
+      detail::__atomic_store(&__address->second, mapped_type{__desired.second});
       return __insert_result::__success;
     }
 
@@ -1364,12 +1359,11 @@ public:
   template <class _Value>
   _CCCL_DEVICE_API void __wait_for_payload(_Value& __slot, _Value __sentinel) const noexcept
   {
-    auto __ref = ::cuda::atomic_ref<_Value, _Scope>{__slot};
     _Value __current;
     // TODO exponential backoff strategy
     do
     {
-      __current = __ref.load(::cuda::std::memory_order_relaxed);
+      __current = detail::__atomic_load(&__slot);
     } while (detail::__bitwise_compare(__current, __sentinel));
   }
 

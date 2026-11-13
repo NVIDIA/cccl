@@ -32,7 +32,7 @@ struct get_gaussian_sum_from_offset_op
   __host__ __device__ _CCCL_FORCEINLINE cuda::std::int64_t operator()(cuda::std::int64_t begin, cuda::std::int64_t end)
   {
     cuda::std::int64_t length                 = end - begin;
-    const cuda::std::int64_t section_gaussian = ((begin - 1) * length + length * (length + 1) / 2);
+    const cuda::std::int64_t section_gaussian = (((begin - 1) * length) + (length * (length + 1) / 2));
     return section_gaussian;
   }
 };

@@ -81,10 +81,8 @@ struct index_to_value_t
     {
       return static_cast<ValueT>(1);
     }
-    else
-    {
-      return static_cast<ValueT>(0);
-    }
+
+    return static_cast<ValueT>(0);
   }
 };
 

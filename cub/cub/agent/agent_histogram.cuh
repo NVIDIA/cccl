@@ -70,7 +70,7 @@ namespace detail
 
 inline ::std::ostream& operator<<(::std::ostream& os, BlockHistogramMemoryPreference mempref)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(mempref);
+  return os << _CUB::detail::to_string(mempref);
 }
 #endif // _CCCL_HOSTED()
 
@@ -78,12 +78,12 @@ CUB_NAMESPACE_END
 
 #if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
 template <::cuda::std::same_as<char> CharT>
-struct std::formatter<CUB_NS_QUALIFIER::BlockHistogramMemoryPreference, CharT> : formatter<const CharT*, CharT>
+struct std::formatter<_CUB::BlockHistogramMemoryPreference, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const CUB_NS_QUALIFIER::BlockHistogramMemoryPreference& mempref, FmtCtx& ctx) const
+  auto format(const _CUB::BlockHistogramMemoryPreference& mempref, FmtCtx& ctx) const
   {
-    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(mempref), ctx);
+    return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(mempref), ctx);
   }
 };
 #endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
@@ -464,11 +464,11 @@ struct AgentHistogram
     {
       if constexpr (IsStriped)
       {
-        is_valid[item] = IsFullTile || (((threadIdx.x + threads_per_block * item) * NumChannels) < valid_samples);
+        is_valid[item] = IsFullTile || (((threadIdx.x + (threads_per_block * item)) * NumChannels) < valid_samples);
       }
       else
       {
-        is_valid[item] = IsFullTile || (((threadIdx.x * items_per_thread + item) * NumChannels) < valid_samples);
+        is_valid[item] = IsFullTile || ((((threadIdx.x * items_per_thread) + item) * NumChannels) < valid_samples);
       }
     }
   }
@@ -649,7 +649,7 @@ struct AgentHistogram
     const PrivatizedDecodeOpT* privatized_decode_op)
       : temp_storage(temp_storage.Alias())
       , d_wrapped_samples(d_samples)
-      , d_native_samples(NativePointer(d_wrapped_samples))
+      , d_native_samples(_CUB::detail::histogram::NativePointer(d_wrapped_samples))
       , num_output_bins(num_output_bins)
       , num_privatized_bins(num_privatized_bins)
       , d_output_histograms(d_output_histograms)

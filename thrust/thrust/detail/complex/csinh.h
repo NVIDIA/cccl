@@ -45,7 +45,8 @@
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/hyperbolic_functions.h>
 #include <cuda/std/__cmath/trigonometric_functions.h>
-#include <cuda/std/limits>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
@@ -58,8 +59,15 @@ using thrust::complex;
 // NOLINTBEGIN(misc-redundant-expression)
 _CCCL_HOST_DEVICE inline complex<double> csinh(const complex<double>& z)
 {
-  double x, y, h;
-  uint32_t hx, hy, ix, iy, lx, ly;
+  double x;
+  double y;
+  double h;
+  uint32_t hx;
+  uint32_t hy;
+  uint32_t ix;
+  uint32_t iy;
+  uint32_t lx;
+  uint32_t ly;
   const double huge = 8.98846567431157953864652595395e+307; // 0x1p1023;
 
   x = z.real();
@@ -90,18 +98,16 @@ _CCCL_HOST_DEVICE inline complex<double> csinh(const complex<double>& z)
       h = ::cuda::std::exp(::cuda::std::fabs(x)) * 0.5;
       return (complex<double>(::cuda::std::copysign(h, x) * ::cuda::std::cos(y), h * ::cuda::std::sin(y)));
     }
-    else if (ix < 0x4096bbaa)
+    if (ix < 0x4096bbaa)
     {
       /* x < 1455: scale to avoid overflow */
       const complex<double> z_ = ldexp_cexp(complex<double>(::cuda::std::fabs(x), y), -1);
       return (complex<double>(z_.real() * ::cuda::std::copysign(1.0, x), z_.imag()));
     }
-    else
-    {
-      /* x >= 1455: the result always overflows */
-      h = huge * x;
-      return (complex<double>(h * ::cuda::std::cos(y), h * h * ::cuda::std::sin(y)));
-    }
+
+    /* x >= 1455: the result always overflows */
+    h = huge * x;
+    return (complex<double>(h * ::cuda::std::cos(y), h * h * ::cuda::std::sin(y)));
   }
 
   /*

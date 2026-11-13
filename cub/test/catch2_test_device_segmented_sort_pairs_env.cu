@@ -923,6 +923,67 @@ CUB_TEST("DeviceSegmentedSort::StableSortPairsDescending can be tuned",
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+template <int BlockThreads>
+struct segmented_sort_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::SegmentedSortPolicy policy) const
+    -> cub::SegmentedSortPolicy
+  {
+    policy.large_segment.threads_per_block  = BlockThreads;
+    policy.medium_segment.threads_per_block = BlockThreads;
+    policy.small_segment.threads_per_block  = BlockThreads;
+    return policy;
+  }
+};
+
+CUB_TEST("DeviceSegmentedSort::SortPairs tuning can be modified", "[segmented_sort][pairs][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+  auto keys_in                             = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out                            = c2h::device_vector<int>(7, thrust::no_init);
+  auto values_in                           = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+  auto values_out                          = c2h::device_vector<int>(7, thrust::no_init);
+  auto begin_offsets                       = c2h::device_vector<int>{0};
+  c2h::device_vector<unsigned int> d_block_size(1);
+
+  const block_size_extracting_constant_iterator end_offsets(7, thrust::raw_pointer_cast(d_block_size.data()));
+
+  {
+    sort_pairs(
+      thrust::raw_pointer_cast(keys_in.data()),
+      thrust::raw_pointer_cast(keys_out.data()),
+      thrust::raw_pointer_cast(values_in.data()),
+      thrust::raw_pointer_cast(values_out.data()),
+      static_cast<int>(keys_in.size()),
+      1,
+      thrust::raw_pointer_cast(begin_offsets.data()),
+      end_offsets,
+      cuda::std::execution::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0u;
+  }
+
+  auto env = cuda::execution::tune(segmented_sort_tuning_transform<target_block_size>{});
+
+  sort_pairs(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<int>(keys_in.size()),
+    1,
+    thrust::raw_pointer_cast(begin_offsets.data()),
+    end_offsets,
+    env);
+
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  const c2h::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
+  REQUIRE(keys_out == expected_keys);
+  REQUIRE(values_out == expected_values);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
 #endif // TEST_LAUNCH != 1
 
 // Keys are unique, so stable and unstable sorts give the same results

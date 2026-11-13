@@ -26,6 +26,7 @@
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__iterator/next.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
@@ -92,77 +93,12 @@ inline constexpr bool __is_sufficient_scope_for_v<thread_scope_system, cluster_l
 template <>
 inline constexpr bool __is_sufficient_scope_for_v<thread_scope_system, grid_level> = true;
 
-template <class _Barrier>
-class __barrier_synchronizer_instance_view
-{
-  _Barrier* __barrier_;
-
-public:
-  using arrival_token _CCCL_NODEBUG = typename _Barrier::arrival_token;
-
-  _CCCL_DEVICE_API explicit __barrier_synchronizer_instance_view(_Barrier* __barrier)
-      : __barrier_{__barrier}
-  {}
-
-  template <class _Hierarchy>
-  _CCCL_DEVICE_API void do_sync(const _Hierarchy&) const
-  {
-    __barrier_->arrive_and_wait();
-  }
-
-  template <class _Hierarchy>
-  _CCCL_DEVICE_API void do_sync_aligned(const _Hierarchy&) const
-  {
-    __barrier_->arrive_and_wait();
-  }
-
-  template <class _Hierarchy>
-  _CCCL_DEVICE_API arrival_token do_arrive(const _Hierarchy&) const
-  {
-    return __barrier_->arrive();
-  }
-
-  template <class _Hierarchy>
-  _CCCL_DEVICE_API arrival_token do_arrive_aligned(const _Hierarchy&) const
-  {
-    return __barrier_->arrive();
-  }
-
-  template <class _Hierarchy>
-  _CCCL_DEVICE_API void do_wait(const _Hierarchy&, arrival_token&& __tok) const
-  {
-    __barrier_->wait(::cuda::std::move(__tok));
-  }
-
-  template <class _Hierarchy>
-  _CCCL_DEVICE_API void do_wait_aligned(const _Hierarchy&, arrival_token&& __tok) const
-  {
-    __barrier_->wait(::cuda::std::move(__tok));
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API auto view() const
-  {
-    return *this;
-  }
-};
-
 template <class _Barrier, class _Unit>
-class __barrier_synchronizer_instance
+struct __barrier_synchronizer_instance
 {
-  _Barrier* __barrier_;
-
-public:
   using arrival_token _CCCL_NODEBUG = typename _Barrier::arrival_token;
 
-  _CCCL_DEVICE_API explicit __barrier_synchronizer_instance(_Barrier* __barrier)
-      : __barrier_{__barrier}
-  {}
-
-  // This synchronizer instance doesn't provide copy/move/assignment methods.
-  __barrier_synchronizer_instance(const __barrier_synchronizer_instance&)            = delete;
-  __barrier_synchronizer_instance(__barrier_synchronizer_instance&&)                 = delete;
-  __barrier_synchronizer_instance& operator=(const __barrier_synchronizer_instance&) = delete;
-  __barrier_synchronizer_instance& operator=(__barrier_synchronizer_instance&&)      = delete;
+  _Barrier* __barrier_;
 
   template <class _Hierarchy>
   _CCCL_DEVICE_API void do_sync(const _Hierarchy&) const
@@ -198,11 +134,6 @@ public:
   _CCCL_DEVICE_API void do_wait_aligned(const _Hierarchy&, arrival_token&& __tok) const
   {
     __barrier_->wait(::cuda::std::move(__tok));
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API __barrier_synchronizer_instance_view<_Barrier> view() const
-  {
-    return __barrier_synchronizer_instance_view<_Barrier>{__barrier_};
   }
 
   template <class _MappingResult, class _Hierarchy>
@@ -238,21 +169,19 @@ class barrier_synchronizer
 
   _RangeView __barriers_;
 
-public:
-  template <class _Unit>
-  using __synchronizer_instance _CCCL_NODEBUG = __barrier_synchronizer_instance<_Barrier, _Unit>;
-
-  _CCCL_TEMPLATE(class _Range)
-  _CCCL_REQUIRES(::cuda::std::is_same_v<_RangeView, ::cuda::std::ranges::views::all_t<_Range>>)
-  _CCCL_DEVICE_API barrier_synchronizer(_Range&& __barriers)
-      : __barriers_{::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__barriers))}
-  {}
-
-  template <class _Unit, class _ParentGroup, class _MappingResult>
-  [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance<_Unit>
-  make_instance(const _Unit&, const _ParentGroup& __parent, const _MappingResult& __mapping_result)
+  template <class _Range, class _Unit, class _ParentGroup, class _MappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API static __barrier_synchronizer_instance<_Barrier, _Unit> __make_instance(
+    _Range& __barriers, const _Unit&, const _ParentGroup& __parent, const _MappingResult& __mapping_result)
   {
     using _Level = typename _ParentGroup::level_type;
+
+    constexpr auto __static_group_count   = _MappingResult::static_group_count();
+    constexpr auto __static_barrier_count = ::cuda::std::ranges::__static_size_v<_Range>;
+    if constexpr (__static_group_count != ::cuda::std::dynamic_extent
+                  && __static_barrier_count != ::cuda::std::dynamic_extent)
+    {
+      static_assert(__static_group_count <= __static_barrier_count, "invalid number of barriers passed");
+    }
 
     static_assert(__is_sufficient_scope_for_v<_Barrier::scope, _Level>,
                   "_Barrier's thread scope is insufficient for group synchronization in _Level");
@@ -268,10 +197,10 @@ public:
     _Barrier* __group_barrier_ptr = nullptr;
     if (__mapping_result.is_valid())
     {
-      _CCCL_ASSERT(__mapping_result.group_count() <= ::cuda::std::ranges::size(__barriers_),
+      _CCCL_ASSERT(__mapping_result.group_count() <= ::cuda::std::ranges::size(__barriers),
                    "invalid number of barriers passed");
       __group_barrier_ptr = ::cuda::std::addressof(
-        *::cuda::std::ranges::next(::cuda::std::ranges::begin(__barriers_), __mapping_result.group_rank()));
+        *::cuda::std::ranges::next(::cuda::std::ranges::begin(__barriers), __mapping_result.group_rank()));
 
       if (__mapping_result.unit_rank() == 0 && __thread_rank_in_unit == 0)
       {
@@ -282,7 +211,34 @@ public:
 
     // todo(dabayer): How we can expose making this aligned?
     __parent.sync();
-    return __synchronizer_instance<_Unit>{__group_barrier_ptr};
+    return __barrier_synchronizer_instance<_Barrier, _Unit>{__group_barrier_ptr};
+  }
+
+public:
+  template <class _Unit>
+  using __synchronizer_instance _CCCL_NODEBUG = __barrier_synchronizer_instance<_Barrier, _Unit>;
+
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(::cuda::std::is_same_v<_RangeView, ::cuda::std::ranges::views::all_t<_Range>>)
+  _CCCL_DEVICE_API barrier_synchronizer(_Range&& __barriers)
+      : __barriers_{::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__barriers))}
+  {}
+
+  template <class _Unit, class _ParentGroup, class _MappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API auto
+  make_instance(const _Unit& __unit, const _ParentGroup& __parent, const _MappingResult& __mapping_result)
+  {
+    return __make_instance(__barriers_, __unit, __parent, __mapping_result);
+  }
+
+  _CCCL_TEMPLATE(class _Unit, class _ParentGroup, class _MappingResult, class _RangeView2 = _RangeView)
+  _CCCL_REQUIRES(
+    ::cuda::std::ranges::sized_range<const _RangeView2> _CCCL_AND ::cuda::std::ranges::forward_range<const _RangeView2>
+      _CCCL_AND ::cuda::std::is_same_v<::cuda::std::ranges::range_reference_t<const _RangeView2>, _Barrier&>)
+  [[nodiscard]] _CCCL_DEVICE_API auto
+  make_instance(const _Unit& __unit, const _ParentGroup& __parent, const _MappingResult& __mapping_result) const
+  {
+    return __make_instance(__barriers_, __unit, __parent, __mapping_result);
   }
 };
 

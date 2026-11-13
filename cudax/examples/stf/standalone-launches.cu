@@ -20,7 +20,7 @@ using namespace cuda::experimental::stf;
 
 int X0(int i)
 {
-  return i * i + 12;
+  return (i * i) + 12;
 }
 
 int main()
@@ -28,7 +28,9 @@ int main()
   stream_ctx ctx;
 
   const int N = 16;
-  int X[N], Y[N], Z[N];
+  int X[N];
+  int Y[N];
+  int Z[N];
 
   for (size_t ind = 0; ind < N; ind++)
   {

@@ -75,7 +75,7 @@ template <bool _UseOptimizedSmemLayout, typename _Tp, ::cuda::std::size_t _MaxRa
     // Align each row to the next 32-bit bank word. The resulting 36-char and 34-short pitches distribute transposed
     // accesses across all 32 shared-memory banks.
     constexpr __tile_extent_t __smem_padding = sizeof(unsigned) / sizeof(_Tp);
-    return __offset + (__offset / __max_tile_size_32) * __smem_padding;
+    return __offset + ((__offset / __max_tile_size_32) * __smem_padding);
   }
   else if constexpr (_UseOptimizedSmemLayout)
   {
@@ -310,7 +310,9 @@ _CCCL_DIAG_POP
 template <typename _TpIn, typename _SrcAccessor, typename _DstAccessor>
 inline constexpr bool __can_stage_in_shared_mem_v =
   ::cuda::is_trivially_copyable_v<::cuda::std::remove_cvref_t<_TpIn>>
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   && ::cuda::std::assignable_from<::cuda::std::remove_cvref_t<_TpIn>&, typename _SrcAccessor::reference>
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   && ::cuda::std::is_assignable_v<typename _DstAccessor::reference, ::cuda::std::remove_cvref_t<_TpIn>&>;
 
 //! @brief Launch the shared-memory tiled transpose kernel.
