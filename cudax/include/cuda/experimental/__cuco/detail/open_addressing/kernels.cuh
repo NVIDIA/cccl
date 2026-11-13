@@ -23,7 +23,7 @@
 
 #include <cub/block/block_reduce.cuh>
 
-#include <cuda/__memory/uninitialized_array.h>
+#include <cuda/__memory/uninitialized.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -284,7 +284,7 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __insert_and_find_n
   auto __idx               = detail::__global_thread_id() / _CgSize;
 
   using __output_type = typename __find_buffer<_Ref>::type;
-  __shared__ ::cuda::__uninitialized_array<__output_type, _BlockSize / _CgSize> __found_buffer;
+  __shared__ ::cuda::__uninitialized<__output_type[_BlockSize / _CgSize]> __found_buffer;
   __shared__ bool __inserted_buffer[_BlockSize / _CgSize];
 
   while ((__idx - __thread_idx / _CgSize) < __n)
@@ -447,7 +447,7 @@ __rehash(_StorageRef __old_storage, _ContainerRef __container_ref, _Predicate __
 
   // `__value_type` is not trivially default constructible, so a plain `__shared__` array would
   // require initialization, which is not allowed for shared variables.
-  __shared__ ::cuda::__uninitialized_array<__value_type, _BlockSize> __buffer;
+  __shared__ ::cuda::__uninitialized<__value_type[_BlockSize]> __buffer;
   __shared__ ::cuda::std::uint32_t __buffer_size;
 
   constexpr auto __cg_size         = _ContainerRef::cg_size;
