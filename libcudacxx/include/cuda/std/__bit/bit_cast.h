@@ -24,6 +24,7 @@
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstring/memcpy.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 
@@ -55,7 +56,7 @@ template <class _To, class _From>
   static_assert(::cuda::std::is_default_constructible_v<_To>,
                 "bit_cast memcpy fallback requires the destination type to be default constructible");
   _To __temp;
-  ::cuda::std::memcpy(&__temp, &__from, sizeof(_To));
+  ::cuda::std::memcpy(::cuda::std::addressof(__temp), ::cuda::std::addressof(__from), sizeof(_To));
   return __temp;
 }
 

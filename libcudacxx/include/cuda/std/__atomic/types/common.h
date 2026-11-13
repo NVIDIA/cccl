@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
@@ -188,7 +189,7 @@ __atomic_assign_volatile(_Tp volatile* __a_value, _Tv volatile const& __val)
 {
   volatile char* __to         = reinterpret_cast<volatile char*>(__a_value);
   volatile char* __end        = __to + sizeof(_Tp);
-  volatile const char* __from = reinterpret_cast<volatile const char*>(&__val);
+  volatile const char* __from = reinterpret_cast<volatile const char*>(::cuda::std::addressof(__val));
   while (__to != __end)
   {
     *__to++ = *__from++;
