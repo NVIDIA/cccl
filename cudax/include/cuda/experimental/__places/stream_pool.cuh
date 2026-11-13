@@ -30,6 +30,7 @@
 
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/__stream/stream_ref.h>
 
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
@@ -74,11 +75,10 @@ class exec_place;
  * driver 595 and by cudart 13.0 on driver 580, accepted on driver 615), and a
  * rejection invalidates the capture, so there is no way to try them first.
  *
- * On drivers 12.5 and newer the context comes from `cuStreamGetCtx_v2`: for a
- * stream created in a green context the original `cuStreamGetCtx` returns
- * `CUDA_ERROR_NOT_SUPPORTED` on CUDA 12 drivers, while the v2 query reports
- * the green context, whose device is read through `cuCtxFromGreenCtx`. Older
- * drivers have no green-context streams, so the original query is enough.
+ * The context lookup is `cuda::stream_ref`'s: `cuStreamGetCtx_v2` on drivers
+ * 12.5 and newer, since the original `cuStreamGetCtx` returns
+ * `CUDA_ERROR_NOT_SUPPORTED` for green-context streams on CUDA 12 drivers,
+ * and the original query on older drivers, which have no such streams.
  *
  * Answering from a guess (the current device) instead of a query is what put
  * transient events in the wrong device's context on multi-GPU systems
@@ -91,25 +91,10 @@ inline int get_device_from_stream(cudaStream_t stream)
     return cuda_try<cudaGetDevice>();
   }
 
-  const auto stream_driver = CUstream(stream);
-  CUcontext ctx            = nullptr;
-#if _CCCL_CTK_AT_LEAST(12, 5)
-  // NOLINTNEXTLINE(readability-magic-numbers, bugprone-argument-comment)
-  if (::cuda::__driver::__version_at_least(12, 5))
-  {
-    const auto from_stream = ::cuda::__driver::__streamGetCtx_v2(stream_driver);
-    ctx                    = from_stream.__ctx_kind_ == ::cuda::__driver::__ctx_from_stream::__kind::__green
-                             ? ::cuda::__driver::__ctxFromGreenCtx(from_stream.__ctx_green_)
-                             : from_stream.__ctx_device_;
-  }
-  else
-#endif // _CCCL_CTK_AT_LEAST(12, 5)
-  {
-    ctx = ::cuda::__driver::__streamGetCtx(stream_driver);
-  }
-
-  // Makes ctx current for the query and restores the previous context on scope exit.
-  const ::cuda::__ensure_current_context guard(ctx);
+  // cuda::__ensure_current_context(stream_ref) makes the stream's context current and restores the
+  // previous one on scope exit. Its context lookup is the green-context aware one (cuStreamGetCtx_v2
+  // on 12.5+ drivers, cuStreamGetCtx before).
+  const ::cuda::__ensure_current_context guard{::cuda::stream_ref{stream}};
   return ::cuda::__driver::__cudevice_to_ordinal(::cuda::__driver::__ctxGetDevice());
 }
 
