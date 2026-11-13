@@ -29,7 +29,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE OutputIterator set_difference(
+_CCCL_HOST_DEVICE_API OutputIterator set_difference(
   sequential::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -69,7 +69,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE OutputIterator set_intersection(
+_CCCL_HOST_DEVICE_API OutputIterator set_intersection(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -109,7 +109,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
+_CCCL_HOST_DEVICE_API OutputIterator set_symmetric_difference(
   sequential::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -151,7 +151,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE OutputIterator set_union(
+_CCCL_HOST_DEVICE_API OutputIterator set_union(
   sequential::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,

@@ -28,7 +28,7 @@ public:
 
   // The constructor loop initializes every key.
   template <class URBG>
-  _CCCL_HOST_DEVICE feistel_bijection(std::uint64_t m, URBG&& g) // NOLINT(cppcoreguidelines-pro-type-member-init)
+  _CCCL_HOST_DEVICE_API feistel_bijection(std::uint64_t m, URBG&& g) // NOLINT(cppcoreguidelines-pro-type-member-init)
       : r_bits((total_bits(m) + 1) / 2)
       , l_bits(total_bits(m) / 2)
       , r_mask((std::uint64_t{1} << r_bits) - 1)
@@ -41,12 +41,12 @@ public:
     }
   }
 
-  _CCCL_HOST_DEVICE std::uint64_t size() const
+  _CCCL_HOST_DEVICE_API std::uint64_t size() const
   {
     return 1ull << (l_bits + r_bits);
   }
 
-  _CCCL_HOST_DEVICE std::uint64_t operator()(const std::uint64_t val) const
+  _CCCL_HOST_DEVICE_API std::uint64_t operator()(const std::uint64_t val) const
   {
     // Unfortunately this is duplicated with libcudacxx/include/cuda/__random/feistel_bijection.h
     // We cannot use the above because thrust PRNG generators incorrectly implement URBG requirements.
@@ -71,7 +71,7 @@ public:
   }
 
 private:
-  _CCCL_HOST_DEVICE static constexpr std::uint64_t total_bits(std::uint64_t m)
+  _CCCL_HOST_DEVICE_API static constexpr std::uint64_t total_bits(std::uint64_t m)
   {
     // Clamp empty ranges to avoid unsigned underflow.
     const auto max_index = (::cuda::std::max) (std::uint64_t{1}, m) - 1;
@@ -106,12 +106,12 @@ public:
   using index_type = IndexType;
 
   template <class URBG>
-  _CCCL_HOST_DEVICE random_bijection(IndexType n, URBG&& g)
+  _CCCL_HOST_DEVICE_API random_bijection(IndexType n, URBG&& g)
       : bijection(n, ::cuda::std::forward<URBG>(g))
       , n(n)
   {}
 
-  _CCCL_HOST_DEVICE IndexType operator()(IndexType i) const
+  _CCCL_HOST_DEVICE_API IndexType operator()(IndexType i) const
   {
     auto upcast_i = static_cast<typename Bijection::index_type>(i);
     auto upcast_n = static_cast<typename Bijection::index_type>(n);
@@ -130,7 +130,7 @@ public:
     return static_cast<IndexType>(upcast_i);
   }
 
-  _CCCL_HOST_DEVICE IndexType size() const
+  _CCCL_HOST_DEVICE_API IndexType size() const
   {
     return n;
   }

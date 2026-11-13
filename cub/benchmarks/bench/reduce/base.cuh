@@ -23,7 +23,7 @@ struct policy_selector
 #endif // !TUNE_BASE
 
 template <typename T, typename OffsetT>
-void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+_CCCL_HOST_API void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   using init_value_t = T;
 

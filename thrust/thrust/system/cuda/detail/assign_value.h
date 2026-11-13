@@ -43,7 +43,7 @@ _CCCL_KERNEL_ATTRIBUTES void assign_value_kernel(T* dst, const U* src)
 } // namespace detail
 
 template <typename DerivedPolicy, typename Pointer1, typename Pointer2>
-_CCCL_HOST_DEVICE void assign_value(execution_policy<DerivedPolicy>& exec, Pointer1 dst, Pointer2 src)
+_CCCL_HOST_DEVICE_API void assign_value(execution_policy<DerivedPolicy>& exec, Pointer1 dst, Pointer2 src)
 {
   using V1 = thrust::detail::it_value_t<Pointer1>;
   using V2 = thrust::detail::it_value_t<Pointer2>;
@@ -88,7 +88,7 @@ struct cross_system_assign_host_path
 {
   // device -> host copy executed from host
   template <typename System1, typename DerivedPolicy2, typename Pointer1, typename Pointer2>
-  _CCCL_HOST void operator()(System1&, execution_policy<DerivedPolicy2>& system2, Pointer1 dst, Pointer2 src)
+  _CCCL_HOST_API void operator()(System1&, execution_policy<DerivedPolicy2>& system2, Pointer1 dst, Pointer2 src)
   {
     thrust::detail::it_value_t<Pointer2> copy_dst;
     const cudaError status = trivial_copy_from_device(&copy_dst, raw_pointer_cast(src), 1, stream(system2));
@@ -98,7 +98,7 @@ struct cross_system_assign_host_path
 
   // host -> device copy executed from host
   template <typename DerivedPolicy1, typename System2, typename Pointer1, typename Pointer2>
-  _CCCL_HOST void operator()(execution_policy<DerivedPolicy1>& system1, System2&, Pointer1 dst, Pointer2 src)
+  _CCCL_HOST_API void operator()(execution_policy<DerivedPolicy1>& system1, System2&, Pointer1 dst, Pointer2 src)
   {
     thrust::detail::it_value_t<Pointer1> copy_src = *src; // may convert type
     const cudaError status = trivial_copy_to_device(raw_pointer_cast(dst), &copy_src, 1, stream(system1));
@@ -108,7 +108,7 @@ struct cross_system_assign_host_path
 } // namespace detail
 
 template <typename System1, typename System2, typename Pointer1, typename Pointer2>
-_CCCL_HOST_DEVICE void assign_value(cross_system<System1, System2>& systems, Pointer1 dst, Pointer2 src)
+_CCCL_HOST_DEVICE_API void assign_value(cross_system<System1, System2>& systems, Pointer1 dst, Pointer2 src)
 {
   NV_IF_TARGET(NV_IS_HOST,
                (detail::cross_system_assign_host_path{}(

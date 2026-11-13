@@ -46,7 +46,7 @@ namespace cuda::experimental::stf
  *
  */
 template <size_t thickness, typename T, typename... P>
-_CCCL_HOST_DEVICE box<mdspan<T, P...>::rank()> inner(const shape_of<mdspan<T, P...>>& s)
+_CCCL_HOST_DEVICE_API box<mdspan<T, P...>::rank()> inner(const shape_of<mdspan<T, P...>>& s)
 {
   using m               = mdspan<T, P...>;
   constexpr size_t rank = m::rank();
@@ -77,7 +77,7 @@ _CCCL_HOST_DEVICE box<mdspan<T, P...>::rank()> inner(const shape_of<mdspan<T, P.
  * @param s input box shape
  */
 template <size_t thickness, size_t rank>
-_CCCL_HOST_DEVICE box<rank> inner(const box<rank>& s)
+_CCCL_HOST_DEVICE_API box<rank> inner(const box<rank>& s)
 {
   ::std::array<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>, rank> inner_extents;
   for (size_t i = 0; i < rank; i++)

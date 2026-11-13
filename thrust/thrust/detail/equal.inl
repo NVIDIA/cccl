@@ -34,7 +34,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename System, typename InputIterator1, typename InputIterator2>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 equal(const thrust::detail::execution_policy_base<System>& exec,
       InputIterator1 first1,
       InputIterator1 last1,
@@ -47,7 +47,7 @@ equal(const thrust::detail::execution_policy_base<System>& exec,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename System, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 equal(const thrust::detail::execution_policy_base<System>& exec,
       InputIterator1 first1,
       InputIterator1 last1,
@@ -60,7 +60,7 @@ equal(const thrust::detail::execution_policy_base<System>& exec,
 } // end equal()
 
 template <typename InputIterator1, typename InputIterator2>
-bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
+_CCCL_HOST_API bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::equal");
   using thrust::system::detail::generic::select_system;
@@ -76,7 +76,8 @@ bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
 }
 
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate binary_pred)
+_CCCL_HOST_API bool
+equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate binary_pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::equal");
   using thrust::system::detail::generic::select_system;

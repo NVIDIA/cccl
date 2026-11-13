@@ -27,13 +27,13 @@ THRUST_NAMESPACE_BEGIN
 namespace random
 {
 template <typename UIntType, size_t W, size_t S, size_t R>
-_CCCL_HOST_DEVICE subtract_with_carry_engine<UIntType, W, S, R>::subtract_with_carry_engine(result_type value)
+_CCCL_HOST_DEVICE_API subtract_with_carry_engine<UIntType, W, S, R>::subtract_with_carry_engine(result_type value)
 {
   seed(value);
 } // end subtract_with_carry_engine::subtract_with_carry_engine()
 
 template <typename UIntType, size_t W, size_t S, size_t R>
-_CCCL_HOST_DEVICE void subtract_with_carry_engine<UIntType, W, S, R>::seed(result_type value)
+_CCCL_HOST_DEVICE_API void subtract_with_carry_engine<UIntType, W, S, R>::seed(result_type value)
 {
   thrust::random::linear_congruential_engine<result_type, 40014u, 0u, 2147483563u> e(
     value == 0u ? default_seed : value);
@@ -49,7 +49,7 @@ _CCCL_HOST_DEVICE void subtract_with_carry_engine<UIntType, W, S, R>::seed(resul
 } // end subtract_with_carry_engine::seed()
 
 template <typename UIntType, size_t W, size_t S, size_t R>
-_CCCL_HOST_DEVICE typename subtract_with_carry_engine<UIntType, W, S, R>::result_type
+_CCCL_HOST_DEVICE_API typename subtract_with_carry_engine<UIntType, W, S, R>::result_type
 subtract_with_carry_engine<UIntType, W, S, R>::operator()()
 {
   // XXX we probably need to cache these m_x[m_k] in a register
@@ -82,7 +82,7 @@ subtract_with_carry_engine<UIntType, W, S, R>::operator()()
 } // end subtract_with_carry_engine::operator()()
 
 template <typename UIntType, size_t W, size_t S, size_t R>
-_CCCL_HOST_DEVICE void subtract_with_carry_engine<UIntType, W, S, R>::discard(unsigned long long z)
+_CCCL_HOST_DEVICE_API void subtract_with_carry_engine<UIntType, W, S, R>::discard(unsigned long long z)
 {
   for (; z > 0; --z)
   {
@@ -92,7 +92,7 @@ _CCCL_HOST_DEVICE void subtract_with_carry_engine<UIntType, W, S, R>::discard(un
 
 template <typename UIntType, size_t W, size_t S, size_t R>
 template <typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>&
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
 subtract_with_carry_engine<UIntType, W, S, R>::stream_out(std::basic_ostream<CharT, Traits>& os) const
 {
   using ostream_type = std::basic_ostream<CharT, Traits>;
@@ -119,7 +119,7 @@ subtract_with_carry_engine<UIntType, W, S, R>::stream_out(std::basic_ostream<Cha
 
 template <typename UIntType, size_t W, size_t S, size_t R>
 template <typename CharType, typename Traits>
-std::basic_istream<CharType, Traits>&
+_CCCL_HOST_API std::basic_istream<CharType, Traits>&
 subtract_with_carry_engine<UIntType, W, S, R>::stream_in(std::basic_istream<CharType, Traits>& is)
 {
   using istream_type = std::basic_istream<CharType, Traits>;
@@ -141,7 +141,7 @@ subtract_with_carry_engine<UIntType, W, S, R>::stream_in(std::basic_istream<Char
 }
 
 template <typename UIntType, size_t W, size_t S, size_t R>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 subtract_with_carry_engine<UIntType, W, S, R>::equal(const subtract_with_carry_engine<UIntType, W, S, R>& rhs) const
 {
   const UIntType long_lag_ = R;
@@ -159,29 +159,29 @@ subtract_with_carry_engine<UIntType, W, S, R>::equal(const subtract_with_carry_e
 }
 
 template <typename UIntType, size_t W, size_t S, size_t R, typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>&
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
 operator<<(std::basic_ostream<CharT, Traits>& os, const subtract_with_carry_engine<UIntType, W, S, R>& e)
 {
   return thrust::random::detail::random_core_access::stream_out(os, e);
 }
 
 template <typename UIntType, size_t W, size_t S, size_t R, typename CharType, typename Traits>
-std::basic_istream<CharType, Traits>&
+_CCCL_HOST_API std::basic_istream<CharType, Traits>&
 operator>>(std::basic_istream<CharType, Traits>& is, subtract_with_carry_engine<UIntType, W, S, R>& e)
 {
   return thrust::random::detail::random_core_access::stream_in(is, e);
 }
 
 template <typename UIntType, size_t W, size_t S, size_t R>
-_CCCL_HOST_DEVICE bool operator==(const subtract_with_carry_engine<UIntType, W, S, R>& lhs,
-                                  const subtract_with_carry_engine<UIntType, W, S, R>& rhs)
+_CCCL_HOST_DEVICE_API bool operator==(const subtract_with_carry_engine<UIntType, W, S, R>& lhs,
+                                      const subtract_with_carry_engine<UIntType, W, S, R>& rhs)
 {
   return thrust::random::detail::random_core_access::equal(lhs, rhs);
 }
 
 template <typename UIntType, size_t W, size_t S, size_t R>
-_CCCL_HOST_DEVICE bool operator!=(const subtract_with_carry_engine<UIntType, W, S, R>& lhs,
-                                  const subtract_with_carry_engine<UIntType, W, S, R>& rhs)
+_CCCL_HOST_DEVICE_API bool operator!=(const subtract_with_carry_engine<UIntType, W, S, R>& lhs,
+                                      const subtract_with_carry_engine<UIntType, W, S, R>& rhs)
 {
   return !(lhs == rhs);
 }

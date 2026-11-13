@@ -92,17 +92,17 @@ public:
   using difference_type = typename super_t::difference_type;
   //! \endcond
 
-  _CCCL_HOST_DEVICE offset_iterator(Iterator it = {}, Offset offset = {})
+  _CCCL_HOST_DEVICE_API offset_iterator(Iterator it = {}, Offset offset = {})
       : super_t(::cuda::std::move(it))
       , m_offset(offset)
   {}
 
-  _CCCL_HOST_DEVICE const Offset& offset() const
+  _CCCL_HOST_DEVICE_API const Offset& offset() const
   {
     return m_offset;
   }
 
-  _CCCL_HOST_DEVICE Offset& offset()
+  _CCCL_HOST_DEVICE_API Offset& offset()
   {
     return m_offset;
   }
@@ -113,7 +113,7 @@ private:
   static constexpr bool indirect_offset = ::cuda::std::indirectly_readable<Offset>;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE auto offset_value() const
+  _CCCL_HOST_DEVICE_API auto offset_value() const
   {
     if constexpr (indirect_offset)
     {
@@ -126,18 +126,18 @@ private:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE reference dereference() const
+  _CCCL_HOST_DEVICE_API reference dereference() const
   {
     return *(this->base() + offset_value());
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE bool equal(const offset_iterator& other) const
+  _CCCL_HOST_DEVICE_API bool equal(const offset_iterator& other) const
   {
     return this->base() + offset_value() == other.base() + other.offset_value();
   }
 
-  _CCCL_HOST_DEVICE void advance(difference_type n)
+  _CCCL_HOST_DEVICE_API void advance(difference_type n)
   {
     if constexpr (indirect_offset)
     {
@@ -149,7 +149,7 @@ private:
     }
   }
 
-  _CCCL_HOST_DEVICE void increment()
+  _CCCL_HOST_DEVICE_API void increment()
   {
     if constexpr (indirect_offset)
     {
@@ -161,7 +161,7 @@ private:
     }
   }
 
-  _CCCL_HOST_DEVICE void decrement()
+  _CCCL_HOST_DEVICE_API void decrement()
   {
     if constexpr (indirect_offset)
     {
@@ -174,7 +174,7 @@ private:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE difference_type distance_to(const offset_iterator& other) const
+  _CCCL_HOST_DEVICE_API difference_type distance_to(const offset_iterator& other) const
   {
     return (other.base() + other.offset_value()) - (this->base() + offset_value());
   }

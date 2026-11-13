@@ -57,7 +57,7 @@ using thrust::complex;
 // finite y and propagates a NaN or raises invalid for an infinite y. C99 Annex G specifies
 // the complex functions in these terms.
 // NOLINTBEGIN(misc-redundant-expression)
-_CCCL_HOST_DEVICE inline complex<double> csinh(const complex<double>& z)
+_CCCL_HOST_DEVICE_API inline complex<double> csinh(const complex<double>& z)
 {
   double x;
   double y;
@@ -187,7 +187,7 @@ _CCCL_HOST_DEVICE inline complex<double> csinh(const complex<double>& z)
 }
 // NOLINTEND(misc-redundant-expression)
 
-_CCCL_HOST_DEVICE inline complex<double> csin(complex<double> z)
+_CCCL_HOST_DEVICE_API inline complex<double> csin(complex<double> z)
 {
   /* csin(z) = -I * csinh(I * z) */
   z = csinh(complex<double>(-z.imag(), z.real()));
@@ -196,7 +196,7 @@ _CCCL_HOST_DEVICE inline complex<double> csin(complex<double> z)
 } // namespace detail::complex
 
 template <typename ValueType>
-_CCCL_HOST_DEVICE inline complex<ValueType> sin(const complex<ValueType>& z)
+_CCCL_HOST_DEVICE_API inline complex<ValueType> sin(const complex<ValueType>& z)
 {
   const ValueType re = z.real();
   const ValueType im = z.imag();
@@ -204,7 +204,7 @@ _CCCL_HOST_DEVICE inline complex<ValueType> sin(const complex<ValueType>& z)
 }
 
 template <typename ValueType>
-_CCCL_HOST_DEVICE inline complex<ValueType> sinh(const complex<ValueType>& z)
+_CCCL_HOST_DEVICE_API inline complex<ValueType> sinh(const complex<ValueType>& z)
 {
   const ValueType re = z.real();
   const ValueType im = z.imag();
@@ -212,13 +212,13 @@ _CCCL_HOST_DEVICE inline complex<ValueType> sinh(const complex<ValueType>& z)
 }
 
 template <>
-_CCCL_HOST_DEVICE inline complex<double> sin(const complex<double>& z)
+_CCCL_HOST_DEVICE_API inline complex<double> sin(const complex<double>& z)
 {
   return detail::complex::csin(z);
 }
 
 template <>
-_CCCL_HOST_DEVICE inline complex<double> sinh(const complex<double>& z)
+_CCCL_HOST_DEVICE_API inline complex<double> sinh(const complex<double>& z)
 {
   return detail::complex::csinh(z);
 }

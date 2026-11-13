@@ -132,7 +132,7 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 #if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
-  friend ::std::basic_ostream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const bernoulli_distribution& __x)
   {
     using ostream_type                        = ::std::basic_ostream<_CharT, _Traits>;
@@ -146,7 +146,7 @@ public:
   }
 
   template <class _CharT, class _Traits>
-  friend ::std::basic_istream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is, bernoulli_distribution& __x)
   {
     using istream_type                        = ::std::basic_istream<_CharT, _Traits>;

@@ -20,7 +20,7 @@ namespace detail
 
 // NOTE: bit_cast cannot be always used because __half, __nv_bfloat16, etc. are not trivially copyable
 template <typename Output, typename Input>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Output unsafe_bitcast(const Input& input)
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE Output unsafe_bitcast(const Input& input)
 {
   // memcpy overwrites the complete object representation.
   Output output; // NOLINT(cppcoreguidelines-pro-type-member-init)

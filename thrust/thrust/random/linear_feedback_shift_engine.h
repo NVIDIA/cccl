@@ -110,21 +110,21 @@ public:
    *
    *  \param value The seed used to initialize this \p linear_feedback_shift_engine's state.
    */
-  _CCCL_HOST_DEVICE explicit linear_feedback_shift_engine(result_type value = default_seed);
+  _CCCL_HOST_DEVICE_API explicit linear_feedback_shift_engine(result_type value = default_seed);
 
   /*! This method initializes this \p linear_feedback_shift_engine's state, and optionally accepts
    *  a seed value.
    *
    *  \param value The seed used to initializes this \p linear_feedback_shift_engine's state.
    */
-  _CCCL_HOST_DEVICE void seed(result_type value = default_seed);
+  _CCCL_HOST_DEVICE_API void seed(result_type value = default_seed);
 
   // generating functions
 
   /*! This member function produces a new random value and updates this \p linear_feedback_shift_engine's state.
    *  \return A new random number.
    */
-  _CCCL_HOST_DEVICE result_type operator()();
+  _CCCL_HOST_DEVICE_API result_type operator()();
 
   /*! This member function advances this \p linear_feedback_shift_engine's state a given number of times
    *  and discards the results.
@@ -132,7 +132,7 @@ public:
    *  \param z The number of random values to discard.
    *  \note This function is provided because an implementation may be able to accelerate it.
    */
-  _CCCL_HOST_DEVICE void discard(unsigned long long z);
+  _CCCL_HOST_DEVICE_API void discard(unsigned long long z);
 
   /*! \cond
    */
@@ -142,7 +142,7 @@ private:
 
   friend struct thrust::random::detail::random_core_access;
 
-  _CCCL_HOST_DEVICE bool equal(const linear_feedback_shift_engine& rhs) const;
+  _CCCL_HOST_DEVICE_API bool equal(const linear_feedback_shift_engine& rhs) const;
 
   template <typename CharT, typename Traits>
   std::basic_ostream<CharT, Traits>& stream_out(std::basic_ostream<CharT, Traits>& os) const;
@@ -160,8 +160,8 @@ private:
  *  \return \c true if \p lhs is equal to \p rhs; \c false, otherwise.
  */
 template <typename UIntType, size_t W, size_t K, size_t Q, size_t S>
-_CCCL_HOST_DEVICE bool operator==(const linear_feedback_shift_engine<UIntType, W, K, Q, S>& lhs,
-                                  const linear_feedback_shift_engine<UIntType, W, K, Q, S>& rhs);
+_CCCL_HOST_DEVICE_API bool operator==(const linear_feedback_shift_engine<UIntType, W, K, Q, S>& lhs,
+                                      const linear_feedback_shift_engine<UIntType, W, K, Q, S>& rhs);
 
 /*! This function checks two \p linear_feedback_shift_engines for inequality.
  *  \param lhs The first \p linear_feedback_shift_engine to test.
@@ -169,8 +169,8 @@ _CCCL_HOST_DEVICE bool operator==(const linear_feedback_shift_engine<UIntType, W
  *  \return \c true if \p lhs is not equal to \p rhs; \c false, otherwise.
  */
 template <typename UIntType, size_t W, size_t K, size_t Q, size_t S>
-_CCCL_HOST_DEVICE bool operator!=(const linear_feedback_shift_engine<UIntType, W, K, Q, S>& lhs,
-                                  const linear_feedback_shift_engine<UIntType, W, K, Q, S>& rhs);
+_CCCL_HOST_DEVICE_API bool operator!=(const linear_feedback_shift_engine<UIntType, W, K, Q, S>& lhs,
+                                      const linear_feedback_shift_engine<UIntType, W, K, Q, S>& rhs);
 
 /*! This function streams a linear_feedback_shift_engine to a \p std::basic_ostream.
  *  \param os The \p basic_ostream to stream out to.
@@ -178,7 +178,7 @@ _CCCL_HOST_DEVICE bool operator!=(const linear_feedback_shift_engine<UIntType, W
  *  \return \p os
  */
 template <typename UIntType, size_t W, size_t K, size_t Q, size_t S, typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>&
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
 operator<<(std::basic_ostream<CharT, Traits>& os, const linear_feedback_shift_engine<UIntType, W, K, Q, S>& e);
 
 /*! This function streams a linear_feedback_shift_engine in from a std::basic_istream.
@@ -187,7 +187,7 @@ operator<<(std::basic_ostream<CharT, Traits>& os, const linear_feedback_shift_en
  *  \return \p is
  */
 template <typename UIntType, size_t W, size_t K, size_t Q, size_t S, typename CharT, typename Traits>
-std::basic_istream<CharT, Traits>&
+_CCCL_HOST_API std::basic_istream<CharT, Traits>&
 operator>>(std::basic_istream<CharT, Traits>& is, linear_feedback_shift_engine<UIntType, W, K, Q, S>& e);
 
 /*! \} // end random_number_engine_templates

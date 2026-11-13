@@ -251,12 +251,12 @@ public:
 
   /*! Returns the number of elements in this vector_base.
    */
-  _CCCL_HOST_DEVICE size_type size() const;
+  _CCCL_HOST_DEVICE_API size_type size() const;
 
   /*! Returns the size() of the largest possible vector_base.
    *  \return The largest possible return value of size().
    */
-  _CCCL_HOST_DEVICE size_type max_size() const;
+  _CCCL_HOST_DEVICE_API size_type max_size() const;
 
   /*! \brief If n is less than or equal to capacity(), this call has no effect.
    *         Otherwise, this method is a request for allocation of additional memory. If
@@ -269,7 +269,7 @@ public:
   /*! Returns the number of elements which have been reserved in this
    *  vector_base.
    */
-  _CCCL_HOST_DEVICE size_type capacity() const;
+  _CCCL_HOST_DEVICE_API size_type capacity() const;
 
   /*! This method shrinks the capacity of this vector_base to exactly
    *  fit its elements.
@@ -284,7 +284,7 @@ public:
    *  Note that data access with this operator is unchecked and
    *  out_of_range lookups are not defined.
    */
-  _CCCL_HOST_DEVICE reference operator[](size_type n);
+  _CCCL_HOST_DEVICE_API reference operator[](size_type n);
 
   /*! \brief Subscript read access to the data contained in this vector_dev.
    *  \param n The index of the element for which data should be accessed.
@@ -294,116 +294,116 @@ public:
    *  Note that data access with this operator is unchecked and
    *  out_of_range lookups are not defined.
    */
-  _CCCL_HOST_DEVICE const_reference operator[](size_type n) const;
+  _CCCL_HOST_DEVICE_API const_reference operator[](size_type n) const;
 
   /*! This method returns an iterator pointing to the beginning of
    *  this vector_base.
    *  \return mStart
    */
-  _CCCL_HOST_DEVICE iterator begin();
+  _CCCL_HOST_DEVICE_API iterator begin();
 
   /*! This method returns a const_iterator pointing to the beginning
    *  of this vector_base.
    *  \return mStart
    */
-  _CCCL_HOST_DEVICE const_iterator begin() const;
+  _CCCL_HOST_DEVICE_API const_iterator begin() const;
 
   /*! This method returns a const_iterator pointing to the beginning
    *  of this vector_base.
    *  \return mStart
    */
-  _CCCL_HOST_DEVICE const_iterator cbegin() const;
+  _CCCL_HOST_DEVICE_API const_iterator cbegin() const;
 
   /*! This method returns a reverse_iterator pointing to the beginning of
    *  this vector_base's reversed sequence.
    *  \return A reverse_iterator pointing to the beginning of this
    *          vector_base's reversed sequence.
    */
-  _CCCL_HOST_DEVICE reverse_iterator rbegin();
+  _CCCL_HOST_DEVICE_API reverse_iterator rbegin();
 
   /*! This method returns a const_reverse_iterator pointing to the beginning of
    *  this vector_base's reversed sequence.
    *  \return A const_reverse_iterator pointing to the beginning of this
    *          vector_base's reversed sequence.
    */
-  _CCCL_HOST_DEVICE const_reverse_iterator rbegin() const;
+  _CCCL_HOST_DEVICE_API const_reverse_iterator rbegin() const;
 
   /*! This method returns a const_reverse_iterator pointing to the beginning of
    *  this vector_base's reversed sequence.
    *  \return A const_reverse_iterator pointing to the beginning of this
    *          vector_base's reversed sequence.
    */
-  _CCCL_HOST_DEVICE const_reverse_iterator crbegin() const;
+  _CCCL_HOST_DEVICE_API const_reverse_iterator crbegin() const;
 
   /*! This method returns an iterator pointing to one element past the
    *  last of this vector_base.
    *  \return begin() + size().
    */
-  _CCCL_HOST_DEVICE iterator end();
+  _CCCL_HOST_DEVICE_API iterator end();
 
   /*! This method returns a const_iterator pointing to one element past the
    *  last of this vector_base.
    *  \return begin() + size().
    */
-  _CCCL_HOST_DEVICE const_iterator end() const;
+  _CCCL_HOST_DEVICE_API const_iterator end() const;
 
   /*! This method returns a const_iterator pointing to one element past the
    *  last of this vector_base.
    *  \return begin() + size().
    */
-  _CCCL_HOST_DEVICE const_iterator cend() const;
+  _CCCL_HOST_DEVICE_API const_iterator cend() const;
 
   /*! This method returns a reverse_iterator pointing to one element past the
    *  last of this vector_base's reversed sequence.
    *  \return rbegin() + size().
    */
-  _CCCL_HOST_DEVICE reverse_iterator rend();
+  _CCCL_HOST_DEVICE_API reverse_iterator rend();
 
   /*! This method returns a const_reverse_iterator pointing to one element past the
    *  last of this vector_base's reversed sequence.
    *  \return rbegin() + size().
    */
-  _CCCL_HOST_DEVICE const_reverse_iterator rend() const;
+  _CCCL_HOST_DEVICE_API const_reverse_iterator rend() const;
 
   /*! This method returns a const_reverse_iterator pointing to one element past the
    *  last of this vector_base's reversed sequence.
    *  \return rbegin() + size().
    */
-  _CCCL_HOST_DEVICE const_reverse_iterator crend() const;
+  _CCCL_HOST_DEVICE_API const_reverse_iterator crend() const;
 
   /*! This method returns a const_reference referring to the first element of this
    *  vector_base.
    *  \return The first element of this vector_base.
    */
-  _CCCL_HOST_DEVICE const_reference front() const;
+  _CCCL_HOST_DEVICE_API const_reference front() const;
 
   /*! This method returns a reference pointing to the first element of this
    *  vector_base.
    *  \return The first element of this vector_base.
    */
-  _CCCL_HOST_DEVICE reference front();
+  _CCCL_HOST_DEVICE_API reference front();
 
   /*! This method returns a const reference pointing to the last element of
    *  this vector_base.
    *  \return The last element of this vector_base.
    */
-  _CCCL_HOST_DEVICE const_reference back() const;
+  _CCCL_HOST_DEVICE_API const_reference back() const;
 
   /*! This method returns a reference referring to the last element of
    *  this vector_dev.
    *  \return The last element of this vector_base.
    */
-  _CCCL_HOST_DEVICE reference back();
+  _CCCL_HOST_DEVICE_API reference back();
 
   /*! This method returns a pointer to this vector_base's first element.
    *  \return A pointer to the first element of this vector_base.
    */
-  _CCCL_HOST_DEVICE pointer data();
+  _CCCL_HOST_DEVICE_API pointer data();
 
   /*! This method returns a const_pointer to this vector_base's first element.
    *  \return a const_pointer to the first element of this vector_base.
    */
-  _CCCL_HOST_DEVICE const_pointer data() const;
+  _CCCL_HOST_DEVICE_API const_pointer data() const;
 
   /*! This method resizes this vector_base to 0.
    */
@@ -412,7 +412,7 @@ public:
   /*! This method returns true iff size() == 0.
    *  \return true if size() == 0; false, otherwise.
    */
-  _CCCL_HOST_DEVICE bool empty() const;
+  _CCCL_HOST_DEVICE_API bool empty() const;
 
   /*! This method appends the given element to the end of this vector_base.
    *  \param x The element to append.
@@ -428,8 +428,8 @@ public:
    *  \param v The vector_base with which to swap.
    */
   // NOLINTNEXTLINE(bugprone-exception-escape)
-  void swap(vector_base& v) noexcept(::cuda::std::is_nothrow_swappable_v<storage_type>
-                                     && ::cuda::std::is_nothrow_swappable_v<size_type>)
+  _CCCL_HOST_API void swap(vector_base& v) noexcept(
+    ::cuda::std::is_nothrow_swappable_v<storage_type> && ::cuda::std::is_nothrow_swappable_v<size_type>)
   {
     using ::cuda::std::swap;
     swap(m_storage, v.m_storage);
@@ -560,7 +560,8 @@ private:
    *  \param b The second vector of interest. After completion, the contents
    *           of a will be returned here.
    */
-  friend void swap(vector_base& a, vector_base& b) noexcept(noexcept(a.swap(b))) // NOLINT(bugprone-exception-escape)
+  _CCCL_HOST_API friend void swap(vector_base& a,
+                                  vector_base& b) noexcept(noexcept(a.swap(b))) // NOLINT(bugprone-exception-escape)
   {
     a.swap(b);
   }
@@ -573,13 +574,13 @@ private:
  *          \p vector equals the other; \c false, otherwise.
  */
 template <typename T1, typename Alloc1, typename T2, typename Alloc2>
-bool operator==(const vector_base<T1, Alloc1>& lhs, const vector_base<T2, Alloc2>& rhs);
+_CCCL_HOST_API bool operator==(const vector_base<T1, Alloc1>& lhs, const vector_base<T2, Alloc2>& rhs);
 
 template <typename T1, typename Alloc1, typename T2, typename Alloc2>
-bool operator==(const vector_base<T1, Alloc1>& lhs, const std::vector<T2, Alloc2>& rhs);
+_CCCL_HOST_API bool operator==(const vector_base<T1, Alloc1>& lhs, const std::vector<T2, Alloc2>& rhs);
 
 template <typename T1, typename Alloc1, typename T2, typename Alloc2>
-bool operator==(const std::vector<T1, Alloc1>& lhs, const vector_base<T2, Alloc2>& rhs);
+_CCCL_HOST_API bool operator==(const std::vector<T1, Alloc1>& lhs, const vector_base<T2, Alloc2>& rhs);
 
 /*! This operator allows comparison between two vectors.
  *  \param lhs The first \p vector to compare.
@@ -588,13 +589,13 @@ bool operator==(const std::vector<T1, Alloc1>& lhs, const vector_base<T2, Alloc2
  *          \p vector equals the other; \c true, otherwise.
  */
 template <typename T1, typename Alloc1, typename T2, typename Alloc2>
-bool operator!=(const vector_base<T1, Alloc1>& lhs, const vector_base<T2, Alloc2>& rhs);
+_CCCL_HOST_API bool operator!=(const vector_base<T1, Alloc1>& lhs, const vector_base<T2, Alloc2>& rhs);
 
 template <typename T1, typename Alloc1, typename T2, typename Alloc2>
-bool operator!=(const vector_base<T1, Alloc1>& lhs, const std::vector<T2, Alloc2>& rhs);
+_CCCL_HOST_API bool operator!=(const vector_base<T1, Alloc1>& lhs, const std::vector<T2, Alloc2>& rhs);
 
 template <typename T1, typename Alloc1, typename T2, typename Alloc2>
-bool operator!=(const std::vector<T1, Alloc1>& lhs, const vector_base<T2, Alloc2>& rhs);
+_CCCL_HOST_API bool operator!=(const std::vector<T1, Alloc1>& lhs, const vector_base<T2, Alloc2>& rhs);
 } // namespace detail
 
 THRUST_NAMESPACE_END

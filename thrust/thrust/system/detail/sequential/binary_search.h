@@ -29,7 +29,7 @@ namespace system::detail::sequential
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE ForwardIterator lower_bound(
+_CCCL_HOST_DEVICE_API ForwardIterator lower_bound(
   sequential::execution_policy<DerivedPolicy>&,
   ForwardIterator first,
   ForwardIterator last,
@@ -67,7 +67,7 @@ _CCCL_HOST_DEVICE ForwardIterator lower_bound(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE ForwardIterator upper_bound(
+_CCCL_HOST_DEVICE_API ForwardIterator upper_bound(
   sequential::execution_policy<DerivedPolicy>&,
   ForwardIterator first,
   ForwardIterator last,
@@ -105,7 +105,7 @@ _CCCL_HOST_DEVICE ForwardIterator upper_bound(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE bool binary_search(
+_CCCL_HOST_DEVICE_API bool binary_search(
   sequential::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,

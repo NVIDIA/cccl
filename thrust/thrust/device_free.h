@@ -54,7 +54,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see device_ptr
  *  \see device_malloc
  */
-inline void device_free(thrust::device_ptr<void> ptr)
+_CCCL_HOST_API inline void device_free(thrust::device_ptr<void> ptr)
 {
   using thrust::system::detail::generic::select_system;
 

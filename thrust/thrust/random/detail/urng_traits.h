@@ -42,7 +42,7 @@ inline constexpr bool has_static_max_member_v<
                                                          urng_result_t<UniformRandomNumberGenerator>>>> = true;
 
 template <typename UniformRandomNumberGenerator>
-_CCCL_HOST_DEVICE constexpr typename UniformRandomNumberGenerator::result_type uniform_random_number_generator_min()
+_CCCL_HOST_DEVICE_API constexpr typename UniformRandomNumberGenerator::result_type uniform_random_number_generator_min()
 {
   if constexpr (has_static_min_member_v<UniformRandomNumberGenerator>)
   {
@@ -55,7 +55,7 @@ _CCCL_HOST_DEVICE constexpr typename UniformRandomNumberGenerator::result_type u
 }
 
 template <typename UniformRandomNumberGenerator>
-_CCCL_HOST_DEVICE constexpr typename UniformRandomNumberGenerator::result_type uniform_random_number_generator_max()
+_CCCL_HOST_DEVICE_API constexpr typename UniformRandomNumberGenerator::result_type uniform_random_number_generator_max()
 {
   if constexpr (has_static_max_member_v<UniformRandomNumberGenerator>)
   {
@@ -72,12 +72,12 @@ struct urng_traits
 {
   using result_type = typename UniformRandomNumberGenerator::result_type;
 
-  _CCCL_HOST_DEVICE static constexpr result_type min THRUST_PREVENT_MACRO_SUBSTITUTION()
+  _CCCL_HOST_DEVICE_API static constexpr result_type min THRUST_PREVENT_MACRO_SUBSTITUTION()
   {
     return uniform_random_number_generator_min<UniformRandomNumberGenerator>();
   }
 
-  _CCCL_HOST_DEVICE static constexpr result_type max THRUST_PREVENT_MACRO_SUBSTITUTION()
+  _CCCL_HOST_DEVICE_API static constexpr result_type max THRUST_PREVENT_MACRO_SUBSTITUTION()
   {
     return uniform_random_number_generator_max<UniformRandomNumberGenerator>();
   }

@@ -28,7 +28,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator copy_if(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator1 first,
   InputIterator1 last,

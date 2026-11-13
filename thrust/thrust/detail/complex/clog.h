@@ -51,7 +51,7 @@ namespace detail::complex
 using thrust::complex;
 
 /* round down to 18 = 54/3 bits */
-_CCCL_HOST_DEVICE inline double trim(double x)
+_CCCL_HOST_DEVICE_API inline double trim(double x)
 {
   uint32_t hi;
   get_high_word(hi, x);
@@ -59,7 +59,7 @@ _CCCL_HOST_DEVICE inline double trim(double x)
   return x;
 }
 
-_CCCL_HOST_DEVICE inline complex<double> clog(const complex<double>& z)
+_CCCL_HOST_DEVICE_API inline complex<double> clog(const complex<double>& z)
 {
   // Adapted from FreeBSDs msun
   double x;
@@ -200,19 +200,19 @@ _CCCL_HOST_DEVICE inline complex<double> clog(const complex<double>& z)
 } // namespace detail::complex
 
 template <typename ValueType>
-_CCCL_HOST_DEVICE inline complex<ValueType> log(const complex<ValueType>& z)
+_CCCL_HOST_DEVICE_API inline complex<ValueType> log(const complex<ValueType>& z)
 {
   return complex<ValueType>(::cuda::std::log(thrust::abs(z)), thrust::arg(z));
 }
 
 template <>
-_CCCL_HOST_DEVICE inline complex<double> log(const complex<double>& z)
+_CCCL_HOST_DEVICE_API inline complex<double> log(const complex<double>& z)
 {
   return detail::complex::clog(z);
 }
 
 template <typename ValueType>
-_CCCL_HOST_DEVICE inline complex<ValueType> log10(const complex<ValueType>& z)
+_CCCL_HOST_DEVICE_API inline complex<ValueType> log10(const complex<ValueType>& z)
 {
   // Using the explicit literal prevents compile time warnings in
   // devices that don't support doubles

@@ -21,21 +21,21 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename ExecutionPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 all_of(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
 {
   return thrust::find_if(exec, first, last, ::cuda::std::not_fn(pred)) == last;
 }
 
 template <typename ExecutionPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 any_of(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
 {
   return thrust::find_if(exec, first, last, pred) != last;
 }
 
 template <typename ExecutionPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 none_of(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
 {
   return !thrust::any_of(exec, first, last, pred);

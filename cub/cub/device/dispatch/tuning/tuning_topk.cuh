@@ -72,7 +72,7 @@ struct topk_policy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const topk_policy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const topk_policy& p)
   {
     return os << "topk_policy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm

@@ -24,7 +24,7 @@ template <typename DerivedPolicy,
           typename UnaryFunction,
           typename OutputType,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputType transform_reduce(
+_CCCL_HOST_DEVICE_API OutputType transform_reduce(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,

@@ -76,10 +76,10 @@ public:
   static_assert(::cuda::std::is_convertible_v<decltype(StrideHolder::value), difference_type>,
                 "The stride must be convertible to the iterator's difference_type");
 
-  strided_iterator() = default;
+  _CCCL_HIDE_FROM_ABI strided_iterator() = default;
 
   //! @brief Creates a strided_iterator from an existing iterator and a stride.
-  _CCCL_HOST_DEVICE strided_iterator(RandomAccessIterator it, StrideHolder stride = {})
+  _CCCL_HOST_DEVICE_API strided_iterator(RandomAccessIterator it, StrideHolder stride = {})
       : super_t(it)
       , StrideHolder(stride)
   {}
@@ -87,13 +87,13 @@ public:
   static constexpr bool has_static_stride = detail::is_compile_time_value<StrideHolder>;
 
   //! @brief Returns either the @ref runtime_value or the @ref compile_time_value holding the stride's value
-  _CCCL_HOST_DEVICE const auto& stride_holder() const
+  _CCCL_HOST_DEVICE_API const auto& stride_holder() const
   {
     return static_cast<const StrideHolder&>(*this);
   }
 
   //! @brief Returns the stride's value
-  _CCCL_HOST_DEVICE auto stride() const -> difference_type
+  _CCCL_HOST_DEVICE_API auto stride() const -> difference_type
   {
     return static_cast<detail::it_difference_t<RandomAccessIterator>>(stride_holder().value);
   }
@@ -101,30 +101,30 @@ public:
 private:
   //! @cond
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void advance(difference_type n)
+  _CCCL_HOST_DEVICE_API void advance(difference_type n)
   {
     this->base_reference() += n * stride();
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void increment()
+  _CCCL_HOST_DEVICE_API void increment()
   {
     this->base_reference() += stride();
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void decrement()
+  _CCCL_HOST_DEVICE_API void decrement()
   {
     this->base_reference() -= stride();
   }
 
   template <typename OtherStrideHolder>
-  _CCCL_HOST_DEVICE bool equal(strided_iterator<RandomAccessIterator, OtherStrideHolder> const& other) const
+  _CCCL_HOST_DEVICE_API bool equal(strided_iterator<RandomAccessIterator, OtherStrideHolder> const& other) const
   {
     return this->base() == other.base();
   }
 
-  _CCCL_HOST_DEVICE difference_type distance_to(strided_iterator const& other) const
+  _CCCL_HOST_DEVICE_API difference_type distance_to(strided_iterator const& other) const
   {
     const difference_type dist = other.base() - this->base();
     _CCCL_ASSERT(dist % stride() == 0, "Underlying iterator difference must be divisible by the stride");

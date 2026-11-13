@@ -340,7 +340,7 @@ struct __get_complex_impl<__nv_bfloat16>
 
 #  if _CCCL_HOSTED()
 template <class _CharT, class _Traits>
-::std::basic_istream<_CharT, _Traits>&
+_CCCL_HOST_API ::std::basic_istream<_CharT, _Traits>&
 operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<__nv_bfloat16>& __x)
 {
   ::std::complex<float> __temp;
@@ -350,7 +350,7 @@ operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<__nv_bfloat16>& 
 }
 
 template <class _CharT, class _Traits>
-::std::basic_ostream<_CharT, _Traits>&
+_CCCL_HOST_API ::std::basic_ostream<_CharT, _Traits>&
 operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<__nv_bfloat16>& __x)
 {
   return __os << complex<float>{__x};

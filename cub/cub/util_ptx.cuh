@@ -40,7 +40,7 @@ CUB_NAMESPACE_BEGIN
  */
 template <typename UnsignedBits, int ByteLen>
 //! deprecated [Since 3.0]
-CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
+CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned int
 BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::constant_t<ByteLen> /*byte_len*/)
 {
   unsigned int bits;
@@ -53,7 +53,7 @@ BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::
  */
 template <typename UnsignedBits>
 //! deprecated [Since 3.0]
-CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
+CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned int
 BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::constant_t<8> /*byte_len*/)
 {
   const unsigned long long MASK = (1ull << num_bits) - 1;
@@ -66,7 +66,7 @@ BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::
  */
 template <typename UnsignedBits>
 //! deprecated [Since 3.0]
-CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
+CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned int
 BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::constant_t<16> /*byte_len*/)
 {
   const __uint128_t MASK = (__uint128_t{1} << num_bits) - 1;
@@ -82,7 +82,7 @@ BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::
  */
 template <typename UnsignedBits>
 //! deprecated [Since 3.0]
-CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE
+CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE_API
 _CCCL_FORCEINLINE unsigned int BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits)
 {
   return _CUB::BFE(source, bit_start, num_bits, detail::constant_v<int{sizeof(UnsignedBits)}>);
@@ -93,7 +93,7 @@ _CCCL_FORCEINLINE unsigned int BFE(UnsignedBits source, unsigned int bit_start, 
 /**
  * Warp synchronous shfl_up
  */
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
+_CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned int
 SHFL_UP_SYNC(unsigned int word, int src_offset, int flags, unsigned int member_mask)
 {
   asm volatile("shfl.sync.up.b32 %0, %1, %2, %3, %4;"
@@ -105,7 +105,7 @@ SHFL_UP_SYNC(unsigned int word, int src_offset, int flags, unsigned int member_m
 /**
  * Warp synchronous shfl_down
  */
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
+_CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned int
 SHFL_DOWN_SYNC(unsigned int word, int src_offset, int flags, unsigned int member_mask)
 {
   asm volatile("shfl.sync.down.b32 %0, %1, %2, %3, %4;"
@@ -119,7 +119,7 @@ SHFL_DOWN_SYNC(unsigned int word, int src_offset, int flags, unsigned int member
 /**
  * \brief Terminates the calling thread
  */
-_CCCL_DEVICE _CCCL_FORCEINLINE void ThreadExit()
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void ThreadExit()
 {
   asm volatile("exit;");
 }
@@ -127,7 +127,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadExit()
 /**
  * \brief Returns the row-major linear thread identifier for a multidimensional thread block
  */
-_CCCL_DEVICE _CCCL_FORCEINLINE int RowMajorTid(int block_dim_x, int block_dim_y, int block_dim_z)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE int RowMajorTid(int block_dim_x, int block_dim_y, int block_dim_z)
 {
   return static_cast<int>(((block_dim_z == 1) ? 0 : (threadIdx.z * block_dim_x * block_dim_y))
                           + ((block_dim_y == 1) ? 0 : (threadIdx.y * block_dim_x)) + threadIdx.x);
@@ -219,7 +219,7 @@ template <int LogicalWarpThreads>
  *   32-bit mask of participating warp lanes
  */
 template <int LogicalWarpThreads, typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_thread, unsigned int member_mask)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_thread, unsigned int member_mask)
 {
   /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
   constexpr int SHFL_C = (32 - LogicalWarpThreads) << 8;
@@ -299,7 +299,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_th
  *   32-bit mask of participating warp lanes
  */
 template <int LogicalWarpThreads, typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_thread, unsigned int member_mask)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_thread, unsigned int member_mask)
 {
   /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
   static constexpr int SHFL_C = (32 - LogicalWarpThreads) << 8;
@@ -379,7 +379,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_t
  *   32-bit mask of participating warp lanes
  */
 template <int LogicalWarpThreads, typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigned int member_mask)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigned int member_mask)
 {
   using ShuffleWord = typename UnitWord<T>::ShuffleWord;
 
@@ -423,7 +423,7 @@ namespace detail
 template <int LabelBits, int WarpActiveThreads>
 struct warp_matcher_t
 {
-  static _CCCL_DEVICE unsigned int match_any(unsigned int label)
+  _CCCL_DEVICE_API static unsigned int match_any(unsigned int label)
   {
     return warp_matcher_t<LabelBits, 32>::match_any(label) & ~(~0 << WarpActiveThreads);
   }
@@ -434,7 +434,7 @@ struct warp_matcher_t<LabelBits, warp_threads>
 {
   // match.any.sync.b32 is slower when matching a few bits
   // using a ballot loop instead
-  static _CCCL_DEVICE unsigned int match_any(unsigned int label)
+  _CCCL_DEVICE_API static unsigned int match_any(unsigned int label)
   {
     unsigned int retval;
 
@@ -466,7 +466,7 @@ struct warp_matcher_t<LabelBits, warp_threads>
  * @brief Shifts @p val left by the amount specified by unsigned 32-bit value in @p num_bits. If @p
  * num_bits is larger than 32 bits, @p num_bits is clamped to 32.
  */
-_CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftLeft(uint32_t val, uint32_t num_bits)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE uint32_t LogicShiftLeft(uint32_t val, uint32_t num_bits)
 {
   uint32_t ret{}; // NOLINT(misc-const-correctness)
   asm("shl.b32 %0, %1, %2;" : "=r"(ret) : "r"(val), "r"(num_bits));
@@ -477,7 +477,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftLeft(uint32_t val, uint32_t nu
  * @brief Shifts @p val right by the amount specified by unsigned 32-bit value in @p num_bits. If @p
  * num_bits is larger than 32 bits, @p num_bits is clamped to 32.
  */
-_CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftRight(uint32_t val, uint32_t num_bits)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE uint32_t LogicShiftRight(uint32_t val, uint32_t num_bits)
 {
   uint32_t ret{}; // NOLINT(misc-const-correctness)
   asm("shr.b32 %0, %1, %2;" : "=r"(ret) : "r"(val), "r"(num_bits));
@@ -491,7 +491,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftRight(uint32_t val, uint32_t n
  * LabelBits of \p label as the calling thread.
  */
 template <int LabelBits, int WarpActiveThreads = detail::warp_threads>
-inline _CCCL_DEVICE unsigned int MatchAny(unsigned int label)
+_CCCL_DEVICE_API inline unsigned int MatchAny(unsigned int label)
 {
   return detail::warp_matcher_t<LabelBits, WarpActiveThreads>::match_any(label);
 }

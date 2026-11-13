@@ -21,7 +21,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::tbb::detail
 {
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
-::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
+_CCCL_HOST_API ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
   execution_policy<DerivedPolicy>& exec,
   ForwardIterator1 keys_first,
   ForwardIterator1 keys_last,
@@ -38,7 +38,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   execution_policy<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,

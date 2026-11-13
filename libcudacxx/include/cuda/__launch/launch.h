@@ -284,8 +284,10 @@ inline constexpr bool __invoke_kernel_functor_with_config_v =
 // 2. With __launch_bounds__ for non-cluster launches with compile-time known block size.
 // 3. Fallback without any attributes.
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
 template <class _Config, class _Kernel, class... _Args>
-__global__ static void
+_CCCL_KERNEL_ATTRIBUTES void
 // todo(dabayer): Re-enable this once cuda::launch with kernels that were compiled with .blocksareclusters directive is
 // fixed.
 //
@@ -308,9 +310,12 @@ __kernel_launcher_with_block_size(const _CCCL_GRID_CONSTANT _Config __conf, _Ker
     __kernel_fn(__args...);
   }
 }
+_CCCL_DIAG_POP
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
 template <class _Config, class _Kernel, class... _Args>
-__global__ static void _CCCL_LAUNCH_BOUNDS(::cuda::__max_nthreads_per_block<typename _Config::hierarchy_type>())
+_CCCL_KERNEL_ATTRIBUTES void _CCCL_LAUNCH_BOUNDS(::cuda::__max_nthreads_per_block<typename _Config::hierarchy_type>())
 __kernel_launcher_with_launch_bounds(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
 {
   ::cuda::__assume_known_info<typename _Config::hierarchy_type>();
@@ -324,9 +329,13 @@ __kernel_launcher_with_launch_bounds(const _CCCL_GRID_CONSTANT _Config __conf, _
     __kernel_fn(__args...);
   }
 }
+_CCCL_DIAG_POP
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
 template <class _Config, class _Kernel, class... _Args>
-__global__ static void __kernel_launcher(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
+_CCCL_KERNEL_ATTRIBUTES void
+__kernel_launcher(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
 {
   ::cuda::__assume_known_info<typename _Config::hierarchy_type>();
 
@@ -339,6 +348,7 @@ __global__ static void __kernel_launcher(const _CCCL_GRID_CONSTANT _Config __con
     __kernel_fn(__args...);
   }
 }
+_CCCL_DIAG_POP
 
 // Return void pointer to work around NVCC bug with __restrict__
 template <class _Kernel, class _Config, class... _Args>

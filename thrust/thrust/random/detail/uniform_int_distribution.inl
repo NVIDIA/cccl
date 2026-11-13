@@ -25,22 +25,22 @@ THRUST_NAMESPACE_BEGIN
 namespace random
 {
 template <typename IntType>
-_CCCL_HOST_DEVICE uniform_int_distribution<IntType>::uniform_int_distribution(IntType a, IntType b)
+_CCCL_HOST_DEVICE_API uniform_int_distribution<IntType>::uniform_int_distribution(IntType a, IntType b)
     : m_param(a, b)
 {} // end uniform_int_distribution::uniform_int_distribution()
 
 template <typename IntType>
-_CCCL_HOST_DEVICE uniform_int_distribution<IntType>::uniform_int_distribution(const param_type& parm)
+_CCCL_HOST_DEVICE_API uniform_int_distribution<IntType>::uniform_int_distribution(const param_type& parm)
     : m_param(parm)
 {} // end uniform_int_distribution::uniform_int_distribution()
 
 template <typename IntType>
-_CCCL_HOST_DEVICE void uniform_int_distribution<IntType>::reset()
+_CCCL_HOST_DEVICE_API void uniform_int_distribution<IntType>::reset()
 {} // end uniform_int_distribution::reset()
 
 template <typename IntType>
 template <typename UniformRandomNumberGenerator>
-_CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::result_type
+_CCCL_HOST_DEVICE_API typename uniform_int_distribution<IntType>::result_type
 uniform_int_distribution<IntType>::operator()(UniformRandomNumberGenerator& urng)
 {
   return operator()(urng, m_param);
@@ -48,7 +48,7 @@ uniform_int_distribution<IntType>::operator()(UniformRandomNumberGenerator& urng
 
 template <typename IntType>
 template <typename UniformRandomNumberGenerator>
-_CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::result_type
+_CCCL_HOST_DEVICE_API typename uniform_int_distribution<IntType>::result_type
 uniform_int_distribution<IntType>::operator()(UniformRandomNumberGenerator& urng, const param_type& parm)
 {
   // XXX this implementation is somewhat hacky and will skip
@@ -68,52 +68,55 @@ uniform_int_distribution<IntType>::operator()(UniformRandomNumberGenerator& urng
 } // end uniform_int_distribution::operator()()
 
 template <typename IntType>
-_CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::result_type uniform_int_distribution<IntType>::a() const
+_CCCL_HOST_DEVICE_API typename uniform_int_distribution<IntType>::result_type
+uniform_int_distribution<IntType>::a() const
 {
   return m_param.first;
 } // end uniform_int_distribution<IntType>::a()
 
 template <typename IntType>
-_CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::result_type uniform_int_distribution<IntType>::b() const
+_CCCL_HOST_DEVICE_API typename uniform_int_distribution<IntType>::result_type
+uniform_int_distribution<IntType>::b() const
 {
   return m_param.second;
 } // end uniform_int_distribution::b()
 
 template <typename IntType>
-_CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::param_type uniform_int_distribution<IntType>::param() const
+_CCCL_HOST_DEVICE_API typename uniform_int_distribution<IntType>::param_type
+uniform_int_distribution<IntType>::param() const
 {
   return m_param;
 } // end uniform_int_distribution::param()
 
 template <typename IntType>
-_CCCL_HOST_DEVICE void uniform_int_distribution<IntType>::param(const param_type& parm)
+_CCCL_HOST_DEVICE_API void uniform_int_distribution<IntType>::param(const param_type& parm)
 {
   m_param = parm;
 } // end uniform_int_distribution::param()
 
 template <typename IntType>
-_CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::result_type uniform_int_distribution<IntType>::min
+_CCCL_HOST_DEVICE_API typename uniform_int_distribution<IntType>::result_type uniform_int_distribution<IntType>::min
 THRUST_PREVENT_MACRO_SUBSTITUTION() const
 {
   return a();
 } // end uniform_int_distribution::min()
 
 template <typename IntType>
-_CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::result_type uniform_int_distribution<IntType>::max
+_CCCL_HOST_DEVICE_API typename uniform_int_distribution<IntType>::result_type uniform_int_distribution<IntType>::max
 THRUST_PREVENT_MACRO_SUBSTITUTION() const
 {
   return b();
 } // end uniform_int_distribution::max()
 
 template <typename IntType>
-_CCCL_HOST_DEVICE bool uniform_int_distribution<IntType>::equal(const uniform_int_distribution& rhs) const
+_CCCL_HOST_DEVICE_API bool uniform_int_distribution<IntType>::equal(const uniform_int_distribution& rhs) const
 {
   return param() == rhs.param();
 }
 
 template <typename IntType>
 template <typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>&
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
 uniform_int_distribution<IntType>::stream_out(std::basic_ostream<CharT, Traits>& os) const
 {
   using ostream_type = std::basic_ostream<CharT, Traits>;
@@ -137,7 +140,8 @@ uniform_int_distribution<IntType>::stream_out(std::basic_ostream<CharT, Traits>&
 
 template <typename IntType>
 template <typename CharT, typename Traits>
-std::basic_istream<CharT, Traits>& uniform_int_distribution<IntType>::stream_in(std::basic_istream<CharT, Traits>& is)
+_CCCL_HOST_API std::basic_istream<CharT, Traits>&
+uniform_int_distribution<IntType>::stream_in(std::basic_istream<CharT, Traits>& is)
 {
   using istream_type = std::basic_istream<CharT, Traits>;
   using ios_base     = typename istream_type::ios_base;
@@ -155,28 +159,28 @@ std::basic_istream<CharT, Traits>& uniform_int_distribution<IntType>::stream_in(
 }
 
 template <typename IntType>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 operator==(const uniform_int_distribution<IntType>& lhs, const uniform_int_distribution<IntType>& rhs)
 {
   return thrust::random::detail::random_core_access::equal(lhs, rhs);
 }
 
 template <typename IntType>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 operator!=(const uniform_int_distribution<IntType>& lhs, const uniform_int_distribution<IntType>& rhs)
 {
   return !(lhs == rhs);
 }
 
 template <typename IntType, typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>&
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
 operator<<(std::basic_ostream<CharT, Traits>& os, const uniform_int_distribution<IntType>& d)
 {
   return thrust::random::detail::random_core_access::stream_out(os, d);
 }
 
 template <typename IntType, typename CharT, typename Traits>
-std::basic_istream<CharT, Traits>&
+_CCCL_HOST_API std::basic_istream<CharT, Traits>&
 operator>>(std::basic_istream<CharT, Traits>& is, uniform_int_distribution<IntType>& d)
 {
   return thrust::random::detail::random_core_access::stream_in(is, d);

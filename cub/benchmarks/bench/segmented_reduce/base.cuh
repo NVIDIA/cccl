@@ -41,7 +41,7 @@ struct policy_selector
 #endif // !TUNE_BASE
 
 template <typename T>
-void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
+_CCCL_HOST_API void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
 {
   static constexpr bool is_argmin = std::is_same_v<op_t, cub::detail::arg_min>;
 

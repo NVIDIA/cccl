@@ -119,7 +119,7 @@ struct BlockScanRaking
    *   Prefix to seed reduction with
    */
   template <int ITERATION, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T
   GuardedReduce(T* raking_ptr, ScanOp scan_op, T raking_partial, constant_t<ITERATION> /*iteration*/)
   {
     if (BlockRakingLayout::UNGUARDED || (((linear_tid * SEGMENT_LENGTH) + ITERATION) < BLOCK_THREADS))
@@ -144,7 +144,7 @@ struct BlockScanRaking
    *   Prefix to seed reduction with
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T
   GuardedReduce(T* /*raking_ptr*/, ScanOp /*scan_op*/, T raking_partial, constant_t<SEGMENT_LENGTH> /*iteration*/)
   {
     return raking_partial;
@@ -160,7 +160,7 @@ struct BlockScanRaking
    *   [in] Input array
    */
   template <int ITERATION>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void CopySegment(T* out, T* in, constant_t<ITERATION> /*iteration*/)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void CopySegment(T* out, T* in, constant_t<ITERATION> /*iteration*/)
   {
     out[ITERATION] = in[ITERATION];
     CopySegment(out, in, constant_v<ITERATION + 1>);
@@ -175,11 +175,12 @@ struct BlockScanRaking
    * @param[in] in
    *   Input array
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void CopySegment(T* /*out*/, T* /*in*/, constant_t<SEGMENT_LENGTH> /*iteration*/) {}
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void CopySegment(T* /*out*/, T* /*in*/, constant_t<SEGMENT_LENGTH> /*iteration*/)
+  {}
 
   /// Performs upsweep raking reduction, returning the aggregate
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Upsweep(ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Upsweep(ScanOp scan_op)
   {
     T* smem_raking_ptr = BlockRakingLayout::RakingPtr(temp_storage.raking_grid, linear_tid);
 
@@ -193,7 +194,7 @@ struct BlockScanRaking
 
   /// Performs exclusive downsweep raking scan
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveDownsweep(ScanOp scan_op, T raking_partial, bool apply_prefix = true)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveDownsweep(ScanOp scan_op, T raking_partial, bool apply_prefix = true)
   {
     T* smem_raking_ptr = BlockRakingLayout::RakingPtr(temp_storage.raking_grid, linear_tid);
 
@@ -211,7 +212,7 @@ struct BlockScanRaking
 
   /// Performs inclusive downsweep raking scan
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveDownsweep(ScanOp scan_op, T raking_partial, bool apply_prefix = true)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveDownsweep(ScanOp scan_op, T raking_partial, bool apply_prefix = true)
   {
     T* smem_raking_ptr = BlockRakingLayout::RakingPtr(temp_storage.raking_grid, linear_tid);
 
@@ -232,7 +233,7 @@ struct BlockScanRaking
   //---------------------------------------------------------------------
 
   /// Constructor
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockScanRaking(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockScanRaking(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
       , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
@@ -256,7 +257,7 @@ struct BlockScanRaking
    *   Binary scan operator
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op)
   {
     if (WARP_SYNCHRONOUS)
     {
@@ -309,7 +310,7 @@ struct BlockScanRaking
    *   Binary scan operator
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& output, const T& initial_value, ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveScan(T input, T& output, const T& initial_value, ScanOp scan_op)
   {
     if (WARP_SYNCHRONOUS)
     {
@@ -366,7 +367,7 @@ struct BlockScanRaking
    *   Threadblock-wide aggregate reduction of input items
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& output, ScanOp scan_op, T& block_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveScan(T input, T& output, ScanOp scan_op, T& block_aggregate)
   {
     if (WARP_SYNCHRONOUS)
     {
@@ -433,7 +434,7 @@ struct BlockScanRaking
    *   Threadblock-wide aggregate reduction of input items
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ExclusiveScan(T input, T& output, const T& initial_value, ScanOp scan_op, T& block_aggregate)
   {
     if (WARP_SYNCHRONOUS)
@@ -502,7 +503,7 @@ struct BlockScanRaking
    *   block-wide prefix to be applied to all inputs.
    */
   template <typename ScanOp, typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ExclusiveScan(T input, T& output, ScanOp scan_op, BlockPrefixCallbackOp& block_prefix_callback_op)
   {
     if (WARP_SYNCHRONOUS)
@@ -583,7 +584,7 @@ struct BlockScanRaking
    *   Binary scan operator
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& output, ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(T input, T& output, ScanOp scan_op)
   {
     if (WARP_SYNCHRONOUS)
     {
@@ -637,7 +638,7 @@ struct BlockScanRaking
    *   Threadblock-wide aggregate reduction of input items
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& output, ScanOp scan_op, T& block_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(T input, T& output, ScanOp scan_op, T& block_aggregate)
   {
     if (WARP_SYNCHRONOUS)
     {
@@ -705,7 +706,7 @@ struct BlockScanRaking
    *   block-wide prefix to be applied to all inputs.
    */
   template <typename ScanOp, typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   InclusiveScan(T input, T& output, ScanOp scan_op, BlockPrefixCallbackOp& block_prefix_callback_op)
   {
     if (WARP_SYNCHRONOUS)

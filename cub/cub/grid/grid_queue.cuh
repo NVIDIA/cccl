@@ -73,13 +73,13 @@ class GridQueue
 
 public:
   /// Returns the device allocation size in bytes needed to construct a GridQueue instance
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static size_t AllocationSize()
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE static size_t AllocationSize()
   {
     return sizeof(OffsetT) * 2;
   }
 
   /// Constructs an invalid GridQueue descriptor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GridQueue()
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE GridQueue()
       : d_counters(nullptr)
   {}
 
@@ -90,14 +90,14 @@ public:
    *   Device allocation to back the GridQueue.  Must be at least as big as
    *   <tt>AllocationSize()</tt>.
    */
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GridQueue(void* d_storage)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE GridQueue(void* d_storage)
       : d_counters((OffsetT*) d_storage)
   {}
 
   /// This operation sets the fill-size and resets the drain counter, preparing the GridQueue for
   /// draining in the next kernel instance. To be called by the host or by a kernel prior to the one
   /// which will be draining.
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cudaError_t
   FillAndResetDrain(OffsetT fill_size, [[maybe_unused]] cudaStream_t stream = nullptr)
   {
     cudaError_t result = cudaErrorUnknown;
@@ -121,7 +121,7 @@ public:
 
   /// This operation resets the drain so that it may advance to meet the existing fill-size.
   /// To be called by the host or by a kernel prior to the one which will be draining.
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t ResetDrain([[maybe_unused]] cudaStream_t stream = nullptr)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cudaError_t ResetDrain([[maybe_unused]] cudaStream_t stream = nullptr)
   {
     cudaError_t result = cudaErrorUnknown;
 
@@ -137,7 +137,7 @@ public:
 
   /// This operation resets the fill counter.
   /// To be called by the host or by a kernel prior to the one which will be filling.
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t ResetFill([[maybe_unused]] cudaStream_t stream = nullptr)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cudaError_t ResetFill([[maybe_unused]] cudaStream_t stream = nullptr)
   {
     cudaError_t result = cudaErrorUnknown;
 
@@ -152,7 +152,7 @@ public:
   }
 
   /// Returns the fill-size established by the parent or by the previous kernel.
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cudaError_t
   FillSize(OffsetT& fill_size, [[maybe_unused]] cudaStream_t stream = nullptr)
   {
     cudaError_t result = cudaErrorUnknown;
@@ -173,14 +173,14 @@ public:
 
   /// Drain @p num_items from the queue. Returns offset from which to read items.
   /// To be called from CUDA kernel.
-  _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT Drain(OffsetT num_items)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE OffsetT Drain(OffsetT num_items)
   {
     return atomicAdd(d_counters + DRAIN, num_items);
   }
 
   /// Fill @p num_items into the queue. Returns offset from which to write items.
   /// To be called from CUDA kernel.
-  _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT Fill(OffsetT num_items)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE OffsetT Fill(OffsetT num_items)
   {
     return atomicAdd(d_counters + FILL, num_items);
   }

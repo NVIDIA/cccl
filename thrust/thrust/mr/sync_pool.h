@@ -49,7 +49,7 @@ struct synchronized_pool_resource : public memory_resource<typename Upstream::po
    *      and as such, may be tuned in the future. This function is exposed so that creating a set of options that are
    *      just a slight departure from the defaults is easy.
    */
-  static pool_options get_default_options()
+  _CCCL_HOST_API static pool_options get_default_options()
   {
     return unsync_pool::get_default_options();
   }
@@ -59,7 +59,7 @@ struct synchronized_pool_resource : public memory_resource<typename Upstream::po
    *  \param upstream the upstream memory resource for allocations
    *  \param options pool options to use
    */
-  synchronized_pool_resource(Upstream* upstream, pool_options options = get_default_options())
+  _CCCL_HOST_API synchronized_pool_resource(Upstream* upstream, pool_options options = get_default_options())
       : upstream_pool(upstream, options)
   {}
 
@@ -67,19 +67,19 @@ struct synchronized_pool_resource : public memory_resource<typename Upstream::po
    *
    *  \param options pool options to use
    */
-  synchronized_pool_resource(pool_options options = get_default_options())
+  _CCCL_HOST_API synchronized_pool_resource(pool_options options = get_default_options())
       : upstream_pool(get_global_resource<Upstream>(), options)
   {}
 
   /*! Releases all held memory to upstream.
    */
-  void release()
+  _CCCL_HOST_API void release()
   {
     const lock_t lock(mtx);
     upstream_pool.release();
   }
 
-  [[nodiscard]] void_ptr do_allocate( // NOLINT(google-default-arguments)
+  [[nodiscard]] _CCCL_HOST_API void_ptr do_allocate( // NOLINT(google-default-arguments)
     std::size_t bytes,
     std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
@@ -87,9 +87,9 @@ struct synchronized_pool_resource : public memory_resource<typename Upstream::po
     return upstream_pool.do_allocate(bytes, alignment);
   }
 
-  void do_deallocate(void_ptr p, // NOLINT(google-default-arguments)
-                     std::size_t n,
-                     std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  _CCCL_HOST_API void do_deallocate(void_ptr p, // NOLINT(google-default-arguments)
+                                    std::size_t n,
+                                    std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     const lock_t lock(mtx);
     upstream_pool.do_deallocate(p, n, alignment);

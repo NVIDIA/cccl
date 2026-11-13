@@ -61,7 +61,7 @@ struct RleNonTrivialRunsLookbackPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const RleNonTrivialRunsLookbackPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const RleNonTrivialRunsLookbackPolicy& p)
   {
     return os
         << "RleNonTrivialRunsLookbackPolicy { .threads_per_block = " << p.threads_per_block
@@ -92,7 +92,7 @@ namespace detail
 }
 } // namespace detail
 
-inline ::std::ostream& operator<<(::std::ostream& os, RleNonTrivialRunsAlgorithm algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, RleNonTrivialRunsAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }
@@ -120,7 +120,7 @@ struct RleNonTrivialRunsPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const RleNonTrivialRunsPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const RleNonTrivialRunsPolicy& p)
   {
     return os << "RleNonTrivialRunsPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback << " }";
   }

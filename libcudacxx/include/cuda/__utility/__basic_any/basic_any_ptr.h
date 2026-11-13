@@ -54,7 +54,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
   //!
   //! Constructors
   //!
-  __basic_any() = default;
+  _CCCL_HIDE_FROM_ABI __basic_any() = default;
 
   _CCCL_NODEBUG_HOST_DEVICE_API __basic_any(::cuda::std::nullptr_t) {}
 

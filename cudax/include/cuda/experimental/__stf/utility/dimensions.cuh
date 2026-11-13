@@ -41,11 +41,11 @@ namespace cuda::experimental::stf
 class pos4
 {
 public:
-  constexpr pos4() = default;
+  _CCCL_HIDE_FROM_ABI constexpr pos4() = default;
 
   /// Create a pos4 from its coordinates
   template <typename IntegralX, typename IntegralY = ssize_t, typename IntegralZ = ssize_t, typename IntegralT = ssize_t>
-  _CCCL_HOST_DEVICE constexpr explicit pos4(IntegralX x, IntegralY y = 0, IntegralZ z = 0, IntegralT t = 0)
+  _CCCL_HOST_DEVICE_API constexpr explicit pos4(IntegralX x, IntegralY y = 0, IntegralZ z = 0, IntegralT t = 0)
       : x(static_cast<ssize_t>(x))
       , y(static_cast<ssize_t>(y))
       , z(static_cast<ssize_t>(z))
@@ -53,7 +53,7 @@ public:
   {}
 
   /// Get the position along a specific axis
-  _CCCL_HOST_DEVICE constexpr ssize_t get(size_t axis_id) const
+  _CCCL_HOST_DEVICE_API constexpr ssize_t get(size_t axis_id) const
   {
     switch (axis_id)
     {
@@ -70,13 +70,13 @@ public:
   }
 
   /// Get the position along a specific axis
-  _CCCL_HOST_DEVICE constexpr ssize_t operator()(int axis_id) const
+  _CCCL_HOST_DEVICE_API constexpr ssize_t operator()(int axis_id) const
   {
     return get(axis_id);
   }
 
   /// Comparison of two pos4 in lexicographical order
-  _CCCL_HOST_DEVICE constexpr bool operator<(const pos4& rhs) const
+  _CCCL_HOST_DEVICE_API constexpr bool operator<(const pos4& rhs) const
   {
     if (x != rhs.x)
     {
@@ -94,13 +94,13 @@ public:
   }
 
   /// Equality test between two pos4
-  _CCCL_HOST_DEVICE constexpr bool operator==(const pos4& rhs) const
+  _CCCL_HOST_DEVICE_API constexpr bool operator==(const pos4& rhs) const
   {
     return x == rhs.x && y == rhs.y && z == rhs.z && t == rhs.t;
   }
 
   /// Convert the pos4 to a string
-  ::std::string to_string() const
+  _CCCL_HOST_API ::std::string to_string() const
   {
     return ::std::string("pos4(" + ::std::to_string(x) + "," + ::std::to_string(y) + "," + ::std::to_string(z) + ","
                          + ::std::to_string(t) + ")");
@@ -118,11 +118,11 @@ public:
 class dim4
 {
 public:
-  dim4() = default;
+  _CCCL_HIDE_FROM_ABI dim4() = default;
 
   /// Create a dim4 from its extents
   template <typename IntegralX, typename IntegralY = size_t, typename IntegralZ = size_t, typename IntegralT = size_t>
-  _CCCL_HOST_DEVICE constexpr explicit dim4(IntegralX x, IntegralY y = 1, IntegralZ z = 1, IntegralT t = 1)
+  _CCCL_HOST_DEVICE_API constexpr explicit dim4(IntegralX x, IntegralY y = 1, IntegralZ z = 1, IntegralT t = 1)
       : x(static_cast<size_t>(x))
       , y(static_cast<size_t>(y))
       , z(static_cast<size_t>(z))
@@ -130,7 +130,7 @@ public:
   {}
 
   /// Get the dimension along a specific axis
-  _CCCL_HOST_DEVICE constexpr size_t get(size_t axis_id) const
+  _CCCL_HOST_DEVICE_API constexpr size_t get(size_t axis_id) const
   {
     switch (axis_id)
     {
@@ -147,20 +147,20 @@ public:
   }
 
   /// Get the dimension along a specific axis
-  _CCCL_HOST_DEVICE constexpr size_t operator()(int axis_id) const
+  _CCCL_HOST_DEVICE_API constexpr size_t operator()(int axis_id) const
   {
     return get(axis_id);
   }
 
   /// Get the total size (multiply all dimensions)
-  _CCCL_HOST_DEVICE constexpr size_t size() const
+  _CCCL_HOST_DEVICE_API constexpr size_t size() const
   {
     const size_t result = x * y * z * t;
     return result;
   }
 
   /// Comparison of two dim4 in lexicographical order
-  _CCCL_HOST_DEVICE constexpr bool operator<(const dim4& rhs) const
+  _CCCL_HOST_DEVICE_API constexpr bool operator<(const dim4& rhs) const
   {
     if (x != rhs.x)
     {
@@ -178,13 +178,13 @@ public:
   }
 
   /// Equality test between two dim4
-  _CCCL_HOST_DEVICE constexpr bool operator==(const dim4& rhs) const
+  _CCCL_HOST_DEVICE_API constexpr bool operator==(const dim4& rhs) const
   {
     return x == rhs.x && y == rhs.y && z == rhs.z && t == rhs.t;
   }
 
   /// Compute the dim4 class obtained by taking the minimum of two dim4 along each axis
-  _CCCL_HOST_DEVICE static constexpr dim4 min(const dim4& a, const dim4& b)
+  _CCCL_HOST_DEVICE_API static constexpr dim4 min(const dim4& a, const dim4& b)
   {
     return dim4(
       ::cuda::std::min(a.x, b.x), ::cuda::std::min(a.y, b.y), ::cuda::std::min(a.z, b.z), ::cuda::std::min(a.t, b.t));
@@ -192,7 +192,7 @@ public:
 
   /// Get the coordinate corresponding to a 1D index within a dim4 class
   /// (inverse of get_index: dimension 0 varies fastest)
-  _CCCL_HOST_DEVICE constexpr pos4 index_to_pos(size_t index) const
+  _CCCL_HOST_DEVICE_API constexpr pos4 index_to_pos(size_t index) const
   {
     _CCCL_ASSERT(index < size(), "invalid index");
     const size_t px = index % x;
@@ -205,7 +205,7 @@ public:
   }
 
   /// Get the 1D index of a coordinate defined by a pos4 class within a dim4 class
-  _CCCL_HOST_DEVICE constexpr size_t get_index(const pos4& p) const
+  _CCCL_HOST_DEVICE_API constexpr size_t get_index(const pos4& p) const
   {
     const size_t px = static_cast<size_t>(p.get(0));
     const size_t py = static_cast<size_t>(p.get(1));
@@ -221,7 +221,7 @@ public:
   }
 
   /// Get the maximum dimension that is not 1
-  _CCCL_HOST_DEVICE constexpr size_t get_rank() const
+  _CCCL_HOST_DEVICE_API constexpr size_t get_rank() const
   {
     if (t > 1)
     {
@@ -240,7 +240,7 @@ public:
   }
 
   /// Convert the dim4 to a string
-  ::std::string to_string() const
+  _CCCL_HOST_API ::std::string to_string() const
   {
     return ::std::string("dim4(" + ::std::to_string(x) + "," + ::std::to_string(y) + "," + ::std::to_string(z) + ","
                          + ::std::to_string(t) + ")");
@@ -264,7 +264,7 @@ public:
   ///@{ @name Constructors
   /// Construct an explicit shape from its lower and upper bounds (inclusive lower bounds, exclusive upper bounds)
   template <typename Int1, typename Int2>
-  _CCCL_HOST_DEVICE box(const ::std::array<::std::pair<Int1, Int2>, dimensions>& bounds)
+  _CCCL_HOST_DEVICE_API box(const ::std::array<::std::pair<Int1, Int2>, dimensions>& bounds)
   {
     for (const size_t ind : each(0, dimensions))
     {
@@ -275,7 +275,7 @@ public:
 
   /// Construct an explicit shape from its upper bounds (exclusive upper bounds)
   template <typename Int>
-  _CCCL_HOST_DEVICE box(const ::std::array<Int, dimensions>& sizes)
+  _CCCL_HOST_DEVICE_API box(const ::std::array<Int, dimensions>& sizes)
   {
     for (size_t ind : each(0, dimensions))
     {
@@ -290,7 +290,7 @@ public:
 
   /// Construct an explicit shape from its upper bounds (exclusive upper bounds)
   template <typename... Int>
-  _CCCL_HOST_DEVICE box(Int... args)
+  _CCCL_HOST_DEVICE_API box(Int... args)
   {
     static_assert(sizeof...(Int) == dimensions, "Number of dimensions must match");
     each_in_pack(
@@ -312,7 +312,7 @@ public:
 
   /// Construct an explicit shape from its lower and upper bounds (inclusive lower bounds, exclusive upper bounds)
   template <typename... E>
-  _CCCL_HOST_DEVICE box(::std::initializer_list<E>... args)
+  _CCCL_HOST_DEVICE_API box(::std::initializer_list<E>... args)
   {
     static_assert(sizeof...(E) == dimensions, "Number of dimensions must match");
     each_in_pack(
@@ -339,7 +339,7 @@ public:
   //     }
   // }
 
-  _CCCL_HOST_DEVICE void print()
+  _CCCL_HOST_DEVICE_API void print()
   {
     printf("EXPLICIT SHAPE\n");
     for (size_t ind = 0; ind < dimensions; ind++)
@@ -350,25 +350,25 @@ public:
   }
 
   /// Get the number of elements along a dimension
-  _CCCL_HOST_DEVICE ::std::ptrdiff_t get_extent(size_t dim) const
+  _CCCL_HOST_DEVICE_API ::std::ptrdiff_t get_extent(size_t dim) const
   {
     return s[dim].second - s[dim].first;
   }
 
   /// Get the first coordinate (included) in a specific dimension
-  _CCCL_HOST_DEVICE ::std::ptrdiff_t get_begin(size_t dim) const
+  _CCCL_HOST_DEVICE_API ::std::ptrdiff_t get_begin(size_t dim) const
   {
     return s[dim].first;
   }
 
   /// Get the last coordinate (excluded) in a specific dimension
-  _CCCL_HOST_DEVICE ::std::ptrdiff_t get_end(size_t dim) const
+  _CCCL_HOST_DEVICE_API ::std::ptrdiff_t get_end(size_t dim) const
   {
     return s[dim].second;
   }
 
   /// Get the total number of elements in this explicit shape
-  _CCCL_HOST_DEVICE ::std::ptrdiff_t size() const
+  _CCCL_HOST_DEVICE_API ::std::ptrdiff_t size() const
   {
     if constexpr (dimensions == 1)
     {
@@ -386,7 +386,7 @@ public:
   }
 
   /// get the dimensionnality of the explicit shape
-  _CCCL_HOST_DEVICE constexpr size_t get_rank() const
+  _CCCL_HOST_DEVICE_API constexpr size_t get_rank() const
   {
     return dimensions;
   }
@@ -398,7 +398,7 @@ public:
     ::std::array<::std::ptrdiff_t, dimensions> current; // Array to store the current position in each dimension
 
   public:
-    _CCCL_HOST_DEVICE iterator(const box& b, bool at_end = false)
+    _CCCL_HOST_DEVICE_API iterator(const box& b, bool at_end = false)
         : iterated(b)
     {
       if (at_end)
@@ -418,7 +418,7 @@ public:
     }
 
     // Overload the dereference operator to get the current position
-    _CCCL_HOST_DEVICE auto& operator*()
+    _CCCL_HOST_DEVICE_API auto& operator*()
     {
       if constexpr (dimensions == 1UL)
       {
@@ -431,7 +431,7 @@ public:
     }
 
     // Overload the pre-increment operator to move to the next position
-    _CCCL_HOST_DEVICE iterator& operator++()
+    _CCCL_HOST_DEVICE_API iterator& operator++()
     {
       if constexpr (dimensions == 1UL)
       {
@@ -458,7 +458,7 @@ public:
     }
 
     // Overload the equality operator to check if two iterators are equal
-    _CCCL_HOST_DEVICE bool operator==(const iterator& rhs) const
+    _CCCL_HOST_DEVICE_API bool operator==(const iterator& rhs) const
     { /*printf("EQUALITY TEST index %d %d shape equal ? %s\n", index,
            other.index, (&shape == &other.shape)?"yes":"no"); */
       _CCCL_ASSERT(iterated == rhs.iterated, "Cannot compare iterators in different boxes.");
@@ -474,14 +474,14 @@ public:
     }
 
     // Overload the inequality operator to check if two iterators are not equal
-    _CCCL_HOST_DEVICE bool operator!=(const iterator& other) const
+    _CCCL_HOST_DEVICE_API bool operator!=(const iterator& other) const
     {
       return !(*this == other);
     }
   };
 
   // Functions to create the begin and end iterators
-  _CCCL_HOST_DEVICE iterator begin() const
+  _CCCL_HOST_DEVICE_API iterator begin() const
   {
     for (size_t i = 0; i < dimensions; ++i)
     {
@@ -493,13 +493,13 @@ public:
     return iterator(*this);
   }
 
-  _CCCL_HOST_DEVICE iterator end() const
+  _CCCL_HOST_DEVICE_API iterator end() const
   {
     return iterator(*this, true);
   }
 
   // Overload the equality operator to check if two shapes are equal
-  _CCCL_HOST_DEVICE bool operator==(const box& rhs) const
+  _CCCL_HOST_DEVICE_API bool operator==(const box& rhs) const
   {
     // NOLINTNEXTLINE(readability-use-anyofallof)
     for (const size_t i : each(0, dimensions))
@@ -512,7 +512,7 @@ public:
     return true;
   }
 
-  _CCCL_HOST_DEVICE bool operator!=(const box& rhs) const
+  _CCCL_HOST_DEVICE_API bool operator!=(const box& rhs) const
   {
     return !(*this == rhs);
   }
@@ -520,7 +520,7 @@ public:
   using coords_t = ::cuda::std::array<size_t, dimensions>;
 
   // This transforms a tuple of (shape, 1D index) into a coordinate
-  _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const
+  _CCCL_HOST_DEVICE_API coords_t index_to_coords(size_t index) const
   {
     coords_t coords{};
     for (size_t i = 0; i < dimensions; ++i)
@@ -770,7 +770,7 @@ UNITTEST("pos4 comparison operators")
 template <>
 struct hash<pos4>
 {
-  ::std::size_t operator()(pos4 const& s) const noexcept
+  _CCCL_HOST_API ::std::size_t operator()(pos4 const& s) const noexcept
   {
     return hash_all(s.x, s.y, s.z, s.t);
   }
@@ -780,7 +780,7 @@ struct hash<pos4>
 template <>
 struct hash<dim4>
 {
-  ::std::size_t operator()(const dim4& s) const noexcept
+  _CCCL_HOST_API ::std::size_t operator()(const dim4& s) const noexcept
   {
     return hash_all(s.x, s.y, s.z, s.t);
   }

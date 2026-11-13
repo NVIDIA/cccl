@@ -87,7 +87,8 @@ function(_cccl_parse_clang_tidy_config source_file out_var)
     [==[{
       "Checks": ["-*", "-clang-diagnostic-*"],
       "CheckOptions": {},
-      "ExtraArgs": [],
+      "ExtraArgs": ["-nocudainc", "-nocudalib"],
+      "RemovedArgs": ["-G"],
       "HeaderFileExtensions": ["", "h", "hh", "hpp", "hxx", "cuh", "inl", "ipp"],
       "SystemHeaders": false
     }]==]
@@ -209,24 +210,24 @@ function(cccl_create_clang_tidy_test plugin source)
 
   cmake_path(ABSOLUTE_PATH source NORMALIZE)
   cmake_path(GET source STEM test_name)
-  set(target "cccl.test.tidy.${plugin}.${test_name}")
-
+  set(test_target "cccl.test.tidy.${plugin}.${test_name}")
+  set(compile_target "${test_target}.compile")
   # We don't actually care about compiling this (and in fact, we never want to!). The
   # point of adding this here is to get the corresponding entries into the compilation
   # database so that clang-tidy knows how to interpret the file properly.
-  add_library("${target}.compile" OBJECT EXCLUDE_FROM_ALL "${source}")
+  add_library("${compile_target}" OBJECT EXCLUDE_FROM_ALL "${source}")
   target_link_libraries(
-    "${target}.compile"
+    "${compile_target}"
     PRIVATE cccl.compiler_interface libcudacxx::libcudacxx
   )
   target_compile_options(
-    "${target}.compile"
+    "${compile_target}"
     PRIVATE -Wno-pragma-clang-attribute
   )
 
   _cccl_parse_clang_tidy_config("${source}" config)
   add_test(
-    NAME "${target}"
+    NAME "${test_target}"
     COMMAND
       "${CMAKE_COMMAND}" "-DSOURCE=${source}"
       "-DOUTPUT=${CMAKE_CURRENT_BINARY_DIR}/${test_name}.out"
@@ -235,7 +236,7 @@ function(cccl_create_clang_tidy_test plugin source)
       "-DFILECHECK=${CCCL_FILECHECK}" -P
       "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/run_filecheck.cmake"
   )
-  _cccl_test_requires_target("${target}" cccl.tidy.plugins)
+  _cccl_test_requires_target("${test_target}" cccl.tidy.plugins)
 endfunction()
 
 block()
@@ -273,3 +274,4 @@ add_subdirectory(modernize_type_traits)
 add_subdirectory(prefer_cuda_traits)
 add_subdirectory(simplify_type_traits)
 add_subdirectory(nodebug_on_aliases)
+add_subdirectory(hide_from_abi)

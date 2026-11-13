@@ -28,7 +28,8 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
 template <class Derived, class Iterator, class TabulateOp>
-void _CCCL_HOST_DEVICE tabulate(execution_policy<Derived>& policy, Iterator first, Iterator last, TabulateOp tabulate_op)
+void _CCCL_HOST_DEVICE_API
+tabulate(execution_policy<Derived>& policy, Iterator first, Iterator last, TabulateOp tabulate_op)
 {
   using size_type  = ::cuda::std::iter_difference_t<Iterator>;
   const auto count = ::cuda::std::distance(first, last);

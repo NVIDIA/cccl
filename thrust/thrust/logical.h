@@ -69,7 +69,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 all_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
        InputIterator first,
        InputIterator last,
@@ -112,7 +112,7 @@ all_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename InputIterator, typename Predicate>
-bool all_of(InputIterator first, InputIterator last, Predicate pred);
+_CCCL_HOST_API bool all_of(InputIterator first, InputIterator last, Predicate pred);
 
 /*! \p any_of determines whether any element in a range satisfies a predicate.
  *  Specifically, \p any_of returns \c true if <tt>pred(*i)</tt> is \c true
@@ -157,7 +157,7 @@ bool all_of(InputIterator first, InputIterator last, Predicate pred);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 any_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
        InputIterator first,
        InputIterator last,
@@ -201,7 +201,7 @@ any_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename InputIterator, typename Predicate>
-bool any_of(InputIterator first, InputIterator last, Predicate pred);
+_CCCL_HOST_API bool any_of(InputIterator first, InputIterator last, Predicate pred);
 
 /*! \p none_of determines whether no element in a range satisfies a predicate.
  *  Specifically, \p none_of returns \c true if there is no iterator \c i in
@@ -246,7 +246,7 @@ bool any_of(InputIterator first, InputIterator last, Predicate pred);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 none_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
         InputIterator first,
         InputIterator last,
@@ -290,7 +290,7 @@ none_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename InputIterator, typename Predicate>
-bool none_of(InputIterator first, InputIterator last, Predicate pred);
+_CCCL_HOST_API bool none_of(InputIterator first, InputIterator last, Predicate pred);
 
 /*! \} // end logical
  *  \} // end reductions

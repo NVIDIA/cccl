@@ -37,7 +37,7 @@ struct structural_inplace_vector
   T elems[Capacity]{};
   size_type count = 0;
 
-  constexpr structural_inplace_vector() = default;
+  _CCCL_HIDE_FROM_ABI constexpr structural_inplace_vector() = default;
 
   // A parameter pack rather than an initializer_list<T> constructor: some MSVC toolsets fail to constant-fold this
   // type through CC dispatch's NTTP-based policy resolution when constructed from an initializer_list.

@@ -14,7 +14,7 @@ struct FixedVector
 {
   T data[N];
 
-  _CCCL_HOST_DEVICE FixedVector()
+  _CCCL_HOST_DEVICE_API FixedVector()
   {
     for (unsigned int i = 0; i < N; i++)
     {
@@ -22,7 +22,7 @@ struct FixedVector
     }
   }
 
-  _CCCL_HOST_DEVICE explicit FixedVector(T init)
+  _CCCL_HOST_DEVICE_API explicit FixedVector(T init)
   {
     for (unsigned int i = 0; i < N; i++)
     {
@@ -30,7 +30,7 @@ struct FixedVector
     }
   }
 
-  _CCCL_HOST_DEVICE
+  _CCCL_HOST_DEVICE_API
 #if _CCCL_COMPILER(NVHPC)
   __attribute__((noinline))
 #endif
@@ -44,7 +44,7 @@ struct FixedVector
     return output;
   }
 
-  _CCCL_HOST_DEVICE bool operator<(const FixedVector& bs) const
+  _CCCL_HOST_DEVICE_API bool operator<(const FixedVector& bs) const
   {
     for (unsigned int i = 0; i < N; i++)
     {
@@ -60,7 +60,7 @@ struct FixedVector
     return false;
   }
 
-  _CCCL_HOST_DEVICE bool operator==(const FixedVector& bs) const
+  _CCCL_HOST_DEVICE_API bool operator==(const FixedVector& bs) const
   {
     for (unsigned int i = 0; i < N; i++)
     {
@@ -79,37 +79,37 @@ struct key_value
   using key_type   = Key;
   using value_type = Value;
 
-  _CCCL_HOST_DEVICE key_value()
+  _CCCL_HOST_DEVICE_API key_value()
       : key()
       , value()
   {}
 
-  _CCCL_HOST_DEVICE key_value(key_type k, value_type v)
+  _CCCL_HOST_DEVICE_API key_value(key_type k, value_type v)
       : key(k)
       , value(v)
   {}
 
-  _CCCL_HOST_DEVICE bool operator<(const key_value& rhs) const
+  _CCCL_HOST_DEVICE_API bool operator<(const key_value& rhs) const
   {
     return key < rhs.key;
   }
 
-  _CCCL_HOST_DEVICE bool operator>(const key_value& rhs) const
+  _CCCL_HOST_DEVICE_API bool operator>(const key_value& rhs) const
   {
     return key > rhs.key;
   }
 
-  _CCCL_HOST_DEVICE bool operator==(const key_value& rhs) const
+  _CCCL_HOST_DEVICE_API bool operator==(const key_value& rhs) const
   {
     return key == rhs.key && value == rhs.value;
   }
 
-  _CCCL_HOST_DEVICE bool operator!=(const key_value& rhs) const
+  _CCCL_HOST_DEVICE_API bool operator!=(const key_value& rhs) const
   {
     return !(*this == rhs);
   }
 
-  friend std::ostream& operator<<(std::ostream& os, const key_value& kv)
+  _CCCL_HOST_API friend std::ostream& operator<<(std::ostream& os, const key_value& kv)
   {
     // cast 1-byte integral (char) types so they print as numbers, not characters
     // (clang-tidy bugprone-unintended-char-ostream-output)
@@ -140,18 +140,18 @@ struct key_value
 
 struct user_swappable
 {
-  _CCCL_HOST_DEVICE user_swappable(bool swapped = false)
+  _CCCL_HOST_DEVICE_API user_swappable(bool swapped = false)
       : was_swapped(swapped)
   {}
 
   bool was_swapped;
 
-  friend _CCCL_HOST_DEVICE bool operator==(const user_swappable& x, const user_swappable& y)
+  friend _CCCL_HOST_DEVICE_API bool operator==(const user_swappable& x, const user_swappable& y)
   {
     return x.was_swapped == y.was_swapped;
   }
 
-  friend _CCCL_HOST_DEVICE void swap(user_swappable& x, user_swappable& y) noexcept
+  friend _CCCL_HOST_DEVICE_API void swap(user_swappable& x, user_swappable& y) noexcept
   {
     x.was_swapped = true;
     y.was_swapped = false;
@@ -165,7 +165,7 @@ class custom_numeric
 {
 public:
   // fill() initializes every element.
-  _CCCL_HOST_DEVICE custom_numeric() // NOLINT(cppcoreguidelines-pro-type-member-init)
+  _CCCL_HOST_DEVICE_API custom_numeric() // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     fill(0);
   }
@@ -182,24 +182,24 @@ public:
   // Allow construction from any integral numeric.
   // fill() initializes every element.
   template <typename T, typename = ::cuda::std::enable_if_t<::cuda::std::is_integral_v<T>>>
-  _CCCL_HOST_DEVICE custom_numeric(const T& i) // NOLINT(cppcoreguidelines-pro-type-member-init)
+  _CCCL_HOST_DEVICE_API custom_numeric(const T& i) // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     fill(static_cast<int>(i));
   }
 
   // fill() initializes every element.
-  _CCCL_HOST_DEVICE custom_numeric(const custom_numeric& other) // NOLINT(cppcoreguidelines-pro-type-member-init)
+  _CCCL_HOST_DEVICE_API custom_numeric(const custom_numeric& other) // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     fill(other.value[0]);
   }
 
-  _CCCL_HOST_DEVICE custom_numeric& operator=(int val)
+  _CCCL_HOST_DEVICE_API custom_numeric& operator=(int val)
   {
     fill(val);
     return *this;
   }
 
-  _CCCL_HOST_DEVICE custom_numeric& operator=(const custom_numeric& other)
+  _CCCL_HOST_DEVICE_API custom_numeric& operator=(const custom_numeric& other)
   {
     if (this != &other)
     {
@@ -207,22 +207,22 @@ public:
     }
     return *this;
   }
-  _CCCL_HOST_DEVICE operator void*() const
+  _CCCL_HOST_DEVICE_API operator void*() const
   {
     return reinterpret_cast<void*>(static_cast<std::size_t>(value[0])); // NOLINT(performance-no-int-to-ptr)
   }
 
-#define DEFINE_OPERATOR(op)                               \
-  _CCCL_HOST_DEVICE custom_numeric& operator op()         \
-  {                                                       \
-    fill(op value[0]);                                    \
-    return *this;                                         \
-  }                                                       \
-  _CCCL_HOST_DEVICE custom_numeric operator op(int) const \
-  {                                                       \
-    custom_numeric ret(*this);                            \
-    op ret;                                               \
-    return ret;                                           \
+#define DEFINE_OPERATOR(op)                                   \
+  _CCCL_HOST_DEVICE_API custom_numeric& operator op()         \
+  {                                                           \
+    fill(op value[0]);                                        \
+    return *this;                                             \
+  }                                                           \
+  _CCCL_HOST_DEVICE_API custom_numeric operator op(int) const \
+  {                                                           \
+    custom_numeric ret(*this);                                \
+    op ret;                                                   \
+    return ret;                                               \
   }
 
   DEFINE_OPERATOR(++)
@@ -230,10 +230,10 @@ public:
 
 #undef DEFINE_OPERATOR
 
-#define DEFINE_OPERATOR(op)                            \
-  _CCCL_HOST_DEVICE custom_numeric operator op() const \
-  {                                                    \
-    return custom_numeric(op value[0]);                \
+#define DEFINE_OPERATOR(op)                                \
+  _CCCL_HOST_DEVICE_API custom_numeric operator op() const \
+  {                                                        \
+    return custom_numeric(op value[0]);                    \
   }
 
   DEFINE_OPERATOR(+)
@@ -242,10 +242,10 @@ public:
 
 #undef DEFINE_OPERATOR
 
-#define DEFINE_OPERATOR(op)                                                       \
-  _CCCL_HOST_DEVICE custom_numeric operator op(const custom_numeric& other) const \
-  {                                                                               \
-    return custom_numeric(value[0] op other.value[0]);                            \
+#define DEFINE_OPERATOR(op)                                                           \
+  _CCCL_HOST_DEVICE_API custom_numeric operator op(const custom_numeric& other) const \
+  {                                                                                   \
+    return custom_numeric(value[0] op other.value[0]);                                \
   }
 
   DEFINE_OPERATOR(+)
@@ -263,11 +263,11 @@ public:
 
 #define CONCAT(X, Y) X##Y
 
-#define DEFINE_OPERATOR(op)                                                             \
-  _CCCL_HOST_DEVICE custom_numeric& operator CONCAT(op, =)(const custom_numeric& other) \
-  {                                                                                     \
-    fill(value[0] op other.value[0]);                                                   \
-    return *this;                                                                       \
+#define DEFINE_OPERATOR(op)                                                                 \
+  _CCCL_HOST_DEVICE_API custom_numeric& operator CONCAT(op, =)(const custom_numeric& other) \
+  {                                                                                         \
+    fill(value[0] op other.value[0]);                                                       \
+    return *this;                                                                           \
   }
 
   DEFINE_OPERATOR(+)
@@ -284,10 +284,10 @@ public:
 #undef DEFINE_OPERATOR
 #undef CONCAT
 
-#define DEFINE_OPERATOR(op)                                                                       \
-  _CCCL_HOST_DEVICE friend bool operator op(const custom_numeric& lhs, const custom_numeric& rhs) \
-  {                                                                                               \
-    return lhs.value[0] op rhs.value[0];                                                          \
+#define DEFINE_OPERATOR(op)                                                                           \
+  _CCCL_HOST_DEVICE_API friend bool operator op(const custom_numeric& lhs, const custom_numeric& rhs) \
+  {                                                                                                   \
+    return lhs.value[0] op rhs.value[0];                                                              \
   }
 
   DEFINE_OPERATOR(==)
@@ -304,14 +304,14 @@ public:
   // Mixed comparisons against int. Because custom_numeric is implicitly convertible to bool, the built-in integer
   // comparison operators would otherwise compete with the homogeneous ones above and make comparisons against integer
   // literals (e.g. ASSERT_EQUAL(0, some_custom_numeric)) ambiguous. Providing exact int overloads resolves this.
-#define DEFINE_OPERATOR(op)                                                     \
-  _CCCL_HOST_DEVICE friend bool operator op(const custom_numeric& lhs, int rhs) \
-  {                                                                             \
-    return lhs.value[0] op rhs;                                                 \
-  }                                                                             \
-  _CCCL_HOST_DEVICE friend bool operator op(int lhs, const custom_numeric& rhs) \
-  {                                                                             \
-    return lhs op rhs.value[0];                                                 \
+#define DEFINE_OPERATOR(op)                                                         \
+  _CCCL_HOST_DEVICE_API friend bool operator op(const custom_numeric& lhs, int rhs) \
+  {                                                                                 \
+    return lhs.value[0] op rhs;                                                     \
+  }                                                                                 \
+  _CCCL_HOST_DEVICE_API friend bool operator op(int lhs, const custom_numeric& rhs) \
+  {                                                                                 \
+    return lhs op rhs.value[0];                                                     \
   }
 
   DEFINE_OPERATOR(==)
@@ -323,7 +323,7 @@ public:
 
 #undef DEFINE_OPERATOR
 
-  friend std::ostream& operator<<(std::ostream& os, const custom_numeric& val)
+  _CCCL_HOST_API friend std::ostream& operator<<(std::ostream& os, const custom_numeric& val)
   {
     return os << "custom_numeric{" << val.value[0] << "}";
   }
@@ -331,7 +331,7 @@ public:
 private:
   int value[5];
 
-  _CCCL_HOST_DEVICE void fill(int val)
+  _CCCL_HOST_DEVICE_API void fill(int val)
   {
     for (int& v : value)
     {
@@ -359,18 +359,18 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 struct my_system : THRUST_NS_QUALIFIER::device_execution_policy<my_system>
 {
-  my_system(int) {}
+  _CCCL_HOST_API my_system(int) {}
 
-  my_system(const my_system& other)
+  _CCCL_HOST_API my_system(const my_system& other)
       : num_copies(other.num_copies + 1)
   {}
 
-  void validate_dispatch()
+  _CCCL_HOST_API void validate_dispatch()
   {
     correctly_dispatched = (num_copies == 0);
   }
 
-  bool is_valid() const
+  _CCCL_HOST_API bool is_valid() const
   {
     return correctly_dispatched;
   }

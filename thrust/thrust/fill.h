@@ -66,7 +66,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 fill(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
      ForwardIterator first,
      ForwardIterator last,
@@ -108,7 +108,7 @@ fill(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void fill(ForwardIterator first, ForwardIterator last, const T& value);
+_CCCL_HOST_DEVICE_API void fill(ForwardIterator first, ForwardIterator last, const T& value);
 
 /*! \p fill_n assigns the value \p value to every element in
  *  the range <tt>[first, first+n)</tt>. That is, for every
@@ -152,7 +152,7 @@ _CCCL_HOST_DEVICE void fill(ForwardIterator first, ForwardIterator last, const T
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename OutputIterator, typename Size, typename T>
-_CCCL_HOST_DEVICE OutputIterator
+_CCCL_HOST_DEVICE_API OutputIterator
 fill_n(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, OutputIterator first, Size n, const T& value);
 
 /*! \p fill_n assigns the value \p value to every element in
@@ -192,7 +192,7 @@ fill_n(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, OutputI
  *  \endverbatim
  */
 template <typename OutputIterator, typename Size, typename T>
-_CCCL_HOST_DEVICE OutputIterator fill_n(OutputIterator first, Size n, const T& value);
+_CCCL_HOST_DEVICE_API OutputIterator fill_n(OutputIterator first, Size n, const T& value);
 
 /*!
  * \} end group filling

@@ -42,7 +42,7 @@ struct inclusive_body
   ValueType sum;
   bool first_call;
 
-  inclusive_body(InputIterator input, OutputIterator output, BinaryFunction binary_op, ValueType init)
+  _CCCL_HOST_API inclusive_body(InputIterator input, OutputIterator output, BinaryFunction binary_op, ValueType init)
       : input(input)
       , output(output)
       , binary_op{binary_op}
@@ -50,7 +50,7 @@ struct inclusive_body
       , first_call(true)
   {}
 
-  inclusive_body(inclusive_body& b, ::tbb::split)
+  _CCCL_HOST_API inclusive_body(inclusive_body& b, ::tbb::split)
       : input(b.input)
       , output(b.output)
       , binary_op{b.binary_op}
@@ -59,7 +59,7 @@ struct inclusive_body
   {}
 
   template <typename Size>
-  void operator()(const ::tbb::blocked_range<Size>& r, ::tbb::pre_scan_tag)
+  _CCCL_HOST_API void operator()(const ::tbb::blocked_range<Size>& r, ::tbb::pre_scan_tag)
   {
     InputIterator iter = input + r.begin();
 
@@ -85,7 +85,7 @@ struct inclusive_body
   }
 
   template <typename Size>
-  void operator()(const ::tbb::blocked_range<Size>& r, ::tbb::final_scan_tag)
+  _CCCL_HOST_API void operator()(const ::tbb::blocked_range<Size>& r, ::tbb::final_scan_tag)
   {
     InputIterator iter1  = input + r.begin();
     OutputIterator iter2 = output + r.begin();
@@ -118,7 +118,7 @@ struct inclusive_body
     first_call = false;
   }
 
-  void reverse_join(inclusive_body& b)
+  _CCCL_HOST_API void reverse_join(inclusive_body& b)
   {
     // Only accumulate this functor's partial sum if this functor has been
     // called at least once -- otherwise we'll over-count the initial value.
@@ -128,7 +128,7 @@ struct inclusive_body
     }
   }
 
-  void assign(inclusive_body& b)
+  _CCCL_HOST_API void assign(inclusive_body& b)
   {
     sum = b.sum;
   }
@@ -143,7 +143,7 @@ struct exclusive_body
   ValueType sum;
   bool first_call;
 
-  exclusive_body(InputIterator input, OutputIterator output, BinaryFunction binary_op, ValueType init)
+  _CCCL_HOST_API exclusive_body(InputIterator input, OutputIterator output, BinaryFunction binary_op, ValueType init)
       : input(input)
       , output(output)
       , binary_op{binary_op}
@@ -151,7 +151,7 @@ struct exclusive_body
       , first_call(true)
   {}
 
-  exclusive_body(exclusive_body& b, ::tbb::split)
+  _CCCL_HOST_API exclusive_body(exclusive_body& b, ::tbb::split)
       : input(b.input)
       , output(b.output)
       , binary_op{b.binary_op}
@@ -160,7 +160,7 @@ struct exclusive_body
   {}
 
   template <typename Size>
-  void operator()(const ::tbb::blocked_range<Size>& r, ::tbb::pre_scan_tag)
+  _CCCL_HOST_API void operator()(const ::tbb::blocked_range<Size>& r, ::tbb::pre_scan_tag)
   {
     InputIterator iter = input + r.begin();
 
@@ -186,7 +186,7 @@ struct exclusive_body
   }
 
   template <typename Size>
-  void operator()(const ::tbb::blocked_range<Size>& r, ::tbb::final_scan_tag)
+  _CCCL_HOST_API void operator()(const ::tbb::blocked_range<Size>& r, ::tbb::final_scan_tag)
   {
     InputIterator iter1  = input + r.begin();
     OutputIterator iter2 = output + r.begin();
@@ -201,7 +201,7 @@ struct exclusive_body
     first_call = false;
   }
 
-  void reverse_join(exclusive_body& b)
+  _CCCL_HOST_API void reverse_join(exclusive_body& b)
   {
     // Only accumulate this functor's partial sum if this functor has been
     // called at least once -- otherwise we'll over-count the initial value.
@@ -211,7 +211,7 @@ struct exclusive_body
     }
   }
 
-  void assign(exclusive_body& b)
+  _CCCL_HOST_API void assign(exclusive_body& b)
   {
     sum = b.sum;
   }
@@ -219,7 +219,7 @@ struct exclusive_body
 } // namespace scan_detail
 
 template <typename InputIterator, typename OutputIterator, typename BinaryFunction>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 inclusive_scan(tag, InputIterator first, InputIterator last, OutputIterator result, BinaryFunction binary_op)
 {
   using namespace thrust::detail;
@@ -243,7 +243,7 @@ inclusive_scan(tag, InputIterator first, InputIterator last, OutputIterator resu
 }
 
 template <typename InputIterator, typename OutputIterator, typename InitialValueType, typename BinaryFunction>
-OutputIterator inclusive_scan(
+_CCCL_HOST_API OutputIterator inclusive_scan(
   tag, InputIterator first, InputIterator last, OutputIterator result, InitialValueType init, BinaryFunction binary_op)
 {
   using namespace thrust::detail;
@@ -268,7 +268,7 @@ OutputIterator inclusive_scan(
 }
 
 template <typename InputIterator, typename OutputIterator, typename InitialValueType, typename BinaryFunction>
-OutputIterator exclusive_scan(
+_CCCL_HOST_API OutputIterator exclusive_scan(
   tag, InputIterator first, InputIterator last, OutputIterator result, InitialValueType init, BinaryFunction binary_op)
 {
   using namespace thrust::detail;

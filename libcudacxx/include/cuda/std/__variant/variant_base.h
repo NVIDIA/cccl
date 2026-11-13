@@ -56,16 +56,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __alt
       : __value(::cuda::std::forward<_Args>(__args)...)
   {}
   _CCCL_EXEC_CHECK_DISABLE
-  constexpr __alt(const __alt&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr __alt(const __alt&) = default;
   _CCCL_EXEC_CHECK_DISABLE
-  constexpr __alt(__alt&&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr __alt(__alt&&) = default;
   _CCCL_EXEC_CHECK_DISABLE
-  constexpr __alt& operator=(const __alt&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr __alt& operator=(const __alt&) = default;
   _CCCL_EXEC_CHECK_DISABLE
-  constexpr __alt& operator=(__alt&&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr __alt& operator=(__alt&&) = default;
 
   _CCCL_EXEC_CHECK_DISABLE
-  ~__alt() = default;
+  _CCCL_HIDE_FROM_ABI ~__alt() = default;
 
   __value_type __value;
 };

@@ -38,7 +38,7 @@ class normal_distribution_nvcc
 {
 protected:
   template <typename UniformRandomNumberGenerator>
-  _CCCL_HOST_DEVICE RealType sample(UniformRandomNumberGenerator& urng, const RealType mean, const RealType stddev)
+  _CCCL_HOST_DEVICE_API RealType sample(UniformRandomNumberGenerator& urng, const RealType mean, const RealType stddev)
   {
     using uint_type                = typename UniformRandomNumberGenerator::result_type;
     using traits                   = thrust::random::detail::urng_traits<UniformRandomNumberGenerator>;
@@ -68,7 +68,7 @@ protected:
   }
 
   // no-op
-  _CCCL_HOST_DEVICE void reset() {}
+  _CCCL_HOST_DEVICE_API void reset() {}
 };
 
 // this version samples the normal distribution using
@@ -77,14 +77,14 @@ template <typename RealType>
 class normal_distribution_portable
 {
 protected:
-  void reset()
+  _CCCL_HOST_API void reset()
   {
     m_valid = false;
   }
 
   // note that we promise to call this member function with the same mean and stddev
   template <typename UniformRandomNumberGenerator>
-  _CCCL_HOST_DEVICE RealType sample(UniformRandomNumberGenerator& urng, const RealType mean, const RealType stddev)
+  _CCCL_HOST_DEVICE_API RealType sample(UniformRandomNumberGenerator& urng, const RealType mean, const RealType stddev)
   {
     // implementation from Boost
     // allow for Koenig lookup

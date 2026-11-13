@@ -65,15 +65,15 @@ public:
   }
 
   /// Construct and explicit shape from a list of lower and upper bounds
-  _CCCL_HOST_DEVICE cyclic_shape(const ::std::array<size_t, dimensions>& begins_,
-                                 const ::std::array<size_t, dimensions>& ends_,
-                                 const ::std::array<size_t, dimensions>& strides_)
+  _CCCL_HOST_DEVICE_API cyclic_shape(const ::std::array<size_t, dimensions>& begins_,
+                                     const ::std::array<size_t, dimensions>& ends_,
+                                     const ::std::array<size_t, dimensions>& strides_)
       : begins(begins_)
       , ends(ends_)
       , strides(strides_)
   {}
 
-  _CCCL_HOST_DEVICE void print() const
+  _CCCL_HOST_DEVICE_API void print() const
   {
     printf("CYCLIC SHAPE\n");
     for (size_t i = 0; i < dimensions; i++)
@@ -85,7 +85,7 @@ public:
   ///@}
 
   /// Get the total number of elements in this explicit shape
-  _CCCL_HOST_DEVICE ::std::ptrdiff_t size() const
+  _CCCL_HOST_DEVICE_API ::std::ptrdiff_t size() const
   {
     size_t res = 1;
     for (size_t d = 0; d < dimensions; d++)
@@ -97,7 +97,7 @@ public:
   }
 
   // Overload the equality operator to check if two shapes are equal
-  _CCCL_HOST_DEVICE bool operator==(const cyclic_shape& other) const
+  _CCCL_HOST_DEVICE_API bool operator==(const cyclic_shape& other) const
   {
     for (size_t i = 0; i < dimensions; ++i)
     {
@@ -111,7 +111,7 @@ public:
   }
 
   /// get the dimensionnality of the explicit shape
-  _CCCL_HOST_DEVICE size_t get_rank() const
+  _CCCL_HOST_DEVICE_API size_t get_rank() const
   {
     return dimensions;
   }
@@ -124,14 +124,14 @@ public:
     ::std::array<size_t, dimensions> current; // Array to store the current position in each dimension
 
   public:
-    _CCCL_HOST_DEVICE iterator(cyclic_shape& s, size_t idx = 0)
+    _CCCL_HOST_DEVICE_API iterator(cyclic_shape& s, size_t idx = 0)
         : shape(&s)
         , index(idx)
         , current(s.begins)
     {}
 
     // Overload the dereference operator to get the current position
-    _CCCL_HOST_DEVICE auto& operator*()
+    _CCCL_HOST_DEVICE_API auto& operator*()
     {
       if constexpr (dimensions == 1)
       {
@@ -144,7 +144,7 @@ public:
     }
 
     // Overload the pre-increment operator to move to the next position
-    _CCCL_HOST_DEVICE iterator& operator++()
+    _CCCL_HOST_DEVICE_API iterator& operator++()
     {
       index++;
 
@@ -166,7 +166,7 @@ public:
     }
 
     // Overload the equality operator to check if two iterators are equal
-    _CCCL_HOST_DEVICE bool operator==(const iterator& other) const
+    _CCCL_HOST_DEVICE_API bool operator==(const iterator& other) const
     { /*printf("EQUALITY TEST index %d %d shape equal ? %s\n", index,
          other.index, (&shape == &other.shape)?"yes":"no"); */
       // printf("check == : index %d %d => %s shape equal ? %s\n", index, other.index, (index ==
@@ -175,19 +175,19 @@ public:
     }
 
     // Overload the inequality operator to check if two iterators are not equal
-    _CCCL_HOST_DEVICE bool operator!=(const iterator& other) const
+    _CCCL_HOST_DEVICE_API bool operator!=(const iterator& other) const
     {
       return !(*this == other);
     }
   };
 
   // Functions to create the begin and end iterators
-  _CCCL_HOST_DEVICE iterator begin()
+  _CCCL_HOST_DEVICE_API iterator begin()
   {
     return iterator(*this);
   }
 
-  _CCCL_HOST_DEVICE iterator end()
+  _CCCL_HOST_DEVICE_API iterator end()
   {
     size_t total_positions = 1;
     for (auto i : each(0, dimensions))
@@ -213,10 +213,10 @@ private:
 class cyclic_partition
 {
 public:
-  cyclic_partition() = default;
+  _CCCL_HIDE_FROM_ABI cyclic_partition() = default;
 
   template <size_t dimensions>
-  _CCCL_HOST_DEVICE static auto apply(const box<dimensions>& in, pos4 place_position, dim4 grid_dims)
+  _CCCL_HOST_DEVICE_API static auto apply(const box<dimensions>& in, pos4 place_position, dim4 grid_dims)
   {
     ::std::array<size_t, dimensions> begins{};
     ::std::array<size_t, dimensions> ends{};
@@ -232,7 +232,7 @@ public:
   }
 
   template <typename mdspan_shape_t>
-  _CCCL_HOST_DEVICE static auto apply(const mdspan_shape_t& in, pos4 place_position, dim4 grid_dims)
+  _CCCL_HOST_DEVICE_API static auto apply(const mdspan_shape_t& in, pos4 place_position, dim4 grid_dims)
   {
     constexpr size_t dimensions = mdspan_shape_t::rank();
 
@@ -253,7 +253,7 @@ public:
    * distribution the owner of an element is its coordinate modulo the grid
    * extent, independently in each dimension.
    */
-  _CCCL_HOST_DEVICE static void get_executor(pos4* result, pos4 data_coords, dim4 /*data_dims*/, dim4 grid_dims)
+  _CCCL_HOST_DEVICE_API static void get_executor(pos4* result, pos4 data_coords, dim4 /*data_dims*/, dim4 grid_dims)
   {
     _CCCL_ASSERT(data_coords.x >= 0 && data_coords.y >= 0 && data_coords.z >= 0 && data_coords.t >= 0,
                  "get_executor requires zero-based (non-negative) coordinates");

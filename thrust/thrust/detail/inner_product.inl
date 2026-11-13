@@ -34,7 +34,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputType>
-_CCCL_HOST_DEVICE OutputType inner_product(
+_CCCL_HOST_DEVICE_API OutputType inner_product(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -53,7 +53,7 @@ template <typename DerivedPolicy,
           typename OutputType,
           typename BinaryFunction1,
           typename BinaryFunction2>
-_CCCL_HOST_DEVICE OutputType inner_product(
+_CCCL_HOST_DEVICE_API OutputType inner_product(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -75,7 +75,8 @@ _CCCL_HOST_DEVICE OutputType inner_product(
 } // end inner_product()
 
 template <typename InputIterator1, typename InputIterator2, typename OutputType>
-OutputType inner_product(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputType init)
+_CCCL_HOST_API OutputType
+inner_product(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputType init)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::inner_product");
   using thrust::system::detail::generic::select_system;
@@ -94,7 +95,7 @@ template <typename InputIterator1,
           typename OutputType,
           typename BinaryFunction1,
           typename BinaryFunction2>
-OutputType inner_product(
+_CCCL_HOST_API OutputType inner_product(
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,

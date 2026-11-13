@@ -16,7 +16,7 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
 {
-_CCCL_HOST_DEVICE inline complex<float> cprojf(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> cprojf(const complex<float>& z)
 {
   if (!::cuda::std::isinf(z.real()) && !::cuda::std::isinf(z.imag()))
   {
@@ -26,7 +26,7 @@ _CCCL_HOST_DEVICE inline complex<float> cprojf(const complex<float>& z)
   return complex<float>(::cuda::std::numeric_limits<float>::infinity(), ::cuda::std::copysignf(0.0, z.imag()));
 }
 
-_CCCL_HOST_DEVICE inline complex<double> cproj(const complex<double>& z)
+_CCCL_HOST_DEVICE_API inline complex<double> cproj(const complex<double>& z)
 {
   if (!::cuda::std::isinf(z.real()) && !::cuda::std::isinf(z.imag()))
   {
@@ -38,19 +38,19 @@ _CCCL_HOST_DEVICE inline complex<double> cproj(const complex<double>& z)
 } // namespace detail::complex
 
 template <typename T>
-_CCCL_HOST_DEVICE inline thrust::complex<T> proj(const thrust::complex<T>& z)
+_CCCL_HOST_DEVICE_API inline thrust::complex<T> proj(const thrust::complex<T>& z)
 {
   return detail::complex::cproj(z);
 }
 
 template <>
-_CCCL_HOST_DEVICE inline thrust::complex<double> proj(const thrust::complex<double>& z)
+_CCCL_HOST_DEVICE_API inline thrust::complex<double> proj(const thrust::complex<double>& z)
 {
   return detail::complex::cproj(z);
 }
 
 template <>
-_CCCL_HOST_DEVICE inline thrust::complex<float> proj(const thrust::complex<float>& z)
+_CCCL_HOST_DEVICE_API inline thrust::complex<float> proj(const thrust::complex<float>& z)
 {
   return detail::complex::cprojf(z);
 }

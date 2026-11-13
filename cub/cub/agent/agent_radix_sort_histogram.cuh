@@ -143,7 +143,7 @@ struct AgentRadixSortHistogram
 
   DecomposerT decomposer;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentRadixSortHistogram(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentRadixSortHistogram(
     TempStorage& temp_storage,
     OffsetT* d_bins_out,
     const KeyT* d_keys_in,
@@ -161,7 +161,7 @@ struct AgentRadixSortHistogram
       , decomposer(decomposer)
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Init()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Init()
   {
     // Initialize bins to 0.
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -180,7 +180,7 @@ struct AgentRadixSortHistogram
     __syncthreads();
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadTileKeys(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void LoadTileKeys(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])
   {
     // tile_offset < num_items always, hence the line below works
     const bool full_tile = num_items - tile_offset >= TILE_ITEMS;
@@ -201,7 +201,7 @@ struct AgentRadixSortHistogram
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   AccumulateSharedHistograms(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])
   {
     const int part = ::cuda::ptx::get_sreg_laneid() % NUM_PARTS;
@@ -222,7 +222,7 @@ struct AgentRadixSortHistogram
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulateGlobalHistograms()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void AccumulateGlobalHistograms()
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int bin = static_cast<int>(threadIdx.x); bin < RADIX_DIGITS; bin += BLOCK_THREADS)
@@ -244,7 +244,7 @@ struct AgentRadixSortHistogram
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Process()
   {
     _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
     // Within a portion, avoid overflowing (u)int32 counters.
@@ -277,7 +277,7 @@ struct AgentRadixSortHistogram
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE digit_extractor_t digit_extractor(int current_bit, int num_bits)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE digit_extractor_t digit_extractor(int current_bit, int num_bits)
   {
     return traits::template digit_extractor<fundamental_digit_extractor_t>(current_bit, num_bits, decomposer);
   }
