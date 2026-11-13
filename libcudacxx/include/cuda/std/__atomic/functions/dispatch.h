@@ -377,8 +377,8 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_exchange_dispatch(
   using __proxy_tag _CCCL_NODEBUG     = __cuda_atomic_deduce_bitwise_tag_t<__value_type>;
   __proxy_pointee* __ptr_proxy        = reinterpret_cast<__proxy_pointee*>(__ptr);
   __proxy_t* __old_proxy              = reinterpret_cast<__proxy_t*>(::cuda::std::addressof(__old));
-  __proxy_t* __new_proxy =
-    reinterpret_cast<__proxy_t*>(::cuda::std::addressof(__new)); // NOLINT(misc-const-correctness)
+  // NOLINTNEXTLINE(misc-const-correctness)
+  __proxy_t* __new_proxy = reinterpret_cast<__proxy_t*>(::cuda::std::addressof(__new));
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
