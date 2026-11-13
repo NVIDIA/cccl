@@ -48,7 +48,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp, ::cuda::thread_scope _Scope>
-_CCCL_DEVICE_API void try_pull_reduce_add(
+_CCCL_DEVICE_API void warp_try_pull_reduce_add(
   ::cuda::multicast_logical_endpoint_ref __src,
   ::cuda::std::uint64_t __offset,
   _Tp* __shared,
@@ -81,7 +81,7 @@ _CCCL_DEVICE_API void try_pull_reduce_add(
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp, ::cuda::thread_scope _Scope>
-_CCCL_DEVICE_API void try_pull_reduce_min(
+_CCCL_DEVICE_API void warp_try_pull_reduce_min(
   ::cuda::multicast_logical_endpoint_ref __src,
   ::cuda::std::uint64_t __offset,
   _Tp* __shared,
@@ -114,7 +114,7 @@ _CCCL_DEVICE_API void try_pull_reduce_min(
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp, ::cuda::thread_scope _Scope>
-_CCCL_DEVICE_API void try_pull_reduce_max(
+_CCCL_DEVICE_API void warp_try_pull_reduce_max(
   ::cuda::multicast_logical_endpoint_ref __src,
   ::cuda::std::uint64_t __offset,
   _Tp* __shared,
