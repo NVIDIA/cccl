@@ -22,6 +22,7 @@ import subprocess
 import sys
 import textwrap
 import threading
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -122,6 +123,345 @@ class _FakeBuildResult:
         if load:
             result.load()
         return result
+
+
+# Binding protocol tests pass fake native results and explicit targets directly
+# to the binding implementation. Public clone() context handling is tested with
+# the real CUDA driver below.
+def _make_bindable_transform(build_results):
+    from cuda.compute._bindings import Op
+    from cuda.compute.algorithms._transform import _UnaryTransform
+
+    algorithm = _UnaryTransform.__new__(_UnaryTransform)
+    algorithm.d_in_cccl = cccl_interop.to_cccl_input_iter(ProxyArray(np.int32))
+    algorithm.d_out_cccl = cccl_interop.to_cccl_output_iter(ProxyArray(np.int32))
+    algorithm.op_cccl = Op()
+    algorithm.build_results = build_results
+    algorithm._bound_build_result = None
+    return algorithm
+
+
+def test_clone_returns_independent_wrappers_sharing_loaded_code():
+    source = _FakeBuildResult(b"sm80-cubin")
+    portable = _make_bindable_transform(_PerCCBuildResults({80: source}))
+
+    first = portable._clone(device_id=0, cc=80)
+    second = portable._clone(device_id=0, cc=80)
+    rebound = first._clone(device_id=0, cc=80)
+
+    assert portable._bound_build_result is None
+    assert first is not portable and second is not first
+    assert rebound is not first
+    for bound in (first, second, rebound):
+        assert bound.build_results is portable.build_results
+        assert bound._bound_build_result is source
+        assert bound.d_in_cccl is not portable.d_in_cccl
+        assert bound.d_out_cccl is not portable.d_out_cccl
+        assert bound.op_cccl is not portable.op_cccl
+    assert first.d_in_cccl is not second.d_in_cccl
+    first.d_in_cccl.bind_pointer_state(0x2000, None)
+    assert second.d_in_cccl.state == 0
+    assert source.load_count == 1
+    assert source.serialize_count == 0
+
+
+@pytest.mark.parametrize("bound", [False, True])
+def test_clone_none_is_unbound_without_device_access(monkeypatch, bound):
+    import cuda.bindings.driver as driver
+    import cuda.core
+
+    source = _FakeBuildResult(b"sm80-cubin")
+    original = _make_bindable_transform(_PerCCBuildResults({80: source}))
+    if bound:
+        original = original._clone(device_id=0, cc=80)
+    original_binding = original._bound_build_result
+    original.d_in_cccl.bind_pointer_state(0x2000, None)
+    load_count = source.load_count
+
+    def unexpected_device_access(*args, **kwargs):
+        raise AssertionError("unbound cloning must not access a device")
+
+    monkeypatch.setattr(cuda.core, "Device", unexpected_device_access)
+    monkeypatch.setattr(driver, "cuCtxGetCurrent", unexpected_device_access)
+    monkeypatch.setattr(driver, "cuCtxSetCurrent", unexpected_device_access)
+    monkeypatch.setattr(_PerCCBuildResults, "resolve", unexpected_device_access)
+
+    cloned = original.clone(device_id=None)
+    assert cloned is not original
+    assert cloned._bound_build_result is None
+    assert original._bound_build_result is original_binding
+    assert cloned.build_results is original.build_results
+    assert cloned.d_in_cccl is not original.d_in_cccl
+    assert cloned.d_out_cccl is not original.d_out_cccl
+    assert cloned.op_cccl is not original.op_cccl
+    assert cloned.d_in_cccl.state == 0
+    assert original.d_in_cccl.state == 0x2000
+    assert source.load_count == load_count
+    assert source.serialize_count == 0
+
+
+def test_clone_device_id_is_required_and_keyword_only():
+    original = _make_bindable_transform(_PerCCBuildResults({}))
+    with pytest.raises(TypeError, match="device_id"):
+        original.clone()
+    for device_id in (None, 0):
+        with pytest.raises(TypeError):
+            original.clone(device_id)
+
+
+@pytest.mark.parametrize(
+    "clone_targets",
+    [(0,), (None,), (0, None), (None, 0), (0, None, 0), (None, 0, None)],
+    ids=[
+        "bind",
+        "unbind",
+        "bind-unbind",
+        "unbind-bind",
+        "bind-unbind-bind",
+        "unbind-bind-unbind",
+    ],
+)
+def test_clone_binding_controls_call_device_resolution(monkeypatch, clone_targets):
+    class FakeExecutable(_FakeBuildResult):
+        def __init__(self, payload):
+            super().__init__(payload)
+            self.calls = []
+
+        def compute(self, *args):
+            self.calls.append(args)
+
+    source = FakeExecutable(b"sm80-cubin")
+    portable = _make_bindable_transform(_PerCCBuildResults({80: source}))
+    executors = [portable]
+    for device_id in clone_targets:
+        original = executors[-1]
+        original_binding = original._bound_build_result
+        cloned = (
+            original.clone(device_id=None)
+            if device_id is None
+            else original._clone(device_id=device_id, cc=80)
+        )
+        assert original._bound_build_result is original_binding
+        assert (cloned._bound_build_result is not None) == (device_id is not None)
+        executors.append(cloned)
+
+    device_queries = []
+
+    def current_device_id():
+        device_queries.append(0)
+        return 0
+
+    monkeypatch.setattr(cccl_interop, "current_device_id", current_device_id)
+    array = SimpleNamespace(
+        __cuda_array_interface__={"data": (0x2000, False)},
+    )
+    for executor in executors:
+        queries_before = len(device_queries)
+        for _ in range(2):
+            executor(d_in=array, d_out=array, op=OpKind.PLUS, num_items=1)
+        expected_queries = 2 if executor._bound_build_result is None else 0
+        assert len(device_queries) - queries_before == expected_queries
+        assert executor.loaded_build_result is source
+        assert executor.d_in_cccl.state == 0x2000
+    assert len(source.calls) == 2 * len(executors)
+    assert source.load_count == 1
+    assert source.serialize_count == 0
+
+
+def test_clone_second_device_uses_independent_loaded_result():
+    source = _FakeBuildResult(b"sm80-cubin")
+    portable = _make_bindable_transform(_PerCCBuildResults({80: source}))
+    first = portable._clone(device_id=0, cc=80)
+    second = portable._clone(device_id=1, cc=80)
+    again = portable._clone(device_id=1, cc=80)
+
+    assert first._bound_build_result is source
+    assert second._bound_build_result is not source
+    assert again._bound_build_result is second._bound_build_result
+    assert source.load_count == 1
+    assert source.serialize_count == 1
+    assert second._bound_build_result.load_count == 1
+
+
+@pytest.mark.parametrize("multi_cc", [False, True])
+def test_clone_selects_target_architecture(multi_cc):
+    sm80 = _FakeBuildResult(b"sm80-cubin")
+    sm90 = _FakeBuildResult(b"sm90-cubin")
+    results = {90: sm90}
+    if multi_cc:
+        results[80] = sm80
+    portable = _make_bindable_transform(_PerCCBuildResults(results))
+    bound = portable._clone(device_id=1, cc=90)
+    assert bound._bound_build_result is sm90
+    assert sm90.load_count == 1
+    assert sm80.load_count == 0
+
+
+@pytest.mark.parametrize("cc", [70, 86, 90])
+def test_clone_rejects_incompatible_architecture(cc):
+    source = _FakeBuildResult(b"incompatible-cubin")
+    portable = _make_bindable_transform(_PerCCBuildResults({cc: source}))
+    with pytest.raises(RuntimeError, match="device 0 has compute capability 8.0"):
+        portable._clone(device_id=0, cc=80)
+    assert source.load_count == 0
+    assert portable._bound_build_result is None
+
+
+def test_clone_single_target_supports_newer_minor():
+    source = _FakeBuildResult(b"sm80-cubin")
+    portable = _make_bindable_transform(_PerCCBuildResults({80: source}))
+    assert portable._clone(device_id=0, cc=86)._bound_build_result is source
+
+
+def test_clone_load_failure_can_retry():
+    source = _FakeBuildResult(b"sm80-cubin", load_failures=1)
+    portable = _make_bindable_transform(_PerCCBuildResults({80: source}))
+    with pytest.raises(RuntimeError, match="synthetic build-result load failure"):
+        portable._clone(device_id=0, cc=80)
+    assert portable._bound_build_result is None
+    assert portable._clone(device_id=0, cc=80)._bound_build_result is source
+    assert source.load_count == 2
+
+
+@pytest.mark.parametrize("device_id", [None, 0])
+@pytest.mark.parametrize("with_init", [False, True])
+def test_clone_creates_independent_descriptors_with_reset_runtime_state(
+    with_init, device_id
+):
+    from cuda.compute._bindings import InitKind, Op
+    from cuda.compute.algorithms._reduce import _Reduce
+
+    template = _make_bindable_transform(_PerCCBuildResults({80: _FakeBuildResult(b"")}))
+    portable = _Reduce.__new__(_Reduce)
+    portable._bound_build_result = None
+    portable.d_in_cccl = template.d_in_cccl
+    portable.d_out_cccl = template.d_out_cccl
+    portable.op_cccl = Op(state=b"captured")
+    portable.init_kind = InitKind.VALUE_INIT if with_init else InitKind.NO_INIT
+    portable.h_init_cccl = (
+        cccl_interop.to_cccl_value(np.asarray([5], dtype=np.int32))
+        if with_init
+        else None
+    )
+    portable.build_results = template.build_results
+
+    first = (
+        portable.clone(device_id=None)
+        if device_id is None
+        else portable._clone(device_id=device_id, cc=80)
+    )
+    second = (
+        portable.clone(device_id=None)
+        if device_id is None
+        else portable._clone(device_id=device_id, cc=80)
+    )
+    assert first.init_kind == portable.init_kind
+    assert first.op_cccl is not second.op_cccl
+    assert first.op_cccl.state == bytes(8)
+    first.op_cccl.state = b"modified"
+    assert portable.op_cccl.state == b"captured"
+    assert second.op_cccl.state == bytes(8)
+    if with_init:
+        assert first.h_init_cccl is not second.h_init_cccl
+        first.h_init_cccl.state = np.asarray([7], dtype=np.int32).view(np.uint8)
+        assert bytes(second.h_init_cccl.state) == bytes(4)
+        assert bytes(portable.h_init_cccl.state) == np.int32(5).tobytes()
+    else:
+        assert first.h_init_cccl is None
+        assert second.h_init_cccl is None
+
+
+def test_clone_nested_select_binds_partitioner():
+    from cuda.compute._bindings import Op
+    from cuda.compute.algorithms._select import _Select
+    from cuda.compute.algorithms._three_way_partition import _ThreeWayPartition
+
+    source = _FakeBuildResult(b"sm80-cubin")
+    partitioner = _ThreeWayPartition.__new__(_ThreeWayPartition)
+    partitioner._bound_build_result = None
+    for attr in (
+        "d_in_cccl",
+        "d_first_part_out_cccl",
+        "d_second_part_out_cccl",
+        "d_unselected_out_cccl",
+        "d_num_selected_out_cccl",
+    ):
+        setattr(
+            partitioner, attr, cccl_interop.to_cccl_input_iter(ProxyArray(np.int32))
+        )
+    partitioner.select_first_part_op_cccl = Op()
+    partitioner.select_second_part_op_cccl = Op()
+    partitioner.build_results = _PerCCBuildResults({80: source})
+    portable = _Select.__new__(_Select)
+    portable._bound_build_result = None
+    portable.partitioner = partitioner
+    portable._after_deserialize()
+
+    bound = portable._clone(device_id=0, cc=80)
+    assert bound.partitioner is not portable.partitioner
+    assert bound.partitioner._bound_build_result is source
+    assert portable.partitioner._bound_build_result is None
+    assert bound.always_false_op.get_state() == b""
+
+    for original in (portable, bound):
+        cloned = original.clone(device_id=None)
+        assert cloned is not original
+        assert cloned._bound_build_result is None
+        assert cloned.partitioner is not original.partitioner
+        assert cloned.partitioner._bound_build_result is None
+        assert cloned.partitioner.build_results is partitioner.build_results
+        assert cloned.always_false_op is not original.always_false_op
+        assert cloned.always_false_op.get_state() == b""
+    assert bound.partitioner._bound_build_result is source
+    assert source.load_count == 1
+    assert source.serialize_count == 0
+
+
+@pytest.mark.parametrize("with_context", [False, True], ids=["no-context", "context"])
+@pytest.mark.parametrize(
+    "outcome", ["success", "incompatible", "load-failure", "invalid-device"]
+)
+def test_clone_restores_real_context(with_context, outcome):
+    from cuda.bindings import driver, nvml
+    from cuda.core._utils.cuda_utils import handle_return
+
+    try:
+        num_devices = get_num_devices()
+    except nvml.DriverNotLoadedError:
+        pytest.skip("requires NVML for CUDA device discovery")
+    if num_devices == 0:
+        pytest.skip("requires a CUDA device for context restoration")
+    device = Device(0)
+    cc = cc_to_key(tuple(device.compute_capability))
+    source = _FakeBuildResult(b"cubin", load_failures=int(outcome == "load-failure"))
+    build_cc = cc + 10 if outcome == "incompatible" else cc
+    portable = _make_bindable_transform(_PerCCBuildResults({build_cc: source}))
+    previous_context = handle_return(driver.cuCtxGetCurrent())
+    try:
+        if with_context:
+            # Use another device's context when available to exercise a switch.
+            Device(num_devices - 1).set_current()
+        else:
+            handle_return(driver.cuCtxSetCurrent(None))
+        expected_context = handle_return(driver.cuCtxGetCurrent())
+        if outcome == "success":
+            bound = portable.clone(device_id=0)
+            assert bound._bound_build_result is source
+        elif outcome == "invalid-device":
+            with pytest.raises(ValueError):
+                portable.clone(device_id=num_devices)
+        else:
+            message = (
+                "device 0 has compute capability"
+                if outcome == "incompatible"
+                else "synthetic build-result load failure"
+            )
+            with pytest.raises(RuntimeError, match=message):
+                portable.clone(device_id=0)
+        assert handle_return(driver.cuCtxGetCurrent()) == expected_context
+        assert portable._bound_build_result is None
+    finally:
+        handle_return(driver.cuCtxSetCurrent(previous_context))
 
 
 class _CoordinatedGetCache(dict):

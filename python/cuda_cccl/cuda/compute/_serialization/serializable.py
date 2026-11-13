@@ -259,6 +259,91 @@ class Serializable:
         override this to rebind it; the default is a no-op.
         """
 
+    def clone(self: _S, *, device_id: None | int) -> _S:
+        """Return an executor with independent mutable host-side argument state, sharing compiled code.
+
+        If ``device_id`` is an integer, bind the executor to that device;
+        if it is ``None``, select the current device at each call.
+
+        Args:
+            device_id: Required keyword-only CUDA ordinal, or ``None`` to clear
+                bindings, including nested ones, without device access or code
+                loading.
+
+        Returns:
+            A new executor with the same call signature; the source is unchanged.
+            Use each executor from one thread at a time.
+
+        Raises:
+            RuntimeError: If no compiled result is compatible with the device,
+                or loading that result fails.
+
+        Binding loads code once without recompiling and restores the previous
+        CUDA context even on failure. The bound device must be current during
+        execution. Bindings are not serialized.
+        """
+        if device_id is None:
+            return self._clone(device_id=None, cc=None)
+
+        from cuda.bindings import driver
+        from cuda.core import Device
+        from cuda.core._utils.cuda_utils import handle_return
+
+        from .._cccl_interop import cc_to_key
+
+        device = Device(device_id)
+        previous_context = handle_return(driver.cuCtxGetCurrent())
+        try:
+            device.set_current()
+            cc = cc_to_key(tuple(device.compute_capability))
+            return self._clone(device.device_id, cc)
+        finally:
+            handle_return(driver.cuCtxSetCurrent(previous_context))
+
+    def _clone(self: _S, device_id: None | int, cc: None | int) -> _S:
+        """Copy per-call descriptors, optionally binding code on the current device."""
+        from .._cccl_interop import key_to_cc
+
+        obj = type(self).__new__(type(self))
+        obj._bound_build_result = None
+        for attr, kind in self.__serialization_schema__:
+            value = getattr(self, attr)
+            if isinstance(kind, _BuildResults):
+                # Share the ownership/clone protocol, not mutable descriptors.
+                # A single cubin can also run on a newer minor of the same SM
+                # major, matching the native serialization compatibility rule.
+                if device_id is not None:
+                    assert cc is not None
+                    build_cc = cc
+                    if len(value) == 1:
+                        (candidate,) = value
+                        if candidate // 10 == cc // 10 and candidate <= cc:
+                            build_cc = candidate
+                    if build_cc not in value:
+                        available = ", ".join(
+                            f"{major}.{minor}"
+                            for major, minor in (key_to_cc(k) for k in sorted(value))
+                        )
+                        major, minor = key_to_cc(cc)
+                        raise RuntimeError(
+                            f"This algorithm was compiled for compute capabilities [{available}], "
+                            f"but device {device_id} has compute capability {major}.{minor}. "
+                            f"Rebuild with compute_capability including {cc}."
+                        )
+                    obj._bound_build_result = value.resolve(build_cc, device_id)
+            elif isinstance(kind, _SubObject) and isinstance(value, Serializable):
+                # For example, select executes a nested three-way partitioner.
+                value = value._clone(device_id, cc)
+            else:
+                # Descriptor codecs omit runtime pointers and reconstruct fresh
+                # Cython objects, without serializing or reloading native code.
+                w = codec.Writer()
+                kind.write(w, value, self)
+                value = kind.read(codec.Reader(w.getvalue()), obj)
+            setattr(obj, attr, value)
+        obj._after_deserialize()
+        return obj
+
     def serialize(self) -> bytes:
         """Serialize this built algorithm to a self-contained serialization blob."""
         w = codec.begin(type(self).__qualname__)
