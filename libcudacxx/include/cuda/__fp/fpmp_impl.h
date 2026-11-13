@@ -516,6 +516,12 @@ template <typename _Tp, typename _Fp>
 inline constexpr bool __fpmp2_int_fits_limb_v =
   __fpmp2_int_value_bits_v<_Tp> >= 0 && __fpmp2_int_value_bits_v<_Tp> <= __fpmp2_mantissa_bits_v<_Fp>;
 
+// Scalars that one limb of an fpmp2 with element type _Fp holds exactly for every value of
+// the type. Arithmetic with such a scalar takes the single-limb kernels, whose low operand
+// limb is known to be zero, instead of promoting the scalar to a pair.
+template <typename _Tp, typename _Fp>
+inline constexpr bool __fpmp2_is_limb_v = __fpmp2_is_lossless_fp_v<_Tp, _Fp> || __fpmp2_int_fits_limb_v<_Tp, _Fp>;
+
 /*
 // Integer sources that the fpmp2 pair represents exactly for every value of the type.
 // The two limbs cover twice the significand of one, so the pair holds any integer up to
@@ -960,6 +966,16 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_ceil(const _FpType __x) no
 /*
 // Internal operations for 2-precision arithmetic
 */
+// x * y rounded once, as an fma with a zero addend: GCC fuses a plain product whose only
+// uses are adds into those adds, which __fmul_rn and __dmul_rn on the device never allow.
+// An exactly zero product comes out as +0; the addend cannot be -0, since clang folds
+// fma(x, y, -0) back into a plain multiply.
+template <typename _FpType>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE _FpType __fpmp_mul_rn_nocontract(const _FpType __x, const _FpType __y) noexcept
+{
+  return ::cuda::__fpmp_fma_rn(__x, __y, _FpType{0});
+}
+
 // Multiply 2 floats exactly, assuming no over/underflow.
 template <typename _FpType>
 _CCCL_TRIVIAL_HOST_DEVICE_API _FpType

@@ -48,7 +48,8 @@ native quotient estimate and the lo word carries the residual a - b*q divided by
 puts the pair in the same precision class as the mid-accuracy quotient for about half the
 arithmetic, at the cost of leaving it unnormalized - as the low accuracy level does
 throughout. The residual itself is exact: q is within an ulp or two of a_hi/b_hi, so the
-subtraction inside the fma cancels without rounding.
+subtraction inside the fma cancels without rounding. The lo word is a product that only
+the caller's adds consume, so it is formed by __fpmp_mul_rn_nocontract.
 */
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void __fpmp2_low_div(
@@ -67,7 +68,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_low_div(
   __e         = ::cuda::__fpmp_fma_rn(__b_lo, -__q, __e);
 
   *__res_hi = __q;
-  *__res_lo = ::cuda::__fpmp_mul_rn(__r, __e);
+  *__res_lo = ::cuda::__fpmp_mul_rn_nocontract(__r, __e);
 } // __fpmp2_low_div
 
 /* Compute high-accuracy quotient, using Newton-
@@ -521,6 +522,42 @@ __fpmp2_rsqrt<double>(const double __a_hi, const double __a_lo, double* __res_hi
 }
 
 #endif // _CCCL_FPMP_USE_LIB
+
+// a / c for a scalar c that one limb holds exactly: the low and default divisions without
+// the term that multiplies the divisor's zero low limb, which for finite operands leaves
+// the value unchanged up to the sign of a zero low limb. high keeps the scaled division.
+template <fpmp2_accuracy _Acc, typename _FpType>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void __fpmp2_div_limb(
+  const _FpType __a_hi, const _FpType __a_lo, const _FpType __c, _FpType* __res_hi, _FpType* __res_lo) noexcept
+{
+  if constexpr (_Acc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_div(__a_hi, __a_lo, __c, _FpType{0}, __res_hi, __res_lo);
+  }
+  else
+  {
+    const _FpType __r = ::cuda::__fpmp_rcp_rn(__c);
+    _FpType __t_hi    = ::cuda::__fpmp_mul_rn(__a_hi, __r);
+    _FpType __e       = ::cuda::__fpmp_fma_rn(__c, -__t_hi, __a_hi);
+    if constexpr (_Acc == fpmp2_accuracy::low)
+    {
+      *__res_hi = __t_hi;
+      *__res_lo = ::cuda::__fpmp_mul_rn_nocontract(__r, ::cuda::__fpmp_add_rn(__a_lo, __e));
+    }
+    else
+    {
+      __t_hi         = ::cuda::__fpmp_fma_rn(__r, __e, __t_hi);
+      _FpType __t_lo = ::cuda::__fpmp_fma_rn(__c, -__t_hi, __a_hi);
+      __t_lo         = ::cuda::__fpmp_add_rn(__a_lo, __t_lo);
+      __e            = ::cuda::__fpmp_mul_rn(__r, __t_lo);
+      __t_lo         = ::cuda::__fpmp_fma_rn(__c, -__e, __t_lo);
+      __t_lo         = ::cuda::__fpmp_fma_rn(__r, __t_lo, __e);
+      __e            = ::cuda::__fpmp_add_rn(__t_hi, __t_lo);
+      *__res_lo      = ::cuda::__fpmp_add_rn(::cuda::__fpmp_sub_rn(__t_hi, __e), __t_lo);
+      *__res_hi      = __e;
+    }
+  }
+}
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>

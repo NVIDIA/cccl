@@ -218,20 +218,25 @@ question.
      - 11
      - 20
 
-   * - ``+=``, ``-=`` with a one-limb scalar
+   * - ``+``, ``-``, ``+=``, ``-=`` with a one-limb scalar
      - 7
      - 10
-     - 13
+     - 10
 
    * - ``*``
      - 5
+     - 8
      - 9
-     - 9
+
+   * - ``*``, ``*=`` with a one-limb scalar
+     - 3
+     - 6
+     - 10
 
    * - ``mad``
      - 13
      - 16
-     - 29
+     - 28
 
    * - ``fma``
      - 16
@@ -265,8 +270,10 @@ question.
 
 Three things follow from the table before any type-specific advice:
 
-1. Multiplication costs the same at ``mid`` and ``high``, so ``high`` is paid for on additions and
-   divisions.
+1. Multiplication costs one instruction more at ``high`` than at ``mid``, so ``high`` is paid for
+   mostly on additions and divisions. A scalar that one limb holds exactly - ``float`` for
+   ``fp32mp2``, ``float`` or ``double`` for ``fp64mp2`` - is cheaper as it is than converted to
+   a pair.
 
 2. Division is the expensive basic operation, and the one ``high`` makes most expensive.
 
@@ -324,13 +331,13 @@ fp32mp2
 - **Use** ``high`` **only on accuracy-critical steps - reductions above all.** ``high`` recovers the
   rounding error committed when the two trailing limbs are added, and that error only grows into the
   result when something amplifies it; cancellation is the usual amplifier. It costs 20 instructions
-  per addition against 11, and 46 per division against 13, while multiplication is 9 at both levels
-  - a product-heavy kernel gains nothing from ``high`` and pays for it on every addition. Where it
-  pays is where nearly equal values are subtracted, where a long sum carries terms of both signs,
-  and in argument reductions. ``fp32mp2_stat`` points at those places: ``partial_cancel_count`` and
-  ``full_cancel_count`` count the operations where significance was lost, per instrumented variable.
-  Then raise the level per operation, with ``add<>``, ``sub<>`` and the rest on the critical step,
-  rather than raising the type for the whole kernel.
+  per addition against 11, and 46 per division against 13, while multiplication is 8 at ``mid`` and
+  9 at ``high`` - a product-heavy kernel gains little from ``high`` and pays for it on every
+  addition. Where it pays is where nearly equal values are subtracted, where a long sum carries
+  terms of both signs, and in argument reductions. ``fp32mp2_stat`` points at those places:
+  ``partial_cancel_count`` and ``full_cancel_count`` count the operations where significance was
+  lost, per instrumented variable. Then raise the level per operation, with ``add<>``, ``sub<>`` and
+  the rest on the critical step, rather than raising the type for the whole kernel.
 
 - **The conversion macros trade FP64 instructions for registers.**
   ``CCCL_FPMP_OPTIMIZED_DOUBLE_TO_FPMP`` and ``CCCL_FPMP_OPTIMIZED_FPMP_TO_DOUBLE``, both on by
@@ -370,11 +377,11 @@ fp32mp2
 - **Smaller things that add up:**
 
   - **Prefer the one-limb accumulate.** ``acc += f`` with a ``float`` operand takes a dedicated
-    path, 10 instructions against 11 at ``mid`` and 13 against 20 at ``high``, and builds no
+    path, 10 instructions against 11 at ``mid`` and 10 against 20 at ``high``, and builds no
     temporary pair.
   - **Prefer** ``mad`` **to a multiply and an add, and use** ``fma`` **for its rounding, not by
     habit.** ``mad(a, b, c)`` is a ``low`` multiply followed by an addition at the type's level, 16
-    instructions at ``mid`` against 20 for the two operations written out. ``fma`` is 19 at ``mid``
+    instructions at ``mid`` against 19 for the two operations written out. ``fma`` is 19 at ``mid``
     and 37 at ``high``, more than the separate operations at ``high``, so it belongs where the fused
     rounding of the main term matters.
   - **Hoist divisions.** Division is the most expensive basic operation and the least accurate. A
@@ -399,7 +406,7 @@ fp64mp2
 ~~~~~~~
 
 - **Use it only on GPUs with full-rate FP64.** ``fp64mp2`` spends FP64 throughput - 11 FP64
-  instructions per ``mid`` addition, 9 per multiplication - so the price of its digits is set by how
+  instructions per ``mid`` addition, 8 per multiplication - so the price of its digits is set by how
   the part rations that pipe. Where FP64 runs at half the FP32 rate, as on B200, H100 and A100, the
   price is fair: on B200 a ``mid`` addition sustains 1347 giga-additions per second and is 7.8×
   faster than software binary128, and division is 17.8× faster. On B300, with FP64 at 1/64 of FP32,
@@ -423,7 +430,7 @@ fp64mp2
   ``double`` arrays, and promote where the extra width is needed - typically the accumulator, since
   the inputs are exact as ``double`` and it is the running sum, or sum of products, that outgrows
   it. ``acc += d`` with a ``double`` operand is the cheap path for exactly that, 10 FP64
-  instructions at ``mid`` against 11 for a pair addition after promotion and 13 against 20 at
+  instructions at ``mid`` against 11 for a pair addition after promotion and 10 against 20 at
   ``high``. Convert the result back once, when it leaves the kernel. Where whole arrays must be
   ``fp64mp2``, the type is 16-byte aligned, so each element is one 128-bit load or store: keep them
   contiguous and aligned, and budget half the elements per byte of bandwidth. The exception to
