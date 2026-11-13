@@ -97,6 +97,31 @@ private:
     __capacity_ = __new_capacity;
   }
 
+  template <class _Up>
+  [[nodiscard]] _CCCL_HOST_API __resizable_buffer<_Up, _Properties...> __as_type() &&
+  {
+    auto __alloc = ::cuda::std::move(*this).__release_allocation();
+    ::cuda::__allocation_info<_Up, _Properties...> __new_alloc{
+      __alloc.stream,
+      ::cuda::std::move(__alloc.mr),
+      reinterpret_cast<_Up*>(__alloc.ptr),
+      __alloc.capacity * sizeof(_Tp) / sizeof(_Up),
+      __alloc.size * sizeof(_Tp) / sizeof(_Up),
+      __alloc.alignment};
+    _CCCL_TRY
+    {
+      return ::cuda::__acquire_resizable_buffer<_Up, _Properties...>(::cuda::std::move(__new_alloc));
+    }
+    _CCCL_CATCH_ALL
+    {
+      *this = ::cuda::std::move([&]() noexcept {
+        __alloc.mr = ::cuda::std::move(__new_alloc.mr);
+        return ::cuda::__acquire_resizable_buffer<_Tp, _Properties...>(::cuda::std::move(__alloc));
+      }());
+      _CCCL_RETHROW;
+    }
+  }
+
 public:
   using __base_t::__base_t;
 
@@ -175,10 +200,7 @@ public:
   _CCCL_REQUIRES(__is_buffer_byte_type_v<_Byte>)
   [[nodiscard]] _CCCL_HOST_API __resizable_buffer<_Byte, _Properties...> as_bytes() && noexcept
   {
-    return ::cuda::__buffer_as_type_impl<_Tp, _Byte, ::cuda::__resizable_buffer>(
-      ::cuda::std::move(*this),
-      ::cuda::__acquire_resizable_buffer<_Tp, _Properties...>,
-      ::cuda::__acquire_resizable_buffer<_Byte, _Properties...>);
+    return ::cuda::std::move(*this).template __as_type<_Byte>();
   }
 
   //! @brief Converts a byte buffer to a typed buffer owning the same allocation,
@@ -201,10 +223,7 @@ public:
       _CCCL_THROW(::std::invalid_argument,
                   "cuda::__resizable_buffer::as_type: size, capacity or alignment is incompatible with _Up");
     }
-    return ::cuda::__buffer_as_type_impl<_Tp, _Up, ::cuda::__resizable_buffer>(
-      ::cuda::std::move(*this),
-      ::cuda::__acquire_resizable_buffer<_Tp, _Properties...>,
-      ::cuda::__acquire_resizable_buffer<_Up, _Properties...>);
+    return ::cuda::std::move(*this).template __as_type<_Up>();
   }
 
   //! @brief Returns the number of elements that fit in the current allocation

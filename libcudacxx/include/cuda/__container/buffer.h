@@ -89,45 +89,6 @@ template <class _Tp, class... _Properties>
 [[nodiscard]] _CCCL_HOST_API ::cuda::buffer<_Tp, _Properties...>
 __acquire_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info);
 
-//! @brief Converts a buffer of \p _Tp into a buffer of \p _Up that owns the
-//! same allocation. Shared implementation of `as_bytes()` and `as_type()`.
-//!
-//! @return A buffer of `size() * sizeof(_Tp) / sizeof(_Up)` elements with the same data
-//! pointer, memory resource, stream and alignment.
-//!
-//! @warning After a successful call, the buffer can only be assigned to or
-//! destroyed.
-template <class _Tp,
-          class _Up,
-          template <class __Tp, class... __Properties> class _Buffer,
-          class _AcquireT,
-          class _AcquireU,
-          class... _Properties>
-[[nodiscard]] _CCCL_HOST_API _Buffer<_Up, _Properties...>
-__buffer_as_type_impl(_Buffer<_Tp, _Properties...>&& __buffer, _AcquireT&& __acquire_old, _AcquireU&& __acquire_new)
-{
-  auto __alloc = ::cuda::std::move(__buffer).__release_allocation();
-  ::cuda::__allocation_info<_Up, _Properties...> __new_alloc{
-    __alloc.stream,
-    ::cuda::std::move(__alloc.mr),
-    reinterpret_cast<_Up*>(__alloc.ptr),
-    __alloc.capacity * sizeof(_Tp) / sizeof(_Up),
-    __alloc.size * sizeof(_Tp) / sizeof(_Up),
-    __alloc.alignment};
-  _CCCL_TRY
-  {
-    return __acquire_new(::cuda::std::move(__new_alloc));
-  }
-  _CCCL_CATCH_ALL
-  {
-    __buffer = ::cuda::std::move([&]() noexcept {
-      __alloc.mr = ::cuda::std::move(__new_alloc.mr);
-      return __acquire_old(::cuda::std::move(__alloc));
-    }());
-    _CCCL_RETHROW;
-  }
-}
-
 _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 //! @rst
 //! .. _libcudacxx-containers-buffer:
@@ -249,6 +210,39 @@ private:
     const ::cuda::__ensure_current_context __guard(__buf_.stream());
     ::cuda::__driver::__memcpyAsync(
       __dest, ::cuda::std::to_address(__first), sizeof(_Tp) * __count, __buf_.stream().get());
+  }
+
+  //! @brief Converts a buffer of \p _Tp into a buffer of \p _Up that owns the
+  //! same allocation. Shared implementation of `as_bytes()` and `as_type()`.
+  //!
+  //! @return A buffer of `size() * sizeof(_Tp) / sizeof(_Up)` elements with the same data
+  //! pointer, memory resource, stream and alignment.
+  //!
+  //! @warning After a successful call, the buffer can only be assigned to or
+  //! destroyed.
+  template <class _Up>
+  [[nodiscard]] _CCCL_HOST_API buffer<_Up, _Properties...> __as_type() &&
+  {
+    auto __alloc = ::cuda::std::move(*this).__release_allocation();
+    ::cuda::__allocation_info<_Up, _Properties...> __new_alloc{
+      __alloc.stream,
+      ::cuda::std::move(__alloc.mr),
+      reinterpret_cast<_Up*>(__alloc.ptr),
+      __alloc.capacity * sizeof(_Tp) / sizeof(_Up),
+      __alloc.size * sizeof(_Tp) / sizeof(_Up),
+      __alloc.alignment};
+    _CCCL_TRY
+    {
+      return ::cuda::__acquire_buffer<_Up, _Properties...>(::cuda::std::move(__new_alloc));
+    }
+    _CCCL_CATCH_ALL
+    {
+      *this = ::cuda::std::move([&]() noexcept {
+        __alloc.mr = ::cuda::std::move(__new_alloc.mr);
+        return ::cuda::__acquire_buffer<_Tp, _Properties...>(::cuda::std::move(__alloc));
+      }());
+      _CCCL_RETHROW;
+    }
   }
 
 public:
@@ -853,10 +847,7 @@ public:
   _CCCL_REQUIRES(__is_buffer_byte_type_v<_Byte>)
   [[nodiscard]] _CCCL_HOST_API buffer<_Byte, _Properties...> as_bytes() && noexcept
   {
-    return ::cuda::__buffer_as_type_impl<_Tp, _Byte, ::cuda::buffer>(
-      ::cuda::std::move(*this),
-      ::cuda::__acquire_buffer<_Tp, _Properties...>,
-      ::cuda::__acquire_buffer<_Byte, _Properties...>);
+    return ::cuda::std::move(*this).template __as_type<_Byte>();
   }
 
   //! @brief Converts a buffer of bytes into a buffer of \p _Up that owns the
@@ -880,10 +871,7 @@ public:
     {
       _CCCL_THROW(::std::invalid_argument, "cuda::buffer::as_type: size or alignment is incompatible with _Up");
     }
-    return ::cuda::__buffer_as_type_impl<_Tp, _Up, ::cuda::buffer>(
-      ::cuda::std::move(*this),
-      ::cuda::__acquire_buffer<_Tp, _Properties...>,
-      ::cuda::__acquire_buffer<_Up, _Properties...>);
+    return ::cuda::std::move(*this).template __as_type<_Up>();
   }
 
   //! @brief Destroys the buffer, deallocates the buffer and destroys the memory
