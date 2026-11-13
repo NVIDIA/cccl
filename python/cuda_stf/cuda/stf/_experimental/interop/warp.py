@@ -162,7 +162,7 @@ def _wp_dtype_from_typestr(typestr):
         ) from exc
 
 
-def array_arg(task, index, dtype=None, shape=None, device=None):
+def get_arg_warp(task, index, dtype=None, shape=None, device=None):
     """Alias task argument ``index`` as a ``wp.array`` (no copy, no ownership).
 
     ``wp.array(data=...)`` rejects objects that only expose the CUDA Array
@@ -191,7 +191,7 @@ def warp_arguments(task, dtypes=None):
         return ()
     n = len(out) if isinstance(out, tuple) else 1
     dtypes = dtypes or (None,) * n
-    return tuple(array_arg(task, i, dtypes[i]) for i in range(n))
+    return tuple(get_arg_warp(task, i, dtypes[i]) for i in range(n))
 
 
 # ---------------------------------------------------------------------------
@@ -660,9 +660,9 @@ def release_graph_handles():
 
 
 __all__ = [
-    "array_arg",
     "current_context",
     "current_task_symbol",
+    "get_arg_warp",
     "release_graph_handles",
     "scope",
     "scope_token",

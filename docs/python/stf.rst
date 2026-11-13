@@ -228,7 +228,7 @@ capture-time temporaries (radix sort scratch, BVH and hash-grid buffers) bypass 
 device allocator hook in current Warp releases and still allocate on the capturing
 stream, so a scope nested inside another scope records only if its body does not sort or
 rebuild a BVH, until Warp routes those temporaries through the hook as well.
-``array_arg(task, index)`` and ``warp_arguments(task)`` convert one or all task
+``get_arg_warp(task, index)`` and ``warp_arguments(task)`` convert one or all task
 arguments if you manage the task block yourself, and ``wrap_stream`` returns a cached
 ``wp.Stream`` for a raw task stream. See ``tests/stf/interop/test_warp_adapter.py`` for
 complete programs.

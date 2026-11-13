@@ -9,11 +9,11 @@ import pytest
 
 wp = pytest.importorskip("warp")
 
-import cuda.stf._experimental as stf  # noqa: E402
-from cuda.stf._experimental import AccessMode  # noqa: E402
-from cuda.stf._experimental.interop.warp import (  # noqa: E402
-    array_arg,
+import cuda.stf._experimental as stf
+from cuda.stf._experimental import AccessMode
+from cuda.stf._experimental.interop.warp import (
     current_context,
+    get_arg_warp,
     release_graph_handles,
     scope,
     scope_token,
@@ -138,11 +138,11 @@ def test_warp_task_logical_data_arrays():
     ctx.finalize()
 
 
-def test_array_arg_dtype_override():
+def test_get_arg_warp_dtype_override():
     ctx = stf.context()
     lx = ctx.logical_data(np.zeros(12, dtype=np.float32))
     with ctx.task(lx.rw()) as t:
-        v = array_arg(t, 0, dtype=wp.vec3, shape=(4,))
+        v = get_arg_warp(t, 0, dtype=wp.vec3, shape=(4,))
         assert v.dtype == wp.vec3 and v.shape == (4,)
     ctx.finalize()
 
@@ -321,13 +321,12 @@ def test_capture_while_inside_nested_scope_task():
     reset = wp.full(1, 3, dtype=int)
 
     def frame(ctx):
-        with scope(ctx):
-            with warp_task(ctx):
-                wp.copy(counter, reset)
-                wp.capture_while(
-                    counter,
-                    lambda: wp.launch(count_down, dim=n, inputs=[counter, acc]),
-                )
+        with scope(ctx), warp_task(ctx):
+            wp.copy(counter, reset)
+            wp.capture_while(
+                counter,
+                lambda: wp.launch(count_down, dim=n, inputs=[counter, acc]),
+            )
 
     _record_and_replay(frame, 2)
     assert acc.numpy()[0] == 6.0 and counter.numpy()[0] == 0
@@ -432,15 +431,14 @@ def test_scope_allocations_belong_to_the_level():
     with scope(ctx, launchable=True) as g:
         with warp_task(ctx, t.rw()):
             pass
-        with scope(ctx, writes=(t,)):
-            with warp_task(ctx):
-                tmp = wp.zeros(
-                    n, dtype=float
-                )  # per-step temporary: dropped inside the scope
-                wp.launch(scale, dim=n, inputs=[2.0, tmp])
-                keep.append(wp.full(n, 1.0, dtype=float))  # outlives the scope
-                wp.launch(scale, dim=n, inputs=[2.0, keep[0]])
-                del tmp
+        with scope(ctx, writes=(t,)), warp_task(ctx):
+            tmp = wp.zeros(
+                n, dtype=float
+            )  # per-step temporary: dropped inside the scope
+            wp.launch(scale, dim=n, inputs=[2.0, tmp])
+            keep.append(wp.full(n, 1.0, dtype=float))  # outlives the scope
+            wp.launch(scale, dim=n, inputs=[2.0, keep[0]])
+            del tmp
         # no MemAlloc node anywhere
         h = int(g.graph)
         nodes = rt.cudaGraphGetNodes(h, rt.cudaGraphGetNodes(h, 0)[-1])[1]

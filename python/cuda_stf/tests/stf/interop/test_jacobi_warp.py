@@ -33,7 +33,7 @@ import cuda.stf._experimental as stf
 
 wp = pytest.importorskip("warp")
 
-from cuda.stf._experimental.interop.warp import array_arg, wrap_stream  # noqa: E402
+from cuda.stf._experimental.interop.warp import get_arg_warp, wrap_stream
 
 # ---------------------------------------------------------------------------
 # Warp kernels. Line-for-line equivalents of the Numba versions in
@@ -169,8 +169,8 @@ def test_jacobi_stackable_warp():
     # Initialize A and Anew.
     with ctx.task(lA.write(), lAnew.write()) as t:
         s = wrap_stream(t.stream_ptr(), device)
-        dA = array_arg(t, 0, wp.float64, (m, n))
-        dAnew = array_arg(t, 1, wp.float64, (m, n))
+        dA = get_arg_warp(t, 0, wp.float64, (m, n))
+        dAnew = get_arg_warp(t, 1, wp.float64, (m, n))
         wp.launch(
             init_kernel,
             dim=(m, n),
@@ -186,7 +186,7 @@ def test_jacobi_stackable_warp():
     with ctx.while_loop() as loop:
         with ctx.task(lresidual.write()) as t:
             s = wrap_stream(t.stream_ptr(), device)
-            dres = array_arg(t, 0, wp.float64, (1,))
+            dres = get_arg_warp(t, 0, wp.float64, (1,))
             wp.launch(
                 reset_residual,
                 dim=1,
@@ -197,9 +197,9 @@ def test_jacobi_stackable_warp():
 
         with ctx.task(lA.read(), lAnew.write(), lresidual.rw()) as t:
             s = wrap_stream(t.stream_ptr(), device)
-            dA = array_arg(t, 0, wp.float64, (m, n))
-            dAnew = array_arg(t, 1, wp.float64, (m, n))
-            dres = array_arg(t, 2, wp.float64, (1,))
+            dA = get_arg_warp(t, 0, wp.float64, (m, n))
+            dAnew = get_arg_warp(t, 1, wp.float64, (m, n))
+            dres = get_arg_warp(t, 2, wp.float64, (1,))
             wp.launch(
                 jacobi_step,
                 dim=(m, n),
@@ -210,8 +210,8 @@ def test_jacobi_stackable_warp():
 
         with ctx.task(lA.rw(), lAnew.read()) as t:
             s = wrap_stream(t.stream_ptr(), device)
-            dA = array_arg(t, 0, wp.float64, (m, n))
-            dAnew = array_arg(t, 1, wp.float64, (m, n))
+            dA = get_arg_warp(t, 0, wp.float64, (m, n))
+            dAnew = get_arg_warp(t, 1, wp.float64, (m, n))
             wp.launch(
                 copy_back,
                 dim=(m, n),
@@ -271,7 +271,7 @@ def test_graph_scope_warp():
     with ctx.graph_scope():
         with ctx.task(lX.rw()) as t:
             s = wrap_stream(t.stream_ptr(), device)
-            dX = array_arg(t, 0, wp.float32, (n,))
+            dX = get_arg_warp(t, 0, wp.float32, (n,))
             wp.launch(
                 scale_kernel,
                 dim=n,
@@ -281,7 +281,7 @@ def test_graph_scope_warp():
             )
         with ctx.task(lX.rw()) as t:
             s = wrap_stream(t.stream_ptr(), device)
-            dX = array_arg(t, 0, wp.float32, (n,))
+            dX = get_arg_warp(t, 0, wp.float32, (n,))
             wp.launch(
                 add_kernel,
                 dim=n,
@@ -292,7 +292,7 @@ def test_graph_scope_warp():
 
     with ctx.graph_scope(), ctx.task(lX.rw()) as t:
         s = wrap_stream(t.stream_ptr(), device)
-        dX = array_arg(t, 0, wp.float32, (n,))
+        dX = get_arg_warp(t, 0, wp.float32, (n,))
         wp.launch(
             scale_kernel,
             dim=n,
@@ -319,7 +319,7 @@ def test_repeat_warp():
 
     with ctx.repeat(10), ctx.task(lX.rw()) as t:
         s = wrap_stream(t.stream_ptr(), device)
-        dX = array_arg(t, 0, wp.float32, (n,))
+        dX = get_arg_warp(t, 0, wp.float32, (n,))
         wp.launch(
             add_kernel,
             dim=n,
@@ -336,8 +336,8 @@ def test_repeat_warp():
 def _submit_branch_task(ctx, lX, lout, branch_id: int, n: int, device):
     with ctx.task(lX.read(), lout.write()) as t:
         s = wrap_stream(t.stream_ptr(), device)
-        dX = array_arg(t, 0, wp.float32, (n,))
-        dout = array_arg(t, 1, wp.float32, (n,))
+        dX = get_arg_warp(t, 0, wp.float32, (n,))
+        dout = get_arg_warp(t, 1, wp.float32, (n,))
         wp.launch(
             branch_kernel,
             dim=n,
@@ -355,10 +355,10 @@ def _submit_join4_task(ctx, branch_lds, lX, lresidual, n: int, loop_iters: int, 
     with ctx.task(*branch_deps, lX.write(), lresidual.write()) as t:
         s = wrap_stream(t.stream_ptr(), device)
         branches = [
-            array_arg(t, index, wp.float32, (n,)) for index in range(len(branch_lds))
+            get_arg_warp(t, index, wp.float32, (n,)) for index in range(len(branch_lds))
         ]
-        dX = array_arg(t, len(branch_lds), wp.float32, (n,))
-        dres = array_arg(t, len(branch_lds) + 1, wp.float32, (1,))
+        dX = get_arg_warp(t, len(branch_lds), wp.float32, (n,))
+        dres = get_arg_warp(t, len(branch_lds) + 1, wp.float32, (1,))
         wp.launch(
             join4_kernel,
             dim=n,
@@ -379,8 +379,8 @@ def _submit_join4_task(ctx, branch_lds, lX, lresidual, n: int, loop_iters: int, 
 def _submit_while_body_task(ctx, lX, lresidual, n: int, device):
     with ctx.task(lX.rw(), lresidual.rw()) as t:
         s = wrap_stream(t.stream_ptr(), device)
-        dX = array_arg(t, 0, wp.float32, (n,))
-        dres = array_arg(t, 1, wp.float32, (1,))
+        dX = get_arg_warp(t, 0, wp.float32, (n,))
+        dres = get_arg_warp(t, 1, wp.float32, (1,))
         wp.launch(
             while_body_kernel,
             dim=n,
