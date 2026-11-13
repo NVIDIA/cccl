@@ -276,18 +276,20 @@ public:
   //! Note: In case of a stream created under a `green_context` the device on which that `green_context` was created is
   //! returned
   //!
-  //! This may be called while the stream, or the calling thread, is capturing into a CUDA graph: it does not
-  //! invalidate the capture.
-  //!
   //! @throws cuda_error if device check fails
   [[nodiscard]] _CCCL_HOST_API device_ref device() const
   {
-    // The device is read from the context of the stream. cuStreamGetDevice() is deliberately not used: older drivers
-    // reject it with CUDA_ERROR_STREAM_CAPTURE_UNSUPPORTED while the stream is capturing, and the rejection
-    // invalidates the capture, so it cannot be tried first. Whether a driver rejects it is unrelated to the toolkit
-    // this was compiled with.
-    const __ensure_current_context __guard{*this};
-    return device_ref{::cuda::__driver::__cudevice_to_ordinal(::cuda::__driver::__ctxGetDevice())};
+    ::CUdevice __device{};
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+    __device = ::cuda::__driver::__streamGetDevice(__stream);
+#  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+    {
+      const auto _ = __ensure_current_context{*this};
+
+      __device = ::cuda::__driver::__ctxGetDevice();
+    }
+#  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+    return device_ref{::cuda::__driver::__cudevice_to_ordinal(__device)};
   }
 
   // The whole _CCCL_UNREACHABLE() thing was added for MSVC, yet now it complains the

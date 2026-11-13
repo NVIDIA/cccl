@@ -757,6 +757,17 @@ struct __ctx_from_stream
 }
 #  endif // _CCCL_CTK_AT_LEAST(12, 5)
 
+// TODO: make this available since CUDA 12.8
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+[[nodiscard]] _CCCL_HOST_API inline ::CUdevice __streamGetDevice(::CUstream __stream)
+{
+  static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuStreamGetDevice, cuStreamGetDevice, 12, 8);
+  ::CUdevice __result{};
+  _CCCLRT_CALL_STREAM_DRIVER_FN(__driver_fn, __stream, "Failed to get the device of the stream", __stream, &__result);
+  return __result;
+}
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+
 _CCCL_HOST_API inline void __streamWaitEvent(::CUstream __stream, ::CUevent __evnt)
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamWaitEvent);
