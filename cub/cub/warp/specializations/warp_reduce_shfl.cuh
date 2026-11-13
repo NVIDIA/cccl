@@ -183,11 +183,27 @@ struct WarpReduceShfl
   }
 
   // Unrolls the reduction steps
-  template <typename ReductionOp>
+  // UniformLastLane: Whether last_lane is the same on every lane of the logical warp
+  template <bool UniformLastLane, typename ReductionOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void ShuffleReduce(T& input, ReductionOp reduction_op, const int last_lane)
   {
     // capture clause prevents regressions
     ::cuda::static_for<steps>([&, value = input, reduction_op](const int step) mutable {
+      // A step with offset > last_lane combines nothing. Skipping it keeps the per-lane check in ReduceStep from being
+      // lowered to predication, which would evaluate reduction_op on every lane, including lanes with nothing to
+      // combine. That is expensive for operators such as FP64 comparisons on GPUs with a low FP64 rate.
+      // The skip must be warp-uniform, because a full warp's shuffle mask covers every lane and ReduceStep's shuffle
+      // must be executed by all of them or by none. static_for passes an integral_constant, so offset = 1 << step is a
+      // compile-time constant. last_lane is only uniform when it comes from valid_items, which WarpReduce requires to
+      // be the same on every lane. SegmentedReduce computes a different last_lane per lane, so it never skips.
+      if constexpr (is_full_warp && UniformLastLane)
+      {
+        const int offset = 1 << step;
+        if (offset > last_lane)
+        {
+          return;
+        }
+      }
       value = ReduceStep(value, reduction_op, last_lane, 1u << step);
       input = value;
     });
@@ -242,7 +258,7 @@ struct WarpReduceShfl
       else
       {
         // Keep the last_lane clamp: invalid lanes may not exist in an incomplete physical warp.
-        ShuffleReduce(reduce_value, reduction_op, last_lane);
+        ShuffleReduce</*UniformLastLane=*/true>(reduce_value, reduction_op, last_lane);
       }
       return reduce_value;
     }
@@ -271,7 +287,7 @@ struct WarpReduceShfl
     // Find the next set flag
     const int last_lane = ::cuda::std::countr_zero(warp_flags);
     T output            = input;
-    ShuffleReduce(output, reduction_op, last_lane);
+    ShuffleReduce</*UniformLastLane=*/false>(output, reduction_op, last_lane);
     return output;
   }
 };
