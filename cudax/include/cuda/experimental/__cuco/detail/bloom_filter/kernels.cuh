@@ -24,6 +24,7 @@
 #if _CCCL_CUDA_COMPILATION()
 
 #  include <cuda/__hierarchy/queries/count.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 
 #  include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
@@ -44,7 +45,7 @@ struct __add_fn
   _InputIt __first;
   _Ref __ref;
 
-  _CCCL_DEVICE_API void operator()(detail::__index_type __idx)
+  _CCCL_DEVICE_API void operator()(::cuda::std::size_t __idx)
   {
     __ref.__add(*(__first + __idx));
   }
@@ -61,7 +62,7 @@ struct __contains_fn
   _OutputIt __output_begin;
   _Ref __ref;
 
-  _CCCL_DEVICE_API void operator()(detail::__index_type __idx) const
+  _CCCL_DEVICE_API void operator()(::cuda::std::size_t __idx) const
   {
     *(__output_begin + __idx) = __ref.__contains(*(__first + __idx));
   }
@@ -86,7 +87,7 @@ __contains_fn(_InputIt, _OutputIt, _Ref) -> __contains_fn<_InputIt, _OutputIt, _
 template <int _CgSize, class _Config, class _InputIt, class _Ref>
 _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS((
   ::cuda::__static_count_query<::cuda::thread_level, ::cuda::block_level, typename _Config::hierarchy_type>())) void
-__add_n(_InputIt __first, detail::__index_type __n, _Ref __ref)
+__add_n(_InputIt __first, ::cuda::std::size_t __n, _Ref __ref)
 {
   using __key_type = typename ::cuda::std::iterator_traits<_InputIt>::value_type;
 
@@ -120,7 +121,7 @@ __add_n(_InputIt __first, detail::__index_type __n, _Ref __ref)
 template <int _CgSize, class _Config, class _InputIt, class _OutputIt, class _Ref>
 _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS((
   ::cuda::__static_count_query<::cuda::thread_level, ::cuda::block_level, typename _Config::hierarchy_type>())) void
-__contains_n(_InputIt __first, detail::__index_type __n, _OutputIt __output_begin, _Ref __ref)
+__contains_n(_InputIt __first, ::cuda::std::size_t __n, _OutputIt __output_begin, _Ref __ref)
 {
   using __key_type = typename ::cuda::std::iterator_traits<_InputIt>::value_type;
 
