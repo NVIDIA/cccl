@@ -463,6 +463,11 @@ public:
     return pool_set.deinit_pools(ctx);
   }
 
+  bool allocation_is_stream_ordered(backend_ctx_untyped& ctx) const override
+  {
+    return (root_allocator ? root_allocator : ctx.get_uncached_allocator()).allocation_is_stream_ordered(ctx);
+  }
+
   ::std::string to_string() const override
   {
     return "pooled";
@@ -515,6 +520,11 @@ public:
   event_list deinit(backend_ctx_untyped& ctx) override
   {
     return pool_set.deinit_pools(ctx);
+  }
+
+  bool allocation_is_stream_ordered(backend_ctx_untyped& ctx) const override
+  {
+    return ctx.get_uncached_allocator().allocation_is_stream_ordered(ctx);
   }
 
   ::std::string to_string() const override
