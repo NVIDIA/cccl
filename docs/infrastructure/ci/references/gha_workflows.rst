@@ -16,9 +16,9 @@ Workflow reference
 CI matrix
 ~~~~~~~~~
 
-Three trigger workflows select a matrix key and run it. Six dispatcher workflows
-unfold the generated job list into GitHub matrix strategies. Contributors rarely
-invoke any of these directly; they fire on push or schedule.
+Three entry-point workflows select matrix keys and run them. The PR workflow runs
+on push; nightly and weekly workflows run on schedules and support manual dispatch.
+Six dispatcher workflows unfold the generated job list into GitHub matrix strategies.
 
 .. list-table::
    :header-rows: 1
@@ -29,7 +29,7 @@ invoke any of these directly; they fire on push or schedule.
      - Purpose
    * - ``.github/workflows/ci-workflow-pull-request.yml``
      - Automatic
-     - Runs the ``pull_request`` matrix on every push to a ``pull-request/<N>`` branch.
+     - Runs the ``pull_request`` matrix on pushes to a ``pull-request/<N>`` branch.
    * - ``.github/workflows/ci-workflow-nightly.yml``
      - Both
      - Runs the broader ``nightly`` matrix on a weekday schedule, with AI failure analysis and Slack notifications.
@@ -54,6 +54,88 @@ invoke any of these directly; they fire on push or schedule.
    * - ``.github/workflows/workflow-dispatch-two-stage-windows.yml``
      - Automatic
      - Executes one producer/consumer chain on Windows.
+
+.. _infra-ci-matrix-selection:
+
+Choosing matrix files
+^^^^^^^^^^^^^^^^^^^^^
+
+Nightly and weekly workflows accept optional ``matrix_ref``, ``matrix_path``,
+and ``ci_profile`` inputs for ``workflow_dispatch``.
+Matrix files must be in the same repository as the workflow run and follow the
+:ref:`matrix.yaml format <infra-ci-matrix-yaml>`.
+
+Setting either matrix input selects a single matrix file and overrides
+``CI_MATRICES``. An omitted ref or path uses the corresponding default below.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 50 30
+
+   * - Input
+     - Meaning
+     - Default when blank
+   * - ``matrix_ref``
+     - Commit SHA, branch, or tag containing the matrix file.
+     - The commit that triggered the run (``github.sha``).
+   * - ``matrix_path``
+     - Path to the matrix file, relative to the repository root.
+     - ``ci/matrix.yaml``.
+
+PR runs select the ``pull_request`` profile in the ``CI_MATRICES`` repository
+variable. When both matrix inputs are blank, nightly and weekly runs default to
+the ``nightly`` and ``weekly`` profiles, respectively.
+
+Nightly and weekly manual dispatches also accept an optional ``ci_profile``
+input to select a different profile. A blank value uses ``nightly`` or
+``weekly``, respectively.
+
+The variable maps profile names to named matrix definitions in ``path@ref``
+form. Matrix names may contain only ASCII letters, digits, hyphens, and
+underscores. For example:
+
+.. code-block:: json
+
+   {
+     "nightly": {
+       "extended": "ci/matrices/extended.yaml@ci-configs"
+     },
+     "pull_request": {
+       "standard": "ci/matrix.yaml",
+       "extended": "ci/matrices/extended.yaml@ci-configs"
+     }
+   }
+
+An omitted path or ref uses ``ci/matrix.yaml`` or the triggering commit,
+respectively. Each resolved path/ref pair must have one name within a profile;
+different names for the same pair cause an error. If the variable is unset or
+the selected profile defines no matrices, CI uses the single default matrix.
+
+Selecting a matrix ref changes the configuration; the workflow's branch or tag
+still selects the code to build and test. PR, nightly, and weekly runs use their
+usual workflow keys.
+
+Each matrix ref may also provide named configurations under
+``.devcontainer/<configuration>/devcontainer.json``. Linux jobs prefer these
+configurations and fall back to ``.devcontainer`` in the source checkout when a
+requested configuration is absent. The matrix ref can supply just additional
+environments; it does not need configurations already present in the source.
+Configurations shared by selected matrix refs must have identical JSON contents;
+conflicting definitions for the same configuration name cause an error.
+
+Manual dispatch requires `write access to the repository
+<https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow>`_.
+Matrix files control job commands, environments, and runner selection, including
+self-hosted runners. Use matrix refs whose contents you trust.
+
+For example, run the full ``nightly`` matrix on code from ``my-feature`` using
+``ci/custom-matrix.yaml`` from the ``ci-matrices`` branch:
+
+.. code-block:: bash
+
+   gh workflow run ci-workflow-nightly.yml --ref my-feature \
+     -f matrix_ref=ci-matrices                             \
+     -f matrix_path=ci/custom-matrix.yaml
 
 Manual tools
 ~~~~~~~~~~~~
@@ -97,10 +179,13 @@ The build-workflow action
 
 The "build workflow from matrix" job runs the ``build-workflow`` action at
 ``.github/actions/workflow-build/``. Its script ``build-workflow.py`` reads
-``ci/matrix.yaml`` together with the change-detection output from
-``ci/inspect_changes.py`` and produces ``workflow/workflow.json``. That file holds
-named groups — "CUB GCC", for example — each carrying a ``standalone`` array and a
-``two_stage`` array of fully expanded job specs.
+each selected matrix file independently, using that file's tags, jobs, and
+exclusions. PR runs also use the change-detection output from
+``ci/inspect_changes.py``.
+The resulting jobs are merged into ``workflow/workflow.json``, combining shared
+builds and tests and assigning unique job IDs across the run. That file holds
+named groups — "CUB GCC", for example — each carrying a ``standalone`` array and
+a ``two_stage`` array of fully expanded job specs.
 
 A second script, ``prepare-workflow-dispatch.py``, splits ``workflow.json`` into
 ``dispatch.json``. This is the structure the GHA workflow is actually dispatched over.
