@@ -401,3 +401,94 @@ C2H_TEST("Group View preserves per-group static unit counts", "[group_view]")
 
   stream.sync();
 }
+
+template <class Parent, class View>
+__device__ void test_viewed_parent(const Parent& parent, const View& view)
+{
+  const cudax::coop::group_by mapping{cuda::std::cw<32>};
+  const cudax::coop::lane_synchronizer synchronizer{};
+
+  const auto check = [&](const auto& child) {
+    using Child  = cuda::std::remove_cvref_t<decltype(child)>;
+    using Result = typename Child::__mapping_result_type;
+    using Sync   = typename Child::__synchronizer_instance_type;
+
+    static_assert(cuda::std::is_same_v<Child, cudax::coop::virtual_group<cuda::thread_level, Parent, Result>>
+                  || cuda::std::is_same_v<Child, cudax::coop::generic_group<cuda::thread_level, Parent, Result, Sync>>);
+
+    // Static counts must come from the view, including specialized views.
+    const cudax::coop::group_view child_view{child};
+    const cudax::coop::group_view parent_view{view};
+    static_assert(cuda::gpu_thread.static_count(child_view) == 32);
+    static_assert(Result::static_group_count()
+                  == (cuda::gpu_thread.static_count(parent_view) == cuda::std::dynamic_extent
+                        ? cuda::std::dynamic_extent
+                        : cuda::gpu_thread.static_count(parent_view) / 32));
+    CHECK(child.count(parent) == cuda::gpu_thread.count(view) / 32);
+    CHECK(child.template count_as<unsigned>(parent) == cuda::gpu_thread.count(view) / 32);
+    CHECK(child.rank(parent) == cuda::gpu_thread.rank(view) / 32);
+    CHECK(child.template rank_as<unsigned>(parent) == cuda::gpu_thread.rank(view) / 32);
+    CHECK(cuda::gpu_thread.count(child) == 32);
+    CHECK(cuda::gpu_thread.rank(child) == cuda::gpu_thread.rank(view) % 32);
+  };
+
+  const cudax::coop::virtual_group virtual_child{cuda::gpu_thread, view, mapping};
+  check(virtual_child);
+
+  const cudax::coop::generic_group child{cuda::gpu_thread, view, mapping, synchronizer};
+  check(child);
+  child.sync();
+
+  const auto made_virtual = cudax::coop::make_group<cudax::coop::virtual_group>(cuda::gpu_thread, view, mapping);
+  check(made_virtual);
+
+  const auto made = cudax::coop::make_group<cudax::coop::generic_group>(cuda::gpu_thread, view, mapping, synchronizer);
+  check(made);
+  made.sync();
+
+  const auto optional = cudax::coop::make_group<cudax::coop::generic_group>(
+    cudax::coop::non_exhaustive, cuda::gpu_thread, view, mapping, synchronizer);
+  REQUIRE(optional.has_value());
+  check(*optional);
+  optional->sync();
+}
+
+struct ViewedParentKernel
+{
+  template <class Config>
+  __device__ void operator()(Config config) const
+  {
+    const cudax::coop::this_block block{config};
+    const cudax::coop::group_view block_view{block};
+    test_viewed_parent(block, block_view);
+
+    // The viewed group can have a coarser unit than its view and the child.
+    const cudax::coop::virtual_group parent{cuda::warp, block, cudax::coop::identity_mapping{}};
+    const cudax::coop::group_view threads{cuda::gpu_thread, parent};
+    test_viewed_parent(parent, threads);
+
+    using View = cuda::std::remove_cv_t<decltype(threads)>;
+    const cudax::coop::group_view<cuda::thread_level, View, typename View::__mapping_result_type> nested{threads};
+    test_viewed_parent(threads, nested);
+
+    // Specialized views must retain their static counts when the parent has unequal counts.
+    const cudax::coop::virtual_group unequal{
+      cuda::gpu_thread, block, cudax::coop::group_as{cuda::std::integer_sequence<int, 32, 96>{}}};
+    unequal.with_static_unit_count([&](const auto& view) {
+      test_viewed_parent(unequal, view);
+      view.with_static_unit_count([&](const auto& nested_view) {
+        test_viewed_parent(unequal, nested_view);
+      });
+    });
+  }
+};
+
+C2H_TEST("Groups constructed from views use the viewed parent", "[group_view]")
+{
+  const cuda::stream stream{cuda::devices[0]};
+
+  cuda::launch(stream, cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<128>()), ViewedParentKernel{});
+  cuda::launch(stream, cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims(128)), ViewedParentKernel{});
+
+  stream.sync();
+}
