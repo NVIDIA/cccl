@@ -281,6 +281,8 @@ template <typename _FpType>
 _CCCL_FPMP_CORE_API void __internal_fpmp2_trig_reduction(
   _FpType __x_hi, _FpType __x_lo, int* __quadrant, _FpType* __r_hi, _FpType* __r_lo) noexcept
 {
+  using __afloat = fp32mp2_high;
+
   _FpType __abs_hi    = (__x_hi < _FpType(0)) ? -__x_hi : __x_hi;
   uint32_t __abs_bits = ::cuda::std::bit_cast<uint32_t>(__abs_hi);
 
@@ -306,71 +308,63 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_trig_reduction(
   {
     /* -- Fast path: Cody-Waite for |x_hi| < 2^20 --
      *
-     * pi/2 = c1 + c2 + c3 + c4 as four floats (94 bits, residual
-     * 8.5e-32); every n * c_k is split exactly with two_mult_fma, so
-     * the reduction is exact down to its third-order terms:
+     * pi/2 split into 4 float pieces, whose sum misses pi/2 by 8.5e-32.
+     * C1 has 2 trailing zero mantissa bits, making n*C1 exact
+     * for |n| < 2^12 via two_mult_fma, and accurate for larger n.
      *
-     * First order.  x_hi - ph is exact (Sterbenz: x_hi and n * pi/2
-     * agree to within pi/4), and the three remaining first-order terms
-     * -pl, x_lo, -p2h are folded with error-free sums, so
-     * (s, e2 + e3 + e4) represents x - n * (c1 + c2) exactly.
-     *
-     * Second order.  e2, e3, e4 are O(2^-24 |s_k|) and p2l, p3h are
-     * O(2^-48 |x|).  Their sum must not round at the scale of the
-     * partial sums s_k: when x lies close to a multiple of pi/2 those
-     * are far larger than r, which is how the previous accumulation in
-     * fp32mp2_high lost up to 11 bits (37 bits at |x| ~ 1e4, 25 bits at
-     * |x| ~ 4e5).  e2 + e3 + e4 goes through error-free sums; p2l + p3h
-     * is added in float unless |r| < 2^-22 |x_hi| (one argument in ~4
-     * million), where it is folded exactly as well.
-     *
-     * Third order (p3l, n * c4 and the sum errors of the second order)
-     * is below 2^-70 |x| and is summed in float.  The returned pair is
-     * not renormalized; the kernel tolerates that.
+     * Error tracking: two_mult_fma gives exact n*C1 = ph + pl,
+     * two_sum gives exact x_hi - ph = s + e.
+     * Remaining corrections accumulated in fp32mp2_high
+     * to preserve ~46 bits when s is near zero (catastrophic
+     * cancellation near multiples of pi).
      */
-    constexpr _FpType __c1 = _FpType(0x1.921fb40000000p+0);
-    constexpr _FpType __c2 = _FpType(0x1.4442d00000000p-24);
-    constexpr _FpType __c3 = _FpType(0x1.84698a0000000p-48);
-    constexpr _FpType __c4 = _FpType(-0x1.cceba40000000p-74);
+    constexpr _FpType __c1 = _FpType(1.5707962512969971e+000);
+    constexpr _FpType __c2 = _FpType(7.5497894158615964e-008);
+    constexpr _FpType __c3 = _FpType(5.3903029534742384e-015);
+    constexpr _FpType __c4 = _FpType(-0x1.cceba4p-74);
 
-    const int __n       = ::cuda::__fpmp_fp2int_rn(__x_hi * _FpType(0x1.45f306p-1f));
-    const _FpType __n_f = ::cuda::__fpmp_int2fp_rn<_FpType>(__n);
+    int __n       = ::cuda::__fpmp_fp2int_rn(__x_hi * _FpType(0x1.45f306p-1f));
+    _FpType __n_f = ::cuda::__fpmp_int2fp_rn<_FpType>(__n);
 
-    _FpType __pl, __p2l, __p3l;
-    const _FpType __ph  = ::cuda::__fpmp_two_mult_fma(__n_f, __c1, &__pl);
-    const _FpType __p2h = ::cuda::__fpmp_two_mult_fma(__n_f, __c2, &__p2l);
-    const _FpType __p3h = ::cuda::__fpmp_two_mult_fma(__n_f, __c3, &__p3l);
+    /* Exact product n*C1 = ph + pl */
+    _FpType __pl;
+    _FpType __ph = ::cuda::__fpmp_two_mult_fma(__n_f, __c1, &__pl);
 
-    _FpType __e2, __e3, __e4;
-    _FpType __s = ::cuda::__fpmp_sub_rn(__x_hi, __ph); /* exact */
-    __s         = ::cuda::__fpmp_two_sum(__s, -__pl, &__e2);
-    __s         = ::cuda::__fpmp_two_sum(__s, __x_lo, &__e3);
-    __s         = ::cuda::__fpmp_two_sum(__s, -__p2h, &__e4);
+    /* Exact subtraction x_hi - ph = s + e */
+    _FpType __e;
+    _FpType __s = ::cuda::__fpmp_two_sum(__x_hi, -__ph, &__e);
 
-    _FpType __f1, __f2;
-    _FpType __t     = ::cuda::__fpmp_two_sum(__e2, __e3, &__f1);
-    __t             = ::cuda::__fpmp_two_sum(__t, __e4, &__f2);
-    _FpType __third = (__f1 + __f2) - ::cuda::__fpmp_fma_rn(__n_f, __c4, __p3l);
+    /* Build result as fp32mp2_high from exact (s, e),
+     * then accumulate corrections with full precision.
+     */
+    __afloat __result(__s, __e);
+    /* Subtracting pl and adding x_lo as single limbs gives the same values as adding them as
+     * pairs with a zero low word, in fewer operations, and makes sin, cos, sincos and tan 4-10%
+     * faster on sm_100 and sm_120. On sm_90, nvcc schedules the single-limb form worse: sin,
+     * cos and sincos ran 1-4% slower than with the pairs (tan 4% faster), so sm_90 keeps them.
+     */
+    NV_IF_ELSE_TARGET(NV_IS_EXACTLY_SM_90,
+                      (__result = __result + __afloat(-__pl); __result = __result + __afloat(__x_lo);),
+                      (__result = __result - __pl; __result = __result + __x_lo;))
 
-    const _FpType __abs_s = (__s < _FpType(0)) ? -__s : __s;
-    _FpType __r_hi_v, __r_lo_v;
-    if (__abs_s >= __abs_hi * _FpType(0x1p-22f))
-    {
-      __third  = __third - (__p2l + __p3h);
-      __r_hi_v = ::cuda::__fpmp_fast_two_sum(__s, __t, &__r_lo_v);
-    }
-    else
-    {
-      _FpType __f3, __f4;
-      __t      = ::cuda::__fpmp_two_sum(__t, -__p2l, &__f3);
-      __t      = ::cuda::__fpmp_two_sum(__t, -__p3h, &__f4);
-      __third  = __third + (__f3 + __f4);
-      __r_hi_v = ::cuda::__fpmp_two_sum(__s, __t, &__r_lo_v);
-    }
+    /* Exact product n*C2 = nC2_hi + nC2_lo via two_mult_fma */
+    _FpType __n_c2_lo;
+    _FpType __n_c2_hi = ::cuda::__fpmp_two_mult_fma(__n_f, __c2, &__n_c2_lo);
+    __result          = __result - __afloat(__n_c2_hi, __n_c2_lo);
+
+    /* nC3_hi + nC3_lo = n*(C3 + C4) to within 2^-47 * n*C3: n*C3 exactly, and n*C4 added
+     * to its low word by one fma. Near a multiple of pi/2, r is far smaller than n*C3, so
+     * neither rounding n*C3 (error up to 2^-24 * n*C3) nor cutting pi/2 at C3
+     * (error n * 9.5e-23) keeps the error small relative to r.
+     */
+    _FpType __n_c3_lo;
+    _FpType __n_c3_hi = ::cuda::__fpmp_two_mult_fma(__n_f, __c3, &__n_c3_lo);
+    __n_c3_lo         = ::cuda::__fpmp_fma_rn(__n_f, __c4, __n_c3_lo);
+    __result          = __result - __afloat(__n_c3_hi, __n_c3_lo);
 
     *__quadrant = __n;
-    *__r_hi     = __r_hi_v;
-    *__r_lo     = __r_lo_v + __third;
+    *__r_hi     = __result.hi();
+    *__r_lo     = __result.lo();
   }
   else
   {
@@ -959,8 +953,8 @@ __internal_fpmp2_atan(const float __x_hi, const float __x_lo, float* __res_hi, f
   const bool __fold = (__ah > __sqrt13) && (__ah < __sqrt3);
   /* Written so that NaN selects the direct range (every comparison false) and flows through to
    * the result; the negated forms sent it to the reciprocal range, whose cap made it pi/2. */
-  const bool __inv  = __ah >= __sqrt3;
-  const bool __cap  = __ah >= 0x1p64f;
+  const bool __inv = __ah >= __sqrt3;
+  const bool __cap = __ah >= 0x1p64f;
 
   float __nl, __de;
   const float __nh = ::cuda::__fpmp_fast_two_sum(::cuda::__fpmp_sub_rn(__ah, 1.0f), __al, &__nl);
