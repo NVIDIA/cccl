@@ -309,6 +309,12 @@ jobs:
     with:
       base_sha: ${{ needs.build-workflow.outputs.base_sha }}
 
+  abi-diff:
+    name: ABI Diff
+    permissions:
+      contents: read
+    uses: ./.github/workflows/abi-diff.yml
+
   docs-build:
     name: Build documentation
     needs: build-workflow
@@ -682,6 +688,7 @@ jobs:
       - build-workflow
       - verify-workflow
       - verify-devcontainers
+      - abi-diff
       - docs-build
       - test-cpu-import
       - dispatch-bench
@@ -709,6 +716,7 @@ jobs:
 
           check_result "verify-workflow"      "success" "${{needs.verify-workflow.result}}"
           check_result "verify-devcontainers" "success" "${{needs.verify-devcontainers.result}}"
+          check_result "abi-diff"             "success" "${{needs.abi-diff.result}}"
           check_result "docs-build"           "success" "${{needs.docs-build.result}}"
           check_result "test-cpu-import"      "success" "${{needs.test-cpu-import.result}}"
 
