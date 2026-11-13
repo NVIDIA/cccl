@@ -67,7 +67,7 @@ public:
 }; // end cuda_error_category
 } // end namespace cuda_cub::detail
 
-_CCCL_HOST_API const error_category& cuda_category()
+_CCCL_PUBLIC_HOST_API const error_category& cuda_category()
 {
   static const thrust::system::cuda_cub::detail::cuda_error_category result;
   return result;

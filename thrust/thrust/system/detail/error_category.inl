@@ -271,13 +271,13 @@ public:
 }; // end system_category_result
 } // namespace detail
 
-_CCCL_HOST_API inline const error_category& generic_category()
+_CCCL_PUBLIC_HOST_API inline const error_category& generic_category()
 {
   static const detail::generic_error_category result;
   return result;
 }
 
-_CCCL_HOST_API inline const error_category& system_category()
+_CCCL_PUBLIC_HOST_API inline const error_category& system_category()
 {
   static const detail::system_error_category result;
   return result;

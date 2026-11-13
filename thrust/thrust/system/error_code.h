@@ -201,7 +201,7 @@ public:
  *        shall behave as specified for the class \p error_category. The object's
  *        \p name virtual function shall return a pointer to the string <tt>"generic"</tt>.
  */
-_CCCL_HOST_API inline const error_category& generic_category();
+_CCCL_PUBLIC_HOST_API inline const error_category& generic_category();
 
 /*! \return A reference to an object of a type derived from class \p error_category.
  *  \note The object's \p equivalent virtual functions shall behave as specified for
@@ -214,7 +214,7 @@ _CCCL_HOST_API inline const error_category& generic_category();
  *        Otherwise, the function shall return <tt>error_condition(ev,system_category())</tt>.
  *        What constitutes correspondence for any given operating system is unspecified.
  */
-_CCCL_HOST_API inline const error_category& system_category();
+_CCCL_PUBLIC_HOST_API inline const error_category& system_category();
 
 // [19.5.2] Class error_code
 
