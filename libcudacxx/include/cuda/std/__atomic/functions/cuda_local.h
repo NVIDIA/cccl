@@ -23,6 +23,7 @@
 #include <cuda/__memory/address_space.h> // IWYU pragma: keep
 #include <cuda/std/__atomic/functions/common.h> // IWYU pragma: keep
 #include <cuda/std/__atomic/types/common.h> // IWYU pragma: keep
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__utility/forward.h> // IWYU pragma: keep
 #include <cuda/std/cstdint>
 #include <cuda/std/cstring> // IWYU pragma: keep
@@ -127,8 +128,8 @@ _CCCL_DEVICE_API bool __cuda_atomic_compare_exchange_weak_if_local(
   }
   using _ValueType = __unv<_Type>;
   _ValueType __old{};
-  ::cuda::std::__atomic_assign_volatile(&__old, *__ptr);
-  if (::cuda::std::__atomic_memcmp(&__old, __expected, sizeof(_ValueType)) == 0)
+  ::cuda::std::__atomic_assign_volatile(::cuda::std::addressof(__old), *__ptr);
+  if (::cuda::std::__atomic_memcmp(::cuda::std::addressof(__old), __expected, sizeof(_ValueType)) == 0)
   {
     ::cuda::std::__atomic_assign_volatile(__ptr, *__desired);
     *__success = true;
@@ -165,7 +166,7 @@ __cuda_atomic_fetch_weak_if_local(_Type* __ptr, __unv<_Type> __val, __unv<_Type>
   }
   using _ValueType = __unv<_Type>;
   _ValueType __old{};
-  ::cuda::std::__atomic_assign_volatile(&__old, *__ptr);
+  ::cuda::std::__atomic_assign_volatile(::cuda::std::addressof(__old), *__ptr);
   *__ret                     = __old;
   const _ValueType __desired = ::cuda::std::forward<_BOp>(__bop)(__old, __val);
   ::cuda::std::__atomic_assign_volatile(__ptr, __desired);

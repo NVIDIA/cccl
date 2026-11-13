@@ -10,6 +10,7 @@
 #include <clang/ASTMatchers/ASTMatchers.h>
 #include <clang/ASTMatchers/ASTMatchFinder.h>
 #include <clang/Lex/Lexer.h>
+#include <common/names.h>
 #include <llvm/ADT/StringRef.h>
 #include <llvm/Support/ErrorHandling.h>
 
@@ -19,31 +20,14 @@ namespace
 {
 using namespace ast_matchers; // NOLINT(google-build-using-namespace)
 
-[[nodiscard]] bool is_ugly_name(StringRef str)
-{
-  if (str.size() < 2)
-  {
-    return false;
-  }
-
-  if (str[0] == '_' && str[1] >= 'A' && str[1] <= 'Z')
-  {
-    // _Foo
-    return true;
-  }
-
-  // __foo
-  return str.starts_with("__");
-}
-
 AST_MATCHER(NamedDecl, isUgly) // NOLINT
 {
-  return is_ugly_name(Node.getName());
+  return util::is_ugly_name(Node.getName());
 }
 
 AST_MATCHER(NamedDecl, isPretty) // NOLINT
 {
-  return !is_ugly_name(Node.getName());
+  return !util::is_ugly_name(Node.getName());
 }
 
 class NoDebugOnAliasesCheck final : public ClangTidyCheck
