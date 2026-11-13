@@ -20,6 +20,7 @@
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/tuple>
@@ -119,9 +120,7 @@ class tuple_of_iterator_references : public ::cuda::std::tuple<Ts...>
 {
 public:
   using super_t = ::cuda::std::tuple<Ts...>;
-  using super_t::super_t;
-
-  tuple_of_iterator_references() = default;
+  _CCCL_DELEGATE_CONSTRUCTORS(tuple_of_iterator_references, ::cuda::std::tuple, Ts...);
 
   // allow implicit construction from cuda::std::tuple<refs>
   _CCCL_HOST_DEVICE tuple_of_iterator_references(const super_t& other)
