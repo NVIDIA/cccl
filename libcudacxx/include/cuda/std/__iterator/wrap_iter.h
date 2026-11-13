@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/pointer_traits.h>
@@ -115,6 +116,13 @@ public:
   _CCCL_API constexpr iterator_type base() const noexcept
   {
     return __i_;
+  }
+
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(is_convertible_v<_Tp*, iterator_type>)
+  _CCCL_API constexpr void __rebind(_Tp* __ptr) noexcept
+  {
+    __i_ = __ptr;
   }
 
 private:

@@ -39,7 +39,7 @@ private:
 template <cuda::std::int32_t BlockSize, typename Key, typename Hasher, typename OutputIt>
 __global__ void hash_bench_kernel(Hasher hash, cuda::std::size_t n, OutputIt out, bool materialize_result)
 {
-  const cuda::std::size_t gid         = static_cast<cuda::std::size_t>(BlockSize) * blockIdx.x + threadIdx.x;
+  const cuda::std::size_t gid         = (static_cast<cuda::std::size_t>(BlockSize) * blockIdx.x) + threadIdx.x;
   const cuda::std::size_t loop_stride = static_cast<cuda::std::size_t>(gridDim.x) * BlockSize;
   cuda::std::size_t idx               = gid;
   using result_t                      = decltype(hash(0));
@@ -71,7 +71,7 @@ void hash_eval(nvbench::state& state, nvbench::type_list<HasherTag, Key>)
   const bool materialize_result = false;
   constexpr auto block_size     = 128;
   const auto num_keys           = state.get_int64("NumInputs");
-  const auto grid_size          = (num_keys + block_size * 16 - 1) / block_size * 16;
+  const auto grid_size          = (num_keys + (block_size * 16) - 1) / block_size * 16;
 
   using result_t = decltype(cuda::std::declval<hash_t>()(cuda::std::declval<cuda::std::int32_t>()));
 

@@ -56,7 +56,7 @@ public:
 
   iterator end() const
   {
-    return begin() + repeats * (last - first);
+    return begin() + (repeats * (last - first));
   }
 
 private:

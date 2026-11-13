@@ -57,7 +57,7 @@ __is_heap_until(_RandomAccessIterator __first, _RandomAccessIterator __last, _Co
     }
     ++__p;
     ++__pp;
-    __c = 2 * __p + 1;
+    __c = (2 * __p) + 1;
   }
   return __last;
 }

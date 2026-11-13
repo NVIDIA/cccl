@@ -164,7 +164,7 @@ inline constexpr size_t __static_size_v<owning_view<_Range>> = __static_size_v<_
 
 template <class _Range>
 inline constexpr size_t __static_size_v<const owning_view<_Range>> =
-  (range<const owning_view<_Range>>) ? __static_size_v<const _Range> : dynamic_extent;
+  range<const owning_view<_Range>> ? __static_size_v<const _Range> : dynamic_extent;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
