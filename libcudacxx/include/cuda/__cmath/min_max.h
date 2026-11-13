@@ -1,0 +1,74 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA___CMATH_MIN_MAX_H
+#define _CUDA___CMATH_MIN_MAX_H
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/__functional/maximum.h>
+#include <cuda/__functional/minimum.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/is_extended_arithmetic.h>
+#include <cuda/std/__type_traits/is_same.h>
+
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+
+//! @brief Returns the smaller of two values, like `cuda::minimum`. Floating-point values are compared like with
+//! `cuda::std::fmin`, so NaN is only returned if both values are NaN.
+//! @param[in] __a The first value.
+//! @param[in] __b The second value.
+//! @return The smaller of `__a` and `__b`.
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(::cuda::std::__is_extended_arithmetic_v<_Tp>)
+[[nodiscard]] _CCCL_TRIVIAL_API constexpr _Tp min(_Tp __a, _Tp __b) noexcept
+{
+  return ::cuda::minimum<_Tp>{}(__a, __b);
+}
+
+// Mixed argument types must select a deleted overload rather than fail deduction, otherwise nvcc with MSVC considers
+// the global ::min of the CUDA headers in SFINAE contexts. The leading non-type template parameter keeps explicit
+// template arguments, like cuda::min<long>(1, 2), from selecting this overload.
+_CCCL_TEMPLATE(int = 0, class _Tp, class _Up)
+_CCCL_REQUIRES((!::cuda::std::is_same_v<_Tp, _Up>) )
+_CCCL_API _Tp min(_Tp, _Up) = delete;
+
+//! @brief Returns the larger of two values, like `cuda::maximum`. Floating-point values are compared like with
+//! `cuda::std::fmax`, so NaN is only returned if both values are NaN.
+//! @param[in] __a The first value.
+//! @param[in] __b The second value.
+//! @return The larger of `__a` and `__b`.
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(::cuda::std::__is_extended_arithmetic_v<_Tp>)
+[[nodiscard]] _CCCL_TRIVIAL_API constexpr _Tp max(_Tp __a, _Tp __b) noexcept
+{
+  return ::cuda::maximum<_Tp>{}(__a, __b);
+}
+
+// See cuda::min
+_CCCL_TEMPLATE(int = 0, class _Tp, class _Up)
+_CCCL_REQUIRES((!::cuda::std::is_same_v<_Tp, _Up>) )
+_CCCL_API _Tp max(_Tp, _Up) = delete;
+
+_CCCL_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA___CMATH_MIN_MAX_H
