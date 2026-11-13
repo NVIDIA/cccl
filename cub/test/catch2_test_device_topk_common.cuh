@@ -107,12 +107,15 @@ void expect_batched_topk_unsupported_and_skip(DispatchFn&& dispatch)
 //                                `num_stream_stages` <, ==, > `prologue` stage-schedule trichotomy.
 //   * `MinChunksPerBlock`     -- raise the chunks-per-block divisor to collapse the logical cluster below the
 //                                physical width (idle-rank early-out).
+//   * `BitsPerPass`           -- pin the radix digit width, for tests whose keys are built around a specific
+//                                pass/bucket structure.
 template <int MaxBlocksPerCluster,
           int MaxChunkSlotsPerBlock = 0,
           int SingleBlockMaxSegSize = -1,
           int ChunkBytes            = 0,
           int PipelineStages        = 0,
-          int MinChunksPerBlock     = 0>
+          int MinChunksPerBlock     = 0,
+          int BitsPerPass           = 0>
 struct cluster_tuning_selector
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
@@ -139,6 +142,10 @@ struct cluster_tuning_selector
     if constexpr (MinChunksPerBlock != 0)
     {
       cluster.min_chunks_per_block = MinChunksPerBlock;
+    }
+    if constexpr (BitsPerPass != 0)
+    {
+      cluster.bits_per_pass = BitsPerPass;
     }
     return cub::detail::batched_topk::topk_policy{
       cub::detail::batched_topk::topk_algorithm::cluster, cub::detail::batched_topk::make_baseline_policy(), cluster};

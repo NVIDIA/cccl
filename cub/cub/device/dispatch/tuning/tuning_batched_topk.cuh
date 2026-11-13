@@ -253,8 +253,10 @@ struct cluster_topk_policy
   // at any cap: a segment that no longer fits resident simply streams the remainder from global memory.
   int max_blocks_per_cluster; //!< Upper bound on the launched cluster width (CTAs per segment); 0 = unrestricted (the
                               //!< hardware cluster-width ceiling, queried from the runtime). Non-zero is additionally
-                              //!< clamped to that same ceiling. A cap narrower than a segment needs pushes it into the
-                              //!< streaming fallback (cap 1 -> single-CTA streaming).
+                              //!< clamped to that same ceiling and so that the per-pass histogram fold fits one
+                              //!< mbarrier transaction count (see
+                              //!< `batched_topk_cluster::effective_max_cluster_blocks`). A cap narrower than a segment
+                              //!< needs pushes it into the streaming fallback (cap 1 -> single-CTA streaming).
   int max_chunk_slots_per_block; //!< Upper bound on resident chunk slots per block; 0 = unrestricted (the full
                                  //!< shared-memory budget: the hardware opt-in budget). A smaller cap shrinks each
                                  //!< CTA's resident capacity (and thus its dynamic shared-memory request), so a smaller

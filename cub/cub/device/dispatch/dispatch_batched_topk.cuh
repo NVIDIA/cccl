@@ -386,12 +386,12 @@ _CCCL_HOST_API ::cuda::std::expected<cluster_launch_shape, cudaError_t> select_c
     {
       return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(cudaErrorInvalidValue);
     }
-    // `max_blocks_per_cluster == 0` -> the full hardware ceiling; a non-zero knob narrows it, clamped to that ceiling.
-    // A cap narrower than a segment needs pushes it into the oversize/streaming fallback below.
+    // The policy's own bound clamped to the hardware ceiling. A cap narrower than a segment needs pushes it into the
+    // oversize/streaming fallback below.
     const int eff_max_blocks_per_cluster =
-      (policy.max_blocks_per_cluster == 0)
-        ? *hw_cluster_ceiling
-        : (::cuda::std::min) (policy.max_blocks_per_cluster, *hw_cluster_ceiling);
+      (::cuda::std::min) (batched_topk_cluster::effective_max_cluster_blocks(
+                            policy.bits_per_pass, policy.max_blocks_per_cluster),
+                          *hw_cluster_ceiling);
 
     // Wave-aware selection: the free variable is the cluster block count (one cluster per segment), paired with the
     // smallest SMEM that keeps the segment fully resident (fewer blocks = more SMEM/fewer clusters-per-wave, more =
