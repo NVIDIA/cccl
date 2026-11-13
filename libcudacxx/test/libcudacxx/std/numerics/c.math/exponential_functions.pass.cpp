@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
+
 // UNSUPPORTED: force-tile
 // error calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
 
@@ -416,6 +419,51 @@ TEST_HOST_DEVICE_FUNC void test(const T val)
   test_pow<T>(val);
 }
 
+#if _CCCL_HAS_FLOAT128()
+TEST_HOST_DEVICE_FUNC void test_float128_frexp_edge_cases()
+{
+  using T      = __float128;
+  int exponent = 0;
+
+  assert(eq(cuda::std::frexp(T(3), &exponent), T(0.75)));
+  assert(exponent == 2);
+  assert(eq(cuda::std::frexp(T(-6), &exponent), T(-0.75)));
+  assert(exponent == 3);
+
+  // binary128 keeps mantissa bits well beyond the double precision
+  const T two_pow_66 = T(1ull << 63) * T(8);
+  const T big        = two_pow_66 / T(2) + T(0.5); // 2^65 + 0.5
+  assert(eq(cuda::std::frexp(big, &exponent) * two_pow_66, big));
+  assert(exponent == 66);
+
+  const T max_mant = cuda::std::frexp(cuda::std::numeric_limits<T>::max(), &exponent);
+  assert(max_mant >= T(0.5) && max_mant < T(1));
+  assert(exponent == 16384);
+
+  assert(eq(cuda::std::frexp(cuda::std::numeric_limits<T>::min(), &exponent), T(0.5)));
+  assert(exponent == -16381);
+
+  // subnormals
+  assert(eq(cuda::std::frexp(cuda::std::numeric_limits<T>::denorm_min(), &exponent), T(0.5)));
+  assert(exponent == -16493);
+  assert(eq(cuda::std::frexp(cuda::std::numeric_limits<T>::denorm_min() * T(5), &exponent), T(0.625)));
+  assert(exponent == -16491);
+  assert(eq(cuda::std::frexp(-cuda::std::numeric_limits<T>::min() / T(4), &exponent), T(-0.5)));
+  assert(exponent == -16383);
+
+  // zero keeps its sign
+  assert(cuda::std::signbit(cuda::std::frexp(T(-0.0), &exponent)));
+  assert(!cuda::std::signbit(cuda::std::frexp(T(0.0), &exponent)));
+}
+
+// Only frexp supports __float128 so far, so the generic driver can not be used
+TEST_HOST_DEVICE_FUNC void test_float128(const float val)
+{
+  test_frexp<__float128>(val);
+  test_float128_frexp_edge_cases();
+}
+#endif // _CCCL_HAS_FLOAT128()
+
 TEST_HOST_DEVICE_FUNC void test(const float val)
 {
   test<float>(val);
@@ -430,6 +478,9 @@ TEST_HOST_DEVICE_FUNC void test(const float val)
 #if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>(val);
 #endif // _LIBCUDACXX_HAS_NVBF16()
+#if _CCCL_HAS_FLOAT128()
+  test_float128(val);
+#endif // _CCCL_HAS_FLOAT128()
 
   test<unsigned short>(static_cast<unsigned short>(val));
   test<int>(static_cast<int>(val));

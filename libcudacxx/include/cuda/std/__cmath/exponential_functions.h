@@ -149,12 +149,54 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #  define _CCCL_BUILTIN_FREXPL(...) __builtin_frexpl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_frexp)
 
+#if _CCCL_HAS_FLOAT128()
+#  if _CCCL_CHECK_BUILTIN(builtin_frexpf128)
+#    define _CCCL_BUILTIN_FREXPF128(...) __builtin_frexpf128(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_frexpf128)
+#endif // _CCCL_HAS_FLOAT128()
+
 // clang-cuda fails with fatal error: error in backend: Undefined external symbol "frexp"
 #if _CCCL_CUDA_COMPILER(CLANG)
 #  undef _CCCL_BUILTIN_FREXPF
 #  undef _CCCL_BUILTIN_FREXP
 #  undef _CCCL_BUILTIN_FREXPL
+#  undef _CCCL_BUILTIN_FREXPF128
 #endif // _CCCL_CUDA_COMPILER(CLANG)
+
+// nvcc doesn't implement __builtin_frexpf128 on device
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_FREXPF128
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+
+#if _CCCL_HAS_FLOAT128()
+// Portable frexp of __float128, used when neither a host builtin nor a device intrinsic is available
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __float128 __frexp_fp128_impl(__float128 __x, int* __e) noexcept
+{
+  constexpr auto __fmt       = __fp_format_of_v<__float128>;
+  constexpr int __bias       = __fp_exp_bias_v<__fmt>;
+  constexpr int __mant_nbits = __fp_mant_nbits_v<__fmt>;
+
+  if (__x == 0 || ::cuda::std::isinf(__x) || ::cuda::std::isnan(__x))
+  {
+    // zero, infinity and NaN are returned unchanged
+    *__e = 0;
+    return __x;
+  }
+
+  int __exp_biased = ::cuda::std::__fp_get_exp_biased(__x);
+  int __exp_offset = 0;
+  if (__exp_biased == 0)
+  {
+    // scaling a subnormal into the normal range is exact
+    __x *= ::cuda::std::__fp_set_exp(__float128(1), __mant_nbits + 1);
+    __exp_biased = ::cuda::std::__fp_get_exp_biased(__x);
+    __exp_offset = __mant_nbits + 1;
+  }
+  // the result lies in [0.5, 1), which has the biased exponent __bias - 1
+  *__e = __exp_biased - __exp_offset - (__bias - 1);
+  return ::cuda::std::__fp_set_exp_biased(__x, __bias - 1);
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float frexp(float __x, int* __e) noexcept
 {
@@ -216,6 +258,18 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
   return __float2bfloat16(::cuda::std::frexpf(__bfloat162float(__x), __e));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __float128 frexp(__float128 __x, int* __e) noexcept
+{
+#  if defined(_CCCL_BUILTIN_FREXPF128)
+  return _CCCL_BUILTIN_FREXPF128(__x, __e);
+#  else // ^^^ _CCCL_BUILTIN_FREXPF128 ^^^ / vvv !_CCCL_BUILTIN_FREXPF128 vvv
+  NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_frexp(__x, __e);))
+  return ::cuda::std::__frexp_fp128_impl(__x, __e);
+#  endif // ^^^ !_CCCL_BUILTIN_FREXPF128 ^^^
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double frexp(_Integer __x, int* __e) noexcept
