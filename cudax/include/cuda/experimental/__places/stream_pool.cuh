@@ -29,9 +29,11 @@
 #endif
 
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <memory>
 #include <mutex>
+#include <tuple>
 #include <vector>
 
 #include <cuda.h>
@@ -58,13 +60,18 @@ class exec_place;
 /**
  * @brief Computes the CUDA device in which the stream was created
  *
- * While @p stream is capturing, the query is only made with a CTK 13
- * runtime, where `cudaStreamGetDevice` succeeds during thread-local, relaxed
- * and global capture without invalidating it. With a CTK 12 runtime the
- * answer depends on the driver: `cudaStreamGetDevice` (12.8, 12.9) is
- * rejected with `cudaErrorStreamCaptureUnsupported` on some of them, so the
- * current device is returned instead. That guess is only correct when the
- * capturing thread's current device is the stream's device; a wrong one puts
+ * The device is read from the stream's context through the driver API
+ * (`cuStreamGetCtx`, then `cuCtxGetDevice` on that context). This is the
+ * path `stream_and_event::insert_dependency` has always run on captured
+ * streams, and it is accepted during thread-local, relaxed and global
+ * capture without invalidating it (verified on drivers 580 and 595).
+ *
+ * `cudaStreamGetDevice` is deliberately not used: whether it is permitted
+ * during capture depends on the driver, not on the toolkit (rejected with
+ * `cudaErrorStreamCaptureUnsupported` by cudart 12.9 on driver 595 and by
+ * cudart 13.0 on driver 580, accepted on driver 615).
+ *
+ * Answering from a guess (the current device) instead of a query is what put
  * transient events in the wrong device's context on multi-GPU systems
  * (`cudaErrorInvalidResourceHandle` at event-record time).
  */
@@ -75,28 +82,19 @@ inline int get_device_from_stream(cudaStream_t stream)
     return cuda_try<cudaGetDevice>();
   }
 
-#if _CCCL_CTK_AT_LEAST(13, 0)
-  return cuda_try<cudaStreamGetDevice>(stream);
-#else
-  if (is_stream_capturing(stream))
+  CUcontext ctx = cuda_try<cuStreamGetCtx>(CUstream(stream));
+
+  cuda_try<cuCtxPushCurrent>(ctx);
+  // Restoring the thread's context is not a release: if it fails, everything after runs on the
+  // wrong context and fails somewhere unrelated. Report and abort.
+  SCOPE(exit)
   {
-    return cuda_try<cudaGetDevice>();
-  }
-
-#  if _CCCL_CTK_AT_LEAST(12, 8)
-  return cuda_try<cudaStreamGetDevice>(stream);
-#  else
-  auto stream_driver = CUstream(stream);
-
-  CUcontext ctx = cuda_try<cuStreamGetCtx>(stream_driver);
-
-  cuda_try(cuCtxPushCurrent(ctx));
-  CUdevice stream_dev = cuda_try<cuCtxGetDevice>();
-  static_cast<void>(cuda_try<cuCtxPopCurrent>());
-
-  return static_cast<int>(stream_dev);
-#  endif
-#endif
+    ON_THROW(abort)
+    {
+      ::std::ignore = cuda_try<cuCtxPopCurrent>();
+    };
+  };
+  return static_cast<int>(cuda_try<cuCtxGetDevice>());
 }
 
 /** Sentinel for "no stream" / empty slot. Distinct from any value returned by cuStreamGetId. */
