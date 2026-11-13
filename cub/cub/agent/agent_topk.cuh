@@ -22,8 +22,10 @@
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/topk_helpers.cuh>
 #include <cub/detail/uninitialized.cuh>
+#include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__memory/assume_aligned.h>
 #include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
@@ -266,14 +268,17 @@ struct AgentTopK
 
     const OffsetT items_per_pass =
       static_cast<OffsetT>(tile_items * gridDim.x); // NOLINT(bugprone-misplaced-widening-cast)
-    const OffsetT total_num_blocks = ::cuda::ceil_div(num_items, tile_items);
+    // The number of tiles fits into an int, only the offsets of the items need OffsetT
+    const int total_num_blocks = static_cast<int>(::cuda::ceil_div(num_items, tile_items));
 
     const OffsetT num_remaining_elements = num_items % tile_items;
-    const OffsetT last_block_id          = (total_num_blocks - 1) % gridDim.x;
+    const unsigned int last_block_id     = static_cast<unsigned int>(total_num_blocks - 1) % gridDim.x;
 
     OffsetT tile_base = static_cast<OffsetT>(blockIdx.x * tile_items); // NOLINT(bugprone-misplaced-widening-cast)
     OffsetT offset    = threadIdx.x * items_per_thread + tile_base;
 
+    // Unrolled, the loop keeps the keys of several tiles in registers, which costs occupancy
+    _CCCL_PRAGMA_NOUNROLL()
     for (int i_block = static_cast<int>(blockIdx.x); i_block < total_num_blocks - 1;
          i_block += static_cast<int>(gridDim.x))
     {
@@ -457,6 +462,8 @@ struct AgentTopK
     }
     else
     {
+      // The candidate buffers are allocations of alias_temporaries
+      in_buf = ::cuda::std::assume_aligned<alias_temporaries_alignment>(in_buf);
       if (early_stop)
       {
         process_range(in_buf, previous_len, f_early_stop);
@@ -643,6 +650,8 @@ struct AgentTopK
     }
     else
     {
+      // The candidate buffers are allocations of alias_temporaries
+      in_buf = ::cuda::std::assume_aligned<alias_temporaries_alignment>(in_buf);
       process_range(in_buf, current_len, f);
     }
   }
