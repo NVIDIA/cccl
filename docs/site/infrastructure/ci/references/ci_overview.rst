@@ -160,4 +160,4 @@ invocation. Pull the same container and run the same ``ci/build_<project>.sh`` o
 :ref:`infra-ci-reproducing-locally`. For targeted single-test iteration,
 ``ci/util/build_and_test_targets.sh`` builds and runs a named subset, covered at
 :ref:`infra-ci-targeted-builds`; for a regression hunt, see
-:doc:`/cccl/development/build_and_bisect_tools`.
+:doc:`cpp:cccl/development/build_and_bisect_tools`.

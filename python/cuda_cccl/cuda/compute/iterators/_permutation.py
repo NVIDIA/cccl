@@ -20,7 +20,7 @@ class PermutationIterator(IteratorBase):
 
     At position i, yields values[indices[i]].
 
-    Similar to `thrust::permutation_iterator <https://nvidia.github.io/cccl/thrust/api/classthrust_1_1permutation__iterator.html>`_.
+    Similar to `thrust::permutation_iterator <https://nvidia.github.io/cccl/cpp/unstable/thrust/api/classthrust_1_1permutation__iterator.html>`_.
 
     Example:
         The code snippet below demonstrates accessing values through an index mapping.

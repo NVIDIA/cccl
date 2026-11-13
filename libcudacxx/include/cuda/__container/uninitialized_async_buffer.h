@@ -45,8 +45,6 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @rst
-//! .. _libcudacxx-containers-uninitialized-async-buffer:
-//!
 //! Uninitialized stream-ordered type-safe memory storage
 //! ------------------------------------------------------
 //!

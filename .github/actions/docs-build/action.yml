@@ -11,18 +11,21 @@ inputs:
 runs:
   using: "composite"
   steps:
-    # Build all docs (gen_docs.bash detects and installs missing deps)
-    - name: Build all docs
-      shell: bash --noprofile --norc -euo pipefail {0}
-      run: ./docs/gen_docs.bash --allow-dep-install
-
-    # Copy all docs to the right folder
-    - name: Move docs to right folder
+    # registry.py imports PyYAML, so the docs environment is created before
+    # anything reads the registry. The build scripts reuse this venv, and the
+    # runner's system Python is left alone.
+    - name: Set up the docs environment
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        mkdir -p _site
-        cp -rf ./docs/_build/html/* _site/
-        touch _site/.nojekyll
+        python3 -m venv docs/env
+        docs/env/bin/python -m pip install --quiet -r docs/requirements.txt
+
+    # The deploy's assembly, minus seeding from and publishing to gh-pages: every
+    # product in docs/registry.yml plus the root project, which holds the
+    # contributor and maintainer docs. Warnings are errors throughout.
+    - name: Build all docs
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: docs/env/bin/python docs/build_site.py
 
     # Update docs as workflow artifact:
     - name: Upload artifact
@@ -30,5 +33,5 @@ runs:
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
       with:
         name: docs
-        path: _site/
+        path: docs/_site/
         compression-level: 0

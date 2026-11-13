@@ -9,3 +9,4 @@ sphinx-design>=0.6.1
 nbsphinx>=0.9.0
 numpydoc>=1.5.0
 numpy>=1.24.0  # Required for type annotations in Python modules
+pyyaml>=6.0  # Read by docs/registry.py, which every conf.py imports

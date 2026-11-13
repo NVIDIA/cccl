@@ -38,7 +38,7 @@ available. In CI, they may download GHA artifacts instead.
     ./ci/test_cub.sh  -cxx g++ -std 17 -arch "70;80;90"
 
 For fast local iteration on a single target rather than a whole project, see
-:doc:`/cccl/development/build_and_bisect_tools`.
+:doc:`cpp:cccl/development/build_and_bisect_tools`.
 
 Testing Python in a minimal container
 -------------------------------------

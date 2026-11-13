@@ -1,0 +1,158 @@
+# Build and publish the documentation site.
+#
+# One root Sphinx project indexes the products; each product is built separately
+# and composed into a complete site, which is published as a single commit.
+#
+#   push to main      every product at unstable/
+#   dispatch a tag    that tag's product, under its exact version
+#
+# The published branch is recreated from the artifact on every deploy, which
+# keeps it at one commit and the repository's clones small. That is safe because
+# the artifact is seeded from what is already published.
+name: Build documentation site
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      git-tag:
+        description: "Release tag to publish, e.g. v3.5.0. Leave blank to publish every product at unstable."
+        required: false
+        type: string
+        default: ""
+      source-ref:
+        description: "What to build from. Defaults to the tag itself; set it to publish a tag whose own tree cannot build these docs."
+        required: false
+        type: string
+        default: ""
+      docs-branch:
+        description: "Target branch: gh-pages, or gh-pages-<name> to rehearse."
+        required: false
+        type: string
+        default: gh-pages
+
+# Two runs publishing the same branch would each seed from the tip as it stood
+# when they started, so the one that finished second would drop what the first
+# added. Runs on a branch are therefore serialized, and a publish already under
+# way is never cancelled. GitHub keeps only the newest waiting run, though, so a
+# release dispatched while a publish runs is cancelled if a later push queues
+# behind it, and has to be dispatched again.
+concurrency:
+  group: docs-publish-${{ inputs.docs-branch || 'gh-pages' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ${{ github.repository == 'NVIDIA/cccl' && 'linux-amd64-cpu32' || 'ubuntu-latest' }}
+    permissions:
+      contents: write
+    steps:
+      # fetch-depth: 0 because the assembly reads the published branch. git-tag
+      # names the version and, by default, is also what gets built. source-ref
+      # overrides the latter for tags too old to build these docs themselves; a
+      # version published that way is reproducible from that ref, not its tag.
+      # The token is not persisted: later fetches read a public repository
+      # anonymously, and the publish step brings its own.
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6
+        with:
+          ref: ${{ inputs.source-ref || inputs.git-tag || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      # registry.py imports PyYAML, so the docs environment is created before
+      # anything reads the registry. The build scripts reuse this venv, and the
+      # runner's system Python is left alone.
+      - name: Set up the docs environment
+        shell: bash --noprofile --norc -euo pipefail {0}
+        run: |
+          python3 -m venv docs/env
+          docs/env/bin/python -m pip install --quiet -r docs/requirements.txt
+
+      - name: Resolve what to build
+        id: plan
+        shell: bash --noprofile --norc -euo pipefail {0}
+        env:
+          GIT_TAG: ${{ inputs.git-tag }}
+          DOCS_BRANCH: ${{ inputs.docs-branch || 'gh-pages' }}
+        run: |
+          # Only gh-pages, or a gh-pages-<name> rehearsal branch: the deploy
+          # recreates its target branch from scratch.
+          if [[ ! "${DOCS_BRANCH}" =~ ^gh-pages(-[A-Za-z0-9._-]+)?$ ]]; then
+            echo "error: docs-branch must be gh-pages or gh-pages-<name>, got '${DOCS_BRANCH}'." >&2
+            exit 1
+          fi
+          echo "branch=${DOCS_BRANCH}" >> "${GITHUB_OUTPUT}"
+
+          # Pages serves <owner>.github.io/<repo> with the owner lowercased; for
+          # NVIDIA/cccl that is exactly the production URL.
+          owner="$(printf '%s' "${GITHUB_REPOSITORY%%/*}" | tr '[:upper:]' '[:lower:]')"
+          echo "site_url=https://${owner}.github.io/${GITHUB_REPOSITORY#*/}" >> "${GITHUB_OUTPUT}"
+
+          if [[ -z "${GIT_TAG}" ]]; then
+            # Development: every product in the registry, at unstable.
+            echo "label=unstable" >> "${GITHUB_OUTPUT}"
+            echo "product=" >> "${GITHUB_OUTPUT}"
+          else
+            # Release: the tag names the product and the version. The registry
+            # owns that mapping, so a new product is routable by being added.
+            docs/env/bin/python - "${GIT_TAG}" >> "${GITHUB_OUTPUT}" <<'PY'
+          import sys
+          sys.path.insert(0, "docs")
+          import registry
+          key, version = registry.resolve_tag(sys.argv[1])
+          print(f"label={version}")
+          print(f"product={key}")
+          PY
+          fi
+
+      # Into a remote-tracking ref, not FETCH_HEAD, which any later fetch
+      # overwrites: the assembly and the manifest generator both read it.
+      - name: Fetch the published site
+        shell: bash --noprofile --norc -euo pipefail {0}
+        env:
+          BRANCH: ${{ steps.plan.outputs.branch }}
+        run: |
+          if ! git fetch --depth=1 origin \
+                 "+refs/heads/${BRANCH}:refs/remotes/origin/${BRANCH}"; then
+            # An absent ref means a first publication and the assembly seeds
+            # nothing. A fetch that merely failed looks identical from there,
+            # and force_orphan would publish a site missing every version. Ask
+            # the remote which one this is.
+            if git ls-remote --exit-code origin "refs/heads/${BRANCH}" >/dev/null 2>&1; then
+              echo "error: ${BRANCH} exists on the remote but could not be fetched." >&2
+              echo "       Refusing to publish a site seeded from nothing." >&2
+              exit 1
+            fi
+            echo "${BRANCH} is not on the remote yet -- first publication"
+          fi
+
+      - name: Build and assemble
+        shell: bash --noprofile --norc -euo pipefail {0}
+        env:
+          CCCL_DOCS_SITE_URL: ${{ steps.plan.outputs.site_url }}
+          CCCL_DOCS_BRANCH: origin/${{ steps.plan.outputs.branch }}
+          LABEL: ${{ steps.plan.outputs.label }}
+          PRODUCT: ${{ steps.plan.outputs.product }}
+        run: |
+          args=(--label "${LABEL}" --seed-from "${CCCL_DOCS_BRANCH}")
+          if [[ -n "${PRODUCT}" ]]; then
+            args+=(--product "${PRODUCT}")
+          fi
+          docs/env/bin/python docs/build_site.py "${args[@]}"
+
+      # The artifact is the complete site, so recreating the branch from it
+      # loses nothing. One commit, every version, a small clone.
+      - name: Publish
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453  # v4.1.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: ${{ steps.plan.outputs.branch }}
+          publish_dir: docs/_site
+          destination_dir: docs
+          force_orphan: true

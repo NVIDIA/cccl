@@ -129,7 +129,7 @@ knowledge_base:
       - ".agent/skills/cccl-test/SKILL.md"
       - ".agent/skills/cccl-test/references/common.md"
       - ".agent/skills/cccl-test/references/libcudacxx.md"
-      - "docs/contributors/index.rst"
+      - "docs/site/contributors/index.rst"
       - "docs/cccl/config_macros.rst"
       - "docs/cccl/development/macro.rst"
       - "docs/cccl/development/visibility.rst"

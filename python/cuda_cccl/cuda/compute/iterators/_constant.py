@@ -21,7 +21,7 @@ class ConstantIterator(IteratorBase):
     """
     Iterator representing a sequence of constant values.
 
-    Similar to `thrust::constant_iterator <https://nvidia.github.io/cccl/thrust/api/classthrust_1_1constant__iterator.html>`_.
+    Similar to `thrust::constant_iterator <https://nvidia.github.io/cccl/cpp/unstable/thrust/api/classthrust_1_1constant__iterator.html>`_.
 
     Every dereference returns the same constant value.
 

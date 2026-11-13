@@ -8,16 +8,9 @@ from datetime import datetime
 # Add extension directory to path
 sys.path.insert(0, os.path.abspath("_ext"))
 
-# Add Python CCCL packages to path for autodoc. cuda-cccl, cuda-coop, and
-# cuda-stf are separate distributions that contribute to the shared ``cuda``
-# namespace.
-for _pkg in ("../python/cuda_cccl", "../python/cuda_coop", "../python/cuda_stf"):
-    python_package_path = os.path.abspath(_pkg)
-    if os.path.exists(python_package_path):
-        sys.path.insert(0, python_package_path)
-
-# Note: numpy is installed as a real dependency (see requirements.txt)
-# This avoids issues with type annotations using union syntax (ndarray | type)
+# The C++ product only. The Python libraries are a separate product, configured
+# in docs/python/conf.py; nothing here imports, mocks or cross-references them,
+# so this build works with the Python sources absent.
 
 # -- Project information -----------------------------------------------------
 
@@ -41,10 +34,6 @@ version = release
 # -- General configuration ---------------------------------------------------
 
 extensions = [
-    "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
-    "sphinx.ext.intersphinx",
-    "sphinx.ext.napoleon",
     "sphinx.ext.extlinks",
     "sphinx.ext.mathjax",
     "sphinx.ext.graphviz",
@@ -54,7 +43,6 @@ extensions = [
     # "exhale",  # Disabled - causing build timeouts, API docs handled by breathe
     "sphinx_design",  # For dropdown, card, and other directives
     "sphinx_copybutton",
-    "coop_visualization",  # Interactive cooperative primitives with RST fallbacks
     "nbsphinx",
     # "rst_processor",  # Disabled - breathe handles embed:rst natively
     "auto_api_generator",  # Automatically generate API reference pages from Doxygen XML
@@ -111,11 +99,20 @@ source_suffix = {
 
 templates_path = ["_templates"]
 
-# Exclude patterns
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import registry  # noqa: E402
+
 exclude_patterns = [
+    # The other projects' source roots sit inside this one (docs/). Read from
+    # registry.yml, so a new product is excluded by being added.
+    *registry.exclude_patterns("cpp"),
     "_build",
     "_repo",
     "tools",
+    # Any loose .md in this directory needs an entry here: MyST would otherwise
+    # treat it as a document, and a document in no toctree is a warning, which
+    # these builds treat as an error.
     "VERSION.md",
     "Thumbs.db",
     ".DS_Store",
@@ -132,10 +129,18 @@ html_theme = "nvidia_sphinx_theme"
 
 html_logo = "_static/nvidia-logo.png"
 
-html_baseurl = (
-    os.environ.get("CCCL_DOCS_BASE_URL", "https://nvidia.github.io/cccl/").rstrip("/")
-    + "/"
-)
+# Where this site is served from. The workflow sets it from the repository, so a
+# fork's switcher fetches the fork's manifest rather than production's.
+_site_root = os.environ.get(
+    "CCCL_DOCS_SITE_URL", registry.load()["site"]["base_url"]
+).rstrip("/")
+
+# This product's namespace, which holds its switcher manifest and versions.
+_component_root = f"{_site_root}/cpp/"
+
+# Pages are served from <component root>/<version>/, so the version is part of
+# the canonical URL; without it every version claims the same address.
+html_baseurl = f"{_component_root}{release}/"
 
 html_theme_options = {
     "icon_links": [
@@ -154,8 +159,24 @@ html_theme_options = {
     "footer_end": ["sphinx-version"],
     "sidebar_includehidden": True,
     "collapse_navigation": False,
+    # A reader landing on unstable/ must not mistake development documentation
+    # for a release.
+    **(
+        {
+            "announcement": (
+                "This is the <strong>development</strong> documentation, built "
+                "from the latest commit on <code>main</code>."
+            )
+        }
+        if release == "unstable"
+        else {}
+    ),
     "switcher": {
-        "json_url": f"{html_baseurl}nv-versions.json",
+        # Deliberately the component root, not html_baseurl: the manifest lists
+        # every version, so it cannot live inside one of them.
+        "json_url": f"{_component_root}nv-versions.json",
+        # Must equal the directory this build is served from, so the switcher
+        # highlights the entry the reader is actually on.
         "version_match": release,
     },
 }
@@ -172,116 +193,11 @@ html_title = "CUDA Core Compute Libraries"
 
 # -- Options for extensions --------------------------------------------------
 
-# Intersphinx mapping
-intersphinx_mapping = {
-    "python": ("https://docs.python.org/3/", None),
-    "numpy": ("https://numpy.org/doc/stable/", None),
-}
-
 # MyST parser configuration
 myst_enable_extensions = [
     "colon_fence",
     "deflist",
     "html_image",
-]
-
-# Napoleon settings
-napoleon_google_docstring = True
-napoleon_numpy_docstring = True
-napoleon_include_init_with_doc = False
-napoleon_include_private_with_doc = False
-napoleon_include_special_with_doc = True
-napoleon_use_admonition_for_examples = False
-napoleon_use_admonition_for_notes = False
-napoleon_use_admonition_for_references = False
-napoleon_use_ivar = False
-napoleon_use_param = True
-napoleon_use_rtype = True
-napoleon_preprocess_types = False
-napoleon_type_aliases = None
-
-# Autodoc settings
-autodoc_default_options = {
-    "members": True,
-    "member-order": "bysource",
-    "special-members": "__init__",
-    "undoc-members": True,
-    "exclude-members": "__weakref__",
-}
-
-# Enable type hints to be shown in the documentation
-autodoc_type_hints = "description"
-autodoc_type_aliases = {
-    "Operator": "Operator",
-    **{
-        name: name
-        for name in (
-            "BlockExchangeMode",
-            "BlockGroup",
-            "BlockLoadStoreAlgorithm",
-            "CommonNumericScalar",
-            "CommonShuffleMode",
-            "CommonThreadDataLike",
-            "IntegerValue",
-            "IntegralScalar",
-            "MemoryGroup",
-            "PortableNumericScalar",
-            "PortableThreadDataLike",
-            "ReduceAlgorithm",
-            "ReduceOperator",
-            "ReductionGroup",
-            "ScalarShuffleMode",
-            "ScanAlgorithm",
-            "ScanOperator",
-            "SignedIntegerScalar",
-            "ThreadDataLike",
-            "ValidItems",
-            "WarpGroup",
-            "WarpLoadStoreAlgorithm",
-        )
-    },
-}
-
-# Set Python domain primary for intersphinx
-primary_domain = "py"
-
-# Mock imports for Python documentation - these modules may not be installed
-autodoc_mock_imports = [
-    # Render real cooperative markers without initializing an optional compiler.
-    "numba_cuda_mlir",
-    "cuda.coop.numba_mlir._compiler._activation",
-    "numba",
-    "numba.core",
-    "numba.core.cgutils",
-    "numba.core.extending",
-    "numba.core.typing",
-    "numba.core.typing.ctypes_utils",
-    "numba.core.typing.templates",
-    "numba.cuda",
-    "numba.cuda.cudadecl",
-    "numba.cuda.dispatcher",
-    "numba.extending",
-    "numba.types",
-    "cuda.bindings",
-    "cuda.bindings.driver",
-    "cuda.bindings.runtime",
-    "cuda.core",
-    "cuda.core.experimental",
-    "cuda.core.experimental._utils",
-    "cuda.core.experimental._utils.cuda_utils",
-    "cuda.pathfinder",
-    "llvmlite",
-    "llvmlite.ir",
-    # numpy is installed as a real dependency (see requirements.txt)
-    "numpydoc_test_module",  # Mock to avoid import errors
-    "cupy",
-    "cuda.compute._bindings",
-    "cuda.compute._bindings_impl",
-    # STF's public API lives in a compiled Cython extension that is not built
-    # at docs time; mock it so the pure-Python helper layers in stf_api.rst
-    # (task_graph, interop.numba, interop.pytorch) can still be imported by autodoc.
-    "cuda.stf._experimental._stf_bindings",
-    "cuda.stf._experimental._stf_bindings_impl",
 ]
 
 # External links configuration
@@ -292,10 +208,6 @@ extlinks = {
 
 # Exhale not used - API documentation is handled directly through breathe directives
 
-# Napoleon configuration (handles NumPy-style docstrings)
-# Note: numpydoc settings removed as Napoleon is used instead
-
-# Config copybutton
 # Suppress specific warning categories that arise from breathe (Doxygen-to-Sphinx
 # bridge) limitations.  These cannot be fixed in our source headers or RST files.
 #
@@ -318,9 +230,6 @@ suppress_warnings = [
 ]
 
 copybutton_prompt_text = ">>> |$ |# "
-autosummary_imported_members = False
-autosummary_generate = True
-autoclass_content = "class"
 
 
 def setup(app):
