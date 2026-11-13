@@ -43,6 +43,7 @@ function end_group() {
     local blue="34"
 
     if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+        echo "End ${name}${duration:+ - Duration: ${duration}s}"
         echo "::endgroup::"
 
         if [[ "$build_status" -ne 0 ]]; then
