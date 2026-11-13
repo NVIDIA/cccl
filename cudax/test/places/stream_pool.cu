@@ -212,9 +212,7 @@ void test_device_from_capturing_stream(int ndevs)
 void test_device_from_green_context_stream(int ndevs)
 {
 #if _CCCL_CTK_AT_LEAST(12, 5)
-  int driver_version = 0;
-  cuda_try(cudaDriverGetVersion(&driver_version));
-  if (driver_version < 12050)
+  if (::cuda::__driver::__version_below(12, 5))
   {
     fprintf(stderr, "test_device_from_green_context_stream: skipped (driver < 12.5)\n");
     return;
