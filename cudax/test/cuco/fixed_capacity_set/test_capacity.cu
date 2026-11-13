@@ -15,6 +15,7 @@
 #include <cuda/std/limits>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 #include <cuda/stream>
 #include <cuda/type_traits>
 
@@ -27,6 +28,17 @@
 #include <testing.cuh>
 
 #include "test_common.cuh"
+
+template <class Set, class = void>
+inline constexpr bool has_capacity_rehash = false;
+
+template <class Set>
+inline constexpr bool has_capacity_rehash<
+  Set,
+  cuda::std::void_t<
+    decltype(cuda::std::declval<Set&>().rehash(cuda::std::declval<cuda::stream_ref>(), cuda::std::size_t{})),
+    decltype(cuda::std::declval<Set&>().rehash_async(cuda::std::declval<cuda::stream_ref>(), cuda::std::size_t{}))>> =
+  true;
 
 using probing_types =
   c2h::type_list<cudax::cuco::linear_probing<4, cuda::hash<int>>, cudax::cuco::double_hashing<2, cuda::hash<int>>>;
@@ -74,6 +86,8 @@ C2H_TEST("fixed_capacity_set capacity constructors", "[container][capacity]", pr
   static_assert(!cuda::std::is_copy_assignable_v<dynamic_set>);
   static_assert(cuda::std::is_nothrow_move_constructible_v<dynamic_set>);
   static_assert(cuda::std::is_nothrow_move_assignable_v<dynamic_set>);
+  static_assert(has_capacity_rehash<dynamic_set>);
+  static_assert(!has_capacity_rehash<static_set>);
 
   test_context context;
   const dynamic_set dynamic{context.stream, context.mr, requested, empty_key{-1}};
@@ -89,6 +103,10 @@ C2H_TEST("fixed_capacity_set capacity constructors", "[container][capacity]", pr
   const auto first       = cuda::counting_iterator<int>{0};
   auto results           = cuda::make_buffer<int>(context.stream, context.mr, num_keys, 0);
   REQUIRE(fixed.insert(context.stream, first, first + num_keys) == num_keys);
+  fixed.contains(context.stream, first, first + num_keys, results.begin());
+  REQUIRE(context.all_equal(results.data(), num_keys, 1));
+  fixed.rehash(context.stream);
+  REQUIRE(fixed.capacity() == valid);
   fixed.contains(context.stream, first, first + num_keys, results.begin());
   REQUIRE(context.all_equal(results.data(), num_keys, 1));
 
