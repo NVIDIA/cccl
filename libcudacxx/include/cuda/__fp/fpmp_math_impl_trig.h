@@ -49,7 +49,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  *   1. Argument reduction: x = n*(pi/2) + r, |r| <= pi/4
  *      - Tiny (|x| < pi/4): no reduction
  *      - Fast (|x| < 2^20): Cody-Waite with exact error tracking
- *        via two_mult_fma + two_sum (3-piece pi/2, ~70 bits)
+ *        via two_mult_fma + two_sum (4-piece pi/2, within 8.5e-32)
  *      - Large (|x| >= 2^20): Payne-Hanek using integer 2/pi table, combining
  *        x_hi and x_lo fractions in 64-bit fixed-point before converting to
  *        fp32mp2 (pure fp32 arithmetic, no fp64). Delivers ~46 bits in the
@@ -270,7 +270,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_trig_reduction(
   {
     /* -- Fast path: Cody-Waite for |x_hi| < 2^20 --
      *
-     * pi/2 split into 3 float pieces (~70 bits)
+     * pi/2 split into 4 float pieces, whose sum misses pi/2 by 8.5e-32.
      * C1 has 2 trailing zero mantissa bits, making n*C1 exact
      * for |n| < 2^12 via two_mult_fma, and accurate for larger n.
      *
@@ -283,6 +283,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_trig_reduction(
     constexpr _FpType __c1 = _FpType(1.5707962512969971e+000);
     constexpr _FpType __c2 = _FpType(7.5497894158615964e-008);
     constexpr _FpType __c3 = _FpType(5.3903029534742384e-015);
+    constexpr _FpType __c4 = _FpType(-0x1.cceba4p-74);
 
     int __n       = ::cuda::__fpmp_fp2int_rn(__x_hi * _FpType(0x1.45f306p-1f));
     _FpType __n_f = ::cuda::__fpmp_int2fp_rn<_FpType>(__n);
@@ -299,16 +300,29 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_trig_reduction(
      * then accumulate corrections with full precision.
      */
     __afloat __result(__s, __e);
-    __result = __result + __afloat(-__pl);
-    __result = __result + __afloat(__x_lo);
+    /* Subtracting pl and adding x_lo as single limbs gives the same values as adding them as
+     * pairs with a zero low word, in fewer operations, and makes sin, cos, sincos and tan 4-10%
+     * faster on sm_100 and sm_120. On sm_90, nvcc schedules the single-limb form worse: sin,
+     * cos and sincos ran 1-4% slower than with the pairs (tan 4% faster), so sm_90 keeps them.
+     */
+    NV_IF_ELSE_TARGET(NV_IS_EXACTLY_SM_90,
+                      (__result = __result + __afloat(-__pl); __result = __result + __afloat(__x_lo);),
+                      (__result = __result - __pl; __result = __result + __x_lo;))
 
     /* Exact product n*C2 = nC2_hi + nC2_lo via two_mult_fma */
     _FpType __n_c2_lo;
     _FpType __n_c2_hi = ::cuda::__fpmp_two_mult_fma(__n_f, __c2, &__n_c2_lo);
     __result          = __result - __afloat(__n_c2_hi, __n_c2_lo);
 
-    /* n*C3 is tiny (~10^-11), single-precision product suffices */
-    __result = __result + __afloat(::cuda::__fpmp_mul_rn(__n_f, -__c3));
+    /* nC3_hi + nC3_lo = n*(C3 + C4) to within 2^-47 * n*C3: n*C3 exactly, and n*C4 added
+     * to its low word by one fma. Near a multiple of pi/2, r is far smaller than n*C3, so
+     * neither rounding n*C3 (error up to 2^-24 * n*C3) nor cutting pi/2 at C3
+     * (error n * 9.5e-23) keeps the error small relative to r.
+     */
+    _FpType __n_c3_lo;
+    _FpType __n_c3_hi = ::cuda::__fpmp_two_mult_fma(__n_f, __c3, &__n_c3_lo);
+    __n_c3_lo         = ::cuda::__fpmp_fma_rn(__n_f, __c4, __n_c3_lo);
+    __result          = __result - __afloat(__n_c3_hi, __n_c3_lo);
 
     *__quadrant = __n;
     *__r_hi     = __result.hi();
@@ -456,7 +470,7 @@ __internal_fpmp2_cos_kernel(_FpType __x_hi, _FpType __x_lo, _FpType* __res_hi, _
 {
   using __ffloat = fp32mp2_low;
 
-  constexpr __ffloat __c1(-5.0000000000000000e-01);
+  constexpr float __c1(-0.5f);
   constexpr __ffloat __c2(4.1666666666666667e-02);
   constexpr __ffloat __c3(-1.3888888888888889e-03);
   constexpr float __c4(2.4801587301587302e-05f);
@@ -479,7 +493,7 @@ __internal_fpmp2_cos_kernel(_FpType __x_hi, _FpType __x_lo, _FpType* __res_hi, _
   __q          = __q * __x2 + __c2;
   __q          = __q * __x2 + __c1;
 
-  __ffloat __result = renormalize(__q * __x2 + __ffloat(_FpType(1)));
+  __ffloat __result = renormalize(__q * __x2 + 1.0f);
   *__res_hi         = __result.hi();
   *__res_lo         = __result.lo();
 }
@@ -1112,7 +1126,7 @@ __internal_fpmp2_asin(const float __x_hi, const float __x_lo, float* __res_hi, f
      *   asin(|x|) = pi/2 - 2*sqrty*(1 + y*P(y))
      * sqrt(y) returns NaN for y < 0 (i.e., |x| > 1), so NaN
      * propagates through the rest of the chain naturally. */
-    __ffloat __y = __ffloat(float(0.5f)) - __absx * __ffloat(float(0.5f));
+    __ffloat __y = 0.5f - __absx * 0.5f;
     float __sy_hi, __sy_lo;
     ::cuda::__fpmp2_sqrt(__y.hi(), __y.lo(), &__sy_hi, &__sy_lo);
     __ffloat __sy(__sy_hi, __sy_lo);
@@ -1121,7 +1135,7 @@ __internal_fpmp2_asin(const float __x_hi, const float __x_lo, float* __res_hi, f
     ::cuda::__internal_fpmp2_asin_poly<float>(__y, &__p);
 
     constexpr __ffloat __PIO2(1.5707963267948966);
-    __r = renormalize(__PIO2 - __ffloat(float(2)) * __sy * (__ffloat(float(1)) + __y * __p));
+    __r = renormalize(__PIO2 - __sy * 2.0f * (1.0f + __y * __p));
   }
 
   if (__is_neg)
@@ -1189,8 +1203,8 @@ __internal_fpmp2_acos(const float __x_hi, const float __x_lo, float* __res_hi, f
      * Polynomial P(y) is evaluated by `__internal_fpmp2_acos_poly`
      * (analogous to `__internal_fpmp2_asin_poly` used by the small
      *  branch and by asin). */
-    __ffloat __y     = __ffloat(float(1)) - __absx;
-    __ffloat __two_y = __ffloat(float(2)) * __y;
+    __ffloat __y     = 1.0f - __absx;
+    __ffloat __two_y = __y * 2.0f;
     float __s_hi, __s_lo;
     ::cuda::__fpmp2_sqrt(__two_y.hi(), __two_y.lo(), &__s_hi, &__s_lo);
     __ffloat __s(__s_hi, __s_lo);
@@ -1433,8 +1447,9 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
     __f_hi               = __renorm;
   }
 
-  /* Same 3-piece pi/2 as the Cody-Waite reduction, doubled to pi (~70 bits).
-   * Multiplying a float by 2 is exact, so these are the Cody-Waite pieces. */
+  /* The first three Cody-Waite pieces of pi/2, doubled to pi (within 1.9e-22; doubling a
+   * float is exact). pi * f involves no cancellation, so their truncation error stays
+   * relative to the angle and the fourth piece is not needed here. */
   constexpr float __pi1 = 2.0f * 1.5707962512969971e+00f;
   constexpr float __pi2 = 2.0f * 7.5497894158615964e-08f;
   constexpr float __pi3 = 2.0f * 5.3903029534742384e-15f;
@@ -1445,8 +1460,8 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
   float __q_lo       = 0.0f;
   const float __q_hi = ::cuda::__fpmp_two_mult_fma(__f_lo, __pi1, &__q_lo);
   __angle            = __angle + __afloat(__q_hi, __q_lo);
-  __angle            = __angle + __afloat(__f_hi * __pi2);
-  __angle            = __angle + __afloat(__f_hi * __pi3);
+  __angle            = __angle + ::cuda::__fpmp_mul_rn_nocontract(__f_hi, __pi2);
+  __angle            = __angle + ::cuda::__fpmp_mul_rn_nocontract(__f_hi, __pi3);
 
   float __s_hi, __s_lo, __c_hi, __c_lo;
   ::cuda::__internal_fpmp2_sin_kernel(__angle.hi(), __angle.lo(), &__s_hi, &__s_lo);
