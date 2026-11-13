@@ -1130,8 +1130,11 @@ struct partition_spec
   ::cuda::std::tuple<Specs...> values;
 };
 
+// Doxygen treats this deduction guide as a function that conflicts with the class.
+#ifndef _CCCL_DOXYGEN_INVOKED
 template <typename... Specs>
 partition_spec(Specs...) -> partition_spec<::cuda::std::decay_t<Specs>...>;
+#endif // _CCCL_DOXYGEN_INVOKED
 
 inline constexpr whole_dim_spec whole{};
 
