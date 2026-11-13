@@ -75,19 +75,28 @@ TEST_FUNC constexpr bool test_type()
   test_mul_overflow<Res, L, R>(1, -1, -1);
   test_mul_overflow<Res, L, R>(-1, -1, 1);
 
+  // nvcc 12.0 seems to have some issues during constant evaluation of this test. Works fine with later versions, so
+  // let's just disable this test.
+#if !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
   // 3. Test T(-1) * T_MIN case
   if constexpr (is_signed_v<L> && is_signed_v<R>)
   {
-    // nvcc 12.0 seems to have some issues during constant evaluation of this test. Works fine with later versions, so
-    // let's just disable this test.
-#if !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
     test_mul_overflow<Res, L, R>(lhs_min, -1, cuda::uabs(lhs_min));
     test_mul_overflow<Res, L, R>(-1, rhs_min, cuda::uabs(rhs_min));
     test_mul_overflow<Res, L, R>(-50000, -50000, 2500000000);
-#endif // !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
   }
 
-  // 4. Test other numbers
+  // 4. Test T_MIN * T_MIN and T_MAX * T_MAX
+  if constexpr (sizeof(L) < sizeof(cuda::std::__cccl_uintmax_t) && sizeof(R) < sizeof(cuda::std::__cccl_uintmax_t))
+  {
+    constexpr auto __max_nbits = cuda::std::max(cuda::std::__num_bits_v<L>, cuda::std::__num_bits_v<R>);
+    using _Up                  = cuda::std::__make_nbit_int_t<2 * __max_nbits, is_signed_v<L> || is_signed_v<R>>;
+    test_mul_overflow<Res, L, R>(lhs_min, rhs_min, _Up{lhs_min} * _Up{rhs_min});
+    test_mul_overflow<Res, L, R>(lhs_max, rhs_max, _Up{lhs_max} * _Up{rhs_max});
+  }
+#endif // !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
+
+  // 5. Test other numbers
   test_mul_overflow<Res, L, R>(17, 14, 238);
   test_mul_overflow<Res, L, R>(-254, 127, -32258);
   test_mul_overflow<Res, L, R>(1657, -13748, -22780436);
@@ -95,15 +104,6 @@ TEST_FUNC constexpr bool test_type()
   if constexpr (is_unsigned_v<L> && is_unsigned_v<Res>)
   {
     test_mul_overflow<Res, L, R>(lhs_max, 4, static_cast<Res>(lhs_max) << 2, sizeof(L) >= sizeof(Res));
-  }
-
-  // 5. Test T_MIN * T_MIN and T_MAX * T_MAX
-  if constexpr (sizeof(L) < sizeof(cuda::std::__cccl_uintmax_t) && sizeof(R) < sizeof(cuda::std::__cccl_uintmax_t))
-  {
-    constexpr auto __max_nbits = cuda::std::max(cuda::std::__num_bits_v<L>, cuda::std::__num_bits_v<R>);
-    using _Up                  = cuda::std::__make_nbit_int_t<2 * __max_nbits, is_signed_v<L> || is_signed_v<R>>;
-    test_mul_overflow<Res, L, R>(lhs_min, rhs_min, _Up{lhs_min} * _Up{rhs_min});
-    test_mul_overflow<Res, L, R>(lhs_max, rhs_max, _Up{lhs_max} * _Up{rhs_max});
   }
 
 #if _CCCL_HAS_INT128()
