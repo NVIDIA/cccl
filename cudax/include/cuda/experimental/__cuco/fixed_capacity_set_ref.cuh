@@ -28,6 +28,7 @@
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/pair.h>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
@@ -225,6 +226,43 @@ public:
   insert(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _Value __value) noexcept
   {
     return __impl_.template insert<false>(__group, __value);
+  }
+
+  //! @brief Inserts a key using one thread and returns an iterator to the stored key.
+  //!
+  //! Unlike `insert`, also returns the stored key, which may differ from the input key when an
+  //! equivalent key is already present.
+  //! @pre `cg_size == 1` and the key differs from the empty sentinel.
+  //! @tparam _Value Input type convertible to `key_type` and compatible with hashing and comparison
+  //! @param[in] __value Key to insert
+  //! @return An iterator to the stored equivalent key and whether the input key was inserted, or
+  //! `{end(), false}` if the set is full
+  //! @note The iterator points into the live slot storage and is invalidated when the container is
+  //! cleared or destroyed.
+  template <class _Value>
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::pair<const_iterator, bool> insert_and_find(_Value __value) noexcept
+  {
+    return __impl_.template insert_and_find<false>(__value);
+  }
+
+  //! @brief Cooperatively inserts a key and returns an iterator to the stored key.
+  //!
+  //! Unlike `insert`, also returns the stored key, which may differ from the input key when an
+  //! equivalent key is already present.
+  //! @pre All group members participate with the same key, which differs from the empty sentinel.
+  //! @tparam _ParentCG Parent cooperative group type
+  //! @tparam _Value Input type convertible to `key_type` and compatible with hashing and comparison
+  //! @param[in] __group Cooperative group of size `cg_size`
+  //! @param[in] __value Key to insert
+  //! @return An iterator to the stored equivalent key and whether the input key was inserted, or
+  //! `{end(), false}` if the set is full
+  //! @note The iterator points into the live slot storage and is invalidated when the container is
+  //! cleared or destroyed.
+  template <class _ParentCG, class _Value>
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::pair<const_iterator, bool>
+  insert_and_find(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _Value __value) noexcept
+  {
+    return __impl_.template insert_and_find<false>(__group, __value);
   }
 
   //! @brief Checks whether a key is present using one thread.
