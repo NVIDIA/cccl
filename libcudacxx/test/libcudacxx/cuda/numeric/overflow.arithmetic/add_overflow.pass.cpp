@@ -137,6 +137,16 @@ TEST_FUNC constexpr void test_type()
   {
     test_add_overflow<Result>(lhs_min, rhs_min, is_signed_v<Lhs> || is_signed_v<Rhs>);
   }
+  // 15. Adding minus one and max of an unsigned type (opposite signs, non-negative sum)
+  if constexpr (is_signed_v<Lhs> && is_unsigned_v<Rhs>)
+  {
+    test_add_overflow<Result>(Lhs{-1}, rhs_max, cuda::std::cmp_greater(rhs_max - 1u, result_max));
+  }
+  // 16. Adding max of an unsigned type and minus one
+  if constexpr (is_unsigned_v<Lhs> && is_signed_v<Rhs>)
+  {
+    test_add_overflow<Result>(lhs_max, Rhs{-1}, cuda::std::cmp_greater(lhs_max - 1u, result_max));
+  }
 }
 
 template <typename T, typename R>
