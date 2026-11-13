@@ -18,6 +18,7 @@
 
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
+#include "catch2_test_non_default_constructible.cuh"
 #include "cub/util_type.cuh"
 #include "cub_test_macros.h"
 
@@ -471,6 +472,170 @@ CUB_TEST("Device radix sort works with bits of custom i128_t keys (db)", "[radix
 
   REQUIRE(reference_keys.first == out_keys);
   REQUIRE(reference_keys.second == out_values);
+}
+
+// The stride makes keys use the upper bits of the key type, so all radix passes see non-trivial digits.
+constexpr int ndc_stride = 2049;
+
+struct ndc_key_decomposer_t
+{
+  __host__ __device__ cuda::std::tuple<int&> operator()(not_default_constructible_t& key) const
+  {
+    return {key.value};
+  }
+};
+
+CUB_TEST("Device radix sort works with non-default-constructible keys", "[radix][sort][device]", CUB_SMALL)
+{
+  const cuda::stream stream = c2h::make_current_device_stream();
+  const int num_items       = GENERATE(1, 500, 1000000);
+  const bool is_descending  = GENERATE(false, true);
+
+  // the input is always unsorted for the sort order requested
+  auto keys_in = make_ndc_buffer(stream, num_items, !is_descending, ndc_stride);
+  auto keys_out =
+    cuda::make_device_buffer<not_default_constructible_t>(stream, c2h::current_device(), num_items, cuda::no_init);
+
+  if (is_descending)
+  {
+    sort_keys_descending(keys_in.data(), keys_out.data(), num_items, ndc_key_decomposer_t{});
+  }
+  else
+  {
+    sort_keys(keys_in.data(), keys_out.data(), num_items, ndc_key_decomposer_t{});
+  }
+
+  REQUIRE_THAT(keys_out, Equals(make_ndc_buffer(stream, num_items, is_descending, ndc_stride)));
+}
+
+CUB_TEST("Device radix sort works with non-default-constructible keys (db)", "[radix][sort][device]", CUB_SMALL)
+{
+  const cuda::stream stream = c2h::make_current_device_stream();
+  const int num_items       = GENERATE(1, 500, 1000000);
+  const bool is_descending  = GENERATE(false, true);
+
+  auto keys_1 = make_ndc_buffer(stream, num_items, !is_descending, ndc_stride);
+  auto keys_2 =
+    cuda::make_device_buffer<not_default_constructible_t>(stream, c2h::current_device(), num_items, cuda::no_init);
+
+  cub::DoubleBuffer<not_default_constructible_t> keys(keys_1.data(), keys_2.data());
+
+  double_buffer_sort_t action(is_descending);
+  action.initialize();
+  launch(action, keys, num_items, ndc_key_decomposer_t{});
+  keys.selector = action.selector();
+  action.finalize();
+
+  const auto& keys_out = keys.Current() == keys_1.data() ? keys_1 : keys_2;
+  REQUIRE_THAT(keys_out, Equals(make_ndc_buffer(stream, num_items, is_descending, ndc_stride)));
+}
+
+CUB_TEST("Device radix sort can sort pairs with non-default-constructible keys and values",
+         "[radix][sort][device]",
+         CUB_SMALL)
+{
+  const cuda::stream stream = c2h::make_current_device_stream();
+  const int num_items       = GENERATE(1, 500, 1000000);
+  const bool is_descending  = GENERATE(false, true);
+
+  auto keys_in   = make_ndc_buffer(stream, num_items, !is_descending, ndc_stride);
+  auto values_in = make_ndc_buffer(stream, num_items);
+  auto keys_out =
+    cuda::make_device_buffer<not_default_constructible_t>(stream, c2h::current_device(), num_items, cuda::no_init);
+  auto values_out =
+    cuda::make_device_buffer<not_default_constructible_t>(stream, c2h::current_device(), num_items, cuda::no_init);
+
+  if (is_descending)
+  {
+    sort_pairs_descending(
+      keys_in.data(), keys_out.data(), values_in.data(), values_out.data(), num_items, ndc_key_decomposer_t{});
+  }
+  else
+  {
+    sort_pairs(keys_in.data(), keys_out.data(), values_in.data(), values_out.data(), num_items, ndc_key_decomposer_t{});
+  }
+
+  REQUIRE_THAT(keys_out, Equals(make_ndc_buffer(stream, num_items, is_descending, ndc_stride)));
+  // the key at index i is the i-th smallest (ascending) or i-th largest (descending) of the original, which started at
+  // index num_items - 1 - i in both cases
+  REQUIRE_THAT(values_out, Equals(make_ndc_buffer(stream, num_items, true)));
+}
+
+CUB_TEST("Device radix sort can sort pairs with non-default-constructible keys and values (db)",
+         "[radix][sort][device]",
+         CUB_SMALL)
+{
+  const cuda::stream stream = c2h::make_current_device_stream();
+  const int num_items       = GENERATE(1, 500, 1000000);
+  const bool is_descending  = GENERATE(false, true);
+
+  auto keys_1 = make_ndc_buffer(stream, num_items, !is_descending, ndc_stride);
+  auto keys_2 =
+    cuda::make_device_buffer<not_default_constructible_t>(stream, c2h::current_device(), num_items, cuda::no_init);
+  auto values_1 = make_ndc_buffer(stream, num_items);
+  auto values_2 =
+    cuda::make_device_buffer<not_default_constructible_t>(stream, c2h::current_device(), num_items, cuda::no_init);
+
+  cub::DoubleBuffer<not_default_constructible_t> keys(keys_1.data(), keys_2.data());
+  cub::DoubleBuffer<not_default_constructible_t> values(values_1.data(), values_2.data());
+
+  double_buffer_sort_t action(is_descending);
+  action.initialize();
+  launch(action, keys, values, num_items, ndc_key_decomposer_t{});
+  keys.selector   = action.selector();
+  values.selector = action.selector();
+  action.finalize();
+
+  const auto& keys_out   = keys.Current() == keys_1.data() ? keys_1 : keys_2;
+  const auto& values_out = values.Current() == values_1.data() ? values_1 : values_2;
+  REQUIRE_THAT(keys_out, Equals(make_ndc_buffer(stream, num_items, is_descending, ndc_stride)));
+  REQUIRE_THAT(values_out, Equals(make_ndc_buffer(stream, num_items, true)));
+}
+
+CUB_TEST("Device radix sort can sort pairs with non-default-constructible values", "[radix][sort][device]", CUB_SMALL)
+{
+  const cuda::stream stream = c2h::make_current_device_stream();
+  const int num_items       = GENERATE(1, 500, 1000000);
+  const bool is_descending  = GENERATE(false, true);
+
+  // plain integer keys, so no decomposer is involved
+  c2h::device_vector<std::uint32_t> keys_in(num_items);
+  thrust::sequence(c2h::device_policy, keys_in.begin(), keys_in.end());
+  if (!is_descending)
+  {
+    thrust::reverse(c2h::device_policy, keys_in.begin(), keys_in.end());
+  }
+  c2h::device_vector<std::uint32_t> keys_out(num_items);
+  auto values_in = make_ndc_buffer(stream, num_items);
+  auto values_out =
+    cuda::make_device_buffer<not_default_constructible_t>(stream, c2h::current_device(), num_items, cuda::no_init);
+
+  if (is_descending)
+  {
+    sort_pairs_descending(
+      thrust::raw_pointer_cast(keys_in.data()),
+      thrust::raw_pointer_cast(keys_out.data()),
+      values_in.data(),
+      values_out.data(),
+      num_items);
+  }
+  else
+  {
+    sort_pairs(thrust::raw_pointer_cast(keys_in.data()),
+               thrust::raw_pointer_cast(keys_out.data()),
+               values_in.data(),
+               values_out.data(),
+               num_items);
+  }
+
+  c2h::device_vector<std::uint32_t> expected_keys(num_items);
+  thrust::sequence(c2h::device_policy, expected_keys.begin(), expected_keys.end());
+  if (is_descending)
+  {
+    thrust::reverse(c2h::device_policy, expected_keys.begin(), expected_keys.end());
+  }
+  REQUIRE(keys_out == expected_keys);
+  REQUIRE_THAT(values_out, Equals(make_ndc_buffer(stream, num_items, true)));
 }
 
 #if TEST_LAUNCH != 1

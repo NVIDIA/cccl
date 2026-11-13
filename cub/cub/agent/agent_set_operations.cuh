@@ -20,7 +20,7 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/__memory/uninitialized_array.h>
+#include <cuda/__memory/uninitialized.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/popcount.h>
@@ -436,13 +436,13 @@ struct agent_set_op
 
     struct LoadStorage
     {
-      ::cuda::__uninitialized_array<int, block_threads> offset;
+      ::cuda::__uninitialized<int[block_threads]> offset;
       union
       {
         // Over-allocated by block_threads items so serial set operations can read one past their range (see
         // items_per_tile).
-        ::cuda::__uninitialized_array<key_type, items_per_tile + block_threads> keys_shared;
-        ::cuda::__uninitialized_array<value_type, items_per_tile + block_threads> values_shared;
+        ::cuda::__uninitialized<key_type[items_per_tile + block_threads]> keys_shared;
+        ::cuda::__uninitialized<value_type[items_per_tile + block_threads]> values_shared;
       };
     } load_storage;
   };

@@ -31,6 +31,7 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
 
+#include <cuda/__memory/uninitialized.h>
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -356,7 +357,9 @@ struct AgentRadixSortDownsweep
     OffsetT block_offset,
     OffsetT valid_items)
   {
-    ValueT values[ITEMS_PER_THREAD];
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    ::cuda::__uninitialized<ValueT[ITEMS_PER_THREAD]> values_storage;
+    auto& values = values_storage.alias();
 
     __syncthreads();
 
@@ -397,7 +400,9 @@ struct AgentRadixSortDownsweep
   template <bool FullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessTile(OffsetT block_offset, OffsetT valid_items = TILE_ITEMS)
   {
-    bit_ordered_type keys[ITEMS_PER_THREAD];
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    ::cuda::__uninitialized<bit_ordered_type[ITEMS_PER_THREAD]> keys_storage;
+    auto& keys = keys_storage.alias();
     int ranks[ITEMS_PER_THREAD];
     OffsetT relative_bin_offsets[ITEMS_PER_THREAD];
 
@@ -526,7 +531,9 @@ struct AgentRadixSortDownsweep
     // Simply copy the input
     while (block_end - block_offset >= TILE_ITEMS)
     {
-      T items[ITEMS_PER_THREAD];
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+      ::cuda::__uninitialized<T[ITEMS_PER_THREAD]> items_storage;
+      auto& items = items_storage.alias();
 
       _CUB::LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items);
       __syncthreads();
@@ -540,7 +547,9 @@ struct AgentRadixSortDownsweep
     {
       OffsetT valid_items = block_end - block_offset;
 
-      T items[ITEMS_PER_THREAD];
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+      ::cuda::__uninitialized<T[ITEMS_PER_THREAD]> items_storage;
+      auto& items = items_storage.alias();
 
       _CUB::LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items, valid_items);
       __syncthreads();
