@@ -39,6 +39,11 @@ struct WarpsInBlockMappingResult
     return 1;
   }
 
+  __device__ static constexpr cuda::std::size_t static_group_rank()
+  {
+    return 0;
+  }
+
   __device__ unsigned group_rank() const
   {
     return 0;

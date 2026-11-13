@@ -310,6 +310,14 @@ public:
     return _Group::template __count_as_impl<_Tp>(__mapping_result, __hier, __arg);
   }
 
+  //! @brief Returns the viewed group's rank known at compile time, or @c cuda::std::dynamic_extent.
+  template <class _Arg>
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr auto static_rank(const _Arg& __arg)
+    -> decltype(_Group::static_rank(__arg))
+  {
+    return _Group::static_rank(__arg);
+  }
+
   template <class _Tp, class _QueryMappingResult, class _Arg>
   [[nodiscard]] _CCCL_DEVICE_API static constexpr auto
   __rank_as_impl(const _QueryMappingResult& __mapping_result, const hierarchy_type& __hier, const _Arg& __arg)

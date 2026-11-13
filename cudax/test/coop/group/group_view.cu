@@ -49,6 +49,7 @@ __device__ void test_group_view(Config config, Level level)
 
     const cudax::coop::group_view<typename View::unit_type, View, typename View::__mapping_result_type> nested{view};
     static_assert(nested.static_count(level) == g.static_count(level));
+    static_assert(nested.static_rank(level) == 0);
     REQUIRE(nested.count(level) == g.count(level));
     REQUIRE(nested.template count_as<unsigned>(level) == g.template count_as<unsigned>(level));
     REQUIRE(nested.rank(level) == g.rank(level));
@@ -72,6 +73,7 @@ __device__ void test_group_view(Config config, Level level)
     }
 
     static_assert(gv.static_count(level) == 1);
+    static_assert(gv.static_rank(level) == 0);
     REQUIRE(gv.count(level) == 1);
     REQUIRE(gv.rank(level) == 0);
 
@@ -122,6 +124,7 @@ __device__ void test_group_view(Config config, Level level)
     }
 
     static_assert(gv.static_count(level) == 1);
+    static_assert(gv.static_rank(level) == 0);
     REQUIRE(gv.count(level) == 1);
     REQUIRE(gv.rank(level) == 0);
 
@@ -317,6 +320,7 @@ __device__ void test_nonuniform_group_view(Config config)
     using Result      = decltype(result);
 
     static_assert(Result::static_group_count() == 2);
+    static_assert(Result::static_group_rank() == cuda::std::dynamic_extent);
     static_assert(Result::is_always_exhaustive() == Exhaustive);
     static_assert(Result::is_always_contiguous() == Contiguous);
 
