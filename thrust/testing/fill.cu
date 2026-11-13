@@ -54,7 +54,7 @@ void test_fill_mixed_types()
 {
   Vector v(4);
 
-  thrust::fill(v.begin(), v.end(), bool(true));
+  thrust::fill(v.begin(), v.end(), true);
 
   Vector ref(4, 1);
   REQUIRE(v == ref);
@@ -155,7 +155,7 @@ void test_fill_n_mixed_types()
 {
   Vector v(4);
 
-  typename Vector::iterator iter = thrust::fill_n(v.begin(), v.size(), bool(true));
+  typename Vector::iterator iter = thrust::fill_n(v.begin(), v.size(), true);
 
   Vector ref(4, 1);
   REQUIRE(v == ref);

@@ -24,7 +24,7 @@
 #include <cuda/__utility/in_range.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__fwd/simd.h>
+#include <cuda/std/__fwd/simd.h> // IWYU pragma: keep
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/default_sentinel.h>
 #include <cuda/std/__iterator/distance.h>

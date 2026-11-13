@@ -74,7 +74,6 @@ namespace random
 template <typename RealType = double>
 class normal_distribution : public detail::normal_distribution_base<RealType>::type
 {
-private:
   using super_t = typename detail::normal_distribution_base<RealType>::type;
 
 public:
@@ -240,4 +239,4 @@ using random::normal_distribution;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/random/detail/normal_distribution.inl>
+#include <thrust/random/detail/normal_distribution.inl> // IWYU pragma: export

@@ -13,10 +13,15 @@
 template <typename Vector>
 void test_merge_by_key_simple()
 {
-  const Vector a_key{0, 2, 4}, a_val{13, 7, 42}, b_key{0, 3, 3, 4}, b_val{42, 42, 7, 13};
-  Vector ref_key{0, 0, 2, 3, 3, 4, 4}, ref_val{13, 42, 7, 42, 7, 42, 13};
+  const Vector a_key{0, 2, 4};
+  const Vector a_val{13, 7, 42};
+  const Vector b_key{0, 3, 3, 4};
+  const Vector b_val{42, 42, 7, 13};
+  Vector ref_key{0, 0, 2, 3, 3, 4, 4};
+  Vector ref_val{13, 42, 7, 42, 7, 42, 13};
 
-  Vector result_key(7), result_val(7);
+  Vector result_key(7);
+  Vector result_val(7);
 
   const auto ends = thrust::merge_by_key(
     a_key.begin(),
@@ -91,14 +96,14 @@ cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
 template <typename T, typename CompareOp, typename... Args>
 auto call_merge_by_key(Args&&... args) -> decltype(thrust::merge_by_key(std::forward<Args>(args)...))
 {
-  if constexpr (::cuda::std::is_void<CompareOp>::value)
+  if constexpr (::cuda::std::is_void_v<CompareOp>)
   {
     return thrust::merge_by_key(std::forward<Args>(args)...);
   }
   else
   {
     // TODO(bgruber): remove next line in C++17 and pass CompareOp{} directly to stable_sort
-    using C = ::cuda::std::conditional_t<::cuda::std::is_void<CompareOp>::value, ::cuda::std::less<T>, CompareOp>;
+    using C = ::cuda::std::conditional_t<::cuda::std::is_void_v<CompareOp>, ::cuda::std::less<T>, CompareOp>;
     return thrust::merge_by_key(std::forward<Args>(args)..., C{});
   }
   _CCCL_UNREACHABLE();
@@ -139,7 +144,7 @@ void test_merge_by_key(size_t n)
       random_vals.begin(), random_vals.begin() + static_cast<std::ptrdiff_t>(size_a));
     const thrust::host_vector<T> h_b_vals(random_vals.begin() + static_cast<std::ptrdiff_t>(size_a), random_vals.end());
 
-    if constexpr (::cuda::std::is_void<CompareOp>::value)
+    if constexpr (::cuda::std::is_void_v<CompareOp>)
     {
       thrust::stable_sort(h_a_keys.begin(), h_a_keys.end());
       thrust::stable_sort(h_b_keys.begin(), h_b_keys.end());
@@ -147,7 +152,7 @@ void test_merge_by_key(size_t n)
     else
     {
       // TODO(bgruber): remove next line in C++17 and pass CompareOp{} directly to stable_sort
-      using C = ::cuda::std::conditional_t<::cuda::std::is_void<CompareOp>::value, ::cuda::std::less<T>, CompareOp>;
+      using C = ::cuda::std::conditional_t<::cuda::std::is_void_v<CompareOp>, ::cuda::std::less<T>, CompareOp>;
       thrust::stable_sort(h_a_keys.begin(), h_a_keys.end(), C{});
       thrust::stable_sort(h_b_keys.begin(), h_b_keys.end(), C{});
     }

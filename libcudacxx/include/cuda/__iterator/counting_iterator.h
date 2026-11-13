@@ -41,6 +41,7 @@
 #include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/move.h>
@@ -120,7 +121,6 @@ template <class _Start,
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 class counting_iterator : public __counting_iterator_category<_Start>
 {
-private:
   _Start __value_ = _Start();
 
 public:

@@ -38,7 +38,7 @@ _CCCL_HOST_DEVICE auto cat_to_system_impl(const random_access_device_iterator_ta
 template <typename Category>
 struct iterator_category_to_system
 {
-  using type = decltype(cat_to_system_impl(Category{}));
+  using type _CCCL_NODEBUG = decltype(cat_to_system_impl(Category{}));
 };
 
 template <typename Category>

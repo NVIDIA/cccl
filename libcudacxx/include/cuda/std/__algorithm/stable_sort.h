@@ -30,11 +30,7 @@
 #include <cuda/std/__memory/destruct_n.h>
 #include <cuda/std/__memory/temporary_buffer.h>
 #include <cuda/std/__memory/unique_ptr.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstddef>

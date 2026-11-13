@@ -182,7 +182,6 @@ THRUST_NAMESPACE_BEGIN
 template <typename T>
 class device_reference : public thrust::reference<T, thrust::device_ptr<T>, thrust::device_reference<T>>
 {
-private:
   using super_t = thrust::reference<T, thrust::device_ptr<T>, thrust::device_reference<T>>;
 
 public:

@@ -7,12 +7,14 @@
 
 #include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
 #include <cuda/buffer>
+#include <cuda/std/__type_traits/type_list_operations.h>
 #include <cuda/std/bit>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include <algorithm>
 #include <cstdint>
 #include <iomanip>
 #include <optional>
@@ -21,6 +23,8 @@
 #include <tuple>
 #include <type_traits>
 #include <vector>
+
+#include <cuda_runtime_api.h>
 
 #include <c2h/catch2_main.h>
 #include <c2h/catch2_test_macros.h>
@@ -149,7 +153,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 {
   const auto bits = SafeBitCast<uint16_t>(val);
   // commented bit is always true, leaving for documentation:
-  return (((bits >= 0x7C01) && (bits <= 0x7FFF)) || ((bits >= 0xFC01) /*&& (bits <= 0xFFFFFFFF)*/));
+  return (((bits >= 0x7C01) && (bits <= 0x7FFF)) || (bits >= 0xFC01) /*&& (bits <= 0xFFFFFFFF)*/);
 }
 
 #endif // TEST_HALF_T()
@@ -165,7 +169,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 {
   const auto bits = SafeBitCast<uint16_t>(val);
   // commented bit is always true, leaving for documentation:
-  return (((bits >= 0x7F81) && (bits <= 0x7FFF)) || ((bits >= 0xFF81) /*&& (bits <= 0xFFFFFFFF)*/));
+  return (((bits >= 0x7F81) && (bits <= 0x7FFF)) || (bits >= 0xFF81) /*&& (bits <= 0xFFFFFFFF)*/);
 }
 
 #endif // TEST_BF_T()
@@ -398,13 +402,13 @@ auto compare_host_ranges(const LhsRange& actual, const RhsRange& expected) -> ve
     return result;
   }
 
-  std::vector<element_compare_result_t<T>> mismatches;
-  mismatches.reserve(actual.size()); // TODO(bgruber): this seems excessive
+  result.first_mismatches.reserve(first_mismatches_count);
+  size_t next_last_mismatch = 0;
   for (size_t i = 0; i < actual.size(); ++i)
   {
     if (actual[i] != expected[i])
     {
-      if (mismatches.empty()) // at the first mismatch
+      if (result.total_mismatches == 0)
       {
         // store up to 3 good values before the first mismatch
         const size_t count = ::cuda::std::min(good_values_before_mismatch, i);
@@ -413,21 +417,40 @@ auto compare_host_ranges(const LhsRange& actual, const RhsRange& expected) -> ve
           result.good_values.emplace_back(indexed_value_t<T>{j, actual[j]});
         }
       }
-      mismatches.emplace_back(element_compare_result_t<T>{i, actual[i], expected[i]});
+
+      const auto mismatch = element_compare_result_t<T>{i, actual[i], expected[i]};
+      ++result.total_mismatches;
+
+      if (result.first_mismatches.size() < first_mismatches_count)
+      {
+        result.first_mismatches.push_back(mismatch);
+      }
+      else
+      {
+        if (!result.last_mismatches)
+        {
+          result.last_mismatches.emplace();
+          result.last_mismatches->reserve(last_mismatches_count);
+        }
+
+        if (result.last_mismatches->size() < last_mismatches_count)
+        {
+          result.last_mismatches->push_back(mismatch);
+        }
+        else
+        {
+          (*result.last_mismatches)[next_last_mismatch] = mismatch;
+          next_last_mismatch                            = (next_last_mismatch + 1) % last_mismatches_count;
+        }
+      }
     }
   }
-  result.total_mismatches = mismatches.size();
 
-  // Handle first mismatches
-  const size_t first_count = cuda::std::min<size_t>(mismatches.size(), first_mismatches_count);
-  result.first_mismatches.assign(mismatches.begin(), mismatches.begin() + first_count);
-
-  // Handle last mismatches
-  if (mismatches.size() > first_mismatches_count)
+  if (result.last_mismatches && next_last_mismatch != 0)
   {
-    const auto start =
-      mismatches.end() - cuda::std::min<size_t>(mismatches.size() - first_mismatches_count, last_mismatches_count);
-    result.last_mismatches.emplace(start, mismatches.end());
+    std::rotate(result.last_mismatches->begin(),
+                result.last_mismatches->begin() + next_last_mismatch,
+                result.last_mismatches->end());
   }
 
   return result;
@@ -521,7 +544,7 @@ struct vector_matcher : Catch::Matchers::MatcherGenericBase
   bool match(OtherVec const& actual_vec) const // TODO(Bgruber): remove const?
   {
     comparison_result = compare_vectors(actual_vec, expected_vec);
-    return comparison_result.total_mismatches == 0;
+    return comparison_result.actual_size == comparison_result.expected_size && comparison_result.total_mismatches == 0;
   }
 
   // See the note on CustomEqualsRangeMatcher::describe above.

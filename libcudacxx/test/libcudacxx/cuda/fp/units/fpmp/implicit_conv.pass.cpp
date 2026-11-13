@@ -29,10 +29,8 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
-using ffloat  = cudax::fp32mp2;
-using ddouble = cudax::fp64mp2;
+using ffloat  = cuda::fp32mp2;
+using ddouble = cuda::fp64mp2;
 
 // ============================ conversions ============================
 

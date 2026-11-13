@@ -34,6 +34,7 @@ THRUST_NAMESPACE_END
 #include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/std/__host_stdlib/memory>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/type_identity.h>
 
@@ -43,7 +44,6 @@ namespace detail
 template <typename T, typename System>
 class temporary_array : public contiguous_storage<T, no_throw_allocator<temporary_allocator<T, System>>>
 {
-private:
   using super_t = contiguous_storage<T, no_throw_allocator<temporary_allocator<T, System>>>;
 
   // to help out the constructor
@@ -112,16 +112,15 @@ private:
 // copy of the range. else, use a temporary_array
 // note that the resulting iterator is explicitly tagged with ToSystem either way
 template <typename Iterator, typename FromSystem, typename ToSystem>
-struct move_to_system_base
-    : public eval_if<::cuda::std::is_convertible<FromSystem, ToSystem>::value,
-                     ::cuda::std::type_identity<tagged_iterator_range<Iterator, ToSystem>>,
-                     ::cuda::std::type_identity<temporary_array<thrust::detail::it_value_t<Iterator>, ToSystem>>>
-{};
+using move_to_system_base =
+  ::cuda::std::conditional_t<::cuda::std::is_convertible_v<FromSystem, ToSystem>,
+                             tagged_iterator_range<Iterator, ToSystem>,
+                             temporary_array<thrust::detail::it_value_t<Iterator>, ToSystem>>;
 
 template <typename Iterator, typename FromSystem, typename ToSystem>
-class move_to_system : public move_to_system_base<Iterator, FromSystem, ToSystem>::type
+class move_to_system : public move_to_system_base<Iterator, FromSystem, ToSystem>
 {
-  using super_t = typename move_to_system_base<Iterator, FromSystem, ToSystem>::type;
+  using super_t = move_to_system_base<Iterator, FromSystem, ToSystem>;
 
 public:
   move_to_system(thrust::execution_policy<FromSystem>& from_system,

@@ -12,6 +12,7 @@
 
 // <cmath>
 
+#include <cuda/numeric>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
@@ -23,6 +24,17 @@
 TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'double' to 'float', possible loss of data
 TEST_DIAG_SUPPRESS_MSVC(4305) // 'argument': truncation from 'T' to 'float'
 TEST_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
+
+template <typename T>
+TEST_HOST_DEVICE_FUNC bool is_about_tanh(T val, T expected)
+{
+  if constexpr (TEST_HAS_CUDA_FAST_MATH && cuda::std::is_same_v<T, float>)
+  {
+    // __tanhf has a maximum relative error of 2^-11; keep the ordinary tolerance on the host.
+    NV_IF_TARGET(NV_IS_DEVICE, (return cuda::isclose(val, expected, 1.0f / 2048.0f);))
+  }
+  return is_about(val, expected);
+}
 
 template <typename T>
 TEST_HOST_DEVICE_FUNC void test_cosh(T val)
@@ -138,14 +150,14 @@ TEST_HOST_DEVICE_FUNC void test_tanh(T val)
     if constexpr (cuda::std::is_same_v<T, double>)
     {
       const T expected = T(0.7615941559557648510292438004398718);
-      assert(is_about(cuda::std::tanh(T(1.0)), expected));
-      assert(is_about(cuda::std::tanh(T(-1.0)), -expected));
+      assert(is_about_tanh(cuda::std::tanh(T(1.0)), expected));
+      assert(is_about_tanh(cuda::std::tanh(T(-1.0)), -expected));
     }
     else
     {
       const T expected = T(0.76159417629241943359375);
-      assert(is_about(cuda::std::tanh(T(1.0)), expected));
-      assert(is_about(cuda::std::tanh(T(-1.0)), -expected));
+      assert(is_about_tanh(cuda::std::tanh(T(1.0)), expected));
+      assert(is_about_tanh(cuda::std::tanh(T(-1.0)), -expected));
     }
   }
 
@@ -157,8 +169,8 @@ TEST_HOST_DEVICE_FUNC void test_tanh(T val)
     assert(cuda::std::isnan(cuda::std::tanhf(-cuda::std::numeric_limits<T>::quiet_NaN())));
 
     const T expected = T(0.76159417629241943359375);
-    assert(is_about(cuda::std::tanhf(T(1.0)), expected));
-    assert(is_about(cuda::std::tanhf(T(-1.0)), -expected));
+    assert(is_about_tanh(cuda::std::tanhf(T(1.0)), expected));
+    assert(is_about_tanh(cuda::std::tanhf(T(-1.0)), -expected));
   }
 #if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (cuda::std::is_same_v<T, long double>)

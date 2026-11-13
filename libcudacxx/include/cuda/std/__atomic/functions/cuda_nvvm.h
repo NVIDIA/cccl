@@ -21,12 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__atomic/functions/cuda_nvvm_backend.h>
-#include <cuda/std/__atomic/functions/generic.h>
-#include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__type_traits/always_false.h>
-#include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__atomic/functions/cuda_nvvm_backend.h> // IWYU pragma: keep
+#include <cuda/std/__atomic/functions/generic.h> // IWYU pragma: keep
+#include <cuda/std/__atomic/scopes.h> // IWYU pragma: keep
+#include <cuda/std/__bit/bit_cast.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/always_false.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_floating_point.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_integral.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_signed.h> // IWYU pragma: keep
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
@@ -261,7 +263,8 @@ _CCCL_DEVICE_API void __cuda_atomic_exchange(
               class _Order,                                                                                           \
               class _Operand,                                                                                         \
               class _Scope,                                                                                           \
-              enable_if_t<(_Operand::__size < 128) && ((_Operand::__size >= 32) || (_CCCL_PTX_ARCH() >= 1000))        \
+              enable_if_t<(is_integral_v<_Type> || is_floating_point_v<_Type>) && (_Operand::__size < 128)            \
+                            && ((_Operand::__size >= 32) || (_CCCL_PTX_ARCH() >= 1000))                               \
                             && !(is_integral_v<_Type> && is_signed_v<_Type> && sizeof(_Type) == 8),                   \
                           bool> = false>                                                                              \
     _CCCL_DEVICE_API void __cuda_atomic_fetch_##_Name(                                                                \

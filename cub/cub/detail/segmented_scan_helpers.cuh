@@ -15,10 +15,16 @@
 
 #include <cuda/std/__algorithm/upper_bound.h>
 #include <cuda/std/__bit/integral.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/readable_traits.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/span>
-#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -127,7 +133,7 @@ struct projector_iv
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
   {
-    return (f) ? init_v : v;
+    return f ? init_v : v;
   }
 };
 
@@ -160,7 +166,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE search_data_t find(logical_offset_t elem_id) const
   {
     const bool is_small = (m_offsets.size() < LinearBinarySearchThreshold);
-    const auto pos      = (is_small) ? locate_linear_search(elem_id) : locate_binary_search(elem_id);
+    const auto pos      = is_small ? locate_linear_search(elem_id) : locate_binary_search(elem_id);
     return pos;
   }
 
@@ -187,8 +193,8 @@ private:
     {
       const auto offset_n = m_offsets[i];
       const bool cond     = ((offset_c <= pos) && (pos < offset_n));
-      segment_id          = (cond) ? i : segment_id;
-      shifted_offset      = (cond) ? pos - offset_c : shifted_offset;
+      segment_id          = cond ? i : segment_id;
+      shifted_offset      = cond ? pos - offset_c : shifted_offset;
       offset_c            = offset_n;
     }
     return {segment_id, shifted_offset};

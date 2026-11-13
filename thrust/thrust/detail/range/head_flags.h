@@ -52,7 +52,6 @@ public:
     }
   };
 
-public:
   using iterator = thrust::transform_iterator<head_flag_functor, thrust::counting_iterator<IndexType>>;
 
   _CCCL_HOST_DEVICE head_flags(RandomAccessIterator first, RandomAccessIterator last, BinaryPredicate binary_pred = {})

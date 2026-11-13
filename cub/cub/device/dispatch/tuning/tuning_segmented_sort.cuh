@@ -13,16 +13,24 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_segmented_radix_sort.cuh>
+#include <cub/agent/agent_radix_sort_downsweep.cuh>
 #include <cub/agent/agent_sub_warp_merge_sort.cuh>
-#include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_radix_rank.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_math.cuh>
+#include <cub/warp/warp_load.cuh>
+#include <cub/warp/warp_store.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/concepts>
+#include <cuda/std/__type_traits/void_t.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -169,7 +177,8 @@ struct policy_selector
     BlockScanAlgorithm scan_algorithm,
     int radix_bits) const
   {
-    const auto scaled = scale_reg_bound(nominal_4B_threads_per_block, nominal_4B_items_per_thread, __dominant_size());
+    const auto scaled =
+      _CUB::detail::scale_reg_bound(nominal_4B_threads_per_block, nominal_4B_items_per_thread, __dominant_size());
     return SegmentedSortRadixSortPolicy{
       scaled.threads_per_block,
       scaled.items_per_thread,
@@ -184,7 +193,7 @@ struct policy_selector
     -> SegmentedSortPolicy
   {
     const auto scale_items = [&](int nominal_4b_items_per_thread) {
-      return nominal_4B_items_to_items(nominal_4b_items_per_thread, __dominant_size());
+      return _CUB::detail::nominal_4B_items_to_items(nominal_4b_items_per_thread, __dominant_size());
     };
 
     if (cc >= ::cuda::compute_capability{8, 6})
@@ -421,8 +430,8 @@ struct policy_hub
       BLOCK_SCAN_RAKING_MEMOIZE,
       RADIX_BITS>;
 
-    static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(7);
-    static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(7);
+    static constexpr int ITEMS_PER_SMALL_THREAD  = _CUB::Nominal4BItemsToItems<DominantT>(7);
+    static constexpr int ITEMS_PER_MEDIUM_THREAD = _CUB::Nominal4BItemsToItems<DominantT>(7);
 
     using SmallSegmentPolicy =
       agent_sub_warp_merge_sort_policy<BLOCK_THREADS,
@@ -454,8 +463,8 @@ struct policy_hub
       BLOCK_SCAN_WARP_SCANS,
       RADIX_BITS>;
 
-    static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(9);
-    static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(9);
+    static constexpr int ITEMS_PER_SMALL_THREAD  = _CUB::Nominal4BItemsToItems<DominantT>(9);
+    static constexpr int ITEMS_PER_MEDIUM_THREAD = _CUB::Nominal4BItemsToItems<DominantT>(9);
 
     using SmallSegmentPolicy =
       agent_sub_warp_merge_sort_policy<BLOCK_THREADS,
@@ -487,8 +496,8 @@ struct policy_hub
       BLOCK_SCAN_WARP_SCANS,
       RADIX_BITS>;
 
-    static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(9);
-    static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(9);
+    static constexpr int ITEMS_PER_SMALL_THREAD  = _CUB::Nominal4BItemsToItems<DominantT>(9);
+    static constexpr int ITEMS_PER_MEDIUM_THREAD = _CUB::Nominal4BItemsToItems<DominantT>(9);
 
     using SmallSegmentPolicy =
       agent_sub_warp_merge_sort_policy<BLOCK_THREADS,
@@ -520,8 +529,8 @@ struct policy_hub
       BLOCK_SCAN_RAKING_MEMOIZE,
       RADIX_BITS>;
 
-    static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(9);
-    static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(9);
+    static constexpr int ITEMS_PER_SMALL_THREAD  = _CUB::Nominal4BItemsToItems<DominantT>(9);
+    static constexpr int ITEMS_PER_MEDIUM_THREAD = _CUB::Nominal4BItemsToItems<DominantT>(9);
 
     using SmallSegmentPolicy =
       agent_sub_warp_merge_sort_policy<BLOCK_THREADS,
@@ -553,8 +562,8 @@ struct policy_hub
       BLOCK_SCAN_WARP_SCANS,
       RADIX_BITS>;
 
-    static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(7);
-    static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(KEYS_ONLY ? 11 : 7);
+    static constexpr int ITEMS_PER_SMALL_THREAD  = _CUB::Nominal4BItemsToItems<DominantT>(7);
+    static constexpr int ITEMS_PER_MEDIUM_THREAD = _CUB::Nominal4BItemsToItems<DominantT>(KEYS_ONLY ? 11 : 7);
 
     using SmallSegmentPolicy =
       agent_sub_warp_merge_sort_policy<BLOCK_THREADS,
@@ -584,8 +593,8 @@ struct policy_hub
       BLOCK_SCAN_WARP_SCANS,
       (sizeof(KeyT) > 1) ? 6 : 4>;
 
-    static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(9);
-    static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(KEYS_ONLY ? 7 : 11);
+    static constexpr int ITEMS_PER_SMALL_THREAD  = _CUB::Nominal4BItemsToItems<DominantT>(9);
+    static constexpr int ITEMS_PER_MEDIUM_THREAD = _CUB::Nominal4BItemsToItems<DominantT>(KEYS_ONLY ? 7 : 11);
 
     using SmallSegmentPolicy =
       agent_sub_warp_merge_sort_policy<BLOCK_THREADS,
@@ -616,8 +625,8 @@ struct policy_hub
       (sizeof(KeyT) > 1) ? 6 : 4>;
 
     static constexpr bool LARGE_ITEMS            = sizeof(DominantT) > 4;
-    static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(LARGE_ITEMS ? 7 : 9);
-    static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(LARGE_ITEMS ? 9 : 7);
+    static constexpr int ITEMS_PER_SMALL_THREAD  = _CUB::Nominal4BItemsToItems<DominantT>(LARGE_ITEMS ? 7 : 9);
+    static constexpr int ITEMS_PER_MEDIUM_THREAD = _CUB::Nominal4BItemsToItems<DominantT>(LARGE_ITEMS ? 9 : 7);
 
     using SmallSegmentPolicy =
       agent_sub_warp_merge_sort_policy<BLOCK_THREADS,

@@ -13,11 +13,16 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/type_traits.h>
-#include <thrust/functional.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 #include <thrust/system/detail/sequential/partition.h>
 #include <thrust/system/detail/sequential/stable_radix_sort.h>
+
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
@@ -25,13 +30,12 @@ namespace system::detail::sequential
 namespace stable_primitive_sort_detail
 {
 template <typename Iterator>
-struct enable_if_bool_sort
-    : ::cuda::std::enable_if<::cuda::std::is_same<bool, thrust::detail::it_value_t<Iterator>>::value>
+struct enable_if_bool_sort : ::cuda::std::enable_if<::cuda::std::is_same_v<bool, thrust::detail::it_value_t<Iterator>>>
 {};
 
 template <typename Iterator>
 struct disable_if_bool_sort
-    : thrust::detail::disable_if<::cuda::std::is_same<bool, thrust::detail::it_value_t<Iterator>>::value>
+    : thrust::detail::disable_if<::cuda::std::is_same_v<bool, thrust::detail::it_value_t<Iterator>>>
 {};
 
 template <typename DerivedPolicy, typename RandomAccessIterator>

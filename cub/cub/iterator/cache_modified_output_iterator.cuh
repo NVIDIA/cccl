@@ -19,11 +19,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
 
-#include <thrust/iterator/iterator_facade.h>
+#include <thrust/iterator/detail/device_system_tag.h>
+#include <thrust/iterator/detail/iterator_facade_category.h> // IWYU pragma: keep
+#include <thrust/iterator/iterator_traversal_tags.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/remove_cv.h>
 
@@ -83,7 +85,6 @@ CUB_NAMESPACE_BEGIN
 template <CacheStoreModifier MODIFIER, typename ValueType, typename OffsetT = ptrdiff_t>
 class CacheModifiedOutputIterator
 {
-private:
   // Proxy object
   struct Reference
   {
@@ -97,7 +98,7 @@ private:
     /// Assignment
     _CCCL_DEVICE _CCCL_FORCEINLINE ValueType operator=(ValueType val)
     {
-      ThreadStore<MODIFIER>(ptr, val);
+      _CUB::ThreadStore<MODIFIER>(ptr, val);
       return val;
     }
   };

@@ -22,8 +22,11 @@
 
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+
+#if _CCCL_HOST_STD_LIB(STL)
+#  include <cuda/std/__type_traits/is_pointer.h>
+#endif // _CCCL_HOST_STD_LIB(STL)
 
 THRUST_NAMESPACE_BEGIN
 
@@ -130,7 +133,8 @@ using is_contiguous_iterator =
  * \see THRUST_PROCLAIM_CONTIGUOUS_ITERATOR
  */
 template <typename Iterator>
-constexpr bool is_contiguous_iterator_v = detail::is_contiguous_iterator_impl_v<::cuda::std::remove_cvref_t<Iterator>>;
+inline constexpr bool is_contiguous_iterator_v =
+  detail::is_contiguous_iterator_impl_v<::cuda::std::remove_cvref_t<Iterator>>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

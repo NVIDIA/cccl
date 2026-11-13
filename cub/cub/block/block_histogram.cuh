@@ -22,6 +22,7 @@
 
 #include <cub/block/specializations/block_histogram_atomic.cuh>
 #include <cub/block/specializations/block_histogram_sort.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
 
 #include <cuda/std/__type_traits/conditional.h>
@@ -165,7 +166,6 @@ template <typename T,
           int BlockDimZ                     = 1>
 class BlockHistogram
 {
-private:
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
@@ -176,7 +176,7 @@ private:
                      detail::BlockHistogramAtomic<Bins>>;
 
   /// Shared memory storage layout type for BlockHistogram
-  using _TempStorage = typename InternalBlockHistogram::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalBlockHistogram::TempStorage;
 
   /// Shared storage reference
   _TempStorage& temp_storage;
@@ -206,7 +206,7 @@ public:
   //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogram()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
@@ -222,7 +222,7 @@ public:
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogram(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}

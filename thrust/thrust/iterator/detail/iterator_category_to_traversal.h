@@ -40,9 +40,10 @@ _CCCL_HOST_DEVICE auto cat_to_traversal_impl(const output_device_iterator_tag&) 
 template <typename CategoryOrTraversal>
 struct iterator_category_to_traversal
 {
-  using type = ::cuda::std::_If<::cuda::std::is_convertible_v<CategoryOrTraversal, incrementable_traversal_tag>,
-                                CategoryOrTraversal,
-                                decltype(cat_to_traversal_impl(CategoryOrTraversal{}))>;
+  using type _CCCL_NODEBUG =
+    ::cuda::std::_If<::cuda::std::is_convertible_v<CategoryOrTraversal, incrementable_traversal_tag>,
+                     CategoryOrTraversal,
+                     decltype(cat_to_traversal_impl(CategoryOrTraversal{}))>;
 };
 
 template <typename CategoryOrTraversal>

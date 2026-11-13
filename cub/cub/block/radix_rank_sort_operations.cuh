@@ -19,22 +19,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/type_traits.cuh>
-#include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
+#include <cub/detail/numeric_traits.cuh>
 
 #include <cuda/__bit/bitfield.h>
 #include <cuda/__type_traits/is_floating_point.h>
-#include <cuda/__utility/static_for.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
 
@@ -75,7 +73,7 @@ struct BaseDigitExtractor<KeyT, true>
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits ProcessFloatMinusZero(UnsignedBits key)
   {
     const UnsignedBits TWIDDLED_MINUS_ZERO_BITS =
-      TraitsT::TwiddleIn(UnsignedBits(1) << UnsignedBits(8 * sizeof(UnsignedBits) - 1));
+      TraitsT::TwiddleIn(UnsignedBits(1) << UnsignedBits((8 * sizeof(UnsignedBits)) - 1));
     const UnsignedBits TWIDDLED_ZERO_BITS = TraitsT::TwiddleIn(0);
     return key == TWIDDLED_MINUS_ZERO_BITS ? TWIDDLED_ZERO_BITS : key;
   }
@@ -158,7 +156,7 @@ _CCCL_HOST_DEVICE void for_each_member(F f, DecomposerT decomposer, T& aggregate
 {
   const auto& tuple_of_refs = decomposer(aggregate);
   constexpr int tuple_size  = ::cuda::std::tuple_size_v<::cuda::std::remove_reference_t<decltype(tuple_of_refs)>>;
-  for_each_member_impl(f, tuple_of_refs, ::cuda::std::make_index_sequence<tuple_size>{});
+  _CUB::detail::for_each_member_impl(f, tuple_of_refs, ::cuda::std::make_index_sequence<tuple_size>{});
 }
 
 namespace radix
@@ -271,7 +269,7 @@ struct min_raw_binary_key_f
 template <class DecomposerT, class T>
 _CCCL_HOST_DEVICE void min_raw_binary_key(DecomposerT decomposer, T& aggregate)
 {
-  detail::for_each_member(min_raw_binary_key_f<DecomposerT>{decomposer}, decomposer, aggregate);
+  _CUB::detail::for_each_member(min_raw_binary_key_f<DecomposerT>{decomposer}, decomposer, aggregate);
 }
 
 template <class DecomposerT>
@@ -292,7 +290,7 @@ struct max_raw_binary_key_f
 template <class DecomposerT, class T>
 _CCCL_HOST_DEVICE void max_raw_binary_key(DecomposerT decomposer, T& aggregate)
 {
-  detail::for_each_member(max_raw_binary_key_f<DecomposerT>{decomposer}, decomposer, aggregate);
+  _CUB::detail::for_each_member(max_raw_binary_key_f<DecomposerT>{decomposer}, decomposer, aggregate);
 }
 
 template <class DecomposerT>
@@ -316,7 +314,7 @@ struct to_bit_ordered_f
 template <class DecomposerT, class T>
 _CCCL_HOST_DEVICE void to_bit_ordered(DecomposerT decomposer, T& aggregate)
 {
-  detail::for_each_member(to_bit_ordered_f<DecomposerT>{decomposer}, decomposer, aggregate);
+  _CUB::detail::for_each_member(to_bit_ordered_f<DecomposerT>{decomposer}, decomposer, aggregate);
 }
 
 template <class DecomposerT>
@@ -340,7 +338,7 @@ struct from_bit_ordered_f
 template <class DecomposerT, class T>
 _CCCL_HOST_DEVICE void from_bit_ordered(DecomposerT decomposer, T& aggregate)
 {
-  detail::for_each_member(from_bit_ordered_f<DecomposerT>{decomposer}, decomposer, aggregate);
+  _CUB::detail::for_each_member(from_bit_ordered_f<DecomposerT>{decomposer}, decomposer, aggregate);
 }
 
 struct inverse_f
@@ -359,7 +357,7 @@ struct inverse_f
 template <class DecomposerT, class T>
 _CCCL_HOST_DEVICE void inverse(DecomposerT decomposer, T& aggregate)
 {
-  detail::for_each_member(inverse_f{}, decomposer, aggregate);
+  _CUB::detail::for_each_member(inverse_f{}, decomposer, aggregate);
 }
 
 struct default_end_bit_f
@@ -377,7 +375,7 @@ template <class DecomposerT, class T>
 _CCCL_HOST_DEVICE int default_end_bit(DecomposerT decomposer, T& aggregate)
 {
   int result{};
-  detail::for_each_member(default_end_bit_f{result}, decomposer, aggregate);
+  _CUB::detail::for_each_member(default_end_bit_f{result}, decomposer, aggregate);
   return result;
 }
 
@@ -429,7 +427,7 @@ digit(DecomposerT decomposer,
       ::cuda::std::uint32_t& src_bit_start,
       ::cuda::std::uint32_t& num_bits)
 {
-  detail::for_each_member(digit_f{dst, dst_bit_start, src_bit_start, num_bits}, decomposer, src);
+  _CUB::detail::for_each_member(digit_f{dst, dst_bit_start, src_bit_start, num_bits}, decomposer, src);
 }
 
 template <class DecomposerT>
@@ -453,7 +451,7 @@ struct custom_digit_extractor_t
     ::cuda::std::uint32_t dst_bit_start{};
     ::cuda::std::uint32_t src_bit_start = bit_start;
     ::cuda::std::uint32_t bits_remaining{num_bits};
-    digit(decomposer, result, key, dst_bit_start, src_bit_start, bits_remaining);
+    _CUB::detail::radix::digit(decomposer, result, key, dst_bit_start, src_bit_start, bits_remaining);
     return result;
   }
 };
@@ -463,14 +461,14 @@ struct custom_bit_conversion_policy_t
   template <class DecomposerT, class T>
   static _CCCL_HOST_DEVICE T to_bit_ordered(DecomposerT decomposer, T val)
   {
-    detail::radix::to_bit_ordered(decomposer, val);
+    _CUB::detail::radix::to_bit_ordered(decomposer, val);
     return val;
   }
 
   template <class DecomposerT, class T>
   static _CCCL_HOST_DEVICE T from_bit_ordered(DecomposerT decomposer, T val)
   {
-    detail::radix::from_bit_ordered(decomposer, val);
+    _CUB::detail::radix::from_bit_ordered(decomposer, val);
     return val;
   }
 };
@@ -480,7 +478,7 @@ struct custom_bit_inversion_policy_t
   template <class DecomposerT, class T>
   static _CCCL_HOST_DEVICE T inverse(DecomposerT decomposer, T val)
   {
-    detail::radix::inverse(decomposer, val);
+    _CUB::detail::radix::inverse(decomposer, val);
     return val;
   }
 };
@@ -499,7 +497,7 @@ struct traits_t<T, false /* is_fundamental */>
   static _CCCL_HOST_DEVICE bit_ordered_type min_raw_binary_key(DecomposerT decomposer)
   {
     T val{};
-    detail::radix::min_raw_binary_key(decomposer, val);
+    _CUB::detail::radix::min_raw_binary_key(decomposer, val);
     return val;
   }
 
@@ -507,7 +505,7 @@ struct traits_t<T, false /* is_fundamental */>
   static _CCCL_HOST_DEVICE bit_ordered_type max_raw_binary_key(DecomposerT decomposer)
   {
     T val{};
-    detail::radix::max_raw_binary_key(decomposer, val);
+    _CUB::detail::radix::max_raw_binary_key(decomposer, val);
     return val;
   }
 
@@ -515,7 +513,7 @@ struct traits_t<T, false /* is_fundamental */>
   static _CCCL_HOST_DEVICE int default_end_bit(DecomposerT decomposer)
   {
     T aggregate{};
-    return detail::radix::default_end_bit(decomposer, aggregate);
+    return _CUB::detail::radix::default_end_bit(decomposer, aggregate);
   }
 
   template <class FundamentalExtractorT, class DecomposerT>

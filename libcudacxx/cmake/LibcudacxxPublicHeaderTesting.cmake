@@ -14,6 +14,7 @@ file(
   RELATIVE "${libcudacxx_SOURCE_DIR}/include"
   CONFIGURE_DEPENDS
   "${libcudacxx_SOURCE_DIR}/include/cuda/*"
+  "${libcudacxx_SOURCE_DIR}/include/cuda/ptxs/*"
   "${libcudacxx_SOURCE_DIR}/include/cuda/std/*"
 )
 

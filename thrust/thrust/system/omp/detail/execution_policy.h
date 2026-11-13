@@ -14,10 +14,7 @@
 #endif // no system header
 
 #include <thrust/detail/allocator_aware_execution_policy.h>
-#include <thrust/detail/type_traits.h>
-#include <thrust/iterator/detail/any_system_tag.h>
 #include <thrust/system/cpp/detail/execution_policy.h>
-#include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN

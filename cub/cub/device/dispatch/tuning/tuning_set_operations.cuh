@@ -14,13 +14,17 @@
 #endif // no system header
 
 #include <cub/block/block_scan.cuh>
-#include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
-#include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__host_stdlib/ostream>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/util_device.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 namespace detail::set_ops
@@ -69,6 +73,15 @@ struct policy_selector
   {
     // We don't use cub::detail::nominal_4B_items_to_items here because Thrust scaled the nominal item count with
     // a ceiling division, whereas nominal_4B_items_to_items rounds down.
+    if (cc >= ::cuda::compute_capability{8, 0})
+    {
+      constexpr int nominal_items_per_thread = 19;
+      return SetOpsPolicy{
+        (key_size == 2 || key_size == 4) ? 256 : 512,
+        ::cuda::std::clamp(::cuda::ceil_div(nominal_items_per_thread * 4, key_size), 1, nominal_items_per_thread),
+        LOAD_DEFAULT,
+        BLOCK_SCAN_WARP_SCANS};
+    }
     if (cc >= ::cuda::compute_capability{6, 0})
     {
       constexpr int nominal_items_per_thread = 19;

@@ -21,9 +21,10 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/common_reference_with.h>
-#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h> // IWYU pragma: keep
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
+#include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__utility/declval.h>
 

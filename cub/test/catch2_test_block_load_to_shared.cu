@@ -108,7 +108,7 @@ void test_block_load(const c2h::device_vector<T>& d_input, InputPointerT input)
   constexpr int max_num_items_first_copy = cuda::ceil_div(tile_size, num_copies);
   constexpr int buffer_align             = cub::detail::LoadToSharedBufferAlignBytes<T>();
   constexpr int buffer_size              = cub::detail::LoadToSharedBufferSizeBytes<T>(max_num_items_first_copy);
-  constexpr int total_smem = ::cuda::round_up(int{sizeof(storage_t)}, buffer_align) + num_buffers * buffer_size;
+  constexpr int total_smem = ::cuda::round_up(int{sizeof(storage_t)}, buffer_align) + (num_buffers * buffer_size);
   constexpr bool sufficient_resources = total_smem <= cub::detail::max_smem_per_block;
   if constexpr (sufficient_resources)
   {

@@ -36,14 +36,15 @@ struct allocator_aware_execution_policy
   template <typename MemoryResource>
   struct execute_with_memory_resource_type
   {
-    using type = thrust::detail::execute_with_allocator<thrust::mr::allocator<::cuda::std::max_align_t, MemoryResource>,
-                                                        ExecutionPolicyCRTPBase>;
+    using type _CCCL_NODEBUG =
+      thrust::detail::execute_with_allocator<thrust::mr::allocator<::cuda::std::max_align_t, MemoryResource>,
+                                             ExecutionPolicyCRTPBase>;
   };
 
   template <typename Allocator>
   struct execute_with_allocator_type
   {
-    using type = thrust::detail::execute_with_allocator<Allocator, ExecutionPolicyCRTPBase>;
+    using type _CCCL_NODEBUG = thrust::detail::execute_with_allocator<Allocator, ExecutionPolicyCRTPBase>;
   };
 
   _CCCL_EXEC_CHECK_DISABLE

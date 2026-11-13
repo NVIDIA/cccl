@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__iterator/iterator_traits.h>

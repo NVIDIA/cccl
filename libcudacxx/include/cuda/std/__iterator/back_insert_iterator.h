@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__fwd/iterator.h>
-#include <cuda/std/__iterator/iterator.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__utility/ctad_support.h>

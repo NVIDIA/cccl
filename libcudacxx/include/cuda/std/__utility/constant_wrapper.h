@@ -21,22 +21,19 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/conditional.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/fold.h>
-#include <cuda/std/__type_traits/is_class.h>
+#include <cuda/std/__type_traits/is_class.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_constructible.h>
-#include <cuda/std/__type_traits/is_object.h>
-#include <cuda/std/__type_traits/is_pointer.h>
-#include <cuda/std/__type_traits/remove_const.h>
+#include <cuda/std/__type_traits/is_object.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_pointer.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/auto_cast.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
-#include <cuda/std/__utility/integer_sequence.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -458,6 +455,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT constant_wrapper : __cw_operators
 #if _CCCL_COMPILER(MSVC)
   static constexpr conditional_t<is_class_v<_Tp>, const _Tp&, const _Tp> value = (_Xp);
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+  // NOLINTNEXTLINE(readability-redundant-parentheses)
   static constexpr decltype((_Xp)) value = (_Xp);
 #endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
@@ -475,11 +473,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT constant_wrapper : __cw_operators
 
   _CCCL_HOST_DEVICE_API constexpr operator decltype(value)() const noexcept
   {
+    // NOLINTNEXTLINE(readability-redundant-parentheses)
     return (_Xp);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr decltype(value) __get() noexcept
   {
+    // NOLINTNEXTLINE(readability-redundant-parentheses)
     return (_Xp);
   }
 

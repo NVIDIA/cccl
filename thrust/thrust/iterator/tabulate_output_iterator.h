@@ -13,8 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/config.h>
-
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/tabulate_output_iterator.h>

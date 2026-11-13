@@ -15,12 +15,14 @@
 
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_store.cuh>
-#include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_sort.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h> // IWYU pragma: keep
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
@@ -57,19 +59,16 @@ using AgentMergeSortPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for Devic
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct MergeSortPolicy
 {
-  int threads_per_block; //!< Number of threads in a CUDA block
-  int items_per_thread; //!< Number of items processed per thread
+  int threads_per_block; //!< Number of threads in a CUDA block. Must be a power of two in the range [1; 1024], and a
+                         //!< multiple of the warp size if a @c WARP_TRANSPOSE load or store algorithm is used
+  int items_per_thread; //!< Number of items processed per thread. Must be at least 1
   BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading items from global memory
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
   BlockStoreAlgorithm store_algorithm; //!< The @ref BlockStoreAlgorithm used for storing items to global memory
 
   //! Whether to unroll the loops inside the block merge sort and serial merge implementation
   // RAPIDS cuDF needs to avoid unrolling some loops in sort to prevent compile time issues
-#if defined(CCCL_AVOID_SORT_UNROLL)
-  bool unroll = false;
-#else // CCCL_AVOID_SORT_UNROLL
-  bool unroll = true;
-#endif // CCCL_AVOID_SORT_UNROLL
+  bool unroll = detail::sort_unroll_default;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const MergeSortPolicy& lhs, const MergeSortPolicy& rhs)
@@ -108,7 +107,7 @@ struct policy_hub
   {
     using MergeSortPolicy =
       agent_merge_sort_policy<256,
-                              Nominal4BItemsToItems<KeyT>(11),
+                              _CUB::Nominal4BItemsToItems<KeyT>(11),
                               BLOCK_LOAD_WARP_TRANSPOSE,
                               LOAD_LDG,
                               BLOCK_STORE_WARP_TRANSPOSE>;
@@ -122,7 +121,7 @@ struct policy_hub
   {
     using MergeSortPolicy =
       agent_merge_sort_policy<512,
-                              Nominal4BItemsToItems<KeyT>(15),
+                              _CUB::Nominal4BItemsToItems<KeyT>(15),
                               BLOCK_LOAD_WARP_TRANSPOSE,
                               LOAD_LDG,
                               BLOCK_STORE_WARP_TRANSPOSE>;
@@ -133,7 +132,7 @@ struct policy_hub
   {
     using MergeSortPolicy =
       agent_merge_sort_policy<256,
-                              Nominal4BItemsToItems<KeyT>(17),
+                              _CUB::Nominal4BItemsToItems<KeyT>(17),
                               BLOCK_LOAD_WARP_TRANSPOSE,
                               LOAD_DEFAULT,
                               BLOCK_STORE_WARP_TRANSPOSE>;
@@ -156,7 +155,7 @@ struct policy_selector
     // from SM60
     return MergeSortPolicy{
       256,
-      detail::nominal_4B_items_to_items(17, key_size),
+      _CUB::detail::nominal_4B_items_to_items(17, key_size),
       BLOCK_LOAD_WARP_TRANSPOSE,
       LOAD_DEFAULT,
       BLOCK_STORE_WARP_TRANSPOSE};

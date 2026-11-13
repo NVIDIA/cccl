@@ -21,11 +21,13 @@
 #endif // no system header
 
 #include <cub/block/block_raking_layout.cuh>
-#include <cub/thread/thread_reduce.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/std/__functional/operations.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -105,7 +107,7 @@ struct BlockReduceRaking
   /// Constructor
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduceRaking(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
@@ -191,7 +193,7 @@ struct BlockReduceRaking
         partial = RakingReduction<IsFullTile>(reduction_op, raking_segment, partial, num_valid, constant_v<1>);
 
         const int valid_raking_threads =
-          (IsFullTile) ? RAKING_THREADS : (num_valid + SEGMENT_LENGTH - 1) / SEGMENT_LENGTH;
+          IsFullTile ? RAKING_THREADS : (num_valid + SEGMENT_LENGTH - 1) / SEGMENT_LENGTH;
 
         // sync before re-using shmem (warp_storage/raking_grid are aliased)
         static_assert(RAKING_THREADS <= warp_threads, "RAKING_THREADS must be <= warp size.");

@@ -32,8 +32,6 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 // Hide a value from the optimizer; see the note above.
 TEST_FUNC double opaque(double __v)
 {
@@ -230,16 +228,16 @@ TEST_FUNC void test()
 {
   // Packed. def == high are the correctly rounded modes; low and mid run the
   // same operators with the accuracy-dependent checks relaxed.
-  test_type<cudax::fp64emu>();
-  test_type<cudax::fp64emu_high>();
-  test_type<cudax::fp64emu_low>(false);
-  test_type<cudax::fp64emu_mid>(false);
+  test_type<cuda::fp64emu>();
+  test_type<cuda::fp64emu_high>();
+  test_type<cuda::fp64emu_low>(false);
+  test_type<cuda::fp64emu_mid>(false);
 
   // Unpacked.
-  test_type<cudax::fp64emu_unpacked>();
-  test_type<cudax::fp64emu_unpacked_high>();
-  test_type<cudax::fp64emu_unpacked_low>(false);
-  test_type<cudax::fp64emu_unpacked_mid>(false);
+  test_type<cuda::fp64emu_unpacked>();
+  test_type<cuda::fp64emu_unpacked_high>();
+  test_type<cuda::fp64emu_unpacked_low>(false);
+  test_type<cuda::fp64emu_unpacked_mid>(false);
 }
 
 int main(int, char**)

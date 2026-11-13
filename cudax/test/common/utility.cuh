@@ -27,7 +27,7 @@
 
 namespace test
 {
-constexpr auto one_thread_dims = cuda::make_config(cuda::block_dims<1>(), cuda::grid_dims<1>());
+inline constexpr auto one_thread_dims = cuda::make_config(cuda::block_dims<1>(), cuda::grid_dims<1>());
 
 struct _malloc_pinned
 {
@@ -103,7 +103,7 @@ struct assign_n
 template <int N>
 struct verify_n
 {
-  __device__ void operator()(int* pi) const noexcept
+  __device__ void operator()(const int* pi) const noexcept
   {
     REQUIRE_DEVICE(*pi == N);
   }

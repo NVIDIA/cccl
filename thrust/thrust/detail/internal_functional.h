@@ -24,20 +24,15 @@
 #include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/__functional/address_stability.h>
-#include <cuda/__functional/equal_to_value.h>
 #include <cuda/__iterator/discard_iterator.h>
 #include <cuda/__iterator/tabulate_output_iterator.h>
 #include <cuda/__iterator/transform_input_output_iterator.h>
 #include <cuda/__iterator/transform_output_iterator.h>
-#include <cuda/std/__host_stdlib/memory>
-#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_const.h>
-#include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_reference.h>
-#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
@@ -193,32 +188,6 @@ struct binary_transform_if_functor
     }
   }
 }; // end binary_transform_if_functor
-
-template <typename T>
-struct host_destroy_functor
-{
-  _CCCL_HOST void operator()(T& x) const
-  {
-    x.~T();
-  } // end operator()()
-}; // end host_destroy_functor
-
-template <typename T>
-struct device_destroy_functor
-{
-  // add __host__ to allow the omp backend to compile with nvcc
-  _CCCL_HOST_DEVICE void operator()(T& x) const
-  {
-    x.~T();
-  } // end operator()()
-}; // end device_destroy_functor
-
-template <typename System, typename T>
-struct destroy_functor
-    : thrust::detail::eval_if<::cuda::std::is_convertible_v<System, thrust::host_system_tag>,
-                              ::cuda::std::type_identity<host_destroy_functor<T>>,
-                              ::cuda::std::type_identity<device_destroy_functor<T>>>
-{};
 
 template <typename T>
 struct fill_functor

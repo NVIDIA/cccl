@@ -21,22 +21,28 @@
 #endif // no system header
 
 #include <cub/agent/agent_rle.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
-#include <cub/device/dispatch/dispatch_scan.cuh>
+#include <cub/detail/non_void_value.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_non_trivial_runs.cuh>
-#include <cub/thread/thread_operators.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
-
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 #include <nv/target>
 
@@ -177,7 +183,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires non_trivial_runs::rle_non_trivial_runs_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_block))
+__launch_bounds__(int(_CUB::detail::current_policy<PolicySelector>().lookback.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceRleSweepKernel(
     const InputIteratorT d_in,
     const OffsetsOutputIteratorT d_offsets_out,
@@ -189,7 +195,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
     const int num_tiles,
     const StreamingContextT streaming_context)
 {
-  static constexpr RleNonTrivialRunsPolicy policy = current_policy<PolicySelector>();
+  static constexpr RleNonTrivialRunsPolicy policy = _CUB::detail::current_policy<PolicySelector>();
   using AgentRlePolicyT =
     agent_rle_policy<policy.lookback.threads_per_block,
                      policy.lookback.items_per_thread,
@@ -372,7 +378,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
     constexpr int items_per_thread  = ActivePolicyT::RleSweepPolicyT::ITEMS_PER_THREAD;
     constexpr auto tile_size        = static_cast<global_offset_t>(threads_per_block * items_per_thread);
 
-    // The upper bound of for the number of items that a single kernel invocation will ever process
+    // The upper bound for the number of items that a single kernel invocation will ever process
     auto capped_num_items_per_invocation = num_items;
     if constexpr (use_streaming_invocation)
     {
@@ -388,9 +394,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
 
     // Number of invocations required to "iterate" over the total input (at least one iteration to process zero items)
     auto const num_partitions =
-      (capped_num_items_per_invocation == 0)
-        ? global_offset_t{1}
-        : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
+      (num_items == 0) ? global_offset_t{1} : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
 
     // Number of input tiles
     const int max_num_tiles = static_cast<int>(::cuda::ceil_div(max_num_items_per_invocation, tile_size));
@@ -409,7 +413,8 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
     // the blob)
     void* allocations[3] = {};
 
-    error = CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+    error =
+      CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
     if (error != cudaSuccess)
     {
       return error;
@@ -447,16 +452,15 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
       _CUB_LOG_KERNEL_LAUNCH("device_scan_init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
 
       // Invoke device_scan_init_kernel to initialize tile descriptors and queue descriptors
-      error = CubDebug(
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
-          .doit(device_scan_init_kernel, tile_status, num_current_tiles, d_num_runs_out));
+      error = CubDebug(detail::TripleChevronFactory{}(init_grid_size, init_kernel_threads, 0, stream)
+                         .doit(device_scan_init_kernel, tile_status, num_current_tiles, d_num_runs_out));
       if (cudaSuccess != error)
       {
         return error;
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(_CUB::detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         return error;
@@ -491,7 +495,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
           &tmp_num_uniques[buffer_selector ^ 0x01]};
 
         error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, threads_per_block, 0, stream)
+          detail::TripleChevronFactory{}(num_current_tiles, threads_per_block, 0, stream)
             .doit(device_rle_sweep_kernel,
                   d_in + current_partition_offset,
                   d_offsets_out,
@@ -510,7 +514,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
       else
       {
         error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, threads_per_block, 0, stream)
+          detail::TripleChevronFactory{}(num_current_tiles, threads_per_block, 0, stream)
             .doit(device_rle_sweep_kernel,
                   d_in + current_partition_offset,
                   d_offsets_out,
@@ -528,7 +532,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(_CUB::detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         return error;
@@ -603,7 +607,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
 
     // Get PTX version
     int ptx_version = 0;
-    error           = CubDebug(PtxVersion(ptx_version));
+    error           = CubDebug(_CUB::PtxVersion(ptx_version));
     if (cudaSuccess != error)
     {
       return error;
@@ -666,13 +670,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   static constexpr int init_kernel_threads = 128;
 
   ::cuda::compute_capability cc{};
-  if (const auto error = CubDebug(ptx_compute_cap(cc)))
+  if (const auto error = CubDebug(_CUB::detail::ptx_compute_cap(cc)))
   {
     return error;
   }
 
   const RleNonTrivialRunsPolicy active_policy = policy_selector(cc);
-  detail::log_dispatch("DeviceRle", cc, active_policy);
+  _CUB::detail::log_dispatch("DeviceRle", cc, active_policy);
 
   const int threads_per_block = active_policy.lookback.threads_per_block;
   const int items_per_thread  = active_policy.lookback.items_per_thread;
@@ -689,9 +693,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   const auto max_num_items_per_invocation =
     use_streaming_invocation ? ::cuda::std::min(capped_num_items_per_invocation, num_items) : num_items;
   const auto num_partitions =
-    (capped_num_items_per_invocation == 0)
-      ? global_offset_t{1}
-      : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
+    (num_items == 0) ? global_offset_t{1} : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
 
   const int max_num_tiles = static_cast<int>(::cuda::ceil_div(max_num_items_per_invocation, tile_size));
 
@@ -705,7 +707,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   void* allocations[3] = {};
   if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -731,7 +733,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
     _CUB_LOG_KERNEL_LAUNCH("device_scan_init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
+          detail::TripleChevronFactory{}(init_grid_size, init_kernel_threads, 0, stream)
             .doit(&detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
                   tile_status,
                   num_current_tiles,
@@ -739,7 +741,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     {
       return error;
     }
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -773,7 +775,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     }();
 
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, threads_per_block, 0, stream)
+          detail::TripleChevronFactory{}(num_current_tiles, threads_per_block, 0, stream)
             .doit(&detail::rle::DeviceRleSweepKernel<
                     PolicySelector,
                     InputIteratorT,
@@ -798,7 +800,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }

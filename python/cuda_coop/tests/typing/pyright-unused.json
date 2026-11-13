@@ -1,0 +1,13 @@
+{
+  "include": [
+    "../../cuda/coop"
+  ],
+  "extraPaths": [
+    "../.."
+  ],
+  "typeCheckingMode": "off",
+  "pythonVersion": "3.10",
+  "reportUnusedFunction": "error",
+  "reportMissingImports": "none",
+  "reportMissingModuleSource": "none"
+}

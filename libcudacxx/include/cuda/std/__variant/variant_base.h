@@ -20,9 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/variant.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
@@ -46,7 +48,7 @@ namespace __variant_detail
 template <size_t _Index, class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __alt
 {
-  using __value_type = _Tp;
+  using __value_type _CCCL_NODEBUG = _Tp;
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
@@ -131,7 +133,7 @@ template <_Trait _DestructibleTrait, class... _Types>
 class _CCCL_TYPE_VISIBILITY_DEFAULT __base
 {
 public:
-  using __index_t = __variant_index_t<sizeof...(_Types)>;
+  using __index_t _CCCL_NODEBUG = __variant_index_t<sizeof...(_Types)>;
 
   _CCCL_API explicit constexpr __base(__valueless_t __tag) noexcept
       : __data_(__tag)
@@ -189,17 +191,17 @@ protected:
 template <class _Traits, _Trait = _Traits::__destructible_trait>
 class _CCCL_TYPE_VISIBILITY_DEFAULT __dtor;
 
-#define _LIBCUDACXX_VARIANT_DESTRUCTOR_BODY(destructible_trait)   \
-  using __base_type = __base<destructible_trait, _Types...>;      \
-  using __index_t   = typename __base_type::__index_t;            \
-                                                                  \
-public:                                                           \
-  using __base_type::__base_type;                                 \
-  using __base_type::operator=;                                   \
-                                                                  \
-  _CCCL_HIDE_FROM_ABI __dtor(const __dtor&)            = default; \
-  _CCCL_HIDE_FROM_ABI __dtor(__dtor&&)                 = default; \
-  _CCCL_HIDE_FROM_ABI __dtor& operator=(const __dtor&) = default; \
+#define _LIBCUDACXX_VARIANT_DESTRUCTOR_BODY(destructible_trait)            \
+  using __base_type _CCCL_NODEBUG = __base<destructible_trait, _Types...>; \
+  using __index_t _CCCL_NODEBUG   = typename __base_type::__index_t;       \
+                                                                           \
+public:                                                                    \
+  using __base_type::__base_type;                                          \
+  using __base_type::operator=;                                            \
+                                                                           \
+  _CCCL_HIDE_FROM_ABI __dtor(const __dtor&)            = default;          \
+  _CCCL_HIDE_FROM_ABI __dtor(__dtor&&)                 = default;          \
+  _CCCL_HIDE_FROM_ABI __dtor& operator=(const __dtor&) = default;          \
   _CCCL_HIDE_FROM_ABI __dtor& operator=(__dtor&&)      = default;
 
 template <class... _Types>
@@ -291,7 +293,7 @@ protected:
 template <class _Traits>
 class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
 {
-  using __base_type = __dtor<_Traits>;
+  using __base_type _CCCL_NODEBUG = __dtor<_Traits>;
 
   template <size_t _CurrentIndex, class _Rhs>
   _CCCL_API static constexpr void
@@ -359,7 +361,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __move_constructor;
   class _CCCL_TYPE_VISIBILITY_DEFAULT                                                                    \
   __move_constructor<__traits<_Types...>, move_constructible_trait> : public __ctor<__traits<_Types...>> \
   {                                                                                                      \
-    using __base_type = __ctor<__traits<_Types...>>;                                                     \
+    using __base_type _CCCL_NODEBUG = __ctor<__traits<_Types...>>;                                       \
                                                                                                          \
   public:                                                                                                \
     using __base_type::__base_type;                                                                      \
@@ -394,7 +396,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __copy_constructor;
   class _CCCL_TYPE_VISIBILITY_DEFAULT                                                                                \
   __copy_constructor<__traits<_Types...>, copy_constructible_trait> : public __move_constructor<__traits<_Types...>> \
   {                                                                                                                  \
-    using __base_type = __move_constructor<__traits<_Types...>>;                                                     \
+    using __base_type _CCCL_NODEBUG = __move_constructor<__traits<_Types...>>;                                       \
                                                                                                                      \
   public:                                                                                                            \
     using __base_type::__base_type;                                                                                  \
@@ -423,7 +425,7 @@ _LIBCUDACXX_VARIANT_COPY_CONSTRUCTOR(_Trait::_Unavailable, __copy_constructor(co
 template <class _Traits>
 class _CCCL_TYPE_VISIBILITY_DEFAULT __assignment : public __copy_constructor<_Traits>
 {
-  using __base_type = __copy_constructor<_Traits>;
+  using __base_type _CCCL_NODEBUG = __copy_constructor<_Traits>;
 
   template <size_t _CurrentIndex, class _Other>
   _CCCL_API constexpr void
@@ -529,7 +531,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __move_assignment;
   class _CCCL_TYPE_VISIBILITY_DEFAULT                                                                      \
   __move_assignment<__traits<_Types...>, move_assignable_trait> : public __assignment<__traits<_Types...>> \
   {                                                                                                        \
-    using __base_type = __assignment<__traits<_Types...>>;                                                 \
+    using __base_type _CCCL_NODEBUG = __assignment<__traits<_Types...>>;                                   \
                                                                                                            \
   public:                                                                                                  \
     using __base_type::__base_type;                                                                        \
@@ -566,7 +568,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __copy_assignment;
   class _CCCL_TYPE_VISIBILITY_DEFAULT                                                                           \
   __copy_assignment<__traits<_Types...>, copy_assignable_trait> : public __move_assignment<__traits<_Types...>> \
   {                                                                                                             \
-    using __base_type = __move_assignment<__traits<_Types...>>;                                                 \
+    using __base_type _CCCL_NODEBUG = __move_assignment<__traits<_Types...>>;                                   \
                                                                                                                 \
   public:                                                                                                       \
     using __base_type::__base_type;                                                                             \
@@ -597,7 +599,7 @@ _LIBCUDACXX_VARIANT_COPY_ASSIGNMENT(_Trait::_Unavailable,
 template <class... _Types>
 class _CCCL_TYPE_VISIBILITY_DEFAULT __impl : public __copy_assignment<__traits<_Types...>>
 {
-  using __base_type = __copy_assignment<__traits<_Types...>>;
+  using __base_type _CCCL_NODEBUG = __copy_assignment<__traits<_Types...>>;
 
   template <size_t _CurrentIndex>
   _CCCL_API static constexpr void

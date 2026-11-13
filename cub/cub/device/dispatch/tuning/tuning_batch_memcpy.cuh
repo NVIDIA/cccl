@@ -13,12 +13,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_batch_memcpy.cuh>
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/ostream>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/util_device.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 
@@ -147,7 +150,7 @@ namespace detail
 
 inline ::std::ostream& operator<<(::std::ostream& os, BatchedCopyAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED()
 
@@ -205,8 +208,8 @@ private:
         /* .warp_level_threshold = */ 128,
         /* .block_level_threshold = */ 8 * 1024,
         // BufferOffsetT and BlockOffsetT are primitive/trivially copyable
-        /* .buffer_lookback_delay = */ default_delay_constructor_policy(true),
-        /* .block_lookback_delay = */ default_delay_constructor_policy(true)},
+        /* .buffer_lookback_delay = */ _CUB::detail::default_delay_constructor_policy(true),
+        /* .block_lookback_delay = */ _CUB::detail::default_delay_constructor_policy(true)},
       large,
     };
   }

@@ -36,8 +36,6 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 // Comparison helpers, shared by the portable checks and the device-only kernels.
 TEST_HOST_DEVICE_FUNC bool approx_eq(double a, double b, double tol)
 {
@@ -289,13 +287,13 @@ int main(int, char**)
 {
   // force_include.h makes this main __host__ __device__ and runs it twice, on the
   // host and then in a kernel, so these cover both without any launch of our own.
-  test_host_device<cudax::fp32mp2>(1e-5);
-  test_host_device<cudax::fp64mp2>(1e-12);
+  test_host_device<cuda::fp32mp2>(1e-5);
+  test_host_device<cuda::fp64mp2>(1e-12);
 
 #if _CCCL_CUDA_COMPILATION()
   // The remaining functions are reachable from device code only, so the kernel run is
   // the one that checks them.
-  NV_IF_TARGET(NV_IS_DEVICE, (test_device<cudax::fp32mp2>(1e-5); test_device<cudax::fp64mp2>(1e-12);))
+  NV_IF_TARGET(NV_IS_DEVICE, (test_device<cuda::fp32mp2>(1e-5); test_device<cuda::fp64mp2>(1e-12);))
 #endif // _CCCL_CUDA_COMPILATION()
   return 0;
 }

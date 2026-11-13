@@ -22,16 +22,17 @@
 
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__algorithm/ranges_min.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/convertible_to.h>
-#include <cuda/std/__functional/bind_back.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__fwd/string_view.h>
+#include <cuda/std/__fwd/subrange.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/counted_iterator.h>
 #include <cuda/std/__iterator/default_sentinel.h>
 #include <cuda/std/__iterator/distance.h>
-#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/all.h>
 #include <cuda/std/__ranges/concepts.h>
@@ -44,7 +45,7 @@
 #include <cuda/std/__ranges/subrange.h>
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
@@ -265,7 +266,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr auto size()
   {
     const auto __n = ::cuda::std::ranges::size(__base_);
-    return (::cuda::std::ranges::min) (__n, static_cast<decltype(__n)>(__count_));
+    return ::cuda::std::ranges::min(__n, static_cast<decltype(__n)>(__count_));
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
@@ -273,7 +274,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr auto size() const
   {
     auto __n = ::cuda::std::ranges::size(__base_);
-    return (::cuda::std::ranges::min) (__n, static_cast<decltype(__n)>(__count_));
+    return ::cuda::std::ranges::min(__n, static_cast<decltype(__n)>(__count_));
   }
 };
 
@@ -283,6 +284,14 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES take_view(_Range&&, range_difference_t<_Range>)
 
 template <class _Tp>
 inline constexpr bool enable_borrowed_range<take_view<_Tp>> = enable_borrowed_range<_Tp>;
+
+// A runtime count cannot change the size of an empty range.
+template <class _View>
+inline constexpr size_t __static_size_v<take_view<_View>> = (__static_size_v<_View> == 0) ? 0 : dynamic_extent;
+
+template <class _View>
+inline constexpr size_t __static_size_v<const take_view<_View>> =
+  (range<const take_view<_View>> && __static_size_v<const _View> == 0) ? 0 : dynamic_extent;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
@@ -325,14 +334,14 @@ struct __passthrough_type<span<_Tp, _Extent>>
 template <class _CharT, class _Traits>
 struct __passthrough_type<basic_string_view<_CharT, _Traits>>
 {
-  using type = _CCCL_NODEBUG basic_string_view<_CharT, _Traits>;
+  using type _CCCL_NODEBUG = basic_string_view<_CharT, _Traits>;
 };
 
 template <class _Iter, class _Sent, ::cuda::std::ranges::subrange_kind _Kind>
 struct __passthrough_type<::cuda::std::ranges::subrange<_Iter, _Sent, _Kind>,
                           void_t<typename ::cuda::std::ranges::subrange<_Iter>>>
 {
-  using type = _CCCL_NODEBUG ::cuda::std::ranges::subrange<_Iter>;
+  using type _CCCL_NODEBUG = ::cuda::std::ranges::subrange<_Iter>;
 };
 
 template <class _Tp>

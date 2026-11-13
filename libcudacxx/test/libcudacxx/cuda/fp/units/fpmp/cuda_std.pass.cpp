@@ -5,7 +5,7 @@
 //
 //  Unit test: cuda::std math overloads for the fpmp2 multi-precision type.
 //
-//  The emulated math lives in cuda::experimental, but a qualified
+//  The emulated math lives in cuda, but a qualified
 //  cuda::std::<fn>(x) call suppresses ADL. Without dedicated overloads in
 //  namespace cuda::std, such a call would silently narrow the fpmp2 argument to
 //  double (via the implicit conversion) and compute a native-double result. This
@@ -28,13 +28,11 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 TEST_HOST_DEVICE_FUNC bool run_test()
 {
   bool ok = true;
 
-  using T = cudax::fp32mp2; // fpmp2<float, def>
+  using T = cuda::fp32mp2; // fpmp2<float, def>
   const T a(2.0f), b(3.0f), c(1.0f);
 
   // ---- Return-type guards (compile-time) ------------------------------------
@@ -67,7 +65,7 @@ TEST_HOST_DEVICE_FUNC bool run_test()
   static_assert(::cuda::std::is_same_v<decltype(::cuda::std::lround(a)), long int>);
 
   // fp64mp2 goes through the same overloads.
-  using D = cudax::fp64mp2; // fpmp2<double, def>
+  using D = cuda::fp64mp2; // fpmp2<double, def>
   const D da(2.0), db(3.0), dc(1.0);
   static_assert(::cuda::std::is_same_v<decltype(::cuda::std::sqrt(da)), D>);
   static_assert(::cuda::std::is_same_v<decltype(::cuda::std::fma(da, db, dc)), D>);

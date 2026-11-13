@@ -22,7 +22,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(per_device_resource.h)
 
 // Some build systems need a hint to know which files we actually include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/per_device_resource.h>
 #  include <thrust/system/cuda/detail/per_device_resource.h>
 #  include <thrust/system/omp/detail/per_device_resource.h>

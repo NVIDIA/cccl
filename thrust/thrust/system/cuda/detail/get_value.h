@@ -17,8 +17,10 @@
 #  include <thrust/system/cuda/config.h>
 
 #  include <thrust/detail/raw_pointer_cast.h>
+#  include <thrust/iterator/detail/host_system_tag.h>
 #  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cross_system.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 
 #  include <nv/target>
 

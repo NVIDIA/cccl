@@ -19,17 +19,23 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/it_traits.cuh>
 #include <cub/thread/thread_load.cuh>
-#include <cub/thread/thread_store.cuh>
 
-#include <thrust/iterator/iterator_facade.h>
+#include <thrust/iterator/detail/device_system_tag.h>
+#include <thrust/iterator/detail/iterator_facade_category.h> // IWYU pragma: keep
+#include <thrust/iterator/iterator_traversal_tags.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
-#include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__utility/declval.h>
+
+#if _CCCL_FREESTANDING()
+#  include <cuda/std/__iterator/iterator_traits.h>
+#endif // _CCCL_FREESTANDING()
 
 CUB_NAMESPACE_BEGIN
 
@@ -113,7 +119,6 @@ public:
                                                             THRUST_NS_QUALIFIER::random_access_traversal_tag>;
 #endif // _CCCL_HOSTED()
 
-public:
   /// Wrapped native pointer
   ValueType* ptr;
 
@@ -141,7 +146,7 @@ public:
   /// Indirection
   _CCCL_DEVICE _CCCL_FORCEINLINE reference operator*() const
   {
-    return ThreadLoad<MODIFIER>(ptr);
+    return _CUB::ThreadLoad<MODIFIER>(ptr);
   }
 
   /// Addition
@@ -186,13 +191,13 @@ public:
   template <typename Distance>
   _CCCL_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
   {
-    return ThreadLoad<MODIFIER>(ptr + n);
+    return _CUB::ThreadLoad<MODIFIER>(ptr + n);
   }
 
   /// Structure dereference
   _CCCL_DEVICE _CCCL_FORCEINLINE pointer operator->()
   {
-    return &ThreadLoad<MODIFIER>(ptr);
+    return &_CUB::ThreadLoad<MODIFIER>(ptr);
   }
 
   /// Equal to
@@ -240,7 +245,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto try_make_cache_modified_iterator(Iterat
 
 template <CacheLoadModifier LoadModifier, typename Iterator>
 using try_make_cache_modified_iterator_t =
-  decltype(try_make_cache_modified_iterator<LoadModifier>(::cuda::std::declval<Iterator>()));
+  decltype(_CUB::detail::try_make_cache_modified_iterator<LoadModifier>(::cuda::std::declval<Iterator>()));
 } // namespace detail
 
 CUB_NAMESPACE_END

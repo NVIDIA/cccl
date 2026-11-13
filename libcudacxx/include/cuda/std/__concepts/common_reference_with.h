@@ -20,12 +20,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h> // IWYU pragma: keep
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__type_traits/common_reference.h>
-#include <cuda/std/__type_traits/copy_cv.h>
-#include <cuda/std/__type_traits/copy_cvref.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

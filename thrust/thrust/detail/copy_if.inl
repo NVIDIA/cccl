@@ -23,7 +23,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(copy_if.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/copy_if.h>
 #  include <thrust/system/cuda/detail/copy_if.h>
 #  include <thrust/system/omp/detail/copy_if.h>

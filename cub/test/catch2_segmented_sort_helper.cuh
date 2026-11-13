@@ -63,14 +63,12 @@ struct segment_index_to_offset_op
     {
       return 0;
     }
-    else if (i < num_segments)
+    if (i < num_segments)
     {
       return segment_size * static_cast<OffsetT>(i - num_empty_segments);
     }
-    else
-    {
-      return num_items;
-    }
+
+    return num_items;
   }
 };
 
@@ -96,7 +94,6 @@ struct short_key_verification_helper
   // Holding the histogram of the keys being sorted for verification
   c2h::host_vector<std::size_t> keys_histogram{};
 
-public:
   void prepare_verification_data(const c2h::device_vector<key_t>& in_keys)
   {
     const c2h::host_vector<key_t> h_in{in_keys};
@@ -138,7 +135,6 @@ public:
 template <typename KeyT>
 class segmented_verification_helper
 {
-private:
   using key_t = KeyT;
   const std::size_t sequence_length{};
 
@@ -240,14 +236,14 @@ public:
 template <typename T>
 struct unwrap_value_t_impl
 {
-  using type = T;
+  using type _CCCL_NODEBUG = T;
 };
 
 #if TEST_HALF_T()
 template <>
 struct unwrap_value_t_impl<half_t>
 {
-  using type = __half;
+  using type _CCCL_NODEBUG = __half;
 };
 #endif // TEST_HALF_T()
 
@@ -255,7 +251,7 @@ struct unwrap_value_t_impl<half_t>
 template <>
 struct unwrap_value_t_impl<bfloat16_t>
 {
-  using type = __nv_bfloat16;
+  using type _CCCL_NODEBUG = __nv_bfloat16;
 };
 #endif // TEST_BF_T()
 
@@ -352,12 +348,7 @@ struct segment_checker
       return true;
     }
 
-    if (!this->check_results(segment_begin, segment_size, ValueT{}))
-    {
-      return false;
-    }
-
-    return true;
+    return this->check_results(segment_begin, segment_size, ValueT{});
   }
 
 private:
@@ -566,7 +557,7 @@ void generate_random_unsorted_inputs(c2h::seed_t seed, //
 
   c2h::gen(make_key_seed(seed), d_keys);
 
-  if constexpr (!::cuda::std::is_same<ValueT, cub::NullType>::value)
+  if constexpr (!::cuda::std::is_same_v<ValueT, cub::NullType>)
   {
     c2h::gen(make_value_seed(seed), d_values);
   }
@@ -723,7 +714,7 @@ void validate_sorted_random_outputs(
   REQUIRE((d_ref_keys == d_sorted_keys) == true);
 
   // Verify segment-by-segment that the values are appropriately sorted for an unstable key-value sort:
-  if constexpr (!::cuda::std::is_same<ValueT, cub::NullType>::value)
+  if constexpr (!::cuda::std::is_same_v<ValueT, cub::NullType>)
   {
     if constexpr (STABLE)
     {
@@ -1226,14 +1217,14 @@ void call_cub_segmented_sort_api(
 ///////////////////////////////////////////////////////////////////////////////
 // Testing implementations
 
-constexpr bool ascending  = false;
-constexpr bool descending = true;
+inline constexpr bool ascending  = false;
+inline constexpr bool descending = true;
 
-constexpr bool pointers      = false;
-constexpr bool double_buffer = true;
+inline constexpr bool pointers      = false;
+inline constexpr bool double_buffer = true;
 
-constexpr bool unstable = false;
-constexpr bool stable   = true;
+inline constexpr bool unstable = false;
+inline constexpr bool stable   = true;
 
 // Uses analytically derived key/value pairs for generation and validation.
 // Much faster that test_segments_random, as this avoids H<->D copies and host reference sorting.
@@ -1580,9 +1571,9 @@ struct generate_edge_case_offsets_dispatch
     add_segments(a_lot_of, single_thread_segment_size - 1);
     add_segments(a_lot_of, single_thread_segment_size);
     add_segments(a_lot_of, single_thread_segment_size + 1);
-    add_segments(a_lot_of, single_thread_segment_size * 2 - 1);
+    add_segments(a_lot_of, (single_thread_segment_size * 2) - 1);
     add_segments(a_lot_of, single_thread_segment_size * 2);
-    add_segments(a_lot_of, single_thread_segment_size * 2 + 1);
+    add_segments(a_lot_of, (single_thread_segment_size * 2) + 1);
     add_segments(a_bunch_of, small_segment_max_segment_size - 1);
     add_segments(a_bunch_of, small_segment_max_segment_size);
     add_segments(a_bunch_of, small_segment_max_segment_size + 1);

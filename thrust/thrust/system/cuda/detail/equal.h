@@ -16,7 +16,11 @@
 #if _CCCL_CUDA_COMPILATION()
 #  include <thrust/system/cuda/config.h>
 
+#  include <thrust/iterator/iterator_traits.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/mismatch.h>
+
+#  include <cuda/std/__functional/operations.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub

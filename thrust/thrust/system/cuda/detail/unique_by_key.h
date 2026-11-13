@@ -18,19 +18,20 @@
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_select.cuh>
-#  include <cub/util_math.cuh>
 #  include <cub/util_temporary_storage.cuh>
 
 #  include <thrust/detail/alignment.h>
+#  include <thrust/detail/execution_policy.h>
 #  include <thrust/detail/function.h>
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/functional.h>
+#  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
-#  include <thrust/system/cuda/detail/core/agent_launcher.h>
+#  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__utility/pair.h>
@@ -39,7 +40,8 @@
 THRUST_NAMESPACE_BEGIN
 
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator1, ForwardIterator2>
+unique_by_key( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator1 keys_first,
   ForwardIterator1 keys_last,
@@ -49,7 +51,8 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2>
+unique_by_key_copy( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -230,7 +233,7 @@ unique_by_key(execution_policy<Derived>& policy, KeyInputIt keys_first, KeyInput
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 
-#  include <thrust/memory.h>
-#  include <thrust/unique.h>
+#  include <thrust/memory.h> // IWYU pragma: keep
+#  include <thrust/unique.h> // IWYU pragma: keep
 
 #endif // _CCCL_CUDA_COMPILATION()

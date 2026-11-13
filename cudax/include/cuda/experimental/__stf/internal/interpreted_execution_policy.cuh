@@ -114,7 +114,6 @@ public:
     bool may_sync = false;
   };
 
-public:
   interpreted_execution_policy()  = default;
   ~interpreted_execution_policy() = default;
 

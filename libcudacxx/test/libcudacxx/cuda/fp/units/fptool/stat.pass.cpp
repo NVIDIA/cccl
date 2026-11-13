@@ -43,27 +43,38 @@
 #include <cuda/std/cstring>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 #include <cuda/stream>
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
-using base_t     = cudax::fp32mp2;
-using stat_t     = cudax::fp32mp2_stat;
-using base_low_t = cudax::fp32mp2_low;
-using stat_low_t = cudax::fp32mp2_stat_low;
+using base_t     = cuda::fp32mp2;
+using stat_t     = cuda::fp32mp2_stat;
+using base_low_t = cuda::fp32mp2_low;
+using stat_low_t = cuda::fp32mp2_stat_low;
 
 // The drop-in promise in memory.
 static_assert(sizeof(stat_t) == sizeof(base_t));
 static_assert(alignof(stat_t) == alignof(base_t));
 static_assert(cuda::std::is_trivially_copyable_v<stat_t>);
-static_assert(sizeof(cudax::fp64mp2_stat) == sizeof(cudax::fp64mp2));
-static_assert(cuda::std::is_trivially_copyable_v<cudax::fp64mp2_stat>);
+static_assert(sizeof(cuda::fp64mp2_stat) == sizeof(cuda::fp64mp2));
+static_assert(cuda::std::is_trivially_copyable_v<cuda::fp64mp2_stat>);
 
 // The wrapper reports the same characteristics as the wrapped type.
 static_assert(cuda::std::numeric_limits<stat_t>::digits == cuda::std::numeric_limits<base_t>::digits);
 static_assert(cuda::std::numeric_limits<stat_t>::is_specialized);
+
+// The compound forms accept exactly the scalars the wrapped type accepts.
+template <class T, class S, class = void>
+struct can_mul_assign : cuda::std::false_type
+{};
+template <class T, class S>
+struct can_mul_assign<T, S, cuda::std::void_t<decltype(cuda::std::declval<T&>() *= cuda::std::declval<S>())>>
+    : cuda::std::true_type
+{};
+static_assert(can_mul_assign<stat_t, float>::value && can_mul_assign<base_t, float>::value);
+static_assert(can_mul_assign<stat_t, int>::value == can_mul_assign<base_t, int>::value);
+static_assert(can_mul_assign<stat_t, double>::value == can_mul_assign<base_t, double>::value);
 
 // A pair of limbs, compared bitwise so that a sign of zero or a NaN payload cannot hide
 // a difference.
@@ -117,7 +128,31 @@ TEST_HOST_DEVICE_FUNC void test_parity()
     s += fc;
     b -= fc;
     s -= fc;
+    b *= fc;
+    s *= fc;
+    b /= fb;
+    s /= fb;
     assert(same(limbs(b), limbs(s)));
+  }
+
+  { // a scalar that one limb cannot hold is converted to the pair, not narrowed to a limb
+    const int wide = 16777217; // 2^24 + 1
+    base_t b       = ba;
+    stat_t s       = sa;
+    b += wide;
+    s += wide;
+    assert(same(limbs(b), limbs(s)));
+    b *= wide;
+    s *= wide;
+    assert(same(limbs(b), limbs(s)));
+    b /= wide;
+    s /= wide;
+    assert(same(limbs(b), limbs(s)));
+    b -= wide;
+    s -= wide;
+    assert(same(limbs(b), limbs(s)));
+    assert(same(limbs(ba * wide), limbs(sa * wide)));
+    assert(same(limbs(wide - ba), limbs(wide - sa)));
   }
 
   { // increment and decrement, prefix and postfix
@@ -246,8 +281,8 @@ TEST_HOST_DEVICE_FUNC void test_parity()
   }
 
   { // the double-double instantiation, so both limb types are exercised
-    using dbase_t = cudax::fp64mp2;
-    using dstat_t = cudax::fp64mp2_stat;
+    using dbase_t = cuda::fp64mp2;
+    using dstat_t = cuda::fp64mp2_stat;
     const dbase_t db(1.25);
     const dstat_t ds(1.25);
     const dbase_t br = (db + db) * db / db - db;
@@ -270,8 +305,8 @@ __global__ void parity_kernel()
 // A kernel by one thread with a hand-counted operation mix.
 constexpr unsigned long long int expected_add = 3ull;
 constexpr unsigned long long int expected_sub = 3ull;
-constexpr unsigned long long int expected_mul = 2ull;
-constexpr unsigned long long int expected_div = 2ull;
+constexpr unsigned long long int expected_mul = 4ull;
+constexpr unsigned long long int expected_div = 3ull;
 constexpr unsigned long long int expected_ops = expected_add + expected_sub + expected_mul + expected_div;
 
 __global__ void counting_kernel(float* sink)
@@ -288,6 +323,9 @@ __global__ void counting_kernel(float* sink)
   s /= a; // div
   ++s; // add
   --s; // sub
+  s *= 2; // mul, a scalar one limb cannot hold, converted to the pair
+  s /= 2.0f; // div, a single-limb scalar
+  s = s * 0.5f; // mul, a single-limb scalar in a binary operator
 
   *sink = static_cast<float>(s);
 }
@@ -295,7 +333,7 @@ __global__ void counting_kernel(float* sink)
 // The exact operands of the counting kernel produce a zero lo limb, so a gap is only
 // sampled where the arithmetic actually needed the second limb: the range stays empty
 // otherwise, which is the sentinel pair rather than an ordered range.
-void check_slot_sampled(const cudax::fpmp2_stat_value& slot)
+void check_slot_sampled(const cuda::fpmp2_stat_value& slot)
 {
   assert(slot.min_exp <= slot.max_exp);
   assert(slot.min_hi_lo_gap <= slot.max_hi_lo_gap
@@ -425,12 +463,12 @@ inline constexpr auto one_thread = cuda::make_config(cuda::grid_dims<1>(), cuda:
 void test_event_counters(cuda::stream_ref stream)
 {
   auto sink = cuda::make_device_buffer<float>(stream, cuda::device_ref{0}, 1, cuda::no_init);
-  cudax::fpmp2_stat_reset_device_data(stream);
+  cuda::fpmp2_stat_reset_device_data(stream);
 
   cuda::launch(stream, one_thread, event_kernel, sink.data());
 
   // The read waits on the stream, so the kernel above is done and counted.
-  const cudax::fpmp2_stat_data d = cudax::fpmp2_stat_read_device_data(stream);
+  const cuda::fpmp2_stat_data d = cuda::fpmp2_stat_read_device_data(stream);
 
   assert(d.full_cancel_count == 2ull);
   assert(d.partial_cancel_count == 1ull);
@@ -452,9 +490,9 @@ void test_device_record(cuda::stream_ref stream)
 
   auto sink = cuda::make_device_buffer<float>(stream, cuda::device_ref{0}, 1, cuda::no_init);
 
-  cudax::fpmp2_stat_reset_device_data(stream);
+  cuda::fpmp2_stat_reset_device_data(stream);
 
-  const cudax::fpmp2_stat_data after_reset = cudax::fpmp2_stat_read_device_data(stream);
+  const cuda::fpmp2_stat_data after_reset = cuda::fpmp2_stat_read_device_data(stream);
 
   assert(after_reset.ops_count == 0ull);
   assert(after_reset.add_count == 0ull);
@@ -474,7 +512,7 @@ void test_device_record(cuda::stream_ref stream)
 
   cuda::launch(stream, one_thread, counting_kernel, sink.data());
 
-  const cudax::fpmp2_stat_data after_run = cudax::fpmp2_stat_read_device_data(stream);
+  const cuda::fpmp2_stat_data after_run = cuda::fpmp2_stat_read_device_data(stream);
 
   assert(after_run.add_count == expected_add);
   assert(after_run.sub_count == expected_sub);
@@ -497,14 +535,14 @@ void test_device_record(cuda::stream_ref stream)
   assert(after_run.arg[2].max_exp == sentinel_min);
 
   // A second reset clears what the run recorded.
-  cudax::fpmp2_stat_reset_device_data(stream);
-  const cudax::fpmp2_stat_data after_second_reset = cudax::fpmp2_stat_read_device_data(stream);
+  cuda::fpmp2_stat_reset_device_data(stream);
+  const cuda::fpmp2_stat_data after_second_reset = cuda::fpmp2_stat_read_device_data(stream);
   assert(after_second_reset.ops_count == 0ull);
 
   // An inexact result must be summarized with a gap that reflects a normalized pair.
   cuda::launch(stream, one_thread, gap_kernel, sink.data());
 
-  const cudax::fpmp2_stat_data after_gap = cudax::fpmp2_stat_read_device_data(stream);
+  const cuda::fpmp2_stat_data after_gap = cuda::fpmp2_stat_read_device_data(stream);
 
   assert(after_gap.div_count == 1ull);
   assert(after_gap.result.min_hi_lo_gap <= after_gap.result.max_hi_lo_gap);
@@ -519,11 +557,13 @@ void test_device_record(cuda::stream_ref stream)
   // Nothing here comes near the bottom of the exponent range.
   assert(after_gap.result.denorm_count == 0ull);
 
+  // Fast math flushes the subnormal results.
+  if (!TEST_HAS_CUDA_FAST_MATH)
   { // subnormals: recognized, and measured by their leading bit
-    cudax::fpmp2_stat_reset_device_data(stream);
+    cuda::fpmp2_stat_reset_device_data(stream);
     cuda::launch(stream, one_thread, denorm_kernel, sink.data());
 
-    const cudax::fpmp2_stat_data after_denorm = cudax::fpmp2_stat_read_device_data(stream);
+    const cuda::fpmp2_stat_data after_denorm = cuda::fpmp2_stat_read_device_data(stream);
 
     // The two results are subnormal; all four operands are ordinary values.
     assert(after_denorm.result.denorm_count == 2ull);
@@ -542,10 +582,10 @@ void test_device_record(cuda::stream_ref stream)
   }
 
   { // low accuracy: overlap must be both bounded and counted
-    cudax::fpmp2_stat_reset_device_data(stream);
+    cuda::fpmp2_stat_reset_device_data(stream);
     cuda::launch(stream, one_thread, overlap_kernel, sink.data());
 
-    const cudax::fpmp2_stat_data after_overlap = cudax::fpmp2_stat_read_device_data(stream);
+    const cuda::fpmp2_stat_data after_overlap = cuda::fpmp2_stat_read_device_data(stream);
 
     assert(after_overlap.add_count == 8ull);
     assert(after_overlap.result.min_hi_lo_gap < 0);
@@ -555,10 +595,10 @@ void test_device_record(cuda::stream_ref stream)
   }
 
   { // a pair led by lo, its hi being zero: measured by lo, and not a deep cancellation
-    cudax::fpmp2_stat_reset_device_data(stream);
+    cuda::fpmp2_stat_reset_device_data(stream);
     cuda::launch(stream, one_thread, zero_hi_kernel, sink.data());
 
-    const cudax::fpmp2_stat_data after_zero_hi = cudax::fpmp2_stat_read_device_data(stream);
+    const cuda::fpmp2_stat_data after_zero_hi = cuda::fpmp2_stat_read_device_data(stream);
 
     assert(after_zero_hi.sub_count == 1ull);
     // The pair is 2^-5 with nothing in hi, so both ends of the range must report that and
@@ -577,10 +617,10 @@ void test_device_record(cuda::stream_ref stream)
   }
 
   { // inverted limbs: counted as both an inversion and an overlap
-    cudax::fpmp2_stat_reset_device_data(stream);
+    cuda::fpmp2_stat_reset_device_data(stream);
     cuda::launch(stream, one_thread, invert_kernel, sink.data());
 
-    const cudax::fpmp2_stat_data after_invert = cudax::fpmp2_stat_read_device_data(stream);
+    const cuda::fpmp2_stat_data after_invert = cuda::fpmp2_stat_read_device_data(stream);
 
     assert(after_invert.sub_count == 1ull);
     // The first operand is the inverted one, hi = -2^-20 against lo = 1.
@@ -607,7 +647,7 @@ void test_device_record(cuda::stream_ref stream)
     *base_total.data() = base_t(0.0f);
     *stat_total.data() = stat_t(0.0f);
 
-    cudax::fpmp2_stat_reset_device_data(stream);
+    cuda::fpmp2_stat_reset_device_data(stream);
     cuda::launch(
       stream,
       cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<atomic_threads>()),
@@ -623,7 +663,7 @@ void test_device_record(cuda::stream_ref stream)
     assert(base_total.data()->hi() == stat_total.data()->hi());
     assert(base_total.data()->lo() == stat_total.data()->lo());
 
-    const cudax::fpmp2_stat_data after_atomics = cudax::fpmp2_stat_read_device_data(stream);
+    const cuda::fpmp2_stat_data after_atomics = cuda::fpmp2_stat_read_device_data(stream);
     assert(after_atomics.add_count == static_cast<unsigned long long int>(atomic_threads));
     assert(after_atomics.ops_count == static_cast<unsigned long long int>(atomic_threads));
   }

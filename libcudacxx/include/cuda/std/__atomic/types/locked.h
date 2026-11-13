@@ -22,10 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/order.h>
-#include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/types/base.h>
 #include <cuda/std/__atomic/types/common.h>
-#include <cuda/std/__type_traits/remove_cv.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -35,7 +33,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <typename _Tp>
 struct __atomic_locked_storage // NOLINT(cppcoreguidelines-pro-type-member-init)
 {
-  using __underlying_t                = _Tp;
+  using __underlying_t _CCCL_NODEBUG  = _Tp;
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_locked_tag;
 
   _Tp __a_value;

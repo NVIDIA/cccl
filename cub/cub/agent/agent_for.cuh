@@ -13,9 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::for_each
@@ -42,7 +39,7 @@ struct agent_block_striped_t
     for (int item = 0; item < items_per_thread; item++)
     {
       const auto idx =
-        static_cast<OffsetT>(threads_per_block * item + threadIdx.x); // NOLINT(bugprone-misplaced-widening-cast)
+        static_cast<OffsetT>((threads_per_block * item) + threadIdx.x); // NOLINT(bugprone-misplaced-widening-cast)
 
       if (IsFullTile || idx < items_in_tile)
       {

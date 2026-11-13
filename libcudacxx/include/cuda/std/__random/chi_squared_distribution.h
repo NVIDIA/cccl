@@ -39,7 +39,6 @@ public:
 
   class param_type
   {
-  private:
     result_type __n_ = result_type{1};
 
   public:

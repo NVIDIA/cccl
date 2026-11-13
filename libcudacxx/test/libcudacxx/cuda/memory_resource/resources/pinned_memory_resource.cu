@@ -108,7 +108,7 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", T
 
   { // allocate_sync / deallocate_sync
     auto* ptr = res.allocate_sync(42);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
+    static_assert(cuda::std::is_same_v<decltype(ptr), void*>);
     ensure_pinned_ptr(ptr);
 
     res.deallocate_sync(ptr, 42);
@@ -116,7 +116,7 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", T
 
   { // allocate_sync / deallocate_sync with alignment
     auto* ptr = res.allocate_sync(42, 4);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
+    static_assert(cuda::std::is_same_v<decltype(ptr), void*>);
     ensure_pinned_ptr(ptr);
 
     res.deallocate_sync(ptr, 42, 4);
@@ -126,7 +126,7 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", T
   {
     { // allocate / deallocate
       auto* ptr = res.allocate(stream, 42);
-      static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
+      static_assert(cuda::std::is_same_v<decltype(ptr), void*>);
 
       stream.sync();
       ensure_pinned_ptr(ptr);
@@ -136,7 +136,7 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", T
 
     { // allocate / deallocate with alignment
       auto* ptr = res.allocate(stream, 42, 4);
-      static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
+      static_assert(cuda::std::is_same_v<decltype(ptr), void*>);
 
       stream.sync();
       ensure_pinned_ptr(ptr);

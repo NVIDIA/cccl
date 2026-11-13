@@ -18,6 +18,11 @@
 #define TEST_CUDA_COMPILER(...) _CCCL_CUDA_COMPILER(__VA_ARGS__)
 #define TEST_CUDA_COMPILATION() _CCCL_CUDA_COMPILATION()
 
+// Lit defines this when the CUDA compiler uses --use_fast_math. Host checks still use ordinary math semantics.
+#ifndef TEST_HAS_CUDA_FAST_MATH
+#  define TEST_HAS_CUDA_FAST_MATH 0
+#endif
+
 // Use the CCCL diagnostic suppression
 #define TEST_DIAG_SUPPRESS_CLANG(...) _CCCL_DIAG_SUPPRESS_CLANG(__VA_ARGS__)
 #define TEST_DIAG_SUPPRESS_GCC(...)   _CCCL_DIAG_SUPPRESS_GCC(__VA_ARGS__)

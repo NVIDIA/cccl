@@ -95,7 +95,6 @@ private:
 template <class IndexType, class Bijection = feistel_bijection>
 class random_bijection
 {
-private:
   static_assert(::cuda::std::is_integral_v<IndexType>, "IndexType must be an integral type");
   static_assert(::cuda::std::is_convertible_v<IndexType, typename Bijection::index_type>,
                 "IndexType must be convertible to Bijection::index_type");

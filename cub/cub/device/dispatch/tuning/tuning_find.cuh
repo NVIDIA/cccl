@@ -14,11 +14,13 @@
 #endif // no system header
 
 #include <cub/thread/thread_load.cuh>
-#include <cub/util_device.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/concepts>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/util_device.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 
@@ -87,7 +89,7 @@ struct policy_selector
       // 1-byte and 4-byte inputs: intentionally left untuned
     }
     // FindIfPolicy (GTX670: 154.0 @ 48M 4B items) - single policy for all ccs
-    const auto scaled = scale_mem_bound(128, 16, input_type_size);
+    const auto scaled = _CUB::detail::scale_mem_bound(128, 16, input_type_size);
     return FindIfPolicy{scaled.threads_per_block, scaled.items_per_thread, 4, LOAD_LDG};
   }
 };

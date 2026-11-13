@@ -12,10 +12,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/cpp/detail/malloc_and_free.h>
+#include <thrust/system/cpp/detail/execution_policy.h>
 #include <thrust/system/cpp/memory.h>
+#include <thrust/system/cpp/pointer.h>
+#include <thrust/system/detail/sequential/malloc_and_free.h>
 
-#include <cuda/std/limits>
+#include <cuda/std/__cstddef/types.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::cpp
@@ -36,7 +38,7 @@ pointer<T> malloc(std::size_t n)
 void free(pointer<void> ptr)
 {
   tag t;
-  return thrust::system::detail::sequential::free(t, ptr);
+  thrust::system::detail::sequential::free(t, ptr);
 } // end free()
 } // namespace system::cpp
 THRUST_NAMESPACE_END

@@ -20,15 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_member_pointer.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -47,13 +43,13 @@ struct _ProjectedPred
   {}
 
   template <class _Tp>
-  invoke_result_t<_Pred&, invoke_result_t<_Proj&, _Tp>> constexpr _CCCL_API inline operator()(_Tp&& __v) const
+  invoke_result_t<_Pred&, invoke_result_t<_Proj&, _Tp>> constexpr _CCCL_API operator()(_Tp&& __v) const
   {
     return ::cuda::std::invoke(__pred, ::cuda::std::invoke(__proj, ::cuda::std::forward<_Tp>(__v)));
   }
 
   template <class _T1, class _T2>
-  invoke_result_t<_Pred&, invoke_result_t<_Proj&, _T1>, invoke_result_t<_Proj&, _T2>> _CCCL_API inline
+  invoke_result_t<_Pred&, invoke_result_t<_Proj&, _T1>, invoke_result_t<_Proj&, _T2>> _CCCL_API
   operator()(_T1&& __lhs, _T2&& __rhs) const
   {
     return ::cuda::std::invoke(__pred,

@@ -167,15 +167,15 @@ CUB_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream (2D)", "[
 CUB_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (1D)", "[histogram][env]", CUB_SMALL)
 {
   // example-begin multi-histogram-even-1d-env
-  // 4-channel RGBA pixels, histogram 3 active channels
+  // 4-channel RGBA items, histogram 3 active channels
   [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
   [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
 
   // clang-format off
-  // 2 pixels: (R=0, G=2, B=1, A=255), (R=3, G=4, B=2, A=128)
+  // 2 items: (R=0, G=2, B=1, A=255), (R=3, G=4, B=2, A=128)
   auto d_samples = thrust::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
   // clang-format on
-  const int num_pixels = 2;
+  const int num_items = 2;
 
   // 5 levels per channel → 4 bins per channel: [0,1), [1,2), [2,3), [3,4)
   const cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels            = {5, 5, 5};
@@ -200,7 +200,7 @@ CUB_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (1D)"
     num_levels,
     lower_level,
     upper_level,
-    num_pixels,
+    num_items,
     stream_ref);
   if (error != cudaSuccess)
   {
@@ -225,19 +225,19 @@ CUB_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (1D)"
 CUB_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (2D)", "[histogram][env]", CUB_SMALL)
 {
   // example-begin multi-histogram-even-2d-env
-  // 4-channel RGBA pixels, histogram 3 active channels, 2D region
+  // 4-channel RGBA items, histogram 3 active channels, 2D region
   [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
   [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
 
-  // 2 rows, 2 pixels per row, stride includes 1 extra padding pixel per row
+  // 2 rows, 2 items per row, stride includes 1 extra padding item per row
   // Row 0: (R=0, G=2, B=1, A=255), (R=3, G=4, B=2, A=128), (PAD, PAD, PAD, PAD)
   // Row 1: (R=1, G=1, B=3, A=200), (R=2, G=3, B=0, A=100), (PAD, PAD, PAD, PAD)
   auto d_samples = thrust::device_vector<unsigned char>{
     0, 2, 1, 255, 3, 4, 2, 128, 0, 0, 0, 0, 1, 1, 3, 200, 2, 3, 0, 100, 0, 0, 0, 0};
 
-  const int num_row_pixels      = 2;
+  const int num_row_items       = 2;
   const int num_rows            = 2;
-  const size_t row_stride_bytes = 3 * NUM_CHANNELS * sizeof(unsigned char); // 3 pixels wide, 2 used
+  const size_t row_stride_bytes = 3 * NUM_CHANNELS * sizeof(unsigned char); // 3 items wide, 2 used
 
   const cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels            = {5, 5, 5};
   const cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> lower_level = {0, 0, 0};
@@ -261,7 +261,7 @@ CUB_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (2D)"
     num_levels,
     lower_level,
     upper_level,
-    num_row_pixels,
+    num_row_items,
     num_rows,
     row_stride_bytes,
     stream_ref);
@@ -288,13 +288,13 @@ CUB_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (2D)"
 CUB_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (1D)", "[histogram][env]", CUB_SMALL)
 {
   // example-begin multi-histogram-range-1d-env
-  // 4-channel RGBA pixels, histogram 3 active channels
+  // 4-channel RGBA items, histogram 3 active channels
   [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
   [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
 
-  // 2 pixels: (R=0, G=2, B=1, A=255), (R=3, G=4, B=2, A=128)
-  auto d_samples       = thrust::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
-  const int num_pixels = 2;
+  // 2 items: (R=0, G=2, B=1, A=255), (R=3, G=4, B=2, A=128)
+  auto d_samples      = thrust::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
+  const int num_items = 2;
 
   // Custom bin boundaries per channel
   auto d_levels_r = thrust::device_vector<unsigned char>{0, 2, 4}; // 2 bins: [0,2), [2,4)
@@ -321,7 +321,7 @@ CUB_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (1D)
   const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceHistogram::MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
-    thrust::raw_pointer_cast(d_samples.data()), d_histogram, num_levels, d_levels, num_pixels, stream_ref);
+    thrust::raw_pointer_cast(d_samples.data()), d_histogram, num_levels, d_levels, num_items, stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceHistogram::MultiHistogramRange failed with status: " << error << '\n';
@@ -345,19 +345,19 @@ CUB_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (1D)
 CUB_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (2D)", "[histogram][env]", CUB_SMALL)
 {
   // example-begin multi-histogram-range-2d-env
-  // 4-channel RGBA pixels, histogram 3 active channels, 2D region
+  // 4-channel RGBA items, histogram 3 active channels, 2D region
   [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
   [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
 
-  // 2 rows, 2 pixels per row, stride includes 1 extra padding pixel per row
+  // 2 rows, 2 items per row, stride includes 1 extra padding item per row
   // Row 0: (R=0, G=2, B=1, A=255), (R=3, G=4, B=2, A=128), (PAD, PAD, PAD, PAD)
   // Row 1: (R=1, G=1, B=3, A=200), (R=2, G=3, B=0, A=100), (PAD, PAD, PAD, PAD)
   auto d_samples = thrust::device_vector<unsigned char>{
     0, 2, 1, 255, 3, 4, 2, 128, 0, 0, 0, 0, 1, 1, 3, 200, 2, 3, 0, 100, 0, 0, 0, 0};
 
-  const int num_row_pixels      = 2;
+  const int num_row_items       = 2;
   const int num_rows            = 2;
-  const size_t row_stride_bytes = 3 * NUM_CHANNELS * sizeof(unsigned char); // 3 pixels wide, 2 used
+  const size_t row_stride_bytes = 3 * NUM_CHANNELS * sizeof(unsigned char); // 3 items wide, 2 used
 
   auto d_levels_r = thrust::device_vector<unsigned char>{0, 2, 4}; // 2 bins: [0,2), [2,4)
   auto d_levels_g = thrust::device_vector<unsigned char>{0, 3, 5}; // 2 bins: [0,3), [3,5)
@@ -387,7 +387,7 @@ CUB_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (2D)
     d_histogram,
     num_levels,
     d_levels,
-    num_row_pixels,
+    num_row_items,
     num_rows,
     row_stride_bytes,
     stream_ref);

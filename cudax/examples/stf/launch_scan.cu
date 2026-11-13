@@ -51,7 +51,7 @@ int main(int argc, char** argv)
     X[i] = X0(static_cast<int>(i));
   }
 
-  auto lX = ctx.logical_data(&X[0], N);
+  auto lX = ctx.logical_data(X.data(), N);
 
   // No need to move this back to the host if we do not check the result
   if (!check)
@@ -61,7 +61,8 @@ int main(int argc, char** argv)
 
   cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
 
-  cudaEvent_t start, stop;
+  cudaEvent_t start;
+  cudaEvent_t stop;
   cuda_safe_call(cudaEventCreate(&start));
   cuda_safe_call(cudaEventCreate(&stop));
   cuda_safe_call(cudaEventRecord(start, ctx.fence()));
@@ -139,6 +140,8 @@ int main(int argc, char** argv)
   ctx.finalize();
 
   float ms = 0;
+  // finalize() does not wait for work recorded in a stream returned by fence().
+  cuda_safe_call(cudaEventSynchronize(stop));
   cuda_safe_call(cudaEventElapsedTime(&ms, start, stop));
 
   printf("%s in %f ms (%g GB/s)\n",

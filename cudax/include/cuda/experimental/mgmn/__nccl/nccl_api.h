@@ -247,9 +247,6 @@ static_assert(__NCCL_COMM_NULL == NCCL_COMM_NULL);
 // Helpers and concepts
 // ==========================================================================================
 
-struct __no_nccl_type
-{};
-
 template <class _Tp>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __nccl_type_of() noexcept
 {
@@ -336,7 +333,7 @@ template <class _Tp>
 #endif // _CCCL_HAS_NVFP8()
   else
   {
-    return __no_nccl_type{};
+    return ::cuda::std::nullptr_t{};
   }
   _CCCL_UNREACHABLE();
 }
@@ -350,9 +347,6 @@ _CCCL_CONCEPT __has_nccl_type_of = _CCCL_REQUIRES_EXPR((_Tp), )(
   _Same_as(__ncclDataType_t)::cuda::experimental::__nccl::__nccl_type_of<::cuda::std::remove_cvref_t<_Tp>>());
 
 // ------------------------------------------------------------------------------------------
-
-struct __no_nccl_redop
-{};
 
 template <class _Op>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __nccl_redop_of() noexcept
@@ -375,7 +369,7 @@ template <class _Op>
   }
   else
   {
-    return __no_nccl_redop{};
+    return ::cuda::std::nullptr_t{};
   }
   _CCCL_UNREACHABLE();
 }

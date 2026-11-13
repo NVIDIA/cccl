@@ -66,9 +66,9 @@ struct hierarchy_level_base
   using level_type = _Level;
 
   template <class _InLevel>
-  using __default_md_query_type = ::cuda::std::uint32_t;
+  using __default_md_query_type _CCCL_NODEBUG = ::cuda::std::uint32_t;
   template <class _InLevel>
-  using __default_1d_query_type = typename _InLevel::__product_type;
+  using __default_1d_query_type _CCCL_NODEBUG = typename _InLevel::__product_type;
 
   _CCCL_TEMPLATE(class _InLevel, class _Hierarchy)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND __is_or_has_hierarchy_member_v<_Hierarchy>)
@@ -211,15 +211,6 @@ struct hierarchy_level_base
   [[nodiscard]] _CCCL_DEVICE_API static bool is_root_rank(const _Group& __group) noexcept
   {
     return _Level::rank(__group) == 0;
-  }
-
-  _CCCL_TEMPLATE(class _Group)
-  _CCCL_REQUIRES(::cuda::experimental::coop::group<_Group>)
-  [[nodiscard]] _CCCL_DEVICE_API static bool is_part_of(const _Group& __group) noexcept
-  {
-    static_assert(__unit_same_as_or_below_v<_Level, typename _Group::unit_type>,
-                  "Only levels below or same as _Group::unit_type can be queried for participation");
-    return ::cuda::experimental::coop::__is_part_of_group<_Level>(__group);
   }
 #    endif // _CCCL_CUDA_COMPILATION()
 #  endif // _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX

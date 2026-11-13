@@ -28,10 +28,6 @@
 #include <cuda/std/__algorithm/upper_bound.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__iterator/advance.h>
-#include <cuda/std/__iterator/distance.h>
-#include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__iterator/next.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__utility/move.h>

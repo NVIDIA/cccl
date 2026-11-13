@@ -45,7 +45,7 @@ inline L divide_ri(const L x, const R y)
 template <typename InputIterator, typename BinaryFunction, typename SFINAE = void>
 struct partial_sum_type
 {
-  using type = thrust::detail::it_value_t<InputIterator>;
+  using type _CCCL_NODEBUG = thrust::detail::it_value_t<InputIterator>;
 };
 
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate, typename BinaryFunction>
@@ -119,7 +119,7 @@ bool interval_has_carry(size_t interval_idx, size_t interval_size, size_t num_in
 {
   // to discover whether the interval has a carry, look at the tail_flag corresponding to its last element
   // the final interval never has a carry by definition
-  return (interval_idx + 1 < num_intervals) ? !tail_flags[(interval_idx + 1) * interval_size - 1] : false;
+  return (interval_idx + 1 < num_intervals) ? !tail_flags[((interval_idx + 1) * interval_size) - 1] : false;
 }
 
 template <typename Iterator1,

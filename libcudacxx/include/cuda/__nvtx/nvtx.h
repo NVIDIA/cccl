@@ -83,7 +83,7 @@ struct __nvtx_cccl_domain
   static constexpr const char* name{"CCCL"};
 };
 
-using __nvtx_cccl_range = ::nvtx3::v1::scoped_range_in<__nvtx_cccl_domain>;
+using __nvtx_cccl_range _CCCL_NODEBUG = ::nvtx3::v1::scoped_range_in<__nvtx_cccl_domain>;
 
 // this type ensures that no NVTX range code is emitted in device code
 struct __nvtx_cccl_optional_range_host_only

@@ -75,7 +75,7 @@ int main()
   {
     for (int j = 0; j < m; ++j)
     {
-      assert(u0[j + m * i] == u1[j + m * i]);
+      assert(u0[j + (m * i)] == u1[j + (m * i)]);
     }
   }
 }

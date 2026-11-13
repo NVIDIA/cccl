@@ -16,6 +16,7 @@
 #include <cub/detail/warpspeed/squad/squad_desc.cuh>
 
 #include <cuda/__ptx/instructions/elect_sync.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/array>
 
 CUB_NAMESPACE_BEGIN
@@ -132,7 +133,7 @@ squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[NumSquads], F f, in
         {
           squadsLeft[gi] = squads[gi];
         }
-        squadDispatch(sr, squadsLeft, f, warpIdxStart);
+        _CUB::detail::warpspeed::squadDispatch(sr, squadsLeft, f, warpIdxStart);
       }
     }
     else
@@ -142,7 +143,7 @@ squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[NumSquads], F f, in
       {
         squadsRight[gi] = squads[mid + gi];
       }
-      squadDispatch(sr, squadsRight, f, warpIdxStartMid);
+      _CUB::detail::warpspeed::squadDispatch(sr, squadsRight, f, warpIdxStartMid);
     }
   }
 }
@@ -151,7 +152,7 @@ template <::cuda::std::size_t NumSquads, typename F>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 squadDispatch(SpecialRegisters sr, ::cuda::std::array<SquadDesc, NumSquads> squads, F f, int warpIdxStart = 0)
 {
-  squadDispatch<NumSquads>(sr, squads.__elems_, f, warpIdxStart);
+  _CUB::detail::warpspeed::squadDispatch<NumSquads>(sr, squads.__elems_, f, warpIdxStart);
 }
 } // namespace detail::warpspeed
 

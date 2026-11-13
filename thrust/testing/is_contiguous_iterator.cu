@@ -31,7 +31,7 @@ void check_is_contiguous()
   STATIC_REQUIRE(thrust::is_contiguous_iterator_v<Iterator> == Expected);
   if constexpr (Expected)
   {
-    STATIC_REQUIRE(cuda::std::__can_to_address<Iterator> == Expected);
+    STATIC_REQUIRE(cuda::std::__can_to_address<Iterator>);
   }
 }
 

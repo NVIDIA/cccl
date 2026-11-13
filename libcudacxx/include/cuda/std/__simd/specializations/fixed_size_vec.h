@@ -26,7 +26,7 @@
 #include <cuda/std/__cmath/fma.h>
 #include <cuda/std/__fwd/simd.h>
 #include <cuda/std/__simd/abi.h>
-#include <cuda/std/__simd/specializations/fixed_size_mask.h>
+#include <cuda/std/__simd/specializations/fixed_size_mask.h> // IWYU pragma: keep
 #include <cuda/std/__simd/specializations/fixed_size_storage.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__utility/integer_sequence.h>

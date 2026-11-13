@@ -33,8 +33,6 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 #if _CCCL_CUDA_COMPILATION()
 template <typename MP2>
 TEST_DEVICE_FUNC MP2 make_lane_value(int lane)
@@ -80,8 +78,8 @@ TEST_DEVICE_FUNC void test_shfl()
 
 __global__ void test_kernel()
 {
-  test_shfl<cudax::fp32mp2>();
-  test_shfl<cudax::fp64mp2>();
+  test_shfl<cuda::fp32mp2>();
+  test_shfl<cuda::fp64mp2>();
 }
 #endif // _CCCL_CUDA_COMPILATION()
 

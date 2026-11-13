@@ -18,13 +18,18 @@
 
 #  include <cub/device/device_transform.cuh>
 
+#  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/parallel_for.h>
 #  include <thrust/system/cuda/detail/util.h>
 
 #  include <cuda/__functional/address_stability.h>
+#  include <cuda/__functional/always_true_false.h>
 #  include <cuda/std/__algorithm/transform.h>
 #  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__iterator/incrementable_traits.h>
+#  include <cuda/std/__tuple_dir/tuple.h>
+#  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -144,8 +149,8 @@ OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many(
   _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(num_items);
 
   cudaError_t status;
-  if constexpr (::cuda::proclaims_copyable_arguments<Predicate>::value
-                && ::cuda::proclaims_copyable_arguments<TransformOp>::value)
+  if constexpr (::cuda::proclaims_copyable_arguments_v<Predicate>
+                && ::cuda::proclaims_copyable_arguments_v<TransformOp>)
   {
     status = CUB_NS_QUALIFIER::DeviceTransform::TransformIf(
       firsts, result, num_items, pred, transform_op, cuda_cub::stream(policy));

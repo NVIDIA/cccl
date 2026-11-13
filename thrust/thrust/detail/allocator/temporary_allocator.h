@@ -42,7 +42,6 @@ namespace detail
 template <typename T, typename System>
 class temporary_allocator : public thrust::detail::tagged_allocator<T, System, thrust::pointer<T, System>>
 {
-private:
   using super_t = thrust::detail::tagged_allocator<T, System, thrust::pointer<T, System>>;
 
   System& m_system;
@@ -51,12 +50,12 @@ public:
   using pointer   = typename super_t::pointer;
   using size_type = typename super_t::size_type;
 
-  inline _CCCL_HOST_DEVICE temporary_allocator(const temporary_allocator& other)
+  _CCCL_HOST_DEVICE temporary_allocator(const temporary_allocator& other)
       : super_t()
       , m_system(other.m_system)
   {}
 
-  inline _CCCL_HOST_DEVICE explicit temporary_allocator(thrust::execution_policy<System>& system)
+  _CCCL_HOST_DEVICE explicit temporary_allocator(thrust::execution_policy<System>& system)
       : super_t()
       , m_system(thrust::detail::derived_cast(system))
   {}
@@ -117,7 +116,7 @@ public:
     }
   }
 
-  _CCCL_HOST_DEVICE inline System& system()
+  _CCCL_HOST_DEVICE System& system()
   {
     return m_system;
   } // end system()

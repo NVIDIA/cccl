@@ -14,4 +14,4 @@
 #endif // no system header
 
 // this system inherits copy
-#include <thrust/system/detail/sequential/copy.h>
+#include <thrust/system/detail/sequential/copy.h> // IWYU pragma: export

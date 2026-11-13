@@ -72,7 +72,7 @@ struct generate_uniform_fn
   __host__ __device__ constexpr Key operator()(cuda::std::size_t idx) const noexcept
   {
     Rng rng;
-    rng.seed(seed + idx * 1664525ull + 1013904223ull);
+    rng.seed(seed + (idx * 1664525ull) + 1013904223ull);
 
     const auto num_unique_keys_unclamped =
       static_cast<cuda::std::size_t>(cuda::std::ceil(static_cast<double>(num) / dist.multiplicity));

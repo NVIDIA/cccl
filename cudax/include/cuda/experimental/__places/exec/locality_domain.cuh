@@ -224,7 +224,9 @@ inline bool locality_domain_memory_disabled()
  *
  * Each SM split method (see `locality_domain_sm_split`) gets its own set of
  * green contexts, so places built with different methods for the same domain
- * are distinct places with distinct SM partitions.
+ * are distinct places with distinct SM partitions. On a device with a single
+ * domain (or when the driver cannot report domains) the method is ignored and
+ * every method maps to one whole-device green context.
  *
  * Entries are created lazily per (device, split method) and kept alive for
  * the process, which also guarantees the (non-owning)
@@ -253,8 +255,10 @@ public:
     // Whole-device degrade ignores the split method (documented contract).
     // Canonicalize the cache key so every method resolves to the SAME green
     // context, stream pool, and execution-place identity instead of one
-    // whole-device context per requested method.
-    if (locality_domain_native_raw_count(dev_id) == 0)
+    // whole-device context per requested method. A device with a single
+    // domain degrades the same way: the domain is the device, and there is
+    // nothing to split.
+    if (locality_domain_native_raw_count(dev_id) <= 1)
     {
       split = locality_domain_sm_split::backfill;
     }
@@ -282,7 +286,11 @@ private:
     // The public count never reports 0: when the driver cannot answer the
     // locality-domain query, the device degrades to a single whole-device
     // domain, so we build one green context spanning the full SM resource
-    // instead of splitting by domain.
+    // instead of splitting by domain. A device with a single domain is
+    // handled the same way: asking the driver to split by domain there is
+    // pointless at best, and a driver without real locality-domain support
+    // (e.g. a forward-compat user-mode driver on an older kernel driver) is
+    // known to hand back an unsplit device without reporting an error.
     const int raw_domains = locality_domain_native_raw_count(dev_id);
     const int num_domains = (raw_domains > 0) ? raw_domains : 1;
 
@@ -290,7 +298,7 @@ private:
     cuda_try(cuDeviceGetDevResource(device, &sm_resource, CU_DEV_RESOURCE_TYPE_SM));
 
     ::std::vector<CUdevResource> domain_sms(num_domains);
-    if (raw_domains == 0)
+    if (raw_domains <= 1)
     {
       // Whole-device degrade: the single domain covers all SMs, whatever the
       // requested split method.
@@ -895,10 +903,11 @@ inline data_place data_place::locality_domain(int dev_id, int domain_id)
  * The SM split method (`split`, native backend only) selects how the place's
  * SM partition is carved out of the device -- whole-device coverage with the
  * default `backfill`, or strictly per-domain partitions with `aligned` /
- * `fine`; see `locality_domain_sm_split` for the tradeoffs. Places built with
- * different methods for the same domain are distinct places (distinct green
- * contexts) sharing the same affine data place. The fallback backend and the
- * fake-topology override accept and ignore the method.
+ * `fine`; see `locality_domain_sm_split` for the tradeoffs. On a device with
+ * several domains, places built with different methods for the same domain
+ * are distinct places (distinct green contexts) sharing the same affine data
+ * place. Single-domain devices, the fallback backend and the fake-topology
+ * override accept and ignore the method.
  */
 inline exec_place exec_place::locality_domain(const locality_domain_view& view, locality_domain_sm_split split)
 {

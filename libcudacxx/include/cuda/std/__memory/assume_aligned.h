@@ -23,7 +23,6 @@
 #endif // no system header
 
 #include <cuda/__memory/is_valid_alignment.h>
-#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/cstddef> // size_t
 #include <cuda/std/cstdint> // uintptr_t

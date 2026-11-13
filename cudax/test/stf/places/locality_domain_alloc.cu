@@ -70,12 +70,14 @@ int main()
     // With the native backend, the allocation must report the requested
     // domain ordinal (unless localization is disabled, or the fake topology
     // override is active, in which case it must report "not localized",
-    // i.e. -1).
+    // i.e. -1). On a single-domain device the driver documents that a
+    // localized allocation on domain 0 is a plain device allocation, which
+    // also reports -1.
     int ordinal = -2;
     cuda_safe_call(cuPointerGetAttribute(
       &ordinal, CU_POINTER_ATTRIBUTE_LOCALITY_DOMAIN_ORDINAL, reinterpret_cast<CUdeviceptr>(ptr)));
     if (std::getenv("CUDASTF_DISABLE_LOCALIZED_MEMORY") != nullptr
-        || std::getenv("CUDASTF_FAKE_LOCALITY_DOMAINS") != nullptr)
+        || std::getenv("CUDASTF_FAKE_LOCALITY_DOMAINS") != nullptr || ndomains == 1)
     {
       EXPECT(ordinal == -1);
     }

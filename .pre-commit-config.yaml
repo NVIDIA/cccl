@@ -38,6 +38,12 @@ repos:
         exclude_types: [python]
       - id: check-yaml
 
+  # Switch to upstream rhysd/actionlint once it supports the $/ self-repository syntax.
+  - repo: https://github.com/chuckatkins/actionlint
+    rev: fd81d12
+    hooks:
+      - id: actionlint
+
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.11.0.1
     hooks:
@@ -73,7 +79,21 @@ repos:
     rev: v0.15.20
     hooks:
     - id: ruff  # linter
+      exclude: ^python/cuda_coop/
     - id: ruff-format  # formatter
+      exclude: ^python/cuda_coop/
+
+  # Use the newer Ruff rules for `cuda.coop`.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.9
+    hooks:
+    - id: ruff-check
+      name: ruff check (cuda.coop)
+      files: ^python/cuda_coop/
+    - id: ruff-format
+      name: ruff format (cuda.coop)
+      files: ^python/cuda_coop/
+      types_or: [python, pyi, jupyter]
 
   # CMake formatting
   - repo: https://github.com/BlankSpruce/gersemi
@@ -133,6 +153,13 @@ repos:
         language: python
         files: ^(cub/test/.*\.(cu|cuh|h)|ci/util/pre-commit/check_cub_test_macros\.py)$
         types: [file]
+
+      - id: check-ptx-umbrella
+        name: require <cuda/ptx> to export every PTX instruction header
+        entry: ci/util/pre-commit/check_ptx_umbrella.py
+        language: python
+        pass_filenames: false
+        files: ^(libcudacxx/include/cuda/(ptx|ptxs/.*|__ptx/.*)|ci/util/pre-commit/check_ptx_umbrella\.py)$
 
       - id: unprintable-unicode
         name: unprintable-unicode

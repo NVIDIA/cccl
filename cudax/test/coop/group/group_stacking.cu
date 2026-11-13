@@ -8,14 +8,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/barrier>
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
-#include <cuda/std/cstddef>
+#include <cuda/std/array>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
-#include <cuda/std/utility>
 #include <cuda/stream>
 
 #include <cuda/experimental/coop/group>
@@ -28,7 +26,6 @@ __device__ void test_group_membership(const Group& group, cuda::std::uint32_t co
   static_assert(cudax::coop::group<Group>);
   static_assert(cuda::std::is_same_v<cuda::thread_level, typename Group::unit_type>);
 
-  REQUIRE(cuda::gpu_thread.is_part_of(group));
   REQUIRE(cuda::gpu_thread.count(group) == count);
   REQUIRE(cuda::gpu_thread.rank(group) == rank);
   REQUIRE(group.__mapping_result().unit_count() == count);
@@ -48,25 +45,53 @@ struct TestKernel1
     test_group_membership(group1, 16, rank % 16);
     REQUIRE(group1.count(parent_group) == 2);
     REQUIRE(group1.rank(parent_group) == rank / 16);
+    group1.sync();
+    group1.sync_aligned();
 
     const cudax::coop::generic_group group2{
-      cuda::gpu_thread,
-      group1,
-      cudax::coop::group_as{cuda::std::integer_sequence<cuda::std::size_t, 8, 8>{}},
-      cudax::coop::lane_synchronizer{}};
+      cuda::gpu_thread, group1, cudax::coop::group_as{cuda::std::array{8, 8}}, cudax::coop::lane_synchronizer{}};
     test_group_membership(group2, 8, rank % 8);
     REQUIRE(group2.count(group1) == 2);
     REQUIRE(group2.rank(group1) == (rank % 16) / 8);
+    group2.sync();
+    group2.sync_aligned();
 
     const cudax::coop::generic_group group3{
       cuda::gpu_thread, group2, cudax::coop::group_by{4}, cudax::coop::lane_synchronizer{}};
     test_group_membership(group3, 4, rank % 4);
     REQUIRE(group3.count(group2) == 2);
     REQUIRE(group3.rank(group2) == (rank % 8) / 4);
-
-    group1.sync();
-    group2.sync_aligned();
     group3.sync();
+    group3.sync_aligned();
+
+    constexpr unsigned unit_counts[]{16, 8, 4, 4};
+    const cudax::coop::generic_group group4{
+      cuda::gpu_thread,
+      parent_group,
+      cudax::coop::group_as{unit_counts} | cudax::coop::group_by{4},
+      cudax::coop::lane_synchronizer{}};
+    test_group_membership(group4, 4, rank % 4);
+    REQUIRE(group4.count(parent_group) == 8);
+    REQUIRE(group4.rank(parent_group) == rank / 4);
+    group4.sync();
+    group4.sync_aligned();
+
+    constexpr unsigned partial_unit_counts[]{16, 4, 8};
+    const auto group5 = cudax::coop::make_group<cudax::coop::generic_group>(
+      cudax::coop::non_exhaustive,
+      cuda::gpu_thread,
+      parent_group,
+      cudax::coop::group_as{partial_unit_counts} | cudax::coop::group_by{4},
+      cudax::coop::lane_synchronizer{});
+    REQUIRE(group5.has_value() == (rank < 28));
+    if (group5)
+    {
+      test_group_membership(*group5, 4, rank % 4);
+      REQUIRE(group5->count(parent_group) == 7);
+      REQUIRE(group5->rank(parent_group) == rank / 4);
+      group5->sync();
+      group5->sync_aligned();
+    }
   }
 };
 
@@ -90,10 +115,7 @@ struct TestKernel2
     REQUIRE(group1.rank(parent_group) == rank / 32);
 
     const cudax::coop::generic_group group2{
-      cuda::gpu_thread,
-      group1,
-      cudax::coop::group_as{cuda::std::integer_sequence<cuda::std::size_t, 16, 16>{}},
-      cudax::coop::lane_synchronizer{}};
+      cuda::gpu_thread, group1, cudax::coop::group_as{cuda::std::array{16, 16}}, cudax::coop::lane_synchronizer{}};
     test_group_membership(group2, 16, rank % 16);
     REQUIRE(group2.count(group1) == 2);
     REQUIRE(group2.rank(group1) == (rank % 32) / 16);
@@ -129,7 +151,6 @@ struct TestKernel3
 
     const cudax::coop::generic_group group1{
       cuda::warp, parent_group, cudax::coop::group_by{cuda::std::cw<16>}, cudax::coop::barrier_synchronizer{barriers1}};
-    REQUIRE(cuda::warp.is_part_of(group1));
     REQUIRE(cuda::warp.count(group1) == 16);
     REQUIRE(cuda::warp.rank(group1) == rank % 16);
     REQUIRE(group1.count(parent_group) == 2);
@@ -143,7 +164,6 @@ struct TestKernel3
       group1,
       cudax::coop::group_by{cuda::std::cw<8>},
       cudax::coop::barrier_synchronizer{(group1.rank(parent_group) == 0) ? barriers2a : barriers2b}};
-    REQUIRE(cuda::warp.is_part_of(group2));
     REQUIRE(cuda::warp.count(group2) == 8);
     REQUIRE(cuda::warp.rank(group2) == rank % 8);
     REQUIRE(group2.count(group1) == 2);

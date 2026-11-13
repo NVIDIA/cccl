@@ -17,6 +17,7 @@
 #include <cub/block/block_merge_sort.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/__memory/uninitialized_array.h>
@@ -24,6 +25,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/pair.h>
 
 CUB_NAMESPACE_BEGIN
@@ -65,7 +67,7 @@ template <bool UpperBound, typename Offset, typename T, typename It, typename Co
   while (begin < end)
   {
     // shift == 1 means scale == 1, so int arithmetic never overflows here regardless of the index magnitude.
-    binary_search_iteration<UpperBound, int>(data, begin, end, key, 1, compare_op);
+    _CUB::detail::set_ops::binary_search_iteration<UpperBound, int>(data, begin, end, key, 1, compare_op);
   }
   return begin;
 }
@@ -80,24 +82,24 @@ biased_binary_search(It data, Offset count, T key, IntT levels, CompareOp compar
 
   if (levels >= 4 && begin < end)
   {
-    binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 9, compare_op);
+    _CUB::detail::set_ops::binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 9, compare_op);
   }
   if (levels >= 3 && begin < end)
   {
-    binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 7, compare_op);
+    _CUB::detail::set_ops::binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 7, compare_op);
   }
   if (levels >= 2 && begin < end)
   {
-    binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 5, compare_op);
+    _CUB::detail::set_ops::binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 5, compare_op);
   }
   if (levels >= 1 && begin < end)
   {
-    binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 4, compare_op);
+    _CUB::detail::set_ops::binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 4, compare_op);
   }
 
   while (begin < end)
   {
-    binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 1, compare_op);
+    _CUB::detail::set_ops::binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 1, compare_op);
   }
   return begin;
 }
@@ -111,7 +113,7 @@ balanced_path(It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset d
 {
   using key_t = it_value_t<It1>;
 
-  Offset index1 = MergePath(keys1, keys2, num_keys1, num_keys2, diag, compare_op);
+  Offset index1 = _CUB::MergePath(keys1, keys2, num_keys1, num_keys2, diag, compare_op);
   Offset index2 = diag - index1;
 
   bool star = false;
@@ -120,8 +122,8 @@ balanced_path(It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset d
     const key_t x = keys2[index2];
 
     // Search for the beginning of the duplicate run of x in both A and B.
-    const Offset start1 = biased_binary_search<false>(keys1, index1, x, levels, compare_op);
-    const Offset start2 = biased_binary_search<false>(keys2, index2, x, levels, compare_op);
+    const Offset start1 = _CUB::detail::set_ops::biased_binary_search<false>(keys1, index1, x, levels, compare_op);
+    const Offset start2 = _CUB::detail::set_ops::biased_binary_search<false>(keys2, index2, x, levels, compare_op);
 
     // Sum x's ranks (distance from merge path to lower bound) in A and B, then split them evenly into a stairstep path.
     const Offset run1      = index1 - start1;
@@ -129,9 +131,10 @@ balanced_path(It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset d
     const Offset total_run = run1 + run2_lb;
 
     // Attempt to advance B and regress A.
-    Offset advance2       = (::cuda::std::max) (total_run >> 1, total_run - run1);
-    const Offset end2     = (::cuda::std::min) (num_keys2, start2 + advance2 + 1);
-    const Offset run2     = (index2 + binary_search<true>(keys2 + index2, end2 - index2, x, compare_op)) - start2;
+    Offset advance2   = (::cuda::std::max) (total_run >> 1, total_run - run1);
+    const Offset end2 = (::cuda::std::min) (num_keys2, start2 + advance2 + 1);
+    const Offset run2 =
+      (index2 + _CUB::detail::set_ops::binary_search<true>(keys2 + index2, end2 - index2, x, compare_op)) - start2;
     advance2              = (::cuda::std::min) (advance2, run2);
     const Offset advance1 = total_run - advance2;
 
@@ -143,7 +146,7 @@ balanced_path(It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset d
 
     index1 = start1 + advance1;
   }
-  return ::cuda::std::make_pair(index1, (diag - index1) + Offset{star});
+  return {index1, (diag - index1) + Offset{star}};
 }
 
 // Serial set operations. Each functor walks the two per-thread sub-ranges of the shared [keys1 | keys2] buffer, writes
@@ -409,7 +412,7 @@ struct agent_set_op
   static constexpr int block_threads    = policy.threads_per_block;
   static constexpr int items_per_thread = policy.items_per_thread;
   // One item is left in reserve so the serial set operations can read one past their range without a bounds check.
-  static constexpr int items_per_tile = block_threads * items_per_thread - 1;
+  static constexpr int items_per_tile = (block_threads * items_per_thread) - 1;
   static_assert(items_per_thread <= 32, "the serial set operations pack one live-slot bit per item into an int mask");
   // A partition coordinate is packed into the high 16 bits of a signed int and recovered with an arithmetic >> 16, so
   // it must stay below 2^15 to keep the packed value non-negative.
@@ -466,13 +469,13 @@ struct agent_set_op
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < items_per_thread - 1; ++item)
       {
-        const int idx = block_threads * item + threadIdx.x;
+        const int idx = (block_threads * item) + threadIdx.x;
         output[item]  = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
       }
 
       // The last item might be a conditional load even for full tiles.
       const int item = items_per_thread - 1;
-      const int idx  = block_threads * item + threadIdx.x;
+      const int idx  = (block_threads * item) + threadIdx.x;
       if (idx < count1 + count2)
       {
         output[item] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
@@ -483,11 +486,30 @@ struct agent_set_op
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < items_per_thread; ++item)
       {
-        const int idx = block_threads * item + threadIdx.x;
+        const int idx = (block_threads * item) + threadIdx.x;
         if (idx < count1 + count2)
         {
           output[item] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
         }
+      }
+    }
+  }
+
+  // Loads only the first @p count1 logical items from a single input range into registers (blocked layout), leaving the
+  // remaining register slots untouched. Used for the value load of operations whose output comes exclusively from the
+  // first input (set difference/intersection): the second input's values are never gathered, so its buffer must not be
+  // read - it may legitimately be shorter than the second key range (e.g. Thrust's by-key difference/intersection pass
+  // the first input's values as a placeholder second value range).
+  template <typename T, typename It1>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void gmem_to_reg_first(T (&output)[items_per_thread], It1 input1, int count1)
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int item = 0; item < items_per_thread; ++item)
+    {
+      const int idx = (block_threads * item) + threadIdx.x;
+      if (idx < count1)
+      {
+        output[item] = static_cast<T>(input1[idx]);
       }
     }
   }
@@ -498,7 +520,7 @@ struct agent_set_op
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < items_per_thread; ++item)
     {
-      const int idx = block_threads * item + threadIdx.x;
+      const int idx = (block_threads * item) + threadIdx.x;
       output[idx]   = input[item];
     }
   }
@@ -546,8 +568,8 @@ struct agent_set_op
     const int num_keys2 = static_cast<int>(keys2_end - keys2_beg);
 
     // Load both key ranges into shared memory, laid out as [keys1 | keys2].
-    const auto keys1_load = detail::try_make_cache_modified_iterator<load_modifier>(keys1_in);
-    const auto keys2_load = detail::try_make_cache_modified_iterator<load_modifier>(keys2_in);
+    const auto keys1_load = _CUB::detail::try_make_cache_modified_iterator<load_modifier>(keys1_in);
+    const auto keys2_load = _CUB::detail::try_make_cache_modified_iterator<load_modifier>(keys2_in);
     key_type keys_loc[items_per_thread];
     gmem_to_reg<!IsLastTile>(keys_loc, keys1_load + keys1_beg, keys2_load + keys2_beg, num_keys1, num_keys2);
     reg_to_shared(&storage.load_storage.keys_shared[0], keys_loc);
@@ -555,7 +577,7 @@ struct agent_set_op
 
     const int diag_loc = (::cuda::std::min) (items_per_thread * static_cast<int>(threadIdx.x), num_keys1 + num_keys2);
 
-    const auto [keys1_beg_loc, keys2_beg_loc] = balanced_path(
+    const auto [keys1_beg_loc, keys2_beg_loc] = _CUB::detail::set_ops::balanced_path(
       &storage.load_storage.keys_shared[0],
       &storage.load_storage.keys_shared[num_keys1],
       num_keys1,
@@ -624,10 +646,19 @@ struct agent_set_op
 
     if constexpr (has_values)
     {
-      const auto values1_load = detail::try_make_cache_modified_iterator<load_modifier>(values1_in);
-      const auto values2_load = detail::try_make_cache_modified_iterator<load_modifier>(values2_in);
+      const auto values1_load = _CUB::detail::try_make_cache_modified_iterator<load_modifier>(values1_in);
       value_type values_loc[items_per_thread];
-      gmem_to_reg<!IsLastTile>(values_loc, values1_load + keys1_beg, values2_load + keys2_beg, num_keys1, num_keys2);
+      // Set difference and intersection emit values exclusively from the first input.
+      if constexpr (::cuda::std::is_same_v<SetOp, serial_set_difference>
+                    || ::cuda::std::is_same_v<SetOp, serial_set_intersection>)
+      {
+        gmem_to_reg_first(values_loc, values1_load + keys1_beg, num_keys1);
+      }
+      else
+      {
+        const auto values2_load = _CUB::detail::try_make_cache_modified_iterator<load_modifier>(values2_in);
+        gmem_to_reg<!IsLastTile>(values_loc, values1_load + keys1_beg, values2_load + keys2_beg, num_keys1, num_keys2);
+      }
       __syncthreads();
 
       reg_to_shared(&storage.load_storage.values_shared[0], values_loc);

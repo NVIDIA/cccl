@@ -14,7 +14,7 @@
 #endif // no system header
 
 #include <cuda/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__new/device_new.h>
+#include <cuda/std/__new/device_new.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__utility/forward.h>
 

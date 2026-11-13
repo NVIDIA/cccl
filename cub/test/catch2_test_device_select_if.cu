@@ -12,6 +12,7 @@
 #include <thrust/logical.h>
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
+#include <thrust/sequence.h>
 
 #include <cuda/functional>
 #include <cuda/iterator>
@@ -24,6 +25,7 @@
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::If, select_if);
 
@@ -404,7 +406,7 @@ try
 
   const offset_t num_items = GENERATE_COPY(
     values({
-      offset_t{2} * max_partition_size + offset_t{20000000}, // 3 partitions
+      (offset_t{2} * max_partition_size) + offset_t{20000000}, // 3 partitions
       offset_t{2} * max_partition_size, // 2 partitions
       max_partition_size + offset_t{1}, // 2 partitions
       max_partition_size, // 1 partitions
@@ -432,10 +434,9 @@ try
   const bool all_results_correct = thrust::equal(out.cbegin(), out.cend(), expected_out_it);
   REQUIRE(all_results_correct == true);
 }
-catch (std::bad_alloc&)
+catch (...)
 {
-  // Exceeding memory is not a failure.
-  SUCCEED("exceeding memory is not a failure");
+  c2h::skip_if_allocation_failure();
 }
 
 CUB_TEST("DeviceSelect::If works for very large number of output items",
@@ -451,7 +452,7 @@ try
 
   const offset_t num_items = GENERATE_COPY(
     values({
-      offset_t{2} * max_partition_size + offset_t{20000000}, // 3 partitions
+      (offset_t{2} * max_partition_size) + offset_t{20000000}, // 3 partitions
       offset_t{2} * max_partition_size, // 2 partitions
       max_partition_size + offset_t{1}, // 2 partitions
       max_partition_size, // 1 or 2 partitions
@@ -482,10 +483,9 @@ try
   const bool all_results_correct = thrust::equal(out.cbegin(), out.cend(), in);
   REQUIRE(all_results_correct == true);
 }
-catch (std::bad_alloc&)
+catch (...)
 {
-  // Exceeding memory is not a failure.
-  SUCCEED("exceeding memory is not a failure");
+  c2h::skip_if_allocation_failure();
 }
 
 CUB_TEST("DeviceSelect::If works with iterators", "[device][select_if]", CUB_SMALL)

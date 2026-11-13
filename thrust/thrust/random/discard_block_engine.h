@@ -20,6 +20,7 @@
 
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/istream>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/cstdint>
@@ -222,4 +223,4 @@ using random::discard_block_engine;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/random/detail/discard_block_engine.inl>
+#include <thrust/random/detail/discard_block_engine.inl> // IWYU pragma: export

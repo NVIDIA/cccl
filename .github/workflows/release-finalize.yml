@@ -61,8 +61,8 @@ jobs:
         run: |
           log_and_export_vars() {
             for var in "$@"; do
-              printf "%-15s %s\n" "$var:" "${!var}" | tee -a $GITHUB_STEP_SUMMARY
-              echo "${var}=${!var}" | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT
+              printf "%-15s %s\n" "$var:" "${!var}" | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "${var}=${!var}" | tee -a "$GITHUB_ENV" | tee -a "$GITHUB_OUTPUT"
             done
           }
 
@@ -81,10 +81,13 @@ jobs:
           release_tag="v${full_version}"
           rc_tag="${release_tag}-rc${rc}"
           repo_version=$(jq -r .full cccl-version.json)
+          # log_and_export_vars reads these variables indirectly through ${!var}.
+          # shellcheck disable=SC2034
           working_branch="branch/${major_version}.${minor_version}.x"
 
           # Create next point release version number as this point release is finalized.
           declare -i next_patch_version=$patch_version
+          # shellcheck disable=SC2034
           next_full_version="${major_version}.${minor_version}.$((next_patch_version + 1))"
 
           log_and_export_vars full_version major_version minor_version patch_version rc release_tag rc_tag repo_version working_branch next_full_version
@@ -95,7 +98,7 @@ jobs:
           fi
 
           # Ensure that there is no final release tag (vX.Y.Z) for the requested version.
-          release_tag_escaped=$(echo "${release_tag}" | sed 's/\./\\./g')
+          release_tag_escaped=${release_tag//./\\.}
           if git ls-remote --tags origin | grep -q "refs/tags/${release_tag_escaped}$"; then
             echo "::error::Final release tag ${release_tag} already exists."
             exit 1
@@ -117,11 +120,11 @@ jobs:
             .vscode
             build
             archives
-            ${source_base}
-            ${package_base}
+            "${source_base}"
+            "${package_base}"
           )
-          mkdir ${source_base}
-          rsync -av ${source_exclude[*]/#/--exclude=} . ${source_base}
+          mkdir "${source_base}"
+          rsync -av "${source_exclude[@]/#/--exclude=}" . "${source_base}"
           echo "::endgroup::"
 
           ci/install_cccl.sh "${package_base}"
@@ -133,35 +136,37 @@ jobs:
           package_tarball=${PWD}/archives/${package_base}.tar.gz
           package_zipfile=${PWD}/archives/${package_base}.zip
 
-          echo "source_tarball=${source_tarball}" >> $GITHUB_ENV
-          echo "source_zipfile=${source_zipfile}" >> $GITHUB_ENV
-          echo "package_tarball=${package_tarball}" >> $GITHUB_ENV
-          echo "package_zipfile=${package_zipfile}" >> $GITHUB_ENV
+          {
+            echo "source_tarball=${source_tarball}"
+            echo "source_zipfile=${source_zipfile}"
+            echo "package_tarball=${package_tarball}"
+            echo "package_zipfile=${package_zipfile}"
+          } >> "$GITHUB_ENV"
 
           echo "::group::Archiving: ${source_tarball}"
-          tar -cvzf ${source_tarball} ${source_base}
+          tar -cvzf "${source_tarball}" "${source_base}"
           echo "::endgroup::"
 
           echo "::group::Archiving: ${source_zipfile}"
-          zip -rv9 ${source_zipfile} ${source_base}
+          zip -rv9 "${source_zipfile}" "${source_base}"
           echo "::endgroup::"
 
           echo "::group::Archiving: ${package_tarball}"
-          tar -cvzf ${package_tarball} ${package_base}
+          tar -cvzf "${package_tarball}" "${package_base}"
           echo "::endgroup::"
 
           echo "::group::Archiving: ${package_zipfile}"
-          zip -rv9 ${package_zipfile} ${package_base}
+          zip -rv9 "${package_zipfile}" "${package_base}"
           echo "::endgroup::"
 
           echo "::group::Archive vs Source Sizes"
-          echo "Sources:" | tee -a $GITHUB_STEP_SUMMARY
-          du -sh ${source_base} ${source_tarball} ${source_zipfile} | tee -a $GITHUB_STEP_SUMMARY
-          echo "Installation Packages:" | tee -a $GITHUB_STEP_SUMMARY
-          du -sh ${package_base} ${package_tarball} ${package_zipfile} | tee -a $GITHUB_STEP_SUMMARY
+          echo "Sources:" | tee -a "$GITHUB_STEP_SUMMARY"
+          du -sh "${source_base}" "${source_tarball}" "${source_zipfile}" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Installation Packages:" | tee -a "$GITHUB_STEP_SUMMARY"
+          du -sh "${package_base}" "${package_tarball}" "${package_zipfile}" | tee -a "$GITHUB_STEP_SUMMARY"
           echo "::endgroup::"
 
-          rm -rf ${source_base} ${package_base}
+          rm -rf "${source_base}" "${package_base}"
 
       - name: Tag
         if: ${{ !inputs.skip_tag }}
@@ -169,23 +174,23 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git tag -a -m "CCCL Release ${release_tag}" ${release_tag} ${rc_tag}
-          git push origin ${release_tag}
-          echo "Tagged release ${release_tag} from ${rc_tag}." | tee -a $GITHUB_STEP_SUMMARY
+          git tag -a -m "CCCL Release ${release_tag}" "${release_tag}" "${rc_tag}"
+          git push origin "${release_tag}"
+          echo "Tagged release ${release_tag} from ${rc_tag}." | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Draft Github Release
         run: |
           version_bump=$(git log -n 1 --pretty=format:%H --grep 'Bump [/A-Za-z]* to [0-9]*\.[0-9]*\.[0-9]*')
-          closest_tag=$(git describe --abbrev=0 $version_bump)
+          closest_tag=$(git describe --abbrev=0 "$version_bump")
 
-          note_gen=""
+          note_gen=()
           if [ "${{ github.event.inputs.skip_generating_notes }}" = "false" ]; then
-            note_gen="--generate-notes"
+            note_gen=(--generate-notes)
           fi
 
-          gh release create ${release_tag} \
+          gh release create "${release_tag}" \
             --draft \
-            $note_gen \
+            "${note_gen[@]}" \
             --notes-start-tag "${closest_tag}" \
             --title "${release_tag}" \
             "${source_zipfile}#Source Archive (zip)" \

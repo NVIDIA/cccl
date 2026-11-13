@@ -16,12 +16,11 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/type_traits.h>
-#include <thrust/memory.h>
 #include <thrust/mr/allocator.h>
 #include <thrust/system/cpp/memory_resource.h>
+#include <thrust/system/cpp/pointer.h>
 
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__cstddef/types.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::cpp

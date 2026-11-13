@@ -16,11 +16,13 @@
 #if _CCCL_CUDA_COMPILATION()
 #  include <thrust/system/cuda/config.h>
 
+#  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 
 #  include <cuda/__iterator/zip_function.h>
 #  include <cuda/__iterator/zip_iterator.h>
 #  include <cuda/std/__algorithm/min.h>
+#  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__utility/pair.h>
 

@@ -20,18 +20,16 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_null_pointer.h>
 #include <cuda/std/__type_traits/is_object.h>
-#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
-#include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -49,11 +47,9 @@ midpoint(_Tp __a, _Tp __b) noexcept
     const _Up __diff = _Up(__a) - _Up(__b);
     return static_cast<_Tp>(__a - static_cast<_Tp>(__diff / 2));
   }
-  else
-  {
-    const _Up __diff = _Up(__b) - _Up(__a);
-    return static_cast<_Tp>(__a + static_cast<_Tp>(__diff / 2));
-  }
+
+  const _Up __diff = _Up(__b) - _Up(__a);
+  return static_cast<_Tp>(__a + static_cast<_Tp>(__diff / 2));
 }
 
 _CCCL_EXEC_CHECK_DISABLE

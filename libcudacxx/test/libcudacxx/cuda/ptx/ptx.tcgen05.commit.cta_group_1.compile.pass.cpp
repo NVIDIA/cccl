@@ -10,10 +10,9 @@
 
 // UNSUPPORTED: libcpp-has-no-threads
 
-// <cuda/ptx>
+// <cuda/ptxs/tcgen05_commit.h>
 
-#include <cuda/ptx>
-#include <cuda/std/utility>
+#include <cuda/ptxs/tcgen05_commit.h>
 
 #include "generated/tcgen05_commit_cta_group_1.h"
 

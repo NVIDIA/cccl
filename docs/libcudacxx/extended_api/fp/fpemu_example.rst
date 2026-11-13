@@ -88,7 +88,7 @@ paired with a libcudacxx from somewhere else:
 .. code-block:: bash
 
     nvcc -std=c++20 -arch=native \
-      -DPI_FP_T=cudax::fp64emu_unpacked -DPI_FP_HEADER='<cuda/fpemu>' \
+      -DPI_FP_T=cuda::fp64emu_unpacked -DPI_FP_HEADER='<cuda/fpemu>' \
       -I <cccl>/libcudacxx/include -I <cccl>/cub -I <cccl>/thrust pi.cu -o pi
 
 On an RTX 6000 Ada, where FP64 runs at a fraction of FP32:
@@ -100,13 +100,13 @@ On an RTX 6000 Ada, where FP64 runs at a fraction of FP32:
 
     type                           value                    digits   time (ms)
     double                         3.1415926535897984        14.78       1.297
-    cudax::fp64emu_unpacked        3.1415926535897936        16.10       0.881
+    cuda::fp64emu_unpacked         3.1415926535897936        16.10       0.881
 
-    cudax::fp64emu_unpacked is 1.47x the speed of native double, for +1.3 digits
+    cuda::fp64emu_unpacked is 1.47x the speed of native double, for +1.3 digits
 
 Software double precision, beating the hardware double precision on the same part on both axes —
 and the accuracy it gains is the summation error that its guard bits absorb and ``double`` has to
-round away. Rebuilding with ``-DPI_FP_T=cudax::fp64emu`` gives the packed form, which reproduces
+round away. Rebuilding with ``-DPI_FP_T=cuda::fp64emu`` gives the packed form, which reproduces
 ``double`` bit for bit at about parity on time, and the ``_mid`` and ``_low`` names walk the
 accuracy levels. The :ref:`fpemu page <libcudacxx-extended-api-fp-fpemu>` collects those figures
 across the parts measured.

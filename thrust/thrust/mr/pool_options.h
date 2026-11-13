@@ -18,11 +18,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/config/memory_resource.h>
-
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__memory/is_valid_alignment.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace mr
@@ -148,12 +146,7 @@ struct pool_options
       return false;
     }
 
-    if (alignment > smallest_block_size)
-    {
-      return false;
-    }
-
-    return true;
+    return alignment <= smallest_block_size;
   }
 };
 

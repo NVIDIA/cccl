@@ -5,6 +5,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 
+#include <cuda/functional>
 #include <cuda/std/cmath>
 #include <cuda/std/complex>
 #include <cuda/std/functional>
@@ -72,7 +73,7 @@ struct push_back
 template <class... As, class... Ts>
 struct push_back<nvbench::type_list<As...>, Ts...>
 {
-  using type = nvbench::type_list<As..., Ts...>;
+  using type _CCCL_NODEBUG = nvbench::type_list<As..., Ts...>;
 };
 } // namespace detail
 
@@ -188,23 +189,23 @@ NVBENCH_DECLARE_TYPE_STRINGS(bit_entropy, "BE", "bit entropy");
   {
     return bit_entropy::_1_000;
   }
-  else if (str == "0.811")
+  if (str == "0.811")
   {
     return bit_entropy::_0_811;
   }
-  else if (str == "0.544")
+  if (str == "0.544")
   {
     return bit_entropy::_0_544;
   }
-  else if (str == "0.337")
+  if (str == "0.337")
   {
     return bit_entropy::_0_337;
   }
-  else if (str == "0.201")
+  if (str == "0.201")
   {
     return bit_entropy::_0_201;
   }
-  else if (str == "0.000")
+  if (str == "0.000")
   {
     return bit_entropy::_0_000;
   }
@@ -224,6 +225,17 @@ template <typename T>
   const auto max_val = static_cast<double>(cuda::std::numeric_limits<T>::max());
   return static_cast<T>(cuda::std::lerp(min_val, max_val, at));
 }
+
+// Checks if a value is even after truncating it toward zero (cast to int), so it also works for floating-point types,
+// which cuda::__is_even does not support.
+struct is_even_after_truncation
+{
+  template <typename T>
+  [[nodiscard]] __host__ __device__ constexpr bool operator()(const T& val) const noexcept
+  {
+    return cuda::__is_even{}(static_cast<int>(val));
+  }
+};
 
 namespace detail
 {
@@ -455,7 +467,7 @@ struct less_t
   }
 
   template <typename T>
-  __host__ __device__ inline bool operator()(const cuda::std::complex<T>& lhs, const cuda::std::complex<T>& rhs) const
+  __host__ __device__ bool operator()(const cuda::std::complex<T>& lhs, const cuda::std::complex<T>& rhs) const
   {
     double magnitude_0 = cuda::std::abs(lhs);
     double magnitude_1 = cuda::std::abs(rhs);
@@ -465,7 +477,7 @@ struct less_t
       // NaN's are always equal.
       return false;
     }
-    else if (cuda::std::isinf(magnitude_0) || cuda::std::isinf(magnitude_1))
+    if (cuda::std::isinf(magnitude_0) || cuda::std::isinf(magnitude_1))
     {
       // If the real or imaginary part of the complex number has a very large value
       // (close to the maximum representable value for a double), it is possible that
@@ -493,10 +505,8 @@ struct less_t
 
       return phase_angle_0 < phase_angle_1;
     }
-    else
-    {
-      return magnitude_0 < magnitude_1;
-    }
+
+    return magnitude_0 < magnitude_1;
   }
 };
 
@@ -698,10 +708,10 @@ private:
     return result;
   }
 
-  void do_deallocate(value_type* ptr)
+  void do_deallocate(value_type* ptr) // NOLINT(readability-non-const-parameter)
   {
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-    cudaFree(ptr);
+    static_cast<void>(cudaFree(ptr));
 #else
     delete[] ptr;
 #endif

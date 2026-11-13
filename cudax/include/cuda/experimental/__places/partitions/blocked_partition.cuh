@@ -67,8 +67,8 @@ public:
     // If first = second, this means it's an empty shape. This may happen
     // when there are more entries in grid_dims than in the shape for
     // example
-    bounds[target_dim].first  = ::cuda::std::min(dim_beg + part_size * place_position.x, dim_end);
-    bounds[target_dim].second = ::cuda::std::min(dim_beg + part_size * (place_position.x + 1), dim_end);
+    bounds[target_dim].first  = ::cuda::std::min(dim_beg + (part_size * place_position.x), dim_end);
+    bounds[target_dim].second = ::cuda::std::min(dim_beg + (part_size * (place_position.x + 1)), dim_end);
 
     return box(bounds);
   }
@@ -163,7 +163,9 @@ UNITTEST("blocked partition with very large data arrays")
   pos4 middle_coord(200, 150, 100, 500);
   pos4 last_coord(399, 299, 199, 999);
 
-  pos4 first_pos, middle_pos, last_pos;
+  pos4 first_pos;
+  pos4 middle_pos;
+  pos4 last_pos;
   blocked_partition::get_executor(&first_pos, first_coord, massive_4d_dims, grid_dims);
   blocked_partition::get_executor(&middle_pos, middle_coord, massive_4d_dims, grid_dims);
   blocked_partition::get_executor(&last_pos, last_coord, massive_4d_dims, grid_dims);

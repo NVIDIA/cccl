@@ -14,4 +14,4 @@
 #endif // no system header
 
 // this system inherits adjacent_difference
-#include <thrust/system/detail/sequential/adjacent_difference.h>
+#include <thrust/system/detail/sequential/adjacent_difference.h> // IWYU pragma: export

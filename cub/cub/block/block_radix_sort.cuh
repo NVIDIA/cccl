@@ -22,9 +22,12 @@
 
 #include <cub/block/block_exchange.cuh>
 #include <cub/block/block_radix_rank.cuh>
+#include <cub/block/block_scan.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -206,7 +209,6 @@ template <typename KeyT,
           int BlockDimZ                         = 1>
 class BlockRadixSort
 {
-private:
   /******************************************************************************
    * Constants and type definitions
    ******************************************************************************/
@@ -510,7 +512,7 @@ public:
   //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixSort()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
@@ -526,7 +528,7 @@ public:
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixSort(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}

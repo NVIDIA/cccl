@@ -11,7 +11,7 @@
 #include "nvbench_helper.cuh"
 
 template <class KeyT, class ValueT, class OpT>
-static void basic(nvbench::state& state, nvbench::type_list<KeyT, ValueT>, OpT op)
+void basic(nvbench::state& state, nvbench::type_list<KeyT, ValueT>, OpT op)
 {
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements"));
   const auto size_ratio     = static_cast<std::size_t>(state.get_int64("SizeRatio"));

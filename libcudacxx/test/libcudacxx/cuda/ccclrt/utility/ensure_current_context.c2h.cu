@@ -24,19 +24,19 @@ void recursive_check_device_setter(int id)
 {
   int cudart_id;
   const cuda::__ensure_current_context setter(cuda::device_ref{id});
-  CCCLRT_REQUIRE(test::count_driver_stack() == cuda::devices.size() - id);
+  REQUIRE(test::count_driver_stack() == cuda::devices.size() - id);
   auto ctx = driver::__ctxGetCurrent();
-  CUDART(cudaGetDevice(&cudart_id));
-  CCCLRT_REQUIRE(cudart_id == id);
+  REQUIRE_CUDART(cudaGetDevice(&cudart_id));
+  REQUIRE(cudart_id == id);
 
   if (id != 0)
   {
     recursive_check_device_setter(id - 1);
 
-    CCCLRT_REQUIRE(test::count_driver_stack() == cuda::devices.size() - id);
-    CCCLRT_REQUIRE(ctx == driver::__ctxGetCurrent());
-    CUDART(cudaGetDevice(&cudart_id));
-    CCCLRT_REQUIRE(cudart_id == id);
+    REQUIRE(test::count_driver_stack() == cuda::devices.size() - id);
+    REQUIRE(ctx == driver::__ctxGetCurrent());
+    REQUIRE_CUDART(cudaGetDevice(&cudart_id));
+    REQUIRE(cudart_id == id);
   }
 }
 
@@ -50,7 +50,7 @@ C2H_TEST("ensure current context", "[device]")
   {
     recursive_check_device_setter(target_device);
 
-    CCCLRT_REQUIRE(test::count_driver_stack() == 0);
+    REQUIRE(test::count_driver_stack() == 0);
   }
 }
 
@@ -64,8 +64,8 @@ C2H_CCCLRT_TEST("ensure current context from a stream", "[device][stream]")
 
     const cuda::__ensure_current_context setter(cuda::stream_ref{str.get()});
 
-    CCCLRT_REQUIRE(driver::__ctxGetCurrent() == device.__primary_context());
-    CCCLRT_REQUIRE(test::count_driver_stack() == 1);
+    REQUIRE(driver::__ctxGetCurrent() == device.__primary_context());
+    REQUIRE(test::count_driver_stack() == 1);
   }
 
   SECTION("The context is popped again on destruction")
@@ -76,7 +76,7 @@ C2H_CCCLRT_TEST("ensure current context from a stream", "[device][stream]")
       const cuda::__ensure_current_context setter(cuda::stream_ref{str.get()});
     }
 
-    CCCLRT_REQUIRE(test::count_driver_stack() == 0);
+    REQUIRE(test::count_driver_stack() == 0);
   }
 
   SECTION("A stream on a second device pushes the context of that device")
@@ -88,8 +88,8 @@ C2H_CCCLRT_TEST("ensure current context from a stream", "[device][stream]")
 
       const cuda::__ensure_current_context setter(cuda::stream_ref{str.get()});
 
-      CCCLRT_REQUIRE(driver::__ctxGetCurrent() == second.__primary_context());
-      CCCLRT_REQUIRE(driver::__ctxGetCurrent() != device.__primary_context());
+      REQUIRE(driver::__ctxGetCurrent() == second.__primary_context());
+      REQUIRE(driver::__ctxGetCurrent() != device.__primary_context());
     }
     else
     {
@@ -120,7 +120,7 @@ C2H_CCCLRT_TEST("ensure current context from a green context stream", "[device][
   {
     const cuda::__ensure_current_context setter(ref);
 
-    CCCLRT_REQUIRE(test::count_driver_stack() == 1);
+    REQUIRE(test::count_driver_stack() == 1);
   }
 
   SECTION("The pushed context is the green context, not the primary context")
@@ -129,15 +129,15 @@ C2H_CCCLRT_TEST("ensure current context from a green context stream", "[device][
     // context of that green context, which is what __logical_device_ref also stores.
     const cuda::__ensure_current_context setter(ref);
 
-    CCCLRT_REQUIRE(driver::__ctxGetCurrent() == driver::__ctxFromGreenCtx(gctx));
-    CCCLRT_REQUIRE(driver::__ctxGetCurrent() != device.__primary_context());
+    REQUIRE(driver::__ctxGetCurrent() == driver::__ctxFromGreenCtx(gctx));
+    REQUIRE(driver::__ctxGetCurrent() != device.__primary_context());
   }
 
   SECTION("The pushed context matches the logical device of the stream")
   {
     const cuda::__ensure_current_context setter(ref);
 
-    CCCLRT_REQUIRE(driver::__ctxGetCurrent() == ref.__logical_device().context());
+    REQUIRE(driver::__ctxGetCurrent() == ref.__logical_device().context());
   }
 
   SECTION("The pushed context resolves to the device of the green context")
@@ -145,7 +145,7 @@ C2H_CCCLRT_TEST("ensure current context from a green context stream", "[device][
     // A green context resolves to the device that owns it.
     const cuda::__ensure_current_context setter(ref);
 
-    CCCLRT_REQUIRE(driver::__cudevice_to_ordinal(driver::__ctxGetDevice()) == device.get());
+    REQUIRE(driver::__cudevice_to_ordinal(driver::__ctxGetDevice()) == device.get());
   }
 
   SECTION("The context is popped again on destruction")
@@ -154,14 +154,14 @@ C2H_CCCLRT_TEST("ensure current context from a green context stream", "[device][
       const cuda::__ensure_current_context setter(ref);
     }
 
-    CCCLRT_REQUIRE(test::count_driver_stack() == 0);
+    REQUIRE(test::count_driver_stack() == 0);
   }
 
   SECTION("A green context stream reports the device that owns the green context")
   {
     // Below CTK 13.0, device() pushes __cu_context() and asks cuCtxGetDevice(). The green
     // context must therefore resolve to its owner device.
-    CCCLRT_REQUIRE(ref.device() == device);
+    REQUIRE(ref.device() == device);
   }
 }
 

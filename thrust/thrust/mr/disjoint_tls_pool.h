@@ -18,6 +18,8 @@
 #endif // no system header
 #include <thrust/mr/disjoint_pool.h>
 
+#include <cuda/std/cassert>
+
 THRUST_NAMESPACE_BEGIN
 namespace mr
 {

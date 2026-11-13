@@ -45,7 +45,6 @@ public:
 
   class param_type
   {
-  private:
     result_type __alpha_ = result_type{1};
     result_type __beta_  = result_type{1};
 

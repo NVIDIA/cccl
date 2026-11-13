@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -31,8 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 #if !(defined _CCCL_FPMP_USE_LIB)
 
 /*
@@ -59,8 +58,8 @@ _CCCL_FPMP_CORE_API void __fpmp2_fmax(
   _FpType* __res_hi,
   _FpType* __res_lo) noexcept
 {
-  const bool __x_is_nan = __fpmp_internal_isnan(__x_hi);
-  const bool __y_is_nan = __fpmp_internal_isnan(__y_hi);
+  const bool __x_is_nan = ::cuda::__fpmp_internal_isnan(__x_hi);
+  const bool __y_is_nan = ::cuda::__fpmp_internal_isnan(__y_hi);
   if (__x_is_nan && !__y_is_nan)
   {
     *__res_hi = __y_hi;
@@ -107,8 +106,8 @@ _CCCL_FPMP_CORE_API void __fpmp2_fmin(
   _FpType* __res_hi,
   _FpType* __res_lo) noexcept
 {
-  const bool __x_is_nan = __fpmp_internal_isnan(__x_hi);
-  const bool __y_is_nan = __fpmp_internal_isnan(__y_hi);
+  const bool __x_is_nan = ::cuda::__fpmp_internal_isnan(__x_hi);
+  const bool __y_is_nan = ::cuda::__fpmp_internal_isnan(__y_hi);
   if (__x_is_nan && !__y_is_nan)
   {
     *__res_hi = __y_hi;
@@ -232,7 +231,8 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_fdim(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fpmp2_from_double(::fdim(__fpmp2_to_double(__x_hi, __x_lo), __fpmp2_to_double(__y_hi, __y_lo)), __res_hi, __res_lo);
+  ::cuda::__fpmp2_from_double(
+    ::fdim(::cuda::__fpmp2_to_double(__x_hi, __x_lo), ::cuda::__fpmp2_to_double(__y_hi, __y_lo)), __res_hi, __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_2A(fdim)
@@ -332,7 +332,7 @@ _CCCL_FPMP_CORE_API int __internal_fpmp2_signbit(const double __x_hi, [[maybe_un
 _CCCL_FPMP_MATH_DISPATCH_1A_RETINT(signbit)
 
 #endif // _CCCL_FPMP_USE_LIB
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

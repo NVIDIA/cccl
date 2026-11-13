@@ -69,7 +69,8 @@ THRUST_NAMESPACE_BEGIN
  */
 template <typename DerivedPolicy>
 _CCCL_HOST_DEVICE pointer<void, DerivedPolicy>
-malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::size_t n);
+malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, // NOLINT(readability-redundant-declaration)
+       std::size_t n);
 
 #endif // _CCCL_DOXYGEN_INVOKED
 
@@ -112,7 +113,8 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::
  */
 template <typename T, typename DerivedPolicy>
 _CCCL_HOST_DEVICE pointer<T, DerivedPolicy>
-malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::size_t n);
+malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, // NOLINT(readability-redundant-declaration)
+       std::size_t n);
 
 /*! \p get_temporary_buffer returns a pointer to storage associated with a given Thrust system sufficient to store up to
  *  \p n objects of type \c T. If not enough storage is available to accommodate \p n objects, an implementation may
@@ -171,8 +173,9 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::
 template <typename T, typename DerivedPolicy>
 _CCCL_HOST_DEVICE ::cuda::std::pair<thrust::pointer<T, DerivedPolicy>,
                                     typename thrust::pointer<T, DerivedPolicy>::difference_type>
-get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>& system,
-                     typename thrust::pointer<T, DerivedPolicy>::difference_type n);
+get_temporary_buffer( // NOLINT(readability-redundant-declaration)
+  const thrust::detail::execution_policy_base<DerivedPolicy>& system,
+  typename thrust::pointer<T, DerivedPolicy>::difference_type n);
 
 /*! \p free deallocates the storage previously allocated by \p thrust::malloc.
  *
@@ -208,7 +211,9 @@ get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>&
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedPolicy>& system, Pointer ptr);
+_CCCL_HOST_DEVICE void
+free(const thrust::detail::execution_policy_base<DerivedPolicy>& system, // NOLINT(readability-redundant-declaration)
+     Pointer ptr);
 
 /*! \p return_temporary_buffer deallocates storage associated with a given Thrust system previously allocated by \p
  * get_temporary_buffer.
@@ -260,8 +265,10 @@ _CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedP
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE void return_temporary_buffer(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& system, Pointer p, std::ptrdiff_t n);
+_CCCL_HOST_DEVICE void return_temporary_buffer( // NOLINT(readability-redundant-declaration)
+  const thrust::detail::execution_policy_base<DerivedPolicy>& system,
+  Pointer p,
+  std::ptrdiff_t n);
 
 /*! \p raw_pointer_cast creates a "raw" pointer from a pointer-like type,
  *  simply returning the wrapped pointer, should it exist.
@@ -275,7 +282,7 @@ _CCCL_HOST_DEVICE void return_temporary_buffer(
  *  \endverbatim
  */
 template <typename Pointer>
-_CCCL_HOST_DEVICE auto* raw_pointer_cast(Pointer ptr);
+_CCCL_HOST_DEVICE auto* raw_pointer_cast(Pointer ptr); // NOLINT(readability-redundant-declaration)
 
 /*! \p raw_reference_cast creates a "raw" reference from a wrapped reference type,
  *  simply returning the underlying reference, should it exist.
@@ -293,7 +300,8 @@ _CCCL_HOST_DEVICE auto* raw_pointer_cast(Pointer ptr);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T& ref);
+_CCCL_HOST_DEVICE typename detail::raw_reference<T>::type
+raw_reference_cast(T& ref); // NOLINT(readability-redundant-declaration)
 
 /*! \p raw_reference_cast creates a "raw" reference from a wrapped reference type,
  *  simply returning the underlying reference, should it exist.
@@ -311,7 +319,8 @@ _CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T& 
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE typename detail::raw_reference<const T>::type raw_reference_cast(const T& ref);
+_CCCL_HOST_DEVICE typename detail::raw_reference<const T>::type
+raw_reference_cast(const T& ref); // NOLINT(readability-redundant-declaration)
 
 /*! \} // memory_management
  */

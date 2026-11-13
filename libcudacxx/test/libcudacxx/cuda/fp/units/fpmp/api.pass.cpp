@@ -21,10 +21,8 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 // Type alias for the multi-precision floating-point type.
-using ffloat = cudax::fp32mp2;
+using ffloat = cuda::fp32mp2;
 
 // Relative-error check against a double reference. fp32mp2 keeps ~46 mantissa
 // bits (~1.4e-14 relative), so 1e-10 is a safe, still-meaningful bound.

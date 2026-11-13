@@ -19,11 +19,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
+#include <cub/warp/warp_utils.cuh>
 
 #include <cuda/__cmath/pow2.h>
-#include <cuda/__ptx/instructions/get_sreg.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -34,9 +34,7 @@ class WarpExchangeSmem
 {
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
 
-  static constexpr int ITEMS_PER_TILE = ItemsPerThread * LogicalWarpThreads + 1;
-
-  static constexpr bool IS_ARCH_WARP = LogicalWarpThreads == warp_threads;
+  static constexpr int ITEMS_PER_TILE = (ItemsPerThread * LogicalWarpThreads) + 1;
 
   static constexpr int LOG_SMEM_BANKS = log2_smem_banks;
 
@@ -54,9 +52,8 @@ class WarpExchangeSmem
   /// Shared storage reference
   _TempStorage& temp_storage;
 
-  const unsigned int lane_id;
-  const unsigned int warp_id;
-  const unsigned int member_mask;
+  const unsigned int lane_id     = _CUB::detail::logical_lane_id<LogicalWarpThreads>();
+  const unsigned int member_mask = _CUB::detail::warp_mask<LogicalWarpThreads>();
 
 public:
   using TempStorage = Uninitialized<_TempStorage>;
@@ -65,9 +62,6 @@ public:
 
   explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpExchangeSmem(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads))
-      , warp_id(IS_ARCH_WARP ? 0 : (::cuda::ptx::get_sreg_laneid() / LogicalWarpThreads))
-      , member_mask(WarpMask<LogicalWarpThreads>(warp_id))
   {}
 
   template <typename OutputT>
@@ -76,14 +70,14 @@ public:
   {
     for (int item = 0; item < ItemsPerThread; item++)
     {
-      const int idx                  = ItemsPerThread * lane_id + item;
+      const int idx                  = (ItemsPerThread * lane_id) + item;
       temp_storage.items_shared[idx] = input_items[item];
     }
     __syncwarp(member_mask);
 
     for (int item = 0; item < ItemsPerThread; item++)
     {
-      const int idx      = LogicalWarpThreads * item + lane_id;
+      const int idx      = (LogicalWarpThreads * item) + lane_id;
       output_items[item] = temp_storage.items_shared[idx];
     }
   }
@@ -94,14 +88,14 @@ public:
   {
     for (int item = 0; item < ItemsPerThread; item++)
     {
-      const int idx                  = LogicalWarpThreads * item + lane_id;
+      const int idx                  = (LogicalWarpThreads * item) + lane_id;
       temp_storage.items_shared[idx] = input_items[item];
     }
     __syncwarp(member_mask);
 
     for (int item = 0; item < ItemsPerThread; item++)
     {
-      const int idx      = ItemsPerThread * lane_id + item;
+      const int idx      = (ItemsPerThread * lane_id) + item;
       output_items[item] = temp_storage.items_shared[idx];
     }
   }

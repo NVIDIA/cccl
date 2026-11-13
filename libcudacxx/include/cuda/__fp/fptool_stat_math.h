@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -47,8 +47,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 // Each wrapper delegates to the fpmp2 overload of the same name: an unqualified call
 // with an fpmp2 argument cannot select the _stat overload, so there is no recursion.
 #define _CCCL_FPMP_STAT_MATH_UNARY(_Name)                                         \
@@ -292,7 +291,7 @@ yn(int __n, const fpmp2_stat<_FpType, _TypeAcc>& __x) noexcept
 {
   return fpmp2_stat<_FpType, _TypeAcc>(yn(__n, __x.as_fpmp2()));
 }
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 // ============================================================================
 // cuda::std overloads for the standard <cmath> names, for the same reason as the fpmp2
@@ -302,12 +301,12 @@ yn(int __n, const fpmp2_stat<_FpType, _TypeAcc>& __x) noexcept
 // ============================================================================
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#define _CCCL_FPMP_STAT_STD_UNARY(_Name)                                           \
-  template <class _FpType, ::cuda::experimental::fpmp2_accuracy _TypeAcc>          \
-  _CCCL_HOST_DEVICE_API ::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc> _Name( \
-    const ::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc>& __x) noexcept       \
-  {                                                                                \
-    return ::cuda::experimental::_Name(__x);                                       \
+#define _CCCL_FPMP_STAT_STD_UNARY(_Name)                             \
+  template <class _FpType, ::cuda::fpmp2_accuracy _TypeAcc>          \
+  _CCCL_HOST_DEVICE_API ::cuda::fpmp2_stat<_FpType, _TypeAcc> _Name( \
+    const ::cuda::fpmp2_stat<_FpType, _TypeAcc>& __x) noexcept       \
+  {                                                                  \
+    return ::cuda::_Name(__x);                                       \
   }
 
 _CCCL_FPMP_STAT_STD_UNARY(exp)
@@ -345,13 +344,12 @@ _CCCL_FPMP_STAT_STD_UNARY(fabs)
 
 #undef _CCCL_FPMP_STAT_STD_UNARY
 
-#define _CCCL_FPMP_STAT_STD_BINARY(_Name)                                          \
-  template <class _FpType, ::cuda::experimental::fpmp2_accuracy _TypeAcc>          \
-  _CCCL_HOST_DEVICE_API ::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc> _Name( \
-    const ::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc>& __x,                \
-    const ::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc>& __y) noexcept       \
-  {                                                                                \
-    return ::cuda::experimental::_Name(__x, __y);                                  \
+#define _CCCL_FPMP_STAT_STD_BINARY(_Name)                                                                        \
+  template <class _FpType, ::cuda::fpmp2_accuracy _TypeAcc>                                                      \
+  _CCCL_HOST_DEVICE_API ::cuda::fpmp2_stat<_FpType, _TypeAcc> _Name(                                             \
+    const ::cuda::fpmp2_stat<_FpType, _TypeAcc>& __x, const ::cuda::fpmp2_stat<_FpType, _TypeAcc>& __y) noexcept \
+  {                                                                                                              \
+    return ::cuda::_Name(__x, __y);                                                                              \
   }
 
 _CCCL_FPMP_STAT_STD_BINARY(pow)
@@ -367,11 +365,11 @@ _CCCL_FPMP_STAT_STD_BINARY(nextafter)
 
 #undef _CCCL_FPMP_STAT_STD_BINARY
 
-#define _CCCL_FPMP_STAT_STD_UNARY_RET(_Ret, _Name)                                                          \
-  template <class _FpType, ::cuda::experimental::fpmp2_accuracy _TypeAcc>                                   \
-  _CCCL_HOST_DEVICE_API _Ret _Name(const ::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc>& __x) noexcept \
-  {                                                                                                         \
-    return ::cuda::experimental::_Name(__x);                                                                \
+#define _CCCL_FPMP_STAT_STD_UNARY_RET(_Ret, _Name)                                            \
+  template <class _FpType, ::cuda::fpmp2_accuracy _TypeAcc>                                   \
+  _CCCL_HOST_DEVICE_API _Ret _Name(const ::cuda::fpmp2_stat<_FpType, _TypeAcc>& __x) noexcept \
+  {                                                                                           \
+    return ::cuda::_Name(__x);                                                                \
   }
 
 _CCCL_FPMP_STAT_STD_UNARY_RET(int, ilogb)
@@ -387,44 +385,43 @@ _CCCL_FPMP_STAT_STD_UNARY_RET(int, signbit)
 #undef _CCCL_FPMP_STAT_STD_UNARY_RET
 
 // Functions with special signatures (extra scalar / out-pointer arguments).
-template <class _FpType, ::cuda::experimental::fpmp2_accuracy _TypeAcc>
-_CCCL_HOST_DEVICE_API ::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc>
-ldexp(const ::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc>& __x, int __n) noexcept
+template <class _FpType, ::cuda::fpmp2_accuracy _TypeAcc>
+_CCCL_HOST_DEVICE_API ::cuda::fpmp2_stat<_FpType, _TypeAcc>
+ldexp(const ::cuda::fpmp2_stat<_FpType, _TypeAcc>& __x, int __n) noexcept
 {
-  return ::cuda::experimental::ldexp(__x, __n);
+  return ::cuda::ldexp(__x, __n);
 }
-template <class _FpType, ::cuda::experimental::fpmp2_accuracy _TypeAcc>
-_CCCL_HOST_DEVICE_API ::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc>
-scalbn(const ::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc>& __x, int __n) noexcept
+template <class _FpType, ::cuda::fpmp2_accuracy _TypeAcc>
+_CCCL_HOST_DEVICE_API ::cuda::fpmp2_stat<_FpType, _TypeAcc>
+scalbn(const ::cuda::fpmp2_stat<_FpType, _TypeAcc>& __x, int __n) noexcept
 {
-  return ::cuda::experimental::scalbn(__x, __n);
+  return ::cuda::scalbn(__x, __n);
 }
-template <class _FpType, ::cuda::experimental::fpmp2_accuracy _TypeAcc>
-_CCCL_HOST_DEVICE_API ::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc>
-scalbln(const ::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc>& __x, long int __n) noexcept
+template <class _FpType, ::cuda::fpmp2_accuracy _TypeAcc>
+_CCCL_HOST_DEVICE_API ::cuda::fpmp2_stat<_FpType, _TypeAcc>
+scalbln(const ::cuda::fpmp2_stat<_FpType, _TypeAcc>& __x, long int __n) noexcept
 {
-  return ::cuda::experimental::scalbln(__x, __n);
+  return ::cuda::scalbln(__x, __n);
 }
-template <class _FpType, ::cuda::experimental::fpmp2_accuracy _TypeAcc>
-_CCCL_HOST_DEVICE_API ::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc>
-frexp(const ::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc>& __x, int* __nptr) noexcept
+template <class _FpType, ::cuda::fpmp2_accuracy _TypeAcc>
+_CCCL_HOST_DEVICE_API ::cuda::fpmp2_stat<_FpType, _TypeAcc>
+frexp(const ::cuda::fpmp2_stat<_FpType, _TypeAcc>& __x, int* __nptr) noexcept
 {
-  return ::cuda::experimental::frexp(__x, __nptr);
+  return ::cuda::frexp(__x, __nptr);
 }
-template <class _FpType, ::cuda::experimental::fpmp2_accuracy _TypeAcc>
-_CCCL_HOST_DEVICE_API ::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc>
-modf(const ::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc>& __x,
-     ::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc>* __iptr) noexcept
+template <class _FpType, ::cuda::fpmp2_accuracy _TypeAcc>
+_CCCL_HOST_DEVICE_API ::cuda::fpmp2_stat<_FpType, _TypeAcc>
+modf(const ::cuda::fpmp2_stat<_FpType, _TypeAcc>& __x, ::cuda::fpmp2_stat<_FpType, _TypeAcc>* __iptr) noexcept
 {
-  return ::cuda::experimental::modf(__x, __iptr);
+  return ::cuda::modf(__x, __iptr);
 }
-template <class _FpType, ::cuda::experimental::fpmp2_accuracy _TypeAcc>
-_CCCL_HOST_DEVICE_API ::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc>
-remquo(const ::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc>& __x,
-       const ::cuda::experimental::fpmp2_stat<_FpType, _TypeAcc>& __y,
+template <class _FpType, ::cuda::fpmp2_accuracy _TypeAcc>
+_CCCL_HOST_DEVICE_API ::cuda::fpmp2_stat<_FpType, _TypeAcc>
+remquo(const ::cuda::fpmp2_stat<_FpType, _TypeAcc>& __x,
+       const ::cuda::fpmp2_stat<_FpType, _TypeAcc>& __y,
        int* __quo) noexcept
 {
-  return ::cuda::experimental::remquo(__x, __y, __quo);
+  return ::cuda::remquo(__x, __y, __quo);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

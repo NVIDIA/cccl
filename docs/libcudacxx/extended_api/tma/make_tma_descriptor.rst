@@ -148,7 +148,7 @@ See :ref:`libcudacxx-extended-api-exceptions` for more details on exception hand
 
 ``tensor.shape``:
 
-* Must be greater than 0 and not exceed ``2^32`` elements per dimension.
+* Must be greater than 0 and not exceed ``2^31`` elements per dimension.
 * The innermost dimension must be a multiple of ``2`` when ``kDLFloat4_e2m1fn`` or ``U4 x 16`` are used.
 
 ``tensor.strides``:

@@ -22,7 +22,6 @@
 
 #include <cuda/std/__algorithm/comp.h>
 #include <cuda/std/__algorithm/comp_ref_type.h>
-#include <cuda/std/__algorithm/iter_swap.h>
 #include <cuda/std/__algorithm/iterator_operations.h>
 #include <cuda/std/__algorithm/min_element.h>
 #include <cuda/std/__algorithm/partial_sort.h>
@@ -31,15 +30,13 @@
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/integral.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__functional/ranges_operations.h>
 #include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/disjunction.h>
-#include <cuda/std/__type_traits/fold.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/climits>
@@ -636,7 +633,7 @@ __bitset_partition(_RandomAccessIterator __first, _RandomAccessIterator __last, 
   uint64_t __right_bitset     = 0;
 
   // Reminder: length = __lm1 - __first + 1.
-  while (__lm1 - __first >= 2 * __detail::__block_size - 1)
+  while (__lm1 - __first >= (2 * __detail::__block_size) - 1)
   {
     // Record the comparison outcomes for the elements currently on the left
     // side.
@@ -957,13 +954,10 @@ _CCCL_API void __introsort(
         __last = __i;
         continue;
       }
-      else
+      if (__fs)
       {
-        if (__fs)
-        {
-          __first = ++__i;
-          continue;
-        }
+        __first = ++__i;
+        continue;
       }
     }
     // Sort the left partition recursively and the right partition with tail recursion elimination.
@@ -983,11 +977,11 @@ _CCCL_API _Number __log2i(_Number __n)
   }
   if (sizeof(__n) <= sizeof(uint32_t))
   {
-    return sizeof(uint32_t) * CHAR_BIT - 1 - ::cuda::std::countl_zero(static_cast<uint32_t>(__n));
+    return (sizeof(uint32_t) * CHAR_BIT) - 1 - ::cuda::std::countl_zero(static_cast<uint32_t>(__n));
   }
   if (sizeof(__n) <= sizeof(uint64_t))
   {
-    return sizeof(uint64_t) * CHAR_BIT - 1 - ::cuda::std::countl_zero(static_cast<uint64_t>(__n));
+    return (sizeof(uint64_t) * CHAR_BIT) - 1 - ::cuda::std::countl_zero(static_cast<uint64_t>(__n));
   }
 
   _Number __log2 = 0;
@@ -1027,10 +1021,10 @@ _CCCL_API constexpr void __sort_dispatch(_RandomAccessIterator __first, _RandomA
 }
 
 template <class _Type, class... _Options>
-using __is_any_of = _Or<is_same<_Type, _Options>...>;
+using __is_any_of _CCCL_NODEBUG = _Or<is_same<_Type, _Options>...>;
 
 template <class _Type>
-using __sort_is_specialized_in_library = __is_any_of<
+using __sort_is_specialized_in_library _CCCL_NODEBUG = __is_any_of<
   _Type,
   char,
 #ifndef _LIBCPP_HAS_NO_WIDE_CHARACTERS

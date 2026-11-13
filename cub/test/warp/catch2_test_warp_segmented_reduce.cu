@@ -62,7 +62,7 @@ struct warp_seg_sum_head_t
   {
     const bool has_agg = ((linear_tid % LogicalWarpThreads == 0) || d_flags[linear_tid]);
     auto result        = warp_reduce.HeadSegmentedSum(thread_data, d_flags[linear_tid]);
-    return (has_agg) ? result : thread_data;
+    return has_agg ? result : thread_data;
   }
 };
 
@@ -96,7 +96,7 @@ struct warp_seg_reduce_head_t
   {
     const bool has_agg = ((linear_tid % LogicalWarpThreads == 0) || d_flags[linear_tid]);
     auto result        = warp_reduce.HeadSegmentedReduce(thread_data, d_flags[linear_tid], reduction_op);
-    return (has_agg) ? result : thread_data;
+    return has_agg ? result : thread_data;
   }
 };
 

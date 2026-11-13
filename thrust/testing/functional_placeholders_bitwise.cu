@@ -22,13 +22,13 @@ struct rebind_vector<thrust::host_vector<T, Allocator>, U>
 template <typename T, typename U, typename Allocator>
 struct rebind_vector<thrust::device_vector<T, Allocator>, U>
 {
-  using type = thrust::device_vector<U, typename Allocator::template rebind<U>::other>;
+  using type _CCCL_NODEBUG = thrust::device_vector<U, typename Allocator::template rebind<U>::other>;
 };
 
 template <typename T, typename U, typename Allocator>
 struct rebind_vector<thrust::universal_vector<T, Allocator>, U>
 {
-  using type = thrust::universal_vector<U, typename Allocator::template rebind<U>::other>;
+  using type _CCCL_NODEBUG = thrust::universal_vector<U, typename Allocator::template rebind<U>::other>;
 };
 
 #define BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(name, op, reference_functor, type_list)                             \

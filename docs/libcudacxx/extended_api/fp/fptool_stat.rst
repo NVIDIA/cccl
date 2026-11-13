@@ -100,10 +100,8 @@ arithmetic instead of the whole kernel's:
 
 .. code-block:: cuda
 
-    namespace cudax = cuda::experimental;
-
-    cudax::fp32mp2      sum{0.0f}, term{1.0f};
-    cudax::fp32mp2_stat compensation{0.0f};   // the only instrumented variable
+    cuda::fp32mp2      sum{0.0f}, term{1.0f};
+    cuda::fp32mp2_stat compensation{0.0f};   // the only instrumented variable
 
     auto y = term - compensation;   // counted: compensation is instrumented, y becomes so
     auto t = sum + y;               // counted: y is instrumented, t becomes so
@@ -171,11 +169,9 @@ project:
 
 .. code-block:: cuda
 
-    namespace cudax = cuda::experimental;
-
-    cudax::fpmp2_stat_reset_device_data(stream);
+    cuda::fpmp2_stat_reset_device_data(stream);
     cuda::launch(stream, config, my_kernel, ...);
-    const auto record = cudax::fpmp2_stat_read_device_data(stream);
+    const auto record = cuda::fpmp2_stat_read_device_data(stream);
 
 Both functions take a stream and are host-only. The reset enqueues a cleared record, so counting
 starts with the next kernel on that stream and **no synchronization is needed**. The read enqueues
@@ -498,3 +494,13 @@ That is what "compare the same workload across types" produces: the operation co
 are measuring the same thing, and the event counters show what changed — here, that the same
 algorithm crosses into lossy territory forty iterations early when the pair is built from
 ``float``.
+
+Optimization guide
+------------------
+
+Several of the recommendations for the ``fpmp`` types — whether ``low`` is safe and where to
+renormalize, where ``high`` pays, whether the pair is earning its cost — are decided from this
+record. The :ref:`FP optimization guide <libcudacxx-extended-api-fp-optimization-guide-fptool>`
+gives the order to read it in for that purpose, and its
+:ref:`Using fpmp efficiently <libcudacxx-extended-api-fp-optimization-guide-fpmp>` section the
+recommendations themselves.

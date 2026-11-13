@@ -9,15 +9,6 @@
 
 #include "nvbench_helper.cuh"
 
-struct is_even
-{
-  template <class T>
-  __device__ constexpr bool operator()(const T& val) const noexcept
-  {
-    return static_cast<int>(val) % 2 == 0;
-  }
-};
-
 template <typename T>
 static void basic(nvbench::state& state, nvbench::type_list<T>)
 {
@@ -33,7 +24,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               thrust::remove_if(policy(alloc, launch), in.begin(), in.end(), is_even{});
+               thrust::remove_if(policy(alloc, launch), in.begin(), in.end(), is_even_after_truncation{});
              });
 }
 

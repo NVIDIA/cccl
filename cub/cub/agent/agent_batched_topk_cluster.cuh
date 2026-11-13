@@ -43,19 +43,22 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_topk.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/segmented_params.cuh>
+#include <cub/detail/topk_helpers.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/detail/warpspeed/optimize_smem_ptr.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
-#include <cub/device/dispatch/dispatch_topk.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
+#include <cuda/__argument/argument.h>
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_down.h>
@@ -63,25 +66,24 @@
 #include <cuda/__execution/tie_break.h>
 #include <cuda/__memcpy_async/elect_one.h>
 #include <cuda/__memory/align_up.h>
+#include <cuda/__memory/is_aligned.h>
 #include <cuda/__memory/ptr_rebind.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
 #include <cuda/__ptx/instructions/mbarrier_init.h>
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
-#include <cuda/argument>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/countr.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__memory/pointer_traits.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/forward.h>
-#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 #include <cuda/std/span>
 
 #include <nv/target>
@@ -128,10 +130,10 @@ struct smem_block_tile_layout
   [[nodiscard]] _CCCL_HOST_DEVICE static constexpr int
   min_smem_bytes_from_num_chunks(::cuda::std::uint64_t num_chunks) noexcept
   {
-    _CCCL_ASSERT(base_padding_bytes + num_chunks * static_cast<::cuda::std::uint64_t>(chunk_bytes)
+    _CCCL_ASSERT(base_padding_bytes + (num_chunks * static_cast<::cuda::std::uint64_t>(chunk_bytes))
                    <= static_cast<::cuda::std::uint64_t>((::cuda::std::numeric_limits<int>::max)()),
                  "dynamic SMEM byte count exceeds int range");
-    return base_padding_bytes + static_cast<int>(num_chunks) * chunk_bytes;
+    return base_padding_bytes + (static_cast<int>(num_chunks) * chunk_bytes);
   }
 
   // Smallest dynamic-SMEM byte count whose per-CTA capacity (`max_block_resident_items`) reaches `items` keys
@@ -248,12 +250,16 @@ struct agent_batched_topk_cluster
   static constexpr bool is_tie_reversed =
     TieBreak == ::cuda::execution::tie_break::__tie_break_t::__prefer_larger_index;
 
+  // An explicit index tie-break picks among keys that compare equal, so -0.0 and +0.0 must rank equal. Without one,
+  // any set of tied keys is a valid result and the extra normalization is skipped.
+  static constexpr bool normalize_minus_zero = TieBreak != ::cuda::execution::tie_break::__tie_break_t::__unspecified;
+
   // Push direction of the cross-CTA prefix scan (`prime_placement_counters`). The leader must be *last* in scan
   // order so it derives its own (merged-away) counts from the predecessor sum: deterministic-prefer-smaller puts the
   // leader at the last logical rank and scans ascending; every other config (deterministic-prefer-larger and the
   // whole non-deterministic path) keeps the leader at rank 0 and scans descending, which makes rank 0 last. Matches the
   // `leader_rank` computed in `compute_segment_layout`.
-  static constexpr bool is_scan_descending = !(needs_set_determinism && !is_tie_reversed);
+  static constexpr bool is_scan_descending = !needs_set_determinism || is_tie_reversed;
 
   // The deterministic final scan visits chunks in global-index order and bails early (`final_filter_should_stop`), so
   // keeping the *first-visited* chunks resident lets it skip re-reading the streamed overflow. Ascending visits low
@@ -276,7 +282,7 @@ struct agent_batched_topk_cluster
   // Radix passes for this key type (compile-time). The overflow stream flips direction each pass; `run` primes the
   // first wave in `first_wave_is_forward` so the leftover after `num_passes` matches the deterministic filter
   // (non-deterministic keeps the forward default).
-  static constexpr int num_passes = detail::topk::calc_num_passes<key_t>(policy.bits_per_pass);
+  static constexpr int num_passes = _CUB::detail::topk::calc_num_passes<key_t>(policy.bits_per_pass);
   static constexpr bool first_wave_is_forward =
     !needs_set_determinism || ((!is_tie_reversed) ^ ((num_passes & 1) != 0));
 
@@ -430,7 +436,7 @@ struct agent_batched_topk_cluster
   [[nodiscard]] static _CCCL_DEVICE _CCCL_FORCEINLINE chunk_desc
   get_chunk(offset_t chunk_idx, offset_t segment_size, offset_t num_cluster_head_items)
   {
-    const offset_t offset = num_cluster_head_items + chunk_idx * offset_t{max_chunk_items};
+    const offset_t offset = num_cluster_head_items + (chunk_idx * offset_t{max_chunk_items});
     // Callers pass a chunk index `< num_cluster_chunks`, so the chunk is non-empty and unsigned `remaining` below can't
     // underflow.
     _CCCL_ASSERT(offset < segment_size, "get_chunk: chunk index lies past the segment end");
@@ -459,7 +465,7 @@ struct agent_batched_topk_cluster
     [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE offset_t global_index(offset_t local_chunk_idx) const
     {
       _CCCL_ASSERT(local_chunk_idx < num_chunks, "global_index: rank-local chunk index out of range");
-      return first + local_chunk_idx * stride;
+      return first + (local_chunk_idx * stride);
     }
   };
 
@@ -840,7 +846,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int j = 0; j < buckets_per_thread; ++j)
     {
-      const int bucket = tid * buckets_per_thread + j;
+      const int bucket = (tid * buckets_per_thread) + j;
       hist_vals[j]     = (bucket < num_buckets) ? temp_storage.hist[bucket] : offset_t{0};
     }
 
@@ -851,7 +857,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int j = 0; j < buckets_per_thread; ++j)
     {
-      const int bucket = tid * buckets_per_thread + j;
+      const int bucket = (tid * buckets_per_thread) + j;
       if (bucket < num_buckets && prefixes[j] < target_k && prefixes[j] + hist_vals[j] >= target_k)
       {
         const out_offset_t new_k                        = target_k - static_cast<out_offset_t>(prefixes[j]);
@@ -1312,8 +1318,8 @@ private:
   template <detail::topk::select SelectDirection>
   struct det_filter_state
   {
-    using identify_op_t =
-      detail::topk::identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
+    using identify_op_t = detail::topk::
+      identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_minus_zero>;
 
     identify_op_t identify_op;
     it_value_t<KeyOutputItItT> block_keys_out;
@@ -1374,7 +1380,7 @@ private:
   {
     if constexpr (Blocked)
     {
-      return tile_base + tid * ItemsPerThread + i;
+      return tile_base + (tid * ItemsPerThread) + i;
     }
     else
     {
@@ -1523,25 +1529,29 @@ private:
     for (int i = 0; i < ItemsPerThread; ++i)
     {
       const int pos = tile_item_pos<Blocked, ItemsPerThread>(tile_base, i);
-      flags[i]      = flag_none;
-      if (pos < num_keys)
+      // No per-key branch: an out-of-range lane (only in the last, partial tile) reads the last in-range key, which
+      // exists because `process_tiles` classifies a tile only while `tile_base < num_keys`, and is forced to
+      // `flag_none` below. Keeping the per-key body straight-line avoids the reconvergence bookkeeping ptxas emits
+      // once the body grows past its if-conversion threshold.
+      const bool in_range = pos < num_keys;
+      const int clamped   = in_range ? pos : num_keys - 1;
+      // In-region index: forward, or (`Reversed`) counting down from the last element. Shared by the `FromSmem`
+      // local read and the segment-local value index.
+      const int folded_pos = Reversed ? (num_keys - 1 - clamped) : clamped;
+      if constexpr (FromSmem)
       {
-        // In-region index: forward, or (`Reversed`) counting down from the last element. Shared by the `FromSmem`
-        // local read and the segment-local value index.
-        const int folded_pos = Reversed ? (num_keys - 1 - pos) : pos;
-        if constexpr (FromSmem)
-        {
-          keys[i] = smem_src[folded_pos];
-        }
-        else
-        {
-          keys[i] = layout.block_keys_in[static_cast<segment_size_val_t>(seg_base + static_cast<offset_t>(folded_pos))];
-        }
-        const auto cls = state.identify_op(keys[i]);
-        flags[i]       = (cls == detail::topk::candidate_class::candidate)
-                         ? flag_candidate
-                         : (cls == detail::topk::candidate_class::selected ? flag_selected : flag_none);
+        keys[i] = smem_src[folded_pos];
       }
+      else
+      {
+        keys[i] = layout.block_keys_in[static_cast<segment_size_val_t>(seg_base + static_cast<offset_t>(folded_pos))];
+      }
+      const auto cls = state.identify_op(keys[i]);
+      const offset_t flag =
+        (cls == detail::topk::candidate_class::candidate)
+          ? flag_candidate
+          : (cls == detail::topk::candidate_class::selected ? flag_selected : flag_none);
+      flags[i] = in_range ? flag : flag_none;
     }
   }
 
@@ -2229,7 +2239,8 @@ private:
   template <detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE void load_and_histogram_first_pass(smem_keys_t& resident_keys)
   {
-    using extract_bin_op_t = detail::topk::extract_bin_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
+    using extract_bin_op_t =
+      detail::topk::extract_bin_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_minus_zero>;
     constexpr int total_bits = int{sizeof(key_t)} * 8;
 
     extract_bin_op_t extract_op(0, total_bits, decomposer_t{});
@@ -2239,7 +2250,7 @@ private:
     // (`ATOMS.POPC.INC.32`). `atomicAdd` defaults to `.gpu` scope (not `.cta` -- that is `atomicAdd_block`), which
     // includes the cluster peers, so it is morally strong with (atomic against) the `.cluster`-scoped DSMEM reductions
     // racing into the leader's `hist` (the Step 2 DSMEM reduction) during the Step 1/2 overlap.
-    offset_t* const hist = detail::warpspeed::optimizeSmemPtr(temp_storage.hist);
+    offset_t* const hist = _CUB::detail::warpspeed::optimizeSmemPtr(temp_storage.hist);
     auto add_first_pass  = [&](const key_t& key) {
       const int bucket = extract_op(key);
       _CCCL_ASSERT(bucket >= 0 && bucket < num_buckets, "histogram bucket index out of range");
@@ -2343,7 +2354,7 @@ private:
         const offset_t num_reverse_cycle_stages = static_cast<offset_t>(num_prologue_stages);
         const offset_t cycle_pos =
           (static_cast<offset_t>(reverse_cycle_seed) + num_reverse_cycle_stages
-           - local_resident_chunk_idx % num_reverse_cycle_stages)
+           - (local_resident_chunk_idx % num_reverse_cycle_stages))
           % num_reverse_cycle_stages;
         const int stage_index = stage_base + static_cast<int>(cycle_pos);
         return stage_index >= num_cycle_stages ? stage_index - num_cycle_stages : stage_index;
@@ -2741,7 +2752,7 @@ private:
     {
       if (!is_single_cta)
       {
-        layout.num_logical_cluster_blocks = compute_num_logical_cluster_blocks(
+        layout.num_logical_cluster_blocks = _CUB::detail::batched_topk_cluster::compute_num_logical_cluster_blocks(
           layout.num_cluster_chunks, policy.min_chunks_per_block, num_full_cluster_blocks);
       }
     }
@@ -2907,12 +2918,13 @@ private:
   template <detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE int run_radix_passes(smem_keys_t resident_keys, key_prefix_t& kth_key_bits_local)
   {
-    using extract_bin_op_t = detail::topk::extract_bin_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
-    using identify_candidates_op_t =
-      detail::topk::identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
+    using extract_bin_op_t =
+      detail::topk::extract_bin_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_minus_zero>;
+    using identify_candidates_op_t = detail::topk::
+      identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_minus_zero>;
 
     constexpr int total_bits = int{sizeof(key_t)} * 8;
-    constexpr int num_passes = detail::topk::calc_num_passes<key_t>(policy.bits_per_pass);
+    constexpr int num_passes = _CUB::detail::topk::calc_num_passes<key_t>(policy.bits_per_pass);
 
     int num_executed_passes = num_passes;
     // No unroll pragma on purpose: the compiler's partial/full auto-unroll beats forced nounroll here.
@@ -2930,7 +2942,7 @@ private:
 
         // Step 1: block-private histogram. Same pinned 32-bit base + `.gpu`-scope `atomicAdd` as
         // `load_and_histogram_first_pass` (see there for the addressing/scope rationale).
-        offset_t* const hist = detail::warpspeed::optimizeSmemPtr(temp_storage.hist);
+        offset_t* const hist = _CUB::detail::warpspeed::optimizeSmemPtr(temp_storage.hist);
         auto add_hist        = [&](const key_t& key) {
           if (identify_op(key) == detail::topk::candidate_class::candidate)
           {
@@ -3053,7 +3065,7 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int j = 0; j < buckets_per_thread; ++j)
         {
-          const int bucket   = tid * buckets_per_thread + j;
+          const int bucket   = (tid * buckets_per_thread) + j;
           local_hist_vals[j] = (bucket < num_buckets) ? temp_storage.hist[bucket] : offset_t{0};
         }
         block_scan_t(temp_storage.scan_storage).ExclusiveSum(local_hist_vals, local_prefixes);
@@ -3089,7 +3101,7 @@ private:
       {
         const int bucket = static_cast<int>(pass_result.kth_bucket);
         _CCCL_ASSERT(bucket >= 0 && bucket < num_buckets, "published splitter bucket index is out of range");
-        detail::topk::set_kth_key_bits<key_t, policy.bits_per_pass>(kth_key_bits_local, pass, bucket);
+        _CUB::detail::topk::set_kth_key_bits<key_t, policy.bits_per_pass>(kth_key_bits_local, pass, bucket);
         num_executed_passes = pass + 1;
 
         // Non-leader: the lane owning the splitter bucket holds its exclusive prefix and raw count in registers from
@@ -3101,7 +3113,7 @@ private:
           const int owner = bucket / buckets_per_thread;
           if (tid == owner)
           {
-            const int slot = bucket - owner * buckets_per_thread;
+            const int slot = bucket - (owner * buckets_per_thread);
             atomicAdd(&temp_storage.num_local_strictly_selected, local_prefixes[slot]);
             temp_storage.num_local_candidates = local_hist_vals[slot];
           }
@@ -3124,12 +3136,12 @@ private:
   template <detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE void run()
   {
-    using identify_candidates_op_t =
-      detail::topk::identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
+    using identify_candidates_op_t = detail::topk::
+      identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_minus_zero>;
 
     constexpr int total_bits = int{sizeof(key_t)} * 8;
     // Only read inside the `needs_set_determinism` branch below; unused otherwise.
-    [[maybe_unused]] constexpr int num_passes = detail::topk::calc_num_passes<key_t>(policy.bits_per_pass);
+    [[maybe_unused]] constexpr int num_passes = _CUB::detail::topk::calc_num_passes<key_t>(policy.bits_per_pass);
 
     // `process_impl` handles `k == 0` and select-all, so the radix path sees a strict `0 < k < segment_size`.
     _CCCL_ASSERT(k > out_offset_t{0} && static_cast<segment_size_val_t>(k) < segment_size,
@@ -3217,7 +3229,7 @@ private:
   {
     constexpr int copy_items         = copy_items_per_thread_clamped;
     const offset_t num_cluster_items = static_cast<offset_t>(segment_size);
-    const offset_t cluster_tid = cluster_block_rank * static_cast<offset_t>(policy.threads_per_block) + threadIdx.x;
+    const offset_t cluster_tid = (cluster_block_rank * static_cast<offset_t>(policy.threads_per_block)) + threadIdx.x;
     const offset_t num_cluster_threads = num_full_cluster_blocks * static_cast<offset_t>(policy.threads_per_block);
     const offset_t step                = num_cluster_threads * static_cast<offset_t>(copy_items);
     auto keys_in_it                    = d_key_segments_it[segment_id];
@@ -3236,8 +3248,9 @@ private:
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int j = 0; j < copy_items; ++j)
       {
-        const auto idx = static_cast<segment_size_val_t>(thread_base + static_cast<offset_t>(j) * num_cluster_threads);
-        keys[j]        = keys_in_it[idx];
+        const auto idx =
+          static_cast<segment_size_val_t>(thread_base + (static_cast<offset_t>(j) * num_cluster_threads));
+        keys[j] = keys_in_it[idx];
       }
       if constexpr (!is_keys_only)
       {
@@ -3246,14 +3259,15 @@ private:
         for (int j = 0; j < copy_items; ++j)
         {
           const auto idx =
-            static_cast<segment_size_val_t>(thread_base + static_cast<offset_t>(j) * num_cluster_threads);
+            static_cast<segment_size_val_t>(thread_base + (static_cast<offset_t>(j) * num_cluster_threads));
           vals[j] = vals_in_it[idx];
         }
       }
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int j = 0; j < copy_items; ++j)
       {
-        const auto idx = static_cast<segment_size_val_t>(thread_base + static_cast<offset_t>(j) * num_cluster_threads);
+        const auto idx =
+          static_cast<segment_size_val_t>(thread_base + (static_cast<offset_t>(j) * num_cluster_threads));
         keys_out_it[idx] = keys[j];
       }
       if constexpr (!is_keys_only)
@@ -3263,7 +3277,7 @@ private:
         for (int j = 0; j < copy_items; ++j)
         {
           const auto idx =
-            static_cast<segment_size_val_t>(thread_base + static_cast<offset_t>(j) * num_cluster_threads);
+            static_cast<segment_size_val_t>(thread_base + (static_cast<offset_t>(j) * num_cluster_threads));
           vals_out_it[idx] = vals[j];
         }
       }
@@ -3296,8 +3310,8 @@ private:
   {
     if constexpr (enable_runtime_single_cta)
     {
-      const bool fits_single_cta =
-        is_single_cta_eligible(segment_size, max_block_resident_items, policy.single_block_max_seg_size);
+      const bool fits_single_cta = _CUB::detail::batched_topk_cluster::is_single_cta_eligible(
+        segment_size, max_block_resident_items, policy.single_block_max_seg_size);
       if (fits_single_cta && cluster_block_rank != 0u)
       {
         return false;
@@ -3323,14 +3337,15 @@ private:
                  "hardware cluster rank must lie within a non-empty cluster");
     segment_id = static_cast<num_segments_val_t>(::cuda::ptx::get_sreg_clusterid_x());
 
-    if (segment_id >= static_cast<num_segments_val_t>(detail::params::get_param(num_segments, num_segments_val_t{0})))
+    if (segment_id
+        >= static_cast<num_segments_val_t>(_CUB::detail::params::get_param(num_segments, num_segments_val_t{0})))
     {
       return;
     }
 
     // Read the clamped-to-nonnegative size before narrowing to `segment_size_val_t`, so the assert sees the caller's
     // value: sizes are clamped >= 0 and capped at 2^21, so a value exceeding 32-bit `offset_t` is a violation.
-    const auto segment_size_raw = detail::params::__get_and_clamp_param_to_nonnegative(segment_sizes, segment_id);
+    const auto segment_size_raw = _CUB::detail::params::__get_and_clamp_param_to_nonnegative(segment_sizes, segment_id);
     _CCCL_ASSERT(
       static_cast<::cuda::std::uint64_t>(segment_size_raw) <= ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max(),
       "segment size must be non-negative and fit the 32-bit cluster offset type");
@@ -3338,7 +3353,7 @@ private:
     // Clamp `k` (already floored to >= 0) to the segment size in a 64-bit width holding both operands.
     const auto k_clamped =
       (::cuda::std::min) (static_cast<::cuda::std::uint64_t>(
-                            detail::params::__get_and_clamp_param_to_nonnegative(k_param, segment_id)),
+                            _CUB::detail::params::__get_and_clamp_param_to_nonnegative(k_param, segment_id)),
                           static_cast<::cuda::std::uint64_t>(segment_size));
 
     if (k_clamped == 0)
@@ -3391,7 +3406,7 @@ private:
     cluster_or_block_arrive(is_single_cta);
 
     [[maybe_unused]] const bool is_ok =
-      detail::params::dispatch_discrete(select_directions, segment_id, [this](auto direction_tag) {
+      _CUB::detail::params::dispatch_discrete(select_directions, segment_id, [this](auto direction_tag) {
         constexpr detail::topk::select Direction = decltype(direction_tag)::value;
         this->template run<Direction>();
       });

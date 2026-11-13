@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/iterator_operations.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__random/uniform_int_distribution.h>
 #include <cuda/std/__utility/move.h>
@@ -35,7 +36,7 @@ __shuffle(_RandomAccessIterator __first, _Sentinel __last_sentinel, _UniformRand
 {
   using difference_type = typename iterator_traits<_RandomAccessIterator>::difference_type;
   using _Dp             = uniform_int_distribution<ptrdiff_t>;
-  using _Pp             = typename _Dp::param_type;
+  using _Pp             = _Dp::param_type;
 
   auto __original_last = _IterOps<_AlgPolicy>::next(__first, __last_sentinel);
   auto __last          = __original_last;

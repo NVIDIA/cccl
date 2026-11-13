@@ -61,10 +61,7 @@ struct min_element_reduction
     {
       return lhs;
     }
-    else
-    {
-      return rhs;
-    }
+    return rhs;
   } // end operator()()
 }; // end min_element_reduction
 
@@ -94,10 +91,7 @@ struct max_element_reduction
     {
       return lhs;
     }
-    else
-    {
-      return rhs;
-    }
+    return rhs;
   } // end operator()()
 }; // end max_element_reduction
 

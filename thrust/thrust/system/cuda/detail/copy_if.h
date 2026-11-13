@@ -17,15 +17,18 @@
 
 #  include <thrust/system/cuda/config.h>
 
+#  include <cub/detail/null_type.cuh>
 #  include <cub/device/device_select.cuh>
 #  include <cub/util_temporary_storage.cuh>
 
 #  include <thrust/detail/alignment.h>
+#  include <thrust/detail/execution_policy.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__iterator/advance.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
@@ -34,7 +37,7 @@ THRUST_NAMESPACE_BEGIN
 // XXX declare generic copy_if interface
 // to avoid circulular dependency from thrust/copy.h
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if(
+_CCCL_HOST_DEVICE OutputIterator copy_if( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -46,7 +49,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if(
+_CCCL_HOST_DEVICE OutputIterator copy_if( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -184,5 +187,5 @@ OutputIterator _CCCL_HOST_DEVICE copy_if(
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 
-#  include <thrust/copy.h>
+#  include <thrust/copy.h> // IWYU pragma: keep
 #endif // _CCCL_CUDA_COMPILATION()

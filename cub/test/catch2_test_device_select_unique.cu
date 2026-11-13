@@ -17,6 +17,7 @@
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 struct fake_equal_to
 {
@@ -483,7 +484,7 @@ try
 
   const offset_t num_items = GENERATE_COPY(
     values({
-      offset_t{2} * max_partition_size + offset_t{20000000}, // 3 partitions
+      (offset_t{2} * max_partition_size) + offset_t{20000000}, // 3 partitions
       offset_t{2} * max_partition_size, // 2 partitions
       max_partition_size + offset_t{1}, // 2 partitions
       max_partition_size, // 1 partitions
@@ -554,8 +555,7 @@ try
     check_result_helper.check_all_results_correct();
   }
 }
-catch (std::bad_alloc&)
+catch (...)
 {
-  // Exceeding memory is not a failure.
-  SUCCEED("exceeding memory is not a failure");
+  c2h::skip_if_allocation_failure();
 }

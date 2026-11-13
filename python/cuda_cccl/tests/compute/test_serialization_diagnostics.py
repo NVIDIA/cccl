@@ -28,13 +28,11 @@ try:
 except ImportError:
     USING_V2 = False
 
-pytestmark = pytest.mark.skipif(
-    USING_V2, reason="serialization not supported on v2 (HostJIT) backend"
-)
-
-_C_MAGIC = b"CCCLSER1"
-# Field offsets within the C build_result header, past the 8-byte magic:
-#   algo_tag u32 | payload_kind u32 | cc u32
+# Magic of the C-level build_result blob embedded in the serialized object. The
+# header that follows the magic starts algo_tag u32 | (payload_kind | os_arch_tag)
+# u32 | cc u32 on both backends, so the cc field sits at the same offset.
+_C_MAGIC = b"CCCLSEV2" if USING_V2 else b"CCCLSER1"
+# Field offsets within the C build_result header, past the 8-byte magic.
 _OFF_CC = 4 + 4
 
 

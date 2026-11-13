@@ -13,10 +13,9 @@
 
 // UNSUPPORTED: libcpp-has-no-threads
 
-// <cuda/ptx>
+// <cuda/ptxs/clusterlaunchcontrol.h>
 
-#include <cuda/ptx>
-#include <cuda/std/utility>
+#include <cuda/ptxs/clusterlaunchcontrol.h>
 
 #include "generated/clusterlaunchcontrol.h"
 

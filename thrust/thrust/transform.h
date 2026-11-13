@@ -30,7 +30,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(transform.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/transform.h>
 #  include <thrust/system/cuda/detail/transform.h>
 #  include <thrust/system/omp/detail/transform.h>

@@ -66,7 +66,7 @@ struct static_mod<T, A, C, M, true>
 {
   _CCCL_HOST_DEVICE T operator()(T x) const
   {
-    return A * x + C;
+    return (A * x) + C;
   }
 }; // end static_mod
 

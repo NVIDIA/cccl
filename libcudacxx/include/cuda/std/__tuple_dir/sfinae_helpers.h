@@ -20,11 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__type_traits/is_copy_assignable.h>
 #include <cuda/std/__type_traits/is_move_assignable.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 

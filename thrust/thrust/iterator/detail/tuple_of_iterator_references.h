@@ -39,25 +39,25 @@ class tuple_of_iterator_references;
 template <typename T>
 struct is_compatible_tuple_normalize
 {
-  using type = T;
+  using type _CCCL_NODEBUG = T;
 };
 
 template <typename... Ts>
 struct is_compatible_tuple_normalize<tuple_of_iterator_references<Ts...>>
 {
-  using type = ::cuda::std::tuple<Ts...>;
+  using type _CCCL_NODEBUG = ::cuda::std::tuple<Ts...>;
 };
 
 template <typename T>
 struct is_compatible_tuple_normalize<thrust::device_reference<T>>
 {
-  using type = T;
+  using type _CCCL_NODEBUG = T;
 };
 
 template <typename T>
 struct is_compatible_tuple_normalize<T&>
 {
-  using type = T;
+  using type _CCCL_NODEBUG = T;
 };
 
 template <typename T>
@@ -110,7 +110,7 @@ struct maybe_unwrap_nested<
 {
   _CCCL_HOST_DEVICE ::cuda::std::tuple<Us...> operator()(const tuple_of_iterator_references<Ts...>& t) const
   {
-    return t.template to_tuple<Us...>(typename ::cuda::std::__make_tuple_indices<sizeof...(Ts)>::type{});
+    return t.template to_tuple<Us...>(::cuda::std::__make_tuple_indices_t<sizeof...(Ts)>{});
   }
 };
 
@@ -171,7 +171,7 @@ public:
     ::cuda::std::enable_if_t<is_compatible_tuple_v<::cuda::std::tuple<Us...>, ::cuda::std::tuple<Ts...>>, int> = 0>
   _CCCL_HOST_DEVICE constexpr operator ::cuda::std::tuple<Us...>() const
   {
-    return to_tuple<Us...>(typename ::cuda::std::__make_tuple_indices<sizeof...(Ts)>::type{});
+    return to_tuple<Us...>(::cuda::std::__make_tuple_indices_t<sizeof...(Ts)>{});
   }
 
   template <class... Us>

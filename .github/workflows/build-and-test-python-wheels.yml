@@ -98,8 +98,9 @@ jobs:
       - dispatch-groups-linux-standalone
       - dispatch-groups-windows-standalone
     permissions:
+      actions: read
       contents: read
-    runs-on: ubuntu-latest
+    runs-on: linux-amd64-cpu4
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6

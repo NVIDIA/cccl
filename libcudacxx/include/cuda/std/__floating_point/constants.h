@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/arithmetic.h>
 #include <cuda/std/__floating_point/decompose.h>
 #include <cuda/std/__floating_point/format.h>
@@ -74,7 +73,7 @@ template <__fp_format _Fmt>
   {
     return _Storage(0x7fu);
   }
-  else if constexpr (_Fmt == __fp_format::__fp8_nv_e8m0)
+  else if constexpr (_Fmt == __fp_format::__fp8_nv_ue5m3 || _Fmt == __fp_format::__fp8_nv_e8m0)
   {
     return _Storage(0xffu);
   }
@@ -160,6 +159,10 @@ template <__fp_format _Fmt>
   if constexpr (_Fmt == __fp_format::__fp8_nv_e4m3)
   {
     return _Storage(0x7eu);
+  }
+  else if constexpr (_Fmt == __fp_format::__fp8_nv_ue5m3)
+  {
+    return _Storage(0xfeu);
   }
   else
   {
@@ -299,6 +302,10 @@ template <__fp_format _Fmt>
   if constexpr (_Fmt == __fp_format::__fp8_nv_e8m0)
   {
     return ::cuda::std::__fp_min<_Fmt>();
+  }
+  else if constexpr (_Fmt == __fp_format::__fp8_nv_ue5m3)
+  {
+    return __fp_storage_t<_Fmt>(0);
   }
   else
   {

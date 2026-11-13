@@ -23,6 +23,7 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__simd/abi.h>
 #include <cuda/std/__simd/basic_mask.h>
 #include <cuda/std/__simd/basic_vec.h>
@@ -31,7 +32,10 @@
 #include <cuda/std/__simd/utility.h>
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/__type_traits/always_false.h>
+#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 
@@ -47,15 +51,13 @@ template <typename _Tp>
 inline constexpr bool __is_enabled_basic_vec_v = false;
 
 template <typename _Tp, typename _Abi>
-inline constexpr bool __is_enabled_basic_vec_v<basic_vec<_Tp, _Abi>> =
-  __is_vectorizable_v<_Tp> && __is_enabled_abi_v<_Abi>;
+inline constexpr bool __is_enabled_basic_vec_v<basic_vec<_Tp, _Abi>> = __is_enabled_vec_v<_Tp, _Abi>;
 
 template <typename _Tp>
 inline constexpr bool __is_enabled_basic_mask_v = false;
 
 template <size_t _Bytes, typename _Abi>
-inline constexpr bool __is_enabled_basic_mask_v<basic_mask<_Bytes, _Abi>> =
-  __is_vectorizable_byte_size_v<_Bytes> && __is_enabled_abi_v<_Abi>;
+inline constexpr bool __is_enabled_basic_mask_v<basic_mask<_Bytes, _Abi>> = __is_enabled_mask_v<_Bytes, _Abi>;
 
 // get the element size of a basic_mask
 // TODO(fbusato): remove if duplicated in other PRs
@@ -67,11 +69,11 @@ inline constexpr size_t __mask_element_size_v<basic_mask<_Bytes, _Abi>> = _Bytes
 
 // Shorthand for integer_sequence<__simd_size_type, N>
 template <__simd_size_type... _Ns>
-using __simd_size_seq = integer_sequence<__simd_size_type, _Ns...>;
+using __simd_size_seq _CCCL_NODEBUG = integer_sequence<__simd_size_type, _Ns...>;
 
 // Shorthand for make_integer_sequence<__simd_size_type, N>
 template <__simd_size_type _Np>
-using __make_simd_size_seq = make_integer_sequence<__simd_size_type, _Np>;
+using __make_simd_size_seq _CCCL_NODEBUG = make_integer_sequence<__simd_size_type, _Np>;
 
 // "If basic_vec<typename T::value_type, Abi>::size() % T::size() is not 0, then
 // resize_t<basic_vec<typename T::value_type, Abi>::size() % T::size(), T> is valid and denotes
@@ -125,7 +127,7 @@ __make_chunk_array(const _Src& __src, __simd_size_seq<_Js...>) noexcept
 }
 
 template <typename _SubVec, typename _Tail, __simd_size_type _NHead, __simd_size_type _Ip>
-using __select_head_or_tail_t = ::cuda::std::conditional_t<(_Ip < _NHead), _SubVec, _Tail>;
+using __select_head_or_tail_t _CCCL_NODEBUG = ::cuda::std::conditional_t<(_Ip < _NHead), _SubVec, _Tail>;
 
 template <typename _SubVec, typename _Tail, __simd_size_type _NHead, __simd_size_type _Ip, typename _Src>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __select_head_or_tail_t<_SubVec, _Tail, _NHead, _Ip>
@@ -297,6 +299,51 @@ cat(const basic_mask<_Bytes, _Abi0>& __x0, const basic_mask<_Bytes, _Abis>&... _
   using __result_t                   = resize_t<__total, basic_mask<_Bytes, _Abi0>>;
   return __result_t{::cuda::std::simd::__make_cat_generator(__x0, __xs...)};
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+// [simd.creation], iota
+
+template <typename _Tp>
+struct __iota_generator
+{
+  template <typename _Idx>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp operator()(_Idx) const noexcept
+  {
+    return static_cast<_Tp>(_Idx::value);
+  }
+};
+
+template <typename _Vec>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __make_iota() noexcept
+{
+  if constexpr (is_arithmetic_v<_Vec>)
+  {
+    static_assert(__is_vectorizable_v<_Vec>, "iota requires a vectorizable arithmetic type");
+    return _Vec{};
+  }
+  else if constexpr (__is_enabled_basic_vec_v<_Vec>)
+  {
+    using _ValueType _CCCL_NODEBUG  = typename _Vec::value_type;
+    using _CommonType _CCCL_NODEBUG = common_type_t<__simd_size_type, _ValueType>;
+    static_assert(is_arithmetic_v<_ValueType>, "iota requires an arithmetic element type");
+    static_assert(_CommonType{_Vec::size() - 1} <= _CommonType{numeric_limits<_ValueType>::max()},
+                  "iota indices must be representable");
+    return _Vec{__iota_generator<_ValueType>{}};
+  }
+  else
+  {
+    static_assert(__always_false_v<_Vec>, "iota requires a vectorizable arithmetic type or an enabled basic_vec");
+  }
+}
+
+// NVCC + MSVC doesn't accept const (constexpr) __device__ variable templates
+#if _CCCL_COMPILER(MSVC)
+template <typename _Vec>
+inline constexpr _Vec iota = ::cuda::std::simd::__make_iota<_Vec>();
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+template <typename _Vec>
+_CCCL_GLOBAL_CONSTANT _Vec iota = ::cuda::std::simd::__make_iota<_Vec>();
+#endif // !_CCCL_COMPILER(MSVC)
 
 _CCCL_END_NAMESPACE_CUDA_STD_SIMD
 

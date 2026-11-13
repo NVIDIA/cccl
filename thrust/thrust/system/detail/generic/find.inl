@@ -46,14 +46,11 @@ struct find_if_functor
     {
       return TupleType(true, (::cuda::std::min) (::cuda::std::get<1>(lhs), ::cuda::std::get<1>(rhs)));
     }
-    else if (::cuda::std::get<0>(lhs))
+    if (::cuda::std::get<0>(lhs))
     {
       return lhs;
     }
-    else
-    {
-      return rhs;
-    }
+    return rhs;
   }
 };
 
@@ -62,7 +59,7 @@ _CCCL_HOST_DEVICE InputIterator
 find_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
 {
   using difference_type = thrust::detail::it_difference_t<InputIterator>;
-  using result_type     = typename ::cuda::std::tuple<bool, difference_type>;
+  using result_type     = ::cuda::std::tuple<bool, difference_type>;
 
   // empty sequence
   if (first == last)

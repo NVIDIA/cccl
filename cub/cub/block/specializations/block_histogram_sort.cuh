@@ -22,6 +22,9 @@
 
 #include <cub/block/block_discontinuity.cuh>
 #include <cub/block/block_radix_sort.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
 
 CUB_NAMESPACE_BEGIN
@@ -98,7 +101,7 @@ struct BlockHistogramSort
   /// Constructor
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogramSort(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   // Discontinuity functor
@@ -123,10 +126,8 @@ struct BlockHistogramSort
 
         return true;
       }
-      else
-      {
-        return false;
-      }
+
+      return false;
     }
   };
 

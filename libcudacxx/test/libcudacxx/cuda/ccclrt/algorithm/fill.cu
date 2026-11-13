@@ -43,7 +43,7 @@ C2H_CCCLRT_TEST("Mdspan Fill", "[algorithm]")
   {
     const cuda::std::dextents<size_t, 3> dynamic_extents{1, 2, 3};
     auto buffer = make_buffer_for_mdspan(stream, dynamic_extents, 0);
-    cuda::std::mdspan<int, cuda::std::dextents<size_t, 3>> dynamic_mdspan(buffer.data(), dynamic_extents);
+    cuda::std::mdspan<int, cuda::std::dims<3>> dynamic_mdspan(buffer.data(), dynamic_extents);
 
     cuda::fill_bytes(stream, dynamic_mdspan, fill_byte);
     check_result_and_erase(stream, buffer);

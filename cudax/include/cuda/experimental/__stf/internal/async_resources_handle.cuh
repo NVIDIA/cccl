@@ -75,7 +75,6 @@ namespace cuda::experimental::stf
  */
 class async_resources_handle
 {
-private:
   /**
    * @brief This class implements a matrix to keep track of the previous
    * synchronization that occurred between each pair of streams in our pools.
@@ -151,7 +150,6 @@ private:
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
     }
 
-  public:
     // This memorize what was the last event used to synchronize a pair of streams
     last_event_per_stream cached_syncs;
 
@@ -327,7 +325,7 @@ public:
  */
 UNITTEST("async_resources_handle is_default_constructible")
 {
-  static_assert(::cuda::std::is_default_constructible<async_resources_handle>::value,
+  static_assert(::cuda::std::is_default_constructible_v<async_resources_handle>,
                 "async_resources_handle must be default constructible");
 };
 #endif

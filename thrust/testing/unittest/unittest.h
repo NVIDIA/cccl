@@ -3,6 +3,7 @@
 // Here was Thrust's legacy unit test framework. It's core was replaced by Catch2, but the APIs remain for all tests
 // that have not been migrated yet.
 
+#include <thrust/detail/preprocessor.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/mr/device_memory_resource.h>
@@ -32,9 +33,9 @@
 #include <unittest/random.h>
 #include <unittest/special_types.h>
 
-#if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
+#if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
 #  include <cxxabi.h>
-#endif // _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
+#endif // _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
 
 // workaround for error #3185-D: no '#pragma diagnostic push' was found to match this 'diagnostic pop'
 #if _CCCL_COMPILER(NVHPC)
@@ -136,7 +137,7 @@ std::vector<T> to_approx(std::vector<Complex<T>> const& v)
       /* Legacy tolerance test: not-equal only if the difference exceeds absolute + relative tolerance. Written as */ \
       /* !(diff > tol) rather than (diff <= tol) so that NaN compares equal to NaN, matching the old framework and */ \
       /* letting degenerate complex results (e.g. complex_plane(0) == NaN) pass. */                                   \
-      REQUIRE_FALSE(::cuda::std::abs(a_ - b_) > 1e-4 * (::cuda::std::abs(a_) + ::cuda::std::abs(b_)) + 1e-4);         \
+      REQUIRE_FALSE(::cuda::std::abs(a_ - b_) > (1e-4 * (::cuda::std::abs(a_) + ::cuda::std::abs(b_))) + 1e-4);       \
     }                                                                                                                 \
   }
 
@@ -355,7 +356,7 @@ namespace unittest
 inline std::string demangle(const char* name)
 {
   // for demangling the result of type_info.name() with msvc, type_info.name() is already demangled
-#if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
+#if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
   int status = 0;
   const std::unique_ptr<char, decltype(&std::free)> realname{
     abi::__cxa_demangle(name, nullptr, nullptr, &status), &std::free};

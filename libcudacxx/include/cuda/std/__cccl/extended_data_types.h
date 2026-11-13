@@ -83,6 +83,12 @@ struct __nv_fp8_e8m0;
 struct __nv_fp8x2_e8m0;
 struct __nv_fp8x4_e8m0;
 #  endif // _CCCL_CTK_AT_LEAST(12, 8)
+
+#  if _CCCL_CTK_AT_LEAST(13, 4)
+struct __nv_fp8_ue5m3;
+struct __nv_fp8x2_ue5m3;
+struct __nv_fp8x4_ue5m3;
+#  endif // _CCCL_CTK_AT_LEAST(13, 4)
 #endif
 
 #if __has_include(<cuda_fp6.h>) && _CCCL_HAS_NVFP8() && !_CCCL_CUDA_COMPILER(NVHPC) \
@@ -106,12 +112,13 @@ struct __nv_fp4x2_e2m1;
 struct __nv_fp4x4_e2m1;
 #endif
 
-#define _CCCL_HAS_NVFP4_E2M1() _CCCL_HAS_NVFP4()
-#define _CCCL_HAS_NVFP6_E2M3() _CCCL_HAS_NVFP6()
-#define _CCCL_HAS_NVFP6_E3M2() _CCCL_HAS_NVFP6()
-#define _CCCL_HAS_NVFP8_E4M3() _CCCL_HAS_NVFP8()
-#define _CCCL_HAS_NVFP8_E5M2() _CCCL_HAS_NVFP8()
-#define _CCCL_HAS_NVFP8_E8M0() (_CCCL_HAS_NVFP8() && _CCCL_CTK_AT_LEAST(12, 8))
+#define _CCCL_HAS_NVFP4_E2M1()  _CCCL_HAS_NVFP4()
+#define _CCCL_HAS_NVFP6_E2M3()  _CCCL_HAS_NVFP6()
+#define _CCCL_HAS_NVFP6_E3M2()  _CCCL_HAS_NVFP6()
+#define _CCCL_HAS_NVFP8_E4M3()  _CCCL_HAS_NVFP8()
+#define _CCCL_HAS_NVFP8_E5M2()  _CCCL_HAS_NVFP8()
+#define _CCCL_HAS_NVFP8_UE5M3() (_CCCL_HAS_NVFP8() && _CCCL_CTK_AT_LEAST(13, 4))
+#define _CCCL_HAS_NVFP8_E8M0()  (_CCCL_HAS_NVFP8() && _CCCL_CTK_AT_LEAST(12, 8))
 
 /***********************************************************************************************************************
  * _Float64

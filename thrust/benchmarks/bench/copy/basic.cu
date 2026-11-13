@@ -58,7 +58,7 @@ struct non_trivial
   }
 };
 
-static_assert(!::cuda::std::is_trivially_copyable<non_trivial>::value); // as required by the C++ standard
+static_assert(!::cuda::std::is_trivially_copyable_v<non_trivial>); // as required by the C++ standard
 static_assert(!::cuda::is_trivially_copyable_v<non_trivial>); // thrust uses this check internally
 
 using types =

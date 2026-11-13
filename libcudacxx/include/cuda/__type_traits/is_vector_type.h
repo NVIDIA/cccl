@@ -45,7 +45,7 @@ using is_vector_type = ::cuda::std::bool_constant<is_vector_type_v<_Tp>>;
 template <class _Tp, class = void>
 inline constexpr bool is_extended_fp_vector_type_v = false;
 template <class _Tp>
-inline constexpr bool is_extended_fp_vector_type_v<_Tp, ::cuda::std::void_t<typename scalar_type<_Tp>::type>> =
+inline constexpr bool is_extended_fp_vector_type_v<_Tp, ::cuda::std::void_t<scalar_type_t<_Tp>>> =
   ::cuda::std::__is_ext_nv_fp_v<scalar_type_t<_Tp>>;
 
 template <class _Tp>

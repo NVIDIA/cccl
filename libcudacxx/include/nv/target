@@ -36,6 +36,12 @@
 #    define _NV_BITSET_ATTRIBUTE
 #  endif
 
+#  if defined(__cpp_inline_variables) && __cpp_inline_variables >= 201606L
+#    define _NV_TARGET_INLINE_VAR inline
+#  else
+#    define _NV_TARGET_INLINE_VAR
+#  endif
+
 // This must be a nested namespace as <nv/target> works with older dialects.
 namespace nv // NOLINT(modernize-concat-nested-namespaces)
 {
@@ -46,33 +52,33 @@ namespace detail
 using base_int_t = unsigned long long;
 
 // No host specialization
-constexpr base_int_t all_hosts = 1;
+_NV_TARGET_INLINE_VAR constexpr base_int_t all_hosts = 1;
 
 // NVIDIA GPUs
-constexpr base_int_t sm_35_bit  = 1 << 1;
-constexpr base_int_t sm_37_bit  = 1 << 2;
-constexpr base_int_t sm_50_bit  = 1 << 3;
-constexpr base_int_t sm_52_bit  = 1 << 4;
-constexpr base_int_t sm_53_bit  = 1 << 5;
-constexpr base_int_t sm_60_bit  = 1 << 6;
-constexpr base_int_t sm_61_bit  = 1 << 7;
-constexpr base_int_t sm_62_bit  = 1 << 8;
-constexpr base_int_t sm_70_bit  = 1 << 9;
-constexpr base_int_t sm_72_bit  = 1 << 10;
-constexpr base_int_t sm_75_bit  = 1 << 11;
-constexpr base_int_t sm_80_bit  = 1 << 12;
-constexpr base_int_t sm_86_bit  = 1 << 13;
-constexpr base_int_t sm_87_bit  = 1 << 14;
-constexpr base_int_t sm_88_bit  = 1 << 15;
-constexpr base_int_t sm_89_bit  = 1 << 16;
-constexpr base_int_t sm_90_bit  = 1 << 17;
-constexpr base_int_t sm_100_bit = 1 << 18;
-constexpr base_int_t sm_103_bit = 1 << 19;
-constexpr base_int_t sm_107_bit = 1 << 20;
-constexpr base_int_t sm_110_bit = 1 << 21;
-constexpr base_int_t sm_120_bit = 1 << 22;
-constexpr base_int_t sm_121_bit = 1 << 23;
-constexpr base_int_t all_devices =
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_35_bit  = 1 << 1;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_37_bit  = 1 << 2;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_50_bit  = 1 << 3;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_52_bit  = 1 << 4;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_53_bit  = 1 << 5;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_60_bit  = 1 << 6;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_61_bit  = 1 << 7;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_62_bit  = 1 << 8;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_70_bit  = 1 << 9;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_72_bit  = 1 << 10;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_75_bit  = 1 << 11;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_80_bit  = 1 << 12;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_86_bit  = 1 << 13;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_87_bit  = 1 << 14;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_88_bit  = 1 << 15;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_89_bit  = 1 << 16;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_90_bit  = 1 << 17;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_100_bit = 1 << 18;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_103_bit = 1 << 19;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_107_bit = 1 << 20;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_110_bit = 1 << 21;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_120_bit = 1 << 22;
+_NV_TARGET_INLINE_VAR constexpr base_int_t sm_121_bit = 1 << 23;
+_NV_TARGET_INLINE_VAR constexpr base_int_t all_devices =
   sm_35_bit | sm_37_bit | sm_50_bit | sm_52_bit | sm_53_bit | sm_60_bit | sm_61_bit | sm_62_bit | sm_70_bit | sm_72_bit
   | sm_75_bit | sm_80_bit | sm_86_bit | sm_87_bit | sm_88_bit | sm_89_bit | sm_90_bit | sm_100_bit | sm_103_bit
   | sm_107_bit | sm_110_bit | sm_120_bit | sm_121_bit;
@@ -210,40 +216,43 @@ using detail::sm_selector;
 using detail::target_description;
 
 // The predicates for basic host/device selection
-constexpr target_description is_host    = target_description(detail::all_hosts);
-constexpr target_description is_device  = target_description(detail::all_devices);
-constexpr target_description any_target = target_description(detail::all_hosts | detail::all_devices);
-constexpr target_description no_target  = target_description(0);
+_NV_TARGET_INLINE_VAR constexpr target_description is_host   = target_description(detail::all_hosts);
+_NV_TARGET_INLINE_VAR constexpr target_description is_device = target_description(detail::all_devices);
+_NV_TARGET_INLINE_VAR constexpr target_description any_target =
+  target_description(detail::all_hosts | detail::all_devices);
+_NV_TARGET_INLINE_VAR constexpr target_description no_target = target_description(0);
 
 // The public names for NVIDIA GPU architectures
-constexpr sm_selector sm_35  = sm_selector::sm_35;
-constexpr sm_selector sm_37  = sm_selector::sm_37;
-constexpr sm_selector sm_50  = sm_selector::sm_50;
-constexpr sm_selector sm_52  = sm_selector::sm_52;
-constexpr sm_selector sm_53  = sm_selector::sm_53;
-constexpr sm_selector sm_60  = sm_selector::sm_60;
-constexpr sm_selector sm_61  = sm_selector::sm_61;
-constexpr sm_selector sm_62  = sm_selector::sm_62;
-constexpr sm_selector sm_70  = sm_selector::sm_70;
-constexpr sm_selector sm_72  = sm_selector::sm_72;
-constexpr sm_selector sm_75  = sm_selector::sm_75;
-constexpr sm_selector sm_80  = sm_selector::sm_80;
-constexpr sm_selector sm_86  = sm_selector::sm_86;
-constexpr sm_selector sm_87  = sm_selector::sm_87;
-constexpr sm_selector sm_88  = sm_selector::sm_88;
-constexpr sm_selector sm_89  = sm_selector::sm_89;
-constexpr sm_selector sm_90  = sm_selector::sm_90;
-constexpr sm_selector sm_100 = sm_selector::sm_100;
-constexpr sm_selector sm_103 = sm_selector::sm_103;
-constexpr sm_selector sm_107 = sm_selector::sm_107;
-constexpr sm_selector sm_110 = sm_selector::sm_110;
-constexpr sm_selector sm_120 = sm_selector::sm_120;
-constexpr sm_selector sm_121 = sm_selector::sm_121;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_35  = sm_selector::sm_35;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_37  = sm_selector::sm_37;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_50  = sm_selector::sm_50;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_52  = sm_selector::sm_52;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_53  = sm_selector::sm_53;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_60  = sm_selector::sm_60;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_61  = sm_selector::sm_61;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_62  = sm_selector::sm_62;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_70  = sm_selector::sm_70;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_72  = sm_selector::sm_72;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_75  = sm_selector::sm_75;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_80  = sm_selector::sm_80;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_86  = sm_selector::sm_86;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_87  = sm_selector::sm_87;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_88  = sm_selector::sm_88;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_89  = sm_selector::sm_89;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_90  = sm_selector::sm_90;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_100 = sm_selector::sm_100;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_103 = sm_selector::sm_103;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_107 = sm_selector::sm_107;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_110 = sm_selector::sm_110;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_120 = sm_selector::sm_120;
+_NV_TARGET_INLINE_VAR constexpr sm_selector sm_121 = sm_selector::sm_121;
 
 using detail::is_exactly;
 using detail::provides;
 } // namespace target
 } // namespace nv
+
+#  undef _NV_TARGET_INLINE_VAR
 
 #endif // C++  && !defined(__CUDACC_RTC__)
 

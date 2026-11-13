@@ -24,7 +24,6 @@
 
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 

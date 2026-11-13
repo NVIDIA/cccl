@@ -24,6 +24,7 @@
 
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__memory/align_up.h>
+#include <cuda/std/__cstddef/types.h>
 
 CUB_NAMESPACE_BEGIN
 

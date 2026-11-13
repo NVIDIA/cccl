@@ -16,14 +16,16 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/cstddef>
+#include <cuda/std/functional>
 #include <cuda/std/optional>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
-#include <cuda/std/utility>
 #include <cuda/stream>
 
 #include <cuda/experimental/coop/group>
 
-#include <cooperative_groups.h>
+#include <nv/target>
 
 #include "group_testing.cuh"
 
@@ -127,11 +129,6 @@ __device__ cuda::std::optional<T> sum(const Group& group, T (&array)[N])
   static_assert(ngroups != cuda::std::dynamic_extent, "group count must be statically known");
 
   __shared__ T group_sums[ngroups];
-
-  if (!Unit{}.is_part_of(group))
-  {
-    return cuda::std::nullopt;
-  }
 
   // todo(dabayer): Replace by group.rank(level) once this query is available.
   const auto group_rank = group.__mapping_result().group_rank();

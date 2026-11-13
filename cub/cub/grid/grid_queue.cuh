@@ -21,6 +21,8 @@
 
 #include <cub/util_debug.cuh>
 
+#include <cuda/std/__cstddef/types.h>
+
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN
@@ -62,7 +64,6 @@ CUB_NAMESPACE_BEGIN
 template <typename OffsetT>
 class GridQueue
 {
-private:
   /// Counter indices
   static constexpr int FILL  = 0;
   static constexpr int DRAIN = 1;

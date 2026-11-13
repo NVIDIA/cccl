@@ -176,9 +176,9 @@ _CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::value_initialize_n(iterator
 
 template <typename T, typename Alloc>
 _CCCL_HOST_DEVICE void
-contiguous_storage<T, Alloc>::uninitialized_fill_n(iterator first, size_type n, const value_type& x)
+contiguous_storage<T, Alloc>::uninitialized_fill_n(iterator first, size_type n, const value_type& value)
 {
-  fill_construct_range(m_allocator, first.base(), n, x);
+  fill_construct_range(m_allocator, first.base(), n, value);
 } // end contiguous_storage::uninitialized_fill()
 
 template <typename T, typename Alloc>

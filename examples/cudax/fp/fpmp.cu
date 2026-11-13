@@ -67,17 +67,16 @@
 #include <cuda/std/span>
 #include <cuda/stream>
 
-// The CCCL FP component lives in cuda::experimental (later cuda::),
-// abbreviated here rather than pulled in with a using-directive.
+// The CCCL FP component lives in namespace cuda, and its names are qualified
+// here rather than pulled in with a using-directive.
 //
 // Two spellings appear below, and the split is deliberate. Type names and the
 // component's own functions - renormalize, the accuracy-selecting add<> -
-// carry the cudax:: prefix, since they have no counterpart for double and so
+// carry the cuda:: prefix, since they have no counterpart for double and so
 // only occur in code written against the component. The standard-named math
 // functions are left unqualified and found by argument-dependent lookup
 // instead, which is what lets an existing body of double code keep its call
 // sites unchanged when the type underneath is swapped.
-namespace cudax = cuda::experimental;
 
 // A value reported as the two limbs it is stored as, rather than rounded to one
 // double. The accuracy levels differ below the width of a single double, so
@@ -123,27 +122,27 @@ __host__ __device__ void float_float_operations(fpmp_results* out)
   // Construction. A double literal carries more precision than the fp32mp2 pair
   // holds, so the cast is explicit by default (see CCCL_FPMP_EXPLICIT_CASTS);
   // float and integer sources convert implicitly.
-  const cudax::fp32mp2 a{1.234567890123456789};
-  const cudax::fp32mp2 b{9.876543210987654321};
-  const cudax::fp32mp2 c{cuda::std::numbers::e_v<float>};
-  const cudax::fp32mp2 d{5u};
+  const cuda::fp32mp2 a{1.234567890123456789};
+  const cuda::fp32mp2 b{9.876543210987654321};
+  const cuda::fp32mp2 c{cuda::std::numbers::e_v<float>};
+  const cuda::fp32mp2 d{5u};
 
   // Arithmetic. An operation on two fp32mp2 values yields an fp32mp2, so
   // results stay in the pair representation and can feed further operations at
   // full precision.
-  const cudax::fp32mp2 sum  = a + b;
-  const cudax::fp32mp2 diff = a - b;
-  const cudax::fp32mp2 prod = a * b;
-  const cudax::fp32mp2 quot = a / b;
+  const cuda::fp32mp2 sum  = a + b;
+  const cuda::fp32mp2 diff = a - b;
+  const cuda::fp32mp2 prod = a * b;
+  const cuda::fp32mp2 quot = a / b;
 
   // Unqualified on purpose: ADL finds the fpmp2 overloads, so a call site
   // written for double needs no edit when the type underneath it changes.
-  const cudax::fp32mp2 sqrt_d  = sqrt(d);
-  const cudax::fp32mp2 rsqrt_d = rsqrt(d);
-  const cudax::fp32mp2 fma_abc = fma(a, b, c);
+  const cuda::fp32mp2 sqrt_d  = sqrt(d);
+  const cuda::fp32mp2 rsqrt_d = rsqrt(d);
+  const cuda::fp32mp2 fma_abc = fma(a, b, c);
 
-  const cudax::fp32mp2 exp_a = exp(a);
-  const cudax::fp32mp2 sin_a = sin(a);
+  const cuda::fp32mp2 exp_a = exp(a);
+  const cuda::fp32mp2 sin_a = sin(a);
 
   // Comparisons return plain bool.
   const bool is_gt = a > b;
@@ -157,40 +156,40 @@ __host__ __device__ void float_float_operations(fpmp_results* out)
   // an fp32mp2 pair and so would need an explicit cast to be stored on its own.
   // The scalar may sit on either side, and the result is an fp32mp2 rather than
   // a built-in type.
-  const cudax::fp32mp2 mixed_add = a + 0.9876543210987654;
-  const cudax::fp32mp2 mixed_mul = a * 3;
-  const cudax::fp32mp2 mixed_lhs = 2 * a;
+  const cuda::fp32mp2 mixed_add = a + 0.9876543210987654;
+  const cuda::fp32mp2 mixed_mul = a * 3;
+  const cuda::fp32mp2 mixed_lhs = 2 * a;
 
   // Accumulating a single float has a dedicated path, cheaper than widening it
   // and running a full pair-with-pair addition.
-  cudax::fp32mp2 acc = a;
+  cuda::fp32mp2 acc = a;
   acc += 0.5f;
 
   // The two components a value is built from: a + b is exact in the pair, and
   // lo holds what a single float would have dropped.
-  const cudax::fp32mp2 s = a + b;
+  const cuda::fp32mp2 s = a + b;
 
   // Accuracy levels. p and q are given directly as limb pairs so that both
   // limbs carry information, and their leading limbs almost cancel. What is
   // left of the sum then comes from the trailing limbs, which is where the
   // accuracy levels part company.
-  const cudax::fp32mp2 p{1.0f, 4.4e-8f};
-  const cudax::fp32mp2 q{-(1.0f - 1.0e-7f), 3.1e-8f};
-  const cudax::fp32mp2 add_def = p + q;
+  const cuda::fp32mp2 p{1.0f, 4.4e-8f};
+  const cuda::fp32mp2 q{-(1.0f - 1.0e-7f), 3.1e-8f};
+  const cuda::fp32mp2 add_def = p + q;
 
   // fpmp2_accuracy::high spends more operations to recover the trailing limb
   // that the default level rounds away.
-  const cudax::fp32mp2_high high_p{1.0f, 4.4e-8f};
-  const cudax::fp32mp2_high high_q{-(1.0f - 1.0e-7f), 3.1e-8f};
-  const cudax::fp32mp2_high add_high = high_p + high_q;
+  const cuda::fp32mp2_high high_p{1.0f, 4.4e-8f};
+  const cuda::fp32mp2_high high_q{-(1.0f - 1.0e-7f), 3.1e-8f};
+  const cuda::fp32mp2_high add_high = high_p + high_q;
 
   // The accuracy can also be picked per operation rather than per type: add<>
   // takes low-accuracy operands and applies the high-accuracy algorithm to
   // them, so a value stored as fp32mp2_low can still be summed carefully where
   // it matters.
-  const cudax::fp32mp2_low low_p{1.0f, 4.4e-8f};
-  const cudax::fp32mp2_low low_q{-(1.0f - 1.0e-7f), 3.1e-8f};
-  const cudax::fp32mp2_low add_low_as_high = cudax::renormalize(cudax::add<cudax::fpmp2_accuracy::high>(low_p, low_q));
+  const cuda::fp32mp2_low low_p{1.0f, 4.4e-8f};
+  const cuda::fp32mp2_low low_q{-(1.0f - 1.0e-7f), 3.1e-8f};
+  const cuda::fp32mp2_low add_low_as_high = cuda::renormalize(cuda::add<cuda::fpmp2_accuracy::high>(low_p, low_q));
 
   // Renormalization. fpmp2_accuracy::low is cheap because it omits the step
   // that keeps the two limbs separated. Detouring through a much larger value
@@ -199,10 +198,10 @@ __host__ __device__ void float_float_operations(fpmp_results* out)
   // small result it is attached to. hi is then no longer the correctly rounded
   // leading part, though hi + lo still is the value. renormalize()
   // redistributes the two.
-  const cudax::fp32mp2_low low_a{1.2345679f, 2.9e-8f};
-  const cudax::fp32mp2_low low_big{1234.5678f, 5.0e-5f};
-  const cudax::fp32mp2_low drifted  = low_a - low_big + low_big;
-  const cudax::fp32mp2_low renormed = cudax::renormalize(drifted);
+  const cuda::fp32mp2_low low_a{1.2345679f, 2.9e-8f};
+  const cuda::fp32mp2_low low_big{1234.5678f, 5.0e-5f};
+  const cuda::fp32mp2_low drifted  = low_a - low_big + low_big;
+  const cuda::fp32mp2_low renormed = cuda::renormalize(drifted);
 
   // Everything above stayed in the pair representation. Converting for display
   // happens here, in one place: to a single double where that is enough, and to
@@ -259,24 +258,24 @@ __host__ __device__ void double_double_operations(fpmp_results* out)
   // explicit cast is involved, unlike the fp32mp2 case above where the same
   // literal has to be split across both limbs. Float and integer sources
   // convert as before.
-  const cudax::fp64mp2 a{1.234567890123456789};
-  const cudax::fp64mp2 b{9.876543210987654321};
-  const cudax::fp64mp2 c{cuda::std::numbers::e_v<float>};
-  const cudax::fp64mp2 d{5u};
+  const cuda::fp64mp2 a{1.234567890123456789};
+  const cuda::fp64mp2 b{9.876543210987654321};
+  const cuda::fp64mp2 c{cuda::std::numbers::e_v<float>};
+  const cuda::fp64mp2 d{5u};
 
   // Arithmetic. As on the narrower type, results stay in the pair
   // representation.
-  const cudax::fp64mp2 sum  = a + b;
-  const cudax::fp64mp2 diff = a - b;
-  const cudax::fp64mp2 prod = a * b;
-  const cudax::fp64mp2 quot = a / b;
+  const cuda::fp64mp2 sum  = a + b;
+  const cuda::fp64mp2 diff = a - b;
+  const cuda::fp64mp2 prod = a * b;
+  const cuda::fp64mp2 quot = a / b;
 
-  const cudax::fp64mp2 sqrt_d  = sqrt(d);
-  const cudax::fp64mp2 rsqrt_d = rsqrt(d);
-  const cudax::fp64mp2 fma_abc = fma(a, b, c);
+  const cuda::fp64mp2 sqrt_d  = sqrt(d);
+  const cuda::fp64mp2 rsqrt_d = rsqrt(d);
+  const cuda::fp64mp2 fma_abc = fma(a, b, c);
 
-  const cudax::fp64mp2 exp_a = exp(a);
-  const cudax::fp64mp2 sin_a = sin(a);
+  const cuda::fp64mp2 exp_a = exp(a);
+  const cuda::fp64mp2 sin_a = sin(a);
 
   const bool is_gt = a > b;
   const bool is_lt = a < b;
@@ -286,46 +285,46 @@ __host__ __device__ void double_double_operations(fpmp_results* out)
   // arithmetic runs at full pair precision; at this width the double literal is
   // already the component type, so that conversion costs nothing and loses
   // nothing.
-  const cudax::fp64mp2 mixed_add = a + 0.9876543210987654;
-  const cudax::fp64mp2 mixed_mul = a * 3;
-  const cudax::fp64mp2 mixed_lhs = 2 * a;
+  const cuda::fp64mp2 mixed_add = a + 0.9876543210987654;
+  const cuda::fp64mp2 mixed_mul = a * 3;
+  const cuda::fp64mp2 mixed_lhs = 2 * a;
 
   // Accumulating a single double takes the same dedicated path.
-  cudax::fp64mp2 acc = a;
+  cuda::fp64mp2 acc = a;
   acc += 0.5;
 
   // The two components a value is built from: a + b is exact in the pair, and
   // lo holds what a single double would have dropped.
-  const cudax::fp64mp2 s = a + b;
+  const cuda::fp64mp2 s = a + b;
 
   // Accuracy levels, exactly as above but on the wider type: the limb values
   // shrink to match the wider mantissa, nothing else changes.
-  const cudax::fp64mp2 p{1.0, 7.3e-17};
-  const cudax::fp64mp2 q{-(1.0 - 1.0e-16), 5.1e-17};
-  const cudax::fp64mp2 add_def = p + q;
+  const cuda::fp64mp2 p{1.0, 7.3e-17};
+  const cuda::fp64mp2 q{-(1.0 - 1.0e-16), 5.1e-17};
+  const cuda::fp64mp2 add_def = p + q;
 
   // fpmp2_accuracy::high recovers the trailing limb the default level rounds
   // away. At this width that limb sits far below anything a single double could
   // show, which is why these results are reported as limb pairs rather than as
   // one number.
-  const cudax::fp64mp2_high high_p{1.0, 7.3e-17};
-  const cudax::fp64mp2_high high_q{-(1.0 - 1.0e-16), 5.1e-17};
-  const cudax::fp64mp2_high add_high = high_p + high_q;
+  const cuda::fp64mp2_high high_p{1.0, 7.3e-17};
+  const cuda::fp64mp2_high high_q{-(1.0 - 1.0e-16), 5.1e-17};
+  const cuda::fp64mp2_high add_high = high_p + high_q;
 
   // The same per-operation choice: low-accuracy operands summed at high
   // accuracy.
-  const cudax::fp64mp2_low low_p{1.0, 7.3e-17};
-  const cudax::fp64mp2_low low_q{-(1.0 - 1.0e-16), 5.1e-17};
-  const cudax::fp64mp2_low add_low_as_high = cudax::renormalize(cudax::add<cudax::fpmp2_accuracy::high>(low_p, low_q));
+  const cuda::fp64mp2_low low_p{1.0, 7.3e-17};
+  const cuda::fp64mp2_low low_q{-(1.0 - 1.0e-16), 5.1e-17};
+  const cuda::fp64mp2_low add_low_as_high = cuda::renormalize(cuda::add<cuda::fpmp2_accuracy::high>(low_p, low_q));
 
   // Renormalization, as above: the detour through big leaves the trailing limb
   // sized for big rather than for the small result, and renormalize()
   // redistributes the two. big is around 1e7 here so that the drift lands where
   // a double can still show it.
-  const cudax::fp64mp2_low low_a{1.2345678901234567, 5.5e-17};
-  const cudax::fp64mp2_low low_big{12345678.901234567, 8.0e-10};
-  const cudax::fp64mp2_low drifted  = low_a - low_big + low_big;
-  const cudax::fp64mp2_low renormed = cudax::renormalize(drifted);
+  const cuda::fp64mp2_low low_a{1.2345678901234567, 5.5e-17};
+  const cuda::fp64mp2_low low_big{12345678.901234567, 8.0e-10};
+  const cuda::fp64mp2_low drifted  = low_a - low_big + low_big;
+  const cuda::fp64mp2_low renormed = cuda::renormalize(drifted);
 
   // The single conversion point, as in the fp32mp2 kernel.
   out->a = static_cast<double>(a);

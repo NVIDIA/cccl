@@ -13,8 +13,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/functional.h>
-#include <thrust/system/detail/error_condition.inl>
+#include <thrust/system/error_code.h>
+
+#include <cuda/std/__type_traits/enable_if.h>
+
+#include <string>
 
 THRUST_NAMESPACE_BEGIN
 

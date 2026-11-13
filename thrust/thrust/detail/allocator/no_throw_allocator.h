@@ -25,7 +25,7 @@ private:
   using super_t = BaseAllocator;
 
 public:
-  inline _CCCL_HOST_DEVICE no_throw_allocator(const BaseAllocator& other = BaseAllocator())
+  _CCCL_HOST_DEVICE no_throw_allocator(const BaseAllocator& other = BaseAllocator())
       : super_t(other)
   {}
 
@@ -47,12 +47,12 @@ public:
       (super_t::deallocate(p, n);));
   } // end deallocate()
 
-  inline _CCCL_HOST_DEVICE bool operator==(no_throw_allocator const& other)
+  _CCCL_HOST_DEVICE bool operator==(no_throw_allocator const& other)
   {
     return super_t::operator==(other);
   }
 
-  inline _CCCL_HOST_DEVICE bool operator!=(no_throw_allocator const& other)
+  _CCCL_HOST_DEVICE bool operator!=(no_throw_allocator const& other)
   {
     return super_t::operator!=(other);
   }

@@ -14,6 +14,7 @@
 #endif // no system header
 
 #if _CCCL_CUDA_COMPILATION()
+#  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN

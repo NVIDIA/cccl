@@ -14,4 +14,4 @@
 #endif // no system header
 
 // omp system inherits malloc and free
-#include <thrust/system/cpp/detail/malloc_and_free.h>
+#include <thrust/system/cpp/detail/malloc_and_free.h> // IWYU pragma: export

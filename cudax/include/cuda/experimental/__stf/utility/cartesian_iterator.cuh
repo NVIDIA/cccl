@@ -21,12 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
+#ifdef UNITTESTED_FILE
+#  include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#endif
+
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <iostream>
 
 namespace cuda::experimental::stf::reserved
 {
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0
 /**
  * @brief Implementation of a cartesian product of multiple iterators
@@ -95,6 +100,7 @@ UNITTEST("cartesian product") {
 
 #endif
 
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0
 class RangeIterator {
 public:
@@ -310,7 +316,7 @@ UNITTEST("range")
   }
 
   reserved::unit_test_range_func<<<1, 1>>>(n);
-  cudaDeviceSynchronize();
+  cuda_safe_call(cudaDeviceSynchronize());
 };
 #endif // UNITTESTED_FILE
 
@@ -373,12 +379,12 @@ public:
 
   _CCCL_HOST_DEVICE StridedRangeIterator operator+(difference_type n) const
   {
-    return StridedRangeIterator(currentValue + stride * n, stride);
+    return StridedRangeIterator(currentValue + (stride * n), stride);
   }
 
   _CCCL_HOST_DEVICE StridedRangeIterator operator-(difference_type n) const
   {
-    return StridedRangeIterator(currentValue - stride * n, stride);
+    return StridedRangeIterator(currentValue - (stride * n), stride);
   }
 
   _CCCL_HOST_DEVICE difference_type operator-(const StridedRangeIterator& other) const
@@ -426,7 +432,7 @@ class StridedRange
 public:
   using value_type      = size_t;
   using iterator        = StridedRangeIterator;
-  using difference_type = typename iterator::difference_type;
+  using difference_type = iterator::difference_type;
 
   _CCCL_HOST_DEVICE explicit StridedRange(value_type start, value_type end, difference_type stride)
       : start_(start)
@@ -440,7 +446,7 @@ public:
     }
     else if ((end_ - start_) % stride_ != 0)
     {
-      end_ = start_ + stride_ * ((end_ - start_) / stride_ + 1);
+      end_ = start_ + (stride_ * (((end_ - start_) / stride_) + 1));
     }
   }
 
@@ -503,7 +509,7 @@ UNITTEST("StridedRange loop")
 template <typename T>
 __global__ void unit_test_strided_range_func(T n)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
   const StridedRange r(tid, n, nthreads);
   for (auto i : r)
@@ -516,7 +522,7 @@ UNITTEST("StridedRange CUDA")
 {
   const size_t n = 100;
   unit_test_strided_range_func<<<4, 2>>>(n);
-  cudaDeviceSynchronize();
+  cuda_safe_call(cudaDeviceSynchronize());
 };
 #endif // UNITTESTED_FILE
 } // end namespace cuda::experimental::stf::reserved

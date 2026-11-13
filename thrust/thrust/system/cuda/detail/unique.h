@@ -18,36 +18,37 @@
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_select.cuh>
-#  include <cub/util_math.cuh>
 #  include <cub/util_temporary_storage.cuh>
 
 #  include <thrust/count.h>
 #  include <thrust/detail/alignment.h>
+#  include <thrust/detail/execution_policy.h>
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/functional.h>
+#  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
-#  include <thrust/system/cuda/detail/core/agent_launcher.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/advance.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/next.h>
+#  include <cuda/std/__tuple_dir/get.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ForwardIterator unique(
+_CCCL_HOST_DEVICE ForwardIterator unique( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
   BinaryPredicate binary_pred);
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE OutputIterator unique_copy(
+_CCCL_HOST_DEVICE OutputIterator unique_copy( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -55,7 +56,8 @@ _CCCL_HOST_DEVICE OutputIterator unique_copy(
   BinaryPredicate binary_pred);
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
+_CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator>
+unique_count( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -194,6 +196,6 @@ unique_count(execution_policy<Derived>& policy, ForwardIt first, ForwardIt last,
 THRUST_NAMESPACE_END
 
 //
-#  include <thrust/memory.h>
-#  include <thrust/unique.h>
+#  include <thrust/memory.h> // IWYU pragma: keep
+#  include <thrust/unique.h> // IWYU pragma: keep
 #endif // _CCCL_CUDA_COMPILATION()

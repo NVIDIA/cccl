@@ -38,7 +38,7 @@ struct copy_construct_with_allocator
   Allocator& a;
 
   template <typename Tuple>
-  inline _CCCL_HOST_DEVICE void operator()(Tuple t)
+  _CCCL_HOST_DEVICE void operator()(Tuple t)
   {
     const InputType& in = ::cuda::std::get<0>(t);
     OutputType& out     = ::cuda::std::get<1>(t);

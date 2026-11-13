@@ -197,7 +197,7 @@ template <typename KeyInputItItT,
           typename NumSegmentsParameterT,
           typename HostSegSizeT,
           typename EnvT>
-_CCCL_HOST_API static cudaError_t batched_topk_keys(
+_CCCL_HOST_API cudaError_t batched_topk_keys(
   KeyInputItItT d_keys_in,
   KeyOutputItItT d_keys_out,
   SegmentSizeParamT segment_sizes,

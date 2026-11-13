@@ -271,4 +271,4 @@ using random::minstd_rand0;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/random/detail/linear_congruential_engine.inl>
+#include <thrust/random/detail/linear_congruential_engine.inl> // IWYU pragma: export

@@ -20,10 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__fwd/allocator.h>
-#include <cuda/std/__fwd/char_traits.h>
-#include <cuda/std/__fwd/memory_resource.h>
-
 #include <cuda/std/__cccl/prologue.h>
 
 // std:: forward declarations
@@ -50,6 +46,7 @@ _CCCL_END_NAMESPACE_STD
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0 // we don't support these features
 template <class _CharT, class _Traits = char_traits<_CharT>, class _Allocator = allocator<_CharT>>
 class _CCCL_TYPE_VISIBILITY_DEFAULT basic_string;

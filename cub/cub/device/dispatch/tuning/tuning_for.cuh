@@ -16,6 +16,7 @@
 #include <cub/agent/agent_for.cuh>
 #include <cub/util_device.cuh>
 
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN

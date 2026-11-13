@@ -25,7 +25,7 @@ namespace system::detail::generic
 struct tag
 {
   template <typename T>
-  _CCCL_HOST_DEVICE inline tag(const T&)
+  _CCCL_HOST_DEVICE tag(const T&)
   {}
 };
 } // namespace system::detail::generic

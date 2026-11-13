@@ -22,18 +22,17 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_enum.h>
 #include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
 template <typename T>
-using is_integral_or_enum =
-  ::cuda::std::integral_constant<bool, ::cuda::std::is_integral_v<T> || ::cuda::std::is_enum_v<T>>;
+using is_integral_or_enum = ::cuda::std::bool_constant<::cuda::std::is_integral_v<T> || ::cuda::std::is_enum_v<T>>;
 
 /**
  * Computes lhs + rhs, but bounds the result to the maximum number representable by the given type, if the addition
@@ -75,13 +74,13 @@ constexpr _CCCL_HOST_DEVICE int Nominal4BItemsToItemsCombined(int nominal_items_
 template <typename T>
 constexpr _CCCL_HOST_DEVICE int Nominal4BItemsToItems(int nominal_items_per_thread)
 {
-  return detail::nominal_4B_items_to_items(nominal_items_per_thread, int{sizeof(T)});
+  return _CUB::detail::nominal_4B_items_to_items(nominal_items_per_thread, int{sizeof(T)});
 }
 
 template <typename ItemT>
 constexpr _CCCL_HOST_DEVICE int Nominal8BItemsToItems(int nominal_items_per_thread)
 {
-  return detail::nominal_8B_items_to_items(nominal_items_per_thread, int{sizeof(ItemT)});
+  return _CUB::detail::nominal_8B_items_to_items(nominal_items_per_thread, int{sizeof(ItemT)});
 }
 
 /**
@@ -94,7 +93,7 @@ constexpr _CCCL_HOST_DEVICE int Nominal8BItemsToItems(int nominal_items_per_thre
 template <typename T>
 constexpr _CCCL_HOST_DEVICE T MidPoint(T begin, T end)
 {
-  return begin + (end - begin) / 2;
+  return begin + ((end - begin) / 2);
 }
 
 CUB_NAMESPACE_END

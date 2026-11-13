@@ -20,8 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__tuple_dir/sfinae_helpers.h>
-
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
@@ -80,7 +78,7 @@ struct __variant_move_assign_base<_CanCopy, _CanMove, _CanCopyAssign, false>
 };
 
 template <bool _CanCopy, bool _CanMove, bool _CanCopyAssign, bool _CanMoveAssign>
-using __variant_base = __variant_move_assign_base<_CanCopy, _CanMove, _CanCopyAssign, _CanMoveAssign>;
+using __variant_base _CCCL_NODEBUG = __variant_move_assign_base<_CanCopy, _CanMove, _CanCopyAssign, _CanMoveAssign>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -366,6 +366,8 @@ void run(stream_ctx& ctx, size_t N, size_t NB)
   ctx.finalize();
 
   float milliseconds;
+  // finalize() does not wait for work recorded in a stream returned by fence().
+  cuda_safe_call(cudaEventSynchronize(stopEvent));
   cuda_safe_call(cudaEventElapsedTime(&milliseconds, startEvent, stopEvent));
 
   double gflops_pdgemm = 2.0 * ((double) N * (double) N * (double) N) / (1000000000.0);

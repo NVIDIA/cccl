@@ -136,7 +136,7 @@ pool. Source is ``.github/workflows/bench.yml``.
 
 Locally, ``ci/bench/bench.sh <base> <test>`` runs the same comparison against checked-out refs::
 
-    ./ci/bench/bench.sh origin/main HEAD --cub-filter "^cub\.bench\.copy\.memcpy\.base$"
+    ./ci/bench/bench.sh origin/main HEAD --cpp-filter "^cub\.bench\.copy\.memcpy\.base$"
 
 It wraps ``ci/bench/compare_git_refs.sh`` and ``ci/bench/compare_paths.sh``; call those directly
 when you already have two checkouts.

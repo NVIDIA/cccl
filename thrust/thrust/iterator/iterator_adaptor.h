@@ -222,7 +222,6 @@ private: // Core iterator interface for iterator_facade
     return y.base() - m_iterator;
   }
 
-private:
   Base m_iterator;
 
   /*! \endcond

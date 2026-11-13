@@ -16,6 +16,8 @@
 #include <thrust/system/cuda/config.h>
 
 #include <thrust/detail/temporary_array.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/system/cpp/detail/execution_policy.h>
 #include <thrust/system/cuda/detail/cdp_dispatch.h>
 #include <thrust/system/cuda/detail/cross_system.h>
 #include <thrust/system/cuda/detail/execution_policy.h>
@@ -24,12 +26,14 @@
 #include <thrust/system/cuda/detail/util.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
-#if _CCCL_CUDA_COMPILATION()
-#  include <cub/device/dispatch/tuning/tuning_transform.cuh>
-#endif // _CCCL_CUDA_COMPILATION()
-
+#include <cuda/__functional/address_stability.h>
+#include <cuda/__functional/always_true_false.h>
 #include <cuda/__fwd/iterator.h>
+#include <cuda/std/__functional/identity.h>
+#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__iterator/next.h>
 #include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
@@ -38,12 +42,19 @@ namespace cuda_cub
 // Forward declare since we need it in the implementation non_trivial_cross_system_copy_n
 template <class System, class InputIterator, class Size, class OutputIterator>
 OutputIterator _CCCL_HOST_DEVICE
-copy_n(execution_policy<System>& system, InputIterator first, Size n, OutputIterator result);
+copy_n(execution_policy<System>& system, // NOLINT(readability-redundant-declaration)
+       InputIterator first,
+       Size n,
+       OutputIterator result);
 
 // Forward declare to work around a cyclic include, since "cuda/detail/transform.h" includes this header
 template <class Derived, class InputIt, class OutputIt, class TransformOp>
-OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE
-transform(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, TransformOp transform_op);
+OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE transform( // NOLINT(readability-redundant-declaration)
+  execution_policy<Derived>& policy,
+  InputIt first,
+  InputIt last,
+  OutputIt result,
+  TransformOp transform_op);
 
 // Forward declare to work around a cyclic include, since "cuda/detail/transform.h" includes this header
 // We want this to unwrap zip_transform_iterator
@@ -51,7 +62,7 @@ namespace __transform
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class Offset, class... InputIts, class OutputIt, class TransformOp, class Predicate>
-OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many(
+OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many( // NOLINT(readability-redundant-declaration)
   execution_policy<Derived>& policy,
   ::cuda::std::tuple<InputIts...> firsts,
   OutputIt result,

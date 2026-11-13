@@ -30,10 +30,8 @@
 #include <cuda/std/__simd/abi.h>
 #include <cuda/std/__simd/concepts.h>
 #include <cuda/std/__simd/flag.h>
-#include <cuda/std/__simd/specializations/fixed_size_vec.h>
 #include <cuda/std/__simd/type_traits.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -43,13 +41,6 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
-
-template <typename _Abi>
-inline constexpr bool __is_enabled_abi_v = false;
-
-// c++ specification sets 1 <= N <= 64
-template <__simd_size_type _Np>
-inline constexpr bool __is_enabled_abi_v<__fixed_size<_Np>> = (_Np >= 1 && _Np <= 64);
 
 //----------------------------------------------------------------------------------------------------------------------
 // __can_generate_v
@@ -80,6 +71,8 @@ template <typename _Range, typename = void>
 inline constexpr bool __has_tuple_size_v = false;
 
 template <typename _Range>
+// Accessing the member directly keeps an incomplete tuple_size in the immediate context for SFINAE.
+// NOLINTNEXTLINE(cccl-modernize-type-traits)
 inline constexpr bool __has_tuple_size_v<_Range, void_t<decltype(tuple_size<remove_cvref_t<_Range>>::value)>> = true;
 
 template <typename _Range, typename = void>
@@ -142,8 +135,6 @@ _CCCL_HOST_DEVICE_API constexpr void __assert_load_store_alignment([[maybe_unuse
   {
     if constexpr (__has_overaligned_flag_v<_Flags...>)
     {
-      static_assert(__overaligned_alignment_v<_Flags...> >= alignof(_Up),
-                    "overaligned flag requires alignment >= alignof(_Up)");
       _CCCL_ASSERT(::cuda::is_aligned(__data, __overaligned_alignment_v<_Flags...>),
                    "flag_overaligned<N> requires data to be aligned to N");
     }

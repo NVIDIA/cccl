@@ -49,7 +49,6 @@ THRUST_NAMESPACE_BEGIN
 template <typename T, typename Alloc = std::allocator<T>>
 class host_vector : public detail::vector_base<T, Alloc>
 {
-private:
   using Parent = detail::vector_base<T, Alloc>;
 
 public:

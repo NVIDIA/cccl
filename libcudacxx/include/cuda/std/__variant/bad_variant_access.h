@@ -20,14 +20,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__exception/terminate.h> // IWYU pragma: keep
+
+#include <nv/target>
 
 #if _CCCL_HAS_EXCEPTIONS()
 
 #  if __cpp_lib_variant >= 201606L
 #    include <variant>
 #  else // ^^^ __cpp_lib_variant >= 201606L ^^^ / vvv __cpp_lib_variant < 201606L vvv
-#    include <exception>
+#    include <cuda/std/__host_stdlib/exception>
 #  endif // ^^^ __cpp_lib_variant < 201606L ^^^
 #endif // _CCCL_HAS_EXCEPTIONS()
 

@@ -22,11 +22,11 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/ranges_find_if.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__concepts/equality_comparable.h>
-#include <cuda/std/__functional/bind_back.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/reference_wrapper.h>
 #include <cuda/std/__iterator/concepts.h>
@@ -40,9 +40,13 @@
 #include <cuda/std/__ranges/movable_box.h>
 #include <cuda/std/__ranges/non_propagating_cache.h>
 #include <cuda/std/__ranges/range_adaptor.h>
+#include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/view_interface.h>
+#include <cuda/std/__type_traits/add_rvalue_reference.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_comparable.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_object.h>
@@ -356,6 +360,10 @@ template <class _Range, class _Pred>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES filter_view(_Range&&, _Pred) -> filter_view<ranges::views::all_t<_Range>, _Pred>;
 
 _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(filter_view)
+
+// Predicates cannot retain any elements from a statically empty base.
+template <class _View, class _Pred>
+inline constexpr size_t __static_size_v<filter_view<_View, _Pred>> = (__static_size_v<_View> == 0) ? 0 : dynamic_extent;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 

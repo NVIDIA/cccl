@@ -22,17 +22,21 @@
 #endif // no system header
 
 #include <cuda/__cmath/sincos.h>
+#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/copysign.h>
+#include <cuda/std/__cmath/fma.h>
 #include <cuda/std/__cmath/isfinite.h>
 #include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__cmath/isnan.h>
-#include <cuda/std/__cmath/trigonometric_functions.h>
+#include <cuda/std/__cmath/signbit.h>
 #include <cuda/std/__complex/complex.h>
 #include <cuda/std/__complex/logarithms.h>
 #include <cuda/std/__complex/nvbf16.h>
 #include <cuda/std/__complex/nvfp16.h>
-#include <cuda/std/__complex/vector_support.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/numbers>
 

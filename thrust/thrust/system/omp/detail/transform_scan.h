@@ -14,4 +14,4 @@
 #endif // no system header
 
 // omp system inherits transform_scan
-#include <thrust/system/cpp/detail/transform_scan.h>
+#include <thrust/system/cpp/detail/transform_scan.h> // IWYU pragma: export

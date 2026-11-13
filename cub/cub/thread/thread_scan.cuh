@@ -19,7 +19,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/thread/thread_operators.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/type_traits.cuh>
+
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/readable_traits.h>
+#include <cuda/std/__type_traits/is_callable.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -99,7 +104,8 @@ ThreadScanExclusive(T* input, T* output, ScanOp scan_op, T prefix, bool apply_pr
   output[0]   = prefix;
   T exclusive = inclusive;
 
-  return ThreadScanExclusive(inclusive, exclusive, input + 1, output + 1, scan_op, detail::constant_v<LENGTH - 1>);
+  return _CUB::detail::ThreadScanExclusive(
+    inclusive, exclusive, input + 1, output + 1, scan_op, detail::constant_v<LENGTH - 1>);
 }
 
 /**
@@ -136,7 +142,7 @@ template <int LENGTH, typename T, typename ScanOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE T
 ThreadScanExclusive(T (&input)[LENGTH], T (&output)[LENGTH], ScanOp scan_op, T prefix, bool apply_prefix = true)
 {
-  return ThreadScanExclusive<LENGTH>((T*) input, (T*) output, scan_op, prefix, apply_prefix);
+  return _CUB::detail::ThreadScanExclusive<LENGTH>((T*) input, (T*) output, scan_op, prefix, apply_prefix);
 }
 
 /**
@@ -191,7 +197,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadScanExclusivePartial(
                 "Input must support the subscript operator[] and have a compile-time size");
   static_assert(is_fixed_size_random_access_range_v<Output>,
                 "Output must support the subscript operator[] and have a compile-time size");
-  static_assert(has_binary_call_operator<ScanOp, ValueT>::value,
+  static_assert(::cuda::std::__is_callable_v<ScanOp, ValueT, ValueT>,
                 "ScanOp must have the binary call operator: operator(ValueT, ValueT)");
   constexpr auto length = static_size_v<Input>;
   static_assert(static_size_v<Output> == length);
@@ -273,7 +279,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanInclusive(T* input, T* output, ScanOp
   output[0]   = inclusive;
 
   // Continue scan
-  return ThreadScanInclusive(inclusive, input + 1, output + 1, scan_op, detail::constant_v<LENGTH - 1>);
+  return _CUB::detail::ThreadScanInclusive(inclusive, input + 1, output + 1, scan_op, detail::constant_v<LENGTH - 1>);
 }
 
 /**
@@ -302,7 +308,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanInclusive(T* input, T* output, ScanOp
 template <int LENGTH, typename T, typename ScanOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanInclusive(T (&input)[LENGTH], T (&output)[LENGTH], ScanOp scan_op)
 {
-  return ThreadScanInclusive<LENGTH>((T*) input, (T*) output, scan_op);
+  return _CUB::detail::ThreadScanInclusive<LENGTH>((T*) input, (T*) output, scan_op);
 }
 
 /**
@@ -348,7 +354,7 @@ ThreadScanInclusive(T* input, T* output, ScanOp scan_op, T prefix, bool apply_pr
   output[0] = inclusive;
 
   // Continue scan
-  return ThreadScanInclusive(inclusive, input + 1, output + 1, scan_op, detail::constant_v<LENGTH - 1>);
+  return _CUB::detail::ThreadScanInclusive(inclusive, input + 1, output + 1, scan_op, detail::constant_v<LENGTH - 1>);
 }
 
 /**
@@ -386,7 +392,7 @@ template <int LENGTH, typename T, typename ScanOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE T
 ThreadScanInclusive(T (&input)[LENGTH], T (&output)[LENGTH], ScanOp scan_op, T prefix, bool apply_prefix = true)
 {
-  return ThreadScanInclusive<LENGTH>((T*) input, (T*) output, scan_op, prefix, apply_prefix);
+  return _CUB::detail::ThreadScanInclusive<LENGTH>((T*) input, (T*) output, scan_op, prefix, apply_prefix);
 }
 
 /**
@@ -441,7 +447,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadScanInclusivePartial(
                 "Input must support the subscript operator[] and have a compile-time size");
   static_assert(is_fixed_size_random_access_range_v<Output>,
                 "Output must support the subscript operator[] and have a compile-time size");
-  static_assert(has_binary_call_operator<ScanOp, ValueT>::value,
+  static_assert(::cuda::std::__is_callable_v<ScanOp, ValueT, ValueT>,
                 "ScanOp must have the binary call operator: operator(ValueT, ValueT)");
   constexpr auto length = static_size_v<Input>;
   static_assert(static_size_v<Output> == length);

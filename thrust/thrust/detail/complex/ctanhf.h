@@ -44,14 +44,15 @@
 #include <thrust/complex.h>
 #include <thrust/detail/complex/math_private.h>
 
+#include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/copysign.h>
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/hyperbolic_functions.h>
-#include <cuda/std/__cmath/inverse_trigonometric_functions.h>
 #include <cuda/std/__cmath/isfinite.h>
 #include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/trigonometric_functions.h>
+#include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
@@ -64,9 +65,15 @@ using thrust::complex;
 // NOLINTBEGIN(misc-redundant-expression)
 _CCCL_HOST_DEVICE inline complex<float> ctanhf(const complex<float>& z)
 {
-  float x, y;
-  float t, beta, s, rho, denom;
-  uint32_t hx, ix;
+  float x;
+  float y;
+  float t;
+  float beta;
+  float s;
+  float rho;
+  float denom;
+  uint32_t hx;
+  uint32_t ix;
 
   x = z.real();
   y = z.imag();
@@ -98,10 +105,10 @@ _CCCL_HOST_DEVICE inline complex<float> ctanhf(const complex<float>& z)
   }
 
   t     = ::cuda::std::tanf(y);
-  beta  = 1.0f + t * t;
+  beta  = 1.0f + (t * t);
   s     = ::cuda::std::sinhf(x);
-  rho   = ::cuda::std::sqrtf(1.0f + s * s);
-  denom = 1.0f + beta * s * s;
+  rho   = ::cuda::std::sqrtf(1.0f + (s * s));
+  denom = 1.0f + (beta * s * s);
   return (complex<float>((beta * rho * s) / denom, t / denom));
 }
 // NOLINTEND(misc-redundant-expression)

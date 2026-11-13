@@ -14,9 +14,9 @@ Overview
 
 This document is the per-function reference for the ``fpmp`` multi-precision types of the CCCL FP component: measured accuracy, special-value behavior and GPU performance, for every function the two types implement.
 
-The types live in namespace ``cuda::experimental``, abbreviated ``cudax::`` here and in the examples. Arithmetic and the math functions both come in with ``<cuda/fpmp>``. Names appear unqualified in the tables below for width; every one of them is a ``cudax::`` name.
+The types live in namespace ``cuda``. Arithmetic and the math functions both come in with ``<cuda/fpmp>``. Names appear unqualified in the tables below for width; every one of them is a ``cuda::`` name.
 
-Each function is reported at three accuracy levels, ``low``, ``def`` and ``high``. ``def`` is the default selector and is equal to ``mid``, not to ``high``; ``mid`` is the name to use in code (``cudax::fpmp2_accuracy::mid``).
+Each function is reported at three accuracy levels, ``low``, ``def`` and ``high``. ``def`` is the default selector and is equal to ``mid``, not to ``high``; ``mid`` is the name to use in code (``cuda::fpmp2_accuracy::mid``).
 
 .. _libcudacxx-extended-api-fp-fpmp-spec-test-platforms:
 
@@ -26,11 +26,11 @@ Test Platforms
 =================== =========== === =========
 GPU                 Clock (MHz) SMs FP64:FP32
 =================== =========== === =========
-NVIDIA B300 SXM6 AC 2032        148 1:32
+NVIDIA B300 SXM6 AC 2032        148 1:64
 NVIDIA B200         1965        148 1:2
 =================== =========== === =========
 
-FP64:FP32 is the rate at which the part runs double precision against single, measured here and rounded to the nearest power of two. It is the single number that decides which of these types is worth using: ``fp32mp2`` is built on FP32 and ``fp64mp2`` on FP64, so each one wins on the hardware where the other's arithmetic is the scarce resource.
+FP64:FP32 is the rate at which the part runs double precision against single, as NVIDIA specifies it: results per clock per SM, from the throughput table in the CUDA C++ Best Practices Guide. A benchmark that times the two side by side can read a narrower gap, since its FP32 baseline runs below peak. It is the single number that decides which of these types is worth using: ``fp32mp2`` is built on FP32 and ``fp64mp2`` on FP64, so each one wins on the hardware where the other's arithmetic is the scarce resource.
 
 .. _libcudacxx-extended-api-fp-fpmp-spec-supported-data-types:
 
@@ -917,10 +917,10 @@ clk/ev    33.8         -0.37x  3.14x   34.1   -0.39x  -0.64x
 ========= =====
 Class     Count
 ========= =====
-fp32      9
+fp32      8
 fp64      0
 other     0
-**total** **9**
+**total** **8**
 ========= =====
 
 .. _accuracy-high-4:
@@ -1086,9 +1086,9 @@ clk/ev    658.6        -0.16x  -0.30x   65.0   -0.34x  3.07x
 Class     Count
 ========= =====
 fp32      0
-fp64      9
+fp64      8
 other     0
-**total** **9**
+**total** **8**
 ========= =====
 
 .. _accuracy-high-5:
@@ -1635,10 +1635,10 @@ clk/ev    50.8         -0.26x  2.08x   51.2   -0.26x  -0.42x
 ========= ======
 Class     Count
 ========= ======
-fp32      13
+fp32      10
 fp64      0
 other     0
-**total** **13**
+**total** **10**
 ========= ======
 
 **Special Values Table:**
@@ -1792,9 +1792,9 @@ clk/ev    914.8        -0.12x  -0.18x   99.4   -0.22x  1.66x
 Class     Count
 ========= ======
 fp32      0
-fp64      13
+fp64      10
 other     0
-**total** **13**
+**total** **10**
 ========= ======
 
 **Special Values Table:**
@@ -2239,10 +2239,10 @@ clk/ev    79.0         -0.17x  1.40x   79.1   -0.17x  -0.28x
 ========= ======
 Class     Count
 ========= ======
-fp32      29
+fp32      28
 fp64      0
 other     0
-**total** **29**
+**total** **28**
 ========= ======
 
 .. _type-fp64mp2-6:
@@ -2358,9 +2358,9 @@ clk/ev    1926.5       -0.06x  -0.54x   155.6 -0.14x  6.75x
 Class     Count
 ========= ======
 fp32      0
-fp64      29
+fp64      28
 other     0
-**total** **29**
+**total** **28**
 ========= ======
 
 .. _libcudacxx-extended-api-fp-fpmp-spec-mathematical-functions:
@@ -8637,11 +8637,11 @@ Per-function instruction counts (NOPs excluded) for every ``(type, method)`` com
    <tbody>
    <tr><td><code>add</code></td><td align="right">8</td><td align="right">0</td><td align="right">1</td><td align="right">11</td><td align="right">0</td><td align="right">0</td><td align="right">20</td><td align="right">0</td><td align="right">0</td><td align="right">0</td><td align="right">8</td><td align="right">4</td><td align="right">0</td><td align="right">11</td><td align="right">0</td><td align="right">0</td><td align="right">20</td><td align="right">0</td></tr>
    <tr><td><code>sub</code></td><td align="right">8</td><td align="right">0</td><td align="right">1</td><td align="right">11</td><td align="right">0</td><td align="right">0</td><td align="right">20</td><td align="right">0</td><td align="right">0</td><td align="right">0</td><td align="right">8</td><td align="right">4</td><td align="right">0</td><td align="right">11</td><td align="right">0</td><td align="right">0</td><td align="right">20</td><td align="right">0</td></tr>
-   <tr><td><code>mul</code></td><td align="right">5</td><td align="right">0</td><td align="right">1</td><td align="right">9</td><td align="right">0</td><td align="right">0</td><td align="right">9</td><td align="right">0</td><td align="right">0</td><td align="right">0</td><td align="right">5</td><td align="right">2</td><td align="right">0</td><td align="right">9</td><td align="right">0</td><td align="right">0</td><td align="right">9</td><td align="right">0</td></tr>
+   <tr><td><code>mul</code></td><td align="right">5</td><td align="right">0</td><td align="right">1</td><td align="right">8</td><td align="right">0</td><td align="right">0</td><td align="right">9</td><td align="right">0</td><td align="right">0</td><td align="right">0</td><td align="right">5</td><td align="right">2</td><td align="right">0</td><td align="right">8</td><td align="right">0</td><td align="right">0</td><td align="right">9</td><td align="right">0</td></tr>
    <tr><td><code>div</code></td><td align="right">6</td><td align="right">0</td><td align="right">1</td><td align="right">13</td><td align="right">0</td><td align="right">0</td><td align="right">23</td><td align="right">0</td><td align="right">23</td><td align="right">1</td><td align="right">11</td><td align="right">27</td><td align="right">1</td><td align="right">18</td><td align="right">25</td><td align="right">1</td><td align="right">28</td><td align="right">49</td></tr>
-   <tr><td><code>acc</code></td><td align="right">7</td><td align="right">0</td><td align="right">1</td><td align="right">10</td><td align="right">0</td><td align="right">0</td><td align="right">13</td><td align="right">0</td><td align="right">0</td><td align="right">0</td><td align="right">7</td><td align="right">2</td><td align="right">0</td><td align="right">10</td><td align="right">0</td><td align="right">0</td><td align="right">13</td><td align="right">0</td></tr>
+   <tr><td><code>acc</code></td><td align="right">7</td><td align="right">0</td><td align="right">1</td><td align="right">10</td><td align="right">0</td><td align="right">0</td><td align="right">10</td><td align="right">0</td><td align="right">0</td><td align="right">0</td><td align="right">7</td><td align="right">2</td><td align="right">0</td><td align="right">10</td><td align="right">0</td><td align="right">0</td><td align="right">10</td><td align="right">0</td></tr>
    <tr><td><code>fma</code></td><td align="right">16</td><td align="right">0</td><td align="right">1</td><td align="right">19</td><td align="right">0</td><td align="right">0</td><td align="right">37</td><td align="right">0</td><td align="right">0</td><td align="right">0</td><td align="right">16</td><td align="right">2</td><td align="right">0</td><td align="right">19</td><td align="right">0</td><td align="right">0</td><td align="right">37</td><td align="right">0</td></tr>
-   <tr><td><code>mad</code></td><td align="right">13</td><td align="right">0</td><td align="right">0</td><td align="right">16</td><td align="right">0</td><td align="right">0</td><td align="right">29</td><td align="right">0</td><td align="right">0</td><td align="right">0</td><td align="right">13</td><td align="right">0</td><td align="right">0</td><td align="right">16</td><td align="right">0</td><td align="right">0</td><td align="right">29</td><td align="right">0</td></tr>
+   <tr><td><code>mad</code></td><td align="right">13</td><td align="right">0</td><td align="right">0</td><td align="right">16</td><td align="right">0</td><td align="right">0</td><td align="right">28</td><td align="right">0</td><td align="right">0</td><td align="right">0</td><td align="right">13</td><td align="right">0</td><td align="right">0</td><td align="right">16</td><td align="right">0</td><td align="right">0</td><td align="right">28</td><td align="right">0</td></tr>
    <tr><td><code>sqrt</code></td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">18</td><td align="right">0</td><td align="right">1</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">0</td><td align="right">23</td><td align="right">25</td><td align="right">—</td><td align="right">—</td><td align="right">—</td></tr>
    <tr><td><code>rsqrt</code></td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">17</td><td align="right">0</td><td align="right">0</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">0</td><td align="right">22</td><td align="right">23</td><td align="right">—</td><td align="right">—</td><td align="right">—</td></tr>
    <tr><td><code>cbrt</code></td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">75</td><td align="right">0</td><td align="right">27</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td><td align="right">—</td></tr>

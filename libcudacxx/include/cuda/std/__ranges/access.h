@@ -21,10 +21,10 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/class_or_enum.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__ranges/enable_borrowed_range.h>
-#include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>

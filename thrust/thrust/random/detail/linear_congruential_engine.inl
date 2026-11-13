@@ -13,9 +13,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/random/detail/linear_congruential_engine_discard.h>
 #include <thrust/random/detail/mod.h>
 #include <thrust/random/detail/random_core_access.h>
 #include <thrust/random/linear_congruential_engine.h>
+
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 
 THRUST_NAMESPACE_BEGIN
 
