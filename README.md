@@ -315,7 +315,7 @@ Only functionality that can be used from device code is available:
   The umbrella header `<cub/cub.cuh>` and device-wide algorithms in `<cub/device/*>` are not supported with NVRTC because they require host code.
 - **Thrust:** Host containers and algorithms that dispatch work from the host cannot be used in an NVRTC program.
 
-For example, compile a kernel using headers from a CCCL checkout as follows. Replace the paths with your checkout and CUDA Toolkit locations, and check each NVRTC return status in application code:
+For example, compile a kernel using headers from a CCCL checkout as follows. Replace the paths with your checkout and CUDA Toolkit locations:
 
 ```cpp
 const char* source = R"(
