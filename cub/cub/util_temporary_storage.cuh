@@ -32,6 +32,9 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
+//! @brief The alignment of every allocation of alias_temporaries
+inline constexpr ::cuda::std::size_t alias_temporaries_alignment = 256;
+
 //! @brief Alias temporaries to externally-allocated device storage (or simply return the amount of storage needed).
 //!
 //! @param[in] d_temp_storage
@@ -53,7 +56,7 @@ template <int NumAllocations>
   void* (&allocations)[NumAllocations],
   const size_t (&allocation_sizes)[NumAllocations])
 {
-  constexpr size_t align_bytes = 256;
+  constexpr size_t align_bytes = alias_temporaries_alignment;
 
   // Compute exclusive prefix sum over allocation requests
   size_t allocation_offsets[NumAllocations];
