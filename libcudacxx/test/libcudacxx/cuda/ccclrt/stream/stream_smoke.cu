@@ -69,6 +69,39 @@ C2H_CCCLRT_TEST("From native handle", "[stream]")
   REQUIRE_CUDART(cudaStreamDestroy(handle));
 }
 
+C2H_CCCLRT_TEST("Stream device can be queried while the stream captures", "[stream][capture]")
+{
+  // The query must give the device of the stream, and must leave the capture valid. Some drivers reject
+  // cuStreamGetDevice() on a capturing stream, which invalidates the capture.
+  const auto mode =
+    GENERATE(cudaStreamCaptureModeGlobal, cudaStreamCaptureModeThreadLocal, cudaStreamCaptureModeRelaxed);
+  CAPTURE(mode);
+
+  for (const cuda::device_ref device : cuda::devices)
+  {
+    CAPTURE(device.get());
+    const cuda::stream str{device};
+    const cuda::stream other{device};
+    REQUIRE(str.device() == device);
+
+    const cuda::__ensure_current_context guard(device);
+    REQUIRE_CUDART(cudaStreamBeginCapture(str.get(), mode));
+
+    // Both the capturing stream and another stream of the capturing thread are queried.
+    REQUIRE(str.device() == device);
+    REQUIRE(other.device() == device);
+
+    cudaStreamCaptureStatus status = cudaStreamCaptureStatusNone;
+    REQUIRE_CUDART(cudaStreamIsCapturing(str.get(), &status));
+    REQUIRE(status == cudaStreamCaptureStatusActive);
+
+    cudaGraph_t graph = nullptr;
+    REQUIRE_CUDART(cudaStreamEndCapture(str.get(), &graph));
+    REQUIRE(graph != nullptr);
+    REQUIRE_CUDART(cudaGraphDestroy(graph));
+  }
+}
+
 template <typename StreamType>
 void add_dependency_test(const StreamType& waiter, const StreamType& waitee)
 {
