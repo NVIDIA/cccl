@@ -243,6 +243,7 @@ __device__ void test_range_input(Config config, Input&& input, const Range& coun
 
   static_assert(cudax::coop::__group_mapping_result<Result>);
   static_assert(Result::static_group_count() == ExpectedGroupCount);
+  static_assert(Result::static_group_rank() == (ExpectedGroupCount == 1 ? 0 : cuda::std::dynamic_extent));
   static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
 
   static_assert(Result::is_always_exhaustive() == Exhaustive);
@@ -288,6 +289,7 @@ __device__ void test_runtime_composition(Config config, Range counts, const Prev
   using Result      = decltype(result);
 
   static_assert(Result::static_group_count() == ExpectedGroupCount);
+  static_assert(Result::static_group_rank() == (ExpectedGroupCount == 1 ? 0 : cuda::std::dynamic_extent));
   static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
   static_assert(Result::has_uniform_static_unit_count());
   static_assert(Result::is_always_exhaustive() == Exhaustive);
@@ -342,6 +344,7 @@ __device__ void test_static_group_as(Config config, Input input, cuda::std::inde
 
   // Check the static metadata for every subgroup, rather than only the current one.
   static_assert(Result::static_group_count() == sizeof...(Counts));
+  static_assert(Result::static_group_rank() == (sizeof...(Counts) == 1 ? 0 : cuda::std::dynamic_extent));
 
   static_assert([] {
     constexpr cuda::std::array expected_counts{Counts...};
@@ -380,6 +383,7 @@ __device__ void test_static_composition(Config config)
   using Repeated      = decltype(repeated);
 
   static_assert(Repeated::static_group_count() == 4);
+  static_assert(Repeated::static_group_rank() == cuda::std::dynamic_extent);
   static_assert(Repeated::static_unit_count(0) == 4);
   static_assert(Repeated::static_unit_count(1) == 12);
   static_assert(Repeated::static_unit_count(2) == 4);

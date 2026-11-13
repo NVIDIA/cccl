@@ -53,7 +53,7 @@ The type can be constructed by specifying what is being grouped (``unit``) withi
 Queries
 -------
 
-Sub-unit queries work as with any other group type. The group may be queried for rank and (static) count within the parent group.
+Sub-unit queries work as with any other group type. The group may be queried for (static) rank and (static) count within the parent group.
 
 Examples
 --------

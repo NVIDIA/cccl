@@ -11,6 +11,7 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 
@@ -31,6 +32,7 @@ __device__ void test_virtual_group(Config config, Level level)
     REQUIRE(cuda::gpu_thread.rank(vg) == cuda::gpu_thread.rank(g));
 
     static_assert(vg.static_count(g) == 1);
+    static_assert(vg.static_rank(g) == 0);
     REQUIRE(vg.count(g) == 1);
     REQUIRE(vg.rank(g) == 0);
 
@@ -52,6 +54,7 @@ __device__ void test_virtual_group(Config config, Level level)
     REQUIRE(cuda::gpu_thread.count(vg) == n);
     REQUIRE(cuda::gpu_thread.rank(vg) == cuda::gpu_thread.rank(g) % n);
 
+    static_assert(vg.static_rank(g) == cuda::std::dynamic_extent);
     REQUIRE(vg.count(g) == cuda::gpu_thread.count(g) / n);
     REQUIRE(vg.rank(g) == cuda::gpu_thread.rank(g) / n);
 
