@@ -207,19 +207,29 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wundefined-var-template")
 
 template <class _Tp, bool = __ssize::__can_ssize<_Tp>, class = void>
-inline constexpr size_t __static_size_impl = dynamic_extent;
+inline constexpr size_t __static_size_impl_v = dynamic_extent;
 
 template <class _Tp>
-inline constexpr size_t __static_size_impl<
+inline constexpr size_t __static_size_impl_v<
   _Tp,
   true,
   void_t<typename integral_constant<size_t, ::cuda::std::ranges::size(__static_size_object<_Tp>)>::type>> =
   integral_constant<size_t, ::cuda::std::ranges::size(__static_size_object<_Tp>)>::value;
 
-template <class _Tp>
-inline constexpr size_t __static_size_v = __static_size_impl<remove_cvref_t<_Tp>>;
-
 _CCCL_DIAG_POP
+
+// Views can have a known static cardinality without modeling sized_range, for example an empty filter_view.
+// Keep propagation separate from the ranges::size probe so such views can specialize it.
+//
+// Preserve cv-qualifiers: a view may refer to a const range with a different size() overload.
+template <class _Tp>
+inline constexpr size_t __static_size_v = __static_size_impl_v<_Tp>;
+
+template <class _Tp>
+inline constexpr size_t __static_size_v<_Tp&> = __static_size_v<_Tp>;
+
+template <class _Tp>
+inline constexpr size_t __static_size_v<_Tp&&> = __static_size_v<_Tp>;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 

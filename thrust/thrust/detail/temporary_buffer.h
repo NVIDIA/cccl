@@ -27,7 +27,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(temporary_buffer.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/temporary_buffer.h>
 #  include <thrust/system/cuda/detail/temporary_buffer.h>
 #  include <thrust/system/omp/detail/temporary_buffer.h>

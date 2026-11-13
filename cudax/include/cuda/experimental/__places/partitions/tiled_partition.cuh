@@ -75,7 +75,7 @@ public:
     // Assuming all parts have tile_per_part tiles, the last tile of the
     // part starts the last tile has index (part_id + ((tile_per_part-1)*
     // nparts)), and ends at the beginning of the next tile (hence +1).
-    const size_t last_elem = (part_id + (tile_per_part - 1) * nparts + 1) * tile_size;
+    const size_t last_elem = (part_id + ((tile_per_part - 1) * nparts) + 1) * tile_size;
 
     // Remove extra elements (if any) by computing what would be the last
     // element for this part
@@ -96,7 +96,7 @@ public:
     const size_t remain  = index % tile_size;
     const size_t tile_id = index / tile_size;
     // Stage 2: apply original shape's transformation to stage1
-    return original_shape.index_to_coords((part_id + tile_id * nparts) * tile_size + remain);
+    return original_shape.index_to_coords(((part_id + (tile_id * nparts)) * tile_size) + remain);
   }
 
 private:

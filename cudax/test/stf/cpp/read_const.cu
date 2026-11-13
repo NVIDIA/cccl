@@ -40,7 +40,7 @@ struct foo
     };
   }
 
-  void ensure(context& ctx, int val)
+  void ensure(context& ctx, int val) const
   {
     std::ignore = val;
     ctx.parallel_for(l.shape(), l.read())->*[=] _CCCL_DEVICE(size_t i, auto dl) {

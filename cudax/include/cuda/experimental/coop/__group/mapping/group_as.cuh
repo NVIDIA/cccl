@@ -52,11 +52,19 @@ namespace cuda::experimental::coop
 {
 template <bool _Exhaustive, class _Unit, class _PrevMappingResult, class _Range>
 [[nodiscard]] _CCCL_DEVICE_API auto
-__group_as_map(const _Unit&, const _PrevMappingResult& __prev_mapping_result, const _Range& __unit_counts)
+__group_as_map(const _Unit&, const _PrevMappingResult& __prev_mapping_result, _Range& __unit_counts)
 {
-  // todo(dabayer): Make group count potentially statically-known when _Range has a known static size.
+  using ::cuda::std::dynamic_extent;
+
+  constexpr auto __prev_static_group_count = _PrevMappingResult::static_group_count();
+  constexpr auto __curr_static_group_count = ::cuda::std::ranges::__static_size_v<_Range>;
+  constexpr auto __static_group_count =
+    (__prev_static_group_count != dynamic_extent && __curr_static_group_count != dynamic_extent)
+      ? __prev_static_group_count * __curr_static_group_count
+      : dynamic_extent;
+
   using _MappingResult =
-    __mapping_result<__uniform_static_unit_count<::cuda::std::dynamic_extent, ::cuda::std::dynamic_extent>,
+    __mapping_result<__uniform_static_unit_count<__static_group_count, dynamic_extent>,
                      _Exhaustive,
                      _PrevMappingResult::is_always_contiguous()>;
 
@@ -68,38 +76,35 @@ __group_as_map(const _Unit&, const _PrevMappingResult& __prev_mapping_result, co
     }
   }
 
-  const auto __prev_nunits    = __prev_mapping_result.unit_count();
   const auto __prev_unit_rank = __prev_mapping_result.unit_rank();
   const auto __curr_ngroups   = static_cast<::cuda::std::uint32_t>(::cuda::std::ranges::size(__unit_counts));
   const auto __ngroups        = __prev_mapping_result.group_count() * __curr_ngroups;
 
-  // If the mapping is exhaustive, check the preconditions, otherwise remove the last partial group.
-  if constexpr (_Exhaustive)
+  if constexpr (::cuda::std::ranges::common_range<_Range>)
   {
-    _CCCL_ASSERT(
-      ::cuda::std::accumulate(::cuda::std::ranges::cbegin(__unit_counts), ::cuda::std::ranges::cend(__unit_counts), 0u)
-        == __prev_nunits,
-      "group_as mapping would produce units without a group during exhaustive mapping");
-  }
-  else
-  {
-    _CCCL_ASSERT(
-      ::cuda::std::accumulate(::cuda::std::ranges::cbegin(__unit_counts), ::cuda::std::ranges::cend(__unit_counts), 0u)
-        <= __prev_nunits,
-      "group_as mapping requires more units than are available");
-
-    if (__prev_unit_rank >= ::cuda::std::accumulate(
-          ::cuda::std::ranges::cbegin(__unit_counts), ::cuda::std::ranges::cend(__unit_counts), 0u))
+    const auto __prev_nunits = __prev_mapping_result.unit_count();
+    if constexpr (_Exhaustive)
     {
-      return _MappingResult::__invalid();
+      _CCCL_ASSERT(
+        ::cuda::std::accumulate(::cuda::std::ranges::begin(__unit_counts), ::cuda::std::ranges::end(__unit_counts), 0u)
+          == __prev_nunits,
+        "group_as mapping would produce units without a group during exhaustive mapping");
+    }
+    else
+    {
+      _CCCL_ASSERT(
+        ::cuda::std::accumulate(::cuda::std::ranges::begin(__unit_counts), ::cuda::std::ranges::end(__unit_counts), 0u)
+          <= __prev_nunits,
+        "group_as mapping requires more units than are available");
     }
   }
 
   ::cuda::std::uint32_t __sum = 0;
+  auto __it                   = ::cuda::std::ranges::begin(__unit_counts);
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (::cuda::std::uint32_t __i = 0; __i < __curr_ngroups; ++__i)
+  for (::cuda::std::uint32_t __i = 0; __i < __curr_ngroups; ++__i, ++__it)
   {
-    const auto __i_count = static_cast<::cuda::std::uint32_t>(__unit_counts[__i]);
+    const auto __i_count = static_cast<::cuda::std::uint32_t>(*__it);
     if (__prev_unit_rank < __sum + __i_count)
     {
       const auto __group_rank = __prev_mapping_result.group_rank() * __curr_ngroups + __i;
@@ -113,6 +118,10 @@ __group_as_map(const _Unit&, const _PrevMappingResult& __prev_mapping_result, co
       return _MappingResult{__ngroups, __group_rank, __n, __rank, __lane_mask};
     }
     __sum += __i_count;
+  }
+  if constexpr (!_Exhaustive)
+  {
+    return _MappingResult::__invalid();
   }
   _CCCL_UNREACHABLE();
 }
@@ -133,14 +142,32 @@ public:
       : __unit_counts_{::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__unit_counts))}
   {}
 
-  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
+  _CCCL_TEMPLATE(class _Unit, class _ParentGroup, class _PrevMappingResult)
+  _CCCL_REQUIRES((!::cuda::std::ranges::range<const _RangeView>) )
+  [[nodiscard]] _CCCL_DEVICE_API auto
+  map(const _Unit& __unit, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result)
+  {
+    return ::cuda::experimental::coop::__group_as_map<true>(__unit, __prev_mapping_result, __unit_counts_);
+  }
+
+  _CCCL_TEMPLATE(class _Unit, class _ParentGroup, class _PrevMappingResult)
+  _CCCL_REQUIRES((!::cuda::std::ranges::range<const _RangeView>) )
+  [[nodiscard]] _CCCL_DEVICE_API auto map(
+    const non_exhaustive_t&, const _Unit& __unit, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result)
+  {
+    return ::cuda::experimental::coop::__group_as_map<false>(__unit, __prev_mapping_result, __unit_counts_);
+  }
+
+  _CCCL_TEMPLATE(class _Unit, class _ParentGroup, class _PrevMappingResult)
+  _CCCL_REQUIRES(::cuda::std::ranges::range<const _RangeView>)
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const _Unit& __unit, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const
   {
     return ::cuda::experimental::coop::__group_as_map<true>(__unit, __prev_mapping_result, __unit_counts_);
   }
 
-  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
+  _CCCL_TEMPLATE(class _Unit, class _ParentGroup, class _PrevMappingResult)
+  _CCCL_REQUIRES(::cuda::std::ranges::range<const _RangeView>)
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const non_exhaustive_t&,
       const _Unit& __unit,

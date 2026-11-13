@@ -78,7 +78,7 @@ struct test_less_than
 {
   long long expected;
 
-  _CCCL_DEVICE bool operator()(long long y)
+  _CCCL_DEVICE bool operator()(long long y) const
   {
     return y < expected;
   }
