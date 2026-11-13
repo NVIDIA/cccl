@@ -90,10 +90,10 @@ template <typename TargetT, typename ParameterT>
 
 #  if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
 // Work around for NVCC emitting invalid lambda-dependent type aliases
-template <typename TargetT, typename SourceT, typename StaticBoundsT>
+template <typename TargetT, typename SourceT, typename StaticBoundsT, bool HasRuntimeBounds>
 [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE constexpr auto
-parameter_from_host(::cuda::args::deferred<SourceT, StaticBoundsT> parameter) noexcept
-  -> ::cuda::args::deferred<SourceT, StaticBoundsT>
+parameter_from_host(::cuda::args::deferred<SourceT, StaticBoundsT, HasRuntimeBounds> parameter) noexcept
+  -> ::cuda::args::deferred<SourceT, StaticBoundsT, HasRuntimeBounds>
 {
   return parameter;
 }
@@ -143,9 +143,9 @@ template <typename TargetT, typename ParameterT>
   }
 }
 
-template <typename TargetT, typename SourceT, typename StaticBoundsT>
+template <typename TargetT, typename SourceT, typename StaticBoundsT, bool HasRuntimeBounds>
 [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE TargetT
-parameter_from_device(::cuda::args::deferred<SourceT, StaticBoundsT> parameter) noexcept
+parameter_from_device(::cuda::args::deferred<SourceT, StaticBoundsT, HasRuntimeBounds> parameter) noexcept
 {
   using element_t       = typename ::cuda::args::__traits<decltype(parameter)>::element_type;
   const element_t value = ::cuda::args::__unwrap(parameter)[0];
