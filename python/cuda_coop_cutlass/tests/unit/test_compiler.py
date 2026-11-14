@@ -239,6 +239,11 @@ def test_finalize_preserves_unrelated_session_and_user_link_libraries(
     monkeypatch.setattr(
         _bundle, "append_link_library_attr", lambda m, p: linked.append((m, p))
     )
+    monkeypatch.setattr(
+        _finalize._convergence,
+        "lower_convergent_provider_calls",
+        lambda module, requests: None,
+    )
     _finalize._trace_finalize_hook(dsl, owned_module, "owned")
     assert _state.lookup_bundle_session(options) is None
     assert len(linked) == 1
