@@ -46,7 +46,7 @@ struct agent_t
     constexpr auto tuning                = implementation_t::policy;
     constexpr int num_kernel_bins        = capacities_t::size;
     constexpr unsigned threads_per_group = implementation_t::threads_per_group;
-    constexpr unsigned groups_per_block  = tuning.block_threads / threads_per_group;
+    constexpr unsigned groups_per_block  = tuning.threads_per_block / threads_per_group;
     if (static_cast<unsigned long long>(blockIdx.x) * groups_per_block
         >= partition.bin_offsets[num_kernel_bins] - partition.bin_offsets[0])
     {
