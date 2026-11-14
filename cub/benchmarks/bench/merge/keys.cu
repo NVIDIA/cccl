@@ -16,7 +16,7 @@
 // %RANGE% TUNE_TRANSPOSE trp 0:1:1
 // %RANGE% TUNE_LOAD ld 0:3:1
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
-// %RANGE% TUNE_THREADS_PER_BLOCK_POW2 tpb 6:10:1
+// %RANGE% TUNE_THREADS_PER_BLOCK tpb 64:1024:64
 
 template <typename KeyT>
 void keys(nvbench::state& state, nvbench::type_list<KeyT>)
