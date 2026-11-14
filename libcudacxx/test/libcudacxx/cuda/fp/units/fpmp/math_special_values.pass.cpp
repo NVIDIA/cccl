@@ -312,6 +312,31 @@ TEST_HOST_DEVICE_FUNC void test_hyperbolic()
   assert(is_pos_inf(atanh(T(1.0f))) && is_neg_inf(atanh(T(-1.0f))) && is_nan(atanh(T(1.5f))) && is_nan(atanh(qnan)));
 }
 
+// At every accuracy level: expm1, log1p, sinh, tanh, asinh and atanh return a zero argument with
+// its sign; a pair (128, lo) with lo < 0 is below the overflow threshold of exp2; and atanh of
+// a pair (+-1, lo) with lo pointing inwards is finite down to a subnormal lo.
+
+template <typename T>
+TEST_HOST_DEVICE_FUNC void test_exp_hyperbolic_edges()
+{
+  assert(is_neg_zero(expm1(T(-0.0f))) && is_pos_zero(expm1(T(0.0f))));
+  assert(is_neg_zero(log1p(T(-0.0f))) && is_pos_zero(log1p(T(0.0f))));
+  assert(is_neg_zero(sinh(T(-0.0f))) && is_pos_zero(sinh(T(0.0f))));
+  assert(is_neg_zero(tanh(T(-0.0f))) && is_pos_zero(tanh(T(0.0f))));
+  assert(is_neg_zero(asinh(T(-0.0f))) && is_pos_zero(asinh(T(0.0f))));
+  assert(is_neg_zero(atanh(T(-0.0f))) && is_pos_zero(atanh(T(0.0f))));
+
+  assert(is_finite(exp2(T(128.0f, -1e-6f))) && exp2(T(128.0f, -1e-6f)) > T(3.4e38f));
+  assert(is_pos_inf(exp2(T(128.0f))) && is_pos_inf(exp2(T(128.0f, 1e-6f))));
+
+  // atanh(1 - d) = (ln 2 - ln d) / 2 to d / 4
+  assert(approx_eq(static_cast<double>(atanh(T(1.0f, -0x1p-100f))), 35.00393261827724));
+#if !defined(TEST_HAS_CUDA_FAST_MATH)
+  assert(approx_eq(static_cast<double>(atanh(T(1.0f, -0x1p-140f))), 48.86687622947614));
+  assert(approx_eq(static_cast<double>(atanh(T(-1.0f, 0x1p-140f))), -48.86687622947614));
+#endif // !TEST_HAS_CUDA_FAST_MATH
+}
+
 // ---- inverse trigonometric and the quadrants of atan2 ---------------------------
 
 TEST_HOST_DEVICE_FUNC void test_inverse_trig()
@@ -523,6 +548,9 @@ int main(int, char**)
   test_boys_f0();
   test_exp_edges();
   test_hyperbolic();
+  test_exp_hyperbolic_edges<cuda::fp32mp2>();
+  test_exp_hyperbolic_edges<cuda::fp32mp2_low>();
+  test_exp_hyperbolic_edges<cuda::fp32mp2_high>();
   test_inverse_trig();
   test_trig();
   test_trig_zero<cuda::fp32mp2>();

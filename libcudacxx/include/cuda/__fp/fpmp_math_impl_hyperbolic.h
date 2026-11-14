@@ -103,6 +103,14 @@ __internal_fpmp2_tanh(const float __x_hi, const float __x_lo, float* __res_hi, f
     return;
   }
 
+  /* +-0 returns +-0 (C99 F.10): the evaluation below would leave +0. */
+  if (__x_hi == 0.0f)
+  {
+    *__res_hi = __x_hi;
+    *__res_lo = __x_lo;
+    return;
+  }
+
   __ffloat __x(__x_hi, __x_lo);
   __ffloat __abs_a = __is_neg ? -__x : __x;
 
@@ -243,6 +251,14 @@ __internal_fpmp2_sinh(const float __x_hi, const float __x_lo, float* __res_hi, f
     const float __nan_val = __x_hi + __x_lo;
     *__res_hi             = __nan_val;
     *__res_lo             = __nan_val;
+    return;
+  }
+
+  /* +-0 returns +-0 (C99 F.10): the evaluation below would leave +0. */
+  if (__x_hi == 0.0f)
+  {
+    *__res_hi = __x_hi;
+    *__res_lo = __x_lo;
     return;
   }
 
@@ -741,7 +757,7 @@ __internal_fpmp2_atanh(const float __x_hi, const float __x_lo, float* __res_hi, 
 
   /* atanh(+-1) = +-inf.  Strict |x| > 1 -> NaN.  A high limb of +-1 with
    * a low limb pointing inwards is |x| < 1 by a sub-ulp amount and stays in
-   * the domain (1 - |x| below is then exact). */
+   * the domain. */
   if (__abs_hi >= 1.0f)
   {
     const float __abs_lo = __is_neg ? -__x_lo : __x_lo;
@@ -758,6 +774,22 @@ __internal_fpmp2_atanh(const float __x_hi, const float __x_lo, float* __res_hi, 
       *__res_lo = 0.0f;
       return;
     }
+    /* |x| = 1 - d with d = -abs_lo <= 2^-25, down to a subnormal d, for which
+     * the quotient of the log1p form below would overflow:
+     *   atanh(|x|) = (ln(2 - d) - ln(d)) / 2 = (ln2 - d/2 - ln(d)) / 2
+     * to d^2/8 < 2^-53, and log1p of the pair (-1, d) is ln(d), below -17. */
+    constexpr float __ln2_hi = 0x1.62e43p-1f; /* ln2 = __ln2_hi + __ln2_lo */
+    constexpr float __ln2_lo = -0x1.05c61p-29f;
+    float __r_hi, __r_lo, __e;
+    ::cuda::__fpmp2_log<float>(-__abs_lo, 0.0f, &__r_hi, &__r_lo);
+    const float __s = ::cuda::__fpmp_fast_two_sum(-__r_hi, __ln2_hi, &__e);
+    __r_hi          = ::cuda::__fpmp_fast_two_sum(
+      __s,
+      ::cuda::__fpmp_add_rn(__e, ::cuda::__fpmp_fma_rn(0.5f, __abs_lo, ::cuda::__fpmp_sub_rn(__ln2_lo, __r_lo))),
+      &__r_lo);
+    *__res_hi = __is_neg ? -0.5f * __r_hi : 0.5f * __r_hi;
+    *__res_lo = __is_neg ? -0.5f * __r_lo : 0.5f * __r_lo;
+    return;
   }
 
   __ffloat __x(__x_hi, __x_lo);

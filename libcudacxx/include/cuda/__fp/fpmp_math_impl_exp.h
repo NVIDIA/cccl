@@ -751,6 +751,14 @@ __internal_fpmp2_log1p(const float __x_hi, const float __x_lo, float* __res_hi, 
     return;
   }
 
+  /* +-0 returns +-0 (C99 F.10): the evaluation below would leave +0. */
+  if (__x_hi == 0.0f)
+  {
+    *__res_hi = __x_hi;
+    *__res_lo = __x_lo;
+    return;
+  }
+
   /* +inf input -> +inf. */
   if (__x_hi == ::cuda::std::__fp_inf<float>())
   {
@@ -1011,8 +1019,9 @@ __internal_fpmp2_exp2(const float __x_hi, const float __x_lo, float* __res_hi, f
     return;
   }
 
-  /* Overflow / underflow shortcuts. */
-  if (__x_hi >= 128.0f)
+  /* Overflow / underflow shortcuts. A pair (128, lo) with lo < 0 is below 128, and its
+   * result is finite. */
+  if (__x_hi > 128.0f || (__x_hi == 128.0f && __x_lo >= 0.0f))
   {
     *__res_hi = ::cuda::std::__fp_inf<float>();
     *__res_lo = 0.0f;
@@ -1237,6 +1246,14 @@ __internal_fpmp2_expm1(const float __x_hi, const float __x_lo, float* __res_hi, 
     const float __nan_val = __x_hi + __x_lo;
     *__res_hi             = __nan_val;
     *__res_lo             = __nan_val;
+    return;
+  }
+
+  /* +-0 returns +-0 (C99 F.10): the evaluation below would leave +0. */
+  if (__x_hi == 0.0f)
+  {
+    *__res_hi = __x_hi;
+    *__res_lo = __x_lo;
     return;
   }
 

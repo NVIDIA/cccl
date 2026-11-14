@@ -394,13 +394,14 @@ renormalized, and the renormalization adds the two limbs, which turns a ``-0`` h
 ``(-0) * 1`` and ``x * (-0)``, where IEEE 754 gives ``-0``. A zero from ``/`` or from a math
 function carries whichever sign its evaluation happens to leave. The exceptions that do follow C99
 are the operations that act on the sign bit itself (unary negation, ``fabs``, ``copysign``,
-construction from a built-in ``-0.0``), ``sin``, ``tan`` and the sine of ``sincos``, which return a
-zero argument unchanged, ``asin``, ``atan`` and ``atan2``, which answer a zero argument on entry
-(``asin(-0)`` and ``atan(-0)`` are ``-0``, and ``atan2`` reads the sign bit of a zero ``y``), and
-the rounding functions ``ceil``, ``floor``, ``trunc``, ``round``, ``rint``, ``nearbyint`` and the
-fraction of ``modf``, whose zero result carries the sign of the argument on the host and the device
-alike. ``signbit`` reports the high limb. Code that distinguishes ``-0`` from ``+0`` anywhere else
-has to take the sign from the operands, before the arithmetic.
+construction from a built-in ``-0.0``), ``sin``, ``tan`` and the sine of ``sincos``, ``expm1``,
+``log1p``, ``sinh``, ``tanh``, ``asinh`` and ``atanh``, which return a zero argument unchanged,
+``asin``, ``atan`` and ``atan2``, which answer a zero argument on entry (``asin(-0)`` and
+``atan(-0)`` are ``-0``, and ``atan2`` reads the sign bit of a zero ``y``), and the rounding
+functions ``ceil``, ``floor``, ``trunc``, ``round``, ``rint``, ``nearbyint`` and the fraction of
+``modf``, whose zero result carries the sign of the argument on the host and the device alike.
+``signbit`` reports the high limb. Code that distinguishes ``-0`` from ``+0`` anywhere else has to
+take the sign from the operands, before the arithmetic.
 
 ``renormalize(x)`` restores the non-overlap invariant, ``|lo| <= ulp(hi)/2``, which only ``low``
 accuracy can leave broken; see :ref:`accuracy levels <libcudacxx-extended-api-fp-fpmp-accuracy>`
