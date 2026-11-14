@@ -429,6 +429,22 @@ TEST_HOST_DEVICE_FUNC void test_erf_family()
   assert(is_finite(erfcinv(T(0.0f, 0.0f) + T(0x1p-30f))) && erfcinv(T(0x1p-30f)) > T(4.0f));
 }
 
+// erfc at every accuracy level: beyond |x| = 10.0546875, where erfc(|x|) < 2^-150, the result is
+// exactly 0 (or 2, with a zero low limb), and a NaN in the low limb alone gives NaN.
+
+template <typename T>
+TEST_HOST_DEVICE_FUNC void test_erfc_ends()
+{
+  using nl = cuda::std::numeric_limits<T>;
+  assert(is_pos_zero(erfc(T(0x1.41c002p+3f))) && is_pos_zero(erfc(T(11.0f))) && is_pos_zero(erfc(T(27.0f))));
+  assert(erfc(T(-0x1.41c002p+3f)).hi() == 2.0f && erfc(T(-0x1.41c002p+3f)).lo() == 0.0f);
+  assert(erfc(T(-27.0f)).hi() == 2.0f && erfc(T(-27.0f)).lo() == 0.0f);
+#if !defined(TEST_HAS_CUDA_FAST_MATH)
+  assert(erfc(T(10.0f)) > T(0.0f)); // subnormal, just below the cut-off
+#endif // !TEST_HAS_CUDA_FAST_MATH
+  assert(is_nan(erfc(T(1.0f, nl::quiet_NaN().hi()))) && is_nan(erfc(T(0.25f, nl::quiet_NaN().hi()))));
+}
+
 // ---- modf and the classification predicates on loose pairs --------------------
 
 TEST_HOST_DEVICE_FUNC void test_modf_and_classify()
@@ -496,6 +512,9 @@ int main(int, char**)
   test_trig();
   test_roots_and_distances();
   test_erf_family();
+  test_erfc_ends<cuda::fp32mp2>();
+  test_erfc_ends<cuda::fp32mp2_low>();
+  test_erfc_ends<cuda::fp32mp2_high>();
   test_modf_and_classify();
   return 0;
 }

@@ -546,7 +546,8 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_erfc_tail(const fp32mp2_low __a
  * Complementary error function erfc(x) (fp32mp2) - dedicated implementation
  * --------------------------------------------------------------------
  *   |x| < 1/2 : 1 - x Q(x^2) (no cancellation, erfc >= 0.48 there)
- *   x >= 1/2  : erfcx(x) exp(-x^2), the tail above; zero above 27.5
+ *   x >= 1/2  : erfcx(x) exp(-x^2), the tail above; zero above 10.0546875,
+ *               where erfc(x) < 2^-150 (2 below -10.0546875)
  *   x <= -1/2 : 2 - erfc(|x|)
  * The former single formula read 40-41 bits: 13 u^2 of fit error plus the
  * generic divisions at the kernel's t = -1 end near x = 0, and a reduction
@@ -559,14 +560,15 @@ __internal_fpmp2_erfc(const float __x_hi, const float __x_lo, float* __res_hi, f
 {
   using __ffloat = fp32mp2_low;
 
-  if (__x_hi != __x_hi)
+  const __ffloat __x = renormalize(__ffloat(__x_hi, __x_lo));
+  // NaN in either limb (the renormalization carries a NaN low limb into the high one)
+  if (__x.hi() != __x.hi())
   {
-    *__res_hi = __x_hi;
-    *__res_lo = __x_hi;
+    *__res_hi = __x.hi();
+    *__res_lo = __x.hi();
     return;
   }
-  const __ffloat __x = renormalize(__ffloat(__x_hi, __x_lo));
-  if (__x.hi() > 27.5f || __x.hi() < -27.5f) /* including +-inf */
+  if (__x.hi() > 10.0546875f || __x.hi() < -10.0546875f) /* including +-inf */
   {
     *__res_hi = (__x.hi() > 0.0f) ? 0.0f : 2.0f;
     *__res_lo = 0.0f;

@@ -416,7 +416,8 @@
       erfcx kernel below times the exact-argument exp(s x^2): x_hi^2 and
       2 x_hi x_lo are exact products and every piece above 2^-48 |x^2| enters
       the reduced argument through error-free sums, so no rounding of x^2
-      reaches the exponent.  x <= -1/2: 2 - erfc(|x|).  Zero above 27.5.
+      reaches the exponent.  x <= -1/2: 2 - erfc(|x|).  Zero above 10.0546875,
+      where erfc(x) < 2^-150 (and 2 below -10.0546875).
 
     erfcx kernel (a >= 1/2), the basis of erfc, erfcx, normcdf and the
     inverse error functions:
