@@ -130,8 +130,9 @@ template <class _Word>
 {
   static_assert(sizeof(_Word) == 4 || sizeof(_Word) == 8, "A weak load requires a 32-bit or 64-bit word");
 
-  // The memory clobber marks the load as a memory side effect so that it is not hoisted, merged, or dropped. It is not
-  // volatile, which would keep the compiler from optimizing the code around it.
+  // The memory clobber keeps the compiler from narrowing, merging, or dropping the load. It is not volatile, which
+  // would keep the compiler from optimizing the code around it, so `ptxas` may hoist the load out of a loop that has
+  // no atomic operation.
   _Word __word;
   if constexpr (sizeof(_Word) == 4)
   {
@@ -148,8 +149,12 @@ template <class _Word>
 //! be swapping it.
 //!
 //! A plain load would let the compiler narrow, widen, merge, or drop the read. This is one weak PTX load of exactly the
-//! swapped word instead. It still races with the swap, so the value may already be stale when the caller sees it.
-//! `__atomic_load` is not used because a strong load is several times slower when many threads probe the same slots.
+//! swapped word instead. `__atomic_load` is not used because a strong load is several times slower when many threads
+//! probe the same slots.
+//!
+//! The load still races with the swap, so the value may already be stale when the caller sees it. Re-read it only
+//! after an atomic operation: a loop that only waits on this load may never observe a change, so wait with
+//! `__atomic_load` instead.
 //!
 //! @tparam _Tp Type of the object, 1, 2, 4, or 8 bytes in size
 //!
