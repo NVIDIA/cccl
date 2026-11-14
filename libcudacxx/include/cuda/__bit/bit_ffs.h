@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__bit/countr.h>
-#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__limits/numeric_limits.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
 
@@ -39,12 +39,6 @@
 #if _CCCL_CHECK_BUILTIN(builtin_ffsll) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_FFSLL(...) __builtin_ffsll(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_ffsll)
-
-// nvcc does not support __builtin_ffs in device code and nvrtc does not support it at all
-#if (_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()) || _CCCL_COMPILER(NVRTC)
-#  undef _CCCL_BUILTIN_FFS
-#  undef _CCCL_BUILTIN_FFSLL
-#endif // (_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()) || _CCCL_COMPILER(NVRTC)
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -87,15 +81,70 @@ template <class _Tp>
 
 #if _CCCL_CUDA_COMPILATION()
 template <class _Tp>
-[[nodiscard]] _CCCL_DEVICE_API int __bit_ffs_impl_device(const _Tp __value) noexcept
+[[nodiscard]] _CCCL_DEVICE_API int __bit_ffs_impl_device(const _Tp __v) noexcept
 {
-  if constexpr (sizeof(_Tp) <= sizeof(::cuda::std::uint32_t))
+  using ::cuda::std::uint32_t;
+  using ::cuda::std::uint64_t;
+
+  if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
   {
-    return ::__ffs(static_cast<int>(__value));
+    return ::__ffs(static_cast<int>(__v));
   }
+  else if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint64_t))
+  {
+    const auto __lo = static_cast<uint32_t>(__v);
+    const auto __hi = static_cast<uint32_t>(__v >> 32);
+
+    const bool __lo_is_zero = (__lo == 0);
+
+    // __ffx(x) is implemented as:
+    // brev.b32             tmp1, x;
+    // bfind.shiftamt.u32   tmp2, tmp1;
+    // add.s32              ret, tmp2, 1;
+    //
+    // For our improved implementation, we don't want the ret + 1 part, so we subtract 1 from the result. That leaves us
+    // with only first 2 instructions. Which is what we need. We do this to avoid using inline PTX.
+    int __ret = ::__ffs((__lo_is_zero) ? __hi : __lo) - 1;
+
+    // When the first set bit is in __hi, we need to add 32 to __ret. We can take advantage of the fact that
+    // bfind.shiftamt returns 0-based index < 32 and ~0 when there is no set bit. The idea is that we can simply set the
+    // 6th bit (32) to set the offset. If no set bit was found, the binary or won't change the ~0 value, so we don't
+    // need any special handling.
+    if (__lo_is_zero)
+    {
+      __ret |= 32;
+    }
+    return __ret + 1;
+  }
+#  if _CCCL_HAS_INT128()
+  else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
+  {
+    const auto __v0 = static_cast<uint32_t>(__v);
+    const auto __v1 = static_cast<uint32_t>(__v >> 32);
+    const auto __v2 = static_cast<uint32_t>(__v >> 64);
+    const auto __v3 = static_cast<uint32_t>(__v >> 96);
+
+    const bool __lo_is_zero   = ((__v0 | __v1) == 0);
+    const auto __lo           = (__lo_is_zero) ? __v2 : __v0;
+    const auto __hi           = (__lo_is_zero) ? __v3 : __v1;
+    const bool __word_is_zero = (__lo == 0);
+    int __ret                 = ::__ffs((__word_is_zero) ? __hi : __lo) - 1;
+
+    // As in the 64-bit case, OR in the word offsets to preserve the ~0 sentinel for a zero input.
+    if (__lo_is_zero)
+    {
+      __ret |= 64;
+    }
+    if (__word_is_zero)
+    {
+      __ret |= 32;
+    }
+    return __ret + 1;
+  }
+#  endif // _CCCL_HAS_INT128()
   else
   {
-    return ::__ffsll(static_cast<long long>(__value));
+    return ::cuda::__bit_ffs_impl_generic(__v);
   }
 }
 #endif // _CCCL_CUDA_COMPILATION()
@@ -103,16 +152,19 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr int __bit_ffs(const _Tp __value) noexcept
 {
-  if constexpr (sizeof(_Tp) <= sizeof(::cuda::std::uint64_t))
-  {
 #if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
-    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
-    {
-      NV_IF_ELSE_TARGET(
-        NV_IS_HOST, (return ::cuda::__bit_ffs_impl_host(__value);), (return ::cuda::__bit_ffs_impl_device(__value);))
-    }
-#endif // !_CCCL_TILE_COMPILATION()
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      ({
+                        if constexpr (sizeof(_Tp) <= sizeof(::cuda::std::uint64_t))
+                        {
+                          return ::cuda::__bit_ffs_impl_host(__value);
+                        }
+                      }),
+                      ({ return ::cuda::__bit_ffs_impl_device(__value); }))
   }
+#endif // !_CCCL_TILE_COMPILATION()
   return ::cuda::__bit_ffs_impl_generic(__value);
 }
 

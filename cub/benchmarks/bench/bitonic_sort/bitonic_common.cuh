@@ -45,8 +45,8 @@ NVBENCH_DECLARE_ENUM_TYPE_STRINGS(
     return std::string{};
   })
 
-template <typename ActionT, Mode mode, typename KeyT, typename ValueT, int Len>
-void run_bench(nvbench::state& state)
+template <typename ActionT, Mode ModeValue, typename KeyT, typename ValueT, int Len>
+_CCCL_HOST_API void run_bench(nvbench::state& state)
 {
   constexpr int items_per_thread = Len / warp_threads;
   const auto kernel              = benchmark_kernel<items_per_thread, KeyT, ValueT, ActionT, int>;
@@ -54,7 +54,7 @@ void run_bench(nvbench::state& state)
   int block_dim;
   int grid_dim;
   int num_iterations;
-  if (mode == Mode::Latency)
+  if (ModeValue == Mode::Latency)
   {
     block_dim      = warp_threads;
     grid_dim       = 1;
@@ -77,7 +77,7 @@ void run_bench(nvbench::state& state)
 struct CustomLess
 {
   template <typename T>
-  __device__ bool operator()(const T& lhs, const T& rhs) const
+  _CCCL_DEVICE_API bool operator()(const T& lhs, const T& rhs) const
   {
     return lhs < rhs;
   }

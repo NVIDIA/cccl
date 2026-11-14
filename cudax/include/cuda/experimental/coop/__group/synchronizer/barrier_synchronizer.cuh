@@ -1,0 +1,258 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_EXPERIMENTAL_COOP___GROUP_SYNCHRONIZER_BARRIER_SYNCHRONIZER_CUH
+#define _CUDA_EXPERIMENTAL_COOP___GROUP_SYNCHRONIZER_BARRIER_SYNCHRONIZER_CUH
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/__fwd/barrier.h>
+#include <cuda/hierarchy>
+#include <cuda/std/__atomic/scopes.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/span.h>
+#include <cuda/std/__iterator/next.h>
+#include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__memory/construct_at.h>
+#include <cuda/std/__ranges/access.h>
+#include <cuda/std/__ranges/all.h>
+#include <cuda/std/__ranges/concepts.h>
+#include <cuda/std/__ranges/size.h>
+#include <cuda/std/__type_traits/is_reference.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/cstdint>
+
+#include <cuda/experimental/coop/__group/fwd.cuh>
+
+#include <cuda/std/__cccl/prologue.h>
+
+#if !defined(_CCCL_DOXYGEN_INVOKED)
+
+namespace cuda::experimental::coop
+{
+template <thread_scope _Scope, class _Level>
+inline constexpr bool __is_sufficient_scope_for_v = false;
+
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_thread, thread_level> = true;
+
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_block, thread_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_block, warp_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_block, block_level> = true;
+
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_cluster, thread_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_cluster, warp_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_cluster, block_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_cluster, cluster_level> = true;
+
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_device, thread_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_device, warp_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_device, block_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_device, cluster_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_device, grid_level> = true;
+
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_system, thread_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_system, warp_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_system, block_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_system, cluster_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_system, grid_level> = true;
+
+template <class _Barrier, class _Unit>
+struct __barrier_synchronizer_instance
+{
+  using arrival_token _CCCL_NODEBUG = typename _Barrier::arrival_token;
+
+  _Barrier* __barrier_;
+
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_sync(const _Hierarchy&) const
+  {
+    __barrier_->arrive_and_wait();
+  }
+
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_sync_aligned(const _Hierarchy&) const
+  {
+    __barrier_->arrive_and_wait();
+  }
+
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API arrival_token do_arrive(const _Hierarchy&) const
+  {
+    return __barrier_->arrive();
+  }
+
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API arrival_token do_arrive_aligned(const _Hierarchy&) const
+  {
+    return __barrier_->arrive();
+  }
+
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_wait(const _Hierarchy&, arrival_token&& __tok) const
+  {
+    __barrier_->wait(::cuda::std::move(__tok));
+  }
+
+  template <class _Hierarchy>
+  _CCCL_DEVICE_API void do_wait_aligned(const _Hierarchy&, arrival_token&& __tok) const
+  {
+    __barrier_->wait(::cuda::std::move(__tok));
+  }
+
+  template <class _MappingResult, class _Hierarchy>
+  _CCCL_DEVICE_API void deinit(const _MappingResult& __mapping_result, const _Hierarchy& __hier) const
+  {
+    _CCCL_ASSERT(__mapping_result.is_valid(),
+                 "internal error - invoking deinit() from a thread that is not part of the group");
+
+    ::cuda::std::size_t __thread_rank_in_unit = 0u;
+    if constexpr (!::cuda::std::is_same_v<_Unit, thread_level>)
+    {
+      __thread_rank_in_unit = gpu_thread.rank(_Unit{}, __hier);
+    }
+
+    if (__mapping_result.unit_rank() == 0 && __thread_rank_in_unit == 0)
+    {
+      ::cuda::std::destroy_at(__barrier_);
+    }
+  }
+};
+
+template <class _RangeView>
+class barrier_synchronizer
+{
+  using _Barrier _CCCL_NODEBUG = ::cuda::std::remove_reference_t<::cuda::std::ranges::range_reference_t<_RangeView>>;
+
+  static_assert(::cuda::std::ranges::sized_range<_RangeView>, "_RangeView must be a sized range");
+  static_assert(::cuda::std::ranges::forward_range<_RangeView>, "_RangeView must be a forward range");
+  static_assert(::cuda::std::ranges::borrowed_range<_RangeView>, "_RangeView must be a borrowed range");
+  static_assert(__is_cuda_barrier_v<_Barrier>
+                  && ::cuda::std::is_lvalue_reference_v<::cuda::std::ranges::range_reference_t<_RangeView>>,
+                "_RangeView's reference type must be cv-unqualified cuda::barrier& type");
+
+  _RangeView __barriers_;
+
+  template <class _Range, class _Unit, class _ParentGroup, class _MappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API static __barrier_synchronizer_instance<_Barrier, _Unit> __make_instance(
+    _Range& __barriers, const _Unit&, const _ParentGroup& __parent, const _MappingResult& __mapping_result)
+  {
+    using _Level = typename _ParentGroup::level_type;
+
+    constexpr auto __static_group_count   = _MappingResult::static_group_count();
+    constexpr auto __static_barrier_count = ::cuda::std::ranges::__static_size_v<_Range>;
+    if constexpr (__static_group_count != ::cuda::std::dynamic_extent
+                  && __static_barrier_count != ::cuda::std::dynamic_extent)
+    {
+      static_assert(__static_group_count <= __static_barrier_count, "invalid number of barriers passed");
+    }
+
+    static_assert(__is_sufficient_scope_for_v<_Barrier::scope, _Level>,
+                  "_Barrier's thread scope is insufficient for group synchronization in _Level");
+
+    ::cuda::std::size_t __nthread_in_unit     = 1;
+    ::cuda::std::size_t __thread_rank_in_unit = 0;
+    if constexpr (!::cuda::std::is_same_v<thread_level, _Unit>)
+    {
+      __nthread_in_unit     = gpu_thread.count(_Unit{}, __parent.hierarchy());
+      __thread_rank_in_unit = gpu_thread.rank(_Unit{}, __parent.hierarchy());
+    }
+
+    _Barrier* __group_barrier_ptr = nullptr;
+    if (__mapping_result.is_valid())
+    {
+      _CCCL_ASSERT(__mapping_result.group_count() <= ::cuda::std::ranges::size(__barriers),
+                   "invalid number of barriers passed");
+      __group_barrier_ptr = ::cuda::std::addressof(
+        *::cuda::std::ranges::next(::cuda::std::ranges::begin(__barriers), __mapping_result.group_rank()));
+
+      if (__mapping_result.unit_rank() == 0 && __thread_rank_in_unit == 0)
+      {
+        init(__group_barrier_ptr,
+             static_cast<::cuda::std::ptrdiff_t>(__mapping_result.unit_count() * __nthread_in_unit));
+      }
+    }
+
+    // todo(dabayer): How we can expose making this aligned?
+    __parent.sync();
+    return __barrier_synchronizer_instance<_Barrier, _Unit>{__group_barrier_ptr};
+  }
+
+public:
+  template <class _Unit>
+  using __synchronizer_instance _CCCL_NODEBUG = __barrier_synchronizer_instance<_Barrier, _Unit>;
+
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(::cuda::std::is_same_v<_RangeView, ::cuda::std::ranges::views::all_t<_Range>>)
+  _CCCL_DEVICE_API barrier_synchronizer(_Range&& __barriers)
+      : __barriers_{::cuda::std::ranges::views::all(::cuda::std::forward<_Range>(__barriers))}
+  {}
+
+  template <class _Unit, class _ParentGroup, class _MappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API auto
+  make_instance(const _Unit& __unit, const _ParentGroup& __parent, const _MappingResult& __mapping_result)
+  {
+    return __make_instance(__barriers_, __unit, __parent, __mapping_result);
+  }
+
+  _CCCL_TEMPLATE(class _Unit, class _ParentGroup, class _MappingResult, class _RangeView2 = _RangeView)
+  _CCCL_REQUIRES(
+    ::cuda::std::ranges::sized_range<const _RangeView2> _CCCL_AND ::cuda::std::ranges::forward_range<const _RangeView2>
+      _CCCL_AND ::cuda::std::is_same_v<::cuda::std::ranges::range_reference_t<const _RangeView2>, _Barrier&>)
+  [[nodiscard]] _CCCL_DEVICE_API auto
+  make_instance(const _Unit& __unit, const _ParentGroup& __parent, const _MappingResult& __mapping_result) const
+  {
+    return __make_instance(__barriers_, __unit, __parent, __mapping_result);
+  }
+};
+
+_CCCL_TEMPLATE(class _Range, class _Ref = ::cuda::std::ranges::range_reference_t<_Range>)
+_CCCL_REQUIRES(
+  ::cuda::std::ranges::viewable_range<_Range> _CCCL_AND ::cuda::std::ranges::sized_range<_Range>
+    _CCCL_AND ::cuda::std::ranges::forward_range<_Range> _CCCL_AND ::cuda::std::ranges::borrowed_range<_Range> _CCCL_AND
+      __is_cuda_barrier_v<::cuda::std::remove_reference_t<_Ref>> _CCCL_AND ::cuda::std::is_lvalue_reference_v<_Ref>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES barrier_synchronizer(_Range&&)
+  -> barrier_synchronizer<::cuda::std::ranges::views::all_t<_Range>>;
+} // namespace cuda::experimental::coop
+
+#endif // !_CCCL_DOXYGEN_INVOKED
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_EXPERIMENTAL_COOP___GROUP_SYNCHRONIZER_BARRIER_SYNCHRONIZER_CUH

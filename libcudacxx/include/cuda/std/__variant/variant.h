@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/variant.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/dependent_type.h>
@@ -63,8 +64,8 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT variant
 
   static_assert((!is_void_v<_Types> && ...), "variant can not have a void type as an alternative.");
 
-  using __first_type  = variant_alternative_t<0, variant>;
-  using __constraints = __variant_detail::__variant_constraints<_Types...>;
+  using __first_type _CCCL_NODEBUG  = variant_alternative_t<0, variant>;
+  using __constraints _CCCL_NODEBUG = __variant_detail::__variant_constraints<_Types...>;
 
 public:
   // Needs to be dependent to guard against incomplete types
@@ -78,7 +79,7 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr variant(variant&&)      = default;
 
   template <class _Arg>
-  using __match_construct =
+  using __match_construct _CCCL_NODEBUG =
     conditional_t<!is_same_v<remove_cvref_t<_Arg>, variant> && !__is_cuda_std_inplace_type_v<remove_cvref_t<_Arg>> //
                     && !__is_cuda_std_inplace_index_v<remove_cvref_t<_Arg>>,
                   typename __constraints::template __match_construct<_Arg>,
@@ -89,12 +90,13 @@ public:
             class              = enable_if_t<sizeof...(_Types) != 0>,
             class _Constraints = __match_construct<_Arg>,
             class              = enable_if_t<_Constraints::__constructible>>
-  _CCCL_API constexpr variant(_Arg&& __arg) noexcept(_Constraints::__nothrow_constructible)
+  _CCCL_API constexpr variant(_Arg&& __arg) noexcept( // NOLINT(bugprone-forwarding-reference-overload)
+    _Constraints::__nothrow_constructible)
       : __impl_(in_place_index<_Constraints::_Ip>, ::cuda::std::forward<_Arg>(__arg))
   {}
 
   template <size_t _Ip, class... _Args>
-  using __variadic_construct =
+  using __variadic_construct _CCCL_NODEBUG =
     conditional_t<(_Ip < sizeof...(_Types)),
                   typename __constraints::template __variadic_construct<_Ip, _Args...>,
                   __variant_detail::__invalid_variant_constraints>;
@@ -109,7 +111,7 @@ public:
   {}
 
   template <size_t _Ip, class _Up, class... _Args>
-  using __variadic_ilist_construct =
+  using __variadic_ilist_construct _CCCL_NODEBUG =
     conditional_t<(_Ip < sizeof...(_Types)),
                   typename __constraints::template __variadic_ilist_construct<_Ip, _Up, _Args...>,
                   __variant_detail::__invalid_variant_constraints>;
@@ -151,7 +153,7 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr variant& operator=(variant&&)      = default;
 
   template <class _Arg>
-  using __match_assign =
+  using __match_assign _CCCL_NODEBUG =
     conditional_t<!is_same_v<remove_cvref_t<_Arg>, variant>,
                   typename __constraints::template __match_assign<_Arg>,
                   __variant_detail::__invalid_variant_constraints>;
@@ -213,7 +215,7 @@ public:
 
   // Needs to be dependent to guard against incomplete types
   template <bool _Dummy>
-  using __swap_constraint =
+  using __swap_constraint _CCCL_NODEBUG =
     __dependent_type<typename __variant_detail::__variant_constraints<_Types...>::template __swappable<_Dummy>, _Dummy>;
 
   template <bool _Dummy       = true,

@@ -101,7 +101,7 @@ template <typename DerivedPolicy,
           typename UnaryFunction,
           typename OutputType,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputType transform_reduce(
+_CCCL_HOST_DEVICE_API OutputType transform_reduce(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -173,7 +173,7 @@ _CCCL_HOST_DEVICE OutputType transform_reduce(
  *  \endverbatim
  */
 template <typename InputIterator, typename UnaryFunction, typename OutputType, typename BinaryFunction>
-OutputType transform_reduce(
+_CCCL_HOST_API OutputType transform_reduce(
   InputIterator first, InputIterator last, UnaryFunction unary_op, OutputType init, BinaryFunction binary_op);
 
 /*! \} // end transformed_reductions

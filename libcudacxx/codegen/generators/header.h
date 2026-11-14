@@ -44,11 +44,15 @@ inline void FormatHeader(std::ostream& out)
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
+// IWYU pragma: begin_keep
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/functions/common.h>
 #include <cuda/std/__atomic/functions/backend.h>
 #include <cuda/std/__atomic/functions/cuda_ptx_backend.h>
+// IWYU pragma: end_keep
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 

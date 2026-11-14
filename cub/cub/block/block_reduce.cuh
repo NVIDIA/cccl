@@ -21,15 +21,18 @@
 #include <cub/block/specializations/block_reduce_raking.cuh>
 #include <cub/block/specializations/block_reduce_raking_commutative_only.cuh>
 #include <cub/block/specializations/block_reduce_warp_reductions.cuh>
-#include <cub/thread/thread_operators.cuh>
+#include <cub/detail/uninitialized.cuh>
+#include <cub/thread/thread_reduce.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
-#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
 
 CUB_NAMESPACE_BEGIN
 
@@ -39,7 +42,7 @@ CUB_NAMESPACE_BEGIN
 
 //! BlockReduceAlgorithm enumerates alternative algorithms for parallel reduction across a CUDA thread
 //! block.
-enum BlockReduceAlgorithm
+enum BlockReduceAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
 
   //! @rst
@@ -140,6 +143,9 @@ enum BlockReduceAlgorithm
   //!      order non-deterministic.
   //!   #. The final block-wide result is available to all threads.
   //!
+  //! Atomic accumulation is only used with ``cuda::std::plus``. Other reduction operators combine the
+  //! warp aggregates in order, as with ``BLOCK_REDUCE_WARP_REDUCTIONS``.
+  //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
   //!
@@ -171,9 +177,9 @@ namespace detail
 }
 } // namespace detail
 
-inline ::std::ostream& operator<<(::std::ostream& os, BlockReduceAlgorithm algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, BlockReduceAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
@@ -181,12 +187,12 @@ CUB_NAMESPACE_END
 
 #if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
 template <::cuda::std::same_as<char> CharT>
-struct std::formatter<CUB_NS_QUALIFIER::BlockReduceAlgorithm, CharT> : formatter<const CharT*, CharT>
+struct std::formatter<_CUB::BlockReduceAlgorithm, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const CUB_NS_QUALIFIER::BlockReduceAlgorithm& algo, FmtCtx& ctx) const
+  _CCCL_HOST_API auto format(const _CUB::BlockReduceAlgorithm& algo, FmtCtx& ctx) const
   {
-    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+    return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(algo), ctx);
   }
 };
 #endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
@@ -286,21 +292,29 @@ CUB_NAMESPACE_BEGIN
 //! @tparam BlockDimZ
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
+// WarpAggregateThreshold: minimum number of warps required to use the parallel
+// warp-0 reduction path. Only applies when Algorithm is BLOCK_REDUCE_WARP_REDUCTIONS
+// or BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC.
+//   -1 (default): only use parallel path when HW redux is available.
+//    0: always use sequential path.
+//   >0: use parallel path when warps >= threshold.
 template <typename T,
           int BlockDimX,
           BlockReduceAlgorithm Algorithm = BLOCK_REDUCE_WARP_REDUCTIONS,
           int BlockDimY                  = 1,
-          int BlockDimZ                  = 1>
+          int BlockDimZ                  = 1,
+          int WarpAggregateThreshold     = -1>
 class BlockReduce
 {
-private:
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
-  using WarpReductions                 = detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ>;
-  using WarpReductionsNondeterministic = detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ, false>;
-  using RakingCommutativeOnly          = detail::BlockReduceRakingCommutativeOnly<T, BlockDimX, BlockDimY, BlockDimZ>;
-  using Raking                         = detail::BlockReduceRaking<T, BlockDimX, BlockDimY, BlockDimZ>;
+  using WarpReductions =
+    detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ, true, WarpAggregateThreshold>;
+  using WarpReductionsNondeterministic =
+    detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ, false, WarpAggregateThreshold>;
+  using RakingCommutativeOnly = detail::BlockReduceRakingCommutativeOnly<T, BlockDimX, BlockDimY, BlockDimZ>;
+  using Raking                = detail::BlockReduceRaking<T, BlockDimX, BlockDimY, BlockDimZ>;
 
   /// Internal specialization type
   using InternalBlockReduce =
@@ -313,10 +327,10 @@ private:
                                                        Raking>>>; // BlockReduceRaking
 
   /// Shared memory storage layout type for BlockReduce
-  using _TempStorage = typename InternalBlockReduce::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalBlockReduce::TempStorage;
 
   /// Internal storage allocator
-  _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
   {
     __shared__ _TempStorage private_storage;
     return private_storage;
@@ -330,8 +344,7 @@ private:
 
 public:
   /// @smemstorage{BlockReduce}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
@@ -343,9 +356,9 @@ public:
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //! @endrst
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduce()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockReduce()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
@@ -359,9 +372,9 @@ public:
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduce(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockReduce(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}
@@ -416,7 +429,7 @@ public:
   //! @param[in] reduction_op
   //!   Binary reduction functor
   template <typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op)
   {
     return InternalBlockReduce(temp_storage).template Reduce<true>(input, BLOCK_THREADS, reduction_op);
   }
@@ -461,7 +474,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ReductionOp
@@ -472,11 +485,11 @@ public:
   //!
   //! @param[in] reduction_op
   //!   Binary reduction functor
-  template <int ITEMS_PER_THREAD, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T (&inputs)[ITEMS_PER_THREAD], ReductionOp reduction_op)
+  template <int ItemsPerThread, typename ReductionOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(T (&inputs)[ItemsPerThread], ReductionOp reduction_op)
   {
     // Reduce partials
-    T partial = cub::ThreadReduce(inputs, reduction_op);
+    T partial = _CUB::ThreadReduce(inputs, reduction_op);
     return Reduce(partial, reduction_op);
   }
 
@@ -531,17 +544,14 @@ public:
   //! @param[in] num_valid
   //!   Number of threads containing valid elements (may be less than BLOCK_THREADS)
   template <typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, int num_valid)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, int num_valid)
   {
     // Determine if we skip bounds checking
     if (num_valid >= BLOCK_THREADS)
     {
-      return InternalBlockReduce(temp_storage).template Reduce<true>(input, num_valid, reduction_op);
+      return InternalBlockReduce(temp_storage).template Reduce<true>(input, BLOCK_THREADS, reduction_op);
     }
-    else
-    {
-      return InternalBlockReduce(temp_storage).template Reduce<false>(input, num_valid, reduction_op);
-    }
+    return InternalBlockReduce(temp_storage).template Reduce<false>(input, num_valid, reduction_op);
   }
 
   //! @}
@@ -589,7 +599,7 @@ public:
   //!
   //! @param[in] input
   //!   Calling thread's input
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(T input)
   {
     return InternalBlockReduce(temp_storage).template Sum<true>(input, BLOCK_THREADS);
   }
@@ -634,16 +644,16 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @param[in] inputs
   //!   Calling thread's input segment
-  template <int ITEMS_PER_THREAD>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T (&inputs)[ITEMS_PER_THREAD])
+  template <int ItemsPerThread>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(T (&inputs)[ItemsPerThread])
   {
     // Reduce partials
-    T partial = cub::ThreadReduce(inputs, ::cuda::std::plus<>{});
+    T partial = _CUB::ThreadReduce(inputs, ::cuda::std::plus<>{});
     return Sum(partial);
   }
 
@@ -692,17 +702,14 @@ public:
   //!
   //! @param[in] num_valid
   //!   Number of threads containing valid elements (may be less than BLOCK_THREADS)
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int num_valid)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(T input, int num_valid)
   {
     // Determine if we skip bounds checking
     if (num_valid >= BLOCK_THREADS)
     {
-      return InternalBlockReduce(temp_storage).template Sum<true>(input, num_valid);
+      return InternalBlockReduce(temp_storage).template Sum<true>(input, BLOCK_THREADS);
     }
-    else
-    {
-      return InternalBlockReduce(temp_storage).template Sum<false>(input, num_valid);
-    }
+    return InternalBlockReduce(temp_storage).template Sum<false>(input, num_valid);
   }
 
   //! @}

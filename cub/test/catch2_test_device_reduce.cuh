@@ -17,142 +17,11 @@
 #include <numeric>
 #include <type_traits>
 
+#include "catch2_test_numeric_helpers.cuh"
 #include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 #include <c2h/test_util_vec.h>
-
-// Comparing results computed on CPU and GPU for extended floating point types is impossible.
-// For instance, when used with a constant iterator of two, the accumulator in sequential reference
-// computation (CPU) bumps into the 4096 limits, which will never change (`4096 + 2 = 4096`).
-// Meanwhile, per-thread aggregates (`2 * 16 = 32`) are accumulated within and among thread blocks,
-// yielding `inf` as a result. No reasonable epsilon can be selected to compare `inf` with `4096`.
-// To make `__half` and `__nv_bfloat16` arithmetic associative, the function object below raises
-// extended floating points to the area of unsigned short integers. This allows us to test large
-// inputs with few code-path differences in device algorithms.
-struct ExtendedFloatSum
-{
-  template <class T>
-  __host__ __device__ T operator()(T a, T b) const
-  {
-    T result{};
-    result.__x = a.raw() + b.raw();
-    return result;
-  }
-
-#if TEST_HALF_T()
-  __host__ __device__ __half operator()(__half a, __half b) const
-  {
-    uint16_t result = this->operator()(half_t{a}, half_t(b)).raw();
-    return reinterpret_cast<__half&>(result);
-  }
-#endif // TEST_HALF_T()
-
-#if TEST_BF_T()
-  __device__ __nv_bfloat16 operator()(__nv_bfloat16 a, __nv_bfloat16 b) const
-  {
-    uint16_t result = this->operator()(bfloat16_t{a}, bfloat16_t(b)).raw();
-    return reinterpret_cast<__nv_bfloat16&>(result);
-  }
-#endif // TEST_BF_T()
-};
-
-template <class It>
-inline It unwrap_it(It it)
-{
-  return it;
-}
-
-#if TEST_HALF_T()
-inline __half* unwrap_it(half_t* it)
-{
-  return reinterpret_cast<__half*>(it);
-}
-
-template <class OffsetT>
-inline cuda::constant_iterator<__half, OffsetT> unwrap_it(cuda::constant_iterator<half_t, OffsetT> it)
-{
-  half_t wrapped_val = *it;
-  __half val         = wrapped_val.operator __half();
-  return cuda::constant_iterator<__half, OffsetT>(val);
-}
-#endif // TEST_HALF_T()
-
-#if TEST_BF_T()
-inline __nv_bfloat16* unwrap_it(bfloat16_t* it)
-{
-  return reinterpret_cast<__nv_bfloat16*>(it);
-}
-
-template <class OffsetT>
-cuda::constant_iterator<__nv_bfloat16, OffsetT> inline unwrap_it(cuda::constant_iterator<bfloat16_t, OffsetT> it)
-{
-  bfloat16_t wrapped_val = *it;
-  __nv_bfloat16 val      = wrapped_val.operator __nv_bfloat16();
-  return cuda::constant_iterator<__nv_bfloat16, OffsetT>(val);
-}
-#endif // TEST_BF_T()
-
-template <typename T>
-using unwrap_value_t = std::remove_reference_t<decltype(*unwrap_it(std::declval<T*>()))>;
-
-template <class WrappedItT, //
-          class ItT = decltype(unwrap_it(std::declval<WrappedItT>()))>
-std::integral_constant<bool, !std::is_same_v<WrappedItT, ItT>> //
-  inline reference_extended_fp(WrappedItT)
-{
-  return {};
-}
-
-inline constexpr ExtendedFloatSum unwrap_op(std::true_type /* extended float */, ::cuda::std::plus<>) //
-{
-  return {};
-}
-
-template <bool V, class OpT>
-inline constexpr OpT unwrap_op(std::integral_constant<bool, V> /* base case */, OpT op)
-{
-  return op;
-}
-
-/**
- * @brief Initializes the given item type with a constant non-zero value.
- */
-template <typename T>
-inline void init_default_constant(T& val, int element_val = 2)
-{
-  val = T{static_cast<T>(element_val)};
-}
-
-template <template <typename> class... Policies>
-inline void init_default_constant(c2h::custom_type_t<Policies...>& val, int element_val = 2)
-{
-  val.key = static_cast<size_t>(element_val);
-  val.val = static_cast<size_t>(element_val);
-}
-
-inline void init_default_constant(uchar3& val, int element_val = 2)
-{
-  const auto element_init = static_cast<unsigned char>(element_val);
-  val                     = uchar3{element_init, element_init, element_init};
-}
-
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
-inline void init_default_constant(ulonglong4& val, int element_val = 2)
-{
-  const auto element_init = static_cast<unsigned long long>(element_val);
-  val                     = ulonglong4{element_init, element_init, element_init, element_init};
-}
-_CCCL_SUPPRESS_DEPRECATED_POP
-
-#if _CCCL_CTK_AT_LEAST(13, 0)
-inline void init_default_constant(ulonglong4_16a& val, int element_val = 2)
-{
-  const auto element_init = static_cast<unsigned long long>(element_val);
-  val                     = ulonglong4_16a{element_init, element_init, element_init, element_init};
-}
-#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 template <typename InputItT,
           typename OffsetItT,
@@ -211,8 +80,8 @@ inline AccumulatorT
 compute_single_problem_reference(const c2h::device_vector<ItemT>& d_in, ReductionOpT reduction_op, AccumulatorT init)
 {
   constexpr std::size_t num_segments = 1;
-  c2h::host_vector<ItemT> h_items(d_in);
-  c2h::host_vector<AccumulatorT> h_results(num_segments);
+  const c2h::host_vector<ItemT> h_items(d_in);
+  const c2h::host_vector<AccumulatorT> h_results(num_segments);
 
   return compute_single_problem_reference(h_items.cbegin(), h_items.cend(), reduction_op, init);
 }
@@ -229,13 +98,13 @@ void compute_segmented_problem_reference(
   AccumulatorT init,
   ResultItT h_results)
 {
-  c2h::host_vector<ItemT> h_items(d_in);
-  c2h::host_vector<OffsetT> h_offsets(d_offsets);
+  const c2h::host_vector<ItemT> h_items(d_in);
+  const c2h::host_vector<OffsetT> h_offsets(d_offsets);
   auto offsets_it   = h_offsets.cbegin();
   auto seg_sizes_it = cuda::transform_iterator(cuda::counting_iterator(std::size_t{0}), [offsets_it](std::size_t i) {
     return offsets_it[i + 1] - offsets_it[i];
   });
-  std::size_t num_segments = h_offsets.size() - 1;
+  const std::size_t num_segments = h_offsets.size() - 1;
 
   compute_host_reference(
     h_items.cbegin(), h_offsets.cbegin(), seg_sizes_it, num_segments, reduction_op, init, h_results);
@@ -253,12 +122,12 @@ void compute_segmented_problem_reference(
   AccumulatorT init,
   ResultItT h_results)
 {
-  c2h::host_vector<OffsetT> h_offsets(d_offsets);
+  const c2h::host_vector<OffsetT> h_offsets(d_offsets);
   auto offsets_it   = h_offsets.cbegin();
   auto seg_sizes_it = cuda::transform_iterator(cuda::counting_iterator(std::size_t{0}), [offsets_it](std::size_t i) {
     return offsets_it[i + 1] - offsets_it[i];
   });
-  std::size_t num_segments = h_offsets.size() - 1;
+  const std::size_t num_segments = h_offsets.size() - 1;
 
   compute_host_reference(in_it, h_offsets.cbegin(), seg_sizes_it, num_segments, reduction_op, init, h_results);
 }
@@ -271,7 +140,7 @@ template <typename ItemT, typename OffsetT, typename ResultItT>
 void compute_segmented_argmin_reference(
   const c2h::device_vector<ItemT>& d_in, const c2h::device_vector<OffsetT>& d_offsets, ResultItT h_results)
 {
-  c2h::host_vector<ItemT> h_items(d_in);
+  const c2h::host_vector<ItemT> h_items(d_in);
   c2h::host_vector<OffsetT> h_offsets(d_offsets);
   const auto num_segments = h_offsets.size() - 1;
   for (std::size_t seg = 0; seg < num_segments; seg++)
@@ -284,7 +153,7 @@ void compute_segmented_argmin_reference(
     {
       auto expected_result_it =
         std::min_element(h_items.cbegin() + h_offsets[seg], h_items.cbegin() + h_offsets[seg + 1]);
-      int result_offset =
+      const int result_offset =
         static_cast<int>(cuda::std::distance((h_items.cbegin() + h_offsets[seg]), expected_result_it));
       h_results[seg] = {result_offset, *expected_result_it};
     }
@@ -299,7 +168,7 @@ template <typename ItemT, typename OffsetT, typename ResultItT>
 void compute_segmented_argmax_reference(
   const c2h::device_vector<ItemT>& d_in, const c2h::device_vector<OffsetT>& d_offsets, ResultItT h_results)
 {
-  c2h::host_vector<ItemT> h_items(d_in);
+  const c2h::host_vector<ItemT> h_items(d_in);
   c2h::host_vector<OffsetT> h_offsets(d_offsets);
   const auto num_segments = h_offsets.size() - 1;
   for (std::size_t seg = 0; seg < num_segments; seg++)
@@ -312,7 +181,7 @@ void compute_segmented_argmax_reference(
     {
       auto expected_result_it =
         std::max_element(h_items.cbegin() + h_offsets[seg], h_items.cbegin() + h_offsets[seg + 1]);
-      int result_offset =
+      const int result_offset =
         static_cast<int>(cuda::std::distance((h_items.cbegin() + h_offsets[seg]), expected_result_it));
       h_results[seg] = {result_offset, *expected_result_it};
     }
@@ -332,7 +201,7 @@ void compute_fixed_size_segmented_problem_reference(
   AccumulatorT init,
   ResultItT h_results)
 {
-  c2h::host_vector<ItemT> h_items(d_in);
+  const c2h::host_vector<ItemT> h_items(d_in);
   auto h_begin = h_items.cbegin();
 
   for (int segment = 0; segment < num_segments; segment++)
@@ -366,7 +235,7 @@ void compute_fixed_size_segmented_argmax_reference(
       auto seg_begin          = h_begin + static_cast<long>(seg) * segment_size;
       auto seg_end            = seg_begin + segment_size;
       auto expected_result_it = std::max_element(seg_begin, seg_end);
-      int result_offset       = static_cast<int>(::cuda::std::distance((seg_begin), expected_result_it));
+      const int result_offset = static_cast<int>(::cuda::std::distance(seg_begin, expected_result_it));
       h_results[seg]          = {result_offset, *expected_result_it};
     }
   }
@@ -394,7 +263,7 @@ void compute_fixed_size_segmented_argmin_reference(
       auto seg_begin          = h_begin + static_cast<long>(seg) * segment_size;
       auto seg_end            = seg_begin + segment_size;
       auto expected_result_it = std::min_element(seg_begin, seg_end);
-      int result_offset       = static_cast<int>(::cuda::std::distance((seg_begin), expected_result_it));
+      const int result_offset = static_cast<int>(::cuda::std::distance(seg_begin, expected_result_it));
       h_results[seg]          = {result_offset, *expected_result_it};
     }
   }
@@ -430,7 +299,7 @@ inline OutputItT compute_unique_keys_reference(InputItT h_in_begin, std::size_t 
 template <typename ItemT>
 inline c2h::host_vector<ItemT> compute_unique_keys_reference(const c2h::device_vector<ItemT>& d_keys)
 {
-  c2h::host_vector<ItemT> h_keys(d_keys);
+  const c2h::host_vector<ItemT> h_keys(d_keys);
   c2h::host_vector<ItemT> h_unique_keys_out(d_keys.size());
 
   auto end_it = compute_unique_keys_reference(h_keys.cbegin(), h_keys.size(), h_unique_keys_out.begin());

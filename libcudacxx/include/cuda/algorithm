@@ -21,9 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__algorithm/fill.h>
 #include <cuda/__algorithm/sample.h>
 #include <cuda/std/algorithm>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_ALGORITHM

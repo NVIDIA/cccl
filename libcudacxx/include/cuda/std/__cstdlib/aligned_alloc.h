@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__cstdlib/malloc.h>
 #include <cuda/std/cstring>
 
 #if _CCCL_HOSTED()
@@ -47,7 +46,7 @@ __aligned_alloc_host([[maybe_unused]] size_t __align, [[maybe_unused]] size_t __
   _CCCL_ASSERT(false, "Use of aligned_alloc in host code is not supported on WIndows");
   return nullptr;
 #  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-  return ::aligned_alloc(__align, __nbytes);
+  return ::aligned_alloc(__align, __nbytes); // NOLINT(cppcoreguidelines-no-malloc)
 #  endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 }
 #endif // !_CCCL_COMPILER(NVRTC)

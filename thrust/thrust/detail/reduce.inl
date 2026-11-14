@@ -29,7 +29,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(reduce_by_key.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/reduce.h>
 #  include <thrust/system/cpp/detail/reduce_by_key.h>
 #  include <thrust/system/cuda/detail/reduce.h>
@@ -44,7 +44,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator>
-_CCCL_HOST_DEVICE detail::it_value_t<InputIterator>
+_CCCL_HOST_DEVICE_API detail::it_value_t<InputIterator>
 reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, InputIterator last)
 {
   _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<DerivedPolicy>(), "thrust::reduce");
@@ -54,7 +54,7 @@ reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIt
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename T>
-_CCCL_HOST_DEVICE T reduce(
+_CCCL_HOST_DEVICE_API T reduce(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, InputIterator last, T init)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::reduce");
@@ -64,7 +64,7 @@ _CCCL_HOST_DEVICE T reduce(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename T, typename BinaryFunction>
-_CCCL_HOST_DEVICE T reduce(
+_CCCL_HOST_DEVICE_API T reduce(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -78,7 +78,7 @@ _CCCL_HOST_DEVICE T reduce(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE void reduce_into(
+_CCCL_HOST_DEVICE_API void reduce_into(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -90,7 +90,7 @@ _CCCL_HOST_DEVICE void reduce_into(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
-_CCCL_HOST_DEVICE void reduce_into(
+_CCCL_HOST_DEVICE_API void reduce_into(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -103,7 +103,7 @@ _CCCL_HOST_DEVICE void reduce_into(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
-_CCCL_HOST_DEVICE void reduce_into(
+_CCCL_HOST_DEVICE_API void reduce_into(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -121,7 +121,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -147,7 +147,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -176,7 +176,7 @@ template <typename DerivedPolicy,
           typename OutputIterator2,
           typename BinaryPredicate,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -200,20 +200,21 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_
 } // end reduce_by_key()
 
 template <typename InputIterator>
-detail::it_value_t<InputIterator> reduce(InputIterator first, InputIterator last)
+_CCCL_HOST_API detail::it_value_t<InputIterator> reduce(InputIterator first, InputIterator last)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::reduce");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<InputIterator>::type;
 
-  System system;
+  // thrust systems must be mutable
+  System system; // NOLINT(misc-const-correctness)
 
   return thrust::reduce(select_system(system), first, last);
 }
 
 template <typename InputIterator, typename T>
-T reduce(InputIterator first, InputIterator last, T init)
+_CCCL_HOST_API T reduce(InputIterator first, InputIterator last, T init)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::reduce");
   using thrust::system::detail::generic::select_system;
@@ -226,7 +227,7 @@ T reduce(InputIterator first, InputIterator last, T init)
 }
 
 template <typename InputIterator, typename T, typename BinaryFunction>
-T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_op)
+_CCCL_HOST_API T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_op)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::reduce");
   using thrust::system::detail::generic::select_system;
@@ -239,7 +240,7 @@ T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_
 }
 
 template <typename InputIterator, typename OutputIterator>
-void reduce_into(InputIterator first, InputIterator last, OutputIterator output)
+_CCCL_HOST_API void reduce_into(InputIterator first, InputIterator last, OutputIterator output)
 {
   using thrust::system::detail::generic::select_system;
 
@@ -253,7 +254,7 @@ void reduce_into(InputIterator first, InputIterator last, OutputIterator output)
 }
 
 template <typename InputIterator, typename OutputIterator, typename T>
-void reduce_into(InputIterator first, InputIterator last, OutputIterator output, T init)
+_CCCL_HOST_API void reduce_into(InputIterator first, InputIterator last, OutputIterator output, T init)
 {
   using thrust::system::detail::generic::select_system;
 
@@ -267,7 +268,8 @@ void reduce_into(InputIterator first, InputIterator last, OutputIterator output,
 }
 
 template <typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
-void reduce_into(InputIterator first, InputIterator last, OutputIterator output, T init, BinaryFunction binary_op)
+_CCCL_HOST_API void
+reduce_into(InputIterator first, InputIterator last, OutputIterator output, T init, BinaryFunction binary_op)
 {
   using thrust::system::detail::generic::select_system;
 
@@ -281,7 +283,7 @@ void reduce_into(InputIterator first, InputIterator last, OutputIterator output,
 }
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
-::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   InputIterator1 keys_first,
   InputIterator1 keys_last,
   InputIterator2 values_first,
@@ -310,7 +312,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   InputIterator1 keys_first,
   InputIterator1 keys_last,
   InputIterator2 values_first,
@@ -347,7 +349,7 @@ template <typename InputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate,
           typename BinaryFunction>
-::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   InputIterator1 keys_first,
   InputIterator1 keys_last,
   InputIterator2 values_first,

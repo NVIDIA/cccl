@@ -18,8 +18,10 @@
 #endif // no system header
 #include <thrust/detail/function.h>
 #include <thrust/detail/temporary_array.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -33,7 +35,7 @@ class temporary_array;
 namespace system::detail::sequential
 {
 template <typename ForwardIterator1, typename ForwardIterator2>
-_CCCL_HOST_DEVICE void iter_swap(ForwardIterator1 iter1, ForwardIterator2 iter2)
+_CCCL_HOST_DEVICE_API void iter_swap(ForwardIterator1 iter1, ForwardIterator2 iter2)
 {
   // note: we cannot use swap(*iter1, *iter2) here, because the reference_type's could be proxy references, for which
   // swap() is not guaranteed to work
@@ -45,7 +47,7 @@ _CCCL_HOST_DEVICE void iter_swap(ForwardIterator1 iter1, ForwardIterator2 iter2)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator
+_CCCL_HOST_DEVICE_API ForwardIterator
 partition(sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, Predicate pred)
 {
   if (first == last)
@@ -54,7 +56,7 @@ partition(sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, F
   }
 
   // wrap pred
-  thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
 
   while (wrapped_pred(*first))
   {
@@ -81,7 +83,7 @@ partition(sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, F
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator partition(
+_CCCL_HOST_DEVICE_API ForwardIterator partition(
   sequential::execution_policy<DerivedPolicy>&,
   ForwardIterator first,
   ForwardIterator last,
@@ -94,7 +96,7 @@ _CCCL_HOST_DEVICE ForwardIterator partition(
   }
 
   // wrap pred
-  thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
 
   while (wrapped_pred(*stencil_first))
   {
@@ -127,7 +129,7 @@ _CCCL_HOST_DEVICE ForwardIterator partition(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator stable_partition(
+_CCCL_HOST_DEVICE_API ForwardIterator stable_partition(
   sequential::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Predicate pred)
 {
   if (first == last)
@@ -136,7 +138,7 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
   }
 
   // wrap pred
-  thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
 
   using T = thrust::detail::it_value_t<ForwardIterator>;
 
@@ -170,7 +172,7 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator stable_partition(
+_CCCL_HOST_DEVICE_API ForwardIterator stable_partition(
   sequential::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -178,7 +180,7 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
   Predicate pred)
 {
   // wrap pred
-  thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
 
   using T = thrust::detail::it_value_t<ForwardIterator>;
 
@@ -218,7 +220,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator first,
   InputIterator last,
@@ -227,7 +229,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_par
   Predicate pred)
 {
   // wrap pred
-  thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
 
   for (; first != last; ++first)
   {
@@ -253,7 +255,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator1 first,
   InputIterator1 last,
@@ -263,7 +265,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_par
   Predicate pred)
 {
   // wrap pred
-  thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
 
   for (; first != last; ++first, (void) ++stencil)
   {

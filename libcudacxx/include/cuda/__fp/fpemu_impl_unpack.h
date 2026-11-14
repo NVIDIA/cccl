@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -45,8 +45,8 @@
 //! lean unpack/pack and do not use these routines.
 //!
 //! They depend only on the primitives/constants in fpemu_impl.h
-//! (bit_cast, __round, __fp64_ovfl_sat, ::cuda::std::countl_zero, the FP64_* masks,
-//! EXTRA_BITS, BIAS, ...).
+//! (bit_cast, __round, __fp64_ovfl_sat, ::cuda::std::countl_zero, the _CCCL_FPEMU_* masks,
+//! _CCCL_FPEMU_EXTRA_BITS, __fpemu_bias, ...).
 
 #include <cuda/__fp/fpemu_impl.h>
 #include <cuda/std/__bit/countl.h>
@@ -55,8 +55,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 //! @brief Unpack a packed binary64 value into the public unpacked ABI.
 //!
 //! Fully-accurate, method-independent, full-range prologue: the sign/exponent/
@@ -76,7 +75,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64_unpacked __internal_fp64emu_unpack(__fp
   int32_t __exponent = static_cast<int32_t>(__a32.x[1] >> 20);
 
   // Normalize denormals: leading-zero count of the magnitude (clamped so a
-  // normal stays at shift == EXTRA_BITS, and a true zero maps to the zero band).
+  // normal stays at shift == _CCCL_FPEMU_EXTRA_BITS, and a true zero maps to the zero band).
   uint64_t __abs_a = ::cuda::std::bit_cast<uint64_t>(__a32);
   int __nzeros     = ::cuda::std::countl_zero(__abs_a);
   if (__nzeros < 11)
@@ -103,7 +102,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64_unpacked __internal_fp64emu_unpack(__fp
     __exponent = 12 - __nzeros; // denormal / zero
   }
 
-  int __shift    = EXTRA_BITS + __nzeros - 11;
+  int __shift    = _CCCL_FPEMU_EXTRA_BITS + __nzeros - 11;
   uint64_t __a64 = ::cuda::std::bit_cast<uint64_t>(__a32);
 
   __a_unpacked.exponent = static_cast<uint32_t>(__exponent);
@@ -168,7 +167,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_pack(__fpbits64_unpa
   }
 
   __uint32x2 __mantissa32 = ::cuda::std::bit_cast<__uint32x2>(__x.mantissa);
-  __mantissa32            = __round<_Rm>(__mantissa32, 0, __sign);
+  __mantissa32            = ::cuda::__round<_Rm>(__mantissa32, 0, __sign);
 
   const bool __is_nan = (__exponent >= (int) (0x0007ff00 - __fpemu_bias - 2048 - 1 - 128 + 0xC));
 
@@ -200,7 +199,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_pack(__fpbits64_unpa
     else
     {
       int32_t __sat_exp = 0;
-      __fp64_ovfl_sat<_Rm>(__sign, __sat_exp, __mantissa32);
+      ::cuda::__fp64_ovfl_sat<_Rm>(__sign, __sat_exp, __mantissa32);
       __mantissa32.x[1] |= (uint32_t) __sat_exp << _CCCL_FP64_HI_MANT_SHIFT;
     }
   }
@@ -208,7 +207,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_pack(__fpbits64_unpa
   __mantissa32.x[1] += __x.sign;
   return ::cuda::std::bit_cast<__fpbits64>(__mantissa32);
 }
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

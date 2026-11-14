@@ -61,9 +61,9 @@ void test_mismatch(const Policy& policy)
   { // convertible pred
     const auto res = cuda::std::mismatch(
       policy,
-      cuda::counting_iterator{int{0}},
+      cuda::counting_iterator{0},
       cuda::counting_iterator{int{size}},
-      cuda::counting_iterator{int{0}},
+      cuda::counting_iterator{0},
       cuda::std::equal_to<cuda::std::ptrdiff_t>{});
     CHECK(res == cuda::std::pair{cuda::counting_iterator<int>{size}, cuda::counting_iterator<int>{size}});
   }
@@ -81,7 +81,7 @@ void test_mismatch(const Policy& policy)
   { // convertible type and pred
     const auto res = cuda::std::mismatch(
       policy,
-      cuda::counting_iterator{int{0}},
+      cuda::counting_iterator{0},
       cuda::counting_iterator{int{size}},
       cuda::counting_iterator{short{0}},
       cuda::std::equal_to<cuda::std::ptrdiff_t>{});
@@ -99,7 +99,7 @@ C2H_TEST("cuda::std::mismatch(first1, last1, first2)", "[parallel algorithm]")
 
   SECTION("with provided stream")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_mismatch(policy);
   }
@@ -113,7 +113,7 @@ C2H_TEST("cuda::std::mismatch(first1, last1, first2)", "[parallel algorithm]")
 
   SECTION("with provided stream and memory_resource")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy =
       cuda::execution::gpu.with(cuda::get_stream, stream).with(cuda::mr::get_memory_resource, device_resource);
@@ -149,9 +149,9 @@ void test_mismatch2(const Policy& policy)
   { // convertible pred
     const auto res = cuda::std::mismatch(
       policy,
-      cuda::counting_iterator{int{0}},
+      cuda::counting_iterator{0},
       cuda::counting_iterator{int{size}},
-      cuda::counting_iterator{int{0}},
+      cuda::counting_iterator{0},
       cuda::counting_iterator{int{size}},
       cuda::std::equal_to<cuda::std::ptrdiff_t>{});
     CHECK(res == cuda::std::pair{cuda::counting_iterator<int>{size}, cuda::counting_iterator<int>{size}});
@@ -171,7 +171,7 @@ void test_mismatch2(const Policy& policy)
   { // convertible type and pred
     const auto res = cuda::std::mismatch(
       policy,
-      cuda::counting_iterator{int{0}},
+      cuda::counting_iterator{0},
       cuda::counting_iterator{int{size}},
       cuda::counting_iterator{short{0}},
       cuda::counting_iterator{short{size}},
@@ -190,7 +190,7 @@ C2H_TEST("cuda::std::mismatch(first1, last1, first2, last2, pred)", "[parallel a
 
   SECTION("with provided stream")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_mismatch2(policy);
   }
@@ -204,7 +204,7 @@ C2H_TEST("cuda::std::mismatch(first1, last1, first2, last2, pred)", "[parallel a
 
   SECTION("with provided stream and memory_resource")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy =
       cuda::execution::gpu.with(cuda::get_stream, stream).with(cuda::mr::get_memory_resource, device_resource);

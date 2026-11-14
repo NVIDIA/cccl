@@ -102,6 +102,12 @@ warnings so they are visible in PR comments instead of looking like ordinary
 no-change results. Empty slices with no warnings are omitted recursively by the
 PR comment renderer.
 
+``--jobs N`` parses trace files in parallel. Each worker reads one trace, or one
+baseline/current pair, and applies every slice, including nested children,
+before discarding the events. The default is ``min(cpu count, 8)`` because a
+large NVCC trace expands well beyond its JSON size. ``--jobs 1`` summarizes
+in-process.
+
 Single-slice examples:
 
 .. code-block:: bash

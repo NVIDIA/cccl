@@ -39,13 +39,12 @@ public:
 
   class param_type
   {
-  private:
     result_type __n_ = result_type{1};
 
   public:
     using distribution_type = chi_squared_distribution;
 
-    constexpr param_type() noexcept = default;
+    _CCCL_HIDE_FROM_ABI constexpr param_type() noexcept = default;
 
     _CCCL_HOST_DEVICE_API constexpr explicit param_type(result_type __n) noexcept
         : __n_{__n}
@@ -75,7 +74,7 @@ private:
 
 public:
   // constructor and reset functions
-  constexpr chi_squared_distribution() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr chi_squared_distribution() noexcept = default;
 
   _CCCL_HOST_DEVICE_API constexpr explicit chi_squared_distribution(result_type __n) noexcept
       : __p_{param_type{__n}}
@@ -137,7 +136,7 @@ public:
 
 #if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
-  friend ::std::basic_ostream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const chi_squared_distribution& __x)
   {
     using ostream_type                        = ::std::basic_ostream<_CharT, _Traits>;
@@ -155,7 +154,7 @@ public:
   }
 
   template <class _CharT, class _Traits>
-  friend ::std::basic_istream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is, chi_squared_distribution& __x)
   {
     using istream_type                        = ::std::basic_istream<_CharT, _Traits>;

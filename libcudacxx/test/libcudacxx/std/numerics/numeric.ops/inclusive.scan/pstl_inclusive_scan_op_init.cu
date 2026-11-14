@@ -37,7 +37,7 @@ struct sum_of_int
 {
   TEST_DEVICE_FUNC constexpr int operator()(const int val) const noexcept
   { // Eulers sum with initial value
-    return val * (val + 1) / 2 + 42;
+    return (val * (val + 1) / 2) + 42;
   }
 };
 
@@ -45,7 +45,7 @@ template <class Policy>
 void test_inclusive_scan(
   const Policy& policy, const thrust::device_vector<int>& input, thrust::device_vector<int>& output)
 {
-  cuda::transform_iterator expected{cuda::counting_iterator{1}, sum_of_int{}};
+  const cuda::transform_iterator expected{cuda::counting_iterator{1}, sum_of_int{}};
   { // empty should not access anything
     auto res = cuda::std::inclusive_scan(
       policy,
@@ -60,7 +60,7 @@ void test_inclusive_scan(
   cuda::std::fill(policy, output.begin(), output.end(), -1);
   { // same output type
     auto res =
-      cuda::std::inclusive_scan(policy, input.begin(), input.end(), output.begin(), cuda::std::plus<int>{}, int{42});
+      cuda::std::inclusive_scan(policy, input.begin(), input.end(), output.begin(), cuda::std::plus<int>{}, 42);
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
@@ -68,7 +68,7 @@ void test_inclusive_scan(
   cuda::std::fill(policy, output.begin(), output.end(), -1);
   { // same output type, conversion with binary op
     auto res =
-      cuda::std::inclusive_scan(policy, input.begin(), input.end(), output.begin(), cuda::std::plus<long>{}, int{42});
+      cuda::std::inclusive_scan(policy, input.begin(), input.end(), output.begin(), cuda::std::plus<long>{}, 42);
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
@@ -97,7 +97,7 @@ void test_inclusive_scan(
       cuda::counting_iterator{short{size + 1}},
       output.begin(),
       cuda::std::plus<int>{},
-      int{42});
+      42);
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
@@ -121,7 +121,7 @@ void test_inclusive_scan(
       cuda::counting_iterator{short{size + 1}},
       output.begin(),
       cuda::std::plus<long>{},
-      int{42});
+      42);
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
@@ -153,7 +153,7 @@ C2H_TEST("cuda::std::inclusive_scan(Iter1, Iter1, Iter2, Op, Init)", "[parallel 
 
   SECTION("with provided stream")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_inclusive_scan(policy, input, output);
   }
@@ -167,7 +167,7 @@ C2H_TEST("cuda::std::inclusive_scan(Iter1, Iter1, Iter2, Op, Init)", "[parallel 
 
   SECTION("with provided stream and memory_resource")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy =
       cuda::execution::gpu.with(cuda::get_stream, stream).with(cuda::mr::get_memory_resource, device_resource);

@@ -50,7 +50,6 @@ THRUST_NAMESPACE_BEGIN
 template <typename T, typename Alloc = thrust::device_allocator<T>>
 class device_vector : public detail::vector_base<T, Alloc>
 {
-private:
   using Parent = detail::vector_base<T, Alloc>;
 
 public:
@@ -63,41 +62,41 @@ public:
 
   /*! This constructor creates an empty \p device_vector.
    */
-  device_vector()
+  _CCCL_HOST_API device_vector()
       : Parent()
   {}
 
   /*! This constructor creates an empty \p device_vector.
    *  \param alloc The allocator to use by this device_vector.
    */
-  device_vector(const Alloc& alloc)
+  _CCCL_HOST_API device_vector(const Alloc& alloc)
       : Parent(alloc)
   {}
 
   /*! The destructor erases the elements.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST ~device_vector() {} // NOLINT(modernize-use-equals-default)
+  _CCCL_HOST_API ~device_vector() {} // NOLINT(modernize-use-equals-default)
 
   /*! This constructor creates a \p device_vector with the given
    *  size.
    *  \param n The number of elements to initially create.
    */
-  explicit device_vector(size_type n)
+  _CCCL_HOST_API explicit device_vector(size_type n)
       : Parent(n)
   {}
 
   //! This constructor creates a \p device_vector with the given size, performing only default-initialization instead of
   //! value-initialization.
   //! \param n The number of elements to initially create.
-  device_vector(size_type n, default_init_t)
+  _CCCL_HOST_API device_vector(size_type n, default_init_t)
       : Parent(n, default_init_t{})
   {}
 
   //! This constructor creates a \p device_vector with the given size, without initializing elements. It mandates that
   //! the element type is trivially default-constructible.
   //! \param n The number of elements to initially create.
-  device_vector(size_type n, no_init_t)
+  _CCCL_HOST_API device_vector(size_type n, no_init_t)
       : Parent(n, no_init_t{})
   {}
 
@@ -106,7 +105,7 @@ public:
    *  \param n The number of elements to initially create.
    *  \param alloc The allocator to use by this device_vector.
    */
-  explicit device_vector(size_type n, const Alloc& alloc)
+  _CCCL_HOST_API explicit device_vector(size_type n, const Alloc& alloc)
       : Parent(n, alloc)
   {}
 
@@ -115,7 +114,7 @@ public:
    *  \param n The number of elements to initially create.
    *  \param value An element to copy.
    */
-  explicit device_vector(size_type n, const value_type& value)
+  _CCCL_HOST_API explicit device_vector(size_type n, const value_type& value)
       : Parent(n, value)
   {}
 
@@ -125,14 +124,14 @@ public:
    *  \param value An element to copy.
    *  \param alloc The allocator to use by this device_vector.
    */
-  explicit device_vector(size_type n, const value_type& value, const Alloc& alloc)
+  _CCCL_HOST_API explicit device_vector(size_type n, const value_type& value, const Alloc& alloc)
       : Parent(n, value, alloc)
   {}
 
   /*! Copy constructor copies from an exemplar \p device_vector.
    *  \param v The \p device_vector to copy.
    */
-  device_vector(const device_vector& v)
+  _CCCL_HOST_API device_vector(const device_vector& v)
       : Parent(v)
   {}
 
@@ -140,14 +139,14 @@ public:
    *  \param v The \p device_vector to copy.
    *  \param alloc The allocator to use by this device_vector.
    */
-  device_vector(const device_vector& v, const Alloc& alloc)
+  _CCCL_HOST_API device_vector(const device_vector& v, const Alloc& alloc)
       : Parent(v, alloc)
   {}
 
   /*! Move constructor moves from another \p device_vector.
    *  \param v The device_vector to move.
    */
-  device_vector(device_vector&& v) noexcept
+  _CCCL_HOST_API device_vector(device_vector&& v) noexcept
       : Parent(::cuda::std::move(v))
   {}
 
@@ -155,14 +154,14 @@ public:
    *  \param v The device_vector to move.
    *  \param alloc The allocator to use by this device_vector.
    */
-  device_vector(device_vector&& v, const Alloc& alloc)
+  _CCCL_HOST_API device_vector(device_vector&& v, const Alloc& alloc)
       : Parent(::cuda::std::move(v), alloc)
   {}
 
   /*! Copy assign operator copies another \p device_vector with the same type.
    *  \param v The \p device_vector to copy.
    */
-  device_vector& operator=(const device_vector& v)
+  _CCCL_HOST_API device_vector& operator=(const device_vector& v)
   {
     Parent::operator=(v);
     return *this;
@@ -171,7 +170,7 @@ public:
   /*! Move assign operator moves from another \p device_vector.
    *  \param v The device_vector to move.
    */
-  device_vector& operator=(device_vector&& v) noexcept
+  _CCCL_HOST_API device_vector& operator=(device_vector&& v) noexcept
   {
     Parent::operator=(::cuda::std::move(v));
     return *this;
@@ -185,7 +184,7 @@ public:
    *  \endverbatim
    */
   template <typename OtherT, typename OtherAlloc>
-  explicit device_vector(const device_vector<OtherT, OtherAlloc>& v)
+  _CCCL_HOST_API explicit device_vector(const device_vector<OtherT, OtherAlloc>& v)
       : Parent(v)
   {}
 
@@ -197,7 +196,7 @@ public:
    *  \endverbatim
    */
   template <typename OtherT, typename OtherAlloc>
-  device_vector& operator=(const device_vector<OtherT, OtherAlloc>& v)
+  _CCCL_HOST_API device_vector& operator=(const device_vector<OtherT, OtherAlloc>& v)
   {
     Parent::operator=(v);
     return *this;
@@ -211,7 +210,7 @@ public:
    *  \endverbatim
    */
   template <typename OtherT, typename OtherAlloc>
-  device_vector(const std::vector<OtherT, OtherAlloc>& v)
+  _CCCL_HOST_API device_vector(const std::vector<OtherT, OtherAlloc>& v)
       : Parent(v)
   {}
 
@@ -223,7 +222,7 @@ public:
    *  \endverbatim
    */
   template <typename OtherT, typename OtherAlloc>
-  device_vector& operator=(const std::vector<OtherT, OtherAlloc>& v)
+  _CCCL_HOST_API device_vector& operator=(const std::vector<OtherT, OtherAlloc>& v)
   {
     Parent::operator=(v);
     return *this;
@@ -239,7 +238,7 @@ public:
    *  \endverbatim
    */
   template <typename OtherT, typename OtherAlloc>
-  device_vector(const detail::vector_base<OtherT, OtherAlloc>& v)
+  _CCCL_HOST_API device_vector(const detail::vector_base<OtherT, OtherAlloc>& v)
       : Parent(v)
   {}
 
@@ -251,7 +250,7 @@ public:
    *  \endverbatim
    */
   template <typename OtherT, typename OtherAlloc>
-  device_vector& operator=(const detail::vector_base<OtherT, OtherAlloc>& v)
+  _CCCL_HOST_API device_vector& operator=(const detail::vector_base<OtherT, OtherAlloc>& v)
   {
     Parent::operator=(v);
     return *this;
@@ -260,7 +259,7 @@ public:
   /*! This constructor builds a \p device_vector from an intializer_list.
    *  \param il The intializer_list.
    */
-  device_vector(::cuda::std::initializer_list<T> il)
+  _CCCL_HOST_API device_vector(::cuda::std::initializer_list<T> il)
       : Parent(il)
   {}
 
@@ -268,14 +267,14 @@ public:
    *  \param il The intializer_list.
    *  \param alloc The allocator to use by this device_vector.
    */
-  device_vector(::cuda::std::initializer_list<T> il, const Alloc& alloc)
+  _CCCL_HOST_API device_vector(::cuda::std::initializer_list<T> il, const Alloc& alloc)
       : Parent(il, alloc)
   {}
 
   /*! Assign an \p intializer_list with a matching element type
    *  \param il The intializer_list.
    */
-  device_vector& operator=(::cuda::std::initializer_list<T> il)
+  _CCCL_HOST_API device_vector& operator=(::cuda::std::initializer_list<T> il)
   {
     Parent::operator=(il);
     return *this;
@@ -290,7 +289,7 @@ public:
    *  \endverbatim
    */
   template <typename InputIterator>
-  device_vector(InputIterator first, InputIterator last)
+  _CCCL_HOST_API device_vector(InputIterator first, InputIterator last)
       : Parent(first, last)
   {}
 
@@ -304,7 +303,7 @@ public:
    *  \endverbatim
    */
   template <typename InputIterator>
-  device_vector(InputIterator first, InputIterator last, const Alloc& alloc)
+  _CCCL_HOST_API device_vector(InputIterator first, InputIterator last, const Alloc& alloc)
       : Parent(first, last, alloc)
   {}
 
@@ -313,7 +312,7 @@ public:
    *  \p y The second \p device_vector of interest.
    */
   // NOLINTNEXTLINE(bugprone-exception-escape)
-  friend void swap(device_vector& a, device_vector& b) noexcept(noexcept(a.swap(b)))
+  _CCCL_HOST_API friend void swap(device_vector& a, device_vector& b) noexcept(noexcept(a.swap(b)))
   {
     a.swap(b);
   }

@@ -30,9 +30,7 @@
 #include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_copy_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_object.h>
@@ -377,7 +375,7 @@ struct __optional_copy_assign_base<_Tp, __smf_availability::__available> : __opt
     return *this;
   }
 
-  __optional_copy_assign_base& operator=(__optional_copy_assign_base&&) = default;
+  _CCCL_HIDE_FROM_ABI __optional_copy_assign_base& operator=(__optional_copy_assign_base&&) = default;
 };
 
 template <class _Tp>

@@ -17,26 +17,25 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/round_down.h>
-#include <cuda/__cmath/round_up.h>
 #include <cuda/__memory/address_space.h>
 #include <cuda/__memory/align_up.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/__memory/ptr_rebind.h>
-#include <cuda/__ptx/instructions/cp_async_bulk.h>
-#include <cuda/__ptx/instructions/elect_sync.h>
-#include <cuda/__ptx/instructions/mbarrier_arrive.h>
-#include <cuda/__ptx/instructions/mbarrier_init.h>
-#include <cuda/__ptx/instructions/mbarrier_inval.h>
-#include <cuda/__ptx/instructions/mbarrier_wait.h>
+#include <cuda/__ptx/instructions/cp_async_bulk.h> // IWYU pragma: keep
+#include <cuda/__ptx/instructions/elect_sync.h> // IWYU pragma: keep
+#include <cuda/__ptx/instructions/mbarrier_arrive.h> // IWYU pragma: keep
+#include <cuda/__ptx/instructions/mbarrier_init.h> // IWYU pragma: keep
+#include <cuda/__ptx/instructions/mbarrier_inval.h> // IWYU pragma: keep
+#include <cuda/__ptx/instructions/mbarrier_wait.h> // IWYU pragma: keep
 #include <cuda/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/data.h>
 #include <cuda/std/__iterator/size.h>
 #include <cuda/std/cstdint>
@@ -104,7 +103,7 @@ private:
   /// Shared storage reference
   _TempStorage& temp_storage;
 
-  const int linear_tid{cub::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ)};
+  const int linear_tid{_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ)};
 
   // Thread selection for uniform operations
   const bool elected{__elect_thread()};
@@ -243,8 +242,8 @@ private:
     token_impl& operator=(const token_impl&) = delete;
     // NOLINTEND(modernize-use-equals-delete)
 
-    token_impl(token_impl&&)            = default;
-    token_impl& operator=(token_impl&&) = default;
+    _CCCL_HIDE_FROM_ABI token_impl(token_impl&&)            = default;
+    _CCCL_HIDE_FROM_ABI token_impl& operator=(token_impl&&) = default;
   };
 
 public:
@@ -335,10 +334,10 @@ public:
                  "Begin of global memory range needs to be aligned according to GmemAlign.");
     _CCCL_ASSERT(::cuda::is_aligned(src_ptr + num_bytes, GmemAlign),
                  "End of global memory range needs to be aligned according to GmemAlign.");
-    _CCCL_ASSERT(::cuda::is_aligned(dst_ptr, cub::detail::LoadToSharedBufferAlignBytes<T>()),
+    _CCCL_ASSERT(::cuda::is_aligned(dst_ptr, _CUB::detail::LoadToSharedBufferAlignBytes<T>()),
                  "Shared memory needs to be 16 byte aligned.");
     _CCCL_ASSERT((static_cast<int>(::cuda::std::size(smem_dst))
-                  >= cub::detail::LoadToSharedBufferSizeBytes<T, GmemAlign>(::cuda::std::size(gmem_src))),
+                  >= _CUB::detail::LoadToSharedBufferSizeBytes<T, GmemAlign>(::cuda::std::size(gmem_src))),
                  "Shared memory destination buffer must have enough space");
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     _CCCL_ASSERT(state == State::ready_to_copy || state == State::ready_to_copy_or_commit,
@@ -413,7 +412,8 @@ public:
 
   //! @brief Wait for previously committed copies to arrive. Prepare for next
   //! calls to @c CopyAsync() .
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Wait(CommitToken&&)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  Wait(CommitToken&&) // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
   {
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     _CCCL_ASSERT(state == State::committed, "Commit() must be called before Wait()");
@@ -421,7 +421,8 @@ public:
 #endif // CCCL_ENABLE_DEVICE_ASSERTIONS
 
     while (!__try_wait())
-      ;
+    {
+    }
     phase_parity ^= 1u;
   }
 

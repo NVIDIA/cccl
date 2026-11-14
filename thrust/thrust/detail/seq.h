@@ -21,11 +21,11 @@ struct seq_t
     : system::detail::sequential::execution_policy<seq_t>
     , allocator_aware_execution_policy<system::detail::sequential::execution_policy>
 {
-  constexpr seq_t() = default;
+  _CCCL_HIDE_FROM_ABI constexpr seq_t() = default;
 
   // allow any execution_policy to convert to the sequential one. required for minimum_system to pick it
   template <typename DerivedPolicy>
-  _CCCL_HOST_DEVICE seq_t(const thrust::execution_policy<DerivedPolicy>&)
+  _CCCL_HOST_DEVICE_API seq_t(const thrust::execution_policy<DerivedPolicy>&)
   {}
 };
 } // namespace detail

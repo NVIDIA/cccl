@@ -38,6 +38,7 @@
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
 #include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 
+#include <memory>
 #include <mutex>
 
 namespace cuda::experimental::stf
@@ -53,9 +54,9 @@ namespace cuda::experimental::stf
 class uncached_graph_allocator : public block_allocator_interface
 {
 public:
-  uncached_graph_allocator() = default;
+  _CCCL_HIDE_FROM_ABI uncached_graph_allocator() = default;
 
-  void*
+  _CCCL_HOST_API void*
   allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
     // This is not implemented yet
@@ -71,9 +72,14 @@ public:
     if (memory_node.is_host())
     {
       cuda_try(cudaMallocHost(&result, s));
+      // If adding the node throws, the buffer is released with that exception in flight: a failing
+      // free leaks it and is reported, it cannot become a second exception.
       SCOPE(fail)
       {
-        cudaFreeHost(&result);
+        ON_THROW(notify)
+        {
+          cuda_try<cudaFreeHost>(result);
+        };
       };
       out = cuda_try<cudaGraphAddEmptyNode>(graph, nodes.data(), nodes.size());
     }
@@ -81,8 +87,17 @@ public:
     {
       if (getenv("USE_CUDA_MALLOC"))
       {
-        cuda_safe_call(cudaGraphAddEmptyNode(&out, graph, nodes.data(), nodes.size()));
+        // Same order as the host branch: allocate first, then add the node, so a failure in
+        // either step leaves neither an orphan node in the graph nor an unreachable buffer.
         cuda_try(cudaMalloc(&result, s));
+        SCOPE(fail)
+        {
+          ON_THROW(notify)
+          {
+            cuda_try<cudaFree>(result);
+          };
+        };
+        out = cuda_try<cudaGraphAddEmptyNode>(graph, nodes.data(), nodes.size());
       }
       else
       {
@@ -95,7 +110,7 @@ public:
     return result;
   }
 
-  void deallocate(
+  _CCCL_HOST_API void deallocate(
     backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t /*sz*/) override
   {
     const cudaGraph_t graph                    = ctx.graph();
@@ -105,28 +120,28 @@ public:
     if (memory_node.is_host())
     {
       // fprintf(stderr, "TODO deallocate host memory (graph_ctx)\n");
-      cuda_safe_call(cudaGraphAddEmptyNode(&out, graph, nodes.data(), nodes.size()));
+      out = cuda_try<cudaGraphAddEmptyNode>(graph, nodes.data(), nodes.size());
     }
     else
     {
-      cuda_safe_call(cudaGraphAddMemFreeNode(&out, graph, nodes.data(), nodes.size(), ptr));
+      out = cuda_try<cudaGraphAddMemFreeNode>(graph, nodes.data(), nodes.size(), ptr);
     }
     reserved::fork_from_graph_node(ctx, out, graph, graph_stage, prereqs, "dealloc");
   }
 
-  ::std::string to_string() const override
+  _CCCL_HOST_API ::std::string to_string() const override
   {
     return "uncached graph allocator";
   }
 
   // Nothing is done as all deallocation are done immediately
-  event_list deinit(backend_ctx_untyped& /* ctx */) override
+  _CCCL_HOST_API event_list deinit(backend_ctx_untyped& /* ctx */) override
   {
     return event_list();
   }
 
 private:
-  void* add_mem_alloc_node(
+  _CCCL_HOST_API void* add_mem_alloc_node(
     const data_place& memory_node,
     cudaGraphNode_t& out,
     cudaGraph_t graph,
@@ -136,7 +151,7 @@ private:
     static const int ndevices = cuda_try<cudaGetDeviceCount>();
     // We need to declare who may access this buffer
     ::std::vector<cudaMemAccessDesc> desc(ndevices);
-    for (int peer : each(0, ndevices))
+    for (const int peer : each(0, ndevices))
     {
       desc[peer].location.type = cudaMemLocationTypeDevice;
       desc[peer].location.id   = peer;
@@ -164,9 +179,9 @@ private:
     params.poolProps.location.id = device_ordinal(memory_node);
     params.accessDescs           = desc.data();
     params.accessDescCount       = size_t(ndevices);
-    params.bytesize              = size_t(s);
+    params.bytesize              = s;
 
-    cuda_safe_call(cudaGraphAddMemAllocNode(&out, graph, input_nodes.data(), input_nodes.size(), &params));
+    out = cuda_try<cudaGraphAddMemAllocNode>(graph, input_nodes.data(), input_nodes.size(), &params);
 
     return params.dptr;
   }
@@ -193,12 +208,12 @@ private:
  */
 class graph_ctx : public backend_ctx<graph_ctx>
 {
-  using backend_impl = typename backend_ctx<graph_ctx>::impl;
+  using backend_impl = backend_ctx<graph_ctx>::impl;
 
   class impl : public backend_impl
   {
   public:
-    impl(async_resources_handle _async_resources = async_resources_handle(nullptr))
+    _CCCL_HOST_API impl(async_resources_handle _async_resources = async_resources_handle(nullptr))
         : backend_impl(mv(_async_resources))
         , _graph(shared_cuda_graph())
     {
@@ -206,7 +221,7 @@ class graph_ctx : public backend_ctx<graph_ctx>
     }
 
     // Note that graph contexts with an explicit graph passed by the user cannot use stages
-    impl(cudaGraph_t g, async_resources_handle _async_resources = async_resources_handle(nullptr))
+    _CCCL_HOST_API impl(cudaGraph_t g, async_resources_handle _async_resources = async_resources_handle(nullptr))
         : backend_impl(mv(_async_resources))
         , _graph(wrap_cuda_graph(g))
         , explicit_graph(true)
@@ -215,9 +230,9 @@ class graph_ctx : public backend_ctx<graph_ctx>
     }
 
     // Constructor with explicit graph, user stream, and async resources
-    impl(cudaGraph_t g,
-         cudaStream_t user_stream,
-         async_resources_handle _async_resources = async_resources_handle(nullptr))
+    _CCCL_HOST_API impl(cudaGraph_t g,
+                        cudaStream_t user_stream,
+                        async_resources_handle _async_resources = async_resources_handle(nullptr))
         : backend_impl(mv(_async_resources))
         , submitted_stream(user_stream)
         , _graph(wrap_cuda_graph(g))
@@ -227,43 +242,43 @@ class graph_ctx : public backend_ctx<graph_ctx>
       reserved::backend_ctx_setup_allocators<impl, uncached_graph_allocator>(*this);
     }
 
-    ~impl() override {}
+    _CCCL_HIDE_FROM_ABI ~impl() override = default;
 
-    ::std::string to_string() const override
+    _CCCL_HOST_API ::std::string to_string() const override
     {
       return "graph backend context";
     }
 
     // Due to circular dependencies, we need to define it here, and not in backend_ctx_untyped
-    void update_uncached_allocator(block_allocator_untyped custom) override
+    _CCCL_HOST_API void update_uncached_allocator(block_allocator_untyped custom) override
     {
       reserved::backend_ctx_update_uncached_allocator(*this, mv(custom));
     }
 
-    cudaGraph_t graph() const override
+    _CCCL_HOST_API cudaGraph_t graph() const override
     {
       assert(_graph.get());
       return *_graph;
     }
 
-    bool is_graph_ctx() const override
+    _CCCL_HOST_API bool is_graph_ctx() const override
     {
       return true;
     }
 
-    executable_graph_cache_stat* graph_get_cache_stat() override
+    _CCCL_HOST_API executable_graph_cache_stat* graph_get_cache_stat() override
     {
       return &cache_stats;
     }
 
-    size_t stage() const override
+    _CCCL_HOST_API size_t stage() const override
     {
       return graph_stage;
     }
 
     // The completion of the CUDA graph implies the completion of all nodes in
     // the graph
-    bool track_dangling_events() const override
+    _CCCL_HOST_API bool track_dangling_events() const override
     {
       return false;
     }
@@ -302,11 +317,11 @@ public:
 
   /// @brief This type is copyable, assignable, and movable. However, copies have reference semantics.
   ///@{
-  graph_ctx(async_resources_handle handle = async_resources_handle(nullptr))
+  _CCCL_HOST_API graph_ctx(async_resources_handle handle = async_resources_handle(nullptr))
       : backend_ctx<graph_ctx>(::std::make_shared<impl>(mv(handle)))
   {}
 
-  graph_ctx(cudaStream_t user_stream, async_resources_handle handle = async_resources_handle(nullptr))
+  _CCCL_HOST_API graph_ctx(cudaStream_t user_stream, async_resources_handle handle = async_resources_handle(nullptr))
       : backend_ctx<graph_ctx>(::std::make_shared<impl>(mv(handle)))
   {
     auto& state = this->state();
@@ -318,11 +333,12 @@ public:
   }
 
   /// @brief Constructor taking a user-provided graph. User code is not supposed to destroy the graph later.
-  graph_ctx(cudaGraph_t g, async_resources_handle handle = async_resources_handle(nullptr))
+  _CCCL_HOST_API graph_ctx(cudaGraph_t g, async_resources_handle handle = async_resources_handle(nullptr))
       : backend_ctx<graph_ctx>(::std::make_shared<impl>(g, mv(handle)))
   {}
 
   /// @brief Constructor with explicit graph, support stream, and async resources
+  _CCCL_HOST_API
   graph_ctx(cudaGraph_t g, cudaStream_t user_stream, async_resources_handle handle = async_resources_handle(nullptr))
       : backend_ctx<graph_ctx>(::std::make_shared<impl>(g, user_stream, mv(handle)))
   {}
@@ -334,14 +350,14 @@ public:
    * @brief Creates a typed task on the specified execution place
    */
   template <typename... Deps>
-  auto task(exec_place e_place, task_dep<Deps>... deps)
+  _CCCL_HOST_API auto task(exec_place e_place, task_dep<Deps>... deps)
   {
     return graph_task<Deps...>(
       *this, get_graph(), this->state().graph_mutex, get_graph_stage(), mv(e_place), mv(deps)...);
   }
 
   // submit a new stage : this will submit a graph in a stream that we return
-  cudaStream_t fence()
+  _CCCL_HOST_API cudaStream_t fence()
   {
     change_stage();
     // Get the stream used to submit the graph of the stage we have
@@ -349,7 +365,7 @@ public:
     return this->state().submitted_stream;
   }
 
-  void finalize()
+  _CCCL_HOST_API void finalize()
   {
     _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::finalized, "");
     auto& state = this->state();
@@ -363,17 +379,29 @@ public:
     // Make sure we release resources attached to this context
     state.release_ctx_resources(state.submitted_stream);
 
+    // Finalization has to complete even when the synchronize below reports a failure, which is
+    // the likely case rather than the exotic one: cudaStreamSynchronize is where asynchronous
+    // errors from earlier work surface. Leaving the context in `submitted` with its resources
+    // already released makes it unusable AND unretryable -- a second finalize() re-enters
+    // release_ctx_resources and trips its "already released" assertion. The guard is armed
+    // after that release so that a failure there still leaves the context retryable, which it
+    // is today: release() only sets its released flag once it has finished.
+    //
+    // The error still propagates; the caller simply gets a consistent context along with it.
+    SCOPE(exit)
+    {
+      state.submitted_stream = nullptr;
+      state.cleanup();
+      set_phase(backend_ctx_untyped::phase::finalized);
+    };
+
     if (state.blocking_finalize)
     {
       cuda_try(cudaStreamSynchronize(state.submitted_stream));
     }
-
-    state.submitted_stream = nullptr;
-    state.cleanup();
-    set_phase(backend_ctx_untyped::phase::finalized);
   }
 
-  void submit(cudaStream_t stream = nullptr)
+  _CCCL_HOST_API void submit(cudaStream_t stream = nullptr)
   {
     _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::submitted, "");
     auto& state = this->state();
@@ -396,8 +424,6 @@ public:
     // Only for the latest graph ... Will also do write-back and cleanup
     instantiate();
 
-    // cuda_safe_call(cudaStreamSynchronize(state.submitted_stream));
-
     cuda_try(cudaGraphLaunch(*state.exec_graph, state.submitted_stream));
 
     state.submitted = true;
@@ -405,7 +431,7 @@ public:
   }
 
   // Start a new stage !
-  void change_stage()
+  _CCCL_HOST_API void change_stage()
   {
     auto& state = this->state();
 
@@ -424,29 +450,29 @@ public:
   }
 
   /// @brief Get the "support" graph associated with the context
-  ::std::shared_ptr<cudaGraph_t> get_shared_graph() const
+  _CCCL_HOST_API ::std::shared_ptr<cudaGraph_t> get_shared_graph() const
   {
     return state()._graph;
   }
 
-  cudaGraph_t& get_graph() const
+  _CCCL_HOST_API cudaGraph_t& get_graph() const
   {
     assert(state()._graph);
     return *(state()._graph);
   }
 
-  size_t get_graph_stage() const
+  _CCCL_HOST_API size_t get_graph_stage() const
   {
     return state().graph_stage;
   }
 
-  auto get_exec_graph() const
+  _CCCL_HOST_API auto get_exec_graph() const
   {
     return state().exec_graph;
   }
 
   /* Make sure all pending operations are finished, and release resources */
-  ::std::shared_ptr<cudaGraph_t> finalize_as_graph()
+  _CCCL_HOST_API ::std::shared_ptr<cudaGraph_t> finalize_as_graph()
   {
     // Write-back data and erase automatically created data instances
     get_state().erase_all_logical_data();
@@ -466,18 +492,18 @@ public:
   }
 
   // Execute the CUDA graph in the provided stream.
-  ::std::shared_ptr<cudaGraphExec_t> instantiate()
+  _CCCL_HOST_API ::std::shared_ptr<cudaGraphExec_t> instantiate()
   {
-    ::std::shared_ptr<cudaGraph_t> g = finalize_as_graph();
+    const ::std::shared_ptr<cudaGraph_t> g = finalize_as_graph();
 
     size_t nedges;
     size_t nnodes;
 
-    cuda_safe_call(cudaGraphGetNodes(*g, nullptr, &nnodes));
+    cuda_try(cudaGraphGetNodes(*g, nullptr, &nnodes));
 #if _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphGetEdges(*g, nullptr, nullptr, nullptr, &nedges));
+    cuda_try(cudaGraphGetEdges(*g, nullptr, nullptr, nullptr, &nedges));
 #else // _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphGetEdges(*g, nullptr, nullptr, &nedges));
+    cuda_try(cudaGraphGetEdges(*g, nullptr, nullptr, &nedges));
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
     auto& state = this->state();
@@ -495,8 +521,8 @@ public:
     // the cache
     if (get_graph_cache_policy().has_value())
     {
-      ::std::function<bool()> policy = get_graph_cache_policy().value();
-      use_cache                      = policy();
+      const ::std::function<bool()> policy = get_graph_cache_policy().value();
+      use_cache                            = policy();
     }
 
     if (use_cache)
@@ -530,33 +556,34 @@ public:
     return state.exec_graph;
   }
 
-  void display_graph_info(cudaGraph_t g)
+  _CCCL_HOST_API void display_graph_info(cudaGraph_t g)
   {
     size_t numNodes;
-    cuda_safe_call(cudaGraphGetNodes(g, nullptr, &numNodes));
+    cuda_try(cudaGraphGetNodes(g, nullptr, &numNodes));
 
     size_t numEdges;
 #if _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, nullptr, &numEdges));
+    cuda_try(cudaGraphGetEdges(g, nullptr, nullptr, nullptr, &numEdges));
 #else // _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, &numEdges));
+    cuda_try(cudaGraphGetEdges(g, nullptr, nullptr, &numEdges));
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
     cuuint64_t mem_attr;
-    cuda_safe_call(cudaDeviceGetGraphMemAttribute(0, cudaGraphMemAttrUsedMemHigh, &mem_attr));
+    cuda_try(cudaDeviceGetGraphMemAttribute(0, cudaGraphMemAttrUsedMemHigh, &mem_attr));
 
     // fprintf(stderr, "INSTANTIATING graph %p with %ld nodes %ld edges - MEM %ld\n", g, numNodes, numEdges,
     // mem_attr);
   }
 
   // flags = cudaGraphDebugDotFlagsVerbose to display all available debug information
-  void print_to_dot(const ::std::string& filename, enum cudaGraphDebugDotFlags flags = cudaGraphDebugDotFlags(0))
+  _CCCL_HOST_API void print_to_dot(const ::std::string& filename,
+                                   enum cudaGraphDebugDotFlags flags = cudaGraphDebugDotFlags(0)) const
   {
-    cudaGraphDebugDotPrint(get_graph(), filename.c_str(), flags);
+    cuda_try(cudaGraphDebugDotPrint(get_graph(), filename.c_str(), flags));
   }
 
   template <typename T>
-  auto wait(cuda::experimental::stf::logical_data<T>& ldata)
+  _CCCL_HOST_API auto wait(cuda::experimental::stf::logical_data<T>& ldata)
   {
     if constexpr (::cuda::std::is_same_v<T, void_interface>)
     {
@@ -566,7 +593,7 @@ public:
 
       /* This forces the completion of the host callback, so that the host
        * thread can use it as a synchronization point for dynamic control flow */
-      cuda_safe_call(cudaStreamSynchronize(fence()));
+      cuda_try<cudaStreamSynchronize>(fence());
     }
     else
     {
@@ -578,24 +605,24 @@ public:
 
       /* This forces the completion of the host callback, so that the host
        * thread can use the content for dynamic control flow */
-      cuda_safe_call(cudaStreamSynchronize(fence()));
+      cuda_try<cudaStreamSynchronize>(fence());
 
       return out;
     }
   }
 
 private:
-  impl& state()
+  _CCCL_HOST_API impl& state()
   {
     return dynamic_cast<impl&>(get_state());
   }
-  const impl& state() const
+  _CCCL_HOST_API const impl& state() const
   {
     return dynamic_cast<const impl&>(get_state());
   }
 
   /// @brief Inserts an empty node that depends on all pending operations
-  cudaStream_t fence_impl(backend_ctx_untyped& bctx)
+  _CCCL_HOST_API cudaStream_t fence_impl(backend_ctx_untyped& bctx)
   {
     auto& state = this->state();
 
@@ -605,8 +632,7 @@ private:
     ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(bctx, prereq_fence, graph_stage);
 
     // Create an empty graph node
-    cudaGraphNode_t n;
-    cuda_safe_call(cudaGraphAddEmptyNode(&n, get_graph(), nodes.data(), nodes.size()));
+    const cudaGraphNode_t n = cuda_try<cudaGraphAddEmptyNode>(get_graph(), nodes.data(), nodes.size());
 
     reserved::fork_from_graph_node(*this, n, get_graph(), graph_stage, prereq_fence, "fence");
 
@@ -614,15 +640,20 @@ private:
   }
 
   // Instantiate a CUDA graph
-  static ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
+  _CCCL_HOST_API static ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
   {
     // Custom deleter specifically for cudaGraphExec_t. The handle is
     // value-initialized and stays null if instantiation throws: do not
     // destroy it in that case (that would mask the instantiation error).
+    // A deleter cannot throw; a failing destroy leaks the handle and is
+    // reported, with its location, rather than dropped silently.
     auto cudaGraphExecDeleter = [](cudaGraphExec_t* pGraphExec) {
       if (*pGraphExec)
       {
-        cudaGraphExecDestroy(*pGraphExec);
+        ON_THROW(notify)
+        {
+          cuda_try<cudaGraphExecDestroy>(*pGraphExec);
+        };
       }
       delete pGraphExec;
     };
@@ -635,13 +666,27 @@ private:
   }
 
   // Creates a new CUDA graph and wrap it into a shared_ptr
-  static ::std::shared_ptr<cudaGraph_t> shared_cuda_graph()
+  _CCCL_HOST_API static ::std::shared_ptr<cudaGraph_t> shared_cuda_graph()
   {
+    // Same precautions as cudaGraphExecDeleter above, for the same reasons. A custom deleter
+    // replaces the default `delete`, so it has to free the cell itself. And the handle is
+    // value-initialized so it stays null if cudaGraphCreate throws, since destroying an
+    // indeterminate handle is undefined behaviour rather than a no-op.
+    //
+    // Not a bare call: a failed destroy would otherwise be dropped silently and leave a sticky
+    // error to surface at some later, unrelated CUDA call. Reported here, with its location.
     auto cudaGraphDeleter = [](cudaGraph_t* pGraph) {
-      cudaGraphDestroy(*pGraph);
+      if (*pGraph)
+      {
+        ON_THROW(notify)
+        {
+          cuda_try<cudaGraphDestroy>(*pGraph);
+        };
+      }
+      delete pGraph;
     };
 
-    ::std::shared_ptr<cudaGraph_t> res(new cudaGraph_t, cudaGraphDeleter);
+    ::std::shared_ptr<cudaGraph_t> res(new cudaGraph_t{}, cudaGraphDeleter);
 
     cuda_try(cudaGraphCreate(res.get(), 0));
 
@@ -649,19 +694,16 @@ private:
   }
 
   // Wrap an existing CUDA graph into a shared_ptr, the destruction of the graph is let to the application
-  static ::std::shared_ptr<cudaGraph_t> wrap_cuda_graph(cudaGraph_t g)
+  _CCCL_HOST_API static ::std::shared_ptr<cudaGraph_t> wrap_cuda_graph(cudaGraph_t g)
   {
-    // Allocate memory for a new cudaGraph_t and copy the existing graph to it
-    cudaGraph_t* pGraph = new cudaGraph_t;
-    *pGraph             = g;
-
-    // There is no custom deleter : only the pointer itself will be destroyed
-    ::std::shared_ptr<cudaGraph_t> res(pGraph);
-
-    return res;
+    // No custom deleter: the graph's lifetime belongs to the application, so only the cell
+    // holding the handle is freed. make_shared keeps that allocation exception-safe -- a raw
+    // `new` followed by a throwing shared_ptr construction would leak it -- and folds the
+    // control block into the same allocation.
+    return ::std::make_shared<cudaGraph_t>(g);
   }
 
-  cudaStream_t submit_one_stage(cudaGraph_t g, size_t stage)
+  _CCCL_HOST_API cudaStream_t submit_one_stage(cudaGraph_t g, size_t stage)
   {
     auto& state = this->state();
     // TODO rework to make sure we don't push a specific stream later ?
@@ -671,16 +713,14 @@ private:
       state.submitted_stream = pick_stream();
       assert(state.submitted_stream != nullptr);
     }
-    //        cuda_safe_call(cudaStreamSynchronize(state.submitted_stream));
-
     size_t nedges;
     size_t nnodes;
 
-    cuda_safe_call(cudaGraphGetNodes(g, nullptr, &nnodes));
+    cuda_try(cudaGraphGetNodes(g, nullptr, &nnodes));
 #if _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, nullptr, &nedges));
+    cuda_try(cudaGraphGetEdges(g, nullptr, nullptr, nullptr, &nedges));
 #else // _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, &nedges));
+    cuda_try(cudaGraphGetEdges(g, nullptr, nullptr, &nedges));
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
     cudaGraphExec_t local_exec_graph = nullptr;
@@ -688,6 +728,7 @@ private:
     // fprintf(stderr, "Instantiate stage %ld\n", stage);
     display_graph_info(g);
 
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0
         ::std::string name = "stage" + ::std::to_string(stage) + ".dot";
         cudaGraphDebugDotPrint(g, name.c_str(), cudaGraphDebugDotFlagsVerbose);
@@ -722,7 +763,7 @@ private:
       auto e_graph_ptr = graph_instantiate(g);
 
       // Save for future use
-      state.previous_exec_graphs.push_back(::std::make_tuple(nnodes, nedges, e_graph_ptr, stage));
+      state.previous_exec_graphs.emplace_back(nnodes, nedges, e_graph_ptr, stage);
 
       local_exec_graph = *e_graph_ptr;
     }
@@ -733,12 +774,12 @@ private:
   }
 
 public:
-  friend inline cudaGraph_t ctx_to_graph(backend_ctx_untyped& ctx)
+  _CCCL_HOST_API friend cudaGraph_t ctx_to_graph(backend_ctx_untyped& ctx)
   {
     return ctx.graph();
   }
 
-  friend inline size_t ctx_to_graph_stage(backend_ctx_untyped& ctx)
+  _CCCL_HOST_API friend size_t ctx_to_graph_stage(backend_ctx_untyped& ctx)
   {
     return ctx.stage();
   }
@@ -749,58 +790,79 @@ public:
 UNITTEST("movable graph_ctx")
 {
   graph_ctx ctx;
-  graph_ctx ctx2 = mv(ctx);
+  const graph_ctx ctx2 = mv(ctx);
 };
 
 UNITTEST("copyable graph_ctx")
 {
-  graph_ctx ctx;
-  graph_ctx ctx2 = ctx;
+  const graph_ctx ctx;
+  // NOLINTNEXTLINE(performance-unnecessary-copy-initialization) -- the copy is what this test exercises
+  const graph_ctx ctx2 = ctx;
 };
 
 UNITTEST("movable graph_task<>")
 {
   graph_ctx ctx;
-  graph_task<> t     = ctx.task();
-  graph_task<> t_cpy = mv(t);
+  graph_task<> t           = ctx.task();
+  const graph_task<> t_cpy = mv(t);
 };
 
 UNITTEST("set_symbol on graph_task and graph_task<>")
 {
+  // Should a step throw, the guards below end the tasks and unpin the buffers, in that order. Each
+  // task lives in its own block, since a task holds its data locked until it ends.
   graph_ctx ctx;
 
-  double X[1024], Y[1024];
+  double X[1024];
+  double Y[1024];
   auto lX = ctx.logical_data(X);
   auto lY = ctx.logical_data(Y);
 
-  pin_memory(X);
-  pin_memory(Y);
+  cuda_safe_call(pin_memory(X));
+  SCOPE(exit)
+  {
+    unpin_memory(X);
+  };
+  cuda_safe_call(pin_memory(Y));
+  SCOPE(exit)
+  {
+    unpin_memory(Y);
+  };
+  // SCOPE(success), since finalize() may throw: a failing step leaves the context alone and its
+  // own exception propagates, instead of an exit guard aborting while unwinding.
+  SCOPE(success)
+  {
+    ctx.finalize();
+  };
 
-  graph_task<> t = ctx.task();
-  t.add_deps(lX.rw(), lY.rw());
-  t.set_symbol("graph_task<>");
-  t.start();
-  cudaGraphNode_t n;
-  cuda_safe_call(cudaGraphAddEmptyNode(&n, t.get_graph(), nullptr, 0));
-  t.end();
+  {
+    graph_task<> t = ctx.task();
+    t.add_deps(lX.rw(), lY.rw());
+    t.set_symbol("graph_task<>");
+    t.start();
+    SCOPE(exit)
+    {
+      t.end();
+    };
+    ::std::ignore = cuda_try<cudaGraphAddEmptyNode>(t.get_graph(), nullptr, 0);
+  }
 
-  graph_task<slice<double>, slice<double>> t2 = ctx.task(lX.rw(), lY.rw());
-  t2.set_symbol("graph_task");
-  t2.start();
-  cudaGraphNode_t n2;
-  cuda_safe_call(cudaGraphAddEmptyNode(&n2, t2.get_graph(), nullptr, 0));
-  t2.end();
-
-  ctx.finalize();
-
-  unpin_memory(X);
-  unpin_memory(Y);
+  {
+    graph_task<slice<double>, slice<double>> t2 = ctx.task(lX.rw(), lY.rw());
+    t2.set_symbol("graph_task");
+    t2.start();
+    SCOPE(exit)
+    {
+      t2.end();
+    };
+    ::std::ignore = cuda_try<cudaGraphAddEmptyNode>(t2.get_graph(), nullptr, 0);
+  }
 };
 
 #  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 namespace reserved
 {
-inline void unit_test_graph_stage()
+_CCCL_HOST_API inline void unit_test_graph_stage()
 {
   graph_ctx ctx;
 
@@ -810,10 +872,10 @@ inline void unit_test_graph_stage()
   ::std::vector<double> A(N);
   for (size_t i = 0; i < N; i++)
   {
-    A[i] = 1.0 * i;
+    A[i] = 1.0 * static_cast<double>(i);
   }
 
-  pin_memory(A);
+  cuda_safe_call(pin_memory(A));
 
   auto lA = ctx.logical_data(make_slice(A.data(), N));
 
@@ -831,7 +893,7 @@ inline void unit_test_graph_stage()
 
   for (size_t i = 0; i < N; i++)
   {
-    double Ai_ref = 1.0 * i;
+    double Ai_ref = 1.0 * static_cast<double>(i);
     for (size_t k = 0; k < NITER; k++)
     {
       Ai_ref = cos(Ai_ref);
@@ -848,7 +910,7 @@ UNITTEST("graph with stage")
   unit_test_graph_stage();
 };
 
-inline void unit_test_graph_empty_stage()
+_CCCL_HOST_API inline void unit_test_graph_empty_stage()
 {
   graph_ctx ctx;
 
@@ -858,10 +920,10 @@ inline void unit_test_graph_empty_stage()
   double A[N];
   for (size_t i = 0; i < N; i++)
   {
-    A[i] = 1.0 * i;
+    A[i] = 1.0 * static_cast<double>(i);
   }
 
-  pin_memory(A);
+  cuda_safe_call(pin_memory(A));
 
   auto lA = ctx.logical_data(A);
 
@@ -881,7 +943,7 @@ inline void unit_test_graph_empty_stage()
 
   for (size_t i = 0; i < N; i++)
   {
-    double Ai_ref = 1.0 * i;
+    double Ai_ref = 1.0 * static_cast<double>(i);
     for (size_t k = 0; k < NITER; k++)
     {
       Ai_ref = cos(Ai_ref);
@@ -898,7 +960,7 @@ UNITTEST("graph with empty stage")
   unit_test_graph_empty_stage();
 };
 
-inline void unit_test_graph_stage_2()
+_CCCL_HOST_API inline void unit_test_graph_stage_2()
 {
   graph_ctx ctx;
 
@@ -908,10 +970,10 @@ inline void unit_test_graph_stage_2()
   double A[N];
   for (size_t i = 0; i < N; i++)
   {
-    A[i] = 1.0 * i;
+    A[i] = 1.0 * static_cast<double>(i);
   }
 
-  pin_memory(A);
+  cuda_safe_call(pin_memory(A));
 
   auto lA = ctx.logical_data(A);
 
@@ -939,7 +1001,7 @@ inline void unit_test_graph_stage_2()
 
   for (size_t i = 0; i < N; i++)
   {
-    double Ai_ref = 1.0 * i;
+    double Ai_ref = 1.0 * static_cast<double>(i);
     for (size_t k = 0; k < NITER; k++)
     {
       Ai_ref = ((k % 2) == 0) ? cos(Ai_ref) : sin(Ai_ref);
@@ -956,7 +1018,7 @@ UNITTEST("graph with stage 2")
   unit_test_graph_stage_2();
 };
 
-inline void unit_test_graph_stage_3()
+_CCCL_HOST_API inline void unit_test_graph_stage_3()
 {
   graph_ctx ctx;
 
@@ -967,12 +1029,12 @@ inline void unit_test_graph_stage_3()
   double B[N];
   for (size_t i = 0; i < N; i++)
   {
-    A[i] = 1.0 * i;
-    B[i] = -1.0 * i;
+    A[i] = 1.0 * static_cast<double>(i);
+    B[i] = -1.0 * static_cast<double>(i);
   }
 
-  pin_memory(A);
-  pin_memory(B);
+  cuda_safe_call(pin_memory(A));
+  cuda_safe_call(pin_memory(B));
 
   auto lA = ctx.logical_data(A);
   auto lB = ctx.logical_data(B);
@@ -1001,8 +1063,8 @@ inline void unit_test_graph_stage_3()
 
   for (size_t i = 0; i < N; i++)
   {
-    double Ai_ref = 1.0 * i;
-    double Bi_ref = -1.0 * i;
+    double Ai_ref = 1.0 * static_cast<double>(i);
+    double Bi_ref = -1.0 * static_cast<double>(i);
     for (size_t k = 0; k < NITER; k++)
     {
       if ((k % 2) == 0)
@@ -1028,10 +1090,13 @@ UNITTEST("graph with stage 3")
   unit_test_graph_stage_3();
 };
 
-inline void unit_test_launch_graph()
+_CCCL_HOST_API inline void unit_test_launch_graph()
 {
   graph_ctx ctx;
-  SCOPE(exit)
+  // finalize() submits pending work and synchronizes, so it belongs on the normal path only:
+  // finalizing a context that is being torn down by an exception is neither meaningful nor
+  // safe, and SCOPE(success) is the flavor whose body may throw.
+  SCOPE(success)
   {
     ctx.finalize();
   };
@@ -1055,7 +1120,7 @@ UNITTEST("basic launch test (graph_ctx)")
   unit_test_launch_graph();
 };
 
-inline void unit_test_launch_many_graph_ctx()
+_CCCL_HOST_API inline void unit_test_launch_many_graph_ctx()
 {
   // Stress the allocators and all resources !
   for (size_t i = 0; i < 256; i++)

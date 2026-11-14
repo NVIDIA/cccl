@@ -57,6 +57,15 @@ C2H_CCCLRT_TEST("locality domain memory pool", "[memory_resource][locality_domai
 {
   test::skip_if_unsupported_memory_pool<cuda::device_memory_pool_ref>();
 
+#  if _CCCL_CTK_AT_LEAST(13, 4)
+  // Locality domains require a CUDA 13.4 driver.
+  if (test::cuda_driver_version() < 13040)
+  {
+    SUCCEED("Driver is too old for locality domain tests (requires CUDA 13.4 / R615 or later)");
+    return;
+  }
+#  endif // _CCCL_CTK_AT_LEAST(13, 4)
+
   SECTION("Every domain has a pool with a real handle")
   {
     for (auto dev : cuda::devices)
@@ -212,7 +221,7 @@ C2H_CCCLRT_TEST("locality domain memory pool", "[memory_resource][locality_domai
   {
     for (auto dev : cuda::devices)
     {
-      cuda::__ensure_current_context guard{dev};
+      const cuda::__ensure_current_context guard{dev};
 
       for (auto& domain : dev.__locality_domains())
       {

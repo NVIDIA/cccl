@@ -71,19 +71,19 @@ class thread_hierarchy
   template <auto x, auto y, auto... subspec>
   struct inner_t<x, y, subspec...>
   {
-    using type = thread_hierarchy<subspec...>;
+    using type _CCCL_NODEBUG = thread_hierarchy<subspec...>;
   };
 
 public:
   // For tag-types
-  thread_hierarchy() = default;
+  _CCCL_HIDE_FROM_ABI thread_hierarchy() = default;
 
   template <auto...>
   friend class thread_hierarchy;
 
   // Construct from an outer thread hierarchy (peel off one level)
   template <bool outer_sync, size_t outer_width>
-  _CCCL_HOST_DEVICE thread_hierarchy(const thread_hierarchy<outer_sync, outer_width, spec...>& outer)
+  _CCCL_HOST_DEVICE_API thread_hierarchy(const thread_hierarchy<outer_sync, outer_width, spec...>& outer)
       : devid(outer.devid)
       , launch_config(outer.launch_config)
       , cg_system(outer.cg_system)
@@ -102,14 +102,11 @@ public:
    *  on the hardware, and generates a thread_hierarchy object that can be passed
    *  to kernels as an argument
    */
-  thread_hierarchy(int devid, interpreted_execution_policy<spec...>& p)
+  _CCCL_HOST_API thread_hierarchy(int devid, interpreted_execution_policy<spec...>& p)
       : devid(devid)
+      , launch_config(p.get_config())
+      , cg_system(p.get_cg_system())
   {
-    launch_config = p.get_config();
-
-    // If we may synchronize across multiple devices.
-    cg_system = p.cg_system;
-
     size_t i = 0;
     for (auto& l : p.get_levels())
     {
@@ -125,30 +122,30 @@ public:
    * @param level The level
    * @return The width (0 if width is dynamic)
    */
-  static inline constexpr size_t static_width(size_t level)
+  _CCCL_HOST_API static constexpr size_t static_width(size_t level)
   {
     size_t data[] = {spec...};
-    return data[1 + 2 * level];
+    return data[1 + (2 * level)];
   }
 
-  _CCCL_HOST_DEVICE const ::std::array<size_t, 3>& get_config() const
+  _CCCL_HOST_DEVICE_API const ::std::array<size_t, 3>& get_config() const
   {
     return launch_config;
   }
 
   // Rank from the root
-  _CCCL_HOST_DEVICE size_t rank([[maybe_unused]] int level, [[maybe_unused]] int root_level) const
+  _CCCL_HOST_DEVICE_API size_t rank([[maybe_unused]] int level, [[maybe_unused]] int root_level) const
   {
     NV_IF_ELSE_TARGET(
       NV_IS_DEVICE,
-      (int tid = threadIdx.x; int bid = blockIdx.x;
+      (const int tid = threadIdx.x; const int bid = blockIdx.x;
        // config : ndevs    = launch_config[0]
        //          nblocks  = launch_config[1]
        //          nthreads = launch_config[2]
        const int nblocks  = launch_config[1];
        const int nthreads = launch_config[2];
 
-       int global_id = tid + bid * nthreads + devid * nblocks * nthreads;
+       int global_id = tid + (bid * nthreads) + (devid * nblocks * nthreads);
 
        // An entry at level l represents a total of width[level] * width[level+1] ... * width[depth - 1] threads.
        size_t level_effective_size      = 1;
@@ -172,7 +169,7 @@ public:
     _CCCL_UNREACHABLE();
   }
 
-  _CCCL_HOST_DEVICE size_t size([[maybe_unused]] int level, [[maybe_unused]] int root_level) const
+  _CCCL_HOST_DEVICE_API size_t size([[maybe_unused]] int level, [[maybe_unused]] int root_level) const
   {
     if constexpr (depth == 0)
     {
@@ -192,17 +189,17 @@ public:
     _CCCL_UNREACHABLE();
   }
 
-  _CCCL_HOST_DEVICE size_t size(int level = int(depth) - 1) const
+  _CCCL_HOST_DEVICE_API size_t size(int level = int(depth) - 1) const
   {
     return size(level, -1);
   }
 
-  _CCCL_HOST_DEVICE size_t rank(int level = int(depth) - 1) const
+  _CCCL_HOST_DEVICE_API size_t rank(int level = int(depth) - 1) const
   {
     return rank(level, -1);
   }
 
-  _CCCL_HOST_DEVICE void sync([[maybe_unused]] int level = 0)
+  _CCCL_HOST_DEVICE_API void sync([[maybe_unused]] int level = 0)
   {
     assert(level >= 0);
     assert(level < depth);
@@ -239,8 +236,8 @@ public:
                      return;
                    }
 
-                   size_t ndevs             = launch_config[0];
-                   size_t system_scope_size = device_scope_size * ndevs;
+                   size_t ndevs                   = launch_config[0];
+                   const size_t system_scope_size = device_scope_size * ndevs;
                    if (target_size == system_scope_size)
                    {
                      cg_system.sync(devid, ndevs);
@@ -253,13 +250,13 @@ public:
   }
 
   template <typename T, typename... Others>
-  auto remove_first_tuple_element(const ::std::tuple<T, Others...>& t)
+  _CCCL_HOST_API auto remove_first_tuple_element(const ::std::tuple<T, Others...>& t)
   {
     return ::std::make_tuple(::std::get<Others>(t)...);
   }
 
   template <typename shape_t, typename P, typename... sub_partitions>
-  _CCCL_HOST_DEVICE auto apply_partition(const shape_t& s, const ::std::tuple<P, sub_partitions...>& t) const
+  _CCCL_HOST_DEVICE_API auto apply_partition(const shape_t& s, const ::std::tuple<P, sub_partitions...>& t) const
   {
     auto s0         = P::apply(s, pos4(rank(0)), dim4(size(0)));
     auto sans_first = make_tuple_indexwise<sizeof...(sub_partitions)>([&](auto index) {
@@ -277,7 +274,7 @@ public:
 
   // Default partitioner tuple<blocked, blocked...., blocked, cyclic>
   template <typename shape_t>
-  _CCCL_HOST_DEVICE auto apply_partition(const shape_t& s) const
+  _CCCL_HOST_DEVICE_API auto apply_partition(const shape_t& s) const
   {
     if constexpr (depth == 1)
     {
@@ -295,13 +292,13 @@ public:
    *
    * @return `thread_hierarchy` instantiated with `spec` sans the first two arguments
    */
-  _CCCL_HOST_DEVICE auto inner() const
+  _CCCL_HOST_DEVICE_API auto inner() const
   {
     return typename inner_t<spec...>::type(*this);
   }
 
   template <typename T>
-  _CCCL_HOST_DEVICE slice<T> storage(int level)
+  _CCCL_HOST_DEVICE_API slice<T> storage(int level)
   {
     assert(level >= 0);
     assert(level < depth);
@@ -338,8 +335,8 @@ public:
                      return make_slice(static_cast<T*>(device_tmp), nelems);
                    }
 
-                   size_t ndevs             = launch_config[0];
-                   size_t system_scope_size = device_scope_size * ndevs;
+                   size_t ndevs                   = launch_config[0];
+                   const size_t system_scope_size = device_scope_size * ndevs;
                    if (target_size == system_scope_size)
                    {
                      // Use system memory (managed memory)
@@ -352,17 +349,17 @@ public:
     return make_slice(static_cast<T*>(nullptr), 0);
   }
 
-  void set_device_tmp(void* addr)
+  _CCCL_HOST_API void set_device_tmp(void* addr)
   {
     device_tmp = addr;
   }
 
-  void set_system_tmp(void* addr)
+  _CCCL_HOST_API void set_system_tmp(void* addr)
   {
     system_tmp = addr;
   }
 
-  void set_devid(int d)
+  _CCCL_HOST_API void set_devid(int d)
   {
     devid = d;
   }
@@ -390,20 +387,20 @@ private:
 
   /* Special case to work-around spec = <> */
   template <size_t Idx>
-  _CCCL_HOST_DEVICE bool may_sync_impl(int) const
+  _CCCL_HOST_DEVICE_API bool may_sync_impl(int) const
   {
     return false;
   }
 
   template <size_t Idx, bool sync, size_t w, auto... remaining>
-  _CCCL_HOST_DEVICE bool may_sync_impl(int level) const
+  _CCCL_HOST_DEVICE_API bool may_sync_impl(int level) const
   {
     static_assert(Idx < sizeof...(spec) / 2);
     return (level == Idx) ? sync : may_sync_impl<Idx + 1, remaining...>(level);
   }
 
   /* Evaluate at runtime if we can call sync on the specified level */
-  _CCCL_HOST_DEVICE bool may_sync(int level) const
+  _CCCL_HOST_DEVICE_API bool may_sync(int level) const
   {
     return may_sync_impl<0, spec...>(level);
   }
@@ -414,17 +411,17 @@ private:
 namespace reserved
 {
 template <auto... spec>
-__global__ void unit_test_thread_hierarchy(thread_hierarchy<spec...> h)
+__global__ static void unit_test_thread_hierarchy(thread_hierarchy<spec...> h) // NOLINT(cccl-hide-from-abi)
 {
   assert(h.size(0) == 2);
   assert(h.size(1) == 2 * 32);
 
   // Rank within the whole system
-  assert(h.rank(1, -1) == 32 + threadIdx.x + blockIdx.x * blockDim.x);
-  assert(h.rank(1) == 32 + threadIdx.x + blockIdx.x * blockDim.x);
+  assert(h.rank(1, -1) == 32 + threadIdx.x + (blockIdx.x * blockDim.x));
+  assert(h.rank(1) == 32 + threadIdx.x + (blockIdx.x * blockDim.x));
 
   assert(h.rank(0, -1) == 1); // device
-  assert(h.rank(1, 0) == threadIdx.x + blockIdx.x * blockDim.x);
+  assert(h.rank(1, 0) == threadIdx.x + (blockIdx.x * blockDim.x));
 }
 } // end namespace reserved
 
@@ -435,8 +432,8 @@ UNITTEST("thread hierarchy indexing")
   p.add_level({::std::make_pair(hw_scope::device, 2UL)});
   p.add_level({::std::make_pair(hw_scope::block, 8UL), ::std::make_pair(hw_scope::thread, 4UL)});
 
-  int dev_id = 1;
-  auto h     = thread_hierarchy<false, size_t(0), false, size_t(0)>(dev_id, p);
+  const int dev_id = 1;
+  auto h           = thread_hierarchy<false, size_t(0), false, size_t(0)>(dev_id, p);
 
   static_assert(h.static_width(0) == 0);
   static_assert(h.static_width(1) == 0);
@@ -450,7 +447,7 @@ UNITTEST("thread hierarchy indexing")
 namespace reserved
 {
 template <auto... spec>
-__global__ void unit_test_thread_hierarchy_sync(thread_hierarchy<spec...> h)
+__global__ static void unit_test_thread_hierarchy_sync(thread_hierarchy<spec...> h) // NOLINT(cccl-hide-from-abi)
 {
   assert(h.rank(1, 0) == threadIdx.x);
   assert(h.rank(0, -1) == blockIdx.x);
@@ -469,14 +466,14 @@ UNITTEST("thread hierarchy sync")
   p.add_level({::std::make_pair(hw_scope::thread, 4UL)});
   p.set_level_sync(1, true);
 
-  size_t dev_id = 1;
-  auto h        = thread_hierarchy(dev_id, p);
+  const size_t dev_id = 1;
+  auto h              = thread_hierarchy(static_cast<int>(dev_id), p);
 
   auto config = p.get_config();
 
   void* args[] = {&h};
   cuda_try(cudaLaunchCooperativeKernel(
-    (void*) reserved::unit_test_thread_hierarchy_sync<true, size_t(0), true, size_t(1)>,
+    reinterpret_cast<void*>(reserved::unit_test_thread_hierarchy_sync<true, size_t(0), true, size_t(1)>),
     config[1],
     config[2],
     args,
@@ -489,7 +486,7 @@ UNITTEST("thread hierarchy sync")
 namespace reserved
 {
 template <auto... spec>
-__global__ void unit_test_thread_hierarchy_inner_sync(thread_hierarchy<spec...> h)
+__global__ static void unit_test_thread_hierarchy_inner_sync(thread_hierarchy<spec...> h) // NOLINT(cccl-hide-from-abi)
 {
   h.inner().sync();
   auto h_inner = h.inner();
@@ -507,8 +504,8 @@ UNITTEST("thread hierarchy inner sync")
   p.add_level({::std::make_pair(hw_scope::thread, 4UL)});
   p.set_level_sync(1, true);
 
-  int dev_id = 1;
-  auto h     = thread_hierarchy<false, size_t(0), true, size_t(0)>(dev_id, p);
+  const int dev_id = 1;
+  auto h           = thread_hierarchy<false, size_t(0), true, size_t(0)>(dev_id, p);
 
   auto config = p.get_config();
   reserved::unit_test_thread_hierarchy_inner_sync<false, size_t(0), true, size_t(0)><<<config[1], config[2]>>>(h);

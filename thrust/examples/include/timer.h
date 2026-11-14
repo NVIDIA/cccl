@@ -25,8 +25,8 @@ inline void cuda_safe_call(cudaError_t error, const std::string& message = "")
 
 struct timer
 {
-  cudaEvent_t start;
-  cudaEvent_t end;
+  cudaEvent_t start{};
+  cudaEvent_t end{};
 
   timer()
   {
@@ -41,12 +41,12 @@ struct timer
     static_cast<void>(cudaEventDestroy(end));
   }
 
-  void restart()
+  void restart() // NOLINT(readability-make-member-function-const)
   {
     cuda_safe_call(cudaEventRecord(start, nullptr));
   }
 
-  double elapsed()
+  double elapsed() // NOLINT(readability-make-member-function-const)
   {
     cuda_safe_call(cudaEventRecord(end, nullptr));
     cuda_safe_call(cudaEventSynchronize(end));
@@ -69,8 +69,8 @@ struct timer
 
 struct timer
 {
-  clock_t start;
-  clock_t end;
+  clock_t start{};
+  clock_t end{};
 
   timer()
   {

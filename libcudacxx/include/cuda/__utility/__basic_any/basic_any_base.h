@@ -26,8 +26,6 @@
 #include <cuda/__utility/__basic_any/storage.h>
 #include <cuda/__utility/__basic_any/tagged_ptr.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/cstddef> // for byte
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -65,9 +63,11 @@ template <class _Interface, int = __extension_of<_Interface, __imovable<>> + __e
 struct __basic_any_base;
 
 template <class _Interface>
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct __basic_any_base<_Interface, 2> : __interface_of<_Interface> // copyable interfaces
 {
-  __basic_any_base() = default;
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+  _CCCL_HIDE_FROM_ABI __basic_any_base() = default;
 
   _CCCL_HOST_DEVICE_API __basic_any_base(__basic_any_base&& __other) noexcept
   {
@@ -107,17 +107,17 @@ private:
 template <class _Interface>
 struct __basic_any_base<_Interface, 1> : __basic_any_base<_Interface, 2> // move-only interfaces
 {
-  __basic_any_base()                                               = default;
-  __basic_any_base(__basic_any_base&&) noexcept                    = default;
-  __basic_any_base(__basic_any_base const&)                        = delete;
-  auto operator=(__basic_any_base&&) noexcept -> __basic_any_base& = default;
-  auto operator=(__basic_any_base const&) -> __basic_any_base&     = delete;
+  _CCCL_HIDE_FROM_ABI __basic_any_base()                                               = default;
+  _CCCL_HIDE_FROM_ABI __basic_any_base(__basic_any_base&&) noexcept                    = default;
+  __basic_any_base(__basic_any_base const&)                                            = delete;
+  _CCCL_HIDE_FROM_ABI auto operator=(__basic_any_base&&) noexcept -> __basic_any_base& = default;
+  auto operator=(__basic_any_base const&) -> __basic_any_base&                         = delete;
 };
 
 template <class _Interface>
 struct __basic_any_base<_Interface, 0> : __basic_any_base<_Interface, 2> // immovable interfaces
 {
-  __basic_any_base()                                               = default;
+  _CCCL_HIDE_FROM_ABI __basic_any_base()                           = default;
   __basic_any_base(__basic_any_base&&) noexcept                    = delete;
   __basic_any_base(__basic_any_base const&)                        = delete;
   auto operator=(__basic_any_base&&) noexcept -> __basic_any_base& = delete;

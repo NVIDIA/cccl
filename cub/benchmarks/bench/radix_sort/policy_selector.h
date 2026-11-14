@@ -126,7 +126,7 @@ constexpr bool fits_in_default_shared_memory()
 }
 #else // TUNE_BASE
 template <typename, typename, typename, auto>
-constexpr bool fits_in_default_shared_memory()
+_CCCL_HOST_API constexpr bool fits_in_default_shared_memory()
 {
   return true;
 }

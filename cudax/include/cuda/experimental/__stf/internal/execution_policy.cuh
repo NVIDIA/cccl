@@ -74,7 +74,7 @@ enum class hw_scope : unsigned int
  * @note The function includes assertions to ensure that lhs and rhs are
  * within the allowed range.
  */
-inline hw_scope operator|(const hw_scope& lhs, const hw_scope& rhs)
+_CCCL_HOST_API inline hw_scope operator|(const hw_scope& lhs, const hw_scope& rhs)
 {
   assert(as_underlying(lhs) <= as_underlying(hw_scope::all));
   assert(as_underlying(rhs) <= as_underlying(hw_scope::all));
@@ -94,7 +94,7 @@ inline hw_scope operator|(const hw_scope& lhs, const hw_scope& rhs)
  * @note The function includes assertions to ensure that lhs and rhs are
  * within the allowed range.
  */
-inline hw_scope operator&(const hw_scope& lhs, const hw_scope& rhs)
+_CCCL_HOST_API inline hw_scope operator&(const hw_scope& lhs, const hw_scope& rhs)
 {
   assert(as_underlying(lhs) <= as_underlying(hw_scope::all));
   assert(as_underlying(rhs) <= as_underlying(hw_scope::all));
@@ -112,7 +112,7 @@ inline hw_scope operator&(const hw_scope& lhs, const hw_scope& rhs)
 //!
 //! @note The function includes an assertion to ensure that s is within the allowed range.
 //!       Any bits beyond those represented by `hw_scope::all` are cleared in the result.
-inline hw_scope operator~(const hw_scope& s)
+_CCCL_HOST_API inline hw_scope operator~(const hw_scope& s)
 {
   assert(as_underlying(s) <= as_underlying(hw_scope::all));
   // Keep the bits beyond `all` zero at all times, and
@@ -131,13 +131,13 @@ struct deduce_execution_policy;
 template <bool b, size_t s>
 struct deduce_execution_policy<b, s>
 {
-  using type = thread_hierarchy_spec<b, s>;
+  using type _CCCL_NODEBUG = thread_hierarchy_spec<b, s>;
 };
 
 template <bool b, size_t s, typename T, typename... Ts>
 struct deduce_execution_policy<b, s, T, Ts...>
 {
-  using type = typename deduce_execution_policy<b, s, Ts...>::type;
+  using type _CCCL_NODEBUG = typename deduce_execution_policy<b, s, Ts...>::type;
 };
 
 template <bool b, size_t s, auto... P, typename... Ts>
@@ -145,7 +145,7 @@ struct deduce_execution_policy<b, s, thread_hierarchy_spec<P...>, Ts...>
 {
   static_assert(::cuda::std::is_same_v<typename deduce_execution_policy<b, s, Ts...>::type, thread_hierarchy_spec<b, s>>,
                 "Only one argument of type deduce_execution_policy<...> is allowed.");
-  using type = thread_hierarchy_spec<b, s, P...>;
+  using type _CCCL_NODEBUG = thread_hierarchy_spec<b, s, P...>;
 };
 } // namespace reserved
 
@@ -171,10 +171,10 @@ public:
   using thread_hierarchy_t = thread_hierarchy<can_sync, width, lower_levels...>;
 
   ///@{ @name Usual constructors
-  thread_hierarchy_spec()                             = default;
-  thread_hierarchy_spec(const thread_hierarchy_spec&) = default;
-  thread_hierarchy_spec(thread_hierarchy_spec&)       = default;
-  thread_hierarchy_spec(thread_hierarchy_spec&&)      = default;
+  _CCCL_HIDE_FROM_ABI thread_hierarchy_spec()                             = default;
+  _CCCL_HIDE_FROM_ABI thread_hierarchy_spec(const thread_hierarchy_spec&) = default;
+  _CCCL_HIDE_FROM_ABI thread_hierarchy_spec(thread_hierarchy_spec&)       = default;
+  _CCCL_HIDE_FROM_ABI thread_hierarchy_spec(thread_hierarchy_spec&&)      = default;
   ///@}
 
   /**
@@ -193,7 +193,7 @@ public:
    * @param p Values of parameters
    */
   template <typename... P>
-  explicit thread_hierarchy_spec(const P&... p)
+  _CCCL_HOST_API explicit thread_hierarchy_spec(const P&... p)
       : inner(reserved::only_convertible_or(thread_hierarchy_spec<lower_levels...>(), p...))
       , dynamic_width(reserved::only_convertible_or(decltype(dynamic_width)(), p...))
       , sync_scope(reserved::only_convertible_or(hw_scope::all, p...))
@@ -210,7 +210,7 @@ public:
     }
   }
 
-  constexpr bool operator==(const thread_hierarchy_spec& rhs) const noexcept
+  _CCCL_HOST_API constexpr bool operator==(const thread_hierarchy_spec& rhs) const noexcept
   {
     if (dynamic_width != rhs.dynamic_width || sync_scope != rhs.sync_scope || mem_bytes != rhs.mem_bytes)
     {
@@ -229,33 +229,33 @@ public:
   // For other types ...
   template <auto... other,
             std::enable_if_t<!std::is_same_v<thread_hierarchy_spec, thread_hierarchy_spec<other...>>, int> = 0>
-  constexpr bool operator==(const thread_hierarchy_spec<other...>&) const noexcept
+  _CCCL_HOST_API constexpr bool operator==(const thread_hierarchy_spec<other...>&) const noexcept
   {
     return false;
   }
 
-  constexpr bool operator!=(const thread_hierarchy_spec& rhs) const noexcept
+  _CCCL_HOST_API constexpr bool operator!=(const thread_hierarchy_spec& rhs) const noexcept
   {
     return !(*this == rhs);
   }
 
   template <auto... other,
             std::enable_if_t<!std::is_same_v<thread_hierarchy_spec, thread_hierarchy_spec<other...>>, int> = 0>
-  constexpr bool operator!=(const thread_hierarchy_spec<other...>&) const noexcept
+  _CCCL_HOST_API constexpr bool operator!=(const thread_hierarchy_spec<other...>&) const noexcept
   {
     return true;
   }
 
   /// @brief Compute the depth of the thread hierarchy.
   /// @return The depth.
-  static constexpr size_t depth()
+  _CCCL_HOST_API static constexpr size_t depth()
   {
-    return 1 + sizeof...(lower_levels) / 2;
+    return 1 + (sizeof...(lower_levels) / 2);
   }
 
   /// @brief Check if synchronization is possible.
   /// @return A boolean indicating if synchronization is possible.
-  static constexpr bool synchronizable()
+  _CCCL_HOST_API static constexpr bool synchronizable()
   {
     return can_sync;
   }
@@ -266,7 +266,7 @@ public:
    * @param inner The inner thread_hierarchy_spec object.
    */
   template <auto... P>
-  void set_inner(const thread_hierarchy_spec<P...>& inner)
+  _CCCL_HOST_API void set_inner(const thread_hierarchy_spec<P...>& inner)
   {
     this->inner = inner;
   }
@@ -276,7 +276,7 @@ public:
    * @param level The level.
    * @return The memory bytes.
    */
-  constexpr mem get_mem(size_t level) const
+  _CCCL_HOST_API constexpr mem get_mem(size_t level) const
   {
     if constexpr (depth() > 1)
     {
@@ -293,7 +293,7 @@ public:
    * @param level The level.
    * @param value The memory bytes.
    */
-  constexpr void set_mem(size_t level, mem value)
+  _CCCL_HOST_API constexpr void set_mem(size_t level, mem value)
   {
     if constexpr (depth() > 1)
     {
@@ -312,7 +312,7 @@ public:
    */
 #ifndef _CCCL_DOXYGEN_INVOKED // doxygen fails to parse this
   template <size_t level>
-  static inline constexpr bool is_synchronizable = [] {
+  static constexpr bool is_synchronizable = [] {
     if constexpr (level > 0)
     {
       return thread_hierarchy_spec<lower_levels...>::template is_synchronizable<level - 1>;
@@ -332,9 +332,9 @@ public:
    * @param level The level
    * @return The width (0 if width is dynamic)
    */
-  static inline constexpr size_t static_width(size_t level)
+  _CCCL_HOST_API static constexpr size_t static_width(size_t level)
   {
-    size_t data[] = {width, lower_levels...};
+    const size_t data[] = {width, lower_levels...};
     return data[2 * level];
   }
 
@@ -343,7 +343,7 @@ public:
    * @param level The level.
    * @return The width.
    */
-  constexpr size_t get_width(size_t level) const
+  _CCCL_HOST_API constexpr size_t get_width(size_t level) const
   {
     if constexpr (depth() > 1)
     {
@@ -359,7 +359,7 @@ public:
    * @brief Set the width.
    * @param new_width The new width.
    */
-  void set_width(size_t level, size_t new_width)
+  _CCCL_HOST_API void set_width(size_t level, size_t new_width)
   {
     if constexpr (depth() > 1)
     {
@@ -381,7 +381,7 @@ public:
   /**
    * @brief Get the scope at a specific level
    */
-  constexpr hw_scope get_scope(size_t level) const
+  _CCCL_HOST_API constexpr hw_scope get_scope(size_t level) const
   {
     if constexpr (depth() > 1)
     {
@@ -419,7 +419,7 @@ private:
  * @return A `thread_hierarchy_spec` instantiation with the appropriate arguments.
  */
 template <typename... P>
-constexpr auto par(const P&... p)
+_CCCL_HOST_API constexpr auto par(const P&... p)
 {
   using R = typename reserved::deduce_execution_policy<false, size_t(0), P...>::type;
   return R(p...);
@@ -441,7 +441,7 @@ constexpr auto par(const P&... p)
  * @return A `thread_hierarchy_spec` instantiation with the appropriate arguments.
  */
 template <size_t width, typename... P>
-constexpr auto par(const P&... p)
+_CCCL_HOST_API constexpr auto par(const P&... p)
 {
   using R = typename reserved::deduce_execution_policy<false, width, P...>::type;
   return R(p...);
@@ -462,7 +462,7 @@ constexpr auto par(const P&... p)
  * @return A `thread_hierarchy_spec` instantiation with the appropriate arguments.
  */
 template <typename... P>
-constexpr auto con(const P&... p)
+_CCCL_HOST_API constexpr auto con(const P&... p)
 {
   using R = typename reserved::deduce_execution_policy<true, size_t(0), P...>::type;
   return R(p...);
@@ -483,7 +483,7 @@ constexpr auto con(const P&... p)
  * @return A `thread_hierarchy_spec` instantiation with the appropriate arguments.
  */
 template <size_t width, typename... P>
-constexpr auto con(const P&... p)
+_CCCL_HOST_API constexpr auto con(const P&... p)
 {
   using R = typename reserved::deduce_execution_policy<true, width, P...>::type;
   return R(p...);

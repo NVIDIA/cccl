@@ -38,7 +38,7 @@ void test_basic_scope(int ndevs)
 
   // Use scope to switch to device 1
   {
-    exec_place_scope scope(exec_place::device(1));
+    const exec_place_scope scope(exec_place::device(1));
 
     int dev_inside = -1;
     cuda_try(cudaGetDevice(&dev_inside));
@@ -63,14 +63,14 @@ void test_nested_scopes(int ndevs)
   cuda_try(cudaSetDevice(0));
 
   {
-    exec_place_scope scope1(exec_place::device(1));
+    const exec_place_scope scope1(exec_place::device(1));
 
     int dev = -1;
     cuda_try(cudaGetDevice(&dev));
     EXPECT(dev == 1);
 
     {
-      exec_place_scope scope2(exec_place::device(2));
+      const exec_place_scope scope2(exec_place::device(2));
 
       cuda_try(cudaGetDevice(&dev));
       EXPECT(dev == 2);
@@ -102,7 +102,7 @@ void test_host_place_scope(int ndevs)
   cuda_try(cudaGetDevice(&dev_before));
 
   {
-    exec_place_scope scope(exec_place::host());
+    const exec_place_scope scope(exec_place::host());
 
     // Device should remain unchanged when using host place
     int dev_inside = -1;
@@ -127,7 +127,7 @@ void test_same_device_scope(int ndevs)
   cuda_try(cudaSetDevice(0));
 
   {
-    exec_place_scope scope(exec_place::device(0));
+    const exec_place_scope scope(exec_place::device(0));
 
     int dev = -1;
     cuda_try(cudaGetDevice(&dev));
@@ -153,7 +153,7 @@ void test_stream_creation_in_scope(int ndevs)
   cudaStream_t stream;
 
   {
-    exec_place_scope scope(exec_place::device(1));
+    const exec_place_scope scope(exec_place::device(1));
     cuda_try(cudaStreamCreate(&stream));
   }
 
@@ -166,7 +166,7 @@ void test_stream_creation_in_scope(int ndevs)
 
   // Clean up (need to be on correct device for some operations)
   {
-    exec_place_scope scope(exec_place::device(1));
+    const exec_place_scope scope(exec_place::device(1));
     cuda_try(cudaStreamDestroy(stream));
   }
 }
@@ -191,10 +191,10 @@ void test_multithreaded_scopes(int ndevs)
       // Each thread starts on device 0
       cuda_try(cudaSetDevice(0));
 
-      int target_dev = i % ndevs;
+      const int target_dev = i % ndevs;
 
       {
-        exec_place_scope scope(exec_place::device(target_dev));
+        const exec_place_scope scope(exec_place::device(target_dev));
 
         int dev = -1;
         cuda_try(cudaGetDevice(&dev));
@@ -247,10 +247,10 @@ void test_stress_iterations(int ndevs)
   const int iterations = 100;
   for (int iter = 0; iter < iterations; ++iter)
   {
-    int target_dev = iter % ndevs;
+    const int target_dev = iter % ndevs;
 
     {
-      exec_place_scope scope(exec_place::device(target_dev));
+      const exec_place_scope scope(exec_place::device(target_dev));
 
       int dev = -1;
       cuda_try(cudaGetDevice(&dev));

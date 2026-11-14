@@ -19,8 +19,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 #include <cub/warp/specializations/warp_exchange_shfl.cuh>
 #include <cub/warp/specializations/warp_exchange_smem.cuh>
 
@@ -28,7 +26,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-enum WarpExchangeAlgorithm
+enum WarpExchangeAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
   WARP_EXCHANGE_SMEM,
   WARP_EXCHANGE_SHUFFLE,
@@ -36,11 +34,11 @@ enum WarpExchangeAlgorithm
 
 namespace detail
 {
-template <typename InputT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS, WarpExchangeAlgorithm WARP_EXCHANGE_ALGORITHM>
+template <typename InputT, int ItemsPerThread, int LogicalWarpThreads, WarpExchangeAlgorithm Algorithm>
 using InternalWarpExchangeImpl =
-  ::cuda::std::_If<WARP_EXCHANGE_ALGORITHM == WARP_EXCHANGE_SMEM,
-                   WarpExchangeSmem<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS>,
-                   WarpExchangeShfl<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS>>;
+  ::cuda::std::_If<Algorithm == WARP_EXCHANGE_SMEM,
+                   WarpExchangeSmem<InputT, ItemsPerThread, LogicalWarpThreads>,
+                   WarpExchangeShfl<InputT, ItemsPerThread, LogicalWarpThreads>>;
 } // namespace detail
 
 /**
@@ -50,10 +48,10 @@ using InternalWarpExchangeImpl =
  * @tparam T
  *   The data type to be exchanged.
  *
- * @tparam ITEMS_PER_THREAD
+ * @tparam ItemsPerThread
  *   The number of items partitioned onto each thread.
  *
- * @tparam LOGICAL_WARP_THREADS
+ * @tparam LogicalWarpThreads
  *   <b>[optional]</b> The number of threads per "logical" warp (may be less
  *   than the number of hardware warp threads). Default is the warp size of the
  *   targeted CUDA compute-capability (e.g., 32 threads for SM86). Must be a
@@ -105,19 +103,17 @@ using InternalWarpExchangeImpl =
  * @endcode
  * @par
  * Suppose the set of striped input @p thread_data across the block of threads
- * is <tt>{ [0,16,32,48], [1,17,33,49], ..., [15, 32, 47, 63] }</tt>.
+ * is <tt>{ [0,16,32,48], [1,17,33,49], ..., [15, 31, 47, 63] }</tt>.
  * The corresponding output @p thread_data in those threads will be
  * <tt>{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [60,61,62,63] }</tt>.
  */
 template <typename InputT,
-          int ITEMS_PER_THREAD,
-          int LOGICAL_WARP_THREADS                      = detail::warp_threads,
-          WarpExchangeAlgorithm WARP_EXCHANGE_ALGORITHM = WARP_EXCHANGE_SMEM>
-class WarpExchange
-    : private detail::InternalWarpExchangeImpl<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, WARP_EXCHANGE_ALGORITHM>
+          int ItemsPerThread,
+          int LogicalWarpThreads          = detail::warp_threads,
+          WarpExchangeAlgorithm Algorithm = WARP_EXCHANGE_SMEM>
+class WarpExchange : private detail::InternalWarpExchangeImpl<InputT, ItemsPerThread, LogicalWarpThreads, Algorithm>
 {
-  using InternalWarpExchange =
-    detail::InternalWarpExchangeImpl<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, WARP_EXCHANGE_ALGORITHM>;
+  using InternalWarpExchange = detail::InternalWarpExchangeImpl<InputT, ItemsPerThread, LogicalWarpThreads, Algorithm>;
 
 public:
   /// \smemstorage{WarpExchange}
@@ -132,7 +128,7 @@ public:
    * @brief Collective constructor using the specified memory allocation as
    *        temporary storage.
    */
-  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpExchange(TempStorage& temp_storage)
+  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpExchange(TempStorage& temp_storage)
       : InternalWarpExchange(temp_storage)
   {}
 
@@ -185,7 +181,7 @@ public:
    * Suppose the set of striped input @p thread_data across the block of threads
    * is <tt>{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [60,61,62,63] }</tt>.
    * The corresponding output @p thread_data in those threads will be
-   * <tt>{ [0,16,32,48], [1,17,33,49], ..., [15, 32, 47, 63] }</tt>.
+   * <tt>{ [0,16,32,48], [1,17,33,49], ..., [15, 31, 47, 63] }</tt>.
    *
    * @param[in] input_items
    *   Items to exchange, converting between <em>blocked</em> and
@@ -196,8 +192,8 @@ public:
    *   <em>blocked</em> arrangements. May be aliased to @p input_items.
    */
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  BlockedToStriped(const InputT (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  BlockedToStriped(const InputT (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
     InternalWarpExchange::BlockedToStriped(input_items, output_items);
   }
@@ -245,7 +241,7 @@ public:
    * @endcode
    * @par
    * Suppose the set of striped input @p thread_data across the block of threads
-   * is <tt>{ [0,16,32,48], [1,17,33,49], ..., [15, 32, 47, 63] }</tt>.
+   * is <tt>{ [0,16,32,48], [1,17,33,49], ..., [15, 31, 47, 63] }</tt>.
    * The corresponding output @p thread_data in those threads will be
    * <tt>{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [60,61,62,63] }</tt>.
    *
@@ -256,8 +252,8 @@ public:
    *   Items from exchange. May be aliased to @p input_items.
    */
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  StripedToBlocked(const InputT (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  StripedToBlocked(const InputT (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
     InternalWarpExchange::StripedToBlocked(input_items, output_items);
   }
@@ -318,8 +314,8 @@ public:
    * @param[in] ranks Corresponding scatter ranks
    */
   template <typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ScatterToStriped(InputT (&items)[ITEMS_PER_THREAD], OffsetT (&ranks)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ScatterToStriped(InputT (&items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
   {
     InternalWarpExchange::ScatterToStriped(items, ranks);
   }
@@ -387,10 +383,10 @@ public:
    *   Corresponding scatter ranks
    */
   template <typename OutputT, typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStriped(
-    const InputT (&input_items)[ITEMS_PER_THREAD],
-    OutputT (&output_items)[ITEMS_PER_THREAD],
-    OffsetT (&ranks)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterToStriped(
+    const InputT (&input_items)[ItemsPerThread],
+    OutputT (&output_items)[ItemsPerThread],
+    OffsetT (&ranks)[ItemsPerThread])
   {
     InternalWarpExchange::ScatterToStriped(input_items, output_items, ranks);
   }

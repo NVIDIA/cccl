@@ -23,7 +23,7 @@ __global__ void block_scan_kernel(T* in, T* out, ActionT action)
 
   T thread_data[ItemsPerThread];
 
-  const int tid           = static_cast<int>(cub::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ));
+  const int tid           = cub::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ);
   const int thread_offset = tid * ItemsPerThread;
 
   for (int item = 0; item < ItemsPerThread; item++)
@@ -52,7 +52,7 @@ __global__ void block_scan_single_kernel(T* in, T* out, ActionT action)
 
   __shared__ storage_t storage;
 
-  const int tid = static_cast<int>(cub::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ));
+  const int tid = cub::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ);
 
   T thread_data = in[tid];
 
@@ -72,7 +72,7 @@ template <cub::BlockScanAlgorithm Algorithm,
           class ActionT>
 void block_scan(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT action)
 {
-  dim3 block_dims(BlockDimX, BlockDimY, BlockDimZ);
+  const dim3 block_dims(BlockDimX, BlockDimY, BlockDimZ);
 
   block_scan_kernel<Algorithm, ItemsPerThread, BlockDimX, BlockDimY, BlockDimZ, T, ActionT>
     <<<1, block_dims>>>(thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), action);
@@ -84,7 +84,7 @@ void block_scan(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT a
 template <cub::BlockScanAlgorithm Algorithm, int BlockDimX, int BlockDimY, int BlockDimZ, class T, class ActionT>
 void block_scan_single(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT action)
 {
-  dim3 block_dims(BlockDimX, BlockDimY, BlockDimZ);
+  const dim3 block_dims(BlockDimX, BlockDimY, BlockDimZ);
 
   block_scan_single_kernel<Algorithm, BlockDimX, BlockDimY, BlockDimZ, T, ActionT>
     <<<1, block_dims>>>(thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), action);
@@ -219,8 +219,8 @@ struct sum_aggregate_op_t
       scan.InclusiveSum(thread_data, thread_data, block_aggregate);
     }
 
-    const int tid = static_cast<int>(
-      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z)));
+    const int tid =
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
     if (tid == m_target_thread_id)
     {
@@ -255,8 +255,8 @@ struct sum_prefix_op_t
   template <int ItemsPerThread, class BlockScanT>
   __device__ void operator()(BlockScanT& scan, T (&thread_data)[ItemsPerThread]) const
   {
-    const int tid = static_cast<int>(
-      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z)));
+    const int tid =
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
     block_prefix_op_t prefix_op{tid, m_prefix};
 
     if constexpr (Mode == scan_mode::exclusive)
@@ -297,8 +297,8 @@ struct min_prefix_op_t
   template <int ItemsPerThread, class BlockScanT>
   __device__ void operator()(BlockScanT& scan, T (&thread_data)[ItemsPerThread]) const
   {
-    const int tid = static_cast<int>(
-      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z)));
+    const int tid =
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
     block_prefix_op_t prefix_op{tid, m_prefix};
 
     if constexpr (Mode == scan_mode::exclusive)
@@ -518,7 +518,7 @@ CUB_TEST("Block scan returns valid block aggregate", "[scan][block]", CUB_SMALL,
     d_in, d_out, sum_aggregate_op_t<type, mode>{target_thread_id, thrust::raw_pointer_cast(d_block_aggregate.data())});
 
   c2h::host_vector<type> h_out = d_in;
-  type block_aggregate         = host_scan(mode, h_out, std::plus<type>{});
+  const type block_aggregate   = host_scan(mode, h_out, std::plus<type>{});
 
   REQUIRE(h_out == d_out);
   REQUIRE(block_aggregate == d_block_aggregate[0]);
@@ -659,7 +659,7 @@ CUB_TEST("Block custom op scan with initial value returns valid block aggregate"
       target_thread_id, initial_value, thrust::raw_pointer_cast(d_block_aggregate.data())});
 
   c2h::host_vector<type> h_out = d_in;
-  type h_block_aggregate       = host_scan(
+  const type h_block_aggregate = host_scan(
     mode,
     h_out,
     [](type l, type r) {

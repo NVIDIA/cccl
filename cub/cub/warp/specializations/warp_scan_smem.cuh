@@ -20,13 +20,16 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/constant.cuh>
+#include <cub/detail/log2.cuh>
+#include <cub/detail/uninitialized.cuh>
+#include <cub/detail/uninitialized_copy.cuh>
 #include <cub/thread/thread_load.cuh>
-#include <cub/thread/thread_operators.cuh>
 #include <cub/thread/thread_store.cuh>
-#include <cub/util_type.cuh>
+#include <cub/util_ptx.cuh>
+#include <cub/warp/warp_utils.cuh>
 
 #include <cuda/__functional/operator_properties.h>
-#include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__utility/static_for.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__functional/operations.h>
@@ -43,56 +46,46 @@ namespace detail
  * @tparam T
  *   Data type being scanned
  *
- * @tparam LOGICAL_WARP_THREADS
+ * @tparam LogicalWarpThreads
  *   Number of threads per logical warp
  */
-template <typename T, int LOGICAL_WARP_THREADS>
+template <typename T, int LogicalWarpThreads>
 struct WarpScanSmem
 {
   /******************************************************************************
    * Constants and type definitions
    ******************************************************************************/
 
-  /// Whether the logical warp size and the PTX warp size coincide
-  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == warp_threads);
-
   /// The number of warp scan steps
-  static constexpr int STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE;
+  static constexpr int STEPS = Log2<LogicalWarpThreads>::VALUE;
 
   /// The number of threads in half a warp
   static constexpr int HALF_WARP_THREADS = 1 << (STEPS - 1);
 
   /// The number of shared memory elements per warp
-  static constexpr int WARP_SMEM_ELEMENTS = LOGICAL_WARP_THREADS + HALF_WARP_THREADS;
+  static constexpr int WARP_SMEM_ELEMENTS = LogicalWarpThreads + HALF_WARP_THREADS;
 
   /// Shared memory storage layout type (1.5 warps-worth of elements for each warp)
-  using _TempStorage = T[WARP_SMEM_ELEMENTS];
+  using _TempStorage _CCCL_NODEBUG = T[WARP_SMEM_ELEMENTS];
 
   // Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   /******************************************************************************
    * Thread fields
    ******************************************************************************/
 
   _TempStorage& temp_storage;
-  unsigned int lane_id;
-  unsigned int member_mask;
+  unsigned int lane_id     = _CUB::detail::logical_lane_id<LogicalWarpThreads>();
+  unsigned int member_mask = _CUB::detail::warp_mask<LogicalWarpThreads>();
 
   /******************************************************************************
    * Construction
    ******************************************************************************/
 
   /// Constructor
-  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpScanSmem(TempStorage& temp_storage)
+  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpScanSmem(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      ,
-
-      lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS)
-      ,
-
-      member_mask(WarpMask<LOGICAL_WARP_THREADS>(::cuda::ptx::get_sreg_laneid() / LOGICAL_WARP_THREADS))
   {}
 
   /******************************************************************************
@@ -100,30 +93,30 @@ struct WarpScanSmem
    ******************************************************************************/
 
   /// Basic inclusive scan iteration (template unrolled, inductive-case specialization)
-  template <bool HAS_IDENTITY, int STEP, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanStep(T& partial, ScanOp scan_op, constant_t<STEP> /*step*/)
+  template <bool HasIdentity, int STEP, typename ScanOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScanStep(T& partial, ScanOp scan_op, constant_t<STEP> /*step*/)
   {
     constexpr int OFFSET = 1 << STEP;
 
     // Share partial into buffer
-    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], partial);
+    _CUB::ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], partial);
 
     __syncwarp(member_mask);
 
     // Update partial if addend is in range
-    if (HAS_IDENTITY || (lane_id >= OFFSET))
+    if (HasIdentity || (lane_id >= OFFSET))
     {
-      T addend = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - OFFSET]);
+      T addend = (T) _CUB::ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - OFFSET]);
       partial  = scan_op(addend, partial);
     }
     __syncwarp(member_mask);
 
-    ScanStep<HAS_IDENTITY>(partial, scan_op, constant_v<STEP + 1>);
+    ScanStep<HasIdentity>(partial, scan_op, constant_v<STEP + 1>);
   }
 
   /// Basic inclusive scan iteration(template unrolled, base-case specialization)
-  template <bool HAS_IDENTITY, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanStep(T& /*partial*/, ScanOp /*scan_op*/, constant_t<STEPS> /*step*/)
+  template <bool HasIdentity, typename ScanOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScanStep(T& /*partial*/, ScanOp /*scan_op*/, constant_t<STEPS> /*step*/)
   {}
 
   /******************************************************************************
@@ -143,16 +136,16 @@ struct WarpScanSmem
    * @param[in] src_lane
    *   Which warp lane is to do the broadcasting
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Broadcast(T input, unsigned int src_lane)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Broadcast(T input, unsigned int src_lane)
   {
     if (lane_id == src_lane)
     {
-      ThreadStore<STORE_VOLATILE>(temp_storage, input);
+      _CUB::ThreadStore<STORE_VOLATILE>(temp_storage, input);
     }
 
     __syncwarp(member_mask);
 
-    return (T) ThreadLoad<LOAD_VOLATILE>(temp_storage);
+    return (T) _CUB::ThreadLoad<LOAD_VOLATILE>(temp_storage);
   }
 
   //---------------------------------------------------------------------
@@ -172,12 +165,12 @@ struct WarpScanSmem
    *   Binary scan operator
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op)
   {
     if constexpr (::cuda::has_identity_element_v<ScanOp, T>)
     {
       constexpr T identity = ::cuda::identity_element<ScanOp, T>();
-      ThreadStore<STORE_VOLATILE>(&temp_storage[lane_id], identity);
+      _CUB::ThreadStore<STORE_VOLATILE>(&temp_storage[lane_id], identity);
       __syncwarp(member_mask);
     }
 
@@ -202,16 +195,16 @@ struct WarpScanSmem
    *   Warp-wide aggregate reduction of input items.
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op, T& warp_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op, T& warp_aggregate)
   {
     InclusiveScan(input, inclusive_output, scan_op);
 
     // Retrieve aggregate
-    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive_output);
+    _CUB::ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive_output);
 
     __syncwarp(member_mask);
 
-    warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
+    warp_aggregate = (T) _CUB::ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
 
     __syncwarp(member_mask);
   }
@@ -232,11 +225,12 @@ struct WarpScanSmem
    *   Number of valid items in warp
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScanPartial(T input, T& inclusive_output, ScanOp scan_op, int valid_items)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  InclusiveScanPartial(T input, T& inclusive_output, ScanOp scan_op, int valid_items)
   {
     // Avoid reading uninitialized memory
     // TODO(pauleonix): Is there a cheaper way of ensuring no uninitialized reads?
-    cub::detail::uninitialized_copy_single(&temp_storage[lane_id], T{});
+    _CUB::detail::uninitialized_copy_single(&temp_storage[lane_id], T{});
     __syncwarp(member_mask);
 
     // Iterate scan steps
@@ -251,7 +245,7 @@ struct WarpScanSmem
       if constexpr (step == 0)
       {
         // Upper half is still uninitialized, i.e. some positions are initialized twice without destructing in between.
-        cub::detail::uninitialized_copy_single(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive_output);
+        _CUB::detail::uninitialized_copy_single(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive_output);
       }
       else
       {
@@ -289,7 +283,7 @@ struct WarpScanSmem
    *   Warp-wide aggregate reduction of input items.
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   InclusiveScanPartial(T input, T& inclusive_output, ScanOp scan_op, int valid_items, T& warp_aggregate)
   {
     InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
@@ -299,7 +293,7 @@ struct WarpScanSmem
 
     __syncwarp(member_mask);
 
-    warp_aggregate = temp_storage[HALF_WARP_THREADS + ::cuda::std::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1)];
+    warp_aggregate = temp_storage[HALF_WARP_THREADS + ::cuda::std::clamp(valid_items - 1, 0, LogicalWarpThreads - 1)];
 
     __syncwarp(member_mask);
   }
@@ -322,22 +316,22 @@ struct WarpScanSmem
    * @param[in] is_integer
    */
   template <typename ScanOpT, typename IsIntegerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Update(T /*input*/, T& inclusive, T& exclusive, ScanOpT /*scan_op*/, IsIntegerT /*is_integer*/)
   {
     // initial value unknown
-    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive);
+    _CUB::ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive);
 
     __syncwarp(member_mask);
 
-    exclusive = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
+    exclusive = (T) _CUB::ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
   }
 
   /**
    * @brief Update inclusive and exclusive using input and inclusive (specialized for summation of
    *        integer types)
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Update(T input, T& inclusive, T& exclusive, ::cuda::std::plus<> /*scan_op*/, ::cuda::std::true_type /*is_integer*/)
   {
     // initial value presumed 0
@@ -349,15 +343,15 @@ struct WarpScanSmem
    *        value
    */
   template <typename ScanOpT, typename IsIntegerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Update(T /*input*/, T& inclusive, T& exclusive, ScanOpT scan_op, T initial_value, IsIntegerT /*is_integer*/)
   {
     inclusive = scan_op(initial_value, inclusive);
-    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive);
+    _CUB::ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive);
 
     __syncwarp(member_mask);
 
-    exclusive = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
+    exclusive = (T) _CUB::ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
     if (lane_id == 0)
     {
       exclusive = initial_value;
@@ -368,7 +362,7 @@ struct WarpScanSmem
    * @brief Update inclusive and exclusive using initial value using input and inclusive
    *        (specialized for summation of integer types)
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Update(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Update(
     T input,
     T& inclusive,
     T& exclusive,
@@ -384,23 +378,23 @@ struct WarpScanSmem
    * @brief Update inclusive, exclusive, and warp aggregate using input and inclusive
    */
   template <typename ScanOpT, typename IsIntegerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Update(T /*input*/, T& inclusive, T& exclusive, T& warp_aggregate, ScanOpT /*scan_op*/, IsIntegerT /*is_integer*/)
   {
     // Initial value presumed to be unknown or identity (either way our padding is correct)
-    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive);
+    _CUB::ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive);
 
     __syncwarp(member_mask);
 
-    exclusive      = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
-    warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
+    exclusive      = (T) _CUB::ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1]);
+    warp_aggregate = (T) _CUB::ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
   }
 
   /**
    * @brief Update inclusive, exclusive, and warp aggregate using input and inclusive (specialized
    *        for summation of integer types)
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Update(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Update(
     T input,
     T& inclusive,
     T& exclusive,
@@ -409,11 +403,11 @@ struct WarpScanSmem
     ::cuda::std::true_type /*is_integer*/)
   {
     // Initial value presumed to be unknown or identity (either way our padding is correct)
-    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive);
+    _CUB::ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive);
 
     __syncwarp(member_mask);
 
-    warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
+    warp_aggregate = (T) _CUB::ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
     exclusive      = inclusive - input;
   }
 
@@ -422,7 +416,7 @@ struct WarpScanSmem
    *        value
    */
   template <typename ScanOpT, typename IsIntegerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Update(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Update(
     T /*input*/,
     T& inclusive,
     T& exclusive,
@@ -432,11 +426,11 @@ struct WarpScanSmem
     IsIntegerT /*is_integer*/)
   {
     // Broadcast warp aggregate
-    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive);
+    _CUB::ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive);
 
     __syncwarp(member_mask);
 
-    warp_aggregate = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
+    warp_aggregate = (T) _CUB::ThreadLoad<LOAD_VOLATILE>(&temp_storage[WARP_SMEM_ELEMENTS - 1]);
 
     __syncwarp(member_mask);
 
@@ -444,11 +438,11 @@ struct WarpScanSmem
     inclusive = scan_op(initial_value, inclusive);
 
     // Get exclusive from exclusive
-    ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1], inclusive);
+    _CUB::ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 1], inclusive);
 
     __syncwarp(member_mask);
 
-    exclusive = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 2]);
+    exclusive = (T) _CUB::ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - 2]);
 
     if (lane_id == 0)
     {
@@ -475,10 +469,10 @@ struct WarpScanSmem
    *   Number of valid items in warp
    */
   template <typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   UpdatePartial([[maybe_unused]] T input, T& inclusive, T& exclusive, [[maybe_unused]] ScanOpT scan_op, int valid_items)
   {
-    if constexpr (::cuda::std::is_integral_v<T> && cub::detail::is_cuda_std_plus_v<ScanOpT, T>)
+    if constexpr (::cuda::std::is_integral_v<T> && ::cuda::__is_cuda_std_plus_v<ScanOpT, T>)
     {
       // initial value presumed 0
       if (static_cast<int>(lane_id) < valid_items)
@@ -525,7 +519,7 @@ struct WarpScanSmem
    *   Initial value to seed the scan (uniform across warp)
    */
   template <typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   UpdatePartial(T input, T& inclusive, T& exclusive, ScanOpT scan_op, int valid_items, T initial_value)
   {
     if (static_cast<int>(lane_id) < valid_items)
@@ -534,7 +528,7 @@ struct WarpScanSmem
     }
     // Get exclusive
     UpdatePartial(input, inclusive, exclusive, scan_op, valid_items);
-    if constexpr (!(::cuda::std::is_integral_v<T> && cub::detail::is_cuda_std_plus_v<ScanOpT, T>) )
+    if constexpr (!(::cuda::std::is_integral_v<T> && ::cuda::__is_cuda_std_plus_v<ScanOpT, T>) )
     {
       if ((lane_id == 0u) && (valid_items > 0))
       {
@@ -566,7 +560,7 @@ struct WarpScanSmem
    *   Number of valid items in warp
    */
   template <typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void UpdatePartial(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void UpdatePartial(
     [[maybe_unused]] T input,
     T& inclusive,
     T& exclusive,
@@ -579,10 +573,10 @@ struct WarpScanSmem
 
     __syncwarp(member_mask);
 
-    const int last_valid_lane = ::cuda::std::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1);
+    const int last_valid_lane = ::cuda::std::clamp(valid_items - 1, 0, LogicalWarpThreads - 1);
     warp_aggregate            = temp_storage[HALF_WARP_THREADS + last_valid_lane];
     // Compute exclusive
-    if constexpr (::cuda::std::is_integral_v<T> && cub::detail::is_cuda_std_plus_v<ScanOpT, T>)
+    if constexpr (::cuda::std::is_integral_v<T> && ::cuda::__is_cuda_std_plus_v<ScanOpT, T>)
     {
       UpdatePartial(input, inclusive, exclusive, scan_op, valid_items);
     }
@@ -624,7 +618,7 @@ struct WarpScanSmem
    *   Initial value to seed the scan (uniform across warp)
    */
   template <typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void UpdatePartial(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void UpdatePartial(
     T input, T& inclusive, T& exclusive, T& warp_aggregate, ScanOpT scan_op, int valid_items, T initial_value)
   {
     // Broadcast warp aggregate
@@ -632,7 +626,7 @@ struct WarpScanSmem
 
     __syncwarp(member_mask);
 
-    const int last_valid_lane = ::cuda::std::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1);
+    const int last_valid_lane = ::cuda::std::clamp(valid_items - 1, 0, LogicalWarpThreads - 1);
     warp_aggregate            = temp_storage[HALF_WARP_THREADS + last_valid_lane];
 
     __syncwarp(member_mask);

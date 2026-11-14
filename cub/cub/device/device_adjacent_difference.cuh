@@ -28,6 +28,7 @@
 #include <cuda/__functional/call_or.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/cstdint>
@@ -138,46 +139,23 @@ struct DeviceAdjacentDifference
   //! to compute the difference between adjacent elements.
   //!
   //!
-  //! .. code-block:: c++
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_api.cu
+  //!    :language: c++
+  //!    :dedent:
+  //!    :start-after: example-begin adjacent-difference-includes
+  //!    :end-before: example-end adjacent-difference-includes
   //!
-  //!    #include <cub/cub.cuh>
-  //!    // or equivalently <cub/device/device_adjacent_difference.cuh>
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_api.cu
+  //!    :language: c++
+  //!    :dedent:
+  //!    :start-after: example-begin custom-difference
+  //!    :end-before: example-end custom-difference
   //!
-  //!    struct CustomDifference
-  //!    {
-  //!      template <typename DataType>
-  //!      __host__ DataType operator()(DataType &lhs, DataType &rhs)
-  //!      {
-  //!        return lhs - rhs;
-  //!      }
-  //!    };
-  //!
-  //!    // Declare, allocate, and initialize device-accessible pointers
-  //!    int  num_items;      // e.g., 8
-  //!    int  *d_input;       // e.g., [1, 2, 1, 2, 1, 2, 1, 2]
-  //!    int  *d_output;
-  //!    ...
-  //!
-  //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = nullptr;
-  //!    size_t   temp_storage_bytes = 0;
-  //!
-  //!    cub::DeviceAdjacentDifference::SubtractLeftCopy(
-  //!      d_temp_storage, temp_storage_bytes,
-  //!      d_input, d_output,
-  //!      num_items, CustomDifference());
-  //!
-  //!    // Allocate temporary storage
-  //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //!
-  //!    // Run operation
-  //!    cub::DeviceAdjacentDifference::SubtractLeftCopy(
-  //!      d_temp_storage, temp_storage_bytes,
-  //!      d_input, d_output,
-  //!      num_items, CustomDifference());
-  //!
-  //!    // d_input  <-- [1, 2, 1, 2, 1, 2, 1, 2]
-  //!    // d_output <-- [1, 1, -1, 1, -1, 1, -1, 1]
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_api.cu
+  //!    :language: c++
+  //!    :dedent:
+  //!    :start-after: example-begin subtract-left-copy
+  //!    :end-before: example-end subtract-left-copy
   //!
   //! @endrst
   //!
@@ -234,9 +212,9 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeftCopy");
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Left>(
+        return _CUB::detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Left>(
           storage, bytes, d_input, d_output, num_items, difference_op, stream, tuning_env);
       });
   }
@@ -262,41 +240,23 @@ struct DeviceAdjacentDifference
   //! to compute the difference between adjacent elements.
   //!
   //!
-  //! .. code-block:: c++
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_api.cu
+  //!    :language: c++
+  //!    :dedent:
+  //!    :start-after: example-begin adjacent-difference-includes
+  //!    :end-before: example-end adjacent-difference-includes
   //!
-  //!    #include <cub/cub.cuh>
-  //!    // or equivalently <cub/device/device_adjacent_difference.cuh>
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_api.cu
+  //!    :language: c++
+  //!    :dedent:
+  //!    :start-after: example-begin custom-difference
+  //!    :end-before: example-end custom-difference
   //!
-  //!    struct CustomDifference
-  //!    {
-  //!      template <typename DataType>
-  //!      __host__ DataType operator()(DataType &lhs, DataType &rhs)
-  //!      {
-  //!        return lhs - rhs;
-  //!      }
-  //!    };
-  //!
-  //!    // Declare, allocate, and initialize device-accessible pointers
-  //!    int  num_items;     // e.g., 8
-  //!    int  *d_data;       // e.g., [1, 2, 1, 2, 1, 2, 1, 2]
-  //!    ...
-  //!
-  //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = nullptr;
-  //!    size_t   temp_storage_bytes = 0;
-  //!    cub::DeviceAdjacentDifference::SubtractLeft(
-  //!      d_temp_storage, temp_storage_bytes,
-  //!      d_data, num_items, CustomDifference());
-  //!
-  //!    // Allocate temporary storage
-  //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //!
-  //!    // Run operation
-  //!    cub::DeviceAdjacentDifference::SubtractLeft(
-  //!      d_temp_storage, temp_storage_bytes,
-  //!      d_data, num_items, CustomDifference());
-  //!
-  //!    // d_data <-- [1, 1, -1, 1, -1, 1, -1, 1]
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_api.cu
+  //!    :language: c++
+  //!    :dedent:
+  //!    :start-after: example-begin subtract-left-in-place
+  //!    :end-before: example-end subtract-left-in-place
   //!
   //! @endrst
   //!
@@ -346,9 +306,9 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeft");
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Left>(
+        return _CUB::detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Left>(
           storage, bytes, d_input, d_input, num_items, difference_op, stream, tuning_env);
       });
   }
@@ -378,43 +338,23 @@ struct DeviceAdjacentDifference
   //! to compute the difference between adjacent elements.
   //!
   //!
-  //! .. code-block:: c++
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_api.cu
+  //!    :language: c++
+  //!    :dedent:
+  //!    :start-after: example-begin adjacent-difference-includes
+  //!    :end-before: example-end adjacent-difference-includes
   //!
-  //!    #include <cub/cub.cuh>
-  //!    // or equivalently <cub/device/device_adjacent_difference.cuh>
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_api.cu
+  //!    :language: c++
+  //!    :dedent:
+  //!    :start-after: example-begin custom-difference
+  //!    :end-before: example-end custom-difference
   //!
-  //!    struct CustomDifference
-  //!    {
-  //!      template <typename DataType>
-  //!      __host__ DataType operator()(DataType &lhs, DataType &rhs)
-  //!      {
-  //!        return lhs - rhs;
-  //!      }
-  //!    };
-  //!
-  //!    // Declare, allocate, and initialize device-accessible pointers
-  //!    int  num_items;     // e.g., 8
-  //!    int  *d_input;      // e.g., [1, 2, 1, 2, 1, 2, 1, 2]
-  //!    int  *d_output;
-  //!    ..
-  //!
-  //!    // Determine temporary device storage requirements
-  //!    void *d_temp_storage = nullptr;
-  //!    size_t temp_storage_bytes = 0;
-  //!    cub::DeviceAdjacentDifference::SubtractRightCopy(
-  //!      d_temp_storage, temp_storage_bytes,
-  //!      d_input, d_output, num_items, CustomDifference());
-  //!
-  //!    // Allocate temporary storage
-  //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //!
-  //!    // Run operation
-  //!    cub::DeviceAdjacentDifference::SubtractRightCopy(
-  //!      d_temp_storage, temp_storage_bytes,
-  //!      d_input, d_output, num_items, CustomDifference());
-  //!
-  //!    // d_input <-- [1, 2, 1, 2, 1, 2, 1, 2]
-  //!    // d_data  <-- [-1, 1, -1, 1, -1, 1, -1, 2]
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_api.cu
+  //!    :language: c++
+  //!    :dedent:
+  //!    :start-after: example-begin subtract-right-copy
+  //!    :end-before: example-end subtract-right-copy
   //!
   //! @endrst
   //!
@@ -472,9 +412,9 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRightCopy");
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Right>(
+        return _CUB::detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Right>(
           storage, bytes, d_input, d_output, num_items, difference_op, stream, tuning_env);
       });
   }
@@ -500,30 +440,17 @@ struct DeviceAdjacentDifference
   //! to compute the difference between adjacent elements.
   //!
   //!
-  //! .. code-block:: c++
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_api.cu
+  //!    :language: c++
+  //!    :dedent:
+  //!    :start-after: example-begin adjacent-difference-includes
+  //!    :end-before: example-end adjacent-difference-includes
   //!
-  //!    #include <cub/cub.cuh>
-  //!    // or equivalently <cub/device/device_adjacent_difference.cuh>
-  //!
-  //!    // Declare, allocate, and initialize device-accessible pointers
-  //!    int  num_items;    // e.g., 8
-  //!    int  *d_data;      // e.g., [1, 2, 1, 2, 1, 2, 1, 2]
-  //!    ...
-  //!
-  //!    // Determine temporary device storage requirements
-  //!    void *d_temp_storage = nullptr;
-  //!    size_t temp_storage_bytes = 0;
-  //!    cub::DeviceAdjacentDifference::SubtractRight(
-  //!      d_temp_storage, temp_storage_bytes, d_data, num_items);
-  //!
-  //!    // Allocate temporary storage
-  //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //!
-  //!    // Run operation
-  //!    cub::DeviceAdjacentDifference::SubtractRight(
-  //!      d_temp_storage, temp_storage_bytes, d_data, num_items);
-  //!
-  //!    // d_data  <-- [-1, 1, -1, 1, -1, 1, -1, 2]
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_api.cu
+  //!    :language: c++
+  //!    :dedent:
+  //!    :start-after: example-begin subtract-right-in-place
+  //!    :end-before: example-end subtract-right-in-place
   //!
   //! @endrst
   //!
@@ -573,9 +500,9 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRight");
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Right>(
+        return _CUB::detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Right>(
           storage, bytes, d_input, d_input, num_items, difference_op, stream, tuning_env);
       });
   }
@@ -664,8 +591,8 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractLeftCopy");
 
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-      return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Left>(
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+      return _CUB::detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Left>(
         storage, bytes, d_input, d_output, num_items, difference_op, stream, tuning_env);
     });
   }
@@ -741,8 +668,8 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractLeft");
 
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-      return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Left>(
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+      return _CUB::detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Left>(
         storage, bytes, d_input, d_input, num_items, difference_op, stream, tuning_env);
     });
   }
@@ -833,8 +760,8 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractRightCopy");
 
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-      return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Right>(
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+      return _CUB::detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Right>(
         storage, bytes, d_input, d_output, num_items, difference_op, stream, tuning_env);
     });
   }
@@ -910,8 +837,8 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractRight");
 
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-      return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Right>(
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+      return _CUB::detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Right>(
         storage, bytes, d_input, d_input, num_items, difference_op, stream, tuning_env);
     });
   }

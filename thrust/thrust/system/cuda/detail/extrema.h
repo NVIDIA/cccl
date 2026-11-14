@@ -17,12 +17,18 @@
 
 #  include <thrust/system/cuda/config.h>
 
+#  include <cub/device/device_reduce.cuh>
+#  include <cub/thread/thread_operators.cuh>
+
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/extrema.h>
+#  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 
 #  include <cuda/__cmath/round_up.h>
 #  include <cuda/__iterator/discard_iterator.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__utility/pair.h>
@@ -103,7 +109,7 @@ cub_minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt las
   // Round tmp_size up to the alignment of offset_t so the index slots are properly aligned.
   const auto aligned_tmp_size = ::cuda::round_up(tmp_size, alignof(offset_t));
   // Allocate: the algorithm's temporary storage followed by two index slots (min, max).
-  thrust::detail::temporary_array<char, Derived> tmp(policy, aligned_tmp_size + 2 * sizeof(offset_t));
+  thrust::detail::temporary_array<char, Derived> tmp(policy, aligned_tmp_size + (2 * sizeof(offset_t)));
   void* const tmp_ptr       = static_cast<void*>(tmp.data().get());
   offset_t* const min_index = thrust::detail::aligned_reinterpret_cast<offset_t*>(tmp.data().get() + aligned_tmp_size);
   offset_t* const max_index = min_index + 1;
@@ -135,7 +141,7 @@ cub_minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt las
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class ItemsIt, class BinaryPred = ::cuda::std::less<thrust::detail::it_value_t<ItemsIt>>>
-ItemsIt _CCCL_HOST_DEVICE
+ItemsIt _CCCL_HOST_DEVICE_API
 min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred = {})
 {
   THRUST_CDP_DISPATCH(({ return __extrema::cub_min_element(policy, first, last, binary_pred); }),
@@ -146,7 +152,7 @@ min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, Bina
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class ItemsIt, class BinaryPred = ::cuda::std::less<thrust::detail::it_value_t<ItemsIt>>>
-ItemsIt _CCCL_HOST_DEVICE
+ItemsIt _CCCL_HOST_DEVICE_API
 max_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred = {})
 {
   THRUST_CDP_DISPATCH(
@@ -158,7 +164,7 @@ max_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, Bina
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class ItemsIt, class BinaryPred = ::cuda::std::less<thrust::detail::it_value_t<ItemsIt>>>
-::cuda::std::pair<ItemsIt, ItemsIt> _CCCL_HOST_DEVICE
+::cuda::std::pair<ItemsIt, ItemsIt> _CCCL_HOST_DEVICE_API
 minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred = {})
 {
   THRUST_CDP_DISPATCH(({ return __extrema::cub_minmax_element(policy, first, last, binary_pred); }),

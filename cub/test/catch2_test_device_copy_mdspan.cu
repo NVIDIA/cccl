@@ -10,11 +10,11 @@
 #include <thrust/host_vector.h>
 #include <thrust/sequence.h>
 
-#include <cuda/devices>
 #include <cuda/std/array>
 #include <cuda/std/execution>
 #include <cuda/std/mdspan>
 
+#include "catch2_test_custom_streams.cuh"
 #include "cub_test_macros.h"
 #include <catch2_test_launch_helper.h>
 
@@ -31,6 +31,40 @@ CUB_TEST("DeviceCopy::Copy: empty mdspan", "[copy][mdspan]", CUB_SMALL)
   auto mdspan_in_empty  = cuda::std::mdspan<int, dims_1d_t>(nullptr, 0);
   auto mdspan_out_empty = cuda::std::mdspan<int, dims_1d_t>(nullptr, 0);
   device_copy_mdspan(mdspan_in_empty, mdspan_out_empty);
+}
+
+CUB_TEST("DeviceCopy::Copy: mdspan with a zero extent", "[copy][mdspan]", CUB_SMALL)
+{
+  constexpr int sentinel = 42;
+  c2h::device_vector<int> d_input(1, 1);
+  c2h::device_vector<int> d_output(1, sentinel);
+  int* in_ptr  = thrust::raw_pointer_cast(d_input.data());
+  int* out_ptr = thrust::raw_pointer_cast(d_output.data());
+
+  SECTION("2D")
+  {
+    device_copy_mdspan(cuda::std::mdspan<int, dims_2d_t>(in_ptr, 0, 5),
+                       cuda::std::mdspan<int, dims_2d_t>(out_ptr, 0, 5));
+    device_copy_mdspan(cuda::std::mdspan<int, dims_2d_t>(in_ptr, 5, 0),
+                       cuda::std::mdspan<int, dims_2d_t>(out_ptr, 5, 0));
+  }
+
+  SECTION("4D")
+  {
+    device_copy_mdspan(cuda::std::mdspan<int, dims_4d_t>(in_ptr, 2, 3, 0, 4),
+                       cuda::std::mdspan<int, dims_4d_t>(out_ptr, 2, 3, 0, 4));
+  }
+
+  SECTION("2D strided")
+  {
+    using extents_t = cuda::std::dextents<int, 2>;
+    using mapping_t = cuda::std::layout_stride::mapping<extents_t>;
+    const mapping_t mapping{extents_t{0, 5}, cuda::std::array<int, 2>{1, 2}};
+    device_copy_mdspan(cuda::std::mdspan<int, extents_t, cuda::std::layout_stride>(in_ptr, mapping),
+                       cuda::std::mdspan<int, extents_t>(out_ptr, 0, 5));
+  }
+
+  REQUIRE(d_output[0] == sentinel);
 }
 
 CUB_TEST("DeviceCopy::Copy: 1D, 2D, 4D mdspan with matching layouts", "[copy][mdspan]", CUB_SMALL)
@@ -105,47 +139,7 @@ CUB_TEST("DeviceCopy::Copy: 1D, 2D, 4D mdspan with matching layouts and user pro
     REQUIRE(d_input == d_output);
   };
 
-  int current_device;
-  auto error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
-  SECTION("DeviceCopy::Copy works with cudaStream_t")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_mdspan_copy(stream.get());
-  }
-
-  SECTION("DeviceCopy::Copy works with cuda::stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_mdspan_copy(stream);
-  }
-
-  SECTION("DeviceCopy::Copy works with cuda::stream_ref")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
-    test_mdspan_copy(stream_ref);
-  }
-
-  SECTION("DeviceCopy::Copy works with cuda::std::execution::env")
-  {
-    cuda::std::execution::env env{};
-    test_mdspan_copy(env);
-  }
-
-  SECTION("DeviceCopy::Copy works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_mdspan_copy(policy);
-  }
-
-  SECTION("DeviceCopy::Copy works with cuda::execution::gpu with stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_mdspan_copy(policy);
-  }
+  test_with_custom_streams(test_mdspan_copy);
 }
 #endif // TEST_LAUNCH == 0
 
@@ -161,7 +155,7 @@ CUB_TEST("DeviceCopy::Copy: 2D, 4D mdspan with compatible layouts", "[copy][mdsp
   using cuda::std::layout_stride;
   using mdspan_2d_left_t  = cuda::std::mdspan<int, dims_2d_t, layout_left>;
   using mdspan_strided_2d = cuda::std::mdspan<int, dims_2d_t, layout_stride>;
-  layout_stride::mapping<dims_2d_t> map_out{dims_2d_t{100, 100}, cuda::std::array{1, 100}};
+  const layout_stride::mapping<dims_2d_t> map_out{dims_2d_t{100, 100}, cuda::std::array{1, 100}};
 
   auto d_mdspan_in2  = mdspan_2d_left_t(thrust::raw_pointer_cast(d_input.data()), dims_2d_t{100, 100});
   auto d_mdspan_out2 = mdspan_strided_2d(thrust::raw_pointer_cast(d_output.data()), map_out);
@@ -179,7 +173,7 @@ struct is_42
 
 CUB_TEST("DeviceCopy::Copy: 2D strided mdspan", "[copy][mdspan]", CUB_SMALL)
 {
-  constexpr size_t num_items = (2 * 100 + 20) * 100;
+  constexpr size_t num_items = ((2 * 100) + 20) * 100;
   c2h::device_vector<int> d_input(num_items, thrust::no_init);
   c2h::device_vector<int> d_output(num_items, thrust::no_init);
   thrust::sequence(d_input.begin(), d_input.end(), 0);
@@ -187,8 +181,8 @@ CUB_TEST("DeviceCopy::Copy: 2D strided mdspan", "[copy][mdspan]", CUB_SMALL)
   using cuda::std::layout_stride;
   using mdspan_strided_2d = cuda::std::mdspan<int, dims_2d_t, layout_stride>;
 
-  layout_stride::mapping<dims_2d_t> map_in{dims_2d_t{100, 100}, cuda::std::array{2, 220}};
-  layout_stride::mapping<dims_2d_t> map_out{dims_2d_t{100, 100}, cuda::std::array{220, 2}};
+  const layout_stride::mapping<dims_2d_t> map_in{dims_2d_t{100, 100}, cuda::std::array{2, 220}};
+  const layout_stride::mapping<dims_2d_t> map_out{dims_2d_t{100, 100}, cuda::std::array{220, 2}};
   auto d_mdspan_in  = mdspan_strided_2d(thrust::raw_pointer_cast(d_input.data()), map_in);
   auto d_mdspan_out = mdspan_strided_2d(thrust::raw_pointer_cast(d_output.data()), map_out);
   device_copy_mdspan(d_mdspan_in, d_mdspan_out);
@@ -207,13 +201,13 @@ CUB_TEST("DeviceCopy::Copy: 2D strided mdspan", "[copy][mdspan]", CUB_SMALL)
   // Count elements that weren't overwritten (should remain as 42s)
   // Due to strided layout, not all elements in the contiguous buffer are accessed
   auto count = thrust::count_if(d_output.begin(), d_output.end(), cuda::equal_to_value<int>{42});
-  constexpr size_t expected_untouched = num_items - (100 * 100 - 1);
+  constexpr size_t expected_untouched = num_items - ((100 * 100) - 1);
   REQUIRE(count == expected_untouched);
 }
 
 CUB_TEST("DeviceCopy::Copy: 2D strided mdspan + contiguous mdspan", "[copy][mdspan]", CUB_SMALL)
 {
-  constexpr size_t num_items = (2 * 100 + 20) * 100;
+  constexpr size_t num_items = ((2 * 100) + 20) * 100;
   c2h::device_vector<int> d_input(num_items, thrust::no_init);
   c2h::device_vector<int> d_output(num_items, thrust::no_init);
   thrust::sequence(d_input.begin(), d_input.end(), 0);
@@ -221,7 +215,7 @@ CUB_TEST("DeviceCopy::Copy: 2D strided mdspan + contiguous mdspan", "[copy][mdsp
   using cuda::std::layout_stride;
   using mdspan_strided_2d    = cuda::std::mdspan<int, dims_2d_t, layout_stride>;
   using mdspan_contiguous_2d = cuda::std::mdspan<int, dims_2d_t>;
-  layout_stride::mapping<dims_2d_t> map_in{dims_2d_t{100, 100}, cuda::std::array{2, 220}};
+  const layout_stride::mapping<dims_2d_t> map_in{dims_2d_t{100, 100}, cuda::std::array{2, 220}};
   auto d_mdspan_in  = mdspan_strided_2d(thrust::raw_pointer_cast(d_input.data()), map_in);
   auto d_mdspan_out = mdspan_contiguous_2d(thrust::raw_pointer_cast(d_output.data()), dims_2d_t{100, 100});
   device_copy_mdspan(d_mdspan_in, d_mdspan_out);

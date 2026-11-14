@@ -27,17 +27,12 @@
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__ranges/compressed_movable_box.h>
-#include <cuda/std/__ranges/movable_box.h>
-#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -49,7 +44,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _Fn, class _Index>
 class __tabulate_proxy
 {
-private:
   template <class, class>
   friend class tabulate_output_iterator;
 
@@ -116,7 +110,6 @@ public:
 template <class _Fn, class _Index>
 class tabulate_output_iterator
 {
-private:
   // Not a base because then the friend operators would be ambiguous
   ::cuda::std::__compressed_movable_box<_Index, _Fn> __store_;
 

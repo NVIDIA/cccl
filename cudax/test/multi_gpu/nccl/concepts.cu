@@ -12,7 +12,7 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/functional> // cuda::std::plus, cuda::std::multiplies
 
-#include <cuda/experimental/__nccl/nccl_api.h>
+#include <cuda/experimental/mgmn/__nccl/nccl_api.h>
 
 #include <c2h/catch2_test_helper.h>
 
@@ -29,7 +29,7 @@ struct trivial_aggregate
 struct non_trivial
 {
   non_trivial(const non_trivial&) {} // NOLINT(modernize-use-equals-default)
-  int a;
+  int a{};
 };
 } // namespace
 

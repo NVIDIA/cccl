@@ -26,8 +26,8 @@ using namespace cuda::experimental::stf;
 template <typename T>
 __global__ void scale_kernel(size_t n, T factor, T* data)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (size_t i = tid; i < n; i += nthreads)
   {
@@ -201,7 +201,7 @@ void run_tests()
     ctx.host_launch(holder.get_double_data().read())->*[](auto d) {
       for (size_t i = 0; i < d.size(); i++)
       {
-        EXPECT(fabs(d(i) - static_cast<double>(i) * 1.5) < 1e-9);
+        EXPECT(fabs(d(i) - (static_cast<double>(i) * 1.5)) < 1e-9);
       }
     };
   }
@@ -235,7 +235,7 @@ void run_tests()
     ctx.host_launch(data1.read())->*[](auto d) {
       for (size_t i = 0; i < d.size(); i++)
       {
-        EXPECT(d(i) == static_cast<int>(i + i * 10));
+        EXPECT(d(i) == static_cast<int>(i + (i * 10)));
       }
     };
   }
@@ -254,13 +254,13 @@ void run_stackable_tests()
 
     // Enter nested context
     {
-      stackable_ctx::graph_scope_guard scope{ctx};
+      const stackable_ctx::graph_scope_guard scope{ctx};
 
       // Scale in nested context
       scale_data(ctx, data, 2);
 
       // Create local data in nested context
-      typename stackable_ctx::logical_data_t<slice<int>> local_data = ctx.logical_data(shape_of<slice<int>>(64));
+      stackable_ctx::logical_data_t<slice<int>> local_data = ctx.logical_data(shape_of<slice<int>>(64));
       local_data.set_symbol("nested_local");
 
       ctx.parallel_for(local_data.shape(), local_data.write())->*[] __device__(size_t i, auto d) {

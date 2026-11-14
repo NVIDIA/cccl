@@ -26,17 +26,16 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetDifferenceByKeyDispatchExplicit()
+TEST_CASE("TestSetDifferenceByKeyDispatchExplicit", "[set_difference_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::set_difference_by_key(
     sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSetDifferenceByKeyDispatchExplicit);
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -59,7 +58,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetDifferenceByKeyDispatchImplicit()
+TEST_CASE("TestSetDifferenceByKeyDispatchImplicit", "[set_difference_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -73,27 +72,30 @@ void TestSetDifferenceByKeyDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSetDifferenceByKeyDispatchImplicit);
 
 template <typename Vector>
-void TestSetDifferenceByKeySimple()
+void test_set_difference_by_key_simple()
 {
   using Iterator = typename Vector::iterator;
 
-  Vector a_key{0, 2, 4, 5}, b_key{0, 3, 3, 4, 6};
-  Vector a_val(4, 0), b_val(5, 1);
+  Vector a_key{0, 2, 4, 5};
+  Vector b_key{0, 3, 3, 4, 6};
+  Vector a_val(4, 0);
+  Vector b_val(5, 1);
 
-  Vector ref_key(2), ref_val(2);
+  Vector ref_key(2);
+  Vector ref_val(2);
   ref_key[0] = 2;
   ref_key[1] = 5;
   ref_val[0] = 0;
   ref_val[1] = 0;
 
-  Vector result_key(2), result_val(2);
+  Vector result_key(2);
+  Vector result_val(2);
 
-  cuda::std::pair<Iterator, Iterator> end = thrust::set_difference_by_key(
+  const cuda::std::pair<Iterator, Iterator> end = thrust::set_difference_by_key(
     a_key.begin(),
     a_key.end(),
     b_key.begin(),
@@ -103,15 +105,15 @@ void TestSetDifferenceByKeySimple()
     result_key.begin(),
     result_val.begin());
 
-  ASSERT_EQUAL_QUIET(result_key.end(), end.first);
-  ASSERT_EQUAL_QUIET(result_val.end(), end.second);
-  ASSERT_EQUAL(ref_key, result_key);
-  ASSERT_EQUAL(ref_val, result_val);
+  REQUIRE(result_key.end() == end.first);
+  REQUIRE(result_val.end() == end.second);
+  REQUIRE(ref_key == result_key);
+  REQUIRE(ref_val == result_val);
 }
-DECLARE_VECTOR_UNITTEST(TestSetDifferenceByKeySimple);
+DECLARE_VECTOR_UNITTEST(test_set_difference_by_key_simple);
 
 template <typename T>
-void TestSetDifferenceByKey(const size_t n)
+void test_set_difference_by_key(const size_t n)
 {
   thrust::host_vector<T> random_keys = unittest::random_integers<unittest::int8_t>(n);
   thrust::host_vector<T> random_vals = unittest::random_integers<unittest::int8_t>(n);
@@ -171,16 +173,16 @@ void TestSetDifferenceByKey(const size_t n)
     d_result_keys.erase(d_end.first, d_result_keys.end());
     d_result_vals.erase(d_end.second, d_result_vals.end());
 
-    ASSERT_EQUAL(h_result_keys, d_result_keys);
-    ASSERT_EQUAL(h_result_vals, d_result_vals);
+    REQUIRE(h_result_keys == d_result_keys);
+    REQUIRE(h_result_vals == d_result_vals);
   }
 }
-DECLARE_VARIABLE_UNITTEST(TestSetDifferenceByKey);
+DECLARE_VARIABLE_UNITTEST(test_set_difference_by_key);
 
 template <typename T>
-void TestSetDifferenceByKeyEquivalentRanges(const size_t n)
+void test_set_difference_by_key_equivalent_ranges(const size_t n)
 {
-  thrust::host_vector<T> temp = unittest::random_integers<T>(n);
+  const thrust::host_vector<T> temp = unittest::random_integers<T>(n);
 
   thrust::host_vector<T> h_a_key = temp;
   thrust::sort(h_a_key.begin(), h_a_key.end());
@@ -195,8 +197,10 @@ void TestSetDifferenceByKeyEquivalentRanges(const size_t n)
   thrust::device_vector<T> d_a_val = h_a_val;
   thrust::device_vector<T> d_b_val = h_b_val;
 
-  thrust::host_vector<T> h_result_key(n), h_result_val(n);
-  thrust::device_vector<T> d_result_key(n), d_result_val(n);
+  thrust::host_vector<T> h_result_key(n);
+  thrust::host_vector<T> h_result_val(n);
+  thrust::device_vector<T> d_result_key(n);
+  thrust::device_vector<T> d_result_val(n);
 
   cuda::std::pair<typename thrust::host_vector<T>::iterator, typename thrust::host_vector<T>::iterator> h_end;
 
@@ -226,13 +230,13 @@ void TestSetDifferenceByKeyEquivalentRanges(const size_t n)
   d_result_key.erase(d_end.first, d_result_key.end());
   d_result_val.erase(d_end.second, d_result_val.end());
 
-  ASSERT_EQUAL(h_result_key, d_result_key);
-  ASSERT_EQUAL(h_result_val, d_result_val);
+  REQUIRE(h_result_key == d_result_key);
+  REQUIRE(h_result_val == d_result_val);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetDifferenceByKeyEquivalentRanges);
+DECLARE_VARIABLE_UNITTEST(test_set_difference_by_key_equivalent_ranges);
 
 template <typename T>
-void TestSetDifferenceByKeyMultiset(const size_t n)
+void test_set_difference_by_key_multiset(const size_t n)
 {
   thrust::host_vector<T> vec = unittest::random_integers<int>(2 * n);
 
@@ -259,8 +263,10 @@ void TestSetDifferenceByKeyMultiset(const size_t n)
   thrust::device_vector<T> d_a_val = h_a_val;
   thrust::device_vector<T> d_b_val = h_b_val;
 
-  thrust::host_vector<T> h_result_key(n), h_result_val(n);
-  thrust::device_vector<T> d_result_key(n), d_result_val(n);
+  thrust::host_vector<T> h_result_key(n);
+  thrust::host_vector<T> h_result_val(n);
+  thrust::device_vector<T> d_result_key(n);
+  thrust::device_vector<T> d_result_val(n);
 
   cuda::std::pair<typename thrust::host_vector<T>::iterator, typename thrust::host_vector<T>::iterator> h_end;
 
@@ -290,7 +296,7 @@ void TestSetDifferenceByKeyMultiset(const size_t n)
   d_result_key.erase(d_end.first, d_result_key.end());
   d_result_val.erase(d_end.second, d_result_val.end());
 
-  ASSERT_EQUAL(h_result_key, d_result_key);
-  ASSERT_EQUAL(h_result_val, d_result_val);
+  REQUIRE(h_result_key == d_result_key);
+  REQUIRE(h_result_val == d_result_val);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetDifferenceByKeyMultiset);
+DECLARE_VARIABLE_UNITTEST(test_set_difference_by_key_multiset);

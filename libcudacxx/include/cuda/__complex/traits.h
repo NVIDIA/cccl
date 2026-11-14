@@ -25,7 +25,6 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__fwd/complex.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
-#include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>

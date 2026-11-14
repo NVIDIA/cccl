@@ -10,10 +10,9 @@
 
 // UNSUPPORTED: libcpp-has-no-threads
 
-// <cuda/ptx>
+// <cuda/ptxs/tcgen05_mma.h>
 
-#include <cuda/ptx>
-#include <cuda/std/utility>
+#include <cuda/ptxs/tcgen05_mma.h>
 
 #include "generated/tcgen05_mma_cta_group_2.h"
 

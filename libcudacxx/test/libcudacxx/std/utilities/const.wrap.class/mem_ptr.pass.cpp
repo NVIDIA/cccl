@@ -7,16 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Find a way to make this work for nvrtc.
-// nvrtc doesn't allow accessing the static constexpr const auto& value member.
-// UNSUPPORTED: nvrtc
-
-// This test crashes msvc with message:
-//   Internal compiler error. Try simplifying or changing the program near the locations listed above.
-// UNSUPPORTED: msvc
-
-// NTTP may not have a class type in C++17.
-// REQUIRES: !c++17
+// nvcc + msvc + c++17 combination fails to compile with error:
+//   template instantiation resulted in unexpected function type
+// XFAIL: nvcc && msvc && c++17
 
 // constant_wrapper
 
@@ -31,6 +24,9 @@
 #include "helpers.h"
 #include "test_macros.h"
 
+// gcc warns about some unnecessary parentheses being emitted by cudefe++.
+TEST_DIAG_SUPPRESS_GCC("-Wparentheses")
+
 struct S
 {
   int member = 42;
@@ -38,15 +34,16 @@ struct S
 
 constexpr S s_value{};
 
+template <class L, class R, class = void>
+inline constexpr bool HasPtrToMem = false;
 template <class L, class R>
-concept HasPtrToMem = requires(L l, R r) {
-  { l->*r };
-};
+inline constexpr bool
+  HasPtrToMem<L, R, cuda::std::void_t<decltype(cuda::std::declval<L&>()->*cuda::std::declval<R&>())>> = true;
 
+template <class L, class R, bool = HasPtrToMem<L, R>>
+inline constexpr bool HasNoexceptPtrToMem = false;
 template <class L, class R>
-concept HasNoexceptPtrToMem = requires(L l, R r) {
-  { l->*r } noexcept;
-};
+inline constexpr bool HasNoexceptPtrToMem<L, R, true> = noexcept(cuda::std::declval<L&>()->*cuda::std::declval<R&>());
 
 struct WithOps
 {
@@ -77,55 +74,68 @@ struct OpsReturnNonStructural
 struct NoOps
 {};
 
-static_assert(HasPtrToMem<cuda::std::__constant_wrapper<&s_value>, cuda::std::__constant_wrapper<&S::member>>);
-static_assert(HasNoexceptPtrToMem<cuda::std::__constant_wrapper<&s_value>, cuda::std::__constant_wrapper<&S::member>>);
+static_assert(HasPtrToMem<cuda::std::constant_wrapper<&s_value>, cuda::std::constant_wrapper<&S::member>>);
+static_assert(HasNoexceptPtrToMem<cuda::std::constant_wrapper<&s_value>, cuda::std::constant_wrapper<&S::member>>);
 
-static_assert(HasPtrToMem<cuda::std::__constant_wrapper<&s_value>, int S::*>);
-static_assert(!HasPtrToMem<cuda::std::__constant_wrapper<&s_value>, int>);
+static_assert(HasPtrToMem<cuda::std::constant_wrapper<&s_value>, int S::*>);
+static_assert(!HasPtrToMem<cuda::std::constant_wrapper<&s_value>, int>);
+
+// Runtime data-member pointers must preserve all pointee cv-qualifiers.
+template <class T>
+using RuntimeMemberResult =
+  decltype(cuda::std::declval<cuda::std::constant_wrapper<static_cast<T*>(nullptr)>>()->*cuda::std::declval<int S::*>());
+
+static_assert(cuda::std::same_as<int&, RuntimeMemberResult<S>>);
+static_assert(cuda::std::same_as<const int&, RuntimeMemberResult<const S>>);
+static_assert(cuda::std::same_as<volatile int&, RuntimeMemberResult<volatile S>>);
+static_assert(cuda::std::same_as<const volatile int&, RuntimeMemberResult<const volatile S>>);
+static_assert(!HasPtrToMem<cuda::std::constant_wrapper<&s_value>, int NoOps::*>);
 
 TEST_FUNC constexpr bool test()
 {
   {
     // use builtin operator->*
-    cuda::std::__constant_wrapper<(&s_value)> cwS;
-    cuda::std::__constant_wrapper<&S::member> cwPM;
-    cuda::std::same_as<cuda::std::__constant_wrapper<42>> decltype(auto) result1 = cwS->*cwPM;
+    cuda::std::constant_wrapper<(&s_value)> cwS{};
+    cuda::std::constant_wrapper<&S::member> cwPM{};
+    decltype(auto) result1 = cwS->*cwPM;
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<42>, decltype(result1)>);
     static_assert(result1 == 42);
   }
 
   {
-    // todo(dabayer): Try to make this work with nvcc
-#if !_CCCL_CUDA_COMPILER(NVCC)
-    // mix runtime and constant_wrapper parameters, will use built-in operator
-    cuda::std::__constant_wrapper<(&s_value)> cwS;
-    int S::* pm                                           = &S::member;
-    cuda::std::same_as<const int&> decltype(auto) result1 = cwS->*pm;
+    // mix runtime and constant_wrapper parameters
+    cuda::std::constant_wrapper<(&s_value)> cwS{};
+    int S::* pm            = &S::member;
+    decltype(auto) result1 = cwS->*pm;
+    static_assert(cuda::std::same_as<const int&, decltype(result1)>);
     assert(result1 == 42);
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
   }
 
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
   {
     // custom operator->*
-    cuda::std::__constant_wrapper<WithOps{42}> cwWO;
-    cuda::std::__constant_wrapper<&WithOps::value> cwPM;
-    cuda::std::same_as<cuda::std::__constant_wrapper<84>> decltype(auto) result1 = cwWO->*cwPM;
+    cuda::std::constant_wrapper<WithOps{42}> cwWO;
+    cuda::std::constant_wrapper<&WithOps::value> cwPM;
+    cuda::std::same_as<cuda::std::constant_wrapper<84>> decltype(auto) result1 = cwWO->*cwPM;
     static_assert(result1 == 84);
   }
 
   {
     // Return non-structural type
     // Will use underlying type's runtime operators
-    cuda::std::__constant_wrapper<OpsReturnNonStructural{42}> cwORNS;
-    cuda::std::__constant_wrapper<&OpsReturnNonStructural::value> cwPM;
+    cuda::std::constant_wrapper<OpsReturnNonStructural{42}> cwORNS;
+    cuda::std::constant_wrapper<&OpsReturnNonStructural::value> cwPM;
     cuda::std::same_as<NonStructural> decltype(auto) result1 = cwORNS->*cwPM;
     assert(result1.get() == 84);
   }
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   {
     // integral_constant
-    cuda::std::__constant_wrapper<(&s_value)> cwS;
-    cuda::std::integral_constant<int S::*, &S::member> icPM;
-    cuda::std::same_as<cuda::std::__constant_wrapper<42>> decltype(auto) result1 = cwS->*icPM;
+    cuda::std::constant_wrapper<(&s_value)> cwS{};
+    cuda::std::integral_constant<int S::*, &S::member> icPM{};
+    decltype(auto) result1 = cwS->*icPM;
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<42>, decltype(result1)>);
     static_assert(result1 == 42);
   }
 

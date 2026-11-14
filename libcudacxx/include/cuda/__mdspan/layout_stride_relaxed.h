@@ -29,7 +29,9 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__mdspan/concepts.h>
 #include <cuda/std/__mdspan/empty_base.h>
-#include <cuda/std/__mdspan/extents.h>
+#include <cuda/std/__mdspan/layout_left.h> // IWYU pragma: keep
+#include <cuda/std/__mdspan/layout_right.h>
+#include <cuda/std/__mdspan/layout_stride.h>
 #include <cuda/std/__mdspan/submdspan_helper.h>
 #include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/integral_constant_like.h>
@@ -39,7 +41,6 @@
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/cmp.h>
-#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -109,14 +110,14 @@ public:
   static_assert(_Extents::rank() == _Strides::rank(),
                 "layout_stride_relaxed::mapping: extents and strides must have the same rank");
 
-  using extents_type = _Extents;
-  using strides_type = _Strides;
-  using index_type   = typename extents_type::index_type;
-  using size_type    = typename extents_type::size_type;
-  using rank_type    = typename extents_type::rank_type;
-  using offset_type  = decltype(::cuda::std::__de_ice(_OffsetType{}));
-  using layout_type  = layout_stride_relaxed;
-  using __base       = ::cuda::std::__mdspan_ebco<_Extents, _Strides, _OffsetType>;
+  using extents_type         = _Extents;
+  using strides_type         = _Strides;
+  using index_type           = typename extents_type::index_type;
+  using size_type            = typename extents_type::size_type;
+  using rank_type            = typename extents_type::rank_type;
+  using offset_type          = decltype(::cuda::std::__de_ice(_OffsetType{}));
+  using layout_type          = layout_stride_relaxed;
+  using __base _CCCL_NODEBUG = ::cuda::std::__mdspan_ebco<_Extents, _Strides, _OffsetType>;
 
 private:
   static constexpr rank_type __rank_    = extents_type::rank();

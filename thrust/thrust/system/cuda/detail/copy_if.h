@@ -17,15 +17,18 @@
 
 #  include <thrust/system/cuda/config.h>
 
+#  include <cub/detail/null_type.cuh>
 #  include <cub/device/device_select.cuh>
 #  include <cub/util_temporary_storage.cuh>
 
 #  include <thrust/detail/alignment.h>
+#  include <thrust/detail/execution_policy.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__iterator/advance.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
@@ -34,7 +37,7 @@ THRUST_NAMESPACE_BEGIN
 // XXX declare generic copy_if interface
 // to avoid circulular dependency from thrust/copy.h
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator copy_if( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -46,7 +49,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator copy_if( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -148,7 +151,7 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if_with_stencil(
   // Get number of selected items
   status = cuda_cub::synchronize(policy);
   cuda_cub::throw_on_error(status, "copy_if failed on sync");
-  offset_t num_selected = get_value(policy, d_num_selected_out);
+  const offset_t num_selected = get_value(policy, d_num_selected_out);
   ::cuda::std::advance(output, num_selected);
   return output;
 }
@@ -159,7 +162,7 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if_with_stencil(
 //-------------------------
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIterator, class OutputIterator, class Predicate>
-OutputIterator _CCCL_HOST_DEVICE copy_if(
+OutputIterator _CCCL_HOST_DEVICE_API copy_if(
   execution_policy<Derived>& policy, InputIterator first, InputIterator last, OutputIterator result, Predicate pred)
 {
   THRUST_CDP_DISPATCH((return detail::copy_if_with_stencil</* InPlace */ false>(
@@ -169,7 +172,7 @@ OutputIterator _CCCL_HOST_DEVICE copy_if(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIterator, class StencilIterator, class OutputIterator, class Predicate>
-OutputIterator _CCCL_HOST_DEVICE copy_if(
+OutputIterator _CCCL_HOST_DEVICE_API copy_if(
   execution_policy<Derived>& policy,
   InputIterator first,
   InputIterator last,
@@ -184,5 +187,5 @@ OutputIterator _CCCL_HOST_DEVICE copy_if(
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 
-#  include <thrust/copy.h>
+#  include <thrust/copy.h> // IWYU pragma: keep
 #endif // _CCCL_CUDA_COMPILATION()

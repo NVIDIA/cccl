@@ -25,13 +25,13 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename ExecutionPolicy, typename BidirectionalIterator>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 reverse(thrust::execution_policy<ExecutionPolicy>& exec, BidirectionalIterator first, BidirectionalIterator last)
 {
   using difference_type = thrust::detail::it_difference_t<BidirectionalIterator>;
 
   // find the midpoint of [first,last)
-  difference_type N = ::cuda::std::distance(first, last);
+  const difference_type N = ::cuda::std::distance(first, last);
   BidirectionalIterator mid(first);
   ::cuda::std::advance(mid, N / 2);
 
@@ -40,7 +40,7 @@ reverse(thrust::execution_policy<ExecutionPolicy>& exec, BidirectionalIterator f
 } // end reverse()
 
 template <typename ExecutionPolicy, typename BidirectionalIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator reverse_copy(
+_CCCL_HOST_DEVICE_API OutputIterator reverse_copy(
   thrust::execution_policy<ExecutionPolicy>& exec,
   BidirectionalIterator first,
   BidirectionalIterator last,

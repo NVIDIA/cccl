@@ -36,8 +36,8 @@ struct synchronous_memory_resource : cuda::mr::memory_resource_base<synchronous_
       throw std::invalid_argument("invalid alignment for synchronous_memory_resource");
     }
 
-    void* ptr          = nullptr;
-    cudaError_t status = cudaMalloc(&ptr, bytes);
+    void* ptr                = nullptr;
+    const cudaError_t status = cudaMalloc(&ptr, bytes);
     if (status != cudaSuccess)
     {
       throw std::runtime_error(cudaGetErrorString(status));
@@ -50,7 +50,7 @@ struct synchronous_memory_resource : cuda::mr::memory_resource_base<synchronous_
                        [[maybe_unused]] size_t bytes,
                        [[maybe_unused]] size_t alignment = cuda::mr::default_cuda_malloc_alignment) noexcept
   {
-    cudaFree(ptr);
+    static_cast<void>(cudaFree(ptr));
   }
 
   friend constexpr void get_property(synchronous_memory_resource const&, cuda::mr::device_accessible) noexcept {}
@@ -134,7 +134,7 @@ int main(int argc, char** argv)
   // Check for correctness (and display results, if specified)
   stream.sync();
   const int compare =
-    CompareDeviceResults(&h_reference, thrust::raw_pointer_cast(d_out.data()), 1, g_verbose, g_verbose);
+    CompareDeviceResults(&h_reference, thrust::raw_pointer_cast(d_out.data()), 1, g_verbose, g_verbose, stream);
   printf("\t%s", compare ? "FAIL" : "PASS");
   printf("\n\n");
 

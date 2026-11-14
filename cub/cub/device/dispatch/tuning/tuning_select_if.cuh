@@ -17,17 +17,23 @@
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
-#include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/prefetch.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
-#include <cub/util_type.cuh>
 
+#include <cuda/__device/compute_capability.h>
+#include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__optional/optional.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/optional>
+#include <cuda/std/cstdint>
 
 #if _CCCL_COMPILER(MSVC)
 #  include <ciso646>
@@ -62,7 +68,7 @@ struct SelectLookbackPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const SelectLookbackPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SelectLookbackPolicy& p)
   {
     return os
         << "SelectLookbackPolicy { .threads_per_block = " << p.threads_per_block
@@ -93,13 +99,14 @@ namespace detail
 }
 } // namespace detail
 
-inline ::std::ostream& operator<<(::std::ostream& os, SelectAlgorithm algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, SelectAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED()
 
 //! The tuning policy for all non-ByKey algorithms in @ref DeviceSelect
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct SelectPolicy
 {
   SelectAlgorithm algorithm; //!< The select algorithm to use
@@ -119,7 +126,7 @@ struct SelectPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const SelectPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SelectPolicy& p)
   {
     return os << "SelectPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback << " }";
   }
@@ -146,9 +153,9 @@ namespace detail
 }
 } // namespace detail
 
-inline ::std::ostream& operator<<(::std::ostream& os, PartitionAlgorithm algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, PartitionAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED()
 
@@ -179,7 +186,7 @@ struct PartitionLookbackPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const PartitionLookbackPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const PartitionLookbackPolicy& p)
   {
     return os
         << "PartitionLookbackPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
@@ -190,6 +197,7 @@ struct PartitionLookbackPolicy
 };
 
 //! The tuning policy for all non-three-way algorithms of @ref DevicePartition
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct PartitionPolicy
 {
   PartitionAlgorithm algorithm = PartitionAlgorithm::lookback; //!< The partition algorithm to use
@@ -209,7 +217,7 @@ struct PartitionPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const PartitionPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const PartitionPolicy& p)
   {
     return os << "PartitionPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback << " }";
   }
@@ -1620,28 +1628,28 @@ struct sm100_tuning<Input,
 
 // TODO(bgruber): drop in CCCL 4.0
 template <class InputT>
-constexpr primitive is_primitive()
+_CCCL_HOST_API constexpr primitive is_primitive()
 {
   return detail::is_primitive_v<InputT> ? primitive::yes : primitive::no;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <class FlagT>
-constexpr flagged is_flagged()
+_CCCL_HOST_API constexpr flagged is_flagged()
 {
   return ::cuda::std::is_same_v<FlagT, NullType> ? flagged::no : flagged::yes;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <bool KeepRejects>
-constexpr keep_rejects are_rejects_kept()
+_CCCL_HOST_API constexpr keep_rejects are_rejects_kept()
 {
   return KeepRejects ? keep_rejects::yes : keep_rejects::no;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <class InputT>
-constexpr input_size classify_input_size()
+_CCCL_HOST_API constexpr input_size classify_input_size()
 {
   return sizeof(InputT) == 1 ? input_size::_1
        : sizeof(InputT) == 2 ? input_size::_2
@@ -1654,21 +1662,21 @@ constexpr input_size classify_input_size()
 
 // TODO(bgruber): drop in CCCL 4.0
 template <class OffsetT>
-constexpr offset_size classify_offset_size()
+_CCCL_HOST_API constexpr offset_size classify_offset_size()
 {
   return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <bool Alias>
-constexpr may_alias should_alias()
+_CCCL_HOST_API constexpr may_alias should_alias()
 {
   return Alias ? may_alias::yes : may_alias::no;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <bool DistinctPartitions>
-constexpr distinct_partitions is_distinct_partitions()
+_CCCL_HOST_API constexpr distinct_partitions is_distinct_partitions()
 {
   return DistinctPartitions ? distinct_partitions::yes : distinct_partitions::no;
 }
@@ -1719,11 +1727,11 @@ struct policy_hub
   {
     using SelectIfPolicyT =
       decltype(select_agent_policy<sm80_tuning<InputT,
-                                               is_flagged<FlagT>(),
-                                               are_rejects_kept<keep_rejects>(),
+                                               _CUB::detail::select::is_flagged<FlagT>(),
+                                               _CUB::detail::select::are_rejects_kept<keep_rejects>(),
                                                offset_size::_4, // before SM100, we only tuned for int32
-                                               is_primitive<InputT>(),
-                                               classify_input_size<InputT>()>>(0));
+                                               _CUB::detail::select::is_primitive<InputT>(),
+                                               _CUB::detail::select::classify_input_size<InputT>()>>(0));
   };
 
   // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy860
@@ -1738,11 +1746,11 @@ struct policy_hub
   {
     using SelectIfPolicyT =
       decltype(select_agent_policy<sm90_tuning<InputT,
-                                               is_flagged<FlagT>(),
-                                               are_rejects_kept<keep_rejects>(),
+                                               _CUB::detail::select::is_flagged<FlagT>(),
+                                               _CUB::detail::select::are_rejects_kept<keep_rejects>(),
                                                offset_size::_4, // before SM100, we only tuned for int32
-                                               is_primitive<InputT>(),
-                                               classify_input_size<InputT>()>>(0));
+                                               _CUB::detail::select::is_primitive<InputT>(),
+                                               _CUB::detail::select::classify_input_size<InputT>()>>(0));
   };
 
   struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
@@ -1751,7 +1759,7 @@ struct policy_hub
     template <typename Tuning>
     static auto select_agent_policy100(int)
       -> agent_select_if_policy<Tuning::threads,
-                                Nominal4BItemsToItems<InputT>(Tuning::nominal_4b_items),
+                                _CUB::Nominal4BItemsToItems<InputT>(Tuning::nominal_4b_items),
                                 Tuning::load_algorithm,
                                 Tuning::load_modifier,
                                 BLOCK_SCAN_WARP_SCANS,
@@ -1760,14 +1768,15 @@ struct policy_hub
     static auto select_agent_policy100(long) -> typename Policy900::SelectIfPolicyT;
 
     using SelectIfPolicyT =
-      decltype(select_agent_policy100<sm100_tuning<InputT,
-                                                   is_flagged<FlagT>(),
-                                                   are_rejects_kept<keep_rejects>(),
-                                                   classify_offset_size<OffsetT>(),
-                                                   is_primitive<InputT>(),
-                                                   classify_input_size<InputT>(),
-                                                   should_alias<may_alias>(),
-                                                   is_distinct_partitions<DistinctPartitions>()>>(0));
+      decltype(select_agent_policy100<
+               sm100_tuning<InputT,
+                            _CUB::detail::select::is_flagged<FlagT>(),
+                            _CUB::detail::select::are_rejects_kept<keep_rejects>(),
+                            _CUB::detail::select::classify_offset_size<OffsetT>(),
+                            _CUB::detail::select::is_primitive<InputT>(),
+                            _CUB::detail::select::classify_input_size<InputT>(),
+                            _CUB::detail::select::should_alias<may_alias>(),
+                            _CUB::detail::select::is_distinct_partitions<DistinctPartitions>()>>(0));
   };
 
   using MaxPolicy = Policy1000;
@@ -1811,7 +1820,7 @@ private:
     CacheLoadModifier load_mod,
     LookbackDelayPolicy delay) const -> SelectLookbackPolicy
   {
-    const int items_per_thread = nominal_4B_items_to_items(nominal_4b_items, input_size_bytes);
+    const int items_per_thread = _CUB::detail::nominal_4B_items_to_items(nominal_4b_items, input_size_bytes);
     return SelectLookbackPolicy{threads_per_block, items_per_thread, load_alg, load_mod, BLOCK_SCAN_WARP_SCANS, delay};
   }
 
@@ -2859,6 +2868,195 @@ private:
     return {};
   }
 
+  // tunings from cub/benchmarks/bench/select/flagged.cu. Select implementations stream with an internal 32-bit
+  // offset, so the selector always reports a 4-byte offset regardless of the user's offset type. These are raw
+  // measured values and must not be passed through nominal_4B_items_to_items.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  get_sm107_flagged_tuning(bool has_flags, bool keep_rejects, bool may_alias) const
+    -> ::cuda::std::optional<SelectLookbackPolicy>
+  {
+    if (!has_flags || keep_rejects || may_alias || offset_size_bytes != 4)
+    {
+      return {};
+    }
+    if (!input_is_primitive && input_type != type_t::int128 && input_type != type_t::uint128)
+    {
+      return {};
+    }
+
+    if (input_size_bytes == 1)
+    {
+      // trp_0.ld_1.ipt_20.tpb_416.ns_20.dcid_5.l2w_555.pf_2  1.037  1.039  1.077  1.050
+      return SelectLookbackPolicy{
+        416,
+        20,
+        BLOCK_LOAD_DIRECT,
+        LOAD_CA,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 20, 555},
+        LoadPrefetch::l1};
+    }
+    if (input_size_bytes == 2)
+    {
+      // trp_1.ld_0.ipt_22.tpb_448.ns_436.dcid_0.l2w_695.pf_3  1.003  0.968  1.287  1.435
+      return SelectLookbackPolicy{
+        448,
+        22,
+        BLOCK_LOAD_WARP_TRANSPOSE,
+        LOAD_DEFAULT,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 436, 695},
+        LoadPrefetch::bulk_l2};
+    }
+    if (input_size_bytes == 4)
+    {
+      if (input_type == type_t::float32)
+      {
+        // trp_1.ld_0.ipt_20.tpb_448.ns_20.dcid_7.l2w_965.pf_3  0.933  0.956  1.115  1.161
+        return SelectLookbackPolicy{
+          448,
+          20,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 20, 965},
+          LoadPrefetch::bulk_l2};
+      }
+      // trp_0.ld_0.ipt_19.tpb_448.ns_1988.dcid_0.l2w_640.pf_2  1.016  0.985  1.084  1.111
+      return SelectLookbackPolicy{
+        448,
+        19,
+        BLOCK_LOAD_DIRECT,
+        LOAD_DEFAULT,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 1988, 640},
+        LoadPrefetch::l1};
+    }
+    if (input_size_bytes == 8)
+    {
+      if (input_type == type_t::float64)
+      {
+        // trp_0.ld_0.ipt_11.tpb_512.ns_808.dcid_7.l2w_585.pf_1  1.012  1.169  1.096  1.088
+        return SelectLookbackPolicy{
+          512,
+          11,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 808, 585},
+          LoadPrefetch::l2};
+      }
+      // trp_1.ld_0.ipt_18.tpb_320.ns_492.dcid_5.l2w_750.pf_3  1.135  1.158  1.083  1.054
+      return SelectLookbackPolicy{
+        320,
+        18,
+        BLOCK_LOAD_WARP_TRANSPOSE,
+        LOAD_DEFAULT,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 492, 750},
+        LoadPrefetch::bulk_l2};
+    }
+    if (input_size_bytes == 16)
+    {
+      // trp_0.ld_1.ipt_19.tpb_128.ns_1236.dcid_0.l2w_675.pf_1  0.938  1.188  1.704  1.830
+      return SelectLookbackPolicy{
+        128,
+        19,
+        BLOCK_LOAD_DIRECT,
+        LOAD_CA,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 1236, 675},
+        LoadPrefetch::l2};
+    }
+
+    return {};
+  }
+
+  // tunings from cub/benchmarks/bench/partition/flagged.cu, which benchmarks with 4-byte offsets. These are raw
+  // measured values and must not be passed through nominal_4B_items_to_items.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm107_flagged_partition_tuning() const noexcept
+    -> ::cuda::std::optional<SelectLookbackPolicy>
+  {
+    if (distinct_partitions || offset_size_bytes != 4)
+    {
+      return {};
+    }
+    if (!input_is_primitive && input_type != type_t::int128 && input_type != type_t::uint128)
+    {
+      return {};
+    }
+
+    if (input_size_bytes == 1)
+    {
+      // trp_0.ld_0.ipt_22.tpb_512.ns_500.dcid_7.l2w_325  0.972  0.983  1.247  1.341
+      return SelectLookbackPolicy{
+        512,
+        22,
+        BLOCK_LOAD_DIRECT,
+        LOAD_DEFAULT,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 500, 325}};
+    }
+    // 2-byte inputs: the search winner regressed during verification, left untuned
+    if (input_size_bytes == 4)
+    {
+      if (input_type == type_t::float32)
+      {
+        // trp_0.ld_1.ipt_14.tpb_320.ns_140.dcid_1.l2w_805  1.267  0.987  1.299  1.617
+        return SelectLookbackPolicy{
+          320,
+          14,
+          BLOCK_LOAD_DIRECT,
+          LOAD_CA,
+          BLOCK_SCAN_WARP_SCANS,
+          LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 140, 805}};
+      }
+      // trp_1.ld_1.ipt_20.tpb_224.ns_60.dcid_0.l2w_640  0.966  0.967  1.148  1.227
+      return SelectLookbackPolicy{
+        224,
+        20,
+        BLOCK_LOAD_WARP_TRANSPOSE,
+        LOAD_CA,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 60, 640}};
+    }
+    if (input_size_bytes == 8)
+    {
+      if (input_type == type_t::float64)
+      {
+        // trp_1.ld_0.ipt_18.tpb_256.ns_28.dcid_0.l2w_745  0.967  1.008  1.148  1.222
+        return SelectLookbackPolicy{
+          256,
+          18,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 28, 745}};
+      }
+      // trp_1.ld_1.ipt_19.tpb_256.ns_20.dcid_1.l2w_1120  0.994  0.960  1.172  1.303
+      return SelectLookbackPolicy{
+        256,
+        19,
+        BLOCK_LOAD_WARP_TRANSPOSE,
+        LOAD_CA,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 20, 1120}};
+    }
+    if (input_size_bytes == 16)
+    {
+      // trp_1.ld_0.ipt_19.tpb_128.ns_52.dcid_1.l2w_1200  0.963  0.982  1.300  1.403
+      return SelectLookbackPolicy{
+        128,
+        19,
+        BLOCK_LOAD_WARP_TRANSPOSE,
+        LOAD_DEFAULT,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 52, 1200}};
+    }
+
+    return {};
+  }
+
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookback_policy(::cuda::compute_capability cc) const
     -> SelectLookbackPolicy
   {
@@ -2876,6 +3074,19 @@ private:
       if (!has_flags && keep_rejects)
       {
         if (const auto policy_opt = get_sm107_partition_tuning())
+        {
+          return *policy_opt;
+        }
+      }
+
+      if (auto policy_opt = get_sm107_flagged_tuning(has_flags, keep_rejects, may_alias))
+      {
+        return *policy_opt;
+      }
+
+      if (has_flags && keep_rejects)
+      {
+        if (const auto policy_opt = get_sm107_flagged_partition_tuning())
         {
           return *policy_opt;
         }
@@ -2933,7 +3144,7 @@ struct policy_selector_from_types
       is_primitive_v<input_t>,
       ::cuda::std::is_same_v<flag_t, NullType> ? 0 : sizeof(flag_t),
       SelectionOpt == SelectImpl::Partition ? sizeof(OffsetT) : sizeof(::cuda::std::int32_t),
-      is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
+      ::cuda::__is_specialization_of_v<SelectedOutputIteratorT, partition_distinct_output_t>,
       SelectionOpt}(cc);
   }
 };

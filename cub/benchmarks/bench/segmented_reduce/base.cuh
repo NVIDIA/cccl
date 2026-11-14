@@ -41,7 +41,7 @@ struct policy_selector
 #endif // !TUNE_BASE
 
 template <typename T>
-void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
+_CCCL_HOST_API void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
 {
   static constexpr bool is_argmin = std::is_same_v<op_t, cub::detail::arg_min>;
 
@@ -78,7 +78,7 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
     );
     if constexpr (is_argmin)
     {
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         cub::DeviceSegmentedReduce::ArgMin,
         "Segmented ArgMin failed",
         d_in,
@@ -89,7 +89,7 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
     }
     else
     {
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         cub::DeviceSegmentedReduce::Reduce,
         "Segmented reduce failed",
         d_in,

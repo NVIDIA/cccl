@@ -750,6 +750,12 @@ class Configuration(object):
         additional_flags = self.get_lit_conf("test_compiler_flags")
         if additional_flags:
             self.cxx.compile_flags += shlex.split(additional_flags)
+        if self.cxx.type in ("nvcc", "nvrtcc") and any(
+            flag in ("--use_fast_math", "-use_fast_math")
+            for flag in self.cxx.flags + self.cxx.compile_flags
+        ):
+            self.config.available_features.add("fast-math")
+            self.cxx.compile_flags += ["-DTEST_HAS_CUDA_FAST_MATH=1"]
         compute_archs = self.get_lit_conf("compute_archs")
         if self.cxx.type == "nvrtcc":
             self.config.available_features.add("nvrtc")
@@ -842,6 +848,8 @@ class Configuration(object):
         if not std:
             # Choose the newest possible language dialect if none is given.
             possible_stds = [
+                "c++23",
+                "c++2b",
                 "c++20",
                 "c++2a",
                 "c++17",
@@ -894,7 +902,10 @@ class Configuration(object):
             # We found a dialect flag.
             stdflag = "-std={0}".format(std)
             if self.cxx.type == "msvc":
-                stdflag = "/std:{0}".format(std)
+                if std in ("23", "c++23", "c++2b"):
+                    stdflag = "/std:c++23preview"
+                else:
+                    stdflag = "/std:{0}".format(std)
 
             extraflags = []
             if self.cxx.type == "clang":
@@ -919,6 +930,7 @@ class Configuration(object):
         std_feature = std.replace("gnu++", "c++")
         std_feature = std.replace("1z", "17")
         std_feature = std.replace("2a", "20")
+        std_feature = std.replace("2b", "23")
         self.config.available_features.add(std_feature)
         # Configure include paths
         self.configure_compile_flags_header_includes()

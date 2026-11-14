@@ -22,15 +22,15 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputType>
-_CCCL_HOST_DEVICE OutputType inner_product(
+_CCCL_HOST_DEVICE_API OutputType inner_product(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
   OutputType init)
 {
-  ::cuda::std::plus<OutputType> binary_op1;
-  ::cuda::std::multiplies<OutputType> binary_op2;
+  const ::cuda::std::plus<OutputType> binary_op1;
+  const ::cuda::std::multiplies<OutputType> binary_op2;
   return thrust::inner_product(exec, first1, last1, first2, init, binary_op1, binary_op2);
 } // end inner_product()
 
@@ -40,7 +40,7 @@ template <typename DerivedPolicy,
           typename OutputType,
           typename BinaryFunction1,
           typename BinaryFunction2>
-_CCCL_HOST_DEVICE OutputType inner_product(
+_CCCL_HOST_DEVICE_API OutputType inner_product(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,

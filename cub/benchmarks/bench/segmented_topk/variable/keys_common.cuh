@@ -125,7 +125,7 @@ static_assert(selected_backend != topk_backend::device
 template <typename KeyT, typename ValueT, typename OffsetT, cuda::std::int64_t MaxK>
 struct topk_backend_selector
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability cc) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const
     -> cub::detail::batched_topk::topk_policy
   {
     // The baseline backend cannot honor a deterministic result set / concrete tie-break request. The `sizeof(KeyT) ==
@@ -147,14 +147,14 @@ struct topk_backend_selector
 #  elif TUNE_BLOCK_LOAD_ALGORITHM == 2
     constexpr auto load_alg = cub::BLOCK_LOAD_VECTORIZE;
 #  endif
-    const auto baseline = cub::detail::batched_topk::baseline_topk_policy{{{
+    const auto baseline = cub::detail::batched_topk::baseline_topk_policy{{
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
-    }}};
+    }};
 #else
     const auto baseline = cub::detail::batched_topk::make_baseline_policy();
 #endif
@@ -197,7 +197,7 @@ template <typename KeyInputItItT,
           typename NumSegmentsParameterT,
           typename HostSegSizeT,
           typename EnvT>
-_CCCL_HOST_API static cudaError_t batched_topk_keys(
+_CCCL_HOST_API cudaError_t batched_topk_keys(
   KeyInputItItT d_keys_in,
   KeyOutputItItT d_keys_out,
   SegmentSizeParamT segment_sizes,
@@ -261,7 +261,7 @@ _CCCL_HOST_API static cudaError_t batched_topk_keys(
 }
 
 template <typename KeyT, int MaxSegmentSize, int K>
-void decode_style_variable_topk_keys(
+_CCCL_HOST_API void decode_style_variable_topk_keys(
   nvbench::state& state, nvbench::type_list<KeyT, nvbench::enum_type<MaxSegmentSize>, nvbench::enum_type<K>>)
 {
   if constexpr (K > MaxSegmentSize)
@@ -307,7 +307,7 @@ void decode_style_variable_topk_keys(
   caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     const auto env = cub_bench_env(alloc, launch);
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       batched_topk_keys,
       "batched topk failed",
       d_keys_in,

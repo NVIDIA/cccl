@@ -16,7 +16,7 @@
 #include <cuda/std/ranges>
 #include <cuda/std/span>
 
-#include <cuda/experimental/__multi_gpu/algorithm/reduce/segmented_reduce.h>
+#include <cuda/experimental/mgmn/segmented_reduce>
 
 #include <numeric>
 #include <vector>
@@ -31,7 +31,7 @@ namespace
 {
 template <class Env, class T, class Op>
 void do_segmented_reduce(
-  cuda::std::span<cudax::nccl_communicator_ref> comms,
+  cuda::std::span<cudax::mgmn::nccl_communicator_ref> comms,
   const std::vector<Env>& envs,
   std::vector<cuda::device_buffer<T>>& in,
   cuda::std::size_t num_segments,
@@ -48,7 +48,7 @@ void do_segmented_reduce(
   INFO("init = " << init);
   INFO("ident = " << ident);
 
-  cudax::segmented_reduce(
+  cudax::mgmn::segmented_reduce(
     cudax::broadcasted,
     comms,
     envs,
@@ -107,7 +107,7 @@ MULTI_GPU_TEST("segmented_reduce documentation example", c2h::type_list<int>)
     outputs.emplace_back(cuda::make_device_buffer<int>(streams[i], device, num_segments, cuda::no_init));
   }
 
-  cudax::segmented_reduce(
+  cudax::mgmn::segmented_reduce(
     cudax::broadcasted,
     comms,
     // Passing streams as the environment directly
@@ -281,7 +281,7 @@ MULTI_GPU_TEST("segmented_reduce, segment lengths differ across ranks", value_ty
   for (int r = 0; r < comms.front().size(); ++r)
   {
     const std::vector<offset_type> segment_sizes{
-      static_cast<offset_type>(r + 1), static_cast<offset_type>(2 * r + 3), static_cast<offset_type>(r + 5)};
+      static_cast<offset_type>(r + 1), static_cast<offset_type>((2 * r) + 3), static_cast<offset_type>(r + 5)};
 
     fill_random(
       values_by_rank.emplace_back(),

@@ -46,11 +46,11 @@
 namespace mersenne
 {
 /* Period parameters */
-constexpr unsigned int N          = 624;
-constexpr unsigned int M          = 397;
-constexpr unsigned int MATRIX_A   = 0x9908b0df; /* constant vector a */
-constexpr unsigned int UPPER_MASK = 0x80000000; /* most significant w-r bits */
-constexpr unsigned int LOWER_MASK = 0x7fffffff; /* least significant r bits */
+inline constexpr unsigned int N          = 624;
+inline constexpr unsigned int M          = 397;
+inline constexpr unsigned int MATRIX_A   = 0x9908b0df; /* constant vector a */
+inline constexpr unsigned int UPPER_MASK = 0x80000000; /* most significant w-r bits */
+inline constexpr unsigned int LOWER_MASK = 0x7fffffff; /* least significant r bits */
 
 static unsigned int mt[N]; /* the array for the state vector  */
 static int mti = N + 1; /* mti==N+1 means mt[N] is not initialized */
@@ -61,7 +61,7 @@ inline void init_genrand(unsigned int s)
   mt[0] = s & 0xffffffff;
   for (mti = 1; mti < static_cast<int>(N); mti++)
   {
-    mt[mti] = (1812433253 * (mt[mti - 1] ^ (mt[mti - 1] >> 30)) + mti);
+    mt[mti] = ((1812433253 * (mt[mti - 1] ^ (mt[mti - 1] >> 30))) + mti);
 
     /* See Knuth TAOCP Vol2. 3rd Ed. P.106 for mtiplier. */
     /* In the previous versions, MSBs of the seed affect   */
@@ -77,9 +77,11 @@ inline void init_genrand(unsigned int s)
 /* init_key is the array for initializing keys */
 /* key_length is its length */
 /* slight change for C++, 2004/2/26 */
-inline void init_by_array(unsigned int init_key[], int key_length)
+inline void init_by_array(const unsigned int init_key[], int key_length)
 {
-  int i, j, k;
+  int i;
+  int j;
+  int k;
   init_genrand(19650218);
   i = 1;
   j = 0;
@@ -119,7 +121,7 @@ inline void init_by_array(unsigned int init_key[], int key_length)
 inline unsigned int genrand_int32()
 {
   unsigned int y;
-  static unsigned int mag01[2] = {0x0, MATRIX_A};
+  static const unsigned int mag01[2] = {0x0, MATRIX_A}; // NOLINT(misc-const-correctness)
 
   /* mag01[x] = x * MATRIX_A  for x=0,1 */
 

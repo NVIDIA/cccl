@@ -61,7 +61,7 @@ void initialize_keys(thrust::device_vector<MyStruct>& structures)
 
 int main()
 {
-  size_t N = 2 * 1024 * 1024;
+  const size_t N = 2 * 1024 * 1024;
 
   // Sort Key-Value pairs using Array of Structures (AoS) storage
   {

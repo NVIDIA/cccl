@@ -22,13 +22,12 @@
 #endif // no system header
 
 #include <cuda/__fwd/random.h>
-#include <cuda/__random/feistel_bijection.h>
+#include <cuda/__random/feistel_bijection.h> // IWYU pragma: keep
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__utility/forward.h>
-#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -43,7 +42,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _IndexType, class _Bijection>
 class random_bijection
 {
-private:
   static_assert(::cuda::std::is_integral_v<_IndexType>, "_IndexType must be an integral type");
   static_assert(::cuda::std::is_integral_v<typename _Bijection::index_type>,
                 "_Bijection::index_type must be an integral type");

@@ -6,6 +6,7 @@
 
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/transform.h>
 
 #include <cuda/iterator>
 #include <cuda/std/limits>
@@ -15,6 +16,7 @@
 
 #include "cub_test_macros.h"
 #include <c2h/custom_type.h>
+#include <c2h/device_policy.h>
 
 using cub::detail::warp_threads;
 
@@ -32,7 +34,7 @@ constexpr int num_logical_warps()
   // architectural warp when the logical warp size divides it evenly.
   static_assert(logical_warps_per_warp * LogicalWarpThreads == warp_threads,
                 "the logical warp size must evenly divide the architectural warp size");
-  return (logical_warps_per_warp == 1) ? 2 : (2 * logical_warps_per_warp - 1);
+  return (logical_warps_per_warp == 1) ? 2 : ((2 * logical_warps_per_warp) - 1);
 }
 
 struct CustomLess
@@ -57,6 +59,28 @@ struct CustomLess
   };
 };
 
+// Maps keys that are not ordered strictly before the upper bound to KeyT{}.
+template <typename KeyT>
+struct clamp_key_below_t
+{
+  KeyT upper_bound;
+
+  __device__ __host__ KeyT operator()(const KeyT& key) const
+  {
+    return CustomLess{}(key, upper_bound) ? key : KeyT{};
+  }
+};
+
+// The Sort(..., valid_items, oob_default) overloads need every valid key ordered strictly before the
+// sentinel, which c2h::gen does not guarantee since it can generate the sentinel value itself.
+// This clamping method works generically, also for custom_t
+template <typename KeyT>
+void clamp_keys_below(c2h::device_vector<KeyT>& d_keys, KeyT upper_bound)
+{
+  thrust::transform(
+    c2h::device_policy, d_keys.begin(), d_keys.end(), d_keys.begin(), clamp_key_below_t<KeyT>{upper_bound});
+}
+
 /**
  * @brief Kernel to dispatch to the appropriate WarpBitonicSort member function, sorting keys-only.
  */
@@ -67,7 +91,7 @@ __global__ void warp_bitonic_sort_kernel(KeyT* in, KeyT* out, int valid_items, A
   using storage_t           = typename warp_bitonic_sort_t::TempStorage;
 
   // Get linear thread and logical warp index
-  const auto tid    = static_cast<int>(threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z));
+  const auto tid    = static_cast<int>(threadIdx.x + (blockDim.x * (threadIdx.y + (blockDim.y * threadIdx.z))));
   const int warp_id = tid / LogicalWarpThreads;
   const int lane    = tid % LogicalWarpThreads;
 
@@ -82,14 +106,14 @@ __global__ void warp_bitonic_sort_kernel(KeyT* in, KeyT* out, int valid_items, A
   __shared__ storage_t storage[TotalWarps];
 
   // Instantiate warp-scope algorithm
-  warp_bitonic_sort_t warp_sort{storage[warp_id]};
+  warp_bitonic_sort_t warp_sort{storage[warp_id]}; // NOLINT(misc-const-correctness)
 
   const int warp_offset = valid_items * warp_id;
 
   // Load data
   for (int i = 0; i < ItemsPerThread; ++i)
   {
-    const int idx = i * LogicalWarpThreads + lane;
+    const int idx = (i * LogicalWarpThreads) + lane;
     if (idx < valid_items)
     {
       thread_data[i] = in[warp_offset + idx];
@@ -102,7 +126,7 @@ __global__ void warp_bitonic_sort_kernel(KeyT* in, KeyT* out, int valid_items, A
   // Store data
   for (int i = 0; i < ItemsPerThread; ++i)
   {
-    const int idx = i * LogicalWarpThreads + lane;
+    const int idx = (i * LogicalWarpThreads) + lane;
     if (idx < valid_items)
     {
       out[warp_offset + idx] = thread_data[i];
@@ -122,7 +146,7 @@ __global__ void warp_bitonic_sort_kernel(
   using storage_t           = typename warp_bitonic_sort_t::TempStorage;
 
   // Get linear thread and logical warp index
-  const auto tid    = static_cast<int>(threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z));
+  const auto tid    = static_cast<int>(threadIdx.x + (blockDim.x * (threadIdx.y + (blockDim.y * threadIdx.z))));
   const int warp_id = tid / LogicalWarpThreads;
   const int lane    = tid % LogicalWarpThreads;
 
@@ -138,14 +162,14 @@ __global__ void warp_bitonic_sort_kernel(
   __shared__ storage_t storage[TotalWarps];
 
   // Instantiate warp-scope algorithm
-  warp_bitonic_sort_t warp_sort{storage[warp_id]};
+  warp_bitonic_sort_t warp_sort{storage[warp_id]}; // NOLINT(misc-const-correctness)
 
   const int warp_offset = valid_items * warp_id;
 
   // Load data
   for (int i = 0; i < ItemsPerThread; ++i)
   {
-    const int idx = i * LogicalWarpThreads + lane;
+    const int idx = (i * LogicalWarpThreads) + lane;
     if (idx < valid_items)
     {
       keys[i]   = keys_in[warp_offset + idx];
@@ -159,7 +183,7 @@ __global__ void warp_bitonic_sort_kernel(
   // Store data
   for (int i = 0; i < ItemsPerThread; ++i)
   {
-    const int idx = i * LogicalWarpThreads + lane;
+    const int idx = (i * LogicalWarpThreads) + lane;
     if (idx < valid_items)
     {
       keys_out[warp_offset + idx]   = keys[i];
@@ -431,6 +455,7 @@ CUB_TEST("Warp sort keys-only on partial warp-tile works",
   c2h::device_vector<type> d_in(total_items);
   c2h::device_vector<type> d_out(total_items);
   c2h::gen(C2H_SEED(5), d_in);
+  clamp_keys_below(d_in, CustomLess::get_oob_default<type>());
 
   // Run test
   warp_bitonic_sort<params::items_per_thread, params::logical_warp_threads, params::total_warps>(
@@ -514,6 +539,7 @@ CUB_TEST("Warp sort on key-value pairs of a partial warp-tile works",
   c2h::device_vector<value_type> d_values_out(total_items);
   c2h::gen(C2H_SEED(5), d_keys_in);
   c2h::gen(C2H_SEED(1), d_values_in);
+  clamp_keys_below(d_keys_in, CustomLess::get_oob_default<key_type>());
 
   // Run test
   warp_bitonic_sort<params::items_per_thread, params::logical_warp_threads, params::total_warps>(
@@ -567,6 +593,7 @@ CUB_TEST("Warp sort on custom key-value pairs works",
   c2h::device_vector<value_type> d_values_out(total_items);
   c2h::gen(C2H_SEED(5), d_keys_in);
   c2h::gen(C2H_SEED(1), d_values_in);
+  clamp_keys_below(d_keys_in, CustomLess::get_oob_default<key_type>());
 
   // Run test
   warp_bitonic_sort<params::items_per_thread, params::logical_warp_threads, params::total_warps>(

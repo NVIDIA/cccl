@@ -27,13 +27,13 @@ namespace detail
 template <typename Predicate, typename NewType, typename OutputType>
 struct new_value_if
 {
-  _CCCL_HOST_DEVICE new_value_if(Predicate p, NewType nv)
+  _CCCL_HOST_DEVICE_API new_value_if(Predicate p, NewType nv)
       : pred(p)
       , new_value(nv)
   {}
 
   template <typename InputType>
-  _CCCL_HOST_DEVICE OutputType operator()(const InputType& x) const
+  _CCCL_HOST_DEVICE_API OutputType operator()(const InputType& x) const
   {
     return pred(x) ? new_value : x;
   } // end operator()()
@@ -41,7 +41,7 @@ struct new_value_if
   // this version of operator()() works like the previous but
   // feeds its second argument to pred
   template <typename InputType, typename PredicateArgumentType>
-  _CCCL_HOST_DEVICE OutputType operator()(const InputType& x, const PredicateArgumentType& y)
+  _CCCL_HOST_DEVICE_API OutputType operator()(const InputType& x, const PredicateArgumentType& y)
   {
     return pred(y) ? new_value : x;
   } // end operator()()
@@ -54,12 +54,12 @@ struct new_value_if
 template <typename T>
 struct constant_unary
 {
-  _CCCL_HOST_DEVICE constant_unary(T _c)
+  _CCCL_HOST_DEVICE_API constant_unary(T _c)
       : c(_c)
   {}
 
   template <typename U>
-  _CCCL_HOST_DEVICE T operator()(U&)
+  _CCCL_HOST_DEVICE_API T operator()(U&)
   {
     return c;
   } // end operator()()
@@ -69,7 +69,7 @@ struct constant_unary
 } // namespace detail
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate, typename T>
-_CCCL_HOST_DEVICE OutputIterator replace_copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator replace_copy_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -79,7 +79,7 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
 {
   using OutputType = thrust::detail::it_value_t<OutputIterator>;
 
-  detail::new_value_if<Predicate, T, OutputType> op(pred, new_value);
+  const detail::new_value_if<Predicate, T, OutputType> op(pred, new_value);
   return thrust::transform(exec, first, last, result, op);
 } // end replace_copy_if()
 
@@ -89,7 +89,7 @@ template <typename DerivedPolicy,
           typename OutputIterator,
           typename Predicate,
           typename T>
-_CCCL_HOST_DEVICE OutputIterator replace_copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator replace_copy_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -100,12 +100,12 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
 {
   using OutputType = thrust::detail::it_value_t<OutputIterator>;
 
-  detail::new_value_if<Predicate, T, OutputType> op(pred, new_value);
+  const detail::new_value_if<Predicate, T, OutputType> op(pred, new_value);
   return thrust::transform(exec, first, last, stencil, result, op);
 } // end replace_copy_if()
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
-_CCCL_HOST_DEVICE OutputIterator replace_copy(
+_CCCL_HOST_DEVICE_API OutputIterator replace_copy(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -119,19 +119,19 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy(
 } // end replace_copy()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate, typename T>
-_CCCL_HOST_DEVICE void replace_if(
+_CCCL_HOST_DEVICE_API void replace_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
   Predicate pred,
   const T& new_value)
 {
-  detail::constant_unary<T> f(new_value);
+  const detail::constant_unary<T> f(new_value);
   thrust::transform_if(exec, first, last, first, first, f, pred);
 } // end replace_if()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate, typename T>
-_CCCL_HOST_DEVICE void replace_if(
+_CCCL_HOST_DEVICE_API void replace_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -139,12 +139,12 @@ _CCCL_HOST_DEVICE void replace_if(
   Predicate pred,
   const T& new_value)
 {
-  detail::constant_unary<T> f(new_value);
+  const detail::constant_unary<T> f(new_value);
   thrust::transform_if(exec, first, last, stencil, first, f, pred);
 } // end replace_if()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 replace(thrust::execution_policy<DerivedPolicy>& exec,
         ForwardIterator first,
         ForwardIterator last,

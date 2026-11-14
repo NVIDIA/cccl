@@ -6,6 +6,7 @@
 #include <cub/detail/type_traits.cuh>
 #include <cub/thread/thread_operators.cuh>
 
+#include "catch2_test_scan_reference.cuh"
 #include <c2h/catch2_test_helper.h>
 
 /**
@@ -35,35 +36,6 @@ struct Mod2Equality
     return (a % 2) == (b % 2);
   }
 };
-
-template <typename InputIt, typename OutputIt, typename InitValueT, typename BinaryOp>
-void compute_exclusive_scan_reference(InputIt first, InputIt last, OutputIt result, InitValueT init, BinaryOp op)
-{
-  using value_t  = cub::detail::it_value_t<InputIt>;
-  using accum_t  = ::cuda::std::__accumulator_t<BinaryOp, value_t, InitValueT>;
-  using output_t = cub::detail::it_value_t<OutputIt>;
-  accum_t acc    = static_cast<accum_t>(init);
-  for (; first != last; ++first)
-  {
-    auto v    = *first;
-    *result++ = static_cast<output_t>(acc);
-    acc       = op(acc, v);
-  }
-}
-
-template <typename InputIt, typename OutputIt, typename BinaryOp, typename InitValueT>
-void compute_inclusive_scan_reference(InputIt first, InputIt last, OutputIt result, BinaryOp op, InitValueT init)
-{
-  using value_t  = cub::detail::it_value_t<InputIt>;
-  using accum_t  = ::cuda::std::__accumulator_t<BinaryOp, value_t, InitValueT>;
-  using output_t = cub::detail::it_value_t<OutputIt>;
-  accum_t acc    = static_cast<accum_t>(init);
-  for (; first != last; ++first)
-  {
-    acc       = op(acc, *first);
-    *result++ = static_cast<output_t>(acc);
-  }
-}
 
 template <typename ValueInItT,
           typename KeyInItT,
@@ -113,10 +85,10 @@ void compute_exclusive_scan_by_key_reference(
   EqualityOpT equality_op,
   InitValueT init)
 {
-  c2h::host_vector<ValueT> host_values(d_values);
-  c2h::host_vector<KeyT> host_keys(d_keys);
+  const c2h::host_vector<ValueT> host_values(d_values);
+  const c2h::host_vector<KeyT> host_keys(d_keys);
 
-  std::size_t num_items = host_values.size();
+  const std::size_t num_items = host_values.size();
 
   compute_exclusive_scan_by_key_reference(
     host_values.cbegin(), host_keys.cbegin(), result_out_it, scan_op, equality_op, init, num_items);
@@ -144,9 +116,9 @@ void compute_inclusive_scan_by_key_reference(
 
     for (; i < num_items && equality_op(h_keys_it[i - 1], h_keys_it[i]); ++i)
     {
-      accum_t val      = h_values_it[i];
-      inclusive        = static_cast<accum_t>(scan_op(inclusive, val));
-      result_out_it[i] = static_cast<output_t>(inclusive);
+      const accum_t val = h_values_it[i];
+      inclusive         = static_cast<accum_t>(scan_op(inclusive, val));
+      result_out_it[i]  = static_cast<output_t>(inclusive);
     }
   }
 }
@@ -159,10 +131,10 @@ void compute_inclusive_scan_by_key_reference(
   ScanOpT scan_op,
   EqualityOpT equality_op)
 {
-  c2h::host_vector<ValueT> host_values(d_values);
-  c2h::host_vector<KeyT> host_keys(d_keys);
+  const c2h::host_vector<ValueT> host_values(d_values);
+  const c2h::host_vector<KeyT> host_keys(d_keys);
 
-  std::size_t num_items = host_values.size();
+  const std::size_t num_items = host_values.size();
 
   compute_inclusive_scan_by_key_reference(
     host_values.cbegin(), host_keys.cbegin(), result_out_it, scan_op, equality_op, num_items);

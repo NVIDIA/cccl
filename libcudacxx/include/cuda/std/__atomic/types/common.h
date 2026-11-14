@@ -24,14 +24,100 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/is_same.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/cstring>
 
+#include <nv/target>
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+template <class _Tp>
+inline constexpr bool __atomic_is_small_floating_point_v = __is_cv_extended_floating_point_v<_Tp> && sizeof(_Tp) == 2;
+
+template <class _Tp>
+inline constexpr bool __atomic_is_floating_point_v =
+  is_floating_point_v<_Tp> || __atomic_is_small_floating_point_v<_Tp>;
+
+// Keep the destination type in ADL without including CUDA floating-point headers.
+template <class _Tp>
+struct __atomic_adl_float
+{
+  float __value;
+
+  _CCCL_HOST_DEVICE_API constexpr operator float() const noexcept
+  {
+    return __value;
+  }
+};
+
+template <class _Tp>
+_CCCL_HOST_DEVICE_API _Tp __cuda_atomic_add(_Tp __lhs, _Tp __rhs)
+{
+#if _CCCL_HAS_NVFP16()
+  if constexpr (is_same_v<_Tp, __half>)
+  {
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
+                      (return __hadd(__lhs, __rhs);),
+                      (return __float2half(__atomic_adl_float<_Tp>{__half2float(__lhs) + __half2float(__rhs)});))
+  }
+  else
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+    if constexpr (is_same_v<_Tp, __nv_bfloat16>)
+  {
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_80,
+      (return __hadd(__lhs, __rhs);),
+      NV_IS_DEVICE,
+      ( // Preserve bfloat16 subnormals when fast math flushes float subnormals.
+        return __float2bfloat16(
+                 __atomic_adl_float<_Tp>{__fmaf_ieee_rn(__bfloat162float(__lhs), 1.0f, __bfloat162float(__rhs))});),
+      NV_IS_HOST,
+      (return __float2bfloat16(__atomic_adl_float<_Tp>{__bfloat162float(__lhs) + __bfloat162float(__rhs)});))
+  }
+  else
+#endif // _CCCL_HAS_NVBF16()
+  {
+    return __lhs + __rhs;
+  }
+}
+
+template <class _Tp>
+_CCCL_HOST_DEVICE_API _Tp __cuda_atomic_sub(_Tp __lhs, _Tp __rhs)
+{
+#if _CCCL_HAS_NVFP16()
+  if constexpr (is_same_v<_Tp, __half>)
+  {
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
+                      (return __hsub(__lhs, __rhs);),
+                      (return __float2half(__atomic_adl_float<_Tp>{__half2float(__lhs) - __half2float(__rhs)});))
+  }
+  else
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+    if constexpr (is_same_v<_Tp, __nv_bfloat16>)
+  {
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_80,
+      (return __hsub(__lhs, __rhs);),
+      NV_IS_DEVICE,
+      ( // Preserve bfloat16 subnormals when fast math flushes float subnormals.
+        return __float2bfloat16(
+                 __atomic_adl_float<_Tp>{__fmaf_ieee_rn(__bfloat162float(__rhs), -1.0f, __bfloat162float(__lhs))});),
+      NV_IS_HOST,
+      (return __float2bfloat16(__atomic_adl_float<_Tp>{__bfloat162float(__lhs) - __bfloat162float(__rhs)});))
+  }
+  else
+#endif // _CCCL_HAS_NVBF16()
+  {
+    return __lhs - __rhs;
+  }
+}
 
 template <class _Tp>
 _CCCL_HOST_DEVICE_API bool __cuda_atomic_less(_Tp __lhs, _Tp __rhs)
@@ -73,16 +159,19 @@ enum class __atomic_tag
 
 // Helpers to SFINAE on the tag inside the storage object
 template <typename _Sto>
-using __atomic_storage_is_base = enable_if_t<__atomic_tag::__atomic_base_tag == remove_cvref_t<_Sto>::__tag, int>;
+using __atomic_storage_is_base _CCCL_NODEBUG =
+  enable_if_t<__atomic_tag::__atomic_base_tag == remove_cvref_t<_Sto>::__tag, int>;
 template <typename _Sto>
-using __atomic_storage_is_locked = enable_if_t<__atomic_tag::__atomic_locked_tag == remove_cvref_t<_Sto>::__tag, int>;
+using __atomic_storage_is_locked _CCCL_NODEBUG =
+  enable_if_t<__atomic_tag::__atomic_locked_tag == remove_cvref_t<_Sto>::__tag, int>;
 template <typename _Sto>
-using __atomic_storage_is_small = enable_if_t<__atomic_tag::__atomic_small_tag == remove_cvref_t<_Sto>::__tag, int>;
+using __atomic_storage_is_small _CCCL_NODEBUG =
+  enable_if_t<__atomic_tag::__atomic_small_tag == remove_cvref_t<_Sto>::__tag, int>;
 
 template <typename _Tp>
-using __atomic_underlying_t = typename _Tp::__underlying_t;
+using __atomic_underlying_t _CCCL_NODEBUG = typename _Tp::__underlying_t;
 template <typename _Tp>
-using __atomic_underlying_remove_cv_t = remove_cv_t<typename _Tp::__underlying_t>;
+using __atomic_underlying_remove_cv_t _CCCL_NODEBUG = remove_cv_t<typename _Tp::__underlying_t>;
 
 // [atomics.types.generic]p1 guarantees _Tp is trivially copyable. Because
 // the default operator= in an object is not volatile, a byte-by-byte copy

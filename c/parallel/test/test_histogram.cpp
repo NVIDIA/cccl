@@ -42,7 +42,7 @@ void build_histogram(
   uint64_t row_stride_samples,
   bool is_evenly_segmented)
 {
-  cudaDeviceProp deviceProp;
+  cudaDeviceProp deviceProp{};
   cudaGetDeviceProperties(&deviceProp, 0);
 
   const int cc_major = deviceProp.major;
@@ -81,7 +81,7 @@ void histogram_even(
   int num_output_levels_val,
   cccl_value_t lower_level,
   cccl_value_t upper_level,
-  int64_t num_row_pixels,
+  int64_t num_row_items,
   int64_t num_rows,
   int64_t row_stride_samples)
 {
@@ -101,12 +101,12 @@ void histogram_even(
       num_output_levels,
       lower_level,
       upper_level,
-      num_row_pixels,
+      num_row_items,
       num_rows,
       row_stride_samples,
       nullptr));
 
-  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  const pointer_t<uint8_t> temp_storage(temp_storage_bytes);
 
   REQUIRE(
     CUDA_SUCCESS
@@ -119,7 +119,7 @@ void histogram_even(
       num_output_levels,
       lower_level,
       upper_level,
-      num_row_pixels,
+      num_row_items,
       num_rows,
       row_stride_samples,
       nullptr));
@@ -135,7 +135,7 @@ auto generate_level_counts_to_test(int max_level_count) -> std::vector<int>
   std::vector<int> r{max_level_count};
   for (size_t c = 1; c < ActiveChannels; ++c)
   {
-    r[c] = r[c - 1] / 2 + 1;
+    r[c] = (r[c - 1] / 2) + 1;
   }
   return r;
 }
@@ -187,11 +187,11 @@ auto compute_reference_result(
   }
   for (OffsetT row = 0; row < height; ++row)
   {
-    for (OffsetT pixel = 0; pixel < width; ++pixel)
+    for (OffsetT item = 0; item < width; ++item)
     {
       for (size_t c = 0; c < ActiveChannels; ++c)
       {
-        const auto offset = row * (row_pitch / sizeof(SampleT)) + pixel * Channels + c;
+        const auto offset = row * (row_pitch / sizeof(SampleT)) + item * Channels + c;
         const int bin     = sample_to_bin_index(static_cast<int>(c), h_samples[offset]);
         if (bin >= 0 && bin < static_cast<int>(h_histogram[c].size())) // if bin is valid
         {
@@ -208,27 +208,27 @@ C2H_TEST("DeviceHistogram::HistogramEven API usage", "[histogram][device]")
   using counter_t = int;
   using level_t   = float;
 
-  int num_samples = 10;
-  std::vector<float> d_samples{2.2f, 6.1f, 7.1f, 2.9f, 3.5f, 0.3f, 2.9f, 2.1f, 6.1f, 999.5f};
+  const int num_samples = 10;
+  const std::vector<float> d_samples{2.2f, 6.1f, 7.1f, 2.9f, 3.5f, 0.3f, 2.9f, 2.1f, 6.1f, 999.5f};
 
-  int num_rows = 1;
+  const int num_rows = 1;
 
-  int num_levels = 7;
-  std::vector<int> d_num_levels{num_levels};
-  std::vector<counter_t> d_single_histogram(6, 0);
+  const int num_levels = 7;
+  const std::vector<int> d_num_levels{num_levels};
+  const std::vector<counter_t> d_single_histogram(6, 0);
   pointer_t<counter_t> d_single_histogram_ptr(d_single_histogram);
 
-  level_t lower_level = 0.0;
-  level_t upper_level = 12.0;
+  const level_t lower_level = 0.0;
+  const level_t upper_level = 12.0;
 
   pointer_t<float> d_samples_ptr(d_samples);
   value_t<int> num_levels_val{num_levels};
-  pointer_t<int> d_num_levels_ptr(d_num_levels);
+  const pointer_t<int> d_num_levels_ptr(d_num_levels);
 
   value_t<level_t> lower_level_val{lower_level};
   value_t<level_t> upper_level_val{upper_level};
 
-  int64_t row_stride_samples = static_cast<int64_t>(num_samples);
+  const int64_t row_stride_samples = static_cast<int64_t>(num_samples);
 
   histogram_even(
     d_samples_ptr,
@@ -255,14 +255,14 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
   const auto max_level       = level_t{sizeof(sample_t) == 1 ? 126 : 1024};
   const auto max_level_count = (sizeof(sample_t) == 1 ? 126 : 1024) + 1;
 
-  offset_t width  = 1920;
-  offset_t height = 1080;
+  const offset_t width  = 1920;
+  const offset_t height = 1080;
 
   constexpr int channels        = 1;
   constexpr int active_channels = 1;
 
   const auto padding_bytes     = static_cast<offset_t>(GENERATE(size_t{0}, 13 * sizeof(sample_t)));
-  const offset_t row_pitch     = width * channels * sizeof(sample_t) + padding_bytes;
+  const offset_t row_pitch     = (width * channels * sizeof(sample_t)) + padding_bytes;
   const auto num_levels        = generate_level_counts_to_test<active_channels>(max_level_count);
   const offset_t total_samples = height * (row_pitch / sizeof(sample_t));
 
@@ -273,7 +273,7 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
     h_samples[i] = static_cast<sample_t>(samples_gen[i]);
   }
 
-  std::vector<counter_t> d_single_histogram(num_levels[0] - 1, 0);
+  const std::vector<counter_t> d_single_histogram(num_levels[0] - 1, 0);
 
   auto levels = setup_bin_levels_for_even<active_channels, level_t>(num_levels, max_level, max_level_count);
 
@@ -300,7 +300,7 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
     {
       return n; // out of range
     }
-    if constexpr (::cuda::std::is_integral<level_t>::value)
+    if constexpr (::cuda::std::is_integral_v<level_t>)
     {
       // Accurate bin computation following the arithmetic we guarantee in the HistoEven docs
       return static_cast<int>(
@@ -359,7 +359,7 @@ C2H_TEST("DeviceHistogram::HistogramEven sample iterator", "[histogram][device]"
   iterator_t<sample_t, counting_iterator_state_t<sample_t>> counting_it = make_counting_iterator<sample_t>("int");
   counting_it.state.value                                               = static_cast<sample_t>(0);
 
-  std::vector<counter_t> d_single_histogram(num_levels[0] - 1, 0);
+  const std::vector<counter_t> d_single_histogram(num_levels[0] - 1, 0);
 
   // Set up levels so that values 0 to adjusted_total_samples-1 are evenly distributed
   std::vector<std::vector<level_t>> levels(2);
@@ -431,7 +431,7 @@ C2H_TEST("Histogram build result has serialization metadata populated", "[histog
       build_info.get_libcudacxx_path(),
       build_info.get_ctk_path()));
 
-  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK(build.cc == (build_info.get_cc_major() * 10) + build_info.get_cc_minor());
   CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
   CHECK(build.payload_size > 0);
   CHECK(build.runtime_policy != nullptr);
@@ -510,11 +510,11 @@ C2H_TEST("Histogram compile/load round-trip", "[histogram][device][serialization
       num_levels_val,
       lower_level_val,
       upper_level_val,
-      /*num_row_pixels=*/static_cast<int64_t>(n_samples),
+      /*num_row_items=*/static_cast<int64_t>(n_samples),
       /*num_rows=*/1,
       /*row_stride_samples=*/static_cast<int64_t>(n_samples),
       null_stream));
-  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  const pointer_t<uint8_t> temp_storage(temp_storage_bytes);
   REQUIRE(
     CUDA_SUCCESS
     == cccl_device_histogram_even(
@@ -526,7 +526,7 @@ C2H_TEST("Histogram compile/load round-trip", "[histogram][device][serialization
       num_levels_val,
       lower_level_val,
       upper_level_val,
-      /*num_row_pixels=*/static_cast<int64_t>(n_samples),
+      /*num_row_items=*/static_cast<int64_t>(n_samples),
       /*num_rows=*/1,
       /*row_stride_samples=*/static_cast<int64_t>(n_samples),
       null_stream));

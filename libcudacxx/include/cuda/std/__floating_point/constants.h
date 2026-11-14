@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/arithmetic.h>
 #include <cuda/std/__floating_point/decompose.h>
 #include <cuda/std/__floating_point/format.h>
@@ -74,7 +73,7 @@ template <__fp_format _Fmt>
   {
     return _Storage(0x7fu);
   }
-  else if constexpr (_Fmt == __fp_format::__fp8_nv_e8m0)
+  else if constexpr (_Fmt == __fp_format::__fp8_nv_ue5m3 || _Fmt == __fp_format::__fp8_nv_e8m0)
   {
     return _Storage(0xffu);
   }
@@ -93,7 +92,7 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_NANF)
   if constexpr (__fp_is_native_type_v<_Tp>)
   {
-    return static_cast<_Tp>(_CCCL_BUILTIN_NANF(""));
+    return static_cast<_Tp>(_CCCL_BUILTIN_NANF());
   }
   else
 #endif // _CCCL_BUILTIN_NANF
@@ -125,22 +124,22 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_NANS)
   if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary32)
   {
-    return static_cast<_Tp>(_CCCL_BUILTIN_NANSF(""));
+    return static_cast<_Tp>(_CCCL_BUILTIN_NANSF());
   }
   else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary64)
   {
-    return static_cast<_Tp>(_CCCL_BUILTIN_NANS(""));
+    return static_cast<_Tp>(_CCCL_BUILTIN_NANS());
   }
 #  if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format_of_v<long double>)
   {
-    return static_cast<_Tp>(_CCCL_BUILTIN_NANSL(""));
+    return static_cast<_Tp>(_CCCL_BUILTIN_NANSL());
   }
 #  endif // _CCCL_HAS_LONG_DOUBLE
 #  if defined(_CCCL_BUILTIN_NANFS128)
   else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary128)
   {
-    return static_cast<_Tp>(_CCCL_BUILTIN_NANFS128(""));
+    return static_cast<_Tp>(_CCCL_BUILTIN_NANFS128());
   }
 #  endif // _CCCL_BUILTIN_NANFS128
   else
@@ -160,6 +159,10 @@ template <__fp_format _Fmt>
   if constexpr (_Fmt == __fp_format::__fp8_nv_e4m3)
   {
     return _Storage(0x7eu);
+  }
+  else if constexpr (_Fmt == __fp_format::__fp8_nv_ue5m3)
+  {
+    return _Storage(0xfeu);
   }
   else
   {
@@ -299,6 +302,10 @@ template <__fp_format _Fmt>
   if constexpr (_Fmt == __fp_format::__fp8_nv_e8m0)
   {
     return ::cuda::std::__fp_min<_Fmt>();
+  }
+  else if constexpr (_Fmt == __fp_format::__fp8_nv_ue5m3)
+  {
+    return __fp_storage_t<_Fmt>(0);
   }
   else
   {

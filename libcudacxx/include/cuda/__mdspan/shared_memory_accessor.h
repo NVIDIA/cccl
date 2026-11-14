@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/__memory/address_space.h>
-#include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/__ptx/instructions/get_sreg.h> // IWYU pragma: keep
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_constructible.h>
@@ -82,8 +82,8 @@ class __shared_memory_accessor : public _Accessor
 {
   static_assert(::cuda::std::is_pointer_v<typename _Accessor::data_handle_type>, "Accessor must be pointer based");
 
-  using __data_handle_type = typename _Accessor::data_handle_type;
-  using __element_type     = ::cuda::std::remove_pointer_t<__data_handle_type>;
+  using __data_handle_type _CCCL_NODEBUG = typename _Accessor::data_handle_type;
+  using __element_type _CCCL_NODEBUG     = ::cuda::std::remove_pointer_t<__data_handle_type>;
 
   static constexpr bool __is_access_noexcept =
     noexcept(::cuda::std::declval<_Accessor>().access(::cuda::std::declval<__data_handle_type>(), 0));
@@ -195,9 +195,9 @@ public:
   {
     [[maybe_unused]] bool __is_valid = true;
     NV_IF_TARGET(NV_IS_DEVICE,
-                 (bool __is_shared_mem     = ::cuda::device::is_address_from(__p, device::address_space::shared);
-                  bool __exceeds_smem_size = __size_bytes > ::cuda::__max_smem_allocation_bytes();
-                  __is_valid               = __is_shared_mem && !__exceeds_smem_size;))
+                 (bool __is_shared_mem           = ::cuda::device::is_address_from(__p, device::address_space::shared);
+                  const bool __exceeds_smem_size = __size_bytes > ::cuda::__max_smem_allocation_bytes();
+                  __is_valid                     = __is_shared_mem && !__exceeds_smem_size;))
     _CCCL_ASSERT(__is_valid, "shared_memory_accessor (mdspan): data handle doesn't point to a valid shared memory");
     _CCCL_VERIFY_DEVICE_ONLY_USAGE();
     return !__is_valid;

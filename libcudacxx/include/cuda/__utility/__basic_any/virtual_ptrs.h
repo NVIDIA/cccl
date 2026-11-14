@@ -22,8 +22,6 @@
 #endif // no system header
 
 #include <cuda/__utility/__basic_any/basic_any_fwd.h>
-#include <cuda/__utility/__basic_any/interfaces.h>
-#include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__utility/typeid.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -32,7 +30,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 struct __base_vptr
 {
-  __base_vptr() = default;
+  _CCCL_HIDE_FROM_ABI __base_vptr() = default;
 
   _CCCL_NODEBUG_HOST_DEVICE_API constexpr __base_vptr(__rtti_base const* __vptr) noexcept
       : __vptr_(__vptr)
@@ -57,7 +55,7 @@ struct __base_vptr
   }
 
 #if !defined(_CCCL_NO_THREE_WAY_COMPARISON)
-  bool operator==(__base_vptr const& __other) const noexcept = default;
+  _CCCL_HIDE_FROM_ABI bool operator==(__base_vptr const& __other) const noexcept = default;
 #else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr auto operator==(__base_vptr __lhs, __base_vptr __rhs) noexcept
     -> bool

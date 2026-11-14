@@ -14,10 +14,10 @@
 #endif // no system header
 
 #include <cub/block/block_merge_sort.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
+#include <cub/warp/warp_utils.cuh>
 
-#include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
@@ -85,10 +85,10 @@ CUB_NAMESPACE_BEGIN
 //! @tparam KeyT
 //!   Key type
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   The number of items per thread
 //!
-//! @tparam LOGICAL_WARP_THREADS
+//! @tparam LogicalWarpThreads
 //!   <b>[optional]</b> The number of threads per "logical" warp (may be less
 //!   than the number of hardware warp threads). Default is the warp size of the
 //!   targeted CUDA compute-capability (e.g., 32 threads for SM86). Must be a
@@ -98,43 +98,36 @@ CUB_NAMESPACE_BEGIN
 //!   <b>[optional]</b> Value type (default: cub::NullType, which indicates a
 //!   keys-only sort)
 //!
-template <typename KeyT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS = detail::warp_threads, typename ValueT = NullType>
+template <typename KeyT, int ItemsPerThread, int LogicalWarpThreads = detail::warp_threads, typename ValueT = NullType>
 class WarpMergeSort
     : public BlockMergeSortStrategy<KeyT,
                                     ValueT,
-                                    LOGICAL_WARP_THREADS,
-                                    ITEMS_PER_THREAD,
-                                    WarpMergeSort<KeyT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, ValueT>>
+                                    LogicalWarpThreads,
+                                    ItemsPerThread,
+                                    WarpMergeSort<KeyT, ItemsPerThread, LogicalWarpThreads, ValueT>>
 {
-private:
-  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == detail::warp_threads;
-  static constexpr bool KEYS_ONLY    = ::cuda::std::is_same_v<ValueT, NullType>;
-  static constexpr int TILE_SIZE     = ITEMS_PER_THREAD * LOGICAL_WARP_THREADS;
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
+  static constexpr int TILE_SIZE  = ItemsPerThread * LogicalWarpThreads;
 
   using BlockMergeSortStrategyT =
-    BlockMergeSortStrategy<KeyT, ValueT, LOGICAL_WARP_THREADS, ITEMS_PER_THREAD, WarpMergeSort>;
+    BlockMergeSortStrategy<KeyT, ValueT, LogicalWarpThreads, ItemsPerThread, WarpMergeSort>;
 
-  const unsigned int warp_id;
-  const unsigned int member_mask;
+  const unsigned int member_mask = _CUB::detail::warp_mask<LogicalWarpThreads>();
 
 public:
   WarpMergeSort() = delete;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE WarpMergeSort(typename BlockMergeSortStrategyT::TempStorage& temp_storage)
-      : BlockMergeSortStrategyT(
-          temp_storage,
-          IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS))
-      , warp_id(IS_ARCH_WARP ? 0 : (::cuda::ptx::get_sreg_laneid() / LOGICAL_WARP_THREADS))
-      , member_mask(WarpMask<LOGICAL_WARP_THREADS>(warp_id))
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpMergeSort(typename BlockMergeSortStrategyT::TempStorage& temp_storage)
+      : BlockMergeSortStrategyT(temp_storage, _CUB::detail::logical_lane_id<LogicalWarpThreads>())
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int get_member_mask() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned int get_member_mask() const
   {
     return member_mask;
   }
 
 private:
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SyncImplementation() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SyncImplementation() const
   {
     __syncwarp(member_mask);
   }

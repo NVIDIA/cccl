@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__fwd/extents.h>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
@@ -75,15 +76,15 @@ struct layout_stride : ::cuda::std::layout_stride
   template <class Extents>
   struct mapping : ::cuda::std::layout_stride::mapping<Extents>
   {
-    constexpr mapping() = default;
+    _CCCL_HIDE_FROM_ABI constexpr mapping() = default;
 
     template <typename... A>
-    constexpr _CCCL_HOST_DEVICE mapping(A&&... a)
+    constexpr _CCCL_HOST_DEVICE_API mapping(A&&... a)
         : ::cuda::std::layout_stride::mapping<Extents>(::cuda::std::forward<A>(a)...)
     {}
 
     template <typename... is_t>
-    constexpr _CCCL_HOST_DEVICE auto operator()(is_t&&... is) const
+    constexpr _CCCL_HOST_DEVICE_API auto operator()(is_t&&... is) const
     {
 #ifdef CUDASTF_BOUNDSCHECK
       each_in_pack(
@@ -104,7 +105,7 @@ struct layout_stride : ::cuda::std::layout_stride
  * @tparam dimensions
  */
 template <typename T, size_t dimensions = 1>
-using slice = mdspan<T, ::cuda::std::dextents<size_t, dimensions>, layout_stride>;
+using slice = mdspan<T, ::cuda::std::dims<dimensions>, layout_stride>;
 
 /**
  * @brief Compute how many dimensions of a slice are actually contiguous.
@@ -115,7 +116,7 @@ using slice = mdspan<T, ::cuda::std::dextents<size_t, dimensions>, layout_stride
  * @return size_t
  */
 template <typename S>
-size_t contiguous_dims(const S& span)
+_CCCL_HOST_API size_t contiguous_dims(const S& span)
 {
   if (span.rank() < 2)
   {
@@ -148,7 +149,8 @@ size_t contiguous_dims(const S& span)
  * @return auto `slice<ElementType, sizeof...(Extents)>`
  */
 template <typename ElementType, typename... Extents, typename... Strides>
-_CCCL_HOST_DEVICE auto make_slice(ElementType* data, const ::std::tuple<Extents...>& extents, const Strides&... strides)
+_CCCL_HOST_DEVICE_API auto
+make_slice(ElementType* data, const ::std::tuple<Extents...>& extents, const Strides&... strides)
 {
   static_assert(sizeof...(Extents) == sizeof...(Strides) + 1);
   using Result = slice<ElementType, sizeof...(Extents)>;
@@ -157,7 +159,7 @@ _CCCL_HOST_DEVICE auto make_slice(ElementType* data, const ::std::tuple<Extents.
       return ::cuda::std::array<size_t, sizeof...(Extents)>{size_t(e)...};
     },
     extents);
-  ::cuda::std::array<size_t, Result::rank()> mdspan_strides{1, size_t(strides)...};
+  const ::cuda::std::array<size_t, Result::rank()> mdspan_strides{1, size_t(strides)...};
   return Result(data, typename Result::mapping_type(sizes, mdspan_strides));
 }
 
@@ -170,7 +172,7 @@ _CCCL_HOST_DEVICE auto make_slice(ElementType* data, const ::std::tuple<Extents.
  * @return auto
  */
 template <typename T, typename... Extents>
-_CCCL_HOST_DEVICE auto make_slice(T* data, const Extents&... extents)
+_CCCL_HOST_DEVICE_API auto make_slice(T* data, const Extents&... extents)
 {
   using Result = slice<T, sizeof...(Extents)>;
   static_assert(sizeof...(Extents) == Result::rank());
@@ -181,13 +183,14 @@ _CCCL_HOST_DEVICE auto make_slice(T* data, const Extents&... extents)
   }
   else
   {
-    ::cuda::std::array<size_t, Result::rank()> sizes{size_t(extents)...}, strides;
+    ::cuda::std::array<size_t, Result::rank()> sizes{size_t(extents)...};
+    ::cuda::std::array<size_t, Result::rank()> strides{};
     for (size_t i = 1; i < strides.size(); ++i)
     {
       strides[i] = sizes[i - 1];
     }
 
-    strides[0] = sizes.size() != 0 && sizes.begin()[0] != 0;
+    strides[0] = !sizes.empty() && sizes.begin()[0] != 0;
     for (size_t i = 2; i < strides.size(); ++i)
     {
       strides.begin()[i] *= strides.begin()[i - 1];
@@ -199,7 +202,7 @@ _CCCL_HOST_DEVICE auto make_slice(T* data, const Extents&... extents)
 namespace reserved
 {
 template <typename View, typename... Whatevs>
-auto make_mdview(Whatevs&&... whatevs)
+_CCCL_HOST_API auto make_mdview(Whatevs&&... whatevs)
 {
   return make_slice(::cuda::std::forward<Whatevs>(whatevs)...);
 }
@@ -372,13 +375,13 @@ public:
    * @brief Dimensionality of the slice.
    *
    */
-  _CCCL_HOST_DEVICE static constexpr size_t rank()
+  _CCCL_HOST_DEVICE_API static constexpr size_t rank()
   {
     return described_type::rank();
   }
 
   // Functions to create the begin and end iterators
-  _CCCL_HOST_DEVICE auto begin()
+  _CCCL_HOST_DEVICE_API auto begin()
   {
     ::std::array<size_t, rank()> sizes;
     unroll<rank()>([&](auto i) {
@@ -387,7 +390,7 @@ public:
     return box<rank()>(sizes).begin();
   }
 
-  _CCCL_HOST_DEVICE auto end()
+  _CCCL_HOST_DEVICE_API auto end()
   {
     ::std::array<size_t, rank()> sizes;
     unroll<rank()>([&](auto i) {
@@ -401,14 +404,14 @@ public:
    *
    * All `shape_of` specializations must define this constructor.
    */
-  shape_of() = default;
+  _CCCL_HIDE_FROM_ABI shape_of() = default;
 
   /**
    * @brief Copies a shape.
    *
    * All `shape_of` specializations must define this constructor.
    */
-  shape_of(const shape_of&) = default;
+  _CCCL_HIDE_FROM_ABI shape_of(const shape_of&) = default;
 
   /**
    * @brief Extracts the shape from a given slice.
@@ -417,7 +420,7 @@ public:
    *
    * All `shape_of` specializations must define this constructor.
    */
-  explicit _CCCL_HOST_DEVICE shape_of(const described_type& x)
+  explicit _CCCL_HOST_DEVICE_API shape_of(const described_type& x)
       : extents(x.extents())
       , strides(x.mapping().strides())
   {}
@@ -429,7 +432,7 @@ public:
    *
    * This constructor is optional.
    */
-  explicit shape_of(const coords_t& sizes)
+  _CCCL_HOST_API explicit shape_of(const coords_t& sizes)
       : extents(sizes)
   {
     size_t product_sizes = 1;
@@ -456,7 +459,7 @@ public:
    * Initializes dimensions to `size0`, `sizes...`. This constructor is optional.
    */
   template <typename... Sizes>
-  explicit shape_of(size_t size0, Sizes&&... sizes)
+  _CCCL_HOST_API explicit shape_of(size_t size0, Sizes&&... sizes)
       : extents(size0, ::cuda::std::forward<Sizes>(sizes)...)
   {
     static_assert(sizeof...(sizes) + 1 == rank(), "Wrong number of arguments passed to shape_of.");
@@ -471,7 +474,8 @@ public:
   }
 
   ///@{ @name Constructors
-  explicit shape_of(const ::cuda::std::array<size_t, rank()>& sizes, const ::cuda::std::array<size_t, rank()>& _strides)
+  _CCCL_HOST_API explicit shape_of(const ::cuda::std::array<size_t, rank()>& sizes,
+                                   const ::cuda::std::array<size_t, rank()>& _strides)
       : shape_of(sizes)
   {
     if constexpr (rank() > 1)
@@ -489,7 +493,7 @@ public:
   }
   ///@}
 
-  bool operator==(const shape_of& other) const
+  _CCCL_HOST_API bool operator==(const shape_of& other) const
   {
     return extents == other.extents && strides == other.strides;
   }
@@ -502,7 +506,7 @@ public:
    *
    * This member function is optional.
    */
-  constexpr _CCCL_HOST_DEVICE size_t extent(size_t dim) const
+  constexpr _CCCL_HOST_DEVICE_API size_t extent(size_t dim) const
   {
     assert(dim < rank());
     return extents.extent(dim);
@@ -514,7 +518,7 @@ public:
    * @param dim The dimension for which to get the stride.
    * @return The stride for the specified dimension.
    */
-  constexpr _CCCL_HOST_DEVICE size_t stride(size_t dim) const
+  constexpr _CCCL_HOST_DEVICE_API size_t stride(size_t dim) const
   {
     assert(dim < rank());
     return strides[dim];
@@ -527,7 +531,7 @@ public:
    *
    * This member function is optional.
    */
-  _CCCL_HOST_DEVICE size_t size() const
+  _CCCL_HOST_DEVICE_API size_t size() const
   {
     size_t result = 1;
     for (size_t i = 0; i != rank(); ++i)
@@ -542,7 +546,7 @@ public:
    *
    * @return const std::array<size_t, dimensions>&
    */
-  _CCCL_HOST_DEVICE ::std::array<size_t, rank()> get_sizes() const
+  _CCCL_HOST_DEVICE_API ::std::array<size_t, rank()> get_sizes() const
   {
     ::std::array<size_t, rank()> result;
     for (size_t i = 0; i < rank(); ++i)
@@ -557,7 +561,7 @@ public:
    *
    * @return const dim4
    */
-  dim4 get_data_dims() const
+  _CCCL_HOST_API dim4 get_data_dims() const
   {
     static_assert(rank() < 5);
 
@@ -596,13 +600,13 @@ public:
    * @param base Base pointer to create the described_type object.
    * @return described_type Newly created described_type object.
    */
-  described_type create(T* base) const
+  _CCCL_HOST_API described_type create(T* base) const
   {
     return described_type(base, typename described_type::mapping_type(extents, strides));
   }
 
   // This transforms a tuple of (shape, 1D index) into a coordinate
-  _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const
+  _CCCL_HOST_DEVICE_API coords_t index_to_coords(size_t index) const
   {
     coords_t coordinates{};
     // for (::std::ptrdiff_t i = _dimensions - 1; i >= 0; i--)
@@ -812,7 +816,7 @@ UNITTEST("3D slice should be similar to 3D mdspan", (slice<double, 3>()))
 namespace reserved
 {
 template <typename T, typename... P, typename F>
-void for_each_contiguous_hunk(const mdspan<T, P...>& s, F&& f)
+_CCCL_HOST_API void for_each_contiguous_hunk(const mdspan<T, P...>& s, F&& f)
 {
   constexpr auto rank = mdspan<T, P...>::extents_type::rank();
   const size_t c      = contiguous_dims(s);
@@ -834,7 +838,7 @@ void for_each_contiguous_hunk(const mdspan<T, P...>& s, F&& f)
     }
     for (size_t i = 0; i < s.extent(dim); ++i)
     {
-      self(self, base + i * s.stride(dim), dim + 1);
+      self(self, base + (i * s.stride(dim)), dim + 1);
     }
   };
   rec(rec, s.data_handle(), c);
@@ -853,7 +857,7 @@ void for_each_contiguous_hunk(const mdspan<T, P...>& s, F&& f)
  * failed partway and rolled back, or an already-unpinned slice).
  */
 template <typename T, typename... P>
-void unpin(mdspan<T, P...>& s)
+_CCCL_HOST_API void unpin(mdspan<T, P...>& s)
 {
   reserved::for_each_contiguous_hunk(s, [](T* base, size_t /*n*/) {
     unpin_memory(base);
@@ -869,7 +873,7 @@ void unpin(mdspan<T, P...>& s)
  * @return true if the slice was newly pinned, false if it was already pinned
  */
 template <typename T, typename... P>
-bool pin(mdspan<T, P...>& s)
+_CCCL_HOST_API bool pin(mdspan<T, P...>& s)
 {
   if (address_is_pinned(s.data_handle()))
   {
@@ -901,7 +905,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
 //! `std::hash<E>` or a custom hash function, if available. The hash is computed by
 //! traversing the multidimensional array in a dimension-major order and combining the
 //! hash values of each element. If neither a standard nor custom hash is available for
-//! the element type, the function prints an error and aborts.
+//! the element type, the program does not compile.
 //!
 //! The function supports both rank deduction and explicit index sequence specification.
 //! When called without an explicit index sequence, it generates one corresponding to the
@@ -917,66 +921,59 @@ _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
 //!
 //! @return The combined hash value of all elements in the mdspan.
 //!
-//! @note Requires that either `std::hash<E>` or a custom hash function for `E` is defined.
-//!       If neither is available, the function will print an error and terminate the program.
+//! @note Requires that either `std::hash<E>` or a custom hash function for `E` is defined;
+//!       this is checked at compile time.
 //! @note If the mdspan is empty, the function returns 0.
 template <typename E, typename X, typename L, typename A, size_t... i>
-size_t data_hash([[maybe_unused]] mdspan<E, X, L, A> s, ::cuda::std::index_sequence<i...> = {})
+_CCCL_HOST_API size_t data_hash(mdspan<E, X, L, A> s, ::cuda::std::index_sequence<i...> = {})
 {
+  static_assert(reserved::has_std_hash_v<E> || reserved::has_cudastf_hash_v<E>,
+                "data_hash requires ::std::hash<E> or a cudastf hash for the element type E");
   using Slice = mdspan<E, X, L, A>;
-  if constexpr (!reserved::has_std_hash_v<E> && !reserved::has_cudastf_hash_v<E>)
+  if constexpr (sizeof...(i) != Slice::rank())
   {
-    fprintf(stderr, "Error: cannot compute data_hash on a mdspan<E, ...> if ::std::hash<E> is not defined.\n");
-    abort();
-    return 0;
+    return data_hash(s, ::cuda::std::make_index_sequence<Slice::rank()>());
   }
   else
   {
-    if constexpr (sizeof...(i) != Slice::rank())
+    if (s.size() == 0)
     {
-      return data_hash(s, ::cuda::std::make_index_sequence<Slice::rank()>());
+      return 0;
     }
-    else
-    {
-      if (s.size() == 0)
+
+    size_t h          = 0;
+    auto content_hash = [&](auto... indices) -> void {
+      for (;;)
       {
-        return 0;
-      }
+        cuda::experimental::stf::hash_combine(h, s(indices...));
 
-      size_t h          = 0;
-      auto content_hash = [&](auto... indices) -> void {
-        for (;;)
+        bool bump = true;
+        each_in_pack(
+          [&](auto current_dim, size_t& index) {
+            if (!bump)
+            {
+              return;
+            }
+            ++index;
+            if (index >= s.extent(current_dim))
+            {
+              index = 0;
+            }
+            else
+            {
+              bump = false;
+            }
+          },
+          indices...);
+        if (bump)
         {
-          cuda::experimental::stf::hash_combine(h, s(indices...));
-
-          bool bump = true;
-          each_in_pack(
-            [&](auto current_dim, size_t& index) {
-              if (!bump)
-              {
-                return;
-              }
-              ++index;
-              if (index >= s.extent(current_dim))
-              {
-                index = 0;
-              }
-              else
-              {
-                bump = false;
-              }
-            },
-            indices...);
-          if (bump)
-          {
-            // Done with all dimensions
-            break;
-          }
+          // Done with all dimensions
+          break;
         }
-      };
-      content_hash((i * 0)...);
-      return h;
-    }
+      }
+    };
+    content_hash((i * 0)...);
+    return h;
   }
 }
 _CCCL_DIAG_POP
@@ -985,9 +982,8 @@ _CCCL_DIAG_POP
  * Write the content of the mdspan into a file
  */
 template <typename E, typename X, typename L, typename A, size_t... i>
-void data_dump([[maybe_unused]] mdspan<E, X, L, A> s,
-               ::std::ostream& file              = ::std::cerr,
-               ::cuda::std::index_sequence<i...> = {})
+_CCCL_HOST_API void data_dump(
+  [[maybe_unused]] mdspan<E, X, L, A> s, ::std::ostream& file = ::std::cerr, ::cuda::std::index_sequence<i...> = {})
 {
   using Slice = mdspan<E, X, L, A>;
   if constexpr (reserved::has_ostream_operator<E>::value)
@@ -1082,7 +1078,7 @@ UNITTEST("data_hash")
 template <typename... P>
 struct hash<mdspan<P...>>
 {
-  ::std::size_t operator()(mdspan<P...> const& s) const noexcept
+  _CCCL_HOST_API ::std::size_t operator()(mdspan<P...> const& s) const noexcept
   {
     static constexpr auto _dimensions = mdspan<P...>::rank();
     // Combine hashes from the ptr, sizes and strides
@@ -1117,8 +1113,8 @@ UNITTEST("slice hash")
   auto s  = make_slice(A, ::std::tuple{5, 2}, 5);
   auto s2 = make_slice(A, ::std::tuple{4, 2}, 5);
 
-  size_t h  = hash<slice<double, 2>>{}(s);
-  size_t h2 = hash<slice<double, 2>>{}(s2);
+  const size_t h  = hash<slice<double, 2>>{}(s);
+  const size_t h2 = hash<slice<double, 2>>{}(s2);
 
   EXPECT(h != h2);
 };
@@ -1133,8 +1129,8 @@ UNITTEST("slice hash 3D")
   // non-contiguous
   auto s2 = make_slice(A, ::std::tuple{4, 2, 40}, 5, 5 * 2);
 
-  size_t h  = hash<slice<double, 3>>{}(s);
-  size_t h2 = hash<slice<double, 3>>{}(s2);
+  const size_t h  = hash<slice<double, 3>>{}(s);
+  const size_t h2 = hash<slice<double, 3>>{}(s2);
 
   EXPECT(h != h2);
 };

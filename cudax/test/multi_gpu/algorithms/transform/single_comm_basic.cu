@@ -17,7 +17,7 @@
 #include <cuda/std/functional>
 #include <cuda/std/span>
 
-#include <cuda/experimental/__multi_gpu/algorithm/transform/transform.h>
+#include <cuda/experimental/mgmn/transform>
 
 #include <string>
 #include <vector>
@@ -35,7 +35,7 @@ namespace
 // Running them concurrently anyway shows that this overload needs no peer to make progress.
 // Catch2 assertions remain on the main thread after all worker threads have joined.
 template <class T, class Op>
-void run_case(cuda::std::span<cudax::nccl_communicator_ref> comms,
+void run_case(cuda::std::span<cudax::mgmn::nccl_communicator_ref> comms,
               const std::vector<std::vector<T>>& inputs_by_rank,
               Op op)
 {
@@ -61,7 +61,7 @@ void run_case(cuda::std::span<cudax::nccl_communicator_ref> comms,
   const auto in_copy = in;
 
   run_threaded(comms.size(), [&](cuda::std::size_t i) {
-    cudax::transform(cudax::distributed, comms[i], envs[i], in[i].begin(), in[i].size(), out[i].begin(), op);
+    cudax::mgmn::transform(cudax::distributed, comms[i], envs[i], in[i].begin(), in[i].size(), out[i].begin(), op);
   });
 
   // `transform` writes only to the output range, so the input must come back unchanged.
@@ -109,7 +109,7 @@ MULTI_GPU_TEST("transform single-comm documentation example", c2h::type_list<int
     auto input  = cuda::make_device_buffer<int>(environment, device, input_values);
     auto output = cuda::make_device_buffer<int>(environment, device, input_values.size(), cuda::no_init);
 
-    cudax::transform(
+    cudax::mgmn::transform(
       cudax::distributed, communicator, environment, input.begin(), input.size(), output.begin(), cuda::std::negate<>{});
 
     // The operator is applied element by element and no rank sees another rank's elements, so every
@@ -130,6 +130,7 @@ MULTI_GPU_TEST("transform single-comm documentation example", c2h::type_list<int
     if (const auto& err_str = failed[i]; !err_str.empty())
     {
       INFO("rank: " << i);
+      // NOLINTNEXTLINE(readability-container-size-empty)
       REQUIRE(err_str == ""); // Should print the full error string
     }
   }
@@ -185,7 +186,7 @@ MULTI_GPU_TEST("transform single-comm, uneven rank sizes", value_types, transfor
   std::vector<std::vector<T>> inputs_by_rank(static_cast<cuda::std::size_t>(comms.front().size()));
   for (int r = 0; r < comms.front().size(); ++r)
   {
-    const auto count = static_cast<cuda::std::size_t>(r) * 100 + 1;
+    const auto count = (static_cast<cuda::std::size_t>(r) * 100) + 1;
 
     inputs_by_rank[static_cast<cuda::std::size_t>(r)] = std::vector<T>(count, make_value<T>(r));
   }

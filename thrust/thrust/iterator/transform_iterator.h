@@ -34,6 +34,8 @@
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/__iterator/contiguous_iterator_adaptor.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__memory/construct_at.h>
@@ -53,7 +55,7 @@ template <class UnaryFunc, class Iterator>
 struct transform_iterator_reference
 {
   // by default, dereferencing the iterator yields the same as the function.
-  using type = ::cuda::std::invoke_result_t<UnaryFunc&, it_value_t<Iterator>>;
+  using type _CCCL_NODEBUG = ::cuda::std::invoke_result_t<UnaryFunc&, it_value_t<Iterator>>;
 };
 
 // for certain function objects, we need to tweak the reference type. Notably, identity functions must decay to values.
@@ -61,12 +63,12 @@ struct transform_iterator_reference
 template <class Iterator>
 struct transform_iterator_reference<::cuda::std::identity, Iterator>
 {
-  using type = it_value_t<Iterator>;
+  using type _CCCL_NODEBUG = it_value_t<Iterator>;
 };
 template <typename Eval, class Iterator>
 struct transform_iterator_reference<functional::actor<Eval>, Iterator>
 {
-  using type =
+  using type _CCCL_NODEBUG =
     ::cuda::std::remove_reference_t<::cuda::std::invoke_result_t<functional::actor<Eval>&, it_value_t<Iterator>>>;
 };
 
@@ -222,16 +224,16 @@ public:
   friend class iterator_core_access;
   //! \endcond
 
-  transform_iterator() = default;
+  _CCCL_HIDE_FROM_ABI transform_iterator() = default;
 
-  transform_iterator(transform_iterator const&) = default;
+  _CCCL_HIDE_FROM_ABI transform_iterator(transform_iterator const&) = default;
 
   //! This constructor takes as arguments an \c Iterator and an \c AdaptableUnaryFunction and copies them to a new \p
   //! transform_iterator.
   //!
   //! \param x An \c Iterator pointing to the input to this \p transform_iterator's \c AdaptableUnaryFunction.
   //! \param f An \c AdaptableUnaryFunction used to transform the objects pointed to by \p x.
-  _CCCL_HOST_DEVICE transform_iterator(Iterator const& x, AdaptableUnaryFunction f)
+  _CCCL_HOST_DEVICE_API transform_iterator(Iterator const& x, AdaptableUnaryFunction f)
       : super_t(x)
       , m_f(f)
   {}
@@ -240,7 +242,7 @@ public:
   //! AdaptableUnaryFunction using its null constructor.
   //!
   //! \param x An \c Iterator to copy.
-  _CCCL_HOST_DEVICE explicit transform_iterator(Iterator const& x)
+  _CCCL_HOST_DEVICE_API explicit transform_iterator(Iterator const& x)
       : super_t(x)
   {}
 
@@ -248,7 +250,7 @@ public:
   //!
   //! \param other The \p transform_iterator to copy.
   template <typename OtherAdaptableUnaryFunction, typename OtherIterator, typename OtherReference, typename OtherValue>
-  _CCCL_HOST_DEVICE transform_iterator(
+  _CCCL_HOST_DEVICE_API transform_iterator(
     const transform_iterator<OtherAdaptableUnaryFunction, OtherIterator, OtherReference, OtherValue>& other,
     detail::enable_if_convertible_t<OtherIterator, Iterator, int>                             = 0,
     detail::enable_if_convertible_t<OtherAdaptableUnaryFunction, AdaptableUnaryFunction, int> = 0)
@@ -256,7 +258,7 @@ public:
       , m_f(other.functor())
   {}
 
-  _CCCL_HOST_DEVICE transform_iterator& operator=(transform_iterator const& other)
+  _CCCL_HOST_DEVICE_API transform_iterator& operator=(transform_iterator const& other)
   {
     super_t::operator=(other);
     if constexpr (::cuda::std::is_copy_assignable_v<AdaptableUnaryFunction>)
@@ -279,9 +281,19 @@ public:
 
   //! This method returns a copy of this \p transform_iterator's \c AdaptableUnaryFunction.
   //! \return A copy of this \p transform_iterator's \c AdaptableUnaryFunction.
-  _CCCL_HOST_DEVICE AdaptableUnaryFunction functor() const
+  _CCCL_HOST_DEVICE_API AdaptableUnaryFunction functor() const
   {
     return m_f;
+  }
+
+  //! @brief Rebuilds the stored iterator in place over the storage at @p ptr.
+  //! @param[in] ptr The address of the storage that replaces the storage this iterator reads from.
+  _CCCL_TEMPLATE(class T)
+  _CCCL_REQUIRES(::cuda::__iter_can_rebind<Iterator, T>)
+  // NOLINTNEXTLINE(readability-identifier-naming): libcu++ calls this by name
+  _CCCL_HOST_DEVICE_API void __rebind(T* ptr)
+  {
+    ::cuda::__rebind_iterator_adaptor(this->base_reference(), ptr);
   }
 
   //! \cond
@@ -292,7 +304,7 @@ private:
   // See goo.gl/LELTNp
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+  _CCCL_HOST_DEVICE_API typename super_t::reference dereference() const
   {
     // TODO(bgruber): we should ideally do as `std::ranges::transform_view::iterator` does:
     // `return std::invoke(m_f, *this->base());` and return `decltype(auto)`. However, `*this->base()` may return a
@@ -332,7 +344,7 @@ private:
 //! \return A new \p transform_iterator which transforms the range at \p it by \p fun.
 //! \see transform_iterator
 template <class AdaptableUnaryFunction, class Iterator>
-inline _CCCL_HOST_DEVICE transform_iterator<AdaptableUnaryFunction, Iterator>
+_CCCL_HOST_DEVICE_API inline transform_iterator<AdaptableUnaryFunction, Iterator>
 make_transform_iterator(Iterator it, AdaptableUnaryFunction fun)
 {
   return transform_iterator<AdaptableUnaryFunction, Iterator>(it, fun);
@@ -342,3 +354,12 @@ make_transform_iterator(Iterator it, AdaptableUnaryFunction fun)
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
+
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <class AdaptableUnaryFunction, class Iterator, class Reference, class Value>
+inline constexpr bool __is_contiguous_iterator_or_adaptor_impl<
+  THRUST_NS_QUALIFIER::transform_iterator<AdaptableUnaryFunction, Iterator, Reference, Value>> =
+  __is_contiguous_iterator_or_adaptor_impl<::cuda::std::remove_cvref_t<Iterator>>;
+_CCCL_END_NAMESPACE_CUDA
+#endif // _CCCL_DOXYGEN_INVOKED

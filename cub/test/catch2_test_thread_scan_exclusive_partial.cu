@@ -52,7 +52,7 @@ template <int NumItems, typename T, typename ScanOperator>
 __global__ void thread_scan_exclusive_partial_kernel_array(
   const T* d_in, T* d_out, ScanOperator scan_operator, int valid_items, T prefix, bool apply_prefix)
 {
-  cuda::std::array<T, NumItems> thread_data;
+  cuda::std::array<T, NumItems> thread_data{};
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < NumItems; ++i)
@@ -171,7 +171,7 @@ CUB_TEST("ThreadScanExclusive Integral Type Tests",
   c2h::device_vector<value_t> d_in(num_items, thrust::no_init);
   c2h::device_vector<output_t> d_out(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<value_t> h_in = d_in;
+  const c2h::host_vector<value_t> h_in = d_in;
   c2h::host_vector<output_t> reference_result(num_items, static_cast<output_t>(filler));
 
   compute_exclusive_scan_reference(
@@ -229,7 +229,7 @@ CUB_TEST("ThreadScanExclusive Floating-Point Type Tests",
   c2h::device_vector<value_t> d_in(num_items, thrust::no_init);
   c2h::device_vector<value_t> d_out(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<value_t> h_in = d_in;
+  const c2h::host_vector<value_t> h_in = d_in;
   c2h::host_vector<value_t> reference_result(num_items, filler);
 
   compute_exclusive_scan_reference(
@@ -292,7 +292,7 @@ CUB_TEST("ThreadScanExclusive Narrow PrecisionType Tests",
   c2h::device_vector<value_t> d_in(num_items, thrust::no_init);
   c2h::device_vector<output_t> d_out(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<value_t> h_in = d_in;
+  const c2h::host_vector<value_t> h_in = d_in;
   c2h::host_vector<output_t> reference_result(num_items, filler);
 
   compute_exclusive_scan_reference(
@@ -328,8 +328,8 @@ CUB_TEST("ThreadScanExclusive Container Tests", "[scan][thread]", CUB_SMALL)
   c2h::device_vector<int> d_out(max_size, thrust::no_init);
   using dist_param = dist_interval<int, cuda::std::plus<>, max_size>;
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<int> h_in = d_in;
-  const int valid_items      = GENERATE_COPY(
+  const c2h::host_vector<int> h_in = d_in;
+  const int valid_items            = GENERATE_COPY(
     take(1, random(2, max_size - 2)),
     take(1, random(max_size + 2, cuda::std::numeric_limits<int>::max())),
     values({1, max_size - 1, max_size, max_size + 1}));

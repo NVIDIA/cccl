@@ -369,11 +369,83 @@ def test_encoded_words_are_removed() -> None:
     assert "0x000fe40000000f00" not in normalized_text(BASELINE)["sm_75"]
 
 
-def test_immediates_and_bank_offsets_are_kept() -> None:
+def test_immediates_are_kept() -> None:
     text = normalized_text(BASELINE)["sm_75"]
-    assert "c[0x0][0x28]" in text
     assert "0x3f800000" in text
     assert "IMAD R7, R2, 0x6, RZ ;" in text
+
+
+@pytest.mark.parametrize("offset", ["0x18", "0x38", "0x298"])
+def test_single_constant_offset_is_noise(offset: str, compared) -> None:
+    shifted = BASELINE.replace("c[0x0][0x28]", f"c[0x0][{offset}]")
+    assert not any(entry.changed for entry in compared(BASELINE, shifted))
+
+
+# Constant operands from the sm_80 transform diff, including arithmetic uses.
+CONSTANTS = """
+arch = sm_80
+        Function : transform
+        /*0000*/                   IADD3.X R17, R3, c[0x4][0x28c], RZ, P1, !PT ;
+        /*0010*/                   IADD3 R16, P1, R2, c[0x4][0x288], RZ ;
+        /*0020*/                   ULDC.64 UR8, c[0x4][0x288] ;
+        /*0030*/                   MOV R1, c[0x0][0x28] ;
+"""
+
+
+def test_constant_offsets_use_the_lowest_offset_in_each_bank() -> None:
+    text = normalized_text(CONSTANTS)["sm_80"]
+    assert "IADD3.X R17, R3, c[0x4][0x4], RZ, P1, !PT ;" in text
+    assert "IADD3 R16, P1, R2, c[0x4][0x0], RZ ;" in text
+    assert "ULDC.64 UR8, c[0x4][0x0] ;" in text
+    assert "MOV R1, c[0x0][0x0] ;" in text
+
+
+def test_constant_banks_can_shift_independently(compared) -> None:
+    shifted = (
+        CONSTANTS.replace("0x288", "0x298")
+        .replace("0x28c", "0x29c")
+        .replace("0x28]", "0x48]")
+    )
+    assert not any(entry.changed for entry in compared(CONSTANTS, shifted))
+
+
+def test_constant_banks_can_shift_independently_in_each_kernel() -> None:
+    baseline = CONSTANTS + CONSTANTS.replace("Function : transform", "Function : other")
+    shifted = CONSTANTS + (
+        CONSTANTS.replace("Function : transform", "Function : other")
+        .replace("0x288", "0x298")
+        .replace("0x28c", "0x29c")
+    )
+    assert normalized_text(baseline) == normalized_text(shifted)
+
+
+def test_constant_banks_can_shift_independently_in_each_architecture() -> None:
+    baseline = CONSTANTS + CONSTANTS.replace("sm_80", "sm_90")
+    shifted = CONSTANTS + (
+        CONSTANTS.replace("sm_80", "sm_90")
+        .replace("0x288", "0x298")
+        .replace("0x28c", "0x29c")
+    )
+    assert normalized_text(baseline) == normalized_text(shifted)
+
+
+def test_constant_spacing_changes(compared) -> None:
+    changed = CONSTANTS.replace("0x28c", "0x290")
+    assert any(entry.changed for entry in compared(CONSTANTS, changed))
+
+
+def test_constant_bank_change_is_detected(compared) -> None:
+    changed = CONSTANTS.replace("c[0x4]", "c[0x5]")
+    assert any(entry.changed for entry in compared(CONSTANTS, changed))
+
+
+@pytest.mark.parametrize(
+    ("before", "after"),
+    [("ULDC.64", "ULDC"), ("UR8", "UR10"), ("P1, !PT", "P0, !PT")],
+)
+def test_constant_instruction_changes_are_detected(before: str, after: str) -> None:
+    changed = CONSTANTS.replace(before, after)
+    assert normalized_text(CONSTANTS) != normalized_text(changed)
 
 
 def test_kernel_order_is_noise() -> None:
@@ -492,6 +564,16 @@ def test_a_changed_architecture_carries_the_changed_lines(compared) -> None:
     assert diff.changed_lines == 2
     # The other architecture is untouched, so it has no diff of its own.
     assert results["sm_90"].diff is None
+
+
+def test_the_hunk_header_names_the_kernel(compared) -> None:
+    """The hunk header carries the enclosing kernel, like `git diff`'s function
+    context, so a reader does not have to scroll to the excerpt's diff headers
+    to know which kernel changed."""
+    results = compared(BASELINE, CHANGED)
+    diff = next(entry.diff for entry in results if entry.diff is not None)
+    text = "\n".join(diff.excerpt)
+    assert "@@ _Z5otherPf" in text
 
 
 def test_the_diff_names_both_sides(compared) -> None:

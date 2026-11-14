@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -51,17 +51,17 @@ using remove_all_extents_t _CCCL_NODEBUG = _CCCL_BUILTIN_REMOVE_ALL_EXTENTS(_Tp)
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_all_extents
 {
-  using type = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_all_extents<_Tp[]>
 {
-  using type = typename remove_all_extents<_Tp>::type;
+  using type _CCCL_NODEBUG = typename remove_all_extents<_Tp>::type;
 };
 template <class _Tp, size_t _Np>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_all_extents<_Tp[_Np]>
 {
-  using type = typename remove_all_extents<_Tp>::type;
+  using type _CCCL_NODEBUG = typename remove_all_extents<_Tp>::type;
 };
 
 template <class _Tp>

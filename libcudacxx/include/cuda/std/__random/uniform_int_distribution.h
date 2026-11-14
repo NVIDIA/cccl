@@ -41,8 +41,8 @@ public:
   using result_type = _UIntType;
 
 private:
-  using _Engine_result_type = typename _Engine::result_type;
-  using _Working_result_type =
+  using _Engine_result_type _CCCL_NODEBUG = typename _Engine::result_type;
+  using _Working_result_type _CCCL_NODEBUG =
     conditional_t<sizeof(_Engine_result_type) <= sizeof(result_type), result_type, _Engine_result_type>;
 
   _Engine& __e_;
@@ -65,9 +65,13 @@ public:
   _CCCL_HOST_DEVICE_API constexpr __independent_bits_engine(_Engine& __e, size_t __w) noexcept
       : __e_(__e)
       , __w_(__w)
+      , __n_((__w_ / __m) + static_cast<size_t>(__w_ % __m != 0))
   {
-    __n_  = __w_ / __m + (__w_ % __m != 0);
-    __w0_ = __w_ / __n_;
+    // TODO(jfaibussowit):
+    //
+    // Fix in CCCL 4.0 (or next ABI bump), reorder __n_ and __w0_ so we can initialize this in
+    // the member initializer list above
+    __w0_ = __w_ / __n_; // NOLINT(cppcoreguidelines-prefer-member-initializer)
     if constexpr (_Rp == 0)
     {
       __y0_ = _Rp;
@@ -93,7 +97,7 @@ public:
         __y0_ = 0;
       }
     }
-    __n0_ = __n_ - __w_ % __n_;
+    __n0_ = __n_ - (__w_ % __n_);
     if (__w0_ < _WDt - 1)
     {
       __y1_ = (_Rp >> (__w0_ + 1)) << (__w0_ + 1);
@@ -168,7 +172,6 @@ public:
 
   class param_type
   {
-  private:
     result_type __a_ = result_type{0};
     result_type __b_ = numeric_limits<result_type>::max();
 
@@ -209,7 +212,7 @@ private:
 
 public:
   // constructors and reset functions
-  constexpr uniform_int_distribution() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr uniform_int_distribution() noexcept = default;
   _CCCL_HOST_DEVICE_API explicit constexpr uniform_int_distribution(
     result_type __a, result_type __b = numeric_limits<result_type>::max()) noexcept
       : __p_(param_type(__a, __b))
@@ -245,7 +248,7 @@ public:
     }
 
     size_t __w = __dt - ::cuda::std::countl_zero(__rp) - 1;
-    if ((__rp & ((numeric_limits<_UIntType>::max)() >> (__dt - __w))) != 0)
+    if ((__rp & (numeric_limits<_UIntType>::max() >> (__dt - __w))) != 0)
     {
       ++__w;
     }
@@ -302,7 +305,7 @@ public:
 
 #if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
-  friend ::std::basic_ostream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const uniform_int_distribution& __x)
   {
     using _Ostream = ::std::basic_ostream<_CharT, _Traits>;
@@ -317,7 +320,7 @@ public:
   }
 
   template <class _CharT, class _Traits>
-  friend ::std::basic_istream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is, uniform_int_distribution& __x)
   {
     using _Istream = ::std::basic_istream<_CharT, _Traits>;

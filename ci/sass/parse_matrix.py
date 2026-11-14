@@ -8,6 +8,7 @@ change to any script.
 
 import argparse
 import json
+from collections.abc import Collection
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
@@ -30,10 +31,12 @@ def resolve_ctk(matrix: dict[str, Any], ctk: str) -> str:
     `13.X` follows the newest CTK.
     """
     versions = matrix["ctk_versions"]
+    if not all(isinstance(version, str) for version in versions):
+        raise ValueError("CTK version keys in matrix.yaml must be quoted strings")
     for version, spec in versions.items():
-        if str(version) == ctk or ctk in spec.get("alias", []):
-            return str(version)
-    raise KeyError(f"Unknown ctk '{ctk}'. Valid: {sorted(map(str, versions))}")
+        if version == ctk or ctk in spec.get("alias", []):
+            return version
+    raise KeyError(f"Unknown ctk '{ctk}'. Valid: {sorted(versions)}")
 
 
 def resolve_cxx(matrix: dict[str, Any], cxx: str) -> str:
@@ -52,6 +55,7 @@ def matrix_entry(matrix: dict[str, Any], config: dict[str, Any]) -> dict[str, An
     """Convert one `sass:` entry to a matrix row."""
     return {
         "id": config["id"],
+        "project": config["project"],
         "launch_args": (
             f"--cuda {resolve_ctk(matrix, config['ctk'])} "
             f"--host {resolve_cxx(matrix, config['cxx'])} "
@@ -66,12 +70,20 @@ def matrix_entry(matrix: dict[str, Any], config: dict[str, Any]) -> dict[str, An
     }
 
 
-def parse_matrix(path: Path, workflow: Workflow) -> dict[str, Any]:
+def parse_matrix(
+    path: Path, workflow: Workflow, projects: Collection[str]
+) -> dict[str, Any]:
+    """Convert the `sass:` entries of `workflow` for `projects` to a matrix."""
     with path.open() as f:
         matrix = yaml.safe_load(f)
 
-    configs = matrix["sass"][workflow]
-    return {"include": [matrix_entry(matrix, config) for config in configs]}
+    return {
+        "include": [
+            matrix_entry(matrix, config)
+            for config in matrix["sass"][workflow]
+            if config["project"] in projects
+        ]
+    }
 
 
 def main() -> None:
@@ -92,9 +104,18 @@ def main() -> None:
         default=Workflow.PULL_REQUEST,
         help="Which `sass:` subsection to read. Default: %(default)s.",
     )
+    parser.add_argument(
+        "--projects",
+        nargs="*",
+        required=True,
+        help=(
+            "Keep only the entries for these projects. Names without an entry "
+            "are ignored."
+        ),
+    )
     args = parser.parse_args()
 
-    print(json.dumps(parse_matrix(args.matrix_yaml, args.workflow)))
+    print(json.dumps(parse_matrix(args.matrix_yaml, args.workflow, args.projects)))
 
 
 if __name__ == "__main__":

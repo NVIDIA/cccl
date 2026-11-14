@@ -30,32 +30,20 @@
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/equality_comparable.h>
-#include <cuda/std/__concepts/invocable.h>
 #include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__concepts/semiregular.h>
 #include <cuda/std/__concepts/totally_ordered.h>
-#include <cuda/std/__functional/ranges_operations.h>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/distance.h>
-#include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__iterator/unreachable_sentinel.h>
-#include <cuda/std/__ranges/enable_borrowed_range.h>
-#include <cuda/std/__ranges/movable_box.h>
-#include <cuda/std/__ranges/view_interface.h>
-#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
-#include <cuda/std/__type_traits/make_unsigned.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/type_identity.h>
-#include <cuda/std/__type_traits/void_t.h>
-#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -133,7 +121,6 @@ template <class _Start,
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 class counting_iterator : public __counting_iterator_category<_Start>
 {
-private:
   _Start __value_ = _Start();
 
 public:
@@ -188,10 +175,10 @@ public:
       : __value_(::cuda::std::move(__value))
   {}
 
-  constexpr counting_iterator(const counting_iterator&)            = default;
-  constexpr counting_iterator(counting_iterator&&)                 = default;
-  constexpr counting_iterator& operator=(const counting_iterator&) = default;
-  constexpr counting_iterator& operator=(counting_iterator&&)      = default;
+  _CCCL_HIDE_FROM_ABI constexpr counting_iterator(const counting_iterator&)            = default;
+  _CCCL_HIDE_FROM_ABI constexpr counting_iterator(counting_iterator&&)                 = default;
+  _CCCL_HIDE_FROM_ABI constexpr counting_iterator& operator=(const counting_iterator&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr counting_iterator& operator=(counting_iterator&&)      = default;
 
   //! @brief Creates a @c counting_iterator from another @c counting_iterator of a different
   //! difference type.

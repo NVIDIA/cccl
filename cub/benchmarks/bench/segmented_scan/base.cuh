@@ -51,7 +51,7 @@ struct to_offsets_functor
   OffsetT segment_size;
   OffsetT wobble;
 
-  __host__ __device__ __forceinline__ OffsetT operator()(size_t i) const
+  _CCCL_HOST_DEVICE_API __forceinline__ OffsetT operator()(size_t i) const
   {
     const auto fixed_size_value = static_cast<OffsetT>(i) * segment_size;
     const auto correction       = ((i & 1) ? wobble : OffsetT{0});
@@ -61,7 +61,7 @@ struct to_offsets_functor
 };
 
 template <size_t Wobble = 0, typename T, typename OffsetT>
-static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+_CCCL_HOST_API void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
 #if !TUNE_BASE
   using policy_t = policy_selector_t<TUNE_THREADS, TUNE_ITEMS, TUNE_MAX_SEGMENTS_PER_BLOCK>;
@@ -99,7 +99,7 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       cuda::execution::tune(policy_t{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceSegmentedScan::ExclusiveSegmentedScan,
       "ExclusiveSegmentedScan failed",
       d_input,
@@ -115,13 +115,13 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 }
 
 template <typename T, typename OffsetT>
-static void fixed_segment_size_bench(nvbench::state& state, nvbench::type_list<T, OffsetT> tl)
+_CCCL_HOST_API void fixed_segment_size_bench(nvbench::state& state, nvbench::type_list<T, OffsetT> tl)
 {
   return bench_impl<0, T, OffsetT>(state, tl);
 }
 
 template <typename T, typename OffsetT>
-static void varying_segment_size_bench(nvbench::state& state, nvbench::type_list<T, OffsetT> tl)
+_CCCL_HOST_API void varying_segment_size_bench(nvbench::state& state, nvbench::type_list<T, OffsetT> tl)
 {
   return bench_impl<1, T, OffsetT>(state, tl);
 }

@@ -13,48 +13,50 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/functional.h>
 #include <thrust/system/detail/errno.h>
 #include <thrust/system/error_code.h>
 
+#include <cuda/std/__functional/operations.h>
+
 #include <cstring>
+#include <string>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace system
 {
-error_category ::~error_category()
+_CCCL_HOST_API inline error_category::~error_category()
 {
   ;
 } // end error_category::~error_category()
 
-error_condition error_category ::default_error_condition(int ev) const
+_CCCL_HOST_API inline error_condition error_category::default_error_condition(int ev) const
 {
   return error_condition(ev, *this);
 } // end error_category::default_error_condition()
 
-bool error_category ::equivalent(int code, const error_condition& condition) const
+_CCCL_HOST_API inline bool error_category::equivalent(int code, const error_condition& condition) const
 {
   return default_error_condition(code) == condition;
 } // end error_condition::equivalent()
 
-bool error_category ::equivalent(const error_code& code, int condition) const
+_CCCL_HOST_API inline bool error_category::equivalent(const error_code& code, int condition) const
 {
-  bool result = (this->operator==(code.category())) && (code.value() == condition);
+  const bool result = (this->operator==(code.category())) && (code.value() == condition);
   return result;
 } // end error_code::equivalent()
 
-bool error_category ::operator==(const error_category& rhs) const
+_CCCL_HOST_API inline bool error_category::operator==(const error_category& rhs) const
 {
   return this == &rhs;
 } // end error_category::operator==()
 
-bool error_category ::operator!=(const error_category& rhs) const
+_CCCL_HOST_API inline bool error_category::operator!=(const error_category& rhs) const
 {
   return !this->operator==(rhs);
 } // end error_category::operator!=()
 
-bool error_category ::operator<(const error_category& rhs) const
+_CCCL_HOST_API inline bool error_category::operator<(const error_category& rhs) const
 {
   return ::cuda::std::less<const error_category*>()(this, &rhs);
 } // end error_category::operator<()
@@ -64,14 +66,14 @@ namespace detail
 class generic_error_category : public error_category
 {
 public:
-  inline generic_error_category() = default;
+  _CCCL_HIDE_FROM_ABI generic_error_category() = default;
 
-  inline const char* name() const override
+  _CCCL_HOST_API const char* name() const override
   {
     return "generic";
   }
 
-  inline std::string message(int ev) const override
+  _CCCL_HOST_API std::string message(int ev) const override
   {
     static const std::string unknown_err("Unknown error");
 
@@ -88,19 +90,19 @@ public:
 class system_error_category : public error_category
 {
 public:
-  inline system_error_category() = default;
+  _CCCL_HIDE_FROM_ABI system_error_category() = default;
 
-  inline const char* name() const override
+  _CCCL_HOST_API const char* name() const override
   {
     return "system";
   }
 
-  inline std::string message(int ev) const override
+  _CCCL_HOST_API std::string message(int ev) const override
   {
     return generic_category().message(ev);
   }
 
-  inline error_condition default_error_condition(int ev) const override
+  _CCCL_HOST_API error_condition default_error_condition(int ev) const override
   {
     using namespace errc;
 
@@ -269,13 +271,13 @@ public:
 }; // end system_category_result
 } // namespace detail
 
-inline const error_category& generic_category()
+_CCCL_PUBLIC_HOST_API inline const error_category& generic_category()
 {
   static const detail::generic_error_category result;
   return result;
 }
 
-inline const error_category& system_category()
+_CCCL_PUBLIC_HOST_API inline const error_category& system_category()
 {
   static const detail::system_error_category result;
   return result;

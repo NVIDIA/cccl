@@ -13,19 +13,21 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/numeric_traits.cuh>
+#include <cub/detail/type_size.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
-#include <cuda/__functional/maximum.h>
-#include <cuda/__functional/minimum.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/is_signed.h>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
 
 CUB_NAMESPACE_BEGIN
 
@@ -101,20 +103,18 @@ enum class op_kind_t
   plus,
   min,
   max,
+  arg_extremum, // both argmin and argmax
+  argminmax,
   other
 };
 
-template <typename T>
-inline constexpr auto classify_op = op_kind_t::other;
-
-template <typename T>
-inline constexpr auto classify_op<::cuda::std::plus<T>> = op_kind_t::plus;
-
-template <typename T>
-inline constexpr auto classify_op<::cuda::minimum<T>> = op_kind_t::min;
-
-template <typename T>
-inline constexpr auto classify_op<::cuda::maximum<T>> = op_kind_t::max;
+template <typename Op>
+inline constexpr auto classify_op =
+  ::cuda::__is_cuda_std_plus_v<Op>  ? op_kind_t::plus
+  : ::cuda::__is_cuda_minimum_v<Op> ? op_kind_t::min
+  : ::cuda::__is_cuda_maximum_v<Op>
+    ? op_kind_t::max
+    : op_kind_t::other;
 
 struct iterator_info
 {
@@ -235,9 +235,9 @@ namespace detail
 } // namespace detail
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, LookbackDelayAlgorithm algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, LookbackDelayAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED()
 
@@ -245,12 +245,12 @@ CUB_NAMESPACE_END
 
 #if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
 template <::cuda::std::same_as<char> CharT>
-struct std::formatter<CUB_NS_QUALIFIER::LookbackDelayAlgorithm, CharT> : formatter<const CharT*, CharT>
+struct std::formatter<_CUB::LookbackDelayAlgorithm, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const CUB_NS_QUALIFIER::LookbackDelayAlgorithm& algo, FmtCtx& ctx) const
+  _CCCL_HOST_API auto format(const _CUB::LookbackDelayAlgorithm& algo, FmtCtx& ctx) const
   {
-    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+    return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(algo), ctx);
   }
 };
 #endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
@@ -277,7 +277,7 @@ struct LookbackDelayPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const LookbackDelayPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const LookbackDelayPolicy& p)
   {
     return os << "LookbackDelayPolicy { .kind = " << p.kind << ", .delay = " << p.delay
               << ", .l2_write_latency = " << p.l2_write_latency << " }";

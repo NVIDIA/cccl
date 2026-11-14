@@ -19,16 +19,23 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/it_traits.cuh>
 #include <cub/thread/thread_load.cuh>
-#include <cub/thread/thread_store.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/iterator/iterator_facade.h>
+#include <thrust/iterator/detail/device_system_tag.h>
+#include <thrust/iterator/detail/iterator_facade_category.h> // IWYU pragma: keep
+#include <thrust/iterator/iterator_traversal_tags.h>
+#include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__utility/declval.h>
+
+#if _CCCL_FREESTANDING()
+#  include <cuda/std/__iterator/iterator_traits.h>
+#endif // _CCCL_FREESTANDING()
 
 CUB_NAMESPACE_BEGIN
 
@@ -112,18 +119,18 @@ public:
                                                             THRUST_NS_QUALIFIER::random_access_traversal_tag>;
 #endif // _CCCL_HOSTED()
 
-public:
   /// Wrapped native pointer
   ValueType* ptr;
 
   /// Constructor
   template <typename QualifiedValueType>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CacheModifiedInputIterator(QualifiedValueType* ptr) ///< Native pointer to wrap
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE CacheModifiedInputIterator(QualifiedValueType* ptr) ///< Native pointer to
+                                                                                              ///< wrap
       : ptr(const_cast<::cuda::std::remove_cv_t<QualifiedValueType>*>(ptr))
   {}
 
   /// Postfix increment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type operator++(int)
   {
     self_type retval = *this;
     ptr++;
@@ -131,21 +138,21 @@ public:
   }
 
   /// Prefix increment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type operator++()
   {
     ptr++;
     return *this;
   }
 
   /// Indirection
-  _CCCL_DEVICE _CCCL_FORCEINLINE reference operator*() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE reference operator*() const
   {
-    return ThreadLoad<MODIFIER>(ptr);
+    return _CUB::ThreadLoad<MODIFIER>(ptr);
   }
 
   /// Addition
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type operator+(Distance n) const
   {
     self_type retval(ptr + n);
     return retval;
@@ -153,7 +160,7 @@ public:
 
   /// Addition assignment
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type& operator+=(Distance n)
   {
     ptr += n;
     return *this;
@@ -161,7 +168,7 @@ public:
 
   /// Subtraction
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type operator-(Distance n) const
   {
     self_type retval(ptr - n);
     return retval;
@@ -169,46 +176,46 @@ public:
 
   /// Subtraction assignment
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type& operator-=(Distance n)
   {
     ptr -= n;
     return *this;
   }
 
   /// Distance
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE difference_type operator-(self_type other) const
   {
     return ptr - other.ptr;
   }
 
   /// Array subscript
   template <typename Distance>
-  _CCCL_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE reference operator[](Distance n) const
   {
-    return ThreadLoad<MODIFIER>(ptr + n);
+    return _CUB::ThreadLoad<MODIFIER>(ptr + n);
   }
 
   /// Structure dereference
-  _CCCL_DEVICE _CCCL_FORCEINLINE pointer operator->()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE pointer operator->()
   {
-    return &ThreadLoad<MODIFIER>(ptr);
+    return &_CUB::ThreadLoad<MODIFIER>(ptr);
   }
 
   /// Equal to
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool operator==(const self_type& rhs) const
   {
     return (ptr == rhs.ptr);
   }
 
   /// Not equal to
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool operator!=(const self_type& rhs) const
   {
     return (ptr != rhs.ptr);
   }
 
   /// ostream operator
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const self_type& /*itr*/)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const self_type& /*itr*/)
   {
     return os;
   }
@@ -224,12 +231,12 @@ template <CacheLoadModifier MODIFIER, typename ValueType, typename OffsetT>
 inline constexpr bool is_CacheModifiedInputIterator<CacheModifiedInputIterator<MODIFIER, ValueType, OffsetT>> = true;
 
 template <CacheLoadModifier LoadModifier, typename Iterator>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto try_make_cache_modified_iterator(Iterator it)
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE auto try_make_cache_modified_iterator(Iterator it)
 {
-  if constexpr (::cuda::std::contiguous_iterator<Iterator>)
+  if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<Iterator>)
   {
     return CacheModifiedInputIterator<LoadModifier, it_value_t<Iterator>, it_difference_t<Iterator>>{
-      THRUST_NS_QUALIFIER::raw_pointer_cast(&*it)};
+      ::cuda::std::to_address(it)};
   }
   else
   {
@@ -239,7 +246,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto try_make_cache_modified_iterator(Iterat
 
 template <CacheLoadModifier LoadModifier, typename Iterator>
 using try_make_cache_modified_iterator_t =
-  decltype(try_make_cache_modified_iterator<LoadModifier>(::cuda::std::declval<Iterator>()));
+  decltype(_CUB::detail::try_make_cache_modified_iterator<LoadModifier>(::cuda::std::declval<Iterator>()));
 } // namespace detail
 
 CUB_NAMESPACE_END

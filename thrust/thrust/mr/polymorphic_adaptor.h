@@ -13,7 +13,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/config/memory_resource.h>
 #include <thrust/mr/memory_resource.h>
+
+#include <cuda/std/__cstddef/types.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace mr
@@ -22,21 +25,22 @@ template <typename Pointer = void*>
 class polymorphic_adaptor_resource final : public memory_resource<Pointer>
 {
 public:
-  polymorphic_adaptor_resource(memory_resource<Pointer>* t)
+  _CCCL_HOST_API polymorphic_adaptor_resource(memory_resource<Pointer>* t)
       : upstream_resource(t)
   {}
 
-  Pointer do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  _CCCL_HOST_API Pointer do_allocate(std::size_t bytes, // NOLINT(google-default-arguments)
+                                     std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     return upstream_resource->allocate(bytes, alignment);
   }
 
-  void do_deallocate(Pointer p, std::size_t bytes, std::size_t alignment) override
+  _CCCL_HOST_API void do_deallocate(Pointer p, std::size_t bytes, std::size_t alignment) override
   {
     return upstream_resource->deallocate(p, bytes, alignment);
   }
 
-  _CCCL_HOST_DEVICE bool do_is_equal(const memory_resource<Pointer>& other) const noexcept override
+  _CCCL_HOST_DEVICE_API bool do_is_equal(const memory_resource<Pointer>& other) const noexcept override
   {
     return upstream_resource->is_equal(other);
   }

@@ -23,13 +23,12 @@
 
 #if _CCCL_HOSTED()
 
-#  include <cuda/__iterator/counting_iterator.h>
 #  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/fill_n.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__iterator/concepts.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__iterator/readable_traits.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__pstl/fill.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -37,7 +36,7 @@
 #  include <cuda/std/__utility/move.h>
 
 #  if _CCCL_HAS_BACKEND_CUDA()
-#    include <cuda/std/__pstl/cuda/generate_n.h>
+#    include <cuda/std/__pstl/cuda/generate_n.h> // IWYU pragma: keep
 #  endif // _CCCL_HAS_BACKEND_CUDA()
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -53,6 +52,7 @@ fill_n([[maybe_unused]] const _Policy& __policy, _InputIterator __first, _Size _
 {
   static_assert(indirectly_writable<_InputIterator, const _Tp&>,
                 "cuda::std::fill_n requires InputIterator to be indirectly writable with const T&");
+  static_assert(__is_convertible_to_integral_v<_Size>, "_Size must be convertible to an integral");
 
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__generate_n, _Policy>();

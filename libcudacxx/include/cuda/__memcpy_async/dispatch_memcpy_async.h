@@ -27,7 +27,7 @@
 #include <cuda/__memcpy_async/cp_async_fallback.h>
 #include <cuda/__memcpy_async/cp_async_shared_global.h>
 #include <cuda/__memory/address_space.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/cstring>
 
@@ -133,10 +133,9 @@ template <::cuda::std::size_t _Align, typename _Group>
           && ::cuda::device::is_address_from(__dest_char, ::cuda::device::address_space::shared)) {
         return ::cuda::__dispatch_memcpy_async_global_to_shared<_Align>(
           __group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
-      } else {
-        return ::cuda::__dispatch_memcpy_async_any_to_any<_Align>(
-          __group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);
-      }),
+      } return ::cuda::
+        __dispatch_memcpy_async_any_to_any<_Align>(
+          __group, __dest_char, __src_char, __size, __allowed_completions, __bar_handle);),
     (
       // Host code path:
       if (__group.thread_rank() == 0) {

@@ -13,7 +13,6 @@
 #endif // no system header
 
 #include <thrust/detail/allocator_aware_execution_policy.h>
-#include <thrust/system/cpp/detail/execution_policy.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -42,7 +41,7 @@ struct execution_policy : system::detail::sequential::execution_policy<Derived>
   using tag_type = tag;
 
   // allow conversion to tag when it is not a successor
-  _CCCL_HOST_DEVICE operator tag() const
+  _CCCL_HOST_DEVICE_API operator tag() const
   {
     return {};
   }

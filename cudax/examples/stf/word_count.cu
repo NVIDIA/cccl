@@ -27,7 +27,7 @@ int main()
 {
   // Paragraph from 'The Raven' by Edgar Allan Poe
   // http://en.wikipedia.org/wiki/The_Raven
-  const char raw_input[] =
+  char raw_input[] =
     "  But the raven, sitting lonely on the placid bust, spoke only,\n"
     "  That one word, as if his soul in that one word he did outpour.\n"
     "  Nothing further then he uttered - not a feather then he fluttered -\n"
@@ -37,10 +37,10 @@ int main()
 
   context ctx;
 
-  auto ltext = ctx.logical_data(const_cast<char*>(&raw_input[0]), {sizeof(raw_input)});
+  auto ltext = ctx.logical_data(raw_input, sizeof(raw_input));
 
   int cnt   = 0;
-  auto lcnt = ctx.logical_data(&cnt, {1});
+  auto lcnt = ctx.logical_data(&cnt, 1);
 
   auto number_devices = 2;
   auto all_devs       = exec_place::repeat(exec_place::device(0), number_devices);

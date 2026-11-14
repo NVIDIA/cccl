@@ -21,35 +21,35 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/terminate.h>
-#include <cuda/std/__functional/binary_function.h>
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__functional/unary_function.h>
-#include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__memory/allocator_arg_t.h>
-#include <cuda/std/__memory/allocator_destructor.h>
-#include <cuda/std/__memory/allocator_traits.h>
-#include <cuda/std/__memory/builtin_new_allocator.h>
-#include <cuda/std/__memory/compressed_pair.h>
-#include <cuda/std/__memory/uses_allocator.h>
-#include <cuda/std/__new_>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_scalar.h>
-#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
-#include <cuda/std/__type_traits/is_trivially_destructible.h>
-#include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/__utility/forward.h>
-#include <cuda/std/__utility/move.h>
-#include <cuda/std/__utility/piecewise_construct.h>
-#include <cuda/std/__utility/swap.h>
-#include <cuda/std/tuple>
-
 #ifndef __cuda_std__
+
+#  include <cuda/std/__exception/terminate.h>
+#  include <cuda/std/__functional/binary_function.h>
+#  include <cuda/std/__functional/invoke.h>
+#  include <cuda/std/__functional/unary_function.h>
+#  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__memory/allocator_arg_t.h>
+#  include <cuda/std/__memory/allocator_destructor.h>
+#  include <cuda/std/__memory/allocator_traits.h>
+#  include <cuda/std/__memory/builtin_new_allocator.h>
+#  include <cuda/std/__memory/compressed_pair.h>
+#  include <cuda/std/__memory/uses_allocator.h>
+#  include <cuda/std/__new_>
+#  include <cuda/std/__type_traits/conditional.h>
+#  include <cuda/std/__type_traits/decay.h>
+#  include <cuda/std/__type_traits/enable_if.h>
+#  include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
+#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__type_traits/is_scalar.h>
+#  include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
+#  include <cuda/std/__type_traits/is_trivially_destructible.h>
+#  include <cuda/std/__type_traits/is_void.h>
+#  include <cuda/std/__type_traits/remove_cvref.h>
+#  include <cuda/std/__utility/forward.h>
+#  include <cuda/std/__utility/move.h>
+#  include <cuda/std/__utility/piecewise_construct.h>
+#  include <cuda/std/__utility/swap.h>
+#  include <cuda/std/tuple>
 
 #  if _CCCL_HAS_EXCEPTIONS()
 #    include <function>

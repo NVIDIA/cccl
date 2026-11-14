@@ -250,7 +250,7 @@ CUB_TEST(
   constexpr int num_segments = 1;
 
   // Precompute reference values shared by both APIs
-  c2h::host_vector<item_t> host_items(in_items);
+  const c2h::host_vector<item_t> host_items(in_items);
 
   auto expected_min_it          = cuda::std::min_element(host_items.cbegin(), host_items.cend());
   const auto expected_min       = static_cast<output_t>(*expected_min_it);
@@ -268,8 +268,10 @@ CUB_TEST(
                                      - static_cast<cuda::std::int64_t>(expected_last_max_it - host_items.crbegin());
 
   using unwrapped_t = unwrap_value_t<output_t>;
-  c2h::device_vector<unwrapped_t> d_min_out(num_segments), d_max_out(num_segments);
-  c2h::device_vector<cuda::std::int64_t> d_min_index(num_segments), d_max_index(num_segments);
+  c2h::device_vector<unwrapped_t> d_min_out(num_segments);
+  c2h::device_vector<unwrapped_t> d_max_out(num_segments);
+  c2h::device_vector<cuda::std::int64_t> d_min_index(num_segments);
+  c2h::device_vector<cuda::std::int64_t> d_max_index(num_segments);
 
   SECTION("default")
   {
@@ -286,8 +288,8 @@ CUB_TEST(
       d_max_index.data(),
       num_items);
 
-    output_t gpu_min = static_cast<output_t>(d_min_out[0]);
-    output_t gpu_max = static_cast<output_t>(d_max_out[0]);
+    const output_t gpu_min = static_cast<output_t>(d_min_out[0]);
+    const output_t gpu_max = static_cast<output_t>(d_max_out[0]);
     REQUIRE(expected_min == gpu_min);
     REQUIRE(expected_min_index == d_min_index[0]);
     REQUIRE(expected_max == gpu_max);
@@ -300,7 +302,7 @@ CUB_TEST(
     SECTION("abs_less_t")
     {
       const bool last_max = GENERATE(false, true);
-      abs_less_t compare_op;
+      const abs_less_t compare_op;
 
       // First minimum by abs value: first element with smallest |value|
       auto exp_min_it          = cuda::std::min_element(host_items.cbegin(), host_items.cend(), compare_op);
@@ -331,8 +333,8 @@ CUB_TEST(
         num_items,
         compare_op);
 
-      output_t gpu_min = static_cast<output_t>(d_min_out[0]);
-      output_t gpu_max = static_cast<output_t>(d_max_out[0]);
+      const output_t gpu_min = static_cast<output_t>(d_min_out[0]);
+      const output_t gpu_max = static_cast<output_t>(d_max_out[0]);
       REQUIRE(exp_min == gpu_min);
       REQUIRE(exp_min_index == d_min_index[0]);
       REQUIRE(exp_max == gpu_max);

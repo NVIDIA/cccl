@@ -13,11 +13,16 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/type_traits.h>
-#include <thrust/functional.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 #include <thrust/system/detail/sequential/partition.h>
 #include <thrust/system/detail/sequential/stable_radix_sort.h>
+
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
@@ -25,17 +30,16 @@ namespace system::detail::sequential
 namespace stable_primitive_sort_detail
 {
 template <typename Iterator>
-struct enable_if_bool_sort
-    : ::cuda::std::enable_if<::cuda::std::is_same<bool, thrust::detail::it_value_t<Iterator>>::value>
+struct enable_if_bool_sort : ::cuda::std::enable_if<::cuda::std::is_same_v<bool, thrust::detail::it_value_t<Iterator>>>
 {};
 
 template <typename Iterator>
 struct disable_if_bool_sort
-    : thrust::detail::disable_if<::cuda::std::is_same<bool, thrust::detail::it_value_t<Iterator>>::value>
+    : thrust::detail::disable_if<::cuda::std::is_same_v<bool, thrust::detail::it_value_t<Iterator>>>
 {};
 
 template <typename DerivedPolicy, typename RandomAccessIterator>
-typename enable_if_bool_sort<RandomAccessIterator>::type _CCCL_HOST_DEVICE stable_primitive_sort(
+typename enable_if_bool_sort<RandomAccessIterator>::type _CCCL_HOST_DEVICE_API stable_primitive_sort(
   sequential::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last)
 {
   // use stable_partition if we're sorting bool
@@ -44,7 +48,7 @@ typename enable_if_bool_sort<RandomAccessIterator>::type _CCCL_HOST_DEVICE stabl
 }
 
 template <typename DerivedPolicy, typename RandomAccessIterator>
-typename disable_if_bool_sort<RandomAccessIterator>::type _CCCL_HOST_DEVICE stable_primitive_sort(
+typename disable_if_bool_sort<RandomAccessIterator>::type _CCCL_HOST_DEVICE_API stable_primitive_sort(
   sequential::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last)
 {
   // call stable_radix_sort
@@ -54,14 +58,14 @@ typename disable_if_bool_sort<RandomAccessIterator>::type _CCCL_HOST_DEVICE stab
 struct logical_not_first
 {
   template <typename Tuple>
-  _CCCL_HOST_DEVICE bool operator()(Tuple t)
+  _CCCL_HOST_DEVICE_API bool operator()(Tuple t)
   {
     return !::cuda::std::get<0>(t);
   }
 };
 
 template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
-typename enable_if_bool_sort<RandomAccessIterator1>::type _CCCL_HOST_DEVICE stable_primitive_sort_by_key(
+typename enable_if_bool_sort<RandomAccessIterator1>::type _CCCL_HOST_DEVICE_API stable_primitive_sort_by_key(
   sequential::execution_policy<DerivedPolicy>& exec,
   RandomAccessIterator1 keys_first,
   RandomAccessIterator1 keys_last,
@@ -77,7 +81,7 @@ typename enable_if_bool_sort<RandomAccessIterator1>::type _CCCL_HOST_DEVICE stab
 }
 
 template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
-typename disable_if_bool_sort<RandomAccessIterator1>::type _CCCL_HOST_DEVICE stable_primitive_sort_by_key(
+typename disable_if_bool_sort<RandomAccessIterator1>::type _CCCL_HOST_DEVICE_API stable_primitive_sort_by_key(
   sequential::execution_policy<DerivedPolicy>& exec,
   RandomAccessIterator1 keys_first,
   RandomAccessIterator1 keys_last,
@@ -89,14 +93,14 @@ typename disable_if_bool_sort<RandomAccessIterator1>::type _CCCL_HOST_DEVICE sta
 } // end namespace stable_primitive_sort_detail
 
 template <typename DerivedPolicy, typename RandomAccessIterator>
-_CCCL_HOST_DEVICE void stable_primitive_sort(
+_CCCL_HOST_DEVICE_API void stable_primitive_sort(
   sequential::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last)
 {
   stable_primitive_sort_detail::stable_primitive_sort(exec, first, last);
 }
 
 template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
-_CCCL_HOST_DEVICE void stable_primitive_sort_by_key(
+_CCCL_HOST_DEVICE_API void stable_primitive_sort_by_key(
   sequential::execution_policy<DerivedPolicy>& exec,
   RandomAccessIterator1 keys_first,
   RandomAccessIterator1 keys_last,

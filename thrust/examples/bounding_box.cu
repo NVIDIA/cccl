@@ -60,10 +60,10 @@ struct bbox_union
   __host__ __device__ bbox operator()(bbox a, bbox b)
   {
     // lower left corner
-    point2d ll(thrust::min(a.lower_left.x, b.lower_left.x), thrust::min(a.lower_left.y, b.lower_left.y));
+    const point2d ll(thrust::min(a.lower_left.x, b.lower_left.x), thrust::min(a.lower_left.y, b.lower_left.y));
 
     // upper right corner
-    point2d ur(thrust::max(a.upper_right.x, b.upper_right.x), thrust::max(a.upper_right.y, b.upper_right.y));
+    const point2d ur(thrust::max(a.upper_right.x, b.upper_right.x), thrust::max(a.upper_right.y, b.upper_right.y));
 
     return bbox(ll, ur);
   }
@@ -81,16 +81,16 @@ int main()
   thrust::uniform_real_distribution<float> u01(0.0f, 1.0f);
   for (size_t i = 0; i < N; i++)
   {
-    float x   = u01(rng);
-    float y   = u01(rng);
-    points[i] = point2d(x, y);
+    const float x = u01(rng);
+    const float y = u01(rng);
+    points[i]     = point2d(x, y);
   }
 
   // initial bounding box contains first point
-  bbox init(points[0], points[0]);
+  const bbox init(points[0], points[0]);
 
   // compute the bounding box for the point set
-  bbox result = thrust::reduce(points.begin(), points.end(), init, bbox_union{});
+  const bbox result = thrust::reduce(points.begin(), points.end(), init, bbox_union{});
 
   // print output
   std::cout << "bounding box " << std::fixed;

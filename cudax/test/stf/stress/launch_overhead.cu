@@ -10,13 +10,16 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <string>
+
 using namespace cuda::experimental::stf;
 
 int main(int argc, char** argv)
 {
   stream_ctx ctx;
   const size_t N = 16;
-  double X[N], Y[N];
+  double X[N];
+  double Y[N];
 
   for (size_t i = 0; i < N; i++)
   {
@@ -36,10 +39,11 @@ int main(int argc, char** argv)
 
   if (argc > 1)
   {
-    iter_cnt = atoi(argv[1]);
+    iter_cnt = ::std::stoi(argv[1]);
   }
 
-  std::chrono::steady_clock::time_point start, stop;
+  std::chrono::steady_clock::time_point start;
+  std::chrono::steady_clock::time_point stop;
   start = std::chrono::steady_clock::now();
   for (int iter = 0; iter < iter_cnt; iter++)
   {
@@ -60,6 +64,6 @@ int main(int argc, char** argv)
   stop = std::chrono::steady_clock::now();
   ctx.finalize();
 
-  std::chrono::duration<double> duration = stop - start;
+  const std::chrono::duration<double> duration = stop - start;
   fprintf(stderr, "Elapsed: %.2lf us per task\n", duration.count() * 1000000.0 / (2 * iter_cnt));
 }

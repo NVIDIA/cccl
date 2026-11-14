@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -75,8 +75,7 @@
 #  include <cuda/std/__cccl/prologue.h>
 #endif
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 //! @brief Accuracy level for floating-point emulation (public).
 //!
 //! Named fpemu_accuracy, so callers write e.g. fpemu<double, fpemu_accuracy::high>.
@@ -92,7 +91,7 @@ enum struct fpemu_accuracy
   high  = 3,
   def   = 3,
 };
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #if !defined(__CUDA_LIBDEVICE__)
 #  include <cuda/std/__cccl/epilogue.h>

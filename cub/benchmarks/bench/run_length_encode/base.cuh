@@ -11,7 +11,7 @@
 
 //! @tparam RunLengthT Offset type large enough to represent the longest run in the sequence
 template <class T, class OffsetT, class RunLengthT>
-static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT>)
+_CCCL_HOST_API void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT>)
 {
   // Offset type large enough to represent any offset into the input sequence and the total number of runs
   using offset_t = cub::detail::choose_signed_offset_t<OffsetT>;
@@ -33,7 +33,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   // Run once to get num_runs for memory accounting
   (void) cub::DeviceRunLengthEncode::Encode(
     d_in_keys, d_out_keys, d_out_counts, d_num_runs_out, static_cast<OffsetT>(elements));
-  cudaDeviceSynchronize();
+  _CCCL_TRY_RUNTIME_API(cudaDeviceSynchronize, "Sync failed");
   const offset_t num_runs = num_runs_out[0];
 
   state.add_element_count(elements);
@@ -52,7 +52,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
       cuda::execution::tune(bench_encode_policy_selector{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceRunLengthEncode::Encode,
       "Encode failed",
       d_in_keys,

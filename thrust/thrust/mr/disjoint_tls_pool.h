@@ -18,6 +18,8 @@
 #endif // no system header
 #include <thrust/mr/disjoint_pool.h>
 
+#include <cuda/std/cassert>
+
 THRUST_NAMESPACE_BEGIN
 namespace mr
 {
@@ -35,7 +37,7 @@ namespace mr
  *  \param bookkeeper the second argument to the constructor, if invoked
  */
 template <typename Upstream, typename Bookkeeper>
-_CCCL_HOST thrust::mr::disjoint_unsynchronized_pool_resource<Upstream, Bookkeeper>&
+_CCCL_HOST_API thrust::mr::disjoint_unsynchronized_pool_resource<Upstream, Bookkeeper>&
 tls_disjoint_pool(Upstream* upstream = nullptr, Bookkeeper* bookkeeper = nullptr)
 {
   static thread_local auto adaptor = [&] {

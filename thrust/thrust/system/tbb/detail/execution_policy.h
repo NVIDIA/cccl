@@ -14,7 +14,6 @@
 
 #include <thrust/detail/allocator_aware_execution_policy.h>
 #include <thrust/system/cpp/detail/execution_policy.h>
-#include <thrust/system/tbb/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::tbb
@@ -42,7 +41,7 @@ struct execution_policy : cpp::execution_policy<Derived>
   using tag_type = tag;
 
   // allow conversion to tag when it is not a successor
-  operator tag() const
+  _CCCL_HOST_API operator tag() const
   {
     return tag();
   }

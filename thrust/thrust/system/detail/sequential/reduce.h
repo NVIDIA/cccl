@@ -24,7 +24,7 @@ namespace system::detail::sequential
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputType, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputType reduce(
+_CCCL_HOST_DEVICE_API OutputType reduce(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator begin,
   InputIterator end,
@@ -32,7 +32,7 @@ _CCCL_HOST_DEVICE OutputType reduce(
   BinaryFunction binary_op)
 {
   // wrap binary_op
-  thrust::detail::wrapped_function<BinaryFunction, OutputType> wrapped_binary_op{binary_op};
+  const thrust::detail::wrapped_function<BinaryFunction, OutputType> wrapped_binary_op{binary_op};
 
   // initialize the result
   OutputType result = init;

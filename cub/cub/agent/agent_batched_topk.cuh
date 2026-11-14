@@ -18,13 +18,19 @@
 #include <cub/block/block_store.cuh>
 #include <cub/block/block_topk.cuh>
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/segmented_params.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
-#include <cub/util_type.cuh>
 
+#include <cuda/__argument/argument.h>
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/argument>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -103,6 +109,13 @@ struct agent_batched_topk_worker_per_segment
   // -------------------------------------------------------------------------
   // Primitive Types
   // -------------------------------------------------------------------------
+  // block_topk masks invalid items of partial tiles and returns the selected items assuming a blocked arrangement
+  static_assert(active_policy.load_algorithm != BLOCK_LOAD_STRIPED,
+                "worker_policy: load_algorithm must not be BLOCK_LOAD_STRIPED, since block_topk requires a blocked "
+                "arrangement");
+  static_assert(active_policy.store_algorithm != BLOCK_STORE_STRIPED,
+                "worker_policy: store_algorithm must not be BLOCK_STORE_STRIPED, since block_topk produces a blocked "
+                "arrangement");
   using block_load_keys_t = BlockLoad<key_t, threads_per_block, items_per_thread, active_policy.load_algorithm>;
   using block_load_vals_t = BlockLoad<value_t, threads_per_block, items_per_thread, active_policy.load_algorithm>;
 
@@ -191,7 +204,7 @@ struct agent_batched_topk_worker_per_segment
 
     // Boundary check
     // TODO (elstehle): consider skipping boundary check if we can safely assume the right grid dimensions
-    if (segment_id >= params::get_param(num_segments, 0))
+    if (segment_id >= _CUB::detail::params::get_param(num_segments, 0))
     {
       return;
     }
@@ -200,7 +213,7 @@ struct agent_batched_topk_worker_per_segment
                                && ::cuda::args::__traits<SegmentSizeParameterT>::lowest == tile_size;
 
     // Resolve Segment Parameters
-    const auto segment_size = params::__get_and_clamp_param_to_nonnegative(segment_sizes, segment_id);
+    const auto segment_size = _CUB::detail::params::__get_and_clamp_param_to_nonnegative(segment_sizes, segment_id);
     if (!only_small_segments && segment_size > tile_size)
     {
       // Enqueue large segment
@@ -221,7 +234,7 @@ struct agent_batched_topk_worker_per_segment
       // so a `k` type narrower than the segment size cannot wrap; the result fits the segment-size type.
       const auto k = static_cast<decltype(segment_size)>(
         (::cuda::std::min) (static_cast<::cuda::std::uint64_t>(
-                              params::__get_and_clamp_param_to_nonnegative(k_param, segment_id)),
+                              _CUB::detail::params::__get_and_clamp_param_to_nonnegative(k_param, segment_id)),
                             static_cast<::cuda::std::uint64_t>(segment_size)));
       // Nothing to select for an empty segment (including a negative size or a negative `k`, both clamped to 0) or a
       // zero k: skip the block work, leaving its output untouched (also keeps the block primitive's `valid_items in
@@ -235,7 +248,7 @@ struct agent_batched_topk_worker_per_segment
         const key_t padding_key =
           (direction == detail::topk::select::max)
             ? ::cuda::std::numeric_limits<key_t>::lowest()
-            : (::cuda::std::numeric_limits<key_t>::max)();
+            : (::cuda::std::numeric_limits<key_t>::max)(); // NOLINT(readability-redundant-parentheses)
 
         // Dereference iterator-of-iterators to get the segment specific iterator
         auto block_keys_in = d_key_segments_it[segment_id];
@@ -255,7 +268,7 @@ struct agent_batched_topk_worker_per_segment
         }
 
         // Load Values (if applicable)
-        [[maybe_unused]] value_t thread_values[items_per_thread];
+        [[maybe_unused]] value_t thread_values[items_per_thread]; // NOLINT(misc-const-correctness)
 
         if constexpr (!is_keys_only)
         {
@@ -280,7 +293,7 @@ struct agent_batched_topk_worker_per_segment
         // Perform Block Top-K
         if constexpr (is_keys_only)
         {
-          const bool is_successful_dispatch = cub::detail::params::dispatch_discrete(
+          const bool is_successful_dispatch = _CUB::detail::params::dispatch_discrete(
             select_directions, segment_id, [this, &thread_keys, k, segment_size](auto direction_tag) {
               if constexpr (decltype(direction_tag)::value == detail::topk::select::max)
               {
@@ -296,7 +309,7 @@ struct agent_batched_topk_worker_per_segment
         else
         {
           // Pass both keys and values
-          const bool is_successful_dispatch = cub::detail::params::dispatch_discrete(
+          const bool is_successful_dispatch = _CUB::detail::params::dispatch_discrete(
             select_directions, segment_id, [this, &thread_keys, &thread_values, k, segment_size](auto direction_tag) {
               if constexpr (decltype(direction_tag)::value == detail::topk::select::max)
               {

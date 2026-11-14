@@ -16,13 +16,16 @@
 #if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/iterator/zip_iterator.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/parallel_for.h>
 #  include <thrust/system/cuda/detail/transform.h>
 #  include <thrust/type_traits/is_trivially_relocatable.h>
 
 #  include <cuda/__functional/address_stability.h>
+#  include <cuda/std/__algorithm/iter_swap.h>
 #  include <cuda/std/__iterator/distance.h>
-#  include <cuda/std/__iterator/iter_swap.h>
+#  include <cuda/std/__tuple_dir/get.h>
+#  include <cuda/std/__tuple_dir/tuple.h>
 #  include <cuda/std/__utility/swap.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -31,7 +34,7 @@ namespace cuda_cub
 struct __swap_f
 {
   template <typename T, typename U>
-  _CCCL_HOST_DEVICE auto operator()(T t, U u) const -> ::cuda::std::tuple<T, U>
+  _CCCL_HOST_DEVICE_API auto operator()(T t, U u) const -> ::cuda::std::tuple<T, U>
   {
     using ::cuda::std::swap;
     swap(t, u);
@@ -46,14 +49,14 @@ struct __swap_fallback_f
   ItemsIt2 items2;
 
   template <class Size>
-  _CCCL_HOST_DEVICE void operator()(Size idx) const
+  _CCCL_HOST_DEVICE_API void operator()(Size idx) const
   {
     ::cuda::std::iter_swap(items1 + idx, items2 + idx);
   }
 };
 
 template <class Derived, class ItemsIt1, class ItemsIt2>
-_CCCL_HOST_DEVICE ItemsIt2
+_CCCL_HOST_DEVICE_API ItemsIt2
 swap_ranges(execution_policy<Derived>& policy, ItemsIt1 first1, ItemsIt1 last1, ItemsIt2 first2)
 {
   if constexpr (thrust::detail::is_indirectly_trivially_copyable_to_v<ItemsIt1, ItemsIt2>

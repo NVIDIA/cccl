@@ -29,12 +29,14 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__fwd/extents.h>
 #include <cuda/std/__fwd/mdspan.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__mdspan/concepts.h>
-#include <cuda/std/__mdspan/default_accessor.h>
+#include <cuda/std/__mdspan/default_accessor.h> // IWYU pragma: keep
 #include <cuda/std/__mdspan/empty_base.h>
 #include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/__mdspan/layout_right.h>
+#include <cuda/std/__mdspan/layout_right.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/extent.h>
 #include <cuda/std/__type_traits/is_abstract.h>
 #include <cuda/std/__type_traits/is_array.h>
@@ -50,7 +52,6 @@
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/remove_reference.h>
-#include <cuda/std/__utility/as_const.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/integer_sequence.h>
@@ -108,7 +109,6 @@ class mdspan
                             typename _LayoutPolicy::template mapping<_Extents>,
                             _AccessorPolicy>
 {
-private:
   static_assert(__is_cuda_std_extents_v<_Extents>,
                 "mdspan: Extents template parameter must be a specialization of extents.");
   static_assert(!is_array_v<_ElementType>, "mdspan: ElementType template parameter may not be an array type");
@@ -122,7 +122,7 @@ private:
   template <class, class, class, class>
   friend class mdspan;
 
-  using __constraints = __mdspan_constraints<_Extents, _LayoutPolicy, _AccessorPolicy>;
+  using __constraints _CCCL_NODEBUG = __mdspan_constraints<_Extents, _LayoutPolicy, _AccessorPolicy>;
 
 public:
   using extents_type     = _Extents;
@@ -136,9 +136,10 @@ public:
   using rank_type        = typename extents_type::rank_type;
   using data_handle_type = typename accessor_type::data_handle_type;
   using reference        = typename accessor_type::reference;
-  using __base           = __mdspan_ebco<typename accessor_type::data_handle_type,
-                                         typename _LayoutPolicy::template mapping<_Extents>,
-                                         _AccessorPolicy>;
+  using __base _CCCL_NODEBUG =
+    __mdspan_ebco<typename accessor_type::data_handle_type,
+                  typename _LayoutPolicy::template mapping<_Extents>,
+                  _AccessorPolicy>;
 
   [[nodiscard]] _CCCL_API static constexpr rank_type rank() noexcept
   {
@@ -476,7 +477,7 @@ public:
   template <size_t... _Idxs>
   [[nodiscard]] _CCCL_API constexpr bool __op_empty(index_sequence<_Idxs...>) const noexcept
   {
-    return (((mapping().extents().extent(_Idxs) == index_type{0})) || ...);
+    return ((mapping().extents().extent(_Idxs) == index_type{0}) || ...);
   }
 
   [[nodiscard]] _CCCL_API constexpr bool empty() const noexcept
@@ -562,11 +563,11 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_CArray&)
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_ElementType*, const array<_OtherIndexType, _Size>&)
-  -> mdspan<_ElementType, dextents<size_t, _Size>>;
+  -> mdspan<_ElementType, dims<_Size>>;
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_ElementType*, span<_OtherIndexType, _Size>)
-  -> mdspan<_ElementType, dextents<size_t, _Size>>;
+  -> mdspan<_ElementType, dims<_Size>>;
 
 // This one is necessary because all the constructors take `data_handle_type`s, not
 // `_ElementType*`s, and `data_handle_type` is taken from `accessor_type::data_handle_type`, which
@@ -581,7 +582,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_ElementType*, const _MappingType&)
 
 template <class _MappingType, class _AccessorType>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES
-mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
+mdspan(typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
   -> mdspan<typename _AccessorType::element_type,
             typename _MappingType::extents_type,
             typename _MappingType::layout_type,

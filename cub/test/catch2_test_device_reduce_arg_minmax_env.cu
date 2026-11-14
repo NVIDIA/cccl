@@ -11,17 +11,17 @@ struct stream_registry_factory_t;
 
 #include <thrust/device_vector.h>
 
-#include <cuda/devices>
 #include <cuda/execution>
 #include <cuda/iterator>
 #include <cuda/std/execution>
 #include <cuda/std/utility>
-#include <cuda/stream>
 
-#include "catch2_test_env_launch_helper.h"
+#include "block_size_extracting_helpers.h"
+#include "catch2_test_launch_helper.h"
+#include <c2h/device_and_stream.h>
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinMax, device_arg_minmax);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinLastMax, device_arg_minlastmax);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::ArgMinMax, device_arg_minmax);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::ArgMinLastMax, device_arg_minlastmax);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -58,6 +58,18 @@ struct reduce_tuning
     const auto policy =
       cub::ReducePassPolicy{ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
     return {policy, policy};
+  }
+};
+
+template <int ThreadsPerBlock>
+struct reduce_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::ReducePolicy policy) const
+    -> cub::ReducePolicy
+  {
+    policy.multi_tile.threads_per_block  = ThreadsPerBlock;
+    policy.single_tile.threads_per_block = ThreadsPerBlock;
+    return policy;
   }
 };
 
@@ -191,8 +203,8 @@ CUB_TEST("Device ArgMin[Last]Max uses custom stream", "[reduce][device]", CUB_SM
   const auto n                                = static_cast<::cuda::std::int64_t>(input.size());
   const cuda::std::int64_t expected_max_index = last_max ? 2 : 1;
 
-  cuda::stream stream{cuda::devices[0]};
-  const auto error = call_argminmax_api(
+  const cuda::stream stream = c2h::make_current_device_stream();
+  const auto error          = call_argminmax_api(
     last_max, input.begin(), min_out.begin(), min_index.begin(), max_out.begin(), max_index.begin(), n, stream);
   stream.sync();
   REQUIRE(error == cudaSuccess);
@@ -213,7 +225,7 @@ CUB_TEST("Device ArgMin[Last]Max can be tuned", "[reduce][device]", CUB_SMALL, b
 
   c2h::device_vector<unsigned int> d_block_size(1);
   using compare_t = block_size_extracting_op<cuda::std::less<>>;
-  compare_t compare_op{thrust::raw_pointer_cast(d_block_size.data())};
+  const compare_t compare_op{thrust::raw_pointer_cast(d_block_size.data())};
 
   // The maximum value 4 appears twice, so first-max and last-max disagree on the reported index.
   auto input     = c2h::device_vector<int>{3, 4, 4, 0, 2};
@@ -234,6 +246,47 @@ CUB_TEST("Device ArgMin[Last]Max can be tuned", "[reduce][device]", CUB_SMALL, b
   REQUIRE(min_index[0] == 3);
   REQUIRE(max_out[0] == 4);
   REQUIRE(max_index[0] == expected_max_index);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST_CASE("Device ArgMin[Last]Max tuning can be modified", "[reduce][device]", CUB_SMALL)
+{
+  const bool last_max                      = GENERATE(false, true);
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+
+  c2h::device_vector<unsigned int> d_block_size(1);
+  using compare_t = block_size_extracting_op<cuda::std::less<>>;
+  const compare_t compare_op{thrust::raw_pointer_cast(d_block_size.data())};
+
+  auto input     = c2h::device_vector<int>{3, 4, 4, 0, 2};
+  auto min_out   = c2h::device_vector<int>(1, thrust::no_init);
+  auto min_index = c2h::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+  auto max_out   = c2h::device_vector<int>(1, thrust::no_init);
+  auto max_index = c2h::device_vector<cuda::std::int64_t>(1, thrust::no_init);
+
+  const auto n = static_cast<int>(input.size());
+
+  auto env = cuda::execution::tune(reduce_tuning_transform<target_block_size>{});
+
+  {
+    call_argminmax_launch_wrapper(
+      last_max,
+      input.begin(),
+      min_out.begin(),
+      min_index.begin(),
+      max_out.begin(),
+      max_index.begin(),
+      n,
+      compare_op,
+      stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
+  call_argminmax_launch_wrapper(
+    last_max, input.begin(), min_out.begin(), min_index.begin(), max_out.begin(), max_index.begin(), n, compare_op, env);
+  REQUIRE(max_out[0] == 4);
   REQUIRE(d_block_size[0] == target_block_size);
 }
 #endif // TEST_LAUNCH != 1

@@ -13,39 +13,44 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/config.h>
+
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/detect_cuda_runtime.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
-#include <cub/detail/uninitialized_copy.cuh>
+#include <cub/detail/type_size.cuh>
 #include <cub/device/dispatch/dispatch_transform_tile_config.cuh>
 #include <cub/device/dispatch/kernels/kernel_transform.cuh>
-#include <cub/util_arch.cuh>
-#include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
-#include <cub/util_type.cuh>
+#include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/device/dispatch/tuning/tuning_transform.cuh>
+#include <cub/util_debug.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__host_stdlib/sstream>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__expected/expected.h>
+#include <cuda/std/__expected/unexpected.h>
+#include <cuda/std/__host_stdlib/cstdio>
+#include <cuda/std/__optional/optional.h>
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__tuple_dir/tie.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/void_t.h>
-#include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
-#include <cuda/std/expected>
-#include <cuda/std/optional>
-#include <cuda/std/tuple>
+
+#include <nv/target>
 
 #if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 #  include <cub/device/dispatch/dispatch_transform_tile.cuh>
@@ -126,25 +131,25 @@ struct TransformKernelSource<PolicySelector,
 
   CUB_RUNTIME_FUNCTION static constexpr int LoadedBytesPerIteration()
   {
-    return loaded_bytes_per_iteration<RandomAccessIteratorsIn...>();
+    return _CUB::detail::transform::loaded_bytes_per_iteration<RandomAccessIteratorsIn...>();
   }
 
   CUB_RUNTIME_FUNCTION static constexpr auto InputIteratorInfos()
   {
     return ::cuda::std::array<iterator_info, sizeof...(RandomAccessIteratorsIn)>{
-      make_iterator_info<RandomAccessIteratorsIn>()...};
+      _CUB::detail::make_iterator_info<RandomAccessIteratorsIn>()...};
   }
 
   template <typename It>
   CUB_RUNTIME_FUNCTION static constexpr kernel_arg<It> MakeIteratorKernelArg(It it)
   {
-    return detail::transform::make_iterator_kernel_arg(it);
+    return _CUB::detail::transform::make_iterator_kernel_arg(it);
   }
 
   template <typename It>
   CUB_RUNTIME_FUNCTION static constexpr kernel_arg<It> MakeAlignedBasePtrKernelArg(It it, int align)
   {
-    return detail::transform::make_aligned_base_ptr_kernel_arg(it, align);
+    return _CUB::detail::transform::make_aligned_base_ptr_kernel_arg(it, align);
   }
 
 private:
@@ -271,9 +276,33 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
   _CCCL_ASSERT(config->items_per_thread > 0, "");
   _CCCL_ASSERT((config->items_per_thread * threads_per_block) % alignment == 0, "");
 
-  const int ipt = spread_out_items_per_thread(
+  const int ipt = _CUB::detail::transform::spread_out_items_per_thread(
     num_items, policy.async_copy, config->items_per_thread, config->sm_count, config->max_occupancy);
-  const int tile_size     = threads_per_block * ipt;
+  const int tile_size = threads_per_block * ipt;
+
+#if _CCCL_HOSTED()
+  NV_IF_TARGET(
+    NV_IS_HOST, ({
+      if (_CUB::detail::logging_enabled())
+      {
+        char reduced_note[64] = "";
+        if (ipt != config->items_per_thread)
+        {
+          ::std::snprintf(
+            reduced_note, sizeof(reduced_note), ", reduced from %d to spread load evenly", config->items_per_thread);
+        }
+        _CUB::detail::log_always(
+          "DeviceTransform: with occupancy %d, picked %d items per thread, achieving %d bytes in flight "
+          "(target: %d)%s\n",
+          config->max_occupancy,
+          ipt,
+          config->max_occupancy * tile_size * kernel_source.LoadedBytesPerIteration(),
+          policy.min_bytes_in_flight,
+          reduced_note);
+      }
+    }));
+#endif // _CCCL_HOSTED()
+
   const int dyn_smem_size = dyn_smem_for_tile_size(tile_size, alignment);
   _CCCL_ASSERT(NoInputs != (dyn_smem_size != 0), ""); // logical xor
 
@@ -293,7 +322,7 @@ template <typename Offset,
           typename Predicate,
           typename TransformOp,
           typename SMemFunc,
-          std::size_t... Is,
+          size_t... Is,
           typename PolicyGetter,
           typename KernelSource,
           typename KernelLauncherFactory>
@@ -312,7 +341,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_async_algorithm(
   KernelLauncherFactory launcher_factory,
   ::cuda::compute_capability cc)
 {
-  auto ret = configure_async_kernel<(sizeof...(RandomAccessIteratorsIn) == 0)>(
+  auto ret = _CUB::detail::transform::configure_async_kernel<(sizeof...(RandomAccessIteratorsIn) == 0)>(
     num_items, alignment, dyn_smem_for_tile_size, stream, policy_getter, kernel_source, launcher_factory, cc);
   if (!ret)
   {
@@ -417,7 +446,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
                            config->max_occupancy * threads_per_block * loaded_bytes_per_iter);
 
     // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16/2^20 elements
-    ipt = spread_out_items_per_thread(
+    ipt = _CUB::detail::transform::spread_out_items_per_thread(
       num_items, prefetch_policy, items_per_thread, config->sm_count, config->max_occupancy);
   }
   _CCCL_ASSERT(ipt, "");
@@ -438,7 +467,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
 }
 
 // This should ideally have been a lambda, but MSVC < 14.44 ICEs if we put a `(static) constexpr` variable inside
-template <typename RandomAccessIteratorTupleIn,
+template <requires_stable_address RequiresStableAddress,
+          typename RandomAccessIteratorTupleIn,
           typename RandomAccessIteratorOut,
           typename Offset,
           typename Predicate,
@@ -447,14 +477,16 @@ template <typename RandomAccessIteratorTupleIn,
           typename KernelLauncherFactory>
 struct invoke_for_cc;
 
-template <typename... RandomAccessIteratorsIn,
+template <requires_stable_address RequiresStableAddress,
+          typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
           typename Offset,
           typename Predicate,
           typename TransformOp,
           typename KernelSource,
           typename KernelLauncherFactory>
-struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
+struct invoke_for_cc<RequiresStableAddress,
+                     ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                      RandomAccessIteratorOut,
                      Offset,
                      Predicate,
@@ -467,7 +499,7 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
   Offset num_items;
   Predicate pred;
   TransformOp op;
-  cudaStream_t stream;
+  cudaStream_t stream = nullptr;
   KernelSource kernel_source;
   KernelLauncherFactory launcher_factory;
   ::cuda::compute_capability cc;
@@ -478,31 +510,25 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
     CUB_DETAIL_CONSTEXPR_ISH TransformPolicy active_policy = policy_getter();
     const auto seq = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   ::std::stringstream ss;
-                   ss << active_policy;
-                   _CubLog("Dispatching DeviceTransform to compute capability %d.%d with tuning: %s\n",
-                           cc.major_cap(),
-                           cc.minor_cap(),
-                           ss.str().c_str());
-                 }))
-#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-    log_dispatch("DeviceTransform", cc, active_policy);
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    _CUB::detail::log_dispatch("DeviceTransform", cc, active_policy);
+
+    // all other algorithms pass copies of the input elements in shared memory or registers to the transformation
+    CUB_DETAIL_STATIC_ISH_ASSERT(
+      RequiresStableAddress == requires_stable_address::no || active_policy.algorithm == TransformAlgorithm::prefetch,
+      "TransformPolicy: algorithm must be TransformAlgorithm::prefetch when stable argument addresses are required");
 
     if CUB_DETAIL_CONSTEXPR_ISH (TransformAlgorithm::ublkcp == active_policy.algorithm)
     {
-      return invoke_async_algorithm(
+      return _CUB::detail::transform::invoke_async_algorithm(
         ::cuda::std::move(in),
         ::cuda::std::move(out),
         num_items,
         ::cuda::std::move(pred),
         ::cuda::std::move(op),
         stream,
-        bulk_copy_alignment(cc),
+        _CUB::detail::transform::bulk_copy_alignment(cc),
         [&](int tile_size, int alignment) {
-          return bulk_copy_dyn_smem_for_tile_size<sizeof...(RandomAccessIteratorsIn)>(
+          return _CUB::detail::transform::bulk_copy_dyn_smem_for_tile_size<sizeof...(RandomAccessIteratorsIn)>(
             kernel_source.InputIteratorInfos(), tile_size, alignment);
         },
         seq,
@@ -513,7 +539,7 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
     }
     else if CUB_DETAIL_CONSTEXPR_ISH (TransformAlgorithm::ldgsts == active_policy.algorithm)
     {
-      return invoke_async_algorithm(
+      return _CUB::detail::transform::invoke_async_algorithm(
         ::cuda::std::move(in),
         ::cuda::std::move(out),
         num_items,
@@ -522,7 +548,7 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
         stream,
         ldgsts_size_and_align,
         [&](int tile_size, int alignment) {
-          return memcpy_async_dyn_smem_for_tile_size<sizeof...(RandomAccessIteratorsIn)>(
+          return _CUB::detail::transform::memcpy_async_dyn_smem_for_tile_size<sizeof...(RandomAccessIteratorsIn)>(
             kernel_source.InputIteratorInfos(), tile_size, alignment);
         },
         seq,
@@ -533,7 +559,7 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
     }
     else
     {
-      return invoke_prefetch_or_vectorized_algorithm(
+      return _CUB::detail::transform::invoke_prefetch_or_vectorized_algorithm(
         ::cuda::std::move(in),
         ::cuda::std::move(out),
         num_items,
@@ -549,7 +575,7 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
   }
 };
 
-template <requires_stable_address StableAddress,
+template <requires_stable_address RequiresStableAddress,
           typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
           typename Offset,
@@ -591,12 +617,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   // CUB dispatch below if they do not hold (CUB's kernels handle the unaligned/tail case, so this is a graceful
   // fallback, not an error). device_supports_tile() enforces the sm_80+ hardware floor at runtime; below it (or if
   // the capability query fails) we fall through to the standard CUB dispatch.
-  if constexpr (StableAddress == requires_stable_address::no && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
+  if constexpr (RequiresStableAddress == requires_stable_address::no
+                && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
                 && tile::tile_dispatch_eligible_v<TransformOp, RandomAccessIteratorOut, RandomAccessIteratorsIn...>)
   {
-    if (tile::device_supports_tile() && tile::runtime_preconditions_valid(in, out, num_items))
+    if (_CUB::detail::transform::tile::device_supports_tile()
+        && _CUB::detail::transform::tile::runtime_preconditions_valid(in, out, num_items))
     {
-      return tile::dispatch<TransformOp>(in, out, num_items, stream);
+      return _CUB::detail::transform::tile::dispatch<TransformOp>(in, out, num_items, stream);
     }
   }
 #endif // _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
@@ -607,10 +635,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  return dispatch_compute_cap(
+  return _CUB::detail::dispatch_compute_cap(
     policy_selector,
     cc,
-    invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
+    invoke_for_cc<RequiresStableAddress,
+                  ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                   RandomAccessIteratorOut,
                   Offset,
                   Predicate,

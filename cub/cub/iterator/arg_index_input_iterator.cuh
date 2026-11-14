@@ -19,10 +19,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_type.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/key_value_pair.cuh>
 
-#include <thrust/iterator/iterator_facade.h>
+#include <thrust/iterator/detail/any_system_tag.h>
+#include <thrust/iterator/detail/iterator_facade_category.h> // IWYU pragma: keep
+#include <thrust/iterator/iterator_traversal_tags.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
@@ -122,13 +126,13 @@ public:
    * @param offset
    *   OffsetT (in items) from @p itr denoting the position of the iterator
    */
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ArgIndexInputIterator(InputIteratorT itr, difference_type offset = 0)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE ArgIndexInputIterator(InputIteratorT itr, difference_type offset = 0)
       : itr(itr)
       , offset(offset)
   {}
 
   /// Postfix increment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type operator++(int)
   {
     self_type retval = *this;
     offset++;
@@ -136,14 +140,14 @@ public:
   }
 
   /// Prefix increment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type operator++()
   {
     offset++;
     return *this;
   }
 
   /// Indirection
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE reference operator*() const
   {
     value_type retval;
     retval.value = itr[offset];
@@ -153,7 +157,7 @@ public:
 
   /// Addition
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type operator+(Distance n) const
   {
     self_type retval(itr, offset + n);
     return retval;
@@ -161,7 +165,7 @@ public:
 
   /// Addition assignment
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type& operator+=(Distance n)
   {
     offset += n;
     return *this;
@@ -169,7 +173,7 @@ public:
 
   /// Subtraction
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type operator-(Distance n) const
   {
     self_type retval(itr, offset - n);
     return retval;
@@ -177,53 +181,53 @@ public:
 
   /// Subtraction assignment
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type& operator-=(Distance n)
   {
     offset -= n;
     return *this;
   }
 
   /// Distance
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE difference_type operator-(self_type other) const
   {
     return offset - other.offset;
   }
 
   /// Array subscript
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE reference operator[](Distance n) const
   {
-    self_type offset = (*this) + n;
+    const self_type offset = (*this) + n;
     return *offset;
   }
 
   /// Structure dereference
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE pointer operator->()
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE pointer operator->()
   {
     return &(*(*this));
   }
 
   /// Equal to
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool operator==(const self_type& rhs)
   {
     return ((itr == rhs.itr) && (offset == rhs.offset));
   }
 
   /// Not equal to
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool operator!=(const self_type& rhs)
   {
     return ((itr != rhs.itr) || (offset != rhs.offset));
   }
 
   /// Normalize
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void normalize()
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void normalize()
   {
     itr += offset;
     offset = 0;
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const self_type& /*itr*/)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const self_type& /*itr*/)
   {
     return os;
   }

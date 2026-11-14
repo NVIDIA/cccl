@@ -1,0 +1,155 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_EXPERIMENTAL_COOP___GROUP_MAPPING_COMPOSITE_MAPPING_CUH
+#define _CUDA_EXPERIMENTAL_COOP___GROUP_MAPPING_COMPOSITE_MAPPING_CUH
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__tuple_dir/apply.h>
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+
+#include <cuda/experimental/coop/__group/fwd.cuh>
+
+#include <cuda/std/__cccl/prologue.h>
+
+#if !defined(_CCCL_DOXYGEN_INVOKED)
+
+// todo(dabayer): do we want to always use uint32_t for all counts/ranks?
+
+namespace cuda::experimental::coop
+{
+template <class... _Mappings>
+class composite_mapping
+{
+  ::cuda::std::tuple<_Mappings...> __mappings_;
+
+  template <::cuda::std::size_t _Ip = 0, class _PrevMappingResult, class... _Args>
+  [[nodiscard]] _CCCL_DEVICE_API auto __map_impl(const _PrevMappingResult& __prev_mapping_result, const _Args&... __args)
+  {
+    const auto __result = ::cuda::std::get<_Ip>(__mappings_).map(__args..., __prev_mapping_result);
+    if constexpr (_Ip + 1 < sizeof...(_Mappings))
+    {
+      return __map_impl<_Ip + 1>(__result, __args...);
+    }
+    else
+    {
+      return __result;
+    }
+  }
+
+public:
+  _CCCL_DEVICE_API constexpr composite_mapping(const _Mappings&... __mappings)
+      : __mappings_{__mappings...}
+  {}
+
+  [[nodiscard]] _CCCL_DEVICE_API constexpr const ::cuda::std::tuple<_Mappings...>& get() const
+  {
+    return __mappings_;
+  }
+
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API auto
+  map(const _Unit& __unit, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result)
+  {
+    if constexpr (sizeof...(_Mappings) > 0)
+    {
+      return __map_impl(__prev_mapping_result, __unit, __parent);
+    }
+    else
+    {
+      return __prev_mapping_result;
+    }
+  }
+
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API auto
+  map(const non_exhaustive_t& __non_exhaustive,
+      const _Unit& __unit,
+      const _ParentGroup& __parent,
+      const _PrevMappingResult& __prev_mapping_result)
+  {
+    if constexpr (sizeof...(_Mappings) > 0)
+    {
+      return __map_impl(__prev_mapping_result, __non_exhaustive, __unit, __parent);
+    }
+    else
+    {
+      return __prev_mapping_result;
+    }
+  }
+};
+
+template <class... _Mappings>
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES composite_mapping(const _Mappings&...) -> composite_mapping<_Mappings...>;
+
+_CCCL_TEMPLATE(class _Lhs, class _Rhs)
+_CCCL_REQUIRES(__is_group_mapping_v<_Lhs> _CCCL_AND __is_group_mapping_v<_Rhs>)
+[[nodiscard]] _CCCL_DEVICE_API constexpr composite_mapping<_Lhs, _Rhs> operator|(const _Lhs& __lhs, const _Rhs& __rhs)
+{
+  return {__lhs, __rhs};
+}
+
+_CCCL_TEMPLATE(class... _LhsMappings, class _Rhs)
+_CCCL_REQUIRES(__is_group_mapping_v<_Rhs>)
+[[nodiscard]] _CCCL_DEVICE_API constexpr composite_mapping<_LhsMappings..., _Rhs>
+operator|(const composite_mapping<_LhsMappings...>& __lhs, const _Rhs& __rhs)
+{
+  return ::cuda::std::apply(
+    [&](const auto&... __lhs_mappings) {
+      return composite_mapping{__lhs_mappings..., __rhs};
+    },
+    __lhs.get());
+}
+
+_CCCL_TEMPLATE(class _Lhs, class... _RhsMappings)
+_CCCL_REQUIRES(__is_group_mapping_v<_Lhs>)
+[[nodiscard]] _CCCL_DEVICE_API constexpr composite_mapping<_Lhs, _RhsMappings...>
+operator|(const _Lhs& __lhs, const composite_mapping<_RhsMappings...>& __rhs)
+{
+  return ::cuda::std::apply(
+    [&](const auto&... __rhs_mappings) {
+      return composite_mapping{__lhs, __rhs_mappings...};
+    },
+    __rhs.get());
+}
+
+template <class... _LhsMappings, class... _RhsMappings>
+[[nodiscard]] _CCCL_DEVICE_API constexpr composite_mapping<_LhsMappings..., _RhsMappings...>
+operator|(const composite_mapping<_LhsMappings...>& __lhs, const composite_mapping<_RhsMappings...>& __rhs)
+{
+  return ::cuda::std::apply(
+    [&](const auto&... __lhs_mappings) {
+      return ::cuda::std::apply(
+        [&](const auto&... __rhs_mappings) {
+          return composite_mapping{__lhs_mappings..., __rhs_mappings...};
+        },
+        __rhs.get());
+    },
+    __lhs.get());
+}
+} // namespace cuda::experimental::coop
+
+#endif // !_CCCL_DOXYGEN_INVOKED
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_EXPERIMENTAL_COOP___GROUP_MAPPING_COMPOSITE_MAPPING_CUH

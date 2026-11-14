@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -152,6 +152,7 @@
 #endif // ^^^ not compiling device code ^^^
 
 // Disable tile support for now
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0 // defined(__CUDACC_TILE__) && _CCCL_CUDA_COMPILER(NVCC, >, 13, 3)
 #  define _CCCL_TILE_COMPILATION() 1
 #else // ^^^ compiling .cu file in tile mode ^^^ / vvv not compiling in tile mode vvv

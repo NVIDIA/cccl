@@ -60,7 +60,7 @@ bool conditional_body_memcpy_supported()
       cuda_safe_call(cudaGraphExecDestroy(e));
     }
   }
-  cudaGetLastError(); // clear any probe failure
+  static_cast<void>(cudaGetLastError()); // clear any probe failure
   cuda_safe_call(cudaFree(a));
   cuda_safe_call(cudaFree(b));
   cuda_safe_call(cudaGraphDestroy(g));
@@ -95,7 +95,7 @@ bool conditional_body_multi_context_supported(green_context_helper& gc)
   cudaGraph_t body = np.conditional.phGraph_out[0];
 
   cudaKernelNodeParams kp{};
-  kp.func           = (void*) probe_noop_kernel;
+  kp.func           = reinterpret_cast<void*>(probe_noop_kernel);
   kp.gridDim        = dim3(1);
   kp.blockDim       = dim3(1);
   kp.sharedMemBytes = 0;
@@ -117,12 +117,12 @@ bool conditional_body_multi_context_supported(green_context_helper& gc)
   cuda_safe_call(cuCtxSetCurrent(prev));
 
   cudaGraphExec_t e;
-  bool ok = (cudaGraphInstantiate(&e, g, 0) == cudaSuccess);
+  const bool ok = (cudaGraphInstantiate(&e, g, 0) == cudaSuccess);
   if (ok)
   {
     cuda_safe_call(cudaGraphExecDestroy(e));
   }
-  cudaGetLastError(); // clear any probe failure
+  static_cast<void>(cudaGetLastError()); // clear any probe failure
   cuda_safe_call(cudaGraphDestroy(g));
   return ok;
 }
@@ -140,7 +140,7 @@ int main()
   ::std::vector<double> ref(n);
   for (size_t i = 0; i < n; i++)
   {
-    ref[i] = 0.25 * static_cast<double>(i % 1024) + 1.0;
+    ref[i] = (0.25 * static_cast<double>(i % 1024)) + 1.0;
   }
 
   const bool stackable_ok = conditional_body_memcpy_supported();
@@ -161,7 +161,7 @@ int main()
 
     auto grid = exec_place::repeat(exec_place::current_device(), nplaces);
     auto rep  = data_place::replicated(grid);
-    auto lin  = ctx.logical_data(&ref[0], {n});
+    auto lin  = ctx.logical_data(ref.data(), n);
     auto lout = ctx.logical_data(shape_of<slice<double>>(n));
     auto tok  = ctx.token(); // a void_interface dep: the instances tuple is
                             // shorter than the deps tuple, which the
@@ -258,7 +258,7 @@ int main()
         {
           ctx = graph_ctx();
         }
-        auto lin  = ctx.logical_data(&ref[0], {n});
+        auto lin  = ctx.logical_data(ref.data(), n);
         auto lout = ctx.logical_data(shape_of<slice<double>>(n));
         ctx.parallel_for(blocked_partition(), ggrid, lin.shape(), lin.read(grep), lout.write())
             ->*[] __device__(size_t i, auto in, auto out) {
@@ -334,7 +334,7 @@ int main()
           {
             gctx = graph_ctx();
           }
-          auto lgin  = gctx.logical_data(&ref[0], {n});
+          auto lgin  = gctx.logical_data(ref.data(), n);
           auto lgout = gctx.logical_data(shape_of<slice<double>>(n));
           gctx.parallel_for(blocked_partition(), grid22, lgin.shape(), lgin.read(rep22), lgout.write())
               ->*[] __device__(size_t i, auto in, auto out) {
@@ -469,7 +469,9 @@ int main()
       gc_opt.emplace(8, 0);
     }
     catch (...)
-    {}
+    {
+      gc_opt.reset(); // green contexts unavailable: the guarded test below is skipped
+    }
     if (stackable_ok && gc_opt && gc_opt->get_count() >= 2 && conditional_body_multi_context_supported(*gc_opt))
     {
       auto& gc = *gc_opt;

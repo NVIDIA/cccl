@@ -24,7 +24,7 @@ namespace system::detail::sequential
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator adjacent_difference(
+_CCCL_HOST_DEVICE_API OutputIterator adjacent_difference(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator first,
   InputIterator last,
@@ -44,9 +44,9 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
 
   while (++first != last)
   {
-    InputType next = *first; // NOLINT(performance-unnecessary-copy-initialization)
-    *(++result)    = binary_op(next, curr);
-    curr           = next;
+    const InputType next = *first; // NOLINT(performance-unnecessary-copy-initialization)
+    *(++result)          = binary_op(next, curr);
+    curr                 = next;
   }
 
   return ++result;

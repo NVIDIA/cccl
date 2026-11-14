@@ -13,6 +13,7 @@ set(
   exception_policies_reciprocal.cu
   explicit_data_places.cu
   partitioned_axpy.cu
+  placement_scoring.cu
   thrust_zip_iterator.cu
   1f1b.cu
 )

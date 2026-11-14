@@ -24,14 +24,21 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/__fwd/hierarchy.h>
-#  include <cuda/__hierarchy/level_dimensions.h>
+#  include <cuda/__hierarchy/hierarchy_levels.h>
+#  include <cuda/__hierarchy/level_dimensions.h> // IWYU pragma: keep
 #  include <cuda/__hierarchy/traits.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__tuple_dir/apply.h>
+#  include <cuda/std/__tuple_dir/get.h>
+#  include <cuda/std/__tuple_dir/tie.h>
+#  include <cuda/std/__tuple_dir/tuple.h>
+#  include <cuda/std/__tuple_dir/tuple_cat.h>
+#  include <cuda/std/__type_traits/conditional.h>
+#  include <cuda/std/__type_traits/fold.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__type_traits/type_list.h>
 #  include <cuda/std/__utility/integer_sequence.h>
-#  include <cuda/std/tuple>
-
-#  include <nv/target>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -425,7 +432,8 @@ public:
 
 #  if !_CCCL_COMPILER(NVRTC)
   template <class _NewLevel, class _Unit, class... _LevelDescs2>
-  friend constexpr auto hierarchy_add_level(const hierarchy<_Unit, _LevelDescs2...>& hierarchy, _NewLevel __lnew);
+  friend
+    _CCCL_API constexpr auto hierarchy_add_level(const hierarchy<_Unit, _LevelDescs2...>& hierarchy, _NewLevel __lnew);
 #  endif // !_CCCL_COMPILER(NVRTC)
 };
 
@@ -481,7 +489,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES hierarchy(const _BottomUnit&, const ::cuda::std
  * @par
  */
 template <class _LUnit = void, class _L1, class... _LevelDescs>
-constexpr auto make_hierarchy(_L1 __l1, _LevelDescs... __ls) noexcept
+_CCCL_API constexpr auto make_hierarchy(_L1 __l1, _LevelDescs... __ls) noexcept
 {
   return __detail::__make_hierarchy<_LUnit>()(__detail::__as_level(__l1), __detail::__as_level(__ls)...);
 }
@@ -511,7 +519,7 @@ constexpr auto make_hierarchy(_L1 __l1, _LevelDescs... __ls) noexcept
  * @par
  */
 template <class _NewLevel, class _Unit, class... _LevelDescs>
-constexpr auto hierarchy_add_level(const hierarchy<_Unit, _LevelDescs...>& __hierarchy, _NewLevel __lnew)
+_CCCL_API constexpr auto hierarchy_add_level(const hierarchy<_Unit, _LevelDescs...>& __hierarchy, _NewLevel __lnew)
 {
   auto __new_level     = __detail::__as_level(__lnew);
   using __added_level  = decltype(__new_level);

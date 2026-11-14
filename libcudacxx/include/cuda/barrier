@@ -25,17 +25,25 @@
 #  error "CUDA synchronization primitives are only supported for sm_70 and up."
 #endif // _CCCL_DEVICE_COMPILATION() && _CCCL_PTX_ARCH() < 700 && !_CCCL_CUDA_COMPILER(NVHPC)
 
+// IWYU pragma: begin_exports
 #include <cuda/__barrier/barrier.h>
 #include <cuda/__barrier/barrier_arrive_tx.h>
 #include <cuda/__barrier/barrier_block_scope.h>
 #include <cuda/__barrier/barrier_expect_tx.h>
 #include <cuda/__barrier/barrier_thread_scope.h>
+#include <cuda/__barrier/shared_memory_barrier.h>
 #include <cuda/__memcpy_async/memcpy_async.h>
 #include <cuda/__memcpy_async/memcpy_async_tx.h>
 #include <cuda/__memory/address_space.h>
 #include <cuda/__memory/aligned_size.h>
-#include <cuda/ptx>
+#include <cuda/__ptx/instructions/cp_async_bulk.h>
+#include <cuda/__ptx/instructions/cp_async_bulk_commit_group.h>
+#include <cuda/__ptx/instructions/cp_async_bulk_tensor.h>
+#include <cuda/__ptx/instructions/cp_async_bulk_wait_group.h>
+#include <cuda/__ptx/instructions/fence.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/barrier>
+// IWYU pragma: end_exports
 
 // Forward-declare CUtensorMap for use in cp_async_bulk_tensor_* PTX wrapping
 // functions. These functions take a pointer to CUtensorMap, so do not need to
@@ -81,7 +89,7 @@ cp_async_bulk_global_to_shared(
                "Source must be global memory address.");
 
   ::cuda::ptx::cp_async_bulk(
-    ::cuda::ptx::space_cluster,
+    ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
     ::cuda::ptx::space_global,
     __dest,
     __src,
@@ -112,7 +120,7 @@ cp_async_bulk_tensor_1d_global_to_shared(
   const ::cuda::std::int32_t __coords[]{__c0};
 
   ::cuda::ptx::cp_async_bulk_tensor(
-    ::cuda::ptx::space_cluster,
+    ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
     ::cuda::ptx::space_global,
     __dest,
     __tensor_map,
@@ -129,7 +137,7 @@ cp_async_bulk_tensor_2d_global_to_shared(
   const ::cuda::std::int32_t __coords[]{__c0, __c1};
 
   ::cuda::ptx::cp_async_bulk_tensor(
-    ::cuda::ptx::space_cluster,
+    ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
     ::cuda::ptx::space_global,
     __dest,
     __tensor_map,
@@ -151,7 +159,7 @@ cp_async_bulk_tensor_3d_global_to_shared(
   const ::cuda::std::int32_t __coords[]{__c0, __c1, __c2};
 
   ::cuda::ptx::cp_async_bulk_tensor(
-    ::cuda::ptx::space_cluster,
+    ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
     ::cuda::ptx::space_global,
     __dest,
     __tensor_map,
@@ -174,7 +182,7 @@ cp_async_bulk_tensor_4d_global_to_shared(
   const ::cuda::std::int32_t __coords[]{__c0, __c1, __c2, __c3};
 
   ::cuda::ptx::cp_async_bulk_tensor(
-    ::cuda::ptx::space_cluster,
+    ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
     ::cuda::ptx::space_global,
     __dest,
     __tensor_map,
@@ -198,7 +206,7 @@ cp_async_bulk_tensor_5d_global_to_shared(
   const ::cuda::std::int32_t __coords[]{__c0, __c1, __c2, __c3, __c4};
 
   ::cuda::ptx::cp_async_bulk_tensor(
-    ::cuda::ptx::space_cluster,
+    ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
     ::cuda::ptx::space_global,
     __dest,
     __tensor_map,

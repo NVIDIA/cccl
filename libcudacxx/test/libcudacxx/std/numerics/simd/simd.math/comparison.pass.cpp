@@ -20,6 +20,55 @@
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"
+#include "math_test_utils.h"
+
+// NVCC/MSVC C++17 misresolves dependent qualified math calls. We use a local using-declaration and ADL as workaround
+namespace test_detail
+{
+using simd::isgreater;
+
+struct comparison_function
+{
+  template <typename X, typename Y>
+  TEST_HOST_DEVICE_FUNC auto operator()(const X& x, const Y& y) const -> decltype(isgreater(x, y));
+};
+} // namespace test_detail
+
+using test_detail::comparison_function;
+
+template <int N>
+TEST_HOST_DEVICE_FUNC void test_mixed_arguments()
+{
+  // Overload participation
+  using F     = simd::vec<float, 3>;
+  using D     = simd::vec<double, 3>;
+  using Other = simd::vec<double, 4>;
+  static_assert(cuda::std::is_invocable_v<comparison_function, F, D>);
+  static_assert(!cuda::std::is_invocable_v<comparison_function, F, Other>);
+
+  // Mixed argument types
+  const F x(4.0f);
+  const D y(2.0);
+  static_assert(cuda::std::is_same_v<decltype(simd::isgreater(x, y)), typename D::mask_type>);
+  const auto comparison = simd::isgreater(x, y);
+  check_math_values(comparison, true);
+
+  // Mixed wrapper and vector arguments
+  const F x1(4.0f);
+  const math_wrapper<D> y1{D(2.0)};
+  check_math_values(simd::isgreater(x1, y1), true);
+}
+
+template <typename T, int N>
+TEST_HOST_DEVICE_FUNC void test_wrapper()
+{
+  using V = simd::vec<T, N>;
+  const explicit_math_wrapper<V> x{V(T{4})};
+  const explicit_math_wrapper<V> y{V(T{2})};
+  static_assert(noexcept(simd::isgreater(x, y)));
+
+  check_math_values(simd::isgreater(x, y), true);
+}
 
 template <typename T, int N>
 TEST_HOST_DEVICE_FUNC void test_non_scalar()
@@ -140,6 +189,8 @@ TEST_HOST_DEVICE_FUNC void test_scalar()
 template <typename T, int N>
 TEST_HOST_DEVICE_FUNC void test_type()
 {
+  test_mixed_arguments<N>();
+  test_wrapper<T, N>();
   test_non_scalar<T, N>();
   test_scalar<T, N>();
 }

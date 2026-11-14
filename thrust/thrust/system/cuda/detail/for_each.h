@@ -18,9 +18,8 @@
 
 #  include <cub/device/device_for.cuh>
 
-#  include <thrust/detail/function.h>
+#  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
-#  include <thrust/system/cuda/detail/parallel_for.h>
 #  include <thrust/system/cuda/detail/util.h>
 
 #  include <cuda/std/__iterator/distance.h>
@@ -51,8 +50,8 @@ template <class Derived, class Input, class UnaryOp>
 Input _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE
 for_each(execution_policy<Derived>& policy, Input first, Input last, UnaryOp op)
 {
-  using size_type = thrust::detail::it_difference_t<Input>;
-  size_type count = static_cast<size_type>(::cuda::std::distance(first, last));
+  using size_type       = thrust::detail::it_difference_t<Input>;
+  const size_type count = static_cast<size_type>(::cuda::std::distance(first, last));
 
   return THRUST_NS_QUALIFIER::cuda_cub::for_each_n(policy, first, count, op);
 }

@@ -13,21 +13,24 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/functional.h>
-#include <thrust/system/detail/error_condition.inl>
+#include <thrust/system/error_code.h>
+
+#include <cuda/std/__type_traits/enable_if.h>
+
+#include <string>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace system
 {
-error_condition ::error_condition()
+_CCCL_HOST_API inline error_condition ::error_condition()
     : m_val(0)
     , m_cat(&generic_category())
 {
   ;
 } // end error_condition::error_condition()
 
-error_condition ::error_condition(int val, const error_category& cat)
+_CCCL_HOST_API inline error_condition ::error_condition(int val, const error_category& cat)
     : m_val(val)
     , m_cat(&cat)
 {
@@ -35,18 +38,18 @@ error_condition ::error_condition(int val, const error_category& cat)
 } // end error_condition::error_condition()
 
 template <typename ErrorConditionEnum>
-error_condition ::error_condition(ErrorConditionEnum e
+_CCCL_HOST_API error_condition ::error_condition(
+  ErrorConditionEnum e
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
-                                  ,
-                                  ::cuda::std::enable_if_t<is_error_condition_enum<ErrorConditionEnum>::value, int>
+  ,
+  ::cuda::std::enable_if_t<is_error_condition_enum<ErrorConditionEnum>::value, int>
 #endif // !_CCCL_COMPILER(MSVC)
-)
-{
-  *this = make_error_condition(e);
-} // end error_condition::error_condition()
+  )
+    : error_condition(make_error_condition(e))
+{} // end error_condition::error_condition()
 
-void error_condition ::assign(int val, const error_category& cat)
+_CCCL_HOST_API inline void error_condition ::assign(int val, const error_category& cat)
 {
   m_val = val;
   m_cat = &cat;
@@ -56,6 +59,7 @@ void error_condition ::assign(int val, const error_category& cat)
 // out.
 // NOLINTBEGIN(misc-unconventional-assign-operator)
 template <typename ErrorConditionEnum>
+_CCCL_HOST_API
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
 ::cuda::std::enable_if_t<is_error_condition_enum<ErrorConditionEnum>::value, error_condition>&
@@ -69,38 +73,38 @@ error_condition ::operator=(ErrorConditionEnum e)
 } // end error_condition::operator=()
 // NOLINTEND(misc-unconventional-assign-operator)
 
-void error_condition ::clear()
+_CCCL_HOST_API inline void error_condition ::clear()
 {
   m_val = 0;
   m_cat = &generic_category();
 } // end error_condition::clear()
 
-int error_condition ::value() const
+_CCCL_HOST_API inline int error_condition ::value() const
 {
   return m_val;
 } // end error_condition::value()
 
-const error_category& error_condition ::category() const
+_CCCL_HOST_API inline const error_category& error_condition ::category() const
 {
   return *m_cat;
 } // end error_condition::category()
 
-std::string error_condition ::message() const
+_CCCL_HOST_API inline std::string error_condition ::message() const
 {
   return category().message(value());
 } // end error_condition::message()
 
-error_condition ::operator bool() const
+_CCCL_HOST_API inline error_condition ::operator bool() const
 {
   return value() != 0;
 } // end error_condition::operator bool ()
 
-error_condition make_error_condition(errc::errc_t e)
+_CCCL_HOST_API error_condition make_error_condition(errc::errc_t e)
 {
   return error_condition(static_cast<int>(e), generic_category());
 } // end make_error_condition()
 
-bool operator<(const error_condition& lhs, const error_condition& rhs)
+_CCCL_HOST_API bool operator<(const error_condition& lhs, const error_condition& rhs)
 {
   return lhs.category().operator<(rhs.category())
       || (lhs.category().operator==(rhs.category()) && (lhs.value() < rhs.value()));

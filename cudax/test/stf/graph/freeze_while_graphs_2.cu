@@ -22,7 +22,7 @@ using namespace cuda::experimental::stf;
 #if _CCCL_CTK_AT_LEAST(12, 4)
 int X0(int i)
 {
-  return 17 * i + 45;
+  return (17 * i) + 45;
 }
 
 __global__ void setHandle(cudaGraphConditionalHandle handle)
@@ -59,7 +59,7 @@ int main()
   cuda_safe_call(cudaGraphCreate(&graph, 0));
 
   cudaGraphConditionalHandle handle;
-  cudaGraphConditionalHandleCreate(&handle, graph, 1, cudaGraphCondAssignDefault);
+  cuda_safe_call(cudaGraphConditionalHandleCreate(&handle, graph, 1, cudaGraphCondAssignDefault));
 
   // Create a graph that will later be inserted as a child graph once all input
   // dependencies are known
@@ -119,7 +119,7 @@ int main()
   ctx.host_launch(lX.read())->*[](auto x) {
     for (int i = 0; i < static_cast<int>(x.size()); i++)
     {
-      EXPECT(x(i) == 3 * X0(i) + 2 * 5);
+      EXPECT(x(i) == (3 * X0(i)) + (2 * 5));
     }
   };
 

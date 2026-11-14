@@ -15,21 +15,24 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
-#include <cuda/std/cstdlib> // for malloc & free
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__cstdlib/malloc.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
 template <typename DerivedPolicy>
-inline _CCCL_HOST_DEVICE void* malloc(execution_policy<DerivedPolicy>&, std::size_t n)
+_CCCL_HOST_DEVICE_API inline void* malloc(execution_policy<DerivedPolicy>&, std::size_t n)
 {
-  return ::cuda::std::malloc(n);
+  // This allocation primitive transfers ownership to its caller.
+  return ::cuda::std::malloc(n); // NOLINT(cppcoreguidelines-no-malloc)
 } // end mallc()
 
 template <typename DerivedPolicy, typename Pointer>
-inline _CCCL_HOST_DEVICE void free(sequential::execution_policy<DerivedPolicy>&, Pointer ptr)
+_CCCL_HOST_DEVICE_API inline void free(sequential::execution_policy<DerivedPolicy>&, Pointer ptr)
 {
-  ::cuda::std::free(thrust::raw_pointer_cast(ptr));
+  // This deallocation primitive releases caller-owned storage.
+  ::cuda::std::free(thrust::raw_pointer_cast(ptr)); // NOLINT(cppcoreguidelines-no-malloc)
 }
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

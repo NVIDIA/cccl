@@ -1,0 +1,118 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_EXPERIMENTAL_COOP___GROUP_SYNCHRONIZER_LANE_SYNCHRONIZER_CUH
+#define _CUDA_EXPERIMENTAL_COOP___GROUP_SYNCHRONIZER_LANE_SYNCHRONIZER_CUH
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/__warp/lane_mask.h>
+#include <cuda/hierarchy>
+#include <cuda/std/__bit/popcount.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/move.h>
+
+#include <cuda/experimental/coop/__group/concepts.cuh>
+#include <cuda/experimental/coop/__group/fwd.cuh>
+#include <cuda/experimental/coop/__group/synchronizer/arrival_token.cuh>
+
+#include <cuda/std/__cccl/prologue.h>
+
+#if !defined(_CCCL_DOXYGEN_INVOKED)
+
+namespace cuda::experimental::coop
+{
+class lane_synchronizer
+{
+public:
+  struct __synchronizer_instance
+  {
+    using arrival_token _CCCL_NODEBUG = __dummy_arrival_token<__synchronizer_instance>;
+
+    ::cuda::device::lane_mask __lane_mask_;
+
+    template <class _Hierarchy>
+    _CCCL_DEVICE_API void do_sync(const _Hierarchy&) const
+    {
+      ::__syncwarp(__lane_mask_.value());
+    }
+
+    template <class _Hierarchy>
+    _CCCL_DEVICE_API void do_sync_aligned(const _Hierarchy&) const
+    {
+      ::__syncwarp(__lane_mask_.value());
+    }
+
+    template <class _Hierarchy>
+    _CCCL_DEVICE_API arrival_token do_arrive(const _Hierarchy&) const
+    {
+      return arrival_token{};
+    }
+
+    template <class _Hierarchy>
+    _CCCL_DEVICE_API arrival_token do_arrive_aligned(const _Hierarchy&) const
+    {
+      return arrival_token{};
+    }
+
+    template <class _Hierarchy>
+    _CCCL_DEVICE_API void do_wait(const _Hierarchy& __hier, [[maybe_unused]] arrival_token&& __tok) const
+    {
+      // Construct a temporary object, so we set __tok to moved-from state.
+      _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__valid(),
+                   "invalid arrival token passed to do_wait function");
+      do_sync(__hier);
+    }
+
+    template <class _Hierarchy>
+    _CCCL_DEVICE_API void do_wait_aligned(const _Hierarchy& __hier, [[maybe_unused]] arrival_token&& __tok) const
+    {
+      // Construct a temporary object, so we set __tok to moved-from state.
+      _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__valid(),
+                   "invalid arrival token passed to do_wait_aligned function");
+      do_sync_aligned(__hier);
+    }
+
+    template <class _MappingResult, class _Hierarchy>
+    _CCCL_DEVICE_API void deinit(const _MappingResult&, const _Hierarchy&)
+    {}
+  };
+
+  _CCCL_HIDE_FROM_ABI explicit lane_synchronizer() = default;
+
+  template <class _Unit, class _ParentGroup, class _MappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance
+  make_instance(const _Unit&, const _ParentGroup&, const _MappingResult& __mapping_result) const
+  {
+    static_assert(::cuda::std::is_same_v<_Unit, thread_level>, "_Unit must be cuda::thread_level");
+    static_assert(__group_mapping_result<_MappingResult>);
+    if (__mapping_result.is_valid())
+    {
+      _CCCL_ASSERT(::cuda::std::popcount(__mapping_result.lane_mask().value()) == __mapping_result.unit_count(),
+                   "lane_synchronizer can only synchronize units within the same warp");
+    }
+    return {__mapping_result.is_valid() ? __mapping_result.lane_mask() : ::cuda::device::lane_mask::none()};
+  }
+};
+} // namespace cuda::experimental::coop
+
+#endif // !_CCCL_DOXYGEN_INVOKED
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_EXPERIMENTAL_COOP___GROUP_SYNCHRONIZER_LANE_SYNCHRONIZER_CUH

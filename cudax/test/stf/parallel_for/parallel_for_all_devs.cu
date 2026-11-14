@@ -16,8 +16,8 @@ using namespace cuda::experimental::stf;
 template <typename T>
 __global__ void axpy(size_t start, size_t cnt, T a, const T* x, T* y)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int ind = tid; ind < cnt; ind += nthreads)
   {
@@ -40,7 +40,8 @@ int main()
   stream_ctx ctx;
 
   const int N = 1024 * 1024 * 32;
-  double *X, *Y;
+  double* X;
+  double* Y;
 
   X = new double[N];
   Y = new double[N];
@@ -51,8 +52,8 @@ int main()
     Y[ind] = Y0(ind);
   }
 
-  auto handle_X = ctx.logical_data(X, {N});
-  auto handle_Y = ctx.logical_data(Y, {N});
+  auto handle_X = ctx.logical_data(X, N);
+  auto handle_Y = ctx.logical_data(Y, N);
 
   auto all_devs = exec_place::all_devices();
 
@@ -71,7 +72,7 @@ int main()
     for (size_t ind = 0; ind < N; ind++)
     {
       // Y should be Y0 + alpha X0
-      EXPECT(fabs(sY(ind) - (Y0(ind) + alpha * X0(ind))) < 0.0001);
+      EXPECT(fabs(sY(ind) - (Y0(ind) + (alpha * X0(ind)))) < 0.0001);
 
       // X should be X0
       EXPECT(fabs(sX(ind) - X0(ind)) < 0.0001);

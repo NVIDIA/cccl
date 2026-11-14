@@ -19,14 +19,18 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/config/memory_resource.h>
 #include <thrust/host_vector.h>
 #include <thrust/mr/allocator.h>
 #include <thrust/mr/memory_resource.h>
 #include <thrust/mr/pool_options.h>
+#include <thrust/mr/validator.h>
 
 #include <cuda/__cmath/ilog.h>
-#include <cuda/__memory/is_valid_alignment.h>
+#include <cuda/__memory/is_valid_alignment.h> // IWYU pragma: keep
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/algorithm>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
@@ -70,9 +74,9 @@ public:
    *      and as such, may be tuned in the future. This function is exposed so that creating a set of options that are
    *      just a slight departure from the defaults is easy.
    */
-  static pool_options get_default_options()
+  _CCCL_HOST_API static pool_options get_default_options()
   {
-    pool_options ret;
+    pool_options ret{};
 
     ret.min_blocks_per_chunk = 16;
     ret.min_bytes_per_chunk  = 1024;
@@ -97,7 +101,7 @@ public:
    *  \param upstream the upstream memory resource for allocations
    *  \param options pool options to use
    */
-  unsynchronized_pool_resource(Upstream* upstream, pool_options options = get_default_options())
+  _CCCL_HOST_API unsynchronized_pool_resource(Upstream* upstream, pool_options options = get_default_options())
       : m_upstream(upstream)
       , m_options(options)
       , m_smallest_block_log2(::cuda::ceil_ilog2(m_options.smallest_block_size))
@@ -108,7 +112,7 @@ public:
   {
     assert(m_options.validate());
 
-    pool p = {block_descriptor_ptr(), 0};
+    const pool p = {block_descriptor_ptr(), 0};
     m_pools.resize(::cuda::ceil_ilog2(m_options.largest_block_size) - m_smallest_block_log2 + 1, p);
   }
 
@@ -118,7 +122,7 @@ public:
    *
    *  \param options pool options to use
    */
-  unsynchronized_pool_resource(pool_options options = get_default_options())
+  _CCCL_HOST_API unsynchronized_pool_resource(pool_options options = get_default_options())
       : m_upstream(get_global_resource<Upstream>())
       , m_options(options)
       , m_smallest_block_log2(::cuda::ceil_ilog2(m_options.smallest_block_size))
@@ -129,13 +133,13 @@ public:
   {
     assert(m_options.validate());
 
-    pool p = {block_descriptor_ptr(), 0};
+    const pool p = {block_descriptor_ptr(), 0};
     m_pools.resize(::cuda::ceil_ilog2(m_options.largest_block_size) - m_smallest_block_log2 + 1, p);
   }
 
   /*! Destructor. Releases all held memory to upstream.
    */
-  ~unsynchronized_pool_resource() override // NOLINT(bugprone-exception-escape)
+  _CCCL_HOST_API ~unsynchronized_pool_resource() override // NOLINT(bugprone-exception-escape)
   {
     release();
   }
@@ -159,7 +163,8 @@ private:
     block_descriptor_ptr next;
   };
 
-  struct chunk_descriptor
+  // Preserve default construction of allocator metadata; allocation paths supply the fields.
+  struct chunk_descriptor // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     std::size_t size;
     chunk_descriptor_ptr next;
@@ -177,7 +182,8 @@ private:
   // I assume that it is better this way, but the additional pointer could
   // potentially hurt? these are supposed to be oversized and/or overaligned,
   // so they are kinda memory intensive already
-  struct oversized_block_descriptor
+  // Preserve default construction of allocator metadata; allocation paths supply the fields.
+  struct oversized_block_descriptor // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     std::size_t size;
     std::size_t alignment;
@@ -208,7 +214,7 @@ private:
 public:
   /*! Releases all held memory to upstream.
    */
-  void release()
+  _CCCL_HOST_API void release()
   {
     // reset the buckets
     for (std::size_t i = 0; i < m_pools.size(); ++i)
@@ -220,10 +226,10 @@ public:
     // deallocate memory allocated for the buckets
     while (::cuda::std::to_address(m_allocated))
     {
-      chunk_descriptor_ptr alloc = m_allocated;
-      m_allocated                = thrust::raw_reference_cast(*m_allocated).next;
+      const chunk_descriptor_ptr alloc = m_allocated;
+      m_allocated                      = thrust::raw_reference_cast(*m_allocated).next;
 
-      void_ptr p = static_cast<void_ptr>(
+      const void_ptr p = static_cast<void_ptr>(
         static_cast<char_ptr>(static_cast<void_ptr>(alloc)) - thrust::raw_reference_cast(*alloc).size);
       m_upstream->do_deallocate(
         p, thrust::raw_reference_cast(*alloc).size + sizeof(chunk_descriptor), m_options.alignment);
@@ -232,21 +238,23 @@ public:
     // deallocate cached oversized/overaligned memory
     while (::cuda::std::to_address(m_oversized))
     {
-      oversized_block_descriptor_ptr alloc = m_oversized;
-      m_oversized                          = thrust::raw_reference_cast(*m_oversized).next;
+      const oversized_block_descriptor_ptr alloc = m_oversized;
+      m_oversized                                = thrust::raw_reference_cast(*m_oversized).next;
 
-      oversized_block_descriptor desc = thrust::raw_reference_cast(*alloc);
+      const oversized_block_descriptor desc = thrust::raw_reference_cast(*alloc);
 
-      void_ptr p = static_cast<void_ptr>(static_cast<char_ptr>(static_cast<void_ptr>(alloc)) - desc.current_size);
+      const void_ptr p = static_cast<void_ptr>(static_cast<char_ptr>(static_cast<void_ptr>(alloc)) - desc.current_size);
       m_upstream->do_deallocate(p, desc.size + sizeof(oversized_block_descriptor), desc.alignment);
     }
 
     m_cached_oversized = oversized_block_descriptor_ptr();
   }
 
-  [[nodiscard]] void_ptr do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  [[nodiscard]] _CCCL_HOST_API void_ptr do_allocate( // NOLINT(google-default-arguments)
+    std::size_t bytes,
+    std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
-    bytes = (std::max) (bytes, m_options.smallest_block_size);
+    bytes = (std::max) (bytes, m_options.smallest_block_size); // NOLINT(readability-redundant-parentheses)
     assert(::cuda::__is_valid_alignment(alignment));
 
     // an oversized and/or overaligned allocation requested; needs to be allocated separately
@@ -266,7 +274,7 @@ public:
           // allocate a new block
           if (is_good)
           {
-            std::size_t size_factor = desc.size / bytes;
+            const std::size_t size_factor = desc.size / bytes;
             if (size_factor >= m_options.cached_size_cutoff_factor)
             {
               is_good = false;
@@ -278,7 +286,7 @@ public:
           // allocate a new block
           if (is_good)
           {
-            std::size_t alignment_factor = desc.alignment / alignment;
+            const std::size_t alignment_factor = desc.alignment / alignment;
             if (alignment_factor >= m_options.cached_alignment_cutoff_factor)
             {
               is_good = false;
@@ -332,8 +340,8 @@ public:
       }
 
       // no fitting cached block found; allocate a new one that's just up to the specs
-      void_ptr allocated = m_upstream->do_allocate(bytes + sizeof(oversized_block_descriptor), alignment);
-      oversized_block_descriptor_ptr block =
+      const void_ptr allocated = m_upstream->do_allocate(bytes + sizeof(oversized_block_descriptor), alignment);
+      const oversized_block_descriptor_ptr block =
         static_cast<oversized_block_descriptor_ptr>(static_cast<void_ptr>(static_cast<char_ptr>(allocated) + bytes));
 
       oversized_block_descriptor desc;
@@ -358,9 +366,9 @@ public:
 
     // the request is NOT for oversized and/or overaligned memory
     // allocate a block from an appropriate bucket
-    std::size_t bytes_log2 = ::cuda::ceil_ilog2(bytes);
-    std::size_t bucket_idx = bytes_log2 - m_smallest_block_log2;
-    pool& bucket           = thrust::raw_reference_cast(m_pools[bucket_idx]);
+    const std::size_t bytes_log2 = ::cuda::ceil_ilog2(bytes);
+    const std::size_t bucket_idx = bytes_log2 - m_smallest_block_log2;
+    pool& bucket                 = thrust::raw_reference_cast(m_pools[bucket_idx]);
 
     bytes = static_cast<std::size_t>(1) << bytes_log2;
 
@@ -390,13 +398,14 @@ public:
         }
       }
 
-      std::size_t descriptor_size = (std::max) (sizeof(block_descriptor), m_options.alignment);
-      std::size_t block_size      = bytes + descriptor_size;
-      block_size += m_options.alignment - block_size % m_options.alignment;
-      std::size_t chunk_size = block_size * n;
+      const std::size_t descriptor_size =
+        (std::max) (sizeof(block_descriptor), m_options.alignment); // NOLINT(readability-redundant-parentheses)
+      std::size_t block_size = bytes + descriptor_size;
+      block_size += m_options.alignment - (block_size % m_options.alignment);
+      const std::size_t chunk_size = block_size * n;
 
-      void_ptr allocated = m_upstream->do_allocate(chunk_size + sizeof(chunk_descriptor), m_options.alignment);
-      chunk_descriptor_ptr chunk =
+      const void_ptr allocated = m_upstream->do_allocate(chunk_size + sizeof(chunk_descriptor), m_options.alignment);
+      const chunk_descriptor_ptr chunk =
         static_cast<chunk_descriptor_ptr>(static_cast<void_ptr>(static_cast<char_ptr>(allocated) + chunk_size));
 
       chunk_descriptor chunk_desc;
@@ -407,7 +416,7 @@ public:
 
       for (std::size_t i = 0; i < n; ++i)
       {
-        block_descriptor_ptr block = static_cast<block_descriptor_ptr>(
+        const block_descriptor_ptr block = static_cast<block_descriptor_ptr>(
           static_cast<void_ptr>(static_cast<char_ptr>(allocated) + block_size * i + bytes));
 
         block_descriptor block_desc;
@@ -418,14 +427,16 @@ public:
     }
 
     // allocate a block from the front of the bucket's free list
-    block_descriptor_ptr block = bucket.free_list;
-    bucket.free_list           = thrust::raw_reference_cast(*block).next;
+    const block_descriptor_ptr block = bucket.free_list;
+    bucket.free_list                 = thrust::raw_reference_cast(*block).next;
     return static_cast<void_ptr>(static_cast<char_ptr>(static_cast<void_ptr>(block)) - bytes);
   }
 
-  void do_deallocate(void_ptr p, std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  _CCCL_HOST_API void do_deallocate(void_ptr p, // NOLINT(google-default-arguments)
+                                    std::size_t n,
+                                    std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
-    n = (std::max) (n, m_options.smallest_block_size);
+    n = (std::max) (n, m_options.smallest_block_size); // NOLINT(readability-redundant-parentheses)
     assert(::cuda::__is_valid_alignment(alignment));
 
     // verify that the pointer is at least as aligned as claimed
@@ -491,13 +502,14 @@ public:
     }
 
     // push the block to the front of the appropriate bucket's free list
-    std::size_t n_log2     = ::cuda::ceil_ilog2(n);
-    std::size_t bucket_idx = n_log2 - m_smallest_block_log2;
-    pool& bucket           = thrust::raw_reference_cast(m_pools[bucket_idx]);
+    const std::size_t n_log2     = ::cuda::ceil_ilog2(n);
+    const std::size_t bucket_idx = n_log2 - m_smallest_block_log2;
+    pool& bucket                 = thrust::raw_reference_cast(m_pools[bucket_idx]);
 
     n = static_cast<std::size_t>(1) << n_log2;
 
-    block_descriptor_ptr block = static_cast<block_descriptor_ptr>(static_cast<void_ptr>(static_cast<char_ptr>(p) + n));
+    const block_descriptor_ptr block =
+      static_cast<block_descriptor_ptr>(static_cast<void_ptr>(static_cast<char_ptr>(p) + n));
 
     block_descriptor desc;
     desc.next        = bucket.free_list;

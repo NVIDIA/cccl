@@ -37,7 +37,7 @@ template <typename ctx_t>
 event_list insert_graph_node(ctx_t& ctx, cudaGraphNode_t node, event_list& input_prereqs)
 {
   cudaGraph_t support_graph = ctx.graph();
-  size_t graph_stage        = ctx.stage();
+  const size_t graph_stage  = ctx.stage();
 
   ::std::vector<cudaGraphNode_t> ready_nodes = reserved::join_with_graph_nodes(ctx, input_prereqs, graph_stage);
 
@@ -61,7 +61,7 @@ event_list insert_graph_node(ctx_t& ctx, cudaGraphNode_t node, event_list& input
 
 int X0(int i)
 {
-  return 17 * i + 45;
+  return (17 * i) + 45;
 }
 
 __global__ void setHandle(cudaGraphConditionalHandle handle)
@@ -137,7 +137,7 @@ int main()
   ctx.host_launch(lX.read())->*[](auto x) {
     for (int i = 0; i < static_cast<int>(x.size()); i++)
     {
-      EXPECT(x(i) == 3 * X0(i) + 2 * 5);
+      EXPECT(x(i) == (3 * X0(i)) + (2 * 5));
     }
   };
 

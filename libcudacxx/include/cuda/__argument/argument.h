@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__argument/argument_bounds.h>
+#include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/std/__algorithm/max_element.h>
 #include <cuda/std/__algorithm/min_element.h>
 #include <cuda/std/__cccl/assert.h>
@@ -31,17 +32,13 @@
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_integer.h>
-#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/cmp.h>
-#include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/cstddef>
-#include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -56,13 +53,13 @@ struct __access;
 template <class _Tp, class = void>
 struct __element_type_from_member_iterator
 {
-  using type = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 template <class _Tp>
 struct __element_type_from_member_iterator<_Tp, ::cuda::std::void_t<::cuda::std::iter_value_t<typename _Tp::iterator>>>
 {
-  using type = ::cuda::std::iter_value_t<typename _Tp::iterator>;
+  using type _CCCL_NODEBUG = ::cuda::std::iter_value_t<typename _Tp::iterator>;
 };
 
 // Fallback: element type is the type itself.
@@ -73,11 +70,11 @@ struct __element_type_of : __element_type_from_member_iterator<_Tp>
 template <class _Tp>
 struct __element_type_of<_Tp, ::cuda::std::void_t<::cuda::std::iter_value_t<_Tp>>>
 {
-  using type = ::cuda::std::iter_value_t<_Tp>;
+  using type _CCCL_NODEBUG = ::cuda::std::iter_value_t<_Tp>;
 };
 
 template <class _Tp>
-using __element_type_of_t = typename __element_type_of<::cuda::std::remove_cvref_t<_Tp>>::type;
+using __element_type_of_t _CCCL_NODEBUG = typename __element_type_of<::cuda::std::remove_cvref_t<_Tp>>::type;
 
 // =====================================================================
 // __is_sequence_v
@@ -101,8 +98,8 @@ template <auto _Value, class _Tp = ::cuda::std::remove_cvref_t<decltype(_Value)>
 class constant
 {
 public:
-  using value_type     = ::cuda::std::remove_cvref_t<_Tp>;
-  using __element_type = value_type;
+  using value_type                   = ::cuda::std::remove_cvref_t<_Tp>;
+  using __element_type _CCCL_NODEBUG = value_type;
 
   [[nodiscard]] _CCCL_API static constexpr value_type __get_value() noexcept
   {
@@ -115,8 +112,8 @@ template <auto _Value>
 class __constant_sequence
 {
 public:
-  using value_type     = ::cuda::std::remove_cvref_t<decltype(_Value)>;
-  using __element_type = __element_type_of_t<value_type>;
+  using value_type                   = ::cuda::std::remove_cvref_t<decltype(_Value)>;
+  using __element_type _CCCL_NODEBUG = __element_type_of_t<value_type>;
 
   static_assert(__is_sequence_v<value_type>, "The value type of __constant_sequence must be a sequence");
 };
@@ -261,7 +258,7 @@ template <class _Arg, class _StaticBounds = no_bounds>
 class immediate
 {
 public:
-  using __element_type = __element_type_of_t<_Arg>;
+  using __element_type _CCCL_NODEBUG = __element_type_of_t<_Arg>;
 
   static_assert(__valid_static_bounds_v<__element_type, _StaticBounds>,
                 "argument wrapper bounds type must be cuda::args::no_bounds or cuda::args::static_bounds with "
@@ -311,7 +308,7 @@ template <class _Arg, class _StaticBounds = no_bounds>
 class __immediate_sequence
 {
 public:
-  using __element_type = __element_type_of_t<_Arg>;
+  using __element_type _CCCL_NODEBUG = __element_type_of_t<_Arg>;
 
   static_assert(__is_sequence_v<_Arg>, "immediate sequence arguments must have a distinct element type");
   static_assert(__valid_static_bounds_v<__element_type, _StaticBounds>,
@@ -414,7 +411,7 @@ template <class _Arg, class _StaticBounds = no_bounds>
 class __deferred_base
 {
 public:
-  using __element_type = __element_type_of_t<_Arg>;
+  using __element_type _CCCL_NODEBUG = __element_type_of_t<_Arg>;
 
   static_assert(__valid_static_bounds_v<__element_type, _StaticBounds>,
                 "argument wrapper bounds type must be cuda::args::no_bounds or cuda::args::static_bounds with "
@@ -471,6 +468,9 @@ class deferred : public __deferred_base<_Arg, _StaticBounds>
 public:
   using __deferred_base<_Arg, _StaticBounds>::__deferred_base;
 };
+
+template <class _Tp>
+inline constexpr bool __is_deferred_v = ::cuda::__is_specialization_of_v<_Tp, deferred>;
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class _Arg>
@@ -659,8 +659,8 @@ template <class _Arg, class _StaticBounds>
 }
 
 template <auto _Value, class _Tp>
-[[nodiscard]] _CCCL_API constexpr typename constant<_Value, _Tp>::value_type
-__unwrap(const constant<_Value, _Tp>&) noexcept
+[[nodiscard]]
+_CCCL_API constexpr typename constant<_Value, _Tp>::value_type __unwrap(const constant<_Value, _Tp>&) noexcept
 {
   return constant<_Value, _Tp>::__get_value();
 }

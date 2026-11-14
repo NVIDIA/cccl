@@ -20,8 +20,27 @@
 
 #include <thrust/memory.h>
 
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>
+
+THRUST_NAMESPACE_BEGIN
+template <typename T>
+class device_reference;
+template <typename T>
+class device_ptr;
+THRUST_NAMESPACE_END
+
+// Specialize `std::iterator_traits` (picked up by cuda::std::iterator_traits), because device_ptr would otherwise
+// inherit the injected class name of its base class as its nested pointer type. Just reuse the specialization for the
+// base class. We do this before device_ptr is defined so the specialization is correctly used inside the definition.
+template <typename T>
+struct std::iterator_traits<THRUST_NS_QUALIFIER::device_ptr<T>>
+    : std::iterator_traits<THRUST_NS_QUALIFIER::pointer<T,
+                                                        THRUST_NS_QUALIFIER::device_system_tag,
+                                                        THRUST_NS_QUALIFIER::device_reference<T>,
+                                                        THRUST_NS_QUALIFIER::device_ptr<T>>>
+{};
 
 THRUST_NAMESPACE_BEGIN
 
@@ -32,9 +51,6 @@ THRUST_NAMESPACE_BEGIN
  *     .. versionadded:: 2.2.0
  *  \endverbatim
  */
-
-template <typename T>
-class device_reference;
 
 /*! \brief \c device_ptr is a pointer-like object which points to an object that
  *  resides in memory associated with the \ref device system.
@@ -72,7 +88,6 @@ template <typename T>
 class device_ptr
     : public thrust::pointer<T, thrust::device_system_tag, thrust::device_reference<T>, thrust::device_ptr<T>>
 {
-private:
   using super_t = thrust::pointer<T, thrust::device_system_tag, thrust::device_reference<T>, thrust::device_ptr<T>>;
 
 public:
@@ -88,7 +103,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE device_ptr(std::nullptr_t)
+  _CCCL_HOST_DEVICE_API device_ptr(std::nullptr_t)
       : super_t(nullptr)
   {}
 
@@ -109,7 +124,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE explicit device_ptr(U* ptr)
+  _CCCL_HOST_DEVICE_API explicit device_ptr(U* ptr)
       : super_t(ptr)
   {}
 
@@ -128,7 +143,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE device_ptr(device_ptr<U> const& other)
+  _CCCL_HOST_DEVICE_API device_ptr(device_ptr<U> const& other)
       : super_t(other)
   {}
 
@@ -149,7 +164,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE device_ptr& operator=(device_ptr<U> const& other)
+  _CCCL_HOST_DEVICE_API device_ptr& operator=(device_ptr<U> const& other)
   {
     super_t::operator=(other);
     return *this;
@@ -167,7 +182,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE device_ptr& operator=(std::nullptr_t)
+  _CCCL_HOST_DEVICE_API device_ptr& operator=(std::nullptr_t)
   {
     super_t::operator=(nullptr);
     return *this;
@@ -187,7 +202,8 @@ public:
  *  \endverbatim
  */
 template <typename T, typename CharT, typename Traits>
-_CCCL_HOST std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, device_ptr<T> const& dp);
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
+operator<<(std::basic_ostream<CharT, Traits>& os, device_ptr<T> const& dp);
 #endif
 
 /*! \brief Create a \c device_ptr from a raw pointer.
@@ -204,7 +220,7 @@ _CCCL_HOST std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<Char
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE device_ptr<T> device_pointer_cast(T* ptr);
+_CCCL_HOST_DEVICE_API device_ptr<T> device_pointer_cast(T* ptr);
 
 /*! \brief Create a \c device_ptr from another \c device_ptr.
  *
@@ -216,7 +232,7 @@ _CCCL_HOST_DEVICE device_ptr<T> device_pointer_cast(T* ptr);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE device_ptr<T> device_pointer_cast(device_ptr<T> const& dptr);
+_CCCL_HOST_DEVICE_API device_ptr<T> device_pointer_cast(device_ptr<T> const& dptr);
 
 /*! \} // memory_management
  */

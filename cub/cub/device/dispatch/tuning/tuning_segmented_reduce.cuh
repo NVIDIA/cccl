@@ -13,8 +13,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/agent/agent_reduce.cuh>
+#include <cub/block/block_reduce.cuh>
+#include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/util_device.cuh>
 
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
@@ -53,7 +59,7 @@ struct SegmentedReduceWarpReducePolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedReduceWarpReducePolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedReduceWarpReducePolicy& p)
   {
     return os << "SegmentedReduceWarpReducePolicy { .threads_per_block = " << p.threads_per_block
               << ", .threads_per_warp = " << p.threads_per_warp << ", .items_per_thread = " << p.items_per_thread
@@ -83,7 +89,7 @@ struct SegmentedReducePolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedReducePolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedReducePolicy& p)
   {
     return os << "SegmentedReducePolicy { .large_reduce = " << p.large_reduce
               << ", .medium_reduce = " << p.medium_reduce << ", .small_reduce = " << p.small_reduce << " }";

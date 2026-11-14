@@ -25,31 +25,31 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE ForwardIterator
+_CCCL_HOST_DEVICE_API ForwardIterator
 remove(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, const T& value)
 {
-  ::cuda::equal_to_value<T> pred{value};
+  const ::cuda::equal_to_value<T> pred{value};
 
   // XXX consider using a placeholder here
   return thrust::remove_if(exec, first, last, pred);
 } // end remove()
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
-_CCCL_HOST_DEVICE OutputIterator remove_copy(
+_CCCL_HOST_DEVICE_API OutputIterator remove_copy(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
   OutputIterator result,
   const T& value)
 {
-  ::cuda::equal_to_value<T> pred{value};
+  const ::cuda::equal_to_value<T> pred{value};
 
   // XXX consider using a placeholder here
   return thrust::remove_copy_if(exec, first, last, result, pred);
 } // end remove_copy()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator
+_CCCL_HOST_DEVICE_API ForwardIterator
 remove_if(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Predicate pred)
 {
   using InputType = thrust::detail::it_value_t<ForwardIterator>;
@@ -62,7 +62,7 @@ remove_if(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, 
 } // end remove_if()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator remove_if(
+_CCCL_HOST_DEVICE_API ForwardIterator remove_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -79,7 +79,7 @@ _CCCL_HOST_DEVICE ForwardIterator remove_if(
 } // end remove_if()
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator remove_copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator remove_copy_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -94,7 +94,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator remove_copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator remove_copy_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,

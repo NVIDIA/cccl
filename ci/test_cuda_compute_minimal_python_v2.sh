@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Run the minimal cuda.compute suite against a wheel built with the v2
 # (HostJIT) backend. The shared minimal script owns dependency installation and
-# selects the free-threading stress and serialization tests for Python 3.14t.
+# adds the free-threading stress suite and parallel sweep on a free-threaded
+# interpreter.
 set -euo pipefail
 
 ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

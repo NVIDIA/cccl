@@ -22,7 +22,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(set_operations.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/set_operations.h>
 #  include <thrust/system/cuda/detail/set_operations.h>
 #  include <thrust/system/omp/detail/set_operations.h>
@@ -33,7 +33,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator set_difference(
+_CCCL_HOST_DEVICE_API OutputIterator set_difference(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -53,7 +53,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename StrictWeakCompare>
-_CCCL_HOST_DEVICE OutputIterator set_difference(
+_CCCL_HOST_DEVICE_API OutputIterator set_difference(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -76,7 +76,7 @@ template <typename DerivedPolicy,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -110,7 +110,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -139,7 +139,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_differ
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator set_intersection(
+_CCCL_HOST_DEVICE_API OutputIterator set_intersection(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -159,7 +159,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename StrictWeakCompare>
-_CCCL_HOST_DEVICE OutputIterator set_intersection(
+_CCCL_HOST_DEVICE_API OutputIterator set_intersection(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -181,7 +181,7 @@ template <typename DerivedPolicy,
           typename InputIterator3,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -212,7 +212,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -239,7 +239,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_inters
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
+_CCCL_HOST_DEVICE_API OutputIterator set_symmetric_difference(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -259,7 +259,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename StrictWeakCompare>
-_CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
+_CCCL_HOST_DEVICE_API OutputIterator set_symmetric_difference(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -282,7 +282,7 @@ template <typename DerivedPolicy,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -316,7 +316,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -345,7 +345,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmet
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator set_union(
+_CCCL_HOST_DEVICE_API OutputIterator set_union(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -365,7 +365,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename StrictWeakCompare>
-_CCCL_HOST_DEVICE OutputIterator set_union(
+_CCCL_HOST_DEVICE_API OutputIterator set_union(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -388,7 +388,7 @@ template <typename DerivedPolicy,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -422,7 +422,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -450,7 +450,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_
 } // end set_union_by_key()
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename StrictWeakOrdering>
-OutputIterator set_difference(
+_CCCL_HOST_API OutputIterator set_difference(
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
@@ -473,7 +473,7 @@ OutputIterator set_difference(
 } // end set_difference()
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
-OutputIterator set_difference(
+_CCCL_HOST_API OutputIterator set_difference(
   InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::set_difference");
@@ -497,7 +497,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakOrdering>
-::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -544,7 +544,7 @@ template <typename InputIterator1,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -584,7 +584,7 @@ template <typename InputIterator1,
 } // end set_difference_by_key()
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename StrictWeakOrdering>
-OutputIterator set_intersection(
+_CCCL_HOST_API OutputIterator set_intersection(
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
@@ -607,7 +607,7 @@ OutputIterator set_intersection(
 } // end set_intersection()
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
-OutputIterator set_intersection(
+_CCCL_HOST_API OutputIterator set_intersection(
   InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::set_intersection");
@@ -630,7 +630,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakOrdering>
-::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -672,7 +672,7 @@ template <typename InputIterator1,
           typename InputIterator3,
           typename OutputIterator1,
           typename OutputIterator2>
-::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -708,7 +708,7 @@ template <typename InputIterator1,
 } // end set_intersection_by_key()
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename StrictWeakOrdering>
-OutputIterator set_symmetric_difference(
+_CCCL_HOST_API OutputIterator set_symmetric_difference(
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
@@ -732,7 +732,7 @@ OutputIterator set_symmetric_difference(
 } // end set_symmetric_difference()
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
-OutputIterator set_symmetric_difference(
+_CCCL_HOST_API OutputIterator set_symmetric_difference(
   InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::set_symmetric_difference");
@@ -757,7 +757,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakOrdering>
-::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -804,7 +804,7 @@ template <typename InputIterator1,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -844,7 +844,7 @@ template <typename InputIterator1,
 } // end set_symmetric_difference_by_key()
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename StrictWeakOrdering>
-OutputIterator set_union(
+_CCCL_HOST_API OutputIterator set_union(
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
@@ -867,7 +867,7 @@ OutputIterator set_union(
 } // end set_union()
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
-OutputIterator set_union(
+_CCCL_HOST_API OutputIterator set_union(
   InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::set_union");
@@ -891,7 +891,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakOrdering>
-::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -938,7 +938,7 @@ template <typename InputIterator1,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,

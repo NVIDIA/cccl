@@ -17,7 +17,6 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/function.h>
-#include <thrust/detail/type_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
@@ -28,7 +27,7 @@ namespace system::detail::sequential
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator inclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator inclusive_scan(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator first,
   InputIterator last,
@@ -41,7 +40,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
   using ValueType = thrust::detail::it_value_t<InputIterator>;
 
   // wrap binary_op
-  thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
+  const thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
 
   if (first != last)
   {
@@ -64,7 +63,7 @@ template <typename DerivedPolicy,
           typename OutputIterator,
           typename InitialValueType,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator inclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator inclusive_scan(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator first,
   InputIterator last,
@@ -75,10 +74,10 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
   using namespace thrust::detail;
 
   using ValueType =
-    typename ::cuda::std::__accumulator_t<BinaryFunction, thrust::detail::it_value_t<InputIterator>, InitialValueType>;
+    ::cuda::std::__accumulator_t<BinaryFunction, thrust::detail::it_value_t<InputIterator>, InitialValueType>;
 
   // wrap binary_op
-  thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
+  const thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
 
   if (first != last)
   {
@@ -104,7 +103,7 @@ template <typename DerivedPolicy,
           typename OutputIterator,
           typename InitialValueType,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator exclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator exclusive_scan(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator first,
   InputIterator last,

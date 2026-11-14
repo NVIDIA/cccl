@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // clang-format off
-// %PARAM% SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE scope device=tsd,GPU,non_block
+// %PARAM% SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE scope device=tsd,GPU,non_block:cluster=tsc,GPU,non_block
 // %PARAM% TYPE,SASS_TYPE type i8=int8_t,.S32:u8=uint8_t,:i16=int16_t,.S32:u16=uint16_t,
 // %PARAM% OP,SASS_OP,FILECHECK_PREFIX_OP op add=fetch_add,ADD,add_sub:sub=fetch_sub,ADD,add_sub:min=fetch_min,MIN,minmax:max=fetch_max,MAX,minmax
 // %PARAM% ORDER,SASS_MEMBAR,FILECHECK_PREFIX_SEQ_CST,FILECHECK_PREFIX_ACQUIRE,FILECHECK_PREFIX_ORDER order relaxed=mor,,non_seq_cst,no_acquire,no_membar:acquire=moa,,non_seq_cst,acquire,no_membar:release=more,ALL,non_seq_cst,no_acquire,membar:acq_rel=moar,ALL,non_seq_cst,acquire,membar:seq_cst=mosc,SC,seq_cst,acquire,membar

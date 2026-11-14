@@ -20,7 +20,7 @@ TEST_CASE("scope_exit runs on normal exit", "[utility][scope]")
 {
   int count = 0;
   {
-    cudax::scope_exit guard{[&]() noexcept {
+    const cudax::scope_exit guard{[&]() noexcept {
       ++count;
     }};
     CHECK(count == 0);
@@ -34,7 +34,7 @@ TEST_CASE("scope_exit runs on exceptional exit", "[utility][scope]")
   bool caught = false;
   try
   {
-    cudax::scope_exit guard{[&]() noexcept {
+    const cudax::scope_exit guard{[&]() noexcept {
       ++count;
     }};
     throw 42;
@@ -76,7 +76,7 @@ TEST_CASE("scope_fail runs only on exceptional exit", "[utility][scope]")
 {
   int count = 0;
   {
-    cudax::scope_fail guard{[&]() noexcept {
+    const cudax::scope_fail guard{[&]() noexcept {
       ++count;
     }};
   }
@@ -85,7 +85,7 @@ TEST_CASE("scope_fail runs only on exceptional exit", "[utility][scope]")
   bool caught = false;
   try
   {
-    cudax::scope_fail guard{[&]() noexcept {
+    const cudax::scope_fail guard{[&]() noexcept {
       ++count;
     }};
     throw 42;
@@ -142,7 +142,7 @@ TEST_CASE("scope_success runs only on normal exit", "[utility][scope]")
 {
   int count = 0;
   {
-    cudax::scope_success guard{[&] {
+    const cudax::scope_success guard{[&] {
       ++count;
     }};
   }
@@ -152,7 +152,7 @@ TEST_CASE("scope_success runs only on normal exit", "[utility][scope]")
   bool caught = false;
   try
   {
-    cudax::scope_success guard{[&] {
+    const cudax::scope_success guard{[&] {
       ++count;
     }};
     throw 42;

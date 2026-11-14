@@ -47,10 +47,10 @@ struct __cccl_select<true>
 };
 
 template <bool _Bp, class _Tp = void>
-using __cccl_enable_if_t = typename __cccl_select<_Bp>::template type<_Tp>;
+using __cccl_enable_if_t _CCCL_NODEBUG = typename __cccl_select<_Bp>::template type<_Tp>;
 
 template <class _Tp, bool _Bp>
-using __cccl_requires_t = typename __cccl_select<_Bp>::template type<_Tp>;
+using __cccl_requires_t _CCCL_NODEBUG = typename __cccl_select<_Bp>::template type<_Tp>;
 
 #if _CCCL_HAS_CONCEPTS() || defined(_CCCL_DOXYGEN_INVOKED)
 #  define _CCCL_TEMPLATE(...)                template <__VA_ARGS__>
@@ -61,8 +61,8 @@ using __cccl_requires_t = typename __cccl_select<_Bp>::template type<_Tp>;
 #  define _CCCL_CONCEPT                      concept
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 #  define _CCCL_TEMPLATE(...) template <__VA_ARGS__
-#  define _CCCL_REQUIRES(...) , bool __cccl_true_ = true, __cccl_enable_if_t < __VA_ARGS__ && __cccl_true_, int > = 0 >
-#  define _CCCL_AND           &&__cccl_true_, int > = 0, __cccl_enable_if_t <
+#  define _CCCL_REQUIRES(...) , bool _CcclTrue = true, __cccl_enable_if_t < __VA_ARGS__ && _CcclTrue, int > = 0 >
+#  define _CCCL_AND           &&_CcclTrue, int > = 0, __cccl_enable_if_t <
 #  define _CCCL_TRAILING_REQUIRES(...)       ->__cccl_requires_t < __VA_ARGS__ _CCCL_TRAILING_REQUIRES_IMPL_
 #  define _CCCL_TRAILING_REQUIRES_IMPL_(...) , __VA_ARGS__ >
 #  define _CCCL_CONCEPT                      inline constexpr bool
@@ -92,7 +92,7 @@ template <class _Tp, class... _Args>
 extern _Tp __cccl_make_dependent;
 
 template <class _Impl, class... _Args>
-using __cccl_requires_expr_impl = decltype(__cccl_make_dependent<_Impl, _Args...>);
+using __cccl_requires_expr_impl _CCCL_NODEBUG = decltype(__cccl_make_dependent<_Impl, _Args...>);
 
 template <typename _Tp>
 _CCCL_API constexpr void __cccl_unused(_Tp&&) noexcept
@@ -317,7 +317,7 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
         _TY>::__cccl_is_satisfied(static_cast<::__cccl_tag<void _CCCL_REQUIRES_EXPR_TPARAM_REFS _TY>*>(nullptr), 0); \
     struct _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID)                                                           \
     {                                                                                                                \
-      using __cccl_self_t = _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID);                                         \
+      using __cccl_self_t _CCCL_NODEBUG = _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID);                           \
       template <class _CCCL_REQUIRES_EXPR_TPARAM_DEFNS _TY>                                                          \
       _CCCL_API inline static auto __cccl_well_formed(__VA_ARGS__) _CCCL_REQUIRES_EXPR_REQUIREMENTS_
 

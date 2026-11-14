@@ -19,17 +19,24 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/iket_support.cuh>
+#include <cub/detail/key_value_pair.cuh>
+#include <cub/detail/log2.cuh>
+#include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/strong_load.cuh>
 #include <cub/detail/strong_store.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_operators.cuh>
 #include <cub/thread/thread_store.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 
@@ -63,12 +70,12 @@ struct BlockScanRunningPrefixOp
   T running_total;
 
   /// Constructor
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockScanRunningPrefixOp(ScanOpT op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockScanRunningPrefixOp(ScanOpT op)
       : op(op)
   {}
 
   /// Constructor
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockScanRunningPrefixOp(T starting_prefix, ScanOpT op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockScanRunningPrefixOp(T starting_prefix, ScanOpT op)
       : op(op)
       , running_total(starting_prefix)
   {}
@@ -79,7 +86,7 @@ struct BlockScanRunningPrefixOp
    * @param block_aggregate
    *   The aggregate sum of the BlockScan inputs
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(const T& block_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T operator()(const T& block_aggregate)
   {
     T retval      = running_total;
     running_total = op(running_total, block_aggregate);
@@ -94,12 +101,12 @@ struct BlockScanRunningPrefixOp
 /**
  * Enumerations of tile status
  */
-enum ScanTileStatus
+enum ScanTileStatus // NOLINT(cppcoreguidelines-use-enum-class)
 {
-  SCAN_TILE_OOB, // Out-of-bounds (e.g., padding)
-  SCAN_TILE_INVALID = 99, // Not yet processed
-  SCAN_TILE_PARTIAL, // Tile aggregate is available
-  SCAN_TILE_INCLUSIVE, // Inclusive tile prefix is available
+  SCAN_TILE_OOB       = 0, // Out-of-bounds (e.g., padding)
+  SCAN_TILE_INVALID   = 99, // Not yet processed
+  SCAN_TILE_PARTIAL   = 100, // Tile aggregate is available
+  SCAN_TILE_INCLUSIVE = 101, // Inclusive tile prefix is available
 };
 
 /**
@@ -113,11 +120,14 @@ enum class MemoryOrder
   acquire_release
 };
 
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(Delay);
+
 namespace detail
 {
-template <int Delay, unsigned int GridThreshold = 500>
-_CCCL_DEVICE _CCCL_FORCEINLINE void delay()
+template <unsigned int Delay, unsigned int GridThreshold = 500>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void delay()
 {
+  _CCCL_IKET_RANGE_PUSH(Delay);
   NV_IF_TARGET(NV_PROVIDES_SM_70, ({
                  if (Delay > 0)
                  {
@@ -131,11 +141,13 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void delay()
                    }
                  }
                }));
+  _CCCL_IKET_RANGE_POP();
 }
 
 template <unsigned int GridThreshold = 500>
-_CCCL_DEVICE _CCCL_FORCEINLINE void delay(int ns)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void delay(unsigned int ns)
 {
+  _CCCL_IKET_RANGE_PUSH(Delay);
   NV_IF_TARGET(NV_PROVIDES_SM_70, ({
                  if (ns > 0)
                  {
@@ -149,40 +161,45 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void delay(int ns)
                    }
                  }
                }));
+  _CCCL_IKET_RANGE_POP();
 }
 
-template <int Delay>
-_CCCL_DEVICE _CCCL_FORCEINLINE void always_delay()
+template <unsigned int Delay>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void always_delay()
 {
+  _CCCL_IKET_RANGE_PUSH(Delay);
   NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(Delay);));
+  _CCCL_IKET_RANGE_POP();
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void always_delay([[maybe_unused]] int ns)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void always_delay([[maybe_unused]] unsigned int ns)
 {
+  _CCCL_IKET_RANGE_PUSH(Delay);
   NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(ns);));
+  _CCCL_IKET_RANGE_POP();
 }
 
 template <unsigned int Delay = 350, unsigned int GridThreshold = 500>
-_CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting()
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void delay_or_prevent_hoisting()
 {
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (delay<Delay, GridThreshold>();), (__threadfence_block();));
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (_CUB::detail::delay<Delay, GridThreshold>();), (__threadfence_block();));
 }
 
 template <unsigned int GridThreshold = 500>
-_CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting([[maybe_unused]] int ns)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void delay_or_prevent_hoisting([[maybe_unused]] unsigned int ns)
 {
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (delay<GridThreshold>(ns);), (__threadfence_block();));
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (_CUB::detail::delay<GridThreshold>(ns);), (__threadfence_block();));
 }
 
 template <unsigned int Delay = 350>
-_CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting()
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting()
 {
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (always_delay(Delay);), (__threadfence_block();));
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (_CUB::detail::always_delay(Delay);), (__threadfence_block();));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting([[maybe_unused]] int ns)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting([[maybe_unused]] unsigned int ns)
 {
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (always_delay(ns);), (__threadfence_block();));
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (_CUB::detail::always_delay(ns);), (__threadfence_block();));
 }
 
 template <unsigned int L2WriteLatency>
@@ -190,18 +207,18 @@ struct no_delay_constructor_t
 {
   struct delay_t
   {
-    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()()
     {
       NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (), (__threadfence_block();));
     }
   };
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE no_delay_constructor_t(unsigned int /* seed */)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE no_delay_constructor_t(unsigned int /* seed */)
   {
-    delay<L2WriteLatency>();
+    _CUB::detail::delay<L2WriteLatency>();
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE delay_t operator()()
   {
     return {};
   }
@@ -212,24 +229,24 @@ struct reduce_by_key_delay_constructor_t
 {
   struct delay_t
   {
-    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()()
     {
       NV_DISPATCH_TARGET(
         NV_IS_EXACTLY_SM_80,
-        (delay<Delay, GridThreshold>();),
+        (_CUB::detail::delay<Delay, GridThreshold>();),
         NV_PROVIDES_SM_70,
-        (delay<0, GridThreshold>();),
+        (_CUB::detail::delay<0, GridThreshold>();),
         NV_IS_DEVICE,
         (__threadfence_block();));
     }
   };
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE reduce_by_key_delay_constructor_t(unsigned int /* seed */)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE reduce_by_key_delay_constructor_t(unsigned int /* seed */)
   {
-    delay<L2WriteLatency>();
+    _CUB::detail::delay<L2WriteLatency>();
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE delay_t operator()()
   {
     return {};
   }
@@ -240,18 +257,18 @@ struct fixed_delay_constructor_t
 {
   struct delay_t
   {
-    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()()
     {
-      delay_or_prevent_hoisting<Delay>();
+      _CUB::detail::delay_or_prevent_hoisting<Delay>();
     }
   };
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE fixed_delay_constructor_t(unsigned int /* seed */)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE fixed_delay_constructor_t(unsigned int /* seed */)
   {
-    delay<L2WriteLatency>();
+    _CUB::detail::delay<L2WriteLatency>();
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE delay_t operator()()
   {
     return {};
   }
@@ -262,21 +279,21 @@ struct exponential_backoff_constructor_t
 {
   struct delay_t
   {
-    int delay;
+    unsigned int delay;
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()()
     {
-      always_delay_or_prevent_hoisting(delay);
+      _CUB::detail::always_delay_or_prevent_hoisting(delay);
       delay <<= 1;
     }
   };
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backoff_constructor_t(unsigned int /* seed */)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE exponential_backoff_constructor_t(unsigned int /* seed */)
   {
-    always_delay<L2WriteLatency>();
+    _CUB::detail::always_delay<L2WriteLatency>();
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE delay_t operator()()
   {
     return {InitialDelay};
   }
@@ -294,27 +311,27 @@ struct exponential_backoff_jitter_constructor_t
     unsigned int max_delay;
     unsigned int& seed;
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
     {
-      return (seed = (a * seed + c) % m) % (max + 1 - min) + min;
+      return ((seed = ((a * seed) + c) % m) % (max + 1 - min)) + min;
     }
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()()
     {
-      always_delay_or_prevent_hoisting(next(0, max_delay));
+      _CUB::detail::always_delay_or_prevent_hoisting(next(0, max_delay));
       max_delay <<= 1;
     }
   };
 
   unsigned int seed;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backoff_jitter_constructor_t(unsigned int seed)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE exponential_backoff_jitter_constructor_t(unsigned int seed)
       : seed(seed)
   {
-    always_delay<L2WriteLatency>();
+    _CUB::detail::always_delay<L2WriteLatency>();
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE delay_t operator()()
   {
     return {InitialDelay, seed};
   }
@@ -332,27 +349,27 @@ struct exponential_backoff_jitter_window_constructor_t
     unsigned int max_delay;
     unsigned int& seed;
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
     {
-      return (seed = (a * seed + c) % m) % (max + 1 - min) + min;
+      return ((seed = ((a * seed) + c) % m) % (max + 1 - min)) + min;
     }
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()()
     {
       unsigned int next_max_delay = max_delay << 1;
-      always_delay_or_prevent_hoisting(next(max_delay, next_max_delay));
+      _CUB::detail::always_delay_or_prevent_hoisting(next(max_delay, next_max_delay));
       max_delay = next_max_delay;
     }
   };
 
   unsigned int seed;
-  _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backoff_jitter_window_constructor_t(unsigned int seed)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE exponential_backoff_jitter_window_constructor_t(unsigned int seed)
       : seed(seed)
   {
-    always_delay<L2WriteLatency>();
+    _CUB::detail::always_delay<L2WriteLatency>();
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE delay_t operator()()
   {
     return {InitialDelay, seed};
   }
@@ -370,15 +387,15 @@ struct exponential_backon_jitter_window_constructor_t
     unsigned int max_delay;
     unsigned int& seed;
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
     {
-      return (seed = (a * seed + c) % m) % (max + 1 - min) + min;
+      return ((seed = ((a * seed) + c) % m) % (max + 1 - min)) + min;
     }
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()()
     {
-      int prev_delay = max_delay >> 1;
-      always_delay_or_prevent_hoisting(next(prev_delay, max_delay));
+      const int prev_delay = max_delay >> 1;
+      _CUB::detail::always_delay_or_prevent_hoisting(next(prev_delay, max_delay));
       max_delay = prev_delay;
     }
   };
@@ -386,13 +403,13 @@ struct exponential_backon_jitter_window_constructor_t
   unsigned int seed;
   unsigned int max_delay = InitialDelay;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backon_jitter_window_constructor_t(unsigned int seed)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE exponential_backon_jitter_window_constructor_t(unsigned int seed)
       : seed(seed)
   {
-    always_delay<L2WriteLatency>();
+    _CUB::detail::always_delay<L2WriteLatency>();
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE delay_t operator()()
   {
     max_delay >>= 1;
     return {max_delay, seed};
@@ -411,14 +428,14 @@ struct exponential_backon_jitter_constructor_t
     unsigned int max_delay;
     unsigned int& seed;
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
     {
-      return (seed = (a * seed + c) % m) % (max + 1 - min) + min;
+      return ((seed = ((a * seed) + c) % m) % (max + 1 - min)) + min;
     }
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()()
     {
-      always_delay_or_prevent_hoisting(next(0, max_delay));
+      _CUB::detail::always_delay_or_prevent_hoisting(next(0, max_delay));
       max_delay >>= 1;
     }
   };
@@ -426,13 +443,13 @@ struct exponential_backon_jitter_constructor_t
   unsigned int seed;
   unsigned int max_delay = InitialDelay;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backon_jitter_constructor_t(unsigned int seed)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE exponential_backon_jitter_constructor_t(unsigned int seed)
       : seed(seed)
   {
-    always_delay<L2WriteLatency>();
+    _CUB::detail::always_delay<L2WriteLatency>();
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE delay_t operator()()
   {
     max_delay >>= 1;
     return {max_delay, seed};
@@ -446,21 +463,21 @@ struct exponential_backon_constructor_t
   {
     unsigned int delay;
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()()
     {
-      always_delay_or_prevent_hoisting(delay);
+      _CUB::detail::always_delay_or_prevent_hoisting(delay);
       delay >>= 1;
     }
   };
 
   unsigned int max_delay = InitialDelay;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backon_constructor_t(unsigned int /* seed */)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE exponential_backon_constructor_t(unsigned int /* seed */)
   {
-    always_delay<L2WriteLatency>();
+    _CUB::detail::always_delay<L2WriteLatency>();
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE delay_t operator()()
   {
     max_delay >>= 1;
     return {max_delay};
@@ -504,7 +521,7 @@ struct tile_state_with_memory_order
   /**
    * Update the specified tile's inclusive value and corresponding status
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
   {
     tile_state.template SetInclusive<Order>(tile_idx, tile_inclusive);
   }
@@ -512,7 +529,7 @@ struct tile_state_with_memory_order
   /**
    * Update the specified tile's partial value and corresponding status
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
   {
     tile_state.template SetPartial<Order>(tile_idx, tile_partial);
   }
@@ -521,27 +538,27 @@ struct tile_state_with_memory_order
    * Wait for the corresponding tile to become non-invalid
    */
   template <class DelayT = detail::default_no_delay_t>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void WaitForValid(int tile_idx, StatusWord& status, T& value, DelayT delay = {})
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void WaitForValid(int tile_idx, StatusWord& status, T& value, DelayT delay = {})
   {
     tile_state.template WaitForValid<DelayT, Order>(tile_idx, status, value, delay);
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE T LoadValid(int tile_idx)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T LoadValid(int tile_idx)
   {
     return tile_state.template LoadValid<Order>(tile_idx);
   }
 };
 
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr size_t num_tiles_to_num_tile_states(size_t num_tiles)
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr size_t num_tiles_to_num_tile_states(size_t num_tiles)
 {
   return warp_threads + num_tiles;
 }
 
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_allocation_size(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cudaError_t tile_state_allocation_size(
   size_t& temp_storage_bytes, size_t bytes_per_description, size_t bytes_per_payload, size_t num_tiles)
 {
-  size_t num_tile_states = num_tiles_to_num_tile_states(num_tiles);
-  size_t allocation_sizes[]{
+  const size_t num_tile_states = _CUB::detail::num_tiles_to_num_tile_states(num_tiles);
+  const size_t allocation_sizes[]{
     // bytes needed for tile status descriptors
     num_tile_states * bytes_per_description,
     // bytes needed for partials
@@ -551,10 +568,10 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_allocation_size(
   // Set the necessary size of the blob
   temp_storage_bytes   = 0;
   void* allocations[3] = {};
-  return alias_temporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes);
+  return _CUB::detail::alias_temporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes);
 };
 
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_init(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cudaError_t tile_state_init(
   size_t bytes_per_description,
   size_t bytes_per_payload,
   size_t num_tiles,
@@ -562,8 +579,8 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_init(
   size_t temp_storage_bytes,
   void* (&allocations)[3])
 {
-  size_t num_tile_states = num_tiles_to_num_tile_states(num_tiles);
-  size_t allocation_sizes[]{
+  const size_t num_tile_states = _CUB::detail::num_tiles_to_num_tile_states(num_tiles);
+  const size_t allocation_sizes[]{
     // bytes needed for tile status descriptors
     num_tile_states * bytes_per_description,
     // bytes needed for partials
@@ -572,7 +589,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_init(
     num_tile_states * bytes_per_payload};
 
   // Set the necessary size of the blob
-  return alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+  return _CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
 }
 } // namespace detail
 
@@ -588,6 +605,11 @@ template <typename T,
                              // cannot handle it currently. For example, we could support status word + int3.
                              && ::cuda::is_power_of_two(sizeof(T)))>
 struct ScanTileState;
+
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(LoadTileStates);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(__any_sync);
+// _CCCL_IKET_CREATE_PUSH_POP_RANGE(LoadTileStatus);
+// _CCCL_IKET_CREATE_PUSH_POP_RANGE(LoadTileAggr);
 
 /**
  * Tile status interface specialized for scan status and value types
@@ -611,6 +633,8 @@ struct ScanTileState<T, true>
   static_assert(sizeof(TxnWord) <= detail::largest_atomic_message_size);
 
   // Device word type
+  // Tile operations supply both fields while preserving triviality.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   struct TileDescriptor
   {
     StatusWord status;
@@ -628,7 +652,7 @@ struct ScanTileState<T, true>
   static constexpr size_t payload_bytes_per_tile     = 0;
 
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanTileState()
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE ScanTileState()
       : d_tile_descriptors(nullptr)
   {}
 
@@ -638,7 +662,7 @@ struct ScanTileState<T, true>
    * @param[in] d_temp_storage
    *   Device-accessible allocation of temporary storage.
    */
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cudaError_t
   Init(int /*num_tiles*/, void* d_temp_storage, size_t /*temp_storage_bytes*/)
   {
     d_tile_descriptors = reinterpret_cast<TxnWord*>(d_temp_storage);
@@ -654,19 +678,19 @@ struct ScanTileState<T, true>
    * @param[out] temp_storage_bytes
    *   Size in bytes of @p d_temp_storage allocation
    */
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static constexpr cudaError_t
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE static constexpr cudaError_t
   AllocationSize(int num_tiles, size_t& temp_storage_bytes)
   {
-    return detail::tile_state_allocation_size(
+    return _CUB::detail::tile_state_allocation_size(
       temp_storage_bytes, description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
   }
 
   /**
    * Initialize (from device)
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeStatus(int num_tiles)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InitializeStatus(int num_tiles)
   {
-    int tile_idx = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
+    const int tile_idx = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
 
     TxnWord val                = TxnWord();
     TileDescriptor* descriptor = reinterpret_cast<TileDescriptor*>(&val);
@@ -688,53 +712,40 @@ struct ScanTileState<T, true>
 
 private:
   template <MemoryOrder Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::relaxed), void>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::relaxed), void>
   StoreStatus(TxnWord* ptr, TxnWord alias)
   {
-    detail::store_relaxed(ptr, alias);
+    _CUB::detail::store_relaxed(ptr, alias);
   }
 
   template <MemoryOrder Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::acquire_release), void>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::acquire_release), void>
   StoreStatus(TxnWord* ptr, TxnWord alias)
   {
-    detail::store_release(ptr, alias);
+    _CUB::detail::store_release(ptr, alias);
   }
 
   template <MemoryOrder Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::relaxed), TxnWord>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::relaxed), TxnWord>
   LoadStatus(TxnWord* ptr)
   {
-    return detail::load_relaxed(ptr);
+    return _CUB::detail::load_relaxed(ptr);
   }
 
   template <MemoryOrder Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::acquire_release), TxnWord>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::acquire_release), TxnWord>
   LoadStatus(TxnWord* ptr)
   {
     // For pre-volta we hoist the memory barrier to outside the loop, i.e., after reading a valid state
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (return detail::load_acquire(ptr);), (return detail::load_relaxed(ptr);));
-  }
-
-  template <MemoryOrder Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::relaxed), void>
-  ThreadfenceForLoadAcqPreVolta()
-  {}
-
-  template <MemoryOrder Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::acquire_release), void>
-  ThreadfenceForLoadAcqPreVolta()
-  {
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (), (__threadfence();));
+    NV_IF_ELSE_TARGET(
+      NV_PROVIDES_SM_70, (return _CUB::detail::load_acquire(ptr);), (return _CUB::detail::load_relaxed(ptr);));
   }
 
 public:
   template <MemoryOrder Order = MemoryOrder::relaxed>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
   {
-    TileDescriptor tile_descriptor;
-    tile_descriptor.status = SCAN_TILE_INCLUSIVE;
-    tile_descriptor.value  = tile_inclusive;
+    const TileDescriptor tile_descriptor{SCAN_TILE_INCLUSIVE, tile_inclusive};
 
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
@@ -743,41 +754,65 @@ public:
   }
 
   template <MemoryOrder Order = MemoryOrder::relaxed>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
   {
-    TileDescriptor tile_descriptor;
-    tile_descriptor.status = SCAN_TILE_PARTIAL;
-    tile_descriptor.value  = tile_partial;
+    const TileDescriptor tile_descriptor{SCAN_TILE_PARTIAL, tile_partial};
 
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
     StoreStatus<Order>(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
+  }
+
+  //! Reset the specified tile to not-yet-set, so that the descriptor can be reused.
+  _CCCL_DEVICE_API void __set_invalid(int tile_idx)
+  {
+    TxnWord value{};
+    auto* const descriptor = reinterpret_cast<TileDescriptor*>(&value);
+    descriptor->status     = StatusWord(SCAN_TILE_INVALID);
+    _CUB::detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, value);
   }
 
   /**
    * Wait for the corresponding tile to become non-invalid
    */
   template <class DelayT = detail::default_delay_t<T>, MemoryOrder Order = MemoryOrder::relaxed>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   WaitForValid(int tile_idx, StatusWord& status, T& value, DelayT delay_or_prevent_hoisting = {})
   {
+    // The descriptor is loaded before any field is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     TileDescriptor tile_descriptor;
 
+    _CCCL_IKET_RANGE_PUSH(LoadTileStates);
     {
       TxnWord alias   = LoadStatus<Order>(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
       tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
     }
+    _CCCL_IKET_RANGE_POP();
 
-    while (__any_sync(0xffffffff, (tile_descriptor.status == SCAN_TILE_INVALID)))
+    while (true)
     {
+      _CCCL_IKET_RANGE_PUSH(__any_sync);
+      auto any_invalid = __any_sync(0xffffffff, (tile_descriptor.status == SCAN_TILE_INVALID));
+      _CCCL_IKET_RANGE_POP();
+      if (!any_invalid)
+      {
+        break;
+      }
+
       delay_or_prevent_hoisting();
+      _CCCL_IKET_RANGE_PUSH(LoadTileStates);
       TxnWord alias   = LoadStatus<Order>(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
       tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
+      _CCCL_IKET_RANGE_POP();
     }
 
     // For pre-Volta and load acquire we emit relaxed loads in LoadStatus and hoist the threadfence here
-    ThreadfenceForLoadAcqPreVolta<Order>();
+    if constexpr (Order == MemoryOrder::acquire_release)
+    {
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (), (__threadfence();));
+    }
 
     status = tile_descriptor.status;
     value  = tile_descriptor.value;
@@ -787,10 +822,10 @@ public:
    * Loads and returns the tile's value. The returned value is undefined if either (a) the tile's status is invalid or
    * (b) there is no memory fence between reading a non-invalid status and the call to LoadValid.
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE T LoadValid(int tile_idx)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T LoadValid(int tile_idx)
   {
-    TxnWord alias                  = d_tile_descriptors[TILE_STATUS_PADDING + tile_idx];
-    TileDescriptor tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
+    TxnWord alias                        = d_tile_descriptors[TILE_STATUS_PADDING + tile_idx];
+    const TileDescriptor tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
     return tile_descriptor.value;
   }
 };
@@ -819,7 +854,7 @@ struct ScanTileState<T, false>
   static constexpr size_t payload_bytes_per_tile     = sizeof(Uninitialized<T>);
 
   /// Constructor
-  _CCCL_FORCEINLINE ScanTileState() = default;
+  _CCCL_HIDE_FROM_ABI ScanTileState() = default;
 
   /**
    * @brief Initializer
@@ -836,13 +871,14 @@ struct ScanTileState<T, false>
    *   Size in bytes of @p d_temp_storage allocation
    */
   /// Initializer
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t Init(int num_tiles, void* d_temp_storage, size_t temp_storage_bytes)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cudaError_t
+  Init(int num_tiles, void* d_temp_storage, size_t temp_storage_bytes)
   {
     cudaError_t error = cudaSuccess;
     do
     {
       void* allocations[3] = {};
-      error                = detail::tile_state_init(
+      error                = _CUB::detail::tile_state_init(
         description_bytes_per_tile, payload_bytes_per_tile, num_tiles, d_temp_storage, temp_storage_bytes, allocations);
       if (cudaSuccess != error)
       {
@@ -866,18 +902,18 @@ struct ScanTileState<T, false>
    * @param[out] temp_storage_bytes
    *   Size in bytes of @p d_temp_storage allocation
    */
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static constexpr cudaError_t
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE static constexpr cudaError_t
   AllocationSize(int num_tiles, size_t& temp_storage_bytes)
   {
-    return detail::tile_state_allocation_size(
+    return _CUB::detail::tile_state_allocation_size(
       temp_storage_bytes, description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
   }
   /**
    * Initialize (from device)
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeStatus(int num_tiles)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InitializeStatus(int num_tiles)
   {
-    int tile_idx = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
+    const int tile_idx = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
     if (tile_idx < num_tiles)
     {
       // Not-yet-set
@@ -895,52 +931,62 @@ struct ScanTileState<T, false>
    * Update the specified tile's inclusive value and corresponding status
    */
   template <MemoryOrder Order = MemoryOrder::relaxed>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
   {
     // Update tile inclusive value
-    ThreadStore<STORE_CG>(d_tile_inclusive + TILE_STATUS_PADDING + tile_idx, tile_inclusive);
-    detail::store_release(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_INCLUSIVE));
+    _CUB::ThreadStore<STORE_CG>(d_tile_inclusive + TILE_STATUS_PADDING + tile_idx, tile_inclusive);
+    _CUB::detail::store_release(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_INCLUSIVE));
   }
 
   /**
    * Update the specified tile's partial value and corresponding status
    */
   template <MemoryOrder Order = MemoryOrder::relaxed>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
   {
     // Update tile partial value
-    ThreadStore<STORE_CG>(d_tile_partial + TILE_STATUS_PADDING + tile_idx, tile_partial);
-    detail::store_release(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_PARTIAL));
+    _CUB::ThreadStore<STORE_CG>(d_tile_partial + TILE_STATUS_PADDING + tile_idx, tile_partial);
+    _CUB::detail::store_release(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_PARTIAL));
+  }
+
+  //! Reset the specified tile to not-yet-set.
+  _CCCL_DEVICE_API void __set_invalid(int tile_idx)
+  {
+    _CUB::detail::store_relaxed(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_INVALID));
   }
 
   /**
    * Wait for the corresponding tile to become non-invalid
    */
   template <class DelayT = detail::default_no_delay_t, MemoryOrder Order = MemoryOrder::relaxed>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void WaitForValid(int tile_idx, StatusWord& status, T& value, DelayT delay = {})
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void WaitForValid(int tile_idx, StatusWord& status, T& value, DelayT delay = {})
   {
     do
     {
       delay();
-      status = detail::load_relaxed(d_tile_status + TILE_STATUS_PADDING + tile_idx);
+      //_CCCL_IKET_RANGE_PUSH(LoadTileStatus);
+      status = _CUB::detail::load_relaxed(d_tile_status + TILE_STATUS_PADDING + tile_idx);
+      //_CCCL_IKET_RANGE_POP();
       __threadfence();
     } while (__any_sync(0xffffffff, (status == SCAN_TILE_INVALID)));
 
+    //_CCCL_IKET_RANGE_PUSH(LoadTileAggr);
     if (status == StatusWord(SCAN_TILE_PARTIAL))
     {
-      value = ThreadLoad<LOAD_CG>(d_tile_partial + TILE_STATUS_PADDING + tile_idx);
+      value = _CUB::ThreadLoad<LOAD_CG>(d_tile_partial + TILE_STATUS_PADDING + tile_idx);
     }
     else if (status == StatusWord(SCAN_TILE_INCLUSIVE))
     {
-      value = ThreadLoad<LOAD_CG>(d_tile_inclusive + TILE_STATUS_PADDING + tile_idx);
+      value = _CUB::ThreadLoad<LOAD_CG>(d_tile_inclusive + TILE_STATUS_PADDING + tile_idx);
     }
+    //_CCCL_IKET_RANGE_POP();
   }
 
   /**
    * Loads and returns the tile's value. The returned value is undefined if either (a) the tile's status is invalid or
    * (b) there is no memory fence between reading a non-invalid status and the call to LoadValid.
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE T LoadValid(int tile_idx)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T LoadValid(int tile_idx)
   {
     return d_tile_inclusive[TILE_STATUS_PADDING + tile_idx];
   }
@@ -971,7 +1017,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, false> : ScanTileState<KeyValuePai
   using SuperClass = ScanTileState<KeyValuePair<KeyT, ValueT>>;
 
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceByKeyScanTileState()
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE ReduceByKeyScanTileState()
       : SuperClass()
   {}
 };
@@ -1005,7 +1051,8 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     _If<TXN_WORD_SIZE == 16, ulonglong2, ::cuda::std::_If<TXN_WORD_SIZE == 8, unsigned long long, unsigned int>>;
 
   // Device word type (for when sizeof(ValueT) == sizeof(KeyT))
-  struct TileDescriptorBigStatus
+  // Preserve default construction for packed transaction storage.
+  struct TileDescriptorBigStatus // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     KeyT key;
     ValueT value;
@@ -1013,7 +1060,8 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
   };
 
   // Device word type (for when sizeof(ValueT) != sizeof(KeyT))
-  struct TileDescriptorLittleStatus
+  // Preserve default construction for packed transaction storage.
+  struct TileDescriptorLittleStatus // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     ValueT value;
     StatusWord status;
@@ -1028,7 +1076,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
   TxnWord* d_tile_descriptors;
 
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceByKeyScanTileState()
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE ReduceByKeyScanTileState()
       : d_tile_descriptors(nullptr)
   {}
 
@@ -1045,7 +1093,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
    * @param[in] temp_storage_bytes
    *   Size in bytes of @p d_temp_storage allocation
    */
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cudaError_t
   Init(int /*num_tiles*/, void* d_temp_storage, size_t /*temp_storage_bytes*/)
   {
     d_tile_descriptors = reinterpret_cast<TxnWord*>(d_temp_storage);
@@ -1061,7 +1109,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
    * @param[out] temp_storage_bytes
    *   Size in bytes of @p d_temp_storage allocation
    */
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static cudaError_t AllocationSize(int num_tiles, size_t& temp_storage_bytes)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE static cudaError_t AllocationSize(int num_tiles, size_t& temp_storage_bytes)
   {
     // bytes needed for tile status descriptors
     temp_storage_bytes = (num_tiles + TILE_STATUS_PADDING) * sizeof(TxnWord);
@@ -1071,9 +1119,9 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
   /**
    * Initialize (from device)
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeStatus(int num_tiles)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InitializeStatus(int num_tiles)
   {
-    int tile_idx               = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
+    const int tile_idx         = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
     TxnWord val                = TxnWord();
     TileDescriptor* descriptor = reinterpret_cast<TileDescriptor*>(&val);
 
@@ -1095,7 +1143,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
   /**
    * Update the specified tile's inclusive value and corresponding status
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, KeyValuePairT tile_inclusive)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SetInclusive(int tile_idx, KeyValuePairT tile_inclusive)
   {
     TileDescriptor tile_descriptor;
     tile_descriptor.status = SCAN_TILE_INCLUSIVE;
@@ -1105,10 +1153,10 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
+    _CUB::detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, KeyValuePairT tile_partial)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SetPartial(int tile_idx, KeyValuePairT tile_partial)
   {
     TileDescriptor tile_descriptor;
     tile_descriptor.status = SCAN_TILE_PARTIAL;
@@ -1118,14 +1166,14 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
+    _CUB::detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
   /**
    * Wait for the corresponding tile to become non-invalid
    */
   template <class DelayT = detail::fixed_delay_constructor_t<350, 450>::delay_t>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   WaitForValid(int tile_idx, StatusWord& status, KeyValuePairT& value, DelayT delay_or_prevent_hoisting = {})
   {
     //        TxnWord         alias           = ThreadLoad<LOAD_CG>(d_tile_descriptors + TILE_STATUS_PADDING +
@@ -1148,7 +1196,9 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     do
     {
       delay_or_prevent_hoisting();
-      TxnWord alias   = detail::load_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
+      // _CCCL_IKET_RANGE_PUSH(LoadTileStates);
+      TxnWord alias = _CUB::detail::load_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
+      // _CCCL_IKET_RANGE_POP();
       tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
 
     } while (__any_sync(0xffffffff, (tile_descriptor.status == SCAN_TILE_INVALID)));
@@ -1174,6 +1224,14 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(Lookback);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(ProcessWindow);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(Reduce);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(SetPartial);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(WaitAnchor);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(SetInclusive);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(WaitForValid);
+
 template <typename T,
           typename ScanOpT,
           typename ScanTileStateT,
@@ -1182,7 +1240,7 @@ template <typename T,
 struct TilePrefixCallbackOp
 {
   // Parameterized warp reduce
-  using WarpReduceT = WarpReduce<T, (1 << (5))>;
+  using WarpReduceT = WarpReduce<T, (1 << 5)>;
 
   // Temporary storage type
   struct _TempStorage
@@ -1194,8 +1252,7 @@ struct TilePrefixCallbackOp
   };
 
   // Alias wrapper allowing temporary storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   // Type of status word
   using StatusWord = typename ScanTileStateT::StatusWord;
@@ -1211,7 +1268,7 @@ struct TilePrefixCallbackOp
 
   // Constructs prefix functor for a given tile index.
   // Precondition: thread blocks processing all of the predecessor tiles were scheduled.
-  _CCCL_DEVICE _CCCL_FORCEINLINE
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE
   TilePrefixCallbackOp(ScanTileStateT& tile_status, TempStorage& temp_storage, ScanOpT scan_op, int tile_idx)
       : temp_storage(temp_storage.Alias())
       , tile_status(tile_status)
@@ -1221,7 +1278,7 @@ struct TilePrefixCallbackOp
 
   // Computes the tile index and constructs prefix functor with it.
   // Precondition: thread block per tile assignment.
-  _CCCL_DEVICE _CCCL_FORCEINLINE
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE
   TilePrefixCallbackOp(ScanTileStateT& tile_status, TempStorage& temp_storage, ScanOpT scan_op)
       : TilePrefixCallbackOp(tile_status, temp_storage, scan_op, blockIdx.x)
   {}
@@ -1239,34 +1296,48 @@ struct TilePrefixCallbackOp
    *   Relevant partial reduction from this window of preceding tiles
    */
   template <class DelayT = detail::default_delay_t<T>>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ProcessWindow(int predecessor_idx, StatusWord& predecessor_status, T& window_aggregate, DelayT delay = {})
   {
+    _CCCL_IKET_RANGE_PUSH(ProcessWindow);
+    // WaitForValid fills value before it is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     T value;
+
+    _CCCL_IKET_RANGE_PUSH(WaitForValid);
     tile_status.WaitForValid(predecessor_idx, predecessor_status, value, delay);
+    _CCCL_IKET_RANGE_POP();
 
     // Perform a segmented reduction to get the prefix for the current window.
     // Use the swizzled scan operator because we are now scanning *down* towards thread0.
 
-    int tail_flag = (predecessor_status == StatusWord(SCAN_TILE_INCLUSIVE));
+    _CCCL_IKET_RANGE_PUSH(Reduce);
+    const int tail_flag = (predecessor_status == StatusWord(SCAN_TILE_INCLUSIVE));
     window_aggregate =
       WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
+    _CCCL_IKET_RANGE_POP();
+    _CCCL_IKET_RANGE_POP();
   }
 
 private:
   // Classic decoupled-lookback prefix computation.
-  _CCCL_DEVICE _CCCL_FORCEINLINE T lookback(T block_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T lookback(T block_aggregate)
   {
+    _CCCL_IKET_RANGE_PUSH(Lookback);
+    _CCCL_IKET_RANGE_PUSH(SetPartial);
     // Update our status with our tile-aggregate
     if (threadIdx.x == 0)
     {
-      detail::uninitialized_copy_single(&temp_storage.block_aggregate, block_aggregate);
+      _CUB::detail::uninitialized_copy_single(&temp_storage.block_aggregate, block_aggregate);
 
       tile_status.SetPartial(tile_idx, block_aggregate);
     }
+    _CCCL_IKET_RANGE_POP();
 
     int predecessor_idx = tile_idx - threadIdx.x - 1;
     StatusWord predecessor_status;
+    // ProcessWindow fills the aggregate before it is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     T window_aggregate;
 
     // Wait for the warp-wide window of predecessor tiles to become valid
@@ -1287,28 +1358,34 @@ private:
     }
 
     // Compute the inclusive tile prefix and update the status for this tile
+    _CCCL_IKET_RANGE_PUSH(SetInclusive);
     if (threadIdx.x == 0)
     {
       inclusive_prefix = scan_op(exclusive_prefix, block_aggregate);
       tile_status.SetInclusive(tile_idx, inclusive_prefix);
 
-      detail::uninitialized_copy_single(&temp_storage.exclusive_prefix, exclusive_prefix);
+      _CUB::detail::uninitialized_copy_single(&temp_storage.exclusive_prefix, exclusive_prefix);
 
-      detail::uninitialized_copy_single(&temp_storage.inclusive_prefix, inclusive_prefix);
+      _CUB::detail::uninitialized_copy_single(&temp_storage.inclusive_prefix, inclusive_prefix);
     }
+    _CCCL_IKET_RANGE_POP();
 
+    _CCCL_IKET_RANGE_POP();
     // Return exclusive_prefix
     return exclusive_prefix;
   }
 
   // Run-to-run-deterministic K=1 32-batched lookback. Only anchor tiles publish INCLUSIVE.
-  _CCCL_DEVICE _CCCL_FORCEINLINE T lookback_stable_reduction_order(T block_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T lookback_stable_reduction_order(T block_aggregate)
   {
+    _CCCL_IKET_RANGE_PUSH(Lookback);
+    _CCCL_IKET_RANGE_PUSH(SetPartial);
     if (threadIdx.x == 0)
     {
-      detail::uninitialized_copy_single(&temp_storage.block_aggregate, block_aggregate);
+      _CUB::detail::uninitialized_copy_single(&temp_storage.block_aggregate, block_aggregate);
       tile_status.SetPartial(tile_idx, block_aggregate);
     }
+    _CCCL_IKET_RANGE_POP();
 
     const int predecessor_idx = tile_idx - threadIdx.x - 1;
     StatusWord predecessor_status;
@@ -1318,6 +1395,7 @@ private:
     const int anchor_tile_lane = (tile_idx - 1) % detail::warp_threads;
 
     T value;
+    _CCCL_IKET_RANGE_PUSH(WaitAnchor);
     while (true)
     {
       tile_status.WaitForValid(predecessor_idx, predecessor_status, value, construct_delay());
@@ -1328,11 +1406,13 @@ private:
         break;
       }
     }
+    _CCCL_IKET_RANGE_POP();
 
     const int tail_flag = (static_cast<int>(threadIdx.x) == anchor_tile_lane);
     exclusive_prefix =
       WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
 
+    _CCCL_IKET_RANGE_PUSH(SetInclusive);
     if (threadIdx.x == 0)
     {
       inclusive_prefix = scan_op(exclusive_prefix, block_aggregate);
@@ -1343,16 +1423,18 @@ private:
         tile_status.SetInclusive(tile_idx, inclusive_prefix);
       }
 
-      detail::uninitialized_copy_single(&temp_storage.exclusive_prefix, exclusive_prefix);
-      detail::uninitialized_copy_single(&temp_storage.inclusive_prefix, inclusive_prefix);
+      _CUB::detail::uninitialized_copy_single(&temp_storage.exclusive_prefix, exclusive_prefix);
+      _CUB::detail::uninitialized_copy_single(&temp_storage.inclusive_prefix, inclusive_prefix);
     }
+    _CCCL_IKET_RANGE_POP();
 
+    _CCCL_IKET_RANGE_POP();
     return exclusive_prefix;
   }
 
 public:
   // BlockScan prefix callback functor.
-  _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(T block_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T operator()(T block_aggregate)
   {
     if constexpr (StableReductionOrder)
     {
@@ -1365,24 +1447,24 @@ public:
   }
 
   // Get the exclusive prefix stored in temporary storage
-  _CCCL_DEVICE _CCCL_FORCEINLINE T GetExclusivePrefix()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T GetExclusivePrefix()
   {
     return temp_storage.exclusive_prefix;
   }
 
   // Get the inclusive prefix stored in temporary storage
-  _CCCL_DEVICE _CCCL_FORCEINLINE T GetInclusivePrefix()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T GetInclusivePrefix()
   {
     return temp_storage.inclusive_prefix;
   }
 
   // Get the block aggregate stored in temporary storage
-  _CCCL_DEVICE _CCCL_FORCEINLINE T GetBlockAggregate()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T GetBlockAggregate()
   {
     return temp_storage.block_aggregate;
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE int GetTileIdx() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE int GetTileIdx() const
   {
     return tile_idx;
   }

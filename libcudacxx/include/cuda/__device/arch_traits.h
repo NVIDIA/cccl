@@ -26,9 +26,8 @@
 #include <cuda/__fwd/devices.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__type_traits/always_false.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -165,8 +164,8 @@ struct arch_traits_t
   __traits.max_block_dim_y                  = 1024;
   __traits.max_block_dim_z                  = 64;
   __traits.max_grid_dim_x                   = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
-  __traits.max_grid_dim_y                   = 64 * 1024 - 1;
-  __traits.max_grid_dim_z                   = 64 * 1024 - 1;
+  __traits.max_grid_dim_y                   = (64 * 1024) - 1;
+  __traits.max_grid_dim_z                   = (64 * 1024) - 1;
   __traits.max_shared_memory_per_block      = 48 * 1024;
   __traits.total_constant_memory            = 64 * 1024;
   __traits.warp_size                        = 32;
@@ -395,7 +394,7 @@ template <>
 template <>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr arch_traits_t arch_traits<arch_id::sm_100>() noexcept
 {
-  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_90);
+  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_100);
   __traits.max_shared_memory_per_multiprocessor = 228 * 1024;
   __traits.max_blocks_per_multiprocessor        = 32;
   __traits.max_threads_per_multiprocessor       = 2048;

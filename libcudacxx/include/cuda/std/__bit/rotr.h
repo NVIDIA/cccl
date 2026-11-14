@@ -26,6 +26,8 @@
 #include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/cstdint>
 
+#include <nv/target>
+
 #if _CCCL_COMPILER(MSVC)
 #  include <intrin.h>
 #endif // _CCCL_COMPILER(MSVC)

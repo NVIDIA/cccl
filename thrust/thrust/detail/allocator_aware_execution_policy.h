@@ -36,19 +36,20 @@ struct allocator_aware_execution_policy
   template <typename MemoryResource>
   struct execute_with_memory_resource_type
   {
-    using type = thrust::detail::execute_with_allocator<thrust::mr::allocator<::cuda::std::max_align_t, MemoryResource>,
-                                                        ExecutionPolicyCRTPBase>;
+    using type _CCCL_NODEBUG =
+      thrust::detail::execute_with_allocator<thrust::mr::allocator<::cuda::std::max_align_t, MemoryResource>,
+                                             ExecutionPolicyCRTPBase>;
   };
 
   template <typename Allocator>
   struct execute_with_allocator_type
   {
-    using type = thrust::detail::execute_with_allocator<Allocator, ExecutionPolicyCRTPBase>;
+    using type _CCCL_NODEBUG = thrust::detail::execute_with_allocator<Allocator, ExecutionPolicyCRTPBase>;
   };
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename MemoryResource>
-  _CCCL_HOST_DEVICE typename execute_with_memory_resource_type<MemoryResource>::type
+  _CCCL_HOST_DEVICE_API typename execute_with_memory_resource_type<MemoryResource>::type
   operator()(MemoryResource* mem_res) const
   {
     return typename execute_with_memory_resource_type<MemoryResource>::type(mem_res);
@@ -56,21 +57,21 @@ struct allocator_aware_execution_policy
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Allocator>
-  _CCCL_HOST_DEVICE typename execute_with_allocator_type<Allocator&>::type operator()(Allocator& alloc) const
+  _CCCL_HOST_DEVICE_API typename execute_with_allocator_type<Allocator&>::type operator()(Allocator& alloc) const
   {
     return typename execute_with_allocator_type<Allocator&>::type(alloc);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Allocator>
-  _CCCL_HOST_DEVICE typename execute_with_allocator_type<Allocator>::type operator()(const Allocator& alloc) const
+  _CCCL_HOST_DEVICE_API typename execute_with_allocator_type<Allocator>::type operator()(const Allocator& alloc) const
   {
     return typename execute_with_allocator_type<Allocator>::type(alloc);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Allocator, ::cuda::std::enable_if_t<!::cuda::std::is_lvalue_reference_v<Allocator>>* = nullptr>
-  _CCCL_HOST_DEVICE typename execute_with_allocator_type<Allocator>::type operator()(Allocator&& alloc) const
+  _CCCL_HOST_DEVICE_API typename execute_with_allocator_type<Allocator>::type operator()(Allocator&& alloc) const
   {
     return typename execute_with_allocator_type<Allocator>::type(::cuda::std::forward<Allocator>(alloc));
   }

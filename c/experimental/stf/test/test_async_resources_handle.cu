@@ -37,7 +37,7 @@ __device__ unsigned g_busy_sink;
 // commits its value.
 __global__ void slow_set_kernel(int* arr, int n, int value, int iters)
 {
-  const int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   if (tid >= n)
   {
     return;
@@ -47,7 +47,7 @@ __global__ void slow_set_kernel(int* arr, int n, int value, int iters)
   unsigned acc = 0;
   for (int i = 0; i < iters; ++i)
   {
-    acc += (static_cast<unsigned>(i) * 1103515245u + 12345u) & 0x7fffffffu;
+    acc += ((static_cast<unsigned>(i) * 1103515245u) + 12345u) & 0x7fffffffu;
   }
   // Publish `acc` via an atomic: an observable, race-free side effect that
   // keeps the loop alive while the stored result stays exactly `value`.
@@ -76,12 +76,12 @@ void submit_set_kernel(stf_ctx_handle ctx, int* d_arr, int n, int value, int ite
   stf_cuda_kernel_add_dep(k, lD, STF_RW);
   stf_cuda_kernel_start(k);
 
-  int* arg_ptr = static_cast<int*>(stf_cuda_kernel_get_arg(k, 0));
+  const int* arg_ptr = static_cast<int*>(stf_cuda_kernel_get_arg(k, 0));
   REQUIRE(arg_ptr == d_arr);
   const int threads   = 128;
   const int blocks    = (n + threads - 1) / threads;
   const void* args[4] = {&arg_ptr, &n, &value, &iters};
-  cudaError_t err =
+  const cudaError_t err =
     stf_cuda_kernel_add_desc(k, reinterpret_cast<void*>(slow_set_kernel), dim3(blocks), dim3(threads), 0, 4, args);
   REQUIRE(err == cudaSuccess);
   stf_cuda_kernel_end(k);

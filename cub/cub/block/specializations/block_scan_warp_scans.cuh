@@ -19,6 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/constant.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_scan.cuh>
@@ -56,6 +57,10 @@ struct BlockScanWarpScans
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
+  static_assert(BLOCK_THREADS % WARP_THREADS == 0,
+                "BlockScanWarpScans requires a thread block size that is a multiple of the warp size, since every warp "
+                "is scanned with a full-warp WarpScan and publishes its aggregate from its last lane");
+
   /// Number of active warps
   static constexpr int WARPS = ::cuda::ceil_div(BLOCK_THREADS, WARP_THREADS);
 
@@ -79,8 +84,19 @@ struct BlockScanWarpScans
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  // FIXME(bgruber): _TempStorage requests an alignment of 32, but that was never actually honored due to a bug in
+  // cub::Uninitialized<T> (fixed in https://github.com/NVIDIA/cccl/pull/11670). However, correctly respecting the
+  // actual alignment causes regressions in several algorithms (e.g. DevicePartition::If, DeviceSelect::Flagged), so
+  // this wrapper deliberately only aligns to 16 bytes as a workaround. THIS IS A BUG, and should be fixed.
+  struct TempStorage
+  {
+    alignas(16) char storage[sizeof(_TempStorage)];
+
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE _TempStorage& Alias()
+    {
+      return reinterpret_cast<_TempStorage&>(*this);
+    }
+  };
 
   //---------------------------------------------------------------------
   // Per-thread fields
@@ -97,9 +113,9 @@ struct BlockScanWarpScans
   //---------------------------------------------------------------------
 
   /// Constructor
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockScanWarpScans(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockScanWarpScans(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
       , warp_id((WARPS == 1) ? 0 : linear_tid / WARP_THREADS)
       , lane_id(::cuda::ptx::get_sreg_laneid())
   {}
@@ -119,7 +135,7 @@ struct BlockScanWarpScans
    *   Threadblock-wide aggregate reduction of input items
    */
   template <typename ScanOp, int WARP>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ApplyWarpAggregates(T& warp_prefix, ScanOp scan_op, T& block_aggregate, constant_t<WARP> /*addend_warp*/)
   {
     if (warp_id == WARP)
@@ -144,7 +160,7 @@ struct BlockScanWarpScans
    *   Threadblock-wide aggregate reduction of input items
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ApplyWarpAggregates(T& /*warp_prefix*/, ScanOp /*scan_op*/, T& /*block_aggregate*/, constant_t<WARPS> /*addend_warp*/)
   {}
 
@@ -163,18 +179,18 @@ struct BlockScanWarpScans
    *   Threadblock-wide aggregate reduction of input items
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T ComputeWarpPrefix(ScanOp scan_op, T warp_aggregate, T& block_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T ComputeWarpPrefix(ScanOp scan_op, T warp_aggregate, T& block_aggregate)
   {
     // Last lane in each warp shares its warp-aggregate
     if (lane_id == WARP_THREADS - 1)
     {
-      detail::uninitialized_copy_single(temp_storage.warp_aggregates + warp_id, warp_aggregate);
+      _CUB::detail::uninitialized_copy_single(temp_storage.warp_aggregates + warp_id, warp_aggregate);
     }
 
     __syncthreads();
 
     // Accumulate block aggregates and save the one that is our warp's prefix
-    T warp_prefix;
+    T warp_prefix; // NOLINT(cppcoreguidelines-pro-type-member-init), filled by ApplyWarpAggregates
     block_aggregate = temp_storage.warp_aggregates[0];
 
     // Use template unrolling (since the PTX backend can't handle unrolling it for SM1x)
@@ -213,7 +229,7 @@ struct BlockScanWarpScans
    *   Initial value to seed the exclusive scan
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T
   ComputeWarpPrefix(ScanOp scan_op, T warp_aggregate, T& block_aggregate, const T& initial_value)
   {
     T warp_prefix = ComputeWarpPrefix(scan_op, warp_aggregate, block_aggregate);
@@ -247,7 +263,7 @@ struct BlockScanWarpScans
    *   Binary scan operator
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op)
   {
     // Compute block-wide exclusive scan.  The exclusive output from tid0 is invalid.
     T block_aggregate;
@@ -271,8 +287,11 @@ struct BlockScanWarpScans
    *   Binary scan operator
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, const T& initial_value, ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ExclusiveScan(T input, T& exclusive_output, const T& initial_value, ScanOp scan_op)
   {
+    // ExclusiveScan fills the aggregate before it is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     T block_aggregate;
     ExclusiveScan(input, exclusive_output, initial_value, scan_op, block_aggregate);
   }
@@ -296,9 +315,11 @@ struct BlockScanWarpScans
    *   Threadblock-wide aggregate reduction of input items
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op, T& block_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op, T& block_aggregate)
   {
     // Compute warp scan in each warp.  The exclusive output from each lane0 is invalid.
+    // WarpScan fills the output before it is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     T inclusive_output;
     WarpScanT(temp_storage.warp_scan[warp_id]).Scan(input, inclusive_output, exclusive_output, scan_op);
 
@@ -337,10 +358,12 @@ struct BlockScanWarpScans
    *   Threadblock-wide aggregate reduction of input items
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ExclusiveScan(T input, T& exclusive_output, const T& initial_value, ScanOp scan_op, T& block_aggregate)
   {
     // Compute warp scan in each warp.  The exclusive output from each lane0 is invalid.
+    // WarpScan fills the output before it is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     T inclusive_output;
     WarpScanT(temp_storage.warp_scan[warp_id]).Scan(input, inclusive_output, exclusive_output, scan_op);
 
@@ -377,10 +400,12 @@ struct BlockScanWarpScans
    *   block-wide prefix to be applied to all inputs.
    */
   template <typename ScanOp, typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op, BlockPrefixCallbackOp& block_prefix_callback_op)
   {
     // Compute block-wide exclusive scan.  The exclusive output from tid0 is invalid.
+    // ExclusiveScan fills the aggregate before it is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     T block_aggregate;
     ExclusiveScan(input, exclusive_output, scan_op, block_aggregate);
 
@@ -391,7 +416,7 @@ struct BlockScanWarpScans
       if (lane_id == 0)
       {
         // Share the prefix with all threads
-        detail::uninitialized_copy_single(&temp_storage.block_prefix, block_prefix);
+        _CUB::detail::uninitialized_copy_single(&temp_storage.block_prefix, block_prefix);
 
         exclusive_output = block_prefix; // The block prefix is the exclusive output for tid0
       }
@@ -425,7 +450,7 @@ struct BlockScanWarpScans
    *   Binary scan operator
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op)
   {
     T block_aggregate;
     InclusiveScan(input, inclusive_output, scan_op, block_aggregate);
@@ -449,7 +474,7 @@ struct BlockScanWarpScans
    *   Threadblock-wide aggregate reduction of input items
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op, T& block_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op, T& block_aggregate)
   {
     WarpScanT(temp_storage.warp_scan[warp_id]).InclusiveScan(input, inclusive_output, scan_op);
 
@@ -485,9 +510,11 @@ struct BlockScanWarpScans
    * block-wide prefix to be applied to all inputs.
    */
   template <typename ScanOp, typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   InclusiveScan(T input, T& exclusive_output, ScanOp scan_op, BlockPrefixCallbackOp& block_prefix_callback_op)
   {
+    // InclusiveScan fills the aggregate before it is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     T block_aggregate;
     InclusiveScan(input, exclusive_output, scan_op, block_aggregate);
 
@@ -498,7 +525,7 @@ struct BlockScanWarpScans
       if (lane_id == 0)
       {
         // Share the prefix with all threads
-        detail::uninitialized_copy_single(&temp_storage.block_prefix, block_prefix);
+        _CUB::detail::uninitialized_copy_single(&temp_storage.block_prefix, block_prefix);
       }
     }
 

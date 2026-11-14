@@ -37,7 +37,7 @@ struct sum_of_int
 {
   TEST_DEVICE_FUNC constexpr int operator()(const int val) const noexcept
   { // Eulers sum with initial value and first element skipped
-    return 42 + val * (val - 1) / 2;
+    return 42 + (val * (val - 1) / 2);
   }
 };
 
@@ -45,7 +45,7 @@ template <class Policy>
 void test_exclusive_scan(
   const Policy& policy, const thrust::device_vector<int>& input, thrust::device_vector<int>& output)
 {
-  cuda::transform_iterator expected{cuda::counting_iterator{1}, sum_of_int{}};
+  const cuda::transform_iterator expected{cuda::counting_iterator{1}, sum_of_int{}};
   { // empty should not access anything
     auto res = cuda::std::exclusive_scan(
       policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), static_cast<int*>(nullptr), 42);
@@ -53,7 +53,7 @@ void test_exclusive_scan(
   }
 
   { // same init type
-    auto res = cuda::std::exclusive_scan(policy, input.begin(), input.end(), output.begin(), int{42});
+    auto res = cuda::std::exclusive_scan(policy, input.begin(), input.end(), output.begin(), 42);
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
@@ -68,7 +68,7 @@ void test_exclusive_scan(
   cuda::std::fill(policy, output.begin(), output.end(), -1);
   { // different input type
     auto res = cuda::std::exclusive_scan(
-      policy, cuda::counting_iterator{short{1}}, cuda::counting_iterator{short{size + 1}}, output.begin(), int{42});
+      policy, cuda::counting_iterator{short{1}}, cuda::counting_iterator{short{size + 1}}, output.begin(), 42);
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
@@ -96,7 +96,7 @@ C2H_TEST("cuda::std::exclusive_scan(Iter1, Iter1, Iter2, Init)", "[parallel algo
 
   SECTION("with provided stream")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_exclusive_scan(policy, input, output);
   }
@@ -110,7 +110,7 @@ C2H_TEST("cuda::std::exclusive_scan(Iter1, Iter1, Iter2, Init)", "[parallel algo
 
   SECTION("with provided stream and memory_resource")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy =
       cuda::execution::gpu.with(cuda::get_stream, stream).with(cuda::mr::get_memory_resource, device_resource);

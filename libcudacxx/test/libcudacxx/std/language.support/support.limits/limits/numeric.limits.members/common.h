@@ -91,6 +91,19 @@ TEST_FUNC inline bool float_eq(__nv_fp8_e5m2 x, __nv_fp8_e5m2 y)
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
+#if _CCCL_HAS_NVFP8_UE5M3()
+TEST_FUNC inline __nv_fp8_ue5m3 make_fp8_ue5m3(double x, __nv_saturation_t sat = __NV_NOSAT)
+{
+  __nv_fp8_ue5m3 res;
+  res.__x = __nv_cvt_double_to_ue5m3(x, sat, cudaRoundNearest);
+  return res;
+}
+TEST_FUNC inline bool float_eq(__nv_fp8_ue5m3 x, __nv_fp8_ue5m3 y)
+{
+  return x.__x == y.__x;
+}
+#endif // _CCCL_HAS_NVFP8_UE5M3()
+
 #if _CCCL_HAS_NVFP8_E8M0()
 TEST_FUNC inline __nv_fp8_e8m0 make_fp8_e8m0(double x, __nv_saturation_t sat = __NV_NOSAT)
 {

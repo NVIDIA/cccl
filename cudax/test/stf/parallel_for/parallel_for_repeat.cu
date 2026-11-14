@@ -34,7 +34,8 @@ int main()
   context ctx;
 
   const int N = 1024 * 1024 * 32;
-  double *X, *Y;
+  double* X;
+  double* Y;
 
   X = new double[N];
   Y = new double[N];
@@ -45,13 +46,13 @@ int main()
     Y[ind] = Y0(ind);
   }
 
-  auto handle_X = ctx.logical_data(X, {N});
-  auto handle_Y = ctx.logical_data(Y, {N});
+  auto handle_X = ctx.logical_data(X, N);
+  auto handle_Y = ctx.logical_data(Y, N);
 
   auto where = exec_place::repeat(exec_place::current_device(), 8);
 
-  double alpha = 3.14;
-  size_t NITER = 5;
+  const double alpha = 3.14;
+  const size_t NITER = 5;
 
   /* Compute Y = Y + alpha X */
   for (size_t k = 0; k < NITER; k++)
@@ -67,7 +68,7 @@ int main()
   for (size_t ind = 0; ind < N; ind++)
   {
     // Y should be Y0 + NITER alpha X0
-    assert(fabs(Y[ind] - (Y0(ind) + NITER * alpha * X0(ind))) < 0.0001);
+    assert(fabs(Y[ind] - (Y0(ind) + (NITER * alpha * X0(ind)))) < 0.0001);
 
     // X should be X0
     assert(fabs(X[ind] - X0(ind)) < 0.0001);

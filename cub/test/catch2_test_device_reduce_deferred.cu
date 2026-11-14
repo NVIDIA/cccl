@@ -16,7 +16,6 @@
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 #include <cuda/argument>
-#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/functional>
@@ -32,6 +31,7 @@
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/device_and_stream.h>
 #include <c2h/generators.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
@@ -40,9 +40,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Min, device_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Max, device_max);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::TransformReduce, device_transform_reduce);
 
-static_assert(cuda::std::is_same_v<cub::detail::reduce::num_items_offset_t<int32_t>, int32_t>);
 using deferred_count_t = decltype(cuda::args::deferred{static_cast<int32_t*>(nullptr)});
-static_assert(cuda::std::is_same_v<cub::detail::reduce::num_items_offset_t<deferred_count_t>, uint32_t>);
+static_assert(cuda::std::is_same_v<cub::detail::num_items_offset_t<deferred_count_t>, uint32_t>);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -294,9 +293,9 @@ CUB_TEST("DeviceReduce::Reduce with a deferred size handles grid boundaries", "[
     tile_size - 1,
     tile_size,
     tile_size + 1,
-    max_blocks * tile_size - 1,
+    (max_blocks * tile_size) - 1,
     max_blocks * tile_size,
-    max_blocks * tile_size + 1);
+    (max_blocks * tile_size) + 1);
 
   const c2h::device_vector<count_t> device_num_items(1, num_items);
   c2h::device_vector<value_t> output(1, value_t{-1});
@@ -327,9 +326,9 @@ CUB_TEST("DeviceReduce atomic dispatch with a deferred size handles grid boundar
     tile_size - 1,
     tile_size,
     tile_size + 1,
-    max_blocks * tile_size - 1,
+    (max_blocks * tile_size) - 1,
     max_blocks * tile_size,
-    max_blocks * tile_size + 1);
+    (max_blocks * tile_size) + 1);
   constexpr value_t init = 7.0f;
 
   const c2h::device_vector<count_t> device_num_items(1, num_items);
@@ -502,10 +501,8 @@ CUB_TEST("DeviceReduce::Reduce consumes a deferred count produced in another str
   constexpr count_t capacity       = 100'000;
   constexpr count_t selected_count = 1'000;
 
-  int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
-  cuda::stream producer{cuda::devices[current_device]};
-  cuda::stream consumer{cuda::devices[current_device]};
+  const cuda::stream producer = c2h::make_current_device_stream();
+  const cuda::stream consumer = c2h::make_current_device_stream();
 
   const auto d_input = cuda::counting_iterator<value_t>{value_t{0}};
   c2h::device_vector<value_t> selected_items(capacity, value_t{capacity + 1});
@@ -588,7 +585,7 @@ CUB_TEST("DeviceReduce environment entry points accept deferred num_items", "[de
   const auto reduce_error =
     cub::DeviceReduce::Reduce(input.begin(), output.begin(), count, cuda::std::plus<>{}, value_t{7});
   REQUIRE(cudaSuccess == reduce_error);
-  REQUIRE(output[0] == value_t{7} + value_t{2} * num_items);
+  REQUIRE(output[0] == value_t{7} + (value_t{2} * num_items));
 
   output[0]            = value_t{-2};
   const auto sum_error = cub::DeviceReduce::Sum(input.begin(), output.begin(), count);

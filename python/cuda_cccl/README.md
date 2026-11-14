@@ -25,15 +25,13 @@ pip install cuda-cccl[sysctk13]  # For CUDA 13.x (system CUDA toolkit)
 pip install cuda-cccl[sysctk12]  # For CUDA 12.x (system CUDA toolkit)
 ```
 
-For a minimal install without Numba (useful when supplying pre-compiled operators):
+For a minimal install without the JIT backend (useful when supplying
+pre-compiled operators):
 
 ```bash
 pip install cuda-cccl[minimal-cu13]      # pip-installed cuda-toolkit
 pip install cuda-cccl[minimal-sysctk13]  # system CUDA toolkit
 ```
-
-On free-threaded Python (e.g. 3.14t), use one of the `minimal-*` extras; the
-other extras fail to install because Numba CUDA has no free-threaded wheels yet.
 
 Install from conda-forge:
 

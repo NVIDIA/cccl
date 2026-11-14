@@ -23,7 +23,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(count.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/count.h>
 #  include <thrust/system/cuda/detail/count.h>
 #  include <thrust/system/omp/detail/count.h>
@@ -34,7 +34,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename EqualityComparable>
-_CCCL_HOST_DEVICE thrust::detail::it_difference_t<InputIterator>
+_CCCL_HOST_DEVICE_API thrust::detail::it_difference_t<InputIterator>
 count(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
       InputIterator first,
       InputIterator last,
@@ -47,7 +47,7 @@ count(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE thrust::detail::it_difference_t<InputIterator>
+_CCCL_HOST_DEVICE_API thrust::detail::it_difference_t<InputIterator>
 count_if(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
          InputIterator first,
          InputIterator last,
@@ -59,7 +59,7 @@ count_if(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
 } // end count_if()
 
 template <typename InputIterator, typename EqualityComparable>
-thrust::detail::it_difference_t<InputIterator>
+_CCCL_HOST_API thrust::detail::it_difference_t<InputIterator>
 count(InputIterator first, InputIterator last, const EqualityComparable& value)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::count");
@@ -73,14 +73,16 @@ count(InputIterator first, InputIterator last, const EqualityComparable& value)
 } // end count()
 
 template <typename InputIterator, typename Predicate>
-thrust::detail::it_difference_t<InputIterator> count_if(InputIterator first, InputIterator last, Predicate pred)
+_CCCL_HOST_API thrust::detail::it_difference_t<InputIterator>
+count_if(InputIterator first, InputIterator last, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::count_if");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<InputIterator>::type;
 
-  System system;
+  // thrust systems must be mutable
+  System system; // NOLINT(misc-const-correctness)
 
   return thrust::count_if(select_system(system), first, last, pred);
 } // end count_if()

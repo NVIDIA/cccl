@@ -25,6 +25,15 @@
 
 CUB_TEST_MEMORY_CLASS(CUB_SMALL);
 
+// BlockRadixRankMatchEarlyCounts only requires a digit count that is a multiple of the warp size if it ranks in
+// multiple parts (see test_block_radix_rank_early_counts_fail.cu for the rejected configuration)
+template <int RadixBits, int NumParts>
+using early_counts_rank_t =
+  cub::BlockRadixRankMatchEarlyCounts<128, RadixBits, false, cub::BLOCK_SCAN_WARP_SCANS, cub::WARP_MATCH_ANY, NumParts>;
+static_assert(sizeof(early_counts_rank_t<4, 1>) > 0, "fewer digits than the warp size are fine without parts");
+static_assert(sizeof(early_counts_rank_t<5, 2>) > 0, "a digit count equal to the warp size is fine with parts");
+static_assert(sizeof(early_counts_rank_t<8, 2>) > 0, "a larger multiple of the warp size is fine with parts");
+
 bool g_verbose = false;
 
 template <cub::RadixRankAlgorithm RankAlgorithm,
@@ -62,7 +71,7 @@ __launch_bounds__(ThreadsPerBlock, 1) __global__ void kernel(Key* d_keys, int* d
     cub::LoadDirectBlocked(threadIdx.x, d_keys, keys);
   }
 
-  cub::BFEDigitExtractor<Key> extractor(0, RadixBits);
+  cub::BFEDigitExtractor<Key> extractor(0, RadixBits); // NOLINT(misc-const-correctness)
   block_radix_rank(temp_storage).RankKeys(keys, ranks, extractor);
 
   if (uses_warp_striped_arrangement)
@@ -95,9 +104,13 @@ struct pair_t
 };
 
 template <bool DESCENDING, typename Key>
-void Initialize(GenMode gen_mode, Key* h_keys, int* h_reference_ranks, int num_items, int num_bits)
+void Initialize(GenMode gen_mode,
+                Key* h_keys,
+                int* h_reference_ranks, // NOLINT(readability-non-const-parameter)
+                int num_items,
+                int num_bits)
 {
-  std::unique_ptr<pair_t<Key>[]> h_pairs_storage(new pair_t<Key>[num_items]);
+  const std::unique_ptr<pair_t<Key>[]> h_pairs_storage(new pair_t<Key>[num_items]);
   pair_t<Key>* h_pairs = h_pairs_storage.get();
 
   for (int i = 0; i < num_items; ++i)
@@ -144,8 +157,8 @@ void TestDriver(GenMode gen_mode)
   constexpr int tile_size = ThreadsPerBlock * ItemsPerThread;
 
   // Allocate host arrays
-  std::unique_ptr<Key[]> h_keys(new Key[tile_size]);
-  std::unique_ptr<int[]> h_reference_ranks(new int[tile_size]);
+  const std::unique_ptr<Key[]> h_keys(new Key[tile_size]);
+  const std::unique_ptr<int[]> h_reference_ranks(new int[tile_size]);
 
   // Initialize problem and solution on host
   Initialize<Descending>(gen_mode, h_keys.get(), h_reference_ranks.get(), tile_size, RadixBits);
@@ -165,7 +178,8 @@ void TestDriver(GenMode gen_mode)
   CubDebugExit(cudaDeviceSynchronize());
 
   // Check keys results
-  const bool compare = CompareDeviceResults(h_reference_ranks.get(), d_ranks.data(), tile_size, g_verbose, g_verbose);
+  const bool compare =
+    CompareDeviceResults(h_reference_ranks.get(), d_ranks.data(), tile_size, g_verbose, g_verbose, stream);
   AssertEquals(0, compare);
 }
 
@@ -178,9 +192,11 @@ template <cub::RadixRankAlgorithm RankAlgorithm,
           typename Key>
 void TestValid(cuda::std::true_type /*fits_smem_capacity*/)
 {
-  TestDriver<RankAlgorithm, ThreadsPerBlock, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(UNIFORM);
+  TestDriver<RankAlgorithm, ThreadsPerBlock, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(
+    GenMode::UNIFORM);
 
-  TestDriver<RankAlgorithm, ThreadsPerBlock, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(INTEGER_SEED);
+  TestDriver<RankAlgorithm, ThreadsPerBlock, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(
+    GenMode::INTEGER_SEED);
 }
 
 template <cub::RadixRankAlgorithm RankAlgorithm,
@@ -207,7 +223,7 @@ void Test()
     cub::detail::block_radix_rank_t<RankAlgorithm, ThreadsPerBlock, RadixBits, Descending, ScanAlgorithm>;
   using storage_t = typename block_radix_rank::TempStorage;
 
-  cuda::std::bool_constant<(sizeof(storage_t) <= cub::detail::max_smem_per_block)> fits_smem_capacity;
+  const cuda::std::bool_constant<(sizeof(storage_t) <= cub::detail::max_smem_per_block)> fits_smem_capacity;
 
   TestValid<RankAlgorithm, ThreadsPerBlock, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(
     fits_smem_capacity);

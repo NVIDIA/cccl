@@ -21,20 +21,20 @@ using namespace cuda::experimental::stf;
 
 __global__ void kernel(slice<int> b, long long int clock_cnt)
 {
-  long long int start_clock  = clock64();
-  long long int clock_offset = 0;
+  const long long int start_clock = clock64();
+  long long int clock_offset      = 0;
   while (clock_offset < clock_cnt)
   {
     clock_offset = clock64() - start_clock;
   }
 
-  size_t n   = b.size();
-  int i      = blockIdx.x * blockDim.x + threadIdx.x;
-  int stride = blockDim.x * gridDim.x;
+  const size_t n   = b.size();
+  int i            = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
+  const int stride = static_cast<int>(blockDim.x * gridDim.x);
 
   while (i < n)
   {
-    b(i) = 17 - 3 * i;
+    b(i) = 17 - (3 * i);
     i += stride;
   }
 }
@@ -42,13 +42,13 @@ __global__ void kernel(slice<int> b, long long int clock_cnt)
 int main()
 {
   int device;
-  cudaGetDevice(&device);
+  cuda_safe_call(cudaGetDevice(&device));
 
   // cudaDevAttrClockRate: Peak clock frequency in kilohertz;
   int clock_rate;
-  cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device);
+  cuda_safe_call(cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device));
 
-  double ms               = 500;
+  const double ms         = 500;
   long long int clock_cnt = (long long int) (ms * clock_rate);
 
   stackable_ctx sctx;
@@ -69,7 +69,7 @@ int main()
   sctx.host_launch(lB.read())->*[](auto b) {
     for (size_t i = 0; i < b.size(); i++)
     {
-      EXPECT(b(i) == (17 - 3 * i));
+      EXPECT(b(i) == (17 - (3 * i)));
     }
   };
 

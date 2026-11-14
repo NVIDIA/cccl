@@ -17,13 +17,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/mr/host_memory_resource.h>
+#include <thrust/detail/config/memory_resource.h>
 #include <thrust/mr/memory_resource.h>
-#include <thrust/system/cuda/detail/util.h>
 #include <thrust/system/cuda/error.h>
 #include <thrust/system/cuda/pointer.h>
 #include <thrust/system/detail/bad_alloc.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__memory/pointer_traits.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -40,21 +40,23 @@ template <allocation_fn Alloc, deallocation_fn Dealloc, typename Pointer>
 class cuda_memory_resource final : public mr::memory_resource<Pointer>
 {
 public:
-  Pointer do_allocate(std::size_t bytes, [[maybe_unused]] std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  _CCCL_HOST_API Pointer do_allocate(std::size_t bytes, // NOLINT(google-default-arguments)
+                                     [[maybe_unused]] std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     void* ret;
-    cudaError_t status = Alloc(&ret, bytes);
+    const cudaError_t status = Alloc(&ret, bytes);
 
     if (status != cudaSuccess)
     {
-      cudaGetLastError(); // Clear the CUDA global error state.
-      throw thrust::system::detail::bad_alloc(thrust::cuda_category().message(status).c_str());
+      static_cast<void>(cudaGetLastError()); // Clear the CUDA global error state.
+      throw thrust::system::detail::bad_alloc(thrust::cuda_category().message(status));
     }
 
     return Pointer(ret);
   }
 
-  void do_deallocate(Pointer p, [[maybe_unused]] std::size_t bytes, [[maybe_unused]] std::size_t alignment) override
+  _CCCL_HOST_API void
+  do_deallocate(Pointer p, [[maybe_unused]] std::size_t bytes, [[maybe_unused]] std::size_t alignment) override
   {
     // We skip error checking here, we shouldn't throw in deallocate in case this is called in a destructor or after
     // main exits and CUDA calls can start returning errors about CUDA being cleaned up.
@@ -62,14 +64,14 @@ public:
   }
 };
 
-inline cudaError_t CUDARTAPI cudaMallocManaged(void** ptr, std::size_t bytes)
+_CCCL_HOST_API inline cudaError_t CUDARTAPI cuda_malloc_managed(void** ptr, std::size_t bytes)
 {
   return ::cudaMallocManaged(ptr, bytes, cudaMemAttachGlobal);
 }
 
 using device_memory_resource = detail::cuda_memory_resource<cudaMalloc, cudaFree, thrust::cuda::pointer<void>>;
 using managed_memory_resource =
-  detail::cuda_memory_resource<detail::cudaMallocManaged, cudaFree, thrust::cuda::universal_pointer<void>>;
+  detail::cuda_memory_resource<detail::cuda_malloc_managed, cudaFree, thrust::cuda::universal_pointer<void>>;
 using pinned_memory_resource =
   detail::cuda_memory_resource<cudaMallocHost, cudaFreeHost, thrust::cuda::universal_host_pinned_pointer<void>>;
 } // namespace detail

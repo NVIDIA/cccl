@@ -18,7 +18,7 @@
  * floating-point status word plays the role of the trap: each worker checks
  * std::fetestexcept / std::isfinite after evaluating, and turns a poisoned
  * result into an exception. The policy algebra plays the role of the signal:
- * on_throw(defer) turns the worker's exception into a value, a handler
+ * defer turns the worker's exception into a value, a handler
  * thread rethrows and interprets it, and the whole hand-off needs no shared
  * try/catch choreography.
  */
@@ -36,7 +36,6 @@
 #include <vector>
 
 using namespace cuda::experimental::stf;
-namespace pol = cuda::experimental::stf::exception_policies;
 
 double f(double x)
 {
@@ -55,6 +54,7 @@ int main()
   ::std::vector<::std::exception_ptr> reports(n_workers);
   ::std::vector<::std::thread> workers;
 
+  workers.reserve(n_workers);
   for (size_t w = 0; w < n_workers; ++w)
   {
     workers.emplace_back([&, w] {
@@ -88,7 +88,7 @@ int main()
     {
       if (report)
       {
-        ON_THROW(catch_only<::std::domain_error>(notify))
+        ON_THROW(if_isa<::std::domain_error>(notify))
         {
           ::std::rethrow_exception(report);
         };

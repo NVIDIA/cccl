@@ -23,7 +23,7 @@ struct policy_selector
 #endif // !TUNE_BASE
 
 template <typename T, typename OffsetT>
-void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+_CCCL_HOST_API void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   using init_value_t = T;
 
@@ -51,7 +51,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       cuda::execution::tune(policy_selector<cuda::std::__accumulator_t<op_t, T, init_value_t>>{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceReduce::Reduce,
       "Reduce failed",
       d_in,

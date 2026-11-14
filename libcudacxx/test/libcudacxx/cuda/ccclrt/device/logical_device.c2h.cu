@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -238,6 +238,15 @@ C2H_CCCLRT_TEST("logical_device_ref locality domain", "[device][logical_device]"
     return;
   }
 
+#  if _CCCL_CTK_AT_LEAST(13, 4)
+  // locality domains require CUDA 13.4 driver
+  if (test::cuda_driver_version() < 13040)
+  {
+    SUCCEED("Driver is too old for locality domain tests (requires CUDA 13.4 / R615 or later)");
+    return;
+  }
+#  endif // _CCCL_CTK_AT_LEAST(13, 4)
+
   SECTION("A whole-device green context is not localized")
   {
     // `__greenCtxCreate` with a null descriptor covers the full device, so the driver reports no
@@ -262,8 +271,12 @@ C2H_CCCLRT_TEST("logical_device_ref locality domain", "[device][logical_device]"
       {
         const auto result = domains[i].locality_domain();
 
-        // Every cached domain comes from a split by locality domain id, so it is always localized.
-        REQUIRE(result.localized);
+        // A single-domain request may be returned as a whole-device context without a locality
+        // flag. Multiple domains must retain their localization metadata.
+        if (domains.size() > 1)
+        {
+          REQUIRE(result.localized);
+        }
         REQUIRE(result.domain_id == i);
       }
     }

@@ -18,8 +18,8 @@ using namespace cuda::experimental::stf;
 
 static __global__ void cuda_sleep_kernel(long long int clock_cnt)
 {
-  long long int start_clock  = clock64();
-  long long int clock_offset = 0;
+  const long long int start_clock = clock64();
+  long long int clock_offset      = 0;
   while (clock_offset < clock_cnt)
   {
     clock_offset = clock64() - start_clock;
@@ -29,20 +29,23 @@ static __global__ void cuda_sleep_kernel(long long int clock_cnt)
 void cuda_sleep(double ms, cudaStream_t stream)
 {
   int device;
-  cudaGetDevice(&device);
+  cuda_safe_call(cudaGetDevice(&device));
 
   // cudaDevAttrClockRate: Peak clock frequency in kilohertz;
   int clock_rate;
-  cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device);
+  cuda_safe_call(cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device));
 
-  long long int clock_cnt = (long long int) (ms * clock_rate);
+  const long long int clock_cnt = (long long int) (ms * clock_rate);
   cuda_sleep_kernel<<<1, 1, 0, stream>>>(clock_cnt);
 }
 
 int main()
 {
   stream_ctx ctx;
-  double vA, vB, vC, vD;
+  double vA;
+  double vB;
+  double vC;
+  double vD;
   auto A = ctx.logical_data(make_slice(&vA, 1));
   auto B = ctx.logical_data(make_slice(&vB, 1));
   auto C = ctx.logical_data(make_slice(&vC, 1));
@@ -58,10 +61,10 @@ int main()
   cudaStream_t K2_stream;
   cudaStream_t K3_stream;
   cudaStream_t K4_stream;
-  cudaStreamCreate(&K1_stream);
-  cudaStreamCreate(&K2_stream);
-  cudaStreamCreate(&K3_stream);
-  cudaStreamCreate(&K4_stream);
+  cuda_safe_call(cudaStreamCreate(&K1_stream));
+  cuda_safe_call(cudaStreamCreate(&K2_stream));
+  cuda_safe_call(cudaStreamCreate(&K3_stream));
+  cuda_safe_call(cudaStreamCreate(&K4_stream));
 
   // Kernel 1 : A(write)
   auto k1 = ctx.task(A.rw());

@@ -21,7 +21,6 @@
 #endif // no system header
 
 #include <cuda/__fwd/complex.h>
-#include <cuda/__type_traits/is_vector_type.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/array.h>
 #include <cuda/std/__fwd/complex.h>
@@ -31,8 +30,11 @@
 #include <cuda/std/__type_traits/has_unique_object_representation.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_aggregate.h>
-#include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__utility/pair.h> // required for sizeof
+#if _CCCL_HAS_CTK()
+#  include <cuda/__type_traits/is_vector_type.h>
+#  include <cuda/std/__type_traits/is_extended_floating_point.h>
+#endif
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -77,7 +79,7 @@ inline constexpr bool __is_bitwise_comparable_v<complex<_Tp>> = false;
 
 // if all the previous conditions fail, check if the type is an aggregate and all its members are bitwise comparable
 template <typename _Tp>
-using __is_bitwise_comparable_callable = ::cuda::std::bool_constant<__is_bitwise_comparable_v<_Tp>>;
+using __is_bitwise_comparable_callable _CCCL_NODEBUG = ::cuda::std::bool_constant<__is_bitwise_comparable_v<_Tp>>;
 
 // __aggregate_all_of_v returns true if the type is not an aggregate (or empty)
 template <typename _Tp>

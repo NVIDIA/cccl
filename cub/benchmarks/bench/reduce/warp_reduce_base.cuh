@@ -12,7 +12,7 @@
 struct benchmark_op_t
 {
   template <typename T>
-  __device__ __forceinline__ T operator()(T thread_data) const
+  _CCCL_DEVICE_API __forceinline__ T operator()(T thread_data) const
   {
     using WarpReduce  = cub::WarpReduce<T>;
     using TempStorage = typename WarpReduce::TempStorage;
@@ -23,11 +23,11 @@ struct benchmark_op_t
 };
 
 template <typename T>
-void warp_reduce(nvbench::state& state, nvbench::type_list<T>)
+_CCCL_HOST_API void warp_reduce(nvbench::state& state, nvbench::type_list<T>)
 {
   constexpr int block_size    = 256;
   constexpr int unroll_factor = 128; // compromise between compile time and noise
-  const auto& kernel          = benchmark_kernel<block_size, unroll_factor, benchmark_op_t, T>;
+  const auto& kernel          = benchmark_kernel<block_size, unroll_factor, benchmark_op_t, T, false>;
   const int num_SMs     = state.get_device().value().get_number_of_sms(); // NOLINT(bugprone-unchecked-optional-access)
   const int device      = state.get_device().value().get_id(); // NOLINT(bugprone-unchecked-optional-access)
   int max_blocks_per_SM = 0;

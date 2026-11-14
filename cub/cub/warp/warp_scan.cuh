@@ -20,14 +20,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/thread/thread_operators.cuh>
-#include <cub/util_type.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/warp/specializations/warp_scan_shfl.cuh>
 #include <cub/warp/specializations/warp_scan_smem.cuh>
+#include <cub/warp/warp_utils.cuh>
 
-#include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_integral.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -51,7 +52,7 @@ CUB_NAMESPACE_BEGIN
 //! * Supports non-commutative scan operators
 //! * Supports "logical" warps smaller than the physical warp size
 //!   (e.g., a logical warp of 8 threads)
-//! * The number of entrant threads must be an multiple of ``LOGICAL_WARP_THREADS``
+//! * The number of entrant threads must be an multiple of ``LogicalWarpThreads``
 //!
 //! Performance Considerations
 //! ++++++++++++++++++++++++++
@@ -62,7 +63,7 @@ CUB_NAMESPACE_BEGIN
 //! * Computation is slightly more efficient (i.e., having lower instruction overhead) for:
 //!
 //!   * Summation (**vs.** generic scan)
-//!   * The architecture's warp size is a whole multiple of ``LOGICAL_WARP_THREADS``
+//!   * The architecture's warp size is a whole multiple of ``LogicalWarpThreads``
 //!
 //! Simple Examples
 //! ++++++++++++++++++++++++++
@@ -131,35 +132,31 @@ CUB_NAMESPACE_BEGIN
 //! @tparam T
 //!   The scan input/output element type
 //!
-//! @tparam LOGICAL_WARP_THREADS
+//! @tparam LogicalWarpThreads
 //!   **[optional]** The number of threads per "logical" warp (may be less than the number of
 //!   hardware warp threads). Default is the warp size associated with the CUDA Compute Capability
 //!   targeted by the compiler (e.g., 32 threads for SM20).
 //!
-template <typename T, int LOGICAL_WARP_THREADS = detail::warp_threads>
+template <typename T, int LogicalWarpThreads = detail::warp_threads>
 class WarpScan
 {
-private:
   /******************************************************************************
    * Constants and type definitions
    ******************************************************************************/
 
-  /// Whether the logical warp size and the PTX warp size coincide
-  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == detail::warp_threads);
-
   /// Whether the logical warp size is a power-of-two
-  static constexpr bool IS_POW_OF_TWO = ((LOGICAL_WARP_THREADS & (LOGICAL_WARP_THREADS - 1)) == 0);
+  static constexpr bool IS_POW_OF_TWO = ((LogicalWarpThreads & (LogicalWarpThreads - 1)) == 0);
 
   /// Whether the data type is an integer (which has fully-associative addition)
   static constexpr bool IS_INTEGER = cuda::std::is_integral_v<T>;
 
   /// Internal specialization.
-  /// Use SHFL-based scan if LOGICAL_WARP_THREADS is a power-of-two
+  /// Use SHFL-based scan if LogicalWarpThreads is a power-of-two
   using InternalWarpScan = ::cuda::std::
-    _If<IS_POW_OF_TWO, detail::WarpScanShfl<T, LOGICAL_WARP_THREADS>, detail::WarpScanSmem<T, LOGICAL_WARP_THREADS>>;
+    _If<IS_POW_OF_TWO, detail::WarpScanShfl<T, LogicalWarpThreads>, detail::WarpScanSmem<T, LogicalWarpThreads>>;
 
   /// Shared memory storage layout type for WarpScan
-  using _TempStorage = typename InternalWarpScan::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalWarpScan::TempStorage;
 
   /******************************************************************************
    * Thread fields
@@ -167,7 +164,7 @@ private:
 
   /// Shared storage reference
   _TempStorage& temp_storage;
-  unsigned int lane_id;
+  unsigned int lane_id = _CUB::detail::logical_lane_id<LogicalWarpThreads>();
 
   /******************************************************************************
    * Public types
@@ -185,9 +182,8 @@ public:
   //!
   //! @param[in] temp_storage
   //!   Reference to memory allocation having layout type TempStorage
-  _CCCL_DEVICE _CCCL_FORCEINLINE WarpScan(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpScan(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS)
   {}
 
   //! @}
@@ -238,7 +234,7 @@ public:
   //!
   //! @param[out] inclusive_output
   //!   Calling thread's output item. May be aliased with `input`.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T input, T& inclusive_output)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveSum(T input, T& inclusive_output)
   {
     InclusiveScan(input, inclusive_output, ::cuda::std::plus<>{});
   }
@@ -293,7 +289,7 @@ public:
   //!
   //! @param[out] warp_aggregate
   //!   Warp-wide aggregate reduction of input items
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T input, T& inclusive_output, T& warp_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveSum(T input, T& inclusive_output, T& warp_aggregate)
   {
     InclusiveScan(input, inclusive_output, ::cuda::std::plus<>{}, warp_aggregate);
   }
@@ -348,7 +344,7 @@ public:
   //!
   //! @param[out] exclusive_output
   //!   Calling thread's output item. May be aliased with `input`.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T input, T& exclusive_output)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveSum(T input, T& exclusive_output)
   {
     T initial_value{};
     ExclusiveScan(input, exclusive_output, initial_value, ::cuda::std::plus<>{});
@@ -408,7 +404,7 @@ public:
   //!
   //! @param[out] warp_aggregate
   //!   Warp-wide aggregate reduction of input items
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T input, T& exclusive_output, T& warp_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveSum(T input, T& exclusive_output, T& warp_aggregate)
   {
     T initial_value{};
     ExclusiveScan(input, exclusive_output, initial_value, ::cuda::std::plus<>{}, warp_aggregate);
@@ -471,7 +467,7 @@ public:
   //! @param[in] scan_op
   //!   Binary scan operator
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op)
   {
     InternalWarpScan(temp_storage).InclusiveScan(input, inclusive_output, scan_op);
   }
@@ -520,7 +516,7 @@ public:
   //! @param[in] scan_op
   //!   Binary scan operator
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, T initial_value, ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, T initial_value, ScanOp scan_op)
   {
     InternalWarpScan internal(temp_storage);
 
@@ -591,7 +587,7 @@ public:
   //! @param[out] warp_aggregate
   //!   Warp-wide aggregate reduction of input items.
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op, T& warp_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op, T& warp_aggregate)
   {
     InternalWarpScan(temp_storage).InclusiveScan(input, inclusive_output, scan_op, warp_aggregate);
   }
@@ -646,7 +642,7 @@ public:
   //! @param[out] warp_aggregate
   //!   Warp-wide aggregate reduction of input items.
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   InclusiveScan(T input, T& inclusive_output, T initial_value, ScanOp scan_op, T& warp_aggregate)
   {
     InternalWarpScan internal(temp_storage);
@@ -725,7 +721,8 @@ public:
   //! @param[in] valid_items
   //!   Number of valid items in warp
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScanPartial(T input, T& inclusive_output, ScanOp scan_op, int valid_items)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  InclusiveScanPartial(T input, T& inclusive_output, ScanOp scan_op, int valid_items)
   {
     InternalWarpScan(temp_storage).InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
   }
@@ -776,7 +773,7 @@ public:
   //! @param[in] valid_items
   //!   Number of valid items in warp
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   InclusiveScanPartial(T input, T& inclusive_output, T initial_value, ScanOp scan_op, int valid_items)
   {
     InternalWarpScan internal(temp_storage);
@@ -854,7 +851,7 @@ public:
   //! @param[out] warp_aggregate
   //!   Warp-wide aggregate reduction of input items.
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   InclusiveScanPartial(T input, T& inclusive_output, ScanOp scan_op, int valid_items, T& warp_aggregate)
   {
     InternalWarpScan(temp_storage).InclusiveScanPartial(input, inclusive_output, scan_op, valid_items, warp_aggregate);
@@ -914,7 +911,7 @@ public:
   //! @param[out] warp_aggregate
   //!   Warp-wide aggregate reduction of input items.
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScanPartial(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScanPartial(
     T input, T& inclusive_output, T initial_value, ScanOp scan_op, int valid_items, T& warp_aggregate)
   {
     InternalWarpScan internal(temp_storage);
@@ -989,7 +986,7 @@ public:
   //! @param[in] scan_op
   //!   Binary scan operator
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op)
   {
     InternalWarpScan internal(temp_storage);
 
@@ -1058,10 +1055,12 @@ public:
   //! @param[in] scan_op
   //!   Binary scan operator
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, T initial_value, ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, T initial_value, ScanOp scan_op)
   {
     InternalWarpScan internal(temp_storage);
 
+    // InclusiveScan fills the output before it is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     T inclusive_output;
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
@@ -1133,7 +1132,7 @@ public:
   //! @param[out] warp_aggregate
   //!   Warp-wide aggregate reduction of input items
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op, T& warp_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op, T& warp_aggregate)
   {
     InternalWarpScan internal(temp_storage);
 
@@ -1211,7 +1210,7 @@ public:
   //!   Warp-wide aggregate reduction of input items
   //!
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ExclusiveScan(T input, T& exclusive_output, T initial_value, ScanOp scan_op, T& warp_aggregate)
   {
     InternalWarpScan internal(temp_storage);
@@ -1290,11 +1289,13 @@ public:
   //! @param[in] valid_items
   //!   Number of valid items in warp
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScanPartial(T input, T& exclusive_output, ScanOp scan_op, int valid_items)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ExclusiveScanPartial(T input, T& exclusive_output, ScanOp scan_op, int valid_items)
   {
     InternalWarpScan internal(temp_storage);
 
-    T inclusive_output;
+    // InclusiveScanPartial supplies the scan result for valid lanes.
+    T inclusive_output; // NOLINT(cppcoreguidelines-pro-type-member-init)
     internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
 
     internal.UpdatePartial(input, inclusive_output, exclusive_output, scan_op, valid_items);
@@ -1361,7 +1362,7 @@ public:
   //! @param[in] valid_items
   //!   Number of valid items in warp
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ExclusiveScanPartial(T input, T& exclusive_output, T initial_value, ScanOp scan_op, int valid_items)
   {
     InternalWarpScan internal(temp_storage);
@@ -1439,7 +1440,7 @@ public:
   //! @param[out] warp_aggregate
   //!   Warp-wide aggregate reduction of input items
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ExclusiveScanPartial(T input, T& exclusive_output, ScanOp scan_op, int valid_items, T& warp_aggregate)
   {
     InternalWarpScan internal(temp_storage);
@@ -1521,7 +1522,7 @@ public:
   //!   Warp-wide aggregate reduction of input items
   //!
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScanPartial(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveScanPartial(
     T input, T& exclusive_output, T initial_value, ScanOp scan_op, int valid_items, T& warp_aggregate)
   {
     InternalWarpScan internal(temp_storage);
@@ -1602,7 +1603,7 @@ public:
   //! @param[in] scan_op
   //!   Binary scan operator
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Scan(T input, T& inclusive_output, T& exclusive_output, ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Scan(T input, T& inclusive_output, T& exclusive_output, ScanOp scan_op)
   {
     InternalWarpScan internal(temp_storage);
 
@@ -1677,7 +1678,7 @@ public:
   //! @param[in] scan_op
   //!   Binary scan operator
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Scan(T input, T& inclusive_output, T& exclusive_output, T initial_value, ScanOp scan_op)
   {
     InternalWarpScan internal(temp_storage);
@@ -1756,7 +1757,7 @@ public:
   //! @param[in] valid_items
   //!   Number of valid items in warp
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ScanPartial(T input, T& inclusive_output, T& exclusive_output, ScanOp scan_op, int valid_items)
   {
     InternalWarpScan internal(temp_storage);
@@ -1835,7 +1836,7 @@ public:
   //! @param[in] valid_items
   //!   Number of valid items in warp
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ScanPartial(T input, T& inclusive_output, T& exclusive_output, T initial_value, ScanOp scan_op, int valid_items)
   {
     InternalWarpScan internal(temp_storage);
@@ -1896,7 +1897,7 @@ public:
   //!
   //! @param[in] src_lane
   //!   Which warp lane is to do the broadcasting
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Broadcast(T input, unsigned int src_lane)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Broadcast(T input, unsigned int src_lane)
   {
     return InternalWarpScan(temp_storage).Broadcast(input, src_lane);
   }

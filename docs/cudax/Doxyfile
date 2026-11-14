@@ -16,7 +16,7 @@ INPUT                  = ../../cudax/include/cuda/experimental/__copy_bytes \
                          ../../cudax/include/cuda/experimental/__device \
                          ../../cudax/include/cuda/experimental/graph.cuh \
                          ../../cudax/include/cuda/experimental/__graph \
-                         ../../cudax/include/cuda/experimental/__group \
+                         ../../cudax/include/cuda/experimental/coop/__group \
                          ../../cudax/include/cuda/experimental/__launch \
                          ../../cudax/include/cuda/experimental/__places \
                          ../../cudax/include/cuda/experimental/__places/exec \
@@ -46,7 +46,7 @@ EXCLUDE_SYMBOLS        = *detail* *RESERVED* *reserved* *__* _A* _B* _C* _D* _E*
 # Path for @snippet references to test/example files
 EXAMPLE_PATH           = ../../cudax/include/cuda/experimental/__stf/utility \
                          ../../cudax/test/multi_gpu/algorithms \
-                         ../../cudax/test/coop/reduce
+                         ../../cudax/test/coop/algorithm/reduce
 
 FILE_PATTERNS          = *.h *.hpp *.cuh
 EXTENSION_MAPPING      = cuh=C++ cu=C++
@@ -98,19 +98,20 @@ PREDEFINED = \
     "_CCCL_FORCEINLINE=" \
     "_CCCL_CONSTEXPR_CXX20=constexpr" \
     "_CCCL_CONSTEXPR_CXX23=constexpr" \
-    "_CCCL_API=inline" \
-    "_CCCL_HOST_DEVICE_API=inline" \
-    "_CCCL_HOST_API=inline" \
-    "_CCCL_DEVICE_API=inline" \
+    "_CCCL_API=" \
+    "_CCCL_HOST_DEVICE_API=" \
+    "_CCCL_HOST_API=" \
+    "_CCCL_DEVICE_API=" \
+    "_CCCL_NODEBUG=" \
     "_CCCL_NODEBUG_API=inline" \
     "_CCCL_NODEBUG_DEVICE_API=inline" \
     "_CCCL_NODEBUG_HOST_API=inline" \
     "_CCCL_TRIVIAL_API=inline" \
     "_CCCL_TRIVIAL_HOST_API=inline" \
     "_CCCL_TRIVIAL_DEVICE_API=inline" \
-    "_CCCL_PUBLIC_API=inline" \
-    "_CCCL_PUBLIC_DEVICE_API=inline" \
-    "_CCCL_PUBLIC_HOST_API=inline" \
+    "_CCCL_PUBLIC_API=" \
+    "_CCCL_PUBLIC_DEVICE_API=" \
+    "_CCCL_PUBLIC_HOST_API=" \
     "_CCCL_BEGIN_NAMESPACE_CUDA_STD=namespace cuda::std {" \
     "_CCCL_END_NAMESPACE_CUDA_STD=}" \
     "_CCCL_CATCH=catch" \

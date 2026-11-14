@@ -20,14 +20,18 @@
 
 #include <cub/block/specializations/block_scan_raking.cuh>
 #include <cub/block/specializations/block_scan_warp_scans.cuh>
+#include <cub/detail/uninitialized.cuh>
+#include <cub/thread/thread_reduce.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
-#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
 
 CUB_NAMESPACE_BEGIN
 
@@ -37,7 +41,7 @@ CUB_NAMESPACE_BEGIN
 
 //! @brief BlockScanAlgorithm enumerates alternative algorithms for cub::BlockScan to compute a
 //!        parallel prefix scan across a CUDA thread block.
-enum BlockScanAlgorithm
+enum BlockScanAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
 
   //! @rst
@@ -120,9 +124,9 @@ namespace detail
 }
 } // namespace detail
 
-inline ::std::ostream& operator<<(::std::ostream& os, BlockScanAlgorithm algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, BlockScanAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
@@ -130,12 +134,12 @@ CUB_NAMESPACE_END
 
 #if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
 template <::cuda::std::same_as<char> CharT>
-struct std::formatter<CUB_NS_QUALIFIER::BlockScanAlgorithm, CharT> : formatter<const CharT*, CharT>
+struct std::formatter<_CUB::BlockScanAlgorithm, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const CUB_NS_QUALIFIER::BlockScanAlgorithm& algo, FmtCtx& ctx) const
+  _CCCL_HOST_API auto format(const _CUB::BlockScanAlgorithm& algo, FmtCtx& ctx) const
   {
-    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+    return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(algo), ctx);
   }
 };
 #endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
@@ -231,7 +235,6 @@ CUB_NAMESPACE_BEGIN
 template <typename T, int BlockDimX, BlockScanAlgorithm Algorithm = BLOCK_SCAN_RAKING, int BlockDimY = 1, int BlockDimZ = 1>
 class BlockScan
 {
-private:
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
@@ -254,7 +257,7 @@ private:
   using InternalBlockScan = ::cuda::std::_If<SAFE_ALGORITHM == BLOCK_SCAN_WARP_SCANS, WarpScans, Raking>;
 
   /// Shared memory storage layout type for BlockScan
-  using _TempStorage = typename InternalBlockScan::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalBlockScan::TempStorage;
 
   /// Shared storage reference
   _TempStorage& temp_storage;
@@ -263,7 +266,7 @@ private:
   unsigned int linear_tid;
 
   /// Internal storage allocator
-  _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
   {
     __shared__ _TempStorage private_storage;
     return private_storage;
@@ -271,8 +274,7 @@ private:
 
 public:
   /// @smemstorage{BlockScan}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
@@ -283,9 +285,9 @@ public:
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //! @endrst
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockScan()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockScan()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
@@ -299,9 +301,9 @@ public:
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockScan(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockScan(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}
@@ -342,7 +344,7 @@ public:
   //!
   //! @param[out] output
   //!   Calling thread's output item (may be aliased to `input`)
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T input, T& output)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveSum(T input, T& output)
   {
     T initial_value{};
 
@@ -388,7 +390,7 @@ public:
   //!
   //! @param[out] block_aggregate
   //!   block-wide aggregate reduction of input items
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T input, T& output, T& block_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveSum(T input, T& output, T& block_aggregate)
   {
     T initial_value{};
 
@@ -453,7 +455,8 @@ public:
   //!   the logical input sequence.
   //!   @endrst
   template <typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T input, T& output, BlockPrefixCallbackOp& block_prefix_callback_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ExclusiveSum(T input, T& output, BlockPrefixCallbackOp& block_prefix_callback_op)
   {
     ExclusiveScan(input, output, ::cuda::std::plus<>{}, block_prefix_callback_op);
   }
@@ -495,7 +498,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @param[in] input
@@ -503,8 +506,8 @@ public:
   //!
   //! @param[out] output
   //!   Calling thread's output items (may be aliased to `input`)
-  template <int ITEMS_PER_THREAD>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD])
+  template <int ItemsPerThread>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveSum(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread])
   {
     T initial_value{};
 
@@ -546,7 +549,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @param[in] input
@@ -557,9 +560,9 @@ public:
   //!
   //! @param[out] block_aggregate
   //!   block-wide aggregate reduction of input items
-  template <int ITEMS_PER_THREAD>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ExclusiveSum(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T& block_aggregate)
+  template <int ItemsPerThread>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ExclusiveSum(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], T& block_aggregate)
   {
     // Reduce consecutive thread items in registers
     T initial_value{};
@@ -613,7 +616,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam BlockPrefixCallbackOp
@@ -631,9 +634,9 @@ public:
   //!   *warp*\ :sub:`0` only call-back functor for specifying a block-wide prefix to be applied to
   //!   the logical input sequence.
   //!   @endrst
-  template <int ITEMS_PER_THREAD, typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(
-    T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], BlockPrefixCallbackOp& block_prefix_callback_op)
+  template <int ItemsPerThread, typename BlockPrefixCallbackOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ExclusiveSum(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], BlockPrefixCallbackOp& block_prefix_callback_op)
   {
     ExclusiveScan(input, output, ::cuda::std::plus<>{}, block_prefix_callback_op);
   }
@@ -687,7 +690,7 @@ public:
   //! @param[in] scan_op
   //!   Binary scan functor
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& output, T initial_value, ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveScan(T input, T& output, T initial_value, ScanOp scan_op)
   {
     InternalBlockScan(temp_storage).ExclusiveScan(input, output, initial_value, scan_op);
   }
@@ -748,7 +751,7 @@ public:
   //! @param[out] block_aggregate
   //!   block-wide aggregate reduction of input items
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ExclusiveScan(T input, T& output, T initial_value, ScanOp scan_op, T& block_aggregate)
   {
     InternalBlockScan(temp_storage).ExclusiveScan(input, output, initial_value, scan_op, block_aggregate);
@@ -856,7 +859,7 @@ public:
   //!   the logical input sequence.
   //!   @endrst
   template <typename ScanOp, typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ExclusiveScan(T input, T& output, ScanOp scan_op, BlockPrefixCallbackOp& block_prefix_callback_op)
   {
     InternalBlockScan(temp_storage).ExclusiveScan(input, output, scan_op, block_prefix_callback_op);
@@ -898,7 +901,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ScanOp
@@ -918,18 +921,18 @@ public:
   //!
   //! @param[in] scan_op
   //!   Binary scan functor
-  template <int ITEMS_PER_THREAD, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ExclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op)
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ExclusiveScan(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], T initial_value, ScanOp scan_op)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = cub::ThreadReduce(input, scan_op);
+    T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op);
 
     // Exclusive scan in registers with prefix as seed
-    detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
+    _CUB::detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @rst
@@ -985,7 +988,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ScanOp
@@ -1008,18 +1011,18 @@ public:
   //!
   //! @param[out] block_aggregate
   //!   block-wide aggregate reduction of input items
-  template <int ITEMS_PER_THREAD, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(
-    T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op, T& block_aggregate)
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveScan(
+    T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], T initial_value, ScanOp scan_op, T& block_aggregate)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = cub::ThreadReduce(input, scan_op);
+    T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op, block_aggregate);
 
     // Exclusive scan in registers with prefix as seed
-    detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
+    _CUB::detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @rst
@@ -1069,7 +1072,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ScanOp
@@ -1092,21 +1095,21 @@ public:
   //!   *warp*\ :sub:`0` only call-back functor for specifying a block-wide prefix to be applied to
   //!   the logical input sequence.
   //!   @endrst
-  template <int ITEMS_PER_THREAD, typename ScanOp, typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(
-    T (&input)[ITEMS_PER_THREAD],
-    T (&output)[ITEMS_PER_THREAD],
+  template <int ItemsPerThread, typename ScanOp, typename BlockPrefixCallbackOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveScan(
+    T (&input)[ItemsPerThread],
+    T (&output)[ItemsPerThread],
     ScanOp scan_op,
     BlockPrefixCallbackOp& block_prefix_callback_op)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = cub::ThreadReduce(input, scan_op);
+    T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, scan_op, block_prefix_callback_op);
 
     // Exclusive scan in registers with prefix as seed
-    detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
+    _CUB::detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @}
@@ -1138,7 +1141,7 @@ public:
   //! @param[in] scan_op
   //!   Binary scan functor
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& output, ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveScan(T input, T& output, ScanOp scan_op)
   {
     InternalBlockScan(temp_storage).ExclusiveScan(input, output, scan_op);
   }
@@ -1170,7 +1173,7 @@ public:
   //! @param[out] block_aggregate
   //!   block-wide aggregate reduction of input items
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& output, ScanOp scan_op, T& block_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExclusiveScan(T input, T& output, ScanOp scan_op, T& block_aggregate)
   {
     InternalBlockScan(temp_storage).ExclusiveScan(input, output, scan_op, block_aggregate);
   }
@@ -1191,7 +1194,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ScanOp
@@ -1205,18 +1208,18 @@ public:
   //!
   //! @param[in] scan_op
   //!   Binary scan functor
-  template <int ITEMS_PER_THREAD, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ExclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], ScanOp scan_op)
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ExclusiveScan(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], ScanOp scan_op)
   {
     // Reduce consecutive thread items in registers
-    T thread_partial = cub::ThreadReduce(input, scan_op);
+    T thread_partial = _CUB::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_partial, thread_partial, scan_op);
 
     // Exclusive scan in registers with prefix
-    detail::ThreadScanExclusive(input, output, scan_op, thread_partial, (linear_tid != 0));
+    _CUB::detail::ThreadScanExclusive(input, output, scan_op, thread_partial, (linear_tid != 0));
   }
 
   //! @rst
@@ -1232,7 +1235,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ScanOp
@@ -1249,18 +1252,18 @@ public:
   //!
   //! @param[out] block_aggregate
   //!   block-wide aggregate reduction of input items
-  template <int ITEMS_PER_THREAD, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ExclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], ScanOp scan_op, T& block_aggregate)
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ExclusiveScan(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], ScanOp scan_op, T& block_aggregate)
   {
     // Reduce consecutive thread items in registers
-    T thread_partial = cub::ThreadReduce(input, scan_op);
+    T thread_partial = _CUB::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_partial, thread_partial, scan_op, block_aggregate);
 
     // Exclusive scan in registers with prefix
-    detail::ThreadScanExclusive(input, output, scan_op, thread_partial, (linear_tid != 0));
+    _CUB::detail::ThreadScanExclusive(input, output, scan_op, thread_partial, (linear_tid != 0));
   }
 
   //! @}
@@ -1301,7 +1304,7 @@ public:
   //!
   //! @param[out] output
   //!   Calling thread's output item (may be aliased to `input`)
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T input, T& output)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveSum(T input, T& output)
   {
     InclusiveScan(input, output, ::cuda::std::plus<>{});
   }
@@ -1343,7 +1346,7 @@ public:
   //!
   //! @param[out] block_aggregate
   //!   block-wide aggregate reduction of input items
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T input, T& output, T& block_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveSum(T input, T& output, T& block_aggregate)
   {
     InclusiveScan(input, output, ::cuda::std::plus<>{}, block_aggregate);
   }
@@ -1443,7 +1446,8 @@ public:
   //!   to the logical input sequence.
   //!   @endrst
   template <typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T input, T& output, BlockPrefixCallbackOp& block_prefix_callback_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  InclusiveSum(T input, T& output, BlockPrefixCallbackOp& block_prefix_callback_op)
   {
     InclusiveScan(input, output, ::cuda::std::plus<>{}, block_prefix_callback_op);
   }
@@ -1482,7 +1486,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @param[in] input
@@ -1490,24 +1494,24 @@ public:
   //!
   //! @param[out] output
   //!   Calling thread's output items (may be aliased to `input`)
-  template <int ITEMS_PER_THREAD>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD])
+  template <int ItemsPerThread>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveSum(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread])
   {
-    if constexpr (ITEMS_PER_THREAD == 1)
+    if constexpr (ItemsPerThread == 1)
     {
       InclusiveSum(input[0], output[0]);
     }
     else
     {
       // Reduce consecutive thread items in registers
-      ::cuda::std::plus<> scan_op;
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      const ::cuda::std::plus<> scan_op;
+      T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveSum(thread_prefix, thread_prefix);
 
       // Inclusive scan in registers with prefix as seed
-      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
+      _CUB::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
     }
   }
 
@@ -1544,7 +1548,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @param[in] input
@@ -1555,25 +1559,25 @@ public:
   //!
   //! @param[out] block_aggregate
   //!   block-wide aggregate reduction of input items
-  template <int ITEMS_PER_THREAD>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  InclusiveSum(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T& block_aggregate)
+  template <int ItemsPerThread>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  InclusiveSum(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], T& block_aggregate)
   {
-    if constexpr (ITEMS_PER_THREAD == 1)
+    if constexpr (ItemsPerThread == 1)
     {
       InclusiveSum(input[0], output[0], block_aggregate);
     }
     else
     {
       // Reduce consecutive thread items in registers
-      ::cuda::std::plus<> scan_op;
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      const ::cuda::std::plus<> scan_op;
+      T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveSum(thread_prefix, thread_prefix, block_aggregate);
 
       // Inclusive scan in registers with prefix as seed
-      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
+      _CUB::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
     }
   }
 
@@ -1622,7 +1626,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam BlockPrefixCallbackOp
@@ -1639,25 +1643,25 @@ public:
   //!   *warp*\ :sub:`0` only call-back functor for specifying a block-wide prefix to be applied to the
   //!   logical input sequence.
   //!   @endrst
-  template <int ITEMS_PER_THREAD, typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(
-    T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], BlockPrefixCallbackOp& block_prefix_callback_op)
+  template <int ItemsPerThread, typename BlockPrefixCallbackOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  InclusiveSum(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], BlockPrefixCallbackOp& block_prefix_callback_op)
   {
-    if constexpr (ITEMS_PER_THREAD == 1)
+    if constexpr (ItemsPerThread == 1)
     {
       InclusiveSum(input[0], output[0], block_prefix_callback_op);
     }
     else
     {
       // Reduce consecutive thread items in registers
-      ::cuda::std::plus<> scan_op;
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      const ::cuda::std::plus<> scan_op;
+      T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveSum(thread_prefix, thread_prefix, block_prefix_callback_op);
 
       // Inclusive scan in registers with prefix as seed
-      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
+      _CUB::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
     }
   }
 
@@ -1706,7 +1710,7 @@ public:
   //! @param[in] scan_op
   //!   Binary scan functor
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& output, ScanOp scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(T input, T& output, ScanOp scan_op)
   {
     InternalBlockScan(temp_storage).InclusiveScan(input, output, scan_op);
   }
@@ -1771,7 +1775,7 @@ public:
   //! @param[out] block_aggregate
   //!   Block-wide aggregate reduction of input items
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& output, ScanOp scan_op, T& block_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(T input, T& output, ScanOp scan_op, T& block_aggregate)
   {
     InternalBlockScan(temp_storage).InclusiveScan(input, output, scan_op, block_aggregate);
   }
@@ -1842,7 +1846,7 @@ public:
   //!   the logical input sequence.
   //!   @endrst
   template <typename ScanOp, typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   InclusiveScan(T input, T& output, ScanOp scan_op, BlockPrefixCallbackOp& block_prefix_callback_op)
   {
     InternalBlockScan(temp_storage).InclusiveScan(input, output, scan_op, block_prefix_callback_op);
@@ -1884,7 +1888,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ScanOp
@@ -1898,24 +1902,24 @@ public:
   //!
   //! @param[in] scan_op
   //!   Binary scan functor
-  template <int ITEMS_PER_THREAD, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  InclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], ScanOp scan_op)
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  InclusiveScan(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], ScanOp scan_op)
   {
-    if constexpr (ITEMS_PER_THREAD == 1)
+    if constexpr (ItemsPerThread == 1)
     {
       InclusiveScan(input[0], output[0], scan_op);
     }
     else
     {
       // Reduce consecutive thread items in registers
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveScan(thread_prefix, thread_prefix, scan_op);
 
       // Inclusive scan in registers with prefix as seed (first thread does not seed)
-      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
+      _CUB::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
     }
   }
 
@@ -1946,7 +1950,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ScanOp
@@ -1963,18 +1967,18 @@ public:
   //!
   //! @param[in] scan_op
   //!   Binary scan functor
-  template <int ITEMS_PER_THREAD, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  InclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op)
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  InclusiveScan(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], T initial_value, ScanOp scan_op)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = cub::ThreadReduce(input, scan_op);
+    T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op);
 
     // Exclusive scan in registers with prefix as seed
-    detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
+    _CUB::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @rst
@@ -2025,7 +2029,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ScanOp
@@ -2042,24 +2046,24 @@ public:
   //!
   //! @param[out] block_aggregate
   //!   Block-wide aggregate reduction of input items
-  template <int ITEMS_PER_THREAD, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  InclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], ScanOp scan_op, T& block_aggregate)
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  InclusiveScan(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], ScanOp scan_op, T& block_aggregate)
   {
-    if (ITEMS_PER_THREAD == 1)
+    if (ItemsPerThread == 1)
     {
       InclusiveScan(input[0], output[0], scan_op, block_aggregate);
     }
     else
     {
       // Reduce consecutive thread items in registers
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan (with no initial value)
       ExclusiveScan(thread_prefix, thread_prefix, scan_op, block_aggregate);
 
       // Inclusive scan in registers with prefix as seed (first thread does not seed)
-      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
+      _CUB::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
     }
   }
 
@@ -2097,7 +2101,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ScanOp
@@ -2118,18 +2122,18 @@ public:
   //!
   //! @param[out] block_aggregate
   //!   Block-wide aggregate reduction of input items
-  template <int ITEMS_PER_THREAD, typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(
-    T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op, T& block_aggregate)
+  template <int ItemsPerThread, typename ScanOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(
+    T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], T initial_value, ScanOp scan_op, T& block_aggregate)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = cub::ThreadReduce(input, scan_op);
+    T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op, block_aggregate);
 
     // Exclusive scan in registers with prefix as seed
-    detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
+    _CUB::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @rst
@@ -2224,7 +2228,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ScanOp
@@ -2247,27 +2251,27 @@ public:
   //!   *warp*\ :sub:`0` only call-back functor for specifying a block-wide prefix to be applied to
   //!   the logical input sequence.
   //!   @endrst
-  template <int ITEMS_PER_THREAD, typename ScanOp, typename BlockPrefixCallbackOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(
-    T (&input)[ITEMS_PER_THREAD],
-    T (&output)[ITEMS_PER_THREAD],
+  template <int ItemsPerThread, typename ScanOp, typename BlockPrefixCallbackOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(
+    T (&input)[ItemsPerThread],
+    T (&output)[ItemsPerThread],
     ScanOp scan_op,
     BlockPrefixCallbackOp& block_prefix_callback_op)
   {
-    if (ITEMS_PER_THREAD == 1)
+    if (ItemsPerThread == 1)
     {
       InclusiveScan(input[0], output[0], scan_op, block_prefix_callback_op);
     }
     else
     {
       // Reduce consecutive thread items in registers
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      T thread_prefix = _CUB::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveScan(thread_prefix, thread_prefix, scan_op, block_prefix_callback_op);
 
       // Inclusive scan in registers with prefix as seed
-      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
+      _CUB::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
     }
   }
 

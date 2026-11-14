@@ -49,7 +49,8 @@ void test_stream_basic()
 void test_stream_multiple_deps()
 {
   const size_t N = 32;
-  double X[N], Y[N];
+  double X[N];
+  double Y[N];
   for (size_t i = 0; i < N; i++)
   {
     X[i] = static_cast<double>(i);
@@ -107,9 +108,9 @@ void test_stream_write_back()
 {
   const size_t N = 64;
   double X[N];
-  for (size_t i = 0; i < N; i++)
+  for (auto& x : X)
   {
-    X[i] = 0.0;
+    x = 0.0;
   }
 
   stream_ctx ctx;
@@ -153,9 +154,9 @@ void test_stream_chained()
 {
   const size_t N = 64;
   double X[N];
-  for (size_t i = 0; i < N; i++)
+  for (auto& x : X)
   {
-    X[i] = 1.0;
+    x = 1.0;
   }
 
   stream_ctx ctx;
@@ -224,7 +225,8 @@ void test_graph_basic()
 void test_graph_multiple_deps()
 {
   const size_t N = 32;
-  double X[N], Y[N];
+  double X[N];
+  double Y[N];
   for (size_t i = 0; i < N; i++)
   {
     X[i] = static_cast<double>(i);
@@ -282,9 +284,9 @@ void test_graph_write_back()
 {
   const size_t N = 64;
   double X[N];
-  for (size_t i = 0; i < N; i++)
+  for (auto& x : X)
   {
-    X[i] = 0.0;
+    x = 0.0;
   }
 
   graph_ctx ctx;
@@ -328,9 +330,9 @@ void test_graph_chained()
 {
   const size_t N = 64;
   double X[N];
-  for (size_t i = 0; i < N; i++)
+  for (auto& x : X)
   {
-    X[i] = 1.0;
+    x = 1.0;
   }
 
   graph_ctx ctx;

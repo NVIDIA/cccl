@@ -8,6 +8,7 @@
 
 // ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
 // ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/std/limits>
 
@@ -131,6 +132,9 @@ int main(int, char**)
 #if _CCCL_HAS_NVFP8_E5M2()
   test_type<__nv_fp8_e5m2>();
 #endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_UE5M3()
+  test_type<__nv_fp8_ue5m3>();
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E8M0()
   test_type<__nv_fp8_e8m0>();
 #endif // _CCCL_HAS_NVFP8_E8M0()

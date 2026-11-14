@@ -48,24 +48,22 @@ void TestPairStableSortByKeyDevice(ExecutionPolicy exec)
   // sort on the device
   stable_sort_by_key_kernel<<<1, 1>>>(exec, d_pairs.begin(), d_pairs.end(), d_values.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   // sort on the host
   thrust::stable_sort_by_key(h_pairs.begin(), h_pairs.end(), h_values.begin());
 
-  ASSERT_EQUAL_QUIET(h_pairs, d_pairs);
-  ASSERT_EQUAL(h_values, d_values);
+  REQUIRE((h_pairs == d_pairs));
+  REQUIRE(h_values == d_values);
 };
 
-void TestPairStableSortByKeyDeviceSeq()
+TEST_CASE("TestPairStableSortByKeyDeviceSeq", "[pair_sort_by_key]")
 {
   TestPairStableSortByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestPairStableSortByKeyDeviceSeq);
 
-void TestPairStableSortByKeyDeviceDevice()
+TEST_CASE("TestPairStableSortByKeyDeviceDevice", "[pair_sort_by_key]")
 {
   TestPairStableSortByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestPairStableSortByKeyDeviceDevice);
 #endif

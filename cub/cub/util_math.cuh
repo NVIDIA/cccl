@@ -22,18 +22,17 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_enum.h>
 #include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
 template <typename T>
-using is_integral_or_enum =
-  ::cuda::std::integral_constant<bool, ::cuda::std::is_integral_v<T> || ::cuda::std::is_enum_v<T>>;
+using is_integral_or_enum = ::cuda::std::bool_constant<::cuda::std::is_integral_v<T> || ::cuda::std::is_enum_v<T>>;
 
 /**
  * Computes lhs + rhs, but bounds the result to the maximum number representable by the given type, if the addition
@@ -43,7 +42,7 @@ using is_integral_or_enum =
  * where `(lhs + rhs)` would overflow.
  */
 template <typename OffsetT>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT safe_add_bound_to_max(OffsetT lhs, OffsetT rhs)
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OffsetT safe_add_bound_to_max(OffsetT lhs, OffsetT rhs)
 {
   static_assert(::cuda::std::is_integral_v<OffsetT>, "OffsetT must be an integral type");
   static_assert(sizeof(OffsetT) >= 4, "OffsetT must be at least 32 bits in size");
@@ -51,12 +50,12 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT safe_add_bound_to_max(OffsetT lhs, O
   return lhs + capped_operand_rhs;
 }
 
-constexpr _CCCL_HOST_DEVICE int nominal_4B_items_to_items(int nominal_items_per_thread, int item_size)
+_CCCL_HOST_DEVICE_API constexpr int nominal_4B_items_to_items(int nominal_items_per_thread, int item_size)
 {
   return ::cuda::std::clamp(nominal_items_per_thread * 4 / item_size, 1, nominal_items_per_thread);
 }
 
-constexpr _CCCL_HOST_DEVICE int nominal_8B_items_to_items(int nominal_items_per_thread, int item_size)
+_CCCL_HOST_DEVICE_API constexpr int nominal_8B_items_to_items(int nominal_items_per_thread, int item_size)
 {
   if (item_size <= 8)
   {
@@ -66,22 +65,22 @@ constexpr _CCCL_HOST_DEVICE int nominal_8B_items_to_items(int nominal_items_per_
 }
 } // namespace detail
 
-constexpr _CCCL_HOST_DEVICE int Nominal4BItemsToItemsCombined(int nominal_items_per_thread, int combined_bytes)
+_CCCL_HOST_DEVICE_API constexpr int Nominal4BItemsToItemsCombined(int nominal_items_per_thread, int combined_bytes)
 {
   return (
     ::cuda::std::min) (nominal_items_per_thread, (::cuda::std::max) (1, nominal_items_per_thread * 8 / combined_bytes));
 }
 
 template <typename T>
-constexpr _CCCL_HOST_DEVICE int Nominal4BItemsToItems(int nominal_items_per_thread)
+_CCCL_HOST_DEVICE_API constexpr int Nominal4BItemsToItems(int nominal_items_per_thread)
 {
-  return detail::nominal_4B_items_to_items(nominal_items_per_thread, int{sizeof(T)});
+  return _CUB::detail::nominal_4B_items_to_items(nominal_items_per_thread, int{sizeof(T)});
 }
 
 template <typename ItemT>
-constexpr _CCCL_HOST_DEVICE int Nominal8BItemsToItems(int nominal_items_per_thread)
+_CCCL_HOST_DEVICE_API constexpr int Nominal8BItemsToItems(int nominal_items_per_thread)
 {
-  return detail::nominal_8B_items_to_items(nominal_items_per_thread, int{sizeof(ItemT)});
+  return _CUB::detail::nominal_8B_items_to_items(nominal_items_per_thread, int{sizeof(ItemT)});
 }
 
 /**
@@ -92,9 +91,9 @@ constexpr _CCCL_HOST_DEVICE int Nominal8BItemsToItems(int nominal_items_per_thre
  * \return Half the sum of \p begin and \p end
  */
 template <typename T>
-constexpr _CCCL_HOST_DEVICE T MidPoint(T begin, T end)
+_CCCL_HOST_DEVICE_API constexpr T MidPoint(T begin, T end)
 {
-  return begin + (end - begin) / 2;
+  return begin + ((end - begin) / 2);
 }
 
 CUB_NAMESPACE_END

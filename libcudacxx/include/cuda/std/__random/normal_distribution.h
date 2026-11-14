@@ -179,7 +179,7 @@ public:
 
 #if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
-  friend ::std::basic_ostream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const normal_distribution& __x)
   {
     _CharT __sp                       = __os.widen(' ');
@@ -199,7 +199,7 @@ public:
   }
 
   template <class _CharT, class _Traits>
-  friend ::std::basic_istream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is, normal_distribution& __x)
   {
     using _Istream = ::std::basic_istream<_CharT, _Traits>;
@@ -210,7 +210,7 @@ public:
     result_type __vp = 0;
     int __v_hot_int  = 0;
     __is >> __mean >> __stddev >> __v_hot_int;
-    bool __v_hot = __v_hot_int != 0;
+    const bool __v_hot = __v_hot_int != 0;
     if (__v_hot)
     {
       __is >> __vp;

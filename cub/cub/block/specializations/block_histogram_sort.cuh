@@ -22,6 +22,9 @@
 
 #include <cub/block/block_discontinuity.cuh>
 #include <cub/block/block_radix_sort.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
 
 CUB_NAMESPACE_BEGIN
@@ -89,17 +92,16 @@ struct BlockHistogramSort
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   // Thread fields
   _TempStorage& temp_storage;
   unsigned int linear_tid;
 
   /// Constructor
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogramSort(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockHistogramSort(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   // Discontinuity functor
@@ -109,12 +111,12 @@ struct BlockHistogramSort
     _TempStorage& temp_storage;
 
     // Constructor
-    _CCCL_DEVICE _CCCL_FORCEINLINE DiscontinuityOp(_TempStorage& temp_storage)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE DiscontinuityOp(_TempStorage& temp_storage)
         : temp_storage(temp_storage)
     {}
 
     // Discontinuity predicate
-    _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(const T& a, const T& b, int b_index)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE bool operator()(const T& a, const T& b, int b_index)
     {
       if (a != b)
       {
@@ -124,10 +126,8 @@ struct BlockHistogramSort
 
         return true;
       }
-      else
-      {
-        return false;
-      }
+
+      return false;
     }
   };
 
@@ -141,7 +141,7 @@ struct BlockHistogramSort
    *   Reference to shared/device-accessible memory histogram
    */
   template <typename CounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ItemsPerThread], CounterT histogram[Bins])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Composite(T (&items)[ItemsPerThread], CounterT histogram[Bins])
   {
     static constexpr int TILE_SIZE = BLOCK_THREADS * ItemsPerThread;
 
@@ -171,7 +171,7 @@ struct BlockHistogramSort
     int flags[ItemsPerThread]; // unused
 
     // Compute head flags to demarcate contiguous runs of the same bin in the sorted tile
-    DiscontinuityOp flag_op(temp_storage);
+    const DiscontinuityOp flag_op(temp_storage);
     BlockDiscontinuityT(temp_storage.discontinuities.flag).FlagHeads(flags, items, flag_op);
 
     // Update begin for first item
@@ -188,7 +188,7 @@ struct BlockHistogramSort
     _CCCL_PRAGMA_UNROLL_FULL()
     for (; histo_offset + BLOCK_THREADS <= Bins; histo_offset += BLOCK_THREADS)
     {
-      int thread_offset = histo_offset + linear_tid;
+      const int thread_offset = histo_offset + linear_tid;
       CounterT count =
         temp_storage.discontinuities.run_end[thread_offset] - temp_storage.discontinuities.run_begin[thread_offset];
       histogram[thread_offset] += count;
@@ -197,7 +197,7 @@ struct BlockHistogramSort
     // Finish up with guarded composition if necessary
     if ((Bins % BLOCK_THREADS != 0) && (histo_offset + linear_tid < Bins))
     {
-      int thread_offset = histo_offset + linear_tid;
+      const int thread_offset = histo_offset + linear_tid;
       CounterT count =
         temp_storage.discontinuities.run_end[thread_offset] - temp_storage.discontinuities.run_begin[thread_offset];
       histogram[thread_offset] += count;

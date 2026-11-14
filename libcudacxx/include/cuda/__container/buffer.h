@@ -27,18 +27,19 @@
 #    include <cub/device/device_transform.cuh>
 #  endif // _CCCL_CUDA_COMPILATION()
 
+#  include <cuda/__container/allocation_info.h>
 #  include <cuda/__container/heterogeneous_iterator.h>
 #  include <cuda/__container/uninitialized_async_buffer.h>
 #  include <cuda/__functional/call_or.h>
 #  include <cuda/__launch/host_launch.h>
 #  include <cuda/__memory_resource/allocation_alignment.h>
 #  include <cuda/__memory_resource/any_resource.h>
-#  include <cuda/__memory_resource/get_memory_resource.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/synchronous_resource_adapter.h>
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
+#  include <cuda/std/__cstddef/byte.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__execution/env.h>
@@ -51,8 +52,10 @@
 #  include <cuda/std/__ranges/size.h>
 #  include <cuda/std/__ranges/unwrap_end.h>
 #  include <cuda/std/__type_traits/decay.h>
+#  include <cuda/std/__type_traits/is_one_of.h>
 #  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/__utility/move.h>
+#  include <cuda/std/cstddef>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/initializer_list>
 
@@ -66,6 +69,25 @@ template <class _Env>
 inline constexpr bool __buffer_compatible_env =
   ::cuda::std::is_same_v<::cuda::std::decay_t<_Env>, ::cuda::std::execution::env<>>
   || ::cuda::std::execution::__queryable_with<const _Env&, allocation_alignment_t>;
+
+template <class _Tp, class _Up = void>
+inline constexpr bool __is_buffer_byte_type_v =
+  ::cuda::std::__is_one_of_v<_Tp,
+#  if _CCCL_HOSTED()
+                             ::std::byte,
+#  endif
+                             ::cuda::std::byte,
+                             char,
+                             unsigned char>;
+
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
+template <class _Tp, class... _Properties>
+class buffer;
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
+
+template <class _Tp, class... _Properties>
+[[nodiscard]] _CCCL_HOST_API ::cuda::buffer<_Tp, _Properties...>
+__acquire_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info);
 
 _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 //! @rst
@@ -107,12 +129,16 @@ public:
   using difference_type        = ::cuda::std::ptrdiff_t;
   using properties_list        = ::cuda::mr::properties_list<_Properties...>;
 
-  using __buffer_t       = ::cuda::__uninitialized_async_buffer<_Tp, _Properties...>;
-  using __resource_t     = ::cuda::mr::any_resource<_Properties...>;
-  using __resource_ref_t = ::cuda::mr::resource_ref<_Properties...>;
+  using __buffer_t _CCCL_NODEBUG          = ::cuda::__uninitialized_async_buffer<_Tp, _Properties...>;
+  using __resource_t _CCCL_NODEBUG        = ::cuda::mr::any_resource<_Properties...>;
+  using __resource_ref_t _CCCL_NODEBUG    = ::cuda::mr::resource_ref<_Properties...>;
+  using __allocation_info_t _CCCL_NODEBUG = ::cuda::__allocation_info<_Tp, _Properties...>;
 
   template <class, class...>
   friend class buffer;
+
+  friend _CCCL_HOST_API auto ::cuda::__acquire_buffer<_Tp, _Properties...>(
+    ::cuda::__allocation_info<_Tp, _Properties...>&& __info) -> ::cuda::buffer<_Tp, _Properties...>;
 
   // For now we require trivially copyable type to simplify the implementation
   static_assert(::cuda::is_trivially_copyable_v<_Tp>, "cuda::buffer requires T to be trivially copyable.");
@@ -133,7 +159,7 @@ private:
 
   //! @brief Helper to check container is compatible with this buffer
   template <class _Range>
-  [[nodiscard]] static constexpr bool __compatible_range() noexcept
+  [[nodiscard]] _CCCL_HOST_API static constexpr bool __compatible_range() noexcept
   {
     return ::cuda::std::ranges::__container_compatible_range<_Range, _Tp>;
   }
@@ -141,20 +167,20 @@ private:
   //! @brief Helper to check whether a different buffer still satisfies all
   //! properties of this one
   template <class... _OtherProperties>
-  [[nodiscard]] static constexpr bool __properties_match() noexcept
+  [[nodiscard]] _CCCL_HOST_API static constexpr bool __properties_match() noexcept
   {
     return ::cuda::std::__type_set_contains_v<::cuda::std::__make_type_set<_OtherProperties...>, _Properties...>;
   }
 
   //! @brief Helper to return an resource_ref to the currently used resource.
   //! Used to grow the buffer
-  __resource_ref_t __borrow_resource() const noexcept
+  _CCCL_HOST_API __resource_ref_t __borrow_resource() const noexcept
   {
     return const_cast<__resource_t&>(__buf_.memory_resource());
   }
 
   template <class _Env>
-  static size_t __alignment_from_env(const _Env& __env)
+  _CCCL_HOST_API static size_t __alignment_from_env(const _Env& __env)
   {
     const auto __align = ::cuda::__call_or(::cuda::allocation_alignment, alignof(_Tp), __env);
     ::cuda::__validate_allocation_alignment(__align, alignof(_Tp));
@@ -181,9 +207,42 @@ private:
     static_assert(::cuda::std::contiguous_iterator<_Iter>, "Non contiguous iterators are not supported");
     // TODO use batched memcpy for non-contiguous iterators, it allows to
     // specify stream ordered access
-    ::cuda::__ensure_current_context __guard(__buf_.stream());
+    const ::cuda::__ensure_current_context __guard(__buf_.stream());
     ::cuda::__driver::__memcpyAsync(
       __dest, ::cuda::std::to_address(__first), sizeof(_Tp) * __count, __buf_.stream().get());
+  }
+
+  //! @brief Converts a buffer of \p _Tp into a buffer of \p _Up that owns the
+  //! same allocation. Shared implementation of `as_bytes()` and `as_type()`.
+  //!
+  //! @return A buffer of `size() * sizeof(_Tp) / sizeof(_Up)` elements with the same data
+  //! pointer, memory resource, stream and alignment.
+  //!
+  //! @warning After a successful call, the buffer can only be assigned to or
+  //! destroyed.
+  template <class _Up>
+  [[nodiscard]] _CCCL_HOST_API buffer<_Up, _Properties...> __as_type() &&
+  {
+    auto __alloc = ::cuda::std::move(*this).__release_allocation();
+    ::cuda::__allocation_info<_Up, _Properties...> __new_alloc{
+      __alloc.stream,
+      ::cuda::std::move(__alloc.mr),
+      reinterpret_cast<_Up*>(__alloc.ptr),
+      __alloc.capacity * sizeof(_Tp) / sizeof(_Up),
+      __alloc.size * sizeof(_Tp) / sizeof(_Up),
+      __alloc.alignment};
+    _CCCL_TRY
+    {
+      return ::cuda::__acquire_buffer<_Up, _Properties...>(::cuda::std::move(__new_alloc));
+    }
+    _CCCL_CATCH_ALL
+    {
+      *this = ::cuda::std::move([&]() noexcept {
+        __alloc.mr = ::cuda::std::move(__new_alloc.mr);
+        return ::cuda::__acquire_buffer<_Tp, _Properties...>(::cuda::std::move(__alloc));
+      }());
+      _CCCL_RETHROW;
+    }
   }
 
 public:
@@ -761,6 +820,60 @@ public:
     __lhs.swap(__rhs);
   }
 
+  //! @brief Releases ownership of the allocation without deallocating it.
+  //!
+  //! @return The stream, memory resource, pointer, capacity, element count and alignment
+  //! of the allocation. The caller becomes responsible for deallocating `ptr`
+  //! with `mr.deallocate(stream, ptr, bytes, alignment)`, where `bytes` is
+  //! `size * sizeof(T)` rounded up to a multiple of `alignment`.
+  //!
+  //! @warning After this call, the buffer can only be assigned to or destroyed.
+  [[nodiscard]] _CCCL_HOST_API __allocation_info_t __release_allocation() && noexcept
+  {
+    return ::cuda::std::move(__buf_).__release_allocation();
+  }
+
+  //! @brief Converts the buffer into a buffer of bytes that owns the same
+  //! allocation.
+  //!
+  //! @tparam _Byte One of `std::byte`, `cuda::std::byte`, `char` or
+  //! `unsigned char`.
+  //!
+  //! @return A buffer of `size() * sizeof(T)` bytes with the same data
+  //! pointer, memory resource, stream and alignment.
+  //!
+  //! @warning After this call, the buffer can only be assigned to or destroyed.
+  _CCCL_TEMPLATE(class _Byte)
+  _CCCL_REQUIRES(__is_buffer_byte_type_v<_Byte>)
+  [[nodiscard]] _CCCL_HOST_API buffer<_Byte, _Properties...> as_bytes() && noexcept
+  {
+    return ::cuda::std::move(*this).template __as_type<_Byte>();
+  }
+
+  //! @brief Converts a buffer of bytes into a buffer of \p _Up that owns the
+  //! same allocation. Only available if `T` is one of `std::byte`,
+  //! `cuda::std::byte`, `char` or `unsigned char`.
+  //!
+  //! @return A buffer of `size() / sizeof(_Up)` elements with the same data
+  //! pointer, memory resource, stream and alignment.
+  //!
+  //! @throw std::invalid_argument if `size()` is not a multiple of
+  //! `sizeof(_Up)` or if `alignment()` is less than `alignof(_Up)`. The buffer
+  //! is left unchanged in that case.
+  //!
+  //! @warning After a successful call, the buffer can only be assigned to or
+  //! destroyed.
+  _CCCL_TEMPLATE(class _Up)
+  _CCCL_REQUIRES(__is_buffer_byte_type_v<_Tp, _Up>)
+  [[nodiscard]] _CCCL_HOST_API buffer<_Up, _Properties...> as_type() &&
+  {
+    if ((size() * sizeof(_Tp)) % sizeof(_Up) != 0 || alignment() < alignof(_Up))
+    {
+      _CCCL_THROW(::std::invalid_argument, "cuda::buffer::as_type: size or alignment is incompatible with _Up");
+    }
+    return ::cuda::std::move(*this).template __as_type<_Up>();
+  }
+
   //! @brief Destroys the buffer, deallocates the buffer and destroys the memory
   //! resource
   //! @param __stream The stream to deallocate the buffer on.
@@ -783,7 +896,7 @@ public:
   }
 
 #  ifndef _CCCL_DOXYGEN_INVOKED
-  _CCCL_HOST_API constexpr void __set_size_unsynchronized(size_type __size) noexcept
+  _CCCL_HOST_API constexpr void __set_size_unsynchronized(size_type __size)
   {
     __buf_.__set_size(__size);
   }
@@ -829,20 +942,35 @@ public:
 
 _CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
+//! @brief Convenience alias for @c cuda::buffer configured with @c cuda::mr::device_accessible.
+//! @rst
+//! Convenience alias for :ref:`cuda::buffer <libcudacxx-api-class-cuda-ns-buffer>`
+//! configured with the ``cuda::mr::device_accessible`` property. See
+//! :ref:`cuda::buffer <libcudacxx-api-class-cuda-ns-buffer>` for constructors,
+//! ownership, and member functions.
+//! @endrst
 template <class _Tp>
 using device_buffer = buffer<_Tp, ::cuda::mr::device_accessible>;
 
+//! @brief Convenience alias for @c cuda::buffer configured with @c cuda::mr::host_accessible.
+//! @rst
+//! Convenience alias for :ref:`cuda::buffer <libcudacxx-api-class-cuda-ns-buffer>`
+//! configured with the ``cuda::mr::host_accessible`` property. See
+//! :ref:`cuda::buffer <libcudacxx-api-class-cuda-ns-buffer>` for constructors,
+//! ownership, and member functions.
+//! @endrst
 template <class _Tp>
 using host_buffer = buffer<_Tp, ::cuda::mr::host_accessible>;
 
 template <class _Tp, class _PropsList>
-using __buffer_type_for_props = typename ::cuda::std::remove_reference_t<_PropsList>::template rebind<buffer, _Tp>;
+using __buffer_type_for_props _CCCL_NODEBUG =
+  typename ::cuda::std::remove_reference_t<_PropsList>::template rebind<buffer, _Tp>;
 
 template <typename _BufferTo, typename _BufferFrom>
 _CCCL_HOST_API void __copy_cross_buffers(
   stream_ref __stream, _BufferTo& __to, const _BufferFrom& __from, typename _BufferFrom::size_type __count)
 {
-  ::cuda::__ensure_current_context __guard(__stream);
+  const ::cuda::__ensure_current_context __guard(__stream);
   __stream.wait(__from.stream());
   ::cuda::__driver::__memcpyAsync(
     __to.__unwrapped_begin(),
@@ -904,7 +1032,7 @@ _CCCL_HOST_API void __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::st
   else
   {
 #  if _CCCL_CUDA_COMPILATION()
-    ::cuda::__ensure_current_context __guard(__stream);
+    const ::cuda::__ensure_current_context __guard(__stream);
     CUB_NS_QUALIFIER::DeviceTransform::Fill(__first, __count, __value, __stream.get());
 #  else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
     static_assert(::cuda::__driver::__cu_driver_memsetable<_Tp>,
@@ -917,6 +1045,7 @@ _CCCL_HOST_API void __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::st
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 
 // Require at least one explicit property on the source, so it doesn't look applicable for initializer list inputs
+#  ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates these with the documented default-property overloads
 _CCCL_TEMPLATE(class _Tp,
                class _FirstProperty,
                class... _RestProperties,
@@ -940,6 +1069,7 @@ _CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
 
   return __res;
 }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a buffer by copying from \p __source, using the default properties of \p __mr
 //! @param __stream The stream used for allocation and copy.
@@ -980,17 +1110,19 @@ _CCCL_HOST_API auto make_buffer(
 }
 #  endif // _CCCL_DOXYGEN_INVOKED
 
+#  ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates these with the documented default-property overloads
 // Empty buffer make function
 _CCCL_TEMPLATE(
   class _Tp, class _FirstProperty, class... _RestProperties, class _Resource, class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
     __buffer_compatible_env<_Env>)
-buffer<_Tp, _FirstProperty, _RestProperties...>
+_CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...>
 make_buffer(stream_ref __stream, _Resource&& __mr, const _Env& __env = {})
 {
   return buffer<_Tp, _FirstProperty, _RestProperties...>{__stream, ::cuda::std::forward<_Resource>(__mr), __env};
 }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates an empty buffer using the default properties of \p __mr
 //! @param __stream The stream used for allocation.
@@ -1013,6 +1145,7 @@ _CCCL_HOST_API auto make_buffer(stream_ref __stream, _Resource&& __mr, const _En
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
+#  ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates these with the documented default-property overloads
 // Size and value make function
 _CCCL_TEMPLATE(
   class _Tp, class _FirstProperty, class... _RestProperties, class _Resource, class _Env = ::cuda::std::execution::env<>)
@@ -1028,6 +1161,7 @@ _CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
     __stream, __res.__unwrapped_begin(), __size, __value);
   return __res;
 }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a buffer of \p __size elements initialized to \p __value, using the default properties of \p __mr
 //! @param __stream The stream used for allocation and initialization.
@@ -1057,18 +1191,20 @@ _CCCL_HOST_API auto make_buffer(
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 
+#  ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates these with the documented default-property overloads
 // Size with no initialization make function
 _CCCL_TEMPLATE(
   class _Tp, class _FirstProperty, class... _RestProperties, class _Resource, class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
     __buffer_compatible_env<_Env>)
-buffer<_Tp, _FirstProperty, _RestProperties...>
+_CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...>
 make_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::no_init_t, const _Env& __env = {})
 {
   return buffer<_Tp, _FirstProperty, _RestProperties...>{
     __stream, ::cuda::std::forward<_Resource>(__mr), __size, ::cuda::no_init, __env};
 }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a buffer of \p __size uninitialized elements, using the default properties of \p __mr
 //! @param __stream The stream used for allocation.
@@ -1091,6 +1227,7 @@ make_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::no_ini
 }
 #  endif // _CCCL_DOXYGEN_INVOKED
 
+#  ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates these with the documented default-property overloads
 // Iterator range make function
 _CCCL_TEMPLATE(class _Tp,
                class _FirstProperty,
@@ -1101,12 +1238,13 @@ _CCCL_TEMPLATE(class _Tp,
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
     __buffer_compatible_env<_Env> _CCCL_AND ::cuda::std::__has_forward_traversal<_Iter>)
-buffer<_Tp, _FirstProperty, _RestProperties...>
+_CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...>
 make_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _Iter __last, const _Env& __env = {})
 {
   return buffer<_Tp, _FirstProperty, _RestProperties...>{
     __stream, ::cuda::std::forward<_Resource>(__mr), __first, __last, __env};
 }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a buffer from the iterator range `[__first, __last)`, using the default properties of \p __mr
 //! @param __stream The stream used for allocation and copy.
@@ -1131,18 +1269,20 @@ make_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _Iter __last, 
 }
 #  endif // _CCCL_DOXYGEN_INVOKED
 
+#  ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates these with the documented default-property overloads
 // Initializer list make function
 _CCCL_TEMPLATE(
   class _Tp, class _FirstProperty, class... _RestProperties, class _Resource, class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
     __buffer_compatible_env<_Env>)
-buffer<_Tp, _FirstProperty, _RestProperties...>
+_CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...>
 make_buffer(stream_ref __stream, _Resource&& __mr, ::cuda::std::initializer_list<_Tp> __ilist, const _Env& __env = {})
 {
   return buffer<_Tp, _FirstProperty, _RestProperties...>{
     __stream, ::cuda::std::forward<_Resource>(__mr), __ilist, __env};
 }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a buffer from \p __ilist, using the default properties of \p __mr
 //! @param __stream The stream used for allocation and copy.
@@ -1165,6 +1305,7 @@ make_buffer(stream_ref __stream, _Resource&& __mr, ::cuda::std::initializer_list
 }
 #  endif // _CCCL_DOXYGEN_INVOKED
 
+#  ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates these with the documented default-property overloads
 // Range make function for ranges
 _CCCL_TEMPLATE(class _Tp,
                class _FirstProperty,
@@ -1175,12 +1316,13 @@ _CCCL_TEMPLATE(class _Tp,
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
     __buffer_compatible_env<_Env> _CCCL_AND ::cuda::std::ranges::forward_range<_Range>)
-buffer<_Tp, _FirstProperty, _RestProperties...>
+_CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...>
 make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range, const _Env& __env = {})
 {
   return buffer<_Tp, _FirstProperty, _RestProperties...>{
     __stream, ::cuda::std::forward<_Resource>(__mr), ::cuda::std::forward<_Range>(__range), __env};
 }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a buffer from \p __range, using the default properties of \p __mr
 //! @param __stream The stream used for allocation and copy.
@@ -1201,6 +1343,31 @@ _CCCL_HOST_API auto make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& 
   return __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), ::cuda::std::forward<_Range>(__range), __env};
 }
 #  endif // _CCCL_DOXYGEN_INVOKED
+
+//! @brief Creates a buffer that takes ownership of an existing allocation.
+//!
+//! @param __info The allocation info to acquire.
+//!
+//! @pre \p __info.ptr is not owned by anything else and can be deallocated with
+//! `__info.mr.deallocate(__info.stream, __info.ptr, bytes, __info.alignment)`, where `bytes` is
+//! `__info.size * sizeof(T)` rounded up to a multiple of \p __info.alignment.
+//!
+//! @throw std::invalid_argument if \p __info.alignment is not a power of two that
+//! is at least `alignof(T)`, if \p __info.ptr is not aligned to \p __info.alignment,
+//! if \p __info.ptr is null and \p __info.size is not zero, if \p __info.capacity does not
+//! equal \p __info.size, or if the allocation size overflows.
+template <class _Tp, class... _Properties>
+[[nodiscard]] _CCCL_HOST_API ::cuda::buffer<_Tp, _Properties...>
+__acquire_buffer(::cuda::__allocation_info<_Tp, _Properties...>&& __info)
+{
+  using __buffer_type = ::cuda::buffer<_Tp, _Properties...>;
+
+  if (__info.capacity != __info.size)
+  {
+    _CCCL_THROW(::std::invalid_argument, "cuda::__acquire_buffer: capacity must match size");
+  }
+  return __buffer_type{__buffer_type::__buffer_t::__adopt_allocation(::cuda::std::move(__info))};
+}
 _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>

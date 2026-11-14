@@ -23,7 +23,6 @@
 
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
@@ -36,7 +35,6 @@ namespace __detail
 template <class _Ret, class _DecayFn>
 class __return_type_wrapper
 {
-private:
   _DecayFn __fn_;
 
 public:

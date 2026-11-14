@@ -109,6 +109,13 @@ template <typename _ElementType>
     return ::DLDataType{::kDLFloat4_e2m1fn, 4, 1};
   }
 #    endif // _CCCL_HAS_NVFP4_E2M1()
+#    if _CCCL_HAS_NVFP8_UE5M3()
+  else if constexpr (::cuda::std::is_same_v<_ElementType, ::__nv_fp8_ue5m3>)
+  {
+    static_assert(::cuda::std::__always_false_v<_ElementType>, "DLPack has no data type code for __nv_fp8_ue5m3");
+    return ::DLDataType{};
+  }
+#    endif // _CCCL_HAS_NVFP8_UE5M3()
   //--------------------------------------------------------------------------------------------------------------------
   // Floating-point types (after specific types)
   else if constexpr (::cuda::is_floating_point_v<_ElementType>)
@@ -226,11 +233,12 @@ to_dlpack_tensor(const ::cuda::device_mdspan<_ElementType, _Extents, _Layout, _A
   ::CUpointer_attribute __attrs[1] = {::CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL};
   int __ptr_dev_id                 = 0;
   void* __results[1]               = {&__ptr_dev_id};
-  const auto __status = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __mdspan.data_handle());
-  if (__status != ::cudaSuccess)
-  {
-    _CCCL_THROW(::cuda::cuda_error, __status, "Failed to get device ordinal of a pointer");
-  }
+  _CCCL_TRY_DRIVER_API(
+    ::cuda::__driver::__pointerGetAttributesNoThrow,
+    "Failed to get device ordinal of a pointer",
+    __attrs,
+    __results,
+    __mdspan.data_handle());
   return ::cuda::__to_dlpack(__mdspan_type{__mdspan}, ::kDLCUDA, __ptr_dev_id);
 }
 

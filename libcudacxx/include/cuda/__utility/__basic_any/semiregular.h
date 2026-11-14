@@ -35,7 +35,6 @@
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/movable.h>
 #include <cuda/std/__memory/addressof.h>
-#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -72,11 +71,8 @@ template <class _Tp>
     ::new (__dst) _Tp(static_cast<_Tp&&>(__src));
     return true;
   }
-  else
-  {
-    ::new (__dst)::cuda::std::type_identity_t<_Tp*>(new _Tp(static_cast<_Tp&&>(__src)));
-    return false;
-  }
+  ::new (__dst)::cuda::std::type_identity_t<_Tp*>(new _Tp(static_cast<_Tp&&>(__src)));
+  return false;
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -89,11 +85,8 @@ template <class _Tp>
     ::new (__dst) _Tp(__src);
     return true;
   }
-  else
-  {
-    ::new (__dst)::cuda::std::type_identity_t<_Tp*>(new _Tp(__src));
-    return false;
-  }
+  ::new (__dst)::cuda::std::type_identity_t<_Tp*>(new _Tp(__src));
+  return false;
 }
 
 _CCCL_EXEC_CHECK_DISABLE

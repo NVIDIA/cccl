@@ -23,6 +23,7 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/builtin.h>
+#include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__cccl/host_std_lib.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -111,7 +112,11 @@
 
 // We need to treat host and device separately
 #if _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)
-#  define _CCCL_GLOBAL_CONSTANT _CCCL_DEVICE constexpr
+#  if _CCCL_HAS_RDC()
+#    define _CCCL_GLOBAL_CONSTANT _CCCL_DEVICE inline constexpr
+#  else // ^^^ _CCCL_HAS_RDC() ^^^ / vvv !_CCCL_HAS_RDC() vvv
+#    define _CCCL_GLOBAL_CONSTANT _CCCL_DEVICE constexpr
+#  endif // ^^^ !_CCCL_HAS_RDC() ^^^
 #else // ^^^ _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC) ^^^ /
       // vvv !_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC) vvv
 #  define _CCCL_GLOBAL_CONSTANT inline constexpr
@@ -139,6 +144,12 @@
 #else // ^^^ has static operator[] ^^^ / vvv no static operator[] vvv
 #  define _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() 0
 #endif // ^^^ no static operator[] ^^^
+
+#if _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR()
+#  define _CCCL_STATIC_SUBSCRIPT_OPERATOR(...) static operator[](__VA_ARGS__)
+#else // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^ / vvv !_CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() vvv
+#  define _CCCL_STATIC_SUBSCRIPT_OPERATOR(...) operator[](__VA_ARGS__) const
+#endif // ^^^ !_CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^
 
 // clang 16+, gcc 13+ and nvhpc 26.1 backport the static call operator back to c++17.
 #if __cpp_static_call_operator >= 202207L                          \

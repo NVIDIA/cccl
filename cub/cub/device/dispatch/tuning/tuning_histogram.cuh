@@ -15,9 +15,10 @@
 
 #include <cub/agent/agent_histogram.cuh>
 #include <cub/block/block_load.cuh>
+#include <cub/detail/numeric_traits.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
@@ -29,7 +30,8 @@ CUB_NAMESPACE_BEGIN
 struct HistogramPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
-  int pixels_per_thread; //!< Number of pixels processed per thread
+  // TODO(bgruber): rename to items_per_thread in CCCL 4.0.
+  int pixels_per_thread; //!< Number of multi-channel items processed per thread
   int vec_size; //!< Vectorization size for loading samples
   BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading samples from global memory
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading samples from global memory
@@ -57,7 +59,7 @@ struct HistogramPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const HistogramPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const HistogramPolicy& p)
   {
     return os
         << "HistogramPolicy { .threads_per_block = " << p.threads_per_block << ", .pixels_per_thread = "
@@ -121,8 +123,8 @@ template <class SampleT,
           int NumChannels,
           int NumActiveChannels,
           counter_size CounterSize,
-          primitive_sample PrimitiveSample = is_primitive_sample<SampleT>(),
-          sample_size SampleSize           = classify_sample_size<SampleT>()>
+          primitive_sample PrimitiveSample = _CUB::detail::histogram::is_primitive_sample<SampleT>(),
+          sample_size SampleSize           = _CUB::detail::histogram::classify_sample_size<SampleT>()>
 struct sm90_tuning;
 
 template <class SampleT>
@@ -161,8 +163,8 @@ template <bool IsEven,
           int NumChannels,
           int NumActiveChannels,
           counter_size CounterSize,
-          primitive_sample PrimitiveSample = is_primitive_sample<SampleT>(),
-          sample_size SampleSize           = classify_sample_size<SampleT>()>
+          primitive_sample PrimitiveSample = _CUB::detail::histogram::is_primitive_sample<SampleT>(),
+          sample_size SampleSize           = _CUB::detail::histogram::classify_sample_size<SampleT>()>
 struct sm100_tuning;
 
 // even
@@ -239,8 +241,10 @@ struct policy_hub
     _CCCL_HOST_DEVICE_API static auto select_agent_policy(long) -> typename Policy500::AgentHistogramPolicyT;
 
     using AgentHistogramPolicyT =
-      decltype(select_agent_policy<
-               sm90_tuning<SampleT, NumChannels, NumActiveChannels, histogram::classify_counter_size<CounterT>()>>(0));
+      decltype(select_agent_policy<sm90_tuning<SampleT,
+                                               NumChannels,
+                                               NumActiveChannels,
+                                               _CUB::detail::histogram::classify_counter_size<CounterT>()>>(0));
 
     static constexpr int init_kernel_pdl_trigger_max_bins = 2048;
   };
@@ -263,9 +267,11 @@ struct policy_hub
     _CCCL_HOST_DEVICE_API static auto select_agent_policy(long) -> typename Policy900::AgentHistogramPolicyT;
 
     using AgentHistogramPolicyT =
-      decltype(select_agent_policy<
-               sm100_tuning<IsEven, SampleT, NumChannels, NumActiveChannels, histogram::classify_counter_size<CounterT>()>>(
-        0));
+      decltype(select_agent_policy<sm100_tuning<IsEven,
+                                                SampleT,
+                                                NumChannels,
+                                                NumActiveChannels,
+                                                _CUB::detail::histogram::classify_counter_size<CounterT>()>>(0));
 
     static constexpr int init_kernel_pdl_trigger_max_bins = 2048;
   };
@@ -287,6 +293,7 @@ struct policy_selector
   int num_channels;
   int num_active_channels;
   bool is_even;
+  type_t sample_type;
 
 private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int t_scale(int nominal_items_per_thread) const
@@ -298,6 +305,53 @@ private:
 public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> HistogramPolicy
   {
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
+    {
+      if (num_channels == 4 && num_active_channels == 3 && counter_size == 4 && sample_is_primitive && is_even)
+      {
+        if (sample_size == 1)
+        {
+          // ipt_7.tpb_128.rle_0.ws_0.mem_1.ld_1.laid_2.vec_0 1.005  0.991  1.537  2.076
+          return HistogramPolicy{128, 7, 1, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 2048};
+        }
+        if (sample_size == 2)
+        {
+          // ipt_7.tpb_256.rle_1.ws_0.mem_1.ld_0.laid_0.vec_0 0.937  1.014  1.145  1.126
+          return HistogramPolicy{256, 7, 1, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, true, SMEM, false, 2048};
+        }
+      }
+      if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive && !is_even)
+      {
+        if (sample_size == 2)
+        {
+          // ipt_9.tpb_1024.rle_1.ws_0.mem_1.ld_0.laid_2.vec_2 1.035  1.036  1.064  1.051
+          return HistogramPolicy{1024, 9, 1 << 2, BLOCK_LOAD_STRIPED, LOAD_DEFAULT, true, SMEM, false, 2048};
+        }
+        if (sample_size == 4 && sample_type != type_t::float32)
+        {
+          // ipt_9.tpb_992.rle_1.ws_0.mem_1.ld_0.laid_1.vec_1 1.684  1.426  1.392  1.170
+          return HistogramPolicy{992, 9, 1 << 1, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_DEFAULT, true, SMEM, false, 2048};
+        }
+        // float32, 8-byte and 16-byte samples: no clean sm107 candidate, fall through
+      }
+      if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive && is_even)
+      {
+        // 1-byte samples: every searched candidate costs ~25% at 2^16/2^20, intentionally left untuned
+        // 2-byte samples: every searched candidate costs ~20% at 2^16/2^20 with 2048 bins, intentionally left untuned
+        // 4-byte samples: every searched candidate regresses the 2048-bin class, intentionally left untuned
+        if (sample_size == 8)
+        {
+          if (sample_type == type_t::float64)
+          {
+            // ipt_16.tpb_512.rle_1.ws_0.mem_1.ld_0.laid_2.vec_0 0.974  0.995  1.138  1.181
+            return HistogramPolicy{512, 16, 1, BLOCK_LOAD_STRIPED, LOAD_DEFAULT, true, SMEM, false, 2048};
+          }
+          // ipt_11.tpb_512.rle_1.ws_0.mem_1.ld_2.laid_2.vec_0 0.943  1.014  1.135  1.199
+          return HistogramPolicy{512, 11, 1, BLOCK_LOAD_STRIPED, LOAD_CA, true, SMEM, false, 2048};
+        }
+      }
+    }
+
     if (cc >= ::cuda::compute_capability{10, 0})
     {
       if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive && sample_size == 1)
@@ -307,11 +361,9 @@ public:
           // ipt_12.tpb_928.rle_0.ws_0.mem_1.ld_2.laid_0.vec_2 1.033332  0.940517  1.031835  1.195876
           return HistogramPolicy{928, 12, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_CA, false, SMEM, false, 2048};
         }
-        else
-        {
-          // ipt_12.tpb_448.rle_0.ws_0.mem_1.ld_1.laid_0.vec_2 1.078987  0.985542  1.085118  1.175637
-          return HistogramPolicy{448, 12, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 2048};
-        }
+
+        // ipt_12.tpb_448.rle_0.ws_0.mem_1.ld_1.laid_0.vec_2 1.078987  0.985542  1.085118  1.175637
+        return HistogramPolicy{448, 12, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 2048};
       }
 
       // sample_size 2/4/8 showed no benefit over SM90 during verification benchmarks
@@ -326,7 +378,7 @@ public:
         {
           return HistogramPolicy{768, 12, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 2048};
         }
-        else if (sample_size == 2)
+        if (sample_size == 2)
         {
           return HistogramPolicy{960, 10, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, true, SMEM, false, 2048};
         }
@@ -354,7 +406,8 @@ struct policy_selector_from_types
       int{sizeof(SampleT)},
       NumChannels,
       NumActiveChannels,
-      IsEven};
+      IsEven,
+      classify_type<SampleT>};
     return policies(cc);
   }
 };

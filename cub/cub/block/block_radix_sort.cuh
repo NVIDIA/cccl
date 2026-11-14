@@ -22,9 +22,12 @@
 
 #include <cub/block/block_exchange.cuh>
 #include <cub/block/block_radix_rank.cuh>
+#include <cub/block/block_scan.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -206,7 +209,6 @@ template <typename KeyT,
           int BlockDimZ                         = 1>
 class BlockRadixSort
 {
-private:
   /******************************************************************************
    * Constants and type definitions
    ******************************************************************************/
@@ -265,7 +267,7 @@ private:
    ******************************************************************************/
 
   /// Internal storage allocator
-  _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
   {
     __shared__ _TempStorage private_storage;
     return private_storage;
@@ -273,7 +275,7 @@ private:
 
   /// Rank keys (specialized for ascending sort)
   template <class DigitExtractorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   RankKeys(bit_ordered_type (&unsigned_keys)[ItemsPerThread],
            int (&ranks)[ItemsPerThread],
            DigitExtractorT digit_extractor,
@@ -284,7 +286,7 @@ private:
 
   /// Rank keys (specialized for descending sort)
   template <class DigitExtractorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   RankKeys(bit_ordered_type (&unsigned_keys)[ItemsPerThread],
            int (&ranks)[ItemsPerThread],
            DigitExtractorT digit_extractor,
@@ -294,7 +296,7 @@ private:
   }
 
   /// ExchangeValues (specialized for key-value sort, to-blocked arrangement)
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExchangeValues(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExchangeValues(
     ValueT (&values)[ItemsPerThread],
     int (&ranks)[ItemsPerThread],
     ::cuda::std::false_type /*is_keys_only*/,
@@ -307,7 +309,7 @@ private:
   }
 
   /// ExchangeValues (specialized for key-value sort, to-striped arrangement)
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExchangeValues(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExchangeValues(
     ValueT (&values)[ItemsPerThread],
     int (&ranks)[ItemsPerThread],
     ::cuda::std::false_type /*is_keys_only*/,
@@ -320,12 +322,12 @@ private:
   }
 
   /// ExchangeValues (specialized for keys-only sort)
-  template <bool IS_BLOCKED>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExchangeValues(
+  template <bool IsBlocked>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExchangeValues(
     ValueT (& /*values*/)[ItemsPerThread],
     int (& /*ranks*/)[ItemsPerThread],
     ::cuda::std::true_type /*is_keys_only*/,
-    ::cuda::std::bool_constant<IS_BLOCKED> /*is_blocked*/)
+    ::cuda::std::bool_constant<IsBlocked> /*is_blocked*/)
   {}
 
   /**
@@ -353,14 +355,14 @@ private:
    *   Callable object responsible for decomposing a key into a tuple of references to its
    *   constituent arithmetic types
    */
-  template <bool DESCENDING, bool KEYS_ONLY, class DecomposerT = detail::identity_decomposer_t>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SortBlocked(
+  template <bool DESCENDING, bool KeysOnly, class DecomposerT = detail::identity_decomposer_t>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SortBlocked(
     KeyT (&keys)[ItemsPerThread],
     ValueT (&values)[ItemsPerThread],
     int begin_bit,
     int end_bit,
     ::cuda::std::bool_constant<DESCENDING> is_descending,
-    ::cuda::std::bool_constant<KEYS_ONLY> is_keys_only,
+    ::cuda::std::bool_constant<KeysOnly> is_keys_only,
     DecomposerT decomposer = {})
   {
     bit_ordered_type(&unsigned_keys)[ItemsPerThread] = reinterpret_cast<bit_ordered_type(&)[ItemsPerThread]>(keys);
@@ -374,7 +376,7 @@ private:
     // Radix sorting passes
     while (true)
     {
-      int pass_bits = ::cuda::std::min(RadixBits, end_bit - begin_bit);
+      const int pass_bits = ::cuda::std::min(RadixBits, end_bit - begin_bit);
       auto digit_extractor =
         traits::template digit_extractor<fundamental_digit_extractor_t>(begin_bit, pass_bits, decomposer);
 
@@ -432,14 +434,14 @@ public:
    * @param is_keys_only
    *   Tag whether is keys-only sort
    */
-  template <bool DESCENDING, bool KEYS_ONLY, class DecomposerT = detail::identity_decomposer_t>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SortBlockedToStriped(
+  template <bool DESCENDING, bool KeysOnly, class DecomposerT = detail::identity_decomposer_t>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SortBlockedToStriped(
     KeyT (&keys)[ItemsPerThread],
     ValueT (&values)[ItemsPerThread],
     int begin_bit,
     int end_bit,
     ::cuda::std::bool_constant<DESCENDING> is_descending,
-    ::cuda::std::bool_constant<KEYS_ONLY> is_keys_only,
+    ::cuda::std::bool_constant<KeysOnly> is_keys_only,
     DecomposerT decomposer = {})
   {
     bit_ordered_type(&unsigned_keys)[ItemsPerThread] = reinterpret_cast<bit_ordered_type(&)[ItemsPerThread]>(keys);
@@ -453,7 +455,7 @@ public:
     // Radix sorting passes
     while (true)
     {
-      int pass_bits = ::cuda::std::min(RadixBits, end_bit - begin_bit);
+      const int pass_bits = ::cuda::std::min(RadixBits, end_bit - begin_bit);
       auto digit_extractor =
         traits::template digit_extractor<fundamental_digit_extractor_t>(begin_bit, pass_bits, decomposer);
 
@@ -497,8 +499,7 @@ public:
 #endif // _CCCL_DOXYGEN_INVOKED
 
   /// @smemstorage{BlockRadixSort}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
@@ -509,9 +510,9 @@ public:
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //! @endrst
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixSort()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockRadixSort()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
@@ -525,9 +526,9 @@ public:
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixSort(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockRadixSort(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}
@@ -584,7 +585,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Sort(KeyT (&keys)[ItemsPerThread], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     NullType values[ItemsPerThread];
@@ -652,7 +653,7 @@ public:
   //!   The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE //
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
   Sort(KeyT (&keys)[ItemsPerThread], DecomposerT decomposer, int begin_bit, int end_bit)
@@ -715,7 +716,7 @@ public:
   //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   template <class DecomposerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE //
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>> Sort(KeyT (&keys)[ItemsPerThread], DecomposerT decomposer)
   {
@@ -784,7 +785,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Sort(
     KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>);
@@ -858,7 +859,7 @@ public:
   //!   The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE //
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
   Sort(
@@ -928,7 +929,7 @@ public:
   //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   template <class DecomposerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE //
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
   Sort(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], DecomposerT decomposer)
@@ -987,7 +988,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   SortDescending(KeyT (&keys)[ItemsPerThread], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     NullType values[ItemsPerThread];
@@ -1055,7 +1056,7 @@ public:
   //!   The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE //
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortDescending(KeyT (&keys)[ItemsPerThread], DecomposerT decomposer, int begin_bit, int end_bit)
@@ -1118,7 +1119,7 @@ public:
   //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   template <class DecomposerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE //
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortDescending(KeyT (&keys)[ItemsPerThread], DecomposerT decomposer)
@@ -1195,7 +1196,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SortDescending(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SortDescending(
     KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>);
@@ -1269,7 +1270,7 @@ public:
   //!   The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE //
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortDescending(
@@ -1339,7 +1340,7 @@ public:
   //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   template <class DecomposerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE //
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortDescending(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], DecomposerT decomposer)
@@ -1409,7 +1410,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   SortBlockedToStriped(KeyT (&keys)[ItemsPerThread], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     NullType values[ItemsPerThread];
@@ -1479,7 +1480,7 @@ public:
   //!   The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE //
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortBlockedToStriped(KeyT (&keys)[ItemsPerThread], DecomposerT decomposer, int begin_bit, int end_bit)
@@ -1543,7 +1544,7 @@ public:
   //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   template <class DecomposerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE //
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortBlockedToStriped(KeyT (&keys)[ItemsPerThread], DecomposerT decomposer)
@@ -1620,7 +1621,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SortBlockedToStriped(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SortBlockedToStriped(
     KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     SortBlockedToStriped(
@@ -1691,7 +1692,7 @@ public:
   //!   The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE //
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortBlockedToStriped(
@@ -1757,7 +1758,7 @@ public:
   //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   template <class DecomposerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE //
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortBlockedToStriped(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], DecomposerT decomposer)
@@ -1823,7 +1824,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   SortDescendingBlockedToStriped(KeyT (&keys)[ItemsPerThread], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     NullType values[ItemsPerThread];
@@ -1892,7 +1893,7 @@ public:
   //!   The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE //
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortDescendingBlockedToStriped(KeyT (&keys)[ItemsPerThread], DecomposerT decomposer, int begin_bit, int end_bit)
@@ -1956,7 +1957,7 @@ public:
   //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   template <class DecomposerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE //
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortDescendingBlockedToStriped(KeyT (&keys)[ItemsPerThread], DecomposerT decomposer)
@@ -2033,7 +2034,7 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SortDescendingBlockedToStriped(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SortDescendingBlockedToStriped(
     KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     SortBlockedToStriped(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>);
@@ -2103,7 +2104,7 @@ public:
   //!   The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE //
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortDescendingBlockedToStriped(
@@ -2169,7 +2170,7 @@ public:
   //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   template <class DecomposerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE //
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortDescendingBlockedToStriped(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], DecomposerT decomposer)

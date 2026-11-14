@@ -11,7 +11,7 @@
 #include <cuda/utility>
 
 template <typename T>
-__device__ __forceinline__ static T generate_random_data()
+_CCCL_DEVICE_API __forceinline__ T generate_random_data()
 {
   constexpr auto size = static_cast<int>(cuda::ceil_div(sizeof(T), sizeof(uint32_t)));
   uint32_t data[size];
@@ -27,14 +27,14 @@ __device__ __forceinline__ static T generate_random_data()
 // When benchmarking algorithms sensitive to data distribution, each thread should use a different seed to get different
 // data.
 template <typename T>
-__device__ __forceinline__ static T generate_random_data(uint32_t& seed)
+_CCCL_DEVICE_API __forceinline__ T generate_random_data(uint32_t& seed)
 {
   constexpr auto size = static_cast<int>(cuda::ceil_div(sizeof(T), sizeof(uint32_t)));
   uint32_t data[size];
   for (int i = 0; i < size; i++)
   {
     // https://en.wikipedia.org/wiki/Linear_congruential_generator
-    seed    = 1664525 * seed + 1013904223;
+    seed    = (1664525 * seed) + 1013904223;
     data[i] = seed;
   }
   T ret;
@@ -45,7 +45,7 @@ __device__ __forceinline__ static T generate_random_data(uint32_t& seed)
 __device__ static int device_var[16];
 
 template <typename T>
-__device__ __forceinline__ static void sink(T value)
+_CCCL_DEVICE_API __forceinline__ void sink(T value)
 {
   if (cuda::ptx::get_sreg_smid() == static_cast<uint32_t>(-1))
   {
@@ -54,7 +54,7 @@ __device__ __forceinline__ static void sink(T value)
 }
 
 template <typename T, int Size>
-__device__ __forceinline__ static void sink(T (&values)[Size])
+_CCCL_DEVICE_API __forceinline__ void sink(T (&values)[Size])
 {
   if (cuda::ptx::get_sreg_smid() == static_cast<uint32_t>(-1))
   {
@@ -69,13 +69,23 @@ __device__ __forceinline__ static void sink(T (&values)[Size])
   }
 }
 
-template <int ThreadsPerBlock, int UnrollFactor, typename ActionT, typename T>
-__launch_bounds__(ThreadsPerBlock) __global__ static void benchmark_kernel(const ActionT action)
+template <int ThreadsPerBlock, int UnrollFactor, typename ActionT, typename T, bool Unroll = true>
+__launch_bounds__(ThreadsPerBlock) _CCCL_KERNEL_ATTRIBUTES static void benchmark_kernel(const ActionT action)
 {
   auto data = generate_random_data<T>();
-  cuda::static_for<UnrollFactor>([&]([[maybe_unused]] auto _) {
-    data = action(data);
-  });
+  if constexpr (Unroll)
+  {
+    cuda::static_for<UnrollFactor>([&]([[maybe_unused]] auto _) {
+      data = action(data);
+    });
+  }
+  else
+  {
+    for (int i = 0; i < UnrollFactor; ++i)
+    {
+      data = action(data);
+    }
+  }
   sink(data);
 }
 
@@ -83,7 +93,7 @@ __launch_bounds__(ThreadsPerBlock) __global__ static void benchmark_kernel(const
 // benchmark results.
 // For keys-only benchmarks, set ValueT to void.
 template <int ItemsPerThread, typename KeyT, typename ValueT, typename ActionT, typename... Args>
-__global__ static void benchmark_kernel(int num_iterations, const ActionT action, Args... args)
+_CCCL_KERNEL_ATTRIBUTES static void benchmark_kernel(int num_iterations, const ActionT action, Args... args)
 {
   constexpr int warp_threads = 32;
   constexpr bool has_values  = !cuda::std::is_void_v<ValueT>;
@@ -92,7 +102,7 @@ __global__ static void benchmark_kernel(int num_iterations, const ActionT action
   [[maybe_unused]] cuda::std::conditional_t<has_values, ValueT, char> values[ItemsPerThread];
   const auto tid = threadIdx.x;
   // Shift tid by 7 to reduce the likelihood of threads within a warp getting monotonically increasing data
-  uint32_t seed = cuda::ptx::get_sreg_clock() + (tid + 7) % warp_threads;
+  uint32_t seed = cuda::ptx::get_sreg_clock() + ((tid + 7) % warp_threads);
 
 #pragma unroll 1
   for (int iter = 0; iter < num_iterations; ++iter)

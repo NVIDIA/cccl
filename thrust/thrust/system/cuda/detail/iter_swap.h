@@ -18,7 +18,9 @@
 #  include <thrust/system/cuda/config.h>
 
 #  include <thrust/detail/raw_pointer_cast.h>
+#  include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
+#  include <thrust/system/cuda/detail/util.h>
 
 #  include <cuda/std/__utility/swap.h>
 
@@ -42,7 +44,7 @@ _CCCL_KERNEL_ATTRIBUTES void iter_swap_kernel(Pointer1 a, Pointer2 b)
 } // namespace detail
 
 template <typename DerivedPolicy, typename Pointer1, typename Pointer2>
-inline _CCCL_HOST_DEVICE void iter_swap(thrust::cuda::execution_policy<DerivedPolicy>& exec, Pointer1 a, Pointer2 b)
+_CCCL_HOST_DEVICE_API inline void iter_swap(thrust::cuda::execution_policy<DerivedPolicy>& exec, Pointer1 a, Pointer2 b)
 {
   // Because of https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#cuda-arch
   // point 2., if a call from a __host__

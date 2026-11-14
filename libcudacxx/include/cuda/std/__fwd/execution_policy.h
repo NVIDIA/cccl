@@ -43,10 +43,10 @@ inline constexpr __execution_policy __policy_to_execution_policy = __execution_p
 
 //! @brief Enumerates the different backends we support
 //! @note Not an enum class because a user might specify multiple backends
-enum __execution_backend : uint8_t
+enum __execution_backend : uint8_t // NOLINT(cppcoreguidelines-use-enum-class)
 {
   // The backends we provide
-  __none = 0,
+  __none = 0, // NOLINT(readability-enum-initial-value)
 #if _CCCL_HAS_BACKEND_CUDA()
   __cuda = 1 << 0,
 #endif // _CCCL_HAS_BACKEND_CUDA()

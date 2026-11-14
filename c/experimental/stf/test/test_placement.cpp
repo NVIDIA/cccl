@@ -38,6 +38,32 @@ stf_exec_place_handle make_dev0_grid(size_t nplaces)
 }
 } // namespace
 
+C2H_TEST("placement evaluation with a native mapper", "[places][placement]")
+{
+  stf_exec_place_handle grid = make_dev0_grid(2);
+
+  const stf_dim4 dims{4 * MiB, 1, 1, 1};
+  stf_placement_stats stats{};
+  uint64_t bytes_per_pos[2] = {0, 0};
+
+  const int rc = stf_placement_evaluate(
+    grid, stf_partition_fn_blocked(0), &dims, 1, /*probes=*/0, /*block_size=*/2 * MiB, &stats, bytes_per_pos);
+  REQUIRE(rc == 0);
+
+  REQUIRE(stats.total_bytes == 4 * MiB);
+  REQUIRE(stats.vm_bytes == 4 * MiB);
+  REQUIRE(stats.block_size == 2 * MiB);
+  REQUIRE(stats.nblocks == 2);
+  // Block-aligned blocked split over two positions: one allocation each and
+  // every byte local to its owner
+  REQUIRE(stats.nallocs == 2);
+  REQUIRE(stats.accuracy == 1.0);
+  REQUIRE(bytes_per_pos[0] == 2 * MiB);
+  REQUIRE(bytes_per_pos[1] == 2 * MiB);
+
+  stf_exec_place_destroy(grid);
+}
+
 C2H_TEST("cute partition creation, accessors and leaf round trip", "[places][placement]")
 {
   const stf_dim4 true_dims{10, 1, 1, 1};
@@ -60,8 +86,10 @@ C2H_TEST("cute partition creation, accessors and leaf round trip", "[places][pla
   REQUIRE(np == 1);
   REQUIRE(nl == 1);
 
-  std::vector<uint64_t> p_ext(np), l_ext(nl);
-  std::vector<int64_t> p_str(np), l_str(nl);
+  std::vector<uint64_t> p_ext(np);
+  std::vector<uint64_t> l_ext(nl);
+  std::vector<int64_t> p_str(np);
+  std::vector<int64_t> l_str(nl);
   std::vector<int> p_axes(np);
   stf_cute_partition_get_place_leaves(part, p_ext.data(), p_str.data(), p_axes.data());
   stf_cute_partition_get_local_leaves(part, l_ext.data(), l_str.data());
@@ -111,6 +139,39 @@ C2H_TEST("cute partition creation, accessors and leaf round trip", "[places][pla
   stf_cute_partition_destroy(nullptr); // must be a no-op
 }
 
+C2H_TEST("partition evaluation matches the equivalent native mapper", "[places][placement]")
+{
+  stf_exec_place_handle grid = make_dev0_grid(2);
+
+  const stf_dim4 dims{8 * MiB, 1, 1, 1};
+  const stf_partition_dim_spec spec[1] = {{STF_DIM_BLOCKED, 0, 0}};
+  const stf_dim4 grid_dims{2, 1, 1, 1};
+
+  stf_cute_partition_handle part = stf_cute_partition_create(&dims, &grid_dims, spec, 1);
+  REQUIRE(part != nullptr);
+
+  stf_placement_stats s_mapper{};
+  stf_placement_stats s_part{};
+  uint64_t b_mapper[2] = {0, 0};
+  uint64_t b_part[2]   = {0, 0};
+
+  REQUIRE(stf_placement_evaluate(grid, stf_partition_fn_blocked(0), &dims, 1, 0, 2 * MiB, &s_mapper, b_mapper) == 0);
+  REQUIRE(stf_placement_evaluate_partition(grid, part, 1, 0, 2 * MiB, &s_part, b_part) == 0);
+
+  REQUIRE(s_mapper.nblocks == s_part.nblocks);
+  REQUIRE(s_mapper.nallocs == s_part.nallocs);
+  // The native mapper is sampled while the structured partition resolves
+  // through the analytic tier; on a block-aligned split both report full
+  // locality and the same byte distribution.
+  REQUIRE(s_mapper.accuracy == 1.0);
+  REQUIRE(s_part.accuracy == 1.0);
+  REQUIRE(b_mapper[0] == b_part[0]);
+  REQUIRE(b_mapper[1] == b_part[1]);
+
+  stf_cute_partition_destroy(part);
+  stf_exec_place_destroy(grid);
+}
+
 C2H_TEST("shaped allocation on composite data places", "[places][placement][allocate]")
 {
   // Composite shaped allocation builds a localized_array, which requires
@@ -136,7 +197,7 @@ C2H_TEST("shaped allocation on composite data places", "[places][placement][allo
   REQUIRE(dp != nullptr);
 
   // A byte count alone cannot carry the tensor geometry: must fail cleanly
-  void* bad = stf_data_place_allocate(dp, static_cast<ptrdiff_t>(n * sizeof(int)), nullptr);
+  const void* bad = stf_data_place_allocate(dp, static_cast<ptrdiff_t>(n * sizeof(int)), nullptr);
   REQUIRE(bad == nullptr);
 
   void* ptr = stf_data_place_allocate_nd(dp, &dims, sizeof(int), nullptr);

@@ -17,18 +17,17 @@
 
 #  include <thrust/system/cuda/config.h>
 
-#  include <cub/device/device_scan.cuh>
+#  include <cub/device/dispatch/dispatch_scan_by_key.cuh> // IWYU pragma: keep
 
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/functional.h>
 #  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/util.h>
-#  include <thrust/type_traits/is_contiguous_iterator.h>
 #  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
@@ -46,7 +45,7 @@ template <typename Derived,
           typename EqualityOpT,
           typename ScanOpT,
           typename SizeT>
-_CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
+_CCCL_HOST_DEVICE_API ValuesOutIt inclusive_scan_by_key_n(
   thrust::cuda_cub::execution_policy<Derived>& policy,
   KeysInIt keys,
   ValuesInIt values,
@@ -134,7 +133,7 @@ template <typename Derived,
           typename EqualityOpT,
           typename ScanOpT,
           typename SizeT>
-_CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
+_CCCL_HOST_DEVICE_API ValuesOutIt exclusive_scan_by_key_n(
   thrust::cuda_cub::execution_policy<Derived>& policy,
   KeysInIt keys,
   ValuesInIt values,
@@ -220,7 +219,7 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class KeyInputIt, class ValInputIt, class ValOutputIt, class BinaryPred, class ScanOp>
-ValOutputIt _CCCL_HOST_DEVICE inclusive_scan_by_key(
+ValOutputIt _CCCL_HOST_DEVICE_API inclusive_scan_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt key_first,
   KeyInputIt key_last,
@@ -240,7 +239,7 @@ ValOutputIt _CCCL_HOST_DEVICE inclusive_scan_by_key(
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class ValOutputIt, class BinaryPred>
-ValOutputIt _CCCL_HOST_DEVICE inclusive_scan_by_key(
+ValOutputIt _CCCL_HOST_DEVICE_API inclusive_scan_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt key_first,
   KeyInputIt key_last,
@@ -253,7 +252,7 @@ ValOutputIt _CCCL_HOST_DEVICE inclusive_scan_by_key(
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class ValOutputIt>
-ValOutputIt _CCCL_HOST_DEVICE inclusive_scan_by_key(
+ValOutputIt _CCCL_HOST_DEVICE_API inclusive_scan_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt key_first,
   KeyInputIt key_last,
@@ -270,7 +269,7 @@ ValOutputIt _CCCL_HOST_DEVICE inclusive_scan_by_key(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class KeyInputIt, class ValInputIt, class ValOutputIt, class Init, class BinaryPred, class ScanOp>
-ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
+ValOutputIt _CCCL_HOST_DEVICE_API exclusive_scan_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt key_first,
   KeyInputIt key_last,
@@ -297,7 +296,7 @@ ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class ValOutputIt, class Init, class BinaryPred>
-ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
+ValOutputIt _CCCL_HOST_DEVICE_API exclusive_scan_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt key_first,
   KeyInputIt key_last,
@@ -311,7 +310,7 @@ ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class ValOutputIt, class Init>
-ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
+ValOutputIt _CCCL_HOST_DEVICE_API exclusive_scan_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt key_first,
   KeyInputIt key_last,
@@ -324,7 +323,7 @@ ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class ValOutputIt>
-ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
+ValOutputIt _CCCL_HOST_DEVICE_API exclusive_scan_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt key_first,
   KeyInputIt key_last,
@@ -337,6 +336,6 @@ ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 
-#  include <thrust/scan.h>
+#  include <thrust/scan.h> // IWYU pragma: keep
 
 #endif // _CCCL_CUDA_COMPILATION()

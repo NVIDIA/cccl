@@ -15,7 +15,9 @@
 
 #include <cuda/__cccl_config>
 #include <cuda/buffer>
+#include <cuda/hierarchy>
 #include <cuda/iterator>
+#include <cuda/launch>
 #include <cuda/memory_pool>
 #include <cuda/std/algorithm>
 #include <cuda/std/cstddef>
@@ -53,7 +55,7 @@ struct original_hash
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t operator()(int key) const noexcept
   {
-    return static_cast<::cuda::std::size_t>(key) * 33 + static_cast<::cuda::std::size_t>(seed);
+    return (static_cast<::cuda::std::size_t>(key) * 33) + static_cast<::cuda::std::size_t>(seed);
   }
 };
 
@@ -119,7 +121,7 @@ template <class Ref>
 __global__ void contains_with_rebound_ref(Ref ref, int offset, int num_keys, int* found)
 {
   const auto tile = cg::tiled_partition<Ref::cg_size>(cg::this_thread_block());
-  const int index = (static_cast<int>(blockIdx.x) * blockDim.x + threadIdx.x) / Ref::cg_size;
+  const int index = ((static_cast<int>(blockIdx.x) * blockDim.x) + threadIdx.x) / Ref::cg_size;
   if (index < num_keys)
   {
     const auto rebound_ref = make_rebound_ref(ref, offset);
@@ -169,7 +171,7 @@ C2H_TEST("fixed_capacity_map_ref rebind APIs", "[ref][rebind]", key_types, cg_si
   constexpr int threads          = 128;
   constexpr int keys_per_block   = threads / cg_size;
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   const auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   const probing_type probing_scheme = [&] {
@@ -234,9 +236,14 @@ C2H_TEST("fixed_capacity_map_ref rebind APIs", "[ref][rebind]", key_types, cg_si
   }
 
   auto found = ::cuda::make_buffer<int>(stream, mr, num_keys, 0);
-  contains_with_rebound_ref<<<(num_keys + keys_per_block - 1) / keys_per_block, threads, 0, stream.get()>>>(
-    ref, offset, num_keys, found.data());
-  REQUIRE(cudaGetLastError() == cudaSuccess);
+  cuda::launch(
+    stream,
+    cuda::make_config(cuda::grid_dims((num_keys + keys_per_block - 1) / keys_per_block), cuda::block_dims<threads>()),
+    contains_with_rebound_ref<typename map_type::ref_type>,
+    ref,
+    offset,
+    num_keys,
+    found.data());
   const auto policy =
     ::cuda::execution::gpu.with(::cuda::get_stream, stream)
       .with(::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(::cuda::device_ref{0}));
@@ -251,16 +258,15 @@ C2H_TEST("fixed_capacity_map_ref rebind APIs preserve static capacity", "[ref][r
   using map_type          = cudax::cuco::
     fixed_capacity_map<int, int, capacity, ::cuda::thread_scope_device, ::cuda::std::equal_to<int>, probing_type>;
 
-  constexpr int num_keys = 32;
-  constexpr int offset   = 1000;
-  constexpr int threads  = 128;
+  constexpr int num_keys                 = 32;
+  constexpr int offset                   = 1000;
+  [[maybe_unused]] constexpr int threads = 128;
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   const auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
   map_type map{stream, mr, cudax::cuco::empty_key{-1}, cudax::cuco::empty_value{-1}};
 
-  const auto pairs =
-    ::cuda::transform_iterator(::cuda::counting_iterator<int>{0}, iota_pair<typename map_type::value_type>{});
+  const auto pairs = ::cuda::transform_iterator(::cuda::counting_iterator<int>{0}, iota_pair<map_type::value_type>{});
   map.insert(stream, pairs, pairs + num_keys);
 
   const auto ref         = map.ref();
@@ -272,8 +278,14 @@ C2H_TEST("fixed_capacity_map_ref rebind APIs preserve static capacity", "[ref][r
   REQUIRE(rebound_ref.storage_span().data() == ref.storage_span().data());
 
   auto found = ::cuda::make_buffer<int>(stream, mr, num_keys, 0);
-  contains_with_rebound_ref<<<1, threads, 0, stream.get()>>>(ref, offset, num_keys, found.data());
-  REQUIRE(cudaGetLastError() == cudaSuccess);
+  cuda::launch(
+    stream,
+    cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<threads>()),
+    contains_with_rebound_ref<map_type::ref_type>,
+    ref,
+    offset,
+    num_keys,
+    found.data());
   const auto policy =
     ::cuda::execution::gpu.with(::cuda::get_stream, stream)
       .with(::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(::cuda::device_ref{0}));

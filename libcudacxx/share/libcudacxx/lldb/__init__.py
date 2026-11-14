@@ -9,10 +9,12 @@ Requires Python 3.12 or newer.
 
 from __future__ import annotations
 
+import annotated_ptr
 import atomic
 import buffer
 import complex
 import event
+import expected
 import hierarchy
 import inplace_vector
 import mdspan
@@ -31,6 +33,7 @@ _CATEGORY = "cccl"
 _FORMATTERS = (
     memory_resource,
     atomic,
+    annotated_ptr,
     buffer,
     std_array,
     complex,
@@ -43,8 +46,10 @@ _FORMATTERS = (
     memory_pool,
     span,
     optional,
+    expected,
     shared_resource,
 )
+
 InternalDict = dict[str, object]
 
 

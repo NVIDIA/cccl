@@ -391,16 +391,16 @@ TEMPLATE_TEST_CASE_METHOD(
 
 struct host_device_resource
 {
-  void* allocate(cuda::stream_ref, size_t, size_t)
+  void* allocate(cuda::stream_ref, std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate(cuda::stream_ref, void*, size_t, size_t) noexcept {}
-  void* allocate_sync(size_t, size_t)
+  void deallocate(cuda::stream_ref, void*, std::size_t, std::size_t) noexcept {}
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate_sync(void*, size_t, size_t) noexcept {}
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
   friend bool operator==(const host_device_resource&, const host_device_resource&) noexcept
   {
     return true;
@@ -417,16 +417,16 @@ static_assert(cuda::has_property<host_device_resource, cuda::mr::host_accessible
 
 struct explicit_dynamic_resource
 {
-  void* allocate(cuda::stream_ref, size_t, size_t)
+  void* allocate(cuda::stream_ref, std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate(cuda::stream_ref, void*, size_t, size_t) noexcept {}
-  void* allocate_sync(size_t, size_t)
+  void deallocate(cuda::stream_ref, void*, std::size_t, std::size_t) noexcept {}
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate_sync(void*, size_t, size_t) noexcept {}
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
   friend bool operator==(const explicit_dynamic_resource&, const explicit_dynamic_resource&) noexcept
   {
     return true;

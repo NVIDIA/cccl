@@ -49,7 +49,8 @@ bool BitcodeCollector::is_bitcode_op(cccl_op_t op)
   return (op.code_type == CCCL_OP_LLVM_IR || op.code_type == CCCL_OP_LTOIR) && op.code != nullptr && op.code_size > 0;
 }
 
-void BitcodeCollector::add_raw_bitcode(const char* data, size_t size, const std::string& name)
+void BitcodeCollector::add_raw_bitcode(
+  const char* data, size_t size, const std::string& name, cccl_op_code_type code_type)
 {
   if (!data || size == 0)
   {
@@ -64,23 +65,26 @@ void BitcodeCollector::add_raw_bitcode(const char* data, size_t size, const std:
     return; // exact same bytes already added
   }
 
-  // Magic-byte routing: LLVM bitcode starts with "BC" (0x42 0x43) and goes to
-  // LLVM's bitcode linker so it can be inlined into the CUB module at the IR
-  // level. Anything else is treated as LTO-IR (binary fatbin container) and
-  // fed to nvJitLink.  CPP_SOURCE never reaches here: main ops are dispatched
-  // by code_type in add_op_code, and per-extra C++ source is dispatched by
-  // extra_code_types[i] in the extras loop below — both call compile_and_add
-  // directly.
-  const bool is_llvm_bitcode =
+  // LLVM IR goes to LLVM's linker so it can be inlined into the CUB module at
+  // the IR level; anything else is LTO-IR (a binary fatbin container) and is
+  // fed to nvJitLink.  The declared code type decides, because LLVM IR may
+  // arrive either as bitcode or as text and the reader accepts both; the "BC"
+  // magic (0x42 0x43) additionally recognizes bitcode from a caller that did
+  // not declare it, and otherwise only picks the file extension.  CPP_SOURCE
+  // never reaches here: main ops are dispatched by code_type in add_op_code,
+  // and per-extra C++ source is dispatched by extra_code_types[i] in the extras
+  // loop below — both call compile_and_add directly.
+  const bool is_bitcode_encoding =
     size >= 2 && static_cast<unsigned char>(data[0]) == 0x42 && static_cast<unsigned char>(data[1]) == 0x43;
+  const bool is_llvm_ir = code_type == CCCL_OP_LLVM_IR || is_bitcode_encoding;
 
-  const char* ext = is_llvm_bitcode ? ".bc" : ".ltoir";
+  const char* ext = is_llvm_ir ? (is_bitcode_encoding ? ".bc" : ".ll") : ".ltoir";
   auto path       = make_temp_path("cccl_" + name + "_", unique_id_, ext);
   if (!write_file(data, size, path))
   {
     return;
   }
-  if (is_llvm_bitcode)
+  if (is_llvm_ir)
   {
     config_.device_bitcode_files.push_back(path);
   }
@@ -158,7 +162,7 @@ void BitcodeCollector::add_op_code(cccl_op_t& op, const std::string& name)
   }
   else
   {
-    add_raw_bitcode(op.code, op.code_size, name);
+    add_raw_bitcode(op.code, op.code_size, name, op.code_type);
   }
 
   // Also link any extra modules (child iterator ops, numba-compiled ops).
@@ -186,7 +190,7 @@ void BitcodeCollector::add_op_code(cccl_op_t& op, const std::string& name)
       }
       else
       {
-        add_raw_bitcode(data, data_sz, extra_name);
+        add_raw_bitcode(data, data_sz, extra_name, t);
       }
     }
   }
@@ -197,7 +201,7 @@ void BitcodeCollector::add_op(cccl_op_t op, const std::string& label)
   // Only add bitcode for LTOIR/LLVM_IR ops (CPP_SOURCE is embedded inline in the generated source)
   if (is_bitcode_op(op))
   {
-    add_raw_bitcode(op.code, op.code_size, label);
+    add_raw_bitcode(op.code, op.code_size, label, op.code_type);
   }
 
   // Always process extras with per-entry dispatch.
@@ -225,7 +229,7 @@ void BitcodeCollector::add_op(cccl_op_t op, const std::string& label)
       }
       else
       {
-        add_raw_bitcode(data, data_sz, extra_name);
+        add_raw_bitcode(data, data_sz, extra_name, t);
       }
     }
   }

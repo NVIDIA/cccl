@@ -25,11 +25,13 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__type_traits/make_nbit_int.h>
+#include <cuda/std/__type_traits/make_nbit_int.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/cstdint>
+
+#include <nv/target>
 
 #if _CCCL_CUDA_COMPILATION() && !_CCCL_TILE_COMPILATION()
 #  include <cuda/__ptx/instructions/shl.h>
@@ -54,14 +56,17 @@ _CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Shift>)
 #if !_CCCL_TILE_COMPILATION()
       _CCCL_IF_NOT_CONSTEVAL_DEFAULT
       {
-        // On device, shr PTX instruction clamps the shift to width, however only 32-bit shifts are supported.
-        NV_IF_TARGET(NV_IS_DEVICE, ({
-                       if constexpr (sizeof(_Shift) <= sizeof(uint32_t) && sizeof(_Tp) <= sizeof(int64_t))
-                       {
-                         using _Up = __make_nbit_int_t<sizeof(_Tp) < sizeof(int64_t) ? 32 : 64, is_signed_v<_Tp>>;
-                         return static_cast<_Tp>(::cuda::ptx::shr(_Up{__v}, static_cast<uint32_t>(__ushift)));
-                       }
-                     }))
+        if (!_CCCL_IS_CONSTANT_P(__shift)) // inline ptx prevents constant folding
+        {
+          // On device, shr PTX instruction clamps the shift to width, however only 32-bit shifts are supported.
+          NV_IF_TARGET(NV_IS_DEVICE, ({
+                         if constexpr (sizeof(_Shift) <= sizeof(uint32_t) && sizeof(_Tp) <= sizeof(int64_t))
+                         {
+                           using _Up = __make_nbit_int_t<sizeof(_Tp) < sizeof(int64_t) ? 32 : 64, is_signed_v<_Tp>>;
+                           return static_cast<_Tp>(::cuda::ptx::shr(_Up{__v}, static_cast<uint32_t>(__ushift)));
+                         }
+                       }))
+        }
       }
 #endif // !_CCCL_TILE_COMPILATION()
       return (__ushift < __width) ? (__v >> __ushift) : static_cast<_Tp>(::cuda::std::cmp_less(__v, 0) ? -1 : 0);
@@ -71,14 +76,17 @@ _CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Shift>)
 #if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    // On device, shl PTX instruction clamps the shift to width, however only 32-bit shifts are supported.
-    NV_IF_TARGET(NV_IS_DEVICE, ({
-                   if constexpr (sizeof(_Shift) <= sizeof(uint32_t) && sizeof(_Tp) <= sizeof(int64_t))
-                   {
-                     using _Up = __make_nbit_int_t<sizeof(_Tp) < sizeof(int64_t) ? 32 : 64, is_signed_v<_Tp>>;
-                     return static_cast<_Tp>(::cuda::ptx::shl(_Up{__v}, static_cast<uint32_t>(__ushift)));
-                   }
-                 }))
+    if (!_CCCL_IS_CONSTANT_P(__shift)) // inline ptx prevents constant folding
+    {
+      // On device, shl PTX instruction clamps the shift to width, however only 32-bit shifts are supported.
+      NV_IF_TARGET(NV_IS_DEVICE, ({
+                     if constexpr (sizeof(_Shift) <= sizeof(uint32_t) && sizeof(_Tp) <= sizeof(int64_t))
+                     {
+                       using _Up = __make_nbit_int_t<sizeof(_Tp) < sizeof(int64_t) ? 32 : 64, is_signed_v<_Tp>>;
+                       return static_cast<_Tp>(::cuda::ptx::shl(_Up{__v}, static_cast<uint32_t>(__ushift)));
+                     }
+                   }))
+    }
   }
 #endif // !_CCCL_TILE_COMPILATION()
   return (__ushift < __width) ? static_cast<_Tp>(::cuda::std::__to_unsigned_like(__v) << __ushift) : _Tp{0};

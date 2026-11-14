@@ -72,7 +72,7 @@ Developer Guides
 
 For more information about architecture, design, and development practices, consult the following developer guides:
 
-- :doc:`CCCL Coding Guidelines </cccl/development/coding_guidelines>` - Our coding guidelines, must be followed
+- :doc:`CCCL Coding Conventions </cccl/development/coding_conventions>` - Our coding conventions, must be followed
 - :doc:`CCCL Development Guide </cccl/development/index>` - Internal details and development process shared across CCCL libraries, mostly libcudacxx
 - :doc:`Thrust Systems </thrust/developer/systems>` - Overview of Thrust's backend systems and execution policies
 - :doc:`Thrust Developer CMake Options </thrust/developer/cmake_options>` - CMake options for Thrust development builds
@@ -197,6 +197,12 @@ Further recommended reading for successful PR reviews:
 
 - `How to Do Code Reviews Like a Human (Part One) <https://mtlynch.io/human-code-reviews-1/>`_
 - `How to Do Code Reviews Like a Human (Part Two) <https://mtlynch.io/human-code-reviews-2/>`_
+
+We welcome the use of AI tools to assist in code authoring and code review.
+However, the (human) CCCL maintainers must understand a contribution and its impact in order to own and maintain it.
+As the author, motivate your change and help the reviewer build a mental model of it,
+for example with drawings, benchmarks, or additional tests and documentation.
+Careful review is how we sustain the stability, quality, and performance the CUDA community relies on.
 
 Thank You
 -----------

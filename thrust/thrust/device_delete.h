@@ -52,7 +52,7 @@ struct device_delete_allocator
  *  \endverbatim
  */
 template <typename T>
-inline void device_delete(thrust::device_ptr<T> ptr, const size_t n = 1)
+_CCCL_HOST_API inline void device_delete(thrust::device_ptr<T> ptr, const size_t n = 1)
 {
   // we don't have an allocator, so there is no need to go through thrust::detail::destroy_range
   thrust::for_each_n(device, ptr, n, detail::gozer{});

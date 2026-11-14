@@ -19,14 +19,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/type_traits.h>
 #include <thrust/random/detail/random_core_access.h>
 #include <thrust/random/detail/xor_combine_engine_max.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/istream>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/__type_traits/type_identity.h>
-#include <cuda/std/cstddef> // for size_t
+#include <cuda/std/__type_traits/conditional.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -41,9 +40,9 @@ namespace random
  *         produces random values by combining the values produced by each.
  *
  *  \tparam Engine1 The type of the first base random number engine to adapt.
- *  \tparam s1 The size of the first shift to use in the generation algorithm.
+ *  \tparam S1 The size of the first shift to use in the generation algorithm.
  *  \tparam Engine2 The type of the second base random number engine to adapt.
- *  \tparam s2 The second of the second shift to use in the generation algorithm. Defaults to \c 0.
+ *  \tparam S2 The second of the second shift to use in the generation algorithm. Defaults to \c 0.
  *
  *  The following code snippet shows an example of using an \p xor_combine_engine instance:
  *
@@ -65,7 +64,7 @@ namespace random
  *  }
  *  \endcode
  */
-template <typename Engine1, size_t s1, typename Engine2, size_t s2 = 0u>
+template <typename Engine1, size_t S1, typename Engine2, size_t S2 = 0u>
 class xor_combine_engine
 {
 public:
@@ -84,18 +83,18 @@ public:
   /*! \typedef result_type
    *  \brief The type of the unsigned integer produced by this \p xor_combine_engine.
    */
-  using result_type = typename thrust::detail::eval_if<
-    (sizeof(typename base2_type::result_type) > sizeof(typename base1_type::result_type)),
-    ::cuda::std::type_identity<typename base2_type::result_type>,
-    ::cuda::std::type_identity<typename base1_type::result_type>>::type;
+  using result_type =
+    ::cuda::std::conditional_t<(sizeof(typename base2_type::result_type) > sizeof(typename base1_type::result_type)),
+                               typename base2_type::result_type,
+                               typename base1_type::result_type>;
 
   /*! The size of the first shift used in the generation algorithm.
    */
-  static const size_t shift1 = s1;
+  static const size_t shift1 = S1;
 
   /*! The size of the second shift used in the generation algorithm.
    */
-  static const size_t shift2 = s2;
+  static const size_t shift2 = S2;
 
   /*! The smallest value this \p xor_combine_engine may potentially produce.
    */
@@ -103,14 +102,14 @@ public:
 
   /*! The largest value this \p xor_combine_engine may potentially produce.
    */
-  static const result_type max = detail::xor_combine_engine_max<Engine1, s1, Engine2, s2, result_type>::value;
+  static const result_type max = detail::xor_combine_engine_max<Engine1, S1, Engine2, S2, result_type>::value;
 
   // constructors and seeding functions
 
   /*! This constructor constructs a new \p xor_combine_engine and constructs
    *  its adapted engines using their null constructors.
    */
-  _CCCL_HOST_DEVICE xor_combine_engine();
+  _CCCL_HOST_DEVICE_API xor_combine_engine();
 
   /*! This constructor constructs a new \p xor_combine_engine using
    *  given \p base1_type and \p base2_type engines to initialize its adapted base engines.
@@ -120,32 +119,32 @@ public:
    *  \param urng2 A \p base2_type to use to initialize this \p xor_combine_engine's
    *         first adapted base engine.
    */
-  _CCCL_HOST_DEVICE xor_combine_engine(const base1_type& urng1, const base2_type& urng2);
+  _CCCL_HOST_DEVICE_API xor_combine_engine(const base1_type& urng1, const base2_type& urng2);
 
   /*! This constructor initializes a new \p xor_combine_engine with a given seed.
    *
    *  \param s The seed used to initialize this \p xor_combine_engine's adapted base engines.
    */
-  _CCCL_HOST_DEVICE xor_combine_engine(result_type s);
+  _CCCL_HOST_DEVICE_API xor_combine_engine(result_type s);
 
   /*! This method initializes the state of this \p xor_combine_engine's adapted base engines
    *  by using their \p default_seed values.
    */
-  _CCCL_HOST_DEVICE void seed();
+  _CCCL_HOST_DEVICE_API void seed();
 
   /*! This method initializes the state of this \p xor_combine_engine's adapted base engines
    *  by using the given seed.
    *
    *  \param s The seed with which to initialize this \p xor_combine_engine's adapted base engines.
    */
-  _CCCL_HOST_DEVICE void seed(result_type s);
+  _CCCL_HOST_DEVICE_API void seed(result_type s);
 
   // generating functions
 
   /*! This member function produces a new random value and updates this \p xor_combine_engine's state.
    *  \return A new random number.
    */
-  _CCCL_HOST_DEVICE result_type operator()();
+  _CCCL_HOST_DEVICE_API result_type operator()();
 
   /*! This member function advances this \p xor_combine_engine's state a given number of times
    *  and discards the results.
@@ -153,7 +152,7 @@ public:
    *  \param z The number of random values to discard.
    *  \note This function is provided because an implementation may be able to accelerate it.
    */
-  _CCCL_HOST_DEVICE void discard(unsigned long long z);
+  _CCCL_HOST_DEVICE_API void discard(unsigned long long z);
 
   // property functions
 
@@ -162,14 +161,14 @@ public:
    *
    *  \return A const reference to the first base engine this \p xor_combine_engine adapts.
    */
-  _CCCL_HOST_DEVICE const base1_type& base1() const;
+  _CCCL_HOST_DEVICE_API const base1_type& base1() const;
 
   /*! This member function returns a const reference to this \p xor_combine_engine's
    *  second adapted base engine.
    *
    *  \return A const reference to the second base engine this \p xor_combine_engine adapts.
    */
-  _CCCL_HOST_DEVICE const base2_type& base2() const;
+  _CCCL_HOST_DEVICE_API const base2_type& base2() const;
 
   /*! \cond
    */
@@ -180,7 +179,7 @@ private:
 
   friend struct thrust::random::detail::random_core_access;
 
-  _CCCL_HOST_DEVICE bool equal(const xor_combine_engine& rhs) const;
+  _CCCL_HOST_DEVICE_API bool equal(const xor_combine_engine& rhs) const;
 
   template <typename CharT, typename Traits>
   std::basic_istream<CharT, Traits>& stream_in(std::basic_istream<CharT, Traits>& is);
@@ -197,36 +196,36 @@ private:
  *  \param rhs The second \p xor_combine_engine to test.
  *  \return \c true if \p lhs is equal to \p rhs; \c false, otherwise.
  */
-template <typename Engine1_, size_t s1_, typename Engine2_, size_t s2_>
-_CCCL_HOST_DEVICE bool operator==(const xor_combine_engine<Engine1_, s1_, Engine2_, s2_>& lhs,
-                                  const xor_combine_engine<Engine1_, s1_, Engine2_, s2_>& rhs);
+template <typename Engine1, size_t S1, typename Engine2, size_t S2>
+_CCCL_HOST_DEVICE_API bool operator==(const xor_combine_engine<Engine1, S1, Engine2, S2>& lhs,
+                                      const xor_combine_engine<Engine1, S1, Engine2, S2>& rhs);
 
 /*! This function checks two \p xor_combine_engines for inequality.
  *  \param lhs The first \p xor_combine_engine to test.
  *  \param rhs The second \p xor_combine_engine to test.
  *  \return \c true if \p lhs is not equal to \p rhs; \c false, otherwise.
  */
-template <typename Engine1_, size_t s1_, typename Engine2_, size_t s2_>
-_CCCL_HOST_DEVICE bool operator!=(const xor_combine_engine<Engine1_, s1_, Engine2_, s2_>& lhs,
-                                  const xor_combine_engine<Engine1_, s1_, Engine2_, s2_>& rhs);
+template <typename Engine1, size_t S1, typename Engine2, size_t S2>
+_CCCL_HOST_DEVICE_API bool operator!=(const xor_combine_engine<Engine1, S1, Engine2, S2>& lhs,
+                                      const xor_combine_engine<Engine1, S1, Engine2, S2>& rhs);
 
 /*! This function streams a xor_combine_engine to a \p std::basic_ostream.
  *  \param os The \p basic_ostream to stream out to.
  *  \param e The \p xor_combine_engine to stream out.
  *  \return \p os
  */
-template <typename Engine1_, size_t s1_, typename Engine2_, size_t s2_, typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>&
-operator<<(std::basic_ostream<CharT, Traits>& os, const xor_combine_engine<Engine1_, s1_, Engine2_, s2_>& e);
+template <typename Engine1, size_t S1, typename Engine2, size_t S2, typename CharT, typename Traits>
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
+operator<<(std::basic_ostream<CharT, Traits>& os, const xor_combine_engine<Engine1, S1, Engine2, S2>& e);
 
 /*! This function streams a xor_combine_engine in from a std::basic_istream.
  *  \param is The \p basic_istream to stream from.
  *  \param e The \p xor_combine_engine to stream in.
  *  \return \p is
  */
-template <typename Engine1_, size_t s1_, typename Engine2_, size_t s2_, typename CharT, typename Traits>
-std::basic_istream<CharT, Traits>&
-operator>>(std::basic_istream<CharT, Traits>& is, xor_combine_engine<Engine1_, s1_, Engine2_, s2_>& e);
+template <typename Engine1, size_t S1, typename Engine2, size_t S2, typename CharT, typename Traits>
+_CCCL_HOST_API std::basic_istream<CharT, Traits>&
+operator>>(std::basic_istream<CharT, Traits>& is, xor_combine_engine<Engine1, S1, Engine2, S2>& e);
 
 /*! \} // end random_number_engine_adaptors
  */
@@ -237,4 +236,4 @@ using random::xor_combine_engine;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/random/detail/xor_combine_engine.inl>
+#include <thrust/random/detail/xor_combine_engine.inl> // IWYU pragma: export

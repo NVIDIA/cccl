@@ -25,16 +25,19 @@
 #include <cub/util_namespace.cuh>
 
 #include <cuda/__cmath/round_down.h>
-#include <cuda/__functional/maximum.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_one_of.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 
@@ -130,7 +133,7 @@ CUB_NAMESPACE_BEGIN
 //!   <tt>T operator()(const T &a, const T &b)</tt>
 //!
 //! @param[in] input
-//!   Array-like input
+//!   Array-like input. Must not be empty; use the overload taking a prefix to reduce possibly empty inputs.
 //!
 //! @param[in] reduction_op
 //!   Binary reduction operator
@@ -144,7 +147,7 @@ template <typename Input,
           typename ReductionOp,
           typename ValueT = ::cuda::std::iter_value_t<Input>,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT>>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op);
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op);
 // forward declaration
 
 /***********************************************************************************************************************
@@ -197,7 +200,7 @@ namespace detail
 
 template <typename T, typename ReductionOp, int Length>
 inline constexpr bool enable_sm90_simd_reduction_v =
-  is_one_of_v<T, int16_t, uint16_t> && is_cuda_minimum_maximum_v<ReductionOp, T> && Length >= 10;
+  ::cuda::std::__is_one_of_v<T, int16_t, uint16_t> && is_cuda_minimum_maximum_v<ReductionOp, T> && Length >= 10;
 
 //----------------------------------------------------------------------------------------------------------------------
 // SM80 SIMD
@@ -244,13 +247,14 @@ inline constexpr bool enable_sm70_simd_reduction_v = false;
 
 template <typename T, typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm90_v =
-  is_one_of_v<T, int32_t, uint32_t> && is_cuda_minimum_maximum_v<ReductionOp, T>;
+  ::cuda::std::__is_one_of_v<T, int32_t, uint32_t> && is_cuda_minimum_maximum_v<ReductionOp, T>;
 
 #  if _CCCL_HAS_NVFP16()
 
 template <typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm90_v<__half2, ReductionOp> =
-  is_cuda_minimum_maximum_v<ReductionOp, __half2> || is_one_of_v<ReductionOp, SimdMin<__half>, SimdMax<__half>>;
+  is_cuda_minimum_maximum_v<ReductionOp, __half2>
+  || ::cuda::std::__is_one_of_v<ReductionOp, SimdMin<__half>, SimdMax<__half>>;
 
 #  endif // _CCCL_HAS_NVFP16()
 
@@ -259,21 +263,22 @@ inline constexpr bool enable_ternary_reduction_sm90_v<__half2, ReductionOp> =
 template <typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm90_v<__nv_bfloat162, ReductionOp> =
   is_cuda_minimum_maximum_v<ReductionOp, __nv_bfloat162>
-  || is_one_of_v<ReductionOp, SimdMin<__nv_bfloat16>, SimdMax<__nv_bfloat16>>;
+  || ::cuda::std::__is_one_of_v<ReductionOp, SimdMin<__nv_bfloat16>, SimdMax<__nv_bfloat16>>;
 
 #  endif // _CCCL_HAS_NVBF16()
 
 template <typename T, typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm50_v =
   ::cuda::std::is_integral_v<T> && sizeof(T) <= 4
-  && (is_cuda_std_plus_v<ReductionOp, T> || is_cuda_std_bitwise_v<ReductionOp, T>);
+  && (::cuda::__is_cuda_std_plus_v<ReductionOp, T> || is_cuda_std_bitwise_v<ReductionOp, T>);
 
 /***********************************************************************************************************************
  * Internal Reduction Algorithms: Sequential, Binary, Ternary
  **********************************************************************************************************************/
 
 template <typename AccumT, typename Input, typename ReductionOp>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduceSequential(const Input& input, ReductionOp reduction_op)
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT
+ThreadReduceSequential(const Input& input, ReductionOp reduction_op)
 {
   auto retval = static_cast<AccumT>(input[0]);
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -285,10 +290,11 @@ template <typename AccumT, typename Input, typename ReductionOp>
 }
 
 template <typename AccumT, typename Input, typename ReductionOp>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduceBinaryTree(const Input& input, ReductionOp reduction_op)
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT
+ThreadReduceBinaryTree(const Input& input, ReductionOp reduction_op)
 {
   constexpr auto length = static_size_v<Input>;
-  auto array            = cub::detail::to_array<AccumT>(input);
+  auto array            = _CUB::detail::to_array<AccumT>(input);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 1; i < length; i *= 2)
   {
@@ -302,10 +308,11 @@ template <typename AccumT, typename Input, typename ReductionOp>
 }
 
 template <typename AccumT, typename Input, typename ReductionOp>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduceTernaryTree(const Input& input, ReductionOp reduction_op)
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT
+ThreadReduceTernaryTree(const Input& input, ReductionOp reduction_op)
 {
   constexpr auto length = static_size_v<Input>;
-  auto array            = cub::detail::to_array<AccumT>(input);
+  auto array            = _CUB::detail::to_array<AccumT>(input);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 1; i < length; i *= 3)
   {
@@ -313,14 +320,14 @@ template <typename AccumT, typename Input, typename ReductionOp>
     for (int j = 0; j + i < length; j += i * 3)
     {
       auto value = reduction_op(array[j], array[j + i]);
-      array[j]   = (j + i * 2 < length) ? reduction_op(value, array[j + i * 2]) : value;
+      array[j]   = (j + (i * 2) < length) ? reduction_op(value, array[j + (i * 2)]) : value;
     }
   }
   return array[0];
 }
 
 template <typename AccumT, typename Input, typename ReductionOp>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT
 ThreadReduceSequentialPartial(const Input& input, ReductionOp reduction_op, int valid_items)
 {
   auto retval = static_cast<AccumT>(input[0]);
@@ -340,9 +347,9 @@ ThreadReduceSequentialPartial(const Input& input, ReductionOp reduction_op, int 
  **********************************************************************************************************************/
 
 template <typename Input, typename ReductionOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, ReductionOp)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, ReductionOp)
 {
-  using cub::detail::unsafe_bitcast;
+  using _CUB::detail::unsafe_bitcast;
   using T                       = ::cuda::std::iter_value_t<Input>;
   using SimdReduceOp            = cuda_operator_to_simd_x2_t<ReductionOp, T>;
   using SimdType                = vector_type_x2_t<T>;
@@ -353,23 +360,23 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, Reducti
   using SimdArray               = ::cuda::std::array<SimdType, length / simd_ratio>;
   static_assert(simd_ratio == 2, "Only SIMD size == 2 is supported");
   T local_array[length_rounded];
-  UnrolledCopy<length_rounded>(input, local_array);
-  auto simd_input      = unsafe_bitcast<SimdArray>(local_array);
-  auto simd_reduction  = cub::ThreadReduce(simd_input, SimdReduceOp{});
-  auto unpacked_values = unsafe_bitcast<UnpackedType>(simd_reduction);
+  _CUB::UnrolledCopy<length_rounded>(input, local_array);
+  auto simd_input      = _CUB::detail::unsafe_bitcast<SimdArray>(local_array);
+  auto simd_reduction  = _CUB::ThreadReduce(simd_input, SimdReduceOp{});
+  auto unpacked_values = _CUB::detail::unsafe_bitcast<UnpackedType>(simd_reduction);
   // Create a reversed copy of the SIMD reduction result and apply the SIMD operator.
   // This avoids redundant instructions for converting to and from 32-bit registers
-  T unpacked_values_rev[] = {unpacked_values[1], unpacked_values[0]};
-  auto simd_reduction_rev = unsafe_bitcast<SimdType>(unpacked_values_rev);
-  SimdType result         = SimdReduceOp{}(simd_reduction, simd_reduction_rev);
+  const T unpacked_values_rev[] = {unpacked_values[1], unpacked_values[0]};
+  auto simd_reduction_rev       = _CUB::detail::unsafe_bitcast<SimdType>(unpacked_values_rev);
+  SimdType result               = SimdReduceOp{}(simd_reduction, simd_reduction_rev); // NOLINT(misc-const-correctness)
   // repeat the same optimization for the last element
   if constexpr (length % simd_ratio == 1)
   {
-    T tail[]       = {input[length - 1], T{}};
-    auto tail_simd = unsafe_bitcast<SimdType>(tail);
+    const T tail[] = {input[length - 1], T{}};
+    auto tail_simd = _CUB::detail::unsafe_bitcast<SimdType>(tail);
     result         = SimdReduceOp{}(result, tail_simd);
   }
-  return unsafe_bitcast<UnpackedType>(result)[0];
+  return _CUB::detail::unsafe_bitcast<UnpackedType>(result)[0];
 }
 
 template <typename ReductionOp, typename T>
@@ -384,12 +391,12 @@ template <typename Input,
           typename ReductionOp,
           typename ValueT = ::cuda::std::iter_value_t<Input>,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT>>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT
 ThreadReducePartial(const Input& input, ReductionOp reduction_op, int valid_items)
 {
   static_assert(is_fixed_size_random_access_range_v<Input>,
                 "Input must support the subscript operator[] and have a compile-time size");
-  static_assert(has_binary_call_operator<ReductionOp, ValueT>::value,
+  static_assert(::cuda::std::__is_callable_v<ReductionOp, ValueT, ValueT>,
                 "ReductionOp must have the binary call operator: operator(ValueT, ValueT)");
   if constexpr (static_size_v<Input> == 1)
   {
@@ -399,7 +406,7 @@ ThreadReducePartial(const Input& input, ReductionOp reduction_op, int valid_item
   {
     using PromT = ::cuda::std::_If<enable_min_max_promotion_v<ReductionOp, ValueT>, int, AccumT>;
 
-    return cub::detail::ThreadReduceSequentialPartial<PromT>(input, reduction_op, valid_items);
+    return _CUB::detail::ThreadReduceSequentialPartial<PromT>(input, reduction_op, valid_items);
   }
 }
 } // namespace detail
@@ -409,15 +416,18 @@ ThreadReducePartial(const Input& input, ReductionOp reduction_op, int valid_item
  **********************************************************************************************************************/
 
 template <typename Input, typename ReductionOp, typename ValueT, typename AccumT>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op)
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op)
 {
-  using namespace cub::detail;
+  using namespace _CUB::detail;
   static_assert(is_fixed_size_random_access_range_v<Input>,
                 "Input must support the subscript operator[] and have a compile-time size");
-  static_assert(has_binary_call_operator<ReductionOp, ValueT>::value,
+  static_assert(::cuda::std::__is_callable_v<ReductionOp, ValueT, ValueT>,
                 "ReductionOp must have the binary call operator: operator(ValueT, ValueT)");
 
   static constexpr auto length = static_size_v<Input>;
+  static_assert(length > 0,
+                "ThreadReduce without a prefix requires a non-empty input. Use the overload taking a prefix to reduce "
+                "possibly empty inputs");
   if constexpr (length == 1)
   {
     return static_cast<AccumT>(input[0]);
@@ -428,22 +438,22 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
   if constexpr ((!is_simd_enabled_cuda_operator<ReductionOp, ValueT> && !is_simd_operator_v<ReductionOp>)
                 || sizeof(ValueT) >= 8)
   {
-    return ThreadReduceSequential<AccumT>(input, reduction_op);
+    return _CUB::detail::ThreadReduceSequential<AccumT>(input, reduction_op);
   }
 
   if constexpr (::cuda::std::is_same_v<ValueT, AccumT> && enable_sm90_simd_reduction_v<ValueT, ReductionOp, length>)
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return ThreadReduceSimd(input, reduction_op);))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return _CUB::detail::ThreadReduceSimd(input, reduction_op);))
   }
 
   if constexpr (::cuda::std::is_same_v<ValueT, AccumT> && enable_sm80_simd_reduction_v<ValueT, ReductionOp, length>)
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_80, (return ThreadReduceSimd(input, reduction_op);))
+    NV_IF_TARGET(NV_PROVIDES_SM_80, (return _CUB::detail::ThreadReduceSimd(input, reduction_op);))
   }
 
   if constexpr (::cuda::std::is_same_v<ValueT, AccumT> && enable_sm70_simd_reduction_v<ValueT, ReductionOp, length>)
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_70, (return ThreadReduceSimd(input, reduction_op);))
+    NV_IF_TARGET(NV_PROVIDES_SM_70, (return _CUB::detail::ThreadReduceSimd(input, reduction_op);))
   }
 
   if constexpr (length >= 6)
@@ -452,23 +462,24 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
     if constexpr (enable_ternary_reduction_sm90_v<ValueT, ReductionOp>)
     {
       // with the current tuning policies, SM90/int32/+ uses too many registers (TODO: fix tuning policy)
-      if constexpr ((is_one_of_v<ReductionOp, ::cuda::std::plus<>, ::cuda::std::plus<PromT>>
-                     && is_one_of_v<PromT, int32_t, uint32_t>)
+      if constexpr ((::cuda::__is_cuda_std_plus_v<ReductionOp, PromT>
+                     && ::cuda::std::__is_one_of_v<PromT, int32_t, uint32_t>)
                     // the compiler generates bad code for int8/uint8 and min/max for SM90
-                    || (is_cuda_minimum_maximum_v<ReductionOp, ValueT> && is_one_of_v<PromT, int8_t, uint8_t>) )
+                    || (is_cuda_minimum_maximum_v<ReductionOp, ValueT>
+                        && ::cuda::std::__is_one_of_v<PromT, int8_t, uint8_t>) )
       {
-        NV_IF_TARGET(NV_PROVIDES_SM_90, (return ThreadReduceSequential<PromT>(input, reduction_op);));
+        NV_IF_TARGET(NV_PROVIDES_SM_90, (return _CUB::detail::ThreadReduceSequential<PromT>(input, reduction_op);));
       }
-      NV_IF_TARGET(NV_PROVIDES_SM_90, (return ThreadReduceTernaryTree<PromT>(input, reduction_op);));
+      NV_IF_TARGET(NV_PROVIDES_SM_90, (return _CUB::detail::ThreadReduceTernaryTree<PromT>(input, reduction_op);));
     }
 
     if constexpr (enable_ternary_reduction_sm50_v<ValueT, ReductionOp>)
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_50, (return ThreadReduceSequential<PromT>(input, reduction_op);));
+      NV_IF_TARGET(NV_PROVIDES_SM_50, (return _CUB::detail::ThreadReduceSequential<PromT>(input, reduction_op);));
     }
   }
 
-  return ThreadReduceBinaryTree<PromT>(input, reduction_op);
+  return _CUB::detail::ThreadReduceBinaryTree<PromT>(input, reduction_op);
 }
 
 //! @brief Reduction over statically-sized array-like types, seeded with the specified @p prefix.
@@ -493,20 +504,21 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
 //! @param[in] prefix
 //!   Prefix to seed reduction with
 //!
-//! @return Aggregate of type <tt>cuda::std::__accumulator_t<ReductionOp, ValueT, PrefixT></tt>
+//! @return Aggregate of type <tt>cuda::std::__accumulator_t<ReductionOp, ValueT, PrefixT></tt>. For an empty
+//! @p input, this is @p prefix.
 //!
 template <typename Input,
           typename ReductionOp,
           typename PrefixT,
           typename ValueT = ::cuda::std::iter_value_t<Input>,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT, PrefixT>>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT
 ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
 {
-  using namespace cub::detail;
+  using namespace _CUB::detail;
   static_assert(is_fixed_size_random_access_range_v<Input>,
                 "Input must support the subscript operator[] and have a compile-time size");
-  static_assert(has_binary_call_operator<ReductionOp, ValueT>::value,
+  static_assert(::cuda::std::__is_callable_v<ReductionOp, ValueT, ValueT>,
                 "ReductionOp must have the binary call operator: operator(ValueT, ValueT)");
   constexpr int length = static_size_v<Input>;
   // copy to a temporary array of type AccumT
@@ -518,7 +530,7 @@ ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
   {
     array[i + 1] = input[i];
   }
-  return cub::ThreadReduce<decltype(array), ReductionOp, AccumT, AccumT>(array, reduction_op);
+  return _CUB::ThreadReduce<decltype(array), ReductionOp, AccumT, AccumT>(array, reduction_op);
 }
 
 #endif // !_CCCL_DOXYGEN_INVOKED

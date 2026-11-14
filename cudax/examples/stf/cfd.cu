@@ -16,10 +16,10 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <chrono>
-
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <string>
 
 using namespace std::chrono;
 using namespace cuda::experimental::stf;
@@ -34,9 +34,11 @@ double gettime()
 void writeplotfile(int m, int n, int scale)
 {
   FILE* gnuplot = EXPECT(fopen("cfd.plt", "w"));
-  SCOPE(exit)
+  // One guard, both outcomes: a failed close is a real error on the normal path, and best
+  // effort while an exception is unwinding (a throwing guard body would abort the program).
+  SCOPE(exit, failing)
   {
-    EXPECT(fclose(gnuplot) == 0);
+    failing ? (void) fclose(gnuplot) : (void) EXPECT(fclose(gnuplot) == 0);
   };
 
   fprintf(gnuplot,
@@ -61,28 +63,25 @@ void writeplotfile(int m, int n, int scale)
 
 double colfunc(double x)
 {
-  double x1 = 0.2;
-  double x2 = 0.5;
+  const double x1 = 0.2;
+  const double x2 = 0.5;
 
-  double absx = fabs(x);
+  const double absx = fabs(x);
 
   if (absx > x2)
   {
     return 0.0;
   }
-  else if (absx < x1)
+  if (absx < x1)
   {
     return 1.0;
   }
-  else
-  {
-    return 1.0 - pow((absx - x1) / (x2 - x1), 2);
-  }
+  return 1.0 - pow((absx - x1) / (x2 - x1), 2);
 }
 
 void hue2rgb(double hue, int& r, int& g, int& b)
 {
-  int rgbmax = 255;
+  const int rgbmax = 255;
 
   r = (int) (rgbmax * colfunc(hue - 1.0));
   g = (int) (rgbmax * colfunc(hue - 0.5));
@@ -107,12 +106,12 @@ void writedatafiles(context& ctx, logical_data<slice<double, 2>> lpsi, int m, in
                 vel(i, j, 0) = (psi(i + 1, j + 2) - psi(i + 1, j)) / 2.0;
                 vel(i, j, 1) = -(psi(i + 2, j + 1) - psi(i, j + 1)) / 2.0;
 
-                double v1 = vel(i, j, 0);
-                double v2 = vel(i, j, 1);
+                const double v1 = vel(i, j, 0);
+                const double v2 = vel(i, j, 1);
 
-                double modvsq = v1 * v1 + v2 * v2;
+                const double modvsq = (v1 * v1) + (v2 * v2);
 
-                double hue = pow(modvsq, 0.4);
+                const double hue = pow(modvsq, 0.4);
 
                 hue2rgb(hue, rgb(i, j, 0), rgb(i, j, 1), rgb(i, j, 2));
               }
@@ -133,11 +132,11 @@ void writedatafiles(context& ctx, logical_data<slice<double, 2>> lpsi, int m, in
 
             for (int i = 0; i < m; i++)
             {
-              int ix = i + 1;
+              const int ix = i + 1;
 
               for (int j = 0; j < n; j++)
               {
-                int iy = j + 1;
+                const int iy = j + 1;
 
                 fprintf(cfile, "%i %i %i %i %i\n", ix, iy, rgb(i, j, 0), rgb(i, j, 1), rgb(i, j, 2));
 
@@ -195,7 +194,7 @@ double deltasq(context& ctx, logical_data<slice<double, 2>> lnewarr, logical_dat
   ctx.parallel_for(lnewarr.shape(), ldsq.reduce(reducer::sum<double>{}), lnewarr.read(), loldarr.read())
       .set_symbol("deltasq")
       ->*[] __device__(size_t i, size_t j, auto& dsq, auto newarr, auto oldarr) {
-            double tmp = newarr(i, j) - oldarr(i, j);
+            const double tmp = newarr(i, j) - oldarr(i, j);
             dsq += tmp * tmp;
           };
 
@@ -244,23 +243,25 @@ int main(int argc, char** argv)
 {
   context ctx;
 
-  int printfreq    = 10; // output frequency
-  double error     = -1.0;
-  double tolerance = 0.0001; //-1.0;  // 0.0001; //tolerance for convergence. <=0 means do not check
+  const int printfreq = 10; // output frequency
+  double error        = -1.0;
+  double tolerance    = 0.0001; //-1.0;  // 0.0001; //tolerance for convergence. <=0 means do not check
 
   // command line arguments
-  int scalefactor = 1, numiter = 10;
+  int scalefactor = 1;
+  int numiter     = 10;
 
   double re = -1.0; // Reynold's number - must be less than 3.7
 
   // simulation sizes
-  int bbase = 10;
-  int hbase = 15;
-  int wbase = 5;
-  int mbase = 32;
-  int nbase = 32;
+  const int bbase = 10;
+  const int hbase = 15;
+  const int wbase = 5;
+  const int mbase = 32;
+  const int nbase = 32;
 
-  int irrotational = 1, checkerr = 0;
+  int irrotational = 1;
+  int checkerr     = 0;
 
   // do we stop because of tolerance?
   if (tolerance > 0)
@@ -278,24 +279,24 @@ int main(int argc, char** argv)
 
   if (argc > 1)
   {
-    scalefactor = atoi(argv[1]);
+    scalefactor = ::std::stoi(argv[1]);
   }
 
   if (argc > 2)
   {
-    numiter = atoi(argv[2]);
+    numiter = ::std::stoi(argv[2]);
   }
 
   if (argc > 3)
   {
-    re           = atof(argv[3]);
+    re           = ::std::stod(argv[3]);
     irrotational = 0;
   }
 
   // Use a CUDA graph backend
   if (argc > 4)
   {
-    if (atoi(argv[4]) == 1)
+    if (::std::stoi(argv[4]) == 1)
     {
       ctx = graph_ctx();
     }
@@ -317,18 +318,21 @@ int main(int argc, char** argv)
   tolerance /= scalefactor;
 
   // Calculate b, h & w and m & n
-  int b = bbase * scalefactor;
-  int h = hbase * scalefactor;
-  int w = wbase * scalefactor;
-  int m = mbase * scalefactor;
-  int n = nbase * scalefactor;
+  const int b = bbase * scalefactor;
+  const int h = hbase * scalefactor;
+  const int w = wbase * scalefactor;
+  const int m = mbase * scalefactor;
+  const int n = nbase * scalefactor;
 
   re /= scalefactor;
 
   // printf("Running CFD on %d x %d grid in serial\n", m, n);
 
   // main arrays and their temporary versions
-  logical_data<slice<double, 2>> lzet, lzettmp, lpsi, lpsitmp;
+  logical_data<slice<double, 2>> lzet;
+  logical_data<slice<double, 2>> lzettmp;
+  logical_data<slice<double, 2>> lpsi;
+  logical_data<slice<double, 2>> lpsitmp;
 
   // allocate arrays
   lpsi    = ctx.logical_data(shape_of<slice<double, 2>>(m + 2, n + 2)).set_symbol("psi");
@@ -385,7 +389,7 @@ int main(int argc, char** argv)
 
   // printf("\nStarting main loop...\n\n");
 
-  double tstart = gettime();
+  const double tstart = gettime();
   nvtx_range r_iter("Overall_Iteration");
 
   int iter = 1;
@@ -402,7 +406,7 @@ int main(int argc, char** argv)
     }
 
     // calculate current error if required
-    bool compute_error = (iter == numiter) || (checkerr && (iter % printfreq == 0));
+    const bool compute_error = (iter == numiter) || (checkerr && (iter % printfreq == 0));
     if (compute_error)
     {
       error = deltasq(ctx, lpsitmp, lpsi);
@@ -457,10 +461,10 @@ int main(int argc, char** argv)
     iter = numiter;
   }
 
-  double tstop = gettime();
+  const double tstop = gettime();
 
-  double ttot  = tstop - tstart;
-  double titer = ttot / (double) iter;
+  const double ttot  = tstop - tstart;
+  const double titer = ttot / (double) iter;
 
   // output results
 

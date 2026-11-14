@@ -13,5 +13,5 @@
 #  pragma system_header
 #endif // no system header
 
-// this system inherits iter_swap
+// tbb system inherits iter_swap
 #include <thrust/system/cpp/detail/iter_swap.h>

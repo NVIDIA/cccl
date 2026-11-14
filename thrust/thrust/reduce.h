@@ -75,7 +75,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator>
-_CCCL_HOST_DEVICE detail::it_value_t<InputIterator>
+_CCCL_HOST_DEVICE_API detail::it_value_t<InputIterator>
 reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, InputIterator last);
 
 /*! \p reduce is a generalization of summation: it computes the sum (or some
@@ -121,7 +121,7 @@ reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIt
  *  \endverbatim
  */
 template <typename InputIterator>
-detail::it_value_t<InputIterator> reduce(InputIterator first, InputIterator last);
+_CCCL_HOST_API detail::it_value_t<InputIterator> reduce(InputIterator first, InputIterator last);
 
 /*! \p reduce is a generalization of summation: it computes the sum (or some
  *  other binary operation) of all the elements in the range <tt>[first,
@@ -172,7 +172,7 @@ detail::it_value_t<InputIterator> reduce(InputIterator first, InputIterator last
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename T>
-_CCCL_HOST_DEVICE T reduce(
+_CCCL_HOST_DEVICE_API T reduce(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, InputIterator last, T init);
 
 /*! \p reduce is a generalization of summation: it computes the sum (or some
@@ -218,7 +218,7 @@ _CCCL_HOST_DEVICE T reduce(
  *  \endverbatim
  */
 template <typename InputIterator, typename T>
-T reduce(InputIterator first, InputIterator last, T init);
+_CCCL_HOST_API T reduce(InputIterator first, InputIterator last, T init);
 
 /*! \p reduce is a generalization of summation: it computes the sum (or some
  *  other binary operation) of all the elements in the range <tt>[first,
@@ -276,7 +276,7 @@ T reduce(InputIterator first, InputIterator last, T init);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename T, typename BinaryFunction>
-_CCCL_HOST_DEVICE T reduce(
+_CCCL_HOST_DEVICE_API T reduce(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -332,7 +332,7 @@ _CCCL_HOST_DEVICE T reduce(
  *  \endverbatim
  */
 template <typename InputIterator, typename T, typename BinaryFunction>
-T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_op);
+_CCCL_HOST_API T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_op);
 
 /*! \p reduce_into is a generalization of summation: it computes the sum (or some
  *  other binary operation) of all the elements in the range <tt>[first,
@@ -393,7 +393,7 @@ T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE void reduce_into(
+_CCCL_HOST_DEVICE_API void reduce_into(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -454,7 +454,7 @@ _CCCL_HOST_DEVICE void reduce_into(
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator>
-void reduce_into(InputIterator first, InputIterator last, OutputIterator output);
+_CCCL_HOST_API void reduce_into(InputIterator first, InputIterator last, OutputIterator output);
 
 /*! \p reduce_into is a generalization of summation: it computes the sum (or some
  *  other binary operation) of all the elements in the range <tt>[first,
@@ -517,7 +517,7 @@ void reduce_into(InputIterator first, InputIterator last, OutputIterator output)
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
-_CCCL_HOST_DEVICE void reduce_into(
+_CCCL_HOST_DEVICE_API void reduce_into(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -580,7 +580,7 @@ _CCCL_HOST_DEVICE void reduce_into(
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename T>
-void reduce_into(InputIterator first, InputIterator last, OutputIterator output, T init);
+_CCCL_HOST_API void reduce_into(InputIterator first, InputIterator last, OutputIterator output, T init);
 
 /*! \p reduce_into is a generalization of summation: it computes the sum (or some
  *  other binary operation) of all the elements in the range <tt>[first,
@@ -651,7 +651,7 @@ void reduce_into(InputIterator first, InputIterator last, OutputIterator output,
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
-_CCCL_HOST_DEVICE void reduce_into(
+_CCCL_HOST_DEVICE_API void reduce_into(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -716,7 +716,8 @@ _CCCL_HOST_DEVICE void reduce_into(
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
-void reduce_into(InputIterator first, InputIterator last, OutputIterator output, T init, BinaryFunction binary_op);
+_CCCL_HOST_API void
+reduce_into(InputIterator first, InputIterator last, OutputIterator output, T init, BinaryFunction binary_op);
 
 /*! \p reduce_by_key is a generalization of \p reduce to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
@@ -784,7 +785,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -848,7 +849,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
-::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   InputIterator1 keys_first,
   InputIterator1 keys_last,
   InputIterator2 values_first,
@@ -925,7 +926,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -997,7 +998,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   InputIterator1 keys_first,
   InputIterator1 keys_last,
   InputIterator2 values_first,
@@ -1082,7 +1083,7 @@ template <typename DerivedPolicy,
           typename OutputIterator2,
           typename BinaryPredicate,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -1162,7 +1163,7 @@ template <typename InputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate,
           typename BinaryFunction>
-::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   InputIterator1 keys_first,
   InputIterator1 keys_last,
   InputIterator2 values_first,

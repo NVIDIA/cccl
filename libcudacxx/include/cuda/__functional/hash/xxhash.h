@@ -60,7 +60,6 @@
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/rotl.h>
 #include <cuda/std/array>
-#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 
@@ -157,11 +156,8 @@ private:
     // process data in 16-byte chunks
     if constexpr (_Holder::__num_chunks > 0)
     {
-      ::cuda::std::array<::cuda::std::uint32_t, 4> __v;
-      __v[0] = __seed_ + __prime1 + __prime2;
-      __v[1] = __seed_ + __prime2;
-      __v[2] = __seed_;
-      __v[3] = __seed_ - __prime1;
+      ::cuda::std::array<::cuda::std::uint32_t, 4> __v{
+        __seed_ + __prime1 + __prime2, __seed_ + __prime2, __seed_, __seed_ - __prime1};
 
       for (::cuda::std::uint32_t __chunk = 0; __chunk < _Holder::__num_chunks; ++__chunk)
       {
@@ -217,12 +213,8 @@ private:
     if (__size >= 16)
     {
       const auto __limit = __size - 16;
-      ::cuda::std::array<::cuda::std::uint32_t, 4> __v;
-
-      __v[0] = __seed_ + __prime1 + __prime2;
-      __v[1] = __seed_ + __prime2;
-      __v[2] = __seed_;
-      __v[3] = __seed_ - __prime1;
+      ::cuda::std::array<::cuda::std::uint32_t, 4> __v{
+        __seed_ + __prime1 + __prime2, __seed_ + __prime2, __seed_, __seed_ - __prime1};
 
       for (; __offset <= __limit; __offset += 16)
       {
@@ -317,7 +309,7 @@ private:
       __v[__i] = ::cuda::std::rotl(__v[__i], 31);
       __v[__i] *= __prime1;
       __h64 ^= __v[__i];
-      __h64 = __h64 * __prime1 + __prime4;
+      __h64 = (__h64 * __prime1) + __prime4;
     }
   };
 
@@ -377,12 +369,8 @@ private:
     if (__size >= 32)
     {
       const auto __limit = __size - 32;
-      ::cuda::std::array<::cuda::std::uint64_t, 4> __v;
-
-      __v[0] = __seed_ + __prime1 + __prime2;
-      __v[1] = __seed_ + __prime2;
-      __v[2] = __seed_;
-      __v[3] = __seed_ - __prime1;
+      ::cuda::std::array<::cuda::std::uint64_t, 4> __v{
+        __seed_ + __prime1 + __prime2, __seed_ + __prime2, __seed_, __seed_ - __prime1};
 
       for (; __offset <= __limit; __offset += 32)
       {
@@ -411,7 +399,7 @@ private:
         ::cuda::std::uint64_t __k1 = ::cuda::__load_chunk<::cuda::std::uint64_t>(__bytes, __offset / 8) * __prime2;
         __k1                       = ::cuda::std::rotl(__k1, 31) * __prime1;
         __h64 ^= __k1;
-        __h64 = ::cuda::std::rotl(__h64, 27) * __prime1 + __prime4;
+        __h64 = (::cuda::std::rotl(__h64, 27) * __prime1) + __prime4;
       }
     }
 
@@ -421,7 +409,7 @@ private:
       for (; __offset <= __size - 4; __offset += 4)
       {
         __h64 ^= (::cuda::__load_chunk<::cuda::std::uint32_t>(__bytes, __offset / 4)) * __prime1;
-        __h64 = ::cuda::std::rotl(__h64, 23) * __prime2 + __prime3;
+        __h64 = (::cuda::std::rotl(__h64, 23) * __prime2) + __prime3;
       }
     }
 

@@ -51,7 +51,7 @@ struct __pool_destroyer
   {
     if (__pool != nullptr)
     {
-      _CCCL_ASSERT_CUDA_API(::cuda::__driver::__mempoolDestroyNoThrow, "Failed to destroy a memory pool", __pool);
+      _CCCL_ASSERT_DRIVER_API(::cuda::__driver::__mempoolDestroyNoThrow, "Failed to destroy a memory pool", __pool);
     }
   }
 
@@ -100,8 +100,8 @@ public:
       , __ref_(::cuda::std::move(__other.__ref_))
   {}
 
-  __shared_memory_pool_base& operator=(const __shared_memory_pool_base&) = default;
-  __shared_memory_pool_base& operator=(__shared_memory_pool_base&&)      = default;
+  _CCCL_HIDE_FROM_ABI __shared_memory_pool_base& operator=(const __shared_memory_pool_base&) = default;
+  _CCCL_HIDE_FROM_ABI __shared_memory_pool_base& operator=(__shared_memory_pool_base&&)      = default;
 
   //! @brief ``release()`` is deleted because ownership is shared.
   ::cudaMemPool_t release() = delete;

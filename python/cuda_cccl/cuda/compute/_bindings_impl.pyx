@@ -609,20 +609,31 @@ cdef class Pointer(StateBase):
             )
         self.set_state(ptr, ref)
 
+    def rebind(self, ptr):
+        """Update the ptr in place from a raw address.
 
-def make_pointer_object(ptr, owner):
+        Clears ``ref``: a raw address has no Python object to keep alive, and
+        recording one here (e.g. the device array the address came from) would
+        keep it alive for as long as this Pointer does, which for the Pointer
+        cached on an Iterator is for as long as the algorithm's wrapper cache
+        entry lives.
+        """
+        if isinstance(ptr, int):
+            self.ptr = int_as_ptr(ptr)
+        elif isinstance(ptr, ctypes.c_void_p):
+            self.ptr = int_as_ptr(ptr.value)
+        else:
+            raise TypeError(
+                "Argument must be an integer, or ctypes.c_void_p, "
+                f"got {type(ptr)}"
+            )
+        self.ref = None
+
+
+def make_pointer_object(ptr):
+    """Make a Pointer from a raw address."""
     cdef Pointer res = Pointer(0)
-
-    if isinstance(ptr, int):
-        res.ptr = int_as_ptr(ptr)
-    elif isinstance(ptr, ctypes.c_void_p):
-        res.ptr = int_as_ptr(ptr.value)
-    else:
-        raise TypeError(
-            "First argument must be an integer, or ctypes.c_void_p, "
-            f"got {type(ptr)}"
-        )
-    res.ref = owner
+    res.rebind(ptr)
     return res
 
 
@@ -756,6 +767,9 @@ cdef class Iterator:
     cdef object host_advance_obj
     cdef cccl_iterator_t iter_data
 
+    cdef readonly bint is_ptr_kind
+    cdef object _cached_ptr_obj
+
     def __cinit__(self,
         int alignment,
         cccl_iterator_kind_t iterator_type,
@@ -821,6 +835,19 @@ cdef class Iterator:
         self.iter_data.advance = self.advance.op_data
         self.iter_data.dereference = self.dereference.op_data
         self.iter_data.value_type = value_type.type_info
+        self.is_ptr_kind = (it_kind == cccl_iterator_kind_t.POINTER)
+        self._cached_ptr_obj = None
+
+    def bind_pointer_state(self, ptr):
+        """Set state from a raw pointer, reusing a cached Pointer instead
+        of allocating one each call. Only valid when is_ptr_kind is True.
+        """
+        cdef Pointer cached = self._cached_ptr_obj
+        if cached is None:
+            cached = Pointer(0)
+            self._cached_ptr_obj = cached
+        cached.rebind(ptr)
+        self.state = cached
 
     @property
     def advance_op(self):
@@ -902,14 +929,6 @@ cdef class Iterator:
     def alignment(self):
         """Return the iterator state alignment for serialization."""
         return self.iter_data.alignment
-
-    def is_kind_pointer(self):
-        cdef cccl_iterator_kind_t it_kind = self.iter_data.type
-        return (it_kind == cccl_iterator_kind_t.POINTER)
-
-    def is_kind_iterator(self):
-        cdef cccl_iterator_kind_t it_kind = self.iter_data.type
-        return (it_kind == cccl_iterator_kind_t.ITERATOR)
 
     def as_bytes(self):
         "Debugging ulitity to get memory view into library struct"
@@ -1022,7 +1041,7 @@ cdef extern from "cccl/c/reduce.h":
         cccl_init_kind_t,
         cccl_determinism_t,
         int, int, const char*, const char*, const char*, const char*,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_reduce(
@@ -1242,7 +1261,7 @@ cdef extern from "cccl/c/scan.h":
         _Bool,
         cccl_init_kind_t,
         int, int, const char*, const char*, const char*, const char*,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_exclusive_scan(
@@ -1574,7 +1593,7 @@ cdef extern from "cccl/c/segmented_reduce.h":
         cccl_op_t,
         cccl_value_t,
         int, int, const char*, const char*, const char*, const char*,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     # `cccl_device_segmented_reduce` (the execute entry point) is declared in the
@@ -1731,7 +1750,7 @@ cdef extern from "cccl/c/merge_sort.h":
         cccl_iterator_t d_out_items,
         cccl_op_t,
         int, int, const char*, const char*, const char*, const char*,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_merge_sort(
@@ -1885,7 +1904,7 @@ cdef extern from "cccl/c/unique_by_key.h":
         cccl_iterator_t d_num_selected_out,
         cccl_op_t comparison_op,
         int, int, const char *, const char *, const char *, const char *,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_unique_by_key(
@@ -2042,7 +2061,7 @@ cdef extern from "cccl/c/radix_sort.h":
         cccl_op_t decomposer,
         const char* decomposer_return_type,
         int, int, const char *, const char *, const char *, const char *,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_radix_sort(
@@ -2205,7 +2224,7 @@ cdef extern from "cccl/c/transform.h":
         cccl_iterator_t d_out,
         cccl_op_t op,
         int, int, const char *, const char *, const char *, const char *,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_unary_transform(
@@ -2223,7 +2242,7 @@ cdef extern from "cccl/c/transform.h":
       cccl_iterator_t d_out,
       cccl_op_t op,
       int, int, const char *, const char *, const char *, const char *,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_binary_transform(
@@ -2453,7 +2472,7 @@ cdef extern from "cccl/c/histogram.h":
         int64_t row_stride_samples,
         bint is_evenly_segmented,
         int, int, const char *, const char *, const char *, const char *,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_histogram_even(
@@ -2465,7 +2484,7 @@ cdef extern from "cccl/c/histogram.h":
         cccl_value_t num_output_levels,
         cccl_value_t lower_level,
         cccl_value_t upper_level,
-        int64_t num_row_pixels,
+        int64_t num_row_items,
         int64_t num_rows,
         int64_t row_stride_samples,
         CUstream stream
@@ -2549,7 +2568,7 @@ cdef class DeviceHistogramBuildResult:
         Value h_num_output_levels,
         Value h_lower_level,
         Value h_upper_level,
-        int num_row_pixels,
+        int num_row_items,
         int num_rows,
         int row_stride_samples,
         stream
@@ -2569,7 +2588,7 @@ cdef class DeviceHistogramBuildResult:
                 h_num_output_levels.value_data,
                 h_lower_level.value_data,
                 h_upper_level.value_data,
-                num_row_pixels,
+                num_row_items,
                 num_rows,
                 row_stride_samples,
                 c_stream
@@ -2620,7 +2639,7 @@ cdef extern from "cccl/c/binary_search.h":
         cccl_iterator_t,
         cccl_op_t,
         int, int, const char*, const char*, const char*, const char*,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_binary_search(
@@ -2761,7 +2780,7 @@ cdef extern from "cccl/c/three_way_partition.h":
         cccl_op_t select_first_part_op,
         cccl_op_t select_second_part_op,
         int, int, const char *, const char *, const char *, const char *,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     CUresult cccl_device_three_way_partition(
@@ -2924,7 +2943,7 @@ cdef extern from "cccl/c/segmented_sort.h":
         cccl_iterator_t begin_offset_in,
         cccl_iterator_t end_offset_in,
         int, int, const char *, const char *, const char *, const char *,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_segmented_sort(

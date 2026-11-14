@@ -45,14 +45,13 @@ namespace reserved
  */
 class buddy_allocator_metadata
 {
-private:
   /**
    * @brief Describes an available piece of memory
    */
   struct avail_block
   {
     // Copy prereqs
-    avail_block(size_t index_, event_list prereqs_)
+    _CCCL_HOST_API avail_block(size_t index_, event_list prereqs_)
         : index(index_)
         , prereqs(mv(prereqs_))
     {}
@@ -62,7 +61,7 @@ private:
   };
 
 public:
-  buddy_allocator_metadata(size_t size, event_list init_prereqs)
+  _CCCL_HOST_API buddy_allocator_metadata(size_t size, event_list init_prereqs)
       : free_lists_(int_log2(next_power_of_two(size)) + 1)
   {
     _CCCL_ASSERT(size && (size & (size - 1)) == 0,
@@ -71,7 +70,7 @@ public:
     free_lists_.back().emplace_back(0, mv(init_prereqs));
   }
 
-  ::std::ptrdiff_t allocate(size_t size, event_list& prereqs)
+  _CCCL_HOST_API ::std::ptrdiff_t allocate(size_t size, event_list& prereqs)
   {
     size               = next_power_of_two(size);
     const size_t level = int_log2(size);
@@ -81,7 +80,7 @@ public:
       return -1;
     }
 
-    ::std::ptrdiff_t alloc_index = find_free_block(level, prereqs);
+    const ::std::ptrdiff_t alloc_index = find_free_block(level, prereqs);
     if (alloc_index == -1)
     {
       fprintf(stderr, "No free block available for size %zu\n", size);
@@ -91,7 +90,7 @@ public:
     return alloc_index;
   }
 
-  void deallocate(::std::ptrdiff_t index, size_t size, event_list& prereqs)
+  _CCCL_HOST_API void deallocate(::std::ptrdiff_t index, size_t size, event_list& prereqs)
   {
     size         = next_power_of_two(size);
     size_t level = int_log2(size);
@@ -124,7 +123,7 @@ public:
     free_lists_[level].emplace_back(index, prereqs);
   }
 
-  void deinit(event_list& prereqs)
+  _CCCL_HOST_API void deinit(event_list& prereqs)
   {
     for (auto& level : free_lists_)
     {
@@ -136,7 +135,7 @@ public:
     }
   }
 
-  void debug_print() const
+  _CCCL_HOST_API void debug_print() const
   {
     size_t power = 1;
     for (size_t i = 0; i < free_lists_.size(); ++i, power *= 2)
@@ -154,7 +153,7 @@ public:
   }
 
 private:
-  static size_t next_power_of_two(size_t size)
+  _CCCL_HOST_API static size_t next_power_of_two(size_t size)
   {
     static_assert(sizeof(size_t) <= 8, "You must be from the future. Review and adjust this code.");
     if (size == 0)
@@ -174,7 +173,7 @@ private:
     return size + 1;
   }
 
-  static size_t int_log2(size_t n)
+  _CCCL_HOST_API static size_t int_log2(size_t n)
   {
     assert(n > 0);
 
@@ -186,7 +185,7 @@ private:
     return log;
   }
 
-  ::std::ptrdiff_t find_free_block(size_t level, event_list& prereqs)
+  _CCCL_HOST_API ::std::ptrdiff_t find_free_block(size_t level, event_list& prereqs)
   {
     for (size_t current_level : each(level, free_lists_.size()))
     {
@@ -194,9 +193,9 @@ private:
       {
         continue;
       }
-      auto& b              = free_lists_[current_level].back();
-      size_t block_index   = b.index;
-      event_list b_prereqs = mv(b.prereqs);
+      auto& b                  = free_lists_[current_level].back();
+      const size_t block_index = b.index;
+      event_list b_prereqs     = mv(b.prereqs);
       free_lists_[current_level].pop_back();
 
       // Dependencies to reuse that block
@@ -206,17 +205,17 @@ private:
       while (current_level > level)
       {
         current_level--;
-        size_t buddy_index = block_index + (1ull << current_level);
+        const size_t buddy_index = block_index + (1ull << current_level);
         // split blocks depend on the previous dependencies of the whole unsplit block
         free_lists_[current_level].emplace_back(buddy_index, b_prereqs);
       }
-      return block_index;
+      return static_cast<::std::ptrdiff_t>(block_index);
     }
 
     return -1; // No block available
   }
 
-  size_t get_buddy_index(size_t index, size_t level)
+  _CCCL_HOST_API size_t get_buddy_index(size_t index, size_t level)
   {
     assert(level <= 63);
     return index ^ (1ull << level); // XOR to find the buddy block
@@ -233,8 +232,8 @@ private:
 class buddy_allocator : public block_allocator_interface
 {
 public:
-  buddy_allocator() = default;
-  buddy_allocator(block_allocator_untyped root_allocator_)
+  _CCCL_HIDE_FROM_ABI buddy_allocator() = default;
+  _CCCL_HOST_API buddy_allocator(block_allocator_untyped root_allocator_)
       : root_allocator(mv(root_allocator_))
   {}
 
@@ -242,16 +241,16 @@ private:
   // Per data place buffer and its corresponding metadata
   struct per_place
   {
-    per_place(void* base_, size_t size, event_list prereqs)
+    _CCCL_HOST_API per_place(void* base_, size_t size, event_list prereqs)
         : base(base_)
         , buffer_size(size)
         , metadata(buffer_size, mv(prereqs))
     {}
 
-    per_place& operator=(const per_place&) = delete;
-    per_place& operator=(per_place&&)      = default;
-    per_place(const per_place&)            = delete;
-    per_place(per_place&&)                 = default;
+    per_place& operator=(const per_place&)                = delete;
+    _CCCL_HIDE_FROM_ABI per_place& operator=(per_place&&) = default;
+    per_place(const per_place&)                           = delete;
+    _CCCL_HIDE_FROM_ABI per_place(per_place&&)            = default;
 
     void* base         = nullptr;
     size_t buffer_size = 0;
@@ -259,7 +258,7 @@ private:
   };
 
 public:
-  void*
+  _CCCL_HOST_API void*
   allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
     auto it = map.find(memory_node);
@@ -279,12 +278,12 @@ public:
     assert(map.count(memory_node) == 1);
     auto& m = it->second;
 
-    ::std::ptrdiff_t offset = m.metadata.allocate(s, prereqs);
+    const ::std::ptrdiff_t offset = m.metadata.allocate(s, prereqs);
     assert(offset != -1);
     return static_cast<char*>(m.base) + offset;
   }
 
-  void deallocate(
+  _CCCL_HOST_API void deallocate(
     backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
     (void) ctx;
@@ -292,12 +291,12 @@ public:
     assert(map.count(memory_node) == 1);
     auto& m = map.find(memory_node)->second;
 
-    size_t offset = static_cast<char*>(ptr) - static_cast<char*>(m.base);
+    const size_t offset = static_cast<char*>(ptr) - static_cast<char*>(m.base);
 
-    m.metadata.deallocate(offset, sz, prereqs);
+    m.metadata.deallocate(static_cast<::std::ptrdiff_t>(offset), sz, prereqs);
   }
 
-  event_list deinit(backend_ctx_untyped& ctx) override
+  _CCCL_HOST_API event_list deinit(backend_ctx_untyped& ctx) override
   {
     event_list result;
     // For every place in the map
@@ -317,7 +316,7 @@ public:
     return result;
   }
 
-  ::std::string to_string() const override
+  _CCCL_HOST_API ::std::string to_string() const override
   {
     return "buddy allocator";
   }
@@ -332,12 +331,13 @@ private:
 
 UNITTEST("buddy_allocator is movable")
 {
-  static_assert(std::is_move_constructible<buddy_allocator>::value, "buddy_allocator must be move constructible");
-  static_assert(std::is_move_assignable<buddy_allocator>::value, "buddy_allocator must be move assignable");
+  static_assert(std::is_move_constructible_v<buddy_allocator>, "buddy_allocator must be move constructible");
+  static_assert(std::is_move_assignable_v<buddy_allocator>, "buddy_allocator must be move assignable");
 };
 
 UNITTEST("buddy allocator meta data")
 {
+  // NOLINTNEXTLINE(misc-const-correctness) -- a const object needs a user-provided default constructor
   event_list prereqs; // starts empty
 
   reserved::buddy_allocator_metadata allocator(1024, prereqs);
@@ -347,11 +347,11 @@ UNITTEST("buddy allocator meta data")
 
   event_list dummy;
 
-  ::std::ptrdiff_t ptr1 = allocator.allocate(200, dummy); // Allocate 200 bytes
+  const ::std::ptrdiff_t ptr1 = allocator.allocate(200, dummy); // Allocate 200 bytes
   // ::std::cout << "\nAfter allocating 200 bytes:" << ::'\n';
   // allocator.debug_print();
 
-  ::std::ptrdiff_t ptr2 = allocator.allocate(300, dummy); // Allocate 300 bytes
+  const ::std::ptrdiff_t ptr2 = allocator.allocate(300, dummy); // Allocate 300 bytes
   // ::std::cout << "\nAfter allocating 300 bytes:" << ::'\n';
   // allocator.debug_print();
 

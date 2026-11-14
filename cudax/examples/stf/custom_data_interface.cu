@@ -36,12 +36,12 @@ public:
 
   __host__ __device__ T& operator()(size_t i, size_t j)
   {
-    return base[i + j * m];
+    return base[i + (j * m)];
   }
 
   __host__ __device__ const T& operator()(size_t i, size_t j) const
   {
-    return base[i + j * m];
+    return base[i + (j * m)];
   }
 
   size_t m, n;
@@ -153,7 +153,7 @@ public:
     const matrix<T>& src_instance = this->instance(src_instance_id);
     const matrix<T>& dst_instance = this->instance(dst_instance_id);
 
-    size_t sz = src_instance.m * src_instance.n * sizeof(T);
+    const size_t sz = src_instance.m * src_instance.n * sizeof(T);
 
     cuda_safe_call(cudaMemcpyAsync((void*) dst_instance.base, (void*) src_instance.base, sz, kind, stream));
   }
@@ -171,7 +171,7 @@ public:
     cudaStream_t stream) override
   {
     matrix<T>& instance = this->instance(instance_id);
-    size_t sz           = instance.m * instance.n * sizeof(T);
+    const size_t sz     = instance.m * instance.n * sizeof(T);
 
     T* base_ptr;
 
@@ -187,7 +187,7 @@ public:
     }
 
     // By filling a positive number, we notify that the allocation was successful
-    s = sz;
+    s = static_cast<::std::ptrdiff_t>(sz);
 
     instance.base = base_ptr;
   }
@@ -200,7 +200,7 @@ public:
     void* /*unused*/,
     cudaStream_t stream) override
   {
-    matrix<T>& instance = this->instance(instance_id);
+    const matrix<T>& instance = this->instance(instance_id);
     if (memory_node.is_host())
     {
       // Fallback to a synchronous method as there is no asynchronous host deallocation API
@@ -221,7 +221,7 @@ public:
   /// registered memory too. Otherwise, copy methods need to be synchronous.
   bool pin_host_memory(instance_id_t instance_id) override
   {
-    matrix<T>& instance = this->instance(instance_id);
+    const matrix<T>& instance = this->instance(instance_id);
     if (!instance.base)
     {
       return false;
@@ -235,7 +235,7 @@ public:
   /// Unregister memory pinned by pin_host_memory
   void unpin_host_memory(instance_id_t instance_id) override
   {
-    matrix<T>& instance = this->instance(instance_id);
+    const matrix<T>& instance = this->instance(instance_id);
     unpin_memory(instance.base);
   }
 };
@@ -250,7 +250,7 @@ public:
 template <typename T>
 struct cuda::experimental::stf::streamed_interface_of<matrix<T>>
 {
-  using type = matrix_stream_interface<T>;
+  using type _CCCL_NODEBUG = matrix_stream_interface<T>;
 };
 
 /**
@@ -269,17 +269,17 @@ struct cuda::experimental::stf::hash<matrix<T>>
 template <typename T>
 __global__ void kernel(matrix<T> M)
 {
-  int tid_x      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads_x = gridDim.x * blockDim.x;
+  const int tid_x      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
+  const int nthreads_x = static_cast<int>(gridDim.x * blockDim.x);
 
-  int tid_y      = blockIdx.y * blockDim.y + threadIdx.y;
-  int nthreads_y = gridDim.y * blockDim.y;
+  const int tid_y      = static_cast<int>((blockIdx.y * blockDim.y) + threadIdx.y);
+  const int nthreads_y = static_cast<int>(gridDim.y * blockDim.y);
 
   for (int x = tid_x; x < M.m; x += nthreads_x)
   {
     for (int y = tid_y; y < M.n; y += nthreads_y)
     {
-      M(x, y) += -x + 7 * y;
+      M(x, y) += -x + (7 * y);
     }
   }
 }
@@ -292,14 +292,14 @@ int main()
   const size_t n = 10;
   std::vector<int> v(m * n);
 
-  matrix<int> M(m, n, &v[0]);
+  matrix<int> M(m, n, v.data());
 
   // M(i,j) = 17 * i + 23 * j
   for (size_t j = 0; j < n; j++)
   {
     for (size_t i = 0; i < m; i++)
     {
-      M(i, j) = 17 * i + 23 * j;
+      M(i, j) = static_cast<int>((17 * i) + (23 * j));
     }
   }
 
@@ -312,7 +312,7 @@ int main()
 
   // M(i,j) +=  2*i + 6*j
   ctx.parallel_for(lM.shape(), lM.rw())->*[] _CCCL_DEVICE(size_t i, size_t j, auto dM) {
-    dM(i, j) += 2 * i + 6 * j;
+    dM(i, j) += (2 * i) + (6 * j);
   };
 
   ctx.finalize();
@@ -321,7 +321,7 @@ int main()
   {
     for (size_t i = 0; i < m; i++)
     {
-      assert(M(i, j) == (17 * i + 23 * j) + (-i + 7 * j) + (2 * i + 6 * j));
+      assert(M(i, j) == ((17 * i) + (23 * j)) + (-i + (7 * j)) + ((2 * i) + (6 * j)));
     }
   }
 }

@@ -21,7 +21,7 @@ __global__ __launch_bounds__(64) void WarpReduceBatchedOverviewKernel(int* out)
 
   // Assume 64 threads per block, so 64 / 32 = 2 logical warps
   // Each logical warp has its own TempStorage
-  __shared__ typename WarpReduceBatched::TempStorage temp_storage[2];
+  __shared__ WarpReduceBatched::TempStorage temp_storage[2];
 
   const int warp_id = static_cast<int>(threadIdx.x) / 32;
 
@@ -31,14 +31,14 @@ __global__ __launch_bounds__(64) void WarpReduceBatchedOverviewKernel(int* out)
   thread_data[1] = tid;
   thread_data[2] = tid + 1;
 
-  int result = WarpReduceBatched{temp_storage[warp_id]}.Reduce(thread_data, cuda::maximum{});
+  const int result = WarpReduceBatched{temp_storage[warp_id]}.Reduce(thread_data, cuda::maximum{});
   // results across threads: [30, 31, 32, ?, ?, ..., ?, 62, 63, 64, ?, ?, ..., ?]
   // example-end warp-reduce-batched-overview
 
   const int lane_id = static_cast<int>(threadIdx.x) % 32;
   if (lane_id < num_batches)
   {
-    out[warp_id * num_batches + lane_id] = result;
+    out[(warp_id * num_batches) + lane_id] = result;
   }
 }
 
@@ -50,7 +50,7 @@ CUB_TEST("WarpReduceBatched overview documentation kernel", "[warp][reduce][batc
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
-  c2h::host_vector<int> expected{30, 31, 32, 62, 63, 64};
+  const c2h::host_vector<int> expected{30, 31, 32, 62, 63, 64};
   REQUIRE(expected == d_out);
 }
 
@@ -65,7 +65,7 @@ __global__ void WarpReduceBatchedReduceApiKernel(int* out)
   using WarpReduceBatched            = cub::WarpReduceBatched<int, num_batches, logical_warp_threads>;
 
   // Only the first logical warp participates, so only a single TempStorage is needed
-  __shared__ typename WarpReduceBatched::TempStorage temp_storage;
+  __shared__ WarpReduceBatched::TempStorage temp_storage;
 
   const int tid = static_cast<int>(threadIdx.x);
   int result{};
@@ -93,7 +93,7 @@ CUB_TEST("WarpReduceBatched::Reduce documentation kernel", "[warp][reduce][batch
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
-  c2h::host_vector<int> expected{14, 15, 16};
+  const c2h::host_vector<int> expected{14, 15, 16};
   REQUIRE(expected == d_out);
 }
 
@@ -109,7 +109,7 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedReduceToStripedApiKernel(i
 
   // Assume 8 threads per block, so 8 / 2 = 4 logical warps
   // Only every other logical warp participates, so only 2 TempStorage are needed
-  __shared__ typename WarpReduceBatched::TempStorage temp_storage[2];
+  __shared__ WarpReduceBatched::TempStorage temp_storage[2];
 
   const int tid               = static_cast<int>(threadIdx.x);
   const int logical_warp_id   = tid / logical_warp_threads;
@@ -136,10 +136,10 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedReduceToStripedApiKernel(i
     for (int i = 0; i < max_out_per_thread; ++i)
     {
       // Striped
-      const int batch_idx = i * logical_warp_threads + logical_lane_id;
+      const int batch_idx = (i * logical_warp_threads) + logical_lane_id;
       if (batch_idx < num_batches)
       {
-        out[participant_idx * num_batches + batch_idx] = results[i];
+        out[(participant_idx * num_batches) + batch_idx] = results[i];
       }
     }
   }
@@ -153,7 +153,7 @@ CUB_TEST("WarpReduceBatched::ReduceToStriped documentation kernel", "[warp][redu
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
-  c2h::host_vector<int> expected{0, 1, 2, 4, 5, 6};
+  const c2h::host_vector<int> expected{0, 1, 2, 4, 5, 6};
   REQUIRE(expected == d_out);
 }
 
@@ -169,7 +169,7 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedReduceToBlockedApiKernel(i
 
   // Assume 8 threads per block, so 8 / 2 = 4 logical warps
   // Only every other logical warp participates, so only 2 TempStorage are needed
-  __shared__ typename WarpReduceBatched::TempStorage temp_storage[2];
+  __shared__ WarpReduceBatched::TempStorage temp_storage[2];
 
   const int tid               = static_cast<int>(threadIdx.x);
   const int logical_warp_id   = tid / logical_warp_threads;
@@ -197,10 +197,10 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedReduceToBlockedApiKernel(i
     for (int i = 0; i < max_out_per_thread; ++i)
     {
       // Blocked
-      const int batch_idx = logical_lane_id * max_out_per_thread + i;
+      const int batch_idx = (logical_lane_id * max_out_per_thread) + i;
       if (batch_idx < num_batches)
       {
-        out[participant_idx * num_batches + batch_idx] = results[i];
+        out[(participant_idx * num_batches) + batch_idx] = results[i];
       }
     }
   }
@@ -214,7 +214,7 @@ CUB_TEST("WarpReduceBatched::ReduceToBlocked documentation kernel", "[warp][redu
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
-  c2h::host_vector<int> expected{0, 1, 2, 4, 5, 6};
+  const c2h::host_vector<int> expected{0, 1, 2, 4, 5, 6};
   REQUIRE(expected == d_out);
 }
 
@@ -228,20 +228,20 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedSumApiKernel(int* out)
   using WarpReduceBatched = cub::WarpReduceBatched<int, num_batches, logical_warp_threads, sync_physical_warp>;
 
   // Assume 8 threads per block, so 8 / 4 = 2 logical warps
-  __shared__ typename WarpReduceBatched::TempStorage temp_storage[2];
+  __shared__ WarpReduceBatched::TempStorage temp_storage[2];
 
   const int tid             = static_cast<int>(threadIdx.x);
   const int logical_warp_id = tid / logical_warp_threads;
 
-  cuda::std::array<int, num_batches> inputs{tid - 1, tid, tid + 1};
-  int result = WarpReduceBatched{temp_storage[logical_warp_id]}.Sum(inputs);
+  const cuda::std::array<int, num_batches> inputs{tid - 1, tid, tid + 1};
+  const int result = WarpReduceBatched{temp_storage[logical_warp_id]}.Sum(inputs);
   // results across threads:
   // [2, 6, 10, ?, 18, 22, 26, ?]
   // example-end warp-reduce-batched-sum
   const int logical_lane_id = tid % logical_warp_threads;
   if (logical_lane_id < num_batches)
   {
-    out[logical_warp_id * num_batches + logical_lane_id] = result;
+    out[(logical_warp_id * num_batches) + logical_lane_id] = result;
   }
 }
 
@@ -253,7 +253,7 @@ CUB_TEST("WarpReduceBatched::Sum documentation kernel", "[warp][reduce][batched]
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
-  c2h::host_vector<int> expected{2, 6, 10, 18, 22, 26};
+  const c2h::host_vector<int> expected{2, 6, 10, 18, 22, 26};
   REQUIRE(expected == d_out);
 }
 
@@ -267,7 +267,7 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedSumToStripedApiKernel(int*
   using WarpReduceBatched = cub::WarpReduceBatched<int, num_batches, logical_warp_threads, sync_physical_warp>;
 
   // Assume 8 threads per block, so 8 / 2 = 4 logical warps
-  __shared__ typename WarpReduceBatched::TempStorage temp_storage[4];
+  __shared__ WarpReduceBatched::TempStorage temp_storage[4];
 
   const int tid             = static_cast<int>(threadIdx.x);
   const int logical_warp_id = tid / logical_warp_threads;
@@ -285,10 +285,10 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedSumToStripedApiKernel(int*
   for (int i = 0; i < max_out_per_thread; ++i)
   {
     // Striped
-    const int batch_idx = i * logical_warp_threads + logical_lane_id;
+    const int batch_idx = (i * logical_warp_threads) + logical_lane_id;
     if (batch_idx < num_batches)
     {
-      out[logical_warp_id * num_batches + batch_idx] = results[i];
+      out[(logical_warp_id * num_batches) + batch_idx] = results[i];
     }
   }
 }
@@ -301,7 +301,7 @@ CUB_TEST("WarpReduceBatched::SumToStriped documentation kernel", "[warp][reduce]
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
-  c2h::host_vector<int> expected{-3, -1, 1, 3, 5, 1, 3, 5, 7, 9, 5, 7, 9, 11, 13, 9, 11, 13, 15, 17};
+  const c2h::host_vector<int> expected{-3, -1, 1, 3, 5, 1, 3, 5, 7, 9, 5, 7, 9, 11, 13, 9, 11, 13, 15, 17};
   REQUIRE(expected == d_out);
 }
 
@@ -315,7 +315,7 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedSumToBlockedApiKernel(int*
   using WarpReduceBatched = cub::WarpReduceBatched<int, num_batches, logical_warp_threads, sync_physical_warp>;
 
   // Assume 8 threads per block, so 8 / 2 = 4 logical warps
-  __shared__ typename WarpReduceBatched::TempStorage temp_storage[4];
+  __shared__ WarpReduceBatched::TempStorage temp_storage[4];
 
   const int tid             = static_cast<int>(threadIdx.x);
   const int logical_warp_id = tid / logical_warp_threads;
@@ -333,10 +333,10 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedSumToBlockedApiKernel(int*
   for (int i = 0; i < max_out_per_thread; ++i)
   {
     // Blocked
-    const int batch_idx = logical_lane_id * max_out_per_thread + i;
+    const int batch_idx = (logical_lane_id * max_out_per_thread) + i;
     if (batch_idx < num_batches)
     {
-      out[logical_warp_id * num_batches + batch_idx] = results[i];
+      out[(logical_warp_id * num_batches) + batch_idx] = results[i];
     }
   }
 }
@@ -349,6 +349,6 @@ CUB_TEST("WarpReduceBatched::SumToBlocked documentation kernel", "[warp][reduce]
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
-  c2h::host_vector<int> expected{-3, -1, 1, 3, 5, 1, 3, 5, 7, 9, 5, 7, 9, 11, 13, 9, 11, 13, 15, 17};
+  const c2h::host_vector<int> expected{-3, -1, 1, 3, 5, 1, 3, 5, 7, 9, 5, 7, 9, 11, 13, 9, 11, 13, 15, 17};
   REQUIRE(expected == d_out);
 }

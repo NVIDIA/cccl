@@ -44,7 +44,7 @@ struct uniform
   //!
   //! @param multiplicity Average number of generated keys that map to each unique key value.
   //! @throws std::invalid_argument if `multiplicity` is not finite or is less than 1.0.
-  explicit uniform(double multiplicity)
+  _CCCL_HOST_API explicit uniform(double multiplicity)
       : multiplicity{multiplicity}
   {
     if (!cuda::std::isfinite(multiplicity) || multiplicity < 1.0)
@@ -63,16 +63,16 @@ namespace detail
 template <typename Key, typename Distribution, typename Rng>
 struct generate_uniform_fn
 {
-  __host__ __device__ constexpr generate_uniform_fn(cuda::std::size_t num, Distribution dist, cuda::std::size_t seed)
+  _CCCL_HOST_DEVICE_API constexpr generate_uniform_fn(cuda::std::size_t num, Distribution dist, cuda::std::size_t seed)
       : num{num}
       , dist{dist}
       , seed{seed}
   {}
 
-  __host__ __device__ constexpr Key operator()(cuda::std::size_t idx) const noexcept
+  _CCCL_HOST_DEVICE_API constexpr Key operator()(cuda::std::size_t idx) const noexcept
   {
     Rng rng;
-    rng.seed(seed + idx * 1664525ull + 1013904223ull);
+    rng.seed(seed + (idx * 1664525ull) + 1013904223ull);
 
     const auto num_unique_keys_unclamped =
       static_cast<cuda::std::size_t>(cuda::std::ceil(static_cast<double>(num) / dist.multiplicity));
@@ -90,11 +90,11 @@ struct generate_uniform_fn
 template <typename Key, typename Rng>
 struct dropout_fn
 {
-  __host__ __device__ constexpr explicit dropout_fn(cuda::std::size_t num)
+  _CCCL_HOST_DEVICE_API constexpr explicit dropout_fn(cuda::std::size_t num)
       : num{num}
   {}
 
-  __host__ __device__ Key operator()(cuda::std::size_t seed) const noexcept
+  _CCCL_HOST_DEVICE_API Key operator()(cuda::std::size_t seed) const noexcept
   {
     Rng rng;
     thrust::uniform_int_distribution<Key> dist{static_cast<Key>(num), cuda::std::numeric_limits<Key>::max()};
@@ -108,14 +108,14 @@ struct dropout_fn
 template <typename Rng>
 struct dropout_pred
 {
-  __host__ __device__ constexpr explicit dropout_pred(double keep_prob)
+  _CCCL_HOST_DEVICE_API constexpr explicit dropout_pred(double keep_prob)
       : keep_prob{keep_prob}
   {}
 
-  __host__ __device__ bool operator()(cuda::std::size_t seed) const noexcept
+  _CCCL_HOST_DEVICE_API bool operator()(cuda::std::size_t seed) const noexcept
   {
     Rng rng;
-    thrust::uniform_real_distribution<double> dist{0.0, 1.0};
+    thrust::uniform_real_distribution<double> dist{0.0, 1.0}; // NOLINT(misc-const-correctness)
     rng.seed(seed);
     return dist(rng) > keep_prob;
   }
@@ -136,7 +136,7 @@ public:
   //! Constructs a key generator with the given seed.
   //!
   //! @param seed Seed used to initialize the generator state.
-  explicit key_generator(cuda::std::uint32_t seed = defaults::seed)
+  _CCCL_HOST_API explicit key_generator(cuda::std::uint32_t seed = defaults::seed)
       : rng{seed}
   {}
 
@@ -149,7 +149,7 @@ public:
   //! @param out_end End of the output key range.
   //! @throws std::invalid_argument if `Distribution` is not a supported distribution tag.
   template <typename Distribution, typename OutputIt>
-  void generate(Distribution dist, OutputIt out_begin, OutputIt out_end)
+  _CCCL_HOST_API void generate(Distribution dist, OutputIt out_begin, OutputIt out_end)
   {
     generate(dist, out_begin, out_end, thrust::device);
   }
@@ -165,7 +165,7 @@ public:
   //! @param exec_policy Execution policy used for the underlying Thrust algorithms.
   //! @throws std::invalid_argument if `Distribution` is not a supported distribution tag.
   template <typename Distribution, typename OutputIt, typename ExecPolicy>
-  void generate(Distribution dist, OutputIt out_begin, OutputIt out_end, ExecPolicy exec_policy)
+  _CCCL_HOST_API void generate(Distribution dist, OutputIt out_begin, OutputIt out_end, ExecPolicy exec_policy)
   {
     using value_type = typename cuda::std::iterator_traits<OutputIt>::value_type;
 
@@ -204,7 +204,7 @@ public:
   //! @param keep_prob Probability of keeping each original key. Must be in `[0, 1]`.
   //! @throws std::invalid_argument if `keep_prob` is outside `[0, 1]`.
   template <typename InOutIt>
-  void dropout(InOutIt begin, InOutIt end, double keep_prob)
+  _CCCL_HOST_API void dropout(InOutIt begin, InOutIt end, double keep_prob)
   {
     dropout(begin, end, keep_prob, thrust::device);
   }
@@ -223,7 +223,7 @@ public:
   //! @param exec_policy Execution policy used for the underlying Thrust algorithms.
   //! @throws std::invalid_argument if `keep_prob` is outside `[0, 1]`.
   template <typename InOutIt, typename ExecPolicy>
-  void dropout(InOutIt begin, InOutIt end, double keep_prob, ExecPolicy exec_policy)
+  _CCCL_HOST_API void dropout(InOutIt begin, InOutIt end, double keep_prob, ExecPolicy exec_policy)
   {
     using value_type = typename cuda::std::iterator_traits<InOutIt>::value_type;
 
@@ -235,7 +235,7 @@ public:
     if (keep_prob < 1.0)
     {
       const auto num_keys = static_cast<cuda::std::size_t>(cuda::std::distance(begin, end));
-      cuda::counting_iterator<cuda::std::size_t> seeds{static_cast<cuda::std::size_t>(rng())};
+      const cuda::counting_iterator<cuda::std::size_t> seeds{static_cast<cuda::std::size_t>(rng())};
 
       thrust::transform_if(
         exec_policy,
@@ -262,7 +262,7 @@ private:
 //! @return Distribution tag initialized from the benchmark state.
 //! @throws std::invalid_argument if `Distribution` is not a supported distribution tag.
 template <typename Distribution>
-Distribution dist_from_state(nvbench::state const& state)
+_CCCL_HOST_API Distribution dist_from_state(nvbench::state const& state)
 {
   if constexpr (cuda::std::is_same_v<Distribution, distribution::unique>)
   {

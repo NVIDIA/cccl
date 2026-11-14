@@ -36,7 +36,7 @@ void test_find_if(const Policy& policy)
 
   { // same type
     const auto res = cuda::std::find_if(
-      policy, cuda::counting_iterator{int{0}}, cuda::counting_iterator{int{size}}, cuda::equal_to_value{expected});
+      policy, cuda::counting_iterator{0}, cuda::counting_iterator{int{size}}, cuda::equal_to_value{expected});
     CHECK(res == cuda::counting_iterator{expected});
   }
 
@@ -57,7 +57,7 @@ C2H_TEST("cuda::std::find_if", "[parallel algorithm]")
 
   SECTION("with provided stream")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_find_if(policy);
   }
@@ -71,7 +71,7 @@ C2H_TEST("cuda::std::find_if", "[parallel algorithm]")
 
   SECTION("with provided stream and memory_resource")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy =
       cuda::execution::gpu.with(cuda::get_stream, stream).with(cuda::mr::get_memory_resource, device_resource);

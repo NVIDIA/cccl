@@ -7,9 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Find a way to make this work for nvrtc.
-// nvrtc doesn't allow accessing the static constexpr const auto& value member.
-// UNSUPPORTED: nvrtc
+// todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
+//   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
+//   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
 
 // constant_wrapper
 
@@ -66,7 +66,6 @@
 #include "helpers.h"
 #include "test_macros.h"
 
-TEST_NV_DIAG_SUPPRESS(20094) // a host member cannot be directly read in a __device__/__global__ function
 TEST_DIAG_SUPPRESS_CLANG("-Wconstant-logical-operand")
 
 struct WithOps
@@ -261,224 +260,202 @@ template <class L, class R>
 inline constexpr bool
   HasLogicalOr<L, R, cuda::std::void_t<decltype(cuda::std::declval<L&>() || cuda::std::declval<R&>())>> = true;
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasPlus<L, R>>
 inline constexpr bool HasNoexceptPlus = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptPlus<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() + cuda::std::declval<R&>())>> = true;
+inline constexpr bool HasNoexceptPlus<L, R, true> = noexcept(cuda::std::declval<L&>() + cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasMinus<L, R>>
 inline constexpr bool HasNoexceptMinus = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptMinus<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() - cuda::std::declval<R&>())>> = true;
+inline constexpr bool HasNoexceptMinus<L, R, true> = noexcept(cuda::std::declval<L&>() - cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasMultiply<L, R>>
 inline constexpr bool HasNoexceptMultiply = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptMultiply<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() * cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptMultiply<L, R, true> = noexcept(cuda::std::declval<L&>() * cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasDivide<L, R>>
 inline constexpr bool HasNoexceptDivide = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptDivide<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() / cuda::std::declval<R&>())>> = true;
+inline constexpr bool HasNoexceptDivide<L, R, true> = noexcept(cuda::std::declval<L&>() / cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasModulo<L, R>>
 inline constexpr bool HasNoexceptModulo = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptModulo<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() % cuda::std::declval<R&>())>> = true;
+inline constexpr bool HasNoexceptModulo<L, R, true> = noexcept(cuda::std::declval<L&>() % cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasShiftLeft<L, R>>
 inline constexpr bool HasNoexceptShiftLeft = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptShiftLeft<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() << cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptShiftLeft<L, R, true> = noexcept(cuda::std::declval<L&>() << cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasShiftRight<L, R>>
 inline constexpr bool HasNoexceptShiftRight = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptShiftRight<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() >> cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptShiftRight<L, R, true> =
+  noexcept(cuda::std::declval<L&>() >> cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasBitAnd<L, R>>
 inline constexpr bool HasNoexceptBitAnd = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptBitAnd<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() & cuda::std::declval<R&>())>> = true;
+inline constexpr bool HasNoexceptBitAnd<L, R, true> = noexcept(cuda::std::declval<L&>() & cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasBitOr<L, R>>
 inline constexpr bool HasNoexceptBitOr = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptBitOr<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() | cuda::std::declval<R&>())>> = true;
+inline constexpr bool HasNoexceptBitOr<L, R, true> = noexcept(cuda::std::declval<L&>() | cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasBitXor<L, R>>
 inline constexpr bool HasNoexceptBitXor = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptBitXor<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() ^ cuda::std::declval<R&>())>> = true;
+inline constexpr bool HasNoexceptBitXor<L, R, true> = noexcept(cuda::std::declval<L&>() ^ cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasLogicalAnd<L, R>>
 inline constexpr bool HasNoexceptLogicalAnd = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptLogicalAnd<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() && cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptLogicalAnd<L, R, true> =
+  noexcept(cuda::std::declval<L&>() && cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasLogicalOr<L, R>>
 inline constexpr bool HasNoexceptLogicalOr = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptLogicalOr<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() || cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptLogicalOr<L, R, true> = noexcept(cuda::std::declval<L&>() || cuda::std::declval<R&>());
 
 // Concept checks for int + int operations
-static_assert(HasPlus<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasMinus<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasMultiply<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasDivide<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasModulo<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasShiftLeft<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<1>>);
-static_assert(HasShiftRight<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<1>>);
-static_assert(HasBitAnd<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasBitOr<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasBitXor<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasLogicalAnd<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasLogicalOr<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
+static_assert(HasPlus<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasMinus<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasMultiply<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasDivide<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasModulo<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasShiftLeft<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<1>>);
+static_assert(HasShiftRight<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<1>>);
+static_assert(HasBitAnd<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasBitOr<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasBitXor<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasLogicalAnd<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasLogicalOr<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
 
-// Old msvc doesn't evaluate noexcept properly.
-#if !TEST_COMPILER(MSVC, <, 19, 30)
-static_assert(HasNoexceptPlus<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasNoexceptMinus<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasNoexceptMultiply<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasNoexceptDivide<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasNoexceptModulo<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasNoexceptShiftLeft<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<1>>);
-static_assert(HasNoexceptShiftRight<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<1>>);
-static_assert(HasNoexceptBitAnd<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasNoexceptBitOr<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasNoexceptBitXor<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasNoexceptLogicalAnd<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasNoexceptLogicalOr<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-#endif // !TEST_COMPILER(MSVC, <, 19, 30)
+static_assert(HasNoexceptPlus<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasNoexceptMinus<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasNoexceptMultiply<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasNoexceptDivide<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasNoexceptModulo<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasNoexceptShiftLeft<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<1>>);
+static_assert(HasNoexceptShiftRight<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<1>>);
+static_assert(HasNoexceptBitAnd<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasNoexceptBitOr<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasNoexceptBitXor<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasNoexceptLogicalAnd<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasNoexceptLogicalOr<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
 
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 // NoOps
-static_assert(!HasPlus<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
-static_assert(!HasMinus<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
-static_assert(!HasMultiply<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
-static_assert(!HasDivide<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
-static_assert(!HasModulo<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
-static_assert(!HasShiftLeft<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
-static_assert(!HasShiftRight<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
-static_assert(!HasBitAnd<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
-static_assert(!HasBitOr<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
-static_assert(!HasBitXor<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
-static_assert(!HasLogicalAnd<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
-static_assert(!HasLogicalOr<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
+static_assert(!HasPlus<cuda::std::constant_wrapper<NoOps{}>, cuda::std::constant_wrapper<NoOps{}>>);
+static_assert(!HasMinus<cuda::std::constant_wrapper<NoOps{}>, cuda::std::constant_wrapper<NoOps{}>>);
+static_assert(!HasMultiply<cuda::std::constant_wrapper<NoOps{}>, cuda::std::constant_wrapper<NoOps{}>>);
+static_assert(!HasDivide<cuda::std::constant_wrapper<NoOps{}>, cuda::std::constant_wrapper<NoOps{}>>);
+static_assert(!HasModulo<cuda::std::constant_wrapper<NoOps{}>, cuda::std::constant_wrapper<NoOps{}>>);
+static_assert(!HasShiftLeft<cuda::std::constant_wrapper<NoOps{}>, cuda::std::constant_wrapper<NoOps{}>>);
+static_assert(!HasShiftRight<cuda::std::constant_wrapper<NoOps{}>, cuda::std::constant_wrapper<NoOps{}>>);
+static_assert(!HasBitAnd<cuda::std::constant_wrapper<NoOps{}>, cuda::std::constant_wrapper<NoOps{}>>);
+static_assert(!HasBitOr<cuda::std::constant_wrapper<NoOps{}>, cuda::std::constant_wrapper<NoOps{}>>);
+static_assert(!HasBitXor<cuda::std::constant_wrapper<NoOps{}>, cuda::std::constant_wrapper<NoOps{}>>);
+static_assert(!HasLogicalAnd<cuda::std::constant_wrapper<NoOps{}>, cuda::std::constant_wrapper<NoOps{}>>);
+static_assert(!HasLogicalOr<cuda::std::constant_wrapper<NoOps{}>, cuda::std::constant_wrapper<NoOps{}>>);
 
 // Concept checks for WithOps operations
-static_assert(HasNoexceptPlus<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
-static_assert(HasNoexceptMinus<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
-static_assert(HasNoexceptMultiply<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
-static_assert(HasNoexceptDivide<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
-static_assert(HasNoexceptModulo<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
-static_assert(
-  HasNoexceptShiftLeft<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{1}>>);
-static_assert(
-  HasNoexceptShiftRight<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{1}>>);
-static_assert(HasNoexceptBitAnd<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
-static_assert(HasNoexceptBitOr<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
-static_assert(HasNoexceptBitXor<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
-static_assert(
-  HasNoexceptLogicalAnd<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
-static_assert(
-  HasNoexceptLogicalOr<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
+static_assert(HasNoexceptPlus<cuda::std::constant_wrapper<WithOps{6}>, cuda::std::constant_wrapper<WithOps{3}>>);
+static_assert(HasNoexceptMinus<cuda::std::constant_wrapper<WithOps{6}>, cuda::std::constant_wrapper<WithOps{3}>>);
+static_assert(HasNoexceptMultiply<cuda::std::constant_wrapper<WithOps{6}>, cuda::std::constant_wrapper<WithOps{3}>>);
+static_assert(HasNoexceptDivide<cuda::std::constant_wrapper<WithOps{6}>, cuda::std::constant_wrapper<WithOps{3}>>);
+static_assert(HasNoexceptModulo<cuda::std::constant_wrapper<WithOps{6}>, cuda::std::constant_wrapper<WithOps{3}>>);
+static_assert(HasNoexceptShiftLeft<cuda::std::constant_wrapper<WithOps{6}>, cuda::std::constant_wrapper<WithOps{1}>>);
+static_assert(HasNoexceptShiftRight<cuda::std::constant_wrapper<WithOps{6}>, cuda::std::constant_wrapper<WithOps{1}>>);
+static_assert(HasNoexceptBitAnd<cuda::std::constant_wrapper<WithOps{6}>, cuda::std::constant_wrapper<WithOps{3}>>);
+static_assert(HasNoexceptBitOr<cuda::std::constant_wrapper<WithOps{6}>, cuda::std::constant_wrapper<WithOps{3}>>);
+static_assert(HasNoexceptBitXor<cuda::std::constant_wrapper<WithOps{6}>, cuda::std::constant_wrapper<WithOps{3}>>);
+static_assert(HasNoexceptLogicalAnd<cuda::std::constant_wrapper<WithOps{6}>, cuda::std::constant_wrapper<WithOps{3}>>);
+static_assert(HasNoexceptLogicalOr<cuda::std::constant_wrapper<WithOps{6}>, cuda::std::constant_wrapper<WithOps{3}>>);
 
 // clang-format off
 // Non-structural types use implicit conversion to underlying type
-static_assert(HasPlus<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(HasMinus<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(HasMultiply<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(HasDivide<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(HasModulo<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(HasShiftLeft<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{1}>>);
-static_assert(HasShiftRight<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{1}>>);
-static_assert(HasBitAnd<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(HasBitOr<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(HasBitXor<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(HasLogicalAnd<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(HasLogicalOr<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(HasPlus<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(HasMinus<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(HasMultiply<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(HasDivide<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(HasModulo<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(HasShiftLeft<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{1}>>);
+static_assert(HasShiftRight<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{1}>>);
+static_assert(HasBitAnd<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(HasBitOr<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(HasBitXor<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(HasLogicalAnd<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(HasLogicalOr<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
 
-static_assert(!HasNoexceptPlus<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(!HasNoexceptMinus<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(!HasNoexceptMultiply<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(!HasNoexceptDivide<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(!HasNoexceptModulo<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(!HasNoexceptShiftLeft<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{1}>>);
-static_assert(!HasNoexceptShiftRight<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{1}>>);
-static_assert(!HasNoexceptBitAnd<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(!HasNoexceptBitOr<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(!HasNoexceptBitXor<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(!HasNoexceptLogicalAnd<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(!HasNoexceptLogicalOr<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(!HasNoexceptPlus<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(!HasNoexceptMinus<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(!HasNoexceptMultiply<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(!HasNoexceptDivide<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(!HasNoexceptModulo<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(!HasNoexceptShiftLeft<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{1}>>);
+static_assert(!HasNoexceptShiftRight<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{1}>>);
+static_assert(!HasNoexceptBitAnd<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(!HasNoexceptBitOr<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(!HasNoexceptBitXor<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(!HasNoexceptLogicalAnd<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(!HasNoexceptLogicalOr<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
 // clang-format on
 
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 TEST_FUNC constexpr bool test()
 {
   {
     // int + int
-    cuda::std::__constant_wrapper<6> cw6{};
-    cuda::std::__constant_wrapper<3> cw3{};
+    cuda::std::constant_wrapper<6> cw6{};
+    cuda::std::constant_wrapper<3> cw3{};
 
     decltype(auto) result = cw6 + cw3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<9>, decltype(result)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<9>, decltype(result)>);
     static_assert(result == 9);
 
     decltype(auto) result2 = cw6 - cw3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<3>, decltype(result2)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<3>, decltype(result2)>);
     static_assert(result2 == 3);
 
     decltype(auto) result3 = cw6 * cw3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<18>, decltype(result3)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<18>, decltype(result3)>);
     static_assert(result3 == 18);
 
     decltype(auto) result4 = cw6 / cw3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<2>, decltype(result4)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<2>, decltype(result4)>);
     static_assert(result4 == 2);
 
     decltype(auto) result5 = cw6 % cw3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<0>, decltype(result5)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<0>, decltype(result5)>);
     static_assert(result5 == 0);
 
     decltype(auto) result6 = cw6 & cw3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<2>, decltype(result6)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<2>, decltype(result6)>);
     static_assert(result6 == 2);
 
     decltype(auto) result7 = cw6 | cw3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<7>, decltype(result7)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<7>, decltype(result7)>);
     static_assert(result7 == 7);
 
     decltype(auto) result8 = cw6 ^ cw3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<5>, decltype(result8)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<5>, decltype(result8)>);
     static_assert(result8 == 5);
 
     // Shift operations: 6 << 3 = 48, 6 >> 3 = 0
     decltype(auto) result9 = cw6 << cw3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<48>, decltype(result9)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<48>, decltype(result9)>);
     static_assert(result9 == 48);
 
     decltype(auto) result10 = cw6 >> cw3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<0>, decltype(result10)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<0>, decltype(result10)>);
     static_assert(result10 == 0);
 
     // logical operations: int convertible to bool, so constant_wrapper overload is disabled
@@ -487,73 +464,73 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::std::same_as<bool, decltype(result11)>);
     assert(result11 == true);
 
-    cuda::std::__constant_wrapper<0> cw0{};
+    cuda::std::constant_wrapper<0> cw0{};
     decltype(auto) result12 = cw0 || cw3;
     static_assert(cuda::std::same_as<bool, decltype(result12)>);
     assert(result12 == true);
   }
 
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   {
     // WithOps operations
-    cuda::std::__constant_wrapper<WithOps{6}> cwWithOps6;
-    cuda::std::__constant_wrapper<WithOps{3}> cwWithOps3;
+    cuda::std::constant_wrapper<WithOps{6}> cwWithOps6;
+    cuda::std::constant_wrapper<WithOps{3}> cwWithOps3;
 
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{9}>> decltype(auto) result =
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{9}>> decltype(auto) result =
       cwWithOps6 + cwWithOps3;
-    static_assert(result.value.value == 9);
+    static_assert(result.__get().value == 9);
 
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{3}>> decltype(auto) result2 =
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{3}>> decltype(auto) result2 =
       cwWithOps6 - cwWithOps3;
-    static_assert(result2.value.value == 3);
+    static_assert(result2.__get().value == 3);
 
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{18}>> decltype(auto) result3 =
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{18}>> decltype(auto) result3 =
       cwWithOps6 * cwWithOps3;
-    static_assert(result3.value.value == 18);
+    static_assert(result3.__get().value == 18);
 
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{2}>> decltype(auto) result4 =
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{2}>> decltype(auto) result4 =
       cwWithOps6 / cwWithOps3;
-    static_assert(result4.value.value == 2);
+    static_assert(result4.__get().value == 2);
 
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{0}>> decltype(auto) result5 =
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{0}>> decltype(auto) result5 =
       cwWithOps6 % cwWithOps3;
-    static_assert(result5.value.value == 0);
+    static_assert(result5.__get().value == 0);
 
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{2}>> decltype(auto) result6 =
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{2}>> decltype(auto) result6 =
       cwWithOps6 & cwWithOps3;
-    static_assert(result6.value.value == 2);
+    static_assert(result6.__get().value == 2);
 
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{7}>> decltype(auto) result7 =
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{7}>> decltype(auto) result7 =
       cwWithOps6 | cwWithOps3;
-    static_assert(result7.value.value == 7);
+    static_assert(result7.__get().value == 7);
 
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{5}>> decltype(auto) result8 =
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{5}>> decltype(auto) result8 =
       cwWithOps6 ^ cwWithOps3;
-    static_assert(result8.value.value == 5);
+    static_assert(result8.__get().value == 5);
 
     // Shift operations: 6 << 3 = 48, 6 >> 3 = 0
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{48}>> decltype(auto) result9 =
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{48}>> decltype(auto) result9 =
       cwWithOps6 << cwWithOps3;
-    static_assert(result9.value.value == 48);
+    static_assert(result9.__get().value == 48);
 
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{0}>> decltype(auto) result10 =
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{0}>> decltype(auto) result10 =
       cwWithOps6 >> cwWithOps3;
-    static_assert(result10.value.value == 0);
+    static_assert(result10.__get().value == 0);
 
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{1}>> decltype(auto) result11 =
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{1}>> decltype(auto) result11 =
       cwWithOps6 && cwWithOps3;
-    static_assert(result11.value.value == 1);
+    static_assert(result11.__get().value == 1);
 
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{1}>> decltype(auto) result12 =
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{1}>> decltype(auto) result12 =
       cwWithOps6 || cwWithOps3;
-    static_assert(result12.value.value == 1);
+    static_assert(result12.__get().value == 1);
   }
 
   {
     // Non-structural return types use implicit conversion
-    cuda::std::__constant_wrapper<OpsReturnNonStructural{6}> cwOpt6;
-    cuda::std::__constant_wrapper<OpsReturnNonStructural{3}> cwOpt3;
+    cuda::std::constant_wrapper<OpsReturnNonStructural{6}> cwOpt6;
+    cuda::std::constant_wrapper<OpsReturnNonStructural{3}> cwOpt3;
 
     cuda::std::same_as<NonStructural> decltype(auto) result = cwOpt6 + cwOpt3;
     assert(result.get() == 9);
@@ -593,11 +570,11 @@ TEST_FUNC constexpr bool test()
     assert(result12.get() == 1);
   }
 
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   {
     // Mix with runtime param: these operators are not used
-    cuda::std::__constant_wrapper<6> cw6{};
+    cuda::std::constant_wrapper<6> cw6{};
     int i = 3;
 
     decltype(auto) result = cw6 + i;
@@ -645,7 +622,7 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::std::same_as<bool, decltype(result11)>);
     assert(result11 == true);
 
-    cuda::std::__constant_wrapper<0> cw0{};
+    cuda::std::constant_wrapper<0> cw0{};
     decltype(auto) result12 = cw0 || i;
     static_assert(cuda::std::same_as<bool, decltype(result12)>);
     assert(result12 == true);
@@ -653,48 +630,48 @@ TEST_FUNC constexpr bool test()
 
   {
     // with integral_constant
-    cuda::std::__constant_wrapper<6> cw6{};
+    cuda::std::constant_wrapper<6> cw6{};
     cuda::std::integral_constant<int, 3> ic3{};
 
     decltype(auto) result = cw6 + ic3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<9>, decltype(result)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<9>, decltype(result)>);
     static_assert(result == 9);
 
     decltype(auto) result2 = cw6 - ic3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<3>, decltype(result2)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<3>, decltype(result2)>);
     static_assert(result2 == 3);
 
     decltype(auto) result3 = cw6 * ic3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<18>, decltype(result3)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<18>, decltype(result3)>);
     static_assert(result3 == 18);
 
     decltype(auto) result4 = cw6 / ic3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<2>, decltype(result4)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<2>, decltype(result4)>);
     static_assert(result4 == 2);
 
     decltype(auto) result5 = cw6 % ic3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<0>, decltype(result5)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<0>, decltype(result5)>);
     static_assert(result5 == 0);
 
     decltype(auto) result6 = cw6 & ic3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<2>, decltype(result6)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<2>, decltype(result6)>);
     static_assert(result6 == 2);
 
     decltype(auto) result7 = cw6 | ic3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<7>, decltype(result7)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<7>, decltype(result7)>);
     static_assert(result7 == 7);
 
     decltype(auto) result8 = cw6 ^ ic3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<5>, decltype(result8)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<5>, decltype(result8)>);
     static_assert(result8 == 5);
 
     // Shift operations: 6 << 3 = 48, 6 >> 3 = 0
     decltype(auto) result9 = cw6 << ic3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<48>, decltype(result9)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<48>, decltype(result9)>);
     static_assert(result9 == 48);
 
     decltype(auto) result10 = cw6 >> ic3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<0>, decltype(result10)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<0>, decltype(result10)>);
     static_assert(result10 == 0);
 
     // logical operations: int convertible to bool, so constant_wrapper overload is disabled
@@ -703,7 +680,7 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::std::same_as<bool, decltype(result11)>);
     assert(result11 == true);
 
-    cuda::std::__constant_wrapper<0> cw0{};
+    cuda::std::constant_wrapper<0> cw0{};
     decltype(auto) result12 = cw0 || ic3;
     static_assert(cuda::std::same_as<bool, decltype(result12)>);
     assert(result12 == true);

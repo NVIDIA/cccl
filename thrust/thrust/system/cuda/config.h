@@ -13,6 +13,15 @@
 #  pragma system_header
 #endif // no system header
 
+// A host translation unit is fine with just the CTK headers: the CUDA backend's algorithms are guarded by
+// _CCCL_CUDA_COMPILATION(), so only the types and execution policies remain, and those need the CTK and nothing more.
+#if !_CCCL_CUDA_COMPILATION() && !_CCCL_HAS_CTK() && !defined(THRUST_IGNORE_CUDA_COMPILER_CHECK)
+#  error \
+    "The Thrust CUDA device system requires a CUDA compiler or the CUDA toolkit headers. Either compile as CUDA, \
+make the CUDA toolkit headers available, or set THRUST_DEVICE_SYSTEM to THRUST_DEVICE_SYSTEM_CPP, \
+THRUST_DEVICE_SYSTEM_OMP, or THRUST_DEVICE_SYSTEM_TBB. Define THRUST_IGNORE_CUDA_COMPILER_CHECK to ignore this."
+#endif
+
 #ifdef THRUST_DEBUG_SYNC
 
 #  if _CCCL_COMPILER(MSVC)
@@ -33,6 +42,7 @@
 #include <cub/detail/detect_cuda_runtime.cuh> // IWYU pragma: export
 #include <cub/util_debug.cuh> // IWYU pragma: export
 #include <cub/util_namespace.cuh> // IWYU pragma: export
+#include <cub/version.cuh>
 
 /**
  * \def THRUST_RUNTIME_FUNCTION
@@ -64,14 +74,7 @@
 //! Deprecated [Since 3.2]
 #define THRUST_FUNCTION _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE
 
-#if 0
-#  define THRUST_ARGS(...)       __VA_ARGS__
-#  define THRUST_STRIP_PARENS(X) X
-#  define THRUST_AGENT_ENTRY(ARGS) \
-    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE static void entry(THRUST_STRIP_PARENS(THRUST_ARGS ARGS))
-#else
-#  define THRUST_AGENT_ENTRY(...) THRUST_AGENT_ENTRY_INLINE_ATTR _CCCL_DEVICE static void entry(__VA_ARGS__)
-#endif
+#define THRUST_AGENT_ENTRY(...) THRUST_AGENT_ENTRY_INLINE_ATTR _CCCL_DEVICE_API static void entry(__VA_ARGS__)
 
 #ifndef THRUST_IGNORE_CUB_VERSION_CHECK
 

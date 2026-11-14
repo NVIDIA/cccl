@@ -73,7 +73,7 @@ void test_shift_left(const Policy& policy, c2h::device_vector<T>& input)
     CHECK(res == random_access_iterator{raw_pointer + size - num_shifted_small});
   }
 
-  const int num_shifted_large = size / 2 + 10;
+  const int num_shifted_large = (size / 2) + 10;
   const auto expected_large   = cuda::transform_iterator{cuda::counting_iterator{num_shifted_large}, cast_to<T>{}};
   thrust::sequence(input.begin(), input.end(), 0);
   { // Large shift
@@ -107,7 +107,7 @@ C2H_TEST("cuda::std::shift_left", "[parallel algorithm]", all_types)
 
   SECTION("with provided stream")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
 
     test_shift_left(policy, input);
@@ -123,7 +123,7 @@ C2H_TEST("cuda::std::shift_left", "[parallel algorithm]", all_types)
 
   SECTION("with provided stream and memory_resource")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy =
       cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource).with(cuda::get_stream, stream);

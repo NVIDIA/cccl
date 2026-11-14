@@ -17,6 +17,10 @@ adapt to the installed CTK rather than hard-coding architectures.
 """
 
 import concurrent.futures
+import os
+import subprocess
+import sys
+import textwrap
 import threading
 
 import numpy as np
@@ -27,8 +31,10 @@ from cuda.core.system import get_num_devices
 
 import cuda.compute._cccl_interop as cccl_interop
 from cuda.compute import (
+    OpKind,
     ProxyArray,
     deserialize,
+    make_merge_sort,
     make_select,
     make_unary_transform,
     serialize,
@@ -44,6 +50,7 @@ from cuda.compute._cccl_interop import (
     key_to_cc,
     normalize_compute_capabilities,
 )
+from cuda.compute._proxy import PROXY_PLACEHOLDER_ADDRESS
 from cuda.compute._target_cc import target_cc
 from cuda.compute.iterators import CountingIterator, TransformIterator
 from cuda.compute.types import from_numpy_dtype
@@ -52,15 +59,6 @@ try:
     from cuda.compute._build_info import USING_V2
 except ImportError:
     USING_V2 = False
-
-# Marker for tests that exercise real v1 serialization or NVRTC/LTO-IR
-# compilation. The fake-backed protocol tests (``_FakeBuildResult`` +
-# ``_PerCCBuildResults``) and pure-logic tests below are backend-agnostic and
-# deliberately run on both backends, so the skip is applied per-test here
-# rather than to the whole module.
-requires_serialization = pytest.mark.skipif(
-    USING_V2, reason="serialization not supported on v2 (HostJIT) backend"
-)
 
 
 def _add_one(a):
@@ -275,18 +273,13 @@ def test_aot_serialization_waits_for_canonical_first_load():
     assert source.serialize_count == 1
 
 
-def _patch_default_build_env(monkeypatch, device, *, backend_serializes):
+def _patch_default_build_env(monkeypatch, device):
     import cuda.compute._caching as _caching_mod
 
     monkeypatch.setattr(
         _caching_mod, "_get_current_device_info", lambda: (device["id"], (8, 0))
     )
     monkeypatch.setattr(_caching_mod, "_process_wide_build_results_cache", {})
-    # Pin the backend capability so these fake-backed tests exercise a fixed
-    # branch regardless of which backend the suite runs against.
-    monkeypatch.setattr(
-        _caching_mod, "_BACKEND_SERIALIZES_BUILD_RESULTS", backend_serializes
-    )
 
 
 def _make_fake_default_builder(device, built_sources):
@@ -308,7 +301,7 @@ def test_default_build_second_same_cc_device_shares_the_entry(monkeypatch):
     instead of running the builder.
     """
     device = {"id": 0}
-    _patch_default_build_env(monkeypatch, device, backend_serializes=True)
+    _patch_default_build_env(monkeypatch, device)
     built_sources = []
     build = _make_fake_default_builder(device, built_sources)
 
@@ -347,37 +340,6 @@ def test_default_build_second_same_cc_device_shares_the_entry(monkeypatch):
     assert len(built_sources) == 2
 
 
-def test_default_build_keys_per_device_without_backend_serialization(monkeypatch):
-    """Without build-result serialization, each device builds its own entry.
-
-    A non-owner device loads a shared entry by cloning it through
-    serialization, so a backend that cannot serialize (v2 HostJIT today) keys
-    default builds per device ordinal instead of sharing them.
-    TODO: delete this test once v2 supports build-result serialization and
-    the per-ordinal branch is removed.
-    """
-    device = {"id": 0}
-    _patch_default_build_env(monkeypatch, device, backend_serializes=False)
-    built_sources = []
-    build = _make_fake_default_builder(device, built_sources)
-
-    first, first_bound = cache_build_results(
-        _FakeBuildResult, "spec", compute_capability=None, builder=build
-    )
-    assert len(built_sources) == 1
-    assert first_bound is first[80]
-
-    # Second same-cc device: its own key, its own build; nothing serialized.
-    device["id"] = 1
-    second, second_bound = cache_build_results(
-        _FakeBuildResult, "spec", compute_capability=None, builder=build
-    )
-    assert len(built_sources) == 2
-    assert second is not first
-    assert second_bound is second[80]
-    assert first[80].serialize_count == 0
-
-
 def test_default_build_binding_falls_back_to_full_build_when_cloning_fails(
     monkeypatch,
 ):
@@ -389,7 +351,7 @@ def test_default_build_binding_falls_back_to_full_build_when_cloning_fails(
     per-device slot.
     """
     device = {"id": 0}
-    _patch_default_build_env(monkeypatch, device, backend_serializes=True)
+    _patch_default_build_env(monkeypatch, device)
     built_sources = []
     build = _make_fake_default_builder(device, built_sources)
 
@@ -458,7 +420,28 @@ def _compilable_ccs(want=2):
 # ----------------------------------------------------------------------------
 
 
-@requires_serialization
+@pytest.mark.parametrize("with_values", [False, True], ids=["keys_only", "pairs"])
+def test_proxy_compile_sorts_with_optional_values(with_values):
+    # The C library tells a keys-only sort from a key-value sort by whether the
+    # values iterator's pointer state is NULL. A ProxyArray therefore binds a
+    # non-NULL placeholder address, so a proxy values array compiles as present
+    # and a proxy keys array is never mistaken for an absent one.
+    ccs = _compilable_ccs(1)
+    if not ccs:
+        pytest.skip("toolchain compiles for no target arch")
+    values = ProxyArray(np.float32) if with_values else None
+    sorter = make_merge_sort(
+        d_in_keys=ProxyArray(np.int32),
+        d_in_values=values,
+        d_out_keys=ProxyArray(np.int32),
+        d_out_values=values,
+        op=OpKind.LESS,
+        compute_capability=ccs[0],
+    )
+    assert sorter.d_in_keys_cccl.state == PROXY_PLACEHOLDER_ADDRESS
+    assert (sorter.d_in_values_cccl.state == PROXY_PLACEHOLDER_ADDRESS) is with_values
+
+
 def test_proxy_single_cc_compile_is_not_loaded():
     ccs = _compilable_ccs(1)
     if not ccs:
@@ -470,7 +453,6 @@ def test_proxy_single_cc_compile_is_not_loaded():
     assert not builder.build_results[cc]._loaded
 
 
-@requires_serialization
 def test_proxy_multi_cc_compile_produces_one_build_result_per_cc():
     ccs = _compilable_ccs(2)
     if len(ccs) < 2:
@@ -480,7 +462,6 @@ def test_proxy_multi_cc_compile_produces_one_build_result_per_cc():
     assert all(not br._loaded for br in builder.build_results.values())
 
 
-@requires_serialization
 def test_multi_cc_serialize_deserialize_roundtrip_defers_load():
     ccs = _compilable_ccs(2)
     if len(ccs) < 2:
@@ -540,9 +521,11 @@ def _transform_case():
     return make, arch_bytes
 
 
-@requires_serialization
 @pytest.mark.parametrize(
     "case", [_counting_case(), _transform_case()], ids=["counting", "transform"]
+)
+@pytest.mark.thread_unsafe(
+    reason="Byte-compares compiled ops, which is only stable through the op-compile cache: a concurrent same-key compile in another thread emits a differently numbered wrapper symbol."
 )
 def test_iterator_op_ltoir_tracks_target_cc_across_instance_reuse(case):
     """Reusing one iterator instance across builds targeting different arches
@@ -569,9 +552,11 @@ def test_iterator_op_ltoir_tracks_target_cc_across_instance_reuse(case):
     for cc in (hi, lo):
         with target_cc(cc):
             ref[cc] = arch_bytes(make())
-    # The two arches must produce different device code, else the test below
-    # could pass vacuously.
-    assert ref[hi] != ref[lo]
+    # On v1 the two arches must produce different device code, else the test
+    # below could pass vacuously. v2 keeps arch-independent source/IR, so there
+    # the reuse check is what guards the memo.
+    if not USING_V2:
+        assert ref[hi] != ref[lo]
 
     # Reuse a single instance across both targets, higher arch first.
     it = make()
@@ -582,7 +567,6 @@ def test_iterator_op_ltoir_tracks_target_cc_across_instance_reuse(case):
         assert arch_bytes(it) == ref[lo]
 
 
-@requires_serialization
 def test_default_build_keys_device_code_on_resolved_device_cc(monkeypatch):
     ccs = _compilable_ccs(2)
     if len(ccs) < 2:
@@ -620,12 +604,13 @@ def test_default_build_keys_device_code_on_resolved_device_cc(monkeypatch):
 
     # The build's target cc is the resolved device cc, never None.
     assert seen_hi == hi_cc and seen_lo == lo_cc
-    # Regression: the second device must not reuse the first device's arch.
-    assert bytes_hi != bytes_lo
+    # Regression: the second device must not reuse the first device's arch. v2
+    # compiles the op to arch-independent code, so only v1 differs by arch.
+    if not USING_V2:
+        assert bytes_hi != bytes_lo
     assert set(it._input_deref_op.keys()) == {hi_cc, lo_cc}
 
 
-@requires_serialization
 def test_select_always_false_op_recompiles_per_target_cc():
     """``_always_false_op`` is a module-global cache whose LTO-IR is linked into
     every ``make_select`` build (as the three-way-partition's second predicate).
@@ -649,8 +634,12 @@ def test_select_always_false_op_recompiles_per_target_cc():
 
     b_hi = code(hi)
     b_lo = code(lo)
-    # Regression: lo must not return the cached hi-arch LTO-IR.
-    assert b_hi != b_lo
+    if USING_V2:
+        # v2 keeps the predicate's C++ source verbatim, whatever the target.
+        assert b_hi == b_lo
+    else:
+        # Regression: lo must not return the cached hi-arch LTO-IR.
+        assert b_hi != b_lo
 
 
 # ----------------------------------------------------------------------------
@@ -658,7 +647,44 @@ def test_select_always_false_op_recompiles_per_target_cc():
 # ----------------------------------------------------------------------------
 
 
-@requires_serialization
+def test_build_for_a_target_cc_needs_no_gpu():
+    """``make_<algo>(compute_capability=...)`` compiles with no device present.
+
+    Compiling the operator reaches the JIT backend, whose target resolver reads
+    the host's compute capability even when the caller names one, so this is the
+    step that decides whether the no-GPU claim above holds.
+
+    Unlike its neighbours this hides the devices in a subprocess rather than
+    patching ``Device``: the query is the backend's own, below anything this
+    package can monkeypatch. The operator is a Python function on purpose, since
+    a well-known operator never reaches the backend and would pass either way.
+    """
+    program = textwrap.dedent(
+        """
+        import numpy as np
+
+        from cuda.compute import ProxyArray, make_unary_transform
+
+        def add_one(a):
+            return a + 1
+
+        make_unary_transform(
+            d_in=ProxyArray(np.int32),
+            d_out=ProxyArray(np.int32),
+            op=add_one,
+            compute_capability=(8, 9),
+        )
+        """
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", program],
+        capture_output=True,
+        text=True,
+        env=dict(os.environ, CUDA_VISIBLE_DEVICES=""),
+    )
+    assert result.returncode == 0, result.stderr
+
+
 def test_unannotated_transform_iterator_construction_needs_no_gpu(monkeypatch):
     """Constructing an unannotated TransformIterator infers the lambda's return
     type; that inference is architecture-independent and must not query the
@@ -683,7 +709,6 @@ def test_unannotated_transform_iterator_construction_needs_no_gpu(monkeypatch):
     assert it.value_type == from_numpy_dtype(np.dtype(np.int64))
 
 
-@requires_serialization
 def test_select_deserialize_needs_no_gpu_and_no_recompile(monkeypatch):
     """``deserialize()`` must neither recompile device code nor require a GPU.
 
@@ -743,7 +768,9 @@ def test_select_deserialize_needs_no_gpu_and_no_recompile(monkeypatch):
 # ----------------------------------------------------------------------------
 
 
-@requires_serialization
+@pytest.mark.thread_unsafe(
+    reason="Asserts the process-wide AOT build result is still unloaded before executing it; a concurrent instance's execution loads it first."
+)
 def test_compile_only_then_lazy_load_and_execute():
     cc = current_device_cc_key()
 
@@ -762,7 +789,6 @@ def test_compile_only_then_lazy_load_and_execute():
     np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
 
 
-@requires_serialization
 def test_multi_cc_loads_only_the_current_device_build_result():
     # This test executes kernels, so it legitimately needs a GPU; ensure the
     # current device's cc is one of the built arches.
@@ -788,7 +814,6 @@ def test_multi_cc_loads_only_the_current_device_build_result():
     assert not loaded.build_results[other]._loaded
 
 
-@requires_serialization
 def test_fused_fast_path_unchanged_when_no_cc_given():
     h = np.arange(512, dtype=np.int32)
     d_in = DeviceArray.from_numpy(h)
@@ -828,7 +853,6 @@ def _same_cc_device_pair():
     return None
 
 
-@requires_serialization
 def test_second_device_loads_via_clone_without_recompiling():
     """On real same-cc GPUs, the first device loads the canonical build result
     in place and the second loads an independent serialize -> deserialize ->
@@ -869,7 +893,6 @@ def test_second_device_loads_via_clone_without_recompiling():
     assert loaded_b._loaded
 
 
-@requires_serialization
 def test_deserialized_wrapper_runs_on_both_devices():
     """One deserialized wrapper runs correctly on two same-cc GPUs: the first
     device to execute claims and loads the canonical result, the second loads
@@ -908,7 +931,6 @@ def test_deserialized_wrapper_runs_on_both_devices():
 # ----------------------------------------------------------------------------
 
 
-@requires_serialization
 def test_serialize_while_other_threads_execute():
     """serialize() must be safe while other threads run the same build.
 
@@ -969,7 +991,6 @@ def test_serialize_while_other_threads_execute():
     np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
 
 
-@requires_serialization
 def test_double_serialize_roundtrip_is_stable_and_executes():
     """serialize -> deserialize -> serialize -> deserialize is stable.
 
@@ -1005,7 +1026,6 @@ def test_double_serialize_roundtrip_is_stable_and_executes():
     np.testing.assert_array_equal(d_out.copy_to_host(), h + 1)
 
 
-@requires_serialization
 def test_default_build_on_second_same_cc_device_clones_payload(monkeypatch):
     """Real-GPU check of the shared default entry (see the fake-based
     test_default_build_second_same_cc_device_shares_the_entry for the
@@ -1049,3 +1069,65 @@ def test_default_build_on_second_same_cc_device_clones_payload(monkeypatch):
     assert result_a is not None and result_b is not None
     assert result_b is not result_a
     assert result_b._loaded
+
+
+def test_operator_device_code_targets_the_requested_cc(monkeypatch):
+    """The operator's device code is compiled for the cc it is given.
+
+    Without an explicit target the arch comes from whichever device happens to
+    be present, so a build for a specific compute capability would silently
+    follow the build machine instead.
+    """
+    from cuda.compute import _jit
+
+    if not _jit.USING_V2:
+        pytest.skip("v1 compiles the operator through a different entry point")
+
+    import numba_cuda_mlir.compiler as backend_compiler
+
+    recorded = {}
+    original = backend_compiler._compile_only
+
+    def record_chip(pyfunc, sig=None, targetoptions=None):
+        recorded.setdefault("chip", (targetoptions or {}).get("chip"))
+        return original(pyfunc, sig, targetoptions)
+
+    monkeypatch.setattr(backend_compiler, "_compile_only", record_chip)
+
+    def add_one(x):
+        return x + 1
+
+    int32 = from_numpy_dtype(np.dtype(np.int32))
+    _jit.compile_op.cache_clear()
+    _jit._compile_op_impl(add_one, (int32,), int32, (7, 5))
+
+    assert recorded["chip"] == "sm_75"
+
+
+def test_return_type_inference_does_not_generate_code(monkeypatch):
+    """Inferring an operator's return type must not generate code.
+
+    The return type follows from typing alone, so inference needs neither a
+    target arch nor a device; generating code for it would make every build
+    depend on the current device before its compute capability can apply.
+    """
+    from cuda.compute import _jit
+
+    generated = []
+    original = _jit._mlir.cuda.compile
+
+    def record(*args, **kwargs):
+        generated.append(kwargs.get("output"))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(_jit._mlir.cuda, "compile", record)
+
+    def add_one(x):
+        return x + 1
+
+    int32 = from_numpy_dtype(np.dtype(np.int32))
+    _jit._infer_return_type.cache_clear()
+    inferred = _jit._infer_return_type(add_one, (int32,))
+
+    assert inferred == from_numpy_dtype(np.dtype(np.int64))
+    assert generated == []

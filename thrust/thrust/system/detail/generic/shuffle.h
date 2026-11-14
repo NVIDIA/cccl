@@ -23,11 +23,11 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename ExecutionPolicy, typename RandomIterator, typename URBG>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 shuffle(thrust::execution_policy<ExecutionPolicy>& exec, RandomIterator first, RandomIterator last, URBG&& g);
 
 template <typename ExecutionPolicy, typename RandomIterator, typename OutputIterator, typename URBG>
-_CCCL_HOST_DEVICE void shuffle_copy(
+_CCCL_HOST_DEVICE_API void shuffle_copy(
   thrust::execution_policy<ExecutionPolicy>& exec,
   RandomIterator first,
   RandomIterator last,

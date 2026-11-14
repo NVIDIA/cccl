@@ -12,7 +12,7 @@
 #include "../policy_selector.h"
 
 template <typename T, typename OffsetT>
-static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+_CCCL_HOST_API void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 try
 {
   using init_value_t             = T;
@@ -49,7 +49,7 @@ try
       cuda::execution::tune(policy_selector<accum_t>{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceScan::ExclusiveScan,
       "ExclusiveScan failed",
       d_input,

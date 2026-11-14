@@ -23,13 +23,17 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/__container/allocation_info.h>
+#  include <cuda/__memory/is_aligned.h>
 #  include <cuda/__memory_resource/allocation_alignment.h>
 #  include <cuda/__memory_resource/any_resource.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__memory/align.h>
 #  include <cuda/std/__new/launder.h>
+#  include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #  include <cuda/std/__type_traits/type_set.h>
 #  include <cuda/std/__utility/exchange.h>
 #  include <cuda/std/__utility/move.h>
@@ -76,12 +80,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _Tp, class... _Properties>
 class __uninitialized_async_buffer
 {
-private:
   static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
                 "The properties of cuda::__uninitialized_async_buffer must contain at least one execution space "
                 "property!");
 
-  using __async_resource = ::cuda::mr::any_resource<_Properties...>;
+  using __async_resource _CCCL_NODEBUG = ::cuda::mr::any_resource<_Properties...>;
 
   __async_resource __mr_;
   ::cuda::stream_ref __stream_ = {::cudaStream_t{}};
@@ -103,7 +106,7 @@ private:
   //! @brief Determines the allocation size given the alignment and size of `T`
   [[nodiscard]] _CCCL_HOST_API size_t __get_allocation_size(const size_t __count) const noexcept
   {
-    return (__count * sizeof(_Tp) + (__alignment_ - 1)) & ~(__alignment_ - 1);
+    return ((__count * sizeof(_Tp)) + (__alignment_ - 1)) & ~(__alignment_ - 1);
   }
 
   //! @brief Determines the properly aligned start of the buffer given the
@@ -147,31 +150,32 @@ private:
   {
     __async_resource* __resource_;
 
-    void* allocate_sync(std::size_t __size, std::size_t __alignment)
+    _CCCL_HOST_API void* allocate_sync(std::size_t __size, std::size_t __alignment)
     {
       return __resource_->allocate_sync(__size, __alignment);
     }
 
-    void deallocate_sync(void* __ptr, std::size_t __size, std::size_t __alignment) noexcept
+    _CCCL_HOST_API void deallocate_sync(void* __ptr, std::size_t __size, std::size_t __alignment) noexcept
     {
       __resource_->deallocate_sync(__ptr, __size, __alignment);
     }
 
-    void* allocate(::cuda::stream_ref __stream, std::size_t __size, std::size_t __alignment)
+    _CCCL_HOST_API void* allocate(::cuda::stream_ref __stream, std::size_t __size, std::size_t __alignment)
     {
       return __resource_->allocate(__stream, __size, __alignment);
     }
 
-    void deallocate(::cuda::stream_ref __stream, void* __ptr, std::size_t __size, std::size_t __alignment) noexcept
+    _CCCL_HOST_API void
+    deallocate(::cuda::stream_ref __stream, void* __ptr, std::size_t __size, std::size_t __alignment) noexcept
     {
       __resource_->deallocate(__stream, __ptr, __size, __alignment);
     }
 
-    friend bool operator==(const __fake_resource_ref& __lhs, const __fake_resource_ref& __rhs) noexcept
+    _CCCL_HOST_API friend bool operator==(const __fake_resource_ref& __lhs, const __fake_resource_ref& __rhs) noexcept
     {
       return *__lhs.__resource_ == *__rhs.__resource_;
     }
-    friend bool operator!=(const __fake_resource_ref& __lhs, const __fake_resource_ref& __rhs) noexcept
+    _CCCL_HOST_API friend bool operator!=(const __fake_resource_ref& __lhs, const __fake_resource_ref& __rhs) noexcept
     {
       return *__lhs.__resource_ != *__rhs.__resource_;
     }
@@ -207,16 +211,32 @@ public:
     const size_t __alignment = alignof(_Tp))
       : __mr_(::cuda::std::move(__mr))
       , __stream_(__stream)
-      , __count_(__count)
+      , __count_(__validate_element_count(__count, __alignment))
       , __alignment_(__validate_alignment_param(__alignment))
       , __buf_(__count_ == 0 ? nullptr : __mr_.allocate(__stream_, __get_allocation_size(__count_), __alignment_))
   {}
 
 private:
-  static size_t __validate_alignment_param(size_t __a)
+  _CCCL_HOST_API static size_t __validate_alignment_param(size_t __a)
   {
     ::cuda::__validate_allocation_alignment(__a, alignof(_Tp));
     return __a;
+  }
+
+  _CCCL_HOST_API static size_t __validate_element_count(const size_t __count, const size_t __alignment)
+  {
+    constexpr size_t __max_element_count = static_cast<size_t>(-1) / sizeof(_Tp);
+    if (__count > __max_element_count)
+    {
+      _CCCL_THROW(::std::invalid_argument, "cuda::__uninitialized_async_buffer: Input size overflow");
+    }
+
+    const size_t __count_elements = __count * sizeof(_Tp);
+    if (__count_elements > __max_element_count - (__alignment - 1))
+    {
+      _CCCL_THROW(::std::invalid_argument, "cuda::__uninitialized_async_buffer: Input size overflow");
+    }
+    return __count;
   }
 
 public:
@@ -303,9 +323,9 @@ public:
   }
 
 #  ifndef _CCCL_DOXYGEN_INVOKED
-  _CCCL_HOST_API constexpr void __set_size(const size_t __count) noexcept
+  _CCCL_HOST_API constexpr void __set_size(const size_t __count)
   {
-    __count_ = __count;
+    __count_ = __validate_element_count(__count, __alignment_);
   }
 #  endif // _CCCL_DOXYGEN_INVOKED
 
@@ -446,9 +466,47 @@ public:
     return __replace_allocation(__stream_, __count);
   }
 
+  [[nodiscard]] _CCCL_HOST_API static __uninitialized_async_buffer
+  __adopt_allocation(::cuda::__allocation_info<_Tp, _Properties...>&& __info)
+  {
+    __uninitialized_async_buffer __ret{
+      ::cuda::std::move(__info.mr), __info.stream, /* __count_ = */ 0, __info.alignment};
+    __validate_element_count(__info.capacity, __info.alignment);
+    if (__info.ptr == nullptr)
+    {
+      if (__info.capacity != 0)
+      {
+        _CCCL_THROW(::std::invalid_argument, "cuda::__uninitialized_async_buffer: Null buffer with nonzero count");
+      }
+    }
+    else if (!::cuda::is_aligned(__info.ptr, __info.alignment))
+    {
+      _CCCL_THROW(::std::invalid_argument, "cuda::__uninitialized_async_buffer: Invalid alignment");
+    }
+    __ret.__count_ = __info.capacity;
+    __ret.__buf_   = __info.ptr;
+    return __ret;
+  }
+
+  [[nodiscard]] _CCCL_HOST_API ::cuda::__allocation_info<_Tp, _Properties...> __release_allocation() && noexcept
+  {
+    using __info_t = ::cuda::__allocation_info<_Tp, _Properties...>;
+    static_assert(::cuda::std::is_nothrow_move_constructible_v<__info_t>);
+
+    __info_t __ret{__stream_, ::cuda::std::move(__mr_), __get_data(), __count_, __count_, __alignment_};
+
+    __stream_    = ::cuda::stream_ref{::cuda::invalid_stream};
+    __count_     = 0;
+    __alignment_ = alignof(_Tp);
+    __buf_       = nullptr;
+    return __ret;
+  }
+
   _CCCL_HOST_API void
   __replace_allocation_discard(::cuda::stream_ref __stream, const size_t __count, const size_t __old_capacity)
   {
+    __validate_element_count(__count, __alignment_);
+
     if (__buf_)
     {
       __mr_.deallocate(__stream_, __buf_, __get_allocation_size(__old_capacity), __alignment_);

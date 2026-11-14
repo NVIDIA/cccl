@@ -23,17 +23,17 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator adjacent_difference(
+_CCCL_HOST_DEVICE_API OutputIterator adjacent_difference(
   thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
 {
   using InputType = thrust::detail::it_value_t<InputIterator>;
-  ::cuda::std::minus<InputType> binary_op;
+  const ::cuda::std::minus<InputType> binary_op;
 
   return thrust::adjacent_difference(exec, first, last, result, binary_op);
 } // end adjacent_difference()
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator adjacent_difference(
+_CCCL_HOST_DEVICE_API OutputIterator adjacent_difference(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -47,7 +47,7 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
     // empty range, nothing to do
     return result;
   }
-  else
+
   {
     // an in-place operation is requested, copy the input and call the entry point
     // XXX a special-purpose kernel would be faster here since

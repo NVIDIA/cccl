@@ -128,7 +128,7 @@ public:
     {
       return __pr.__t_;
     }
-    uniform_real_distribution<double> __gen;
+    uniform_real_distribution<double> __gen; // NOLINT(misc-const-correctness)
     double __u = __gen(__g) - __pr.__pr_;
     if (__u < 0)
     {
@@ -216,7 +216,7 @@ public:
 
 #if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
-  friend ::std::basic_ostream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const binomial_distribution& __x)
   {
     using ostream_type                        = ::std::basic_ostream<_CharT, _Traits>;
@@ -230,7 +230,7 @@ public:
   }
 
   template <class _CharT, class _Traits>
-  friend ::std::basic_istream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is, binomial_distribution& __x)
   {
     using istream_type                        = ::std::basic_istream<_CharT, _Traits>;

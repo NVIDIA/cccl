@@ -29,10 +29,8 @@
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__concepts/convertible_to.h>
 #  include <cuda/std/__concepts/equality_comparable.h>
-#  include <cuda/std/__concepts/same_as.h>
-#  include <cuda/std/__type_traits/decay.h>
+#  include <cuda/std/__concepts/same_as.h> // IWYU pragma: keep
 #  include <cuda/std/__type_traits/fold.h>
-#  include <cuda/std/__type_traits/is_same.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -102,7 +100,7 @@ template <bool _Convertible>
 struct __different_resource__
 {
   template <class _OtherResource>
-  static constexpr bool __value(_OtherResource*) noexcept
+  _CCCL_HOST_API static constexpr bool __value(_OtherResource*) noexcept
   {
     return synchronous_resource<_OtherResource>;
   }
@@ -111,7 +109,7 @@ struct __different_resource__
 template <>
 struct __different_resource__<true>
 {
-  static constexpr bool __value(void*) noexcept
+  _CCCL_HOST_API static constexpr bool __value(void*) noexcept
   {
     return false;
   }

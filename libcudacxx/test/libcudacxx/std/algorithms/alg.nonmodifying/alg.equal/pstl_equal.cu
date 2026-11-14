@@ -50,7 +50,7 @@ void test_equal(const Policy& policy)
 
   { // convertible type
     const auto res = cuda::std::equal(
-      policy, cuda::counting_iterator{short{0}}, cuda::counting_iterator{size}, cuda::counting_iterator{int{0}});
+      policy, cuda::counting_iterator{short{0}}, cuda::counting_iterator{size}, cuda::counting_iterator{0});
     CHECK(res);
   }
 }
@@ -65,7 +65,7 @@ C2H_TEST("cuda::std::equal(first1, last1, first2)", "[parallel algorithm]")
 
   SECTION("with provided stream")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_equal(policy);
   }
@@ -79,7 +79,7 @@ C2H_TEST("cuda::std::equal(first1, last1, first2)", "[parallel algorithm]")
 
   SECTION("with provided stream and memory_resource")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy =
       cuda::execution::gpu.with(cuda::get_stream, stream).with(cuda::mr::get_memory_resource, device_resource);
@@ -125,7 +125,7 @@ void test_equal2(const Policy& policy)
       policy,
       cuda::counting_iterator{short{0}},
       cuda::counting_iterator{size},
-      cuda::counting_iterator{int{0}},
+      cuda::counting_iterator{0},
       cuda::counting_iterator{int{size}});
     CHECK(res);
   }
@@ -141,7 +141,7 @@ C2H_TEST("cuda::std::equal(first1, last1, first2, last2)", "[parallel algorithm]
 
   SECTION("with provided stream")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_equal2(policy);
   }
@@ -155,7 +155,7 @@ C2H_TEST("cuda::std::equal(first1, last1, first2, last2)", "[parallel algorithm]
 
   SECTION("with provided stream and memory_resource")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy =
       cuda::execution::gpu.with(cuda::get_stream, stream).with(cuda::mr::get_memory_resource, device_resource);

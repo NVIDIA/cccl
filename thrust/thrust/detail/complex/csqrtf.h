@@ -47,7 +47,7 @@
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/signbit.h>
-#include <cuda/std/limits>
+#include <cuda/std/__limits/numeric_limits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
@@ -59,12 +59,13 @@ using thrust::complex;
 // is 0/0, which produces a NaN and raises the invalid flag. C99 Annex G specifies the
 // complex functions in these terms.
 // NOLINTBEGIN(misc-redundant-expression)
-_CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> csqrtf(const complex<float>& z)
 {
-  float a = z.real(), b = z.imag();
+  float a = z.real();
+  float b = z.imag();
   float t;
   int scale;
-  complex<float> result;
+  complex<float> result{};
 
   /* We risk spurious overflow for components >= FLT_MAX / (1 + sqrt(2)). */
   const float THRESH = 1.40949553037932e+38f;
@@ -95,10 +96,8 @@ _CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
     {
       return (complex<float>(::cuda::std::fabsf(b - b), ::cuda::std::copysignf(a, b)));
     }
-    else
-    {
-      return (complex<float>(a, ::cuda::std::copysignf(b - b, b)));
-    }
+
+    return (complex<float>(a, ::cuda::std::copysignf(b - b, b)));
   }
   /*
    * The remaining special case (b is NaN) is handled just fine by
@@ -146,20 +145,18 @@ _CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
   {
     return (result * 2.0f);
   }
-  else if (scale == 2)
+  if (scale == 2)
   {
     return (result * 0.5f);
   }
-  else
-  {
-    return (result);
-  }
+
+  return result;
 }
 // NOLINTEND(misc-redundant-expression)
 } // namespace detail::complex
 
 template <>
-_CCCL_HOST_DEVICE inline complex<float> sqrt(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> sqrt(const complex<float>& z)
 {
   return detail::complex::csqrtf(z);
 }

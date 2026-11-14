@@ -39,25 +39,25 @@ class tuple_of_iterator_references;
 template <typename T>
 struct is_compatible_tuple_normalize
 {
-  using type = T;
+  using type _CCCL_NODEBUG = T;
 };
 
 template <typename... Ts>
 struct is_compatible_tuple_normalize<tuple_of_iterator_references<Ts...>>
 {
-  using type = ::cuda::std::tuple<Ts...>;
+  using type _CCCL_NODEBUG = ::cuda::std::tuple<Ts...>;
 };
 
 template <typename T>
 struct is_compatible_tuple_normalize<thrust::device_reference<T>>
 {
-  using type = T;
+  using type _CCCL_NODEBUG = T;
 };
 
 template <typename T>
 struct is_compatible_tuple_normalize<T&>
 {
-  using type = T;
+  using type _CCCL_NODEBUG = T;
 };
 
 template <typename T>
@@ -96,7 +96,7 @@ inline constexpr bool is_compatible_tuple_v<::cuda::std::tuple<Us...>, ::cuda::s
 template <class U, class T, class Enable = void>
 struct maybe_unwrap_nested
 {
-  _CCCL_HOST_DEVICE U operator()(const T& t) const
+  _CCCL_HOST_DEVICE_API U operator()(const T& t) const
   {
     return t;
   }
@@ -108,9 +108,9 @@ struct maybe_unwrap_nested<
   tuple_of_iterator_references<Ts...>,
   ::cuda::std::enable_if_t<is_compatible_tuple_v<::cuda::std::tuple<Us...>, ::cuda::std::tuple<Ts...>>, int>>
 {
-  _CCCL_HOST_DEVICE ::cuda::std::tuple<Us...> operator()(const tuple_of_iterator_references<Ts...>& t) const
+  _CCCL_HOST_DEVICE_API ::cuda::std::tuple<Us...> operator()(const tuple_of_iterator_references<Ts...>& t) const
   {
-    return t.template __to_tuple<Us...>(typename ::cuda::std::__make_tuple_indices<sizeof...(Ts)>::type{});
+    return t.template to_tuple<Us...>(::cuda::std::__make_tuple_indices_t<sizeof...(Ts)>{});
   }
 };
 
@@ -121,14 +121,14 @@ public:
   using super_t = ::cuda::std::tuple<Ts...>;
   using super_t::super_t;
 
-  tuple_of_iterator_references() = default;
+  _CCCL_HIDE_FROM_ABI tuple_of_iterator_references() = default;
 
   // allow implicit construction from cuda::std::tuple<refs>
-  _CCCL_HOST_DEVICE tuple_of_iterator_references(const super_t& other)
+  _CCCL_HOST_DEVICE_API tuple_of_iterator_references(const super_t& other)
       : super_t(other)
   {}
 
-  _CCCL_HOST_DEVICE tuple_of_iterator_references(super_t&& other)
+  _CCCL_HOST_DEVICE_API tuple_of_iterator_references(super_t&& other)
       : super_t(::cuda::std::move(other))
   {}
 
@@ -136,7 +136,7 @@ public:
   // XXX might be worthwhile to guard this with an enable_if is_assignable
   _CCCL_EXEC_CHECK_DISABLE
   template <typename... Us>
-  _CCCL_HOST_DEVICE tuple_of_iterator_references& operator=(const ::cuda::std::tuple<Us...>& other)
+  _CCCL_HOST_DEVICE_API tuple_of_iterator_references& operator=(const ::cuda::std::tuple<Us...>& other)
   {
     super_t::operator=(other);
     return *this;
@@ -146,7 +146,7 @@ public:
   // XXX might be worthwhile to guard this with an enable_if is_assignable
   _CCCL_EXEC_CHECK_DISABLE
   template <typename U1, typename U2>
-  _CCCL_HOST_DEVICE tuple_of_iterator_references& operator=(const ::cuda::std::pair<U1, U2>& other)
+  _CCCL_HOST_DEVICE_API tuple_of_iterator_references& operator=(const ::cuda::std::pair<U1, U2>& other)
   {
     super_t::operator=(other);
     return *this;
@@ -156,7 +156,7 @@ public:
   // XXX perhaps we should generalize to reference<T> we could captures reference<pair> this way
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Pointer, typename Derived, typename... Us>
-  _CCCL_HOST_DEVICE tuple_of_iterator_references&
+  _CCCL_HOST_DEVICE_API tuple_of_iterator_references&
   operator=(const reference<::cuda::std::tuple<Us...>, Pointer, Derived>& other)
   {
     using tuple_type = ::cuda::std::tuple<Us...>;
@@ -169,13 +169,13 @@ public:
   template <
     class... Us,
     ::cuda::std::enable_if_t<is_compatible_tuple_v<::cuda::std::tuple<Us...>, ::cuda::std::tuple<Ts...>>, int> = 0>
-  _CCCL_HOST_DEVICE constexpr operator ::cuda::std::tuple<Us...>() const
+  _CCCL_HOST_DEVICE_API constexpr operator ::cuda::std::tuple<Us...>() const
   {
-    return __to_tuple<Us...>(typename ::cuda::std::__make_tuple_indices<sizeof...(Ts)>::type{});
+    return to_tuple<Us...>(::cuda::std::__make_tuple_indices_t<sizeof...(Ts)>{});
   }
 
   template <class... Us>
-  _CCCL_HOST_DEVICE friend void swap(tuple_of_iterator_references& x, tuple_of_iterator_references<Us...>& y)
+  _CCCL_HOST_DEVICE_API friend void swap(tuple_of_iterator_references& x, tuple_of_iterator_references<Us...>& y)
   {
     x.swap(y);
   }
@@ -183,7 +183,9 @@ public:
   // this overload of swap() permits swapping tuple_of_iterator_references returned as temporaries from
   // iterator dereferences
   template <class... Us>
-  _CCCL_HOST_DEVICE friend void swap(tuple_of_iterator_references&& x, tuple_of_iterator_references<Us...>&& y)
+  _CCCL_HOST_DEVICE_API friend void
+  swap(tuple_of_iterator_references&& x, // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+       tuple_of_iterator_references<Us...>&& y) // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
   {
     x.swap(y);
   }
@@ -192,7 +194,7 @@ public:
     class... Us,
     size_t... Id,
     ::cuda::std::enable_if_t<is_compatible_tuple_v<::cuda::std::tuple<Us...>, ::cuda::std::tuple<Ts...>>, int> = 0>
-  _CCCL_HOST_DEVICE constexpr ::cuda::std::tuple<Us...> __to_tuple(::cuda::std::__tuple_indices<Id...>) const
+  _CCCL_HOST_DEVICE_API constexpr ::cuda::std::tuple<Us...> to_tuple(::cuda::std::__tuple_indices<Id...>) const
   {
     return {maybe_unwrap_nested<Us, Ts>{}(::cuda::std::get<Id>(*this))...};
   }
@@ -218,27 +220,27 @@ struct tuple_element<Id, THRUST_NS_QUALIFIER::detail::tuple_of_iterator_referenc
     : tuple_element<Id, tuple<Ts...>>
 {};
 
-// tuple_of_iterator_references<_TTypes...> implicitly converts to tuple<_UTypes...> if is_compatible_tuple_v holds.
-// Compute the common reference from the actual element types (not by substituting _UTypes/_TTypes on both sides),
+// tuple_of_iterator_references<TTypes...> implicitly converts to tuple<UTypes...> if is_compatible_tuple_v holds.
+// Compute the common reference from the actual element types (not by substituting UTypes/TTypes on both sides),
 // so proxy reference elements (e.g. __transform_input_output_proxy) participate correctly.
-template <class... _TTypes, class... _UTypes, template <class> class _TQual, template <class> class _UQual>
+template <class... TTypes, class... UTypes, template <class> class TQual, template <class> class UQual>
 struct basic_common_reference<
-  THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<_TTypes...>,
-  tuple<_UTypes...>,
-  _TQual,
-  _UQual,
-  enable_if_t<THRUST_NS_QUALIFIER::detail::is_compatible_tuple_v<tuple<_TTypes...>, tuple<_UTypes...>>>>
-    : basic_common_reference<tuple<_TTypes...>, tuple<_UTypes...>, _TQual, _UQual>
+  THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<TTypes...>,
+  tuple<UTypes...>,
+  TQual,
+  UQual,
+  enable_if_t<THRUST_NS_QUALIFIER::detail::is_compatible_tuple_v<tuple<TTypes...>, tuple<UTypes...>>>>
+    : basic_common_reference<tuple<TTypes...>, tuple<UTypes...>, TQual, UQual>
 {};
 
-template <class... _TTypes, class... _UTypes, template <class> class _TQual, template <class> class _UQual>
+template <class... TTypes, class... UTypes, template <class> class TQual, template <class> class UQual>
 struct basic_common_reference<
-  tuple<_TTypes...>,
-  THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<_UTypes...>,
-  _TQual,
-  _UQual,
-  enable_if_t<THRUST_NS_QUALIFIER::detail::is_compatible_tuple_v<tuple<_TTypes...>, tuple<_UTypes...>>>>
-    : basic_common_reference<tuple<_TTypes...>, tuple<_UTypes...>, _TQual, _UQual>
+  tuple<TTypes...>,
+  THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<UTypes...>,
+  TQual,
+  UQual,
+  enable_if_t<THRUST_NS_QUALIFIER::detail::is_compatible_tuple_v<tuple<TTypes...>, tuple<UTypes...>>>>
+    : basic_common_reference<tuple<TTypes...>, tuple<UTypes...>, TQual, UQual>
 {};
 
 _CCCL_END_NAMESPACE_CUDA_STD

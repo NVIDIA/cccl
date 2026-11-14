@@ -13,9 +13,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 #include <cub/warp/warp_utils.cuh>
 
 #include <cuda/__cmath/pow2.h>
@@ -26,7 +27,6 @@
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/swap.h>
 
 CUB_NAMESPACE_BEGIN
@@ -117,16 +117,21 @@ class WarpBitonicSort
   // The sorting network exchanges items between lanes "lane" and "lane ^ stride", which only stays inside the
   // logical warp when its size is a power of two.
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
-  using _TempStorage = cub::NullType;
+  using _TempStorage _CCCL_NODEBUG = cub::NullType;
 
   // to simplify internal recursive call
-  WarpBitonicSort() = default;
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort()
+  {
+    _CCCL_ASSUME(lane >= 0);
+  }
 
 public:
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
-  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&) {}
+  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&)
+  {
+    _CCCL_ASSUME(lane >= 0);
+  }
 
   //! @brief Sorts keys across a logical warp of threads using bitonic sorting network.
   //!
@@ -172,7 +177,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
     {
-      if (i * LogicalWarpThreads + lane >= valid_items)
+      if ((i * LogicalWarpThreads) + lane >= valid_items)
       {
         keys[i] = oob_default;
       }
@@ -202,7 +207,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
     {
-      if (i * LogicalWarpThreads + lane >= valid_items)
+      if ((i * LogicalWarpThreads) + lane >= valid_items)
       {
         keys[i] = KeyT{};
       }
@@ -261,7 +266,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
     {
-      if (i * LogicalWarpThreads + lane >= valid_items)
+      if ((i * LogicalWarpThreads) + lane >= valid_items)
       {
         keys[i]   = oob_default;
         values[i] = ValueT{};
@@ -292,7 +297,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
     {
-      if (i * LogicalWarpThreads + lane >= valid_items)
+      if ((i * LogicalWarpThreads) + lane >= valid_items)
       {
         keys[i]   = KeyT{};
         values[i] = ValueT{};
@@ -307,7 +312,7 @@ private:
 
   static constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
 
-  int lane = detail::logical_lane_id<LogicalWarpThreads>();
+  int lane = _CUB::detail::logical_lane_id<LogicalWarpThreads>();
 
   static constexpr int first_half_len  = ::cuda::prev_power_of_two(ItemsPerThread - 1);
   static constexpr int second_half_len = ItemsPerThread - first_half_len;
@@ -315,7 +320,7 @@ private:
   using SortSecondHalfT                = WarpBitonicSort<KeyT, second_half_len, LogicalWarpThreads, ValueT>;
 
   template <typename CompareOp, bool Reverse>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op) const
   {
     SortFirstHalfT{}.template sort<CompareOp, !Reverse>(keys, values, compare_op);
     SortSecondHalfT{}.template sort<CompareOp, Reverse>(
@@ -338,7 +343,7 @@ private:
   //! @param[in,out] values Values to merge (reordered to match key order)
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
   template <typename CompareOp, bool Reverse>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void merge(KeyT* keys, ValueT* values, CompareOp compare_op) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void merge(KeyT* keys, ValueT* values, CompareOp compare_op) const
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < second_half_len; ++i)
@@ -346,7 +351,7 @@ private:
       const int other_i      = i + first_half_len;
       KeyT& key              = keys[i];
       KeyT& other_key        = keys[other_i];
-      const bool should_swap = (Reverse) ? compare_op(key, other_key) : compare_op(other_key, key);
+      const bool should_swap = Reverse ? compare_op(key, other_key) : compare_op(other_key, key);
 
       if (should_swap)
       {
@@ -365,7 +370,7 @@ private:
   }
 
   template <typename CompareOp, bool Reverse>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
   {
     if (valid_items > first_half_len * LogicalWarpThreads)
     {
@@ -374,7 +379,7 @@ private:
         keys + first_half_len,
         (keys_only ? nullptr : values + first_half_len),
         compare_op,
-        valid_items - first_half_len * LogicalWarpThreads);
+        valid_items - (first_half_len * LogicalWarpThreads));
       merge<CompareOp, Reverse>(keys, values, compare_op, valid_items);
     }
     else
@@ -396,7 +401,7 @@ private:
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
   //! @param[in] valid_items Total number of valid items across the logical warp
   template <typename CompareOp, bool Reverse>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void merge(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void merge(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < second_half_len; ++i)
@@ -404,9 +409,9 @@ private:
       const int other_i      = i + first_half_len;
       KeyT& key              = keys[i];
       KeyT& other_key        = keys[other_i];
-      const bool should_swap = (Reverse) ? compare_op(key, other_key) : compare_op(other_key, key);
+      const bool should_swap = Reverse ? compare_op(key, other_key) : compare_op(other_key, key);
 
-      if (should_swap && other_i * LogicalWarpThreads + lane < valid_items)
+      if (should_swap && (other_i * LogicalWarpThreads) + lane < valid_items)
       {
         using ::cuda::std::swap;
         swap(key, other_key);
@@ -424,7 +429,7 @@ private:
         keys + first_half_len,
         (keys_only ? nullptr : values + first_half_len),
         compare_op,
-        valid_items - first_half_len * LogicalWarpThreads);
+        valid_items - (first_half_len * LogicalWarpThreads));
     }
     else
     {
@@ -445,16 +450,21 @@ class WarpBitonicSort<KeyT, 1, LogicalWarpThreads, ValueT>
   // The sorting network exchanges items between lanes "lane" and "lane ^ stride", which only stays inside the
   // logical warp when its size is a power of two.
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
-  using _TempStorage = cub::NullType;
+  using _TempStorage _CCCL_NODEBUG = cub::NullType;
 
   // to simplify internal recursive call
-  WarpBitonicSort() = default;
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort()
+  {
+    _CCCL_ASSUME(lane >= 0);
+  }
 
 public:
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
-  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&) {}
+  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&)
+  {
+    _CCCL_ASSUME(lane >= 0);
+  }
 
   template <typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void Sort(KeyT (&keys)[1], CompareOp compare_op) const
@@ -522,11 +532,11 @@ private:
   // A logical warp of 2^n lanes is sorted by a network of n stages.
   static constexpr int num_stages = ::cuda::std::countr_zero(static_cast<unsigned>(LogicalWarpThreads));
 
-  int lane                 = detail::logical_lane_id<LogicalWarpThreads>();
-  unsigned int member_mask = WarpMask<LogicalWarpThreads>(detail::logical_warp_id<LogicalWarpThreads>());
+  int lane                 = _CUB::detail::logical_lane_id<LogicalWarpThreads>();
+  unsigned int member_mask = _CUB::detail::warp_mask<LogicalWarpThreads>();
 
   template <typename CompareOp, bool Reverse>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op) const
   {
     ::cuda::static_for<num_stages>([&](auto stage) {
       merge_stage<CompareOp, Reverse, true, stage()>(keys, values, compare_op);
@@ -534,7 +544,7 @@ private:
   }
 
   template <typename CompareOp, bool Reverse>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void merge(KeyT* keys, ValueT* values, CompareOp compare_op) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void merge(KeyT* keys, ValueT* values, CompareOp compare_op) const
   {
     // A single-lane logical warp holds a single item, so there is nothing to merge.
     if constexpr (num_stages > 0)
@@ -544,7 +554,7 @@ private:
   }
 
   template <typename CompareOp, bool Reverse>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
   {
     ::cuda::static_for<num_stages>([&](auto stage) {
       merge_stage<CompareOp, Reverse, false, stage()>(keys, values, compare_op, valid_items);
@@ -552,7 +562,7 @@ private:
   }
 
   template <typename CompareOp, bool Reverse>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void merge(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void merge(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
   {
     if constexpr (num_stages > 0)
     {
@@ -565,12 +575,12 @@ private:
   //! @tparam Full If true, all items are valid (no boundary checks: ``valid_items`` is not used)
   //! @tparam Stage Stage index in ``[0, num_stages)``
   template <typename CompareOp, bool Reverse, bool Full, int Stage>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   merge_stage(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items = -1) const
   {
     // Each stage divides the inputs into groups and sorts within each group.
     // Sort direction of each group should be adjusted to maintain the bitonic property.
-    unsigned int group_reverse = Reverse;
+    unsigned int group_reverse = Reverse; // NOLINT(misc-const-correctness)
     if constexpr (Stage == num_stages - 1)
     {
       // The last stage contains only one group, and the sort direction is just Reverse

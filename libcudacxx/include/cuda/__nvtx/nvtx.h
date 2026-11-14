@@ -83,15 +83,15 @@ struct __nvtx_cccl_domain
   static constexpr const char* name{"CCCL"};
 };
 
-using __nvtx_cccl_range = ::nvtx3::v1::scoped_range_in<__nvtx_cccl_domain>;
+using __nvtx_cccl_range _CCCL_NODEBUG = ::nvtx3::v1::scoped_range_in<__nvtx_cccl_domain>;
 
 // this type ensures that no NVTX range code is emitted in device code
 struct __nvtx_cccl_optional_range_host_only
 {
   bool __engaged = false;
-  alignas(__nvtx_cccl_range) unsigned char __storage[sizeof(__nvtx_cccl_range)];
+  alignas(__nvtx_cccl_range) unsigned char __storage[sizeof(__nvtx_cccl_range)]{};
 
-  __nvtx_cccl_optional_range_host_only() = default;
+  _CCCL_HIDE_FROM_ABI __nvtx_cccl_optional_range_host_only() = default;
 
   _CCCL_HOST_API void __start(const ::nvtx3::v1::event_attributes& __attributes)
   {

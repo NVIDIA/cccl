@@ -43,32 +43,36 @@ CUB_TEST("DispatchScan::Dispatch: custom policy hub", "[scan][device]", CUB_SMAL
   c2h::gen(C2H_SEED(1), in_items);
 
   c2h::host_vector<value_t> expected(num_items);
-  c2h::host_vector<value_t> host_items(in_items);
+  const c2h::host_vector<value_t> host_items(in_items);
   compute_inclusive_scan_reference(host_items.cbegin(), host_items.cend(), expected.begin(), scan_op_t{}, value_t{});
 
   using policy_hub_t = my_policy_hub<value_t, value_t, accum_t, offset_t, scan_op_t>;
   using dispatch_t =
     DispatchScan<value_t*, value_t*, scan_op_t, NullType, offset_t, accum_t, ForceInclusive::No, policy_hub_t>;
   size_t temp_size = 0;
-  dispatch_t::Dispatch(
-    nullptr,
-    temp_size,
-    thrust::raw_pointer_cast(in_items.data()),
-    thrust::raw_pointer_cast(out_items.data()),
-    scan_op_t{},
-    NullType{},
-    num_items,
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      nullptr,
+      temp_size,
+      thrust::raw_pointer_cast(in_items.data()),
+      thrust::raw_pointer_cast(out_items.data()),
+      scan_op_t{},
+      NullType{},
+      num_items,
+      /* stream */ nullptr));
   c2h::device_vector<uint8_t> temp_storage(temp_size, thrust::no_init);
-  dispatch_t::Dispatch(
-    thrust::raw_pointer_cast(temp_storage.data()),
-    temp_size,
-    thrust::raw_pointer_cast(in_items.data()),
-    thrust::raw_pointer_cast(out_items.data()),
-    scan_op_t{},
-    NullType{},
-    num_items,
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      thrust::raw_pointer_cast(temp_storage.data()),
+      temp_size,
+      thrust::raw_pointer_cast(in_items.data()),
+      thrust::raw_pointer_cast(out_items.data()),
+      scan_op_t{},
+      NullType{},
+      num_items,
+      /* stream */ nullptr));
 
   REQUIRE(out_items == expected);
 }

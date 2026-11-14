@@ -15,16 +15,24 @@
 
 #include <cuda/std/__algorithm/upper_bound.h>
 #include <cuda/std/__bit/integral.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/readable_traits.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/span>
-#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_scan
 {
 template <typename ValueT, typename FlagT = bool>
+// Producers supply both fields while preserving triviality.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct augmented_value_t
 {
   ValueT value;
@@ -42,7 +50,7 @@ template <typename ToT>
 struct initial_value_converter
 {
   template <typename FromT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static constexpr ToT cast(FromT v) noexcept
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE static constexpr ToT cast(FromT v) noexcept
   {
     return static_cast<ToT>(v);
   }
@@ -52,7 +60,7 @@ template <typename ToValueT, typename ToFlagT>
 struct initial_value_converter<augmented_value_t<ToValueT, ToFlagT>>
 {
   template <typename FromValueT, typename FromFlagT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static constexpr augmented_value_t<ToValueT, ToFlagT>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE static constexpr augmented_value_t<ToValueT, ToFlagT>
   cast(augmented_value_t<FromValueT, FromFlagT> fv) noexcept
   {
     return {static_cast<ToValueT>(fv.value), static_cast<ToFlagT>(fv.flag)};
@@ -60,7 +68,7 @@ struct initial_value_converter<augmented_value_t<ToValueT, ToFlagT>>
 };
 
 template <typename ToT, typename FromT>
-_CCCL_DEVICE _CCCL_FORCEINLINE constexpr ToT convert_initial_value(FromT v) noexcept
+_CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr ToT convert_initial_value(FromT v) noexcept
 {
   return initial_value_converter<ToT>::cast(v);
 }
@@ -71,7 +79,7 @@ struct schwarz_scan_op
   using fv_t = augmented_value_t<ValueT, FlagT>;
   mutable BinaryOpT scan_op;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE fv_t operator()(fv_t o1, fv_t o2) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE fv_t operator()(fv_t o1, fv_t o2) const
   {
     if (o2.flag)
     {
@@ -86,7 +94,7 @@ struct schwarz_scan_op
 template <typename V, typename F = bool>
 struct packer
 {
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
   {
     return augmented_value_t<V, F>{v, f};
   }
@@ -98,7 +106,7 @@ struct packer_iv
   mutable ScanOp op;
   V init_v;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
   {
     V res = v;
     if (f)
@@ -112,7 +120,7 @@ struct packer_iv
 template <typename V, typename F = bool>
 struct projector
 {
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()(V v, F) const
   {
     return v;
   }
@@ -123,9 +131,9 @@ struct projector_iv
 {
   V init_v;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
   {
-    return (f) ? init_v : v;
+    return f ? init_v : v;
   }
 };
 
@@ -151,14 +159,14 @@ public:
     logical_offset_t logical_offset;
   };
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE bag_of_segments(::cuda::std::span<ValueT> cum_sizes)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE bag_of_segments(::cuda::std::span<ValueT> cum_sizes)
       : m_offsets(cum_sizes)
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE search_data_t find(logical_offset_t elem_id) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE search_data_t find(logical_offset_t elem_id) const
   {
     const bool is_small = (m_offsets.size() < LinearBinarySearchThreshold);
-    const auto pos      = (is_small) ? locate_linear_search(elem_id) : locate_binary_search(elem_id);
+    const auto pos      = is_small ? locate_linear_search(elem_id) : locate_binary_search(elem_id);
     return pos;
   }
 
@@ -171,7 +179,7 @@ private:
   //    prefix sum of segment sizes. Expectation: 0 <= pos < last element of m_offsets
 
   // Linear search
-  _CCCL_DEVICE _CCCL_FORCEINLINE search_data_t locate_linear_search(logical_offset_t pos) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE search_data_t locate_linear_search(logical_offset_t pos) const
   {
     const auto offset_size = m_offsets.size();
 
@@ -185,15 +193,15 @@ private:
     {
       const auto offset_n = m_offsets[i];
       const bool cond     = ((offset_c <= pos) && (pos < offset_n));
-      segment_id          = (cond) ? i : segment_id;
-      shifted_offset      = (cond) ? pos - offset_c : shifted_offset;
+      segment_id          = cond ? i : segment_id;
+      shifted_offset      = cond ? pos - offset_c : shifted_offset;
       offset_c            = offset_n;
     }
     return {segment_id, shifted_offset};
   }
 
   // Binary search
-  _CCCL_DEVICE _CCCL_FORCEINLINE search_data_t locate_binary_search(logical_offset_t pos) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE search_data_t locate_binary_search(logical_offset_t pos) const
   {
     const auto offset_size = m_offsets.size();
     const auto beg_it      = m_offsets.data();
@@ -227,12 +235,12 @@ public:
 
   static constexpr segment_id_t max_offset_size = MaxBagSize;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE statically_bound_bag_of_segments(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE statically_bound_bag_of_segments(
     ::cuda::std::span<ValueT> cum_sizes, ::cuda::std::integral_constant<unsigned int, MaxBagSize>)
       : m_offsets(cum_sizes)
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE search_data_t find(logical_offset_t elem_id) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE search_data_t find(logical_offset_t elem_id) const
   {
     if constexpr (max_offset_size < LinearBinarySearchThreshold)
     {
@@ -245,7 +253,7 @@ public:
   }
 
 private:
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
   is_it_past_this_segment(logical_offset_t offset, segment_id_t segment_id, segment_id_t size) const
   {
     return ((segment_id < size) && (m_offsets[segment_id] <= offset));
@@ -259,7 +267,7 @@ private:
   //    prefix sum of segment sizes. Expectation: 0 <= pos < last element of m_offsets
 
   // Linear search
-  _CCCL_DEVICE _CCCL_FORCEINLINE search_data_t locate_linear_search(logical_offset_t pos) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE search_data_t locate_linear_search(logical_offset_t pos) const
   {
     const auto n_offsets = m_offsets.size();
 
@@ -276,7 +284,7 @@ private:
   }
 
   // Branchless binary search
-  _CCCL_DEVICE _CCCL_FORCEINLINE search_data_t locate_binary_search(logical_offset_t pos) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE search_data_t locate_binary_search(logical_offset_t pos) const
   {
     constexpr segment_id_t start = ::cuda::std::bit_ceil(max_offset_size) >> 1;
 
@@ -300,7 +308,7 @@ private:
 };
 
 template <unsigned int MaxBagSize, typename ValueT>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto make_statically_bound_bag_of_segments(::cuda::std::span<ValueT> span)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE auto make_statically_bound_bag_of_segments(::cuda::std::span<ValueT> span)
 {
   return statically_bound_bag_of_segments<ValueT, MaxBagSize>{span, {}};
 }
@@ -321,11 +329,11 @@ public:
     SizeT logical_offset;
   };
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE bag_of_fixed_size_segments(SizeT segment_size)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE bag_of_fixed_size_segments(SizeT segment_size)
       : m_segment_size(segment_size)
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE search_data_t find(logical_offset_t elem_id) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE search_data_t find(logical_offset_t elem_id) const
   {
     const SizeT segment_id      = elem_id / m_segment_size;
     const SizeT relative_offset = elem_id - segment_id * m_segment_size;
@@ -366,35 +374,35 @@ struct multi_segmented_input_iterator
     bool m_head_flag;
     ReadTransformT m_read_fn;
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE operator value_type() const
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE operator value_type() const
     {
       return m_read_fn(m_it[m_offset], m_head_flag);
     }
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy& operator=(const __mapping_proxy& other)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE __mapping_proxy& operator=(const __mapping_proxy& other)
     {
       return (*this = static_cast<value_type>(other));
     }
   };
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy operator*() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE __mapping_proxy operator*() const
   {
     return make_proxy(0);
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy operator[](difference_type n) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE __mapping_proxy operator[](difference_type n) const
   {
     return make_proxy(n);
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE friend multi_segmented_input_iterator
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE friend multi_segmented_input_iterator
   operator+(const multi_segmented_input_iterator& iter, difference_type n)
   {
     return {iter.m_it, iter.m_start + n, iter.m_searcher, iter.m_it_idx_begin, iter.m_read_transform_fn};
   }
 
 private:
-  _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy make_proxy(difference_type n) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE __mapping_proxy make_proxy(difference_type n) const
   {
     const auto [segment_id, rel_offset] = m_searcher.find(m_start + n);
 
@@ -440,31 +448,31 @@ struct multi_segmented_output_iterator
     WriteTransformT m_write_fn;
 
     template <typename V, typename F>
-    _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy& operator=(augmented_value_t<V, F> new_value)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE __mapping_proxy& operator=(augmented_value_t<V, F> new_value)
     {
       m_it[m_offset] = m_write_fn(new_value.value, m_head_flag);
       return *this;
     }
   };
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy operator*() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE __mapping_proxy operator*() const
   {
     return make_proxy(0);
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy operator[](difference_type n) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE __mapping_proxy operator[](difference_type n) const
   {
     return make_proxy(n);
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE friend multi_segmented_output_iterator
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE friend multi_segmented_output_iterator
   operator+(const multi_segmented_output_iterator& iter, difference_type n)
   {
     return {iter.m_it, iter.m_start + n, iter.m_searcher, iter.m_it_idx_begin, iter.m_write_transform_fn};
   }
 
 private:
-  _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy make_proxy(difference_type n) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE __mapping_proxy make_proxy(difference_type n) const
   {
     const auto [segment_id, rel_offset] = m_searcher.find(m_start + n);
 
@@ -490,12 +498,12 @@ struct worker_prefix_callback_t
   PrefixT& m_exclusive_prefix;
   BinaryOpT m_scan_op;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE worker_prefix_callback_t(PrefixT& prefix, BinaryOpT& op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE worker_prefix_callback_t(PrefixT& prefix, BinaryOpT& op)
       : m_exclusive_prefix(prefix)
       , m_scan_op(op)
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE PrefixT operator()(PrefixT block_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE PrefixT operator()(PrefixT block_aggregate)
   {
     const PrefixT previous_prefix = m_exclusive_prefix;
     m_exclusive_prefix            = m_scan_op(m_exclusive_prefix, block_aggregate);

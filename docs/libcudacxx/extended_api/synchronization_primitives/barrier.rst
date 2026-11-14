@@ -18,12 +18,19 @@ Defined in header ``<cuda/barrier>``:
 
    template <cuda::thread_scope Scope,
              typename CompletionFunction = /* unspecified */>
-   class cuda::barrier;
+   class cuda::barrier {
+   public:
+     static constexpr cuda::thread_scope scope = Scope;
+
+     // ...
+   };
 
 The class template ``cuda::barrier`` is an extended form of `cuda::std::barrier <https://en.cppreference.com/w/cpp/thread/barrier>`_
 that takes an additional :ref:`cuda::thread_scope <libcudacxx-extended-api-memory-model-thread-scopes>` argument.
 
-If ``!(scope == cuda::thread_block_scope && cuda::device::is_address_from(this, cuda::device::address_space::shared))``, then the semantics are the same as
+``Scope`` shall not be ``cuda::thread_scope_cluster``.
+
+If ``!(scope == cuda::thread_scope_block && cuda::device::is_address_from(this, cuda::device::address_space::shared))``, then the semantics are the same as
 `cuda::std::barrier <https://en.cppreference.com/w/cpp/thread/barrier>`_, otherwise, see below.
 
 The ``cuda::barrier`` class templates extends ``cuda::std::barrier`` with the following additional operations:

@@ -40,14 +40,14 @@ class tiled_mdspan_shape
 {
 public:
   // parts id, nparts ?
-  tiled_mdspan_shape(const mdspan_shape_t& s, size_t part_id, size_t nparts)
+  _CCCL_HOST_API tiled_mdspan_shape(const mdspan_shape_t& s, size_t part_id, size_t nparts)
       : original_shape(s)
       , part_id(part_id)
       , nparts(nparts)
   {}
 
   /* The number of elements in this part */
-  size_t size() const
+  _CCCL_HOST_API size_t size() const
   {
     _CCCL_ASSERT(mdspan_shape_t::rank() == 1, "Tiled mdspan shape only implemented in 1D yet");
 
@@ -75,7 +75,7 @@ public:
     // Assuming all parts have tile_per_part tiles, the last tile of the
     // part starts the last tile has index (part_id + ((tile_per_part-1)*
     // nparts)), and ends at the beginning of the next tile (hence +1).
-    const size_t last_elem = (part_id + (tile_per_part - 1) * nparts + 1) * tile_size;
+    const size_t last_elem = (part_id + ((tile_per_part - 1) * nparts) + 1) * tile_size;
 
     // Remove extra elements (if any) by computing what would be the last
     // element for this part
@@ -90,13 +90,13 @@ public:
 
   using coords_t = typename mdspan_shape_t::coords_t;
 
-  _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const
+  _CCCL_HOST_DEVICE_API coords_t index_to_coords(size_t index) const
   {
     // First transform from nparts and part_id to one coordinate
     const size_t remain  = index % tile_size;
     const size_t tile_id = index / tile_size;
     // Stage 2: apply original shape's transformation to stage1
-    return original_shape.index_to_coords((part_id + tile_id * nparts) * tile_size + remain);
+    return original_shape.index_to_coords(((part_id + (tile_id * nparts)) * tile_size) + remain);
   }
 
 private:
@@ -116,7 +116,7 @@ private:
  * function to implement tiled<tile_size> and have the other type deduced.
  */
 template <size_t tile_size, typename mdspan_shape_t>
-auto tiled(const mdspan_shape_t s, size_t part_id, size_t nparts)
+_CCCL_HOST_API auto tiled(const mdspan_shape_t s, size_t part_id, size_t nparts)
 {
   return reserved::tiled_mdspan_shape<tile_size, mdspan_shape_t>(s, part_id, nparts);
 }
@@ -127,10 +127,10 @@ class tiled_partition
   static_assert(tile_size > 0);
 
 public:
-  tiled_partition() = default;
+  _CCCL_HIDE_FROM_ABI tiled_partition() = default;
 
   template <typename mdspan_shape_t>
-  static const reserved::tiled_mdspan_shape<tile_size, mdspan_shape_t>
+  _CCCL_HOST_API static reserved::tiled_mdspan_shape<tile_size, mdspan_shape_t>
   apply(const mdspan_shape_t& in, pos4 place_position, dim4 grid_dims)
   {
     // TODO assert 1D !
@@ -138,7 +138,7 @@ public:
     return reserved::tiled_mdspan_shape<tile_size, mdspan_shape_t>(in, place_position.x, grid_dims.x);
   }
 
-  _CCCL_HOST_DEVICE static void get_executor(pos4* result, pos4 data_coords, dim4 /*unused*/, dim4 grid_dims)
+  _CCCL_HOST_DEVICE_API static void get_executor(pos4* result, pos4 data_coords, dim4 /*unused*/, dim4 grid_dims)
   {
     assert(grid_dims.x > 0);
     *result = pos4((data_coords.x / tile_size) % grid_dims.x);

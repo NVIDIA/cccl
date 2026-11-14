@@ -65,6 +65,7 @@ struct policy_selector
     auto policy              = cub::TransformAsyncCopyPolicy{};
     policy.threads_per_block = TUNE_THREADS;
     policy.unroll_factor     = TUNE_UNROLL_FACTOR;
+    policy.store_vec_size    = 1 << TUNE_STORE_VEC_SIZE_POW2;
     return {min_bytes_in_flight, algorithm, {}, {}, policy};
 #  else // TUNE_ALGORITHM
 #    error Policy hub does not yet implement the specified value for algorithm
@@ -74,11 +75,12 @@ struct policy_selector
 #endif // !TUNE_BASE
 
 template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename TransformOp>
-void bench_transform(nvbench::state& state,
-                     cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
-                     RandomAccessIteratorOut output,
-                     ::cuda::std::int64_t num_items,
-                     TransformOp transform_op)
+_CCCL_HOST_API void bench_transform(
+  nvbench::state& state,
+  cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
+  RandomAccessIteratorOut output,
+  ::cuda::std::int64_t num_items,
+  TransformOp transform_op)
 {
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](const nvbench::launch& launch) {
     cub::DeviceTransform::Transform(

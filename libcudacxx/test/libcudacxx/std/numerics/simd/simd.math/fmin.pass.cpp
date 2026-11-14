@@ -20,6 +20,18 @@
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"
+#include "math_test_utils.h"
+
+template <int N>
+TEST_HOST_DEVICE_FUNC void test_mixed_arguments()
+{
+  using F = simd::vec<float, N>;
+  using D = simd::vec<double, N>;
+  const F x(4.0f);
+  const D y(2.0);
+  const D minimum = simd::fmin(x, y);
+  check_math_values(minimum, 2.0);
+}
 
 template <typename T, int N>
 TEST_HOST_DEVICE_FUNC void test_non_scalar()
@@ -64,6 +76,7 @@ TEST_HOST_DEVICE_FUNC void test_scalar()
 template <typename T, int N>
 TEST_HOST_DEVICE_FUNC void test_type()
 {
+  test_mixed_arguments<N>();
   test_non_scalar<T, N>();
   test_scalar<T, N>();
 }

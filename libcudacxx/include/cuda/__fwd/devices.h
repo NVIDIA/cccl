@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,14 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__fwd/span.h>
-
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 #if _CCCL_HAS_CTK()
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 class __physical_device;
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
 class device_ref;
 template <::cudaDeviceAttr _Attr>
 struct __dev_attr;

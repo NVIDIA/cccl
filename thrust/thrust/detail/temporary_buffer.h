@@ -27,7 +27,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(temporary_buffer.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/temporary_buffer.h>
 #  include <thrust/system/cuda/detail/temporary_buffer.h>
 #  include <thrust/system/omp/detail/temporary_buffer.h>
@@ -38,12 +38,12 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 template <typename T, typename DerivedPolicy, typename Pair>
-_CCCL_HOST_DEVICE ::cuda::std::pair<thrust::pointer<T, DerivedPolicy>,
-                                    typename thrust::pointer<T, DerivedPolicy>::difference_type>
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<thrust::pointer<T, DerivedPolicy>,
+                                        typename thrust::pointer<T, DerivedPolicy>::difference_type>
 down_cast_pair(Pair p)
 {
   // XXX should use a hypothetical thrust::static_pointer_cast here
-  thrust::pointer<T, DerivedPolicy> ptr =
+  const thrust::pointer<T, DerivedPolicy> ptr =
     thrust::pointer<T, DerivedPolicy>(static_cast<T*>(thrust::raw_pointer_cast(p.first)));
 
   using result_type =
@@ -54,27 +54,27 @@ down_cast_pair(Pair p)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename DerivedPolicy>
-_CCCL_HOST_DEVICE ::cuda::std::pair<thrust::pointer<T, DerivedPolicy>,
-                                    typename thrust::pointer<T, DerivedPolicy>::difference_type>
-get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<thrust::pointer<T, DerivedPolicy>,
+                                        typename thrust::pointer<T, DerivedPolicy>::difference_type>
+get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>& system,
                      typename thrust::pointer<T, DerivedPolicy>::difference_type n)
 {
   using thrust::detail::get_temporary_buffer; // execute_with_allocator
   using thrust::system::detail::generic::get_temporary_buffer;
 
   return thrust::detail::down_cast_pair<T, DerivedPolicy>(
-    get_temporary_buffer<T>(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), n));
+    get_temporary_buffer<T>(thrust::detail::derived_cast(thrust::detail::strip_const(system)), n));
 } // end get_temporary_buffer()
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE void
-return_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Pointer p, std::ptrdiff_t n)
+_CCCL_HOST_DEVICE_API void
+return_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>& system, Pointer p, std::ptrdiff_t n)
 {
   using thrust::detail::return_temporary_buffer; // execute_with_allocator
   using thrust::system::detail::generic::return_temporary_buffer;
 
-  return return_temporary_buffer(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), p, n);
+  return return_temporary_buffer(thrust::detail::derived_cast(thrust::detail::strip_const(system)), p, n);
 } // end return_temporary_buffer()
 
 THRUST_NAMESPACE_END

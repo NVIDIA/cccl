@@ -26,28 +26,28 @@ inline constexpr bool is_retaggable =
 } // namespace detail
 
 template <typename Tag, typename Iterator>
-_CCCL_HOST_DEVICE detail::tagged_iterator<Iterator, Tag> reinterpret_tag(Iterator iter)
+_CCCL_HOST_DEVICE_API detail::tagged_iterator<Iterator, Tag> reinterpret_tag(Iterator iter)
 {
   return detail::tagged_iterator<Iterator, Tag>(iter);
 }
 
 // specialization for raw pointer
 template <typename Tag, typename T>
-_CCCL_HOST_DEVICE pointer<T, Tag> reinterpret_tag(T* ptr)
+_CCCL_HOST_DEVICE_API pointer<T, Tag> reinterpret_tag(T* ptr)
 {
   return pointer<T, Tag>(ptr);
 }
 
 // specialization for pointer
 template <typename Tag, typename T, typename OtherTag, typename Reference, typename Derived>
-_CCCL_HOST_DEVICE pointer<T, Tag> reinterpret_tag(pointer<T, OtherTag, Reference, Derived> ptr)
+_CCCL_HOST_DEVICE_API pointer<T, Tag> reinterpret_tag(pointer<T, OtherTag, Reference, Derived> ptr)
 {
   return reinterpret_tag<Tag>(ptr.get());
 }
 
 // avoid deeply-nested tagged_iterator
 template <typename Tag, typename BaseIterator, typename OtherTag>
-_CCCL_HOST_DEVICE detail::tagged_iterator<BaseIterator, Tag>
+_CCCL_HOST_DEVICE_API detail::tagged_iterator<BaseIterator, Tag>
 reinterpret_tag(detail::tagged_iterator<BaseIterator, OtherTag> iter)
 {
   return reinterpret_tag<Tag>(iter.base());
@@ -56,14 +56,14 @@ reinterpret_tag(detail::tagged_iterator<BaseIterator, OtherTag> iter)
 template <typename Tag,
           typename Iterator,
           ::cuda::std::enable_if_t<detail::is_retaggable<iterator_system_t<Iterator>, Tag>, int> = 0>
-_CCCL_HOST_DEVICE detail::tagged_iterator<Iterator, Tag> retag(Iterator iter)
+_CCCL_HOST_DEVICE_API detail::tagged_iterator<Iterator, Tag> retag(Iterator iter)
 {
   return reinterpret_tag<Tag>(iter);
 }
 
 // specialization for raw pointer
 template <typename Tag, typename T, ::cuda::std::enable_if_t<detail::is_retaggable<iterator_system_t<T*>, Tag>, int> = 0>
-_CCCL_HOST_DEVICE pointer<T, Tag> retag(T* ptr)
+_CCCL_HOST_DEVICE_API pointer<T, Tag> retag(T* ptr)
 {
   return reinterpret_tag<Tag>(ptr);
 }
@@ -73,7 +73,7 @@ template <typename Tag,
           typename T,
           typename OtherTag,
           ::cuda::std::enable_if_t<detail::is_retaggable<OtherTag, Tag>, int> = 0>
-_CCCL_HOST_DEVICE pointer<T, Tag> retag(pointer<T, OtherTag> ptr)
+_CCCL_HOST_DEVICE_API pointer<T, Tag> retag(pointer<T, OtherTag> ptr)
 {
   return reinterpret_tag<Tag>(ptr);
 }
@@ -83,7 +83,8 @@ template <typename Tag,
           typename BaseIterator,
           typename OtherTag,
           ::cuda::std::enable_if_t<detail::is_retaggable<OtherTag, Tag>, int> = 0>
-_CCCL_HOST_DEVICE detail::tagged_iterator<BaseIterator, Tag> retag(detail::tagged_iterator<BaseIterator, OtherTag> iter)
+_CCCL_HOST_DEVICE_API detail::tagged_iterator<BaseIterator, Tag>
+retag(detail::tagged_iterator<BaseIterator, OtherTag> iter)
 {
   return reinterpret_tag<Tag>(iter);
 }

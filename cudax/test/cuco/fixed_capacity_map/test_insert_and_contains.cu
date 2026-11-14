@@ -96,7 +96,7 @@ C2H_TEST("fixed_capacity_map insert and contains", "[container]", key_types, cg_
 
   constexpr int num_keys = (::cuda::std::numeric_limits<key_type>::max() > 800) ? 400 : 100;
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   map_type map{stream,
@@ -129,7 +129,7 @@ C2H_TEST("fixed_capacity_map insert and contains", "[container]", key_types, cg_
 }
 
 template <class _Key, class _Tp>
-using __map_of = cudax::cuco::fixed_capacity_map<
+using __map_of _CCCL_NODEBUG = cudax::cuco::fixed_capacity_map<
   _Key,
   _Tp,
   ::cuda::std::dynamic_extent,
@@ -140,12 +140,12 @@ using __map_of = cudax::cuco::fixed_capacity_map<
 
 C2H_TEST("fixed_capacity_map key and slot size constraint", "[container]")
 {
-  static_assert(sizeof(typename __map_of<::cuda::std::uint8_t, ::cuda::std::uint8_t>::value_type) == 2,
+  static_assert(sizeof(__map_of<::cuda::std::uint8_t, ::cuda::std::uint8_t>::value_type) == 2,
                 "<uint8_t, uint8_t> is a valid 2-byte slot");
-  static_assert(sizeof(typename __map_of<::cuda::std::uint16_t, ::cuda::std::uint16_t>::value_type) == 4,
+  static_assert(sizeof(__map_of<::cuda::std::uint16_t, ::cuda::std::uint16_t>::value_type) == 4,
                 "<uint16_t, uint16_t> is a valid 4-byte slot");
-  static_assert(sizeof(typename __map_of<::cuda::std::uint32_t, ::cuda::std::uint32_t>::value_type) == 8,
+  static_assert(sizeof(__map_of<::cuda::std::uint32_t, ::cuda::std::uint32_t>::value_type) == 8,
                 "<uint32_t, uint32_t> is a valid 8-byte slot");
-  static_assert(sizeof(typename __map_of<::cuda::std::uint8_t, ::cuda::std::uint32_t>::value_type) == 8,
+  static_assert(sizeof(__map_of<::cuda::std::uint8_t, ::cuda::std::uint32_t>::value_type) == 8,
                 "a mismatched <uint8_t, uint32_t> slot is a valid 8-byte slot");
 }

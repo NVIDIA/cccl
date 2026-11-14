@@ -14,16 +14,18 @@
 #endif // no system header
 
 #if _CCCL_CUDA_COMPILATION()
+#  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
 template <class Derived, class ItemsIt, class ResultIt>
-ResultIt _CCCL_HOST_DEVICE reverse_copy(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, ResultIt result);
+ResultIt _CCCL_HOST_DEVICE_API
+reverse_copy(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, ResultIt result);
 
 template <class Derived, class ItemsIt>
-void _CCCL_HOST_DEVICE reverse(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last);
+void _CCCL_HOST_DEVICE_API reverse(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last);
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 
@@ -38,18 +40,19 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
 template <class Derived, class ItemsIt, class ResultIt>
-ResultIt _CCCL_HOST_DEVICE reverse_copy(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, ResultIt result)
+ResultIt _CCCL_HOST_DEVICE_API
+reverse_copy(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, ResultIt result)
 {
   return cuda_cub::copy(policy, ::cuda::std::reverse_iterator{last}, ::cuda::std::reverse_iterator{first}, result);
 }
 
 template <class Derived, class ItemsIt>
-void _CCCL_HOST_DEVICE reverse(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
+void _CCCL_HOST_DEVICE_API reverse(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
 {
   using difference_type = thrust::detail::it_difference_t<ItemsIt>;
 
   // find the midpoint of [first,last)
-  difference_type N = ::cuda::std::distance(first, last);
+  const difference_type N = ::cuda::std::distance(first, last);
   ItemsIt mid(first);
   ::cuda::std::advance(mid, N / 2);
 

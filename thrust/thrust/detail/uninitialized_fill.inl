@@ -25,7 +25,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(uninitialized_fill.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/uninitialized_fill.h>
 #  include <thrust/system/cuda/detail/uninitialized_fill.h>
 #  include <thrust/system/omp/detail/uninitialized_fill.h>
@@ -36,7 +36,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void uninitialized_fill(
+_CCCL_HOST_DEVICE_API void uninitialized_fill(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -49,7 +49,7 @@ _CCCL_HOST_DEVICE void uninitialized_fill(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename Size, typename T>
-_CCCL_HOST_DEVICE ForwardIterator uninitialized_fill_n(
+_CCCL_HOST_DEVICE_API ForwardIterator uninitialized_fill_n(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, Size n, const T& x)
 {
   _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<DerivedPolicy>(), "uninitialized_fill_n");
@@ -58,7 +58,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_fill_n(
 } // end uninitialized_fill_n()
 
 template <typename ForwardIterator, typename T>
-void uninitialized_fill(ForwardIterator first, ForwardIterator last, const T& x)
+_CCCL_HOST_API void uninitialized_fill(ForwardIterator first, ForwardIterator last, const T& x)
 {
   using System = typename thrust::iterator_system<ForwardIterator>::type;
   _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<System>(), "uninitialized_fill");
@@ -70,7 +70,7 @@ void uninitialized_fill(ForwardIterator first, ForwardIterator last, const T& x)
 } // end uninitialized_fill()
 
 template <typename ForwardIterator, typename Size, typename T>
-ForwardIterator uninitialized_fill_n(ForwardIterator first, Size n, const T& x)
+_CCCL_HOST_API ForwardIterator uninitialized_fill_n(ForwardIterator first, Size n, const T& x)
 {
   using System = typename thrust::iterator_system<ForwardIterator>::type;
   _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<System>(), "uninitialized_fill_n");

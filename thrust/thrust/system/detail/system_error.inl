@@ -13,58 +13,63 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/system/error_code.h>
 #include <thrust/system/system_error.h>
+
+#include <cuda/std/__host_stdlib/stdexcept>
+
+#include <string>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace system
 {
-system_error ::system_error(error_code ec, const std::string& what_arg)
+_CCCL_HOST_API system_error ::system_error(error_code ec, const std::string& what_arg)
     : std::runtime_error(what_arg)
     , m_error_code(ec)
 {} // end system_error::system_error()
 
-system_error ::system_error(error_code ec, const char* what_arg)
+_CCCL_HOST_API system_error ::system_error(error_code ec, const char* what_arg)
     : std::runtime_error(what_arg)
     , m_error_code(ec)
 {
   ;
 } // end system_error::system_error()
 
-system_error ::system_error(error_code ec)
+_CCCL_HOST_API system_error ::system_error(error_code ec)
     : std::runtime_error("")
     , m_error_code(ec)
 {
   ;
 } // end system_error::system_error()
 
-system_error ::system_error(int ev, const error_category& ecat, const std::string& what_arg)
+_CCCL_HOST_API system_error ::system_error(int ev, const error_category& ecat, const std::string& what_arg)
     : std::runtime_error(what_arg)
     , m_error_code(ev, ecat)
 {
   ;
 } // end system_error::system_error()
 
-system_error ::system_error(int ev, const error_category& ecat, const char* what_arg)
+_CCCL_HOST_API system_error ::system_error(int ev, const error_category& ecat, const char* what_arg)
     : std::runtime_error(what_arg)
     , m_error_code(ev, ecat)
 {
   ;
 } // end system_error::system_error()
 
-system_error ::system_error(int ev, const error_category& ecat)
+_CCCL_HOST_API system_error ::system_error(int ev, const error_category& ecat)
     : std::runtime_error("")
     , m_error_code(ev, ecat)
 {
   ;
 } // end system_error::system_error()
 
-const error_code& system_error ::code() const noexcept
+_CCCL_HOST_API const error_code& system_error ::code() const noexcept
 {
   return m_error_code;
 } // end system_error::code()
 
-const char* system_error ::what() const noexcept
+_CCCL_HOST_API const char* system_error ::what() const noexcept
 {
   if (m_what.empty())
   {

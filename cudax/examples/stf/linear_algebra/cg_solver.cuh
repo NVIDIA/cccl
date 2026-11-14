@@ -18,6 +18,7 @@
 
 #include "dot.cuh"
 
+// NOLINTNEXTLINE(google-global-names-in-headers) -- example header, included only by the example sources
 using namespace cuda::experimental::stf;
 
 #if !_CCCL_CTK_BELOW(12, 4)
@@ -90,7 +91,7 @@ void cg_solver(ctx_t& ctx, csr_matrix<T>& A, vector_t<T>& X, vector_t<T>& B, dou
 
     while_guard.update_cond(rsnew.read(), cg_iter.rw())->*[cg_tol, max_cg] __device__(auto drsnew, auto diter) {
       (*diter)++; // increment iteration counter
-      bool converged = (*drsnew < cg_tol * cg_tol);
+      const bool converged = (*drsnew < cg_tol * cg_tol);
       // printf("CG iter %d: RES %e (tol=%e)\n", *diter, sqrt(*drsnew), cg_tol);
       return !converged && (*diter < max_cg);
     };
@@ -98,7 +99,7 @@ void cg_solver(ctx_t& ctx, csr_matrix<T>& A, vector_t<T>& X, vector_t<T>& B, dou
     // p = r + (rsnew / rsold) * p;
     ctx.parallel_for(P.shape(), P.rw(), R.read(), rsnew.read(), rsold.read()).set_symbol("P=r+(rsnew/rsold)*P")
         ->*[] _CCCL_DEVICE(size_t i, auto dP, auto dR, auto drsnew, auto drsold) {
-              dP(i) = dR(i) + (*drsnew / *drsold) * dP(i);
+              dP(i) = dR(i) + ((*drsnew / *drsold) * dP(i));
             };
 
     // update old residual
@@ -175,7 +176,7 @@ void cg_solver_no_while(
     // p = r + (rsnew / rsold) * p;
     ctx.parallel_for(P.shape(), P.rw(), R.read(), rsnew.read(), rsold.read()).set_symbol("P=r+(rsnew/rsold)*P")
         ->*[] _CCCL_DEVICE(size_t i, auto dP, auto dR, auto drsnew, auto drsold) {
-              dP(i) = dR(i) + (*drsnew / *drsold) * dP(i);
+              dP(i) = dR(i) + ((*drsnew / *drsold) * dP(i));
             };
 
     // update old residual

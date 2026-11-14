@@ -21,12 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_convertible.h>
-#include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -54,7 +54,7 @@ public:
   {}
   template <class _Up>
   _CCCL_API constexpr __wrap_iter(const __wrap_iter<_Up>& __u,
-                                  typename enable_if<is_convertible_v<_Up, iterator_type>>::type* = nullptr) noexcept
+                                  enable_if_t<is_convertible_v<_Up, iterator_type>>* = nullptr) noexcept
       : __i_(__u.base())
   {}
   _CCCL_API constexpr reference operator*() const noexcept
@@ -63,7 +63,7 @@ public:
   }
   _CCCL_API constexpr pointer operator->() const noexcept
   {
-    return ::cuda::std::__to_address(__i_);
+    return ::cuda::std::to_address(__i_);
   }
   _CCCL_API constexpr __wrap_iter& operator++() noexcept
   {
@@ -116,6 +116,13 @@ public:
   _CCCL_API constexpr iterator_type base() const noexcept
   {
     return __i_;
+  }
+
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(is_convertible_v<_Tp*, iterator_type>)
+  _CCCL_API constexpr void __rebind(_Tp* __ptr) noexcept
+  {
+    __i_ = __ptr;
   }
 
 private:
@@ -234,7 +241,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits<__wrap_iter<_It>>
 
   _CCCL_API constexpr static element_type* to_address(pointer __w) noexcept
   {
-    return ::cuda::std::__to_address(__w.base());
+    return ::cuda::std::to_address(__w.base());
   }
 };
 

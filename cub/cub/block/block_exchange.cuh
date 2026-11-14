@@ -18,10 +18,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/constant.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
-#include <cub/warp/warp_exchange.cuh>
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
@@ -153,13 +153,13 @@ private:
   _TempStorage& temp_storage;
 
   // TODO(bgruber): can we use signed int here? Only these variables are unsigned:
-  unsigned int linear_tid  = RowMajorTid(BlockDimX, BlockDimY, BlockDimZ);
+  unsigned int linear_tid  = _CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ);
   unsigned int lane_id     = ::cuda::ptx::get_sreg_laneid();
   unsigned int warp_id     = WARPS == 1 ? 0 : linear_tid / WARP_THREADS;
   unsigned int warp_offset = warp_id * WARP_TIME_SLICED_ITEMS;
 
   /// Internal storage allocator
-  _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
   {
     __shared__ _TempStorage private_storage;
     return private_storage;
@@ -174,7 +174,7 @@ private:
   //! @param[out] output_items
   //!   Items to exchange, converting between **blocked** and **striped** arrangements.
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockedToStriped(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void BlockedToStriped(
     const T (&input_items)[ItemsPerThread],
     OutputT (&output_items)[ItemsPerThread],
     ::cuda::std::false_type /*time_slicing*/)
@@ -182,12 +182,12 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = linear_tid * ItemsPerThread + i;
+      int item_offset = (linear_tid * ItemsPerThread) + i; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncthreads();
@@ -195,7 +195,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = i * BLOCK_THREADS + linear_tid;
+      int item_offset = (i * BLOCK_THREADS) + linear_tid; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
@@ -213,7 +213,7 @@ private:
   //! @param[out] output_items
   //!   Items to exchange, converting between **blocked** and **striped** arrangements.
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockedToStriped(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void BlockedToStriped(
     const T (&input_items)[ItemsPerThread],
     OutputT (&output_items)[ItemsPerThread],
     ::cuda::std::true_type /*time_slicing*/)
@@ -233,12 +233,12 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
         {
-          int item_offset = lane_id * ItemsPerThread + i;
+          int item_offset = (lane_id * ItemsPerThread) + i; // NOLINT(misc-const-correctness)
           if constexpr (INSERT_PADDING)
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
           }
-          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+          _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
       }
 
@@ -253,7 +253,7 @@ private:
 
         if (slice_offset < strip_oob && slice_oob > strip_offset)
         {
-          int item_offset = strip_offset + linear_tid - slice_offset;
+          int item_offset = strip_offset + linear_tid - slice_offset; // NOLINT(misc-const-correctness)
           if (item_offset >= 0 && item_offset < TIME_SLICED_ITEMS)
           {
             if constexpr (INSERT_PADDING)
@@ -283,7 +283,7 @@ private:
   //! @param[out] output_items
   //!   Items to exchange, converting between **blocked** and **striped** arrangements.
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockedToWarpStriped(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void BlockedToWarpStriped(
     const T (&input_items)[ItemsPerThread],
     OutputT (&output_items)[ItemsPerThread],
     ::cuda::std::false_type /*time_slicing*/)
@@ -291,12 +291,12 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = warp_offset + i + (lane_id * ItemsPerThread);
+      int item_offset = warp_offset + i + (lane_id * ItemsPerThread); // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncwarp(0xffffffff);
@@ -304,7 +304,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = warp_offset + (i * WARP_TIME_SLICED_THREADS) + lane_id;
+      int item_offset = warp_offset + (i * WARP_TIME_SLICED_THREADS) + lane_id; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
@@ -322,7 +322,7 @@ private:
   //! @param[out] output_items
   //!   Items to exchange, converting between **blocked** and **striped** arrangements.
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockedToWarpStriped(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void BlockedToWarpStriped(
     const T (&input_items)[ItemsPerThread],
     OutputT (&output_items)[ItemsPerThread],
     ::cuda::std::true_type /*time_slicing*/)
@@ -332,12 +332,12 @@ private:
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ItemsPerThread; i++)
       {
-        int item_offset = i + lane_id * ItemsPerThread;
+        int item_offset = i + (lane_id * ItemsPerThread); // NOLINT(misc-const-correctness)
         if constexpr (INSERT_PADDING)
         {
           item_offset += item_offset >> LOG_SMEM_BANKS;
         }
-        detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+        _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
       }
 
       __syncwarp(0xffffffff);
@@ -345,7 +345,7 @@ private:
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ItemsPerThread; i++)
       {
-        int item_offset = i * WARP_TIME_SLICED_THREADS + lane_id;
+        int item_offset = (i * WARP_TIME_SLICED_THREADS) + lane_id; // NOLINT(misc-const-correctness)
         if constexpr (INSERT_PADDING)
         {
           item_offset += item_offset >> LOG_SMEM_BANKS;
@@ -364,12 +364,12 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
         {
-          int item_offset = i + lane_id * ItemsPerThread;
+          int item_offset = i + (lane_id * ItemsPerThread); // NOLINT(misc-const-correctness)
           if constexpr (INSERT_PADDING)
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
           }
-          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+          _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
 
         __syncwarp(0xffffffff);
@@ -377,7 +377,7 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
         {
-          int item_offset = i * WARP_TIME_SLICED_THREADS + lane_id;
+          int item_offset = (i * WARP_TIME_SLICED_THREADS) + lane_id; // NOLINT(misc-const-correctness)
           if constexpr (INSERT_PADDING)
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
@@ -397,7 +397,7 @@ private:
   //! @param[out] output_items
   //!   Items to exchange, converting between **blocked** and **striped** arrangements.
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void StripedToBlocked(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void StripedToBlocked(
     const T (&input_items)[ItemsPerThread],
     OutputT (&output_items)[ItemsPerThread],
     ::cuda::std::false_type /*time_slicing*/)
@@ -405,12 +405,12 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = i * BLOCK_THREADS + linear_tid;
+      int item_offset = (i * BLOCK_THREADS) + linear_tid; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncthreads();
@@ -419,7 +419,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = linear_tid * ItemsPerThread + i;
+      int item_offset = (linear_tid * ItemsPerThread) + i; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
@@ -437,7 +437,7 @@ private:
   //! @param[out] output_items
   //!   Items to exchange, converting between **blocked** and **striped** arrangements.
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void StripedToBlocked(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void StripedToBlocked(
     const T (&input_items)[ItemsPerThread],
     OutputT (&output_items)[ItemsPerThread],
     ::cuda::std::true_type /*time_slicing*/)
@@ -462,14 +462,14 @@ private:
 
         if (slice_offset < strip_oob && slice_oob > strip_offset)
         {
-          int item_offset = strip_offset + linear_tid - slice_offset;
+          int item_offset = strip_offset + linear_tid - slice_offset; // NOLINT(misc-const-correctness)
           if (item_offset >= 0 && item_offset < TIME_SLICED_ITEMS)
           {
             if constexpr (INSERT_PADDING)
             {
               item_offset += item_offset >> LOG_SMEM_BANKS;
             }
-            detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+            _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
           }
         }
       }
@@ -481,7 +481,7 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
         {
-          int item_offset = lane_id * ItemsPerThread + i;
+          int item_offset = (lane_id * ItemsPerThread) + i; // NOLINT(misc-const-correctness)
           if constexpr (INSERT_PADDING)
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
@@ -508,7 +508,7 @@ private:
   //! @param[out] output_items
   //!   Items to exchange, converting between **blocked** and **striped** arrangements.
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void WarpStripedToBlocked(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void WarpStripedToBlocked(
     const T (&input_items)[ItemsPerThread],
     OutputT (&output_items)[ItemsPerThread],
     ::cuda::std::false_type /*time_slicing*/)
@@ -516,12 +516,12 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = warp_offset + (i * WARP_TIME_SLICED_THREADS) + lane_id;
+      int item_offset = warp_offset + (i * WARP_TIME_SLICED_THREADS) + lane_id; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncwarp(0xffffffff);
@@ -529,12 +529,12 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = warp_offset + i + (lane_id * ItemsPerThread);
+      int item_offset = warp_offset + i + (lane_id * ItemsPerThread); // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      detail::uninitialized_copy_single(output_items + i, temp_storage.buff[item_offset]);
+      _CUB::detail::uninitialized_copy_single(output_items + i, temp_storage.buff[item_offset]);
     }
   }
 
@@ -547,7 +547,7 @@ private:
   //! @param[out] output_items
   //!   Items to exchange, converting between **blocked** and **striped** arrangements.
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void WarpStripedToBlocked(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void WarpStripedToBlocked(
     const T (&input_items)[ItemsPerThread],
     OutputT (&output_items)[ItemsPerThread],
     ::cuda::std::true_type /*time_slicing*/)
@@ -562,12 +562,12 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
         {
-          int item_offset = i * WARP_TIME_SLICED_THREADS + lane_id;
+          int item_offset = (i * WARP_TIME_SLICED_THREADS) + lane_id; // NOLINT(misc-const-correctness)
           if constexpr (INSERT_PADDING)
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
           }
-          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+          _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
 
         __syncwarp(0xffffffff);
@@ -575,7 +575,7 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
         {
-          int item_offset = i + lane_id * ItemsPerThread;
+          int item_offset = i + (lane_id * ItemsPerThread); // NOLINT(misc-const-correctness)
           if constexpr (INSERT_PADDING)
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
@@ -597,7 +597,7 @@ private:
   //! @param[in] ranks
   //!   Corresponding scatter ranks
   template <typename OutputT, typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToBlocked(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterToBlocked(
     const T (&input_items)[ItemsPerThread],
     OutputT (&output_items)[ItemsPerThread],
     OffsetT (&ranks)[ItemsPerThread],
@@ -606,12 +606,12 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = ranks[i];
+      int item_offset = ranks[i]; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
-      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncthreads();
@@ -619,7 +619,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = linear_tid * ItemsPerThread + i;
+      int item_offset = (linear_tid * ItemsPerThread) + i; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
@@ -639,7 +639,7 @@ private:
   //! @param[in] ranks
   //!   Corresponding scatter ranks
   template <typename OutputT, typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToBlocked(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterToBlocked(
     const T (&input_items)[ItemsPerThread],
     OutputT (&output_items)[ItemsPerThread],
     OffsetT ranks[ItemsPerThread],
@@ -657,14 +657,14 @@ private:
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ItemsPerThread; i++)
       {
-        int item_offset = ranks[i] - slice_offset;
+        int item_offset = ranks[i] - slice_offset; // NOLINT(misc-const-correctness)
         if (item_offset >= 0 && item_offset < WARP_TIME_SLICED_ITEMS)
         {
           if constexpr (INSERT_PADDING)
           {
             item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
           }
-          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+          _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
       }
 
@@ -675,7 +675,7 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
         {
-          int item_offset = lane_id * ItemsPerThread + i;
+          int item_offset = (lane_id * ItemsPerThread) + i; // NOLINT(misc-const-correctness)
           if constexpr (INSERT_PADDING)
           {
             item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
@@ -704,7 +704,7 @@ private:
   //! @param[in] ranks
   //!   Corresponding scatter ranks
   template <typename OutputT, typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStriped(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterToStriped(
     const T (&input_items)[ItemsPerThread],
     OutputT (&output_items)[ItemsPerThread],
     OffsetT (&ranks)[ItemsPerThread],
@@ -713,12 +713,12 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = ranks[i];
+      int item_offset = ranks[i]; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
-      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncthreads();
@@ -726,7 +726,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = i * BLOCK_THREADS + linear_tid;
+      int item_offset = (i * BLOCK_THREADS) + linear_tid; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
@@ -746,7 +746,7 @@ private:
   //! @param[in] ranks
   //!   Corresponding scatter ranks
   template <typename OutputT, typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStriped(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterToStriped(
     const T (&input_items)[ItemsPerThread],
     OutputT (&output_items)[ItemsPerThread],
     OffsetT (&ranks)[ItemsPerThread],
@@ -765,14 +765,14 @@ private:
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ItemsPerThread; i++)
       {
-        int item_offset = ranks[i] - slice_offset;
+        int item_offset = ranks[i] - slice_offset; // NOLINT(misc-const-correctness)
         if (item_offset >= 0 && item_offset < WARP_TIME_SLICED_ITEMS)
         {
           if constexpr (INSERT_PADDING)
           {
             item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
           }
-          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+          _CUB::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
       }
 
@@ -787,7 +787,7 @@ private:
 
         if (slice_offset < strip_oob && slice_oob > strip_offset)
         {
-          int item_offset = strip_offset + linear_tid - slice_offset;
+          int item_offset = strip_offset + linear_tid - slice_offset; // NOLINT(misc-const-correctness)
           if (item_offset >= 0 && item_offset < TIME_SLICED_ITEMS)
           {
             if constexpr (INSERT_PADDING)
@@ -818,7 +818,7 @@ public:
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //! @endrst
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockExchange()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockExchange()
       : temp_storage(PrivateStorage())
   {}
 
@@ -830,7 +830,7 @@ public:
   //! @endrst
   //!
   //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockExchange(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockExchange(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
   {}
 
@@ -883,10 +883,26 @@ public:
   //! @param[out] output_items
   //!   Items from exchange, converting between **striped** and **blocked** arrangements.
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   StripedToBlocked(const T (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
     StripedToBlocked(input_items, output_items, detail::bool_constant_v<WarpTimeSlicing>);
+  }
+
+  //! @rst
+  //! Convenience overload of `StripedToBlocked(input_items, output_items)` that performs the exchange in-place.
+  //!
+  //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.5.
+  //!
+  //! - @smemreuse
+  //! @endrst
+  //!
+  //! @param[in,out] items
+  //!   Items to exchange, converting between **striped** and **blocked** arrangements.
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void StripedToBlocked(T (&items)[ItemsPerThread])
+  {
+    StripedToBlocked(items, items);
   }
 
   //! @rst
@@ -938,10 +954,26 @@ public:
   //! @param[out] output_items
   //!   Items from exchange, converting between **striped** and **blocked** arrangements.
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   BlockedToStriped(const T (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
     BlockedToStriped(input_items, output_items, detail::bool_constant_v<WarpTimeSlicing>);
+  }
+
+  //! @rst
+  //! Convenience overload of `BlockedToStriped(input_items, output_items)` that performs the exchange in-place.
+  //!
+  //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.5.
+  //!
+  //! - @smemreuse
+  //! @endrst
+  //!
+  //! @param[in,out] items
+  //!   Items to exchange, converting between **blocked** and **striped** arrangements.
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void BlockedToStriped(T (&items)[ItemsPerThread])
+  {
+    BlockedToStriped(items, items);
   }
 
   //! @rst
@@ -993,10 +1025,26 @@ public:
   //! @param[out] output_items
   //!   Items from exchange, converting between **striped** and **blocked** arrangements.
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   WarpStripedToBlocked(const T (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
     WarpStripedToBlocked(input_items, output_items, detail::bool_constant_v<WarpTimeSlicing>);
+  }
+
+  //! @rst
+  //! Convenience overload of `WarpStripedToBlocked(input_items, output_items)` that performs the exchange in-place.
+  //!
+  //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.5.
+  //!
+  //! - @smemreuse
+  //! @endrst
+  //!
+  //! @param[in,out] items
+  //!   Items to exchange, converting between **warp-striped** and **blocked** arrangements.
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void WarpStripedToBlocked(T (&items)[ItemsPerThread])
+  {
+    WarpStripedToBlocked(items, items);
   }
 
   //! @rst
@@ -1051,10 +1099,26 @@ public:
   //! @param[out] output_items
   //!   Items from exchange, converting between **striped** and **blocked** arrangements.
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   BlockedToWarpStriped(const T (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
     BlockedToWarpStriped(input_items, output_items, detail::bool_constant_v<WarpTimeSlicing>);
+  }
+
+  //! @rst
+  //! Convenience overload of `BlockedToWarpStriped(input_items, output_items)` that performs the exchange in-place.
+  //!
+  //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.5.
+  //!
+  //! - @smemreuse
+  //! @endrst
+  //!
+  //! @param[in,out] items
+  //!   Items to exchange, converting between **blocked** and **warp-striped** arrangements.
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void BlockedToWarpStriped(T (&items)[ItemsPerThread])
+  {
+    BlockedToWarpStriped(items, items);
   }
 
   //! @}
@@ -1082,10 +1146,33 @@ public:
   //! @param[in] ranks
   //!   Corresponding scatter ranks
   template <typename OutputT, typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToBlocked(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterToBlocked(
     const T (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
   {
     ScatterToBlocked(input_items, output_items, ranks, detail::bool_constant_v<WarpTimeSlicing>);
+  }
+
+  //! @rst
+  //! Convenience overload of `ScatterToBlocked(input_items, output_items, ranks)` that performs the exchange in-place.
+  //!
+  //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.5.
+  //!
+  //! - @smemreuse
+  //! @endrst
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Signed integer type for local offsets
+  //!
+  //! @param[in,out] items
+  //!   Items to exchange into **blocked** arrangement.
+  //!
+  //! @param[in] ranks
+  //!   Corresponding scatter ranks
+  template <typename OffsetT>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterToBlocked(T (&items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
+  {
+    ScatterToBlocked(items, items, ranks);
   }
 
   //! @rst
@@ -1110,10 +1197,33 @@ public:
   //! @param[in] ranks
   //!   Corresponding scatter ranks
   template <typename OutputT, typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStriped(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterToStriped(
     const T (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
   {
     ScatterToStriped(input_items, output_items, ranks, detail::bool_constant_v<WarpTimeSlicing>);
+  }
+
+  //! @rst
+  //! Convenience overload of `ScatterToStriped(input_items, output_items, ranks)` that performs the exchange in-place.
+  //!
+  //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.5.
+  //!
+  //! - @smemreuse
+  //! @endrst
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Signed integer type for local offsets
+  //!
+  //! @param[in,out] items
+  //!   Items to exchange into **striped** arrangement.
+  //!
+  //! @param[in] ranks
+  //!   Corresponding scatter ranks
+  template <typename OffsetT>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterToStriped(T (&items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
+  {
+    ScatterToStriped(items, items, ranks);
   }
 
   //! @rst
@@ -1138,13 +1248,13 @@ public:
   //! @param[in] ranks
   //!   Corresponding scatter ranks
   template <typename OutputT, typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStripedGuarded(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterToStripedGuarded(
     const T (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = ranks[i];
+      int item_offset = ranks[i]; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
@@ -1160,13 +1270,38 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = i * BLOCK_THREADS + linear_tid;
+      int item_offset = (i * BLOCK_THREADS) + linear_tid; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
       output_items[i] = temp_storage.buff[item_offset];
     }
+  }
+
+  //! @rst
+  //! Convenience overload of `ScatterToStripedGuarded(input_items, output_items, ranks)` that performs the exchange
+  //! in-place.
+  //!
+  //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.5.
+  //!
+  //! - @smemreuse
+  //! @endrst
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Signed integer type for local offsets
+  //!
+  //! @param[in,out] items
+  //!   Items to exchange into **striped** arrangement.
+  //!
+  //! @param[in] ranks
+  //!   Corresponding scatter ranks
+  template <typename OffsetT>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ScatterToStripedGuarded(T (&items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
+  {
+    ScatterToStripedGuarded(items, items, ranks);
   }
 
   //! @rst
@@ -1197,7 +1332,7 @@ public:
   //! @param[in] is_valid
   //!   Corresponding flag denoting item validity
   template <typename OutputT, typename OffsetT, typename ValidFlag>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStripedFlagged(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterToStripedFlagged(
     const T (&input_items)[ItemsPerThread],
     OutputT (&output_items)[ItemsPerThread],
     OffsetT (&ranks)[ItemsPerThread],
@@ -1206,7 +1341,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = ranks[i];
+      int item_offset = ranks[i]; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
@@ -1222,7 +1357,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = i * BLOCK_THREADS + linear_tid;
+      int item_offset = (i * BLOCK_THREADS) + linear_tid; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
@@ -1231,84 +1366,38 @@ public:
     }
   }
 
-  //! @}
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-
-  /// @param[in-out] items
-  ///   Items to exchange, converting between **striped** and **blocked** arrangements.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void StripedToBlocked(T (&items)[ItemsPerThread])
-  {
-    StripedToBlocked(items, items);
-  }
-
-  /// @param[in-out] items
-  ///   Items to exchange, converting between **striped** and **blocked** arrangements.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockedToStriped(T (&items)[ItemsPerThread])
-  {
-    BlockedToStriped(items, items);
-  }
-
-  /// @param[in-out] items
-  ///   Items to exchange, converting between **striped** and **blocked** arrangements.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void WarpStripedToBlocked(T (&items)[ItemsPerThread])
-  {
-    WarpStripedToBlocked(items, items);
-  }
-
-  /// @param[in-out] items
-  ///   Items to exchange, converting between **striped** and **blocked** arrangements.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockedToWarpStriped(T (&items)[ItemsPerThread])
-  {
-    BlockedToWarpStriped(items, items);
-  }
-
-  /// @param[in-out] items
-  ///   Items to exchange, converting between **striped** and **blocked** arrangements.
-  ///
-  /// @param[in] ranks
-  ///   Corresponding scatter ranks
-  template <typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToBlocked(T (&items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
-  {
-    ScatterToBlocked(items, items, ranks);
-  }
-
-  /// @param[in-out] items
-  ///   Items to exchange, converting between **striped** and **blocked** arrangements.
-  /// @param[in] ranks
-  ///   Corresponding scatter ranks
-  template <typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStriped(T (&items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
-  {
-    ScatterToStriped(items, items, ranks);
-  }
-
-  /// @param[in-out] items
-  ///   Items to exchange, converting between **striped** and **blocked** arrangements.
-  /// @param[in] ranks
-  ///   Corresponding scatter ranks
-  template <typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ScatterToStripedGuarded(T (&items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
-  {
-    ScatterToStripedGuarded(items, items, ranks);
-  }
-
-  /// @param[in-out] items
-  ///   Items to exchange, converting between **striped** and **blocked** arrangements.
-  /// @param[in] ranks
-  ///   Corresponding scatter ranks
-  /// @param[in] is_valid
-  ///   Corresponding flag denoting item validity
+  //! @rst
+  //! Convenience overload of `ScatterToStripedFlagged(input_items, output_items, ranks, is_valid)` that performs the
+  //! exchange in-place.
+  //!
+  //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.5.
+  //!
+  //! - @smemreuse
+  //! @endrst
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Signed integer type for local offsets
+  //!
+  //! @tparam ValidFlag
+  //!   **[inferred]** FlagT type denoting which items are valid
+  //!
+  //! @param[in,out] items
+  //!   Items to exchange into **striped** arrangement.
+  //!
+  //! @param[in] ranks
+  //!   Corresponding scatter ranks
+  //!
+  //! @param[in] is_valid
+  //!   Corresponding flag denoting item validity
   template <typename OffsetT, typename ValidFlag>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStripedFlagged(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterToStripedFlagged(
     T (&items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread], ValidFlag (&is_valid)[ItemsPerThread])
   {
     ScatterToStripedFlagged(items, items, ranks, is_valid);
   }
 
-#endif // _CCCL_DOXYGEN_INVOKED
+  //! @}
 };
 
 CUB_NAMESPACE_END

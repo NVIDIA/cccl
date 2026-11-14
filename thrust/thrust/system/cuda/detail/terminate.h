@@ -20,7 +20,7 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::cuda::detail
 {
-inline _CCCL_HOST_DEVICE void terminate_with_message(const char* message)
+_CCCL_HOST_DEVICE_API inline void terminate_with_message(const char* message)
 {
   printf("%s\n", message);
   ::cuda::std::terminate();

@@ -60,7 +60,7 @@ void Initialize(int* h_in, int num_items)
 /**
  * Compute solution
  */
-void Solve(int* h_in, int& h_reference, int num_items)
+void Solve(const int* h_in, int& h_reference, int num_items)
 {
   for (int i = 0; i < num_items; ++i)
   {
@@ -138,15 +138,12 @@ int main(int argc, char** argv)
 
   // Check for correctness (and display results, if specified)
   stream.sync();
-  int compare = CompareDeviceResults(&h_reference, d_out.data(), 1, g_verbose, g_verbose);
+  const int compare = CompareDeviceResults(&h_reference, d_out.data(), 1, g_verbose, g_verbose, stream);
   printf("\t%s", compare ? "FAIL" : "PASS");
   AssertEquals(0, compare);
 
   // Cleanup
-  if (h_in)
-  {
-    delete[] h_in;
-  }
+  delete[] h_in;
 
   printf("\n\n");
 

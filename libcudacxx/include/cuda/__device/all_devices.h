@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -23,25 +23,25 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__container/simple_vector.h>
 #  include <cuda/__device/device_ref.h>
 #  include <cuda/__device/physical_device.h>
-#  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
 #  include <cuda/std/span>
-
-#  include <vector>
 
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-[[nodiscard]] _CCCL_HOST_API inline ::std::vector<device_ref> __make_devices()
+// Keep the new container and its cached storage separate from the former std::vector.
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
+
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::__simple_vector<device_ref> __make_devices()
 {
-  ::std::vector<device_ref> __ret{};
-  __ret.reserve(::cuda::__physical_devices().size());
+  ::cuda::__simple_vector<device_ref> __ret{::cuda::__physical_devices().size(), ::cuda::no_init};
   for (::cuda::std::size_t __i = 0; __i < ::cuda::__physical_devices().size(); ++__i)
   {
     __ret.emplace_back(static_cast<int>(__i));
@@ -49,7 +49,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
   return __ret;
 }
 
-[[nodiscard]] inline ::cuda::std::span<const device_ref> __devices()
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::span<const device_ref> __devices()
 {
   static const auto __devices = ::cuda::__make_devices();
   return ::cuda::std::span<const device_ref>{__devices.data(), __devices.size()};
@@ -132,6 +132,8 @@ public:
 //! * device
 //! * device_ref
 inline constexpr __all_devices devices{};
+
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
 _CCCL_END_NAMESPACE_CUDA
 

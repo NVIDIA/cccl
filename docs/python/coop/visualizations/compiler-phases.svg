@@ -1,0 +1,64 @@
+<!-- Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+
+SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+-->
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 1050" role="img" aria-labelledby="title desc">
+  <title id="title">Numba-CUDA-MLIR compilation phases</title>
+  <desc id="desc">Seven compiler phases in order. Cooperative planning remains before main type inference. Group planning computes Load/Store payload dtype and item count. PayloadInference reuses the carried GroupLoweringPlan, checks explicit inputs and constructor extent, and records constructor state. prepare_calls_and_storage analyzes all original calls, retains _RewriteMatch records, validates descriptor ownership, prepares providers, and collects scratch requirements from their compiled layouts. Later consumers can supply facts needed by earlier constructors. begin_rewrite stages shared backing in the entry block so it dominates every scratch view. match selects each block; apply reuses or materializes invocables and emits statements in source order. ThreadData holds each thread&#x27;s payload; TempStorage describes cooperative scratch. Standalone payload-write dtype inference remains in apply. finish_rewrite cleans unused bindings after all replacement blocks are installed, preserving original definitions throughout emission. These steps belong to one planner, not separate compiler passes. Facts belong to the current IR and compilation attempt. Provider artifact caches and pipeline placement are unchanged.</desc>
+  <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#44556b" /></marker></defs>
+  <rect width="1040" height="1050" rx="12" fill="#ffffff" />
+  <text x="28" y="38" text-anchor="start" font-family="sans-serif" font-size="22" fill="#172b3a" font-weight="600">COMPILATION PHASES</text>
+  <text x="28" y="68" text-anchor="start" font-family="sans-serif" font-size="18" fill="#172b3a">One compiler attempt; default LTO path for a kernel with cooperative calls.</text>
+  <rect x="28" y="100" width="984" height="92" rx="9" fill="#e9f2fb" stroke="#68798b" />
+  <text x="57" y="154.0" text-anchor="start" font-family="sans-serif" font-size="25" fill="#172b3a" font-weight="600">1</text>
+  <text x="99" y="136" text-anchor="start" font-family="sans-serif" font-size="20" fill="#172b3a" font-weight="600">Build untyped IR</text>
+  <text x="99" y="166" text-anchor="start" font-family="sans-serif" font-size="16" fill="#172b3a">Numba-CUDA-MLIR</text>
+  <text x="453" y="132" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Translate Python bytecode.</text>
+  <text x="453" y="157" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Form blocks, expressions, and call sites.</text>
+  <path d="M 520 192 V 219" fill="none" stroke="#44556b" stroke-width="2" marker-end="url(#arrow)" />
+  <rect x="28" y="220" width="984" height="92" rx="9" fill="#e9f2fb" stroke="#68798b" />
+  <text x="57" y="274.0" text-anchor="start" font-family="sans-serif" font-size="25" fill="#172b3a" font-weight="600">2</text>
+  <text x="99" y="256" text-anchor="start" font-family="sans-serif" font-size="20" fill="#172b3a" font-weight="600">Run early rewrites</text>
+  <text x="99" y="286" text-anchor="start" font-family="sans-serif" font-size="16" fill="#172b3a">Numba-CUDA-MLIR</text>
+  <text x="453" y="252" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Fold constants and prune dead branches.</text>
+  <text x="453" y="277" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Run before-inference rewrites. Inline device helpers.</text>
+  <path d="M 520 312 V 339" fill="none" stroke="#44556b" stroke-width="2" marker-end="url(#arrow)" />
+  <rect x="28" y="340" width="984" height="120" rx="9" fill="#e5f1d7" stroke="#68798b" />
+  <text x="57" y="408.0" text-anchor="start" font-family="sans-serif" font-size="25" fill="#172b3a" font-weight="600">3</text>
+  <text x="99" y="376" text-anchor="start" font-family="sans-serif" font-size="20" fill="#172b3a" font-weight="600">Plan cooperative calls</text>
+  <text x="99" y="406" text-anchor="start" font-family="sans-serif" font-size="16" fill="#172b3a">cuda.coop</text>
+  <text x="453" y="372" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Plan groups; reuse payload facts; prepare providers.</text>
+  <text x="453" y="397" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Stage entry backing; match and replace each block.</text>
+  <text x="453" y="422" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Clean unused bindings after every block is installed.</text>
+  <path d="M 520 460 V 487" fill="none" stroke="#44556b" stroke-width="2" marker-end="url(#arrow)" />
+  <rect x="28" y="488" width="984" height="92" rx="9" fill="#e9f2fb" stroke="#68798b" />
+  <text x="57" y="542.0" text-anchor="start" font-family="sans-serif" font-size="25" fill="#172b3a" font-weight="600">4</text>
+  <text x="99" y="524" text-anchor="start" font-family="sans-serif" font-size="20" fill="#172b3a" font-weight="600">Finish untyped passes</text>
+  <text x="99" y="554" text-anchor="start" font-family="sans-serif" font-size="16" fill="#172b3a">Numba-CUDA-MLIR</text>
+  <text x="453" y="520" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Process literals and supported unrolling.</text>
+  <text x="453" y="545" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Reconstruct SSA and propagate literals.</text>
+  <path d="M 520 580 V 607" fill="none" stroke="#44556b" stroke-width="2" marker-end="url(#arrow)" />
+  <rect x="28" y="608" width="984" height="92" rx="9" fill="#e9f2fb" stroke="#68798b" />
+  <text x="57" y="662.0" text-anchor="start" font-family="sans-serif" font-size="25" fill="#172b3a" font-weight="600">5</text>
+  <text x="99" y="644" text-anchor="start" font-family="sans-serif" font-size="20" fill="#172b3a" font-weight="600">Infer types</text>
+  <text x="99" y="674" text-anchor="start" font-family="sans-serif" font-size="16" fill="#172b3a">Numba-CUDA-MLIR</text>
+  <text x="453" y="640" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">MLIRTypeInference assigns expression types</text>
+  <text x="453" y="665" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">and call signatures to the rewritten kernel.</text>
+  <path d="M 520 700 V 727" fill="none" stroke="#44556b" stroke-width="2" marker-end="url(#arrow)" />
+  <rect x="28" y="728" width="984" height="92" rx="9" fill="#e9f2fb" stroke="#68798b" />
+  <text x="57" y="782.0" text-anchor="start" font-family="sans-serif" font-size="25" fill="#172b3a" font-weight="600">6</text>
+  <text x="99" y="764" text-anchor="start" font-family="sans-serif" font-size="20" fill="#172b3a" font-weight="600">Run typed rewrites</text>
+  <text x="99" y="794" text-anchor="start" font-family="sans-serif" font-size="16" fill="#172b3a">Numba-CUDA-MLIR</text>
+  <text x="453" y="760" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Strip phi nodes and inline overloads.</text>
+  <text x="453" y="785" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Run after-inference rewrites.</text>
+  <path d="M 520 820 V 847" fill="none" stroke="#44556b" stroke-width="2" marker-end="url(#arrow)" />
+  <rect x="28" y="848" width="984" height="120" rx="9" fill="#e9f2fb" stroke="#68798b" />
+  <text x="57" y="916.0" text-anchor="start" font-family="sans-serif" font-size="25" fill="#172b3a" font-weight="600">7</text>
+  <text x="99" y="884" text-anchor="start" font-family="sans-serif" font-size="20" fill="#172b3a" font-weight="600">Lower, link, and launch</text>
+  <text x="99" y="914" text-anchor="start" font-family="sans-serif" font-size="16" fill="#172b3a">Numba-CUDA-MLIR + CUDA tools</text>
+  <text x="453" y="880" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Lower through MLIR. Compile kernel LTO-IR.</text>
+  <text x="453" y="905" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">nvJitLink combines it with provider LTO-IR.</text>
+  <text x="453" y="930" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Load the cubin and launch the kernel.</text>
+  <text x="28" y="1017" text-anchor="start" font-family="sans-serif" font-size="18" fill="#172b3a">Phase 3 completes before the main type-inference pass. The next figure expands its handoffs.</text>
+</svg>

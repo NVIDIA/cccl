@@ -21,6 +21,8 @@
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/__iterator/contiguous_iterator_adaptor.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>
 
@@ -35,19 +37,29 @@ class normal_iterator : public iterator_adaptor<normal_iterator<Pointer>, Pointe
 public:
   _CCCL_HIDE_FROM_ABI normal_iterator() = default;
 
-  _CCCL_HOST_DEVICE normal_iterator(Pointer p)
+  _CCCL_HOST_DEVICE_API normal_iterator(Pointer p)
       : super_t(p)
   {}
 
   template <typename OtherPointer>
-  _CCCL_HOST_DEVICE
+  _CCCL_HOST_DEVICE_API
   normal_iterator(const normal_iterator<OtherPointer>& other, enable_if_convertible_t<OtherPointer, Pointer>* = nullptr)
       : super_t(other.base())
   {}
+
+  //! @brief Rebuilds the stored pointer in place over the storage at @p ptr.
+  //! @param[in] ptr The address of the storage that replaces the storage this iterator points to.
+  _CCCL_TEMPLATE(class T)
+  _CCCL_REQUIRES(::cuda::__iter_can_rebind<Pointer, T>)
+  // NOLINTNEXTLINE(readability-identifier-naming): libcu++ calls this by name
+  _CCCL_HOST_DEVICE_API void __rebind(T* ptr)
+  {
+    ::cuda::__rebind_iterator_adaptor(this->base_reference(), ptr);
+  }
 };
 
 template <typename Pointer>
-_CCCL_HOST_DEVICE normal_iterator<Pointer> make_normal_iterator(Pointer ptr)
+_CCCL_HOST_DEVICE_API normal_iterator<Pointer> make_normal_iterator(Pointer ptr)
 {
   return normal_iterator<Pointer>(ptr);
 }
@@ -72,8 +84,7 @@ struct pointer_traits<THRUST_NS_QUALIFIER::detail::normal_iterator<Pointer>>
   template <typename U>
   using rebind = typename THRUST_NS_QUALIFIER::detail::rebind_pointer<pointer, U>::type;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static pointer
-  pointer_to(Pointer& r) noexcept(noexcept(::cuda::std::addressof(r)))
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static pointer pointer_to(Pointer& r) noexcept(noexcept(::cuda::std::addressof(r)))
   {
     return static_cast<element_type*>(::cuda::std::addressof(r));
   }

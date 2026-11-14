@@ -14,9 +14,16 @@
 #endif // no system header
 
 #if _CCCL_CUDA_COMPILATION()
+#  include <cub/detail/null_type.cuh>
+
+#  include <thrust/functional.h>
+#  include <thrust/remove.h>
+#  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/copy_if.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 
 #  include <cuda/__functional/equal_to_value.h>
+#  include <cuda/std/__functional/not_fn.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -25,7 +32,7 @@ namespace cuda_cub
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class StencilIt, class Predicate>
-InputIt _CCCL_HOST_DEVICE
+InputIt _CCCL_HOST_DEVICE_API
 remove_if(execution_policy<Derived>& policy, InputIt first, InputIt last, StencilIt stencil, Predicate predicate)
 {
   THRUST_CDP_DISPATCH((return cuda_cub::detail::copy_if_with_stencil</* InPlace */ true>(
@@ -35,7 +42,8 @@ remove_if(execution_policy<Derived>& policy, InputIt first, InputIt last, Stenci
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class Predicate>
-InputIt _CCCL_HOST_DEVICE remove_if(execution_policy<Derived>& policy, InputIt first, InputIt last, Predicate predicate)
+InputIt _CCCL_HOST_DEVICE_API
+remove_if(execution_policy<Derived>& policy, InputIt first, InputIt last, Predicate predicate)
 {
   THRUST_CDP_DISPATCH(
     (return cuda_cub::detail::copy_if_with_stencil</* InPlace */ true>(
@@ -44,7 +52,7 @@ InputIt _CCCL_HOST_DEVICE remove_if(execution_policy<Derived>& policy, InputIt f
 }
 
 template <class Derived, class InputIt, class T>
-InputIt _CCCL_HOST_DEVICE remove(execution_policy<Derived>& policy, InputIt first, InputIt last, const T& value)
+InputIt _CCCL_HOST_DEVICE_API remove(execution_policy<Derived>& policy, InputIt first, InputIt last, const T& value)
 {
   using thrust::placeholders::_1;
 
@@ -54,7 +62,7 @@ InputIt _CCCL_HOST_DEVICE remove(execution_policy<Derived>& policy, InputIt firs
 // copy
 
 template <class Derived, class InputIt, class StencilIt, class OutputIt, class Predicate>
-OutputIt _CCCL_HOST_DEVICE remove_copy_if(
+OutputIt _CCCL_HOST_DEVICE_API remove_copy_if(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -66,17 +74,17 @@ OutputIt _CCCL_HOST_DEVICE remove_copy_if(
 }
 
 template <class Derived, class InputIt, class OutputIt, class Predicate>
-OutputIt _CCCL_HOST_DEVICE
+OutputIt _CCCL_HOST_DEVICE_API
 remove_copy_if(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, Predicate predicate)
 {
   return cuda_cub::copy_if(policy, first, last, result, ::cuda::std::not_fn(predicate));
 }
 
 template <class Derived, class InputIt, class OutputIt, class T>
-OutputIt _CCCL_HOST_DEVICE
+OutputIt _CCCL_HOST_DEVICE_API
 remove_copy(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, const T& value)
 {
-  ::cuda::equal_to_value<T> pred{value};
+  const ::cuda::equal_to_value<T> pred{value};
   return cuda_cub::remove_copy_if(policy, first, last, result, pred);
 }
 } // namespace cuda_cub

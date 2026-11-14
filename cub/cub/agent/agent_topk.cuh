@@ -18,10 +18,13 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
-#include <cub/block/radix_rank_sort_operations.cuh>
-#include <cub/util_type.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/topk_helpers.cuh>
+#include <cub/detail/uninitialized.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -57,94 +60,6 @@ struct agent_topk_policy
   static constexpr BlockLoadAlgorithm load_algorithm = LoadAlgorithm;
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
 };
-
-template <typename KeyT, bool CanTwiddle = detail::radix::can_twiddle<KeyT>>
-struct key_prefix_storage_t;
-
-template <typename KeyT>
-struct key_prefix_storage_t<KeyT, true>
-{
-  using bits_t = typename Traits<KeyT>::UnsignedBits;
-  bits_t bits;
-};
-
-// Calculates the number of passes needed for a type T with BitsPerPass bits processed per pass.
-template <typename T>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_num_passes(int bits_per_pass)
-{
-  return ::cuda::ceil_div<int>(sizeof(T) * 8, bits_per_pass);
-}
-
-template <int BitsPerPass>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_num_passes(const int total_bits)
-{
-  return ::cuda::ceil_div<int>(total_bits, BitsPerPass);
-}
-
-// Calculates the starting bit for a given pass (bit 0 is the least significant (rightmost) bit).
-// We process the input from the most to the least significant bit. This way, we can skip some passes in the end.
-template <typename T, int BitsPerPass>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
-{
-  int start_bit = int{sizeof(T)} * 8 - (pass + 1) * BitsPerPass;
-  if (start_bit < 0)
-  {
-    start_bit = 0;
-  }
-  return start_bit;
-}
-
-template <int BitsPerPass>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_start_bit(const int total_bits, const int pass)
-{
-  int start_bit = total_bits - (pass + 1) * BitsPerPass;
-  if (start_bit < 0)
-  {
-    start_bit = 0;
-  }
-  return start_bit;
-}
-
-// Bit-vector for accumulating prefix digits via funnel shift. Each pass shifts the existing
-// contents left by BitsPerPass and ORs the new bucket at the bottom. Sized to hold all
-// decomposed bits of KeyT plus headroom for the shift padding of the last pass.
-template <typename KeyT>
-struct key_prefix_storage_t<KeyT, false>
-{
-  static constexpr int num_words = ::cuda::ceil_div<int>(sizeof(KeyT) * 8 + 31, 32);
-  unsigned int words[num_words];
-
-  // Funnel-shifts the entire bit-vector left by `shift` positions and inserts `value` into the
-  // vacated low bits. Each word receives carry bits from its lower neighbor (high-to-low order
-  // so each word reads its neighbor's original value). The final word is filled from `value`.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void shift_or(int shift, unsigned int value)
-  {
-    _CCCL_ASSERT(shift > 0 && shift < 32, "shift_or requires 0 < shift < 32");
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = num_words - 1; i > 0; --i)
-    {
-      words[i] = __funnelshift_l(words[i - 1], words[i], shift);
-    }
-    words[0] = (words[0] << shift) | value;
-  }
-};
-
-template <typename KeyT, int BitsPerPass>
-_CCCL_DEVICE _CCCL_FORCEINLINE void
-set_kth_key_bits(key_prefix_storage_t<KeyT>& prefix, const int pass, const int bin_index)
-{
-  if constexpr (detail::radix::can_twiddle<KeyT>)
-  {
-    using bits_t        = typename Traits<KeyT>::UnsignedBits;
-    const int start_bit = calc_start_bit<KeyT, BitsPerPass>(pass);
-    bits_t bucket       = bin_index;
-    prefix.bits |= static_cast<bits_t>(bucket) << start_bit;
-  }
-  else
-  {
-    prefix.shift_or(BitsPerPass, bin_index);
-  }
-}
 
 template <typename KeyInT, typename OffsetT, typename OutOffsetT>
 struct alignas(128) Counter
@@ -184,16 +99,6 @@ struct alignas(128) Counter
   alignas(128) OutOffsetT out_back_cnt;
   // The 'alignas' is necessary to improve the performance of global memory accessing by isolating the request,
   // especially for the segment version.
-};
-
-enum class candidate_class
-{
-  // The given candidate is definitely amongst the top-k items
-  selected,
-  // The given candidate may or may not be amongst the top-k items
-  candidate,
-  // The given candidate is definitely not amongst the top-k items
-  rejected
 };
 
 //! @brief AgentTopK implements a stateful abstraction of CUDA thread blocks for participating in
@@ -277,8 +182,7 @@ struct AgentTopK
     OffsetT histogram[num_buckets];
   };
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per-thread fields
@@ -327,7 +231,7 @@ struct AgentTopK
   //! @param identify_candidates_op
   //!   Filter operator
   //!
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentTopK(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentTopK(
     TempStorage& temp_storage,
     const KeyInputIteratorT d_keys_in,
     KeyOutputIteratorT d_keys_out,
@@ -356,7 +260,7 @@ struct AgentTopK
 
   // Process a range of input data in tiles, calling f(key, index) for each element
   template <typename InputItT, typename FuncT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void process_range(InputItT in, const OffsetT num_items, FuncT f)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void process_range(InputItT in, const OffsetT num_items, FuncT f)
   {
     key_in_t thread_data[items_per_thread];
 
@@ -410,7 +314,7 @@ struct AgentTopK
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void init_histograms(OffsetT* histogram)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void init_histograms(OffsetT* histogram)
   {
     // Initialize histogram bin counts to zeros
     int histo_offset = 0;
@@ -428,7 +332,7 @@ struct AgentTopK
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void merge_histograms(OffsetT* global_histogram)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void merge_histograms(OffsetT* global_histogram)
   {
     int histo_offset = 0;
 
@@ -450,7 +354,7 @@ struct AgentTopK
   }
 
   // Fused filtering of the current pass and building histogram for the next pass
-  _CCCL_DEVICE _CCCL_FORCEINLINE void filter_and_histogram(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void filter_and_histogram(
     key_in_t* in_buf,
     OffsetT* in_idx_buf,
     key_in_t* out_buf,
@@ -581,7 +485,7 @@ struct AgentTopK
   }
 
   // Replace histogram with its own prefix sum
-  _CCCL_DEVICE _CCCL_FORCEINLINE void compute_bin_offsets(volatile OffsetT* histogram)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void compute_bin_offsets(volatile OffsetT* histogram)
   {
     OffsetT thread_data[bins_per_thread]{};
 
@@ -596,7 +500,7 @@ struct AgentTopK
   }
 
   // Identify the bucket that the k-th value falls into
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   choose_bucket(Counter<key_in_t, OffsetT, OutOffsetT>* counter, const OutOffsetT k, const int pass)
   {
     // Initialize histogram bin counts to zeros
@@ -618,7 +522,7 @@ struct AgentTopK
         counter->len              = cur - prev;
         const unsigned int bucket = static_cast<unsigned int>(bin_idx);
         // Update the "splitter" key by adding the radix digit of the k-th item bin of this pass
-        set_kth_key_bits<key_in_t, bits_per_pass>(counter->kth_key_bits, pass, bucket);
+        _CUB::detail::topk::set_kth_key_bits<key_in_t, bits_per_pass>(counter->kth_key_bits, pass, bucket);
       }
     };
 
@@ -639,7 +543,7 @@ struct AgentTopK
   // the histogram for the next pass. The caller-supplied counter_update_fn runs on thread 0 of the
   // last block to update pass-specific counter state.
   template <typename CounterUpdateFn>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void finalize_pass(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void finalize_pass(
     Counter<key_in_t, OffsetT, OutOffsetT>* counter,
     OffsetT* histogram,
     OutOffsetT current_k,
@@ -657,8 +561,8 @@ struct AgentTopK
     bool is_last_block = false;
     if (threadIdx.x == 0)
     {
-      unsigned int finished = atomicInc(&counter->finished_block_cnt, gridDim.x - 1);
-      is_last_block         = (finished == (gridDim.x - 1));
+      const unsigned int finished = atomicInc(&counter->finished_block_cnt, gridDim.x - 1);
+      is_last_block               = (finished == (gridDim.x - 1));
     }
 
     // syncthreads ensures that the BlockLoad for loading the global histogram can reuse the temporary storage
@@ -685,7 +589,7 @@ struct AgentTopK
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void invoke_last_filter(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void invoke_last_filter(
     key_in_t* in_buf, OffsetT* in_idx_buf, Counter<key_in_t, OffsetT, OutOffsetT>* counter, OutOffsetT k, int pass)
   {
     const bool load_from_original_input = (pass <= 1) || counter->previous_len > buffer_length;
@@ -743,7 +647,7 @@ struct AgentTopK
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void invoke_filter_and_histogram(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void invoke_filter_and_histogram(
     key_in_t* in_buf,
     OffsetT* in_idx_buf,
     key_in_t* out_buf,
@@ -807,7 +711,7 @@ struct AgentTopK
 
   // Histogram-only pass: computes the histogram over the full input without filtering.
   // Used for the first radix pass before any candidates have been identified.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void invoke_histogram_only(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void invoke_histogram_only(
     Counter<key_in_t, OffsetT, OutOffsetT>* counter, OffsetT* histogram, int pass, bool is_last_pass)
   {
     // Initialize shared memory histogram

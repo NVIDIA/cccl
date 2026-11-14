@@ -16,6 +16,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/util_debug.cuh>
 
 #include <cstdio>
 #include <iostream>
@@ -44,8 +45,8 @@ int g_grid_size = 1;
 /**
  * Simple kernel for performing a block-wide exclusive prefix sum over integers
  */
-template <int BLOCK_THREADS,
-          int ITEMS_PER_THREAD,
+template <int BlockThreads,
+          int ItemsPerThread,
           BlockScanAlgorithm ALGORITHM>
 __global__ void BlockPrefixSumKernel(int* d_in, // Tile of input
                                      int* d_out, // Tile of output
@@ -53,14 +54,14 @@ __global__ void BlockPrefixSumKernel(int* d_in, // Tile of input
 {
   // Specialize BlockLoad type for our thread block (uses warp-striped loads for coalescing, then transposes in shared
   // memory to a blocked arrangement)
-  using BlockLoadT = BlockLoad<int, BLOCK_THREADS, ITEMS_PER_THREAD, BLOCK_LOAD_WARP_TRANSPOSE>;
+  using BlockLoadT = BlockLoad<int, BlockThreads, ItemsPerThread, BLOCK_LOAD_WARP_TRANSPOSE>;
 
   // Specialize BlockStore type for our thread block (uses warp-striped loads for coalescing, then transposes in shared
   // memory to a blocked arrangement)
-  using BlockStoreT = BlockStore<int, BLOCK_THREADS, ITEMS_PER_THREAD, BLOCK_STORE_WARP_TRANSPOSE>;
+  using BlockStoreT = BlockStore<int, BlockThreads, ItemsPerThread, BLOCK_STORE_WARP_TRANSPOSE>;
 
   // Specialize BlockScan type for our thread block
-  using BlockScanT = BlockScan<int, BLOCK_THREADS, ALGORITHM>;
+  using BlockScanT = BlockScan<int, BlockThreads, ALGORITHM>;
 
   // Shared memory
   __shared__ union TempStorage
@@ -71,7 +72,7 @@ __global__ void BlockPrefixSumKernel(int* d_in, // Tile of input
   } temp_storage;
 
   // Per-thread tile data
-  int data[ITEMS_PER_THREAD];
+  int data[ItemsPerThread];
 
   // Load items into a blocked arrangement
   BlockLoadT(temp_storage.load).Load(d_in, data);
@@ -80,14 +81,14 @@ __global__ void BlockPrefixSumKernel(int* d_in, // Tile of input
   __syncthreads();
 
   // Start cycle timer
-  clock_t start = clock();
+  const clock_t start = clock();
 
   // Compute exclusive prefix sum
   int aggregate;
   BlockScanT(temp_storage.scan).ExclusiveSum(data, data, aggregate);
 
   // Stop cycle timer
-  clock_t stop = clock();
+  const clock_t stop = clock();
 
   // Barrier for smem reuse
   __syncthreads();
@@ -98,8 +99,8 @@ __global__ void BlockPrefixSumKernel(int* d_in, // Tile of input
   // Store aggregate and elapsed clocks
   if (threadIdx.x == 0)
   {
-    *d_elapsed                              = (start > stop) ? start - stop : stop - start;
-    d_out[BLOCK_THREADS * ITEMS_PER_THREAD] = aggregate;
+    *d_elapsed                           = (start > stop) ? start - stop : stop - start;
+    d_out[BlockThreads * ItemsPerThread] = aggregate;
   }
 }
 
@@ -129,15 +130,15 @@ int Initialize(int* h_in, int* h_reference, int num_items)
 /**
  * Test thread block scan
  */
-template <int BLOCK_THREADS, int ITEMS_PER_THREAD, BlockScanAlgorithm ALGORITHM>
+template <int BlockThreads, int ItemsPerThread, BlockScanAlgorithm ALGORITHM>
 void Test()
 {
-  constexpr int TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD;
+  constexpr int TILE_SIZE = BlockThreads * ItemsPerThread;
 
   // Allocate host arrays
   int* h_in        = new int[TILE_SIZE];
   int* h_reference = new int[TILE_SIZE];
-  int* h_gpu       = new int[TILE_SIZE + 1];
+  const int* h_gpu = new int[TILE_SIZE + 1];
 
   // Initialize problem and reference output on host
   int h_aggregate = Initialize(h_in, h_reference, TILE_SIZE);
@@ -146,9 +147,9 @@ void Test()
   int* d_in          = nullptr;
   int* d_out         = nullptr;
   clock_t* d_elapsed = nullptr;
-  cudaMalloc((void**) &d_in, sizeof(int) * TILE_SIZE);
-  cudaMalloc((void**) &d_out, sizeof(int) * (TILE_SIZE + 1));
-  cudaMalloc((void**) &d_elapsed, sizeof(clock_t));
+  CubDebugExit(cudaMalloc(reinterpret_cast<void**>(&d_in), sizeof(int) * TILE_SIZE));
+  CubDebugExit(cudaMalloc(reinterpret_cast<void**>(&d_out), sizeof(int) * (TILE_SIZE + 1)));
+  CubDebugExit(cudaMalloc(reinterpret_cast<void**>(&d_elapsed), sizeof(clock_t)));
 
   // Display input problem data
   if (g_verbose)
@@ -164,10 +165,10 @@ void Test()
   // Kernel props
   int max_sm_occupancy;
   CubDebugExit(
-    MaxSmOccupancy(max_sm_occupancy, BlockPrefixSumKernel<BLOCK_THREADS, ITEMS_PER_THREAD, ALGORITHM>, BLOCK_THREADS));
+    MaxSmOccupancy(max_sm_occupancy, BlockPrefixSumKernel<BlockThreads, ItemsPerThread, ALGORITHM>, BlockThreads));
 
   // Copy problem to device
-  cudaMemcpy(d_in, h_in, sizeof(int) * TILE_SIZE, cudaMemcpyHostToDevice);
+  CubDebugExit(cudaMemcpy(d_in, h_in, sizeof(int) * TILE_SIZE, cudaMemcpyHostToDevice));
 
   printf(
     "BlockScan algorithm %s on %d items (%d timing iterations, %d blocks, %d threads, %d items per thread, %d SM "
@@ -179,13 +180,12 @@ void Test()
     TILE_SIZE,
     g_timing_iterations,
     g_grid_size,
-    BLOCK_THREADS,
-    ITEMS_PER_THREAD,
+    BlockThreads,
+    ItemsPerThread,
     max_sm_occupancy);
 
   // Run aggregate/prefix kernel
-  BlockPrefixSumKernel<BLOCK_THREADS, ITEMS_PER_THREAD, ALGORITHM>
-    <<<g_grid_size, BLOCK_THREADS>>>(d_in, d_out, d_elapsed);
+  BlockPrefixSumKernel<BlockThreads, ItemsPerThread, ALGORITHM><<<g_grid_size, BlockThreads>>>(d_in, d_out, d_elapsed);
 
   // Check results
   printf("\tOutput items: ");
@@ -207,13 +207,13 @@ void Test()
   for (int i = 0; i < g_timing_iterations; ++i)
   {
     // Copy problem to device
-    cudaMemcpy(d_in, h_in, sizeof(int) * TILE_SIZE, cudaMemcpyHostToDevice);
+    CubDebugExit(cudaMemcpy(d_in, h_in, sizeof(int) * TILE_SIZE, cudaMemcpyHostToDevice));
 
     timer.Start();
 
     // Run aggregate/prefix kernel
-    BlockPrefixSumKernel<BLOCK_THREADS, ITEMS_PER_THREAD, ALGORITHM>
-      <<<g_grid_size, BLOCK_THREADS>>>(d_in, d_out, d_elapsed);
+    BlockPrefixSumKernel<BlockThreads, ItemsPerThread, ALGORITHM>
+      <<<g_grid_size, BlockThreads>>>(d_in, d_out, d_elapsed);
 
     timer.Stop();
     elapsed_millis += timer.ElapsedMillis();
@@ -229,10 +229,10 @@ void Test()
   CubDebugExit(cudaDeviceSynchronize());
 
   // Display timing results
-  float avg_millis          = elapsed_millis / static_cast<float>(g_timing_iterations);
-  float avg_items_per_sec   = float(TILE_SIZE * g_grid_size) / avg_millis / 1000.0f;
-  float avg_clocks          = float(elapsed_clocks) / static_cast<float>(g_timing_iterations);
-  float avg_clocks_per_item = avg_clocks / TILE_SIZE;
+  const float avg_millis          = elapsed_millis / static_cast<float>(g_timing_iterations);
+  const float avg_items_per_sec   = float(TILE_SIZE * g_grid_size) / avg_millis / 1000.0f;
+  const float avg_clocks          = float(elapsed_clocks) / static_cast<float>(g_timing_iterations);
+  const float avg_clocks_per_item = avg_clocks / TILE_SIZE;
 
   printf("\tAverage BlockScan::Sum clocks: %.3f\n", avg_clocks);
   printf("\tAverage BlockScan::Sum clocks per item: %.3f\n", avg_clocks_per_item);
@@ -240,29 +240,20 @@ void Test()
   printf("\tAverage million items / sec: %.4f\n", avg_items_per_sec);
 
   // Cleanup
-  if (h_in)
-  {
-    delete[] h_in;
-  }
-  if (h_reference)
-  {
-    delete[] h_reference;
-  }
-  if (h_gpu)
-  {
-    delete[] h_gpu;
-  }
+  delete[] h_in;
+  delete[] h_reference;
+  delete[] h_gpu;
   if (d_in)
   {
-    cudaFree(d_in);
+    CubDebugExit(cudaFree(d_in));
   }
   if (d_out)
   {
-    cudaFree(d_out);
+    CubDebugExit(cudaFree(d_out));
   }
   if (d_elapsed)
   {
-    cudaFree(d_elapsed);
+    CubDebugExit(cudaFree(d_elapsed));
   }
 }
 
@@ -277,13 +268,13 @@ __global__ void ExclusiveSumArrayKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain a segment of consecutive items that are blocked across threads
   int thread_data[4];
   for (int i = 0; i < 4; i++)
   {
-    thread_data[i] = d_data[threadIdx.x * 4 + i];
+    thread_data[i] = d_data[(threadIdx.x * 4) + i];
   }
 
   // Collectively compute the block-wide exclusive prefix sum
@@ -292,7 +283,7 @@ __global__ void ExclusiveSumArrayKernel(int* d_data)
   // Store results
   for (int i = 0; i < 4; i++)
   {
-    d_data[threadIdx.x * 4 + i] = thread_data[i];
+    d_data[(threadIdx.x * 4) + i] = thread_data[i];
   }
 }
 // example-end exclusive-sum-array
@@ -304,7 +295,7 @@ __global__ void ExclusiveSumSingleKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain input item for each thread
   int thread_data = d_data[threadIdx.x];
@@ -324,7 +315,7 @@ __global__ void ExclusiveSumAggregateKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain input item for each thread
   int thread_data = d_data[threadIdx.x];
@@ -355,7 +346,7 @@ struct BlockPrefixCallbackOp
   // Thread-0 is responsible for returning a value for seeding the block-wide scan.
   __device__ int operator()(int block_aggregate)
   {
-    int old_prefix = running_total;
+    const int old_prefix = running_total;
     running_total += block_aggregate;
     return old_prefix;
   }
@@ -373,9 +364,9 @@ __global__ void ExclusiveSumPrefixCallbackKernel(int* d_data, int num_items)
   // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
   __shared__ union
   {
-    typename BlockLoadT::TempStorage load;
-    typename BlockScanT::TempStorage scan;
-    typename BlockStoreT::TempStorage store;
+    BlockLoadT::TempStorage load;
+    BlockScanT::TempStorage scan;
+    BlockStoreT::TempStorage store;
   } temp_storage;
 
   // Initialize running total
@@ -407,7 +398,7 @@ __global__ void ExclusiveScanSingleKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain input item for each thread
   int thread_data = d_data[threadIdx.x];
@@ -431,9 +422,9 @@ __global__ void InclusiveSumPrefixCallbackKernel(int* d_data, int num_items)
   // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
   __shared__ union
   {
-    typename BlockLoadT::TempStorage load;
-    typename BlockScanT::TempStorage scan;
-    typename BlockStoreT::TempStorage store;
+    BlockLoadT::TempStorage load;
+    BlockScanT::TempStorage scan;
+    BlockStoreT::TempStorage store;
   } temp_storage;
 
   // Initialize running total
@@ -465,13 +456,13 @@ __global__ void InclusiveSumArrayKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain a segment of consecutive items that are blocked across threads
   int thread_data[4];
   for (int i = 0; i < 4; i++)
   {
-    thread_data[i] = d_data[threadIdx.x * 4 + i];
+    thread_data[i] = d_data[(threadIdx.x * 4) + i];
   }
 
   // Collectively compute the block-wide inclusive prefix sum
@@ -480,7 +471,7 @@ __global__ void InclusiveSumArrayKernel(int* d_data)
   // Store results
   for (int i = 0; i < 4; i++)
   {
-    d_data[threadIdx.x * 4 + i] = thread_data[i];
+    d_data[(threadIdx.x * 4) + i] = thread_data[i];
   }
 }
 // example-end inclusive-sum-array
@@ -492,7 +483,7 @@ __global__ void InclusiveSumSingleKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain input item for each thread
   int thread_data = d_data[threadIdx.x];
@@ -512,13 +503,13 @@ __global__ void ExclusiveScanArrayKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain a segment of consecutive items that are blocked across threads
   int thread_data[4];
   for (int i = 0; i < 4; i++)
   {
-    thread_data[i] = d_data[threadIdx.x * 4 + i];
+    thread_data[i] = d_data[(threadIdx.x * 4) + i];
   }
 
   // Collectively compute the block-wide exclusive prefix max scan
@@ -527,7 +518,7 @@ __global__ void ExclusiveScanArrayKernel(int* d_data)
   // Store results
   for (int i = 0; i < 4; i++)
   {
-    d_data[threadIdx.x * 4 + i] = thread_data[i];
+    d_data[(threadIdx.x * 4) + i] = thread_data[i];
   }
 }
 // example-end exclusive-scan-array
@@ -539,7 +530,7 @@ __global__ void ExclusiveScanAggregateKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain input item for each thread
   int thread_data = d_data[threadIdx.x];
@@ -570,8 +561,8 @@ struct BlockPrefixCallbackMaxOp
   // Thread-0 is responsible for returning a value for seeding the block-wide scan.
   __device__ int operator()(int block_aggregate)
   {
-    int old_prefix = running_total;
-    running_total  = (block_aggregate > old_prefix) ? block_aggregate : old_prefix;
+    const int old_prefix = running_total;
+    running_total        = (block_aggregate > old_prefix) ? block_aggregate : old_prefix;
     return old_prefix;
   }
 };
@@ -588,9 +579,9 @@ __global__ void ExclusiveScanPrefixCallbackKernel(int* d_data, int num_items)
   // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
   __shared__ union
   {
-    typename BlockLoadT::TempStorage load;
-    typename BlockScanT::TempStorage scan;
-    typename BlockStoreT::TempStorage store;
+    BlockLoadT::TempStorage load;
+    BlockScanT::TempStorage scan;
+    BlockStoreT::TempStorage store;
   } temp_storage;
 
   // Initialize running total
@@ -622,7 +613,7 @@ __global__ void ExclusiveSumSinglePrefixCallbackKernel(int* d_data, int num_item
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Initialize running total
   BlockPrefixCallbackOp prefix_op(0);
@@ -650,13 +641,13 @@ __global__ void ExclusiveSumArrayAggregateKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain a segment of consecutive items that are blocked across threads
   int thread_data[4];
   for (int i = 0; i < 4; i++)
   {
-    thread_data[i] = d_data[threadIdx.x * 4 + i];
+    thread_data[i] = d_data[(threadIdx.x * 4) + i];
   }
 
   // Collectively compute the block-wide exclusive prefix sum
@@ -666,7 +657,7 @@ __global__ void ExclusiveSumArrayAggregateKernel(int* d_data)
   // Store results
   for (int i = 0; i < 4; i++)
   {
-    d_data[threadIdx.x * 4 + i] = thread_data[i];
+    d_data[(threadIdx.x * 4) + i] = thread_data[i];
   }
 }
 // example-end exclusive-sum-array-aggregate
@@ -678,13 +669,13 @@ __global__ void InclusiveScanArrayKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain a segment of consecutive items that are blocked across threads
   int thread_data[4];
   for (int i = 0; i < 4; i++)
   {
-    thread_data[i] = d_data[threadIdx.x * 4 + i];
+    thread_data[i] = d_data[(threadIdx.x * 4) + i];
   }
 
   // Collectively compute the block-wide inclusive prefix max scan
@@ -693,7 +684,7 @@ __global__ void InclusiveScanArrayKernel(int* d_data)
   // Store results
   for (int i = 0; i < 4; i++)
   {
-    d_data[threadIdx.x * 4 + i] = thread_data[i];
+    d_data[(threadIdx.x * 4) + i] = thread_data[i];
   }
 }
 // example-end inclusive-scan-array
@@ -705,7 +696,7 @@ __global__ void InclusiveScanSingleKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain input item for each thread
   int thread_data = d_data[threadIdx.x];
@@ -729,9 +720,9 @@ __global__ void InclusiveScanPrefixCallbackKernel(int* d_data, int num_items)
   // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
   __shared__ union
   {
-    typename BlockLoadT::TempStorage load;
-    typename BlockScanT::TempStorage scan;
-    typename BlockStoreT::TempStorage store;
+    BlockLoadT::TempStorage load;
+    BlockScanT::TempStorage scan;
+    BlockStoreT::TempStorage store;
   } temp_storage;
 
   // Initialize running total
@@ -763,13 +754,13 @@ __global__ void InclusiveSumArrayAggregateKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain a segment of consecutive items that are blocked across threads
   int thread_data[4];
   for (int i = 0; i < 4; i++)
   {
-    thread_data[i] = d_data[threadIdx.x * 4 + i];
+    thread_data[i] = d_data[(threadIdx.x * 4) + i];
   }
 
   // Collectively compute the block-wide inclusive prefix sum
@@ -779,7 +770,7 @@ __global__ void InclusiveSumArrayAggregateKernel(int* d_data)
   // Store results
   for (int i = 0; i < 4; i++)
   {
-    d_data[threadIdx.x * 4 + i] = thread_data[i];
+    d_data[(threadIdx.x * 4) + i] = thread_data[i];
   }
 }
 // example-end inclusive-sum-array-aggregate
@@ -791,7 +782,7 @@ __global__ void InclusiveSumSingleAggregateKernel(int* d_data)
   using BlockScan = cub::BlockScan<int, 128>;
 
   // Allocate shared memory for BlockScan
-  __shared__ typename BlockScan::TempStorage temp_storage;
+  __shared__ BlockScan::TempStorage temp_storage;
 
   // Obtain input item for each thread
   int thread_data = d_data[threadIdx.x];
@@ -818,7 +809,7 @@ void TestDocumentationExamples()
   int running_max;
   bool all_passed = true;
 
-  cudaMalloc(&d_data, num_items * sizeof(int));
+  CubDebugExit(cudaMalloc(&d_data, num_items * sizeof(int)));
 
   // Test ExclusiveSumArrayKernel
   if (all_passed)
@@ -828,18 +819,18 @@ void TestDocumentationExamples()
     {
       h_data[i] = 1;
     }
-    cudaMemcpy(d_data, h_data, num_items * sizeof(int), cudaMemcpyHostToDevice);
+    CubDebugExit(cudaMemcpy(d_data, h_data, num_items * sizeof(int), cudaMemcpyHostToDevice));
     ExclusiveSumArrayKernel<<<1, 128>>>(d_data);
-    cudaMemcpy(h_data, d_data, num_items * sizeof(int), cudaMemcpyDeviceToHost);
+    CubDebugExit(cudaMemcpy(h_data, d_data, num_items * sizeof(int), cudaMemcpyDeviceToHost));
     bool passed = true;
     for (int i = 0; i < 128 && passed; i++)
     {
       for (int j = 0; j < 4 && passed; j++)
       {
-        int expected = i * 4 + j;
-        if (h_data[i * 4 + j] != expected)
+        const int expected = (i * 4) + j;
+        if (h_data[(i * 4) + j] != expected)
         {
-          printf("FAILED at [%d]: expected %d, got %d\n", i * 4 + j, expected, h_data[i * 4 + j]);
+          printf("FAILED at [%d]: expected %d, got %d\n", (i * 4) + j, expected, h_data[(i * 4) + j]);
           passed     = false;
           all_passed = false;
         }
@@ -859,9 +850,9 @@ void TestDocumentationExamples()
     {
       h_data[i] = 1;
     }
-    cudaMemcpy(d_data, h_data, 128 * sizeof(int), cudaMemcpyHostToDevice);
+    CubDebugExit(cudaMemcpy(d_data, h_data, 128 * sizeof(int), cudaMemcpyHostToDevice));
     ExclusiveSumSingleKernel<<<1, 128>>>(d_data);
-    cudaMemcpy(h_data, d_data, 128 * sizeof(int), cudaMemcpyDeviceToHost);
+    CubDebugExit(cudaMemcpy(h_data, d_data, 128 * sizeof(int), cudaMemcpyDeviceToHost));
     bool passed = true;
     for (int i = 0; i < 128 && passed; i++)
     {
@@ -886,9 +877,9 @@ void TestDocumentationExamples()
     {
       h_data[i] = 1;
     }
-    cudaMemcpy(d_data, h_data, 128 * sizeof(int), cudaMemcpyHostToDevice);
+    CubDebugExit(cudaMemcpy(d_data, h_data, 128 * sizeof(int), cudaMemcpyHostToDevice));
     ExclusiveSumAggregateKernel<<<1, 128>>>(d_data);
-    cudaMemcpy(h_data, d_data, 128 * sizeof(int), cudaMemcpyDeviceToHost);
+    CubDebugExit(cudaMemcpy(h_data, d_data, 128 * sizeof(int), cudaMemcpyDeviceToHost));
     bool passed = true;
     for (int i = 0; i < 128 && passed; i++)
     {
@@ -912,9 +903,9 @@ void TestDocumentationExamples()
     {
       h_data[i] = 1;
     }
-    cudaMemcpy(d_data, h_data, num_items * sizeof(int), cudaMemcpyHostToDevice);
+    CubDebugExit(cudaMemcpy(d_data, h_data, num_items * sizeof(int), cudaMemcpyHostToDevice));
     ExclusiveSumPrefixCallbackKernel<<<1, 128>>>(d_data, num_items);
-    cudaMemcpy(h_data, d_data, num_items * sizeof(int), cudaMemcpyDeviceToHost);
+    CubDebugExit(cudaMemcpy(h_data, d_data, num_items * sizeof(int), cudaMemcpyDeviceToHost));
     bool passed = true;
     for (int i = 0; i < num_items && passed; i++)
     {
@@ -938,9 +929,9 @@ void TestDocumentationExamples()
     {
       h_data[i] = 1;
     }
-    cudaMemcpy(d_data, h_data, num_items * sizeof(int), cudaMemcpyHostToDevice);
+    CubDebugExit(cudaMemcpy(d_data, h_data, num_items * sizeof(int), cudaMemcpyHostToDevice));
     InclusiveSumPrefixCallbackKernel<<<1, 128>>>(d_data, num_items);
-    cudaMemcpy(h_data, d_data, num_items * sizeof(int), cudaMemcpyDeviceToHost);
+    CubDebugExit(cudaMemcpy(h_data, d_data, num_items * sizeof(int), cudaMemcpyDeviceToHost));
     bool passed = true;
     for (int i = 0; i < num_items && passed; i++)
     {
@@ -964,18 +955,18 @@ void TestDocumentationExamples()
     {
       h_data[i] = 1;
     }
-    cudaMemcpy(d_data, h_data, num_items * sizeof(int), cudaMemcpyHostToDevice);
+    CubDebugExit(cudaMemcpy(d_data, h_data, num_items * sizeof(int), cudaMemcpyHostToDevice));
     InclusiveSumArrayKernel<<<1, 128>>>(d_data);
-    cudaMemcpy(h_data, d_data, num_items * sizeof(int), cudaMemcpyDeviceToHost);
+    CubDebugExit(cudaMemcpy(h_data, d_data, num_items * sizeof(int), cudaMemcpyDeviceToHost));
     bool passed = true;
     for (int i = 0; i < 128 && passed; i++)
     {
       for (int j = 0; j < 4 && passed; j++)
       {
-        int expected = i * 4 + j + 1;
-        if (h_data[i * 4 + j] != expected)
+        const int expected = (i * 4) + j + 1;
+        if (h_data[(i * 4) + j] != expected)
         {
-          printf("FAILED at [%d]: expected %d, got %d\n", i * 4 + j, expected, h_data[i * 4 + j]);
+          printf("FAILED at [%d]: expected %d, got %d\n", (i * 4) + j, expected, h_data[(i * 4) + j]);
           passed     = false;
           all_passed = false;
         }
@@ -994,9 +985,9 @@ void TestDocumentationExamples()
     {
       h_data[i] = 1;
     }
-    cudaMemcpy(d_data, h_data, 128 * sizeof(int), cudaMemcpyHostToDevice);
+    CubDebugExit(cudaMemcpy(d_data, h_data, 128 * sizeof(int), cudaMemcpyHostToDevice));
     InclusiveSumSingleKernel<<<1, 128>>>(d_data);
-    cudaMemcpy(h_data, d_data, 128 * sizeof(int), cudaMemcpyDeviceToHost);
+    CubDebugExit(cudaMemcpy(h_data, d_data, 128 * sizeof(int), cudaMemcpyDeviceToHost));
     bool passed = true;
     for (int i = 0; i < 128 && passed; i++)
     {
@@ -1020,17 +1011,17 @@ void TestDocumentationExamples()
     {
       h_data[i] = i;
     }
-    cudaMemcpy(d_data, h_data, num_items * sizeof(int), cudaMemcpyHostToDevice);
+    CubDebugExit(cudaMemcpy(d_data, h_data, num_items * sizeof(int), cudaMemcpyHostToDevice));
     ExclusiveScanArrayKernel<<<1, 128>>>(d_data);
-    cudaMemcpy(h_data, d_data, num_items * sizeof(int), cudaMemcpyDeviceToHost);
+    CubDebugExit(cudaMemcpy(h_data, d_data, num_items * sizeof(int), cudaMemcpyDeviceToHost));
     running_max = INT_MIN;
     bool passed = true;
     for (int i = 0; i < 128 && passed; i++)
     {
       for (int j = 0; j < 4 && passed; j++)
       {
-        int idx      = i * 4 + j;
-        int expected = running_max;
+        const int idx      = (i * 4) + j;
+        const int expected = running_max;
         if (h_data[idx] != expected)
         {
           printf("FAILED at [%d]: expected %d, got %d\n", idx, expected, h_data[idx]);
@@ -1053,14 +1044,14 @@ void TestDocumentationExamples()
     {
       h_data[i] = i;
     }
-    cudaMemcpy(d_data, h_data, 128 * sizeof(int), cudaMemcpyHostToDevice);
+    CubDebugExit(cudaMemcpy(d_data, h_data, 128 * sizeof(int), cudaMemcpyHostToDevice));
     ExclusiveScanAggregateKernel<<<1, 128>>>(d_data);
-    cudaMemcpy(h_data, d_data, 128 * sizeof(int), cudaMemcpyDeviceToHost);
+    CubDebugExit(cudaMemcpy(h_data, d_data, 128 * sizeof(int), cudaMemcpyDeviceToHost));
     running_max = INT_MIN;
     bool passed = true;
     for (int i = 0; i < 128 && passed; i++)
     {
-      int expected = running_max;
+      const int expected = running_max;
       if (h_data[i] != expected)
       {
         printf("FAILED at [%d]: expected %d, got %d\n", i, expected, h_data[i]);
@@ -1082,15 +1073,15 @@ void TestDocumentationExamples()
     {
       h_data[i] = (i % 2 == 0) ? i : -i;
     }
-    cudaMemcpy(d_data, h_data, num_items * sizeof(int), cudaMemcpyHostToDevice);
+    CubDebugExit(cudaMemcpy(d_data, h_data, num_items * sizeof(int), cudaMemcpyHostToDevice));
     ExclusiveScanPrefixCallbackKernel<<<1, 128>>>(d_data, num_items);
-    cudaMemcpy(h_data, d_data, num_items * sizeof(int), cudaMemcpyDeviceToHost);
+    CubDebugExit(cudaMemcpy(h_data, d_data, num_items * sizeof(int), cudaMemcpyDeviceToHost));
     running_max = INT_MIN;
     bool passed = true;
     for (int i = 0; i < num_items && passed; i++)
     {
-      int input_val = (i % 2 == 0) ? i : -i;
-      int expected  = running_max;
+      const int input_val = (i % 2 == 0) ? i : -i;
+      const int expected  = running_max;
       if (h_data[i] != expected)
       {
         printf("FAILED at [%d]: expected %d, got %d\n", i, expected, h_data[i]);
@@ -1112,17 +1103,17 @@ void TestDocumentationExamples()
     {
       h_data[i] = i;
     }
-    cudaMemcpy(d_data, h_data, num_items * sizeof(int), cudaMemcpyHostToDevice);
+    CubDebugExit(cudaMemcpy(d_data, h_data, num_items * sizeof(int), cudaMemcpyHostToDevice));
     InclusiveScanArrayKernel<<<1, 128>>>(d_data);
-    cudaMemcpy(h_data, d_data, num_items * sizeof(int), cudaMemcpyDeviceToHost);
+    CubDebugExit(cudaMemcpy(h_data, d_data, num_items * sizeof(int), cudaMemcpyDeviceToHost));
     running_max = INT_MIN;
     bool passed = true;
     for (int i = 0; i < 128 && passed; i++)
     {
       for (int j = 0; j < 4 && passed; j++)
       {
-        int idx     = i * 4 + j;
-        running_max = (idx > running_max) ? idx : running_max;
+        const int idx = (i * 4) + j;
+        running_max   = (idx > running_max) ? idx : running_max;
         if (h_data[idx] != running_max)
         {
           printf("FAILED at [%d]: expected %d, got %d\n", idx, running_max, h_data[idx]);
@@ -1144,9 +1135,9 @@ void TestDocumentationExamples()
     {
       h_data[i] = i;
     }
-    cudaMemcpy(d_data, h_data, 128 * sizeof(int), cudaMemcpyHostToDevice);
+    CubDebugExit(cudaMemcpy(d_data, h_data, 128 * sizeof(int), cudaMemcpyHostToDevice));
     InclusiveScanSingleKernel<<<1, 128>>>(d_data);
-    cudaMemcpy(h_data, d_data, 128 * sizeof(int), cudaMemcpyDeviceToHost);
+    CubDebugExit(cudaMemcpy(h_data, d_data, 128 * sizeof(int), cudaMemcpyDeviceToHost));
     running_max = INT_MIN;
     bool passed = true;
     for (int i = 0; i < 128 && passed; i++)
@@ -1172,15 +1163,15 @@ void TestDocumentationExamples()
     {
       h_data[i] = (i % 2 == 0) ? i : -i;
     }
-    cudaMemcpy(d_data, h_data, num_items * sizeof(int), cudaMemcpyHostToDevice);
+    CubDebugExit(cudaMemcpy(d_data, h_data, num_items * sizeof(int), cudaMemcpyHostToDevice));
     InclusiveScanPrefixCallbackKernel<<<1, 128>>>(d_data, num_items);
-    cudaMemcpy(h_data, d_data, num_items * sizeof(int), cudaMemcpyDeviceToHost);
+    CubDebugExit(cudaMemcpy(h_data, d_data, num_items * sizeof(int), cudaMemcpyDeviceToHost));
     running_max = INT_MIN;
     bool passed = true;
     for (int i = 0; i < num_items && passed; i++)
     {
-      int input_val = (i % 2 == 0) ? i : -i;
-      running_max   = (input_val > running_max) ? input_val : running_max;
+      const int input_val = (i % 2 == 0) ? i : -i;
+      running_max         = (input_val > running_max) ? input_val : running_max;
       if (h_data[i] != running_max)
       {
         printf("FAILED at [%d]: expected %d, got %d\n", i, running_max, h_data[i]);
@@ -1200,7 +1191,7 @@ void TestDocumentationExamples()
   }
 
   delete[] h_data;
-  cudaFree(d_data);
+  CubDebugExit(cudaFree(d_data));
 }
 
 /**

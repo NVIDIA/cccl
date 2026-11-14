@@ -36,13 +36,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @brief __is_local_smem_barrier returns true if barrier is (1) block-scoped and (2) located in shared memory.
 template <thread_scope _Sco,
           typename _CompF,
-          bool _Is_mbarrier = (_Sco == thread_scope_block)
-                           && ::cuda::std::is_same_v<_CompF, ::cuda::std::__empty_completion>>
+          bool _IsMbarrier = (_Sco == thread_scope_block)
+                          && ::cuda::std::is_same_v<_CompF, ::cuda::std::__empty_completion>>
 _CCCL_HOST_DEVICE_API inline bool __is_local_smem_barrier([[maybe_unused]] barrier<_Sco, _CompF>& __barrier)
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
-    (return _Is_mbarrier && ::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared);),
+    (return _IsMbarrier && ::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared);),
     (return false;));
 }
 

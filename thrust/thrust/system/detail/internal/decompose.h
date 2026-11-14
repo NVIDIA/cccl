@@ -22,22 +22,22 @@ class index_range
 public:
   using index_type = IndexType;
 
-  _CCCL_HOST_DEVICE index_range(index_type begin, index_type end)
+  _CCCL_HOST_DEVICE_API index_range(index_type begin, index_type end)
       : m_begin(begin)
       , m_end(end)
   {}
 
-  _CCCL_HOST_DEVICE index_type begin() const
+  _CCCL_HOST_DEVICE_API index_type begin() const
   {
     return m_begin;
   }
 
-  _CCCL_HOST_DEVICE index_type end() const
+  _CCCL_HOST_DEVICE_API index_type end() const
   {
     return m_end;
   }
 
-  _CCCL_HOST_DEVICE index_type size() const
+  _CCCL_HOST_DEVICE_API index_type size() const
   {
     return m_end - m_begin;
   }
@@ -54,8 +54,8 @@ public:
   using index_type = IndexType;
   using range_type = index_range<index_type>;
 
-  _CCCL_HOST_DEVICE uniform_decomposition(index_type N, index_type granularity, index_type max_intervals)
-      : m_N(N)
+  _CCCL_HOST_DEVICE_API uniform_decomposition(index_type N, index_type granularity, index_type max_intervals)
+      : m_n(N)
       , m_intervals((N + granularity - 1) / granularity)
       , m_threshold(0)
       , m_small_interval(granularity)
@@ -70,29 +70,27 @@ public:
     }
   }
 
-  _CCCL_HOST_DEVICE index_range<index_type> operator[](const index_type& i) const
+  _CCCL_HOST_DEVICE_API index_range<index_type> operator[](const index_type& i) const
   {
     if (i < m_threshold)
     {
-      index_type begin = m_large_interval * i;
-      index_type end   = begin + m_large_interval;
+      const index_type begin = m_large_interval * i;
+      const index_type end   = begin + m_large_interval;
       return range_type(begin, end);
     }
-    else
-    {
-      index_type begin = m_large_interval * m_threshold + m_small_interval * (i - m_threshold);
-      index_type end   = (begin + m_small_interval < m_N) ? begin + m_small_interval : m_N;
-      return range_type(begin, end);
-    }
+
+    const index_type begin = (m_large_interval * m_threshold) + (m_small_interval * (i - m_threshold));
+    const index_type end   = (begin + m_small_interval < m_n) ? begin + m_small_interval : m_n;
+    return range_type(begin, end);
   }
 
-  _CCCL_HOST_DEVICE index_type size() const
+  _CCCL_HOST_DEVICE_API index_type size() const
   {
     return m_intervals;
   }
 
 private:
-  index_type m_N;
+  index_type m_n;
   index_type m_intervals;
   index_type m_threshold;
   index_type m_small_interval;

@@ -1,8 +1,5 @@
 .. _cccl-runtime-buffer:
 
-.. |cuda_make_buffer| replace:: ``cuda::make_buffer``
-.. _cuda_make_buffer: ../api/namespacecuda_1a8d909070d4cf758e776659b91e473a6f.html
-
 Buffer
 ======
 
@@ -201,11 +198,11 @@ Example:
     // Alternative would be to call buf.destroy(stream2)
    }
 
-|cuda_make_buffer|_
+:ref:`cuda::make_buffer <libcudacxx-api-function-cuda-ns-make_buffer>`
 ------------------------------------------------------------------------------------------------
 .. _cccl-runtime-buffer-make-buffer:
 
-|cuda_make_buffer|_ is a factory function that
+:ref:`cuda::make_buffer <libcudacxx-api-function-cuda-ns-make_buffer>` is a factory function that
 creates buffers with automatic property deduction from the memory resource. It supports the same construction patterns
 as the buffer constructors, in addition to an overload that sets all elements of the buffer to the same value.
 
@@ -273,3 +270,42 @@ Memory Resource Access
 Buffers provide access to their underlying memory resource:
 
 - ``memory_resource()`` - Get a const reference to the memory resource
+
+Reinterpreting Allocations
+--------------------------
+.. _cccl-runtime-buffer-ownership:
+
+Buffers can transfer ownership of their allocation without copying. All of these functions can only be called on an
+rvalue buffer, and leave it in a state where it can only be assigned to or destroyed:
+
+- ``std::move(buf).as_bytes<Byte>()`` - Convert any buffer into a buffer of ``size() * sizeof(T)`` bytes, where
+  ``Byte`` is one of ``std::byte``, ``cuda::std::byte``, ``char``, or ``unsigned char``
+- ``std::move(buf).as_type<U>()`` - Convert a buffer of bytes into a buffer of ``size() / sizeof(U)`` elements of type
+  ``U``. Throws ``std::invalid_argument`` and leaves the buffer unchanged if ``size()`` is not a multiple of
+  ``sizeof(U)`` or ``alignment()`` is less than ``alignof(U)``
+
+The converted buffer keeps the data pointer, memory resource, stream, and alignment of the original buffer, and
+deallocates the same number of bytes. Interpreting the bytes as ``U`` is subject to the usual C++ object lifetime rules.
+
+Example:
+
+.. code:: cpp
+
+   #include <cuda/buffer>
+   #include <cuda/devices>
+   #include <cuda/memory_resource>
+   #include <cuda/std/utility>
+   #include <cuda/stream>
+
+   #include <cstddef>
+
+   void type_erase() {
+     cuda::stream stream{cuda::devices[0]};
+     auto mr = cuda::device_default_memory_pool(cuda::devices[0]);
+
+     cuda::device_buffer<int> ints{stream, mr, 1024, cuda::no_init};
+
+     // Zero-copy conversion to untyped storage and back
+     cuda::device_buffer<std::byte> bytes = cuda::std::move(ints).as_bytes<std::byte>();
+     cuda::device_buffer<int> typed       = cuda::std::move(bytes).as_type<int>();
+   }

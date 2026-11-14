@@ -23,7 +23,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(equal.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/equal.h>
 #  include <thrust/system/cuda/detail/equal.h>
 #  include <thrust/system/omp/detail/equal.h>
@@ -34,21 +34,21 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename System, typename InputIterator1, typename InputIterator2>
-_CCCL_HOST_DEVICE bool
-equal(const thrust::detail::execution_policy_base<System>& system,
+_CCCL_HOST_DEVICE_API bool
+equal(const thrust::detail::execution_policy_base<System>& exec,
       InputIterator1 first1,
       InputIterator1 last1,
       InputIterator2 first2)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::equal");
   using thrust::system::detail::generic::equal;
-  return equal(thrust::detail::derived_cast(thrust::detail::strip_const(system)), first1, last1, first2);
+  return equal(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2);
 } // end equal()
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename System, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE bool
-equal(const thrust::detail::execution_policy_base<System>& system,
+_CCCL_HOST_DEVICE_API bool
+equal(const thrust::detail::execution_policy_base<System>& exec,
       InputIterator1 first1,
       InputIterator1 last1,
       InputIterator2 first2,
@@ -56,11 +56,11 @@ equal(const thrust::detail::execution_policy_base<System>& system,
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::equal");
   using thrust::system::detail::generic::equal;
-  return equal(thrust::detail::derived_cast(thrust::detail::strip_const(system)), first1, last1, first2, binary_pred);
+  return equal(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, binary_pred);
 } // end equal()
 
 template <typename InputIterator1, typename InputIterator2>
-bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
+_CCCL_HOST_API bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::equal");
   using thrust::system::detail::generic::select_system;
@@ -68,14 +68,16 @@ bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
   using System2 = typename thrust::iterator_system<InputIterator2>::type;
 
-  System1 system1;
-  System2 system2;
+  // thrust systems must be mutable
+  System1 system1; // NOLINT(misc-const-correctness)
+  System2 system2; // NOLINT(misc-const-correctness)
 
   return thrust::equal(select_system(system1, system2), first1, last1, first2);
 }
 
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate binary_pred)
+_CCCL_HOST_API bool
+equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate binary_pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::equal");
   using thrust::system::detail::generic::select_system;

@@ -150,6 +150,25 @@ TEST_FUNC constexpr bool test()
       static_assert(!cuda::std::is_assignable<P3&, P4&&>::value);
     }
   }
+  { // Converting from pair<X&, ...> copy-assigns the referent.
+    CountAssign lhs_ref{};
+    CountAssign rhs_ref{};
+    cuda::std::pair<CountAssign&, long> lhs(lhs_ref, 1L);
+    cuda::std::pair<CountAssign&, int> rhs(rhs_ref, 2);
+    lhs = cuda::std::move(rhs);
+    assert(lhs_ref.copied == 1);
+    assert(lhs_ref.moved == 0);
+    assert(rhs_ref.moved == 0);
+    assert(lhs.second == 2L);
+  }
+  {
+    CopyAssignable lhs_ref{};
+    CopyAssignable rhs_ref{};
+    cuda::std::pair<CopyAssignable&, long> lhs(lhs_ref, 1L);
+    cuda::std::pair<CopyAssignable&, int> rhs(rhs_ref, 2);
+    lhs = cuda::std::move(rhs);
+    assert(lhs.second == 2L);
+  }
   return true;
 }
 

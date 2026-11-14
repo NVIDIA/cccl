@@ -24,7 +24,6 @@
 #include <thrust/detail/type_deduction.h>
 
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/tuple>
@@ -37,7 +36,7 @@ template <typename Eval>
 struct actor : Eval
 {
   _CCCL_EXEC_CHECK_DISABLE
-  constexpr actor() = default;
+  _CCCL_HIDE_FROM_ABI constexpr actor() = default;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API actor(const Eval& base)
@@ -59,13 +58,10 @@ struct actor : Eval
   }
 };
 
-template <typename T>
-struct is_actor : ::cuda::std::false_type
-{};
-
-template <typename T>
-struct is_actor<actor<T>> : ::cuda::std::true_type
-{};
+template <class Eval>
+inline constexpr bool is_actor_v = false;
+template <class Eval>
+inline constexpr bool is_actor_v<actor<Eval>> = true;
 
 // a node selecting and returning one of the arguments to the entire expression template
 template <unsigned int Pos>
@@ -83,7 +79,7 @@ struct argument
 template <unsigned int Pos>
 struct placeholder
 {
-  using type = actor<argument<Pos>>;
+  using type _CCCL_NODEBUG = actor<argument<Pos>>;
 };
 
 // composition of actors/nodes
@@ -94,7 +90,7 @@ template <typename Eval, typename SubExpr>
 struct composite<Eval, SubExpr>
 {
   _CCCL_EXEC_CHECK_DISABLE
-  constexpr composite() = default;
+  _CCCL_HIDE_FROM_ABI constexpr composite() = default;
 
   // TODO(bgruber): drop ctor and use aggregate initialization in C++17
   _CCCL_EXEC_CHECK_DISABLE
@@ -120,7 +116,7 @@ template <typename Eval, typename SubExpr1, typename SubExpr2>
 struct composite<Eval, SubExpr1, SubExpr2>
 {
   _CCCL_EXEC_CHECK_DISABLE
-  constexpr composite() = default;
+  _CCCL_HIDE_FROM_ABI constexpr composite() = default;
 
   // TODO(bgruber): drop ctor and use aggregate initialization in C++17
   _CCCL_EXEC_CHECK_DISABLE
@@ -154,7 +150,7 @@ template <typename F>
 struct operator_adaptor : F
 {
   _CCCL_EXEC_CHECK_DISABLE
-  constexpr operator_adaptor() = default;
+  _CCCL_HIDE_FROM_ABI constexpr operator_adaptor() = default;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API operator_adaptor(F f)

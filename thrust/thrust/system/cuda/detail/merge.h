@@ -18,9 +18,11 @@
 
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/iterator/iterator_traits.h>
-#  include <thrust/system/cuda/detail/dispatch.h>
+#  include <thrust/merge.h>
+#  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__utility/pair.h>
@@ -31,14 +33,14 @@ namespace cuda_cub
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class KeysIt1, class KeysIt2, class ResultIt, class CompareOp = ::cuda::std::less<>>
-ResultIt _CCCL_HOST_DEVICE
-merge(execution_policy<Derived>& policy,
-      KeysIt1 keys1_begin,
-      KeysIt1 keys1_end,
-      KeysIt2 keys2_begin,
-      KeysIt2 keys2_end,
-      ResultIt result_begin,
-      CompareOp compare_op = {})
+ResultIt _CCCL_HOST_DEVICE_API merge(
+  execution_policy<Derived>& policy,
+  KeysIt1 keys1_begin,
+  KeysIt1 keys1_end,
+  KeysIt2 keys2_begin,
+  KeysIt2 keys2_end,
+  ResultIt result_begin,
+  CompareOp compare_op = {})
 {
   THRUST_CDP_DISPATCH(
     ({
@@ -90,7 +92,7 @@ template <class Derived,
           class KeysOutputIt,
           class ItemsOutputIt,
           class CompareOp = ::cuda::std::less<>>
-::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE merge_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE_API merge_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_begin,
   KeysIt1 keys1_end,

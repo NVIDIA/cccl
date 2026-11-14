@@ -17,8 +17,8 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <algorithm>
-
-#include <stdlib.h>
+#include <cstdlib>
+#include <string>
 
 using namespace cuda::experimental::stf;
 
@@ -92,14 +92,14 @@ void write_vtk_2D(const std::string& filename, slice<const double, 3> Ez, double
 }
 
 // Define the source function
-_CCCL_DEVICE double Source(double t, double x, double y, double z)
+__host__ __device__ double Source(double t, double x, [[maybe_unused]] double y, [[maybe_unused]] double z)
 {
   constexpr double pi         = 3.14159265358979323846;
   constexpr double freq       = 1e9;
   constexpr double omega      = (2 * pi * freq);
   constexpr double wavelength = 3e8 / freq;
   constexpr double k          = 2 * pi / wavelength;
-  return sin(k * x - omega * t);
+  return sin((k * x) - (omega * t));
 }
 #endif // !_CCCL_COMPILER(MSVC)
 
@@ -116,14 +116,14 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   size_t timesteps = 10;
   if (argc > 1)
   {
-    timesteps = (size_t) atol(argv[1]);
+    timesteps = (size_t) ::std::stol(argv[1]);
   }
 
   // No output by default
   int output_freq = -1;
   if (argc > 2)
   {
-    output_freq = atoi(argv[2]);
+    output_freq = ::std::stoi(argv[2]);
   }
 
   // Domain dimensions
@@ -153,7 +153,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   const double MU      = 1.256e-6; // Permeability of free space
 
   // CFL condition DT <= min(DX, DY, DZ) * sqrt(epsilon_max * mu_max)
-  double DT = 0.25 * std::min(std::min(DX, DY), DZ) * sqrt(EPSILON * MU);
+  double DT = 0.25 * std::min({DX, DY, DZ}) * sqrt(EPSILON * MU);
 
   // Initialize E
   ctx.parallel_for(data_shape, lEx.write(), lEy.write(), lEz.write())
@@ -189,7 +189,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   box Hs({0ul, SIZE_X - 1}, {0ul, SIZE_Y - 1}, {0ul, SIZE_Z - 1});
   box source_s({center_x, center_x + 1}, {center_y, center_y + 1}, {center_z, center_z + 1});
 
-  int iterations_per_graph = (output_freq == -1) ? timesteps : output_freq;
+  int iterations_per_graph = (output_freq == -1) ? static_cast<int>(timesteps) : output_freq;
 
   for (size_t n = 0; n < timesteps / iterations_per_graph; n++)
   {
@@ -211,7 +211,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
           ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ex, auto Hy, auto Hz, auto epsilon) {
                 Ex(i, j, k) =
                   Ex(i, j, k)
-                  + (DT / (epsilon(i, j, k) * DX)) * (Hz(i, j, k) - Hz(i, j - 1, k) - Hy(i, j, k) + Hy(i, j, k - 1));
+                  + ((DT / (epsilon(i, j, k) * DX)) * (Hz(i, j, k) - Hz(i, j - 1, k) - Hy(i, j, k) + Hy(i, j, k - 1)));
               };
 
       // Update Ey
@@ -219,7 +219,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
           ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ey, auto Hx, auto Hz, auto epsilon) {
                 Ey(i, j, k) =
                   Ey(i, j, k)
-                  + (DT / (epsilon(i, j, k) * DY)) * (Hx(i, j, k) - Hx(i, j, k - 1) - Hz(i, j, k) + Hz(i - 1, j, k));
+                  + ((DT / (epsilon(i, j, k) * DY)) * (Hx(i, j, k) - Hx(i, j, k - 1) - Hz(i, j, k) + Hz(i - 1, j, k)));
               };
 
       // Update Ez
@@ -227,12 +227,17 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
           ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez, auto Hx, auto Hy, auto epsilon) {
                 Ez(i, j, k) =
                   Ez(i, j, k)
-                  + (DT / (epsilon(i, j, k) * DZ)) * (Hy(i, j, k) - Hy(i - 1, j, k) - Hx(i, j, k) + Hx(i, j - 1, k));
+                  + ((DT / (epsilon(i, j, k) * DZ)) * (Hy(i, j, k) - Hy(i - 1, j, k) - Hx(i, j, k) + Hx(i, j - 1, k)));
               };
 
       // Add the source function at the center of the grid
       ctx.parallel_for(source_s, lEz.rw())->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez) {
-        Ez(i, j, k) = Ez(i, j, k) + Source(n * DT, i * DX, j * DY, k * DZ);
+        Ez(i, j, k) =
+          Ez(i, j, k)
+          + Source(static_cast<double>(n) * DT,
+                   static_cast<double>(i) * DX,
+                   static_cast<double>(j) * DY,
+                   static_cast<double>(k) * DZ);
       };
 
       // Update the magnetic fields
@@ -242,7 +247,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
           ->*[=]
         _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hx, auto Ey, auto Ez, auto mu) {
           Hx(i, j, k) =
-            Hx(i, j, k) - (DT / (mu(i, j, k) * DY)) * (Ez(i, j + 1, k) - Ez(i, j, k) - Ey(i, j, k + 1) + Ey(i, j, k));
+            Hx(i, j, k) - ((DT / (mu(i, j, k) * DY)) * (Ez(i, j + 1, k) - Ez(i, j, k) - Ey(i, j, k + 1) + Ey(i, j, k)));
         };
 
       // Update Hy
@@ -250,7 +255,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
           ->*[=]
         _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hy, auto Ex, auto Ez, auto mu) {
           Hy(i, j, k) =
-            Hy(i, j, k) - (DT / (mu(i, j, k) * DZ)) * (Ex(i, j, k + 1) - Ex(i, j, k) - Ez(i + 1, j, k) + Ez(i, j, k));
+            Hy(i, j, k) - ((DT / (mu(i, j, k) * DZ)) * (Ex(i, j, k + 1) - Ex(i, j, k) - Ez(i + 1, j, k) + Ez(i, j, k)));
         };
 
       // Update Hz
@@ -258,13 +263,13 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
           ->*[=]
         _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hz, auto Ex, auto Ey, auto mu) {
           Hz(i, j, k) =
-            Hz(i, j, k) - (DT / (mu(i, j, k) * DX)) * (Ey(i + 1, j, k) - Ey(i, j, k) - Ex(i, j + 1, k) + Ex(i, j, k));
+            Hz(i, j, k) - ((DT / (mu(i, j, k) * DX)) * (Ey(i + 1, j, k) - Ey(i, j, k) - Ex(i, j + 1, k) + Ex(i, j, k)));
         };
 
       auto handle = while_guard.cond_handle();
       ctx.parallel_for(box(1), lcounter.rw())->*[handle] __device__(size_t, auto counter) {
         (*counter)--;
-        bool should_continue = (*counter > 0);
+        const bool should_continue = (*counter > 0);
         cudaGraphSetConditional(handle, should_continue);
       };
 
@@ -276,7 +281,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
         // Output the electric field at the center of the grid
         fprintf(stderr, "%ld\t%le\n", n, Ez(center_x, center_y, center_z));
 
-        std::string filename = "Ez" + std::to_string(n) + ".vtk";
+        const std::string filename = "Ez" + std::to_string(n) + ".vtk";
 
         // Dump a 2D slice of Ez in VTK
         write_vtk_2D(filename, Ez, DX, DY, DZ);

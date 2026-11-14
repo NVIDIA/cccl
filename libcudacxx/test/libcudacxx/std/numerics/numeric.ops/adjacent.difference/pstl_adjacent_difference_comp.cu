@@ -43,7 +43,7 @@ void test_adjacent_difference(
     CHECK(res == output.begin());
   }
 
-  cuda::constant_iterator<int> expected{1};
+  const cuda::constant_iterator<int> expected{1};
   {
     auto res = cuda::std::adjacent_difference(policy, input.begin(), input.end(), output.begin(), cuda::std::minus<>{});
     CHECK(res == output.end());
@@ -53,11 +53,7 @@ void test_adjacent_difference(
   cuda::std::fill(policy, output.begin(), output.end(), -1);
   { // non contiguous input
     auto res = cuda::std::adjacent_difference(
-      policy,
-      cuda::counting_iterator{int{1}},
-      cuda::counting_iterator{int{size + 1}},
-      output.begin(),
-      cuda::std::minus<>{});
+      policy, cuda::counting_iterator{1}, cuda::counting_iterator{int{size + 1}}, output.begin(), cuda::std::minus<>{});
     CHECK(res == output.end());
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
@@ -89,7 +85,7 @@ C2H_TEST("cuda::std::adjacent_difference(Iter1, Iter1, Iter2, Init)", "[parallel
 
   SECTION("with provided stream")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_adjacent_difference(policy, input, output);
   }
@@ -103,7 +99,7 @@ C2H_TEST("cuda::std::adjacent_difference(Iter1, Iter1, Iter2, Init)", "[parallel
 
   SECTION("with provided stream and memory_resource")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy =
       cuda::execution::gpu.with(cuda::get_stream, stream).with(cuda::mr::get_memory_resource, device_resource);

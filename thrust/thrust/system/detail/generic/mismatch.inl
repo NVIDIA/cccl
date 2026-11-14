@@ -24,7 +24,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
   thrust::execution_policy<DerivedPolicy>& exec, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
 {
   using namespace thrust::placeholders;
@@ -33,7 +33,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
 } // end mismatch()
 
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -44,10 +44,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
   using IteratorTuple = ::cuda::std::tuple<InputIterator1, InputIterator2>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-  ZipIterator zipped_first = thrust::make_zip_iterator(first1, first2);
-  ZipIterator zipped_last  = thrust::make_zip_iterator(last1, first2);
+  const ZipIterator zipped_first = thrust::make_zip_iterator(first1, first2);
+  const ZipIterator zipped_last  = thrust::make_zip_iterator(last1, first2);
 
-  ZipIterator result =
+  const ZipIterator result =
     thrust::find_if_not(exec, zipped_first, zipped_last, thrust::detail::tuple_binary_predicate<BinaryPredicate>{pred});
 
   return ::cuda::std::make_pair(
@@ -55,7 +55,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
 } // end mismatch()
 
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -77,7 +77,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
 } // end mismatch()
 
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,

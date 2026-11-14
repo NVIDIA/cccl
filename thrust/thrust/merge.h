@@ -98,7 +98,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator merge(
+_CCCL_HOST_DEVICE_API OutputIterator merge(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -167,7 +167,7 @@ _CCCL_HOST_DEVICE OutputIterator merge(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 merge(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result);
 
 /*! \p merge combines two sorted ranges <tt>[first1, last1)</tt> and <tt>[first2, last2)</tt>
@@ -240,7 +240,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename StrictWeakCompare>
-_CCCL_HOST_DEVICE OutputIterator merge(
+_CCCL_HOST_DEVICE_API OutputIterator merge(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -306,13 +306,13 @@ _CCCL_HOST_DEVICE OutputIterator merge(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename StrictWeakCompare>
-OutputIterator
-merge(InputIterator1 first1,
-      InputIterator1 last1,
-      InputIterator2 first2,
-      InputIterator2 last2,
-      OutputIterator result,
-      StrictWeakCompare comp);
+_CCCL_HOST_API OutputIterator merge(
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  InputIterator2 last2,
+  OutputIterator result,
+  StrictWeakCompare comp);
 
 /*! \p merge_by_key performs a key-value merge. That is, \p merge_by_key copies elements from
  *  <tt>[keys_first1, keys_last1)</tt> and <tt>[keys_first2, keys_last2)</tt> into a single range,
@@ -414,7 +414,7 @@ template <typename DerivedPolicy,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -515,7 +515,7 @@ template <typename InputIterator1,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -625,7 +625,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Compare>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -726,7 +726,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,

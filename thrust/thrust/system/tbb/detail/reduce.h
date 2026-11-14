@@ -41,7 +41,7 @@ struct body
   thrust::detail::wrapped_function<BinaryFunction, OutputType> binary_op;
 
   // note: we only initialize sum with init to avoid calling OutputType's default constructor
-  body(RandomAccessIterator first, OutputType init, BinaryFunction binary_op)
+  _CCCL_HOST_API body(RandomAccessIterator first, OutputType init, BinaryFunction binary_op)
       : first(first)
       , sum(init)
       , first_call(true)
@@ -49,7 +49,7 @@ struct body
   {}
 
   // note: we only initialize sum with b.sum to avoid calling OutputType's default constructor
-  body(body& b, ::tbb::split)
+  _CCCL_HOST_API body(body& b, ::tbb::split)
       : first(b.first)
       , sum(b.sum)
       , first_call(true)
@@ -57,7 +57,7 @@ struct body
   {}
 
   template <typename Size>
-  void operator()(const ::tbb::blocked_range<Size>& r)
+  _CCCL_HOST_API void operator()(const ::tbb::blocked_range<Size>& r)
   {
     // we assume that blocked_range specifies a contiguous range of integers
 
@@ -90,7 +90,7 @@ struct body
     }
   } // end operator()()
 
-  void join(body& b)
+  _CCCL_HOST_API void join(body& b)
   {
     sum = binary_op(sum, b.sum);
   }
@@ -98,24 +98,22 @@ struct body
 } // namespace reduce_detail
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputType, typename BinaryFunction>
-OutputType reduce(
+_CCCL_HOST_API OutputType reduce(
   execution_policy<DerivedPolicy>&, InputIterator begin, InputIterator end, OutputType init, BinaryFunction binary_op)
 {
   using Size = thrust::detail::it_difference_t<InputIterator>;
 
-  Size n = ::cuda::std::distance(begin, end);
+  const Size n = ::cuda::std::distance(begin, end);
 
   if (n == 0)
   {
     return init;
   }
-  else
-  {
-    using Body = typename reduce_detail::body<InputIterator, OutputType, BinaryFunction>;
-    Body reduce_body(begin, init, binary_op);
-    ::tbb::parallel_reduce(::tbb::blocked_range<Size>(0, n), reduce_body);
-    return binary_op(init, reduce_body.sum);
-  }
+
+  using Body = typename reduce_detail::body<InputIterator, OutputType, BinaryFunction>;
+  Body reduce_body(begin, init, binary_op);
+  ::tbb::parallel_reduce(::tbb::blocked_range<Size>(0, n), reduce_body);
+  return binary_op(init, reduce_body.sum);
 }
 } // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

@@ -128,15 +128,18 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
 
     void* th_dev_tmp_ptr = nullptr;
 
-    // Free the temporary device memory on the way out, even if set_device_tmp
-    // or the launch throws. Installed before the malloc so a throw from
-    // set_device_tmp cannot skip the free. cuda_safe_call (not cuda_try)
-    // because SCOPE(exit) is noexcept.
+    // Free the temporary device memory on the way out, even if set_device_tmp or the launch
+    // throws. Installed before the malloc so a throw from set_device_tmp cannot skip the free.
+    // A failing free leaks the buffer and is reported; the guard is noexcept, so it cannot become
+    // a second exception, and nothing here is worth ending the program over.
     SCOPE(exit)
     {
       if (th_dev_tmp_ptr)
       {
-        cuda_safe_call(cudaFreeAsync(th_dev_tmp_ptr, stream));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaFreeAsync>(th_dev_tmp_ptr, stream);
+        };
       }
     };
 
@@ -249,7 +252,7 @@ public:
         deallocateManagedMemory(sys_mem, th_mem_config[0], streams[0]);
       }
 
-      unsigned char* hostMemoryArrivedList = interpreted_policy.cg_system.get_arrived_list();
+      unsigned char* hostMemoryArrivedList = interpreted_policy.get_cg_system().get_arrived_list();
       if (hostMemoryArrivedList)
       {
         deallocateManagedMemory(hostMemoryArrivedList, grid_size - 1, streams[0]);
@@ -264,15 +267,18 @@ public:
       {
         const size_t arrived_bytes  = grid_size - 1;
         auto* hostMemoryArrivedList = static_cast<unsigned char*>(allocateManagedMemory(arrived_bytes));
-        // Own the buffer until cg_system adopts it; if the assignment below
-        // throws, free immediately so we do not leak. cuda_safe_call because
-        // SCOPE(fail) is noexcept (pool insert can throw).
+        // Own the buffer until cg_system adopts it; if the assignment below throws (pool insert
+        // can), free immediately so we do not leak. The guard runs with that exception in flight,
+        // so a failing free is reported and the buffer leaks.
         SCOPE(fail)
         {
-          cuda_safe_call(cudaFree(hostMemoryArrivedList));
+          ON_THROW(notify)
+          {
+            cuda_try<cudaFree>(hostMemoryArrivedList);
+          };
         };
         memset(hostMemoryArrivedList, 0, arrived_bytes);
-        interpreted_policy.cg_system = reserved::cooperative_group_system(hostMemoryArrivedList);
+        interpreted_policy.get_cg_system() = reserved::cooperative_group_system(hostMemoryArrivedList);
       }
     }
 
@@ -409,15 +415,24 @@ public:
     int device              = -1;
     cudaEvent_t start_event = nullptr, end_event = nullptr;
 
+    // The timing events are released on every path. A failing destroy leaks that event and is
+    // reported; the guard is noexcept, so it cannot become a second exception. One policy per
+    // release, so a failure on the first does not skip the second.
     SCOPE(exit)
     {
       if (start_event)
       {
-        cuda_safe_call(cudaEventDestroy(start_event));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(start_event);
+        };
       }
       if (end_event)
       {
-        cuda_safe_call(cudaEventDestroy(end_event));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(end_event);
+        };
       }
     };
 
@@ -442,7 +457,7 @@ public:
           deallocateManagedMemory(sys_mem, th_mem_config[0], t.get_stream());
         }
 
-        unsigned char* hostMemoryArrivedList = interpreted_policy.cg_system.get_arrived_list();
+        unsigned char* hostMemoryArrivedList = interpreted_policy.get_cg_system().get_arrived_list();
         if (hostMemoryArrivedList)
         {
           deallocateManagedMemory(hostMemoryArrivedList, grid_size - 1, t.get_stream());
@@ -462,23 +477,7 @@ public:
       {
         if (start_event && end_event)
         {
-          // Inside the SCOPE body; keep cuda_safe_call so a CUDA error aborts
-          // rather than throwing through a fail/exit guard (std::terminate).
-          cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
-          cuda_safe_call(cudaEventSynchronize(end_event));
-
-          float milliseconds = 0;
-          cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
-
-          if (dot.is_tracing())
-          {
-            dot.template add_vertex_timing<stream_task<>>(t, milliseconds, device);
-          }
-
-          if (statistics.is_calibrating())
-          {
-            statistics.log_task_time(t, milliseconds);
-          }
+          statistics.record_task_timing(t, start_event, end_event, t.get_stream(), dot, device);
         }
       }
 
@@ -519,15 +518,18 @@ public:
       {
         const size_t arrived_bytes  = grid_size - 1;
         auto* hostMemoryArrivedList = static_cast<unsigned char*>(allocateManagedMemory(arrived_bytes));
-        // Own the buffer until cg_system adopts it; if the assignment below
-        // throws, free immediately so we do not leak. cuda_safe_call because
-        // SCOPE(fail) is noexcept (pool insert can throw).
+        // Own the buffer until cg_system adopts it; if the assignment below throws (pool insert
+        // can), free immediately so we do not leak. The guard runs with that exception in flight,
+        // so a failing free is reported and the buffer leaks.
         SCOPE(fail)
         {
-          cuda_safe_call(cudaFree(hostMemoryArrivedList));
+          ON_THROW(notify)
+          {
+            cuda_try<cudaFree>(hostMemoryArrivedList);
+          };
         };
         memset(hostMemoryArrivedList, 0, arrived_bytes);
-        interpreted_policy.cg_system = reserved::cooperative_group_system(hostMemoryArrivedList);
+        interpreted_policy.get_cg_system() = reserved::cooperative_group_system(hostMemoryArrivedList);
       }
     }
 

@@ -26,7 +26,7 @@ struct saxpy_functor
 
   __host__ __device__ float operator()(const float& x, const float& y) const
   {
-    return a * x + y;
+    return (a * x) + y;
   }
 };
 
@@ -53,8 +53,8 @@ void saxpy_slow(float A, thrust::device_vector<float>& X, thrust::device_vector<
 int main()
 {
   // initialize host arrays
-  thrust::host_vector<float> x{1.0, 1.0, 1.0, 1.0};
-  thrust::host_vector<float> y{1.0, 2.0, 3.0, 4.0};
+  const thrust::host_vector<float> x{1.0, 1.0, 1.0, 1.0};
+  const thrust::host_vector<float> y{1.0, 2.0, 3.0, 4.0};
 
   {
     // transfer to device

@@ -20,9 +20,9 @@
 
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/istream>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/cstddef> // for size_t
 #include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -47,9 +47,9 @@ namespace random
  *         <tt>a = b - (b-1)/m</tt>.
  *
  *  \tparam UIntType The type of unsigned integer to produce.
- *  \tparam w The word size of the produced values (<tt> w <= sizeof(UIntType)</tt>).
- *  \tparam s The short lag of the generation algorithm.
- *  \tparam r The long lag of the generation algorithm.
+ *  \tparam W The word size of the produced values (<tt> W <= sizeof(UIntType)</tt>).
+ *  \tparam S The short lag of the generation algorithm.
+ *  \tparam R The long lag of the generation algorithm.
  *
  *  \note Inexperienced users should not use this class template directly.  Instead, use
  *  \p ranlux24_base or \p ranlux48_base, which are instances of \p subtract_with_carry_engine.
@@ -57,14 +57,13 @@ namespace random
  *  \see thrust::random::ranlux24_base
  *  \see thrust::random::ranlux48_base
  */
-template <typename UIntType, size_t w, size_t s, size_t r>
+template <typename UIntType, size_t W, size_t S, size_t R>
 class subtract_with_carry_engine
 {
   /*! \cond
    */
 
-private:
-  static const UIntType modulus = UIntType(1) << w;
+  static const UIntType modulus = UIntType(1) << W;
   /*! \endcond
    */
 
@@ -80,15 +79,15 @@ public:
 
   /*! The word size of the produced values.
    */
-  static const size_t word_size = w;
+  static const size_t word_size = W;
 
   /*! The size of the short lag used in the generation algorithm.
    */
-  static const size_t short_lag = s;
+  static const size_t short_lag = S;
 
   /*! The size of the long lag used in the generation algorithm.
    */
-  static const size_t long_lag = r;
+  static const size_t long_lag = R;
 
   /*! The smallest value this \p subtract_with_carry_engine may potentially produce.
    */
@@ -109,21 +108,21 @@ public:
    *
    *  \param value The seed used to initialize this \p subtract_with_carry_engine's state.
    */
-  _CCCL_HOST_DEVICE explicit subtract_with_carry_engine(result_type value = default_seed);
+  _CCCL_HOST_DEVICE_API explicit subtract_with_carry_engine(result_type value = default_seed);
 
   /*! This method initializes this \p subtract_with_carry_engine's state, and optionally accepts
    *  a seed value.
    *
    *  \param value The seed used to initializes this \p subtract_with_carry_engine's state.
    */
-  _CCCL_HOST_DEVICE void seed(result_type value = default_seed);
+  _CCCL_HOST_DEVICE_API void seed(result_type value = default_seed);
 
   // generating functions
 
   /*! This member function produces a new random value and updates this \p subtract_with_carry_engine's state.
    *  \return A new random number.
    */
-  _CCCL_HOST_DEVICE result_type operator()();
+  _CCCL_HOST_DEVICE_API result_type operator()();
 
   /*! This member function advances this \p subtract_with_carry_engine's state a given number of times
    *  and discards the results.
@@ -131,19 +130,19 @@ public:
    *  \param z The number of random values to discard.
    *  \note This function is provided because an implementation may be able to accelerate it.
    */
-  _CCCL_HOST_DEVICE void discard(unsigned long long z);
+  _CCCL_HOST_DEVICE_API void discard(unsigned long long z);
 
   /*! \cond
    */
 
 private:
   result_type m_x[long_lag];
-  unsigned int m_k;
-  int m_carry;
+  unsigned int m_k{};
+  int m_carry{};
 
   friend struct thrust::random::detail::random_core_access;
 
-  _CCCL_HOST_DEVICE bool equal(const subtract_with_carry_engine& rhs) const;
+  _CCCL_HOST_DEVICE_API bool equal(const subtract_with_carry_engine& rhs) const;
 
   template <typename CharT, typename Traits>
   std::basic_ostream<CharT, Traits>& stream_out(std::basic_ostream<CharT, Traits>& os) const;
@@ -160,36 +159,36 @@ private:
  *  \param rhs The second \p subtract_with_carry_engine to test.
  *  \return \c true if \p lhs is equal to \p rhs; \c false, otherwise.
  */
-template <typename UIntType_, size_t w_, size_t s_, size_t r_>
-_CCCL_HOST_DEVICE bool operator==(const subtract_with_carry_engine<UIntType_, w_, s_, r_>& lhs,
-                                  const subtract_with_carry_engine<UIntType_, w_, s_, r_>& rhs);
+template <typename UIntType, size_t W, size_t S, size_t R>
+_CCCL_HOST_DEVICE_API bool operator==(const subtract_with_carry_engine<UIntType, W, S, R>& lhs,
+                                      const subtract_with_carry_engine<UIntType, W, S, R>& rhs);
 
 /*! This function checks two \p subtract_with_carry_engines for inequality.
  *  \param lhs The first \p subtract_with_carry_engine to test.
  *  \param rhs The second \p subtract_with_carry_engine to test.
  *  \return \c true if \p lhs is not equal to \p rhs; \c false, otherwise.
  */
-template <typename UIntType_, size_t w_, size_t s_, size_t r_>
-_CCCL_HOST_DEVICE bool operator!=(const subtract_with_carry_engine<UIntType_, w_, s_, r_>& lhs,
-                                  const subtract_with_carry_engine<UIntType_, w_, s_, r_>& rhs);
+template <typename UIntType, size_t W, size_t S, size_t R>
+_CCCL_HOST_DEVICE_API bool operator!=(const subtract_with_carry_engine<UIntType, W, S, R>& lhs,
+                                      const subtract_with_carry_engine<UIntType, W, S, R>& rhs);
 
 /*! This function streams a subtract_with_carry_engine to a \p std::basic_ostream.
  *  \param os The \p basic_ostream to stream out to.
  *  \param e The \p subtract_with_carry_engine to stream out.
  *  \return \p os
  */
-template <typename UIntType_, size_t w_, size_t s_, size_t r_, typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>&
-operator<<(std::basic_ostream<CharT, Traits>& os, const subtract_with_carry_engine<UIntType_, w_, s_, r_>& e);
+template <typename UIntType, size_t W, size_t S, size_t R, typename CharT, typename Traits>
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
+operator<<(std::basic_ostream<CharT, Traits>& os, const subtract_with_carry_engine<UIntType, W, S, R>& e);
 
 /*! This function streams a subtract_with_carry_engine in from a std::basic_istream.
  *  \param is The \p basic_istream to stream from.
  *  \param e The \p subtract_with_carry_engine to stream in.
  *  \return \p is
  */
-template <typename UIntType_, size_t w_, size_t s_, size_t r_, typename CharT, typename Traits>
-std::basic_istream<CharT, Traits>&
-operator>>(std::basic_istream<CharT, Traits>& is, subtract_with_carry_engine<UIntType_, w_, s_, r_>& e);
+template <typename UIntType, size_t W, size_t S, size_t R, typename CharT, typename Traits>
+_CCCL_HOST_API std::basic_istream<CharT, Traits>&
+operator>>(std::basic_istream<CharT, Traits>& is, subtract_with_carry_engine<UIntType, W, S, R>& e);
 
 /*! \} // end random_number_engine_templates
  */
@@ -229,4 +228,4 @@ using random::subtract_with_carry_engine;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/random/detail/subtract_with_carry_engine.inl>
+#include <thrust/random/detail/subtract_with_carry_engine.inl> // IWYU pragma: export

@@ -38,20 +38,20 @@ public:
 
     using result_type = ValueType;
 
-    _CCCL_HOST_DEVICE tail_flag_functor(RandomAccessIterator first, RandomAccessIterator last)
+    _CCCL_HOST_DEVICE_API tail_flag_functor(RandomAccessIterator first, RandomAccessIterator last)
         : binary_pred()
         , iter(first)
         , n(last - first)
     {}
 
-    _CCCL_HOST_DEVICE
+    _CCCL_HOST_DEVICE_API
     tail_flag_functor(RandomAccessIterator first, RandomAccessIterator last, BinaryPredicate binary_pred)
         : binary_pred(binary_pred)
         , iter(first)
         , n(last - first)
     {}
 
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE result_type operator()(const IndexType& i)
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE result_type operator()(const IndexType& i)
     {
       return (i == (n - 1) || !binary_pred(iter[i], iter[i + 1]));
     }
@@ -59,35 +59,34 @@ public:
 
   using counting_iterator = thrust::counting_iterator<IndexType>;
 
-public:
   using iterator = thrust::transform_iterator<tail_flag_functor, counting_iterator>;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE tail_flags(RandomAccessIterator first, RandomAccessIterator last)
+  _CCCL_HOST_DEVICE_API tail_flags(RandomAccessIterator first, RandomAccessIterator last)
       : m_begin(
           thrust::make_transform_iterator(thrust::counting_iterator<IndexType>(0), tail_flag_functor(first, last)))
       , m_end(m_begin + (last - first))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE tail_flags(RandomAccessIterator first, RandomAccessIterator last, BinaryPredicate binary_pred)
+  _CCCL_HOST_DEVICE_API tail_flags(RandomAccessIterator first, RandomAccessIterator last, BinaryPredicate binary_pred)
       : m_begin(thrust::make_transform_iterator(
           thrust::counting_iterator<IndexType>(0), tail_flag_functor(first, last, binary_pred)))
       , m_end(m_begin + (last - first))
   {}
 
-  _CCCL_HOST_DEVICE iterator begin() const
+  _CCCL_HOST_DEVICE_API iterator begin() const
   {
     return m_begin;
   }
 
-  _CCCL_HOST_DEVICE iterator end() const
+  _CCCL_HOST_DEVICE_API iterator end() const
   {
     return m_end;
   }
 
   template <typename OtherIndex>
-  _CCCL_HOST_DEVICE typename iterator::reference operator[](OtherIndex i)
+  _CCCL_HOST_DEVICE_API typename iterator::reference operator[](OtherIndex i)
   {
     return *(begin() + i);
   }
@@ -99,14 +98,15 @@ private:
 };
 
 template <typename RandomAccessIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE tail_flags<RandomAccessIterator, BinaryPredicate>
+_CCCL_HOST_DEVICE_API tail_flags<RandomAccessIterator, BinaryPredicate>
 make_tail_flags(RandomAccessIterator first, RandomAccessIterator last, BinaryPredicate binary_pred)
 {
   return tail_flags<RandomAccessIterator, BinaryPredicate>(first, last, binary_pred);
 }
 
 template <typename RandomAccessIterator>
-_CCCL_HOST_DEVICE tail_flags<RandomAccessIterator> make_tail_flags(RandomAccessIterator first, RandomAccessIterator last)
+_CCCL_HOST_DEVICE_API tail_flags<RandomAccessIterator>
+make_tail_flags(RandomAccessIterator first, RandomAccessIterator last)
 {
   return tail_flags<RandomAccessIterator>(first, last);
 }

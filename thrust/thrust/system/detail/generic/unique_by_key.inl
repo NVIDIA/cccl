@@ -26,7 +26,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename ExecutionPolicy, typename ForwardIterator1, typename ForwardIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
   thrust::execution_policy<ExecutionPolicy>& exec,
   ForwardIterator1 keys_first,
   ForwardIterator1 keys_last,
@@ -37,7 +37,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_b
 } // end unique_by_key()
 
 template <typename ExecutionPolicy, typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
   thrust::execution_policy<ExecutionPolicy>& exec,
   ForwardIterator1 keys_first,
   ForwardIterator1 keys_last,
@@ -60,7 +60,7 @@ template <typename ExecutionPolicy,
           typename InputIterator2,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -79,7 +79,7 @@ template <typename ExecutionPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -90,12 +90,12 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_
 {
   using difference_type = thrust::detail::it_difference_t<InputIterator1>;
 
-  difference_type n = ::cuda::std::distance(keys_first, keys_last);
+  const difference_type n = ::cuda::std::distance(keys_first, keys_last);
 
-  thrust::detail::head_flags<InputIterator1, BinaryPredicate> stencil(keys_first, keys_last, binary_pred);
+  const thrust::detail::head_flags<InputIterator1, BinaryPredicate> stencil(keys_first, keys_last, binary_pred);
 
   using namespace thrust::placeholders;
-  thrust::zip_iterator<::cuda::std::tuple<OutputIterator1, OutputIterator2>> result = thrust::copy_if(
+  const thrust::zip_iterator<::cuda::std::tuple<OutputIterator1, OutputIterator2>> result = thrust::copy_if(
     exec,
     thrust::make_zip_iterator(keys_first, values_first),
     thrust::make_zip_iterator(keys_first, values_first) + n,
@@ -103,7 +103,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_
     thrust::make_zip_iterator(keys_output, values_output),
     _1);
 
-  difference_type output_size = result - thrust::make_zip_iterator(keys_output, values_output);
+  const difference_type output_size = result - thrust::make_zip_iterator(keys_output, values_output);
 
   return ::cuda::std::make_pair(keys_output + output_size, values_output + output_size);
 } // end unique_by_key_copy()

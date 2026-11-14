@@ -21,6 +21,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/functional/actor.h>
 #include <thrust/functional.h>
 
 #include <cuda/std/__functional/operations.h>
@@ -36,7 +37,7 @@ struct plus_equal
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&& t1, T2&& t2) const
     noexcept(noexcept(THRUST_FWD(t1) += THRUST_FWD(t2))) -> decltype(THRUST_FWD(t1) += THRUST_FWD(t2))
   {
     return THRUST_FWD(t1) += THRUST_FWD(t2);
@@ -50,7 +51,7 @@ struct minus_equal
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&& t1, T2&& t2) const
     noexcept(noexcept(THRUST_FWD(t1) -= THRUST_FWD(t2))) -> decltype(THRUST_FWD(t1) -= THRUST_FWD(t2))
   {
     return THRUST_FWD(t1) -= THRUST_FWD(t2);
@@ -64,7 +65,7 @@ struct multiplies_equal
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&& t1, T2&& t2) const
     noexcept(noexcept(THRUST_FWD(t1) *= THRUST_FWD(t2))) -> decltype(THRUST_FWD(t1) *= THRUST_FWD(t2))
   {
     return THRUST_FWD(t1) *= THRUST_FWD(t2);
@@ -78,7 +79,7 @@ struct divides_equal
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&& t1, T2&& t2) const
     noexcept(noexcept(THRUST_FWD(t1) /= THRUST_FWD(t2))) -> decltype(THRUST_FWD(t1) /= THRUST_FWD(t2))
   {
     return THRUST_FWD(t1) /= THRUST_FWD(t2);
@@ -92,7 +93,7 @@ struct modulus_equal
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&& t1, T2&& t2) const
     noexcept(noexcept(THRUST_FWD(t1) %= THRUST_FWD(t2))) -> decltype(THRUST_FWD(t1) %= THRUST_FWD(t2))
   {
     return THRUST_FWD(t1) %= THRUST_FWD(t2);
@@ -106,7 +107,7 @@ struct bit_and_equal
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&& t1, T2&& t2) const
     noexcept(noexcept(THRUST_FWD(t1) &= THRUST_FWD(t2))) -> decltype(THRUST_FWD(t1) &= THRUST_FWD(t2))
   {
     return THRUST_FWD(t1) &= THRUST_FWD(t2);
@@ -120,7 +121,7 @@ struct bit_or_equal
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&& t1, T2&& t2) const
     noexcept(noexcept(THRUST_FWD(t1) |= THRUST_FWD(t2))) -> decltype(THRUST_FWD(t1) |= THRUST_FWD(t2))
   {
     return THRUST_FWD(t1) |= THRUST_FWD(t2);
@@ -134,7 +135,7 @@ struct bit_xor_equal
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&& t1, T2&& t2) const
     noexcept(noexcept(THRUST_FWD(t1) ^= THRUST_FWD(t2))) -> decltype(THRUST_FWD(t1) ^= THRUST_FWD(t2))
   {
     return THRUST_FWD(t1) ^= THRUST_FWD(t2);
@@ -148,7 +149,7 @@ struct bit_lshift_equal
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&& t1, T2&& t2) const
     noexcept(noexcept(THRUST_FWD(t1) <<= THRUST_FWD(t2))) -> decltype(THRUST_FWD(t1) <<= THRUST_FWD(t2))
   {
     return THRUST_FWD(t1) <<= THRUST_FWD(t2);
@@ -162,7 +163,7 @@ struct bit_rshift_equal
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&& t1, T2&& t2) const
     noexcept(noexcept(THRUST_FWD(t1) >>= THRUST_FWD(t2))) -> decltype(THRUST_FWD(t1) >>= THRUST_FWD(t2))
   {
     return THRUST_FWD(t1) >>= THRUST_FWD(t2);
@@ -176,7 +177,7 @@ struct bit_lshift
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&& t1, T2&& t2) const
     noexcept(noexcept(THRUST_FWD(t1) << THRUST_FWD(t2))) -> decltype(THRUST_FWD(t1) << THRUST_FWD(t2))
   {
     return THRUST_FWD(t1) << THRUST_FWD(t2);
@@ -190,18 +191,18 @@ struct bit_rshift
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1& t1, T2&& t2) const
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1& t1, T2&& t2) const
     noexcept(noexcept(THRUST_FWD(t1) >> THRUST_FWD(t2))) -> decltype(THRUST_FWD(t1) >> THRUST_FWD(t2))
   {
     return THRUST_FWD(t1) >> THRUST_FWD(t2);
   }
 };
 
-#define MAKE_BINARY_COMPOSITE(op, functor)                                                                       \
-  template <typename A, typename B, ::cuda::std::enable_if_t<is_actor<A>::value || is_actor<B>::value, int> = 0> \
-  _CCCL_HOST_DEVICE auto operator op(const A& a, const B& b)->decltype(compose(functor{}, a, b))                 \
-  {                                                                                                              \
-    return compose(functor{}, a, b);                                                                             \
+#define MAKE_BINARY_COMPOSITE(op, functor)                                                             \
+  template <typename A, typename B, ::cuda::std::enable_if_t<is_actor_v<A> || is_actor_v<B>, int> = 0> \
+  _CCCL_HOST_DEVICE_API auto operator op(const A& a, const B& b)->decltype(compose(functor{}, a, b))   \
+  {                                                                                                    \
+    return compose(functor{}, a, b);                                                                   \
   }
 
 MAKE_BINARY_COMPOSITE(==, ::cuda::std::equal_to<>)
@@ -247,7 +248,7 @@ struct unary_plus
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(+THRUST_FWD(t1)))
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&& t1) const noexcept(noexcept(+THRUST_FWD(t1)))
     -> decltype(+THRUST_FWD(t1))
   {
     return +THRUST_FWD(t1);
@@ -261,7 +262,7 @@ struct prefix_increment
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(++THRUST_FWD(t1)))
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&& t1) const noexcept(noexcept(++THRUST_FWD(t1)))
     -> decltype(++THRUST_FWD(t1))
   {
     return ++THRUST_FWD(t1);
@@ -275,7 +276,7 @@ struct postfix_increment
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(THRUST_FWD(t1)++))
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&& t1) const noexcept(noexcept(THRUST_FWD(t1)++))
     -> decltype(THRUST_FWD(t1)++)
   {
     return THRUST_FWD(t1)++;
@@ -289,7 +290,7 @@ struct prefix_decrement
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(--THRUST_FWD(t1)))
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&& t1) const noexcept(noexcept(--THRUST_FWD(t1)))
     -> decltype(--THRUST_FWD(t1))
   {
     return --THRUST_FWD(t1);
@@ -303,7 +304,7 @@ struct postfix_decrement
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(THRUST_FWD(t1)--))
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&& t1) const noexcept(noexcept(THRUST_FWD(t1)--))
     -> decltype(THRUST_FWD(t1)--)
   {
     return THRUST_FWD(t1)--;
@@ -317,18 +318,18 @@ struct bit_not
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(~THRUST_FWD(t1)))
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&& t1) const noexcept(noexcept(~THRUST_FWD(t1)))
     -> decltype(~THRUST_FWD(t1))
   {
     return ~THRUST_FWD(t1);
   }
 }; // end prefix_increment
 
-#define MAKE_UNARY_COMPOSITE(op, functor)                                         \
-  template <typename A, ::cuda::std::enable_if_t<is_actor<A>::value, int> = 0>    \
-  _CCCL_HOST_DEVICE auto operator op(const A& a)->decltype(compose(functor{}, a)) \
-  {                                                                               \
-    return compose(functor{}, a);                                                 \
+#define MAKE_UNARY_COMPOSITE(op, functor)                                             \
+  template <typename A, ::cuda::std::enable_if_t<is_actor_v<A>, int> = 0>             \
+  _CCCL_HOST_DEVICE_API auto operator op(const A& a)->decltype(compose(functor{}, a)) \
+  {                                                                                   \
+    return compose(functor{}, a);                                                     \
   }
 
 MAKE_UNARY_COMPOSITE(+, unary_plus)
@@ -340,11 +341,11 @@ MAKE_UNARY_COMPOSITE(~, bit_not)
 
 #undef MAKE_UNARY_COMPOSITE
 
-#define MAKE_UNARY_COMPOSITE_POSTFIX(op, functor)                                      \
-  template <typename A, ::cuda::std::enable_if_t<is_actor<A>::value, int> = 0>         \
-  _CCCL_HOST_DEVICE auto operator op(const A& a, int)->decltype(compose(functor{}, a)) \
-  {                                                                                    \
-    return compose(functor{}, a);                                                      \
+#define MAKE_UNARY_COMPOSITE_POSTFIX(op, functor)                                          \
+  template <typename A, ::cuda::std::enable_if_t<is_actor_v<A>, int> = 0>                  \
+  _CCCL_HOST_DEVICE_API auto operator op(const A& a, int)->decltype(compose(functor{}, a)) \
+  {                                                                                        \
+    return compose(functor{}, a);                                                          \
   }
 
 MAKE_UNARY_COMPOSITE_POSTFIX(++, postfix_increment)
@@ -357,12 +358,12 @@ struct assign
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&& t1, T2&& t2) const
     THRUST_DECLTYPE_RETURNS(THRUST_FWD(t1) = THRUST_FWD(t2))
 };
 
 template <typename Eval, typename T>
-_CCCL_HOST_DEVICE auto do_assign(const actor<Eval>& _1, const T& _2) -> decltype(compose(assign{}, _1, _2))
+_CCCL_HOST_DEVICE_API auto do_assign(const actor<Eval>& _1, const T& _2) -> decltype(compose(assign{}, _1, _2))
 {
   return compose(assign{}, _1, _2);
 }

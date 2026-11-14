@@ -23,7 +23,8 @@ int main(int argc, char** argv)
 {
   graph_ctx ctx;
 
-  double X[1024], Y[1024];
+  double X[1024];
+  double Y[1024];
   auto handle_X = ctx.logical_data(X);
   auto handle_Y = ctx.logical_data(Y);
 

@@ -38,7 +38,7 @@ void add_relative_error_summary(
   estimator.add(stream, first, first + num_items);
   const auto estimated_cardinality = estimator.estimate(stream);
   const auto relative_error =
-    cuda::std::abs(static_cast<double>(estimated_cardinality) / static_cast<double>(num_items) - 1.0);
+    cuda::std::abs((static_cast<double>(estimated_cardinality) / static_cast<double>(num_items)) - 1.0);
   estimator.clear(stream);
 
   auto& summary = state.add_summary("RelativeError");
@@ -62,7 +62,7 @@ void hyperloglog_e2e(nvbench::state& state, nvbench::type_list<Key>)
   const auto sketch_size_kb = sketch_size_kb_type{static_cast<double>(state.get_int64("SketchSizeKB"))};
 
   const auto device = cuda::device_ref{0};
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
   const cuda::device_memory_pool_ref mr = cuda::device_default_memory_pool(device);
 
   auto items = cuda::make_device_buffer<Key>(stream, device, num_items, cuda::no_init);
@@ -99,7 +99,7 @@ void hyperloglog_add(nvbench::state& state, nvbench::type_list<Key>)
   const auto sketch_size_kb = sketch_size_kb_type{static_cast<double>(state.get_int64("SketchSizeKB"))};
 
   const auto device = cuda::device_ref{0};
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
   const cuda::device_memory_pool_ref mr = cuda::device_default_memory_pool(device);
 
   auto items = cuda::make_device_buffer<Key>(stream, device, num_items, cuda::no_init);

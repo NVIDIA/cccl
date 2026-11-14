@@ -37,13 +37,12 @@ class weekday_last;
 
 class weekday
 {
-private:
   unsigned char __weekday_;
 
   // https://howardhinnant.github.io/date_algorithms.html#weekday_from_days
   [[nodiscard]] _CCCL_API static constexpr unsigned char __weekday_from_days(int __days) noexcept
   {
-    return static_cast<unsigned char>(static_cast<unsigned>(__days >= -4 ? (__days + 4) % 7 : (__days + 5) % 7 + 6));
+    return static_cast<unsigned char>(static_cast<unsigned>(__days >= -4 ? (__days + 4) % 7 : ((__days + 5) % 7) + 6));
   }
 
 public:
@@ -118,14 +117,14 @@ public:
     // casts are required to work around nvcc bug 3145483
     const int __wdu = static_cast<int>(__lhs.c_encoding()) - static_cast<int>(__rhs.c_encoding());
     const int __wk  = (__wdu >= 0 ? __wdu : __wdu - 6) / 7;
-    return days{__wdu - __wk * 7};
+    return days{__wdu - (__wk * 7)};
   }
 
   [[nodiscard]] _CCCL_API friend constexpr weekday operator+(const weekday& __lhs, const days& __rhs) noexcept
   {
     auto const __mu = static_cast<long long>(__lhs.c_encoding()) + __rhs.count();
     auto const __yr = (__mu >= 0 ? __mu : __mu - 6) / 7;
-    return weekday{static_cast<unsigned>(__mu - __yr * 7)};
+    return weekday{static_cast<unsigned>(__mu - (__yr * 7))};
   }
 
   [[nodiscard]] _CCCL_API friend constexpr weekday operator+(const days& __lhs, const weekday& __rhs) noexcept
@@ -183,7 +182,6 @@ public:
 
 class weekday_indexed
 {
-private:
   chrono::weekday __weekday_;
   unsigned char __idx_;
 
@@ -226,7 +224,6 @@ public:
 
 class weekday_last
 {
-private:
   chrono::weekday __weekday_;
 
 public:

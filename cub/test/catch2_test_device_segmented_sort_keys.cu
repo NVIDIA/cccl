@@ -6,12 +6,17 @@
 #include <cub/device/device_segmented_sort.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__execution/tune.h>
 #include <cuda/iterator>
+
+#include <algorithm>
+#include <functional>
 
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
 #include "cub_test_macros.h"
 #include <c2h/bfloat16.cuh>
+#include <c2h/catch2_allocation_failure.h>
 #include <c2h/half.cuh>
 
 // FIXME: Graph launch disabled, algorithm syncs internally. WAR exists for device-launch, figure out how to enable for
@@ -50,7 +55,7 @@ CUB_TEST("DeviceSegmentedSortKeys: No segments", "[keys][segmented][sort][device
   const bool sort_descending = GENERATE(ascending, descending);
   const bool sort_buffer     = GENERATE(pointers, double_buffer);
 
-  cub::DoubleBuffer<KeyT> keys_buffer(nullptr, nullptr);
+  cub::DoubleBuffer<KeyT> keys_buffer(nullptr, nullptr); // NOLINT(misc-const-correctness)
   cub::DoubleBuffer<cub::NullType> values_buffer(nullptr, nullptr);
   values_buffer.selector = 1;
 
@@ -87,7 +92,7 @@ CUB_TEST("DeviceSegmentedSortKeys: Empty segments", "[keys][segmented][sort][dev
   c2h::device_vector<int> offsets(num_segments + 1, int{});
   const int* d_offsets = thrust::raw_pointer_cast(offsets.data());
 
-  cub::DoubleBuffer<KeyT> keys_buffer(nullptr, nullptr);
+  cub::DoubleBuffer<KeyT> keys_buffer(nullptr, nullptr); // NOLINT(misc-const-correctness)
   cub::DoubleBuffer<cub::NullType> values_buffer(nullptr, nullptr);
   values_buffer.selector = 1;
 
@@ -206,7 +211,7 @@ try
 
   // Generate input keys
   constexpr auto max_histo_size = 250;
-  segmented_verification_helper<key_t> verification_helper{max_histo_size};
+  const segmented_verification_helper<key_t> verification_helper{max_histo_size};
   verification_helper.prepare_input_data(in_keys);
 
   auto offsets = cuda::transform_iterator(
@@ -224,9 +229,9 @@ try
   // Verify the keys are sorted correctly
   verification_helper.verify_sorted(out_keys, offsets + num_empty_segments, num_segments - num_empty_segments);
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
+  c2h::skip_if_allocation_failure();
 }
 
 CUB_TEST("DeviceSegmentedSort::SortKeys: very large segments",
@@ -268,9 +273,55 @@ try
   // Verify the keys are sorted correctly
   verification_helper.verify_sorted(out_keys);
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
+  c2h::skip_if_allocation_failure();
 }
 
 #endif // TEST_TYPES == 0
+
+#if TEST_TYPES == 0 && TEST_LAUNCH == 0
+// More radix digits (2^7) than threads per block (64) in the large-segment radix sort, so each thread tracks multiple
+// bins. This exercises the reversal of the bin offsets of descending sorts.
+struct multiple_bins_per_thread_tuning
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::SegmentedSortPolicy
+  {
+    return cub::SegmentedSortPolicy{
+      cub::SegmentedSortRadixSortPolicy{
+        64, 4, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::RADIX_RANK_MEMOIZE, cub::BLOCK_SCAN_WARP_SCANS, 7},
+      cub::SegmentedSortSubWarpMergeSortPolicy{
+        64, 32, 1, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT},
+      cub::SegmentedSortSubWarpMergeSortPolicy{
+        64, 4, 1, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT},
+      1000000};
+  }
+};
+
+CUB_TEST("DeviceSegmentedSort::SortKeysDescending works with multiple radix bins per thread",
+         "[segmented_sort][keys][device]",
+         CUB_SMALL)
+{
+  // a single segment spanning many large-segment tiles, so the multi-pass radix sort is used
+  constexpr int num_items = 4096;
+  c2h::device_vector<int> keys_in(num_items, thrust::no_init);
+  c2h::gen(C2H_SEED(2), keys_in);
+  c2h::device_vector<int> keys_out(num_items, thrust::no_init);
+  const c2h::device_vector<int> offsets{0, num_items};
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedSort::SortKeysDescending(
+      thrust::raw_pointer_cast(keys_in.data()),
+      thrust::raw_pointer_cast(keys_out.data()),
+      num_items,
+      1,
+      thrust::raw_pointer_cast(offsets.data()),
+      thrust::raw_pointer_cast(offsets.data()) + 1,
+      cuda::execution::tune(multiple_bins_per_thread_tuning{})));
+
+  c2h::host_vector<int> expected(keys_in);
+  std::sort(expected.begin(), expected.end(), std::greater<>{});
+  REQUIRE(c2h::host_vector<int>(keys_out) == expected);
+}
+#endif // TEST_TYPES == 0 && TEST_LAUNCH == 0

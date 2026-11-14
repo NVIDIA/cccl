@@ -25,9 +25,7 @@
 #include <cuda/__utility/__basic_any/interfaces.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__type_traits/add_pointer.h>
-#include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/remove_reference.h>
-#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -49,9 +47,9 @@ struct __archetype;
 template <>
 struct __archetype<false, false> // immovable archetype
 {
-  __archetype()                   = default;
-  __archetype(__archetype&&)      = delete;
-  __archetype(const __archetype&) = delete;
+  _CCCL_HIDE_FROM_ABI __archetype() = default;
+  __archetype(__archetype&&)        = delete;
+  __archetype(const __archetype&)   = delete;
 
   template <class _Value>
   _CCCL_HOST_DEVICE_API __archetype(_Value) noexcept;
@@ -63,7 +61,7 @@ struct __archetype<false, false> // immovable archetype
 template <>
 struct __archetype<true, false> : __archetype<false, false> // movable archetype
 {
-  __archetype() = default;
+  _CCCL_HIDE_FROM_ABI __archetype() = default;
   _CCCL_HOST_DEVICE_API __archetype(__archetype&&) noexcept;
   __archetype(const __archetype&) = delete;
 };
@@ -72,7 +70,7 @@ struct __archetype<true, false> : __archetype<false, false> // movable archetype
 template <>
 struct __archetype<true, true> : __archetype<true, false>
 {
-  __archetype() = default;
+  _CCCL_HIDE_FROM_ABI __archetype() = default;
   _CCCL_HOST_DEVICE_API __archetype(__archetype const&);
 };
 
@@ -160,7 +158,9 @@ _CCCL_CONCEPT __any_castable_to =
 template <class _SrcCvAny, class _DstCvAny>
 _CCCL_CONCEPT __any_convertible_to =
   __any_castable_to<_SrcCvAny, _DstCvAny> && //
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   __extension_of<typename ::cuda::std::remove_reference_t<_SrcCvAny>::interface_type,
+                 // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
                  typename ::cuda::std::remove_reference_t<_DstCvAny>::interface_type>;
 
 _CCCL_END_NAMESPACE_CUDA

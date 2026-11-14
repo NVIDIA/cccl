@@ -35,7 +35,7 @@ from cuda.cccl._cuda_version_utils import detect_cuda_version, get_recommended_e
 
 
 def _load_cuda_libraries():
-    # Load appropriate libraries for the detected CUDA version
+    # Load appropriate libraries for the detected CUDA version.
     for libname in ("nvrtc", "nvJitLink"):
         load_nvidia_dynamic_lib(libname)
 

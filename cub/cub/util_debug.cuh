@@ -108,7 +108,7 @@ CUB_NAMESPACE_BEGIN
  *
  * \return The CUDA error.
  */
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cudaError_t
 Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]] int line)
 {
   // Clear the global CUDA error state which may have been set by the last
@@ -121,7 +121,7 @@ Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]]
   #define CUB_TEMP_DEVICE_CODE last_error = cudaGetLastError()
   #endif
 
-  cudaError_t last_error = cudaSuccess;
+  cudaError_t last_error = cudaSuccess; // NOLINT(misc-const-correctness)
 
   NV_IF_ELSE_TARGET(
     NV_IS_HOST,
@@ -164,17 +164,17 @@ Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]]
  * \brief Debug macro
  */
 #ifndef CubDebug
-#  define CubDebug(e) CUB_NS_QUALIFIER::Debug((cudaError_t) (e), __FILE__, __LINE__)
+#  define CubDebug(e) /* NOLINT(readability-identifier-naming) */ _CUB::Debug((cudaError_t) (e), __FILE__, __LINE__)
 #endif
 
 /**
  * \brief Debug macro with exit
  */
 #ifndef CubDebugExit
-#  define CubDebugExit(e)                                               \
-    if (CUB_NS_QUALIFIER::Debug((cudaError_t) (e), __FILE__, __LINE__)) \
-    {                                                                   \
-      exit(1);                                                          \
+#  define CubDebugExit(e) /* NOLINT(readability-identifier-naming) */ \
+    if (_CUB::Debug((cudaError_t) (e), __FILE__, __LINE__))           \
+    {                                                                 \
+      exit(1);                                                        \
     }
 #endif
 

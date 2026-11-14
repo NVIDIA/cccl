@@ -16,6 +16,7 @@
 #include <cub/agent/agent_for.cuh>
 #include <cub/util_device.cuh>
 
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
@@ -40,7 +41,7 @@ struct ForPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ForPolicy& policy)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const ForPolicy& policy)
   {
     return os << "ForPolicy { .threads_per_block = " << policy.threads_per_block
               << ", .items_per_thread = " << policy.items_per_thread << " }";

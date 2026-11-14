@@ -76,7 +76,7 @@ void test_shift_right(const Policy& policy, c2h::device_vector<T>& input)
 
   thrust::sequence(input.begin(), input.end(), 0);
   { // shift smaller than half size but large enough for two step
-    const int num_shifted = size / 2 - 10;
+    const int num_shifted = (size / 2) - 10;
     const auto mid        = cuda::std::next(input.begin(), num_shifted);
     auto res              = cuda::std::shift_right(policy, input.begin(), input.end(), num_shifted);
     CHECK(cuda::std::equal(policy, mid, input.end(), expected));
@@ -84,7 +84,7 @@ void test_shift_right(const Policy& policy, c2h::device_vector<T>& input)
   }
   thrust::sequence(input.begin(), input.end(), 0);
   { // shift smaller than half size but large enough for two step, random_access
-    const int num_shifted = size / 2 - 10;
+    const int num_shifted = (size / 2) - 10;
     const auto mid        = cuda::std::next(input.begin(), num_shifted);
     auto res              = cuda::std::shift_right(
       policy, random_access_iterator{raw_pointer}, random_access_iterator{raw_pointer + size}, num_shifted);
@@ -94,7 +94,7 @@ void test_shift_right(const Policy& policy, c2h::device_vector<T>& input)
 
   thrust::sequence(input.begin(), input.end(), 0);
   { // shift larger than half size
-    const int num_shifted = size / 2 + 10;
+    const int num_shifted = (size / 2) + 10;
     const auto mid        = cuda::std::next(input.begin(), num_shifted);
     auto res              = cuda::std::shift_right(policy, input.begin(), input.end(), num_shifted);
     CHECK(cuda::std::equal(policy, mid, input.end(), expected));
@@ -103,7 +103,7 @@ void test_shift_right(const Policy& policy, c2h::device_vector<T>& input)
 
   thrust::sequence(input.begin(), input.end(), 0);
   { // shift larger than half size, random_access
-    const int num_shifted = size / 2 + 10;
+    const int num_shifted = (size / 2) + 10;
     const auto mid        = cuda::std::next(input.begin(), num_shifted);
     auto res              = cuda::std::shift_right(
       policy, random_access_iterator{raw_pointer}, random_access_iterator{raw_pointer + size}, num_shifted);
@@ -126,7 +126,7 @@ C2H_TEST("cuda::std::shift_right", "[parallel algorithm]", all_types)
 
   SECTION("with provided stream")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
 
     test_shift_right(policy, input);
@@ -142,7 +142,7 @@ C2H_TEST("cuda::std::shift_right", "[parallel algorithm]", all_types)
 
   SECTION("with provided stream and memory_resource")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy =
       cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource).with(cuda::get_stream, stream);

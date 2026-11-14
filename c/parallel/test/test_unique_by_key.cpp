@@ -119,8 +119,8 @@ C2H_TEST("DeviceSelect::UniqueByKey can run with empty input", "[unique_by_key]"
 
   constexpr int num_items = 0;
 
-  operation_t op = make_operation("op", get_unique_by_key_op(get_type_info<key_t>().type));
-  std::vector<key_t> input_keys(num_items);
+  const operation_t op = make_operation("op", get_unique_by_key_op(get_type_info<key_t>().type));
+  const std::vector<key_t> input_keys(num_items);
 
   pointer_t<key_t> input_keys_it(input_keys);
   pointer_t<int> output_num_selected_it(1);
@@ -153,7 +153,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works", "[unique_by_key]", key_types)
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
 
-  operation_t op                   = make_operation("op", get_unique_by_key_op(get_type_info<key_t>().type));
+  const operation_t op             = make_operation("op", get_unique_by_key_op(get_type_info<key_t>().type));
   std::vector<key_t> input_keys    = generate<key_t>(num_items);
   std::vector<item_t> input_values = generate<item_t>(num_items);
 
@@ -188,7 +188,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works", "[unique_by_key]", key_types)
     return a.first == b.first;
   });
 
-  int num_selected = output_num_selected_it[0];
+  const int num_selected = output_num_selected_it[0];
 
   REQUIRE((boundary - input_pairs.begin()) == num_selected);
 
@@ -213,7 +213,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with keys only", "[unique_by_key]", ke
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
 
-  operation_t op                = make_operation("op", get_unique_by_key_op(get_type_info<key_t>().type));
+  const operation_t op          = make_operation("op", get_unique_by_key_op(get_type_info<key_t>().type));
   std::vector<key_t> input_keys = generate<key_t>(num_items);
 
   pointer_t<key_t> input_keys_it(input_keys);
@@ -239,8 +239,8 @@ C2H_TEST("DeviceSelect::UniqueByKey works with keys only", "[unique_by_key]", ke
     build_cache,
     test_key);
 
-  const auto boundary = std::unique(input_keys.begin(), input_keys.end());
-  int num_selected    = output_num_selected_it[0];
+  const auto boundary    = std::unique(input_keys.begin(), input_keys.end());
+  const int num_selected = output_num_selected_it[0];
   REQUIRE((boundary - input_keys.begin()) == num_selected);
 
   std::vector<key_t> host_output_keys(output_keys_it);
@@ -262,7 +262,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with floating point types", "[unique_b
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
 
-  operation_t op                   = make_operation("op", get_unique_by_key_op(get_type_info<key_t>().type));
+  const operation_t op             = make_operation("op", get_unique_by_key_op(get_type_info<key_t>().type));
   const std::vector<int> int_input = generate<int>(num_items);
   // Suppress harmless conversion warnings on MSVC
   _CCCL_DIAG_PUSH
@@ -302,7 +302,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with floating point types", "[unique_b
     return a.first == b.first;
   });
 
-  int num_selected = output_num_selected_it[0];
+  const int num_selected = output_num_selected_it[0];
 
   REQUIRE((boundary - input_pairs.begin()) == num_selected);
 
@@ -327,7 +327,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with well-known operations", "[unique_
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
 
-  cccl_op_t op                     = make_well_known_unique_binary_predicate();
+  const cccl_op_t op               = make_well_known_unique_binary_predicate();
   std::vector<key_t> input_keys    = generate<key_t>(num_items);
   std::vector<item_t> input_values = generate<item_t>(num_items);
 
@@ -362,7 +362,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with well-known operations", "[unique_
     return a.first == b.first;
   });
 
-  int num_selected = output_num_selected_it[0];
+  const int num_selected = output_num_selected_it[0];
 
   REQUIRE((boundary - input_pairs.begin()) == num_selected);
 
@@ -386,7 +386,7 @@ C2H_TEST("DeviceSelect::UniqueByKey handles none equal", "[device][select_unique
 
   const int num_items = 250; // to ensure that we get none equal for smaller data types
 
-  operation_t op                   = make_operation("op", get_unique_by_key_op(get_type_info<key_t>().type));
+  const operation_t op             = make_operation("op", get_unique_by_key_op(get_type_info<key_t>().type));
   std::vector<key_t> input_keys    = make_shuffled_sequence<key_t>(num_items);
   std::vector<item_t> input_values = generate<item_t>(num_items);
 
@@ -422,7 +422,7 @@ C2H_TEST("DeviceSelect::UniqueByKey handles all equal", "[device][select_unique_
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
 
-  operation_t op = make_operation("op", get_unique_by_key_op(get_type_info<key_t>().type));
+  const operation_t op = make_operation("op", get_unique_by_key_op(get_type_info<key_t>().type));
   std::vector<key_t> input_keys(num_items, static_cast<key_t>(1));
   std::vector<item_t> input_values = generate<item_t>(num_items);
 
@@ -467,7 +467,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with custom types", "[device][select_u
 {
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
 
-  operation_t op              = make_operation("op",
+  const operation_t op        = make_operation("op",
                                                R"(struct key_pair { short a; size_t b; };
 extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
   key_pair* lhs = static_cast<key_pair*>(lhs_ptr);
@@ -516,7 +516,7 @@ extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
     return a.first == b.first;
   });
 
-  int num_selected = output_num_selected_it[0];
+  const int num_selected = output_num_selected_it[0];
 
   REQUIRE((boundary - input_pairs.begin()) == num_selected);
 
@@ -540,7 +540,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with custom types with well-known oper
 {
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
 
-  operation_t op_state        = make_operation("op",
+  const operation_t op_state  = make_operation("op",
                                                R"(struct key_pair { short a; size_t b; };
 extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
   key_pair* lhs = static_cast<key_pair*>(lhs_ptr);
@@ -591,7 +591,7 @@ extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
     return a.first == b.first;
   });
 
-  int num_selected = output_num_selected_it[0];
+  const int num_selected = output_num_selected_it[0];
 
   REQUIRE((boundary - input_pairs.begin()) == num_selected);
 
@@ -616,7 +616,7 @@ C2H_TEST("DeviceMergeSort::SortPairs works with input and output iterators", "[u
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
 
-  operation_t op = make_operation("op", get_unique_by_key_op(get_type_info<int>().type));
+  const operation_t op = make_operation("op", get_unique_by_key_op(get_type_info<int>().type));
   iterator_t<T, random_access_iterator_state_t<T>> input_keys_it =
     make_random_access_iterator<T>(iterator_kind::INPUT, "int", "key");
   iterator_t<T, random_access_iterator_state_t<T>> input_values_it =
@@ -631,17 +631,17 @@ C2H_TEST("DeviceMergeSort::SortPairs works with input and output iterators", "[u
   std::vector<T> input_keys        = generate<T>(num_items);
   std::vector<item_t> input_values = generate<int>(num_items);
 
-  pointer_t<T> input_keys_ptr(input_keys);
+  const pointer_t<T> input_keys_ptr(input_keys);
   input_keys_it.state.data = input_keys_ptr.ptr;
-  pointer_t<item_t> input_values_ptr(input_values);
+  const pointer_t<item_t> input_values_ptr(input_values);
   input_values_it.state.data = input_values_ptr.ptr;
 
-  pointer_t<T> output_keys_ptr(num_items);
+  const pointer_t<T> output_keys_ptr(num_items);
   output_keys_it.state.data = output_keys_ptr.ptr;
-  pointer_t<item_t> output_values_ptr(num_items);
+  const pointer_t<item_t> output_values_ptr(num_items);
   output_values_it.state.data = output_values_ptr.ptr;
 
-  pointer_t<int> output_num_selected_ptr(1);
+  const pointer_t<int> output_num_selected_ptr(1);
   output_num_selected_it.state.data = output_num_selected_ptr.ptr;
 
   auto& build_cache = get_cache<UniqueByKey_Iterators_Fixture_Tag>();
@@ -670,7 +670,7 @@ C2H_TEST("DeviceMergeSort::SortPairs works with input and output iterators", "[u
     return a.first == b.first;
   });
 
-  int num_selected = output_num_selected_ptr[0];
+  const int num_selected = output_num_selected_ptr[0];
 
   REQUIRE((boundary - input_pairs.begin()) == num_selected);
 
@@ -705,7 +705,7 @@ C2H_TEST("DeviceSelect::UniqueByKey fails to build for large types due to no vsm
 {
   const int num_items = 1;
 
-  operation_t op           = make_operation("op",
+  const operation_t op     = make_operation("op",
                                             R"(struct large_key_pair { int a; char c[500]; };
 extern "C" __device__ bool op(large_key_pair lhs, large_key_pair rhs) {
   return lhs.a == rhs.a;
@@ -723,7 +723,7 @@ extern "C" __device__ bool op(large_key_pair lhs, large_key_pair rhs) {
   pointer_t<item_t> output_values_it;
   pointer_t<int> output_num_selected_it(1);
 
-  cudaDeviceProp deviceProp;
+  cudaDeviceProp deviceProp{};
   cudaGetDeviceProperties(&deviceProp, 0);
 
   const int cc_major = deviceProp.major;
@@ -830,7 +830,7 @@ C2H_TEST("UniqueByKey works with C++ source operations", "[unique_by_key]")
   const std::size_t num_items = GENERATE(42, 1337, 42000);
 
   // Create operation from C++ source instead of LTO-IR
-  std::string cpp_source = R"(
+  const std::string cpp_source = R"(
     extern "C" __device__ void op(void* lhs, void* rhs, void* result) {
       int* ilhs = (int*)lhs;
       int* irhs = (int*)rhs;
@@ -839,14 +839,14 @@ C2H_TEST("UniqueByKey works with C++ source operations", "[unique_by_key]")
     }
   )";
 
-  operation_t op = make_cpp_operation("op", cpp_source);
+  const operation_t op = make_cpp_operation("op", cpp_source);
 
   // Generate input with some duplicates
   std::vector<key_t> input_keys(num_items);
   std::vector<value_t> input_values(num_items);
   for (std::size_t i = 0; i < num_items; ++i)
   {
-    input_keys[i]   = static_cast<key_t>(i % (num_items / 10 + 1)); // Create duplicates
+    input_keys[i]   = static_cast<key_t>(i % ((num_items / 10) + 1)); // Create duplicates
     input_values[i] = static_cast<value_t>(i);
   }
 
@@ -857,7 +857,7 @@ C2H_TEST("UniqueByKey works with C++ source operations", "[unique_by_key]")
   pointer_t<std::size_t> output_num_selected_ptr(1);
 
   // Test key including flag that this uses C++ source
-  std::optional<std::string> test_key = std::format("cpp_source_test_{}_{}", num_items, typeid(key_t).name());
+  const std::optional<std::string> test_key = std::format("cpp_source_test_{}_{}", num_items, typeid(key_t).name());
 
   auto& cache =
     fixture<unique_by_key_build_cache_t, UniqueByKey_AllPointerInputs_Fixture_Tag>::get_or_create().get_value();
@@ -897,8 +897,11 @@ C2H_TEST("UniqueByKey works with C++ source operations", "[unique_by_key]")
 
   std::vector<key_t> output_keys(num_selected);
   std::vector<value_t> output_values(num_selected);
-  cudaMemcpy(output_keys.data(), output_keys_ptr.ptr, num_selected * sizeof(key_t), cudaMemcpyDeviceToHost);
-  cudaMemcpy(output_values.data(), output_values_ptr.ptr, num_selected * sizeof(value_t), cudaMemcpyDeviceToHost);
+  REQUIRE(cudaSuccess
+          == cudaMemcpy(output_keys.data(), output_keys_ptr.ptr, num_selected * sizeof(key_t), cudaMemcpyDeviceToHost));
+  REQUIRE(
+    cudaSuccess
+    == cudaMemcpy(output_values.data(), output_values_ptr.ptr, num_selected * sizeof(value_t), cudaMemcpyDeviceToHost));
 
   REQUIRE(output_keys == expected_keys);
   REQUIRE(output_values == expected_values);
@@ -912,7 +915,7 @@ C2H_TEST("UniqueByKey works with C++ source operations using custom headers", "[
   const std::size_t num_items = GENERATE(42, 1337, 42000);
 
   // Create operation from C++ source that uses the identity function from header
-  std::string cpp_source = R"(
+  const std::string cpp_source = R"(
     #include "test_identity.h"
     extern "C" __device__ void op(void* lhs, void* rhs, void* result) {
       int* ilhs = (int*)lhs;
@@ -924,14 +927,14 @@ C2H_TEST("UniqueByKey works with C++ source operations using custom headers", "[
     }
   )";
 
-  operation_t op = make_cpp_operation("op", cpp_source);
+  const operation_t op = make_cpp_operation("op", cpp_source);
 
   // Generate input with some duplicates
   std::vector<key_t> input_keys(num_items);
   std::vector<value_t> input_values(num_items);
   for (std::size_t i = 0; i < num_items; ++i)
   {
-    input_keys[i]   = static_cast<key_t>(i % (num_items / 10 + 1)); // Create duplicates
+    input_keys[i]   = static_cast<key_t>(i % ((num_items / 10) + 1)); // Create duplicates
     input_values[i] = static_cast<value_t>(i);
   }
 
@@ -942,9 +945,9 @@ C2H_TEST("UniqueByKey works with C++ source operations using custom headers", "[
   pointer_t<std::size_t> output_num_selected_ptr(1);
 
   // Test _ex version with custom build configuration
-  const char* extra_flags[] = {"-DTEST_IDENTITY_ENABLED"};
-  const char* extra_dirs[]  = {TEST_INCLUDE_PATH};
-  cccl_build_config config  = make_build_config(extra_flags, 1, extra_dirs, 1);
+  const char* extra_flags[]      = {"-DTEST_IDENTITY_ENABLED"};
+  const char* extra_dirs[]       = {TEST_INCLUDE_PATH};
+  const cccl_build_config config = make_build_config(extra_flags, 1, extra_dirs, 1);
 
   // Build with _ex version
   cccl_device_unique_by_key_build_result_t build{};
@@ -984,7 +987,7 @@ C2H_TEST("UniqueByKey works with C++ source operations using custom headers", "[
       op,
       num_items,
       CU_STREAM_LEGACY));
-  pointer_t<char> temp_storage(temp_storage_bytes);
+  const pointer_t<char> temp_storage(temp_storage_bytes);
   d_temp_storage = static_cast<void*>(temp_storage.ptr);
   REQUIRE(
     CUDA_SUCCESS
@@ -1003,7 +1006,9 @@ C2H_TEST("UniqueByKey works with C++ source operations using custom headers", "[
 
   // Verify results
   size_t num_selected;
-  cudaMemcpy(&num_selected, static_cast<void*>(output_num_selected_ptr.ptr), sizeof(size_t), cudaMemcpyDeviceToHost);
+  REQUIRE(cudaSuccess
+          == cudaMemcpy(
+            &num_selected, static_cast<void*>(output_num_selected_ptr.ptr), sizeof(size_t), cudaMemcpyDeviceToHost));
 
   std::vector<key_t> expected_keys;
   std::vector<value_t> expected_values;
@@ -1040,7 +1045,7 @@ C2H_TEST("UniqueByKey build result has serialization metadata populated", "[uniq
   constexpr int device_id = 0;
   const auto& build_info  = BuildInformation<device_id>::init();
 
-  cccl_op_t op = make_well_known_binary_operation();
+  const cccl_op_t op = make_well_known_binary_operation();
   pointer_t<T> keys_in(1);
   pointer_t<T> values_in(1);
   pointer_t<T> keys_out(1);
@@ -1065,7 +1070,7 @@ C2H_TEST("UniqueByKey build result has serialization metadata populated", "[uniq
       build_info.get_libcudacxx_path(),
       build_info.get_ctk_path()));
 
-  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK(build.cc == (build_info.get_cc_major() * 10) + build_info.get_cc_minor());
   CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
   CHECK(build.payload_size > 0);
   CHECK(build.runtime_policy != nullptr);
@@ -1085,7 +1090,7 @@ C2H_TEST("UniqueByKey compile/load round-trip", "[unique_by_key][serialization]"
   constexpr int device_id = 0;
   const auto& build_info  = BuildInformation<device_id>::init();
 
-  cccl_op_t op = make_well_known_unique_binary_predicate();
+  const cccl_op_t op = make_well_known_unique_binary_predicate();
   pointer_t<T> dummy_keys_in(1);
   pointer_t<T> dummy_values_in(1);
   pointer_t<T> dummy_keys_out(1);
@@ -1154,7 +1159,7 @@ C2H_TEST("UniqueByKey compile/load round-trip", "[unique_by_key][serialization]"
       op,
       n,
       null_stream));
-  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  const pointer_t<uint8_t> temp_storage(temp_storage_bytes);
   REQUIRE(
     CUDA_SUCCESS
     == cccl_device_unique_by_key(

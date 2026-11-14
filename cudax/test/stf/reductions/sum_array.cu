@@ -47,8 +47,8 @@ public:
     const exec_place& /*unused*/,
     cudaStream_t s) override
   {
-    auto& in_instance    = d.instance<typename scalar_t::element_type>(in_instance_id);
-    auto& inout_instance = d.instance<typename scalar_t::element_type>(inout_instance_id);
+    auto& in_instance    = d.instance<scalar_t::element_type>(in_instance_id);
+    auto& inout_instance = d.instance<scalar_t::element_type>(inout_instance_id);
     add<<<1, 1, 0, s>>>(in_instance.data_handle(), inout_instance.data_handle());
   }
 
@@ -58,7 +58,7 @@ public:
                       const exec_place& /*unused*/,
                       cudaStream_t s) override
   {
-    auto& out_instance = d.instance<typename scalar_t::element_type>(out_instance_id);
+    auto& out_instance = d.instance<scalar_t::element_type>(out_instance_id);
     // fprintf(stderr, "REDUX INIT d %p memory node %d instance id %d => addr %p\n", d, out_memory_node,
     //        out_instance_id, *out_instance);
     set_value<<<1, 1, 0, s>>>(out_instance.data_handle(), 0);
@@ -81,7 +81,7 @@ int main()
   for (int i = 0; i < N; i++)
   {
     array[i]         = i;
-    array_handles[i] = ctx.logical_data(&array[i], {1});
+    array_handles[i] = ctx.logical_data(&array[i], 1);
     array_handles[i].set_symbol(std::string("array[") + std::to_string(i) + std::string("]"));
   }
 
@@ -89,19 +89,18 @@ int main()
   var_handle.set_symbol("var");
 
   int check_sum = 0;
-  for (int i = 0; i < N; i++)
+  for (const int v : array)
   {
-    check_sum += array[i];
+    check_sum += v;
   }
 
   auto redux_op = std::make_shared<scalar_sum_t>();
 
-  for (int i = 0; i < N; i++)
+  for (auto& h : array_handles)
   {
-    ctx.task(var_handle.relaxed(redux_op), array_handles[i].read())
-        ->*[](cudaStream_t stream, auto d_var, auto d_array_i) {
-              add<<<1, 1, 0, stream>>>(d_array_i.data_handle(), d_var.data_handle());
-            };
+    ctx.task(var_handle.relaxed(redux_op), h.read())->*[](cudaStream_t stream, auto d_var, auto d_array_i) {
+      add<<<1, 1, 0, stream>>>(d_array_i.data_handle(), d_var.data_handle());
+    };
   }
 
   // Force the reconstruction of data on the device, so that no transfers are
@@ -112,7 +111,7 @@ int main()
   // Check result
   ctx.task(exec_place::host(), var_handle.read())->*[=](cudaStream_t stream, auto h_var) {
     cuda_safe_call(cudaStreamSynchronize(stream));
-    int value = h_var(0);
+    const int value = h_var(0);
     EXPECT(value == check_sum);
   };
 

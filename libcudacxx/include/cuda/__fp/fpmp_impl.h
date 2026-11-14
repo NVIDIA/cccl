@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -87,31 +87,25 @@
     [5] Fukuda et al. (2010). FPAN: A Fast Pairwise Addition Normalization Algorithm. SC '10.
 */
 
-#include <cuda/__fp/fpmp_common.h>
-#include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__cccl/preprocessor.h> // _CCCL_PP_FOR_EACH, to fold __CUDA_ARCH_LIST__
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/__fp/fpmp_common.h> // IWYU pragma: keep
+#include <cuda/std/__bit/bit_cast.h> // IWYU pragma: keep
+#include <cuda/std/__cccl/preprocessor.h> // IWYU pragma: keep
+#include <cuda/std/__cmath/fma.h> // IWYU pragma: keep
+#include <cuda/std/__cmath/isnan.h>
+#include <cuda/std/__cmath/roots.h> // IWYU pragma: keep
+#include <cuda/std/__cmath/rounding_functions.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_integer.h>
-#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/num_bits.h>
-#include <cuda/std/cfloat> // LDBL_* , to recognize a binary128 long double
-#include <cuda/std/cmath>
+#include <cuda/std/cfloat>
 #include <cuda/std/cstdint>
-#include <cuda/std/cstring>
 
 #include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 // ===================================================================
 // Internal implementation vocabulary and helpers (moved from fpmp_common.h;
 // fpmp_common.h now carries only the public API surface).
@@ -173,6 +167,9 @@ namespace cuda::experimental
 // whether it provides the type. ARM64 stays excluded, as in CCCL: no ARM64 toolchain
 // provides __float128 (aarch64 GCC does not even define __SIZEOF_FLOAT128__), and nvc++
 // there rejects the name outright - such hosts take the 128-bit long double path below.
+// GCC still provides the distinct IEC type _Float128 (including on x86, where
+// __fpmp_fp128 is __float128). fpmp2 converts to that spelling separately (see
+// fpmp.h) because GCC does not convert _Float128 to __fpmp_fp128 when they differ.
 */
 #ifndef _CCCL_FPMP_HAS_FLOAT128_TYPE
 #  if _CCCL_HAS_FLOAT128()
@@ -311,6 +308,36 @@ using __fpmp_fp128 = long double;
 static_assert(sizeof(__fpmp_fp128) == 16, "__fpmp_fp128 must be a 128-bit floating-point type");
 #endif
 
+// IEC 60559 _Float128. GCC often treats this as a distinct binary128 type from
+// __fpmp_fp128 (__float128 on x86, long double on aarch64 IEEE-128) with no
+// implicit conversion. Declared when the compiler offers the type so fpmp2 can
+// convert to it without going through __fpmp_fp128; when the two types are
+// already the same, the extra members are SFINAE'd out.
+//
+// __FLT128_MANT_DIG__ alone does not answer the question: it describes the
+// format, and both GCC and Clang predefine it on x86 without accepting the
+// _Float128 *token* in C++. GCC 13 is the first release to spell the C23
+// interchange types in C++ (P1467). Godbolt gcc 16.2 x86: sizeof(_Float128)==16
+// and is_same with both long double and __float128 is false, so the extra
+// members are not redundant on that host. Clang still does not implement
+// P1467R9 (https://clang.llvm.org/cxx_status.html); llvm/llvm-project#78503
+// only covers float16_t / bfloat16_t, and #80195 remains open for C23
+// _Float128. Godbolt x86-64 clang 23.1 (-std=c++17 and c++23) rejects the
+// token. armv8-a clang accepts it as an alias of long double (is_same true,
+// __STDCPP_FLOAT128_T__ unset): from 12 with -std=c++17, from 17 with
+// -std=c++23 (16 with c++23 does not). Extra members would SFINAE out there,
+// so this gate stays GCC. __STDCPP_FLOAT128_T__ is the portable on-ramp if a
+// later Clang/libstdc++/libc++ provides a distinct type. Requiring GCC also
+// rules out NVRTC, NVHPC and MSVC. nvcc with a GCC 13 host parses _Float128
+// in both passes, which is what the aarch64 quad reductions need.
+#ifndef _CCCL_FPMP_HAS_IEC_FLOAT128
+#  if defined(__FLT128_MANT_DIG__) && (_CCCL_COMPILER(GCC, >=, 13) || defined(__STDCPP_FLOAT128_T__))
+#    define _CCCL_FPMP_HAS_IEC_FLOAT128 1
+#  else
+#    define _CCCL_FPMP_HAS_IEC_FLOAT128 0
+#  endif
+#endif
+
 /*
 // Internal macro definitions
 */
@@ -440,18 +467,87 @@ template <typename _Tp>
 inline constexpr bool __fpmp2_is_supported_fp_v = __fpmp2_is_fp32_v<_Tp> || __fpmp2_is_fp64_v<_Tp>;
 
 /*
+// Floating-point sources that reach the single-limb constructor of an fpmp2 with element
+// type _Fp without losing anything: _Fp itself, and float widening into a double-based
+// pair. double into a float pair is not in the set, because it generally needs the low
+// limb to be represented. Such a source must not be reachable through an implicit
+// conversion sequence, or the compiler can pick the single-limb constructor and drop the
+// low part with no diagnostic; it is routed to the _CCCL_FPMP_EXPLICIT constructor
+// instead, which populates both limbs.
+*/
+template <typename _Tp, typename _Fp>
+inline constexpr bool __fpmp2_is_lossless_fp_v =
+  ::cuda::std::is_same_v<_Tp, _Fp> || (__fpmp2_is_fp32_v<_Tp> && __fpmp2_is_fp64_v<_Fp>);
+
+// Significand bits of one limb, counting the implicit leading bit.
+template <typename _Fp>
+inline constexpr int __fpmp2_mantissa_bits_v = __fpmp2_is_fp32_v<_Fp> ? 24 : 53;
+
+/*
+// Value bits of an integer type, i.e. excluding the sign, or -1 if _Tp is not one of the
+// standard integer types. The specialization exists because __num_bits_v answers with a
+// static_assert rather than by SFINAE, so naming it for a class type is a hard error; the
+// constraints below combine this with other predicates in a single constant expression,
+// which instantiates every operand regardless of short-circuiting. Dispatching on
+// __cccl_is_integer_v keeps __num_bits_v out of the non-integer case entirely.
+*/
+template <typename _Tp, bool = ::cuda::std::__cccl_is_integer_v<_Tp>>
+inline constexpr int __fpmp2_int_value_bits_v = -1;
+
+template <typename _Tp>
+inline constexpr int __fpmp2_int_value_bits_v<_Tp, true> =
+  static_cast<int>(::cuda::std::__num_bits_v<_Tp>) - static_cast<int>(::cuda::std::is_signed_v<_Tp>);
+
+/*
+// Integer sources that one limb already represents exactly for every value of the type:
+// int32_t and narrower into a double limb, int16_t and narrower into a float limb. The
+// low limb is provably zero, so these take the single-component constructor, which just
+// converts and zeroes lo. Routing them through the two-limb integer constructor instead
+// would be equally correct but would emit a residual computation that always yields zero
+// (4 extra PTX instructions for `fp64mp2 acc = 0;`).
+//
+// Restricted to __cccl_is_integer_v (via __fpmp2_int_value_bits_v, which reports -1 for
+// everything else) so that bool and the character types stay out of the single-component
+// constructor's constraint: they have their own delegating constructor, and letting both
+// apply would make `fpmp2 x = 'a'` ambiguous. They reach this path anyway, one hop later,
+// once that delegate has widened them to a fixed-width integer.
+*/
+template <typename _Tp, typename _Fp>
+inline constexpr bool __fpmp2_int_fits_limb_v =
+  __fpmp2_int_value_bits_v<_Tp> >= 0 && __fpmp2_int_value_bits_v<_Tp> <= __fpmp2_mantissa_bits_v<_Fp>;
+
+// Scalars that one limb of an fpmp2 with element type _Fp holds exactly for every value of
+// the type. Arithmetic with such a scalar takes the single-limb kernels, whose low operand
+// limb is known to be zero, instead of promoting the scalar to a pair.
+template <typename _Tp, typename _Fp>
+inline constexpr bool __fpmp2_is_limb_v = __fpmp2_is_lossless_fp_v<_Tp, _Fp> || __fpmp2_int_fits_limb_v<_Tp, _Fp>;
+
+/*
+// Integer sources that the fpmp2 pair represents exactly for every value of the type.
+// The two limbs cover twice the significand of one, so the pair holds any integer up to
+// 2 * __fpmp2_mantissa_bits_v bits: 48 for a float pair (int32_t and narrower) and 106
+// for a double pair (every standard integer type, up to uint64_t). Unlike the narrowing
+// floating-point case, these lose nothing, so they are allowed implicitly: the ones that
+// need both limbs go to the accurate integer constructor, the rest to the cheap one.
+// Wider integers (int64_t into a float pair, __int128) are excluded and stay explicit.
+*/
+template <typename _Tp, typename _Fp>
+inline constexpr bool __fpmp2_is_lossless_int_v =
+  __fpmp2_int_value_bits_v<_Tp> >= 0 && __fpmp2_int_value_bits_v<_Tp> <= 2 * __fpmp2_mantissa_bits_v<_Fp>;
+
+/*
 // Internal basic arith operations
 // dispatched to the appropriate built-in for host and device
 // if not available, use the appropriate fallback
 // the fallback is the appropriate arithmetic operation
 //
 // The CUDA intrinsics are called as ::__dadd_rn etc. because these wrappers live in
-// cuda::experimental, where <cuda/fpemu> declares same-named overloads for its own
+// cuda, where <cuda/fpemu> declares same-named overloads for its own
 // types: unqualified lookup would stop there and never reach the global scope.
 */
 _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_internal_fabs(float __x) noexcept
 {
-  return fabsf(__x);
+  return ::fabsf(__x);
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API bool __fpmp_internal_isnan(float __x) noexcept
 {
@@ -471,7 +567,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_add_rz(float __x, float __y) noexcept
                       {
                         return __sum;
                       }
-                      float __error = fmaf(-1.0f, __sum, __x) + __y;
+                      float __error = ::fmaf(-1.0f, __sum, __x) + __y;
                       if (__error == 0.0f)
                       {
                         return __sum;
@@ -497,7 +593,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_mul_rn(float __x, float __y) noexcept
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_fma_rn(float __x, float __y, float __z) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__fmaf_ieee_rn(__x, __y, __z);), (return fmaf(__x, __y, __z);))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__fmaf_ieee_rn(__x, __y, __z);), (return ::fmaf(__x, __y, __z);))
 }
 // On device the approximate SFU reciprocal / reciprocal square root are emitted as
 // inline asm rather than through __frcp_rn / __frsqrt_rn: they are the fastest option
@@ -521,7 +617,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_rsqrt_rn(float __x) noexcept
                       asm("rsqrt.approx.ftz.f32 %0,%1;" : "=f"(__r) : "f"(__x));
                       return __r;
                     }),
-                    (return 1.0f / sqrtf(__x);))
+                    (return 1.0f / ::sqrtf(__x);))
 }
 // Fast single-precision base-2 exp / log mapped to the FP32 SFU approximation units
 // (ex2.approx / lg2.approx) on device and to the libm single-precision routines on the
@@ -553,7 +649,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rz(float __x) noexcept
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rn(float __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2int_rn(__x);), (return static_cast<int32_t>(roundf(__x));))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2int_rn(__x);), (return static_cast<int32_t>(::roundf(__x));))
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API uint32_t __fpmp_fp2uint_rz(float __x) noexcept
 {
@@ -594,11 +690,11 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_int2fp_rz(int32_t __x) noexcept
                       {
                         if constexpr (__fpmp2_is_fp32_v<_FpType>)
                         {
-                          __f = nextafterf(__f, 0.0f);
+                          __f = ::nextafterf(__f, 0.0f);
                         }
                         else
                         {
-                          __f = nextafter(__f, 0.0);
+                          __f = ::nextafter(__f, 0.0);
                         }
                       }
                       return __f;
@@ -614,11 +710,11 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_uint2fp_rz(uint32_t __x) noexcept
                       {
                         if constexpr (__fpmp2_is_fp32_v<_FpType>)
                         {
-                          __f = nextafterf(__f, 0.0f);
+                          __f = ::nextafterf(__f, 0.0f);
                         }
                         else
                         {
-                          __f = nextafter(__f, 0.0);
+                          __f = ::nextafter(__f, 0.0);
                         }
                       }
                       return __f;
@@ -634,11 +730,11 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_ll2fp_rz(int64_t __x) noexcept
                       {
                         if constexpr (__fpmp2_is_fp32_v<_FpType>)
                         {
-                          __f = nextafterf(__f, 0.0f);
+                          __f = ::nextafterf(__f, 0.0f);
                         }
                         else
                         {
-                          __f = nextafter(__f, 0.0);
+                          __f = ::nextafter(__f, 0.0);
                         }
                       }
                       return __f;
@@ -654,11 +750,11 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_ull2fp_rz(uint64_t __x) noexcept
                       {
                         if constexpr (__fpmp2_is_fp32_v<_FpType>)
                         {
-                          __f = nextafterf(__f, 0.0f);
+                          __f = ::nextafterf(__f, 0.0f);
                         }
                         else
                         {
-                          __f = nextafter(__f, 0.0);
+                          __f = ::nextafter(__f, 0.0);
                         }
                       }
                       return __f;
@@ -770,7 +866,7 @@ _CCCL_HOST_DEVICE_API inline double __fpmp_ll2fp_rz<double>(int64_t __x) noexcep
                       long double __exact = static_cast<long double>(__x);
                       if ((__x > 0 && __d > __exact) || (__x < 0 && __d < __exact))
                       {
-                        __d = nextafter(__d, 0.0);
+                        __d = ::nextafter(__d, 0.0);
                       }
                       return __d;
                     }))
@@ -783,7 +879,7 @@ _CCCL_HOST_DEVICE_API inline double __fpmp_ull2fp_rz<double>(uint64_t __x) noexc
                       long double __exact = static_cast<long double>(__x);
                       if (__d > __exact)
                       {
-                        __d = nextafter(__d, 0.0);
+                        __d = ::nextafter(__d, 0.0);
                       }
                       return __d;
                     }))
@@ -799,7 +895,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_trunc(const _FpType __x) n
 {
   if constexpr (__fpmp2_is_fp32_v<_FpType>)
   {
-    const _FpType __abs_x = __fpmp_internal_fabs(__x);
+    const _FpType __abs_x = ::cuda::__fpmp_internal_fabs(__x);
     if (__abs_x >= _FpType(0x1.0p23f))
     {
       return __x;
@@ -811,8 +907,8 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_trunc(const _FpType __x) n
         return ::__int2float_rz(__xi);
       }),
       ({
-        const int32_t __xi = __fpmp_fp2int_rz(__x);
-        return __fpmp_int2fp_rz<_FpType>(__xi);
+        const int32_t __xi = ::cuda::__fpmp_fp2int_rz(__x);
+        return ::cuda::__fpmp_int2fp_rz<_FpType>(__xi);
       }))
   }
   else
@@ -826,7 +922,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_floor(const _FpType __x) n
 {
   if constexpr (__fpmp2_is_fp32_v<_FpType>)
   {
-    const _FpType __abs_x = __fpmp_internal_fabs(__x);
+    const _FpType __abs_x = ::cuda::__fpmp_internal_fabs(__x);
     if (__abs_x >= _FpType(0x1.0p23f))
     {
       return __x;
@@ -836,7 +932,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_floor(const _FpType __x) n
                         const int32_t __xi = ::__float2int_rd(__x);
                         return ::__int2float_rn(__xi);
                       }),
-                      (return floorf(__x);))
+                      (return ::floorf(__x);))
   }
   else
   {
@@ -849,7 +945,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_ceil(const _FpType __x) no
 {
   if constexpr (__fpmp2_is_fp32_v<_FpType>)
   {
-    const _FpType __abs_x = __fpmp_internal_fabs(__x);
+    const _FpType __abs_x = ::cuda::__fpmp_internal_fabs(__x);
     if (__abs_x >= _FpType(0x1.0p23f))
     {
       return __x;
@@ -859,7 +955,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_ceil(const _FpType __x) no
                         const int32_t __xi = ::__float2int_ru(__x);
                         return ::__int2float_rn(__xi);
                       }),
-                      (return ceilf(__x);))
+                      (return ::ceilf(__x);))
   }
   else
   {
@@ -870,13 +966,23 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_ceil(const _FpType __x) no
 /*
 // Internal operations for 2-precision arithmetic
 */
+// x * y rounded once, as an fma with a zero addend: GCC fuses a plain product whose only
+// uses are adds into those adds, which __fmul_rn and __dmul_rn on the device never allow.
+// An exactly zero product comes out as +0; the addend cannot be -0, since clang folds
+// fma(x, y, -0) back into a plain multiply.
+template <typename _FpType>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE _FpType __fpmp_mul_rn_nocontract(const _FpType __x, const _FpType __y) noexcept
+{
+  return ::cuda::__fpmp_fma_rn(__x, __y, _FpType{0});
+}
+
 // Multiply 2 floats exactly, assuming no over/underflow.
 template <typename _FpType>
 _CCCL_TRIVIAL_HOST_DEVICE_API _FpType
 __fpmp_two_mult_fma(const _FpType __x, const _FpType __y, _FpType* const __res_lo) noexcept
 {
-  _FpType __res_hi = __fpmp_mul_rn(__x, __y);
-  *__res_lo        = __fpmp_fma_rn(__x, __y, -__res_hi);
+  _FpType __res_hi = ::cuda::__fpmp_mul_rn(__x, __y);
+  *__res_lo        = ::cuda::__fpmp_fma_rn(__x, __y, -__res_hi);
   return __res_hi;
 }
 
@@ -888,9 +994,9 @@ template <typename _FpType>
 _CCCL_TRIVIAL_HOST_DEVICE_API _FpType
 __fpmp_fast_two_sum(const _FpType __x, const _FpType __y, _FpType* const __res_lo) noexcept
 {
-  _FpType __res_hi = __fpmp_add_rn(__x, __y);
-  _FpType __diff   = __fpmp_sub_rn(__res_hi, __x);
-  *__res_lo        = __fpmp_sub_rn(__y, __diff);
+  _FpType __res_hi = ::cuda::__fpmp_add_rn(__x, __y);
+  _FpType __diff   = ::cuda::__fpmp_sub_rn(__res_hi, __x);
+  *__res_lo        = ::cuda::__fpmp_sub_rn(__y, __diff);
   return __res_hi;
 }
 
@@ -900,12 +1006,12 @@ template <typename _FpType>
 _CCCL_TRIVIAL_HOST_DEVICE_API _FpType
 __fpmp_two_sum(const _FpType __x, const _FpType __y, _FpType* const __res_lo) noexcept
 {
-  _FpType __res_hi  = __fpmp_add_rn(__x, __y);
-  _FpType __a_prime = __fpmp_sub_rn(__res_hi, __y);
-  _FpType __b_prime = __fpmp_sub_rn(__res_hi, __a_prime);
-  _FpType __delta_a = __fpmp_sub_rn(__x, __a_prime);
-  _FpType __delta_b = __fpmp_sub_rn(__y, __b_prime);
-  *__res_lo         = __fpmp_add_rn(__delta_a, __delta_b);
+  _FpType __res_hi  = ::cuda::__fpmp_add_rn(__x, __y);
+  _FpType __a_prime = ::cuda::__fpmp_sub_rn(__res_hi, __y);
+  _FpType __b_prime = ::cuda::__fpmp_sub_rn(__res_hi, __a_prime);
+  _FpType __delta_a = ::cuda::__fpmp_sub_rn(__x, __a_prime);
+  _FpType __delta_b = ::cuda::__fpmp_sub_rn(__y, __b_prime);
+  *__res_lo         = ::cuda::__fpmp_add_rn(__delta_a, __delta_b);
   return __res_hi;
 }
 
@@ -916,7 +1022,7 @@ _CCCL_HOST_DEVICE_API constexpr void __fpmp_from_double(const double __x, float*
   *__res_hi = (float) __x;
   *__res_lo = (float) (__x - (double) (float) __x);
 }
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

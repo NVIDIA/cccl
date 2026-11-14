@@ -27,10 +27,10 @@ public:
   data_block(size_t beg, size_t end, size_t ghost_size)
       : ghost_size(ghost_size)
       , block_size(end - beg + 1)
-      , array(new T[block_size + 2 * ghost_size])
+      , array(new T[block_size + (2 * ghost_size)])
       , left_interface(new T[ghost_size])
       , right_interface(new T[ghost_size])
-      , handle(ctx.logical_data(array.get(), block_size + 2 * ghost_size))
+      , handle(ctx.logical_data(array.get(), block_size + (2 * ghost_size)))
       , left_handle(ctx.logical_data(left_interface.get(), ghost_size))
       , right_handle(ctx.logical_data(right_interface.get(), ghost_size))
   {}
@@ -45,7 +45,6 @@ public:
     return array.get();
   }
 
-public:
   size_t ghost_size;
   size_t block_size;
   std::unique_ptr<T[]> array;
@@ -65,7 +64,8 @@ public:
 template <typename T>
 __global__ void copy_kernel(size_t cnt, T* dst, const T* src)
 {
-  for (int idx = threadIdx.x + blockIdx.x * blockDim.x; idx < cnt; idx += blockDim.x * gridDim.x)
+  for (int idx = static_cast<int>(threadIdx.x + (blockIdx.x * blockDim.x)); idx < cnt;
+       idx += static_cast<int>(blockDim.x * gridDim.x))
   {
     dst[idx] = src[idx];
   }
@@ -74,10 +74,11 @@ __global__ void copy_kernel(size_t cnt, T* dst, const T* src)
 template <typename T>
 __global__ void stencil_kernel(size_t cnt, size_t ghost_size, T* array, const T* array1)
 {
-  for (int idx = threadIdx.x + blockIdx.x * blockDim.x; idx < cnt; idx += blockDim.x * gridDim.x)
+  for (int idx = static_cast<int>(threadIdx.x + (blockIdx.x * blockDim.x)); idx < cnt;
+       idx += static_cast<int>(blockDim.x * gridDim.x))
   {
-    int idx2    = idx + ghost_size;
-    array[idx2] = 0.9 * array1[idx2] + 0.05 * array1[idx2 - 1] + 0.05 * array1[idx2 + 1];
+    const int idx2 = static_cast<int>(idx + ghost_size);
+    array[idx2]    = (0.9 * array1[idx2]) + (0.05 * array1[idx2 - 1]) + (0.05 * array1[idx2 + 1]);
   }
 }
 
@@ -123,17 +124,17 @@ template <typename T>
 void copy_array(data_block<T>& bn, data_block<T>& bn1)
 {
   ctx.task(bn1.handle.rw(), bn.handle.read())
-      ->*[sz = bn.block_size + 2 * bn.ghost_size](cudaStream_t stream, auto s1, auto s2) {
+      ->*[sz = bn.block_size + (2 * bn.ghost_size)](cudaStream_t stream, auto s1, auto s2) {
             copy_kernel<<<256, 64, 0, stream>>>(sz, s1.data_handle(), s2.data_handle());
           };
 }
 
 int main(int argc, char** argv)
 {
-  size_t NBLOCKS    = 2;
-  size_t BLOCK_SIZE = 1024 * 64;
+  const size_t NBLOCKS    = 2;
+  const size_t BLOCK_SIZE = 1024 * 64;
 
-  size_t TOTAL_SIZE = NBLOCKS * BLOCK_SIZE;
+  const size_t TOTAL_SIZE = NBLOCKS * BLOCK_SIZE;
 
   std::vector<double> U0(NBLOCKS * BLOCK_SIZE);
   for (size_t idx = 0; idx < NBLOCKS * BLOCK_SIZE; idx++)
@@ -147,17 +148,17 @@ int main(int argc, char** argv)
   // Create blocks and allocates host data
   for (size_t b = 0; b < NBLOCKS; b++)
   {
-    int beg = b * BLOCK_SIZE;
-    int end = (b + 1) * BLOCK_SIZE;
+    const int beg = static_cast<int>(b * BLOCK_SIZE);
+    const int end = static_cast<int>((b + 1) * BLOCK_SIZE);
 
-    Un.push_back(data_block<double>(beg, end, 1));
-    Un1.push_back(data_block<double>(beg, end, 1));
+    Un.emplace_back(beg, end, 1);
+    Un1.emplace_back(beg, end, 1);
   }
 
   // Fill blocks with initial values
   for (size_t b = 0; b < NBLOCKS; b++)
   {
-    size_t beg = b * BLOCK_SIZE;
+    const size_t beg = b * BLOCK_SIZE;
     // int end = (b+1)*BLOCK_SIZE;
 
     double* Un_vals  = Un[b].get_array();
@@ -172,7 +173,7 @@ int main(int argc, char** argv)
 
   // Create the graph - it starts out empty
 
-  int NITER = 400;
+  const int NITER = 400;
   for (int iter = 0; iter < NITER; iter++)
   {
     // UPDATE Un from Un1

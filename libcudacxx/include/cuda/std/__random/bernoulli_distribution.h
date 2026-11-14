@@ -132,7 +132,7 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 #if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
-  friend ::std::basic_ostream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const bernoulli_distribution& __x)
   {
     using ostream_type                        = ::std::basic_ostream<_CharT, _Traits>;
@@ -146,14 +146,14 @@ public:
   }
 
   template <class _CharT, class _Traits>
-  friend ::std::basic_istream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is, bernoulli_distribution& __x)
   {
     using istream_type                        = ::std::basic_istream<_CharT, _Traits>;
     using ios_base                            = typename istream_type::ios_base;
     const typename ios_base::fmtflags __flags = __is.flags();
     using _Eng                                = bernoulli_distribution;
-    using param_type                          = typename _Eng::param_type;
+    using param_type                          = _Eng::param_type;
     __is.flags(ios_base::dec | ios_base::skipws);
     double __p;
     __is >> __p;

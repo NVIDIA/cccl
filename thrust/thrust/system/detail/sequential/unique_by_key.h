@@ -31,7 +31,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -50,8 +50,8 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_
 
     for (++keys_first, ++values_first; keys_first != keys_last; ++keys_first, (void) ++values_first)
     {
-      InputKeyType key      = *keys_first;
-      OutputValueType value = *values_first;
+      const InputKeyType key      = *keys_first;
+      const OutputValueType value = *values_first;
 
       if (!binary_pred(temp_key, key))
       {
@@ -77,7 +77,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_
 } // end unique_by_key_copy()
 
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
   sequential::execution_policy<DerivedPolicy>& exec,
   ForwardIterator1 keys_first,
   ForwardIterator1 keys_last,

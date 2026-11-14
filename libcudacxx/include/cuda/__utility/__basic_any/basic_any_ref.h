@@ -29,6 +29,8 @@
 #include <cuda/__utility/__basic_any/rtti.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/any>
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/__type_traits/remove_const.h>
@@ -147,7 +149,7 @@ private:
   friend struct __basic_any;
   friend struct __basic_any_access;
 
-  __basic_any() = default;
+  _CCCL_HIDE_FROM_ABI __basic_any() = default;
 
   //! \brief Constructs a \c __basic_any<__ireference<_Interface>> from an lvalue
   //! reference to a \c __basic_any<_Interface>.
@@ -211,7 +213,7 @@ private:
     using __src_interface_t _CCCL_NODEBUG = typename ::cuda::std::remove_reference_t<_SrcCvAny>::interface_type;
     if (!__from.has_value())
     {
-      __throw_bad_any_cast();
+      _CCCL_THROW(::std::bad_any_cast);
     }
     auto __to_vptr = __vptr_cast<__src_interface_t, interface_type>(__from.__get_vptr());
     __set_ref(__to_vptr, __from.__get_optr());
@@ -277,7 +279,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface&> : __basic_any<__ir
   _CCCL_REQUIRES((!::cuda::std::same_as<_SrcInterface, _Interface&>) _CCCL_AND //
                  (!__is_value_v<_SrcInterface>) _CCCL_AND //
                    __any_convertible_to<__basic_any<_SrcInterface>, __basic_any>)
-  _CCCL_HOST_DEVICE_API __basic_any(__basic_any<_SrcInterface>&& __src) noexcept
+  _CCCL_HOST_DEVICE_API
+  __basic_any(__basic_any<_SrcInterface>&& __src) noexcept // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
       : __basic_any<__ireference<_Interface>>()
   {
     this->__set_ref(__src.__get_vptr(), __src.__get_optr());
@@ -314,7 +317,7 @@ private:
   friend struct __basic_any;
   friend struct __basic_any_access;
 
-  __basic_any() = default;
+  _CCCL_HIDE_FROM_ABI __basic_any() = default;
 };
 
 _CCCL_END_NAMESPACE_CUDA

@@ -69,9 +69,6 @@ log_vars \
 mkdir -p "${workdir}"
 cd "${workdir}"
 
-# Python deps:
-pip install numpy
-
 # Clone MatX
 rm -rf MatX
 git clone "${matx_repo}" -b "${matx_branch}"
@@ -80,6 +77,9 @@ cd MatX
 echo "MatX HEAD:"
 git log -1 --format=short
 cd ..
+
+# Install the Python dependencies required by the cloned MatX tests.
+pip install -r MatX/test/requirements.txt
 
 # Write out version override file
 jq -r ".packages.CCCL *=
@@ -97,6 +97,8 @@ cat "$version_override_file"
 # Configure and build
 rm -rf build
 
+# MatX includes <cub/cub.cuh> directly and builds with -Werror, so disable CUB's compile-time
+# warning about including the umbrella header to avoid breaking the build.
 SCCACHE_NO_DIST_COMPILE=1 cmake \
   -B build -S MatX -G Ninja \
   "-DCMAKE_CUDA_ARCHITECTURES=75;120" \
@@ -104,7 +106,9 @@ SCCACHE_NO_DIST_COMPILE=1 cmake \
   -DMATX_BUILD_TESTS=ON \
   -DMATX_BUILD_EXAMPLES=ON \
   -DMATX_BUILD_BENCHMARKS=ON \
-  -DMATX_EN_CUTENSOR=ON
+  -DMATX_EN_CUTENSOR=ON \
+  -DCMAKE_CXX_FLAGS=-DCCCL_DISABLE_CUB_UMBRELLA_HEADER_WARNING \
+  -DCMAKE_CUDA_FLAGS=-DCCCL_DISABLE_CUB_UMBRELLA_HEADER_WARNING
 
 # Disabled because `cmake --build -j ""` is invalid, but so is
 # `cmake --build -j8`. CMake expects a space between `-j` and

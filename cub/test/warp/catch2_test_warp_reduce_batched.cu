@@ -58,7 +58,7 @@ warp_reduce_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::span<T> out
   auto inputs = cuda::std::array<T, Batches>{};
   for (int batch_idx = 0; batch_idx < Batches; ++batch_idx)
   {
-    inputs[batch_idx] = input_md(logical_warp_id * Batches + batch_idx, lane_id);
+    inputs[batch_idx] = input_md((logical_warp_id * Batches) + batch_idx, lane_id);
   }
 
   constexpr int out_per_thread = cuda::ceil_div(Batches, LogicalWarpThreads);
@@ -80,11 +80,11 @@ warp_reduce_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::span<T> out
   {
     const auto batch_idx =
       (Mode == WarpReduceBatchedMode::ToBlocked)
-        ? (idx + lane_id * out_per_thread)
-        : (idx * LogicalWarpThreads + lane_id);
+        ? (idx + (lane_id * out_per_thread))
+        : ((idx * LogicalWarpThreads) + lane_id);
     if (batch_idx < Batches)
     {
-      output[static_cast<std::size_t>(logical_warp_id) * Batches + batch_idx] = outputs[idx];
+      output[(static_cast<std::size_t>(logical_warp_id) * Batches) + batch_idx] = outputs[idx];
     }
   }
 }
@@ -101,7 +101,7 @@ __global__ void sum_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::spa
   auto inputs = cuda::std::array<T, Batches>{};
   for (int batch_idx = 0; batch_idx < Batches; ++batch_idx)
   {
-    inputs[batch_idx] = input_md(logical_warp_id * Batches + batch_idx, lane_id);
+    inputs[batch_idx] = input_md((logical_warp_id * Batches) + batch_idx, lane_id);
   }
 
   constexpr int out_per_thread = cuda::ceil_div(Batches, LogicalWarpThreads);
@@ -123,11 +123,11 @@ __global__ void sum_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::spa
   {
     const auto batch_idx =
       (Mode == WarpReduceBatchedMode::ToBlocked)
-        ? (idx + lane_id * out_per_thread)
-        : (idx * LogicalWarpThreads + lane_id);
+        ? (idx + (lane_id * out_per_thread))
+        : ((idx * LogicalWarpThreads) + lane_id);
     if (batch_idx < Batches)
     {
-      output[static_cast<std::size_t>(logical_warp_id) * Batches + batch_idx] = outputs[idx];
+      output[(static_cast<std::size_t>(logical_warp_id) * Batches) + batch_idx] = outputs[idx];
     }
   }
 }
@@ -157,7 +157,7 @@ warp_reduce_batched_cond_part_kernel(input_2d_mdspan_t<T> input_md, cuda::std::s
     auto inputs = cuda::std::array<T, Batches>{};
     for (int batch_idx = 0; batch_idx < Batches; ++batch_idx)
     {
-      inputs[batch_idx] = input_md(participant_idx * Batches + batch_idx, lane_id);
+      inputs[batch_idx] = input_md((participant_idx * Batches) + batch_idx, lane_id);
     }
 
     constexpr int out_per_thread = cuda::ceil_div(Batches, LogicalWarpThreads);
@@ -179,11 +179,11 @@ warp_reduce_batched_cond_part_kernel(input_2d_mdspan_t<T> input_md, cuda::std::s
     {
       const auto batch_idx =
         (Mode == WarpReduceBatchedMode::ToBlocked)
-          ? (idx + lane_id * out_per_thread)
-          : (idx * LogicalWarpThreads + lane_id);
+          ? (idx + (lane_id * out_per_thread))
+          : ((idx * LogicalWarpThreads) + lane_id);
       if (batch_idx < Batches)
       {
-        output[static_cast<std::size_t>(participant_idx) * Batches + batch_idx] = outputs[idx];
+        output[(static_cast<std::size_t>(participant_idx) * Batches) + batch_idx] = outputs[idx];
       }
     }
   }
@@ -257,8 +257,8 @@ void test_warp_reduce_batched(ReductionOp reduction_op = ReductionOp{})
 
   c2h::device_vector<T> d_output(total_batches);
 
-  input_2d_mdspan_t<T> d_input_md(thrust::raw_pointer_cast(d_input.data()), total_batches, LogicalWarpThreads);
-  cuda::std::span<T> d_output_span(thrust::raw_pointer_cast(d_output.data()), total_batches);
+  const input_2d_mdspan_t<T> d_input_md(thrust::raw_pointer_cast(d_input.data()), total_batches, LogicalWarpThreads);
+  const cuda::std::span<T> d_output_span(thrust::raw_pointer_cast(d_output.data()), total_batches);
   if constexpr (CondParticipation)
   {
     warp_reduce_batched_cond_part_kernel<Mode, SyncPhysicalWarp, Batches, LogicalWarpThreads>
@@ -285,12 +285,12 @@ void test_warp_reduce_batched(ReductionOp reduction_op = ReductionOp{})
   REQUIRE(err == cudaSuccess);
 
   // Host-side: construct mdspans once; pass to reference and verify
-  c2h::host_vector<T> h_input  = d_input;
-  c2h::host_vector<T> h_output = d_output;
+  c2h::host_vector<T> h_input        = d_input;
+  const c2h::host_vector<T> h_output = d_output;
 
   c2h::host_vector<T> h_reference(total_batches);
-  input_2d_mdspan_t<const T> h_input_md(h_input.data(), total_batches, LogicalWarpThreads);
-  cuda::std::span<T> h_reference_span(h_reference.data(), total_batches);
+  const input_2d_mdspan_t<const T> h_input_md(h_input.data(), total_batches, LogicalWarpThreads);
+  const cuda::std::span<T> h_reference_span(h_reference.data(), total_batches);
 
   compute_host_reference(h_input_md, h_reference_span, reduction_op);
 

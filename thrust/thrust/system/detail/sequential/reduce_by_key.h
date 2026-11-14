@@ -28,7 +28,7 @@ template <typename DerivedPolicy,
           typename OutputIterator2,
           typename BinaryPredicate,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -51,8 +51,8 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_
 
     for (++keys_first, ++values_first; keys_first != keys_last; ++keys_first, (void) ++values_first)
     {
-      InputKeyType key     = *keys_first;
-      InputValueType value = *values_first;
+      const InputKeyType key     = *keys_first;
+      const InputValueType value = *values_first;
 
       if (binary_pred(temp_key, key))
       {

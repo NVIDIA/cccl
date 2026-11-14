@@ -41,24 +41,21 @@ namespace cuda::experimental::stf
 namespace reserved
 {
 // host-allocated pool, modeled as a hashtable keyed by size
-inline auto& host_pool()
+_CCCL_HOST_API inline auto& host_pool()
 {
   static ::std::unordered_multimap<size_t, void*> result;
   return result;
 }
 
 // managed memory pool, modeled as a hashtable keyed by size
-inline auto& managed_pool()
+_CCCL_HOST_API inline auto& managed_pool()
 {
   static ::std::unordered_multimap<size_t, void*> result;
   return result;
 }
 
 // maximum number of entries in the host-allocated pool
-enum : size_t
-{
-  maxPoolEntries = 16 * 1024
-};
+inline constexpr size_t maxPoolEntries = 16 * 1024;
 } // namespace reserved
 
 /**
@@ -67,7 +64,7 @@ enum : size_t
  * @param sz Number of bytes to allocate
  * @return void* pointer to allocated data
  */
-inline void* allocateHostMemory(size_t sz)
+_CCCL_HOST_API inline void* allocateHostMemory(size_t sz)
 {
   auto& pool = reserved::host_pool();
   if (auto i = pool.find(sz); i != pool.end())
@@ -85,7 +82,8 @@ inline void* allocateHostMemory(size_t sz)
     // the next call).
     while (!pool.empty())
     {
-      const auto it     = pool.begin();
+      const auto it = pool.begin();
+      // NOLINTNEXTLINE(misc-const-correctness) -- the free call takes void*
       void* const entry = it->second;
       pool.erase(it);
       cuda_try<cudaFreeHost>(entry);
@@ -106,7 +104,7 @@ inline void* allocateHostMemory(size_t sz)
  * @param sz Number of bytes to allocate
  * @return void* pointer to allocated data
  */
-inline void* allocateManagedMemory(size_t sz)
+_CCCL_HOST_API inline void* allocateManagedMemory(size_t sz)
 {
   auto& pool = reserved::managed_pool();
 
@@ -123,7 +121,8 @@ inline void* allocateManagedMemory(size_t sz)
     // leaks at most the in-flight pointer, never causes a double-free.
     while (!pool.empty())
     {
-      const auto it     = pool.begin();
+      const auto it = pool.begin();
+      // NOLINTNEXTLINE(misc-const-correctness) -- the free call takes void*
       void* const entry = it->second;
       pool.erase(it);
       cuda_try(cudaFree(entry));
@@ -144,10 +143,11 @@ inline void* allocateManagedMemory(size_t sz)
  * @param sz size in bytes
  * @param loc location of the call, defaulted
  */
-inline void deallocateHostMemory(
+_CCCL_HOST_API inline void deallocateHostMemory(
   void* p, size_t sz, const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
 {
   ::std::ignore = loc;
+  // NOLINTNEXTLINE(bugprone-assert-side-effect) -- the lambda only reports; it changes no state
   assert([&] {
     auto r = reserved::host_pool().equal_range(sz);
     for (auto i = r.first; i != r.second; ++i)
@@ -169,7 +169,10 @@ inline void deallocateHostMemory(
   }
   catch (...)
   {
-    cuda_safe_call(cudaFreeHost(p));
+    ON_THROW(notify)
+    {
+      cuda_try<cudaFreeHost>(p);
+    };
   }
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
   reserved::host_pool().insert(::std::make_pair(sz, p));
@@ -183,10 +186,11 @@ inline void deallocateHostMemory(
  * @param sz size in bytes
  * @param loc location of the call, defaulted
  */
-inline void deallocateManagedMemory(
+_CCCL_HOST_API inline void deallocateManagedMemory(
   void* p, size_t sz, const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
 {
   ::std::ignore = loc;
+  // NOLINTNEXTLINE(bugprone-assert-side-effect) -- the lambda only reports; it changes no state
   assert([&] {
     auto r = reserved::managed_pool().equal_range(sz);
     for (auto i = r.first; i != r.second; ++i)
@@ -208,7 +212,10 @@ inline void deallocateManagedMemory(
   }
   catch (...)
   {
-    cuda_safe_call(cudaFree(p));
+    ON_THROW(notify)
+    {
+      cuda_try<cudaFree>(p);
+    };
   }
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
   reserved::managed_pool().insert(::std::make_pair(sz, p));
@@ -223,12 +230,15 @@ inline void deallocateManagedMemory(
  * @param sz size in bytes
  * @param stream the stream used for ordering
  */
-inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
+_CCCL_HOST_API inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
 {
   SCOPE(fail)
   {
-    // In case of failure make sure we don't leak.
-    cuda_safe_call(cudaFreeHost(p));
+    // In case of failure make sure we don't leak; a failing free is reported.
+    ON_THROW(notify)
+    {
+      cuda_try<cudaFreeHost>(p);
+    };
   };
   // Own the heap pair until the launch succeeds; release ownership to the
   // callback only after cuda_try returns without throwing, so a failed
@@ -246,6 +256,7 @@ inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
       };
     },
     args.get()));
+  // NOLINTNEXTLINE(bugprone-unused-return-value) -- ownership went to the host callback registered above
   args.release();
 }
 
@@ -257,12 +268,15 @@ inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
  * @param sz size in bytes
  * @param stream the stream used for ordering
  */
-inline void deallocateManagedMemory(void* p, size_t sz, cudaStream_t stream)
+_CCCL_HOST_API inline void deallocateManagedMemory(void* p, size_t sz, cudaStream_t stream)
 {
   SCOPE(fail)
   {
-    // In case of failure make sure we don't leak.
-    cuda_safe_call(cudaFree(p));
+    // In case of failure make sure we don't leak; a failing free is reported.
+    ON_THROW(notify)
+    {
+      cuda_try<cudaFree>(p);
+    };
   };
   auto args = ::std::make_unique<::std::pair<size_t, void*>>(sz, p);
   cuda_try(cudaLaunchHostFunc(
@@ -276,6 +290,7 @@ inline void deallocateManagedMemory(void* p, size_t sz, cudaStream_t stream)
       };
     },
     args.get()));
+  // NOLINTNEXTLINE(bugprone-unused-return-value) -- ownership went to the host callback registered above
   args.release();
 }
 
@@ -290,7 +305,7 @@ inline void deallocateManagedMemory(void* p, size_t sz, cudaStream_t stream)
  * @param numDependencies number of elements in `pDependencies`
  * @return cudaGraphNode_t the newly inserted node
  */
-inline cudaGraphNode_t deallocateHostMemory(
+_CCCL_HOST_API inline cudaGraphNode_t deallocateHostMemory(
   void* p, size_t sz, cudaGraph_t graph, const cudaGraphNode_t* pDependencies, size_t numDependencies)
 {
   // Own the heap pair until the graph-node add succeeds; release to the
@@ -308,6 +323,7 @@ inline cudaGraphNode_t deallocateHostMemory(
       },
     .userData = args.get()};
   const auto result = cuda_try<cudaGraphAddHostNode>(graph, pDependencies, numDependencies, &params);
+  // NOLINTNEXTLINE(bugprone-unused-return-value) -- ownership went to the host callback registered above
   args.release();
   return result;
 }
@@ -323,7 +339,7 @@ inline cudaGraphNode_t deallocateHostMemory(
  * @return bool value indicating if p corresponds to a piece of memory that is already pinned or not.
  */
 template <typename T>
-bool address_is_pinned(T* p)
+_CCCL_HOST_API bool address_is_pinned(T* p)
 {
   const auto attr = cuda_try<cudaPointerGetAttributes>(p);
   EXPECT(attr.type != cudaMemoryTypeDevice);
@@ -338,7 +354,7 @@ bool address_is_pinned(T* p)
  * @param n number of elements in the block
  */
 template <typename T>
-cudaError_t pin_memory(T* p, size_t n)
+_CCCL_HOST_API cudaError_t pin_memory(T* p, size_t n)
 {
   assert(p);
   if (address_is_pinned(p))
@@ -347,7 +363,7 @@ cudaError_t pin_memory(T* p, size_t n)
   }
   // We cast to (void *) because T may be a const type : we are not going
   // to modify the content, so this is legit ...
-  using NonConstT = typename std::remove_const<T>::type;
+  using NonConstT = std::remove_const_t<T>;
   // Report the result of THIS call only. cudaGetLastError() would return the
   // sticky error of any earlier failed CUDA call on this thread (e.g. an
   // expected probe failure or a caught allocation error), misattributing it
@@ -356,7 +372,7 @@ cudaError_t pin_memory(T* p, size_t n)
   if (res != cudaSuccess)
   {
     // Consume the sticky error state so it is not re-reported elsewhere.
-    cudaGetLastError();
+    static_cast<void>(cudaGetLastError());
   }
   return res;
 }
@@ -368,20 +384,20 @@ cudaError_t pin_memory(T* p, size_t n)
  * @param p pointer to beginning of memory block
  */
 template <typename T>
-void unpin_memory(T* p)
+_CCCL_HOST_API void unpin_memory(T* p)
 {
   assert(p);
 
   // We cast to non const T * because T may be a const type : we are not going
   // to modify the content, so this is legit ...
-  using NonConstT = typename std::remove_const<T>::type;
+  using NonConstT = std::remove_const_t<T>;
   if (cudaHostUnregister(const_cast<NonConstT*>(p)) != cudaSuccess)
   {
     // Tolerate unregister failures (e.g. the matching registration was
     // skipped or failed) and consume the sticky error state so it is not
     // misattributed to a later, unrelated call. This runs on cleanup paths
     // (including destructors), so it must not throw.
-    cudaGetLastError();
+    static_cast<void>(cudaGetLastError());
   }
 }
 
@@ -389,7 +405,7 @@ void unpin_memory(T* p)
  * @brief Pins arrays in host memory
  */
 template <typename T, size_t N>
-cudaError_t pin_memory(T (&array)[N])
+_CCCL_HOST_API cudaError_t pin_memory(T (&array)[N])
 {
   return pin_memory(array, N);
 }
@@ -398,7 +414,7 @@ cudaError_t pin_memory(T (&array)[N])
  * @brief Pins vectors in host memory
  */
 template <typename T>
-cudaError_t pin_memory(::std::vector<T>& v)
+_CCCL_HOST_API cudaError_t pin_memory(::std::vector<T>& v)
 {
   return pin_memory(v.data(), v.size());
 }
@@ -407,7 +423,7 @@ cudaError_t pin_memory(::std::vector<T>& v)
  * @brief Unpin vectors in host memory
  */
 template <typename T>
-void unpin_memory(::std::vector<T>& v)
+_CCCL_HOST_API void unpin_memory(::std::vector<T>& v)
 {
   unpin_memory(v.data());
 }
@@ -417,15 +433,15 @@ UNITTEST("pin_memory")
 {
   ::std::vector<double> a(1024);
 
-  EXPECT(!address_is_pinned(&a[0]));
+  EXPECT(!address_is_pinned(a.data()));
   EXPECT(!address_is_pinned(&a[1023]));
 
-  pin_memory(&a[0], 1024);
-  EXPECT(address_is_pinned(&a[0]));
+  cuda_safe_call(pin_memory(a.data(), 1024));
+  EXPECT(address_is_pinned(a.data()));
   EXPECT(address_is_pinned(&a[1023]));
-  unpin_memory(&a[0]);
+  unpin_memory(a.data());
 
-  EXPECT(!address_is_pinned(&a[0]));
+  EXPECT(!address_is_pinned(a.data()));
   EXPECT(!address_is_pinned(&a[1023]));
 };
 
@@ -433,11 +449,11 @@ UNITTEST("pin_memory const")
 {
   ::std::vector<double> a(1024);
 
-  const double* ca = &a[0];
+  const double* ca = a.data();
 
   EXPECT(!address_is_pinned(ca));
 
-  pin_memory(ca, 1024);
+  cuda_safe_call(pin_memory(ca, 1024));
   EXPECT(address_is_pinned(ca));
   unpin_memory(ca);
 
@@ -454,13 +470,13 @@ UNITTEST("pin_memory ignores stale sticky errors")
   EXPECT(cudaMalloc(&p, size_t(1) << 46) != cudaSuccess);
 
   ::std::vector<double> a(1024);
-  EXPECT(pin_memory(&a[0], 1024) == cudaSuccess);
-  EXPECT(address_is_pinned(&a[0]));
-  unpin_memory(&a[0]);
-  EXPECT(!address_is_pinned(&a[0]));
+  EXPECT(pin_memory(a.data(), 1024) == cudaSuccess);
+  EXPECT(address_is_pinned(a.data()));
+  unpin_memory(a.data());
+  EXPECT(!address_is_pinned(a.data()));
 
   // Consume whatever is left so this test does not poison the next one.
-  cudaGetLastError();
+  static_cast<void>(cudaGetLastError());
 };
 
 #endif // UNITTESTED_FILE
@@ -486,13 +502,14 @@ public:
   using const_reverse_iterator = ::std::reverse_iterator<const_iterator>;
 
   // Constructors
-  small_vector() = default;
+  _CCCL_HIDE_FROM_ABI small_vector() = default;
 
-  small_vector(const small_vector& rhs)
+  _CCCL_HOST_API small_vector(const small_vector& rhs)
   {
     if (rhs.size() <= small_cap)
     {
-      auto b = rhs.begin(), e = b + rhs.size();
+      auto b = rhs.begin();
+      auto e = b + rhs.size();
       construct_small_elements([&](T* dest, small_size_t) {
         if (b >= e)
         {
@@ -508,11 +525,12 @@ public:
     }
   }
 
-  small_vector(small_vector&& rhs) noexcept
+  _CCCL_HOST_API small_vector(small_vector&& rhs) noexcept
   {
     if (rhs.size() <= small_cap)
     {
-      auto b = rhs.begin(), e = b + rhs.size();
+      auto b = rhs.begin();
+      auto e = b + rhs.size();
       loop([&](auto i) {
         if (b >= e)
         {
@@ -530,11 +548,12 @@ public:
     }
   }
 
-  small_vector(::std::initializer_list<T> init)
+  _CCCL_HOST_API small_vector(::std::initializer_list<T> init)
   {
     if (init.size() <= small_cap)
     {
-      auto b = init.begin(), e = init.end();
+      auto b = init.begin();
+      auto e = init.end();
       construct_small_elements([&](T* dest, small_size_t) {
         if (b >= e)
         {
@@ -551,7 +570,7 @@ public:
   }
 
   // Assignment operators
-  small_vector& operator=(const small_vector& rhs)
+  _CCCL_HOST_API small_vector& operator=(const small_vector& rhs)
   {
     if (this == &rhs)
     {
@@ -580,7 +599,7 @@ public:
     return *this;
   }
 
-  small_vector& operator=(small_vector&& rhs) noexcept
+  _CCCL_HOST_API small_vector& operator=(small_vector&& rhs) noexcept
   {
     if (this == &rhs)
     {
@@ -625,7 +644,7 @@ public:
 
   small_vector& operator=(::std::initializer_list<T> ilist);
 
-  ~small_vector()
+  _CCCL_HOST_API ~small_vector()
   {
     if (is_small())
     {
@@ -646,7 +665,7 @@ public:
   }
 
   // Element access
-  T& operator[](size_t pos)
+  _CCCL_HOST_API T& operator[](size_t pos)
   {
     if (is_small())
     {
@@ -657,7 +676,7 @@ public:
     return big()[pos];
   }
 
-  const T& operator[](size_t pos) const
+  _CCCL_HOST_API const T& operator[](size_t pos) const
   {
     if (is_small())
     {
@@ -670,11 +689,11 @@ public:
 
   T& at(size_t pos);
   const T& at(size_t pos) const;
-  T& front()
+  _CCCL_HOST_API T& front()
   {
     return *begin();
   }
-  const T& front() const
+  _CCCL_HOST_API const T& front() const
   {
     return *begin();
   }
@@ -685,30 +704,30 @@ public:
   const T* data() const noexcept;
 
   // Iterators
-  iterator begin() noexcept
+  _CCCL_HOST_API iterator begin() noexcept
   {
     return is_small() ? small_begin() : big().data();
   }
-  const_iterator begin() const noexcept
-  {
-    return is_small() ? small_begin() : big().data();
-  }
-
-  const_iterator cbegin() const noexcept
+  _CCCL_HOST_API const_iterator begin() const noexcept
   {
     return is_small() ? small_begin() : big().data();
   }
 
-  iterator end() noexcept
+  _CCCL_HOST_API const_iterator cbegin() const noexcept
+  {
+    return is_small() ? small_begin() : big().data();
+  }
+
+  _CCCL_HOST_API iterator end() noexcept
   {
     return begin() + size();
   }
 
-  const_iterator end() const noexcept
+  _CCCL_HOST_API const_iterator end() const noexcept
   {
     return begin() + size();
   }
-  const_iterator cend() const noexcept
+  _CCCL_HOST_API const_iterator cend() const noexcept
   {
     return begin() + size();
   }
@@ -721,22 +740,22 @@ public:
   const_reverse_iterator crend() const noexcept;
 
   // Capacity
-  bool empty() const noexcept
+  _CCCL_HOST_API bool empty() const noexcept
   {
     return is_small() ? small_length == 0 : big().empty();
   }
 
-  size_t size() const noexcept
+  _CCCL_HOST_API size_t size() const noexcept
   {
     return is_small() ? small_length : big().size();
   }
 
-  size_t max_size() const noexcept
+  _CCCL_HOST_API size_t max_size() const noexcept
   {
     return big().max_size();
   }
 
-  void reserve(size_t new_cap)
+  _CCCL_HOST_API void reserve(size_t new_cap)
   {
     if (is_small())
     {
@@ -767,14 +786,14 @@ public:
     big().reserve(new_cap);
   }
 
-  size_t capacity() const noexcept
+  _CCCL_HOST_API size_t capacity() const noexcept
   {
     return is_small() ? small_cap : big().capacity();
   }
   void shrink_to_fit();
 
   // Modifiers
-  void clear() noexcept
+  _CCCL_HOST_API void clear() noexcept
   {
     if (is_small())
     {
@@ -799,7 +818,7 @@ public:
   iterator insert(const_iterator pos, size_t count, const T& value);
 
   template <class InputIt>
-  iterator insert(iterator pos, InputIt first, InputIt last)
+  _CCCL_HOST_API iterator insert(iterator pos, InputIt first, InputIt last)
   {
     if (is_small())
     {
@@ -845,11 +864,8 @@ public:
       assert(size() == new_size);
       return big().data() + (result - big().begin());
     }
-    else
-    {
-      auto result = big().insert(big().begin() + (pos - big().data()), first, last);
-      return big().data() + (result - big().begin());
-    }
+    auto result = big().insert(big().begin() + (pos - big().data()), first, last);
+    return big().data() + (result - big().begin());
   }
 
   iterator insert(const_iterator pos, ::std::initializer_list<T> ilist);
@@ -857,52 +873,50 @@ public:
   iterator emplace(const_iterator pos, Args&&... args);
   iterator erase(const_iterator pos);
 
-  iterator erase(iterator first, iterator last)
+  _CCCL_HOST_API iterator erase(iterator first, iterator last)
   {
     if (is_small())
     {
-      auto b = small_begin(), e = b + small_length;
+      auto b = small_begin();
+      auto e = b + small_length;
       assert(b <= first && first <= last && last <= e);
       auto result = ::std::move(last, e, first);
       ::std::destroy(result, e);
       small_length -= static_cast<decltype(small_length)>(last - first);
       return result;
     }
-    else
-    {
-      auto f_     = big().begin() + (first - big().data());
-      auto l_     = big().begin() + (last - big().data());
-      auto result = big().erase(f_, l_);
-      return big().data() + (result - big().begin());
-    }
+    auto f_     = big().begin() + (first - big().data());
+    auto l_     = big().begin() + (last - big().data());
+    auto result = big().erase(f_, l_);
+    return big().data() + (result - big().begin());
   }
 
-  void push_back(const T& value)
+  _CCCL_HOST_API void push_back(const T& value)
   {
     push_back(T(value)); // force an rvalue
   }
 
-  void push_back(T&& value)
+  _CCCL_HOST_API void push_back(T&& value)
   {
     if (is_small())
     {
       if (small_length < small_cap)
       {
-        new (small_begin() + small_length) T(mv(value));
+        new (small_begin() + small_length) T(::cuda::std::move(value));
         ++small_length;
         return;
       }
-      reserve(small_cap * 2 + 1);
+      reserve((small_cap * 2) + 1);
       assert(!is_small());
       // fall through to big case
     }
-    big().push_back(mv(value));
+    big().push_back(::cuda::std::move(value));
   }
 
   template <class... Args>
   void emplace_back(Args&&... args);
 
-  void pop_back()
+  _CCCL_HOST_API void pop_back()
   {
     if (is_small())
     {
@@ -916,7 +930,7 @@ public:
     }
   }
 
-  void resize(size_t new_size)
+  _CCCL_HOST_API void resize(size_t new_size)
   {
     if (is_small())
     {
@@ -935,7 +949,7 @@ public:
     }
   }
 
-  void resize(size_t new_size, const value_type& value)
+  _CCCL_HOST_API void resize(size_t new_size, const value_type& value)
   {
     if (is_small())
     {
@@ -981,7 +995,7 @@ public:
     }
   }
 
-  void swap(small_vector& other) noexcept
+  _CCCL_HOST_API void swap(small_vector& other) noexcept
   {
     if (is_small())
     {
@@ -992,8 +1006,10 @@ public:
           return other.swap(*this);
         }
         // We are longer, the other is shorter
-        auto b = small_begin(), e = small_begin() + small_length, ob = other.small_begin(),
-             oe = other.small_begin() + other.small_length;
+        auto b  = small_begin();
+        auto e  = small_begin() + small_length;
+        auto ob = other.small_begin();
+        auto oe = other.small_begin() + other.small_length;
         ::std::swap_ranges(ob, oe, b);
         ::std::uninitialized_move(b + other.small_length, e, oe);
         ::std::destroy(b + other.small_length, e);
@@ -1026,7 +1042,7 @@ public:
   }
 
   // Non-member functions
-  friend bool operator==(const small_vector& lhs, const small_vector& rhs)
+  _CCCL_HOST_API friend bool operator==(const small_vector& lhs, const small_vector& rhs)
   {
     return lhs.size() == rhs.size() && ::std::equal(lhs.begin(), lhs.end(), rhs.begin());
   }
@@ -1038,32 +1054,32 @@ public:
   // friend void swap(small_vector& lhs, small_vector& rhs) noexcept;
 
 private:
-  auto small_begin()
+  _CCCL_HOST_API auto small_begin()
   {
     return reinterpret_cast<T*>(&small_);
   }
 
-  auto small_begin() const
+  _CCCL_HOST_API auto small_begin() const
   {
     return reinterpret_cast<const T*>(&small_);
   }
 
-  auto& big()
+  _CCCL_HOST_API auto& big()
   {
     return *reinterpret_cast<::std::vector<T>*>(&big_);
   }
 
-  auto& big() const
+  _CCCL_HOST_API auto& big() const
   {
     return *reinterpret_cast<const ::std::vector<T>*>(&big_);
   }
 
-  bool is_small() const
+  _CCCL_HOST_API bool is_small() const
   {
     return small_length <= small_cap;
   }
 
-  void shrink_small(size_t delta)
+  _CCCL_HOST_API void shrink_small(size_t delta)
   {
     assert(delta <= small_length);
     assert(is_small());
@@ -1082,7 +1098,7 @@ private:
   // Return false from @p construct_one to stop. On success sets small_length; on
   // throw destroys any elements constructed so far and rethrows.
   template <typename F>
-  void construct_small_elements(F&& construct_one)
+  _CCCL_HOST_API void construct_small_elements(F&& construct_one)
   {
     small_size_t n = 0;
     SCOPE(fail)
@@ -1099,14 +1115,14 @@ private:
     small_length = n;
   }
 
-  void adopt_big_vector(::std::vector<T>&& vec)
+  _CCCL_HOST_API void adopt_big_vector(::std::vector<T>&& vec)
   {
-    new (&big())::std::vector<T>(mv(vec));
+    new (&big())::std::vector<T>(::cuda::std::move(vec));
     small_length = small_size_t(-1);
   }
 
   template <typename F>
-  void loop(F&& f)
+  _CCCL_HOST_API void loop(F&& f)
   {
     if constexpr (small_cap < 16)
     {
@@ -1134,7 +1150,7 @@ private:
 
   union
   {
-    alignas(T) unsigned char small_[sizeof(T) * small_cap];
+    alignas(T) unsigned char small_[sizeof(T) * small_cap]{};
     alignas(::std::vector<T>) unsigned char big_[sizeof(::std::vector<T>)];
   };
   small_size_t small_length = 0;

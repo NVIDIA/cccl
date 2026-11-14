@@ -36,6 +36,7 @@
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/data.h>
 #include <cuda/std/__ranges/size.h>
+#include <cuda/std/__simd/abi.h>
 #include <cuda/std/__simd/basic_vec.h>
 #include <cuda/std/__simd/concepts.h>
 #include <cuda/std/__simd/flag.h>
@@ -100,7 +101,7 @@ __full_store_to_ptr(const basic_vec<_Tp, _Abi>& __v, _Up* const __ptr, flags<_Fl
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
       constexpr auto __base_alignment = __has_aligned_flag ? alignment_v<__vec_t, _Up> : alignof(_Up);
-      constexpr auto __ptr_alignment  = ::cuda::std::max(__base_alignment, __overaligned_value_v<_Flags...>);
+      constexpr auto __ptr_alignment  = ::cuda::std::max(__base_alignment, __overaligned_alignment_v<_Flags...>);
       constexpr auto __data_size      = __simd_size * sizeof(_Up);
 
       _Up __tmp[__simd_size]{};

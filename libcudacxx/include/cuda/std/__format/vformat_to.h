@@ -30,9 +30,11 @@
 #include <cuda/std/__format/formatter.h>
 #include <cuda/std/__format/parse_arg_id.h>
 #include <cuda/std/__format/validation.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/monostate.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/string_view>
 

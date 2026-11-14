@@ -13,8 +13,9 @@
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 #include <cuda/experimental/stf.cuh>
 
-#include <stdio.h>
-#include <time.h>
+#include <cstdio>
+#include <ctime>
+#include <string>
 
 #define MAX_ITER 200
 
@@ -27,13 +28,14 @@ int main(int argc, char** argv)
   int N0 = 128;
   if (argc > 2)
   {
-    N0 = atoi(argv[2]);
+    N0 = ::std::stoi(argv[2]);
   }
 
   // fprintf(stderr, "Using %d...\n", N0);
 
-  size_t N = size_t(N0) * 1024 * 1024;
+  const size_t N = size_t(N0) * 1024 * 1024;
 
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0
     auto number_devices = 1;
     auto all_devs = exec_place::repeat<blocked_partition>(exec_place::device(0), number_devices);
@@ -69,7 +71,8 @@ int main(int argc, char** argv)
 
   const char* const method = argc >= 2 ? argv[1] : "launch-partition";
 
-  cudaEvent_t start, stop;
+  cudaEvent_t start;
+  cudaEvent_t stop;
   cuda_safe_call(cudaEventCreate(&start));
   cuda_safe_call(cudaEventCreate(&stop));
   cuda_safe_call(cudaEventRecord(start, ctx.fence()));
@@ -124,6 +127,8 @@ int main(int argc, char** argv)
   ctx.finalize();
 
   float elapsed_ms;
+  // finalize() does not wait for work recorded in a stream returned by fence().
+  cuda_safe_call(cudaEventSynchronize(stop));
   cuda_safe_call(cudaEventElapsedTime(&elapsed_ms, start, stop));
 
   cuda_safe_call(cudaEventDestroy(start));

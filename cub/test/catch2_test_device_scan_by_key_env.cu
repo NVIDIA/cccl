@@ -15,15 +15,28 @@ struct stream_registry_factory_t;
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/tune.h>
 #include <cuda/__iterator/constant_iterator.h>
+#include <cuda/memory_resource>
+#include <cuda/std/cstdint>
+#include <cuda/std/functional>
+#include <cuda/stream>
 
 #include <sstream>
 
-#include "catch2_test_env_launch_helper.h"
+#include "block_size_extracting_helpers.h"
+#include "catch2_test_custom_streams.cuh"
+#include "catch2_test_launch_helper.h"
+#include "catch2_test_memory_resources.h"
+#include <c2h/device_and_stream.h>
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_scan_exclusive_sum_by_key);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_scan_exclusive_scan_by_key);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSumByKey, device_scan_inclusive_sum_by_key);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanByKey, device_scan_inclusive_scan_by_key);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::ExclusiveSumByKey, device_scan_exclusive_sum_by_key);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::ExclusiveScanByKey, device_scan_exclusive_scan_by_key);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::InclusiveSumByKey, device_scan_inclusive_sum_by_key);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::InclusiveScanByKey, device_scan_inclusive_scan_by_key);
+
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_scan_exclusive_sum_by_key_two_phase);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_scan_exclusive_scan_by_key_two_phase);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSumByKey, device_scan_inclusive_sum_by_key_two_phase);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanByKey, device_scan_inclusive_scan_by_key_two_phase);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -43,7 +56,7 @@ CUB_TEST_CASE("Device scan exclusive-sum-by-key works with default environment",
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSumByKey(d_keys.begin(), d_in.begin(), d_out.begin(), num_items));
 
-  thrust::device_vector<int> expected{0, 8, 0, 7, 12, 0, 0};
+  const thrust::device_vector<int> expected{0, 8, 0, 7, 12, 0, 0};
   REQUIRE(d_out == expected);
 }
 
@@ -56,19 +69,16 @@ CUB_TEST_CASE("Device scan exclusive-scan-by-key works with default environment"
 
   using selector_t = cub::detail::scan_by_key::policy_selector_from_types<key_t, accum_t, value_t, block_size_check_t>;
 
-  int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
-
   cudaDeviceProp device_props{};
-  REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, current_device));
+  REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, c2h::current_device().get()));
 
   const auto target_block_size =
     selector_t{}(cuda::compute_capability{device_props.major, device_props.minor}).lookback.threads_per_block;
 
-  num_items_t num_items = 1;
-  auto d_keys           = thrust::device_vector<key_t>{0};
+  const num_items_t num_items = 1;
+  auto d_keys                 = thrust::device_vector<key_t>{0};
   c2h::device_vector<unsigned int> d_block_size(1);
-  block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
   auto d_in  = cuda::constant_iterator(value_t{1});
   auto d_out = thrust::device_vector<value_t>(1);
   auto init  = value_t{0};
@@ -90,7 +100,7 @@ CUB_TEST_CASE("Device scan inclusive-sum-by-key works with default environment",
 
   REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveSumByKey(d_keys.begin(), d_in.begin(), d_out.begin(), num_items));
 
-  thrust::device_vector<int> expected{8, 14, 7, 12, 15, 0, 9};
+  const thrust::device_vector<int> expected{8, 14, 7, 12, 15, 0, 9};
   REQUIRE(d_out == expected);
 }
 
@@ -103,19 +113,16 @@ CUB_TEST_CASE("Device scan inclusive-scan-by-key works with default environment"
 
   using selector_t = cub::detail::scan_by_key::policy_selector_from_types<key_t, accum_t, value_t, block_size_check_t>;
 
-  int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
-
   cudaDeviceProp device_props{};
-  REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, current_device));
+  REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, c2h::current_device().get()));
 
   const auto target_block_size =
     selector_t{}(cuda::compute_capability{device_props.major, device_props.minor}).lookback.threads_per_block;
 
-  num_items_t num_items = 1;
-  auto d_keys           = thrust::device_vector<key_t>{0};
+  const num_items_t num_items = 1;
+  auto d_keys                 = thrust::device_vector<key_t>{0};
   c2h::device_vector<unsigned int> d_block_size(1);
-  block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
   auto d_in  = cuda::constant_iterator(value_t{1});
   auto d_out = thrust::device_vector<value_t>(1);
 
@@ -146,6 +153,18 @@ struct scan_by_key_tuning
   }
 };
 
+template <int BlockThreads>
+struct scan_by_key_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::ScanByKeyPolicy policy) const
+    -> cub::ScanByKeyPolicy
+  {
+    policy.algorithm                  = cub::ScanByKeyAlgorithm::lookback;
+    policy.lookback.threads_per_block = BlockThreads;
+    return policy;
+  }
+};
+
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 using block_size_extracting_scan_op_t  = block_size_extracting_op<cuda::std::plus<>>;
@@ -164,7 +183,35 @@ CUB_TEST("DeviceScan::ExclusiveSumByKey can be tuned", "[scan][by_key][device]",
 
   device_scan_exclusive_sum_by_key(d_keys.begin(), d_in.begin(), d_out.begin(), 7, equality_op, env);
 
-  c2h::device_vector<int> expected{0, 8, 0, 7, 12, 0, 0};
+  const c2h::device_vector<int> expected{0, 8, 0, 7, 12, 0, 0};
+  REQUIRE(d_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceScan::ExclusiveScanByKey tuning can be modified", "[scan][by_key][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+  c2h::device_vector<int> d_keys{0, 0, 1, 1, 1, 2, 2};
+  c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
+  c2h::device_vector<int> d_out(7, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1);
+
+  auto scan_op = block_size_extracting_scan_op_t{thrust::raw_pointer_cast(d_block_size.data())};
+
+  {
+    device_scan_exclusive_scan_by_key(
+      d_keys.begin(), d_in.begin(), d_out.begin(), scan_op, 0, 7, cuda::std::equal_to<>{}, stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
+  auto env = cuda::execution::tune(scan_by_key_tuning_transform<target_block_size>{});
+
+  device_scan_exclusive_scan_by_key(
+    d_keys.begin(), d_in.begin(), d_out.begin(), scan_op, 0, 7, cuda::std::equal_to<>{}, env);
+
+  const c2h::device_vector<int> expected{0, 8, 0, 7, 12, 0, 0};
   REQUIRE(d_out == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -183,7 +230,7 @@ CUB_TEST("DeviceScan::ExclusiveScanByKey can be tuned", "[scan][by_key][device]"
   device_scan_exclusive_scan_by_key(
     d_keys.begin(), d_in.begin(), d_out.begin(), scan_op, 0, 7, cuda::std::equal_to<>{}, env);
 
-  c2h::device_vector<int> expected{0, 8, 0, 7, 12, 0, 0};
+  const c2h::device_vector<int> expected{0, 8, 0, 7, 12, 0, 0};
   REQUIRE(d_out == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -201,7 +248,7 @@ CUB_TEST("DeviceScan::InclusiveSumByKey can be tuned", "[scan][by_key][device]",
 
   device_scan_inclusive_sum_by_key(d_keys.begin(), d_in.begin(), d_out.begin(), 7, equality_op, env);
 
-  c2h::device_vector<int> expected{8, 14, 7, 12, 15, 0, 9};
+  const c2h::device_vector<int> expected{8, 14, 7, 12, 15, 0, 9};
   REQUIRE(d_out == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -220,7 +267,7 @@ CUB_TEST("DeviceScan::InclusiveScanByKey can be tuned", "[scan][by_key][device]"
   device_scan_inclusive_scan_by_key(
     d_keys.begin(), d_in.begin(), d_out.begin(), scan_op, 7, cuda::std::equal_to<>{}, env);
 
-  c2h::device_vector<int> expected{8, 14, 7, 12, 15, 0, 9};
+  const c2h::device_vector<int> expected{8, 14, 7, 12, 15, 0, 9};
   REQUIRE(d_out == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -231,10 +278,10 @@ CUB_TEST("Device scan exclusive-sum-by-key uses environment", "[scan][by_key][de
 {
   using num_items_t = int;
 
-  num_items_t num_items = 7;
-  auto d_keys           = thrust::device_vector<int>{0, 0, 1, 1, 1, 2, 2};
-  auto d_in             = thrust::device_vector<float>{8.0f, 6.0f, 7.0f, 5.0f, 3.0f, 0.0f, 9.0f};
-  auto d_out            = thrust::device_vector<float>(num_items);
+  const num_items_t num_items = 7;
+  auto d_keys                 = thrust::device_vector<int>{0, 0, 1, 1, 1, 2, 2};
+  auto d_in                   = thrust::device_vector<float>{8.0f, 6.0f, 7.0f, 5.0f, 3.0f, 0.0f, 9.0f};
+  auto d_out                  = thrust::device_vector<float>(num_items);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -252,7 +299,7 @@ CUB_TEST("Device scan exclusive-sum-by-key uses environment", "[scan][by_key][de
 
   device_scan_exclusive_sum_by_key(d_keys.begin(), d_in.begin(), d_out.begin(), num_items, cuda::std::equal_to<>{}, env);
 
-  thrust::device_vector<float> expected{0.0f, 8.0f, 0.0f, 7.0f, 12.0f, 0.0f, 0.0f};
+  const thrust::device_vector<float> expected{0.0f, 8.0f, 0.0f, 7.0f, 12.0f, 0.0f, 0.0f};
   REQUIRE(d_out == expected);
 }
 
@@ -261,11 +308,11 @@ CUB_TEST("Device scan exclusive-scan-by-key uses environment", "[scan][by_key][d
   using scan_op_t   = cuda::std::plus<>;
   using num_items_t = int;
 
-  num_items_t num_items = 7;
-  auto d_keys           = thrust::device_vector<int>{0, 0, 1, 1, 1, 2, 2};
-  auto d_in             = thrust::device_vector<float>{8.0f, 6.0f, 7.0f, 5.0f, 3.0f, 0.0f, 9.0f};
-  auto d_out            = thrust::device_vector<float>(num_items);
-  auto init             = 0.0f;
+  const num_items_t num_items = 7;
+  auto d_keys                 = thrust::device_vector<int>{0, 0, 1, 1, 1, 2, 2};
+  auto d_in                   = thrust::device_vector<float>{8.0f, 6.0f, 7.0f, 5.0f, 3.0f, 0.0f, 9.0f};
+  auto d_out                  = thrust::device_vector<float>(num_items);
+  auto init                   = 0.0f;
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -286,7 +333,7 @@ CUB_TEST("Device scan exclusive-scan-by-key uses environment", "[scan][by_key][d
   device_scan_exclusive_scan_by_key(
     d_keys.begin(), d_in.begin(), d_out.begin(), scan_op_t{}, init, num_items, cuda::std::equal_to<>{}, env);
 
-  thrust::device_vector<float> expected{0.0f, 8.0f, 0.0f, 7.0f, 12.0f, 0.0f, 0.0f};
+  const thrust::device_vector<float> expected{0.0f, 8.0f, 0.0f, 7.0f, 12.0f, 0.0f, 0.0f};
   REQUIRE(d_out == expected);
 }
 
@@ -294,10 +341,10 @@ CUB_TEST("Device scan inclusive-sum-by-key uses environment", "[scan][by_key][de
 {
   using num_items_t = int;
 
-  num_items_t num_items = 7;
-  auto d_keys           = thrust::device_vector<int>{0, 0, 1, 1, 1, 2, 2};
-  auto d_in             = thrust::device_vector<float>{8.0f, 6.0f, 7.0f, 5.0f, 3.0f, 0.0f, 9.0f};
-  auto d_out            = thrust::device_vector<float>(num_items);
+  const num_items_t num_items = 7;
+  auto d_keys                 = thrust::device_vector<int>{0, 0, 1, 1, 1, 2, 2};
+  auto d_in                   = thrust::device_vector<float>{8.0f, 6.0f, 7.0f, 5.0f, 3.0f, 0.0f, 9.0f};
+  auto d_out                  = thrust::device_vector<float>(num_items);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -315,7 +362,7 @@ CUB_TEST("Device scan inclusive-sum-by-key uses environment", "[scan][by_key][de
 
   device_scan_inclusive_sum_by_key(d_keys.begin(), d_in.begin(), d_out.begin(), num_items, cuda::std::equal_to<>{}, env);
 
-  thrust::device_vector<float> expected{8.0f, 14.0f, 7.0f, 12.0f, 15.0f, 0.0f, 9.0f};
+  const thrust::device_vector<float> expected{8.0f, 14.0f, 7.0f, 12.0f, 15.0f, 0.0f, 9.0f};
   REQUIRE(d_out == expected);
 }
 
@@ -324,10 +371,10 @@ CUB_TEST("Device scan inclusive-scan-by-key uses environment", "[scan][by_key][d
   using scan_op_t   = cuda::std::plus<>;
   using num_items_t = int;
 
-  num_items_t num_items = 7;
-  auto d_keys           = thrust::device_vector<int>{0, 0, 1, 1, 1, 2, 2};
-  auto d_in             = thrust::device_vector<float>{8.0f, 6.0f, 7.0f, 5.0f, 3.0f, 0.0f, 9.0f};
-  auto d_out            = thrust::device_vector<float>(num_items);
+  const num_items_t num_items = 7;
+  auto d_keys                 = thrust::device_vector<int>{0, 0, 1, 1, 1, 2, 2};
+  auto d_in                   = thrust::device_vector<float>{8.0f, 6.0f, 7.0f, 5.0f, 3.0f, 0.0f, 9.0f};
+  auto d_out                  = thrust::device_vector<float>(num_items);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -347,9 +394,392 @@ CUB_TEST("Device scan inclusive-scan-by-key uses environment", "[scan][by_key][d
   device_scan_inclusive_scan_by_key(
     d_keys.begin(), d_in.begin(), d_out.begin(), scan_op_t{}, num_items, cuda::std::equal_to<>{}, env);
 
-  thrust::device_vector<float> expected{8.0f, 14.0f, 7.0f, 12.0f, 15.0f, 0.0f, 9.0f};
+  const thrust::device_vector<float> expected{8.0f, 14.0f, 7.0f, 12.0f, 15.0f, 0.0f, 9.0f};
   REQUIRE(d_out == expected);
 }
+
+struct key_group_equal
+{
+  __host__ __device__ bool operator()(cuda::std::int32_t lhs, cuda::std::int32_t rhs) const
+  {
+    return lhs / 2 == rhs / 2;
+  }
+};
+
+#if TEST_LAUNCH == 0
+
+// Explicit-storage calls bypass the launch wrappers, so test them only in the host-launch variant.
+template <class TwoPhaseFn, class EnvT>
+size_t run_two_phase(TwoPhaseFn two_phase, const EnvT& env, cudaStream_t stream = nullptr)
+{
+  size_t temp_storage_bytes = 0;
+  REQUIRE(cudaSuccess == two_phase(nullptr, temp_storage_bytes, env));
+
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  {
+    const stream_scope scope{stream};
+    REQUIRE(cudaSuccess == two_phase(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, env));
+  }
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(stream));
+  return temp_storage_bytes;
+}
+
+template <class TwoPhaseFn>
+void test_two_phase_env_kinds(size_t expected_temp_storage_bytes, TwoPhaseFn two_phase)
+{
+  const cuda::stream stream = c2h::make_current_device_stream();
+  test_with_custom_streams(
+    [&](const auto& env) {
+      REQUIRE(run_two_phase(two_phase, env, stream.get()) == expected_temp_storage_bytes);
+    },
+    stream);
+
+  SECTION("default environment")
+  {
+    REQUIRE(run_two_phase(two_phase, stdexec::env<>{}) == expected_temp_storage_bytes);
+  }
+
+  SECTION("memory resource is ignored")
+  {
+    const auto mr_env = stdexec::prop{cuda::mr::get_memory_resource_t{}, throwing_memory_resource{}};
+    REQUIRE(run_two_phase(two_phase, stdexec::env{mr_env}) == expected_temp_storage_bytes);
+  }
+}
+
+CUB_TEST_CASE("DeviceScan::ExclusiveSumByKey works with user provided memory and environment",
+              "[scan][by_key][device]",
+              CUB_SMALL)
+{
+  constexpr cuda::std::int32_t num_items = 7;
+  const c2h::device_vector<cuda::std::int32_t> d_keys{0, 1, 2, 3, 2, 4, 5};
+  const c2h::device_vector<cuda::std::int32_t> d_in{8, 6, 7, 5, 3, 0, 9};
+  c2h::device_vector<cuda::std::int32_t> d_out(num_items, thrust::no_init);
+
+  size_t expected_bytes{};
+  REQUIRE(cudaSuccess
+          == cub::DeviceScan::ExclusiveSumByKey(
+            nullptr, expected_bytes, d_keys.begin(), d_in.begin(), d_out.begin(), num_items));
+
+  test_two_phase_env_kinds(expected_bytes, [&](void* storage, size_t& bytes, const auto& env) {
+    return cub::DeviceScan::ExclusiveSumByKey(
+      storage, bytes, d_keys.begin(), d_in.begin(), d_out.begin(), num_items, key_group_equal{}, env);
+  });
+
+  const c2h::device_vector<cuda::std::int32_t> expected{0, 8, 0, 7, 12, 0, 0};
+  REQUIRE(d_out == expected);
+}
+
+CUB_TEST_CASE("DeviceScan::ExclusiveScanByKey works with user provided memory and environment",
+              "[scan][by_key][device]",
+              CUB_SMALL)
+{
+  constexpr cuda::std::int32_t num_items = 7;
+  const c2h::device_vector<cuda::std::int32_t> d_keys{0, 1, 2, 3, 2, 4, 5};
+  const c2h::device_vector<cuda::std::int32_t> d_in{8, 6, 7, 5, 3, 0, 9};
+  c2h::device_vector<cuda::std::int32_t> d_out(num_items, thrust::no_init);
+
+  size_t expected_bytes{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceScan::ExclusiveScanByKey(
+      nullptr, expected_bytes, d_keys.begin(), d_in.begin(), d_out.begin(), cuda::std::multiplies<>{}, 2, num_items));
+
+  test_two_phase_env_kinds(expected_bytes, [&](void* storage, size_t& bytes, const auto& env) {
+    return cub::DeviceScan::ExclusiveScanByKey(
+      storage,
+      bytes,
+      d_keys.begin(),
+      d_in.begin(),
+      d_out.begin(),
+      cuda::std::multiplies<>{},
+      2,
+      num_items,
+      key_group_equal{},
+      env);
+  });
+
+  const c2h::device_vector<cuda::std::int32_t> expected{2, 16, 2, 14, 70, 2, 0};
+  REQUIRE(d_out == expected);
+}
+
+CUB_TEST_CASE("DeviceScan::InclusiveSumByKey works with user provided memory and environment",
+              "[scan][by_key][device]",
+              CUB_SMALL)
+{
+  constexpr cuda::std::int32_t num_items = 7;
+  const c2h::device_vector<cuda::std::int32_t> d_keys{0, 1, 2, 3, 2, 4, 5};
+  const c2h::device_vector<cuda::std::int32_t> d_in{8, 6, 7, 5, 3, 0, 9};
+  c2h::device_vector<cuda::std::int32_t> d_out(num_items, thrust::no_init);
+
+  size_t expected_bytes{};
+  REQUIRE(cudaSuccess
+          == cub::DeviceScan::InclusiveSumByKey(
+            nullptr, expected_bytes, d_keys.begin(), d_in.begin(), d_out.begin(), num_items));
+
+  test_two_phase_env_kinds(expected_bytes, [&](void* storage, size_t& bytes, const auto& env) {
+    return cub::DeviceScan::InclusiveSumByKey(
+      storage, bytes, d_keys.begin(), d_in.begin(), d_out.begin(), num_items, key_group_equal{}, env);
+  });
+
+  const c2h::device_vector<cuda::std::int32_t> expected{8, 14, 7, 12, 15, 0, 9};
+  REQUIRE(d_out == expected);
+}
+
+CUB_TEST_CASE("DeviceScan::InclusiveScanByKey works with user provided memory and environment",
+              "[scan][by_key][device]",
+              CUB_SMALL)
+{
+  constexpr cuda::std::int32_t num_items = 7;
+  const c2h::device_vector<cuda::std::int32_t> d_keys{0, 1, 2, 3, 2, 4, 5};
+  const c2h::device_vector<cuda::std::int32_t> d_in{8, 6, 7, 5, 3, 0, 9};
+  c2h::device_vector<cuda::std::int32_t> d_out(num_items, thrust::no_init);
+
+  size_t expected_bytes{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceScan::InclusiveScanByKey(
+      nullptr, expected_bytes, d_keys.begin(), d_in.begin(), d_out.begin(), cuda::std::multiplies<>{}, num_items));
+
+  test_two_phase_env_kinds(expected_bytes, [&](void* storage, size_t& bytes, const auto& env) {
+    return cub::DeviceScan::InclusiveScanByKey(
+      storage,
+      bytes,
+      d_keys.begin(),
+      d_in.begin(),
+      d_out.begin(),
+      cuda::std::multiplies<>{},
+      num_items,
+      key_group_equal{},
+      env);
+  });
+
+  const c2h::device_vector<cuda::std::int32_t> expected{8, 48, 7, 35, 105, 0, 0};
+  REQUIRE(d_out == expected);
+}
+
+CUB_TEST("DeviceScan::ExclusiveSumByKey can be tuned with user provided memory",
+         "[scan][by_key][device]",
+         CUB_SMALL,
+         block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  const c2h::device_vector<cuda::std::int32_t> d_keys{0, 0, 1, 1, 1, 2, 2};
+  const c2h::device_vector<cuda::std::int32_t> d_in{8, 6, 7, 5, 3, 0, 9};
+  c2h::device_vector<cuda::std::int32_t> d_out(7, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_extracting_equality_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+  const cuda::stream stream = c2h::make_current_device_stream();
+  const auto env =
+    stdexec::env{cuda::execution::tune(scan_by_key_tuning<target_block_size>{}), cuda::stream_ref{stream}};
+
+  run_two_phase(
+    [&](void* storage, size_t& bytes, const auto& env) {
+      return cub::DeviceScan::ExclusiveSumByKey(
+        storage, bytes, d_keys.begin(), d_in.begin(), d_out.begin(), 7, block_size_check, env);
+    },
+    env,
+    stream.get());
+
+  const c2h::device_vector<cuda::std::int32_t> expected{0, 8, 0, 7, 12, 0, 0};
+  REQUIRE(d_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceScan::ExclusiveScanByKey can be tuned with user provided memory",
+         "[scan][by_key][device]",
+         CUB_SMALL,
+         block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  const c2h::device_vector<cuda::std::int32_t> d_keys{0, 0, 1, 1, 1, 2, 2};
+  const c2h::device_vector<cuda::std::int32_t> d_in{8, 6, 7, 5, 3, 0, 9};
+  c2h::device_vector<cuda::std::int32_t> d_out(7, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_extracting_scan_op_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+  const cuda::stream stream = c2h::make_current_device_stream();
+  const auto env =
+    stdexec::env{cuda::execution::tune(scan_by_key_tuning<target_block_size>{}), cuda::stream_ref{stream}};
+
+  run_two_phase(
+    [&](void* storage, size_t& bytes, const auto& env) {
+      return cub::DeviceScan::ExclusiveScanByKey(
+        storage,
+        bytes,
+        d_keys.begin(),
+        d_in.begin(),
+        d_out.begin(),
+        block_size_check,
+        0,
+        7,
+        cuda::std::equal_to<>{},
+        env);
+    },
+    env,
+    stream.get());
+
+  const c2h::device_vector<cuda::std::int32_t> expected{0, 8, 0, 7, 12, 0, 0};
+  REQUIRE(d_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceScan::InclusiveSumByKey can be tuned with user provided memory",
+         "[scan][by_key][device]",
+         CUB_SMALL,
+         block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  const c2h::device_vector<cuda::std::int32_t> d_keys{0, 0, 1, 1, 1, 2, 2};
+  const c2h::device_vector<cuda::std::int32_t> d_in{8, 6, 7, 5, 3, 0, 9};
+  c2h::device_vector<cuda::std::int32_t> d_out(7, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_extracting_equality_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+  const cuda::stream stream = c2h::make_current_device_stream();
+  const auto env =
+    stdexec::env{cuda::execution::tune(scan_by_key_tuning<target_block_size>{}), cuda::stream_ref{stream}};
+
+  run_two_phase(
+    [&](void* storage, size_t& bytes, const auto& env) {
+      return cub::DeviceScan::InclusiveSumByKey(
+        storage, bytes, d_keys.begin(), d_in.begin(), d_out.begin(), 7, block_size_check, env);
+    },
+    env,
+    stream.get());
+
+  const c2h::device_vector<cuda::std::int32_t> expected{8, 14, 7, 12, 15, 0, 9};
+  REQUIRE(d_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceScan::InclusiveScanByKey can be tuned with user provided memory",
+         "[scan][by_key][device]",
+         CUB_SMALL,
+         block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  const c2h::device_vector<cuda::std::int32_t> d_keys{0, 0, 1, 1, 1, 2, 2};
+  const c2h::device_vector<cuda::std::int32_t> d_in{8, 6, 7, 5, 3, 0, 9};
+  c2h::device_vector<cuda::std::int32_t> d_out(7, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_extracting_scan_op_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+  const cuda::stream stream = c2h::make_current_device_stream();
+  const auto env =
+    stdexec::env{cuda::execution::tune(scan_by_key_tuning<target_block_size>{}), cuda::stream_ref{stream}};
+
+  run_two_phase(
+    [&](void* storage, size_t& bytes, const auto& env) {
+      return cub::DeviceScan::InclusiveScanByKey(
+        storage, bytes, d_keys.begin(), d_in.begin(), d_out.begin(), block_size_check, 7, cuda::std::equal_to<>{}, env);
+    },
+    env,
+    stream.get());
+
+  const c2h::device_vector<cuda::std::int32_t> expected{8, 14, 7, 12, 15, 0, 9};
+  REQUIRE(d_out == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+#endif // TEST_LAUNCH == 0
+
+// The graph launch appends its own stream argument, which cannot be combined with an environment
+#if TEST_LAUNCH != 2
+
+// Before the environment parameter, the two-phase overloads took `cudaStream_t stream = nullptr`, so callers passing
+// nullptr, a literal 0 or cudaStream_t{} for the stream exist. All must keep compiling and keep running on the default
+// stream.
+CUB_TEST_CASE("DeviceScan ByKey two-phase overloads accept legacy null stream arguments",
+              "[scan][by_key][device]",
+              CUB_SMALL)
+{
+  constexpr cuda::std::int32_t num_items = 7;
+  const c2h::device_vector<cuda::std::int32_t> d_keys{0, 1, 2, 3, 2, 4, 5};
+  const c2h::device_vector<cuda::std::int32_t> d_in{8, 6, 7, 5, 3, 0, 9};
+  c2h::device_vector<cuda::std::int32_t> d_exclusive_sum(num_items, thrust::no_init);
+  c2h::device_vector<cuda::std::int32_t> d_exclusive_scan(num_items, thrust::no_init);
+  c2h::device_vector<cuda::std::int32_t> d_inclusive_sum(num_items, thrust::no_init);
+  c2h::device_vector<cuda::std::int32_t> d_inclusive_scan(num_items, thrust::no_init);
+  const stream_scope scope{cudaStream_t{}};
+
+  SECTION("nullptr")
+  {
+    device_scan_exclusive_sum_by_key_two_phase(
+      d_keys.begin(), d_in.begin(), d_exclusive_sum.begin(), num_items, key_group_equal{}, nullptr);
+    device_scan_exclusive_scan_by_key_two_phase(
+      d_keys.begin(),
+      d_in.begin(),
+      d_exclusive_scan.begin(),
+      cuda::std::multiplies<>{},
+      2,
+      num_items,
+      key_group_equal{},
+      nullptr);
+    device_scan_inclusive_sum_by_key_two_phase(
+      d_keys.begin(), d_in.begin(), d_inclusive_sum.begin(), num_items, key_group_equal{}, nullptr);
+    device_scan_inclusive_scan_by_key_two_phase(
+      d_keys.begin(),
+      d_in.begin(),
+      d_inclusive_scan.begin(),
+      cuda::std::multiplies<>{},
+      num_items,
+      key_group_equal{},
+      nullptr);
+  }
+  SECTION("literal 0")
+  {
+    device_scan_exclusive_sum_by_key_two_phase(
+      d_keys.begin(), d_in.begin(), d_exclusive_sum.begin(), num_items, key_group_equal{}, 0);
+    device_scan_exclusive_scan_by_key_two_phase(
+      d_keys.begin(),
+      d_in.begin(),
+      d_exclusive_scan.begin(),
+      cuda::std::multiplies<>{},
+      2,
+      num_items,
+      key_group_equal{},
+      0);
+    device_scan_inclusive_sum_by_key_two_phase(
+      d_keys.begin(), d_in.begin(), d_inclusive_sum.begin(), num_items, key_group_equal{}, 0);
+    device_scan_inclusive_scan_by_key_two_phase(
+      d_keys.begin(),
+      d_in.begin(),
+      d_inclusive_scan.begin(),
+      cuda::std::multiplies<>{},
+      num_items,
+      key_group_equal{},
+      0);
+  }
+  SECTION("cudaStream_t{}")
+  {
+    device_scan_exclusive_sum_by_key_two_phase(
+      d_keys.begin(), d_in.begin(), d_exclusive_sum.begin(), num_items, key_group_equal{}, cudaStream_t{});
+    device_scan_exclusive_scan_by_key_two_phase(
+      d_keys.begin(),
+      d_in.begin(),
+      d_exclusive_scan.begin(),
+      cuda::std::multiplies<>{},
+      2,
+      num_items,
+      key_group_equal{},
+      cudaStream_t{});
+    device_scan_inclusive_sum_by_key_two_phase(
+      d_keys.begin(), d_in.begin(), d_inclusive_sum.begin(), num_items, key_group_equal{}, cudaStream_t{});
+    device_scan_inclusive_scan_by_key_two_phase(
+      d_keys.begin(),
+      d_in.begin(),
+      d_inclusive_scan.begin(),
+      cuda::std::multiplies<>{},
+      num_items,
+      key_group_equal{},
+      cudaStream_t{});
+  }
+
+  REQUIRE(d_exclusive_sum == c2h::device_vector<cuda::std::int32_t>{0, 8, 0, 7, 12, 0, 0});
+  REQUIRE(d_exclusive_scan == c2h::device_vector<cuda::std::int32_t>{2, 16, 2, 14, 70, 2, 0});
+  REQUIRE(d_inclusive_sum == c2h::device_vector<cuda::std::int32_t>{8, 14, 7, 12, 15, 0, 9});
+  REQUIRE(d_inclusive_scan == c2h::device_vector<cuda::std::int32_t>{8, 48, 7, 35, 105, 0, 0});
+}
+
+#endif // TEST_LAUNCH != 2
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
 CUB_TEST("Test ScanByKeyPolicy properties", "[scan][by_key][device]", CUB_SMALL)

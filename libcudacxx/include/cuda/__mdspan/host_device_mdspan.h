@@ -24,7 +24,9 @@
 #include <cuda/__mdspan/host_device_accessor.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__fwd/array.h>
+#include <cuda/std/__fwd/extents.h>
 #include <cuda/std/__fwd/span.h>
+#include <cuda/std/__mdspan/mdspan.h>
 #include <cuda/std/__type_traits/extent.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_pointer.h>
@@ -33,7 +35,6 @@
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/delegate_constructors.h>
-#include <cuda/std/mdspan>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -74,11 +75,11 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES host_mdspan(_CArray&)
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES host_mdspan(_ElementType*, const ::cuda::std::array<_OtherIndexType, _Size>&)
-  -> host_mdspan<_ElementType, ::cuda::std::dextents<size_t, _Size>>;
+  -> host_mdspan<_ElementType, ::cuda::std::dims<_Size>>;
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES host_mdspan(_ElementType*, ::cuda::std::span<_OtherIndexType, _Size>)
-  -> host_mdspan<_ElementType, ::cuda::std::dextents<size_t, _Size>>;
+  -> host_mdspan<_ElementType, ::cuda::std::dims<_Size>>;
 
 // This one is necessary because all the constructors take `data_handle_type`s, not
 // `_ElementType*`s, and `data_handle_type` is taken from `accessor_type::data_handle_type`, which
@@ -94,7 +95,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES host_mdspan(_ElementType*, const _MappingType&)
 
 template <class _MappingType, class _AccessorType>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES
-host_mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
+host_mdspan(typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
   -> host_mdspan<typename _AccessorType::element_type,
                  typename _MappingType::extents_type,
                  typename _MappingType::layout_type,
@@ -137,11 +138,11 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES device_mdspan(_CArray&)
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES device_mdspan(_ElementType*, const ::cuda::std::array<_OtherIndexType, _Size>&)
-  -> device_mdspan<_ElementType, ::cuda::std::dextents<size_t, _Size>>;
+  -> device_mdspan<_ElementType, ::cuda::std::dims<_Size>>;
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES device_mdspan(_ElementType*, ::cuda::std::span<_OtherIndexType, _Size>)
-  -> device_mdspan<_ElementType, ::cuda::std::dextents<size_t, _Size>>;
+  -> device_mdspan<_ElementType, ::cuda::std::dims<_Size>>;
 
 // This one is necessary because all the constructors take `data_handle_type`s, not
 // `_ElementType*`s, and `data_handle_type` is taken from `accessor_type::data_handle_type`, which
@@ -157,7 +158,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES device_mdspan(_ElementType*, const _MappingType
 
 template <class _MappingType, class _AccessorType>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES
-device_mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
+device_mdspan(typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
   -> device_mdspan<typename _AccessorType::element_type,
                    typename _MappingType::extents_type,
                    typename _MappingType::layout_type,
@@ -200,11 +201,11 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES managed_mdspan(_CArray&)
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES managed_mdspan(_ElementType*, const ::cuda::std::array<_OtherIndexType, _Size>&)
-  -> managed_mdspan<_ElementType, ::cuda::std::dextents<size_t, _Size>>;
+  -> managed_mdspan<_ElementType, ::cuda::std::dims<_Size>>;
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES managed_mdspan(_ElementType*, ::cuda::std::span<_OtherIndexType, _Size>)
-  -> managed_mdspan<_ElementType, ::cuda::std::dextents<size_t, _Size>>;
+  -> managed_mdspan<_ElementType, ::cuda::std::dims<_Size>>;
 
 // This one is necessary because all the constructors take `data_handle_type`s, not
 // `_ElementType*`s, and `data_handle_type` is taken from `accessor_type::data_handle_type`, which
@@ -220,7 +221,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES managed_mdspan(_ElementType*, const _MappingTyp
 
 template <class _MappingType, class _AccessorType>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES
-managed_mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
+managed_mdspan(typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
   -> managed_mdspan<typename _AccessorType::element_type,
                     typename _MappingType::extents_type,
                     typename _MappingType::layout_type,

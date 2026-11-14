@@ -12,6 +12,7 @@
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 
 #include <algorithm>
+#include <string>
 
 using namespace cuda::experimental::stf;
 
@@ -92,7 +93,7 @@ __device__ double Source(double t, double x, double y, double z)
   constexpr double omega      = (2 * pi * freq);
   constexpr double wavelength = 3e8 / freq;
   constexpr double k          = 2 * pi / wavelength;
-  return sin(k * x - omega * t);
+  return sin((k * x) - (omega * t));
 }
 #endif // !_CCCL_COMPILER(MSVC)
 
@@ -128,7 +129,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   const double MU      = 1.256e-6; // Permeability of free space
 
   // CFL condition DT <= min(DX, DY, DZ) * sqrt(epsilon_max * mu_max)
-  double DT = 0.25 * std::min(std::min(DX, DY), DZ) * sqrt(EPSILON * MU);
+  double DT = 0.25 * std::min({DX, DY, DZ}) * sqrt(EPSILON * MU);
 
   // Initialize E
   ctx.parallel_for(data_shape, lEx.write(), lEy.write(), lEz.write())
@@ -163,20 +164,20 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   size_t timesteps = 10;
   if (argc > 1)
   {
-    timesteps = (size_t) atol(argv[1]);
+    timesteps = (size_t) ::std::stol(argv[1]);
   }
 
   // No output by default
   int64_t output_freq = -1;
   if (argc > 2)
   {
-    output_freq = (int64_t) atol(argv[2]);
+    output_freq = (int64_t) ::std::stol(argv[2]);
   }
 
   /* Index shapes for Electric fields, Magnetic fields, and the indices where there is a source */
-  box<3> Es({1ul, SIZE_X - 1}, {1ul, SIZE_Y - 1}, {1ul, SIZE_Z - 1});
-  box<3> Hs({0ul, SIZE_X - 1}, {0ul, SIZE_Y - 1}, {0ul, SIZE_Z - 1});
-  box<3> source_s({center_x, center_x + 1}, {center_y, center_y + 1}, {center_z, center_z + 1});
+  const box<3> Es({1ul, SIZE_X - 1}, {1ul, SIZE_Y - 1}, {1ul, SIZE_Z - 1});
+  const box<3> Hs({0ul, SIZE_X - 1}, {0ul, SIZE_Y - 1}, {0ul, SIZE_Z - 1});
+  const box<3> source_s({center_x, center_x + 1}, {center_y, center_y + 1}, {center_z, center_z + 1});
 
   for (size_t n = 0; n < timesteps; n++)
   {
@@ -184,55 +185,63 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
     // Update Ex
     ctx.parallel_for(Es, lEx.rw(), lHy.read(), lHz.read(), lepsilon.read())
-        ->*[=]
-      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ex, auto Hy, auto Hz, auto epsilon) {
-        Ex(i, j, k) = Ex(i, j, k)
-                    + (DT / (epsilon(i, j, k) * DX)) * (Hz(i, j, k) - Hz(i, j - 1, k) - Hy(i, j, k) + Hy(i, j, k - 1));
-      };
+        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ex, auto Hy, auto Hz, auto epsilon) {
+              Ex(i, j, k) =
+                Ex(i, j, k)
+                + ((DT / (epsilon(i, j, k) * DX)) * (Hz(i, j, k) - Hz(i, j - 1, k) - Hy(i, j, k) + Hy(i, j, k - 1)));
+            };
 
     // Update Ey
     ctx.parallel_for(Es, lEy.rw(), lHx.read(), lHz.read(), lepsilon.read())
-        ->*[=]
-      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ey, auto Hx, auto Hz, auto epsilon) {
-        Ey(i, j, k) = Ey(i, j, k)
-                    + (DT / (epsilon(i, j, k) * DY)) * (Hx(i, j, k) - Hx(i, j, k - 1) - Hz(i, j, k) + Hz(i - 1, j, k));
-      };
+        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ey, auto Hx, auto Hz, auto epsilon) {
+              Ey(i, j, k) =
+                Ey(i, j, k)
+                + ((DT / (epsilon(i, j, k) * DY)) * (Hx(i, j, k) - Hx(i, j, k - 1) - Hz(i, j, k) + Hz(i - 1, j, k)));
+            };
 
     // Update Ez
     ctx.parallel_for(Es, lEz.rw(), lHx.read(), lHy.read(), lepsilon.read())
-        ->*[=]
-      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez, auto Hx, auto Hy, auto epsilon) {
-        Ez(i, j, k) = Ez(i, j, k)
-                    + (DT / (epsilon(i, j, k) * DZ)) * (Hy(i, j, k) - Hy(i - 1, j, k) - Hx(i, j, k) + Hx(i, j - 1, k));
-      };
+        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez, auto Hx, auto Hy, auto epsilon) {
+              Ez(i, j, k) =
+                Ez(i, j, k)
+                + ((DT / (epsilon(i, j, k) * DZ)) * (Hy(i, j, k) - Hy(i - 1, j, k) - Hx(i, j, k) + Hx(i, j - 1, k)));
+            };
 
     // Add the source function at the center of the grid
     ctx.parallel_for(source_s, lEz.rw())->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez) {
-      Ez(i, j, k) = Ez(i, j, k) + Source(n * DT, i * DX, j * DY, k * DZ);
+      Ez(i, j, k) =
+        Ez(i, j, k)
+        + Source(static_cast<double>(n) * DT,
+                 static_cast<double>(i) * DX,
+                 static_cast<double>(j) * DY,
+                 static_cast<double>(k) * DZ);
     };
 
     // Update the magnetic fields
 
     // Update Hx
     ctx.parallel_for(Hs, lHx.rw(), lEy.read(), lEz.read(), lmu.read())
-        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hx, auto Ey, auto Ez, auto mu) {
-              Hx(i, j, k) = Hx(i, j, k)
-                          - (DT / (mu(i, j, k) * DY)) * (Ez(i, j + 1, k) - Ez(i, j, k) - Ey(i, j, k + 1) + Ey(i, j, k));
-            };
+        ->*[=]
+      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hx, auto Ey, auto Ez, auto mu) {
+        Hx(i, j, k) =
+          Hx(i, j, k) - ((DT / (mu(i, j, k) * DY)) * (Ez(i, j + 1, k) - Ez(i, j, k) - Ey(i, j, k + 1) + Ey(i, j, k)));
+      };
 
     // Update Hy
     ctx.parallel_for(Hs, lHy.rw(), lEx.read(), lEz.read(), lmu.read())
-        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hy, auto Ex, auto Ez, auto mu) {
-              Hy(i, j, k) = Hy(i, j, k)
-                          - (DT / (mu(i, j, k) * DZ)) * (Ex(i, j, k + 1) - Ex(i, j, k) - Ez(i + 1, j, k) + Ez(i, j, k));
-            };
+        ->*[=]
+      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hy, auto Ex, auto Ez, auto mu) {
+        Hy(i, j, k) =
+          Hy(i, j, k) - ((DT / (mu(i, j, k) * DZ)) * (Ex(i, j, k + 1) - Ex(i, j, k) - Ez(i + 1, j, k) + Ez(i, j, k)));
+      };
 
     // Update Hz
     ctx.parallel_for(Hs, lHz.rw(), lEx.read(), lEy.read(), lmu.read())
-        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hz, auto Ex, auto Ey, auto mu) {
-              Hz(i, j, k) = Hz(i, j, k)
-                          - (DT / (mu(i, j, k) * DX)) * (Ey(i + 1, j, k) - Ey(i, j, k) - Ex(i, j + 1, k) + Ex(i, j, k));
-            };
+        ->*[=]
+      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hz, auto Ex, auto Ey, auto mu) {
+        Hz(i, j, k) =
+          Hz(i, j, k) - ((DT / (mu(i, j, k) * DX)) * (Ey(i + 1, j, k) - Ey(i, j, k) - Ex(i, j + 1, k) + Ex(i, j, k)));
+      };
 
     if (output_freq > 0)
     {
@@ -242,7 +251,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
         if (output_freq > 0 && n % output_freq == 0)
         {
-          std::string filename = "Ez" + std::to_string(n) + ".vtk";
+          const std::string filename = "Ez" + std::to_string(n) + ".vtk";
 
           // Dump a 2D slice of Ez in VTK
           write_vtk_2D(filename, Ez, DX, DY, DZ);

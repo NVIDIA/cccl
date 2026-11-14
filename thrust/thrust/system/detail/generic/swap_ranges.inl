@@ -30,7 +30,7 @@ namespace detail
 struct swap_pair_elements
 {
   template <typename Tuple>
-  _CCCL_HOST_DEVICE void operator()(Tuple t)
+  _CCCL_HOST_DEVICE_API void operator()(Tuple t)
   {
     // use unqualified swap to allow ADL to catch any user-defined swap
     using ::cuda::std::swap;
@@ -40,7 +40,7 @@ struct swap_pair_elements
 } // namespace detail
 
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2>
-_CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
+_CCCL_HOST_DEVICE_API ForwardIterator2 swap_ranges(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator1 first1,
   ForwardIterator1 last1,
@@ -49,7 +49,7 @@ _CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
   using IteratorTuple = ::cuda::std::tuple<ForwardIterator1, ForwardIterator2>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-  ZipIterator result = thrust::for_each(
+  const ZipIterator result = thrust::for_each(
     exec,
     thrust::make_zip_iterator(first1, first2),
     thrust::make_zip_iterator(last1, first2),

@@ -73,7 +73,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator
+_CCCL_HOST_DEVICE_API ForwardIterator
 unique(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
 /*! For each group of consecutive elements in the range <tt>[first, last)</tt>
@@ -116,7 +116,7 @@ unique(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Forward
  *  \endverbatim
  */
 template <typename ForwardIterator>
-ForwardIterator unique(ForwardIterator first, ForwardIterator last);
+_CCCL_HOST_API ForwardIterator unique(ForwardIterator first, ForwardIterator last);
 
 /*! For each group of consecutive elements in the range <tt>[first, last)</tt>
  *  with the same value, \p unique removes all but the first element of
@@ -167,7 +167,7 @@ ForwardIterator unique(ForwardIterator first, ForwardIterator last);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ForwardIterator unique(
+_CCCL_HOST_DEVICE_API ForwardIterator unique(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -216,7 +216,7 @@ _CCCL_HOST_DEVICE ForwardIterator unique(
  *  \endverbatim
  */
 template <typename ForwardIterator, typename BinaryPredicate>
-ForwardIterator unique(ForwardIterator first, ForwardIterator last, BinaryPredicate binary_pred);
+_CCCL_HOST_API ForwardIterator unique(ForwardIterator first, ForwardIterator last, BinaryPredicate binary_pred);
 
 /*! \p unique_copy copies elements from the range <tt>[first, last)</tt>
  * to a range beginning with \p result, except that in a consecutive group
@@ -276,7 +276,7 @@ ForwardIterator unique(ForwardIterator first, ForwardIterator last, BinaryPredic
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator unique_copy(
+_CCCL_HOST_DEVICE_API OutputIterator unique_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -334,7 +334,7 @@ _CCCL_HOST_DEVICE OutputIterator unique_copy(
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator>
-OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterator result);
+_CCCL_HOST_API OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterator result);
 
 /*! \p unique_copy copies elements from the range <tt>[first, last)</tt>
  * to a range beginning with \p result, except that in a consecutive group
@@ -387,7 +387,7 @@ OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterat
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE OutputIterator unique_copy(
+_CCCL_HOST_DEVICE_API OutputIterator unique_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -439,7 +439,8 @@ _CCCL_HOST_DEVICE OutputIterator unique_copy(
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename BinaryPredicate>
-OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterator result, BinaryPredicate binary_pred);
+_CCCL_HOST_API OutputIterator
+unique_copy(InputIterator first, InputIterator last, OutputIterator result, BinaryPredicate binary_pred);
 
 /*! \p unique_by_key is a generalization of \p unique to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
@@ -502,7 +503,7 @@ OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterat
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator1 keys_first,
   ForwardIterator1 keys_last,
@@ -563,7 +564,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_b
  *  \endverbatim
  */
 template <typename ForwardIterator1, typename ForwardIterator2>
-::cuda::std::pair<ForwardIterator1, ForwardIterator2>
+_CCCL_HOST_API ::cuda::std::pair<ForwardIterator1, ForwardIterator2>
 unique_by_key(ForwardIterator1 keys_first, ForwardIterator1 keys_last, ForwardIterator2 values_first);
 
 /*! \p unique_by_key is a generalization of \p unique to key-value pairs.
@@ -625,7 +626,7 @@ unique_by_key(ForwardIterator1 keys_first, ForwardIterator1 keys_last, ForwardIt
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator1 keys_first,
   ForwardIterator1 keys_last,
@@ -685,7 +686,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_b
  *  \endverbatim
  */
 template <typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
-::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
+_CCCL_HOST_API ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
   ForwardIterator1 keys_first, ForwardIterator1 keys_last, ForwardIterator2 values_first, BinaryPredicate binary_pred);
 
 /*! \p unique_by_key_copy is a generalization of \p unique_copy to key-value pairs.
@@ -754,7 +755,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -818,7 +819,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
-::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   InputIterator1 keys_first,
   InputIterator1 keys_last,
   InputIterator2 values_first,
@@ -895,7 +896,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -967,7 +968,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   InputIterator1 keys_first,
   InputIterator1 keys_last,
   InputIterator2 values_first,
@@ -1017,7 +1018,7 @@ template <typename InputIterator1,
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
+_CCCL_HOST_DEVICE_API thrust::detail::it_difference_t<ForwardIterator> unique_count(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -1064,7 +1065,7 @@ _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
+_CCCL_HOST_DEVICE_API thrust::detail::it_difference_t<ForwardIterator> unique_count(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
 /*! \p unique_count counts runs of equal elements in the range <tt>[first, last)</tt>
@@ -1105,7 +1106,7 @@ _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
  *  \endverbatim
  */
 template <typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator>
+_CCCL_HOST_DEVICE_API thrust::detail::it_difference_t<ForwardIterator>
 unique_count(ForwardIterator first, ForwardIterator last, BinaryPredicate binary_pred);
 
 /*! \p unique_count counts runs of equal elements in the range <tt>[first, last)</tt>
@@ -1145,7 +1146,7 @@ unique_count(ForwardIterator first, ForwardIterator last, BinaryPredicate binary
  *  \endverbatim
  */
 template <typename ForwardIterator>
-_CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator>
+_CCCL_HOST_DEVICE_API thrust::detail::it_difference_t<ForwardIterator>
 unique_count(ForwardIterator first, ForwardIterator last);
 
 /*! \} // end stream_compaction

@@ -24,11 +24,11 @@ namespace system::detail::sequential
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE InputIterator
+_CCCL_HOST_DEVICE_API InputIterator
 find_if(execution_policy<DerivedPolicy>&, InputIterator first, InputIterator last, Predicate pred)
 {
   // wrap pred
-  thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
 
   while (first != last)
   {

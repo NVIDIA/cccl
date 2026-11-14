@@ -1,8 +1,34 @@
 import numpy as np
+import pytest
 
+from cuda.compute import ProxyArray
 from cuda.compute._caching import CachableFunction, _make_hashable
 
 global_x = 1
+
+
+def add(x, y):
+    # Module-level operator whose body names itself: ``add`` is both this
+    # function's global name and the attribute name in ``np.add``.
+    return np.add(x, y)
+
+
+def fact(n):
+    return 1 if n <= 1 else n * fact(n - 1)
+
+
+def _ping(n):
+    return _pong(n - 1) if n else 0
+
+
+def _pong(n):
+    return _ping(n - 1) if n else 1
+
+
+def _key(value):
+    # ``_make_hashable`` collects objects it keys by ``id()`` into a keep-alive
+    # list; the tests below compare keys only, so a throwaway list is fine.
+    return _make_hashable(value, [])
 
 
 def test_func_caching_basic():
@@ -88,16 +114,16 @@ def test_make_hashable_python_scalars_keyed_by_value():
     a = int(str(10**6))
     b = int(str(10**6))
     assert a is not b
-    assert _make_hashable(a) == _make_hashable(b)
+    assert _key(a) == _key(b)
 
     x = float(str(3.5))
     y = float(str(3.5))
-    assert _make_hashable(x) == _make_hashable(y)
+    assert _key(x) == _key(y)
 
     # Distinct values, types, and bool-vs-int must not collide.
-    assert _make_hashable(a) != _make_hashable(int(str(10**6 + 1)))
-    assert _make_hashable(1) != _make_hashable(1.0)
-    assert _make_hashable(True) != _make_hashable(1)
+    assert _key(a) != _key(int(str(10**6 + 1)))
+    assert _key(1) != _key(1.0)
+    assert _key(True) != _key(1)
 
 
 def test_func_caching_with_python_scalar_closure():
@@ -121,6 +147,9 @@ def test_func_caching_with_python_scalar_closure():
     assert f1 != f3
 
 
+@pytest.mark.thread_unsafe(
+    reason="Mutates the module global it keys on; a concurrent instance changes it under this one's feet."
+)
 def test_func_caching_with_global_variable():
     global global_x
 
@@ -137,10 +166,10 @@ def test_func_caching_with_global_variable():
 
 
 def test_func_caching_wrapped_cuda_jit_function():
-    import numba.cuda
+    from numba_cuda_mlir import cuda as backend_cuda
 
     def make_func():
-        @numba.cuda.jit
+        @backend_cuda.jit
         def inner(x):
             return x
 
@@ -150,7 +179,7 @@ def test_func_caching_wrapped_cuda_jit_function():
         return func
 
     def make_func2():
-        @numba.cuda.jit
+        @backend_cuda.jit
         def inner(x):
             return 2 * x
 
@@ -186,6 +215,63 @@ def test_func_caching_with_global_np_ufunc():
     assert CachableFunction(func1) != CachableFunction(func2)
 
 
+class _RankedProxyArray(ProxyArray):
+    """A ProxyArray with a caller-chosen shape.
+
+    ProxyArray itself always reports a fixed rank-1 shape, so it alone can't
+    exercise the "different rank" half of the dtype-and-rank cache key.
+    """
+
+    __slots__ = ("_shape",)
+
+    def __init__(self, dtype, shape):
+        super().__init__(dtype)
+        self._shape = tuple(shape)
+
+    @property
+    def __cuda_array_interface__(self):
+        cai = super().__cuda_array_interface__
+        cai["shape"] = self._shape
+        return cai
+
+
+def test_make_hashable_device_array_keys_on_dtype_and_rank_only():
+    # Regression test for gh-11407: a device array's build-cache key must
+    # depend only on dtype and rank (ndim), not on the concrete shape or
+    # identity of the referenced array. Shape is threaded through the
+    # runtime state buffer (not baked into the compiled code); only rank
+    # sizes the generated carray() call, so distinct arrays of the same
+    # dtype and rank must produce the same key.
+    a = ProxyArray(np.int64)
+    b = ProxyArray(np.int64)
+    assert a is not b
+    assert _key(a) == _key(b)
+
+    c = ProxyArray(np.int32)
+    assert _key(a) != _key(c)
+
+    d = _RankedProxyArray(np.int64, (1, 1))
+    assert _key(a) != _key(d)
+
+
+def test_func_caching_with_device_array_closure_ignores_shape():
+    # gh-11407: closures capturing a device array must compare equal
+    # across distinct array objects of the same dtype and rank, so the
+    # algorithm build cache hits instead of rebuilding every call.
+    def factory(lut):
+        def op(x):
+            return lut[x]
+
+        return op
+
+    f1 = CachableFunction(factory(ProxyArray(np.int64)))
+    f2 = CachableFunction(factory(ProxyArray(np.int64)))
+    assert f1 == f2
+
+    f3 = CachableFunction(factory(ProxyArray(np.int32)))
+    assert f1 != f3
+
+
 def test_func_caching_with_aliased_np_ufunc():
     def make_func1():
         amin = np.argmin
@@ -207,3 +293,16 @@ def test_func_caching_with_aliased_np_ufunc():
     func2 = make_func2()
 
     assert CachableFunction(func1) != CachableFunction(func2)
+
+
+def test_self_referencing_operator_key_terminates():
+    # Regression test: keying a function by content must not recurse into
+    # itself when its own name appears among the globals it references.
+    assert CachableFunction(add) == CachableFunction(add)
+    assert CachableFunction(fact) == CachableFunction(fact)
+    assert CachableFunction(add) != CachableFunction(fact)
+
+
+def test_mutually_recursive_operator_keys_terminate_and_differ():
+    assert CachableFunction(_ping) == CachableFunction(_ping)
+    assert CachableFunction(_ping) != CachableFunction(_pong)

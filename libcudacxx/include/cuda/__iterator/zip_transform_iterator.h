@@ -21,31 +21,22 @@
 #endif // no system header
 
 #include <cuda/__fwd/iterator.h>
-#include <cuda/std/__algorithm/ranges_min_element.h>
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #include <cuda/__iterator/zip_common.h>
 #include <cuda/std/__concepts/constructible.h>
-#include <cuda/std/__concepts/convertible_to.h>
-#include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/advance.h>
-#include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__ranges/compressed_movable_box.h>
-#include <cuda/std/__ranges/concepts.h>
-#include <cuda/std/__ranges/movable_box.h>
+#include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/common_type.h>
-#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/tuple>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -157,7 +148,6 @@ template <class _Fn, class... _Iterators>
 template <class _Fn, class... _Iterators>
 class zip_transform_iterator
 {
-private:
   // Not a base because then the friend operators would be ambiguous
   ::cuda::std::__compressed_movable_box<::cuda::std::tuple<_Iterators...>, _Fn> __store_;
 
@@ -189,9 +179,9 @@ private:
   __zip_apply(const _Op& __op,
               const ::cuda::std::tuple<_Iterators...>& __tuple1,
               const ::cuda::std::tuple<_Iterators...>& __tuple2) //
-    noexcept(noexcept(__op(__tuple1, __tuple2, ::cuda::std::make_index_sequence<sizeof...(_Iterators)>())))
+    noexcept(noexcept(__op(__tuple1, __tuple2, ::cuda::std::index_sequence_for<_Iterators...>())))
   {
-    return __op(__tuple1, __tuple2, ::cuda::std::make_index_sequence<sizeof...(_Iterators)>());
+    return __op(__tuple1, __tuple2, ::cuda::std::index_sequence_for<_Iterators...>());
   }
 
 public:
@@ -251,7 +241,7 @@ public:
     [[nodiscard]] _CCCL_API constexpr reference operator()(const _Iterators&... __iters) const
       noexcept(::cuda::std::is_nothrow_invocable_v<_Fn&, ::cuda::std::iter_reference_t<const _Iterators>...>)
     {
-      return ::cuda::std::invoke(const_cast<_Fn&>(__func_), *__iters...);
+      return ::cuda::std::invoke(__func_, *__iters...);
     }
   };
 
@@ -268,11 +258,10 @@ public:
     _Fn& __func_;
 
     _CCCL_EXEC_CHECK_DISABLE
-    [[nodiscard]] _CCCL_API constexpr reference operator()(const _Iterators&... __iters) const noexcept(noexcept(
-      ::cuda::std::invoke(const_cast<_Fn&>(__func_), __iters[::cuda::std::iter_difference_t<_Iterators>(__n_)]...)))
+    [[nodiscard]] _CCCL_API constexpr reference operator()(const _Iterators&... __iters) const
+      noexcept(noexcept(::cuda::std::invoke(__func_, __iters[::cuda::std::iter_difference_t<_Iterators>(__n_)]...)))
     {
-      return ::cuda::std::invoke(
-        const_cast<_Fn&>(__func_), __iters[::cuda::std::iter_difference_t<_Iterators>(__n_)]...);
+      return ::cuda::std::invoke(__func_, __iters[::cuda::std::iter_difference_t<_Iterators>(__n_)]...);
     }
   };
 

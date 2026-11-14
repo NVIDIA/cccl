@@ -21,12 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/bit_compress.h>
 #include <cuda/std/__bit/bit_expand.h>
 #include <cuda/std/__bit/bit_repeat.h>
 #include <cuda/std/__bit/bit_reverse.h>
 #include <cuda/std/__bit/byteswap.h>
+#include <cuda/std/__bit/clear_padding.h>
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/endian.h>
@@ -38,5 +40,6 @@
 #include <cuda/std/__bit/shl.h>
 #include <cuda/std/__bit/shr.h>
 #include <cuda/std/version>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_STD_BIT

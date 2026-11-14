@@ -41,7 +41,7 @@ CUB_TEST("Device transform reduce works with pointers", "[reduce][device]", CUB_
 
   const int num_items = GENERATE_COPY(take(3, random(min_items, max_items)));
 
-  item_t init{42};
+  const item_t init{42};
   c2h::device_vector<item_t> out(1);
   c2h::device_vector<item_t> in(num_items + 1);
   c2h::gen(C2H_SEED(2), in);
@@ -205,7 +205,7 @@ CUB_TEST("Device transform reduce doesn't let input type into reduction op", "[r
 
   device_transform_reduce(d_in, d_out, num_items, reduction_op_t{}, transform_op_t{}, init);
 
-  const std::uint64_t expected = static_cast<std::uint64_t>(num_items) * magic_val.a * magic_val.a + init.a;
+  const std::uint64_t expected = (static_cast<std::uint64_t>(num_items) * magic_val.a * magic_val.a) + init.a;
   const output_t actual        = out[0];
 
   INFO("num_items: " << num_items);

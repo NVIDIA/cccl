@@ -30,21 +30,26 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wignored-attributes")
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
+#  include <cub/agent/agent_select_if.cuh>
 #  include <cub/device/device_partition.cuh>
+#  include <cub/util_namespace.cuh>
 
 _CCCL_DIAG_POP
 
-#  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
+#  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__algorithm/partition_copy.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__execution/env.h>
-#  include <cuda/std/__execution/policy.h>
+#  include <cuda/std/__fwd/execution_policy.h>
 #  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__iterator/incrementable_traits.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
@@ -83,7 +88,7 @@ struct __pstl_dispatch<__pstl_algorithm::__partition_copy, __execution_backend::
 
     // Determine temporary device storage requirements for device_partition
     size_t __num_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DevicePartition::If,
       "__pstl_cuda_partition_copy: determination of device storage for cub::DevicePartition::If failed",
       static_cast<void*>(nullptr),
@@ -99,7 +104,7 @@ struct __pstl_dispatch<__pstl_algorithm::__partition_copy, __execution_backend::
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
 
       // Run the kernel, the standard requires that the input and output range do not overlap
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DevicePartition::If,
         "__pstl_cuda_partition_copy: kernel launch of cub::DevicePartition::If failed",
         __storage.__get_temp_storage(),
@@ -112,7 +117,7 @@ struct __pstl_dispatch<__pstl_algorithm::__partition_copy, __execution_backend::
         __policy);
 
       // Copy the result back from storage
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_partition_copy: copy of result from device to host failed",
         ::cuda::std::addressof(__num_selected),

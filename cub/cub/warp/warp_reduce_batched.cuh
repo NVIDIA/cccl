@@ -20,14 +20,16 @@
 #endif // no system header
 
 #include <cub/detail/type_traits.cuh>
-#include <cub/util_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/warp/specializations/warp_reduce_batched_wspro.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/readable_traits.h>
+#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/array>
 
 CUB_NAMESPACE_BEGIN
 
@@ -113,7 +115,7 @@ private:
   static constexpr auto max_out_per_thread = ::cuda::ceil_div(Batches, LogicalWarpThreads);
 
   template <class InputT, class OutputT, class ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void check_constraints()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void check_constraints()
   {
     static_assert(detail::is_fixed_size_random_access_range_v<InputT>,
                   "InputT must support the subscript operator[] and have a compile-time size");
@@ -125,20 +127,19 @@ private:
     // These restrictions could be relaxed to allow type-conversions
     static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<InputT>, T>, "Input element type must match T");
     static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<OutputT>, T>, "Output element type must match T");
-    static_assert(detail::has_binary_call_operator<ReductionOp, T>::value,
+    static_assert(::cuda::std::__is_callable_v<ReductionOp, T, T>,
                   "ReductionOp must have the binary call operator: operator(T, T)");
   };
 
   //! Shared memory storage layout type for WarpReduceBatched
-  using _TempStorage = typename InternalWarpReduceBatched::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalWarpReduceBatched::TempStorage;
 
   //! Shared storage reference
   _TempStorage& temp_storage;
 
 public:
   //! \smemstorage{WarpReduceBatched}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
@@ -206,7 +207,8 @@ public:
     static_assert(max_out_per_thread == 1,
                   "For Batches > LogicalWarpThreads (or Batches == 0), use ReduceToStriped() or ReduceToBlocked()");
 
-    ::cuda::std::array<T, 1> output;
+    // ReduceToStriped supplies the output value.
+    ::cuda::std::array<T, 1> output; // NOLINT(cppcoreguidelines-pro-type-member-init)
     // ReduceToBlocked() and ReduceToStriped() do the same for max_out_per_thread == 1.
     ReduceToStriped(inputs, output, reduction_op);
     return output[0];

@@ -17,14 +17,19 @@
 
 #  include <thrust/system/cuda/config.h>
 
-#  include <cub/device/device_scan.cuh>
+#  include <cub/detail/input_value.cuh>
+#  include <cub/detail/it_traits.cuh>
+#  include <cub/device/dispatch/dispatch_common.cuh>
+#  include <cub/device/dispatch/dispatch_scan.cuh> // IWYU pragma: keep
 
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/detail/type_traits.h>
 #  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
+#  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/invoke.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
@@ -37,7 +42,7 @@ namespace detail
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename ScanOp>
-_CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
+_CCCL_HOST_DEVICE_API OutputIt inclusive_scan_n_impl(
   thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, Size num_items, OutputIt result, ScanOp scan_op)
 {
   using AccumT        = thrust::detail::it_value_t<InputIt>;
@@ -87,7 +92,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename InitValueT, typename ScanOp>
-_CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
+_CCCL_HOST_DEVICE_API OutputIt inclusive_scan_n_impl(
   thrust::cuda_cub::execution_policy<Derived>& policy,
   InputIt first,
   Size num_items,
@@ -144,7 +149,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename InitValueT, typename ScanOp>
-_CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
+_CCCL_HOST_DEVICE_API OutputIt exclusive_scan_n_impl(
   thrust::cuda_cub::execution_policy<Derived>& policy,
   InputIt first,
   Size num_items,
@@ -203,7 +208,7 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
 //-------------------------
 
 template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename T, typename ScanOp>
-_CCCL_HOST_DEVICE OutputIt inclusive_scan_n(
+_CCCL_HOST_DEVICE_API OutputIt inclusive_scan_n(
   thrust::cuda_cub::execution_policy<Derived>& policy,
   InputIt first,
   Size num_items,
@@ -219,7 +224,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n(
 }
 
 template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename ScanOp>
-_CCCL_HOST_DEVICE OutputIt inclusive_scan_n(
+_CCCL_HOST_DEVICE_API OutputIt inclusive_scan_n(
   thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, Size num_items, OutputIt result, ScanOp scan_op)
 {
   THRUST_CDP_DISPATCH(
@@ -229,7 +234,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n(
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename ScanOp>
-_CCCL_HOST_DEVICE OutputIt inclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIt inclusive_scan(
   thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, ScanOp scan_op)
 {
   using diff_t           = thrust::detail::it_difference_t<InputIt>;
@@ -238,7 +243,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan(
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename T, typename ScanOp>
-_CCCL_HOST_DEVICE OutputIt inclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIt inclusive_scan(
   thrust::cuda_cub::execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -252,7 +257,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan(
 }
 
 template <typename Derived, typename InputIt, typename OutputIt>
-_CCCL_HOST_DEVICE OutputIt
+_CCCL_HOST_DEVICE_API OutputIt
 inclusive_scan(thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
 {
   return thrust::cuda_cub::inclusive_scan(policy, first, last, result, ::cuda::std::plus<>{});
@@ -260,7 +265,7 @@ inclusive_scan(thrust::cuda_cub::execution_policy<Derived>& policy, InputIt firs
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename T, typename ScanOp>
-_CCCL_HOST_DEVICE OutputIt exclusive_scan_n(
+_CCCL_HOST_DEVICE_API OutputIt exclusive_scan_n(
   thrust::cuda_cub::execution_policy<Derived>& policy,
   InputIt first,
   Size num_items,
@@ -276,7 +281,7 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n(
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename T, typename ScanOp>
-_CCCL_HOST_DEVICE OutputIt exclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIt exclusive_scan(
   thrust::cuda_cub::execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -290,14 +295,14 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan(
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename T>
-_CCCL_HOST_DEVICE OutputIt exclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIt exclusive_scan(
   thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, T init)
 {
   return thrust::cuda_cub::exclusive_scan(policy, first, last, result, init, ::cuda::std::plus<>{});
 }
 
 template <typename Derived, typename InputIt, typename OutputIt>
-_CCCL_HOST_DEVICE OutputIt
+_CCCL_HOST_DEVICE_API OutputIt
 exclusive_scan(thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
 {
   using init_type = thrust::detail::it_value_t<InputIt>;
@@ -306,6 +311,6 @@ exclusive_scan(thrust::cuda_cub::execution_policy<Derived>& policy, InputIt firs
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 
-#  include <thrust/scan.h>
+#  include <thrust/scan.h> // IWYU pragma: keep
 
 #endif // _CCCL_CUDA_COMPILATION()

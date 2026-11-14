@@ -21,10 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/__functional/address_stability.h>
 #include <cuda/__functional/always_true_false.h>
 #include <cuda/__functional/equal_to_value.h>
 #include <cuda/__functional/hash.h>
+#include <cuda/__functional/is_even.h>
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
 #include <cuda/__functional/operator_properties.h>
@@ -32,5 +34,6 @@
 #include <cuda/__iterator/zip_function.h>
 #include <cuda/__memory/get_device_address.h>
 #include <cuda/std/functional>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_FUNCTIONAL_

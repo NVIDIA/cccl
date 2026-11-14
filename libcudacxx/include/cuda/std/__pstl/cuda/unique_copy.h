@@ -29,24 +29,23 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 #  include <cub/device/device_select.cuh>
+#  include <cub/util_namespace.cuh>
 
 _CCCL_DIAG_POP
 
-#  include <cuda/__execution/policy.h>
+#  include <cuda/__functional/call_or.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
-#  include <cuda/std/__algorithm/unique.h>
 #  include <cuda/std/__algorithm/unique_copy.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__execution/env.h>
-#  include <cuda/std/__execution/policy.h>
+#  include <cuda/std/__fwd/execution_policy.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/incrementable_traits.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
-#  include <cuda/std/__iterator/next.h>
-#  include <cuda/std/__memory/pointer_traits.h>
 #  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
@@ -80,7 +79,7 @@ struct __pstl_dispatch<__pstl_algorithm::__unique_copy, __execution_backend::__c
     _OffsetType __num_selected = 0;
 
     size_t __num_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceSelect::Unique,
       "__pstl_cuda_unique: determination of device storage for cub::DeviceSelect::Unique failed",
       static_cast<void*>(nullptr),
@@ -95,7 +94,7 @@ struct __pstl_dispatch<__pstl_algorithm::__unique_copy, __execution_backend::__c
     { // Create temporary storage for the return value (num_selected) and CUB internal scratch space
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
 
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceSelect::Unique,
         "__pstl_cuda_unique: kernel launch of cub::DeviceSelect::Unique failed",
         __storage.__get_temp_storage(),
@@ -107,7 +106,7 @@ struct __pstl_dispatch<__pstl_algorithm::__unique_copy, __execution_backend::__c
         ::cuda::std::move(__pred),
         __policy);
 
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_unique: copy of num_selected from device to host failed",
         ::cuda::std::addressof(__num_selected),

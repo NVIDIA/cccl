@@ -102,7 +102,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator set_difference(
+_CCCL_HOST_DEVICE_API OutputIterator set_difference(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -179,7 +179,7 @@ _CCCL_HOST_DEVICE OutputIterator set_difference(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
-OutputIterator set_difference(
+_CCCL_HOST_API OutputIterator set_difference(
   InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result);
 
 /*! \p set_difference constructs a sorted range that is the set difference of the sorted
@@ -257,7 +257,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename StrictWeakCompare>
-_CCCL_HOST_DEVICE OutputIterator set_difference(
+_CCCL_HOST_DEVICE_API OutputIterator set_difference(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -331,7 +331,7 @@ _CCCL_HOST_DEVICE OutputIterator set_difference(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename StrictWeakCompare>
-OutputIterator set_difference(
+_CCCL_HOST_API OutputIterator set_difference(
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
@@ -421,7 +421,7 @@ OutputIterator set_difference(
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator set_intersection(
+_CCCL_HOST_DEVICE_API OutputIterator set_intersection(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -505,7 +505,7 @@ _CCCL_HOST_DEVICE OutputIterator set_intersection(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
-OutputIterator set_intersection(
+_CCCL_HOST_API OutputIterator set_intersection(
   InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result);
 
 /*! \p set_intersection constructs a sorted range that is the
@@ -595,7 +595,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename StrictWeakCompare>
-_CCCL_HOST_DEVICE OutputIterator set_intersection(
+_CCCL_HOST_DEVICE_API OutputIterator set_intersection(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -680,7 +680,7 @@ _CCCL_HOST_DEVICE OutputIterator set_intersection(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename StrictWeakCompare>
-OutputIterator set_intersection(
+_CCCL_HOST_API OutputIterator set_intersection(
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
@@ -767,7 +767,7 @@ OutputIterator set_intersection(
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
+_CCCL_HOST_DEVICE_API OutputIterator set_symmetric_difference(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -848,7 +848,7 @@ _CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
-OutputIterator set_symmetric_difference(
+_CCCL_HOST_API OutputIterator set_symmetric_difference(
   InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result);
 
 /*! \p set_symmetric_difference constructs a sorted range that is the set symmetric
@@ -935,7 +935,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename StrictWeakCompare>
-_CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
+_CCCL_HOST_DEVICE_API OutputIterator set_symmetric_difference(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -1018,7 +1018,7 @@ _CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename StrictWeakCompare>
-OutputIterator set_symmetric_difference(
+_CCCL_HOST_API OutputIterator set_symmetric_difference(
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
@@ -1103,7 +1103,7 @@ OutputIterator set_symmetric_difference(
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator set_union(
+_CCCL_HOST_DEVICE_API OutputIterator set_union(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -1182,7 +1182,7 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
-OutputIterator set_union(
+_CCCL_HOST_API OutputIterator set_union(
   InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result);
 
 /*! \p set_union constructs a sorted range that is the union of the sorted ranges
@@ -1262,7 +1262,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename StrictWeakCompare>
-_CCCL_HOST_DEVICE OutputIterator set_union(
+_CCCL_HOST_DEVICE_API OutputIterator set_union(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -1338,7 +1338,7 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename StrictWeakCompare>
-OutputIterator set_union(
+_CCCL_HOST_API OutputIterator set_union(
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
@@ -1447,7 +1447,7 @@ template <typename DerivedPolicy,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -1552,7 +1552,7 @@ template <typename InputIterator1,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -1668,7 +1668,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -1779,7 +1779,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -1891,7 +1891,7 @@ template <typename DerivedPolicy,
           typename InputIterator3,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -1995,7 +1995,7 @@ template <typename InputIterator1,
           typename InputIterator3,
           typename OutputIterator1,
           typename OutputIterator2>
-::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -2110,7 +2110,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -2220,7 +2220,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -2334,7 +2334,7 @@ template <typename DerivedPolicy,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -2442,7 +2442,7 @@ template <typename InputIterator1,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -2561,7 +2561,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -2675,7 +2675,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -2788,7 +2788,7 @@ template <typename DerivedPolicy,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -2894,7 +2894,7 @@ template <typename InputIterator1,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -3011,7 +3011,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -3123,7 +3123,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,

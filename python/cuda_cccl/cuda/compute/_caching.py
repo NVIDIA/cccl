@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import functools
+import hashlib
 import threading
 import types
 import weakref
@@ -19,22 +20,14 @@ try:
 except ImportError:
     from cuda.core.experimental._utils.cuda_utils import CUDAError
 
-from ._utils.protocols import get_dtype, get_shape, is_device_array
+from ._utils.protocols import (
+    get_data_pointer,
+    get_dtype,
+    get_shape,
+    is_contiguous,
+    is_device_array,
+)
 from .struct import _Struct
-
-try:
-    from ._build_info import USING_V2  # type: ignore[import-not-found]
-except ImportError:
-    USING_V2 = False
-
-# Whether the backend can serialize build results (the v2 HostJIT backend
-# cannot, today). Serialization is what lets same-cc devices share one default
-# build — a non-owner device loads by cloning the shared entry through
-# serialize -> deserialize -> load — so backends without it key default builds
-# per device ordinal and build independently per device instead.
-# TODO: delete this flag (and every branch on it) once v2 supports
-# build-result serialization.
-_BACKEND_SERIALIZES_BUILD_RESULTS = not USING_V2
 
 # Registry thet maps type -> key function for extracting cache key
 # from a value of that type.
@@ -163,16 +156,9 @@ class _DeviceBuildTarget(NamedTuple):
     """
     Target identity of a per-device wrapper or build entry.
 
-    Two roles. In the wrapper cache it keys every default-build wrapper:
-    wrappers hold device-bound state (their construction-time binding), so
-    each device gets its own. In the build-results cache it is used only when
-    the backend cannot serialize build results (the v2 HostJIT backend
-    today): sharing one entry across same-cc devices requires cloning it
-    through serialization, so such backends key default builds per device
-    ordinal instead.
-    TODO: once v2 supports build-result serialization, delete the build-cache
-    role (the _BACKEND_SERIALIZES_BUILD_RESULTS branch in
-    cache_build_results); the wrapper-cache role remains.
+    Keys every default-build wrapper in the wrapper cache: wrappers hold
+    device-bound state (their construction-time binding), so each device gets
+    its own.
 
     NamedTuples compare as plain tuples, so all target kinds must keep
     structurally disjoint layouts (arity or element types) to never compare
@@ -405,12 +391,8 @@ def cache_build_results(
     Current-device builds are keyed by compute capability alone and shared
     across same-cc device ordinals: the compiled payload only depends on the
     cc, and _PerCCBuildResults.resolve() gives each device its own loaded
-    state. When the backend cannot serialize build results (the v2 HostJIT
-    backend today), a non-owner device has no way to load the shared entry —
-    loading it clones through serialization — so default builds are keyed per
-    device ordinal instead and each device builds its own entry. Explicit AOT
-    builds have no current device and are keyed by their normalized target
-    compute capabilities. The key intentionally excludes the current Python
+    state. Explicit AOT builds have no current device and are keyed by their
+    normalized target compute capabilities. The key intentionally excludes the current Python
     thread so wrappers can share compiled results.
 
     Args:
@@ -442,13 +424,7 @@ def cache_build_results(
             device_info = _get_current_device_info()
         device_id, cc = device_info
         packed_cc = cc_to_key(cc)
-        # TODO: reduce to _DefaultBuildTarget(packed_cc) once v2 supports
-        # build-result serialization.
-        target_key = (
-            _DefaultBuildTarget(packed_cc)
-            if _BACKEND_SERIALIZES_BUILD_RESULTS
-            else _DeviceBuildTarget(device_id, cc)
-        )
+        target_key = _DefaultBuildTarget(packed_cc)
         user_cache_key = _make_cache_key_from_args(*key_args)
         cache_key = (build_result_type, target_key, user_cache_key)
         build_results = _cache_single_flight(
@@ -497,6 +473,32 @@ def _bind_default_build(
         return _cache_single_flight(
             build_results._loaded_results, (packed_cc, device_id), build_privately
         )
+
+
+def _proxy_device_arrays(args: tuple, kwargs: dict) -> tuple[tuple, dict]:
+    """Replace device-array arguments with dtype-only ``ProxyArray`` placeholders.
+
+    A factory builds an algorithm from its arguments' *types*; the arrays' data
+    is bound at ``__call__``. Building from proxies therefore produces the same
+    algorithm, but the wrapper, which lives in the process-wide wrapper cache,
+    is never constructed from (and so can never retain) a caller's allocation,
+    and the single-phase and ahead-of-time (``ProxyArray``) build paths are
+    identical. Non-contiguous arrays are left as is so the build keeps raising
+    the same error it does today. Objects that merely contain arrays (iterators,
+    ``DoubleBuffer``) are not device arrays and pass through unchanged.
+    """
+    from ._proxy import ProxyArray
+
+    def proxy(value):
+        if (
+            is_device_array(value)
+            and not isinstance(value, ProxyArray)
+            and is_contiguous(value)
+        ):
+            return ProxyArray(get_dtype(value))
+        return value
+
+    return tuple(proxy(a) for a in args), {k: proxy(v) for k, v in kwargs.items()}
 
 
 class _CacheWithRegisteredKeyFunctions:
@@ -573,8 +575,9 @@ class _CacheWithRegisteredKeyFunctions:
                 )
                 _thread_local.factory_device_info = target
                 try:
+                    build_args, build_kwargs = _proxy_device_arrays(args, kwargs)
                     with target_cc(target_cc_arg):
-                        result = func(*args, **kwargs)
+                        result = func(*build_args, **build_kwargs)
                 finally:
                     _thread_local.factory_device_info = previous_device_info
                 cache[cache_key] = result
@@ -604,19 +607,65 @@ class _CacheWithRegisteredKeyFunctions:
 cache_with_registered_key_functions = _CacheWithRegisteredKeyFunctions()
 
 
-def _make_hashable(value):
-    # duck-type check for numba.cuda.CUDADispatcher:
+def _function_key(func, in_progress: tuple):
+    """Key a captured function by content, unless its key is already being
+    built further up the walk (the operator refers to itself, directly or via
+    another function). Such a back-reference is keyed by the position of that
+    function in ``in_progress``; identical walks produce identical positions,
+    and descending again would never terminate.
+    """
+    for depth, active in enumerate(in_progress):
+        if active is func:
+            return ("recursive", depth)
+    return CachableFunction(func, _in_progress=in_progress)
+
+
+def _make_hashable(value, keep_alive: list, in_progress: tuple = ()):
+    """Hash a global/closure variable for caching purposes.
+
+    Values that cannot be keyed by content fall back to ``id()``. Such a value
+    is also appended to ``keep_alive`` so the caller can keep it alive. This
+    prevents cache key collisions: once the object is freed, Python may give
+    its address to an unrelated object, and two different operators would
+    then produce equal keys.
+
+    ``in_progress`` holds the functions whose keys are being built up the
+    walk; see :func:`_function_key`.
+    """
+    # duck-type check for a JIT backend's dispatcher:
     if hasattr(value, "py_func") and callable(value.py_func):
-        return CachableFunction(value.py_func)
+        return _function_key(value.py_func, in_progress)
+    elif isinstance(value, types.FunctionType):
+        # A captured plain Python function (e.g. a helper called from the
+        # operator) is keyed by its own content, recursively.
+        return _function_key(value, in_progress)
     elif is_device_array(value):
-        # Ops with device arrays in globals/closures will be handled
-        # by stateful op machinery, which enables updating the state
-        # (pointers). Thus, we only cache on the dtype and shape of
-        # the referenced array, but not its pointer.
-        return (get_dtype(value), get_shape(value))
+        if len(in_progress) > 1:
+            # A device array captured by a *nested* function (a helper the
+            # operator calls) is not threaded through the runtime state; the
+            # compiler bakes its pointer, shape and strides into the device
+            # code as constants. Key it by exactly those, so two operators
+            # whose helpers capture different arrays never share a kernel.
+            cai = value.__cuda_array_interface__
+            return (
+                "device_array.baked",
+                get_dtype(value),
+                tuple(cai["shape"]),
+                cai.get("strides"),
+                get_data_pointer(value),
+            )
+        # The stateful op machinery threads the array's pointer and
+        # shape through the *runtime* state buffer.  Thus, the key
+        # includes only dtype and rank, not pointer or shape.
+        return (get_dtype(value), len(get_shape(value)))
+    elif isinstance(value, np.ndarray):
+        # A captured host array is frozen into the compiled operator as a
+        # constant, so arrays with different contents are different operators.
+        digest = hashlib.sha256(np.ascontiguousarray(value).tobytes()).digest()
+        return ("numpy.ndarray", value.dtype, value.shape, digest)
     elif isinstance(value, (np.number, np.bool_)):
         return ("numpy.scalar", value.dtype.str, value.tobytes())
-    elif isinstance(value, (bool, int, float)):
+    elif isinstance(value, (bool, int, float, str, bytes)):
         # Python scalars are immutable values; key them by type and value so
         # equal-valued scalars share a cache entry. Without this they fall
         # through to ``id(value)`` below, and a fresh (non-interned) ``int``/
@@ -625,12 +674,19 @@ def _make_hashable(value):
         # collisions between like-named scalar subclasses from other modules).
         return ("python.scalar", _type_fqn(value), value)
     elif isinstance(value, (list, tuple)):
-        return tuple(_make_hashable(v) for v in value)
+        return tuple(_make_hashable(v, keep_alive, in_progress) for v in value)
     elif isinstance(value, dict):
         return tuple(
-            sorted((_make_hashable(k), _make_hashable(v)) for k, v in value.items())
+            sorted(
+                (
+                    _make_hashable(k, keep_alive, in_progress),
+                    _make_hashable(v, keep_alive, in_progress),
+                )
+                for k, v in value.items()
+            )
         )
     else:
+        keep_alive.append(value)
         return id(value)
 
 
@@ -638,9 +694,15 @@ def clear_all_caches():
     """
     Clear all algorithm caches.
 
-    This function clears cached algorithm wrappers and completed build results
-    in the current process, forcing recompilation on the next invocation.
-    Useful for benchmarking compilation time.
+    This function clears cached algorithm wrappers, completed build results,
+    and compiled device code (JIT-compiled Python operators and NVRTC-compiled
+    iterator wrappers) in the current process, forcing recompilation on the
+    next invocation. Useful for benchmarking compilation time.
+
+    Device code memoized on existing iterator objects (a ``TransformIterator``'s
+    compiled operator, an iterator's advance and dereference ops) is object
+    state and is not affected; construct new iterators as well for a fully cold
+    build.
 
     This function is not synchronized with active factory calls or algorithm
     execution. Callers that use it in a multi-threaded program must externally
@@ -655,34 +717,44 @@ def clear_all_caches():
     """
     _clear_wrapper_caches()
     _process_wide_build_results_cache.clear()
-    # Auxiliary caches registered process-wide (e.g. _jit._infer_return_type)
-    # must be cleared too, so builds after a clear really are cold. Factory
-    # entries' cache_clear is idempotent with _clear_wrapper_caches above.
-    for cached_func in _process_wide_cache_registry.values():
+    # Auxiliary caches registered process-wide (_jit._infer_return_type, the
+    # compiled-operator memo _jit.compile_op, and the NVRTC memos in
+    # _cpp_compile) must be cleared too, so builds after a clear really are
+    # cold. Factory entries' cache_clear is idempotent with
+    # _clear_wrapper_caches above. Snapshot the registry first: a lazy import
+    # (e.g. of _jit or _cpp_compile) on another thread registers into it, and
+    # iterating a dict that grows underneath raises "dictionary changed size".
+    for cached_func in list(_process_wide_cache_registry.values()):
         cached_func.cache_clear()
 
 
 class CachableFunction:
     """
-    A type that wraps a function and provides custom comparison
-    (__eq__) and hash (__hash__) implementations.
+    A cache key for a function, with comparison (__eq__) and hash (__hash__)
+    based on its bytecode, constants, and closures, while ignoring other
+    attributes such as its docstring.
 
-    The purpose of this class is to enable caching and comparison of
-    functions based on their bytecode, constants, and closures, while
-    ignoring other attributes such as their names or docstrings.
+    It does not hold a reference to the function it was built from. It does
+    hold a reference to any captured object that could only be keyed by its
+    ``id()`` (see :func:`_make_hashable`), so that address stays valid for
+    the lifetime of the key.
     """
 
     # TODO: eventually, move this class to _jit.py as it only
     # has to do with caching of Python callables that will be
     # JIT compiled.
-    def __init__(self, func):
-        self._func = func
+    def __init__(self, func, _in_progress: tuple = ()):
+        self._name = func.__name__
 
+        # Functions whose keys are being built, outermost first, so a
+        # reference back to one of them does not recurse forever.
+        in_progress = (*_in_progress, func)
         closure = func.__closure__ if func.__closure__ is not None else []
+        keep_alive: list = []
         contents = []
         # Make closure contents hashable
         for cell in closure:
-            contents.append(_make_hashable(cell.cell_contents))
+            contents.append(_make_hashable(cell.cell_contents, keep_alive, in_progress))
         self._identity = (
             func.__name__,
             func.__code__.co_code,
@@ -696,10 +768,13 @@ class CachableFunction:
                 # use the hash of the name itself. Assumes numba
                 # known how to interpret the dotted name at JIT
                 # time.
-                _make_hashable(func.__globals__.get(name, name))
+                _make_hashable(
+                    func.__globals__.get(name, name), keep_alive, in_progress
+                )
                 for name in func.__code__.co_names
             ),
         )
+        self._keep_alive = tuple(keep_alive)
 
     def __eq__(self, other):
         return self._identity == other._identity
@@ -708,7 +783,12 @@ class CachableFunction:
         return hash(self._identity)
 
     def __repr__(self):
-        return str(self._func)
+        # Iterators derive device symbol names from str() of their cache key
+        # (see IteratorBase._get_uid), so the repr must distinguish functions
+        # that compare unequal: two same-named operators with different bodies
+        # must not share a symbol. Hash the identity rather than printing it.
+        digest = hashlib.sha256(repr(self._identity).encode()).hexdigest()[:16]
+        return f"<CachableFunction {self._name} {digest}>"
 
 
 # Register keyers for built-in types

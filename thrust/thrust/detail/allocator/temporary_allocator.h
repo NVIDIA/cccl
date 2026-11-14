@@ -42,7 +42,6 @@ namespace detail
 template <typename T, typename System>
 class temporary_allocator : public thrust::detail::tagged_allocator<T, System, thrust::pointer<T, System>>
 {
-private:
   using super_t = thrust::detail::tagged_allocator<T, System, thrust::pointer<T, System>>;
 
   System& m_system;
@@ -51,19 +50,19 @@ public:
   using pointer   = typename super_t::pointer;
   using size_type = typename super_t::size_type;
 
-  inline _CCCL_HOST_DEVICE temporary_allocator(const temporary_allocator& other)
+  _CCCL_HOST_DEVICE_API temporary_allocator(const temporary_allocator& other)
       : super_t()
       , m_system(other.m_system)
   {}
 
-  inline _CCCL_HOST_DEVICE explicit temporary_allocator(thrust::execution_policy<System>& system)
+  _CCCL_HOST_DEVICE_API explicit temporary_allocator(thrust::execution_policy<System>& system)
       : super_t()
       , m_system(thrust::detail::derived_cast(system))
   {}
 
-  _CCCL_HOST_DEVICE pointer allocate(size_type cnt)
+  _CCCL_HOST_DEVICE_API pointer allocate(size_type cnt)
   {
-    pointer_and_size result = thrust::get_temporary_buffer<T>(system(), cnt);
+    const pointer_and_size result = thrust::get_temporary_buffer<T>(system(), cnt);
 
     // handle failure
     if (result.second < cnt)
@@ -87,7 +86,7 @@ public:
     return result.first;
   }
 
-  _CCCL_HOST_DEVICE void deallocate(pointer p, size_type n) noexcept // NOLINT(bugprone-exception-escape)
+  _CCCL_HOST_DEVICE_API void deallocate(pointer p, size_type n) noexcept // NOLINT(bugprone-exception-escape)
   {
     _CCCL_TRY
     {
@@ -97,7 +96,7 @@ public:
     // Deallocate must be noexcept to be safe in destructors and during exception unwinding.
     // Clear CUDA error state and leak the memory rather than propagating exception.
     // Memory is leaked, but this matches standard allocator behavior when deallocation fails.
-    _CCCL_CATCH (std::exception & e)
+    _CCCL_CATCH (const std::exception& e)
     {
       // if we have some context about the thrown exception, log it
       NV_IF_TARGET(NV_IS_HOST, {
@@ -117,7 +116,7 @@ public:
     }
   }
 
-  _CCCL_HOST_DEVICE inline System& system()
+  _CCCL_HOST_DEVICE_API System& system()
   {
     return m_system;
   } // end system()

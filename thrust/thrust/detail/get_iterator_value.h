@@ -27,7 +27,7 @@ namespace detail
 // --------------------------------------------------
 // it is okay to dereference iterator in the usual way
 template <typename DerivedPolicy, typename Iterator>
-_CCCL_HOST_DEVICE it_value_t<Iterator> get_iterator_value(thrust::execution_policy<DerivedPolicy>&, Iterator it)
+_CCCL_HOST_DEVICE_API it_value_t<Iterator> get_iterator_value(thrust::execution_policy<DerivedPolicy>&, Iterator it)
 {
   return *it;
 } // get_iterator_value(exec,Iterator);
@@ -39,7 +39,7 @@ _CCCL_HOST_DEVICE it_value_t<Iterator> get_iterator_value(thrust::execution_poli
 // we use get_value(exec,pointer*) function
 // to perform a dereferencing consistent with the execution policy
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE typename ::cuda::std::pointer_traits<Pointer*>::element_type
+_CCCL_HOST_DEVICE_API typename ::cuda::std::pointer_traits<Pointer*>::element_type
 get_iterator_value(thrust::execution_policy<DerivedPolicy>& exec, Pointer* ptr)
 {
   return get_value(derived_cast(exec), ptr);

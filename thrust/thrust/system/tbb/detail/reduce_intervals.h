@@ -30,7 +30,7 @@ namespace system::tbb::detail
 namespace reduce_intervals_detail
 {
 template <typename L, typename R>
-inline L divide_ri(const L x, const R y)
+_CCCL_HOST_API inline L divide_ri(const L x, const R y)
 {
   return (x + (y - 1)) / y;
 }
@@ -43,6 +43,7 @@ struct body
   Size n, interval_size;
   BinaryFunction binary_op;
 
+  _CCCL_HOST_API
   body(RandomAccessIterator1 first, RandomAccessIterator2 result, Size n, Size interval_size, BinaryFunction binary_op)
       : first(first)
       , result(result)
@@ -51,7 +52,7 @@ struct body
       , binary_op(binary_op)
   {}
 
-  void operator()(const ::tbb::blocked_range<Size>& r) const
+  _CCCL_HOST_API void operator()(const ::tbb::blocked_range<Size>& r) const
   {
     assert(r.size() == 1);
 
@@ -71,7 +72,7 @@ struct body
 };
 
 template <typename RandomAccessIterator1, typename RandomAccessIterator2, typename Size, typename BinaryFunction>
-body<RandomAccessIterator1, RandomAccessIterator2, Size, BinaryFunction> make_body(
+_CCCL_HOST_API body<RandomAccessIterator1, RandomAccessIterator2, Size, BinaryFunction> make_body(
   RandomAccessIterator1 first, RandomAccessIterator2 result, Size n, Size interval_size, BinaryFunction binary_op)
 {
   return body<RandomAccessIterator1, RandomAccessIterator2, Size, BinaryFunction>(
@@ -84,7 +85,7 @@ template <typename DerivedPolicy,
           typename Size,
           typename RandomAccessIterator2,
           typename BinaryFunction>
-void reduce_intervals(
+_CCCL_HOST_API void reduce_intervals(
   thrust::tbb::execution_policy<DerivedPolicy>&,
   RandomAccessIterator1 first,
   RandomAccessIterator1 last,
@@ -92,7 +93,7 @@ void reduce_intervals(
   RandomAccessIterator2 result,
   BinaryFunction binary_op)
 {
-  thrust::detail::it_difference_t<RandomAccessIterator1> n = last - first;
+  const thrust::detail::it_difference_t<RandomAccessIterator1> n = last - first;
 
   Size num_intervals = reduce_intervals_detail::divide_ri(n, interval_size);
 
@@ -102,7 +103,7 @@ void reduce_intervals(
 }
 
 template <typename DerivedPolicy, typename RandomAccessIterator1, typename Size, typename RandomAccessIterator2>
-void reduce_intervals(
+_CCCL_HOST_API void reduce_intervals(
   thrust::tbb::execution_policy<DerivedPolicy>& exec,
   RandomAccessIterator1 first,
   RandomAccessIterator1 last,

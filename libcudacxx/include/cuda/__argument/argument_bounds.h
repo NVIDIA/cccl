@@ -24,7 +24,7 @@
 #include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/limits>
+#include <cuda/std/limits> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -108,7 +108,7 @@ template <class _Tp>
   static_assert(::cuda::std::numeric_limits<_Tp>::is_specialized,
                 "cuda::args bounds require a specialized cuda::std::numeric_limits for the element type. Provide "
                 "explicit bounds for element types without a numeric_limits specialization.");
-  return (::cuda::std::numeric_limits<_Tp>::max)();
+  return ::cuda::std::numeric_limits<_Tp>::max();
 }
 
 // =====================================================================
@@ -125,7 +125,7 @@ class runtime_bounds
   _Tp __upper_ = __type_highest<_Tp>();
 
 public:
-  constexpr runtime_bounds() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr runtime_bounds() noexcept = default;
 
   _CCCL_API constexpr runtime_bounds(_Tp __lower, _Tp __upper) noexcept
       : __lower_(__lower)

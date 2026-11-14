@@ -16,14 +16,12 @@
 #include <cub/agent/agent_radix_sort_downsweep.cuh>
 #include <cub/agent/agent_radix_sort_upsweep.cuh>
 #include <cub/block/block_scan.cuh>
+#include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_radix_sort.cuh>
 #include <cub/util_arch.cuh>
 
-#include <cuda/__device/compute_capability.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/limits>
+#include <cuda/std/__limits/numeric_limits.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -33,7 +31,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector, bool AltDigitBits>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int segmented_radix_sort_kernel_launch_bounds() noexcept
 {
-  constexpr SegmentedRadixSortPolicy policy = current_policy<PolicySelector>();
+  constexpr SegmentedRadixSortPolicy policy = _CUB::detail::current_policy<PolicySelector>();
   return AltDigitBits ? policy.alternate_pass.threads_per_block : policy.regular_pass.threads_per_block;
 }
 
@@ -109,7 +107,8 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_radix_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltDigitBits>())
+__launch_bounds__(
+  _CUB::detail::segmented_radix_sort::segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltDigitBits>())
   _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedRadixSortKernel(
     const KeyT* const d_keys_in,
     KeyT* const d_keys_out,
@@ -125,7 +124,7 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
   // Constants
   //
 
-  static constexpr SegmentedRadixSortPolicy policy        = current_policy<PolicySelector>();
+  static constexpr SegmentedRadixSortPolicy policy        = _CUB::detail::current_policy<PolicySelector>();
   static constexpr RadixSortDownsweepPolicy active_policy = AltDigitBits ? policy.alternate_pass : policy.regular_pass;
 
   static constexpr int threads_per_block = active_policy.threads_per_block;
@@ -218,7 +217,7 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < bins_tracked_per_thread; ++track)
     {
-      int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
+      const int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
 
       if ((threads_per_block == radix_digits) || (bin_idx < radix_digits))
       {
@@ -231,7 +230,7 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < bins_tracked_per_thread; ++track)
     {
-      int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
+      const int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
 
       if ((threads_per_block == radix_digits) || (bin_idx < radix_digits))
       {
@@ -251,11 +250,11 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < bins_tracked_per_thread; ++track)
     {
-      int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
+      const int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
 
       if ((threads_per_block == radix_digits) || (bin_idx < radix_digits))
       {
-        temp_storage.reverse_counts_out[threadIdx.x] = bin_offset[track];
+        temp_storage.reverse_counts_out[bin_idx] = bin_offset[track];
       }
     }
 
@@ -264,7 +263,7 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < bins_tracked_per_thread; ++track)
     {
-      int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
+      const int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
 
       if ((threads_per_block == radix_digits) || (bin_idx < radix_digits))
       {

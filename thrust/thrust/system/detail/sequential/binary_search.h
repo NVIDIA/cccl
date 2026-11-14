@@ -29,7 +29,7 @@ namespace system::detail::sequential
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE ForwardIterator lower_bound(
+_CCCL_HOST_DEVICE_API ForwardIterator lower_bound(
   sequential::execution_policy<DerivedPolicy>&,
   ForwardIterator first,
   ForwardIterator last,
@@ -37,7 +37,7 @@ _CCCL_HOST_DEVICE ForwardIterator lower_bound(
   StrictWeakOrdering comp)
 {
   // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
 
   using difference_type = thrust::detail::it_difference_t<ForwardIterator>;
 
@@ -45,8 +45,8 @@ _CCCL_HOST_DEVICE ForwardIterator lower_bound(
 
   while (len > 0)
   {
-    difference_type half   = len >> 1;
-    ForwardIterator middle = first;
+    const difference_type half = len >> 1;
+    ForwardIterator middle     = first;
 
     ::cuda::std::advance(middle, half);
 
@@ -67,7 +67,7 @@ _CCCL_HOST_DEVICE ForwardIterator lower_bound(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE ForwardIterator upper_bound(
+_CCCL_HOST_DEVICE_API ForwardIterator upper_bound(
   sequential::execution_policy<DerivedPolicy>&,
   ForwardIterator first,
   ForwardIterator last,
@@ -75,7 +75,7 @@ _CCCL_HOST_DEVICE ForwardIterator upper_bound(
   StrictWeakOrdering comp)
 {
   // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
 
   using difference_type = thrust::detail::it_difference_t<ForwardIterator>;
 
@@ -83,8 +83,8 @@ _CCCL_HOST_DEVICE ForwardIterator upper_bound(
 
   while (len > 0)
   {
-    difference_type half   = len >> 1;
-    ForwardIterator middle = first;
+    const difference_type half = len >> 1;
+    ForwardIterator middle     = first;
 
     ::cuda::std::advance(middle, half);
 
@@ -105,7 +105,7 @@ _CCCL_HOST_DEVICE ForwardIterator upper_bound(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE bool binary_search(
+_CCCL_HOST_DEVICE_API bool binary_search(
   sequential::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -115,7 +115,7 @@ _CCCL_HOST_DEVICE bool binary_search(
   ForwardIterator iter = sequential::lower_bound(exec, first, last, val, comp);
 
   // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
 
   return iter != last && !wrapped_comp(val, *iter);
 }

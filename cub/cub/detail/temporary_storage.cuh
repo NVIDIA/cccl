@@ -31,8 +31,8 @@
 
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/cstddef>
 
 CUB_NAMESPACE_BEGIN
 
@@ -86,7 +86,7 @@ class slot
   void* m_pointer{};
 
 public:
-  slot() = default;
+  _CCCL_HIDE_FROM_ABI slot() = default;
 
   /**
    * @brief Returns an array of type @p T and length @p elements
@@ -95,21 +95,21 @@ public:
   _CCCL_HOST_DEVICE alias<T> create_alias(size_t elements = 0);
 
 private:
-  _CCCL_HOST_DEVICE void set_bytes_required(size_t new_size)
+  _CCCL_HOST_DEVICE_API void set_bytes_required(size_t new_size)
   {
     m_size = (::cuda::std::max) (m_size, new_size);
   }
 
-  _CCCL_HOST_DEVICE size_t get_bytes_required() const
+  _CCCL_HOST_DEVICE_API size_t get_bytes_required() const
   {
     return m_size;
   }
 
-  _CCCL_HOST_DEVICE void set_storage(void* ptr)
+  _CCCL_HOST_DEVICE_API void set_storage(void* ptr)
   {
     m_pointer = ptr;
   }
-  _CCCL_HOST_DEVICE void* get_storage() const
+  _CCCL_HOST_DEVICE_API void* get_storage() const
   {
     return m_pointer;
   }
@@ -138,14 +138,14 @@ class alias
   slot& m_slot;
   size_t m_elements{};
 
-  _CCCL_HOST_DEVICE explicit alias(slot& slot, size_t elements = 0)
+  _CCCL_HOST_DEVICE_API explicit alias(slot& slot, size_t elements = 0)
       : m_slot(slot)
       , m_elements(elements)
   {
     this->update_slot();
   }
 
-  _CCCL_HOST_DEVICE void update_slot()
+  _CCCL_HOST_DEVICE_API void update_slot()
   {
     m_slot.set_bytes_required(m_elements * sizeof(T));
   }
@@ -163,7 +163,7 @@ public:
    *                         temporary slot to fit up to @p new_elements items
    *                         of type @p T.
    */
-  _CCCL_HOST_DEVICE void grow(size_t new_elements)
+  _CCCL_HOST_DEVICE_API void grow(size_t new_elements)
   {
     m_elements = new_elements;
     this->update_slot();
@@ -175,7 +175,7 @@ public:
    * If the @p elements number is equal to zero, or storage layout isn't mapped,
    * @p nullptr is returned.
    */
-  _CCCL_HOST_DEVICE T* get() const
+  _CCCL_HOST_DEVICE_API T* get() const
   {
     if (m_elements == 0)
     {
@@ -189,7 +189,7 @@ public:
 };
 
 template <typename T>
-_CCCL_HOST_DEVICE alias<T> slot::create_alias(size_t elements)
+_CCCL_HOST_DEVICE_API alias<T> slot::create_alias(size_t elements)
 {
   return alias<T>(*this, elements);
 }
@@ -256,14 +256,14 @@ template <int SlotsCount>
 class layout
 {
   slot m_slots[SlotsCount];
-  size_t m_sizes[SlotsCount];
-  void* m_pointers[SlotsCount];
+  size_t m_sizes[SlotsCount]{};
+  void* m_pointers[SlotsCount]{};
   bool m_layout_was_mapped{};
 
 public:
-  layout() = default;
+  _CCCL_HIDE_FROM_ABI layout() = default;
 
-  _CCCL_HOST_DEVICE slot* get_slot(int slot_id)
+  _CCCL_HOST_DEVICE_API slot* get_slot(int slot_id)
   {
     if (slot_id < SlotsCount)
     {
@@ -276,13 +276,14 @@ public:
   /**
    * @brief Returns required temporary storage size in bytes
    */
-  _CCCL_HOST_DEVICE size_t get_size()
+  _CCCL_HOST_DEVICE_API size_t get_size()
   {
     this->prepare_interface();
 
     // alias_temporaries can return error only in mapping stage, so it's safe to ignore it here.
     size_t temp_storage_bytes{};
-    [[maybe_unused]] const auto error = detail::alias_temporaries(nullptr, temp_storage_bytes, m_pointers, m_sizes);
+    [[maybe_unused]] const auto error =
+      _CUB::detail::alias_temporaries(nullptr, temp_storage_bytes, m_pointers, m_sizes);
     _CCCL_ASSERT(error == cudaSuccess, "");
 
     if (temp_storage_bytes == 0)
@@ -305,7 +306,7 @@ public:
   /**
    * @brief Maps the layout to the temporary storage buffer.
    */
-  _CCCL_HOST_DEVICE cudaError_t map_to_buffer(void* d_temp_storage, size_t temp_storage_bytes)
+  _CCCL_HOST_DEVICE_API cudaError_t map_to_buffer(void* d_temp_storage, size_t temp_storage_bytes)
   {
     if (m_layout_was_mapped)
     {
@@ -314,7 +315,8 @@ public:
 
     this->prepare_interface();
 
-    if (cudaError_t error = detail::alias_temporaries(d_temp_storage, temp_storage_bytes, m_pointers, m_sizes))
+    if (const cudaError_t error =
+          _CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, m_pointers, m_sizes))
     {
       return error;
     }
@@ -329,7 +331,7 @@ public:
   }
 
 private:
-  _CCCL_HOST_DEVICE void prepare_interface()
+  _CCCL_HOST_DEVICE_API void prepare_interface()
   {
     if (m_layout_was_mapped)
     {

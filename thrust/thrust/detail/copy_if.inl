@@ -23,7 +23,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(copy_if.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/copy_if.h>
 #  include <thrust/system/cuda/detail/copy_if.h>
 #  include <thrust/system/omp/detail/copy_if.h>
@@ -34,7 +34,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator copy_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -52,7 +52,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator copy_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -66,7 +66,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
 } // end copy_if()
 
 template <typename InputIterator, typename OutputIterator, typename Predicate>
-OutputIterator copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred)
+_CCCL_HOST_API OutputIterator copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::copy_if");
   using thrust::system::detail::generic::select_system;
@@ -81,7 +81,7 @@ OutputIterator copy_if(InputIterator first, InputIterator last, OutputIterator r
 } // end copy_if()
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 copy_if(InputIterator1 first, InputIterator1 last, InputIterator2 stencil, OutputIterator result, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::copy_if");

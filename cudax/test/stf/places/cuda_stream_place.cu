@@ -40,7 +40,8 @@ int main()
   // context ctx;
   stream_ctx ctx;
   const size_t N = 16;
-  double X[N], Y[N];
+  double X[N];
+  double Y[N];
 
   for (size_t i = 0; i < N; i++)
   {
@@ -67,7 +68,7 @@ int main()
 
   for (size_t i = 0; i < N; i++)
   {
-    assert(fabs(Y[i] - (Y0(i) + 2 * 10.0 * alpha * X0(i))) < 0.0001);
+    assert(fabs(Y[i] - (Y0(i) + (2 * 10.0 * alpha * X0(i)))) < 0.0001);
     assert(fabs(X[i] - X0(i)) < 0.0001);
   }
 

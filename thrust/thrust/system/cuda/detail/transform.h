@@ -18,17 +18,18 @@
 
 #  include <cub/device/device_transform.cuh>
 
-#  include <thrust/iterator/zip_iterator.h>
+#  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/parallel_for.h>
 #  include <thrust/system/cuda/detail/util.h>
-#  include <thrust/zip_function.h>
 
 #  include <cuda/__functional/address_stability.h>
-#  include <cuda/__iterator/zip_function.h>
-#  include <cuda/__iterator/zip_iterator.h>
+#  include <cuda/__functional/always_true_false.h>
 #  include <cuda/std/__algorithm/transform.h>
 #  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__iterator/incrementable_traits.h>
+#  include <cuda/std/__tuple_dir/tuple.h>
+#  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -59,7 +60,7 @@ struct unary_transform_f
 // EAN 2024-10-04: when force-inlined, gcc's optimizer will generate bad code
 // for this function:
 template <class Policy, class InputIt, class Size, class OutputIt, class StencilIt, class TransformOp, class Predicate>
-OutputIt _CCCL_HOST_DEVICE unary_if_with_stencil(
+OutputIt _CCCL_HOST_DEVICE_API unary_if_with_stencil(
   Policy& policy,
   InputIt items,
   OutputIt result,
@@ -108,7 +109,7 @@ template <class Policy,
           class StencilIt,
           class TransformOp,
           class Predicate>
-OutputIt _CCCL_HOST_DEVICE binary_if_with_stencil(
+OutputIt _CCCL_HOST_DEVICE_API binary_if_with_stencil(
   Policy& policy,
   InputIt1 items1,
   InputIt2 items2,
@@ -148,8 +149,8 @@ OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many(
   _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(num_items);
 
   cudaError_t status;
-  if constexpr (::cuda::proclaims_copyable_arguments<Predicate>::value
-                && ::cuda::proclaims_copyable_arguments<TransformOp>::value)
+  if constexpr (::cuda::proclaims_copyable_arguments_v<Predicate>
+                && ::cuda::proclaims_copyable_arguments_v<TransformOp>)
   {
     status = CUB_NS_QUALIFIER::DeviceTransform::TransformIf(
       firsts, result, num_items, pred, transform_op, cuda_cub::stream(policy));
@@ -165,31 +166,6 @@ OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many(
   throw_on_error(status, "transform: failed to synchronize");
 
   return result + num_items;
-}
-
-// unwrap zip_iterator and zip_function into their underlying iterators so cub::DeviceTransform can optimize them
-// TODO(bgruber): we may want to move this unpacking logic into cub::DeviceTransform directly
-template <class Derived, class Offset, class... InputIts, class OutputIt, class TransformOp>
-OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many(
-  execution_policy<Derived>& policy,
-  ::cuda::std::tuple<zip_iterator<::cuda::std::tuple<InputIts...>>> firsts,
-  OutputIt result,
-  Offset num_items,
-  zip_function<TransformOp> transform_op)
-{
-  return cub_transform_many(
-    policy, ::cuda::std::get<0>(firsts).get_iterator_tuple(), result, num_items, transform_op.underlying_function());
-}
-
-template <class Derived, class Offset, class... InputIts, class OutputIt, class TransformOp>
-OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many(
-  execution_policy<Derived>& policy,
-  ::cuda::std::tuple<::cuda::zip_iterator<InputIts...>> firsts,
-  OutputIt result,
-  Offset num_items,
-  ::cuda::zip_function<TransformOp> transform_op)
-{
-  return cub_transform_many(policy, ::cuda::std::get<0>(firsts).__iterators(), result, num_items, transform_op.__fun());
 }
 
 template <typename F>

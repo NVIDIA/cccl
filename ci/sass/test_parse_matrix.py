@@ -35,13 +35,27 @@ def matrix() -> dict:
 def test_a_ctk_alias_resolves_to_a_real_version(matrix) -> None:
     """`13.X` follows the newest CTK, so it must not resolve to itself."""
     resolved = resolve_ctk(matrix, "13.X")
-    # YAML reads the version keys as numbers, so compare as strings.
-    assert resolved in {str(key) for key in matrix["ctk_versions"]}
+    assert resolved in matrix["ctk_versions"]
     assert resolved != "13.X"
 
 
 def test_an_explicit_ctk_version_is_kept(matrix) -> None:
     assert resolve_ctk(matrix, "12.0") == "12.0"
+
+
+def test_ctk_version_keys_are_strings(matrix) -> None:
+    assert all(isinstance(version, str) for version in matrix["ctk_versions"])
+
+
+def test_a_numeric_ctk_version_key_is_rejected() -> None:
+    matrix = yaml.safe_load("ctk_versions:\n  99.99: {alias: ['99.X']}\n")
+    with pytest.raises(ValueError, match="must be quoted strings"):
+        resolve_ctk(matrix, "99.X")
+
+
+def test_a_multi_digit_ctk_minor_resolves() -> None:
+    matrix = yaml.safe_load("ctk_versions:\n  '99.99': {alias: ['99.X']}\n")
+    assert resolve_ctk(matrix, "99.X") == "99.99"
 
 
 def test_an_unknown_ctk_is_rejected(matrix) -> None:
@@ -70,7 +84,9 @@ def test_an_unknown_cxx_is_rejected(matrix) -> None:
 
 def test_the_entry_carries_the_resolved_launch_args() -> None:
     """`launch.sh` is called with these, so the spelling must be exact."""
-    row = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST)["include"][0]
+    row = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST, ["cub", "thrust"])[
+        "include"
+    ][0]
     cuda, host = row["launch_args"].split()[1::2]
     assert row["launch_args"].strip() == f"--cuda {cuda} --host {host}"
     assert cuda[0].isdigit()
@@ -92,7 +108,9 @@ def test_the_row_keys_are_the_workflow_inputs() -> None:
     inputs = workflow[True]["workflow_call"]["inputs"]
     required = {name for name, spec in inputs.items() if spec.get("required")}
 
-    row = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST)["include"][0]
+    row = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST, ["cub", "thrust"])[
+        "include"
+    ][0]
     assert set(row) == required - {"base_ref"}
 
 
@@ -100,8 +118,44 @@ def test_the_filters_reach_the_workflow_as_json() -> None:
     """A matrix value cannot hold a list, so the filters are serialized."""
     import json
 
-    row = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST)["include"][0]
+    row = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST, ["cub", "thrust"])[
+        "include"
+    ][0]
     assert isinstance(json.loads(row["target_filters_json"]), list)
+
+
+def test_each_project_has_its_own_entry() -> None:
+    """The ID names the artifacts and the build directory, so it must be unique."""
+    rows = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST, ["cub", "thrust"])[
+        "include"
+    ]
+    assert [(row["id"], row["project"]) for row in rows] == [
+        ("cub-benchmarks", "cub"),
+        ("thrust-benchmarks", "thrust"),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("projects", "expected_ids"),
+    [
+        (["cub"], ["cub-benchmarks"]),
+        (["thrust"], ["thrust-benchmarks"]),
+        (["cub", "thrust"], ["cub-benchmarks", "thrust-benchmarks"]),
+        ([], []),
+    ],
+)
+def test_projects_select_the_entries(projects, expected_ids) -> None:
+    """The PR workflow passes the projects that the change affects."""
+    rows = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST, projects)["include"]
+    assert [row["id"] for row in rows] == expected_ids
+
+
+def test_projects_without_an_entry_are_ignored() -> None:
+    """`inspect_changes.py` also reports projects that have no SASS comparison."""
+    rows = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST, ["libcudacxx", "thrust"])[
+        "include"
+    ]
+    assert [row["id"] for row in rows] == ["thrust-benchmarks"]
 
 
 if __name__ == "__main__":

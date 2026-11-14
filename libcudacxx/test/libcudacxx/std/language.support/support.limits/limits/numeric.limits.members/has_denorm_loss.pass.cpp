@@ -8,6 +8,7 @@
 
 // ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
 // ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 // test numeric_limits
 
@@ -73,6 +74,9 @@ int main(int, char**)
 #if _CCCL_HAS_NVFP8_E5M2()
   test<__nv_fp8_e5m2, false>();
 #endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_UE5M3()
+  test<__nv_fp8_ue5m3, false>();
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E8M0()
   test<__nv_fp8_e8m0, false>();
 #endif // _CCCL_HAS_NVFP8_E8M0()

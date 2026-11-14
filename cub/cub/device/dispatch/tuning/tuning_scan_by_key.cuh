@@ -19,15 +19,19 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/numeric_traits.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
@@ -59,7 +63,7 @@ struct ScanByKeyLookbackPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ScanByKeyLookbackPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const ScanByKeyLookbackPolicy& p)
   {
     return os
         << "ScanByKeyLookbackPolicy { .threads_per_block = " << p.threads_per_block
@@ -90,11 +94,27 @@ namespace detail
 }
 } // namespace detail
 
-inline ::std::ostream& operator<<(::std::ostream& os, ScanByKeyAlgorithm algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, ScanByKeyAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED()
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<_CUB::ScanByKeyAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  _CCCL_HOST_API auto format(const _CUB::ScanByKeyAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! The tuning policy for all ByKey algorithms in @ref DeviceScan.
 struct ScanByKeyPolicy
@@ -116,7 +136,7 @@ struct ScanByKeyPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ScanByKeyPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const ScanByKeyPolicy& p)
   {
     return os << "ScanByKeyPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback << " }";
   }
@@ -155,19 +175,19 @@ enum class key_size
 };
 
 template <class AccumT>
-constexpr primitive_accum is_primitive_accum()
+_CCCL_HOST_API constexpr primitive_accum is_primitive_accum()
 {
   return is_primitive<AccumT>::value ? primitive_accum::yes : primitive_accum::no;
 }
 
 template <class ScanOpT>
-constexpr primitive_op is_primitive_op()
+_CCCL_HOST_API constexpr primitive_op is_primitive_op()
 {
-  return basic_binary_op_t<ScanOpT>::value ? primitive_op::yes : primitive_op::no;
+  return basic_binary_op_v<ScanOpT> ? primitive_op::yes : primitive_op::no;
 }
 
 template <class ValueT>
-constexpr val_size classify_val_size()
+_CCCL_HOST_API constexpr val_size classify_val_size()
 {
   return sizeof(ValueT) == 1 ? val_size::_1
        : sizeof(ValueT) == 2 ? val_size::_2
@@ -179,7 +199,7 @@ constexpr val_size classify_val_size()
 }
 
 template <class KeyT>
-constexpr key_size classify_key_size()
+_CCCL_HOST_API constexpr key_size classify_key_size()
 {
   return sizeof(KeyT) == 1 ? key_size::_1
        : sizeof(KeyT) == 2 ? key_size::_2
@@ -193,9 +213,9 @@ constexpr key_size classify_key_size()
 template <class KeyT,
           class ValueT,
           primitive_op PrimitiveOp,
-          key_size KeySize                     = classify_key_size<KeyT>(),
-          val_size ValueSize                   = classify_val_size<ValueT>(),
-          primitive_accum PrimitiveAccumulator = is_primitive_accum<ValueT>()>
+          key_size KeySize                     = _CUB::detail::scan_by_key::classify_key_size<KeyT>(),
+          val_size ValueSize                   = _CUB::detail::scan_by_key::classify_val_size<ValueT>(),
+          primitive_accum PrimitiveAccumulator = _CUB::detail::scan_by_key::is_primitive_accum<ValueT>()>
 struct sm80_tuning;
 
 template <class KeyT, class ValueT>
@@ -486,9 +506,9 @@ struct sm80_tuning<KeyT, __uint128_t, primitive_op::yes, key_size::_16, val_size
 template <class KeyT,
           class ValueT,
           primitive_op PrimitiveOp,
-          key_size KeySize                     = classify_key_size<KeyT>(),
-          val_size ValueSize                   = classify_val_size<ValueT>(),
-          primitive_accum PrimitiveAccumulator = is_primitive_accum<ValueT>()>
+          key_size KeySize                     = _CUB::detail::scan_by_key::classify_key_size<KeyT>(),
+          val_size ValueSize                   = _CUB::detail::scan_by_key::classify_val_size<ValueT>(),
+          primitive_accum PrimitiveAccumulator = _CUB::detail::scan_by_key::is_primitive_accum<ValueT>()>
 struct sm90_tuning;
 
 template <class KeyT, class ValueT>
@@ -779,9 +799,9 @@ struct sm90_tuning<KeyT, __uint128_t, primitive_op::yes, key_size::_16, val_size
 template <class KeyT,
           class ValueT,
           primitive_op PrimitiveOp,
-          key_size KeySize                     = classify_key_size<KeyT>(),
-          val_size ValueSize                   = classify_val_size<ValueT>(),
-          primitive_accum PrimitiveAccumulator = is_primitive_accum<ValueT>()>
+          key_size KeySize                     = _CUB::detail::scan_by_key::classify_key_size<KeyT>(),
+          val_size ValueSize                   = _CUB::detail::scan_by_key::classify_val_size<ValueT>(),
+          primitive_accum PrimitiveAccumulator = _CUB::detail::scan_by_key::is_primitive_accum<ValueT>()>
 struct sm100_tuning;
 
 // key_size = 8 bits
@@ -992,7 +1012,7 @@ struct policy_hub
   {
     static constexpr int nominal_4b_items_per_thread = 6;
     static constexpr int items_per_thread =
-      max_input_bytes <= 8 ? 6 : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes);
+      max_input_bytes <= 8 ? 6 : _CUB::Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes);
 
     using ScanByKeyPolicyT =
       agent_scan_by_key_policy<128,
@@ -1009,7 +1029,7 @@ struct policy_hub
   {
     static constexpr int nominal_4b_items_per_thread = 9;
     static constexpr int items_per_thread =
-      max_input_bytes <= 8 ? 9 : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes);
+      max_input_bytes <= 8 ? 9 : _CUB::Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes);
 
     using ScanByKeyPolicyT =
       agent_scan_by_key_policy<256,
@@ -1046,7 +1066,9 @@ struct policy_hub
 
   struct Policy800 : detail::chained_policy<800, Policy800, Policy520>
   {
-    using ScanByKeyPolicyT = decltype(select_agent_policy<sm80_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>>(0));
+    using ScanByKeyPolicyT =
+      decltype(select_agent_policy<sm80_tuning<key_t, ValueT, _CUB::detail::scan_by_key::is_primitive_op<ScanOpT>()>>(
+        0));
   };
 
   // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy860
@@ -1059,7 +1081,9 @@ struct policy_hub
 
   struct Policy900 : detail::chained_policy<900, Policy900, Policy860>
   {
-    using ScanByKeyPolicyT = decltype(select_agent_policy<sm90_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>>(0));
+    using ScanByKeyPolicyT =
+      decltype(select_agent_policy<sm90_tuning<key_t, ValueT, _CUB::detail::scan_by_key::is_primitive_op<ScanOpT>()>>(
+        0));
   };
 
   struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
@@ -1080,7 +1104,8 @@ struct policy_hub
     static auto select_agent_policy100(long) -> typename Policy900::ScanByKeyPolicyT;
 
     using ScanByKeyPolicyT =
-      decltype(select_agent_policy100<sm100_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>>(0));
+      decltype(select_agent_policy100<sm100_tuning<key_t, ValueT, _CUB::detail::scan_by_key::is_primitive_op<ScanOpT>()>>(
+        0));
   };
 
   using MaxPolicy = Policy1000;
@@ -1107,7 +1132,7 @@ struct policy_selector_from_hub
 {
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const -> ScanByKeyPolicy
   {
-    return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
+    return _CUB::detail::scan_by_key::convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
   }
 };
 
@@ -1148,14 +1173,14 @@ private:
       const auto items_per_thread =
         max_input_bytes <= 8
           ? 9
-          : Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 9, combined_input_bytes);
+          : _CUB::Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 9, combined_input_bytes);
       return {256,
               items_per_thread,
               BLOCK_LOAD_WARP_TRANSPOSE,
               load_modifier,
               BLOCK_STORE_WARP_TRANSPOSE,
               BLOCK_SCAN_WARP_SCANS,
-              default_reduce_by_key_delay_constructor_policy(
+              _CUB::detail::default_reduce_by_key_delay_constructor_policy(
                 delay_ctor_key_size, sizeof(int), delay_ctor_key_is_primitive_or_trivially_copyable, true)};
     };
 
@@ -2036,14 +2061,14 @@ private:
     const auto items_per_thread =
       max_input_bytes <= 8
         ? 6
-        : Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 6, combined_input_bytes);
+        : _CUB::Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 6, combined_input_bytes);
     return {128,
             items_per_thread,
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_CA,
             BLOCK_STORE_WARP_TRANSPOSE,
             BLOCK_SCAN_WARP_SCANS,
-            default_reduce_by_key_delay_constructor_policy(
+            _CUB::detail::default_reduce_by_key_delay_constructor_policy(
               accum_size, sizeof(int), accum_is_primitive_or_trivially_copyable, true)};
   }
 

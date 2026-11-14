@@ -15,7 +15,10 @@ code does not change. The normalizer removes it:
 
 Branch targets become a signed delta from the branch address, thus code that
 only moved is equal. Opcodes, modifiers, predicates, registers, immediates,
-constant-bank offsets and the control flow are all compared.
+constant-bank numbers, relative constant offsets and the control flow are all
+compared. Constant offsets become relative to the lowest referenced offset in
+each kernel and bank. This performance comparison ignores uniform data shifts;
+it does not check whether the referenced data stays the same.
 
 `cuobjdump -sass` prints every architecture into one stream. Each architecture
 is split out and compared on its own. A fatbin names it in an `arch =` line, and
@@ -27,6 +30,7 @@ CI does not read that status. CI reads `changed` from report.json, because
 """
 
 import argparse
+import bisect
 import difflib
 import itertools
 import json
@@ -96,6 +100,10 @@ _BRANCH_RE = re.compile(
 )
 
 _NOP_RE = re.compile(r"^NOP\s*;?\s*$")
+
+_CONSTANT_RE = re.compile(
+    r"\bc\[(?P<bank>0x[0-9a-fA-F]+)\]\[(?P<offset>0x[0-9a-fA-F]+)\]"
+)
 
 _WHITESPACE_RE = re.compile(r"\s+")
 
@@ -192,6 +200,27 @@ def _kernels(lines: list[str]) -> list[Kernel]:
             end -= 1
         del entry.instructions[end:]
 
+        # A bank can move independently in each kernel. Keep the spacing between
+        # references, so only a uniform shift disappears from the comparison.
+        offsets: dict[str, int] = {}
+        for instruction in entry.instructions:
+            for match in _CONSTANT_RE.finditer(instruction):
+                bank = match.group("bank")
+                offset = int(match.group("offset"), 16)
+                offsets[bank] = min(offsets.get(bank, offset), offset)
+
+        if offsets:
+            entry.instructions = [
+                _CONSTANT_RE.sub(
+                    lambda m: (
+                        f"c[{m.group('bank')}]"
+                        f"[{int(m.group('offset'), 16) - offsets[m.group('bank')]:#x}]"
+                    ),
+                    instruction,
+                )
+                for instruction in entry.instructions
+            ]
+
     return kernels
 
 
@@ -245,6 +274,84 @@ def normalized_text(raw: str) -> dict[str, str]:
 # holds 65536 characters. Thus the comment shows only this many lines and links
 # to the complete diff in the artifacts.
 _MAX_EXCERPT_LINES = 40
+
+_FUNCTION_LINE_RE = re.compile(r"^Function : (?P<name>.*)$")
+
+_HUNK_HEADER_RE = re.compile(
+    r"^@@ -(?P<l1>\d+)(?:,(?P<s1>\d+))? \+(?P<l2>\d+)(?:,(?P<s2>\d+))? @@$"
+)
+
+
+def _kernel_boundaries(text: str) -> tuple[list[int], list[str]]:
+    """The 0-indexed line and name of each `Function :` header in `text`.
+
+    `Listing.text()` puts one `Function : <name>` line before each kernel's
+    instructions. Returned as two parallel lists, so `bisect` can search the
+    line numbers.
+    """
+    starts: list[int] = []
+    names: list[str] = []
+    for i, line in enumerate(text.splitlines()):
+        if function_match := _FUNCTION_LINE_RE.match(line):
+            starts.append(i)
+            names.append(function_match.group("name"))
+    return starts, names
+
+
+def _kernel_at(boundaries: tuple[list[int], list[str]], line_no: int) -> str | None:
+    """The kernel that owns 0-indexed `line_no`, or None before the first one."""
+    starts, names = boundaries
+    index = bisect.bisect_right(starts, line_no) - 1
+    return names[index] if index >= 0 else None
+
+
+def _annotate_hunk_headers(
+    lines: list[str],
+    base_boundaries: tuple[list[int], list[str]],
+    test_boundaries: tuple[list[int], list[str]],
+) -> list[str]:
+    """Append the enclosing kernel name to each `@@ ... @@` hunk header.
+
+    Mirrors `git diff`'s function-context convention (`@@ -l,s +l,s @@ <name>`),
+    so the SASS diff excerpt shows which kernel a hunk belongs to without
+    growing the line budget. The hunk's leading context can start above the
+    kernel's `Function :` line (or even in the previous kernel's trailing
+    context), so the kernel is looked up at the hunk's first actual `-`/`+`
+    line, on whichever side that line belongs to, rather than at the hunk's
+    start.
+    """
+    annotated: list[str] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        hunk_match = _HUNK_HEADER_RE.match(line)
+        if not hunk_match:
+            annotated.append(line)
+            index += 1
+            continue
+
+        base_line = int(hunk_match.group("l1"))
+        test_line = int(hunk_match.group("l2"))
+
+        kernel = None
+        body_end = index + 1
+        while body_end < len(lines) and not _HUNK_HEADER_RE.match(lines[body_end]):
+            body = lines[body_end]
+            if body.startswith("-"):
+                kernel = kernel or _kernel_at(base_boundaries, base_line - 1)
+                base_line += 1
+            elif body.startswith("+"):
+                kernel = kernel or _kernel_at(test_boundaries, test_line - 1)
+                test_line += 1
+            else:
+                base_line += 1
+                test_line += 1
+            body_end += 1
+
+        annotated.append(f"{line} {kernel}" if kernel else line)
+        annotated.extend(lines[index + 1 : body_end])
+        index = body_end
+    return annotated
 
 
 class Status(StrEnum):
@@ -335,6 +442,11 @@ def compare_target(
                 n=3,
                 lineterm="",
             )
+        )
+        lines = _annotate_hunk_headers(
+            lines,
+            _kernel_boundaries(base[arch]),
+            _kernel_boundaries(test[arch]),
         )
         diff = Diff(
             excerpt=lines[:_MAX_EXCERPT_LINES],
@@ -430,7 +542,8 @@ def main() -> int:
             "Compare every `<target>.sass` file that both directories hold, per "
             "target and per architecture. Ignores instruction addresses, "
             "encoded instruction words, absolute branch targets, kernel "
-            "emission order and trailing NOP padding, because those change "
+            "emission order, uniform constant-bank offset shifts and trailing "
+            "NOP padding, because those change "
             f"between builds when the code does not. Writes {REPORT_NAME}, the "
             "normalized text of both sides under base/ and test/, and the diff "
             "of each changed architecture under diff/. Exits 0 when the SASS is "

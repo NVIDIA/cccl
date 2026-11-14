@@ -18,14 +18,15 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/numeric_traits.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/optional>
+#include <cuda/std/__optional/optional.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -54,7 +55,7 @@ struct UniqueByKeyPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const UniqueByKeyPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const UniqueByKeyPolicy& p)
   {
     return os
         << "UniqueByKeyPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
@@ -96,19 +97,19 @@ enum class val_size
 };
 
 template <class T>
-_CCCL_HOST_DEVICE constexpr primitive_key is_primitive_key()
+_CCCL_HOST_DEVICE_API constexpr primitive_key is_primitive_key()
 {
   return is_primitive<T>::value ? primitive_key::yes : primitive_key::no;
 }
 
 template <class T>
-_CCCL_HOST_DEVICE constexpr primitive_val is_primitive_val()
+_CCCL_HOST_DEVICE_API constexpr primitive_val is_primitive_val()
 {
   return is_primitive<T>::value ? primitive_val::yes : primitive_val::no;
 }
 
 template <class KeyT>
-_CCCL_HOST_DEVICE constexpr key_size classify_key_size()
+_CCCL_HOST_DEVICE_API constexpr key_size classify_key_size()
 {
   return sizeof(KeyT) == 1 ? key_size::_1
        : sizeof(KeyT) == 2 ? key_size::_2
@@ -120,7 +121,7 @@ _CCCL_HOST_DEVICE constexpr key_size classify_key_size()
 }
 
 template <class ValueT>
-_CCCL_HOST_DEVICE constexpr val_size classify_val_size()
+_CCCL_HOST_DEVICE_API constexpr val_size classify_val_size()
 {
   return sizeof(ValueT) == 1 ? val_size::_1
        : sizeof(ValueT) == 2 ? val_size::_2
@@ -133,10 +134,10 @@ _CCCL_HOST_DEVICE constexpr val_size classify_val_size()
 
 template <class KeyT,
           class ValueT,
-          primitive_key PrimitiveKey   = is_primitive_key<KeyT>(),
-          primitive_val PrimitiveAccum = is_primitive_val<ValueT>(),
-          key_size KeySize             = classify_key_size<KeyT>(),
-          val_size AccumSize           = classify_val_size<ValueT>()>
+          primitive_key PrimitiveKey   = _CUB::detail::unique_by_key::is_primitive_key<KeyT>(),
+          primitive_val PrimitiveAccum = _CUB::detail::unique_by_key::is_primitive_val<ValueT>(),
+          key_size KeySize             = _CUB::detail::unique_by_key::classify_key_size<KeyT>(),
+          val_size AccumSize           = _CUB::detail::unique_by_key::classify_val_size<ValueT>()>
 struct sm80_tuning;
 
 // 8-bit key
@@ -325,10 +326,10 @@ struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::no, key_size
 
 template <class KeyT,
           class ValueT,
-          primitive_key PrimitiveKey   = is_primitive_key<KeyT>(),
-          primitive_val PrimitiveAccum = is_primitive_val<ValueT>(),
-          key_size KeySize             = classify_key_size<KeyT>(),
-          val_size AccumSize           = classify_val_size<ValueT>()>
+          primitive_key PrimitiveKey   = _CUB::detail::unique_by_key::is_primitive_key<KeyT>(),
+          primitive_val PrimitiveAccum = _CUB::detail::unique_by_key::is_primitive_val<ValueT>(),
+          key_size KeySize             = _CUB::detail::unique_by_key::classify_key_size<KeyT>(),
+          val_size AccumSize           = _CUB::detail::unique_by_key::classify_val_size<ValueT>()>
 struct sm90_tuning;
 
 // 8-bit key
@@ -537,10 +538,10 @@ struct sm90_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::no, key_size
 
 template <class KeyT,
           class ValueT,
-          primitive_key PrimitiveKey   = is_primitive_key<KeyT>(),
-          primitive_val PrimitiveAccum = is_primitive_val<ValueT>(),
-          key_size KeySize             = classify_key_size<KeyT>(),
-          val_size AccumSize           = classify_val_size<ValueT>()>
+          primitive_key PrimitiveKey   = _CUB::detail::unique_by_key::is_primitive_key<KeyT>(),
+          primitive_val PrimitiveAccum = _CUB::detail::unique_by_key::is_primitive_val<ValueT>(),
+          key_size KeySize             = _CUB::detail::unique_by_key::classify_key_size<KeyT>(),
+          val_size AccumSize           = _CUB::detail::unique_by_key::classify_val_size<ValueT>()>
 struct sm100_tuning;
 
 // 8-bit key
@@ -789,7 +790,7 @@ struct policy_hub
   template <int Nominal4bItemsPerThread, int Threads>
   struct DefaultPolicy
   {
-    static constexpr int items_per_thread = Nominal4BItemsToItems<KeyT>(Nominal4bItemsPerThread);
+    static constexpr int items_per_thread = _CUB::Nominal4BItemsToItems<KeyT>(Nominal4bItemsPerThread);
     using UniqueByKeyPolicyT =
       agent_unique_by_key_policy<Threads,
                                  items_per_thread,
@@ -865,17 +866,20 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct policy_selector
 {
   int key_size;
   int value_size;
   bool primitive_key;
   bool primitive_value;
+  type_t key_type   = type_t::other;
+  type_t value_type = type_t::other;
 
 private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto default_items_per_thread() const -> int
   {
-    return cub::detail::nominal_4B_items_to_items(11, key_size);
+    return _CUB::detail::nominal_4B_items_to_items(11, key_size);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_default_policy() const -> UniqueByKeyPolicy
@@ -1457,10 +1461,129 @@ private:
     return {};
   }
 
+  // tunings from cub/benchmarks/bench/select/unique_by_key.cu, which benchmarks with 4-byte offsets. These are raw
+  // measured values.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm107_tuning() const
+    -> ::cuda::std::optional<UniqueByKeyPolicy>
+  {
+    if (!primitive_key && key_type != type_t::int128 && key_type != type_t::uint128)
+    {
+      return {};
+    }
+    if (!primitive_value && value_type != type_t::int128 && value_type != type_t::uint128)
+    {
+      return {};
+    }
+
+    if (key_size == 1 && value_size == 1)
+    {
+      // ipt_14.tpb_320.trp_0.ld_0.ns_384.dcid_3.l2w_615  1.130  1.011  1.031  1.068
+      return UniqueByKeyPolicy{
+        320,
+        14,
+        BLOCK_LOAD_DIRECT,
+        LOAD_DEFAULT,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backoff_jitter, 384, 615}};
+    }
+    if (key_size == 2 && value_size == 2)
+    {
+      // ipt_15.tpb_512.trp_0.ld_0.ns_1768.dcid_0.l2w_355  1.024  1.014  1.197  1.238
+      return UniqueByKeyPolicy{
+        512,
+        15,
+        BLOCK_LOAD_DIRECT,
+        LOAD_DEFAULT,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 1768, 355}};
+    }
+    if (key_size == 4 && value_size == 4)
+    {
+      if (value_type == type_t::float32)
+      {
+        // float32 values: the search winner regressed during verification, left untuned
+        return {};
+      }
+      // ipt_17.tpb_224.trp_1.ld_0.ns_1044.dcid_0.l2w_910  1.002  1.030  1.176  1.152
+      return UniqueByKeyPolicy{
+        224,
+        17,
+        BLOCK_LOAD_WARP_TRANSPOSE,
+        LOAD_DEFAULT,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 1044, 910}};
+    }
+    if (key_size == 4 && value_size == 8)
+    {
+      // ipt_10.tpb_480.trp_0.ld_0.ns_808.dcid_0.l2w_820  1.037  1.014  1.085  1.119
+      return UniqueByKeyPolicy{
+        480,
+        10,
+        BLOCK_LOAD_DIRECT,
+        LOAD_DEFAULT,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 808, 820}};
+    }
+    if (key_size == 8 && value_size == 4)
+    {
+      // ipt_12.tpb_256.trp_1.ld_1.ns_216.dcid_1.l2w_750  1.012  0.990  1.115  1.159
+      return UniqueByKeyPolicy{
+        256,
+        12,
+        BLOCK_LOAD_WARP_TRANSPOSE,
+        LOAD_CA,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 216, 750}};
+    }
+    if (key_size == 8 && value_size == 8)
+    {
+      if (value_type == type_t::float64)
+      {
+        // ipt_10.tpb_512.trp_0.ld_0.ns_308.dcid_1.l2w_585  1.096  1.066  1.147  1.159
+        return UniqueByKeyPolicy{
+          512,
+          10,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 308, 585}};
+      }
+      // ipt_10.tpb_512.trp_0.ld_1.ns_44.dcid_1.l2w_540  1.060  1.063  1.144  1.155
+      return UniqueByKeyPolicy{
+        512,
+        10,
+        BLOCK_LOAD_DIRECT,
+        LOAD_CA,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 44, 540}};
+    }
+    if (key_size == 16 && value_size == 16)
+    {
+      // ipt_15.tpb_128.trp_1.ld_1.ns_0.dcid_1.l2w_525  0.980  1.575  2.314  2.515
+      return UniqueByKeyPolicy{
+        128,
+        15,
+        BLOCK_LOAD_WARP_TRANSPOSE,
+        LOAD_CA,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 0, 525}};
+    }
+
+    return {};
+  }
+
 public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
     -> UniqueByKeyPolicy
   {
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
+    {
+      if (auto tuning = get_sm107_tuning())
+      {
+        return *tuning;
+      }
+    }
+
     if (cc >= ::cuda::compute_capability{10, 0})
     {
       if (auto tuning = get_sm100_tuning())
@@ -1505,7 +1628,9 @@ struct policy_selector_from_types
       static_cast<int>(sizeof(KeyT)),
       static_cast<int>(sizeof(ValueT)),
       is_primitive<KeyT>::value && sizeof(KeyT) <= 8,
-      is_primitive<ValueT>::value && sizeof(ValueT) <= 8}(cc);
+      is_primitive<ValueT>::value && sizeof(ValueT) <= 8,
+      classify_type<KeyT>,
+      classify_type<ValueT>}(cc);
   }
 };
 
@@ -1526,7 +1651,7 @@ struct policy_selector_from_hub
 {
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> UniqueByKeyPolicy
   {
-    return convert_policy<typename PolicyHub::MaxPolicy>();
+    return _CUB::detail::unique_by_key::convert_policy<typename PolicyHub::MaxPolicy>();
   }
 };
 

@@ -34,8 +34,6 @@
 #include <cuda/experimental/__graph/graph.cuh>
 #include <cuda/experimental/__graph/graph_node_ref.cuh>
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/std/__cccl/prologue.h>
 
 // work around breathe "_CUDAX_CONSTEXPR_FRIEND friend" bug.

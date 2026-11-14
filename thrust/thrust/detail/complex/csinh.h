@@ -45,7 +45,8 @@
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/hyperbolic_functions.h>
 #include <cuda/std/__cmath/trigonometric_functions.h>
-#include <cuda/std/limits>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
@@ -56,10 +57,17 @@ using thrust::complex;
 // finite y and propagates a NaN or raises invalid for an infinite y. C99 Annex G specifies
 // the complex functions in these terms.
 // NOLINTBEGIN(misc-redundant-expression)
-_CCCL_HOST_DEVICE inline complex<double> csinh(const complex<double>& z)
+_CCCL_HOST_DEVICE_API inline complex<double> csinh(const complex<double>& z)
 {
-  double x, y, h;
-  uint32_t hx, hy, ix, iy, lx, ly;
+  double x;
+  double y;
+  double h;
+  uint32_t hx;
+  uint32_t hy;
+  uint32_t ix;
+  uint32_t iy;
+  uint32_t lx;
+  uint32_t ly;
   const double huge = 8.98846567431157953864652595395e+307; // 0x1p1023;
 
   x = z.real();
@@ -90,18 +98,16 @@ _CCCL_HOST_DEVICE inline complex<double> csinh(const complex<double>& z)
       h = ::cuda::std::exp(::cuda::std::fabs(x)) * 0.5;
       return (complex<double>(::cuda::std::copysign(h, x) * ::cuda::std::cos(y), h * ::cuda::std::sin(y)));
     }
-    else if (ix < 0x4096bbaa)
+    if (ix < 0x4096bbaa)
     {
       /* x < 1455: scale to avoid overflow */
-      complex<double> z_ = ldexp_cexp(complex<double>(::cuda::std::fabs(x), y), -1);
+      const complex<double> z_ = ldexp_cexp(complex<double>(::cuda::std::fabs(x), y), -1);
       return (complex<double>(z_.real() * ::cuda::std::copysign(1.0, x), z_.imag()));
     }
-    else
-    {
-      /* x >= 1455: the result always overflows */
-      h = huge * x;
-      return (complex<double>(h * ::cuda::std::cos(y), h * h * ::cuda::std::sin(y)));
-    }
+
+    /* x >= 1455: the result always overflows */
+    h = huge * x;
+    return (complex<double>(h * ::cuda::std::cos(y), h * h * ::cuda::std::sin(y)));
   }
 
   /*
@@ -181,7 +187,7 @@ _CCCL_HOST_DEVICE inline complex<double> csinh(const complex<double>& z)
 }
 // NOLINTEND(misc-redundant-expression)
 
-_CCCL_HOST_DEVICE inline complex<double> csin(complex<double> z)
+_CCCL_HOST_DEVICE_API inline complex<double> csin(complex<double> z)
 {
   /* csin(z) = -I * csinh(I * z) */
   z = csinh(complex<double>(-z.imag(), z.real()));
@@ -190,7 +196,7 @@ _CCCL_HOST_DEVICE inline complex<double> csin(complex<double> z)
 } // namespace detail::complex
 
 template <typename ValueType>
-_CCCL_HOST_DEVICE inline complex<ValueType> sin(const complex<ValueType>& z)
+_CCCL_HOST_DEVICE_API inline complex<ValueType> sin(const complex<ValueType>& z)
 {
   const ValueType re = z.real();
   const ValueType im = z.imag();
@@ -198,7 +204,7 @@ _CCCL_HOST_DEVICE inline complex<ValueType> sin(const complex<ValueType>& z)
 }
 
 template <typename ValueType>
-_CCCL_HOST_DEVICE inline complex<ValueType> sinh(const complex<ValueType>& z)
+_CCCL_HOST_DEVICE_API inline complex<ValueType> sinh(const complex<ValueType>& z)
 {
   const ValueType re = z.real();
   const ValueType im = z.imag();
@@ -206,13 +212,13 @@ _CCCL_HOST_DEVICE inline complex<ValueType> sinh(const complex<ValueType>& z)
 }
 
 template <>
-_CCCL_HOST_DEVICE inline complex<double> sin(const complex<double>& z)
+_CCCL_HOST_DEVICE_API inline complex<double> sin(const complex<double>& z)
 {
   return detail::complex::csin(z);
 }
 
 template <>
-_CCCL_HOST_DEVICE inline complex<double> sinh(const complex<double>& z)
+_CCCL_HOST_DEVICE_API inline complex<double> sinh(const complex<double>& z)
 {
   return detail::complex::csinh(z);
 }

@@ -16,8 +16,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/raw_reference_cast.h>
 #include <thrust/detail/type_traits.h>
+#include <thrust/iterator/iterator_traits.h>
+
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_assignable.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
@@ -30,7 +34,7 @@ template <typename InputIterator, typename OutputIterator>
 struct reference_is_assignable
 {
   template <typename OI>
-  static constexpr bool h()
+  _CCCL_HOST_API static constexpr bool h()
   {
     if constexpr (::cuda::std::is_same_v<thrust::detail::it_reference_t<OI>, void>)
     {
@@ -51,7 +55,7 @@ struct reference_is_assignable
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename OutputIterator, typename InputIterator>
-inline _CCCL_HOST_DEVICE ::cuda::std::enable_if_t<reference_is_assignable<InputIterator, OutputIterator>::value>
+_CCCL_HOST_DEVICE_API inline ::cuda::std::enable_if_t<reference_is_assignable<InputIterator, OutputIterator>::value>
 iter_assign(OutputIterator dst, InputIterator src)
 {
   *dst = *src;
@@ -59,9 +63,9 @@ iter_assign(OutputIterator dst, InputIterator src)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename OutputIterator, typename InputIterator>
-inline _CCCL_HOST_DEVICE
-typename thrust::detail::disable_if<reference_is_assignable<InputIterator, OutputIterator>::value>::type
-iter_assign(OutputIterator dst, InputIterator src)
+_CCCL_HOST_DEVICE_API inline
+  typename thrust::detail::disable_if<reference_is_assignable<InputIterator, OutputIterator>::value>::type
+  iter_assign(OutputIterator dst, InputIterator src)
 {
   using value_type = thrust::detail::it_value_t<InputIterator>;
 
@@ -72,16 +76,11 @@ iter_assign(OutputIterator dst, InputIterator src)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator general_copy(InputIterator first, InputIterator last, OutputIterator result)
+_CCCL_HOST_DEVICE_API OutputIterator general_copy(InputIterator first, InputIterator last, OutputIterator result)
 {
   for (; first != last; ++first, (void) ++result)
   {
-    // gcc 4.2 crashes while instantiating iter_assign
-#if _CCCL_COMPILER(GCC, <, 4, 3)
-    *result = *first;
-#else
     general_copy_detail::iter_assign(result, first);
-#endif
   }
 
   return result;
@@ -89,16 +88,11 @@ _CCCL_HOST_DEVICE OutputIterator general_copy(InputIterator first, InputIterator
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename InputIterator, typename Size, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator general_copy_n(InputIterator first, Size n, OutputIterator result)
+_CCCL_HOST_DEVICE_API OutputIterator general_copy_n(InputIterator first, Size n, OutputIterator result)
 {
   for (; n > Size(0); ++first, (void) ++result, (void) --n)
   {
-    // gcc 4.2 crashes while instantiating iter_assign
-#if _CCCL_COMPILER(GCC, <, 4, 3)
-    *result = *first;
-#else
     general_copy_detail::iter_assign(result, first);
-#endif
   }
 
   return result;

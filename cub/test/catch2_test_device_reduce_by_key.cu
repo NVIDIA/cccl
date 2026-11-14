@@ -77,7 +77,7 @@ CUB_TEST("Device reduce-by-key works", "[by_key][reduce][device]", CUB_SMALL, fu
   INFO("Test seg_size_range: [" << std::get<0>(seg_size_range) << ", " << std::get<1>(seg_size_range) << "]");
 
   // Generate input segments
-  c2h::device_vector<offset_t> segment_offsets = c2h::gen_uniform_offsets<offset_t>(
+  const c2h::device_vector<offset_t> segment_offsets = c2h::gen_uniform_offsets<offset_t>(
     C2H_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
 
   // Get array of keys from segment offsets
@@ -102,7 +102,7 @@ CUB_TEST("Device reduce-by-key works", "[by_key][reduce][device]", CUB_SMALL, fu
     using accum_t = cuda::std::__accumulator_t<op_t, value_t, output_t>;
     c2h::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(in_values, segment_offsets, reduction_op, accum_t{}, expected_result.begin());
-    c2h::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);
+    const c2h::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);
 
     // Run test
     c2h::device_vector<offset_t> num_unique_keys(1);
@@ -133,7 +133,7 @@ CUB_TEST("Device reduce-by-key works", "[by_key][reduce][device]", CUB_SMALL, fu
     c2h::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(
       in_values, segment_offsets, op_t{}, cuda::std::numeric_limits<value_t>::max(), expected_result.begin());
-    c2h::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);
+    const c2h::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);
 
     // Run test
     c2h::device_vector<offset_t> num_unique_keys(1);
@@ -155,4 +155,33 @@ CUB_TEST("Device reduce-by-key works", "[by_key][reduce][device]", CUB_SMALL, fu
     REQUIRE(expected_result == out_result);
     REQUIRE(expected_keys == out_unique_keys);
   }
+}
+
+// Keys must be compared as the input key type, not after a (lossy) conversion to the output key type
+CUB_TEST_CASE("Device reduce-by-key compares keys before converting them to the output key type",
+              "[by_key][reduce][device]",
+              CUB_SMALL)
+{
+  // 1, 257 and 513 are all 1 when truncated to uint8_t, but differ as int
+  const c2h::device_vector<int> keys_in{1, 257, 513, 2, 2};
+  const c2h::device_vector<int> values_in{1, 1, 1, 1, 1};
+  const int num_items = static_cast<int>(keys_in.size());
+
+  c2h::device_vector<std::uint8_t> keys_out(num_items, thrust::no_init);
+  c2h::device_vector<int> values_out(num_items, thrust::no_init);
+  c2h::device_vector<int> num_unique_keys(1);
+  device_reduce_by_key(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    thrust::raw_pointer_cast(num_unique_keys.data()),
+    cuda::std::plus<>{},
+    num_items);
+
+  REQUIRE(num_unique_keys[0] == 4);
+  keys_out.resize(4);
+  values_out.resize(4);
+  REQUIRE(keys_out == c2h::device_vector<std::uint8_t>{1, 1, 1, 2});
+  REQUIRE(values_out == c2h::device_vector<int>{1, 1, 1, 2});
 }

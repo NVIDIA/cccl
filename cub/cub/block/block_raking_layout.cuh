@@ -20,7 +20,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_type.cuh>
+#include <cub/detail/uninitialized.cuh>
+
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/min.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -58,18 +61,17 @@ struct BlockRakingLayout
   static constexpr int MAX_RAKING_THREADS = ::cuda::std::min(ThreadsPerBlock, detail::warp_threads);
 
   /// Number of raking elements per warp-synchronous raking thread (rounded up)
-  static constexpr int SEGMENT_LENGTH = (SHARED_ELEMENTS + MAX_RAKING_THREADS - 1) / MAX_RAKING_THREADS;
+  static constexpr int SEGMENT_LENGTH = ::cuda::ceil_div(ThreadsPerBlock, MAX_RAKING_THREADS);
 
   /// Never use a raking thread that will have no valid data (e.g., when ThreadsPerBlock is 62 and SEGMENT_LENGTH is 2,
   /// we should only use 31 raking threads)
-  static constexpr int RAKING_THREADS = (SHARED_ELEMENTS + SEGMENT_LENGTH - 1) / SEGMENT_LENGTH;
+  static constexpr int RAKING_THREADS = ::cuda::ceil_div(ThreadsPerBlock, SEGMENT_LENGTH);
 
   /// Whether we will have bank conflicts (technically we should find out if the GCD is > 1)
   static constexpr bool HAS_CONFLICTS = (detail::smem_banks % SEGMENT_LENGTH == 0);
 
   /// Degree of bank conflicts (e.g., 4-way)
-  static constexpr int CONFLICT_DEGREE =
-    (HAS_CONFLICTS) ? (MAX_RAKING_THREADS * SEGMENT_LENGTH) / detail::smem_banks : 1;
+  static constexpr int CONFLICT_DEGREE = HAS_CONFLICTS ? (MAX_RAKING_THREADS * SEGMENT_LENGTH) / detail::smem_banks : 1;
 
   /// Pad each segment length with one element if segment length is not relatively prime to warp size and can't be
   /// optimized as a vector load
@@ -80,7 +82,7 @@ struct BlockRakingLayout
 
   /// Whether or not we need bounds checking during raking (the number of reduction elements is not a multiple of the
   /// number of raking threads)
-  static constexpr int UNGUARDED = (SHARED_ELEMENTS % RAKING_THREADS == 0);
+  static constexpr int UNGUARDED = (ThreadsPerBlock % RAKING_THREADS == 0);
 
   /**
    * @brief Shared memory storage type
@@ -91,13 +93,12 @@ struct BlockRakingLayout
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   /**
    * @brief Returns the location for the calling thread to place data into the grid
    */
-  static _CCCL_DEVICE _CCCL_FORCEINLINE T* PlacementPtr(TempStorage& temp_storage, unsigned int linear_tid)
+  _CCCL_DEVICE_API static _CCCL_FORCEINLINE T* PlacementPtr(TempStorage& temp_storage, unsigned int linear_tid)
   {
     // Offset for partial
     unsigned int offset = linear_tid;
@@ -115,7 +116,7 @@ struct BlockRakingLayout
   /**
    * @brief Returns the location for the calling thread to begin sequential raking
    */
-  static _CCCL_DEVICE _CCCL_FORCEINLINE T* RakingPtr(TempStorage& temp_storage, unsigned int linear_tid)
+  _CCCL_DEVICE_API static _CCCL_FORCEINLINE T* RakingPtr(TempStorage& temp_storage, unsigned int linear_tid)
   {
     return temp_storage.Alias().buff + (linear_tid * (SEGMENT_LENGTH + USE_SEGMENT_PADDING));
   }

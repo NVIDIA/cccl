@@ -14,13 +14,13 @@
 #endif // no system header
 
 #if _CCCL_CUDA_COMPILATION()
+#  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/fill.h>
 #  include <thrust/system/cuda/detail/parallel_for.h>
 #  include <thrust/system/cuda/detail/util.h>
 
 #  include <cuda/std/__iterator/distance.h>
-#  include <cuda/std/__new/device_new.h>
 #  include <cuda/std/__type_traits/is_trivially_assignable.h>
 #  include <cuda/std/__type_traits/is_trivially_constructible.h>
 
@@ -48,7 +48,7 @@ struct functor
 } // namespace __uninitialized_fill
 
 template <class Derived, class Iterator, class Size, class T>
-Iterator _CCCL_HOST_DEVICE
+Iterator _CCCL_HOST_DEVICE_API
 uninitialized_fill_n(execution_policy<Derived>& policy, Iterator first, Size count, T const& x)
 {
   // if the output type is trivially constructible from the input, it has no side effect, and we can skip placement new
@@ -69,7 +69,8 @@ uninitialized_fill_n(execution_policy<Derived>& policy, Iterator first, Size cou
 }
 
 template <class Derived, class Iterator, class T>
-void _CCCL_HOST_DEVICE uninitialized_fill(execution_policy<Derived>& policy, Iterator first, Iterator last, T const& x)
+void _CCCL_HOST_DEVICE_API
+uninitialized_fill(execution_policy<Derived>& policy, Iterator first, Iterator last, T const& x)
 {
   cuda_cub::uninitialized_fill_n(policy, first, ::cuda::std::distance(first, last), x);
 }

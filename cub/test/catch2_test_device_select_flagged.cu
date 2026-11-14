@@ -11,15 +11,16 @@
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
-#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/std/execution>
 
 #include <algorithm>
 
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 template <class T, class FlagT>
 static c2h::host_vector<T> get_reference(const c2h::device_vector<T>& in, const c2h::device_vector<FlagT>& flags)
@@ -162,7 +163,7 @@ CUB_TEST("DeviceSelect::Flagged does not change input", "[device][select_flagged
   int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // copy input first
-  c2h::device_vector<type> reference = in;
+  const c2h::device_vector<type> reference = in;
 
   select_flagged(in.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items);
 
@@ -256,47 +257,7 @@ CUB_TEST("DeviceSelect::Flagged works with user provided memory and environment"
     REQUIRE(reference == out);
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
-  SECTION("DeviceSelect::Flagged works with cudaStream_t")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_flagged(stream.get());
-  }
-
-  SECTION("DeviceSelect::Flagged works with cuda::stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_flagged(stream);
-  }
-
-  SECTION("DeviceSelect::Flagged works with cuda::stream_ref")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
-    test_flagged(stream_ref);
-  }
-
-  SECTION("DeviceSelect::Flagged works with cuda::std::execution::env")
-  {
-    cuda::std::execution::env env{};
-    test_flagged(env);
-  }
-
-  SECTION("DeviceSelect::Flagged works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_flagged(policy);
-  }
-
-  SECTION("DeviceSelect::Flagged works with cuda::execution::gpu with stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_flagged(policy);
-  }
+  test_with_custom_streams(test_flagged);
 }
 #endif // TEST_LAUNCH == 0
 
@@ -600,9 +561,9 @@ try
   // The partition size (the maximum number of items processed by a single kernel invocation) is an important boundary
   constexpr auto max_partition_size = static_cast<offset_t>(cuda::std::numeric_limits<std::int32_t>::max());
 
-  offset_t num_items = GENERATE_COPY(
+  const offset_t num_items = GENERATE_COPY(
     values({
-      offset_t{2} * max_partition_size + offset_t{20000000}, // 3 partitions
+      (offset_t{2} * max_partition_size) + offset_t{20000000}, // 3 partitions
       offset_t{2} * max_partition_size, // 2 partitions
       max_partition_size + offset_t{1}, // 2 partitions
       max_partition_size, // 1 partitions
@@ -620,18 +581,17 @@ try
   offset_t* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // Run test
-  offset_t expected_num_copied = (num_items + match_every_nth - offset_t{1}) / match_every_nth;
+  const offset_t expected_num_copied = (num_items + match_every_nth - offset_t{1}) / match_every_nth;
   c2h::device_vector<type> out(expected_num_copied);
   select_flagged(in, flags_in, out.begin(), d_first_num_selected_out, num_items);
 
   // Ensure that we created the correct output
   REQUIRE(num_selected_out[0] == expected_num_copied);
-  auto expected_out_it     = cuda::transform_iterator(in, multiply_n<offset_t>{static_cast<offset_t>(match_every_nth)});
-  bool all_results_correct = thrust::equal(out.cbegin(), out.cend(), expected_out_it);
+  auto expected_out_it = cuda::transform_iterator(in, multiply_n<offset_t>{static_cast<offset_t>(match_every_nth)});
+  const bool all_results_correct = thrust::equal(out.cbegin(), out.cend(), expected_out_it);
   REQUIRE(all_results_correct == true);
 }
-catch (std::bad_alloc&)
+catch (...)
 {
-  // Exceeding memory is not a failure.
-  SUCCEED("exceeding memory is not a failure");
+  c2h::skip_if_allocation_failure();
 }

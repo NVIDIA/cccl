@@ -35,10 +35,10 @@
 
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__concepts/convertible_to.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__execution/env.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
-#  include <cuda/std/cstddef>
+#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -83,7 +83,7 @@ struct allocation_alignment_t
 _CCCL_GLOBAL_CONSTANT auto allocation_alignment = allocation_alignment_t{};
 
 //! @brief Returns true if \p __alignment is a power of two and not less than \p __min_alignment.
-_CCCL_HOST_DEVICE inline constexpr bool
+_CCCL_HOST_DEVICE_API constexpr bool
 __is_valid_allocation_alignment(::cuda::std::size_t __alignment, ::cuda::std::size_t __min_alignment) noexcept
 {
   return __alignment >= __min_alignment && __alignment != 0 && (__alignment & (__alignment - 1)) == 0;

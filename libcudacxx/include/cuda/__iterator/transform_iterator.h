@@ -25,6 +25,7 @@
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#include <cuda/__iterator/contiguous_iterator_adaptor.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__concepts/equality_comparable.h>
@@ -35,8 +36,6 @@
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__ranges/compressed_movable_box.h>
-#include <cuda/std/__ranges/concepts.h>
-#include <cuda/std/__ranges/movable_box.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
@@ -45,7 +44,6 @@
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/declval.h>
-#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -64,7 +62,7 @@ struct __transform_iterator_category_base<_Fn,
                                           _Iter,
                                           ::cuda::std::enable_if_t<::cuda::std::__has_forward_traversal<_Iter>>>
 {
-  using _Cat = typename ::cuda::std::iterator_traits<_Iter>::iterator_category;
+  using _Cat _CCCL_NODEBUG = typename ::cuda::std::iterator_traits<_Iter>::iterator_category;
 
   using iterator_category = ::cuda::std::conditional_t<
     ::cuda::std::is_reference_v<::cuda::std::invoke_result_t<_Fn&, ::cuda::std::iter_reference_t<_Iter>>>,
@@ -235,6 +233,18 @@ public:
   {
     return ::cuda::std::move(__iter());
   }
+
+#ifndef _CCCL_DOXYGEN_INVOKED
+  //! @brief Rebuilds the stored iterator in place over the storage at @p __ptr.
+  //! @param[in] __ptr The address of the storage that replaces the storage this iterator reads from.
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__iter_can_rebind<_Iter, _Tp>)
+  _CCCL_API constexpr void __rebind(_Tp* __ptr)
+  {
+    ::cuda::__rebind_iterator_adaptor(__iter(), __ptr);
+  }
+#endif // !_CCCL_DOXYGEN_INVOKED
 
   //! @brief Dereferences the stored iterator and applies the stored functor to the result
   _CCCL_EXEC_CHECK_DISABLE

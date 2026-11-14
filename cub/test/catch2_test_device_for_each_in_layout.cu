@@ -54,18 +54,21 @@ template <bool IsLayoutRight, typename T, typename IndexType, size_t... Extents>
 static void fill_linear([[maybe_unused]] c2h::host_vector<T>& vector,
                         [[maybe_unused]] const cuda::std::extents<IndexType, Extents...>& ext)
 {
-  [[maybe_unused]] size_t pos = 0;
   if constexpr (sizeof...(Extents) == 0)
   {
     return;
   }
-  else if constexpr (IsLayoutRight)
-  {
-    fill_linear_impl<IsLayoutRight, 0>(vector, ext, pos);
-  }
   else
   {
-    fill_linear_impl<IsLayoutRight, (sizeof...(Extents) - 1)>(vector, ext, pos);
+    size_t pos = 0;
+    if constexpr (IsLayoutRight)
+    {
+      fill_linear_impl<IsLayoutRight, 0>(vector, ext, pos);
+    }
+    else
+    {
+      fill_linear_impl<IsLayoutRight, (sizeof...(Extents) - 1)>(vector, ext, pos);
+    }
   }
 }
 
@@ -154,14 +157,10 @@ CUB_TEST(
   CAPTURE(c2h::type_name<index_type>(), c2h::type_name<dims>(), c2h::type_name<layout_t>());
 
   device_for_each_in_layout(mapping_t{ext}, store_op_t{d_output_raw});
-  c2h::host_vector<data_t> h_output_gpu = d_output;
-  constexpr bool is_layout_right        = cuda::std::is_same_v<layout_t, cuda::std::layout_right>;
+  const c2h::host_vector<data_t> h_output_gpu = d_output;
+  constexpr bool is_layout_right              = cuda::std::is_same_v<layout_t, cuda::std::layout_right>;
   fill_linear<is_layout_right>(h_output_expected, ext);
-// MSVC error: C3546: '...': there are no parameter packs available to expand in
-//             make_tuple_types.h:__make_tuple_types_flat
-#if !_CCCL_COMPILER(MSVC)
   REQUIRE(h_output_expected == h_output_gpu);
-#endif // !_CCCL_COMPILER(MSVC)
 }
 
 CUB_TEST("DeviceFor::ForEachInLayout 3D dynamic",
@@ -180,15 +179,15 @@ CUB_TEST("DeviceFor::ForEachInLayout 3D dynamic",
   auto X                              = GENERATE_COPY(take(3, random(2, 10)));
   auto Y                              = GENERATE_COPY(take(3, random(2, 10)));
   auto Z                              = GENERATE_COPY(take(3, random(2, 10)));
-  ext_t ext{X, Y, Z};
+  const ext_t ext{X, Y, Z};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{1});
   c2h::host_vector<data_t> h_output_expected(cub::detail::size(ext), data_t{2});
   auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
   CAPTURE(c2h::type_name<index_type>(), X, Y, Z);
 
   device_for_each_in_layout(mapping_t{ext}, store_op_t{d_output_raw});
-  c2h::host_vector<data_t> h_output_gpu = d_output;
-  constexpr bool is_layout_right        = cuda::std::is_same_v<layout_t, cuda::std::layout_right>;
+  const c2h::host_vector<data_t> h_output_gpu = d_output;
+  constexpr bool is_layout_right              = cuda::std::is_same_v<layout_t, cuda::std::layout_right>;
   fill_linear<is_layout_right>(h_output_expected, ext);
 
 #if !_CCCL_COMPILER(MSVC)
@@ -229,4 +228,32 @@ CUB_TEST("DeviceFor::ForEachInLayout no duplicates", "[ForEachInLayout][no_dupli
 
   auto num_of_once_marked_items = thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1);
   REQUIRE(num_of_once_marked_items == num_items);
+}
+
+struct call_counter_t
+{
+  int* d_count;
+
+  template <class... Ts>
+  __device__ void operator()(Ts...) const
+  {
+    atomicAdd(d_count, 1);
+  }
+};
+
+CUB_TEST(
+  "DeviceFor::ForEachInLayout handles extents with a zero dimension", "[ForEachInLayout][device]", CUB_SMALL, layouts)
+{
+  using layout_t  = c2h::get<0, TestType>;
+  using ext_t     = cuda::std::dextents<int, 3>;
+  using mapping_t = typename layout_t::template mapping<ext_t>;
+
+  c2h::device_vector<int> count(1, 0);
+  const call_counter_t op{thrust::raw_pointer_cast(count.data())};
+
+  device_for_each_in_layout(mapping_t{ext_t{0, 3, 4}}, op);
+  device_for_each_in_layout(mapping_t{ext_t{3, 0, 4}}, op);
+  device_for_each_in_layout(mapping_t{ext_t{3, 4, 0}}, op);
+
+  REQUIRE(count[0] == 0);
 }

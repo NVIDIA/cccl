@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/format.h>
 #include <cuda/std/__floating_point/traits.h>
 #include <cuda/std/__type_traits/always_false.h>
@@ -36,8 +37,9 @@ template <__fp_format _Fmt>
 [[nodiscard]] _CCCL_API constexpr auto __fp_storage_type_impl() noexcept
 {
   if constexpr (_Fmt == __fp_format::__fp8_nv_e4m3 || _Fmt == __fp_format::__fp8_nv_e5m2
-                || _Fmt == __fp_format::__fp8_nv_e8m0 || _Fmt == __fp_format::__fp6_nv_e2m3
-                || _Fmt == __fp_format::__fp6_nv_e3m2 || _Fmt == __fp_format::__fp4_nv_e2m1)
+                || _Fmt == __fp_format::__fp8_nv_ue5m3 || _Fmt == __fp_format::__fp8_nv_e8m0
+                || _Fmt == __fp_format::__fp6_nv_e2m3 || _Fmt == __fp_format::__fp6_nv_e3m2
+                || _Fmt == __fp_format::__fp4_nv_e2m1)
   {
     return uint8_t{};
   }
@@ -66,10 +68,10 @@ template <__fp_format _Fmt>
 }
 
 template <__fp_format _Fmt>
-using __fp_storage_t = decltype(__fp_storage_type_impl<_Fmt>());
+using __fp_storage_t _CCCL_NODEBUG = decltype(__fp_storage_type_impl<_Fmt>());
 
 template <class _Tp>
-using __fp_storage_of_t = __fp_storage_t<__fp_format_of_v<_Tp>>;
+using __fp_storage_of_t _CCCL_NODEBUG = __fp_storage_t<__fp_format_of_v<_Tp>>;
 
 #if !_CCCL_TILE_COMPILATION()
 template <class _Tp>
@@ -132,6 +134,14 @@ template <class _Tp>
     return __ret;
   }
 #endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_UE5M3()
+  else if constexpr (is_same_v<_Tp, __nv_fp8_ue5m3>)
+  {
+    _Tp __ret{};
+    __ret.__x = __v;
+    return __ret;
+  }
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E8M0()
   else if constexpr (is_same_v<_Tp, __nv_fp8_e8m0>)
   {
@@ -222,6 +232,12 @@ template <class _Tp>
     return __v.__x;
   }
 #endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_UE5M3()
+  else if constexpr (is_same_v<_Tp, __nv_fp8_ue5m3>)
+  {
+    return __v.__x;
+  }
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E8M0()
   else if constexpr (is_same_v<_Tp, __nv_fp8_e8m0>)
   {

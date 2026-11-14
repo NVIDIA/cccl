@@ -44,7 +44,7 @@ struct destroy_via_allocator
   Allocator& a;
 
   template <typename T>
-  _CCCL_HOST_DEVICE void operator()(T& x) noexcept
+  _CCCL_HOST_DEVICE_API void operator()(T& x) noexcept
   {
     ::cuda::std::allocator_traits<Allocator>::destroy(a, &x);
   }
@@ -55,14 +55,14 @@ struct gozer
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T>
-  inline _CCCL_HOST_DEVICE void operator()(T& x) noexcept
+  _CCCL_HOST_DEVICE_API void operator()(T& x) noexcept
   {
     x.~T();
   }
 };
 
 template <typename Allocator, typename Pointer, typename Size>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 destroy_range([[maybe_unused]] Allocator& a, [[maybe_unused]] Pointer p, [[maybe_unused]] Size n) noexcept
 {
   using pe_t = typename ::cuda::std::pointer_traits<Pointer>::element_type;

@@ -23,7 +23,10 @@ struct stream_registry_factory_t;
 #include <algorithm>
 #include <numeric>
 
-#include "catch2_test_env_launch_helper.h"
+#include "block_size_extracting_helpers.h"
+#include "catch2_test_launch_helper.h"
+
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceTopK::MaxKeys, device_topk_max_keys);
 
 // %PARAM% TEST_LAUNCH lid 0:2
 
@@ -50,6 +53,18 @@ struct topk_tuning
   }
 };
 
+template <unsigned int ThreadsPerBlock>
+struct topk_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto
+  operator()(cuda::compute_capability /*cc*/, cub::detail::topk::topk_policy policy) const
+    -> cub::detail::topk::topk_policy
+  {
+    policy.threads_per_block = ThreadsPerBlock;
+    return policy;
+  }
+};
+
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 
@@ -60,7 +75,7 @@ CUB_TEST("DeviceTopK::MaxKeys can be tuned", "[topk][device]", CUB_SMALL, block_
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size{0};
 
-  block_size_extracting_constant_iterator input(42, thrust::raw_pointer_cast(d_block_size.data()));
+  const block_size_extracting_constant_iterator input(42, thrust::raw_pointer_cast(d_block_size.data()));
   c2h::device_vector<int> d_keys_out(3);
 
   auto env = stdexec::env{topk_requirements(), cuda::execution::tune(topk_tuning<target_block_size>{})};
@@ -84,12 +99,39 @@ CUB_TEST("DeviceTopK::MaxKeys can be tuned", "[topk][device]", CUB_SMALL, block_
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+template <typename Env>
+void max_keys_observing_block_size(Env env, c2h::device_vector<unsigned int>& d_block_size)
+{
+  const block_size_extracting_constant_iterator input(42, thrust::raw_pointer_cast(d_block_size.data()));
+  c2h::device_vector<int> d_keys_out(3, thrust::no_init);
+
+  device_topk_max_keys(input, d_keys_out.begin(), /* elements */ 1024, d_keys_out.size(), env);
+}
+
+CUB_TEST("DeviceTopK::MaxKeys tuning can be modified", "[topk][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+  c2h::device_vector<unsigned int> d_block_size{0};
+
+  // the default tuning must not already use the target block size, otherwise the test passes vacuously
+  {
+    max_keys_observing_block_size(stdexec::env{topk_requirements()}, d_block_size);
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
+  max_keys_observing_block_size(
+    stdexec::env{topk_requirements(), cuda::execution::tune(topk_tuning_transform<target_block_size>{})}, d_block_size);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
 CUB_TEST("DeviceTopK::MinKeys can be tuned", "[topk][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size{0};
 
-  block_size_extracting_constant_iterator input(42, thrust::raw_pointer_cast(d_block_size.data()));
+  const block_size_extracting_constant_iterator input(42, thrust::raw_pointer_cast(d_block_size.data()));
   c2h::device_vector<int> d_keys_out(3);
 
   auto env = stdexec::env{topk_requirements(), cuda::execution::tune(topk_tuning<target_block_size>{})};
@@ -118,7 +160,7 @@ CUB_TEST("DeviceTopK::MaxPairs can be tuned", "[topk][device]", CUB_SMALL, block
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size{0};
 
-  block_size_extracting_constant_iterator input(42, thrust::raw_pointer_cast(d_block_size.data()));
+  const block_size_extracting_constant_iterator input(42, thrust::raw_pointer_cast(d_block_size.data()));
   auto values_in = cuda::make_counting_iterator<int>(0);
   c2h::device_vector<int> d_keys_out(3);
   c2h::device_vector<int> d_values_out(3);
@@ -151,7 +193,7 @@ CUB_TEST("DeviceTopK::MinPairs can be tuned", "[topk][device]", CUB_SMALL, block
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size{0};
 
-  block_size_extracting_constant_iterator input(42, thrust::raw_pointer_cast(d_block_size.data()));
+  const block_size_extracting_constant_iterator input(42, thrust::raw_pointer_cast(d_block_size.data()));
   auto values_in = cuda::make_counting_iterator<int>(0);
   c2h::device_vector<int> d_keys_out(3);
   c2h::device_vector<int> d_values_out(3);
@@ -211,8 +253,8 @@ CUB_TEST("DeviceTopK::MaxKeys env-alloc returns correct top K", "[topk][env]", C
   const int num_items = 256;
   c2h::device_vector<int> d_in(num_items);
   c2h::gen(C2H_SEED(1), d_in);
-  c2h::host_vector<int> h_in      = d_in;
-  c2h::device_vector<int> d_out_k = c2h::device_vector<int>(8);
+  const c2h::host_vector<int> h_in = d_in;
+  c2h::device_vector<int> d_out_k  = c2h::device_vector<int>(8);
 
   auto env = topk_requirements();
   REQUIRE(cudaSuccess == cub::DeviceTopK::MaxKeys(d_in.begin(), d_out_k.begin(), num_items, 8, env));
@@ -229,8 +271,8 @@ CUB_TEST("DeviceTopK::MinKeys env-alloc returns correct bottom K", "[topk][env]"
   const int num_items = 256;
   c2h::device_vector<int> d_in(num_items);
   c2h::gen(C2H_SEED(1), d_in);
-  c2h::host_vector<int> h_in      = d_in;
-  c2h::device_vector<int> d_out_k = c2h::device_vector<int>(8);
+  const c2h::host_vector<int> h_in = d_in;
+  c2h::device_vector<int> d_out_k  = c2h::device_vector<int>(8);
 
   auto env = topk_requirements();
   REQUIRE(cudaSuccess == cub::DeviceTopK::MinKeys(d_in.begin(), d_out_k.begin(), num_items, 8, env));
@@ -322,7 +364,7 @@ CUB_TEST("DeviceTopK::MaxKeys env-alloc handles K equal to num_items", "[topk][e
 
   c2h::host_vector<int> h_out = d_out;
   std::sort(h_out.begin(), h_out.end(), cuda::std::greater<int>{});
-  c2h::host_vector<int> expected{9, 7, 5, 2, 1};
+  const c2h::host_vector<int> expected{9, 7, 5, 2, 1};
   REQUIRE(h_out == expected);
 }
 

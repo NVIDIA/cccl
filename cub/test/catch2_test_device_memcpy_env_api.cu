@@ -43,10 +43,10 @@ CUB_TEST("cub::DeviceMemcpy::Batched accepts env with stream", "[memcpy][env]", 
   auto d_sizes = thrust::device_vector<int>{
     2 * static_cast<int>(sizeof(int)), 3 * static_cast<int>(sizeof(int)), 1 * static_cast<int>(sizeof(int))};
 
-  int num_buffers = 3;
+  const int num_buffers = 3;
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceMemcpy::Batched(
     thrust::raw_pointer_cast(d_src_ptrs.data()),
@@ -59,8 +59,8 @@ CUB_TEST("cub::DeviceMemcpy::Batched accepts env with stream", "[memcpy][env]", 
     std::cerr << "cub::DeviceMemcpy::Batched failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_a{10, 20, 30, 40, 50};
-  thrust::device_vector<int> expected_b{60};
+  const thrust::device_vector<int> expected_a{10, 20, 30, 40, 50};
+  const thrust::device_vector<int> expected_b{60};
   // example-end memcpy-batched-env
 
   stream.sync();

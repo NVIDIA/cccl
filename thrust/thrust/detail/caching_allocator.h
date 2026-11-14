@@ -21,7 +21,7 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-inline thrust::mr::allocator<
+_CCCL_HOST_API inline thrust::mr::allocator<
   char,
   thrust::mr::disjoint_unsynchronized_pool_resource<thrust::device_memory_resource, thrust::mr::new_delete_resource>>
 single_device_tls_caching_allocator()

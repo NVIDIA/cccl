@@ -44,10 +44,18 @@ _CCCL_DIAG_SUPPRESS_MSVC(4244) // warning C4244: '=': conversion from 'int' to '
       ASSERT_ALMOST_EQUAL(reference, result);                                                                   \
     }                                                                                                           \
   };                                                                                                            \
-  VectorUnitTest<TestFunctionalPlaceholders##name, type_list, thrust::device_vector, thrust::device_allocator>  \
-    TestFunctionalPlaceholders##name##DeviceInstance;                                                           \
-  VectorUnitTest<TestFunctionalPlaceholders##name, type_list, thrust::host_vector, std::allocator>              \
-    TestFunctionalPlaceholders##name##HostInstance;
+  DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(                                                                  \
+    TestFunctionalPlaceholders##name,                                                                           \
+    type_list,                                                                                                  \
+    thrust::device_vector,                                                                                      \
+    thrust::device_allocator,                                                                                   \
+    TestFunctionalPlaceholders##name##Device);                                                                  \
+  DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(                                                                  \
+    TestFunctionalPlaceholders##name,                                                                           \
+    type_list,                                                                                                  \
+    thrust::host_vector,                                                                                        \
+    std::allocator,                                                                                             \
+    TestFunctionalPlaceholders##name##Host);
 
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(Plus, +, ::cuda::std::plus, ThirtyTwoBitTypes);
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(Minus, -, ::cuda::std::minus, ThirtyTwoBitTypes);
@@ -70,7 +78,7 @@ BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(Modulus, %, ::cuda::std::modulus, SmallInteg
     Vector result(input.size());                                                          \
     thrust::transform(input.begin(), input.end(), result.begin(), reference_operator _1); \
                                                                                           \
-    ASSERT_EQUAL(reference, result);                                                      \
+    REQUIRE(reference == result);                                                         \
   }                                                                                       \
   DECLARE_VECTOR_UNITTEST(TestFunctionalPlaceholders##name);
 

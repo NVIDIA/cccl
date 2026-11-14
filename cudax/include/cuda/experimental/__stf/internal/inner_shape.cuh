@@ -46,7 +46,7 @@ namespace cuda::experimental::stf
  *
  */
 template <size_t thickness, typename T, typename... P>
-_CCCL_HOST_DEVICE box<mdspan<T, P...>::rank()> inner(const shape_of<mdspan<T, P...>>& s)
+_CCCL_HOST_DEVICE_API box<mdspan<T, P...>::rank()> inner(const shape_of<mdspan<T, P...>>& s)
 {
   using m               = mdspan<T, P...>;
   constexpr size_t rank = m::rank();
@@ -77,7 +77,7 @@ _CCCL_HOST_DEVICE box<mdspan<T, P...>::rank()> inner(const shape_of<mdspan<T, P.
  * @param s input box shape
  */
 template <size_t thickness, size_t rank>
-_CCCL_HOST_DEVICE box<rank> inner(const box<rank>& s)
+_CCCL_HOST_DEVICE_API box<rank> inner(const box<rank>& s)
 {
   ::std::array<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>, rank> inner_extents;
   for (size_t i = 0; i < rank; i++)
@@ -94,8 +94,8 @@ _CCCL_HOST_DEVICE box<rank> inner(const box<rank>& s)
 #ifdef UNITTESTED_FILE
 UNITTEST("inner explicit shape (explicit bounds)")
 {
-  box s({10, 100}, {-10, 10});
-  static_assert(::cuda::std::is_same_v<decltype(s), box<2>>);
+  const box s({10, 100}, {-10, 10});
+  static_assert(::cuda::std::is_same_v<decltype(s), const box<2>>);
 
   auto i = inner<2>(s);
   EXPECT(i.get_begin(0) == 12);
@@ -106,8 +106,8 @@ UNITTEST("inner explicit shape (explicit bounds)")
 
 UNITTEST("inner explicit shape (sizes)")
 {
-  box s(10, 100, 12);
-  static_assert(::cuda::std::is_same_v<decltype(s), box<3>>);
+  const box s(10, 100, 12);
+  static_assert(::cuda::std::is_same_v<decltype(s), const box<3>>);
 
   auto i = inner<2>(s);
   EXPECT(i.get_begin(0) == 2);
