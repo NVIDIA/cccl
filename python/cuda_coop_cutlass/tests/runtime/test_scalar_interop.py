@@ -74,6 +74,44 @@ def test_typed_nonfinite_scan_seed(operation, seed):
         )
 
 
+@pytest.mark.parametrize("pairs", (False, True))
+def test_numpy_radix_bounds(pairs):
+    @cute.kernel
+    def kernel(destination: cute.Pointer):
+        thread = cute.arch.thread_idx()[0]
+        value = cutlass.Int32(31 - thread)
+        if cutlass.const_expr(pairs):
+            result, original = coop.radix_sort_pairs(
+                coop.this_block(),
+                value,
+                cutlass.Int32(thread),
+                begin_bit=np.int32(0),
+                end_bit=np.int64(5),
+            )
+            output = cute.make_tensor(destination, cute.make_layout(64))
+            output[32 + thread] = original
+        else:
+            result = coop.radix_sort_keys(
+                coop.this_block(),
+                value,
+                begin_bit=np.int32(0),
+                end_bit=np.int64(5),
+            )
+            output = cute.make_tensor(destination, cute.make_layout(64))
+        output[thread] = result
+
+    @cute.jit
+    def launch(destination: cute.Pointer):
+        kernel(destination).launch(grid=1, block=32)
+
+    observed = np.zeros(64, dtype=np.int32)
+    with device_array(observed) as destination:
+        launch(destination)
+    np.testing.assert_array_equal(observed[:32], np.arange(32))
+    if pairs:
+        np.testing.assert_array_equal(observed[32:], np.arange(31, -1, -1))
+
+
 @pytest.mark.parametrize("dtype", (np.float32, np.float64))
 @pytest.mark.parametrize("operation", ("min", "max"))
 @pytest.mark.parametrize("group_kind", ("warp", "logical", "block"))
