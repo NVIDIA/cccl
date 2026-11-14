@@ -287,3 +287,16 @@ def test_export_rejects_conflicting_typed_items():
             data = ThreadData.from_values(Float32(2.75), dtype=Int32)
             with pytest.raises(TypeError, match="dtype does not match"):
                 data.to_register_tensor(dtype=Float32)
+
+
+def test_deepcopy_ir_values():
+    with ir.Context(), ir.Location.unknown():
+        module = ir.Module.create()
+        with ir.InsertionPoint(module.body):
+            value = Int32(Int32(7).ir_value())
+            data = ThreadData.from_values(value, dtype=Int32)
+            cloned = deepcopy(data)
+            assert cloned[0] is value
+            cloned[0] = Int32(9)
+            assert data[0] is value
+        assert module.operation.verify()
