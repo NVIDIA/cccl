@@ -446,7 +446,20 @@ def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
 
     call_arguments = [input_name]
     if request.operation.operation is ReduceOperation.REDUCE:
-        call_arguments.append(operator_expression(request.op))
+        expression = operator_expression(request.op)
+        if (
+            type_specification.token in {"f32", "f64"}
+            and request.op in ("min", "max")
+            and request.operation.valid_items.kind is not BindingKind.OMITTED
+        ):
+            # CUB's recognized min/max redux path pads excluded lanes with
+            # infinity. That is not an identity for an all-NaN valid prefix.
+            # A custom functor selects CUB's bounded shuffle reduction.
+            scalar = type_specification.cpp_type
+            expression = (
+                f"[] ({scalar} a, {scalar} b) {{ return {expression}(a, b); }}"
+            )
+        call_arguments.append(expression)
     if runtime_valid_items:
         call_arguments.append("valid_items")
     elif request.operation.valid_items.kind is BindingKind.STATIC:
