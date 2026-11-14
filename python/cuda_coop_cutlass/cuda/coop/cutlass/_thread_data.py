@@ -1205,9 +1205,8 @@ class ThreadData:
         results. A block argument names a value supplied on entry to an IR
         block. The hook wraps the supplied scalars in a new Python container.
 
-        Require static metadata and one value per item. Keep a
-        declared dtype; without one, record the item type inferred from
-        the original payload.
+        Require static metadata and one value per item. Keep a declared dtype;
+        without one, record the item type inferred from the original payload.
 
         Parameters
         ----------

@@ -324,11 +324,10 @@ Can thread-local work surround a collective?
 --------------------------------------------
 
 Yes. A leader thread can prepare data before a collective and consume its
-result afterwards. Every member of the group must reach the collective in
-the same iteration, including members whose inputs are excluded by
-``valid_items``. A condition around the collective itself must be uniform
-across the group. A block collective inside ``if thread == 0`` violates
-this requirement.
+result afterwards. Every member of the group must reach the collective in the
+same iteration, including members whose inputs are excluded by ``valid_items``.
+A condition around the collective itself must be uniform across the group.
+A block collective inside ``if thread == 0`` violates this requirement.
 
 Use a runtime ``if`` statement for conditional collective calls. A runtime
 conditional expression such as ``coop.sum(block, x) if condition else y``
@@ -369,12 +368,10 @@ is defined only at group rank zero.
 How do I change a payload's element type?
 -----------------------------------------
 
-Use ``ThreadData.from_fn(len(values), lambda i: values[i],
-dtype=cutlass.Float32)`` to create a converted payload. Supported NumPy
-scalar classes and ``np.dtype``
-selectors name the same element types as their CUTLASS equivalents.
-``int`` and ``float`` select ``Int32`` and ``Float32`` for runtime CuTe
-values.
+Use ``ThreadData.from_fn(len(values), lambda i: values[i], dtype=cutlass.Float32)``
+to create a converted payload. Supported NumPy scalar classes and ``np.dtype``
+selectors name the same element types as their CUTLASS equivalents. ``int``
+and ``float`` select ``Int32`` and ``Float32`` for runtime CuTe values.
 
 ``ThreadData(..., dtype=..., values=...)`` and ``from_values`` declare the
 type of existing items. Typed items must agree with that declaration;
@@ -384,27 +381,25 @@ output dtype. Widening unsigned input preserves its unsigned value.
 An explicit narrowing conversion can discard information, so choose the
 destination width deliberately.
 
-Carry a fixed item count, dtype, and alignment through runtime branches
-and loops. Changing any of these properties at a runtime join is rejected.
-Initialize loop-carried payloads with the alignment of the values that
-will replace them. A CuTe "different structure" diagnostic can indicate a
-dtype or alignment change. Normalize branch results before the join, or use
-a compile-time condition when each alternative needs a different
-representation.
+Carry a fixed item count, dtype, and alignment through runtime branches and
+loops. Changing any of these properties at a runtime join is rejected.
+Initialize loop-carried payloads with the alignment of the values that will
+replace them. A CuTe "different structure" diagnostic can indicate a dtype or
+alignment change. Normalize branch results before the join, or use a
+compile-time condition when each alternative needs a different representation.
 
 .. _coop-faq-storage-control-flow:
 
 Can I choose temporary storage inside a branch or loop?
 --------------------------------------------------------
 
-Construct one ``TempStorage`` inside the kernel before the control flow when
-calls must reuse
-one allocation. Aliases of that descriptor are supported. Selecting between
-different descriptors at a runtime join is rejected, even when their
-capacities happen to match. A fresh descriptor created and used entirely
-inside one branch or loop iteration is also supported. Host-created
-descriptors can be used directly, but cannot be carried through runtime
-control flow.
+Construct one ``TempStorage`` inside the kernel before the control flow
+when calls must reuse one allocation. Aliases of that descriptor are
+supported. Selecting between different descriptors at a runtime join is
+rejected, even when their capacities happen to match. A fresh descriptor
+created and used entirely inside one branch or loop iteration is also
+supported. Host-created descriptors can be used directly, but cannot be
+carried through runtime control flow.
 
 Let ``TempStorage()`` infer capacity unless an explicit limit is needed.
 A supplied capacity must fit both the device's shared-memory budget and the

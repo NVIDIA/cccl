@@ -46,9 +46,9 @@ class TempStorage:
     ----------
     size_in_bytes : int or None
         Explicit positive capacity, or ``None`` to infer it from all uses,
-        including reserved arrays.
-        An explicit capacity must cover the resolved allocation and fit
-        a signed 32-bit integer. Device shared-memory limits still apply.
+        including reserved arrays. An explicit capacity must cover the resolved
+        allocation and fit a signed 32-bit integer. Device shared-memory limits
+        still apply.
     alignment : int or None
         Optional minimum byte alignment, a power of two up to 1024. The
         planner also satisfies the C++ primitive's alignment requirement.
@@ -67,9 +67,8 @@ class TempStorage:
     descriptor lifetimes and supplies the storage operands. ``release``
     consumes the descriptor and returns its complete region as a native view.
     Runtime branches and loops may carry aliases of the same kernel-local
-    descriptor;
-    selecting or rebinding to a different descriptor is rejected. Use an
-    ``if`` statement for conditional operations, with a condition uniform
+    descriptor; selecting or rebinding to a different descriptor is rejected.
+    Use an ``if`` statement for conditional operations, with a condition uniform
     across participating threads, rather than a runtime conditional expression.
     """
 
