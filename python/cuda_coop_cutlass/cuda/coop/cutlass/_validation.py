@@ -13,6 +13,30 @@ from typing import Any, Protocol, SupportsIndex, TypeVar, runtime_checkable
 _ItemT = TypeVar("_ItemT")
 
 
+def _validate_output_region(output: Any, *, name: str) -> None:
+    """Reject implicit SSA writes across a runtime control-flow boundary."""
+
+    from cutlass._mlir import ir
+    from cutlass.base_dsl.common import DSLUserCodeError
+
+    try:
+        block = ir.InsertionPoint.current.block
+    except ValueError:
+        return
+    if block == output._creation_block:
+        return
+    owner = block.owner
+    while owner is not None:
+        if owner.name.startswith("scf."):
+            raise DSLUserCodeError(
+                f"{name} must be created inside the current runtime branch "
+                "or loop. Write the aggregate to a local ThreadData, then "
+                "copy its items with an explicit subscript assignment to "
+                "carry them across runtime control flow."
+            )
+        owner = owner.parent
+
+
 @runtime_checkable
 class _ReadableThreadDataLike(Protocol[_ItemT]):
     """Describe a fixed number of readable values owned by one thread.

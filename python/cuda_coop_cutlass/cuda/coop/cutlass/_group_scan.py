@@ -123,6 +123,8 @@ def scan(
         inference. The aggregate excludes ``initial_value`` and lanes beyond
         ``valid_items``. CuTe register tensors and ``TensorSSA`` values are
         not accepted as this output argument. ``None`` omits the aggregate.
+        Inside a runtime branch or loop, create this output in that region
+        and explicitly copy its item to carry the value beyond the region.
 
     algorithm : str, optional
         Compile-time block algorithm: ``"raking"`` (the default),

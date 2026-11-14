@@ -35,3 +35,42 @@ def test_numpy_scalar_reduction(value):
     with device_array(observed) as destination:
         launch(destination)
     assert observed[0] == float(value) * 32
+
+
+@pytest.mark.parametrize("region", ("branch", "loop"))
+def test_scan_aggregate_explicit_copy(region):
+    @cute.kernel
+    def kernel(destination: cute.Pointer, count: cutlass.Int32):
+        thread = cute.arch.thread_idx()[0]
+        aggregate = coop.ThreadData.from_values(cutlass.Int32(0))
+        total = cutlass.Int32(0)
+        if cutlass.const_expr(region == "loop"):
+            for _ in cutlass.range(count):
+                total = total + aggregate[0]
+                temporary = coop.ThreadData(1)
+                coop.inclusive_sum(
+                    coop.this_block(),
+                    cutlass.Int32(thread + 1),
+                    aggregate_output=temporary,
+                )
+                aggregate[0] = temporary[0]
+        else:
+            if count > 0:
+                temporary = coop.ThreadData(1)
+                coop.inclusive_sum(
+                    coop.this_block(),
+                    cutlass.Int32(thread + 1),
+                    aggregate_output=temporary,
+                )
+                aggregate[0] = temporary[0]
+            total = aggregate[0]
+        cute.make_tensor(destination, cute.make_layout(32))[thread] = total
+
+    @cute.jit
+    def launch(destination: cute.Pointer, count: cutlass.Int32):
+        kernel(destination, count).launch(grid=1, block=32)
+
+    observed = np.zeros(32, dtype=np.int32)
+    with device_array(observed) as destination:
+        launch(destination, cutlass.Int32(3))
+    np.testing.assert_array_equal(observed, 1056 if region == "loop" else 528)

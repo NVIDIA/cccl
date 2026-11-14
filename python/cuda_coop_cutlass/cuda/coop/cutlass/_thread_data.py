@@ -608,6 +608,12 @@ class ThreadData:
             if values is not None
             else [_UNSET for _ in range(self.items_per_thread)]
         )
+        from cutlass._mlir import ir
+
+        try:
+            self._creation_block = ir.InsertionPoint.current.block
+        except ValueError:
+            self._creation_block = None
 
     @classmethod
     def from_values(cls, *values: Any, dtype: Any = None) -> ThreadData:

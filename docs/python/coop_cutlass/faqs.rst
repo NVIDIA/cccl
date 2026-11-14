@@ -336,6 +336,34 @@ is rejected when it needs temporary storage. Synchronize application data
 before another thread reads it; the collective's scratch-reuse barrier does
 not replace synchronization required by earlier application writes.
 
+.. _coop-faq-scan-loop-aggregate:
+
+How do I carry a scan aggregate across loop iterations?
+-------------------------------------------------------
+
+Create ``aggregate_output`` inside the loop, then explicitly assign its
+item to the payload carried across iterations. CuTe recognizes that
+assignment as a loop-carried update. An outer payload used without an
+explicit loop-carried update is rejected: the implicit mutation alone cannot
+carry its new value out of the runtime region.
+
+.. code-block:: python
+
+   aggregate = coop.ThreadData.from_values(cutlass.Int32(0))
+   total = cutlass.Int32(0)
+   for _ in cutlass.range(iterations):
+       total = total + aggregate[0]
+       current = coop.ThreadData(1)
+       prefix = coop.inclusive_sum(block, value, aggregate_output=current)
+       aggregate[0] = current[0]
+
+The same rule applies to runtime branches and Radix Rank's
+``exclusive_digit_prefix``: create the output in that region and copy its
+items explicitly before leaving it. Keep the condition or iteration count
+uniform across the participating group. The scan aggregate excludes the
+exclusive seed and is available to every member; an ordinary Reduce result
+is defined only at group rank zero.
+
 .. _coop-faq-payload-conversion:
 
 How do I change a payload's element type?

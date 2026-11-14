@@ -291,3 +291,32 @@ def test_launch_requirements(case, expected):
 
     with pytest.raises(Exception, match=expected):
         cute.compile[(GPUArch("sm_80"),)](launch, 48)
+
+
+@pytest.mark.parametrize("region", ("branch", "loop"))
+def test_aggregate_output_requires_explicit_control_flow_assignment(region):
+    @cute.kernel
+    def kernel(memory: cute.Pointer, count: cutlass.Int32):
+        aggregate = coop.ThreadData.from_values(cutlass.Int32(0))
+        if cutlass.const_expr(region == "branch"):
+            if count > 0:
+                coop.inclusive_sum(
+                    coop.this_block(),
+                    cutlass.Int32(1),
+                    aggregate_output=aggregate,
+                )
+        else:
+            for _ in cutlass.range(count):
+                coop.inclusive_sum(
+                    coop.this_block(),
+                    cutlass.Int32(1),
+                    aggregate_output=aggregate,
+                )
+        cute.make_tensor(memory, cute.make_layout(1))[0] = aggregate[0]
+
+    @cute.jit
+    def launch(memory: cute.Pointer, count: cutlass.Int32):
+        kernel(memory, count).launch(grid=1, block=32)
+
+    with pytest.raises(Exception, match="aggregate_output must be created"):
+        cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), cutlass.Int32(3))
