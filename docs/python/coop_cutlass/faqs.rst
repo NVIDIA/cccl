@@ -348,6 +348,14 @@ selectors name the same element types as their CUTLASS equivalents.
 ``int`` and ``float`` select ``Int32`` and ``Float32`` for runtime CuTe
 values.
 
+``ThreadData(..., dtype=..., values=...)`` and ``from_values`` declare the
+type of existing items. Typed items must agree with that declaration;
+changing metadata does not convert them. Export to a register tensor or
+``TensorSSA`` checks the source declaration before applying an explicit
+output dtype. Widening unsigned input preserves its unsigned value.
+An explicit narrowing conversion can discard information, so choose the
+destination width deliberately.
+
 .. _coop-faq-storage-control-flow:
 
 Can I choose temporary storage inside a branch or loop?
