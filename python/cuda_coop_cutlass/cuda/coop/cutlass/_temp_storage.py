@@ -14,6 +14,25 @@ from enum import Enum
 
 from ._validation import _normalize_alignment
 
+# Provider capacities and released extents use signed i32 operands.
+_MAX_STORAGE_SIZE_IN_BYTES = (1 << 31) - 1
+_MAX_STORAGE_ALIGNMENT = 1024
+
+
+def _validate_storage_size(size_in_bytes):
+    if size_in_bytes > _MAX_STORAGE_SIZE_IN_BYTES:
+        raise ValueError(
+            "TempStorage size_in_bytes must fit a signed 32-bit capacity "
+            f"(at most {_MAX_STORAGE_SIZE_IN_BYTES} bytes)."
+        )
+
+
+def _normalize_storage_alignment(alignment):
+    alignment = _normalize_alignment(alignment)
+    if alignment is not None and alignment > _MAX_STORAGE_ALIGNMENT:
+        raise ValueError("TempStorage alignment must not exceed 1024 bytes.")
+    return alignment
+
 
 class TempStorage:
     """Describe shared-memory requirements for operations in one kernel.
@@ -28,9 +47,10 @@ class TempStorage:
     size_in_bytes : int or None
         Explicit positive capacity, or ``None`` to infer it from all uses,
         including reserved arrays.
-        An explicit capacity must cover the resolved allocation.
+        An explicit capacity must cover the resolved allocation and fit
+        a signed 32-bit integer. Device shared-memory limits still apply.
     alignment : int or None
-        Optional minimum byte alignment, expressed as a power of two. The
+        Optional minimum byte alignment, a power of two up to 1024. The
         planner also satisfies the C++ primitive's alignment requirement.
     auto_sync : bool
         Whether each scratch-using call emits a trailing block barrier.
@@ -72,8 +92,9 @@ class TempStorage:
                 raise ValueError(
                     "TempStorage size_in_bytes must be a positive integer."
                 )
+            _validate_storage_size(size_in_bytes)
 
-        alignment = _normalize_alignment(alignment)
+        alignment = _normalize_storage_alignment(alignment)
 
         if not isinstance(sharing, str) or isinstance(sharing, Enum):
             raise TypeError(

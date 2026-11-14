@@ -138,7 +138,7 @@ def test_undersized_capacity(sharing, capacity):
         "first": _types.ScratchLayout(24, 8),
         "second": _types.ScratchLayout(16, 16),
     }
-    with pytest.raises(_storage.DSLRuntimeError, match="capacity is smaller"):
+    with pytest.raises(_storage.DSLUserCodeError, match="capacity is smaller"):
         _storage.plan_deferred_temp_storage_events(events, layouts)
 
 
@@ -175,7 +175,9 @@ def test_configuration_change_rejected(changed):
     storage = TempStorage()
     first = _event(storage, "scratch", object())
     second = replace(first, **changed)
-    with pytest.raises(_storage.DSLRuntimeError, match="configuration changed"):
+    with pytest.raises(
+        _storage.DSLUserCodeError, match="configuration changed"
+    ):
         _storage.plan_deferred_temp_storage_events(
             [first, second], {"scratch": _types.ScratchLayout(16, 8)}
         )
@@ -404,3 +406,16 @@ def test_launch_size_warning_preserves_value_producing_branches(returns_value):
             assert ir.Value.__eq__(check.operands[0], requested)
         else:
             assert check.operands[0].owner.name == "arith.maxsi"
+
+
+@pytest.mark.parametrize("sharing", ["shared", "exclusive"])
+def test_inferred_capacity_cannot_overflow_provider_operand(sharing):
+    storage = TempStorage(sharing=sharing)
+    kernel = object()
+    events = [_event(storage, key, kernel) for key in ("first", "second")]
+    size = (1 << 30) if sharing == "exclusive" else (1 << 32)
+    layouts = {
+        key: _types.ScratchLayout(size, 4) for key in ("first", "second")
+    }
+    with pytest.raises(ValueError, match="signed 32-bit capacity"):
+        _storage.plan_deferred_temp_storage_events(events, layouts)

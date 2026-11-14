@@ -100,3 +100,15 @@ def test_loop_protocol_keeps_identity():
     assert storage.__new_from_mlir_values__([]) is storage
     with pytest.raises(ValueError, match="no runtime MLIR values"):
         storage.__new_from_mlir_values__([object()])
+
+
+@pytest.mark.parametrize("capacity", [1 << 31, 1 << 32, (1 << 32) + 256])
+def test_capacity_cannot_overflow_provider_operand(capacity):
+    with pytest.raises(ValueError, match="signed 32-bit capacity"):
+        TempStorage(capacity)
+
+
+@pytest.mark.parametrize("alignment", [2048, 4096])
+def test_storage_alignment_respects_allocator_limit(alignment):
+    with pytest.raises(ValueError, match="must not exceed 1024"):
+        TempStorage(alignment=alignment)

@@ -234,6 +234,45 @@ def test_storage_selection_preserves_identity_or_rejects(
             cute.compile[(GPUArch("sm_80"),)](launch, cutlass.Int32(2))
 
 
+@pytest.mark.parametrize(
+    "argument", ["capacity", "reserve", "alignment", "combined", "undersized"]
+)
+def test_invalid_storage_request_rejected_before_allocation(argument):
+    @cute.kernel
+    def kernel():
+        if cutlass.const_expr(argument == "capacity"):
+            storage = coop.TempStorage((1 << 32) + 256)
+        elif cutlass.const_expr(argument == "undersized"):
+            storage = coop.TempStorage(1)
+        elif cutlass.const_expr(argument == "combined"):
+            first = coop.TempStorage(1 << 30)
+            second = coop.TempStorage(1 << 30)
+            first.reserve(1, cutlass.Int32)
+            second.reserve(1, cutlass.Int32)
+            storage = coop.TempStorage(1)
+        else:
+            storage = coop.TempStorage()
+        if cutlass.const_expr(argument == "undersized"):
+            storage.reserve(2, cutlass.Int32)
+        elif cutlass.const_expr(argument == "reserve"):
+            storage.reserve(1 << 30, cutlass.Int32)
+        elif cutlass.const_expr(argument == "alignment"):
+            storage.reserve(1, cutlass.Int32, alignment=2048)
+        else:
+            storage.release()
+
+    @cute.jit
+    def launch():
+        kernel().launch(grid=1, block=64)
+
+    diagnostic = {
+        "alignment": "must not exceed 1024",
+        "undersized": "capacity is smaller than its reservation",
+    }.get(argument, "signed 32-bit capacity")
+    with pytest.raises(Exception, match=diagnostic):
+        cute.compile[(GPUArch("sm_80"),)](launch)
+
+
 @pytest.mark.parametrize("select_at_runtime", [False, True])
 def test_host_storage_cannot_be_selected_by_runtime_control_flow(
     select_at_runtime,
