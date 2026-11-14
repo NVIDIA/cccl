@@ -57,9 +57,12 @@ TEST_HOST_DEVICE_FUNC void test_accuracy()
     {-0x1p+0f, 0x1p-30f, 0x1p+30f, 0x1p+0f, -0x1.78b56359fab33p-2, 0x1.f7c41029d2c0fp-56},
     {-0x1p+0f, 0x1p-30f, -0x1p+31f, 0x1p+1f, 0x1.d8e64b85ea41bp+2, -0x1.6d101f078d62cp-54},
     {0x1.6a09e6p-1f, 0x1.9fcef4p-27f, 0x1.4p+3f, 0.0f, 0x1.0000000000018p-5, 0x1.2ac7d7f7f5dbp-59},
-    // a subnormal base, and a tiny base whose lo limb is subnormal
+#if !defined(TEST_HAS_CUDA_FAST_MATH)
+    // a subnormal base, and a tiny base whose lo limb is subnormal; --use_fast_math flushes
+    // subnormals to zero on the device (FTZ), so these two are left to the IEEE build
     {0x1.2d687p-129f, 0.0f, -0x1.333334p-1f, 0.0f, 0x1.32450b3fe3e8cp+77, 0x1.567bef45e3887p+21},
     {0x1.3c5a7ep-118f, -0x1.98p-143f, 0x1.7ae148p-2f, 0.0f, 0x1.5e6edd1560973p-44, 0x1.51a4a2b5d3bebp-98},
+#endif // !TEST_HAS_CUDA_FAST_MATH
   };
   for (pow_case c : cases)
   {

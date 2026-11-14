@@ -291,7 +291,6 @@ __fpmp2_sqrt(const _FpType __a_hi, const _FpType __a_lo, _FpType* __res_hi, _FpT
 {
   const _FpType __zero = static_cast<_FpType>(0.0);
   const _FpType __half = static_cast<_FpType>(0.5);
-  const _FpType __one  = static_cast<_FpType>(1.0);
   _FpType __r          = ::cuda::__fpmp_rsqrt_rn(__a_hi);
   if (__a_hi == __zero)
   {
@@ -312,7 +311,7 @@ __fpmp2_sqrt(const _FpType __a_hi, const _FpType __a_lo, _FpType* __res_hi, _FpT
      * 0.23 u^2 mean, independent of the seed's accuracy, against 5.7-52 u^2
      * before.  12 operations. */
     __y                = ::cuda::__fpmp_fma_rn(__h, __s + __a_lo, __y);
-    const _FpType __d  = ::cuda::__fpmp_fma_rn(-__y, __r, __one);
+    const _FpType __d  = ::cuda::__fpmp_fma_rn(-__y, __r, static_cast<_FpType>(1.0));
     __s                = ::cuda::__fpmp_fma_rn(__y, -__y, __a_hi);
     const _FpType __hr = ::cuda::__fpmp_fma_rn(__h, __d, __h);
     const _FpType __e  = ::cuda::__fpmp_add_rn(__s, __a_lo);

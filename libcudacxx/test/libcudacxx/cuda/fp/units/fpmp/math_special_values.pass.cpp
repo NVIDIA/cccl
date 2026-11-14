@@ -105,25 +105,35 @@ TEST_HOST_DEVICE_FUNC void test_log()
 
   // assert per check rather than an accumulated flag, so a failure names the
   // function and the argument that broke.
-#define CHECK_LOG(name)                      \
-  assert(is_neg_inf(name(T(0.0f))));         \
-  assert(is_neg_inf(name(T(-0.0f))));        \
-  assert(is_nan(name(T(-1.0f))));            \
-  assert(is_nan(name(nl::lowest())));        \
-  assert(is_nan(name(-pinf)));               \
-  assert(is_pos_inf(name(pinf)));            \
-  assert(is_nan(name(qnan)));                \
-  assert(is_finite(name(nl::max())));        \
-  assert(is_finite(name(nl::min())));        \
-  assert(is_finite(name(nl::denorm_min()))); \
-  assert(name(nl::max()) > T(0.0f));         \
-  assert(name(nl::denorm_min()) < T(0.0f))
+#define CHECK_LOG(name)               \
+  assert(is_neg_inf(name(T(0.0f))));  \
+  assert(is_neg_inf(name(T(-0.0f)))); \
+  assert(is_nan(name(T(-1.0f))));     \
+  assert(is_nan(name(nl::lowest()))); \
+  assert(is_nan(name(-pinf)));        \
+  assert(is_pos_inf(name(pinf)));     \
+  assert(is_nan(name(qnan)));         \
+  assert(is_finite(name(nl::max()))); \
+  assert(is_finite(name(nl::min()))); \
+  assert(name(nl::max()) > T(0.0f));  \
+  CHECK_LOG_SUBNORMAL(name)
+
+  // A subnormal argument is finite and gives a negative result; --use_fast_math flushes it to
+  // zero on the device (FTZ), so that part is left to the IEEE build.
+#if defined(TEST_HAS_CUDA_FAST_MATH)
+#  define CHECK_LOG_SUBNORMAL(name) static_cast<void>(0)
+#else
+#  define CHECK_LOG_SUBNORMAL(name)            \
+    assert(is_finite(name(nl::denorm_min()))); \
+    assert(name(nl::denorm_min()) < T(0.0f))
+#endif // TEST_HAS_CUDA_FAST_MATH
 
   CHECK_LOG(log);
   CHECK_LOG(log2);
   CHECK_LOG(log10);
 
 #undef CHECK_LOG
+#undef CHECK_LOG_SUBNORMAL
 }
 
 // ---- atan --------------------------------------------------------------------
@@ -197,7 +207,11 @@ TEST_HOST_DEVICE_FUNC void test_normcdfinv()
 
   assert(is_nan(normcdfinv(T(-1.0f))));
   assert(is_nan(normcdfinv(T(2.0f))));
+#if !defined(TEST_HAS_CUDA_FAST_MATH)
+  // --use_fast_math flushes subnormals to zero on the device (FTZ), which turns -denorm_min
+  // into -0 and the result into -inf; the subnormal arguments are left to the IEEE build.
   assert(is_nan(normcdfinv(-nl::denorm_min()))); // just below 0
+#endif // !TEST_HAS_CUDA_FAST_MATH
   assert(is_nan(normcdfinv(T(1.0f, 0x1p-30f)))); // the pair just above 1
   assert(is_nan(normcdfinv(-pinf)));
   assert(is_nan(normcdfinv(pinf)));
@@ -205,7 +219,9 @@ TEST_HOST_DEVICE_FUNC void test_normcdfinv()
 
   // The pairs just inside the ends are finite, large and of the right sign.
   assert(is_finite(normcdfinv(T(1.0f, -0x1p-30f))) && normcdfinv(T(1.0f, -0x1p-30f)) > T(0.0f));
+#if !defined(TEST_HAS_CUDA_FAST_MATH)
   assert(is_finite(normcdfinv(nl::denorm_min())) && normcdfinv(nl::denorm_min()) < T(0.0f));
+#endif // !TEST_HAS_CUDA_FAST_MATH
 }
 
 // ---- boys_f0 -------------------------------------------------------------------
