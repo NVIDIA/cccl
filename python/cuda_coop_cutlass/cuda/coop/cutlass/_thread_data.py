@@ -507,7 +507,13 @@ def _resolve_export_shape(
             f"{source} shape must contain exactly items_per_thread elements "
             f"({inferred} != {items_per_thread})"
         )
-    return shape
+
+    def normalize(extent):
+        if isinstance(extent, (tuple, list)):
+            return tuple(normalize(item) for item in extent)
+        return int(_operator.index(extent))
+
+    return normalize(shape)
 
 
 def _resolve_export_dtype(dtype: Any, *, fallback: Any, source: str) -> Any:
@@ -1027,7 +1033,14 @@ class ThreadData:
             items_per_thread=self.items_per_thread,
             source=source,
         )
-        values = self.values(source)
+        # Validate the original declaration before applying an explicit export
+        # conversion. Vector.from_elements receives already typed values so
+        # its signless IR casts cannot change unsigned numeric semantics.
+        if self.dtype is None:
+            values = self.values(source)
+        else:
+            _, values = self._dynamic_values(feature=source)
+        values = _coerce_payload_values_to_dtype(values, dtype, source=source)
 
         import cutlass.cute as _cute
         from cutlass import Vector
@@ -1089,7 +1102,9 @@ class ThreadData:
         idx = self._index(idx)
         self._values[idx] = value
 
-    def _dynamic_values(self) -> tuple[type, tuple[Any, ...]]:
+    def _dynamic_values(
+        self, *, feature: str = "ThreadData control flow"
+    ) -> tuple[type, tuple[Any, ...]]:
         """Resolve payload items to typed scalars for CuTe IR operations.
 
         CuTe uses ``__extract_mlir_values__`` and ``__new_from_mlir_values__``
@@ -1115,7 +1130,7 @@ class ThreadData:
         value_type, values = _types.resolve_thread_data_value_type(
             self,
             allowed=_types.ALL_PROVIDER_TYPES,
-            feature="ThreadData control flow",
+            feature=feature,
             scope=_ROOT_SCOPE,
             resolve_type=resolve_type,
         )
@@ -1124,7 +1139,7 @@ class ThreadData:
             plain = _types.coerce_plain_scalar(
                 value,
                 value_type,
-                name="ThreadData control-flow value",
+                name=f"{feature} value",
                 scope=_ROOT_SCOPE,
                 allow_nonfinite=True,
             )

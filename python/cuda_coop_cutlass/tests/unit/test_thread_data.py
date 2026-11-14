@@ -267,3 +267,23 @@ def test_casting_constructor_normalizes_scalar_subclasses(
     data = ThreadData.from_fn(1, lambda _: item, dtype=selector)
     assert type(data[0]) is selector
     assert data[0] == expected
+
+
+@pytest.mark.parametrize(
+    "value,dtype,error",
+    [(300, np.int8, ValueError), (1.5, np.int32, TypeError)],
+)
+def test_export_rejects_values_that_conflict_with_metadata(value, dtype, error):
+    data = ThreadData.from_values(value, dtype=dtype)
+    with pytest.raises(error, match="not representable|dtype does not match"):
+        data.to_tensor_ssa()
+
+
+def test_export_rejects_conflicting_typed_items():
+    Float32 = import_module("cutlass.base_dsl.typing").Float32
+    with ir.Context(), ir.Location.unknown():
+        module = ir.Module.create()
+        with ir.InsertionPoint(module.body):
+            data = ThreadData.from_values(Float32(2.75), dtype=Int32)
+            with pytest.raises(TypeError, match="dtype does not match"):
+                data.to_register_tensor(dtype=Float32)
