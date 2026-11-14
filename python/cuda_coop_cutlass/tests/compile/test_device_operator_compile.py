@@ -9,7 +9,7 @@ from dataclasses import replace
 import cutlass
 import pytest
 from cutlass import cute
-from cutlass.base_dsl.common import get_current_env_manager
+from cutlass.base_dsl.common import DSLUserCodeError, get_current_env_manager
 from cutlass.base_dsl.compiler import GPUArch
 from cutlass.cute.runtime import make_ptr
 
@@ -128,7 +128,7 @@ def test_callback_signature_must_be_binary_and_closed(signature):
 
 def test_callback_architecture_must_match_kernel():
     callback = coop.compile_operator(_add_one, cutlass.Int32, arch="sm_90")
-    with pytest.raises(Exception, match="targets.*sm_90|architecture"):
+    with pytest.raises(DSLUserCodeError, match="targets.*sm_90|architecture"):
         _compile(_launcher(callback))
 
 
@@ -175,3 +175,9 @@ def test_callback_preparation_requires_host_context():
         Exception, match="outside.*trac|during.*trac|active.*trac|before.*trac"
     ):
         _compile(launch)
+
+
+@pytest.mark.parametrize("arch", ("sm_nope", "sm_90aa", "compute_90x"))
+def test_invalid_callback_arch(arch):
+    with pytest.raises(DSLUserCodeError, match="Invalid configured CUDA arch"):
+        coop.compile_operator(_add_one, cutlass.Int32, arch=arch)
