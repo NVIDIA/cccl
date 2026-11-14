@@ -578,6 +578,7 @@ public:
     const auto __num_keys = detail::__distance(__first, __last);
     if (__num_keys == 0)
     {
+      __stream.sync();
       return 0;
     }
 
