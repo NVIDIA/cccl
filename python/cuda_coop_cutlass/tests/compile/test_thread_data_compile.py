@@ -14,6 +14,7 @@ also convert one TensorSSA vector both inside and after a loop.
 import cutlass
 import pytest
 from cutlass import cute
+from cutlass.base_dsl.common import DSLBaseError
 from cutlass.base_dsl.compiler import GPUArch
 from cutlass.cute.runtime import make_ptr
 
@@ -106,3 +107,40 @@ def test_tensor_ssa_conversion_across_regions():
         cute.compile[(GPUArch("sm_80"),)](launch, pointer, cutlass.Int32(3))
         is not None
     )
+
+
+@pytest.mark.parametrize("change", ["signedness", "alignment"])
+@pytest.mark.parametrize("control_flow", ["branch", "loop"])
+def test_rebinding_requires_stable_metadata(change, control_flow):
+    new_dtype = cutlass.Uint32 if change == "signedness" else cutlass.Int32
+    new_alignment = 64 if change == "alignment" else 32
+
+    @cute.kernel
+    def kernel(memory: cute.Pointer, iterations: cutlass.Int32):
+        payload = coop.ThreadData(
+            1, dtype=cutlass.Int32, values=[1], alignment=32
+        )
+        if cutlass.const_expr(control_flow == "branch"):
+            if iterations > 0:
+                payload = coop.ThreadData(
+                    1, dtype=new_dtype, values=[7], alignment=new_alignment
+                )
+        else:
+            for _ in range(iterations):
+                payload = coop.ThreadData(
+                    1, dtype=new_dtype, values=[7], alignment=new_alignment
+                )
+        output = cute.make_tensor(memory, cute.make_layout(1))
+        output[0] = payload[0]
+
+    @cute.jit
+    def launch(memory: cute.Pointer, iterations: cutlass.Int32):
+        kernel(memory, iterations).launch(grid=1, block=1)
+
+    pointer = make_ptr(
+        cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16
+    )
+    with pytest.raises(
+        DSLBaseError, match="CONTAINER_STRUCTURE_CHANGED|dtype and alignment"
+    ):
+        cute.compile[(GPUArch("sm_80"),)](launch, pointer, cutlass.Int32(1))

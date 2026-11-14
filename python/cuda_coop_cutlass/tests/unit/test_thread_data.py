@@ -215,7 +215,7 @@ def test_control_flow_roundtrip(dtype, inferred):
             )
             original = tuple(data._values)
             values = data.__extract_mlir_values__()
-            assert len(values) == 2
+            assert len(values) == 3
             rebuilt = data.__new_from_mlir_values__(values)
             assert rebuilt is not data
             assert rebuilt.items_per_thread == 2

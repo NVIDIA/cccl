@@ -356,6 +356,14 @@ output dtype. Widening unsigned input preserves its unsigned value.
 An explicit narrowing conversion can discard information, so choose the
 destination width deliberately.
 
+Carry a fixed item count, dtype, and alignment through runtime branches
+and loops. Changing any of these properties at a runtime join is rejected.
+Initialize loop-carried payloads with the alignment of the values that
+will replace them. A CuTe "different structure" diagnostic can indicate a
+dtype or alignment change. Normalize branch results before the join, or use
+a compile-time condition when each alternative needs a different
+representation.
+
 .. _coop-faq-storage-control-flow:
 
 Can I choose temporary storage inside a branch or loop?

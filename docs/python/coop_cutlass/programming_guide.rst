@@ -995,7 +995,8 @@ load/store payload.
 An initialized ``ThreadData`` can cross CuTe runtime loops and branches while
 retaining its fixed item count, dtype, and requested alignment. Initialize
 every item in every participating thread before carrying the payload across
-a runtime control-flow boundary.
+a runtime control-flow boundary. Changes to dtype or alignment across that
+boundary are rejected; use an explicit conversion to keep both paths consistent.
 
 Load and Store infer the memory element type from the CuTe operand. If a
 producer or tensor adapter loses the intended unsigned element type, use
