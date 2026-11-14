@@ -238,6 +238,70 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #  undef _CCCL_BUILTIN_LDEXPL
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
+#if _CCCL_HAS_FLOAT128()
+#  if _CCCL_CHECK_BUILTIN(builtin_ldexpf128)
+#    define _CCCL_BUILTIN_LDEXPF128(...) __builtin_ldexpf128(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_ldexpf128)
+
+// clang-cuda can not call into the host math library on device
+#  if _CCCL_CUDA_COMPILER(CLANG)
+#    undef _CCCL_BUILTIN_LDEXPF128
+#  endif // _CCCL_CUDA_COMPILER(CLANG)
+
+// nvcc doesn't implement __builtin_ldexpf128 on device
+#  if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#    undef _CCCL_BUILTIN_LDEXPF128
+#  endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+
+// Portable ldexp of __float128, used when neither a host builtin nor a device intrinsic is available
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __float128 __ldexp_fp128_impl(__float128 __x, int __e) noexcept
+{
+  constexpr int __exp_min = __fp_exp_min_v<__fp_format_of_v<__float128>>;
+  constexpr int __exp_max = __fp_exp_max_v<__fp_format_of_v<__float128>>;
+  constexpr int __digits  = __fp_digits_v<__fp_format_of_v<__float128>>;
+
+  // x is only ever multiplied by powers of two, so zero, infinity and NaN propagate, and a product is exact unless it
+  // overflows or becomes subnormal, where the multiplication rounds it and raises the floating point exceptions.
+  // 2^e is not representable for every e, so the scaling is split into at most three steps
+  if (__e > __exp_max)
+  {
+    const __float128 __two_max = ::cuda::std::__fp_set_exp(__float128(1), __exp_max);
+    __x *= __two_max;
+    __e -= __exp_max;
+    if (__e > __exp_max)
+    {
+      __x *= __two_max;
+      __e -= __exp_max;
+      if (__e > __exp_max)
+      {
+        // even the smallest subnormal has overflown by now
+        __e = __exp_max;
+      }
+    }
+  }
+  else if (__e < __exp_min)
+  {
+    // Scaling by 2^exp_min could round a subnormal intermediate that the last step rounds a second time. Keeping
+    // digits bits of headroom leaves an intermediate either exact, or so small that the result underflows to zero
+    // (or the smallest subnormal) regardless
+    const __float128 __two_min = ::cuda::std::__fp_set_exp(__float128(1), __exp_min + __digits);
+    __x *= __two_min;
+    __e -= __exp_min + __digits;
+    if (__e < __exp_min)
+    {
+      __x *= __two_min;
+      __e -= __exp_min + __digits;
+      if (__e < __exp_min)
+      {
+        // even the largest finite value has underflown by now
+        __e = __exp_min;
+      }
+    }
+  }
+  return __x * ::cuda::std::__fp_set_exp(__float128(1), __e);
+}
+#endif // _CCCL_HAS_FLOAT128()
+
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float ldexp(float __x, int __e) noexcept
 {
 #if defined(_CCCL_BUILTIN_LDEXPF)
@@ -298,6 +362,18 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
   return __float2bfloat16(::cuda::std::ldexpf(__bfloat162float(__x), __e));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __float128 ldexp(__float128 __x, int __e) noexcept
+{
+#  if defined(_CCCL_BUILTIN_LDEXPF128)
+  return _CCCL_BUILTIN_LDEXPF128(__x, __e);
+#  else // ^^^ _CCCL_BUILTIN_LDEXPF128 ^^^ / vvv !_CCCL_BUILTIN_LDEXPF128 vvv
+  NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_ldexp(__x, __e);))
+  return ::cuda::std::__ldexp_fp128_impl(__x, __e);
+#  endif // ^^^ !_CCCL_BUILTIN_LDEXPF128 ^^^
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double ldexp(_Integer __x, int __e) noexcept
