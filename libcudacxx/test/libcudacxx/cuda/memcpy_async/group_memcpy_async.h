@@ -98,6 +98,8 @@ TEST_DEVICE_FUNC __noinline__ void test_fully_specialized()
   bar    = bar_sel.construct(+thread_block_size);
   assert(*source == 12);
   assert(*dest == 0);
+  // All threads must finish reading *dest before the copy below overwrites it.
+  cg::this_thread_block().sync();
 
   // test normal version
   cuda::memcpy_async(cg::this_thread_block(), dest, source, sizeof(storage<T>), *bar);
