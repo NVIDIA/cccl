@@ -249,6 +249,11 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_fdim(
     return;
   }
   ::cuda::__fpmp2_high_sub<float>(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  /* A finite difference beyond FLT_MAX (fdim(FLT_MAX, -FLT_MAX)) overflows the subtraction
+   * into (inf, NaN) or (NaN, NaN): it is +inf. */
+  const bool __finite = *__res_hi < ::cuda::std::__fp_inf<float>();
+  *__res_hi           = __finite ? *__res_hi : ::cuda::std::__fp_inf<float>();
+  *__res_lo           = __finite ? *__res_lo : 0.0f;
 }
 
 /*

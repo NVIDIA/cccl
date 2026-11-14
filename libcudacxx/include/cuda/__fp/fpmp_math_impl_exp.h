@@ -213,7 +213,9 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_ldexp2(fp32mp2_low __p, int __n
   }
   const float __scale_a = ::cuda::std::bit_cast<float>(static_cast<unsigned>(__ek1) << 23);
   const float __scale_b = ::cuda::std::bit_cast<float>(static_cast<unsigned>(__ek2) << 23);
-  return __p * __scale_a * __scale_b;
+  const fp32mp2_low __r = __p * __scale_a * __scale_b;
+  /* an overflowed product carries inf in the low limb as well (exp10(38.6)): make it (inf, 0) */
+  return (__r.hi() == ::cuda::std::__fp_inf<float>()) ? fp32mp2_low(__r.hi(), 0.0f) : __r;
 }
 
 /*
@@ -281,12 +283,16 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_exp_core(
 
   __p = __p * __r_scale + __fscale_lo;
 
-  // Scale the result by the high part of the scale
-  __p               = __p * __fscale;
-  __ffloat __result = renormalize(__p);
+  // Scale the result by the high part of the scale. A product that overflows has an
+  // infinite high limb, which renormalize would turn into inf - inf = NaN: the result is
+  // +inf with a zero low limb (the argument one float below the overflow threshold can
+  // still overflow through its low limb).
+  __p                   = __p * __fscale;
+  const bool __overflow = __p.hi() == ::cuda::std::__fp_inf<float>(); /* a NaN stays a NaN */
+  __ffloat __result     = renormalize(__p);
 
-  *__res_hi = __result.hi();
-  *__res_lo = __result.lo();
+  *__res_hi = __overflow ? ::cuda::std::__fp_inf<float>() : __result.hi();
+  *__res_lo = __overflow ? 0.0f : __result.lo();
 } // __internal_fpmp2_exp_core
 
 /* The two halves of 2^n as floats, from the biased exponent field
@@ -319,10 +325,12 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_exp_scales(const int32_t __k, float* _
  * With 14 terms and float-float arithmetic this reaches ~1e-14 relative error (46 of 48 bits)
  * over the whole range where the result's low limb is a normal float, i.e. exp(x) >= 2^-102.
  */
+template <int _Shift = 0>
 _CCCL_FPMP_CORE_API void
-__internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+__internal_fpmp2_exp_impl(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
   using __ffloat = fp32mp2_low;
+  static_assert(_Shift == 0 || _Shift == -1, "exp: the result is scaled by 2^Shift, 1 or 1/2");
 
   // Constants as C99 hex floating-point literals - split via constexpr constructor
   constexpr float __inv_ln2(0x1.715476p+0f); // 1/ln(2)
@@ -351,7 +359,10 @@ __internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, fl
    *     5 (c3..c7) carry an ff `.lo()` part.
    */
   // Overflow threshold for single precision: ln(FLT_MAX) ~= 88.7228 = 0x1.62e430p+6
-  if (__x_hi > 0x1.62e430p+6f)
+  /* Overflow: ln(FLT_MAX) = 88.7228, one ln 2 further for the halved result. The float
+   * at the threshold itself may still overflow through its low limb; the core maps that
+   * to +inf. */
+  if (__x_hi > ((_Shift == 0) ? 0x1.62e430p+6f : 0x1.65a9f8p+6f))
   {
     *__res_hi = ::cuda::std::__fp_inf<float>();
     *__res_lo = 0.0f;
@@ -373,7 +384,7 @@ __internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, fl
   float __t = __x_hi * __inv_ln2 + __shift_bias;
 
   // Shift the exponent by 23 bits to get the scale as fp32 value
-  int32_t __scale = ::cuda::std::bit_cast<int32_t>(__t);
+  int32_t __scale = ::cuda::std::bit_cast<int32_t>(__t) + _Shift; /* 2^(n + Shift), exact */
   __scale <<= 23;
 
   // Split the scale into high and low parts
@@ -402,6 +413,12 @@ __internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, fl
   __ffloat __r(__s2, __tail);
 
   ::cuda::__internal_fpmp2_exp_core(__r, __fscale, __fscale_lo, __res_hi, __res_lo);
+} // __internal_fpmp2_exp_impl
+
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  ::cuda::__internal_fpmp2_exp_impl<0>(__x_hi, __x_lo, __res_hi, __res_lo);
 } // __internal_fpmp2_exp
 
 /*

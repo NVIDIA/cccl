@@ -188,13 +188,18 @@ _CCCL_FPMP_MATH_DISPATCH_1A(tanh)
 
 /* 0.5/e for e = exp(|x|), or 0 past e = 2^32, where it is under 2^-63 of sinh and cosh. The
  * divisor is clamped there: dividing by e forms a subnormal low limb past |x| = 70, and Intel
- * cores take a microcode assist for each product with a subnormal result. */
+ * cores take a microcode assist for each product with a subnormal result. With _FromHalf the
+ * argument is e/2 (what exp delivers with its scale lowered by one binade) and the quotient is
+ * 0.25 / (e/2), the same value. */
+template <bool _FromHalf = false>
 [[nodiscard]] _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_half_inv_exp(const fp32mp2_low& __e) noexcept
 {
   using __ffloat = fp32mp2_low;
 
-  const bool __negligible     = __e.hi() > 0x1p32f;
-  const __ffloat __half_inv_e = __ffloat(0.5f) / (__negligible ? __ffloat(0x1p32f) : __e);
+  constexpr float __num       = _FromHalf ? 0.25f : 0.5f;
+  constexpr float __cap       = _FromHalf ? 0x1p31f : 0x1p32f;
+  const bool __negligible     = __e.hi() > __cap;
+  const __ffloat __half_inv_e = __ffloat(__num) / (__negligible ? __ffloat(__cap) : __e);
   return __negligible ? __ffloat(0.f) : __half_inv_e;
 }
 
@@ -246,20 +251,22 @@ __internal_fpmp2_sinh(const float __x_hi, const float __x_lo, float* __res_hi, f
 
   if (__abs_hi >= __branch_point)
   {
-    /* ---- large-|x| branch:  sinh(|x|) = (e - 1/e) / 2 ---------- */
+    /* ---- large-|x| branch:  sinh(|x|) = e/2 - 1/(2e) ----------
+     * e/2 comes straight out of exp with its power-of-two scale lowered by one, exact, so
+     * the result stays finite up to |x| = 89.416 where exp alone overflows from 88.7228;
+     * 1/(2e) = 0.25 / (e/2) through the refined division. */
     float __u_hi;
     float __u_lo;
-    ::cuda::__fpmp2_exp<float>(__abs_a.hi(), __abs_a.lo(), &__u_hi, &__u_lo);
+    ::cuda::__internal_fpmp2_exp_impl<-1>(__abs_a.hi(), __abs_a.lo(), &__u_hi, &__u_lo);
     if (__u_hi == ::cuda::std::__fp_inf<float>())
     {
       *__res_hi = __is_neg ? -::cuda::std::__fp_inf<float>() : ::cuda::std::__fp_inf<float>();
       *__res_lo = 0.0f;
       return;
     }
-    __ffloat __e(__u_hi, __u_lo);
-    __ffloat __half_e = __e * 0.5f;
+    const __ffloat __half_e(__u_hi, __u_lo);
     float __i_hi, __i_lo;
-    ::cuda::__fpmp_math_div_refined<false>(0.5f, 0.0f, __u_hi, __u_lo, &__i_hi, &__i_lo);
+    ::cuda::__fpmp_math_div_refined<false>(0.25f, 0.0f, __u_hi, __u_lo, &__i_hi, &__i_lo);
     __ffloat __result = renormalize(__half_e - __ffloat(__i_hi, __i_lo));
     if (__is_neg)
     {
@@ -369,21 +376,23 @@ __internal_fpmp2_cosh(const float __x_hi, const float __x_lo, float* __res_hi, f
   __ffloat __x(__x_hi, __x_lo);
   __ffloat __abs_a = __is_neg ? -__x : __x;
 
+  /* e/2 straight out of exp with its scale lowered by one binade (exact), so cosh stays
+   * finite up to |x| = 89.416 where exp alone overflows from 88.7228. */
   float __u_hi;
   float __u_lo;
-  ::cuda::__fpmp2_exp<float>(__abs_a.hi(), __abs_a.lo(), &__u_hi, &__u_lo);
+  ::cuda::__internal_fpmp2_exp_impl<-1>(__abs_a.hi(), __abs_a.lo(), &__u_hi, &__u_lo);
   if (__u_hi == ::cuda::std::__fp_inf<float>())
   {
     *__res_hi = ::cuda::std::__fp_inf<float>();
     *__res_lo = 0.0f;
     return;
   }
-  __ffloat __e(__u_hi, __u_lo);
+  const __ffloat __half_e(__u_hi, __u_lo);
 
-  /* cosh(|x|) = 0.5*e + 0.5/e  (both terms positive; no cancellation). */
-  __ffloat __half_e     = __e * 0.5f;
-  __ffloat __half_inv_e = ::cuda::__internal_fpmp2_half_inv_exp(__e);
-  __ffloat __result     = renormalize(__half_e + __half_inv_e);
+  /* cosh(|x|) = e/2 + 0.5/e  (both terms positive; no cancellation); the second term from
+   * e/2 directly, 0 past |x| = 22 in the clamped helper. */
+  const __ffloat __half_inv_e = ::cuda::__internal_fpmp2_half_inv_exp<true>(__half_e);
+  __ffloat __result           = renormalize(__half_e + __half_inv_e);
 
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();

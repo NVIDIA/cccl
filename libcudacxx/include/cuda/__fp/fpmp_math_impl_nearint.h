@@ -1174,7 +1174,7 @@ __fpmp2_ceil(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _FpT
 
   _FpType __t_hi = __n, __t_lo = _FpType(0);
   ::cuda::__fpmp2_acc<_FpType>(_FpType(1), &__t_hi, &__t_lo);
-  *__res_hi = __t_hi;
+  *__res_hi = (__t_hi == _FpType(0)) ? ::cuda::std::copysign(_FpType(0), __x_hi) : __t_hi; /* ceil((-1, +eps)) = -0 */
   *__res_lo = __t_lo;
 }
 
@@ -1237,7 +1237,8 @@ __fpmp2_trunc(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _Fp
   {
     _FpType __t_hi = __n, __t_lo = _FpType(0);
     ::cuda::__fpmp2_acc<_FpType>(static_cast<_FpType>(__delta), &__t_hi, &__t_lo);
-    *__res_hi = __t_hi;
+    *__res_hi = (__t_hi == _FpType(0)) ? ::cuda::std::copysign(_FpType(0), __x_hi) : __t_hi; /* trunc((-1, +eps)) = -0
+                                                                                              */
     *__res_lo = __t_lo;
     return;
   }
@@ -1321,7 +1322,10 @@ __fpmp2_round(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _Fp
     /* A renormalized pair has lo = 0 here (round(+-0) = +-0); a loose one is the scalar case. */
     const _FpType __i  = ::cuda::__fpmp_internal_trunc<_FpType>(__x_lo);
     const _FpType __fr = __x_lo - __i;
-    *__res_hi = __i + ((::cuda::__fpmp_internal_fabs(__fr) >= __half) ? ((__x_lo < __zero) ? -__one : __one) : __zero);
+    const _FpType __r =
+      __i + ((::cuda::__fpmp_internal_fabs(__fr) >= __half) ? ((__x_lo < __zero) ? -__one : __one) : __zero);
+    /* a zero result carries the sign of the argument: round(-0) = -0, round(-0.3 as a tail) = -0 */
+    *__res_hi = (__r == __zero) ? ((__x_lo == __zero) ? __x_hi : ::cuda::std::copysign(__zero, __x_lo)) : __r;
     *__res_lo = __zero;
     return;
   }
@@ -1503,7 +1507,8 @@ __fpmp2_nearbyint(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi,
  */
 _CCCL_FPMP_CORE_API long long int __internal_fpmp2_llrint(const float __x_hi, const float __x_lo) noexcept
 {
-  if (!(::cuda::__fpmp_internal_fabs(__x_hi) < 0x1p63f))
+  if (!(::cuda::__fpmp_internal_fabs(__x_hi) < 0x1p63f)
+      || !(::cuda::__fpmp_internal_fabs(__x_lo) < ::cuda::std::__fp_inf<float>()))
   {
     return ::cuda::std::llrint(static_cast<double>(__x_hi));
   }
@@ -1542,7 +1547,8 @@ _CCCL_FPMP_MATH_DISPATCH_1A_RETLL(llrint)
  */
 _CCCL_FPMP_CORE_API long long int __internal_fpmp2_llround(const float __x_hi, const float __x_lo) noexcept
 {
-  if (!(::cuda::__fpmp_internal_fabs(__x_hi) < 0x1p63f))
+  if (!(::cuda::__fpmp_internal_fabs(__x_hi) < 0x1p63f)
+      || !(::cuda::__fpmp_internal_fabs(__x_lo) < ::cuda::std::__fp_inf<float>()))
   {
     return ::cuda::std::llround(static_cast<double>(__x_hi));
   }

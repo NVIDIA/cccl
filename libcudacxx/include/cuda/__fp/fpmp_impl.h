@@ -900,16 +900,9 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_trunc(const _FpType __x) n
     {
       return __x;
     }
-    NV_IF_ELSE_TARGET(
-      NV_IS_DEVICE,
-      ({
-        const int32_t __xi = ::__float2int_rz(__x);
-        return ::__int2float_rz(__xi);
-      }),
-      ({
-        const int32_t __xi = ::cuda::__fpmp_fp2int_rz(__x);
-        return ::cuda::__fpmp_int2fp_rz<_FpType>(__xi);
-      }))
+    /* The builtin: one FRND on the device, and it keeps the sign of a zero result on both
+     * targets, where the int round trip returned +0 for every |x| < 1. */
+    return ::cuda::std::trunc(__x);
   }
   else
   {
@@ -927,12 +920,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_floor(const _FpType __x) n
     {
       return __x;
     }
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                      ({
-                        const int32_t __xi = ::__float2int_rd(__x);
-                        return ::__int2float_rn(__xi);
-                      }),
-                      (return ::floorf(__x);))
+    return ::cuda::std::floor(__x); /* one FRND on the device; keeps the sign of a zero */
   }
   else
   {
@@ -950,12 +938,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_ceil(const _FpType __x) no
     {
       return __x;
     }
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                      ({
-                        const int32_t __xi = ::__float2int_ru(__x);
-                        return ::__int2float_rn(__xi);
-                      }),
-                      (return ::ceilf(__x);))
+    return ::cuda::std::ceil(__x); /* one FRND on the device; keeps the sign of a zero */
   }
   else
   {

@@ -1772,7 +1772,7 @@ __internal_fpmp2_erfcinv(const float __x_hi, const float __x_lo, float* __res_hi
     *__res_lo = *__res_hi;
     return;
   }
-  if (__q.hi() == 0.0f || __q.hi() == 2.0f) /* a renormalized pair with .lo() == 0 */
+  if (__q.hi() == 0.0f || (__q.hi() == 2.0f && __q.lo() == 0.0f)) /* (2, -eps) is a valid pair below 2 */
   {
     *__res_hi = (__q.hi() == 0.0f) ? ::cuda::std::__fp_inf<float>() : -::cuda::std::__fp_inf<float>();
     *__res_lo = 0.0f;

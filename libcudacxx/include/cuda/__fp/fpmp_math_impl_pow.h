@@ -1141,7 +1141,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_hypot(
   ::cuda::__fpmp2_sqrt(__a_hi, __a_lo, &__h_hi, &__h_lo);
   const float __back = ::cuda::std::bit_cast<float>(static_cast<uint32_t>((127 + __k) << 23));
   *__res_hi          = __h_hi * __back;
-  *__res_lo          = __h_lo * __back;
+  *__res_lo          = (*__res_hi < ::cuda::std::__fp_inf<float>()) ? __h_lo * __back : 0.0f; /* (inf, 0) on overflow */
 }
 
 /*

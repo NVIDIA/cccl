@@ -30,6 +30,8 @@
 #include <cuda/__fp/fpmp_math_impl.h>
 // modf splits the pair with trunc.
 #include <cuda/__fp/fpmp_math_impl_nearint.h>
+#include <cuda/std/climits>
+#include <cuda/std/cmath>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -302,7 +304,9 @@ _CCCL_FPMP_CORE_API int __fpmp2_ilogb(const _FpType __x_hi, const _FpType __x_lo
   const _FpType __m = ::cuda::std::frexp(__x_hi, &__hi_exp);
   if ((__m == _FpType(0)) || !::cuda::std::isfinite(__x_hi))
   {
-    return ::cuda::std::ilogb(static_cast<double>(__x_hi));
+    /* The C99 sentinels directly (FP_ILOGB0 for a zero, FP_ILOGBNAN for a NaN, INT_MAX for an
+     * infinity), without the detour through a double. */
+    return (__m == _FpType(0)) ? FP_ILOGB0 : ((__x_hi != __x_hi) ? FP_ILOGBNAN : INT_MAX);
   }
   const bool __below_power_of_two = (::cuda::__fpmp_internal_fabs(__m) == _FpType(0.5)) && (__x_lo != _FpType(0))
                                  && (::cuda::std::signbit(__x_hi) != ::cuda::std::signbit(__x_lo));
@@ -437,6 +441,16 @@ _CCCL_FPMP_CORE_API void __fpmp2_modf(
   _FpType* __iptr_hi,
   _FpType* __iptr_lo) noexcept
 {
+  if (!(::cuda::__fpmp_internal_fabs(__x_hi) < ::cuda::std::__fp_inf<_FpType>()))
+  {
+    /* modf(+-inf) = (+-0, +-inf); a NaN is a NaN in both parts (C99 F.10.3.12). */
+    const _FpType __nan = __x_hi + __x_lo;
+    *__iptr_hi          = __x_hi;
+    *__iptr_lo          = _FpType(0);
+    *__res_hi           = (__x_hi == __x_hi) ? ::cuda::std::copysign(_FpType(0), __x_hi) : __nan;
+    *__res_lo           = (__x_hi == __x_hi) ? _FpType(0) : __nan;
+    return;
+  }
   ::cuda::__fpmp2_trunc<_FpType>(__x_hi, __x_lo, __iptr_hi, __iptr_lo);
   ::cuda::__fpmp2_high_sub<_FpType>(__x_hi, __x_lo, *__iptr_hi, *__iptr_lo, __res_hi, __res_lo);
 
