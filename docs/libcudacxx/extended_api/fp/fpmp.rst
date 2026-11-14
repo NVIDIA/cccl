@@ -368,22 +368,26 @@ with the converted ``c`` reaches ``3u²``; the quotient is the same value, one i
 ``sqrt`` and ``rsqrt`` are kept as short as the arithmetic itself and take no branch for special
 arguments: they expect a positive, finite argument whose high limb is a normal number. ``sqrt(0)``
 is ``0``, but ``rsqrt(0)`` is NaN rather than infinity, both return NaN for ``+inf``, for a negative
-argument and for NaN, and on the device both return NaN for a subnormal argument. Code that can
-meet such arguments should test for them before the call, and scale a subnormal argument by an
-even power of two (and the result back by its square root) around it. The math functions below
+argument and for NaN, and on the device both return NaN for a subnormal argument. ``sqrt`` keeps
+its accuracy down to a high limb of about ``2^-100``; below that its residual term is subnormal
+and the error grows (11 u² at ``2^-108``). Code that can meet such arguments should test for them
+before the call, and scale a subnormal or tiny argument by an even power of two (and the result
+back by its square root) around it. The math functions below
 return the C99 Annex F values for infinities, NaN and arguments outside their domain, except for
 the sign of a zero result, covered next.
 
-The sign of zero is not tracked, by the arithmetic or by the math functions. A pair is stored
+The sign of zero is not tracked, by the arithmetic or by most math functions. A pair is stored
 renormalized, and the renormalization adds the two limbs, which turns a ``-0`` high limb into
 ``+0``: every zero result of ``+``, ``-``, ``*`` and ``fma`` is ``+0``, including ``(-0) + (-0)``,
 ``(-0) * 1`` and ``x * (-0)``, where IEEE 754 gives ``-0``. A zero from ``/`` or from a math
 function carries whichever sign its evaluation happens to leave: ``sin(-0)`` and ``atan(-0)``
-return ``+0`` where C99 Annex F has ``-0``, ``fp32mp2`` ``trunc(-0.5)`` returns ``+0`` while
-``fp64mp2`` returns ``-0``, and ``fp32mp2`` ``floor(-0)`` is ``-0`` on the host and ``+0`` on the
-device. Only the operations that act on the sign bit itself keep it: unary negation, ``fabs``,
-``copysign`` and construction from a built-in ``-0.0``. ``signbit`` reports the high limb. Code
-that distinguishes ``-0`` from ``+0`` has to take the sign from the operands, before the arithmetic.
+return ``+0`` where C99 Annex F has ``-0``, and ``atan2`` reads a zero argument as ``+0``, so
+``atan2(-0, -1)`` is ``+pi``. The exceptions that do follow C99 are the operations that act on the
+sign bit itself (unary negation, ``fabs``, ``copysign``, construction from a built-in ``-0.0``),
+and the rounding functions ``ceil``, ``floor``, ``trunc``, ``round``, ``rint``, ``nearbyint`` and
+the fraction of ``modf``, whose zero result carries the sign of the argument on the host and the
+device alike. ``signbit`` reports the high limb. Code that distinguishes ``-0`` from ``+0``
+anywhere else has to take the sign from the operands, before the arithmetic.
 
 ``renormalize(x)`` restores the non-overlap invariant, ``|lo| <= ulp(hi)/2``, which only ``low``
 accuracy can leave broken; see :ref:`accuracy levels <libcudacxx-extended-api-fp-fpmp-accuracy>`
@@ -400,15 +404,24 @@ hardware where FP64 is rationed:
   the ``sqrt`` and ``rsqrt`` already named above
 - **Trigonometric** — ``sin``, ``cos``, ``tan``, ``sincos``, ``asin``, ``acos``, ``atan``,
   ``atan2``, and the pi-scaled ``sinpi``, ``cospi``, ``sincospi``, which split the argument over
-  the limb pair rather than reducing it against a radian multiple of pi
-- **Hyperbolic** — ``sinh``, ``cosh``, ``tanh``, ``asinh``, ``acosh``, ``atanh``
+  the limb pair rather than reducing it against a radian multiple of pi. The radian reduction is
+  exact (Payne-Hanek) from ``|x| >= 2^20`` on; below that a four-piece ``pi/2`` leaves the reduced
+  argument an absolute error of about ``n * 2^-100`` for ``n = round(2x/pi)``, so the near-zero
+  one of ``sin`` and ``cos`` loses relative accuracy within ``n * 2^-54`` of a multiple of
+  ``pi/2`` (a few u² at ``2^-40`` from a multiple near ``10^5``, 300 u² at ``2^-53`` from
+  ``161 pi/2``, up to ``10^6`` u² for the float pairs closest to a multiple near ``2^19``)
+- **Hyperbolic** — ``sinh``, ``cosh``, ``tanh``, ``asinh``, ``acosh``, ``atanh`` (``sinh`` and ``cosh``
+  stay finite up to ``|x| = 89.416``, where ``exp`` alone overflows from ``88.723``)
 - **Error functions** — ``erf``, ``erfc``, ``erfcx``, ``erfinv``, ``erfcinv``
 - **Rounding, magnitude and scaling** — ``ceil``, ``floor``, ``trunc``, ``round``, ``fabs``,
   ``ldexp``, ``scalbn``
 - **Minimum, maximum and remainder** — ``fmin``, ``fmax``, ``min``, ``max``, ``fmod``,
   ``remainder`` (``fmod``, ``remainder`` and ``remquo`` are exact on sparse pairs, whose tail sits
-  far below the head, in ``fp32mp2_high``; the other levels compute on the pair rounded to 53
-  significant bits, as a ``double`` would)
+  far below the head, in ``fp32mp2_high``, as long as the divisor's two limbs span at most 126
+  bits, ``fmod(2^100 + 2^-120, 2^100)`` being past that; the other levels compute on the pair
+  rounded to 53 significant bits, as a ``double`` would. The ``fp64mp2`` ``remquo``, ``lrint``,
+  ``lround``, ``llrint`` and ``llround`` are ``double`` fallbacks on the high limb, not exact on
+  the pair)
 - **Probability** — ``normcdf``, ``normcdfinv``, and ``icdf`` for ``fp32mp2`` only, which turns a 32- or 64-bit
   uniform integer into a Gaussian variate. Taking an integer rather than a pair, it is the one
   function here that ADL cannot find, so it has to be written ``cuda::icdf(bits)``, and its
