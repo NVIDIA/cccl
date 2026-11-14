@@ -61,6 +61,7 @@ from cutlass.cute.ffi import ffi
 from .._compiler import _rendering, _state, _storage, _types
 from .._temp_storage import TempStorage
 from .._thread_data import ThreadData, _make_rmem_tensor
+from .._validation import _validate_output_region
 
 _SCOPE = "cuda.coop.cutlass"
 _INTEGER_KEYS = frozenset({Int32, Int64, Uint32, Uint64})
@@ -824,6 +825,9 @@ def provider_radix_rank(
                 "radix_rank_keys exclusive_digit_prefix must be writable "
                 "ThreadData"
             )
+        _validate_output_region(
+            prefix, name="radix_rank_keys exclusive_digit_prefix"
+        )
         expected = block_radix_rank_bins_per_thread(
             end_bit - begin_bit, launch.exact_block_threads
         )

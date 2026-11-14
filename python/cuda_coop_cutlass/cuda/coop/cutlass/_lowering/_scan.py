@@ -57,6 +57,7 @@ from .._operators import (
     validate_operator_dtype,
 )
 from .._thread_data import ThreadData, _make_rmem_tensor
+from .._validation import _validate_output_region
 
 _provider_rendering = _rendering
 _provider_state = _state
@@ -866,6 +867,7 @@ def _validate_aggregate_output(output, *, value_type):
         raise ValueError(
             "cuda.coop.cutlass.scan aggregate_output must contain one item"
         )
+    _validate_output_region(output, name="scan aggregate_output")
     if (
         output.dtype is not None
         and _provider_types.canonical_dsl_type(output.dtype) is not value_type

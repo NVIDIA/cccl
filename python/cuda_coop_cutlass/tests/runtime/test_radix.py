@@ -512,11 +512,6 @@ def _run_rank(
             input_keys = _Readonly(keys)
         else:
             input_keys = keys
-        if cutlass.const_expr(prefix):
-            digit_prefix = coop.ThreadData(
-                items_per_thread=prefix_items,
-                dtype=None if prefix_inferred else cutlass.Int32,
-            )
         if cutlass.const_expr(scalar):
             result = cutlass.Int32(0)
         else:
@@ -527,6 +522,10 @@ def _run_rank(
                 result[item] = cutlass.Int32(0)
         for iteration in range(repeats):
             if cutlass.const_expr(prefix):
+                digit_prefix = coop.ThreadData(
+                    items_per_thread=prefix_items,
+                    dtype=None if prefix_inferred else cutlass.Int32,
+                )
                 result = coop.radix_rank_keys(
                     group,
                     input_keys,
