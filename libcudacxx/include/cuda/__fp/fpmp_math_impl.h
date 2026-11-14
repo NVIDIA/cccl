@@ -146,7 +146,8 @@ _CCCL_HOST_DEVICE_API inline void __fpmp_math_div_refined(
     const _FpType __ph = ::cuda::__fpmp_two_mult_fma(__q1, __b_lo, &__pl);
     const _FpType __s2 = ::cuda::__fpmp_two_sum(__s, -__ph, &__t2);
     const _FpType __n1 = __s2 + ((__t1 + __t2) - __pl);
-    const _FpType __lh = ::cuda::__fpmp_mul_rn(__n1, __r1);
+    /* nocontract: GCC would fuse the product into the caller's add of q_lo */
+    const _FpType __lh = ::cuda::__fpmp_mul_rn_nocontract(__n1, __r1);
     const _FpType __er = ::cuda::__fpmp_fma_rn(__n1, __r1, -__lh); /* exact product residual */
     const _FpType __tt = ::cuda::__fpmp_fma_rn(-__b_hi, __r1, _FpType(1)); /* 1 - b r1 */
     *__q_lo            = __lh + ::cuda::__fpmp_fma_rn(__lh, __tt, __er);
@@ -155,7 +156,7 @@ _CCCL_HOST_DEVICE_API inline void __fpmp_math_div_refined(
   {
     _FpType __n1 = ::cuda::__fpmp_add_rn(__e1, __a_lo);
     __n1         = ::cuda::__fpmp_fma_rn(-__q1, __b_lo, __n1);
-    *__q_lo      = ::cuda::__fpmp_mul_rn(__n1, __r1);
+    *__q_lo      = ::cuda::__fpmp_mul_rn_nocontract(__n1, __r1); /* see above */
   }
 } // __fpmp_math_div_refined
 
@@ -299,11 +300,11 @@ __fpmp_poly_horner_mixed(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpTyp
       __ff_t __v = __c[_Np - _Mp - 1];
       if constexpr (_Fast)
       {
-        __v = ::cuda::__fpmp_poly_fast_add(__v_f * __xh, __v);
+        __v = ::cuda::__fpmp_poly_fast_add(::cuda::__fpmp_mul_rn_nocontract(__v_f, __xh), __v);
       }
       else
       {
-        __v = __v_f * __xh + __v;
+        __v = ::cuda::__fpmp_mul_rn_nocontract(__v_f, __xh) + __v;
       }
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int __k = _Np - _Mp - 2; __k >= 0; --__k)
