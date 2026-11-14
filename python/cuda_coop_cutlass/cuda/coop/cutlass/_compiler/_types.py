@@ -187,6 +187,11 @@ ORDINARY_PROVIDER_TYPES = {
     np.float32: Float32,
     np.float64: Float64,
 }
+_NUMPY_PROVIDER_TYPES = {
+    np.dtype(dtype): value_type
+    for dtype, value_type in ORDINARY_PROVIDER_TYPES.items()
+    if issubclass(dtype, np.generic)
+}
 PROVIDER_TYPE_NAMES = {
     value_type: value_type.__name__.lower()
     for value_type in TYPE_SPECIFICATIONS
@@ -211,7 +216,7 @@ def coerce_plain_scalar(
     allow_nonfinite: bool,
     convert: bool = True,
 ) -> Any:
-    """Validate and optionally cast an exact Python int or float.
+    """Validate and optionally cast a Python or NumPy numeric literal.
 
     Lowerings call this before forming typed wrapper arguments. A Python
     literal has no fixed-width compiler dtype, so it must be checked against
@@ -224,8 +229,9 @@ def coerce_plain_scalar(
     Parameters
     ----------
     value : object
-        Candidate host literal. Only exact Python int and float enter this
-        conversion path; typed compiler values use the separate dtype checks.
+        Candidate host literal. Exact Python int/float and NumPy numeric
+        scalars matching the destination dtype enter this path. Other
+        typed values use the separate dtype checks.
     value_type : type
         Supported CUTLASS scalar type required by the wrapper parameter.
     name : str
@@ -242,9 +248,13 @@ def coerce_plain_scalar(
     -------
     object
         Converted scalar, validated original literal when convert is false,
-        or ``_NOT_PLAIN_SCALAR`` when the input is not an exact int or float.
+        or ``_NOT_PLAIN_SCALAR`` when the input needs separate dtype checks.
     """
 
+    if isinstance(value, (np.integer, np.floating)):
+        if canonical_dsl_type(value) is not value_type:
+            return _NOT_PLAIN_SCALAR
+        value = value.item()
     token = TYPE_SPECIFICATIONS[value_type].token
     if type(value) is int:
         if token in _FLOAT_TYPE_TOKENS:
@@ -436,7 +446,17 @@ def canonical_dsl_type(
         return value
 
     if isinstance(value, np.dtype):
-        ordinary_type = ORDINARY_PROVIDER_TYPES.get(value.type)
+        ordinary_type = _NUMPY_PROVIDER_TYPES.get(value)
+        if ordinary_type is not None:
+            return ordinary_type
+
+    if isinstance(value, np.generic) or (
+        isinstance(value, type) and issubclass(value, np.generic)
+    ):
+        dtype = (
+            value.dtype if isinstance(value, np.generic) else np.dtype(value)
+        )
+        ordinary_type = _NUMPY_PROVIDER_TYPES.get(dtype)
         if ordinary_type is not None:
             return ordinary_type
 
