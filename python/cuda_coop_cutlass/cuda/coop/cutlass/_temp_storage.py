@@ -7,7 +7,7 @@
 The descriptor holds compile-time policy and identity, not a device pointer.
 Finalization allocates storage after C++ layout probes establish its size.
 The MLIR hooks carry an analysis token through branches and loops, preserving
-aliases until finalization checks terminal release.
+aliases until finalization checks identity and terminal release.
 """
 
 from enum import Enum
@@ -46,6 +46,11 @@ class TempStorage:
     to share an allocation across calls in a kernel. Finalization validates
     descriptor lifetimes and supplies the storage operands. ``release``
     consumes the descriptor and returns its complete region as a native view.
+    Runtime branches and loops may carry aliases of the same kernel-local
+    descriptor;
+    selecting or rebinding to a different descriptor is rejected. Use an
+    ``if`` statement for conditional operations, with a condition uniform
+    across participating threads, rather than a runtime conditional expression.
     """
 
     def __init__(
@@ -95,7 +100,19 @@ class TempStorage:
         self._identity_token = register_creation(self)
 
     def __extract_mlir_values__(self):
-        return [] if self._identity_token is None else [self._identity_token]
+        if self._identity_token is None:
+            from cutlass.base_dsl.common import DSLUserCodeError
+
+            from ._compiler import _state
+
+            if _state._active_trace_module_op() is not None:
+                raise DSLUserCodeError(
+                    "Host-created TempStorage cannot be carried through "
+                    "runtime control flow; construct the descriptor inside "
+                    "the kernel."
+                )
+            return []
+        return [self._identity_token]
 
     def __new_from_mlir_values__(self, values):
         if self._identity_token is None:

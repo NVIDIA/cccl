@@ -336,6 +336,20 @@ is rejected when it needs temporary storage. Synchronize application data
 before another thread reads it; the collective's scratch-reuse barrier does
 not replace synchronization required by earlier application writes.
 
+.. _coop-faq-storage-control-flow:
+
+Can I choose temporary storage inside a branch or loop?
+--------------------------------------------------------
+
+Construct one ``TempStorage`` inside the kernel before the control flow when
+calls must reuse
+one allocation. Aliases of that descriptor are supported. Selecting between
+different descriptors at a runtime join is rejected, even when their
+capacities happen to match. A fresh descriptor created and used entirely
+inside one branch or loop iteration is also supported. Host-created
+descriptors can be used directly, but cannot be carried through runtime
+control flow.
+
 .. _coop-faq-compiler-setup:
 
 Why does import work but kernel compilation fail?
