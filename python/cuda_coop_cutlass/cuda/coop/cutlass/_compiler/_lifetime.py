@@ -9,7 +9,7 @@ from inspect import currentframe
 from typing import Any
 
 from cutlass._mlir import ir
-from cutlass.base_dsl.common import DSLRuntimeError
+from cutlass.base_dsl.common import DSLUserCodeError
 
 from . import _state
 
@@ -70,7 +70,7 @@ def register_use(storage, operation, *, release=False):
         return
     if storage._identity_token is None:
         if release:
-            raise DSLRuntimeError(
+            raise DSLUserCodeError(
                 "TempStorage.release requires a descriptor "
                 "constructed inside the kernel."
             )
@@ -271,8 +271,8 @@ def _kernel_graph(kernel):
                         )
                     values = values[count:]
             elif operation.regions or operation.successors:
-                raise DSLRuntimeError(
-                    f"TempStorage.release cannot analyze control flow {name} "
+                raise DSLUserCodeError(
+                    f"TempStorage cannot analyze control flow {name} "
                     f"({operation.location})."
                 )
             else:
@@ -285,15 +285,13 @@ def _kernel_graph(kernel):
 
 
 def validate_temp_storage_lifetimes(session):
-    """Reject any reachable use after release, preserving alias consumption."""
+    """Reject ambiguous identities and reachable uses after release."""
     events = session.temp_storage_lifetime_event_list()
-    if not any(event.kind == "release" for event in events):
+    if not events:
         return
     kernels = {event.kernel for event in events}
     for kernel in kernels:
         local = [event for event in events if event.kernel == kernel]
-        if not any(event.kind == "release" for event in local):
-            continue
         indexed = {
             event.anchor: (index, event) for index, event in enumerate(local)
         }
@@ -325,7 +323,7 @@ def validate_temp_storage_lifetimes(session):
                     ]
                     if consumed:
                         previous = local[consumed[0]]
-                        raise DSLRuntimeError(
+                        raise DSLUserCodeError(
                             "TempStorage cannot be used by "
                             f"{event.operation} after "
                             "release() on a reachable path: "
@@ -335,7 +333,7 @@ def validate_temp_storage_lifetimes(session):
                     if owners and {origin for origin, _ in owners} != {
                         origins.get(id(event.storage))
                     }:
-                        raise DSLRuntimeError(
+                        raise DSLUserCodeError(
                             "TempStorage cannot select different descriptor "
                             "instances through runtime control flow "
                             f"({event.location})."
@@ -371,7 +369,7 @@ def validate_temp_storage_lifetimes(session):
                     pending.append(target)
         for index, owners in seen_uses.items():
             if not owners:
-                raise DSLRuntimeError(
+                raise DSLUserCodeError(
                     "TempStorage use has no local descriptor instance "
                     f"({local[index].location})."
                 )

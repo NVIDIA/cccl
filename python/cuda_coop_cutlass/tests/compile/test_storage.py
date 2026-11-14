@@ -187,3 +187,75 @@ def test_runtime_conditional_expression_rejects_storage(operation, branch):
 
     with pytest.raises(Exception, match="use an if statement"):
         cute.compile[(GPUArch("sm_80"),)](launch, cutlass.Int32(1))
+
+
+@pytest.mark.parametrize("control_flow", ["if", "for", "while"])
+@pytest.mark.parametrize("same_descriptor", [False, True])
+def test_storage_selection_preserves_identity_or_rejects(
+    control_flow, same_descriptor
+):
+    @cute.kernel
+    def kernel(flag: cutlass.Int32):
+        storage = coop.TempStorage(256, alignment=4)
+        original = storage
+        if cutlass.const_expr(control_flow == "if"):
+            if flag > 0:
+                if cutlass.const_expr(same_descriptor):
+                    storage = original
+                else:
+                    storage = coop.TempStorage(256, alignment=4)
+        elif cutlass.const_expr(control_flow == "for"):
+            for iteration in range(flag):
+                if cutlass.const_expr(same_descriptor):
+                    storage = original
+                else:
+                    storage = coop.TempStorage(256, alignment=4)
+                storage.reserve(64, cutlass.Int32)
+        else:
+            iteration = cutlass.Int32(0)
+            while iteration < flag:
+                if cutlass.const_expr(same_descriptor):
+                    storage = original
+                else:
+                    storage = coop.TempStorage(256, alignment=4)
+                storage.reserve(64, cutlass.Int32)
+                iteration += 1
+        view = storage.reserve(64, cutlass.Int32)
+        view[0] = cutlass.Int32(7)
+
+    @cute.jit
+    def launch(flag: cutlass.Int32):
+        kernel(flag).launch(grid=1, block=64)
+
+    if same_descriptor:
+        assert cute.compile[(GPUArch("sm_80"),)](launch, cutlass.Int32(2))
+    else:
+        with pytest.raises(Exception, match="different descriptor instances"):
+            cute.compile[(GPUArch("sm_80"),)](launch, cutlass.Int32(2))
+
+
+@pytest.mark.parametrize("select_at_runtime", [False, True])
+def test_host_storage_cannot_be_selected_by_runtime_control_flow(
+    select_at_runtime,
+):
+    first = coop.TempStorage(64, alignment=4)
+    second = coop.TempStorage(128, alignment=4, sharing="exclusive")
+
+    @cute.kernel
+    def kernel(flag: cutlass.Int32):
+        storage = first
+        if cutlass.const_expr(select_at_runtime):
+            if flag > 0:
+                storage = second
+        view = storage.reserve(16, cutlass.Int32)
+        view[0] = cutlass.Int32(7)
+
+    @cute.jit
+    def launch(flag: cutlass.Int32):
+        kernel(flag).launch(grid=1, block=32)
+
+    if select_at_runtime:
+        with pytest.raises(Exception, match="Host-created TempStorage"):
+            cute.compile[(GPUArch("sm_80"),)](launch, cutlass.Int32(1))
+    else:
+        assert cute.compile[(GPUArch("sm_80"),)](launch, cutlass.Int32(1))
