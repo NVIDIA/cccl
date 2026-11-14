@@ -42,7 +42,8 @@
 //! toolkit (NVIDIA/cccl#9983).
 //!
 //! There are no cluster-scope intrinsics, so `thread_scope_cluster` uses the device-scope ones, which are stronger.
-//! Loads and stores are volatile accesses, which the PTX memory model treats as relaxed system-scope operations.
+//! `__atomic_load` and `__atomic_store` are volatile accesses, which the PTX memory model treats as relaxed
+//! system-scope operations.
 
 namespace cuda::experimental::cuco::detail
 {
@@ -122,6 +123,59 @@ template <class _Tp>
   using __word_type        = __atomic_word_t<_Tp>;
   const __word_type __bits = *reinterpret_cast<const volatile __word_type*>(__address);
   return ::cuda::std::bit_cast<_Tp>(__bits);
+}
+
+template <class _Word>
+[[nodiscard]] _CCCL_DEVICE_API _Word __weak_load_word(const _Word* __address) noexcept
+{
+  static_assert(sizeof(_Word) == 4 || sizeof(_Word) == 8, "A weak load requires a 32-bit or 64-bit word");
+
+  // The memory clobber marks the load as a memory side effect so that it is not hoisted, merged, or dropped. It is not
+  // volatile, which would keep the compiler from optimizing the code around it.
+  _Word __word;
+  if constexpr (sizeof(_Word) == 4)
+  {
+    asm("ld.b32 %0,[%1];" : "=r"(__word) : "l"(__address) : "memory");
+  }
+  else
+  {
+    asm("ld.b64 %0,[%1];" : "=l"(__word) : "l"(__address) : "memory");
+  }
+  return __word;
+}
+
+//! @brief Reads the word that `__atomic_compare_exchange` swaps for the object at `__address` while other threads may
+//! be swapping it.
+//!
+//! A plain load would let the compiler narrow, widen, merge, or drop the read. This is one weak PTX load of exactly the
+//! swapped word instead. It still races with the swap, so the value may already be stale when the caller sees it.
+//! `__atomic_load` is not used because a strong load is several times slower when many threads probe the same slots.
+//!
+//! @tparam _Tp Type of the object, 1, 2, 4, or 8 bytes in size
+//!
+//! @param __address Address of the object
+//!
+//! @return The object held by the swapped word
+template <class _Tp>
+[[nodiscard]] _CCCL_DEVICE_API _Tp __weak_load(const _Tp* __address) noexcept
+{
+  static_assert(sizeof(_Tp) == 1 || sizeof(_Tp) == 2 || sizeof(_Tp) == 4 || sizeof(_Tp) == 8,
+                "cuCO atomics require a 1, 2, 4, or 8 byte type");
+
+  using __word_type = __atomic_word_t<_Tp>;
+  if constexpr (sizeof(_Tp) <= 2)
+  {
+    _CCCL_ASSERT(::cuda::is_aligned(__address, sizeof(_Tp)), "cuCO atomics require a naturally aligned address");
+    constexpr ::cuda::std::uintptr_t __align_mask = sizeof(unsigned int) - 1;
+    const auto __address_value                    = reinterpret_cast<::cuda::std::uintptr_t>(__address);
+    const auto* const __aligned = reinterpret_cast<const unsigned int*>(__address_value & ~__align_mask);
+    const auto __offset         = static_cast<unsigned int>((__address_value & __align_mask) * 8);
+    return ::cuda::std::bit_cast<_Tp>(static_cast<__word_type>(__weak_load_word(__aligned) >> __offset));
+  }
+  else
+  {
+    return ::cuda::std::bit_cast<_Tp>(__weak_load_word(reinterpret_cast<const __word_type*>(__address)));
+  }
 }
 
 template <class _Tp>
