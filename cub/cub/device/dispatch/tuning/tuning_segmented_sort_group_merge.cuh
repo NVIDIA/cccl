@@ -26,26 +26,28 @@ namespace detail::segmented_sort_lrb
 // Count and scatter use the same block size, with one input segment per thread.
 struct partition_policy
 {
-  int block_threads = 256;
+  int threads_per_block = 256;
 };
 
-// Settings for one launch; min/max_threads describe cooperation per segment, not block size.
+// Settings for one GroupMerge sorting launch.
 struct group_merge_policy
 {
-  int block_threads;
-  int min_threads;
-  int max_threads;
-  int min_ipt;
-  int max_ipt;
+  int threads_per_block;
+  int min_threads_per_segment;
+  int max_threads_per_segment;
+  int min_items_per_thread;
+  int max_items_per_thread;
   int grid_size_multiplier; // Launch SM count * grid_size_multiplier blocks.
-  int min_blocks_per_sm; // Compiler launch-bounds target, not the grid size.
+  int min_resident_blocks_per_sm; // Compiler launch-bounds target, not the grid size.
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const group_merge_policy& lhs, const group_merge_policy& rhs) noexcept
   {
-    return lhs.block_threads == rhs.block_threads && lhs.min_threads == rhs.min_threads
-        && lhs.max_threads == rhs.max_threads && lhs.min_ipt == rhs.min_ipt && lhs.max_ipt == rhs.max_ipt
-        && lhs.grid_size_multiplier == rhs.grid_size_multiplier && lhs.min_blocks_per_sm == rhs.min_blocks_per_sm;
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.min_threads_per_segment == rhs.min_threads_per_segment
+        && lhs.max_threads_per_segment == rhs.max_threads_per_segment
+        && lhs.min_items_per_thread == rhs.min_items_per_thread && lhs.max_items_per_thread == rhs.max_items_per_thread
+        && lhs.grid_size_multiplier == rhs.grid_size_multiplier
+        && lhs.min_resident_blocks_per_sm == rhs.min_resident_blocks_per_sm;
   }
 };
 
@@ -65,8 +67,9 @@ struct lrb_policy
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const lrb_policy& lhs, const lrb_policy& rhs) noexcept
   {
-    return lhs.partition.block_threads == rhs.partition.block_threads && lhs.group_merge.warp == rhs.group_merge.warp
-        && lhs.group_merge.small_block == rhs.group_merge.small_block && lhs.group_merge.large == rhs.group_merge.large;
+    return lhs.partition.threads_per_block == rhs.partition.threads_per_block
+        && lhs.group_merge.warp == rhs.group_merge.warp && lhs.group_merge.small_block == rhs.group_merge.small_block
+        && lhs.group_merge.large == rhs.group_merge.large;
   }
 };
 
@@ -75,8 +78,29 @@ struct policy_selector
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr lrb_policy operator()(::cuda::compute_capability) const noexcept
   {
-    constexpr int threads = sizeof(Key) <= 4 ? 1024 : 512;
-    return {{256}, {{256, 1, 32, 9, 15, 128, 1}, {256, 64, 256, 9, 15, 128, 1}, {threads, 512, threads, 9, 15, 2, 1}}};
+    constexpr int large_threads_per_block = sizeof(Key) <= 4 ? 1024 : 512;
+    lrb_policy policy{};
+    auto& warp                      = policy.group_merge.warp;
+    warp.threads_per_block          = 256;
+    warp.min_threads_per_segment    = 1;
+    warp.max_threads_per_segment    = 32;
+    warp.min_items_per_thread       = 9;
+    warp.max_items_per_thread       = 15;
+    warp.grid_size_multiplier       = 128;
+    warp.min_resident_blocks_per_sm = 1;
+
+    auto& small_block                   = policy.group_merge.small_block;
+    small_block                         = warp;
+    small_block.min_threads_per_segment = 64;
+    small_block.max_threads_per_segment = 256;
+
+    auto& large                   = policy.group_merge.large;
+    large                         = small_block;
+    large.threads_per_block       = large_threads_per_block;
+    large.min_threads_per_segment = 512;
+    large.max_threads_per_segment = large_threads_per_block;
+    large.grid_size_multiplier    = 2;
+    return policy;
   }
 };
 

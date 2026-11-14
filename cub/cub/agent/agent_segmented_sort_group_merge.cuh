@@ -40,15 +40,18 @@ struct group_merge_expansion
 {
   static constexpr auto policy = PolicyGetter{}();
 
-  static_assert(policy.min_threads > 0 && ::cuda::is_power_of_two(policy.min_threads));
-  static_assert(policy.max_threads >= policy.min_threads && ::cuda::is_power_of_two(policy.max_threads)
-                && policy.max_threads <= policy.block_threads);
-  static_assert(policy.min_ipt > 0 && policy.max_ipt >= policy.min_ipt);
+  static_assert(policy.min_threads_per_segment > 0 && ::cuda::is_power_of_two(policy.min_threads_per_segment));
+  static_assert(policy.max_threads_per_segment >= policy.min_threads_per_segment
+                && ::cuda::is_power_of_two(policy.max_threads_per_segment)
+                && policy.max_threads_per_segment <= policy.threads_per_block);
+  static_assert(policy.min_items_per_thread > 0 && policy.max_items_per_thread >= policy.min_items_per_thread);
 
-  static constexpr int ipt_choices    = policy.max_ipt - policy.min_ipt + 1;
-  static constexpr int thread_choices = ::cuda::ilog2(policy.max_threads) - ::cuda::ilog2(policy.min_threads) + 1;
-  static_assert(thread_choices == 1 || policy.max_ipt < 2 * policy.min_ipt,
-                "GroupMerge policy: with multiple thread counts, max_ipt must be < 2 * min_ipt so that threads * ipt "
+  static constexpr int ipt_choices = policy.max_items_per_thread - policy.min_items_per_thread + 1;
+  static constexpr int thread_choices =
+    ::cuda::ilog2(policy.max_threads_per_segment) - ::cuda::ilog2(policy.min_threads_per_segment) + 1;
+  static_assert(thread_choices == 1 || policy.max_items_per_thread < 2 * policy.min_items_per_thread,
+                "GroupMerge policy: with multiple thread counts, max_items_per_thread must be < 2 * "
+                "min_items_per_thread so that threads * ipt "
                 "strictly increases across bins (bin order must equal capacity order)");
 
   static constexpr int size = thread_choices * ipt_choices;
@@ -58,7 +61,8 @@ struct group_merge_expansion
   {
     const int thread_config_idx = bin_idx / ipt_choices;
     const int ipt_config_idx    = bin_idx % ipt_choices;
-    return {policy.min_threads * ::cuda::ipow(2, thread_config_idx), policy.min_ipt + ipt_config_idx};
+    return {policy.min_threads_per_segment * ::cuda::ipow(2, thread_config_idx),
+            policy.min_items_per_thread + ipt_config_idx};
   }
 
   // Select each pair once and reuse it for its capacity and configuration type.
@@ -88,21 +92,23 @@ struct agent_group_merge
 {
   static constexpr auto policy           = PolicyGetter{}();
   using expansion                        = group_merge_expansion<PolicyGetter>;
-  static constexpr bool is_warp          = policy.max_threads <= 32;
-  static constexpr int threads_per_group = is_warp ? 32 : policy.block_threads;
+  static constexpr bool is_warp          = policy.max_threads_per_segment <= 32;
+  static constexpr int threads_per_group = is_warp ? 32 : policy.threads_per_block;
 
-  static_assert(policy.block_threads > 0 && policy.block_threads <= 1024);
-  static_assert(policy.grid_size_multiplier > 0 && policy.min_blocks_per_sm > 0);
-  static_assert(policy.block_threads % 32 == 0);
-  static_assert(is_warp || policy.min_threads >= 64);
-  static_assert(policy.block_threads % policy.max_threads == 0);
-  static_assert(policy.min_ipt >= 9 && policy.max_ipt <= 15, "GroupMerge groups support IPT 9..15");
+  static_assert(policy.threads_per_block > 0 && policy.threads_per_block <= 1024);
+  static_assert(policy.grid_size_multiplier > 0 && policy.min_resident_blocks_per_sm > 0);
+  static_assert(policy.threads_per_block % 32 == 0);
+  static_assert(is_warp || policy.min_threads_per_segment >= 64);
+  static_assert(policy.threads_per_block % policy.max_threads_per_segment == 0);
+  static_assert(policy.min_items_per_thread >= 9 && policy.max_items_per_thread <= 15,
+                "GroupMerge groups support IPT 9..15");
 
   // Dynamic shared memory for key exchange/merging, including one prefetch slot per group.
   template <typename Key>
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr size_t scratch_bytes() noexcept
   {
-    return sizeof(Key) * ((policy.block_threads * policy.max_ipt) + (is_warp ? policy.block_threads / 32 : 1));
+    return sizeof(Key)
+         * ((policy.threads_per_block * policy.max_items_per_thread) + (is_warp ? policy.threads_per_block / 32 : 1));
   }
 
   // Synchronize the scheduling group: one full warp or the whole block.
@@ -138,7 +144,7 @@ struct agent_group_merge
     const int thread_idx_in_group = threadIdx.x % threads_per_group;
     if constexpr (is_warp)
     {
-      keys_shared += (threadIdx.x / 32) * ((32 * policy.max_ipt) + 1);
+      keys_shared += (threadIdx.x / 32) * ((32 * policy.max_items_per_thread) + 1);
     }
     const int thread_idx_in_segment = thread_idx_in_group % config.threads_per_segment;
     const int segment_begin_idx_shared =

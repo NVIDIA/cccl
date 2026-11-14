@@ -21,9 +21,11 @@
 #include <cub/detail/segmented_sort_lrb.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_sort_lrb.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_temporary_storage.cuh>
 
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
 CUB_NAMESPACE_BEGIN
@@ -84,12 +86,12 @@ _CCCL_HOST_API cudaError_t dispatch_partition(
   {
     return error;
   }
-  const unsigned block_threads = static_cast<unsigned>(tuning.block_threads);
-  const unsigned grid_size     = (num_segments / block_threads) + (num_segments % block_threads != 0);
+  const unsigned threads_per_block = static_cast<unsigned>(tuning.threads_per_block);
+  const unsigned grid_size         = ::cuda::ceil_div(num_segments, threads_per_block);
   if (num_segments)
   {
     if (const auto error = CubDebug(
-          launcher_factory(grid_size, block_threads, 0, stream)
+          launcher_factory(grid_size, threads_per_block, 0, stream)
             .doit(partition_kernel<Capacities, false, BeginIterator, EndIterator, PartitionPolicySelector>,
                   begins,
                   ends,
@@ -100,15 +102,15 @@ _CCCL_HOST_API cudaError_t dispatch_partition(
       return error;
     }
   }
-  if (const auto error =
-        CubDebug(launcher_factory(1, 1, 0, stream).doit(segment_prefix_kernel<Capacities>, counts, offsets, cursors)))
+  if (const auto error = CubDebug(launcher_factory(1, detail::warp_threads, 0, stream)
+                                    .doit(segment_prefix_kernel<Capacities>, counts, offsets, cursors)))
   {
     return error;
   }
   if (num_segments)
   {
     if (const auto error = CubDebug(
-          launcher_factory(grid_size, block_threads, 0, stream)
+          launcher_factory(grid_size, threads_per_block, 0, stream)
             .doit(partition_kernel<Capacities, true, BeginIterator, EndIterator, PartitionPolicySelector>,
                   begins,
                   ends,
@@ -156,7 +158,7 @@ _CCCL_HOST_API cudaError_t launch_sort_kernel(
   }
   int occupancy = 0;
   if (const auto error =
-        CubDebug(launcher_factory.MaxSmOccupancy(occupancy, kernel, tuning.block_threads, dynamic_smem_bytes)))
+        CubDebug(launcher_factory.MaxSmOccupancy(occupancy, kernel, tuning.threads_per_block, dynamic_smem_bytes)))
   {
     return error;
   }
@@ -167,7 +169,7 @@ _CCCL_HOST_API cudaError_t launch_sort_kernel(
   }
   const unsigned long long grid_size = static_cast<unsigned long long>(sm_count) * tuning.grid_size_multiplier;
   if (const auto error = CubDebug(
-        launcher_factory(static_cast<unsigned>(grid_size), tuning.block_threads, dynamic_smem_bytes, stream)
+        launcher_factory(static_cast<unsigned>(grid_size), tuning.threads_per_block, dynamic_smem_bytes, stream)
           .doit(kernel, bins, begins, ends, in, out)))
   {
     return error;

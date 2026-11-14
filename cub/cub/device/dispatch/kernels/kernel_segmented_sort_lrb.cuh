@@ -16,11 +16,17 @@
 #endif // no system header
 
 #include <cub/agent/agent_segmented_sort_lrb.cuh>
+#include <cub/block/block_scan.cuh>
 #include <cub/detail/segmented_sort_lrb.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/warp/warp_load.cuh>
+#include <cub/warp/warp_store.cuh>
 
-#include <cuda/atomic>
+#include <cuda/__atomic/atomic.h>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__atomic/order.h>
+#include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__type_traits/conditional.h>
 
 CUB_NAMESPACE_BEGIN
@@ -34,7 +40,7 @@ template <typename Capacities,
           typename BeginIterator,
           typename EndIterator,
           typename PolicySelector = partition_policy_selector>
-__launch_bounds__(current_policy<PolicySelector>().block_threads) _CCCL_KERNEL_ATTRIBUTES void partition_kernel(
+__launch_bounds__(current_policy<PolicySelector>().threads_per_block) _CCCL_KERNEL_ATTRIBUTES void partition_kernel(
   BeginIterator begins,
   EndIterator ends,
   unsigned num_segments,
@@ -83,24 +89,48 @@ __launch_bounds__(current_policy<PolicySelector>().block_threads) _CCCL_KERNEL_A
   }
 }
 
-// One thread converts bin counts into global ID offsets and initial scatter cursors.
+// One warp converts bin counts into global ID offsets and initial scatter cursors.
+template <int NumBins>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_bin_counts(const unsigned* counts, unsigned* offsets, unsigned* cursors)
+{
+  constexpr int items_per_thread = ::cuda::ceil_div(NumBins, detail::warp_threads);
+  using load_t                   = WarpLoad<unsigned, items_per_thread, WARP_LOAD_TRANSPOSE>;
+  using scan_t                   = BlockScan<unsigned, detail::warp_threads>;
+  using store_t                  = WarpStore<unsigned, items_per_thread, WARP_STORE_TRANSPOSE>;
+  __shared__ typename load_t::TempStorage load_storage;
+  __shared__ scan_t::TempStorage scan_storage;
+  __shared__ typename store_t::TempStorage store_storage;
+  unsigned items[items_per_thread];
+  unsigned prefixes[items_per_thread];
+  unsigned cursor_prefixes[items_per_thread];
+  unsigned total;
+  load_t(load_storage).Load(counts, items, NumBins, 0u);
+  scan_t(scan_storage).ExclusiveSum(items, prefixes, total);
+  // WarpStore transposes its input registers; retain a copy for the second output.
+  for (int item = 0; item < items_per_thread; ++item)
+  {
+    cursor_prefixes[item] = prefixes[item];
+  }
+  store_t(store_storage).Store(offsets, prefixes, NumBins);
+  __syncwarp(); // Reuse the transpose storage after every lane has read it.
+  store_t(store_storage).Store(cursors, cursor_prefixes, NumBins);
+  if (threadIdx.x == 0)
+  {
+    offsets[NumBins] = total;
+  }
+}
+
 template <typename Capacities>
 _CCCL_KERNEL_ATTRIBUTES void segment_prefix_kernel(const unsigned* counts, unsigned* offsets, unsigned* cursors)
 {
-  unsigned prefix = 0;
-  for (int bin_idx = 0; bin_idx <= Capacities::size; ++bin_idx)
-  {
-    offsets[bin_idx] = cursors[bin_idx] = prefix;
-    prefix += counts[bin_idx];
-  }
-  offsets[Capacities::size + 1] = prefix;
+  scan_bin_counts<Capacities::size + 1>(counts, offsets, cursors);
 }
 
 // Consume this kernel's bins, packing segments into groups and invoking its sorting implementation.
 // The kernel type carries the selector; launch bounds and the body select tuning for the compiled target.
 template <typename Kernel, typename Key, typename BeginIterator, typename EndIterator>
-__launch_bounds__(current_policy<typename Kernel::policy_selector>().block_threads,
-                  current_policy<typename Kernel::policy_selector>().min_blocks_per_sm)
+__launch_bounds__(current_policy<typename Kernel::policy_selector>().threads_per_block,
+                  current_policy<typename Kernel::policy_selector>().min_resident_blocks_per_sm)
   _CCCL_KERNEL_ATTRIBUTES void sort_kernel(
     partition_result partition, BeginIterator begins, EndIterator ends, const Key* in, Key* out)
 {
