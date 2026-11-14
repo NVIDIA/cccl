@@ -23,13 +23,14 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename Size>
-_CCCL_HOST_DEVICE void malloc(thrust::execution_policy<DerivedPolicy>&, Size)
+_CCCL_HOST_DEVICE_API void malloc(thrust::execution_policy<DerivedPolicy>&, Size)
 {
   static_assert(thrust::detail::depend_on_instantiation<Size, false>::value, "unimplemented for this system");
 }
 
 template <typename T, typename DerivedPolicy>
-_CCCL_HOST_DEVICE thrust::pointer<T, DerivedPolicy> malloc(thrust::execution_policy<DerivedPolicy>& exec, std::size_t n)
+_CCCL_HOST_DEVICE_API thrust::pointer<T, DerivedPolicy>
+malloc(thrust::execution_policy<DerivedPolicy>& exec, std::size_t n)
 {
   if constexpr (::cuda::std::is_void_v<T>)
   {
@@ -44,25 +45,25 @@ _CCCL_HOST_DEVICE thrust::pointer<T, DerivedPolicy> malloc(thrust::execution_pol
 } // end malloc()
 
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE void free(thrust::execution_policy<DerivedPolicy>&, Pointer)
+_CCCL_HOST_DEVICE_API void free(thrust::execution_policy<DerivedPolicy>&, Pointer)
 {
   static_assert(thrust::detail::depend_on_instantiation<Pointer, false>::value, "unimplemented for this system");
 }
 
 template <typename DerivedPolicy, typename Pointer1, typename Pointer2>
-_CCCL_HOST_DEVICE void assign_value(thrust::execution_policy<DerivedPolicy>&, Pointer1, Pointer2)
+_CCCL_HOST_DEVICE_API void assign_value(thrust::execution_policy<DerivedPolicy>&, Pointer1, Pointer2)
 {
   static_assert(thrust::detail::depend_on_instantiation<Pointer1, false>::value, "unimplemented for this system");
 }
 
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE void get_value(thrust::execution_policy<DerivedPolicy>&, Pointer)
+_CCCL_HOST_DEVICE_API void get_value(thrust::execution_policy<DerivedPolicy>&, Pointer)
 {
   static_assert(thrust::detail::depend_on_instantiation<Pointer, false>::value, "unimplemented for this system");
 }
 
 template <typename DerivedPolicy, typename Pointer1, typename Pointer2>
-_CCCL_HOST_DEVICE void iter_swap(thrust::execution_policy<DerivedPolicy>&, Pointer1, Pointer2)
+_CCCL_HOST_DEVICE_API void iter_swap(thrust::execution_policy<DerivedPolicy>&, Pointer1, Pointer2)
 {
   static_assert(thrust::detail::depend_on_instantiation<Pointer1, false>::value, "unimplemented for this system");
 }

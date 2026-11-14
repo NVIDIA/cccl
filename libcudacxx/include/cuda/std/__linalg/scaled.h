@@ -82,7 +82,7 @@ public:
   }
 
   [[nodiscard]]
-  _CCCL_API inline typename offset_policy::data_handle_type constexpr offset(data_handle_type __p, size_t __i) const
+  _CCCL_API typename offset_policy::data_handle_type constexpr offset(data_handle_type __p, size_t __i) const
   {
     return __nested_accessor_.offset(__p, __i);
   }
@@ -105,7 +105,8 @@ private:
 namespace __detail
 {
 template <class _ScalingFactor, class _NestedAccessor>
-using __scaled_element_type = add_const_t<typename scaled_accessor<_ScalingFactor, _NestedAccessor>::element_type>;
+using __scaled_element_type _CCCL_NODEBUG =
+  add_const_t<typename scaled_accessor<_ScalingFactor, _NestedAccessor>::element_type>;
 } // namespace __detail
 
 template <class _ScalingFactor, class _ElementType, class _Extents, class _Layout, class _Accessor>

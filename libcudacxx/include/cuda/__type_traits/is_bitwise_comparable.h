@@ -79,7 +79,7 @@ inline constexpr bool __is_bitwise_comparable_v<complex<_Tp>> = false;
 
 // if all the previous conditions fail, check if the type is an aggregate and all its members are bitwise comparable
 template <typename _Tp>
-using __is_bitwise_comparable_callable = ::cuda::std::bool_constant<__is_bitwise_comparable_v<_Tp>>;
+using __is_bitwise_comparable_callable _CCCL_NODEBUG = ::cuda::std::bool_constant<__is_bitwise_comparable_v<_Tp>>;
 
 // __aggregate_all_of_v returns true if the type is not an aggregate (or empty)
 template <typename _Tp>

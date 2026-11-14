@@ -67,13 +67,6 @@
 #  define _CCCL_ARTIFICIAL
 #endif // !_CCCL_HAS_ATTRIBUTE(__artificial__)
 
-// The nodebug attribute flattens aliases down to the actual type rather typename meow<T>::type
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_NODEBUG_ALIAS _CCCL_NODEBUG
-#else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG) vvv
-#  define _CCCL_NODEBUG_ALIAS
-#endif // !_CCCL_CUDA_COMPILER(CLANG)
-
 // _CCCL_ASSUME
 // NVCC does not properly respect [[assume()]], so use __builtin_assume, see nvbug5458663
 #if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()

@@ -31,6 +31,7 @@
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/key_value_pair.cuh>
 #include <cub/detail/non_void_value.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_segmented_reduce.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
@@ -151,13 +152,13 @@ private:
     if constexpr (::cuda::std::is_integral_v<offset_t>)
     {
       using accum_t =
-        decltype(detail::segmented_reduce::select_segmented_accum_t<InputIteratorT, InitValueT, ReductionOpT>(
+        decltype(_CUB::detail::segmented_reduce::select_segmented_accum_t<InputIteratorT, InitValueT, ReductionOpT>(
           static_cast<OverrideAccumT*>(nullptr)));
       using default_policy_selector_t =
         detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
       using policy_selector_t =
-        ::cuda::std::execution::__query_result_or_t<TuningEnvT, SegmentedReducePolicy, default_policy_selector_t>;
-      return detail::segmented_reduce::dispatch<OverrideAccumT, offset_t>(
+        detail::policy_selector_from_tuning_env_t<TuningEnvT, SegmentedReducePolicy, default_policy_selector_t>;
+      return _CUB::detail::segmented_reduce::dispatch<OverrideAccumT, offset_t>(
         d_temp_storage,
         temp_storage_bytes,
         d_in,
@@ -194,13 +195,13 @@ private:
     TuningEnvT)
   {
     using accum_t =
-      decltype(detail::segmented_reduce::select_segmented_accum_t<InputIteratorT, InitValueT, ReductionOpT>(
+      decltype(_CUB::detail::segmented_reduce::select_segmented_accum_t<InputIteratorT, InitValueT, ReductionOpT>(
         static_cast<OverrideAccumT*>(nullptr)));
     using default_policy_selector_t =
       detail::segmented_reduce::policy_selector_from_types<accum_t, OffsetT, ReductionOpT>;
     using policy_selector_t =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, SegmentedReducePolicy, default_policy_selector_t>;
-    return detail::segmented_reduce::dispatch_fixed_size<OverrideAccumT>(
+      detail::policy_selector_from_tuning_env_t<TuningEnvT, SegmentedReducePolicy, default_policy_selector_t>;
+    return _CUB::detail::segmented_reduce::dispatch_fixed_size<OverrideAccumT>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -250,7 +251,7 @@ private:
       is_min ? ::cuda::std::numeric_limits<input_value_t>::max() : ::cuda::std::numeric_limits<input_value_t>::lowest();
     const init_value_t initial_value{accum_t(1, sentinel)};
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
         return select_tuning_and_dispatch_fixed_size<accum_t>(
           storage,
@@ -270,7 +271,7 @@ private:
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_arg_single_phase(
     InputIteratorT d_in, OutputIteratorT d_out, ::cuda::std::int64_t num_segments, int segment_size, const EnvT& env)
   {
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&](auto /* tuning */, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t /* stream */) {
         return fixed_size_arg_two_phase<ReductionOpT>(
           d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, env);
@@ -301,7 +302,7 @@ private:
     static_assert(is_supported_determinism_v<EnvT>,
                   "gpu_to_gpu determinism is not supported for device segmented reductions ");
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
         return select_tuning_and_dispatch_variable_size<OverrideAccumT, OverrideOffsetT>(
           storage,
@@ -337,7 +338,7 @@ private:
     InitValueT initial_value,
     const EnvT& env)
   {
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&](auto /* tuning */, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t /* stream */) {
         return variable_size_two_phase<OverrideAccumT, OverrideOffsetT>(
           d_temp_storage,
@@ -377,7 +378,7 @@ private:
     // integral constant or larger integral types
     using offset_t = int;
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
         return select_tuning_and_dispatch_fixed_size<OverrideAccumT>(
           storage,
@@ -409,7 +410,7 @@ private:
     InitValueT initial_value,
     const EnvT& env)
   {
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&](auto /* tuning */, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t /* stream */) {
         return fixed_size_two_phase<OverrideAccumT>(
           d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, reduction_op, initial_value, env);

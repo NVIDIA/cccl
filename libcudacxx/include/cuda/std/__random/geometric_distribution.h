@@ -41,13 +41,12 @@ public:
 
   class param_type
   {
-  private:
     double __p_ = 0.5;
 
   public:
     using distribution_type = geometric_distribution;
 
-    param_type() noexcept = default;
+    _CCCL_HIDE_FROM_ABI param_type() noexcept = default;
 
     _CCCL_HOST_DEVICE_API constexpr explicit param_type(double __p) noexcept
         : __p_{__p}
@@ -77,7 +76,7 @@ private:
 
 public:
   // constructors and reset functions
-  constexpr geometric_distribution() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr geometric_distribution() noexcept = default;
   _CCCL_HOST_DEVICE_API constexpr explicit geometric_distribution(double __p) noexcept
       : __p_{__p}
   {}
@@ -137,7 +136,7 @@ public:
 
 #if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
-  friend ::std::basic_ostream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const geometric_distribution& __x)
   {
     using _Ostream = ::std::basic_ostream<_CharT, _Traits>;
@@ -154,7 +153,7 @@ public:
   }
 
   template <class _CharT, class _Traits>
-  friend ::std::basic_istream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is, geometric_distribution& __x)
   {
     using _Istream = ::std::basic_istream<_CharT, _Traits>;

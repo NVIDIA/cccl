@@ -366,7 +366,7 @@ and ``2`` records the launch under CUDA graph capture and then executes it.
 Instead of calling the CUB API directly, declare a launch wrapper for it with
 ``DECLARE_LAUNCH_WRAPPER`` and call the wrapper from the test body,
 with exactly the same arguments as you would call the wrapped function,
-omitting the temporary storage size and pointer arguments, as well as a stream argument:
+omitting the temporary storage size and pointer arguments:
 
 .. code-block:: c++
 
@@ -375,16 +375,12 @@ omitting the temporary storage size and pointer arguments, as well as a stream a
     CUB_TEST("Reduce test", "[device][reduce]", CUB_SMALL)
     {
       // ...
-      cub_reduce_sum(d_in, d_out, n); // same
+      cub_reduce_sum(d_in, d_out, n); // same arguments
     }
 
 The wrapper allocates temporary storage and invokes the CUB API through whichever of the
 three launch mechanisms matches the current ``TEST_LAUNCH`` value, checking return codes and
 launch errors along the way.
-
-Under CUDA graph capture (``TEST_LAUNCH == 2``), the wrapper implicitly appends a ``stream`` argument to the call.
-If the wrapped API has default parameters before its ``stream`` parameter,
-specify those explicitly at all call sites so the injected stream argument lines up.
 
 For APIs that take template parameters, use ``DECLARE_TMPL_LAUNCH_WRAPPER`` instead,
 passing the template parameter list and the arguments to instantiate it with.
@@ -400,7 +396,57 @@ Use the ``ESCAPE_LIST`` macro to protect commas inside each list from the prepro
 For testing single phase environment-based APIs use the ``DECLARE_LAUNCH_WRAPPER_ENV`` and
 ``DECLARE_TMPL_LAUNCH_WRAPPER_ENV`` macros from the same header instead.
 They expect the wrapped API's last argument to be an execution environment.
-The helper injects a memory resource and stream into that env automatically.
+The helper injects a memory resource into that env automatically.
+Callers must not supply a memory resource. Device-launch tests must provide an
+``expected_allocation_size(...)`` property specifying the expected temporary storage allocation size.
+
+Stream ordering of the wrapped operation after preparation work is preserved
+if the stream is passed as the environment of the CUB API (usually the last argument):
+
+.. code-block:: c++
+
+    cub_reduce_sum(d_in, d_out, n, stream);
+
+Both wrapper families preserve the environment's other properties and use the following
+launch behavior:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 16 42 42
+
+   * - Launch mode
+     - Two-phase wrappers
+     - ``_ENV`` wrappers
+   * - Host (``TEST_LAUNCH == 0``)
+     - Enqueue the algorithm's work on the supplied stream, or the host default stream
+       when none is supplied. Pass that stream to the wrapped API.
+     - Enqueue the algorithm's work on the environment's stream, or a temporary host
+       stream when no stream property exists. Pass that stream to the wrapped API.
+   * - Device (``TEST_LAUNCH == 1``)
+     - Enqueue a parent kernel on the supplied host stream, or the host default stream
+       when none is supplied.
+     - Enqueue a parent kernel on the environment's host stream, or the host default
+       stream when no stream property exists.
+   * - Graph (``TEST_LAUNCH == 2``)
+     - Capture on the supplied stream when it is non-default, or a temporary capture
+       stream otherwise. Pass the capture stream to the wrapped API. Execute the graph
+       on the supplied stream, or the host default stream when none is supplied.
+     - Capture on the environment's stream, or a temporary host stream when no stream
+       property exists. Pass that stream to the wrapped API and execute the graph on
+       the same stream. An explicitly supplied default stream is rejected.
+
+For device launches, the parent kernel is ordered after pending work on its host stream
+and invokes the wrapped API with the device-side default stream.
+All wrappers wait for execution to complete before returning.
+
+For two-phase graph launches, the wrapper adds the capture stream to a trailing environment
+that does not provide one. When no stream or environment argument is supplied, it appends a
+separate ``stream`` argument. Specify any preceding default parameters explicitly so that
+the environment or stream argument occupies the correct position.
+
+When an ``_ENV`` environment has no stream property, callers must complete input preparation
+before invoking the wrapper.
+
 Consult ``test/catch2_test_launch_wrapper.cu`` for more usage examples.
 
 Since the whole file is compiled three times, any ``CUB_TEST`` in the same translation unit
@@ -459,9 +505,14 @@ Recommended minimum tests cases to be added for each new single-phase API overlo
    and verify the applied block size on the device using ``block_size_extracting_op`` or
    ``block_size_extracting_constant_iterator``. The test case should be guarded by
    ``#if TEST_LAUNCH != 1``.
-5. If the algorithm has a determinism/ordering axis, ``cuda::execution::require(...)`` is
+5. ``"<algorithm> tuning can be modified"`` — an environment carrying
+   ``cuda::execution::tune(...)`` with a policy transformer is honored: the transformer modifies the
+   block size used by the kernel. Verify the applied block size on the device in the same way as for
+   ``"<algorithm> can be tuned"``, and check that it differs from the block size of CUB's default
+   tuning. The test case should be guarded by ``#if TEST_LAUNCH != 1``.
+6. If the algorithm has a determinism/ordering axis, ``cuda::execution::require(...)`` is
    tested for each supported level. The test case should be guarded by ``#if TEST_LAUNCH != 1``.
-6. If the algorithm takes an operator/predicate parameter (e.g. a comparator or equality op),
+7. If the algorithm takes an operator/predicate parameter (e.g. a comparator or equality op),
    that parameter is tested in combination with the environment, not only in isolation. The test
    case should be guarded by ``#if TEST_LAUNCH != 1``.
 

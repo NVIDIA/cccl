@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3
 
 #include <cub/device/device_copy.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_ptx.cuh>
 
 #include <thrust/logical.h>
@@ -313,12 +314,14 @@ void nontrivial_constructor_test()
   std::uint8_t* d_temp_storage{};
   std::size_t temp_storage_bytes{};
 
-  cub::DeviceCopy::Batched(d_temp_storage, temp_storage_bytes, a_iter.begin(), b_iter.begin(), sizes, num_buffers);
+  CubDebugExit(
+    cub::DeviceCopy::Batched(d_temp_storage, temp_storage_bytes, a_iter.begin(), b_iter.begin(), sizes, num_buffers));
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-  cub::DeviceCopy::Batched(d_temp_storage, temp_storage_bytes, a_iter.begin(), b_iter.begin(), sizes, num_buffers);
+  CubDebugExit(
+    cub::DeviceCopy::Batched(d_temp_storage, temp_storage_bytes, a_iter.begin(), b_iter.begin(), sizes, num_buffers));
 
   for (int i = 0; i < num_buffers; i++)
   {

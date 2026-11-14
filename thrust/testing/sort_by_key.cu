@@ -54,8 +54,10 @@ void initialize_simple_key_value_sort_test(
 template <class Vector>
 void test_sort_by_key_simple()
 {
-  Vector unsorted_keys, unsorted_values;
-  Vector sorted_keys, sorted_values;
+  Vector unsorted_keys;
+  Vector unsorted_values;
+  Vector sorted_keys;
+  Vector sorted_values;
 
   initialize_simple_key_value_sort_test(unsorted_keys, unsorted_values, sorted_keys, sorted_values);
 

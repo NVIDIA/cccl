@@ -43,6 +43,7 @@
 #include <cuda/std/cstring>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 #include <cuda/stream>
 
 #include "test_macros.h"
@@ -62,6 +63,18 @@ static_assert(cuda::std::is_trivially_copyable_v<cuda::fp64mp2_stat>);
 // The wrapper reports the same characteristics as the wrapped type.
 static_assert(cuda::std::numeric_limits<stat_t>::digits == cuda::std::numeric_limits<base_t>::digits);
 static_assert(cuda::std::numeric_limits<stat_t>::is_specialized);
+
+// The compound forms accept exactly the scalars the wrapped type accepts.
+template <class T, class S, class = void>
+struct can_mul_assign : cuda::std::false_type
+{};
+template <class T, class S>
+struct can_mul_assign<T, S, cuda::std::void_t<decltype(cuda::std::declval<T&>() *= cuda::std::declval<S>())>>
+    : cuda::std::true_type
+{};
+static_assert(can_mul_assign<stat_t, float>::value && can_mul_assign<base_t, float>::value);
+static_assert(can_mul_assign<stat_t, int>::value == can_mul_assign<base_t, int>::value);
+static_assert(can_mul_assign<stat_t, double>::value == can_mul_assign<base_t, double>::value);
 
 // A pair of limbs, compared bitwise so that a sign of zero or a NaN payload cannot hide
 // a difference.
@@ -115,7 +128,31 @@ TEST_HOST_DEVICE_FUNC void test_parity()
     s += fc;
     b -= fc;
     s -= fc;
+    b *= fc;
+    s *= fc;
+    b /= fb;
+    s /= fb;
     assert(same(limbs(b), limbs(s)));
+  }
+
+  { // a scalar that one limb cannot hold is converted to the pair, not narrowed to a limb
+    const int wide = 16777217; // 2^24 + 1
+    base_t b       = ba;
+    stat_t s       = sa;
+    b += wide;
+    s += wide;
+    assert(same(limbs(b), limbs(s)));
+    b *= wide;
+    s *= wide;
+    assert(same(limbs(b), limbs(s)));
+    b /= wide;
+    s /= wide;
+    assert(same(limbs(b), limbs(s)));
+    b -= wide;
+    s -= wide;
+    assert(same(limbs(b), limbs(s)));
+    assert(same(limbs(ba * wide), limbs(sa * wide)));
+    assert(same(limbs(wide - ba), limbs(wide - sa)));
   }
 
   { // increment and decrement, prefix and postfix
@@ -268,8 +305,8 @@ __global__ void parity_kernel()
 // A kernel by one thread with a hand-counted operation mix.
 constexpr unsigned long long int expected_add = 3ull;
 constexpr unsigned long long int expected_sub = 3ull;
-constexpr unsigned long long int expected_mul = 2ull;
-constexpr unsigned long long int expected_div = 2ull;
+constexpr unsigned long long int expected_mul = 4ull;
+constexpr unsigned long long int expected_div = 3ull;
 constexpr unsigned long long int expected_ops = expected_add + expected_sub + expected_mul + expected_div;
 
 __global__ void counting_kernel(float* sink)
@@ -286,6 +323,9 @@ __global__ void counting_kernel(float* sink)
   s /= a; // div
   ++s; // add
   --s; // sub
+  s *= 2; // mul, a scalar one limb cannot hold, converted to the pair
+  s /= 2.0f; // div, a single-limb scalar
+  s = s * 0.5f; // mul, a single-limb scalar in a binary operator
 
   *sink = static_cast<float>(s);
 }

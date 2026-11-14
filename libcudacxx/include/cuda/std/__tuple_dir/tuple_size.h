@@ -41,7 +41,7 @@ template <class _Tp>
 inline constexpr size_t tuple_size_v = tuple_size<_Tp>::value;
 
 template <class _Tp, class...>
-using __enable_if_tuple_size_imp = _Tp;
+using __enable_if_tuple_size_imp _CCCL_NODEBUG = _Tp;
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT

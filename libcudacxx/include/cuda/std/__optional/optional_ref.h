@@ -50,9 +50,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 class optional<_Tp&>
 {
-private:
-  using __raw_type     = remove_reference_t<_Tp>;
-  __raw_type* __value_ = nullptr;
+  using __raw_type _CCCL_NODEBUG = remove_reference_t<_Tp>;
+  __raw_type* __value_           = nullptr;
 
   _CCCL_TEMPLATE(class _Ref, class _Arg)
   _CCCL_REQUIRES(is_constructible_v<_Ref, _Arg>)
@@ -269,14 +268,11 @@ public:
 
   _CCCL_API constexpr _Tp& value() const
   {
-    if (__value_ != nullptr)
-    {
-      return *__value_;
-    }
-    else
+    if (__value_ == nullptr)
     {
       __throw_bad_optional_access();
     }
+    return *__value_;
   }
 
   template <class _Up>

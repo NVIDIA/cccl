@@ -183,7 +183,7 @@ TEST_CASE("copy d2d large element 64 bytes", "[copy][d2d][large_element]")
   {
     for (int j = 0; j < 64; ++j)
     {
-      data[i].data[j] = static_cast<char>((i * 64 + j) % 128);
+      data[i].data[j] = static_cast<char>(((i * 64) + j) % 128);
     }
   }
   test_copy<layout_right>(data, N);
@@ -205,7 +205,7 @@ struct alignas(64) large_type_128
 
 // src: (4,512):(512,1), layout_right, sizeof(T) = 128
 // dst: (4,512):(512,1), layout_right, sizeof(T) = 128
-// sizeof(T) > __max_vector_access → __are_vectorizable_copy is false
+// sizeof(T) > __max_memory_access_width → __are_vectorizable_copy is false
 // inner_extent_bytes = 512 * 128 = 64KB >= __bytes_in_flight → path (2b)
 // 2D with outer dim > 1 → tile_size != tensor_size → bypasses DeviceTransform path (1)
 TEST_CASE("copy d2d large element 128 bytes 2D contiguous", "[copy][d2d][large_element]")
@@ -218,7 +218,7 @@ TEST_CASE("copy d2d large element 128 bytes 2D contiguous", "[copy][d2d][large_e
   {
     for (int j = 0; j < 128; ++j)
     {
-      data[i].data[j] = static_cast<char>((i * 128 + j) % 128);
+      data[i].data[j] = static_cast<char>(((i * 128) + j) % 128);
     }
   }
   test_copy<layout_right>(data, M, N);
@@ -228,7 +228,7 @@ TEST_CASE("copy d2d large element 128 bytes 2D contiguous", "[copy][d2d][large_e
 // dst: (2,513):(1024,1), layout_stride
 // Padded outer stride (1024 > 513) prevents coalescing → tile_size = 513 != tensor_size = 1026
 // inner_extent_bytes = 513 * 128 = 65664 >= __bytes_in_flight → path (2b)
-// __are_vectorizable_copy is false (alignof(128) > __max_vector_access)
+// __are_vectorizable_copy is false (alignof(128) > __max_memory_access_width)
 // _TileSize = 256, inner_size = 513 = 2 * 256 + 1 → last tile has 1 remaining element
 TEST_CASE("copy d2d contiguous kernel remainder", "[copy][d2d][contiguous][remainder]")
 {
@@ -248,7 +248,7 @@ TEST_CASE("copy d2d contiguous kernel remainder", "[copy][d2d][contiguous][remai
   {
     for (int j = 0; j < 128; ++j)
     {
-      h_src[i].data[j] = static_cast<char>((i * 128 + j) % 128);
+      h_src[i].data[j] = static_cast<char>(((i * 128) + j) % 128);
     }
   }
 
@@ -258,7 +258,7 @@ TEST_CASE("copy d2d contiguous kernel remainder", "[copy][d2d][contiguous][remai
   {
     for (int j = 0; j < N; ++j)
     {
-      h_expected[static_cast<std::size_t>(i) * Ld + j] = h_src[static_cast<std::size_t>(i) * Ld + j];
+      h_expected[(static_cast<std::size_t>(i) * Ld) + j] = h_src[(static_cast<std::size_t>(i) * Ld) + j];
     }
   }
 
@@ -285,7 +285,7 @@ static_assert(alignof(overaligned_int) >= sizeof(overaligned_int));
 
 // src: (2,4096):(4096,1), layout_right, sizeof(T) = 16, alignof(T) = 16
 // dst: (2,4096):(4096,1), layout_right
-// alignof(T) <= __max_vector_access → __are_vectorizable_copy is true
+// alignof(T) <= __max_memory_access_width → __are_vectorizable_copy is true
 // inner_extent_bytes = 4096 * 16 = 64KB >= __bytes_in_flight → path (2a)
 // 2D with outer dim > 1 → tile_size != tensor_size → bypasses DeviceTransform path (1)
 TEST_CASE("copy d2d overaligned type vectorized", "[copy][d2d][overaligned]")
@@ -489,7 +489,7 @@ TEST_CASE("copy d2d large count > INT_MAX", "[copy][d2d][large][.]")
 
   size_t free_mem  = 0;
   size_t total_mem = 0;
-  cudaMemGetInfo(&free_mem, &total_mem);
+  REQUIRE(cudaSuccess == cudaMemGetInfo(&free_mem, &total_mem));
   if (free_mem < required + (size_t{256} << 20))
   {
     SKIP("Not enough GPU memory (" << (free_mem >> 20) << " MB free, need ~" << (required >> 20) << " MB)");
@@ -525,7 +525,7 @@ TEST_CASE("copy d2d contiguous kernel outer size > max grid y", "[copy][d2d][con
 
   size_t free_mem  = 0;
   size_t total_mem = 0;
-  cudaMemGetInfo(&free_mem, &total_mem);
+  REQUIRE(cudaSuccess == cudaMemGetInfo(&free_mem, &total_mem));
   if (free_mem < required + (size_t{256} << 20))
   {
     SKIP("Not enough GPU memory (" << (free_mem >> 20) << " MB free, need ~" << (required >> 20) << " MB)");
@@ -548,5 +548,5 @@ TEST_CASE("copy d2d contiguous kernel outer size > max grid y", "[copy][d2d][con
 
   REQUIRE(d_dst[0] == static_cast<char>(0x42));
   REQUIRE(d_dst[size_t{M - 1} * N] == static_cast<char>(0x42));
-  REQUIRE(d_dst[size_t{M} * N - 1] == static_cast<char>(0x42));
+  REQUIRE(d_dst[(size_t{M} * N) - 1] == static_cast<char>(0x42));
 }

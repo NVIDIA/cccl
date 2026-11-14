@@ -119,6 +119,14 @@ private:
   static constexpr auto store_algorithm = agent_policy.store_algorithm;
   static constexpr auto scan_algorithm  = agent_policy.scan_algorithm;
 
+  // The block-wide scan requires the items in a blocked arrangement
+  static_assert(load_algorithm != BLOCK_LOAD_STRIPED,
+                "SegmentedScanBlockPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since the scan requires a "
+                "blocked arrangement");
+  static_assert(store_algorithm != BLOCK_STORE_STRIPED,
+                "SegmentedScanBlockPolicy: store_algorithm must not be BLOCK_STORE_STRIPED, since the scan produces a "
+                "blocked arrangement");
+
   using block_load_t  = BlockLoad<AccumT, threads_per_block, items_per_thread, load_algorithm>;
   using block_store_t = BlockStore<AccumT, threads_per_block, items_per_thread, store_algorithm>;
   using block_scan_t  = BlockScan<AccumT, threads_per_block, scan_algorithm>;
@@ -162,7 +170,7 @@ private:
     _multiple_segment_algorithms_storage_t reused;
   };
 
-  using _TempStorage =
+  using _TempStorage _CCCL_NODEBUG =
     ::cuda::std::conditional_t<multi_segment_enabled, _multi_segment_temp_storage_t, _single_segment_temp_storage_t>;
 
   _TempStorage& temp_storage; ///< Reference to temp_storage
@@ -179,7 +187,7 @@ public:
   // Constructor
   //---------------------------------------------------------------------
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE agent_segmented_scan(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE agent_segmented_scan(
     TempStorage& temp_storage, InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, InitValueT initial_value)
       : temp_storage(temp_storage.Alias())
       , d_in(d_in)
@@ -199,7 +207,7 @@ public:
   //! @param output_begin_idx
   //!  Index of start of the segment's prefix scan result in the output array
   //!
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   scan_one_segment(OffsetT input_begin_idx, OffsetT input_end_idx, OffsetT output_begin_idx)
   {
     const OffsetT segment_items = ::cuda::std::max(input_end_idx, input_begin_idx) - input_begin_idx;
@@ -271,7 +279,7 @@ public:
             typename OutputBeginOffsetIteratorT,
             ::cuda::std::size_t NumSegments                  = max_segments,
             ::cuda::std::enable_if_t<(NumSegments > 1), int> = 0>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_segments(
     InputBeginOffsetIteratorT input_begin_idx_it,
     InputEndOffsetIteratorT input_end_idx_it,
     OutputBeginOffsetIteratorT output_begin_idx_it,
@@ -310,7 +318,7 @@ public:
 
       for (unsigned chunk_id = 0; chunk_id < n_chunks; ++chunk_id)
       {
-        const unsigned work_id = chunk_id * threads_per_block + tid;
+        const unsigned work_id = (chunk_id * threads_per_block) + tid;
 
         // TODO: use BlockLoad to load
         const OffsetT input_segment_begin = (work_id < n_segments) ? input_begin_idx_it[work_id] : 0;
@@ -379,7 +387,8 @@ public:
 |   I64 |         I32 |    2^27      |       57 |              18 |       warp |    784x | 86.95% |
          */
         // searcher locates segment_id using branchless linear/binary search in cum_sizes
-        const auto searcher = make_statically_bound_bag_of_segments<NumSegments>(cum_sizes);
+        const auto searcher =
+          _CUB::detail::segmented_scan::make_statically_bound_bag_of_segments<NumSegments>(cum_sizes);
         scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_block);
       }
       else
@@ -407,7 +416,7 @@ public:
 
 private:
   template <typename SearcherT, typename InputBeginOffsetIteratorT, typename OutputBeginOffsetIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments_chunked(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_segments_chunked(
     const SearcherT& searcher,
     InputBeginOffsetIteratorT input_begin_idx_it,
     OutputBeginOffsetIteratorT output_begin_idx_it,
@@ -539,7 +548,7 @@ private:
             typename ScanOpTy,
             bool IsInclusive = is_inclusive,
             bool HasInit     = has_init>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void scan_first_tile(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_first_tile(
     ScannerT& scanner,
     ItemTy (&items)[items_per_thread],
     InitValueTy init_value,
@@ -548,7 +557,7 @@ private:
   {
     if constexpr (HasInit)
     {
-      const ItemTy converted_init_value = convert_initial_value<ItemTy>(init_value);
+      const ItemTy converted_init_value = _CUB::detail::segmented_scan::convert_initial_value<ItemTy>(init_value);
       if constexpr (IsInclusive)
       {
         scanner.InclusiveScan(items, items, converted_init_value, scan_op, block_aggregate);
@@ -567,7 +576,7 @@ private:
   }
 
   template <typename ScannerT, typename ItemTy, typename ScanOpTy, typename PrefixCallback, bool IsInclusive = is_inclusive>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   scan_later_tile(ScannerT& scanner, ItemTy (&items)[items_per_thread], ScanOpTy scan_op, PrefixCallback& prefix_op)
   {
     if constexpr (IsInclusive)
@@ -596,7 +605,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_scan_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
+__launch_bounds__(_CUB::detail::current_policy<PolicySelector>().block.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void device_segmented_scan_kernel(
     const InputIteratorT d_in,
     const OutputIteratorT d_out,
@@ -608,13 +617,13 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
     const InitValueT init_value,
     const int num_segments_per_worker)
 {
-  static constexpr auto policy = current_policy<PolicySelector>();
+  static constexpr auto policy = _CUB::detail::current_policy<PolicySelector>();
   static_assert(policy.block.load_modifier != CacheLoadModifier::LOAD_LDG,
                 "The memory consistency model does not apply to texture accesses");
 
   struct policy_getter
   {
-    constexpr auto operator()() const
+    _CCCL_HOST_DEVICE_API constexpr auto operator()() const
     {
       return policy;
     }

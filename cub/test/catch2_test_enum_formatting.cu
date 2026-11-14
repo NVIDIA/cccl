@@ -84,6 +84,7 @@ void do_test(const Tester& tester)
     tester(cub::BlockLoadAlgorithm::BLOCK_LOAD_TRANSPOSE, "BLOCK_LOAD_TRANSPOSE");
     tester(cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE, "BLOCK_LOAD_WARP_TRANSPOSE");
     tester(cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED, "BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED");
+    tester(cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED_VECTORIZED, "BLOCK_LOAD_STRIPED_VECTORIZED");
 
     tester(cub::BlockLoadAlgorithm(100), "<unknown BlockLoadAlgorithm>");
   }

@@ -122,8 +122,8 @@ C2H_TEST("cuco load factor conversion at integer boundaries", "[capacity]")
   // converting it, including when the exact integer result would be representable.
   REQUIRE_THROWS_AS((cudax::cuco::make_valid_capacity<linear_1, 1>(i64_max / 2, 0.5)), std::logic_error);
   REQUIRE_THROWS_AS((cudax::cuco::make_valid_capacity<linear_1, 1>(u64_max / 2, 0.5)), std::logic_error);
-  REQUIRE_THROWS_AS((cudax::cuco::make_valid_capacity<linear_1, 1>(i64_max / 2 + 1, 0.5)), std::logic_error);
-  REQUIRE_THROWS_AS((cudax::cuco::make_valid_capacity<linear_1, 1>(u64_max / 2 + 1, 0.5)), std::logic_error);
+  REQUIRE_THROWS_AS((cudax::cuco::make_valid_capacity<linear_1, 1>((i64_max / 2) + 1, 0.5)), std::logic_error);
+  REQUIRE_THROWS_AS((cudax::cuco::make_valid_capacity<linear_1, 1>((u64_max / 2) + 1, 0.5)), std::logic_error);
   REQUIRE_THROWS_AS((cudax::cuco::make_valid_capacity<linear_1, 1>(1, cuda::std::numeric_limits<double>::min())),
                     std::logic_error);
   REQUIRE_THROWS_AS((cudax::cuco::make_valid_capacity<linear_1, 1>(1, cuda::std::numeric_limits<double>::quiet_NaN())),

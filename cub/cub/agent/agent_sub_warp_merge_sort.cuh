@@ -103,7 +103,7 @@ class AgentSubWarpSort
   struct BinaryOpT
   {
     template <typename T>
-    _CCCL_DEVICE bool operator()(T lhs, T rhs) const noexcept
+    _CCCL_DEVICE_API bool operator()(T lhs, T rhs) const noexcept
     {
       if constexpr (IsDescending)
       {
@@ -117,7 +117,7 @@ class AgentSubWarpSort
     }
 
 #if _CCCL_HAS_NVFP16()
-    _CCCL_DEVICE bool operator()(__half lhs, __half rhs) const noexcept
+    _CCCL_DEVICE_API bool operator()(__half lhs, __half rhs) const noexcept
     {
       // Need to explicitly cast to float for SM <= 52.
       if constexpr (IsDescending)
@@ -133,7 +133,7 @@ class AgentSubWarpSort
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
-    _CCCL_DEVICE bool operator()(__nv_bfloat16 lhs, __nv_bfloat16 rhs) const noexcept
+    _CCCL_DEVICE_API bool operator()(__nv_bfloat16 lhs, __nv_bfloat16 rhs) const noexcept
     {
       // Need to explicitly cast to float for SM < 80.
       if constexpr (IsDescending)
@@ -152,7 +152,7 @@ class AgentSubWarpSort
   };
 
 #if _CCCL_HAS_NVFP16()
-  _CCCL_DEVICE static bool equal(__half lhs, __half rhs)
+  _CCCL_DEVICE_API static bool equal(__half lhs, __half rhs)
   {
     // Need to explicitly cast to float for SM <= 52.
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return __heq(lhs, rhs);), (return __half2float(lhs) == __half2float(rhs);));
@@ -160,7 +160,7 @@ class AgentSubWarpSort
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
-  _CCCL_DEVICE static bool equal(__nv_bfloat16 lhs, __nv_bfloat16 rhs)
+  _CCCL_DEVICE_API static bool equal(__nv_bfloat16 lhs, __nv_bfloat16 rhs)
   {
     // Need to explicitly cast to float for SM < 80.
     NV_IF_ELSE_TARGET(
@@ -169,13 +169,23 @@ class AgentSubWarpSort
 #endif // _CCCL_HAS_NVBF16()
 
   template <typename T>
-  _CCCL_DEVICE static bool equal(T lhs, T rhs)
+  _CCCL_DEVICE_API static bool equal(T lhs, T rhs)
   {
     return lhs == rhs;
   }
 
 public:
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, cub::NullType>;
+
+  static_assert(PolicyT::WARP_THREADS <= detail::warp_threads,
+                "SegmentedSortSubWarpMergeSortPolicy: threads_per_warp must not exceed the warp size (32)");
+  // WarpMergeSort expects and produces a blocked arrangement of items
+  static_assert(PolicyT::LOAD_ALGORITHM != WARP_LOAD_STRIPED,
+                "SegmentedSortSubWarpMergeSortPolicy: load_algorithm must not be WARP_LOAD_STRIPED, since the "
+                "sub-warp merge sort requires a blocked arrangement");
+  static_assert(PolicyT::STORE_ALGORITHM != WARP_STORE_STRIPED,
+                "SegmentedSortSubWarpMergeSortPolicy: store_algorithm must not be WARP_STORE_STRIPED, since the "
+                "sub-warp merge sort produces a blocked arrangement");
 
   using WarpMergeSortT = WarpMergeSort<KeyT, PolicyT::ITEMS_PER_THREAD, PolicyT::WARP_THREADS, ValueT>;
 
@@ -205,11 +215,11 @@ public:
 
   _TempStorage& storage;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE explicit AgentSubWarpSort(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE explicit AgentSubWarpSort(TempStorage& temp_storage)
       : storage(temp_storage.Alias())
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessSegment(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ProcessSegment(
     int segment_size, KeysLoadItT keys_input, KeyT* keys_output, ItemsLoadItT values_input, ValueT* values_output)
   {
     WarpMergeSortT warp_merge_sort(storage.sort);
@@ -279,7 +289,7 @@ private:
    * Only the first thread of a virtual warp is used for soring.
    */
   template <typename CompareOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ShortCircuit(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ShortCircuit(
     unsigned int linear_tid,
     OffsetT segment_size,
     KeysLoadItT keys_input,

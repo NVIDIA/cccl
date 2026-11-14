@@ -17,15 +17,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/config.h>
-
-#include <thrust/detail/config/memory_resource.h>
 #include <thrust/mr/polymorphic_adaptor.h>
 #include <thrust/mr/validator.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__memory/pointer_traits.h>
-#include <cuda/std/limits>
+#include <cuda/std/__type_traits/integral_constant.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace mr
@@ -91,10 +90,11 @@ public:
    */
   _CCCL_EXEC_CHECK_DISABLE
   template <class SizeType = size_type>
-  _CCCL_HOST_DEVICE size_type max_size() const
+  _CCCL_HOST_DEVICE_API size_type max_size() const
   {
     // Workaround for cudafe++ < 13.1 + gcc < 13 replacing `numeric_limits<size_t>` with
     // `numeric_limits<conditional<is_void_v<void>, __common_type2_imp<uint64_t, uint64_t>::type, void>::type>`
+    // NOLINTNEXTLINE(readability-redundant-parentheses): Prevent max macro expansion.
     return (::cuda::std::numeric_limits<SizeType>::max)() / sizeof(T);
   }
 
@@ -102,13 +102,13 @@ public:
    *
    *  \param resource the resource to be used to allocate raw memory.
    */
-  _CCCL_HOST_DEVICE allocator(MR* resource)
+  _CCCL_HOST_DEVICE_API allocator(MR* resource)
       : mem_res(resource)
   {}
 
   /*! Copy constructor. Copies the resource pointer. */
   template <typename U>
-  _CCCL_HOST_DEVICE allocator(const allocator<U, MR>& other)
+  _CCCL_HOST_DEVICE_API allocator(const allocator<U, MR>& other)
       : mem_res(other.resource())
   {}
 
@@ -117,7 +117,7 @@ public:
    *  \param n number of elements to allocate
    *  \return a pointer to the newly allocated storage.
    */
-  [[nodiscard]] _CCCL_HOST pointer allocate(size_type n)
+  [[nodiscard]] _CCCL_HOST_API pointer allocate(size_type n)
   {
     return static_cast<pointer>(mem_res->do_allocate(n * sizeof(T), alignof(T)));
   }
@@ -127,7 +127,7 @@ public:
    *  \param p pointer returned by a previous call to \p allocate
    *  \param n number of elements, passed as an argument to the \p allocate call that produced \p p
    */
-  _CCCL_HOST void deallocate(pointer p, size_type n) noexcept // NOLINT(bugprone-exception-escape)
+  _CCCL_HOST_API void deallocate(pointer p, size_type n) noexcept // NOLINT(bugprone-exception-escape)
   {
     return mem_res->do_deallocate(p, n * sizeof(T), alignof(T));
   }
@@ -136,7 +136,7 @@ public:
    *
    *  \return the memory resource used by this allocator.
    */
-  _CCCL_HOST_DEVICE MR* resource() const
+  _CCCL_HOST_DEVICE_API MR* resource() const
   {
     return mem_res;
   }
@@ -147,14 +147,14 @@ private:
 
 /*! Compares the allocators for equality by comparing the underlying memory resources. */
 template <typename T, typename MR>
-_CCCL_HOST_DEVICE bool operator==(const allocator<T, MR>& lhs, const allocator<T, MR>& rhs) noexcept
+_CCCL_HOST_DEVICE_API bool operator==(const allocator<T, MR>& lhs, const allocator<T, MR>& rhs) noexcept
 {
   return *lhs.resource() == *rhs.resource();
 }
 
 /*! Compares the allocators for inequality by comparing the underlying memory resources. */
 template <typename T, typename MR>
-_CCCL_HOST_DEVICE bool operator!=(const allocator<T, MR>& lhs, const allocator<T, MR>& rhs) noexcept
+_CCCL_HOST_DEVICE_API bool operator!=(const allocator<T, MR>& lhs, const allocator<T, MR>& rhs) noexcept
 {
   return !(lhs == rhs);
 }
@@ -191,25 +191,25 @@ public:
    *      \p allocator base subobject with that resource.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE stateless_resource_allocator()
+  _CCCL_HOST_DEVICE_API stateless_resource_allocator()
       : base(get_global_resource<Upstream>())
   {}
 
   /*! Copy constructor. Copies the memory resource pointer. */
-  _CCCL_HOST_DEVICE stateless_resource_allocator(const stateless_resource_allocator& other)
+  _CCCL_HOST_DEVICE_API stateless_resource_allocator(const stateless_resource_allocator& other)
       : base(other)
   {}
 
   /*! Conversion constructor from an allocator of a different type. Copies the memory resource pointer. */
   template <typename U>
-  _CCCL_HOST_DEVICE stateless_resource_allocator(const stateless_resource_allocator<U, Upstream>& other)
+  _CCCL_HOST_DEVICE_API stateless_resource_allocator(const stateless_resource_allocator<U, Upstream>& other)
       : base(other)
   {}
 
-  stateless_resource_allocator& operator=(const stateless_resource_allocator&) = default;
+  _CCCL_HIDE_FROM_ABI stateless_resource_allocator& operator=(const stateless_resource_allocator&) = default;
 
   /*! Destructor. */
-  ~stateless_resource_allocator() = default;
+  _CCCL_HIDE_FROM_ABI ~stateless_resource_allocator() = default;
 };
 
 /*! \} // allocators

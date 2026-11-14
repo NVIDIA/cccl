@@ -196,8 +196,8 @@ using ::intmax_t;
 using ::uintmax_t;
 
 #if _CCCL_HAS_INT128()
-using __cccl_intmax_t  = __int128_t;
-using __cccl_uintmax_t = __uint128_t;
+using __cccl_intmax_t _CCCL_NODEBUG  = __int128_t;
+using __cccl_uintmax_t _CCCL_NODEBUG = __uint128_t;
 #else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
 using __cccl_intmax_t  = long long;
 using __cccl_uintmax_t = unsigned long long;

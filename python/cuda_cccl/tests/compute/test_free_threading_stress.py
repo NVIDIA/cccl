@@ -68,13 +68,6 @@ def _require_free_threaded_python() -> None:
     _assert_gil_disabled("at free-threaded test start")
 
 
-def _require_serialization_backend() -> None:
-    from cuda.compute._build_info import USING_V2
-
-    if USING_V2:
-        pytest.skip("serialization is not supported by the C Parallel v2 backend")
-
-
 @pytest.fixture
 def compute_module():
     _require_free_threaded_python()
@@ -781,7 +774,6 @@ def test_thread_local_algorithm_objects_share_build_result(compute_module, case)
 @pytest.mark.parametrize("case", SHARED_ALGORITHM_CASES, ids=str)
 def test_concurrent_deserialize_and_execute(compute_module, case):
     cc = compute_module
-    _require_serialization_backend()
 
     source_algorithm = case.make_shared(cc)
     blob = cc.serialize(source_algorithm)
@@ -831,7 +823,6 @@ def test_concurrent_deserialize_and_execute(compute_module, case):
 @pytest.mark.no_numba
 def test_free_threaded_aot_factory_shares_compile_and_first_load(compute_module):
     cc = compute_module
-    _require_serialization_backend()
 
     device = Device()
     target_cc = tuple(device.compute_capability)
@@ -878,7 +869,6 @@ def test_free_threaded_aot_factory_shares_compile_and_first_load(compute_module)
 @pytest.mark.no_numba
 def test_free_threaded_aot_blob_concurrent_deserialize_and_load(compute_module):
     cc = compute_module
-    _require_serialization_backend()
 
     device = Device()
     target_cc = tuple(device.compute_capability)
@@ -939,7 +929,6 @@ def test_free_threaded_multi_cc_blob_concurrent_deserialize_and_execute(
     entry for the other arch must stay lazy in every thread.
     """
     cc = compute_module
-    _require_serialization_backend()
 
     device = Device()
     cc_major, cc_minor = device.compute_capability
@@ -1880,8 +1869,9 @@ def test_distinct_op_cold_build_storm(jit_compute_module):
     _cache_single_flight elects a separate builder per thread and the backend
     compiles run in parallel rather than coalescing. This is the test that
     exercises whether numba-cuda-mlir's compile pipeline -- MLIR contexts,
-    lowering registries, the NVVM path -- tolerates concurrent entry, and
-    whether _compile_op_impl's non-coalescing lru_cache is safe under it.
+    lowering registries, the NVVM path -- tolerates concurrent entry: the
+    compile_op memo coalesces only same-key misses, so distinct keys compile
+    concurrently.
     """
     cc = jit_compute_module
 

@@ -105,9 +105,9 @@ struct BlockReduceRaking
   unsigned int linear_tid;
 
   /// Constructor
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduceRaking(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockReduceRaking(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
@@ -121,7 +121,7 @@ struct BlockReduceRaking
    *   Number of valid elements (may be less than BLOCK_THREADS)
    */
   template <bool IsFullTile, typename ReductionOp, int ITERATION>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T RakingReduction(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T RakingReduction(
     ReductionOp reduction_op, T* raking_segment, T partial, int num_valid, constant_t<ITERATION> /*iteration*/)
   {
     // Update partial if addend is in range
@@ -144,7 +144,7 @@ struct BlockReduceRaking
    *   Number of valid elements (may be less than BLOCK_THREADS)
    */
   template <bool IsFullTile, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T RakingReduction(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T RakingReduction(
     ReductionOp /*reduction_op*/,
     T* /*raking_segment*/,
     T partial,
@@ -169,7 +169,7 @@ struct BlockReduceRaking
    *   Binary reduction operator
    */
   template <bool IsFullTile, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T partial, int num_valid, ReductionOp reduction_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(T partial, int num_valid, ReductionOp reduction_op)
   {
     if (WARP_SYNCHRONOUS)
     {
@@ -193,7 +193,7 @@ struct BlockReduceRaking
         partial = RakingReduction<IsFullTile>(reduction_op, raking_segment, partial, num_valid, constant_v<1>);
 
         const int valid_raking_threads =
-          (IsFullTile) ? RAKING_THREADS : (num_valid + SEGMENT_LENGTH - 1) / SEGMENT_LENGTH;
+          IsFullTile ? RAKING_THREADS : (num_valid + SEGMENT_LENGTH - 1) / SEGMENT_LENGTH;
 
         // sync before re-using shmem (warp_storage/raking_grid are aliased)
         static_assert(RAKING_THREADS <= warp_threads, "RAKING_THREADS must be <= warp size.");
@@ -220,7 +220,7 @@ struct BlockReduceRaking
    *   Number of valid elements (may be less than BLOCK_THREADS)
    */
   template <bool IsFullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T partial, int num_valid)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(T partial, int num_valid)
   {
     const ::cuda::std::plus<> reduction_op;
 

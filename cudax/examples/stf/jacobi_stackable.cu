@@ -53,7 +53,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
       A(i, j) = (i == j) ? 1.0 : -1.0;
     };
 
-  cudaEvent_t start, stop;
+  cudaEvent_t start;
+  cudaEvent_t stop;
 
   cuda_safe_call(cudaEventCreate(&start));
   cuda_safe_call(cudaEventCreate(&stop));
@@ -94,7 +95,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   float elapsedTime;
   // finalize() does not wait for work recorded in a stream returned by fence().
   cuda_safe_call(cudaEventSynchronize(stop));
-  cudaEventElapsedTime(&elapsedTime, start, stop);
+  cuda_safe_call(cudaEventElapsedTime(&elapsedTime, start, stop));
   printf("Elapsed time: %f ms\n", elapsedTime);
 #endif
 }

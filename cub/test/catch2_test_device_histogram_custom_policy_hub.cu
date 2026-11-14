@@ -62,33 +62,37 @@ CUB_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][devi
     DispatchHistogram<num_channels, num_active_channels, sample_t*, counter_t, level_t, offset_t, policy_hub_t>;
 
   size_t temp_size = 0;
-  dispatch_t::DispatchEven(
-    nullptr,
-    temp_size,
-    thrust::raw_pointer_cast(d_samples.data()),
-    d_histograms,
-    num_levels,
-    lower_level,
-    upper_level,
-    num_row_items,
-    num_rows,
-    row_stride_samples,
-    /* stream */ nullptr,
-    cuda::std::true_type{});
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::DispatchEven(
+      nullptr,
+      temp_size,
+      thrust::raw_pointer_cast(d_samples.data()),
+      d_histograms,
+      num_levels,
+      lower_level,
+      upper_level,
+      num_row_items,
+      num_rows,
+      row_stride_samples,
+      /* stream */ nullptr,
+      cuda::std::true_type{}));
   c2h::device_vector<std::uint8_t> temp_storage(temp_size, thrust::no_init);
-  dispatch_t::DispatchEven(
-    thrust::raw_pointer_cast(temp_storage.data()),
-    temp_size,
-    thrust::raw_pointer_cast(d_samples.data()),
-    d_histograms,
-    num_levels,
-    lower_level,
-    upper_level,
-    num_row_items,
-    num_rows,
-    row_stride_samples,
-    /* stream */ nullptr,
-    cuda::std::true_type{});
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::DispatchEven(
+      thrust::raw_pointer_cast(temp_storage.data()),
+      temp_size,
+      thrust::raw_pointer_cast(d_samples.data()),
+      d_histograms,
+      num_levels,
+      lower_level,
+      upper_level,
+      num_row_items,
+      num_rows,
+      row_stride_samples,
+      /* stream */ nullptr,
+      cuda::std::true_type{}));
 
   c2h::host_vector<counter_t> expected_histogram(num_bins, 0);
   for (const auto sample : h_samples)

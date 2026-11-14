@@ -113,11 +113,12 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  *     implicit `fpmp2(FpType)` ctor; using a __ffloat literal
  *     whose `.lo()` happens to be zero -- e.g. for layout
  *     consistency -- works just as well, the `.lo()` is simply
- *     ignored in this phase). The leading M iterations run in
+ *     ignored in this phase). The leading M - 1 steps run in
  *     pure FpType arithmetic:
- *         v_f = v_f * x.hi() + c[k].hi()
- *     using the "op" form r = a*b + c (no fma/mad), matching the
- *     pattern used by the hand-written math kernels (e.g. erfc).
+ *         v_f = fma(v_f, x.hi(), c[k].hi())
+ *     with an explicit fma: nvcc contracts a*b + c by default and a
+ *     host compiler may or may not, so the plain form could round
+ *     differently on the host and the device.
  *
  *   - The remaining N - M LOWER-degree coefficients
  *         c[N-M-1], c[N-M-2], ..., c[0]
@@ -125,8 +126,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  *     transition step
  *         v = v_f * x.hi() + c[N-M-1]
  *     mirrors the float*float + ff layout used in `__fpmp2_erfc`
- *     (the float product gets promoted to ff via the mixed-arithmetic
- *     operator, then the remaining iterations are plain ff Horner).
+ *     (the mixed-arithmetic operator adds the float product to the
+ *     pair with the single-limb kernel, then the remaining iterations
+ *     are plain ff Horner). The product is formed by
+ *     `__fpmp_mul_rn_nocontract`, since GCC would otherwise fuse it
+ *     into that kernel's TwoSum.
  *
  * Special cases:
  *   - M == 0     : pure ff Horner (no FpType phase).
@@ -149,7 +153,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  *   met    : fpmp arithmetic accuracy level (deduced from arguments).
  *********************************************************************/
 template <int _Mp, int _Np, typename _FpType, fpmp2_accuracy _TypeAcc>
-_CCCL_HOST_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 __fpmp_poly_horner_mixed(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc> (&__c)[_Np]) noexcept
 {
   static_assert(_Np >= 2, "poly_horner_mixed requires at least 2 coefficients (degree >= 1)");
@@ -171,13 +175,13 @@ __fpmp_poly_horner_mixed(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpTyp
   }
   else
   {
-    // FpType phase: M iterations consuming c[N-1] ... c[N-M].
+    // FpType phase: M - 1 steps consuming c[N-1] ... c[N-M].
     const _FpType __xh = __x.hi();
     _FpType __v_f      = __c[_Np - 1].hi();
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __k = _Np - 2; __k >= _Np - _Mp; --__k)
     {
-      __v_f = __v_f * __xh + __c[__k].hi();
+      __v_f = ::cuda::__fpmp_fma_rn(__v_f, __xh, __c[__k].hi());
     }
 
     if constexpr (_Mp == _Np)
@@ -188,9 +192,9 @@ __fpmp_poly_horner_mixed(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpTyp
     else
     {
       // Transition step: (float * float) + ff -> ff
-      // (the mixed-type operator+ promotes the FpType product
-      // to __ff_t with .lo() == 0 before adding c[N-M-1].)
-      __ff_t __v = __v_f * __xh + __c[_Np - _Mp - 1];
+      // (the mixed-type operator+ adds the FpType product to
+      // c[N-M-1] with the single-limb kernel.)
+      __ff_t __v = ::cuda::__fpmp_mul_rn_nocontract(__v_f, __xh) + __c[_Np - _Mp - 1];
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int __k = _Np - _Mp - 2; __k >= 0; --__k)
       {
@@ -262,7 +266,7 @@ __fpmp_poly_horner_mixed(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpTyp
  *   met    : fpmp arithmetic accuracy level (deduced from arguments)
  *********************************************************************/
 template <int _Mp = 0, int _Np, typename _FpType, fpmp2_accuracy _TypeAcc>
-_CCCL_HOST_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 __fpmp_poly_horner_comp(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc> (&__c)[_Np]) noexcept
 {
   static_assert(_Np >= 2, "poly_horner_comp requires at least 2 coefficients (degree >= 1)");
@@ -279,7 +283,7 @@ __fpmp_poly_horner_comp(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __k = _Np - 2; __k >= _Np - _Mp; --__k)
     {
-      __acc = __acc * __xh + __c[__k].hi();
+      __acc = ::cuda::__fpmp_fma_rn(__acc, __xh, __c[__k].hi());
     }
   }
 
@@ -388,7 +392,7 @@ enum class __fpmp_poly_method
  *   met      : fpmp arithmetic accuracy level (deduced).
  *********************************************************************/
 template <__fpmp_poly_method _Strategy, int _Mp = 0, int _Np, typename _FpType, fpmp2_accuracy _TypeAcc>
-_CCCL_HOST_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 __fpmp_poly_eval(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc> (&__c)[_Np]) noexcept
 {
   if constexpr (_Strategy == __fpmp_poly_method::horner_mixed)

@@ -341,7 +341,7 @@ void TestAlgorithmSpecialisation()
 
   enum class timer_id : uint32_t
   {
-    TIMER_SIZE_BEGIN = 0,
+    TIMER_SIZE_BEGIN,
     TIMER_SIZE_END,
     TIMER_DECODE_BEGIN,
     TIMER_DECODE_END,
@@ -350,7 +350,9 @@ void TestAlgorithmSpecialisation()
 
   // Get temporary storage requirements for the scan (for computing offsets for the per-block
   // run-length decoded items)
-  cub::DeviceScan::InclusiveSum(nullptr, temp_storage_bytes, d_decoded_sizes, d_decoded_offsets, num_blocks);
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceScan::InclusiveSum(nullptr, temp_storage_bytes, d_decoded_sizes, d_decoded_offsets, num_blocks));
 
   // Allocate device memory
   CubDebugExit(cudaMalloc(&temp_storage, temp_storage_bytes));

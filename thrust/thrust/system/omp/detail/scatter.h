@@ -14,4 +14,4 @@
 #endif // no system header
 
 // omp system inherits scatter
-#include <thrust/system/cpp/detail/scatter.h>
+#include <thrust/system/cpp/detail/scatter.h> // IWYU pragma: export

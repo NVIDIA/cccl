@@ -23,8 +23,7 @@
 #include <cuda/std/limits>
 
 #if _CCCL_HOSTED()
-#  include <stdexcept>
-#  include <string>
+#  include <stdexcept> // IWYU pragma: keep
 #endif // _CCCL_HOSTED()
 
 THRUST_NAMESPACE_BEGIN
@@ -179,7 +178,7 @@ THRUST_NAMESPACE_END
 //! Thrust-style dispatch interfaces, that always deduce the size type from the arguments.
 #  define THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(status, call, count, arguments)    \
     _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)                           \
-    if _THRUST_INDEX_TYPE_DISPATCH_SELECT (std::int32_t, count)                  \
+    if _THRUST_INDEX_TYPE_DISPATCH_SELECT (std::uint32_t, count)                 \
       _THRUST_INDEX_TYPE_DISPATCH(std::uint32_t, status, call, count, arguments) \
     else                                                                         \
       _THRUST_INDEX_TYPE_DISPATCH(std::uint64_t, status, call, count, arguments)

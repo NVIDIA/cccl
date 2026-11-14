@@ -28,13 +28,13 @@ struct other_floating_point_type
 template <>
 struct other_floating_point_type<float>
 {
-  using type = double;
+  using type _CCCL_NODEBUG = double;
 };
 
 template <>
 struct other_floating_point_type<double>
 {
-  using type = float;
+  using type _CCCL_NODEBUG = float;
 };
 
 template <typename T>

@@ -29,9 +29,9 @@ template <typename... Ts>
 inline constexpr bool is_unrelated_systems<unrelated_systems<Ts...>> = true;
 
 template <typename... Ts>
-_CCCL_HOST_DEVICE auto minimum_system_impl(int) -> minimum_type<Ts...>;
+_CCCL_HOST_DEVICE_API auto minimum_system_impl(int) -> minimum_type<Ts...>;
 template <typename... Ts>
-_CCCL_HOST_DEVICE auto minimum_system_impl(long) -> unrelated_systems<Ts...>;
+_CCCL_HOST_DEVICE_API auto minimum_system_impl(long) -> unrelated_systems<Ts...>;
 
 // if a minimum system exists for these arguments, return it
 // otherwise, collect the arguments and report them as unrelated
