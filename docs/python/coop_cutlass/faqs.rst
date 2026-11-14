@@ -336,6 +336,18 @@ is rejected when it needs temporary storage. Synchronize application data
 before another thread reads it; the collective's scratch-reuse barrier does
 not replace synchronization required by earlier application writes.
 
+.. _coop-faq-payload-conversion:
+
+How do I change a payload's element type?
+-----------------------------------------
+
+Use ``ThreadData.from_fn(len(values), lambda i: values[i],
+dtype=cutlass.Float32)`` to create a converted payload. Supported NumPy
+scalar classes and ``np.dtype``
+selectors name the same element types as their CUTLASS equivalents.
+``int`` and ``float`` select ``Int32`` and ``Float32`` for runtime CuTe
+values.
+
 .. _coop-faq-storage-control-flow:
 
 Can I choose temporary storage inside a branch or loop?

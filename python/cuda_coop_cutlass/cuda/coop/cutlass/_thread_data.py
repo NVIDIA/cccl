@@ -408,7 +408,15 @@ def _coerce_payload_values_to_dtype(
     index and conversion source so a caller can locate the bad value.
     """
 
-    if not (_is_cutlass_dsl_dtype(dtype) or _is_ordinary_scalar_dtype(dtype)):
+    import numpy as np
+
+    from ._compiler._types import ALL_PROVIDER_TYPES, canonical_dsl_type
+
+    scalar_dtype = dtype.type if isinstance(dtype, np.dtype) else dtype
+    if not (
+        _is_cutlass_dsl_dtype(scalar_dtype)
+        or _is_ordinary_scalar_dtype(scalar_dtype)
+    ):
         return values
 
     coerced = []
@@ -417,10 +425,21 @@ def _coerce_payload_values_to_dtype(
             coerced.append(value)
             continue
         try:
-            if isinstance(value, dtype):
+            # Host constructors cannot consume traced CuTe values. Resolve
+            # their dtype spelling before casting a device expression.
+            cast_dtype = scalar_dtype
+            if not isinstance(value, (bool, int, float, complex, np.generic)):
+                resolved = canonical_dsl_type(dtype)
+                if resolved in ALL_PROVIDER_TYPES:
+                    cast_dtype = resolved
+            if _is_cutlass_dsl_dtype(cast_dtype) and isinstance(
+                value, np.generic
+            ):
+                value = value.item()
+            if type(value) is cast_dtype:
                 coerced.append(value)
             else:
-                coerced.append(dtype(value))
+                coerced.append(cast_dtype(value))
         except Exception as exc:
             raise TypeError(
                 f"{source} dtype cannot be applied to payload item {idx}"
@@ -829,7 +848,16 @@ class ThreadData:
                         "ThreadData.from_payload items_per_thread does not "
                         "match payload.items_per_thread"
                     )
+            from ._compiler._types import ALL_PROVIDER_TYPES, canonical_dsl_type
+
             if dtype is None or payload.dtype == dtype:
+                return payload
+            if (
+                payload.dtype is not None
+                and canonical_dsl_type(dtype) in ALL_PROVIDER_TYPES
+                and canonical_dsl_type(payload.dtype)
+                is canonical_dsl_type(dtype)
+            ):
                 return payload
             if payload.dtype is not None:
                 raise TypeError(
