@@ -412,6 +412,17 @@ signed 32-bit byte-count representation. Shared-storage alignment must be a
 power of two no greater than 1024 bytes. A capacity smaller than the required
 allocation raises a compilation error.
 
+.. _coop-faq-floating-prefix:
+
+How do floating min/max and scan seeds handle NaN and infinity?
+---------------------------------------------------------------
+
+``min`` and ``max`` reductions use ``fmin``/``fmax`` semantics: a numeric
+operand wins over NaN, and an all-NaN contributing prefix produces NaN.
+``valid_items`` excludes later members' values while those members still
+participate. The ``np.minimum`` and ``np.maximum`` operator aliases select
+these same reduction semantics.
+
 .. _coop-faq-compiler-setup:
 
 Why does import work but kernel compilation fail?
