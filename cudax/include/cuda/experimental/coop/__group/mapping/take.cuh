@@ -59,8 +59,7 @@ public:
     constexpr bool __curr_is_always_exhaustive = (__static_prev_nunits == _StaticUnitCount);
 
     using _MappingResult =
-      __mapping_result<_PrevMappingResult::static_group_count(),
-                       _StaticUnitCount,
+      __mapping_result<__uniform_static_unit_count<_PrevMappingResult::static_group_count(), _StaticUnitCount>,
                        _Exhaustive || (_PrevMappingResult::is_always_exhaustive() && __curr_is_always_exhaustive),
                        _PrevMappingResult::is_always_contiguous()>;
 
@@ -153,11 +152,10 @@ public:
   template <bool _Exhaustive, class _Unit, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto __do_map(const _Unit&, const _PrevMappingResult& __prev_mapping_result) const
   {
-    using _MappingResult =
-      __mapping_result<_PrevMappingResult::static_group_count(),
-                       ::cuda::std::dynamic_extent,
-                       _Exhaustive,
-                       _PrevMappingResult::is_always_contiguous()>;
+    using _MappingResult = __mapping_result<
+      __uniform_static_unit_count<_PrevMappingResult::static_group_count(), ::cuda::std::dynamic_extent>,
+      _Exhaustive,
+      _PrevMappingResult::is_always_contiguous()>;
 
     if constexpr (!_PrevMappingResult::is_always_exhaustive())
     {

@@ -17,25 +17,28 @@
 THRUST_NAMESPACE_BEGIN
 
 template <typename DerivedPolicy, typename InputIterator, typename EqualityComparable>
-_CCCL_HOST_DEVICE thrust::detail::it_difference_t<InputIterator>
-count(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+_CCCL_HOST_DEVICE_API thrust::detail::it_difference_t<InputIterator>
+count(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, // NOLINT(readability-redundant-declaration)
       InputIterator first,
       InputIterator last,
       const EqualityComparable& value);
 
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE thrust::detail::it_difference_t<InputIterator>
-count_if(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+_CCCL_HOST_DEVICE_API thrust::detail::it_difference_t<InputIterator>
+count_if(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, // NOLINT(readability-redundant-declaration)
          InputIterator first,
          InputIterator last,
          Predicate pred);
 
 template <typename InputIterator, typename EqualityComparable>
-thrust::detail::it_difference_t<InputIterator>
-count(InputIterator first, InputIterator last, const EqualityComparable& value);
+_CCCL_HOST_API thrust::detail::it_difference_t<InputIterator>
+count(InputIterator first, // NOLINT(readability-redundant-declaration)
+      InputIterator last,
+      const EqualityComparable& value);
 
 template <typename InputIterator, typename Predicate>
-thrust::detail::it_difference_t<InputIterator> count_if(InputIterator first, InputIterator last, Predicate pred);
+_CCCL_HOST_API thrust::detail::it_difference_t<InputIterator>
+count_if(InputIterator first, InputIterator last, Predicate pred); // NOLINT(readability-redundant-declaration)
 
 THRUST_NAMESPACE_END
 

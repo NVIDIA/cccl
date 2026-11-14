@@ -18,18 +18,18 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename RandomAccessIterator>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 sort(thrust::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last);
 
 template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 sort(thrust::execution_policy<DerivedPolicy>& exec,
      RandomAccessIterator first,
      RandomAccessIterator last,
      StrictWeakOrdering comp);
 
 template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
-_CCCL_HOST_DEVICE void sort_by_key(
+_CCCL_HOST_DEVICE_API void sort_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   RandomAccessIterator1 keys_first,
   RandomAccessIterator1 keys_last,
@@ -39,7 +39,7 @@ template <typename DerivedPolicy,
           typename RandomAccessIterator1,
           typename RandomAccessIterator2,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void sort_by_key(
+_CCCL_HOST_DEVICE_API void sort_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   RandomAccessIterator1 keys_first,
   RandomAccessIterator1 keys_last,
@@ -47,19 +47,19 @@ _CCCL_HOST_DEVICE void sort_by_key(
   StrictWeakOrdering comp);
 
 template <typename DerivedPolicy, typename RandomAccessIterator>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 stable_sort(thrust::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last);
 
 // XXX it is an error to call this function; it has no implementation
 template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void stable_sort(
+_CCCL_HOST_DEVICE_API void stable_sort(
   thrust::execution_policy<DerivedPolicy>& exec,
   RandomAccessIterator first,
   RandomAccessIterator last,
   StrictWeakOrdering comp);
 
 template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
-_CCCL_HOST_DEVICE void stable_sort_by_key(
+_CCCL_HOST_DEVICE_API void stable_sort_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   RandomAccessIterator1 keys_first,
   RandomAccessIterator1 keys_last,
@@ -70,7 +70,7 @@ template <typename DerivedPolicy,
           typename RandomAccessIterator1,
           typename RandomAccessIterator2,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void stable_sort_by_key(
+_CCCL_HOST_DEVICE_API void stable_sort_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   RandomAccessIterator1 keys_first,
   RandomAccessIterator1 keys_last,
@@ -78,19 +78,19 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
   StrictWeakOrdering comp);
 
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 is_sorted(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
 template <typename DerivedPolicy, typename ForwardIterator, typename Compare>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 is_sorted(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Compare comp);
 
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator
+_CCCL_HOST_DEVICE_API ForwardIterator
 is_sorted_until(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
 template <typename DerivedPolicy, typename ForwardIterator, typename Compare>
-_CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
+_CCCL_HOST_DEVICE_API ForwardIterator is_sorted_until(
   thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Compare comp);
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

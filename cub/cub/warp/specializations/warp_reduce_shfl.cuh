@@ -70,13 +70,13 @@ struct WarpReduceShfl
   using TempStorage = NullType;
 
   /// Lane index in logical warp
-  int lane_id = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
+  int lane_id = _CUB::detail::logical_lane_id<LogicalWarpThreads>();
 
   /// Logical warp index in 32-thread physical warp
-  int warp_id = CUB_NS_QUALIFIER::detail::logical_warp_id<LogicalWarpThreads>();
+  int warp_id = _CUB::detail::logical_warp_id<LogicalWarpThreads>();
 
   /// 32-thread physical warp member mask of logical warp
-  ::cuda::std::uint32_t member_mask = CUB_NS_QUALIFIER::WarpMask<LogicalWarpThreads>(warp_id);
+  ::cuda::std::uint32_t member_mask = _CUB::WarpMask<LogicalWarpThreads>(warp_id);
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpReduceShfl(TempStorage& /*temp_storage*/) {}
 
@@ -105,7 +105,7 @@ struct WarpReduceShfl
   {
     KeyValuePair<KeyT, ValueT> output;
 
-    KeyT other_key = CUB_NS_QUALIFIER::ShuffleDown<shuffle_threads>(input.key, offset, last_lane, member_mask);
+    KeyT other_key = _CUB::ShuffleDown<shuffle_threads>(input.key, offset, last_lane, member_mask);
 
     output.key   = input.key;
     output.value = ReduceStep(input.value, ::cuda::std::plus<>{}, last_lane, offset);
@@ -167,12 +167,12 @@ struct WarpReduceShfl
     {
       constexpr unsigned shfl_c_base = (warp_threads - shuffle_threads) << 8;
       const int shfl_c               = last_lane | shfl_c_base;
-      return CUB_NS_QUALIFIER::detail::shfl_down_op(input, reduction_op, offset, shfl_c, member_mask);
+      return _CUB::detail::shfl_down_op(input, reduction_op, offset, shfl_c, member_mask);
     }
     else
     {
       Tp output = input;
-      Tp tmp    = CUB_NS_QUALIFIER::ShuffleDown<shuffle_threads>(output, offset, last_lane, member_mask);
+      Tp tmp    = _CUB::ShuffleDown<shuffle_threads>(output, offset, last_lane, member_mask);
       // Perform reduction op if valid
       if (offset + lane_id <= last_lane)
       {
@@ -209,7 +209,7 @@ struct WarpReduceShfl
   Reduce(const T input, const int valid_items, ReductionOp reduction_op)
   {
     // Dispatch to more efficient intrinsics when applicable
-    [[maybe_unused]] const int last_lane = (AllValidLanes) ? LogicalWarpThreads - 1 : valid_items - 1;
+    [[maybe_unused]] const int last_lane = AllValidLanes ? LogicalWarpThreads - 1 : valid_items - 1;
 
     if constexpr (is_warp_vote_any_op<ReductionOp, T>)
     {
@@ -229,7 +229,7 @@ struct WarpReduceShfl
         {
           reduce_value = lane_id <= last_lane ? input : ::cuda::identity_element<ReductionOp, T>();
         }
-        if (const auto output = CUB_NS_QUALIFIER::detail::warp_redux(reduce_value, member_mask, reduction_op))
+        if (const auto output = _CUB::detail::warp_redux(reduce_value, member_mask, reduction_op))
         {
           return *output;
         }

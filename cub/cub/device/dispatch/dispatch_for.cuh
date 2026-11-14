@@ -66,7 +66,7 @@ invoke_dynamic_block_size(OffsetT num_items, OpT op, cudaStream_t stream, ForPol
     return error;
   }
 
-  if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+  if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
   {
     return error;
   }
@@ -101,7 +101,7 @@ invoke_static_block_size(OffsetT num_items, OpT op, cudaStream_t stream, ForPoli
     return error;
   }
 
-  if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+  if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
   {
     return error;
   }
@@ -120,23 +120,23 @@ dispatch(OffsetT num_items, OpT op, cudaStream_t stream, PolicySelector policy_s
   }
 
   ::cuda::compute_capability cc{};
-  if (const auto error = CubDebug(ptx_compute_cap(cc)))
+  if (const auto error = CubDebug(_CUB::detail::ptx_compute_cap(cc)))
   {
     return error;
   }
 
-  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+  return _CUB::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     constexpr ForPolicy active_policy = policy_getter();
 
-    detail::log_dispatch("DeviceFor", cc, active_policy);
+    _CUB::detail::log_dispatch("DeviceFor", cc, active_policy);
 
     if constexpr (active_policy.threads_per_block > 0)
     {
-      return invoke_static_block_size<PolicySelector>(num_items, op, stream, active_policy);
+      return _CUB::detail::for_each::invoke_static_block_size<PolicySelector>(num_items, op, stream, active_policy);
     }
     else
     {
-      return invoke_dynamic_block_size<PolicySelector>(num_items, op, stream, active_policy);
+      return _CUB::detail::for_each::invoke_dynamic_block_size<PolicySelector>(num_items, op, stream, active_policy);
     }
   });
 }

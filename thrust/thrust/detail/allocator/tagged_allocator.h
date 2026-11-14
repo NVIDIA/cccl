@@ -61,22 +61,22 @@ public:
     using other = tagged_allocator<U, Tag, Pointer>;
   }; // end rebind
 
-  tagged_allocator() = default;
+  _CCCL_HIDE_FROM_ABI tagged_allocator() = default;
 
-  tagged_allocator(const tagged_allocator&) = default;
+  _CCCL_HIDE_FROM_ABI tagged_allocator(const tagged_allocator&) = default;
 
   template <typename U, typename OtherPointer>
-  _CCCL_HOST_DEVICE tagged_allocator(const tagged_allocator<U, Tag, OtherPointer>&)
+  _CCCL_HOST_DEVICE_API tagged_allocator(const tagged_allocator<U, Tag, OtherPointer>&)
   {}
 
-  ~tagged_allocator() = default;
+  _CCCL_HIDE_FROM_ABI ~tagged_allocator() = default;
 
-  _CCCL_HOST_DEVICE pointer address(reference x) const
+  _CCCL_HOST_DEVICE_API pointer address(reference x) const
   {
     return &x;
   }
 
-  _CCCL_HOST_DEVICE const_pointer address(const_reference x) const
+  _CCCL_HOST_DEVICE_API const_pointer address(const_reference x) const
   {
     return &x;
   }
@@ -84,17 +84,17 @@ public:
   // Workaround for cudafe++ < 13.1 + gcc < 13 replacing `numeric_limits<size_t>` with
   // `numeric_limits<conditional<is_void_v<void>, __common_type2_imp<uint64_t, uint64_t>::type, void>::type>`
   template <class SizeType = size_type>
-  size_type max_size() const
+  _CCCL_HOST_API size_type max_size() const
   {
     return (::cuda::std::numeric_limits<SizeType>::max)() / sizeof(T);
   }
 
-  _CCCL_HOST_DEVICE friend bool operator==(const tagged_allocator&, const tagged_allocator&)
+  _CCCL_HOST_DEVICE_API friend bool operator==(const tagged_allocator&, const tagged_allocator&)
   {
     return true;
   }
 
-  _CCCL_HOST_DEVICE friend bool operator!=(const tagged_allocator&, const tagged_allocator&)
+  _CCCL_HOST_DEVICE_API friend bool operator!=(const tagged_allocator&, const tagged_allocator&)
   {
     return false;
   }

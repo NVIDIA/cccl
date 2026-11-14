@@ -269,7 +269,7 @@ struct AgentRadixSortDownsweep
   // Utility methods
   //---------------------------------------------------------------------
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE digit_extractor_t digit_extractor()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE digit_extractor_t digit_extractor()
   {
     return traits::template digit_extractor<fundamental_digit_extractor_t>(current_bit, num_bits, decomposer);
   }
@@ -278,7 +278,7 @@ struct AgentRadixSortDownsweep
    * Scatter ranked keys through shared memory, then to device-accessible memory
    */
   template <bool FullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterKeys(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterKeys(
     bit_ordered_type (&twiddled_keys)[ITEMS_PER_THREAD],
     OffsetT (&relative_bin_offsets)[ITEMS_PER_THREAD],
     int (&ranks)[ITEMS_PER_THREAD],
@@ -314,7 +314,7 @@ struct AgentRadixSortDownsweep
    * Scatter ranked values through shared memory, then to device-accessible memory
    */
   template <bool FullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterValues(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterValues(
     ValueT (&values)[ITEMS_PER_THREAD],
     OffsetT (&relative_bin_offsets)[ITEMS_PER_THREAD],
     int (&ranks)[ITEMS_PER_THREAD],
@@ -350,7 +350,7 @@ struct AgentRadixSortDownsweep
    * Truck along associated values
    */
   template <bool FullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void GatherScatterValues(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void GatherScatterValues(
     OffsetT (&relative_bin_offsets)[ITEMS_PER_THREAD],
     int (&ranks)[ITEMS_PER_THREAD],
     OffsetT block_offset,
@@ -364,7 +364,7 @@ struct AgentRadixSortDownsweep
     {
       if constexpr (LOAD_WARP_STRIPED)
       {
-        LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values);
+        _CUB::LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values);
       }
       else
       {
@@ -379,7 +379,7 @@ struct AgentRadixSortDownsweep
       const OffsetT load_valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
       if constexpr (LOAD_WARP_STRIPED)
       {
-        LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values, load_valid_items);
+        _CUB::LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values, load_valid_items);
       }
       else
       {
@@ -395,7 +395,7 @@ struct AgentRadixSortDownsweep
    * Process tile
    */
   template <bool FullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessTile(OffsetT block_offset, OffsetT valid_items = TILE_ITEMS)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ProcessTile(OffsetT block_offset, OffsetT valid_items = TILE_ITEMS)
   {
     bit_ordered_type keys[ITEMS_PER_THREAD];
     int ranks[ITEMS_PER_THREAD];
@@ -410,7 +410,7 @@ struct AgentRadixSortDownsweep
     {
       if constexpr (LOAD_WARP_STRIPED)
       {
-        LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys);
+        _CUB::LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys);
       }
       else
       {
@@ -425,7 +425,7 @@ struct AgentRadixSortDownsweep
       const OffsetT load_valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
       if constexpr (LOAD_WARP_STRIPED)
       {
-        LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, load_valid_items, default_key);
+        _CUB::LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, load_valid_items, default_key);
       }
       else
       {
@@ -521,16 +521,16 @@ struct AgentRadixSortDownsweep
    * Copy tiles within the range of input
    */
   template <typename InputIteratorT, typename T>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Copy(InputIteratorT d_in, T* d_out, OffsetT block_offset, OffsetT block_end)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Copy(InputIteratorT d_in, T* d_out, OffsetT block_offset, OffsetT block_end)
   {
     // Simply copy the input
     while (block_end - block_offset >= TILE_ITEMS)
     {
       T items[ITEMS_PER_THREAD];
 
-      LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items);
+      _CUB::LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items);
       __syncthreads();
-      StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items);
+      _CUB::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items);
 
       block_offset += TILE_ITEMS;
     }
@@ -542,9 +542,9 @@ struct AgentRadixSortDownsweep
 
       T items[ITEMS_PER_THREAD];
 
-      LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items, valid_items);
+      _CUB::LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items, valid_items);
       __syncthreads();
-      StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items, valid_items);
+      _CUB::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items, valid_items);
     }
   }
 
@@ -552,7 +552,7 @@ struct AgentRadixSortDownsweep
    * Copy tiles within the range of input (specialized for NullType)
    */
   template <typename InputIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Copy(InputIteratorT /*d_in*/, NullType* /*d_out*/, OffsetT /*block_offset*/, OffsetT /*block_end*/)
   {}
 
@@ -563,7 +563,7 @@ struct AgentRadixSortDownsweep
   /**
    * Constructor
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentRadixSortDownsweep(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentRadixSortDownsweep(
     TempStorage& temp_storage,
     OffsetT (&bin_offset)[BINS_TRACKED_PER_THREAD],
     OffsetT num_items,
@@ -603,7 +603,7 @@ struct AgentRadixSortDownsweep
   /**
    * Constructor
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentRadixSortDownsweep(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentRadixSortDownsweep(
     TempStorage& temp_storage,
     OffsetT num_items,
     OffsetT* d_spine,
@@ -652,7 +652,7 @@ struct AgentRadixSortDownsweep
   /**
    * Distribute keys from a segment of input tiles.
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessRegion(OffsetT block_offset, OffsetT block_end)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ProcessRegion(OffsetT block_offset, OffsetT block_end)
   {
     if (short_circuit)
     {

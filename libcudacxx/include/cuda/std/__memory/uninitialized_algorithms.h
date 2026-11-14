@@ -597,7 +597,7 @@ __uninitialized_allocator_copy_impl(_Alloc&, _In* __first1, _In* __last1, _Out* 
     }
     return __first2;
   }
-  else
+  else // NOLINT(readability-else-after-return)
   {
     return ::cuda::std::copy(__first1, __last1, __first2);
   }
@@ -668,7 +668,7 @@ _Iter2 __uninitialized_allocator_move_if_noexcept(_Alloc&, _Iter1 __first1, _Ite
     }
     return __first2;
   }
-  else
+  else // NOLINT(readability-else-after-return)
   {
     return ::cuda::std::move(__first1, __last1, __first2);
   }

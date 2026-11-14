@@ -29,10 +29,12 @@
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/coop/__group/fwd.cuh>
+#include <cuda/experimental/coop/__group/group_view.cuh>
 #include <cuda/experimental/coop/__group/mapping/mapping_result.cuh>
 #include <cuda/experimental/coop/__group/synchronizer/lane_synchronizer.cuh>
 #include <cuda/experimental/coop/__group/traits.cuh>
@@ -67,13 +69,29 @@ public:
     return 1;
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_rank()
+  {
+    return 0;
+  }
+
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_rank() const
   {
     return 0;
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool has_uniform_static_unit_count()
+  {
+    return true;
+  }
+
   [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count()
   {
+    return ::cuda::std::dynamic_extent;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count(::cuda::std::size_t __i)
+  {
+    _CCCL_ASSERT(__i < static_group_count(), "__i out of range");
     return ::cuda::std::dynamic_extent;
   }
 
@@ -137,6 +155,14 @@ public:
   coalesced_group(coalesced_group&&)                 = delete;
   coalesced_group& operator=(const coalesced_group&) = delete;
   coalesced_group& operator=(coalesced_group&&)      = delete;
+
+  //! @brief Invokes the callable with a view specialized for this group's static unit count.
+  //! Counts that are only known at runtime remain dynamic.
+  template <class _Fn>
+  _CCCL_DEVICE_API decltype(auto) with_static_unit_count(_Fn&& __fn) const
+  {
+    return ::cuda::experimental::coop::__with_static_unit_count(*this, ::cuda::std::forward<_Fn>(__fn));
+  }
 
   [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const
   {
@@ -230,6 +256,14 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _InLevel& __in_level) const
   {
     return __count_as_impl<typename _InLevel::__product_type>(__mapping_result_, __hier_, __in_level);
+  }
+
+  //! @brief Returns the group rank within the level known at compile time, or @c cuda::std::dynamic_extent.
+  _CCCL_TEMPLATE(class _InLevel)
+  _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_rank(const _InLevel&)
+  {
+    return static_count(_InLevel{}) == 1 ? 0 : ::cuda::std::dynamic_extent;
   }
 
   template <class _Tp, class _MappingResult, class _InLevel>

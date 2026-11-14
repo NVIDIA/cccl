@@ -38,7 +38,7 @@
 //! type alias named \c type.
 
 #if !defined(_CCCL_META_UNROLL_LIMIT)
-#  if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVHPC)
+#  if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC)
 #    define _CCCL_META_UNROLL_LIMIT 10
 #  else
 #    define _CCCL_META_UNROLL_LIMIT 16
@@ -102,11 +102,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_list
   template <class _Fn, class... _Us>
   using __call _CCCL_NODEBUG = __type_call<_Fn, _Ts..., _Us...>;
 };
-
-// Before the addition of inline variables, it was necessary to
-// provide a definition for constexpr class static data members.
-template <class... _Ts>
-constexpr size_t const __type_list<_Ts...>::__size;
 
 //! \brief Given a type list and a list of types, append the types to the list.
 template <class _List, class... _Ts>

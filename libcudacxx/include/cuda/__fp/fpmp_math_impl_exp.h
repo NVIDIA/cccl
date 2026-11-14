@@ -105,7 +105,7 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_exp2_kernel(fp32mp2_low __r) no
 
   /* Close with the implicit a0 = 1 constant:
    *   2^r = 1 + r * G(r) */
-  __p = __p * __r + __ffloat(1.0f, 0.0f);
+  __p = __p * __r + 1.0f;
   return __p;
 }
 
@@ -167,7 +167,7 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_exp10_kernel(fp32mp2_low __r) n
   __ffloat __p = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 7>(__r, __exp10_c);
 
   /* Close with the implicit b0 = 1:  10^r = 1 + r * G(r) */
-  __p = __p * __r + __ffloat(1.0f, 0.0f);
+  __p = __p * __r + 1.0f;
   return __p;
 }
 
@@ -312,7 +312,7 @@ __internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, fl
 
   // Compute the reduced argument r = x - n*ln(2)
   float __tt   = __t - __shift_bias;
-  __ffloat __r = __x - __ffloat(static_cast<float>(__tt)) * __ln2;
+  __ffloat __r = __x - __ln2 * __tt;
   __r          = renormalize(__r);
 
   // Scale the reduced argument by the low part of the scale
@@ -339,7 +339,7 @@ __internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, fl
   __p = __p * __r_scale + __fscale_lo;
 
   // Scale the result by the high part of the scale
-  __p               = __p * __ffloat(__fscale);
+  __p               = __p * __fscale;
   __ffloat __result = renormalize(__p);
 
   *__res_hi = __result.hi();
@@ -454,7 +454,7 @@ __internal_fpmp2_log(const float __x_hi, const float __x_lo, float* __res_hi, fl
   __ffloat __f = sub<fpmp2_accuracy::high>(__m, 1.0f);
   __ffloat __g = __m + 1.0f;
   __ffloat __u = __f / __g;
-  __u          = __u + __u;
+  __u          = __u * 2.0f;
   __u          = renormalize(__u);
   __ffloat __v = __u * __u;
 
@@ -472,7 +472,7 @@ __internal_fpmp2_log(const float __x_hi, const float __x_lo, float* __res_hi, fl
   __ffloat __log_m = __q * __u + __u;
 
   /* log(x) = log(m) + e*ln(2) */
-  __ffloat __result = renormalize(__log_m + __ffloat(static_cast<float>(__e)) * __ln2);
+  __ffloat __result = renormalize(__log_m + __ln2 * static_cast<float>(__e));
 
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
@@ -614,7 +614,7 @@ __internal_fpmp2_log1p(const float __x_hi, const float __x_lo, float* __res_hi, 
    * result captures the rounding loss that a plain fast 2-sum
    * folds into the leading term and then quantizes to float
    * precision in the subsequent operations. */
-  __ffloat __sum = add<fpmp2_accuracy::high>(__ffloat(1.0f), __ffloat(__x_hi, __x_lo));
+  __ffloat __sum = add<fpmp2_accuracy::high>(1.0f, __ffloat(__x_hi, __x_lo));
 
   /* (1 + x) < 0  -> NaN. */
   if (__sum.hi() < 0.0f)
@@ -851,8 +851,8 @@ __internal_fpmp2_exp2(const float __x_hi, const float __x_lo, float* __res_hi, f
   }
 
   /* Step 1: integer/fractional split directly in base-2 units. */
-  const int __n        = ::cuda::__fpmp_fp2int_rn(__x_hi);
-  const __ffloat __n_f = ::cuda::__fpmp_int2fp_rn<float>(__n);
+  const int __n     = ::cuda::__fpmp_fp2int_rn(__x_hi);
+  const float __n_f = ::cuda::__fpmp_int2fp_rn<float>(__n);
 
   /* Step 2: r = x - n.  __ffloat subtraction by an integer is exact
    * (n_f is representable in float for |n| <= 2^23, which our
@@ -990,8 +990,8 @@ __internal_fpmp2_exp10(const float __x_hi, const float __x_lo, float* __res_hi, 
   const float __s = ::cuda::__fpmp_two_sum(__x_hi, -__ph, &__e);
 
   __afloat __r_acc(__s, __e);
-  __r_acc = __r_acc + __afloat(-__pl);
-  __r_acc = __r_acc + __afloat(__x_lo);
+  __r_acc = __r_acc - __pl;
+  __r_acc = __r_acc + __x_lo;
 
   /* n_f * C2 = nC2_hi + nC2_lo  (exact pair) */
   float __n_c2_lo;
@@ -1001,7 +1001,7 @@ __internal_fpmp2_exp10(const float __x_hi, const float __x_lo, float* __res_hi, 
   /* n_f * C3 is tiny (~10^-14 at the largest n we hit);
    * single-precision product is below the polynomial noise
    * floor but cheap to include for completeness. */
-  __r_acc = __r_acc + __afloat(::cuda::__fpmp_mul_rn(__n_f, -__c3));
+  __r_acc = __r_acc + ::cuda::__fpmp_mul_rn_nocontract(__n_f, -__c3);
 
   /* Step 3: 10^r' via the dedicated base-10 Taylor kernel.
    * Hand off the accurate accumulator as fast __ffloat -- the
@@ -1165,7 +1165,7 @@ __internal_fpmp2_expm1(const float __x_hi, const float __x_lo, float* __res_hi, 
     return;
   }
 
-  __ffloat __result = sub<fpmp2_accuracy::high>(__ffloat(__e_hi, __e_lo), __ffloat(1.0f));
+  __ffloat __result = sub<fpmp2_accuracy::high>(__ffloat(__e_hi, __e_lo), 1.0f);
   *__res_hi         = __result.hi();
   *__res_lo         = __result.lo();
 } // __internal_fpmp2_expm1

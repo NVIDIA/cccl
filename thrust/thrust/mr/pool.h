@@ -74,7 +74,7 @@ public:
    *      and as such, may be tuned in the future. This function is exposed so that creating a set of options that are
    *      just a slight departure from the defaults is easy.
    */
-  static pool_options get_default_options()
+  _CCCL_HOST_API static pool_options get_default_options()
   {
     pool_options ret{};
 
@@ -101,7 +101,7 @@ public:
    *  \param upstream the upstream memory resource for allocations
    *  \param options pool options to use
    */
-  unsynchronized_pool_resource(Upstream* upstream, pool_options options = get_default_options())
+  _CCCL_HOST_API unsynchronized_pool_resource(Upstream* upstream, pool_options options = get_default_options())
       : m_upstream(upstream)
       , m_options(options)
       , m_smallest_block_log2(::cuda::ceil_ilog2(m_options.smallest_block_size))
@@ -122,7 +122,7 @@ public:
    *
    *  \param options pool options to use
    */
-  unsynchronized_pool_resource(pool_options options = get_default_options())
+  _CCCL_HOST_API unsynchronized_pool_resource(pool_options options = get_default_options())
       : m_upstream(get_global_resource<Upstream>())
       , m_options(options)
       , m_smallest_block_log2(::cuda::ceil_ilog2(m_options.smallest_block_size))
@@ -139,7 +139,7 @@ public:
 
   /*! Destructor. Releases all held memory to upstream.
    */
-  ~unsynchronized_pool_resource() override // NOLINT(bugprone-exception-escape)
+  _CCCL_HOST_API ~unsynchronized_pool_resource() override // NOLINT(bugprone-exception-escape)
   {
     release();
   }
@@ -214,7 +214,7 @@ private:
 public:
   /*! Releases all held memory to upstream.
    */
-  void release()
+  _CCCL_HOST_API void release()
   {
     // reset the buckets
     for (std::size_t i = 0; i < m_pools.size(); ++i)
@@ -250,11 +250,11 @@ public:
     m_cached_oversized = oversized_block_descriptor_ptr();
   }
 
-  [[nodiscard]] void_ptr do_allocate( // NOLINT(google-default-arguments)
+  [[nodiscard]] _CCCL_HOST_API void_ptr do_allocate( // NOLINT(google-default-arguments)
     std::size_t bytes,
     std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
-    bytes = (std::max) (bytes, m_options.smallest_block_size);
+    bytes = (std::max) (bytes, m_options.smallest_block_size); // NOLINT(readability-redundant-parentheses)
     assert(::cuda::__is_valid_alignment(alignment));
 
     // an oversized and/or overaligned allocation requested; needs to be allocated separately
@@ -398,9 +398,10 @@ public:
         }
       }
 
-      const std::size_t descriptor_size = (std::max) (sizeof(block_descriptor), m_options.alignment);
-      std::size_t block_size            = bytes + descriptor_size;
-      block_size += m_options.alignment - block_size % m_options.alignment;
+      const std::size_t descriptor_size =
+        (std::max) (sizeof(block_descriptor), m_options.alignment); // NOLINT(readability-redundant-parentheses)
+      std::size_t block_size = bytes + descriptor_size;
+      block_size += m_options.alignment - (block_size % m_options.alignment);
       const std::size_t chunk_size = block_size * n;
 
       const void_ptr allocated = m_upstream->do_allocate(chunk_size + sizeof(chunk_descriptor), m_options.alignment);
@@ -431,11 +432,11 @@ public:
     return static_cast<void_ptr>(static_cast<char_ptr>(static_cast<void_ptr>(block)) - bytes);
   }
 
-  void do_deallocate(void_ptr p, // NOLINT(google-default-arguments)
-                     std::size_t n,
-                     std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  _CCCL_HOST_API void do_deallocate(void_ptr p, // NOLINT(google-default-arguments)
+                                    std::size_t n,
+                                    std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
-    n = (std::max) (n, m_options.smallest_block_size);
+    n = (std::max) (n, m_options.smallest_block_size); // NOLINT(readability-redundant-parentheses)
     assert(::cuda::__is_valid_alignment(alignment));
 
     // verify that the pointer is at least as aligned as claimed

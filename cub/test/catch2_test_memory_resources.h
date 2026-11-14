@@ -8,8 +8,13 @@
 #include <cuda/__memory_resource/memory_resource_base.h>
 #include <cuda/__memory_resource/resource.h>
 #include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__exception/terminate.h>
 
-#include <c2h/catch2_test_helper.h>
+#include <cstddef>
+
+#include <cuda_runtime_api.h>
+
+#include <c2h/catch2_test_macros.h>
 
 struct device_memory_resource
     : cub::detail::device_memory_resource
@@ -147,16 +152,23 @@ struct device_side_memory_resource
     return allocate(stream, bytes);
   }
 
-  __host__ __device__ void* allocate(cuda::stream_ref /* stream */, size_t bytes)
+  __host__ __device__ void*
+  allocate(cuda::stream_ref /* stream */, size_t bytes) // NOLINT(readability-make-member-function-const)
   {
     if (bytes_allocated)
     {
-      *bytes_allocated += bytes;
+      const auto offset = *bytes_allocated;
+      *bytes_allocated  = offset + bytes;
+      auto* result      = static_cast<char*>(ptr) + offset;
+      return result;
     }
-    return static_cast<void*>(static_cast<char*>(ptr) + *bytes_allocated);
+    return ptr;
   }
 
-  __host__ __device__ void deallocate(const cuda::stream_ref /* stream */, void* /* ptr */, size_t bytes)
+  __host__ __device__ void deallocate( // NOLINT(readability-make-member-function-const)
+    const cuda::stream_ref /* stream */,
+    void* /* ptr */,
+    size_t bytes)
   {
     if (bytes_deallocated)
     {
@@ -164,8 +176,11 @@ struct device_side_memory_resource
     }
   }
 
-  __host__ __device__ void
-  deallocate(const cuda::stream_ref /* stream */, void* /* ptr */, size_t bytes, size_t /* alignment */)
+  __host__ __device__ void deallocate( // NOLINT(readability-make-member-function-const)
+    const cuda::stream_ref /* stream */,
+    void* /* ptr */,
+    size_t bytes,
+    size_t /* alignment */)
   {
     if (bytes_deallocated)
     {

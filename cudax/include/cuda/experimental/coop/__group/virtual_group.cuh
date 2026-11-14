@@ -35,6 +35,7 @@
 
 #include <cuda/experimental/coop/__group/concepts.cuh>
 #include <cuda/experimental/coop/__group/fwd.cuh>
+#include <cuda/experimental/coop/__group/group_view.cuh>
 #include <cuda/experimental/coop/__group/mapping/common.cuh>
 #include <cuda/experimental/coop/__group/mapping/mapping_result.cuh>
 #include <cuda/experimental/coop/__group/queries.cuh>
@@ -49,11 +50,10 @@ template <class _Unit, class _ParentGroup>
 [[nodiscard]] _CCCL_DEVICE_API constexpr auto __make_init_group_mapping_result(const _ParentGroup& __parent_group)
 {
   using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
-  using _InitMappingResult =
-    __mapping_result</*initial static group count*/ 1,
-                     ::cuda::experimental::coop::__static_count_query_group<_Unit, _ParentGroup>(),
-                     /*initial is always exhaustive*/ true,
-                     _ParentMappingResult::is_always_contiguous()>;
+  using _InitMappingResult   = __mapping_result<
+    __uniform_static_unit_count<1, ::cuda::experimental::coop::__static_count_query_group<_Unit, _ParentGroup>()>,
+    /*initial is always exhaustive*/ true,
+    _ParentMappingResult::is_always_contiguous()>;
 
   return _InitMappingResult{
     /*initial group count*/ 1,
@@ -149,11 +149,34 @@ public:
     _CCCL_ASSERT(__mapping_result_.is_valid(), "virtual_group requires all units to be part of the group");
   }
 
+  _CCCL_TEMPLATE(class _ParentUnit, class _ParentMappingResult, class _Mapping)
+  _CCCL_REQUIRES(::cuda::std::is_same_v<
+                 _MappingResult,
+                 __group_mapping_result_t<_Unit, group_view<_ParentUnit, _ParentGroup, _ParentMappingResult>, _Mapping>>)
+  _CCCL_DEVICE_API explicit virtual_group(const _Unit& __unit,
+                                          const group_view<_ParentUnit, _ParentGroup, _ParentMappingResult>& __parent,
+                                          _Mapping&& __mapping)
+      : __hier_{__parent.hierarchy()}
+      , __mapping_result_{::cuda::experimental::coop::__do_group_mapping(
+          __unit, __parent, ::cuda::std::forward<_Mapping>(__mapping))}
+      , __synchronizer_instance_{__parent.__synchronizer_instance()}
+  {
+    _CCCL_ASSERT(__mapping_result_.is_valid(), "virtual_group requires all units to be part of the group");
+  }
+
   // Groups can't be copied, moved nor assigned.
   virtual_group(const virtual_group&)            = delete;
   virtual_group(virtual_group&&)                 = delete;
   virtual_group& operator=(const virtual_group&) = delete;
   virtual_group& operator=(virtual_group&&)      = delete;
+
+  //! @brief Invokes the callable with a view specialized for this group's static unit count.
+  //! Counts that are only known at runtime remain dynamic.
+  template <class _Fn>
+  _CCCL_DEVICE_API decltype(auto) with_static_unit_count(_Fn&& __fn) const
+  {
+    return ::cuda::experimental::coop::__with_static_unit_count(*this, ::cuda::std::forward<_Fn>(__fn));
+  }
 
   [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const
   {
@@ -232,6 +255,12 @@ public:
     return __count_as_impl<typename level_type::__product_type>(__mapping_result_, __hier_, __parent);
   }
 
+  //! @brief Returns the group rank within the parent known at compile time, or @c cuda::std::dynamic_extent.
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_rank(const _ParentGroup&)
+  {
+    return _MappingResult::static_group_rank();
+  }
+
   template <class _Tp, class _QueryMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp
   __rank_as_impl(const _QueryMappingResult& __mapping_result, const _Hierarchy&, const _ParentGroup&)
@@ -260,6 +289,18 @@ _CCCL_TEMPLATE(class _Unit,
 _CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND group<_ParentGroup> _CCCL_AND
                  __unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>)
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES virtual_group(const _Unit&, const _ParentGroup&, _Mapping&&)
+  -> virtual_group<_Unit, _ParentGroup, _MappingResult>;
+
+_CCCL_TEMPLATE(class _Unit,
+               class _ParentUnit,
+               class _ParentGroup,
+               class _ParentMappingResult,
+               class _Mapping,
+               class _MappingResult =
+                 __group_mapping_result_t<_Unit, group_view<_ParentUnit, _ParentGroup, _ParentMappingResult>, _Mapping>)
+_CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND __unit_same_as_or_below_v<_Unit, _ParentUnit>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES
+virtual_group(const _Unit&, const group_view<_ParentUnit, _ParentGroup, _ParentMappingResult>&, _Mapping&&)
   -> virtual_group<_Unit, _ParentGroup, _MappingResult>;
 } // namespace cuda::experimental::coop
 

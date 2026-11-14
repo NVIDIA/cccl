@@ -24,7 +24,7 @@ namespace system::detail::sequential
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename UnaryFunction>
-_CCCL_HOST_DEVICE InputIterator
+_CCCL_HOST_DEVICE_API InputIterator
 for_each(sequential::execution_policy<DerivedPolicy>&, InputIterator first, InputIterator last, UnaryFunction f)
 {
   // wrap f
@@ -39,7 +39,7 @@ for_each(sequential::execution_policy<DerivedPolicy>&, InputIterator first, Inpu
 } // end for_each()
 
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename UnaryFunction>
-_CCCL_HOST_DEVICE InputIterator
+_CCCL_HOST_DEVICE_API InputIterator
 for_each_n(sequential::execution_policy<DerivedPolicy>&, InputIterator first, Size n, UnaryFunction f)
 {
   // wrap f

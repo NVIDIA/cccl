@@ -14,4 +14,4 @@
 #endif // no system header
 
 // this system inherits extrema algorithms
-#include <thrust/system/detail/sequential/extrema.h>
+#include <thrust/system/detail/sequential/extrema.h> // IWYU pragma: export

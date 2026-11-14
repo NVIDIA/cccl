@@ -23,6 +23,7 @@
 
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__cmath/isnan.h>
+#include <cuda/std/__cmath/traits.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/storage.h>
 #include <cuda/std/__limits/numeric_limits.h>
@@ -173,14 +174,11 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
       {
         return __y;
       }
-      else if (::cuda::std::isnan(__y))
+      if (::cuda::std::isnan(__y))
       {
         return __x;
       }
-      else
-      {
-        return __x < __y ? __y : __x;
-      }
+      return ::cuda::std::isless(__x, __y) ? __y : __x;
     }
 }
 
@@ -315,11 +313,11 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
       {
         return __y;
       }
-      else if (::cuda::std::isnan(__y))
+      if (::cuda::std::isnan(__y))
       {
         return __x;
       }
-      return __y < __x ? __y : __x;
+      return ::cuda::std::isgreater(__x, __y) ? __y : __x;
     }
 }
 

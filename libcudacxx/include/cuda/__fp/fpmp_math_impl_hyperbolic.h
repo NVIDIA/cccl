@@ -104,13 +104,13 @@ __internal_fpmp2_tanh(const float __x_hi, const float __x_lo, float* __res_hi, f
   if (__abs_hi >= __branch_point)
   {
     /* ---- (2) large-|x| branch: 1 - 2/(exp(2|x|)+1) ------------ */
-    __ffloat __two_abs = __abs_a + __abs_a; /* exactly 2|x|: addition of equals */
+    __ffloat __two_abs = __abs_a * 2.0f; /* exactly 2|x| */
     float __u_hi;
     float __u_lo;
     ::cuda::__fpmp2_exp<float>(__two_abs.hi(), __two_abs.lo(), &__u_hi, &__u_lo);
-    __ffloat __denom  = __ffloat(__u_hi, __u_lo) + __ffloat(1.f);
+    __ffloat __denom  = __ffloat(__u_hi, __u_lo) + 1.0f;
     __ffloat __r      = __ffloat(2.f) / __denom;
-    __ffloat __result = __ffloat(1.f) - __r;
+    __ffloat __result = 1.0f - __r;
     if (__is_neg)
     {
       __result = -__result;
@@ -178,6 +178,18 @@ _CCCL_FPMP_MATH_DISPATCH_1A(tanh)
  * ====================================================================
  */
 
+/* 0.5/e for e = exp(|x|), or 0 past e = 2^32, where it is under 2^-63 of sinh and cosh. The
+ * divisor is clamped there: dividing by e forms a subnormal low limb past |x| = 70, and Intel
+ * cores take a microcode assist for each product with a subnormal result. */
+[[nodiscard]] _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_half_inv_exp(const fp32mp2_low& __e) noexcept
+{
+  using __ffloat = fp32mp2_low;
+
+  const bool __negligible     = __e.hi() > 0x1p32f;
+  const __ffloat __half_inv_e = __ffloat(0.5f) / (__negligible ? __ffloat(0x1p32f) : __e);
+  return __negligible ? __ffloat(0.f) : __half_inv_e;
+}
+
 /*
  * --------------------------------------------------------------------
  * Hyperbolic sine sinh(x) (fp32mp2) - dedicated implementation
@@ -221,8 +233,8 @@ __internal_fpmp2_sinh(const float __x_hi, const float __x_lo, float* __res_hi, f
     float __u_lo;
     ::cuda::__fpmp2_exp<float>(__abs_a.hi(), __abs_a.lo(), &__u_hi, &__u_lo);
     __ffloat __e(__u_hi, __u_lo);
-    __ffloat __half_e     = __e * __ffloat(0.5f);
-    __ffloat __half_inv_e = __ffloat(0.5f) / __e;
+    __ffloat __half_e     = __e * 0.5f;
+    __ffloat __half_inv_e = ::cuda::__internal_fpmp2_half_inv_exp(__e);
     __ffloat __result     = renormalize(__half_e - __half_inv_e);
     if (__is_neg)
     {
@@ -334,8 +346,8 @@ __internal_fpmp2_cosh(const float __x_hi, const float __x_lo, float* __res_hi, f
   __ffloat __e(__u_hi, __u_lo);
 
   /* cosh(|x|) = 0.5*e + 0.5/e  (both terms positive; no cancellation). */
-  __ffloat __half_e     = __e * __ffloat(0.5f);
-  __ffloat __half_inv_e = __ffloat(0.5f) / __e;
+  __ffloat __half_e     = __e * 0.5f;
+  __ffloat __half_inv_e = ::cuda::__internal_fpmp2_half_inv_exp(__e);
   __ffloat __result     = renormalize(__half_e + __half_inv_e);
 
   *__res_hi = __result.hi();
@@ -760,15 +772,15 @@ __internal_fpmp2_atanh(const float __x_hi, const float __x_lo, float* __res_hi, 
    *
    * Use accurate sub for 1 - |x| to capture full precision when
    * |x| is close to 1. */
-  __ffloat __one_minus = sub<fpmp2_accuracy::high>(__ffloat(1.0f), __abs_a);
-  __ffloat __two_abs   = __abs_a + __abs_a;
+  __ffloat __one_minus = sub<fpmp2_accuracy::high>(1.0f, __abs_a);
+  __ffloat __two_abs   = __abs_a * 2.0f;
   __ffloat __t         = __two_abs / __one_minus;
 
   float __l_hi;
   float __l_lo;
   ::cuda::__fpmp2_log1p<float>(__t.hi(), __t.lo(), &__l_hi, &__l_lo);
 
-  __ffloat __result = __ffloat(__l_hi, __l_lo) * __ffloat(0.5f);
+  __ffloat __result = __ffloat(__l_hi, __l_lo) * 0.5f;
   if (__is_neg)
   {
     __result = -__result;

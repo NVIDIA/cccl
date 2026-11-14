@@ -49,7 +49,6 @@ THRUST_NAMESPACE_BEGIN
 template <typename T, typename Alloc = std::allocator<T>>
 class host_vector : public detail::vector_base<T, Alloc>
 {
-private:
   using Parent = detail::vector_base<T, Alloc>;
 
 public:
@@ -70,7 +69,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST host_vector()
+  _CCCL_HOST_API host_vector()
       : Parent()
   {}
 
@@ -81,7 +80,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST host_vector(const Alloc& alloc)
+  _CCCL_HOST_API host_vector(const Alloc& alloc)
       : Parent(alloc)
   {}
 
@@ -92,7 +91,7 @@ public:
    *  \endverbatim
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST ~host_vector() {} // NOLINT(modernize-use-equals-default)
+  _CCCL_HOST_API ~host_vector() {} // NOLINT(modernize-use-equals-default)
 
   /*! This constructor creates a \p host_vector with the given
    *  size.
@@ -102,21 +101,21 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST explicit host_vector(size_type n)
+  _CCCL_HOST_API explicit host_vector(size_type n)
       : Parent(n)
   {}
 
   //! This constructor creates a \p host_vector with the given size, performing only default-initialization instead of
   //! value-initialization.
   //! \param n The number of elements to initially create.
-  _CCCL_HOST host_vector(size_type n, default_init_t)
+  _CCCL_HOST_API host_vector(size_type n, default_init_t)
       : Parent(n, default_init_t{})
   {}
 
   //! This constructor creates a \p host_vector with the given size, without initializing elements. It mandates that
   //! the element type is trivially default-constructible.
   //! \param n The number of elements to initially create.
-  _CCCL_HOST host_vector(size_type n, no_init_t)
+  _CCCL_HOST_API host_vector(size_type n, no_init_t)
       : Parent(n, no_init_t{})
   {}
 
@@ -129,7 +128,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST explicit host_vector(size_type n, const Alloc& alloc)
+  _CCCL_HOST_API explicit host_vector(size_type n, const Alloc& alloc)
       : Parent(n, alloc)
   {}
 
@@ -142,7 +141,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST explicit host_vector(size_type n, const value_type& value)
+  _CCCL_HOST_API explicit host_vector(size_type n, const value_type& value)
       : Parent(n, value)
   {}
 
@@ -156,7 +155,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST explicit host_vector(size_type n, const value_type& value, const Alloc& alloc)
+  _CCCL_HOST_API explicit host_vector(size_type n, const value_type& value, const Alloc& alloc)
       : Parent(n, value, alloc)
   {}
 
@@ -167,7 +166,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST host_vector(const host_vector& v)
+  _CCCL_HOST_API host_vector(const host_vector& v)
       : Parent(v)
   {}
 
@@ -179,7 +178,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST host_vector(const host_vector& v, const Alloc& alloc)
+  _CCCL_HOST_API host_vector(const host_vector& v, const Alloc& alloc)
       : Parent(v, alloc)
   {}
 
@@ -190,7 +189,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST host_vector(host_vector&& v) noexcept
+  _CCCL_HOST_API host_vector(host_vector&& v) noexcept
       : Parent(::cuda::std::move(v))
   {}
 
@@ -202,7 +201,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST host_vector(host_vector&& v, const Alloc& alloc)
+  _CCCL_HOST_API host_vector(host_vector&& v, const Alloc& alloc)
       : Parent(::cuda::std::move(v), alloc)
   {}
 
@@ -213,7 +212,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST host_vector& operator=(const host_vector& v)
+  _CCCL_HOST_API host_vector& operator=(const host_vector& v)
   {
     Parent::operator=(v);
     return *this;
@@ -226,7 +225,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST host_vector& operator=(host_vector&& v) noexcept
+  _CCCL_HOST_API host_vector& operator=(host_vector&& v) noexcept
   {
     Parent::operator=(::cuda::std::move(v));
     return *this;
@@ -240,7 +239,7 @@ public:
    *  \endverbatim
    */
   template <typename OtherT, typename OtherAlloc>
-  _CCCL_HOST host_vector(const host_vector<OtherT, OtherAlloc>& v)
+  _CCCL_HOST_API host_vector(const host_vector<OtherT, OtherAlloc>& v)
       : Parent(v)
   {}
 
@@ -252,7 +251,7 @@ public:
    *  \endverbatim
    */
   template <typename OtherT, typename OtherAlloc>
-  _CCCL_HOST host_vector& operator=(const host_vector<OtherT, OtherAlloc>& v)
+  _CCCL_HOST_API host_vector& operator=(const host_vector<OtherT, OtherAlloc>& v)
   {
     Parent::operator=(v);
     return *this;
@@ -266,7 +265,7 @@ public:
    *  \endverbatim
    */
   template <typename OtherT, typename OtherAlloc>
-  _CCCL_HOST host_vector(const std::vector<OtherT, OtherAlloc>& v)
+  _CCCL_HOST_API host_vector(const std::vector<OtherT, OtherAlloc>& v)
       : Parent(v)
   {}
 
@@ -278,7 +277,7 @@ public:
    *  \endverbatim
    */
   template <typename OtherT, typename OtherAlloc>
-  _CCCL_HOST host_vector& operator=(const std::vector<OtherT, OtherAlloc>& v)
+  _CCCL_HOST_API host_vector& operator=(const std::vector<OtherT, OtherAlloc>& v)
   {
     Parent::operator=(v);
     return *this;
@@ -294,7 +293,7 @@ public:
    *  \endverbatim
    */
   template <typename OtherT, typename OtherAlloc>
-  _CCCL_HOST host_vector(const detail::vector_base<OtherT, OtherAlloc>& v)
+  _CCCL_HOST_API host_vector(const detail::vector_base<OtherT, OtherAlloc>& v)
       : Parent(v)
   {}
 
@@ -307,7 +306,7 @@ public:
    *  \endverbatim
    */
   template <typename OtherT, typename OtherAlloc>
-  _CCCL_HOST host_vector& operator=(const detail::vector_base<OtherT, OtherAlloc>& v)
+  _CCCL_HOST_API host_vector& operator=(const detail::vector_base<OtherT, OtherAlloc>& v)
   {
     Parent::operator=(v);
     return *this;
@@ -316,7 +315,7 @@ public:
   /*! This constructor builds a \p host_vector from an intializer_list.
    *  \param il The intializer_list.
    */
-  host_vector(::cuda::std::initializer_list<T> il)
+  _CCCL_HOST_API host_vector(::cuda::std::initializer_list<T> il)
       : Parent(il)
   {}
 
@@ -324,14 +323,14 @@ public:
    *  \param il The intializer_list.
    *  \param alloc The allocator to use by this host_vector.
    */
-  host_vector(::cuda::std::initializer_list<T> il, const Alloc& alloc)
+  _CCCL_HOST_API host_vector(::cuda::std::initializer_list<T> il, const Alloc& alloc)
       : Parent(il, alloc)
   {}
 
   /*! Assign an \p intializer_list with a matching element type
    *  \param il The intializer_list.
    */
-  host_vector& operator=(::cuda::std::initializer_list<T> il)
+  _CCCL_HOST_API host_vector& operator=(::cuda::std::initializer_list<T> il)
   {
     Parent::operator=(il);
     return *this;
@@ -346,7 +345,7 @@ public:
    *  \endverbatim
    */
   template <typename InputIterator>
-  _CCCL_HOST host_vector(InputIterator first, InputIterator last)
+  _CCCL_HOST_API host_vector(InputIterator first, InputIterator last)
       : Parent(first, last)
   {}
 
@@ -360,7 +359,7 @@ public:
    *  \endverbatim
    */
   template <typename InputIterator>
-  _CCCL_HOST host_vector(InputIterator first, InputIterator last, const Alloc& alloc)
+  _CCCL_HOST_API host_vector(InputIterator first, InputIterator last, const Alloc& alloc)
       : Parent(first, last, alloc)
   {}
 
@@ -694,7 +693,8 @@ public:
    *  \p x The first \p host_vector of interest.
    *  \p y The second \p host_vector of interest.
    */
-  friend void swap(host_vector& a, host_vector& b) noexcept(noexcept(a.swap(b))) // NOLINT(bugprone-exception-escape)
+  // NOLINTNEXTLINE(bugprone-exception-escape)
+  _CCCL_HOST_API friend void swap(host_vector& a, host_vector& b) noexcept(noexcept(a.swap(b)))
   {
     a.swap(b);
   }

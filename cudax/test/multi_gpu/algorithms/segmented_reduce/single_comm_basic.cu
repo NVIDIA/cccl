@@ -153,6 +153,7 @@ MULTI_GPU_TEST("segmented_reduce single-comm documentation example", c2h::type_l
     if (const auto& err_str = failed[i]; !err_str.empty())
     {
       INFO("rank: " << i);
+      // NOLINTNEXTLINE(readability-container-size-empty)
       REQUIRE(err_str == ""); // Should print the full error string
     }
   }
@@ -302,7 +303,7 @@ MULTI_GPU_TEST("segmented_reduce single-comm, segment lengths differ across rank
   for (int r = 0; r < comms.front().size(); ++r)
   {
     const std::vector<offset_type> segment_sizes{
-      static_cast<offset_type>(r + 1), static_cast<offset_type>(2 * r + 3), static_cast<offset_type>(r + 5)};
+      static_cast<offset_type>(r + 1), static_cast<offset_type>((2 * r) + 3), static_cast<offset_type>(r + 5)};
 
     fill_random(
       values_by_rank.emplace_back(),

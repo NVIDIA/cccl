@@ -22,8 +22,11 @@
 
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+
+#if _CCCL_HOST_STD_LIB(STL)
+#  include <cuda/std/__type_traits/is_pointer.h>
+#endif // _CCCL_HOST_STD_LIB(STL)
 
 THRUST_NAMESPACE_BEGIN
 

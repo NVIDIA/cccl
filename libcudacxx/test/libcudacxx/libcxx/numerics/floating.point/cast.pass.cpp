@@ -50,6 +50,9 @@ TEST_FUNC void test_fp_cast()
 #if _CCCL_HAS_NVFP8_E5M2()
   test_fp_cast<T, __nv_fp8_e5m2>();
 #endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_UE5M3()
+  test_fp_cast<T, __nv_fp8_ue5m3>();
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E8M0()
   test_fp_cast<T, __nv_fp8_e8m0>();
 #endif // _CCCL_HAS_NVFP8_E8M0()
@@ -86,6 +89,9 @@ TEST_FUNC bool test()
 #if _CCCL_HAS_NVFP8_E5M2()
   test_fp_cast<__nv_fp8_e5m2>();
 #endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_UE5M3()
+  test_fp_cast<__nv_fp8_ue5m3>();
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E8M0()
   test_fp_cast<__nv_fp8_e8m0>();
 #endif // _CCCL_HAS_NVFP8_E8M0()

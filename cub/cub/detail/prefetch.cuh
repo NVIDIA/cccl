@@ -52,7 +52,7 @@ enum class LoadPrefetch : int
 };
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, LoadPrefetch prefetch)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, LoadPrefetch prefetch)
 {
   switch (prefetch)
   {

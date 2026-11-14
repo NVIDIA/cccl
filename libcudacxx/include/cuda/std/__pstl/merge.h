@@ -68,7 +68,7 @@ _CCCL_HOST_API _OutputIterator merge(
       return ::cuda::std::copy(
         __policy, ::cuda::std::move(__first2), ::cuda::std::move(__last2), ::cuda::std::move(__result));
     }
-    else if (__first2 == __last2)
+    if (__first2 == __last2)
     {
       return ::cuda::std::copy(
         __policy, ::cuda::std::move(__first1), ::cuda::std::move(__last1), ::cuda::std::move(__result));

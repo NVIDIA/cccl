@@ -232,18 +232,17 @@ struct CompareFunctor
     {
       return a >= b;
     }
-    else if (op_ == OpType::GT)
+    if (op_ == OpType::GT)
     {
       return a > b;
     }
-    else if (op_ == OpType::LE)
+    if (op_ == OpType::LE)
     {
       return a <= b;
     }
-    else
-    { // LT
-      return a < b;
-    }
+
+    // LT
+    return a < b;
   }
 };
 
@@ -332,7 +331,8 @@ try
   {
     fill_normal(in[i], n, i);
   }
-  thrust::device_vector<T> tmpA(n, thrust::no_init), tmpB(n, thrust::no_init);
+  thrust::device_vector<T> tmpA(n, thrust::no_init);
+  thrust::device_vector<T> tmpB(n, thrust::no_init);
 
   T* d_in[num_in];
   for (int i = 0; i < num_in; i++)
@@ -445,11 +445,9 @@ try
         {
           return a;
         }
-        else
-        {
-          const auto m = ::max(a, b);
-          return m + ::log1p(::exp(-::abs(a - b)));
-        }
+
+        const auto m = ::max(a, b);
+        return m + ::log1p(::exp(-::abs(a - b)));
       },
       s);
 
@@ -466,11 +464,9 @@ try
         {
           return a;
         }
-        else
-        {
-          const auto m = ::max(a, b);
-          return m + ::log1p(::exp2(-::abs(a - b))) * inv_log_2;
-        }
+
+        const auto m = ::max(a, b);
+        return m + ::log1p(::exp2(-::abs(a - b))) * inv_log_2;
       },
       s);
 
@@ -510,7 +506,8 @@ try
   {
     fill_normal(in[i], n, i);
   }
-  thrust::device_vector<T> tmpA(n, thrust::no_init), tmpB(n, thrust::no_init);
+  thrust::device_vector<T> tmpA(n, thrust::no_init);
+  thrust::device_vector<T> tmpB(n, thrust::no_init);
 
   T* d_in[num_in];
   for (int i = 0; i < num_in; i++)
@@ -580,14 +577,12 @@ try
         {
           return a;
         }
-        else if (b != b)
+        if (b != b)
         {
           return b;
         }
-        else
-        {
-          return ::max(a, b);
-        }
+
+        return ::max(a, b);
       },
       s);
 
@@ -656,7 +651,8 @@ try
 
   thrust::device_vector<T> input(n, thrust::no_init);
   fill_normal(input, n, 0);
-  thrust::device_vector<T> tmpA(n, thrust::no_init), tmpB(n, thrust::no_init);
+  thrust::device_vector<T> tmpA(n, thrust::no_init);
+  thrust::device_vector<T> tmpB(n, thrust::no_init);
 
   T* d_in = thrust::raw_pointer_cast(input.data());
   T* d_a  = thrust::raw_pointer_cast(tmpA.data());
@@ -814,7 +810,8 @@ try
 
   thrust::device_vector<T> input(n, thrust::no_init);
   fill_normal(input, n, 0);
-  thrust::device_vector<T> tmpA(n, thrust::no_init), tmpB(n, thrust::no_init);
+  thrust::device_vector<T> tmpA(n, thrust::no_init);
+  thrust::device_vector<T> tmpB(n, thrust::no_init);
 
   T* d_in = thrust::raw_pointer_cast(input.data());
   T* d_a  = thrust::raw_pointer_cast(tmpA.data());
@@ -877,18 +874,16 @@ try
         {
           return v;
         }
-        else if (minmax == 0)
+        if (minmax == 0)
         {
           return ::max(static_cast<opmath_t>(v), lim0_val);
         }
-        else if (minmax == 1)
+        if (minmax == 1)
         {
           return ::min(static_cast<opmath_t>(v), lim0_val);
         }
-        else
-        {
-          return ::min(::max(static_cast<opmath_t>(v), lim0_val), lim1_val);
-        }
+
+        return ::min(::max(static_cast<opmath_t>(v), lim0_val), lim1_val);
       },
       s);
 

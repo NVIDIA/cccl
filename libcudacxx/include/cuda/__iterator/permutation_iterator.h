@@ -93,7 +93,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _Iter, class _Index>
 class permutation_iterator
 {
-private:
   _Iter __iter_;
   _Index __index_;
 

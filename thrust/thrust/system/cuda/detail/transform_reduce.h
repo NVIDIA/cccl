@@ -17,20 +17,18 @@
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_reduce.cuh>
-#  include <cub/util_math.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/raw_reference_cast.h>
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/functional.h>
+#  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
-#  include <thrust/system/cuda/detail/core/agent_launcher.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/get_value.h>
-#  include <thrust/system/cuda/detail/make_unsigned_special.h>
 #  include <thrust/system/cuda/detail/util.h>
+#  include <thrust/transform_reduce.h>
 
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
 
@@ -99,7 +97,7 @@ THRUST_RUNTIME_FUNCTION T transform_reduce_n_impl(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class TransformOp, class T, class ReduceOp>
-T _CCCL_HOST_DEVICE transform_reduce(
+T _CCCL_HOST_DEVICE_API transform_reduce(
   execution_policy<Derived>& policy, InputIt first, InputIt last, TransformOp transform_op, T init, ReduceOp reduce_op)
 {
   using size_type           = thrust::detail::it_difference_t<InputIt>;

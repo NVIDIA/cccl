@@ -37,7 +37,7 @@ CUB_NAMESPACE_BEGIN
 //! \returns The number of elements merged from the first sequence at the intersection of the diagonal with the merge
 //! path. The number of elements merged from the second sequence is \c diag minus the returned value.
 template <typename KeyIt1, typename KeyIt2, typename OffsetT, typename BinaryPred>
-_CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
+_CCCL_DEVICE_API _CCCL_FORCEINLINE OffsetT
 MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, OffsetT diag, BinaryPred binary_pred)
 {
   OffsetT keys1_begin = diag < keys2_count ? 0 : diag - keys2_count;
@@ -45,7 +45,7 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
 
   while (keys1_begin < keys1_end)
   {
-    const OffsetT mid = cub::MidPoint<OffsetT>(keys1_begin, keys1_end);
+    const OffsetT mid = _CUB::MidPoint<OffsetT>(keys1_begin, keys1_end);
     // pull copies of the keys before calling binary_pred so proxy references are unwrapped
     const detail::it_value_t<KeyIt1> key1 = keys1[mid];
     const detail::it_value_t<KeyIt2> key2 = keys2[diag - 1 - mid];
@@ -64,7 +64,7 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
 namespace detail
 {
 template <bool Unroll = detail::sort_unroll_default, typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
-_CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void serial_merge(
   KeyIt keys_shared,
   int keys1_beg,
   int keys2_beg,
@@ -100,7 +100,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
 }
 
 template <bool Unroll = detail::sort_unroll_default, typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
-_CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void serial_merge(
   KeyIt keys_shared,
   int keys1_beg,
   int keys2_beg,
@@ -110,7 +110,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
   int (&indices)[ItemsPerThread],
   CompareOp compare_op)
 {
-  serial_merge<Unroll>(
+  _CUB::detail::serial_merge<Unroll>(
     keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, output[0]);
 }
 } // namespace detail
@@ -127,7 +127,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void serial_merge(
 //! \param output The output array
 //! \param indices The shared memory indices relative to \c keys_shared of the elements written to \c output
 template <typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
-_CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void SerialMerge(
   KeyIt keys_shared,
   int keys1_beg,
   int keys2_beg,
@@ -138,12 +138,12 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   CompareOp compare_op,
   KeyT oob_default)
 {
-  detail::serial_merge(
+  _CUB::detail::serial_merge(
     keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, oob_default);
 }
 
 template <typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
-_CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void SerialMerge(
   KeyIt keys_shared,
   int keys1_beg,
   int keys2_beg,
@@ -153,7 +153,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   int (&indices)[ItemsPerThread],
   CompareOp compare_op)
 {
-  detail::serial_merge(keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op);
+  _CUB::detail::serial_merge(keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op);
 }
 
 /**
@@ -218,7 +218,6 @@ class BlockMergeSortStrategy
 {
   static_assert(::cuda::is_power_of_two(NumThreads), "NumThreads must be a power of two");
 
-private:
   static constexpr int ITEMS_PER_TILE = ItemsPerThread * NumThreads;
 
   // Whether or not there are values to be trucked along with keys
@@ -246,7 +245,7 @@ private:
   _TempStorage& temp_storage;
 
   /// Internal storage allocator
-  _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
   {
     __shared__ _TempStorage private_storage;
     return private_storage;
@@ -259,17 +258,17 @@ public:
   using TempStorage = Uninitialized<_TempStorage>;
 
   BlockMergeSortStrategy() = delete;
-  explicit _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSortStrategy(unsigned int linear_tid)
+  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockMergeSortStrategy(unsigned int linear_tid)
       : temp_storage(PrivateStorage())
       , linear_tid(linear_tid)
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSortStrategy(TempStorage& temp_storage, unsigned int linear_tid)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockMergeSortStrategy(TempStorage& temp_storage, unsigned int linear_tid)
       : temp_storage(temp_storage.Alias())
       , linear_tid(linear_tid)
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int get_linear_tid() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned int get_linear_tid() const
   {
     return linear_tid;
   }
@@ -302,7 +301,7 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op)
   {
     ValueT items[ItemsPerThread];
     Sort<CompareOp, false>(keys, items, compare_op, ITEMS_PER_TILE, keys[0]);
@@ -349,7 +348,7 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Sort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int valid_items, KeyT oob_default)
   {
     ValueT items[ItemsPerThread];
@@ -386,7 +385,7 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Sort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op)
   {
     Sort<CompareOp, false>(keys, items, compare_op, ITEMS_PER_TILE, keys[0]);
@@ -439,7 +438,7 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp, bool IsLastTile = true>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Sort(KeyT (&keys)[ItemsPerThread],
        ValueT (&items)[ItemsPerThread],
        CompareOp compare_op,
@@ -457,7 +456,7 @@ public:
     }
     else
     {
-      detail::stable_odd_even_sort<Unroll>(keys, items, compare_op);
+      _CUB::detail::stable_odd_even_sort<Unroll>(keys, items, compare_op);
 
       // each thread has sorted keys
       // merge sort keys in shared memory
@@ -506,7 +505,7 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Sort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op, int valid_items)
   {
     // keys[0] only binds a reference here; without a sentinel it is never read.
@@ -550,7 +549,7 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int valid_items)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int valid_items)
   {
     ValueT items[ItemsPerThread];
     Sort(keys, items, compare_op, valid_items);
@@ -585,7 +584,7 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void StableSort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void StableSort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op)
   {
     Sort(keys, compare_op);
   }
@@ -622,7 +621,7 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   StableSort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op)
   {
     Sort(keys, items, compare_op);
@@ -671,7 +670,7 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   StableSort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int valid_items, KeyT oob_default)
   {
     Sort(keys, compare_op, valid_items, oob_default);
@@ -725,7 +724,7 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp, bool IsLastTile = true>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void StableSort(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void StableSort(
     KeyT (&keys)[ItemsPerThread],
     ValueT (&items)[ItemsPerThread],
     CompareOp compare_op,
@@ -773,7 +772,7 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void StableSort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int valid_items)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void StableSort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int valid_items)
   {
     Sort(keys, compare_op, valid_items);
   }
@@ -819,7 +818,7 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   StableSort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op, int valid_items)
   {
     Sort(keys, items, compare_op, valid_items);
@@ -831,12 +830,12 @@ private:
   //! run, and the run ending at ITEMS_PER_TILE would otherwise read an uninitialized value
   //! (see NVIDIA/cccl#5327). The items side needs no such store: the gather indices record
   //! pre-increment positions, which never exceed ITEMS_PER_TILE - 1.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void StoreKeys(KeyT (&keys)[ItemsPerThread])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void StoreKeys(KeyT (&keys)[ItemsPerThread])
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      const int idx                 = ItemsPerThread * linear_tid + item;
+      const int idx                 = (ItemsPerThread * linear_tid) + item;
       temp_storage.keys_shared[idx] = keys[item];
     }
     if (linear_tid == 0)
@@ -846,14 +845,14 @@ private:
   }
 
   //! Moves this thread's values into the positions given by \p indices, via shared memory.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExchangeItems(ValueT (&items)[ItemsPerThread], int (&indices)[ItemsPerThread])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExchangeItems(ValueT (&items)[ItemsPerThread], int (&indices)[ItemsPerThread])
   {
     Sync();
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      const int idx                  = ItemsPerThread * linear_tid + item;
+      const int idx                  = (ItemsPerThread * linear_tid) + item;
       temp_storage.items_shared[idx] = items[item];
     }
 
@@ -880,7 +879,7 @@ private:
   //! indeterminate values, which are copied around but never compared and never placed within the
   //! valid prefix, because the merge rounds clamp every run to \p valid_items.
   template <bool HasOobDefault, typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SortPartialTile(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SortPartialTile(
     KeyT (&keys)[ItemsPerThread],
     ValueT (&items)[ItemsPerThread],
     CompareOp compare_op,
@@ -899,7 +898,7 @@ private:
       _CCCL_PRAGMA_UNROLL(unroll)
       for (int item = 1; item < ItemsPerThread; ++item)
       {
-        if (ItemsPerThread * linear_tid + item < valid_items)
+        if ((ItemsPerThread * linear_tid) + item < valid_items)
         {
           max_key = compare_op(max_key, keys[item]) ? keys[item] : max_key;
         }
@@ -909,7 +908,7 @@ private:
         }
       }
 
-      detail::stable_odd_even_sort<Unroll>(keys, items, compare_op);
+      _CUB::detail::stable_odd_even_sort<Unroll>(keys, items, compare_op);
     }
 
     MergeRounds<true>(keys, items, compare_op, valid_items);
@@ -924,7 +923,7 @@ private:
   //! end up with unspecified values, and trailing rounds whose input runs already cover all valid
   //! items are skipped.
   template <bool Clamped, typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void MergeRounds(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void MergeRounds(
     KeyT (&keys)[ItemsPerThread],
     ValueT (&items)[ItemsPerThread],
     CompareOp compare_op,
@@ -959,7 +958,10 @@ private:
 
       const int thread_idx_in_thread_group_being_merged = mask & linear_tid;
 
-      int keys1_beg, keys1_end, keys2_end, diag;
+      int keys1_beg;
+      int keys1_end;
+      int keys2_end;
+      int diag;
       if constexpr (Clamped)
       {
         keys1_beg = (::cuda::std::min) (valid_items, start);
@@ -984,7 +986,7 @@ private:
       const int keys1_count = keys1_end - keys1_beg;
       const int keys2_count = keys2_end - keys2_beg;
 
-      const int partition_diag = MergePath(
+      const int partition_diag = _CUB::MergePath(
         &temp_storage.keys_shared[keys1_beg],
         &temp_storage.keys_shared[keys2_beg],
         keys1_count,
@@ -996,7 +998,7 @@ private:
       const int keys2_beg_loc   = keys2_beg + diag - partition_diag;
       const int keys1_count_loc = keys1_end - keys1_beg_loc;
       const int keys2_count_loc = keys2_end - keys2_beg_loc;
-      detail::serial_merge<Unroll>(
+      _CUB::detail::serial_merge<Unroll>(
         &temp_storage.keys_shared[0],
         keys1_beg_loc,
         keys2_beg_loc,
@@ -1013,7 +1015,7 @@ private:
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sync() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Sync() const
   {
     static_cast<const SynchronizationPolicy*>(this)->SyncImplementation();
   }
@@ -1113,7 +1115,6 @@ class BlockMergeSort
         BlockMergeSort<KeyT, BlockDimX, ItemsPerThread, ValueT, BlockDimY, BlockDimZ, Unroll>,
         Unroll>
 {
-private:
   // The thread block size in threads
   static constexpr int BLOCK_THREADS  = BlockDimX * BlockDimY * BlockDimZ;
   static constexpr int ITEMS_PER_TILE = ItemsPerThread * BLOCK_THREADS;
@@ -1122,16 +1123,17 @@ private:
     BlockMergeSortStrategy<KeyT, ValueT, BLOCK_THREADS, ItemsPerThread, BlockMergeSort, Unroll>;
 
 public:
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSort()
-      : BlockMergeSortStrategyT(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockMergeSort()
+      : BlockMergeSortStrategyT(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE explicit BlockMergeSort(typename BlockMergeSortStrategyT::TempStorage& temp_storage)
-      : BlockMergeSortStrategyT(temp_storage, RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+  _CCCL_DEVICE_API
+  _CCCL_FORCEINLINE explicit BlockMergeSort(typename BlockMergeSortStrategyT::TempStorage& temp_storage)
+      : BlockMergeSortStrategyT(temp_storage, _CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
 private:
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SyncImplementation() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SyncImplementation() const
   {
     __syncthreads();
   }

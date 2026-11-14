@@ -37,7 +37,7 @@ struct Uninitialized
   alignas(T) DeviceWord storage[WORDS];
 
   /// Alias
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T& Alias()
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE T& Alias()
   {
     return reinterpret_cast<T&>(*this);
   }
