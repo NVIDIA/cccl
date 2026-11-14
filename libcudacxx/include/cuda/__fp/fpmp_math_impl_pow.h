@@ -681,6 +681,95 @@ _CCCL_FPMP_MATH_DISPATCH_2A(pow)
 
 /*
  * ====================================================================
+ * Single-precision seeds for cbrt(x) and rcbrt(x)
+ * ====================================================================
+ *
+ * r^(1/3) and r^(-1/3) for the reduced argument r in [1/4, 2), to a
+ * relative error of about 2^-23; the float polish and the Halley step
+ * that follow need no more.
+ *
+ * The device evaluates ex2(+-lg2(r) / 3) with the SFU lg2/ex2 pair. A
+ * host whose fmaf is a hardware instruction refines a minimax polynomial
+ * instead, which is faster there than exp2f and log2f. Every multiply-add
+ * is an explicit fma, so that result depends neither on the compiler's
+ * contraction nor on the C library. Over every float in [1/4, 2) these
+ * seeds err by at most 2^-23.98 (cbrt) and 2^-23.29 (rcbrt).
+ *
+ * Any other host keeps exp2f and log2f: with fmaf a library call, the
+ * polynomial seeds make cbrt 9% and rcbrt 14% slower on x86-64.
+ *
+ * Polynomials: Sollya 8.0,
+ *   fpminimax(x^(1/3),  4, [|single...|], [1/4; 2], relative, floating)
+ *   fpminimax(x^(-1/3), 3, [|single...|], [1/4; 2], relative, floating)
+ * with relative errors of at most 1.87e-3 and 1.69e-2.
+ */
+
+// FP_FAST_FMAF is the <cmath> statement that fmaf is hardware; clang does
+// not make it on x86, where __FMA__ says the same.
+#  if defined(FP_FAST_FMAF) || defined(__FMA__)
+#    define _CCCL_FPMP_HOST_SEED_POLY 1
+#  else
+#    define _CCCL_FPMP_HOST_SEED_POLY 0
+#  endif
+
+#  if _CCCL_FPMP_HOST_SEED_POLY
+
+/* Host seed for cbrt: one Halley step s - s (s^3 - r) / (2 s^3 + r) on
+ * the quartic, with s^3 - r = fma(s2_hi, s, -r) + s2_lo s for the exact
+ * square s2_hi + s2_lo = s^2. A relative error e becomes 2/3 e^3:
+ * 4.4e-9, below the rounding of the step. */
+_CCCL_FPMP_CORE_API float __internal_fpmp2_cbrt_seed_host(const float __r) noexcept
+{
+  float __s = ::cuda::__fpmp_fma_rn(-0x1.1d6df4p-4f, __r, 0x1.8bab52p-2f);
+  __s       = ::cuda::__fpmp_fma_rn(__s, __r, -0x1.b0554p-1f);
+  __s       = ::cuda::__fpmp_fma_rn(__s, __r, 0x1.21c40ap+0f);
+  __s       = ::cuda::__fpmp_fma_rn(__s, __r, 0x1.94a7acp-2f);
+
+  float __s2_lo;
+  const float __s2_hi = ::cuda::__fpmp_two_mult_fma(__s, __s, &__s2_lo);
+  const float __numer = ::cuda::__fpmp_fma_rn(__s2_lo, __s, ::cuda::__fpmp_fma_rn(__s2_hi, __s, -__r));
+  const float __denom = ::cuda::__fpmp_fma_rn(__s2_hi + __s2_hi, __s, __r);
+  return ::cuda::__fpmp_fma_rn(-__s, __numer / __denom, __s);
+}
+
+/* Host seed for rcbrt: two division-free steps s (1 + u/3 + 2u^2/9),
+ * u = 1 - r s^3, on the cubic. A relative error e becomes 14/3 e^3:
+ * 2.2e-5 after the first step and 5e-14 after the second. */
+_CCCL_FPMP_CORE_API float __internal_fpmp2_rcbrt_seed_host(const float __r) noexcept
+{
+  float __s = ::cuda::__fpmp_fma_rn(-0x1.092b32p-2f, __r, 0x1.2a688p+0f);
+  __s       = ::cuda::__fpmp_fma_rn(__s, __r, -0x1.e31ca6p+0f);
+  __s       = ::cuda::__fpmp_fma_rn(__s, __r, 0x1.f6b196p+0f);
+
+  for (int __i = 0; __i < 2; ++__i)
+  {
+    const float __u  = ::cuda::__fpmp_fma_rn(-__r, (__s * __s) * __s, 1.0f);
+    const float __hf = ::cuda::__fpmp_fma_rn(0x1.c71c72p-3f, __u, 0x1.555556p-2f);
+    __s              = ::cuda::__fpmp_fma_rn(__u * __s, __hf, __s);
+  }
+  return __s;
+}
+
+#  endif // _CCCL_FPMP_HOST_SEED_POLY
+
+_CCCL_FPMP_CORE_API float __internal_fpmp2_cbrt_seed(const float __r) noexcept
+{
+#  if _CCCL_FPMP_HOST_SEED_POLY
+  NV_IF_TARGET(NV_IS_HOST, (return ::cuda::__internal_fpmp2_cbrt_seed_host(__r);))
+#  endif // _CCCL_FPMP_HOST_SEED_POLY
+  return ::cuda::__fpmp_fast_exp2(0x1.555556p-2f * ::cuda::__fpmp_fast_log2(__r));
+}
+
+_CCCL_FPMP_CORE_API float __internal_fpmp2_rcbrt_seed(const float __r) noexcept
+{
+#  if _CCCL_FPMP_HOST_SEED_POLY
+  NV_IF_TARGET(NV_IS_HOST, (return ::cuda::__internal_fpmp2_rcbrt_seed_host(__r);))
+#  endif // _CCCL_FPMP_HOST_SEED_POLY
+  return ::cuda::__fpmp_fast_exp2(-0x1.555556p-2f * ::cuda::__fpmp_fast_log2(__r));
+}
+
+/*
+ * ====================================================================
  * cbrt(x) - cube root
  * ====================================================================
  */
@@ -696,13 +785,14 @@ _CCCL_FPMP_MATH_DISPATCH_2A(pow)
  *      extraction sees a normal float; the +8 bias in the result
  *      exponent is undone in the final scaling step.
  *   4. Argument reduction:  ax = r * 2^(3*nexpo)  with
- *      nexpo = round((expo - 126) / 3).  The reduced r sits in
- *      roughly [2^-1, 2^1), which gives the SFU lg2/ex2 pair a tight
- *      enough range that one Halley step recovers full fp32mp2
- *      precision.
- *   5. Seed s0 = fast_exp2(third * fast_log2(r_hi)) from the SFU pair
- *      (~2^-22), polished by one Newton step in float with an exact
- *      s0^2, so s1 is within an ulp of cbrt(r) whatever the seed did.
+ *      nexpo = round((expo - 126) / 3).  The reduced r lies in
+ *      [1/4, 2): ax = m * 2^(expo - 126) with m in [1/2, 1), and
+ *      (expo - 126) - 3 nexpo is -1, 0 or 1.
+ *   5. Seed s0 ~ r_hi^(1/3) in single precision
+ *      (__internal_fpmp2_cbrt_seed: the SFU lg2/ex2 pair on the device,
+ *      ~2^-22; a refined polynomial on a host with hardware fma),
+ *      polished by one Newton step in float with an exact s0^2, so s1 is
+ *      within an ulp of cbrt(r) whatever the seed did.
  *   6. One Halley step on s1 with everything that matters exact:
  *         cbrt(r) = s1 + s1 (r - s1^3) / (2 s1^3 + r) + O(eps^3)
  *      r - s1^3 as an error-free pair (exact cube pieces, Sterbenz,
@@ -722,9 +812,9 @@ _CCCL_FPMP_MATH_DISPATCH_2A(pow)
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_cbrt(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  // 1/3 in single precision (round-to-nearest); the exact 1/3 is not
-  // representable in any binary float, but ulp(1/3) is well below the
-  // accuracy of the SFU lg2/ex2 pair so this is sufficient.
+  // 1/3 in single precision (round-to-nearest). (expo - 126) / 3 is at
+  // least 1/6 away from a rounding tie, so the product rounds to the same
+  // integer as the exact quotient.
   constexpr float __third_f = 0x1.555556p-2f;
 
   const uint32_t __xbits   = ::cuda::std::bit_cast<uint32_t>(__x_hi);
@@ -780,8 +870,8 @@ __internal_fpmp2_cbrt(const float __x_hi, const float __x_lo, float* __res_hi, f
   const float __scale_b = ::cuda::std::bit_cast<float>(static_cast<uint32_t>((127 + __rest_pow) * __exp_shift));
   const float __r_lo    = (__ax_lo * __scale_a) * __scale_b;
 
-  /* Seed: the SFU lg2/ex2 pair, about 2^-22 relative. */
-  const float __s0 = ::cuda::__fpmp_fast_exp2(__third_f * ::cuda::__fpmp_fast_log2(__r_hi));
+  /* Seed: about 2^-22 relative on the device, 2^-24 on a host with hardware fma. */
+  const float __s0 = ::cuda::__internal_fpmp2_cbrt_seed(__r_hi);
 
   /* Float polish, one Newton step s1 = s0 - (s0^3 - r) s0 / (3 r) with s0^2 as
    * an exact pair, so that s1 lands within an ulp of cbrt(r) whatever the seed
@@ -881,12 +971,13 @@ _CCCL_FPMP_MATH_DISPATCH_1A(cbrt)
  *      extraction sees a normal float; the +8 offset ends up as a
  *      +8 shift on the back-scale (denorm_div3 = 8).
  *   4. Argument reduction:  ax = r * 2^(3*nexpo) with
- *      nexpo = round((expo - 126) / 3).  Reduced r sits in roughly
- *      [2^-2, 2^2), giving the SFU lg2/ex2 pair a tight enough range
- *      that one Halley step recovers full fp32mp2 precision.
- *   5. Seed s0 = fast_exp2(-third * fast_log2(r_hi)) from the SFU pair
- *      (~2^-22), polished by one Newton step in float (no reciprocal
- *      needed), so s1 is within an ulp of 1/cbrt(r) whatever the seed did.
+ *      nexpo = round((expo - 126) / 3).  The reduced r lies in
+ *      [1/4, 2), as for cbrt.
+ *   5. Seed s0 ~ r_hi^(-1/3) in single precision
+ *      (__internal_fpmp2_rcbrt_seed: the SFU lg2/ex2 pair on the device,
+ *      ~2^-22; a refined polynomial on a host with hardware fma),
+ *      polished by one Newton step in float (no reciprocal needed), so
+ *      s1 is within an ulp of 1/cbrt(r) whatever the seed did.
  *   6. One Halley step on s1 with the residual exact:
  *          u     = 1 - r s1^3        (error-free pair: exact cube pieces,
  *                                     1 - (r s1^3)_hi exact, the four
@@ -907,8 +998,8 @@ _CCCL_FPMP_MATH_DISPATCH_1A(cbrt)
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_rcbrt(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  // 1/3 and 2/9 in single precision (round-to-nearest); ulp at this
-  // scale is far below the SFU lg2/ex2 estimate's accuracy.
+  // 1/3 and 2/9 in single precision (round-to-nearest). nexpo rounds as
+  // in cbrt.
   constexpr float __third_f      = 0x1.555556p-2f; // ~= 1/3
   constexpr float __two_ninths_f = 0x1.c71c72p-3f; // ~= 2/9
 
@@ -976,8 +1067,8 @@ __internal_fpmp2_rcbrt(const float __x_hi, const float __x_lo, float* __res_hi, 
   const float __scale_b = ::cuda::std::bit_cast<float>(static_cast<uint32_t>((127 + __rest_pow) * __exp_shift));
   const float __r_lo    = (__ax_lo * __scale_a) * __scale_b;
 
-  /* Seed: the SFU lg2/ex2 pair, about 2^-22 relative. */
-  const float __s0 = ::cuda::__fpmp_fast_exp2(-__third_f * ::cuda::__fpmp_fast_log2(__r_hi));
+  /* Seed: about 2^-22 relative on the device, 2^-23 on a host with hardware fma. */
+  const float __s0 = ::cuda::__internal_fpmp2_rcbrt_seed(__r_hi);
 
   /* Float polish, one Newton step s1 = s0 (1 + (1 - r s0^3) / 3): no reciprocal
    * needed, and s1 lands within an ulp of 1/cbrt(r) whatever the seed did. */
