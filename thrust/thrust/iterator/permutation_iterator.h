@@ -28,8 +28,10 @@
 #endif // no system header
 
 #include <thrust/detail/type_traits.h>
+#include <thrust/detail/use_default.h>
 #include <thrust/iterator/detail/minimum_system.h>
 #include <thrust/iterator/iterator_adaptor.h>
+#include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
 
 THRUST_NAMESPACE_BEGIN

@@ -15,14 +15,22 @@
 
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/detail/reference_forward_declaration.h>
+#include <thrust/detail/type_traits.h>
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/tuple.h>
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__tuple_dir/tuple_indices.h>
+#include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
-#include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
 

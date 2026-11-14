@@ -13,8 +13,11 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/pointer.h>
-#include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/tagged_iterator.h>
+#include <thrust/iterator/iterator_traits.h>
+
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_convertible.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
