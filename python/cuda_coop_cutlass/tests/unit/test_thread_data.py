@@ -250,3 +250,20 @@ def test_control_flow_checks_lane_types():
         ThreadData(
             items_per_thread=2, values=[Int32(1), Uint32(2)]
         ).__extract_mlir_values__()
+
+
+@pytest.mark.parametrize("selector", [np.int32, np.dtype("int32"), int])
+def test_equivalent_dtype_selectors(selector):
+    data = ThreadData.from_values(Int32(7), dtype=Int32)
+    assert ThreadData.from_payload(data, dtype=selector) is data
+
+
+@pytest.mark.parametrize(
+    "selector,item,expected", [(int, True, 1), (float, np.float64(1.5), 1.5)]
+)
+def test_casting_constructor_normalizes_scalar_subclasses(
+    selector, item, expected
+):
+    data = ThreadData.from_fn(1, lambda _: item, dtype=selector)
+    assert type(data[0]) is selector
+    assert data[0] == expected
