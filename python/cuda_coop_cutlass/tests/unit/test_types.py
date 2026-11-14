@@ -32,6 +32,8 @@ _DTYPE_CASES = [
     (np.uint32, typing.Uint32),
     (np.int64, typing.Int64),
     (np.uint64, typing.Uint64),
+    (np.longlong, typing.Int64),
+    (np.ulonglong, typing.Uint64),
     (np.float32, typing.Float32),
     (np.float64, typing.Float64),
 ]
@@ -230,3 +232,20 @@ def test_wide_valid_items_retains_original_range(dtype, value, valid):
         fallback = select.operands[2].owner.attributes["value"]
         assert ir.IntegerAttr(fallback).value == -1
         assert module.operation.verify()
+
+
+@pytest.mark.parametrize(
+    "value,dtype",
+    (
+        (np.int64(1), typing.Int32),
+        (np.float64(1.5), typing.Float32),
+        (np.int32(1), typing.Float32),
+    ),
+)
+def test_numpy_literals_retain_declared_dtype(value, dtype):
+    assert (
+        _types.coerce_plain_scalar(
+            value, dtype, name="item", scope="test", allow_nonfinite=True
+        )
+        is _types._NOT_PLAIN_SCALAR
+    )
