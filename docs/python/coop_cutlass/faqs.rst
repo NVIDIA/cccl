@@ -350,6 +350,12 @@ inside one branch or loop iteration is also supported. Host-created
 descriptors can be used directly, but cannot be carried through runtime
 control flow.
 
+Let ``TempStorage()`` infer capacity unless an explicit limit is needed.
+A supplied capacity must fit both the device's shared-memory budget and the
+signed 32-bit byte-count representation. Shared-storage alignment must be a
+power of two no greater than 1024 bytes. A capacity smaller than the required
+allocation raises a compilation error.
+
 .. _coop-faq-compiler-setup:
 
 Why does import work but kernel compilation fail?

@@ -216,8 +216,11 @@ def reserve_temp_storage_tensor(
 
     from cutlass import BFloat16, Float16, cute
 
+    from .._temp_storage import (
+        _normalize_storage_alignment,
+        _validate_storage_size,
+    )
     from .._thread_data import _normalize_index_int
-    from .._validation import _normalize_alignment
     from ._types import ALL_PROVIDER_TYPES, canonical_dsl_type
 
     count = (
@@ -246,7 +249,14 @@ def reserve_temp_storage_tensor(
             "integer or floating-point scalar type."
         )
     itemsize = value_type.width // 8
-    alignment = max(itemsize, _normalize_alignment(alignment) or 1)
+    _validate_storage_size(count * itemsize)
+    capacity = temp_storage.capacity_size_in_bytes
+    if capacity is not None and count * itemsize > capacity:
+        raise DSLUserCodeError(
+            "TempStorage.reserve capacity is smaller than its reservation "
+            f"({capacity} < {count * itemsize} bytes)."
+        )
+    alignment = max(itemsize, _normalize_storage_alignment(alignment) or 1)
     if temp_storage.auto_sync:
         raise ValueError(
             "TempStorage.reserve requires auto_sync=False; callers must "
@@ -344,10 +354,18 @@ def plan_deferred_temp_storage_events(
 
     Raises
     ------
+    DSLUserCodeError
+        Uses disagree on configuration, or explicit capacity is too small.
+    ValueError
+        Resolved capacity or alignment exceeds the supported range.
     DSLRuntimeError
-        Uses of one descriptor disagree on its configuration, a layout is
-        missing, or explicit capacity is too small.
+        A required C++ scratch layout is missing.
     """
+
+    from .._temp_storage import (
+        _normalize_storage_alignment,
+        _validate_storage_size,
+    )
 
     grouped: dict[tuple[Any, int], list[DeferredTempStorageEvent]] = {}
     for event in events:
@@ -362,7 +380,7 @@ def plan_deferred_temp_storage_events(
         if any(
             event.reservation_layout is not None for event in group_events
         ) and any(event.auto_sync for event in group_events):
-            raise DSLRuntimeError(
+            raise DSLUserCodeError(
                 "TempStorage.reserve requires auto_sync=False for every "
                 "use of its descriptor."
             )
@@ -373,7 +391,7 @@ def plan_deferred_temp_storage_events(
                 or event.capacity_size_in_bytes != first.capacity_size_in_bytes
                 or event.capacity_alignment != first.capacity_alignment
             ):
-                raise DSLRuntimeError(
+                raise DSLUserCodeError(
                     "Deferred TempStorage configuration changed during tracing "
                     f"for {first.kernel_name} ({event.location})."
                 )
@@ -415,7 +433,7 @@ def plan_deferred_temp_storage_events(
 
         capacity_size = first.capacity_size_in_bytes
         if capacity_size is not None and capacity_size < planned_size:
-            raise DSLRuntimeError(
+            raise DSLUserCodeError(
                 "Deferred TempStorage capacity is smaller than "
                 "its resolved plan "
                 f"in {first.kernel_name} ({capacity_size} < {planned_size})."
@@ -427,24 +445,27 @@ def plan_deferred_temp_storage_events(
             first.capacity_alignment or 1, required_plan_alignment
         )
 
+        _validate_storage_size(resolved_size_in_bytes)
+        _normalize_storage_alignment(plan_alignment)
+
         releases = []
         for event in group_events:
             itemsize = event.release_itemsize
             if itemsize is None:
                 continue
             if not resolved_size_in_bytes:
-                raise DSLRuntimeError(
+                raise DSLUserCodeError(
                     "TempStorage.release requires an existing nonempty region."
                 )
             if resolved_size_in_bytes % itemsize:
-                raise DSLRuntimeError(
+                raise DSLUserCodeError(
                     "TempStorage.release region size is not divisible by "
                     "dtype item size "
                     f"({resolved_size_in_bytes} % {itemsize}; "
                     f"{event.location})."
                 )
             if plan_alignment % itemsize:
-                raise DSLRuntimeError(
+                raise DSLUserCodeError(
                     "TempStorage.release dtype requires "
                     f"{itemsize}-byte alignment; "
                     f"region guarantees {plan_alignment} ({event.location})."
@@ -682,7 +703,16 @@ def materialize_deferred_temp_storage_plans(
                 ):
                     _deferred_temp_storage_capability_error()
 
+    from .._temp_storage import _validate_storage_size
+
     for entry_block, kernel_plans in kernel_groups.values():
+        # Each descriptor may fit by itself while their aligned total does not.
+        total_size = 0
+        for plan in kernel_plans:
+            total_size = (
+                _align_up(total_size, plan.alignment) + plan.size_in_bytes
+            )
+            _validate_storage_size(total_size)
         with ir.InsertionPoint.at_block_begin(entry_block):
             allocator = SmemAllocator()
             for plan in kernel_plans:
