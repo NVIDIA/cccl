@@ -17,7 +17,7 @@ from __future__ import annotations
 from collections.abc import Callable, Hashable, Mapping
 from typing import Any, NoReturn
 
-from cutlass.base_dsl.common import DSLRuntimeError
+from cutlass.base_dsl.common import DSLRuntimeError, DSLUserCodeError
 from cutlass.base_dsl.typing import (
     Int32,
     Uint32,
@@ -71,6 +71,14 @@ def _active_cuda_kernel_op() -> Any:
     op = current_ip.block.owner
     while op is not None:
         operation = getattr(op, "operation", op)
+        if getattr(operation, "name", None) == "scf.execute_region":
+            # CuTe may erase speculative conditional-expression traces. Never
+            # retain placeholders or lifetime markers from such a region.
+            raise DSLUserCodeError(
+                "TempStorage operations inside runtime conditional "
+                "expressions or scf.execute_region are unsupported; "
+                "use an if statement with a group-uniform condition."
+            )
         if getattr(operation, "name", None) == "cuda.kernel":
             return operation
         if (

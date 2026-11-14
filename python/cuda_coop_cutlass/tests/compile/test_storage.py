@@ -152,3 +152,38 @@ def test_deferred_storage_extends_explicit_launch_size(requested):
             re.escape(value) + rf" = llvm.mlir.constant\({expected} : i64\)",
             host_ir,
         )
+
+
+@pytest.mark.parametrize(
+    "operation", ["implicit_sum", "sum", "reserve", "release"]
+)
+@pytest.mark.parametrize("branch", ["then", "else"])
+def test_runtime_conditional_expression_rejects_storage(operation, branch):
+    # This used to retain placeholders belonging to CuTe's erased speculative
+    # trace and segfault Python in finalization. Compilation must stop safely.
+    def value(storage):
+        if operation == "implicit_sum":
+            return coop.sum(coop.this_block(), cutlass.Int32(1))
+        if operation == "sum":
+            return coop.sum(
+                coop.this_block(), cutlass.Int32(1), temp_storage=storage
+            )
+        if operation == "reserve":
+            return storage.reserve(1, cutlass.Int32)[0]
+        return storage.release(cutlass.Int32)[0]
+
+    @cute.kernel
+    def kernel(flag: cutlass.Int32):
+        storage = coop.TempStorage(256, alignment=4)
+        if cutlass.const_expr(branch == "then"):
+            total = value(storage) if flag > 0 else cutlass.Int32(0)
+        else:
+            total = cutlass.Int32(0) if flag > 0 else value(storage)
+        cute.printf("%d", total)
+
+    @cute.jit
+    def launch(flag: cutlass.Int32):
+        kernel(flag).launch(grid=1, block=64)
+
+    with pytest.raises(Exception, match="use an if statement"):
+        cute.compile[(GPUArch("sm_80"),)](launch, cutlass.Int32(1))

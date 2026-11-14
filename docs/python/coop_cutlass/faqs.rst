@@ -318,6 +318,24 @@ they are not broadcast to every lane. Each returned payload has
 batch are unspecified. The :doc:`feature-sum example
 <visualizations/reduce-batched>` guards its stores by batch index.
 
+.. _coop-faq-collective-control-flow:
+
+Can thread-local work surround a collective?
+--------------------------------------------
+
+Yes. A leader thread can prepare data before a collective and consume its
+result afterwards. Every member of the group must reach the collective in
+the same iteration, including members whose inputs are excluded by
+``valid_items``. A condition around the collective itself must be uniform
+across the group. A block collective inside ``if thread == 0`` violates
+this requirement.
+
+Use a runtime ``if`` statement for conditional collective calls. A runtime
+conditional expression such as ``coop.sum(block, x) if condition else y``
+is rejected when it needs temporary storage. Synchronize application data
+before another thread reads it; the collective's scratch-reuse barrier does
+not replace synchronization required by earlier application writes.
+
 .. _coop-faq-compiler-setup:
 
 Why does import work but kernel compilation fail?
