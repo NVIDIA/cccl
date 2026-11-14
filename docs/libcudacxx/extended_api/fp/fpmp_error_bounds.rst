@@ -133,20 +133,12 @@ host against binary128 — whichever of the two is larger.
      - 4.0 [#host]_
 
    * - ``x * c`` (scalar ``c`` held exactly by one limb)
-     - ``low``, ``mid``
+     - all
      - relative ≤ ``2u²`` to first order
      - derived
      - all operands
      - 1.98 [#host]_
      - 1.99 [#host]_
-
-   * - ``x * c`` (scalar ``c`` held exactly by one limb)
-     - ``high``
-     - relative ≤ ``2u²`` to first order ([JMP17]_ Algorithm 7)
-     - derived
-     - all operands
-     - 1.50 [#host]_
-     - 1.50 [#host]_
 
    * - ``fma(x, y, z)``
      - ``low``, ``mid``
@@ -201,8 +193,8 @@ host against binary128 — whichever of the two is larger.
    predicts. The specification's own ``fp64mp2`` table reports a smaller maximum for ``sqrt``
    over its working range.
 
-``low`` and ``mid`` addition, ``low`` and ``mid`` ``fma``, and ``low`` and ``mid``
-multiplication by a one-limb scalar compute the *same value*; the normalizing level additionally normalizes it, which is exact, so they share a bound
+``low`` and ``mid`` addition, ``low`` and ``mid`` ``fma``, and multiplication by a one-limb
+scalar at every level compute the *same value*; the normalizing levels additionally normalize it, which is exact, so they share a bound
 and differ only in the state of the result. Division by a one-limb scalar gives the value of
 ``x / y`` with ``y = (c, 0)``, one operation cheaper. The division and square-root sequences (Nagai et al. 2008
 and Karp-Markstein 1997 iterations) have no published analysis; double-word divisions with
