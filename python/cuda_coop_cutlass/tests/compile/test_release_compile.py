@@ -62,9 +62,7 @@ def test_release_rejects_unmodeled_extension_control_flow():
         storage = coop.TempStorage(64)
         native_region(storage, flag)
 
-    with pytest.raises(
-        Exception, match="cannot analyze control flow cf.switch"
-    ):
+    with pytest.raises(Exception, match="scf.execute_region are unsupported"):
         _compile(kernel)
 
 
