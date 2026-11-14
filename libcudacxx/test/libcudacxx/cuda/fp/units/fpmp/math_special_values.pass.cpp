@@ -376,6 +376,21 @@ TEST_HOST_DEVICE_FUNC void test_trig()
   assert(approx_eq(static_cast<double>(cos(T(-0x1.8p25f))), -0.8961918292972255));
 }
 
+// sin, tan and the sine of sincos return a zero argument with its sign, at every accuracy level.
+
+template <typename T>
+TEST_HOST_DEVICE_FUNC void test_trig_zero()
+{
+  assert(is_neg_zero(sin(T(-0.0f))) && is_pos_zero(sin(T(0.0f))));
+  assert(is_neg_zero(tan(T(-0.0f))) && is_pos_zero(tan(T(0.0f))));
+  T s, c;
+  sincos(T(-0.0f), &s, &c);
+  assert(is_neg_zero(s) && c == T(1.0f));
+  sincos(T(0.0f), &s, &c);
+  assert(is_pos_zero(s) && c == T(1.0f));
+  assert(cos(T(-0.0f)) == T(1.0f));
+}
+
 // ---- roots, distances and the positive difference ------------------------------
 
 TEST_HOST_DEVICE_FUNC void test_roots_and_distances()
@@ -510,6 +525,9 @@ int main(int, char**)
   test_hyperbolic();
   test_inverse_trig();
   test_trig();
+  test_trig_zero<cuda::fp32mp2>();
+  test_trig_zero<cuda::fp32mp2_low>();
+  test_trig_zero<cuda::fp32mp2_high>();
   test_roots_and_distances();
   test_erf_family();
   test_erfc_ends<cuda::fp32mp2>();

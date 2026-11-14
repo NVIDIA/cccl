@@ -283,8 +283,8 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_trig_reduction(
 {
   using __afloat = fp32mp2_high;
 
-  _FpType __abs_hi    = (__x_hi < _FpType(0)) ? -__x_hi : __x_hi;
-  uint32_t __abs_bits = ::cuda::std::bit_cast<uint32_t>(__abs_hi);
+  // The sign bit is cleared, not negated away: -0 is below pi/4 too, and comes back as -0.
+  uint32_t __abs_bits = ::cuda::std::bit_cast<uint32_t>(__x_hi) & 0x7FFFFFFFU;
 
   /* No reduction for |x| < pi/4 */
   if (__abs_bits < 0x3F490FDBU)
@@ -763,7 +763,8 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincos(
     __s_lo = -__s_lo;
   }
 
-  *__sin_hi = __s_hi;
+  // sin(-0) is -0; the kernels' x + x z is +0 there.
+  *__sin_hi = (__x_hi == 0.0f) ? __x_hi : __s_hi;
   *__sin_lo = __s_lo;
   *__cos_hi = __c_hi;
   *__cos_lo = __c_lo;
@@ -900,7 +901,8 @@ __internal_fpmp2_tan(const float __x_hi, const float __x_lo, float* __res_hi, fl
 
   __mp2_t __result = (__quadrant & 1) ? __mp2_t(-__c / __s) : __mp2_t(__s / __c);
 
-  *__res_hi = __result.hi();
+  // tan(-0) is -0; the quotient of the kernels is +0 there.
+  *__res_hi = (__x_hi == 0.0f) ? __x_hi : __result.hi();
   *__res_lo = __result.lo();
 }
 
