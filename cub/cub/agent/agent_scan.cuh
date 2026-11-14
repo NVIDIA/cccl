@@ -380,9 +380,20 @@ struct AgentScan
     _CCCL_IKET_RANGE_PUSH(Load);
     if constexpr (IsLastTile)
     {
-      // Fill last element with the first element because collectives are
-      // not suffix guarded.
-      BlockLoadT(temp_storage.load).Load(d_in + tile_offset, items, num_remaining, *(d_in + tile_offset));
+      if constexpr (IS_INCLUSIVE)
+      {
+        // Fill last element with the first element because collectives are
+        // not suffix guarded.
+        BlockLoadT(temp_storage.load).Load(d_in + tile_offset, items, num_remaining, *(d_in + tile_offset));
+      }
+      else
+      {
+        // Ignore the last element of the input, as it doesn't contribute to the result
+        // We use init_value instead of the first element to avoid the edge case where
+        // only the last element is inside a new tile.
+        BlockLoadT(temp_storage.load)
+          .Load(d_in + tile_offset, items, static_cast<int>(num_remaining) - 1, static_cast<AccumT>(init_value));
+      }
     }
     else
     {
@@ -563,6 +574,24 @@ struct AgentScan
   //---------------------------------------------------------------------------
 
   /**
+   * @brief Whether the tile starting at @p range_offset can be consumed as a full (unguarded) tile
+   *
+   * An exclusive scan never reads the last input element, so a tile ending exactly at @p range_end must take
+   * the guarded path, which skips that element.
+   */
+  static _CCCL_DEVICE _CCCL_FORCEINLINE bool HasFullTile(OffsetT range_offset, OffsetT range_end)
+  {
+    if constexpr (IS_INCLUSIVE)
+    {
+      return range_offset + TILE_ITEMS <= range_end;
+    }
+    else
+    {
+      return range_offset + TILE_ITEMS < range_end;
+    }
+  }
+
+  /**
    * @brief Process a tile of input
    *
    * @param tile_offset
@@ -584,9 +613,19 @@ struct AgentScan
     _CCCL_IKET_RANGE_PUSH(Load);
     if constexpr (IsLastTile)
     {
-      // Fill last element with the first element because collectives are
-      // not suffix guarded.
-      BlockLoadT(temp_storage.load).Load(d_in + tile_offset, items, valid_items, *(d_in + tile_offset));
+      if constexpr (IS_INCLUSIVE)
+      {
+        // Fill last element with the first element because collectives are
+        // not suffix guarded.
+        BlockLoadT(temp_storage.load).Load(d_in + tile_offset, items, valid_items, *(d_in + tile_offset));
+      }
+      else
+      {
+        // Ignore the last element of the input, as it doesn't contribute to the result
+        // We use init_value instead of the first element to avoid the edge case where
+        // only the last element is inside a new tile.
+        BlockLoadT(temp_storage.load).Load(d_in + tile_offset, items, valid_items - 1, static_cast<AccumT>(init_value));
+      }
     }
     else
     {
@@ -638,31 +677,31 @@ struct AgentScan
   {
     BlockScanRunningPrefixOp<AccumT, ScanOpT> prefix_op(scan_op);
 
-    if (range_offset + TILE_ITEMS <= range_end)
+    if (HasFullTile(range_offset, range_end))
     {
       // Consume first tile of input (full)
-      ConsumeTile<true, true>(range_offset, prefix_op);
+      ConsumeTile<true, false>(range_offset, prefix_op);
       range_offset += TILE_ITEMS;
 
       // Consume subsequent full tiles of input
-      while (range_offset + TILE_ITEMS <= range_end)
+      while (HasFullTile(range_offset, range_end))
       {
-        ConsumeTile<false, true>(range_offset, prefix_op);
+        ConsumeTile<false, false>(range_offset, prefix_op);
         range_offset += TILE_ITEMS;
       }
 
-      // Consume a partially-full tile
+      // Consume the last (partially-full) tile
       if (range_offset < range_end)
       {
         int valid_items = range_end - range_offset;
-        ConsumeTile<false, false>(range_offset, prefix_op, valid_items);
+        ConsumeTile<false, true>(range_offset, prefix_op, valid_items);
       }
     }
     else
     {
       // Consume the first tile of input (partially-full)
       int valid_items = range_end - range_offset;
-      ConsumeTile<true, false>(range_offset, prefix_op, valid_items);
+      ConsumeTile<true, true>(range_offset, prefix_op, valid_items);
     }
   }
 
@@ -683,17 +722,17 @@ struct AgentScan
     BlockScanRunningPrefixOp<AccumT, ScanOpT> prefix_op(prefix, scan_op);
 
     // Consume full tiles of input
-    while (range_offset + TILE_ITEMS <= range_end)
+    while (HasFullTile(range_offset, range_end))
     {
-      ConsumeTile<true, false>(range_offset, prefix_op);
+      ConsumeTile<false, false>(range_offset, prefix_op);
       range_offset += TILE_ITEMS;
     }
 
-    // Consume a partially-full tile
+    // Consume the last (partially-full) tile
     if (range_offset < range_end)
     {
       int valid_items = range_end - range_offset;
-      ConsumeTile<false, false>(range_offset, prefix_op, valid_items);
+      ConsumeTile<false, true>(range_offset, prefix_op, valid_items);
     }
   }
 };
