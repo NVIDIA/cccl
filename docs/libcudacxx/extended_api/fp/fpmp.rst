@@ -323,7 +323,7 @@ a scalar that one limb holds exactly, and they are constrained the same way. ``a
 ``fp32mp2`` takes the single-limb path, and so does ``acc += 2``: an integer the pair converts
 from implicitly is accepted, and this constant fits one limb. ``acc += 1.5`` is rejected, because
 a ``double`` generally needs both limbs; under ``CCCL_FPMP_EXPLICIT_CASTS=0`` it compiles and
-takes the single-limb path, since the constant ``1.5`` is a ``float``.
+takes the single-limb path, since a ``float`` holds the value of the constant ``1.5`` exactly.
 
 Setting ``CCCL_FPMP_EXPLICIT_CASTS=0`` restores the fully implicit model, which is worth
 considering when ``fpmp2`` is being dropped into a large existing ``double`` codebase and the edit
