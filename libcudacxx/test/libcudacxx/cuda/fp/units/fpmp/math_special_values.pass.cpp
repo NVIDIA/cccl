@@ -443,6 +443,50 @@ TEST_HOST_DEVICE_FUNC void test_roots_and_distances()
   assert(is_pos_inf(fdim(nl::max(), nl::lowest())) && fdim(nl::max(), nl::lowest()).lo() == 0.0f);
 }
 
+// At every accuracy level: a NaN result of hypot, rhypot and the 3- and 4-operand norms is NaN
+// in both limbs; an infinite operand of a norm gives +inf (+0 for the reciprocal) also next to
+// a NaN, as for hypot; fmax and fmin order -0 below +0.
+
+template <typename T>
+TEST_HOST_DEVICE_FUNC bool is_nan_both(T r)
+{
+  return cuda::std::isnan(r.hi()) && cuda::std::isnan(r.lo());
+}
+
+template <typename T>
+TEST_HOST_DEVICE_FUNC void test_norm_specials()
+{
+  using nl     = cuda::std::numeric_limits<T>;
+  const T pinf = nl::infinity();
+  const T qnan = nl::quiet_NaN();
+  const T one  = T(1.0f);
+
+  assert(is_nan_both(hypot(qnan, one)) && is_nan_both(rhypot(one, qnan)));
+  assert(is_nan_both(norm3d(qnan, one, one)) && is_nan_both(norm4d(one, one, qnan, one)));
+  assert(is_nan_both(rnorm3d(one, qnan, one)) && is_nan_both(rnorm4d(one, one, one, qnan)));
+  assert(is_pos_inf(norm3d(pinf, qnan, one)) && is_pos_inf(norm3d(one, -pinf, one)));
+  assert(is_pos_inf(norm4d(-pinf, qnan, one, one)) && is_pos_inf(norm4d(one, one, one, pinf)));
+  assert(is_pos_zero(rnorm3d(pinf, qnan, one)) && is_pos_zero(rnorm3d(one, one, -pinf)));
+  assert(is_pos_zero(rnorm4d(pinf, qnan, one, one)) && is_pos_zero(rnorm4d(one, -pinf, one, one)));
+  assert(norm3d(T(2.0f), T(-3.0f), T(6.0f)) == T(7.0f) && norm4d(one, one, one, one) == T(2.0f));
+
+  assert(is_pos_zero(fmax(T(-0.0f), T(0.0f))) && is_pos_zero(fmax(T(0.0f), T(-0.0f))));
+  assert(is_neg_zero(fmin(T(-0.0f), T(0.0f))) && is_neg_zero(fmin(T(0.0f), T(-0.0f))));
+}
+
+// fp64mp2 fdim is taken on the limb pair: a difference in the low limbs alone is exact, and one
+// that overflows is +inf.
+
+TEST_HOST_DEVICE_FUNC void test_fdim_fp64mp2()
+{
+  using T  = cuda::fp64mp2;
+  using nl = cuda::std::numeric_limits<T>;
+  assert(fdim(T(1.0, 0x1p-70), T(1.0, 0x1p-72)) == T(0x1.8p-71));
+  assert(is_zero(fdim(T(1.0, 0x1p-72), T(1.0, 0x1p-70))));
+  assert(is_pos_inf(fdim(nl::max(), nl::lowest())) && fdim(nl::max(), nl::lowest()).lo() == 0.0);
+  assert(is_nan(fdim(nl::quiet_NaN(), T(1.0))));
+}
+
 // ---- error and probability functions ------------------------------------------
 
 TEST_HOST_DEVICE_FUNC void test_erf_family()
@@ -557,6 +601,10 @@ int main(int, char**)
   test_trig_zero<cuda::fp32mp2_low>();
   test_trig_zero<cuda::fp32mp2_high>();
   test_roots_and_distances();
+  test_norm_specials<cuda::fp32mp2>();
+  test_norm_specials<cuda::fp32mp2_low>();
+  test_norm_specials<cuda::fp32mp2_high>();
+  test_fdim_fp64mp2();
   test_erf_family();
   test_erfc_ends<cuda::fp32mp2>();
   test_erfc_ends<cuda::fp32mp2_low>();

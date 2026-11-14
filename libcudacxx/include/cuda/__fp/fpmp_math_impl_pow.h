@@ -1224,7 +1224,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_hypot(
   {
     const bool __inf = (__ax == 0x7F800000u) || (__ay == 0x7F800000u);
     *__res_hi        = __inf ? ::cuda::std::bit_cast<float>(0x7F800000u) : (__x_hi + __y_hi);
-    *__res_lo        = 0.0f;
+    *__res_lo        = __inf ? 0.0f : *__res_hi; /* NaN in both limbs */
     return;
   }
   float __a_hi, __a_lo, __h_hi, __h_lo;
@@ -1257,6 +1257,39 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_hypot(
 _CCCL_FPMP_MATH_DISPATCH_2A(hypot)
 
 /*
+ * --------------------------------------------------------------------
+ * Special operands of norm3d, norm4d, rnorm3d and rnorm4d (fp32mp2)
+ * --------------------------------------------------------------------
+ * Answered on entry, as hypot and rhypot do (C Annex F for hypot, extended to n operands
+ * and to the reciprocal): an infinite operand gives +inf (+0 for the reciprocal) also next
+ * to a NaN, where the sum of the squares in double would be NaN, and a NaN operand
+ * otherwise gives NaN in both limbs. Returns true when it has stored the result.
+ * --------------------------------------------------------------------
+ */
+template <int _Np>
+_CCCL_FPMP_CORE_API bool __internal_fpmp2_norm_special(
+  const float (&__x_hi)[_Np], const bool __reciprocal, float* __res_hi, float* __res_lo) noexcept
+{
+  bool __has_inf = false;
+  bool __has_nan = false;
+  for (int __k = 0; __k < _Np; ++__k)
+  {
+    __has_inf = __has_inf || (::cuda::__fpmp_internal_fabs(__x_hi[__k]) == ::cuda::std::__fp_inf<float>());
+    __has_nan = __has_nan || ::cuda::__fpmp_internal_isnan(__x_hi[__k]);
+  }
+  if (__has_inf)
+  {
+    *__res_hi = __reciprocal ? 0.0f : ::cuda::std::__fp_inf<float>();
+    *__res_lo = 0.0f;
+  }
+  else if (__has_nan)
+  {
+    *__res_hi = *__res_lo = ::cuda::std::__fp_nan<float>();
+  }
+  return __has_inf || __has_nan;
+}
+
+/*
  * ====================================================================
  * norm3d(a, b, c) - Euclidean norm of a 3-vector
  * ====================================================================
@@ -1277,6 +1310,11 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_norm3d(
   float* __res_hi,
   float* __res_lo) noexcept
 {
+  const float __x_hi[3] = {__a_hi, __b_hi, __c_hi};
+  if (::cuda::__internal_fpmp2_norm_special(__x_hi, false, __res_hi, __res_lo))
+  {
+    return;
+  }
   using __mp2_t = fpmp2<float>;
   double __ad   = static_cast<double>(__mp2_t(__a_hi, __a_lo));
   double __bd   = static_cast<double>(__mp2_t(__b_hi, __b_lo));
@@ -1338,6 +1376,11 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_norm4d(
   float* __res_hi,
   float* __res_lo) noexcept
 {
+  const float __x_hi[4] = {__a_hi, __b_hi, __c_hi, __d_hi};
+  if (::cuda::__internal_fpmp2_norm_special(__x_hi, false, __res_hi, __res_lo))
+  {
+    return;
+  }
   using __mp2_t = fpmp2<float>;
   double __ad   = static_cast<double>(__mp2_t(__a_hi, __a_lo));
   double __bd   = static_cast<double>(__mp2_t(__b_hi, __b_lo));
@@ -1400,6 +1443,11 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_rnorm3d(
   float* __res_hi,
   float* __res_lo) noexcept
 {
+  const float __x_hi[3] = {__a_hi, __b_hi, __c_hi};
+  if (::cuda::__internal_fpmp2_norm_special(__x_hi, true, __res_hi, __res_lo))
+  {
+    return;
+  }
   using __mp2_t = fpmp2<float>;
   double __ad   = static_cast<double>(__mp2_t(__a_hi, __a_lo));
   double __bd   = static_cast<double>(__mp2_t(__b_hi, __b_lo));
@@ -1461,6 +1509,11 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_rnorm4d(
   float* __res_hi,
   float* __res_lo) noexcept
 {
+  const float __x_hi[4] = {__a_hi, __b_hi, __c_hi, __d_hi};
+  if (::cuda::__internal_fpmp2_norm_special(__x_hi, true, __res_hi, __res_lo))
+  {
+    return;
+  }
   using __mp2_t = fpmp2<float>;
   double __ad   = static_cast<double>(__mp2_t(__a_hi, __a_lo));
   double __bd   = static_cast<double>(__mp2_t(__b_hi, __b_lo));
@@ -1532,7 +1585,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_rhypot(
   {
     const bool __inf = (__ax == 0x7F800000u) || (__ay == 0x7F800000u);
     *__res_hi        = __inf ? 0.0f : (__x_hi + __y_hi);
-    *__res_lo        = 0.0f;
+    *__res_lo        = *__res_hi; /* NaN in both limbs */
     return;
   }
   if ((__ax | __ay) == 0u)
