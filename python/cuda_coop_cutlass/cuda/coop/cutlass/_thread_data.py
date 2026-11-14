@@ -1247,15 +1247,21 @@ class ThreadData:
         return result
 
     def __deepcopy__(self, memo: dict[int, Any]) -> ThreadData:
-        """Copy dtype and items while retaining the uninitialized sentinel."""
+        """Copy the container, sharing immutable traced scalar values."""
+
+        def copy_item(value):
+            if value is _UNSET or _is_cutlass_dsl_dtype(type(value)):
+                return value
+            from cutlass._mlir import ir
+
+            if isinstance(value, ir.Value):
+                return value
+            return _deepcopy(value, memo)
 
         result = ThreadData(
             self.items_per_thread,
             dtype=_deepcopy(self.dtype, memo),
-            values=[
-                _UNSET if value is _UNSET else _deepcopy(value, memo)
-                for value in self._values
-            ],
+            values=[copy_item(value) for value in self._values],
         )
         result.alignment = self.alignment
         memo[id(self)] = result
