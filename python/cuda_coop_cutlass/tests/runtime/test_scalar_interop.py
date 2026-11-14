@@ -37,6 +37,43 @@ def test_numpy_scalar_reduction(value):
     assert observed[0] == float(value) * 32
 
 
+@pytest.mark.parametrize(
+    "operation,seed",
+    (
+        ("min", np.float32(np.inf)),
+        ("max", np.float32(-np.inf)),
+        ("sum", np.float32(np.nan)),
+    ),
+)
+def test_typed_nonfinite_scan_seed(operation, seed):
+    @cute.kernel
+    def kernel(destination: cute.Pointer):
+        thread = cute.arch.thread_idx()[0]
+        result = coop.exclusive_scan(
+            coop.this_block(),
+            cutlass.Float32(thread + 1),
+            scan_op=operation,
+            initial_value=seed,
+        )
+        cute.make_tensor(destination, cute.make_layout(32))[thread] = result
+
+    @cute.jit
+    def launch(destination: cute.Pointer):
+        kernel(destination).launch(grid=1, block=32)
+
+    observed = np.zeros(32, dtype=np.float32)
+    with device_array(observed) as destination:
+        launch(destination)
+    if operation == "sum":
+        assert np.isnan(observed).all()
+    elif operation == "min":
+        np.testing.assert_array_equal(observed, np.r_[np.inf, np.ones(31)])
+    else:
+        np.testing.assert_array_equal(
+            observed, np.r_[-np.inf, np.arange(1, 32)]
+        )
+
+
 @pytest.mark.parametrize("dtype", (np.float32, np.float64))
 @pytest.mark.parametrize("operation", ("min", "max"))
 @pytest.mark.parametrize("group_kind", ("warp", "logical", "block"))

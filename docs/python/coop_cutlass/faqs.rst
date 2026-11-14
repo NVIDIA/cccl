@@ -423,6 +423,12 @@ operand wins over NaN, and an all-NaN contributing prefix produces NaN.
 participate. The ``np.minimum`` and ``np.maximum`` operator aliases select
 these same reduction semantics.
 
+For an exclusive floating scan, use a typed identity with the input dtype,
+for example ``np.float32(np.inf)`` for ``min`` or
+``cutlass.Float32(-math.inf)`` for ``max``. Matching typed NaN and infinity
+seeds are accepted. Plain Python numeric seeds must be finite and
+representable in the input dtype. The seed must be uniform within the group.
+
 .. _coop-faq-compiler-setup:
 
 Why does import work but kernel compilation fail?

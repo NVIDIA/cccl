@@ -123,7 +123,16 @@ def test_dynamic_prefix(dtype):
     )
 
 
-@pytest.mark.parametrize("seed", (2, np.float32(2)))
+@pytest.mark.parametrize(
+    "seed",
+    (
+        2,
+        np.float32(2),
+        np.float32(np.inf),
+        np.float32(-np.inf),
+        np.float32(np.nan),
+    ),
+)
 def test_float_seed(seed):
     @cute.kernel
     def kernel(memory: cute.Pointer):
@@ -197,7 +206,7 @@ def test_invalid_controls(case, expected):
             coop.exclusive_scan(group, value, initial_value=cutlass.Int64(1))
         elif cutlass.const_expr(case == "nonfinite_seed"):
             coop.exclusive_scan(
-                group, cutlass.Float32(1), initial_value=np.float32(np.inf)
+                group, cutlass.Float32(1), initial_value=float("inf")
             )
         elif cutlass.const_expr(case == "large_seed"):
             coop.exclusive_scan(

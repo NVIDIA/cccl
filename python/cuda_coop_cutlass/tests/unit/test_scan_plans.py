@@ -193,8 +193,8 @@ def test_request_plan_mismatch():
         )
 
 
-@pytest.mark.parametrize("initial", (np.float32(np.inf), np.float32(np.nan)))
-def test_nonfinite_seed(initial):
+@pytest.mark.parametrize("initial", (float("inf"), float("-inf"), float("nan")))
+def test_nonfinite_python_seed(initial):
     with pytest.raises(ValueError, match="finite"):
         _scan._typed_value(
             initial, cutlass.Float32, name="initial_value", initial=True

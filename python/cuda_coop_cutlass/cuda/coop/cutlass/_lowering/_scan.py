@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import dataclasses
 import hashlib
-import math
 from typing import Any
 
 import numpy as np
@@ -817,11 +816,12 @@ def _typed_value(value, value_type, *, name="value", initial=False):
     ``value`` is converted to ``value_type``; ``name`` identifies errors.
     Python literals and NumPy values receive range checks. With
     ``initial=True``, NumPy and CuTe scalars must already have ``value_type``
-    and Python or NumPy floats must be finite. Tracing cannot see a runtime
+    and Python float literals must be finite. Tracing cannot see a runtime
     CuTe value, so an initial CuTe scalar is checked only for dtype.
     """
 
-    if isinstance(value, np.generic):
+    typed_numpy = isinstance(value, np.generic)
+    if typed_numpy:
         if (
             initial
             and _provider_types.canonical_dsl_type(value) is not value_type
@@ -831,14 +831,12 @@ def _typed_value(value, value_type, *, name="value", initial=False):
                 "value dtype"
             )
         value = value.item()
-    if initial and type(value) is float and (not math.isfinite(value)):
-        raise ValueError("cuda.coop.cutlass.scan initial_value must be finite")
     converted = _provider_types.coerce_plain_scalar(
         value,
         value_type,
         name=f"scan {name}",
         scope=_ROOT_SCOPE,
-        allow_nonfinite=not initial,
+        allow_nonfinite=not initial or typed_numpy,
     )
     if converted is not _provider_types._NOT_PLAIN_SCALAR:
         return converted
