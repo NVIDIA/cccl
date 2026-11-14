@@ -115,6 +115,21 @@ def validate_operator_dtype(op, value_type, *, primitive="reduce"):
                 f"{op.dtype.__name__} must match the input dtype "
                 f"{value_type.__name__}"
             )
+        from cutlass.base_dsl.common import DSLUserCodeError
+
+        from ._compiler import _state, _target
+
+        if _state._active_trace_module_op() is not None:
+            arch = _target.resolve_nvrtc_arch(
+                "cuda.coop.cutlass",
+                lambda: _target.configured_gpu_arch(_state._get_cute_dsl),
+            )
+            if op.arch != arch:
+                raise DSLUserCodeError(
+                    f"cuda.coop.cutlass device operator targets {op.arch}, "
+                    f"but this kernel targets {arch}; compile the operator "
+                    "for the kernel's architecture."
+                )
         return
     if op not in OPERATOR_CPP:
         raise ValueError(f"unsupported built-in operator {op!r}")

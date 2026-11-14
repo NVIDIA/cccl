@@ -9,7 +9,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from cutlass.base_dsl.common import DSLRuntimeError
+from cutlass.base_dsl.common import DSLRuntimeError, DSLUserCodeError
 from cutlass.base_dsl.compiler import GPUArch
 
 
@@ -57,7 +57,7 @@ def _configured_arch_suffix(scope: str, arch: str) -> str:
             break
     if _is_numeric_arch(arch):
         return arch
-    raise DSLRuntimeError(
+    raise DSLUserCodeError(
         f"Invalid configured CUDA arch {original!r} for {scope} provider; "
         "expected digits with an optional 'a' or 'f' suffix, optionally "
         "prefixed by 'sm' or 'compute'."
