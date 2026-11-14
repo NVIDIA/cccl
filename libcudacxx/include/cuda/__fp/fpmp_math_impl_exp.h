@@ -101,7 +101,7 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_exp2_kernel(fp32mp2_low __r) no
   };
 
   /* G(r) = a1 + a2*r + a3*r^2 + ... + a13*r^12 ~= (2^r - 1)/r */
-  __ffloat __p = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 6>(__r, __exp2_c);
+  __ffloat __p = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, 6>(__r, __exp2_c);
 
   /* Close with the implicit a0 = 1 constant:
    *   2^r = 1 + r * G(r) */
@@ -127,11 +127,13 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_exp2_kernel(fp32mp2_low __r) no
  * 0.5)^k).
  *
  * Coefficient layout:
- *   - b1..b6 (the 6 lowest-degree terms) kept as ff: their
+ *   - b1..b7 (the 7 lowest-degree terms) kept as ff: their
  *     fp32-rounding error at |r| = log10(2)/2 lifts the polynomial
- *     value above the fp32mp2 noise floor and must carry .lo() bits.
- *   - b7..b13 (the M = 7 highest) are plain float (zero .lo());
- *     their fp32 round-off contributes < 2^-46 to the polynomial.
+ *     value above the fp32mp2 noise floor and must carry .lo() bits
+ *     (with b7 in plain float the result lost two bits: one ulp of
+ *     b7 ~= 2^-27 times r^7 reaches 2^-46.7 of the result).
+ *   - b8..b13 (the M = 6 highest) are plain float (zero .lo());
+ *     their fp32 round-off contributes < 2^-50 to the result.
  *   - Implicit b0 = 1 is folded via the final  p * r + 1  step.
  *
  * Truncation error at |r| = log10(2)/2:
@@ -144,8 +146,10 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_exp10_kernel(fp32mp2_low __r) n
   using __ffloat = fp32mp2_low;
 
   /* b_k = (ln 10)^k / k!,  ordered low -> high degree.
-   * 6 low-degree ff entries (carry .lo()) + 7 high-degree float
-   * entries (M = 7) consumed by poly_eval's float-only inner loop. */
+   * 7 low-degree ff entries (carry .lo()) + 6 high-degree float
+   * entries (M = 6) consumed by poly_eval's float-only inner loop.
+   * b7 must stay float-float: at |r| = 0.1505 the float phase's
+   * own rounding on b7 would reach the result at 2^-46.7. */
   constexpr __ffloat __exp10_c[13] = {
     __ffloat(0x1.26bb1bbb55516p+1), /* [ 0] b1 = ln 10  */
     __ffloat(0x1.53524c73cea6ap+1), /* [ 1] b2          */
@@ -153,8 +157,8 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_exp10_kernel(fp32mp2_low __r) n
     __ffloat(0x1.2bd7609fd98c6p+0), /* [ 3] b4          */
     __ffloat(0x1.1429ffd1d4d79p-1), /* [ 4] b5          */
     __ffloat(0x1.a7ed70847c8bap-3), /* [ 5] b6          */
-    /* high-degree M = 7, zero .lo() by construction */
-    __ffloat(0x1.16e4ep-4f), /* [ 6] b7          */
+    __ffloat(0x1.16e4dfc333a87p-4), /* [ 6] b7          */
+    /* high-degree M = 6, zero .lo() by construction */
     __ffloat(0x1.4116bp-6f), /* [ 7] b8          */
     __ffloat(0x1.4897c4p-8f), /* [ 8] b9          */
     __ffloat(0x1.2ea52cp-10f), /* [ 9] b10         */
@@ -164,7 +168,7 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_exp10_kernel(fp32mp2_low __r) n
   };
 
   /* G(r) = b1 + b2*r + b3*r^2 + ... + b13*r^12 ~= (10^r - 1)/r */
-  __ffloat __p = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 7>(__r, __exp10_c);
+  __ffloat __p = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, 6>(__r, __exp10_c);
 
   /* Close with the implicit b0 = 1:  10^r = 1 + r * G(r) */
   __p = __p * __r + 1.0f;
@@ -209,7 +213,9 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_ldexp2(fp32mp2_low __p, int __n
   }
   const float __scale_a = ::cuda::std::bit_cast<float>(static_cast<unsigned>(__ek1) << 23);
   const float __scale_b = ::cuda::std::bit_cast<float>(static_cast<unsigned>(__ek2) << 23);
-  return __p * __scale_a * __scale_b;
+  const fp32mp2_low __r = __p * __scale_a * __scale_b;
+  /* an overflowed product carries inf in the low limb as well (exp10(38.6)): make it (inf, 0) */
+  return (__r.hi() == ::cuda::std::__fp_inf<float>()) ? fp32mp2_low(__r.hi(), 0.0f) : __r;
 }
 
 /*
@@ -220,44 +226,22 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_ldexp2(fp32mp2_low __p, int __n
 
 /*
  * --------------------------------------------------------------------
- * Exponential function (fp32mp2) - dedicated implementation
+ * Internal helper: exp(r) * 2^n for fp32mp2 (the kernel of exp and pow)
  * --------------------------------------------------------------------
- * Compute exp(x) for float-float (fp32mp2) precision
- *
- * Algorithm:
- *   1. Argument reduction: x = n*ln(2) + r, where |r| < ln(2)/2
- *   2. Compute exp(r) using 14-term Taylor series with Horner's method
- *   3. Scale result by 2^n using IEEE-754 bit manipulation
- *
- * Range reduction ensures that the Taylor series converges quickly since |r| < ln(2)/2 ~= 0.35.
- * With 14 terms and float-float arithmetic, this achieves approximately 10^-10 to 10^-11 relative accuracy.
+ * r is the reduced argument (|r| <= ln(2)/2 plus the slack of a float
+ * integer estimate; the pair need not be renormalized) and the scale 2^n
+ * comes split in two halves, fscale * fscale_lo, so that neither half
+ * overflows or denormalizes on its own and a result in the subnormal
+ * range is rounded once (gradual underflow).  exp derives the halves
+ * from its shift trick, pow from its integer n; see
+ * __internal_fpmp2_exp_scales.
+ * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_exp_core(
+  const fp32mp2_low __r, const float __fscale, const float __fscale_lo, float* __res_hi, float* __res_lo) noexcept
 {
   using __ffloat = fp32mp2_low;
 
-  // Constants as C99 hex floating-point literals - split via constexpr constructor
-  constexpr float __inv_ln2(0x1.715476p+0f); // 1/ln(2)
-  constexpr float __shift_bias(12582912.0f + 127.0f * 2.0f); // 127.0f*2.0f is the bias for the exponent
-  constexpr __ffloat __ln2(0x1.62e42fefa39efp-1); // ln(2)
-
-  /* Taylor series coefficients 1/k! for k = 1..13.
-   *
-   * The polynomial evaluated below is
-   *   p(r) = c1 + c2*r + c3*r^2 + ... + c13*r^12
-   * with p(r) = (exp(r) - 1) / r, so exp(r) = r*p(r) + 1.
-   *
-   * Layout for the mixed-precision Horner dispatcher:
-   *   - c1, c2 are plain `float` and live at the LOW-degree end
-   *     of p(r), which is the wrong end for the M-split.  We
-   *     keep them as scalar constants and fold them in via two
-   *     trailing Horner steps OUTSIDE `poly_eval`.
-   *   - c3..c13 form an 11-coefficient table consumed by
-   *     `poly_eval<horner_mixed, 6>`: 6 high-degree entries
-   *     (c8..c13) are plain float literals, the remaining
-   *     5 (c3..c7) carry an ff `.lo()` part.
-   */
   constexpr float __c1(0x1.0p+0);
   constexpr float __c2(0x1.0p-1);
 
@@ -276,45 +260,6 @@ __internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, fl
     __ffloat(0x1.6125p-33f) // [10] (= c13, leading)
   };
 
-  // Overflow threshold for single precision: ln(FLT_MAX) ~= 88.7228 = 0x1.62e430p+6
-  if (__x_hi > 0x1.62e430p+6f)
-  {
-    *__res_hi = ::cuda::std::__fp_inf<float>();
-    *__res_lo = 0.0f;
-    return;
-  }
-
-  // Underflow threshold for single precision: ln(FLT_MIN) ~= -87.3365 = -0x1.5d589ep+6
-  if (__x_hi < -0x1.5d589ep+6f)
-  {
-    *__res_hi = 0.0f;
-    *__res_lo = 0.0f;
-    return;
-  }
-
-  __ffloat __x(__x_hi, __x_lo);
-
-  // Step 1: Argument reduction: x = n*ln(2) + r, where |r| < ln(2)/2
-  float __t = __x_hi * __inv_ln2 + __shift_bias;
-
-  // Shift the exponent by 23 bits to get the scale as fp32 value
-  int32_t __scale = ::cuda::std::bit_cast<int32_t>(__t);
-  __scale <<= 23;
-
-  // Split the scale into high and low parts
-  uint32_t __scale_lo = __scale >> 1;
-  __scale_lo &= 0x7F800000u;
-  __scale -= __scale_lo;
-
-  // Cast the scales to fp32 values
-  float __fscale    = ::cuda::std::bit_cast<float>(__scale);
-  float __fscale_lo = ::cuda::std::bit_cast<float>(__scale_lo);
-
-  // Compute the reduced argument r = x - n*ln(2)
-  float __tt   = __t - __shift_bias;
-  __ffloat __r = __x - __ln2 * __tt;
-  __r          = renormalize(__r);
-
   // Scale the reduced argument by the low part of the scale
   __ffloat __r_scale = __r * __fscale_lo;
 
@@ -328,7 +273,7 @@ __internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, fl
   // the c8->c7 boundary. The numerical difference is below 1 ULP
   // at the polynomial value, well inside the Taylor truncation
   // noise floor.
-  __ffloat __p = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 6>(__r, __exp_c);
+  __ffloat __p = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, 6>(__r, __exp_c);
 
   // Fold in the low-degree float coefficients c1, c2 outside the
   // dispatcher (they live at the wrong end of the polynomial for
@@ -338,12 +283,142 @@ __internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, fl
 
   __p = __p * __r_scale + __fscale_lo;
 
-  // Scale the result by the high part of the scale
-  __p               = __p * __fscale;
-  __ffloat __result = renormalize(__p);
+  // Scale the result by the high part of the scale. A product that overflows has an
+  // infinite high limb, which renormalize would turn into inf - inf = NaN: the result is
+  // +inf with a zero low limb (the argument one float below the overflow threshold can
+  // still overflow through its low limb).
+  __p                   = __p * __fscale;
+  const bool __overflow = __p.hi() == ::cuda::std::__fp_inf<float>(); /* a NaN stays a NaN */
+  __ffloat __result     = renormalize(__p);
 
-  *__res_hi = __result.hi();
-  *__res_lo = __result.lo();
+  *__res_hi = __overflow ? ::cuda::std::__fp_inf<float>() : __result.hi();
+  *__res_lo = __overflow ? 0.0f : __result.lo();
+} // __internal_fpmp2_exp_core
+
+/* The two halves of 2^n as floats, from the biased exponent field
+ * k = n + 254 (the sum of the two biased exponents). */
+_CCCL_FPMP_CORE_API void __internal_fpmp2_exp_scales(const int32_t __k, float* __fscale, float* __fscale_lo) noexcept
+{
+  int32_t __scale     = __k << 23;
+  uint32_t __scale_lo = static_cast<uint32_t>(__scale >> 1);
+  __scale_lo &= 0x7F800000u;
+  __scale -= static_cast<int32_t>(__scale_lo);
+  *__fscale    = ::cuda::std::bit_cast<float>(__scale);
+  *__fscale_lo = ::cuda::std::bit_cast<float>(__scale_lo);
+}
+
+/*
+ * --------------------------------------------------------------------
+ * Exponential function (fp32mp2) - dedicated implementation
+ * --------------------------------------------------------------------
+ * Compute exp(x) for float-float (fp32mp2) precision
+ *
+ * Algorithm:
+ *   1. Argument reduction: x = n*ln(2) + r, where |r| < ln(2)/2, with ln(2) as a
+ *      Cody-Waite triple so that the reduction is accurate to ~2^-62 absolute for
+ *      every n (a single float-float ln(2) left an |n| * 2^-48 error that capped the
+ *      result at 41 bits for |x| > 30).
+ *   2. Compute exp(r) using 14-term Taylor series with Horner's method
+ *   3. Scale result by 2^n using IEEE-754 bit manipulation
+ *
+ * Range reduction ensures that the Taylor series converges quickly since |r| < ln(2)/2 ~= 0.35.
+ * With 14 terms and float-float arithmetic this reaches ~1e-14 relative error (46 of 48 bits)
+ * over the whole range where the result's low limb is a normal float, i.e. exp(x) >= 2^-102.
+ */
+template <int _Shift = 0>
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_exp_impl(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  using __ffloat = fp32mp2_low;
+  static_assert(_Shift == 0 || _Shift == -1, "exp: the result is scaled by 2^Shift, 1 or 1/2");
+
+  // Constants as C99 hex floating-point literals - split via constexpr constructor
+  constexpr float __inv_ln2(0x1.715476p+0f); // 1/ln(2)
+  constexpr float __shift_bias(12582912.0f + 127.0f * 2.0f); // 127.0f*2.0f is the bias for the exponent
+  // ln(2) as a Cody-Waite triple: the head carries 16 significant bits, so n * ln2_hi is
+  // exact for |n| <= 128 (the whole finite range), and the reduction below is accurate to
+  // about 2^-62 absolute instead of the |n| * 2^-48 a single float-float constant allows.
+  constexpr float __ln2_hi(0x1.62e4000000000p-1f);
+  constexpr float __ln2_mid(0x1.7f7d1c0000000p-20f);
+  constexpr float __ln2_lo(0x1.ef357a0000000p-45f);
+
+  /* Taylor series coefficients 1/k! for k = 1..13.
+   *
+   * The polynomial evaluated below is
+   *   p(r) = c1 + c2*r + c3*r^2 + ... + c13*r^12
+   * with p(r) = (exp(r) - 1) / r, so exp(r) = r*p(r) + 1.
+   *
+   * Layout for the mixed-precision Horner dispatcher:
+   *   - c1, c2 are plain `float` and live at the LOW-degree end
+   *     of p(r), which is the wrong end for the M-split.  We
+   *     keep them as scalar constants and fold them in via two
+   *     trailing Horner steps OUTSIDE `poly_eval`.
+   *   - c3..c13 form an 11-coefficient table consumed by
+   *     `poly_eval<horner_mixed, 6>`: 6 high-degree entries
+   *     (c8..c13) are plain float literals, the remaining
+   *     5 (c3..c7) carry an ff `.lo()` part.
+   */
+  // Overflow threshold for single precision: ln(FLT_MAX) ~= 88.7228 = 0x1.62e430p+6
+  /* Overflow: ln(FLT_MAX) = 88.7228, one ln 2 further for the halved result. The float
+   * at the threshold itself may still overflow through its low limb; the core maps that
+   * to +inf. */
+  if (__x_hi > ((_Shift == 0) ? 0x1.62e430p+6f : 0x1.65a9f8p+6f))
+  {
+    *__res_hi = ::cuda::std::__fp_inf<float>();
+    *__res_lo = 0.0f;
+    return;
+  }
+
+  // Below ln(2^-150) ~= -103.97 the result is under half the smallest subnormal and is zero.
+  // Between there and ln(FLT_MIN) ~= -87.34 it underflows gradually through the scaling at the
+  // end, which rounds the high limb onto the subnormal grid in one step while the low limb
+  // vanishes -- the same behaviour as expf and as the fp64mp2 exp.
+  if (__x_hi < -0x1.9fe3680000000p+6f)
+  {
+    *__res_hi = 0.0f;
+    *__res_lo = 0.0f;
+    return;
+  }
+
+  // Step 1: Argument reduction: x = n*ln(2) + r, where |r| < ln(2)/2
+  float __t = __x_hi * __inv_ln2 + __shift_bias;
+
+  // Shift the exponent by 23 bits to get the scale as fp32 value
+  int32_t __scale = ::cuda::std::bit_cast<int32_t>(__t) + _Shift; /* 2^(n + Shift), exact */
+  __scale <<= 23;
+
+  // Split the scale into high and low parts
+  uint32_t __scale_lo = __scale >> 1;
+  __scale_lo &= 0x7F800000u;
+  __scale -= __scale_lo;
+
+  // Cast the scales to fp32 values
+  float __fscale    = ::cuda::std::bit_cast<float>(__scale);
+  float __fscale_lo = ::cuda::std::bit_cast<float>(__scale_lo);
+
+  // Compute the reduced argument r = x - n*ln(2) as a pair: x_hi - n*ln2_hi is exact (the
+  // product is, and Sterbenz covers the difference); n*ln2_mid is split exactly and, like
+  // x_lo, folded in with an error-free sum; the two sum errors and the low product are far
+  // enough below r to be summed in plain float. The pair is not renormalized: its low word
+  // is below half an ulp of the high one except when x lies within ~4e-6 of a multiple of
+  // ln 2, and an overlapping r costs the float-float kernel below nothing.
+  float __tt       = __t - __shift_bias;
+  const float __r1 = ::cuda::__fpmp_fma_rn(-__tt, __ln2_hi, __x_hi);
+  float __pm_lo;
+  const float __pm_hi = ::cuda::__fpmp_two_mult_fma(__tt, __ln2_mid, &__pm_lo);
+  float __e1, __e2;
+  const float __s1   = ::cuda::__fpmp_two_sum(__r1, -__pm_hi, &__e1);
+  const float __s2   = ::cuda::__fpmp_two_sum(__s1, __x_lo, &__e2);
+  const float __tail = (__e1 + __e2) - ::cuda::__fpmp_fma_rn(__tt, __ln2_lo, __pm_lo);
+  __ffloat __r(__s2, __tail);
+
+  ::cuda::__internal_fpmp2_exp_core(__r, __fscale, __fscale_lo, __res_hi, __res_lo);
+} // __internal_fpmp2_exp_impl
+
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_exp(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  ::cuda::__internal_fpmp2_exp_impl<0>(__x_hi, __x_lo, __res_hi, __res_lo);
 } // __internal_fpmp2_exp
 
 /*
@@ -367,23 +442,48 @@ _CCCL_FPMP_MATH_DISPATCH_1A(exp)
 
 /*
  * --------------------------------------------------------------------
- * Natural logarithm log(x) (fp32mp2) - dedicated implementation
+ * Internal helper: log(m) and e for x = m * 2^e (fp32mp2)
  * --------------------------------------------------------------------
- * Natural logarithm, fully implemented in fp32mp2.
- * Range reduction: x = m * 2^e with m in [1, sqrt(2)].
- * Core: log(m) = 2*atanh((m-1)/(m+1)) via degree-8 minimax polynomial.
- * Reconstruction: log(x) = log(m) + e*ln(2).
- * All arithmetic in fp32mp2_low; no fp64 operations.
- * Handles denormals via pre-scaling by 2^24.
- * Does not handle NaN, +-0, or negative inputs.
+ * Shared by log, log1p, log2 and log10.  Splits the argument
+ * x = x_hi + x_lo + x_tail into m * 2^e with m in [sqrt(1/2), sqrt(2)]
+ * and returns
+ *     log(m) = 2 atanh(u) = u + u * v * q(v),   u = 2 (m - 1) / (m + 1),
+ *     v = u^2
+ * as a float-float (not renormalized) plus the integer e.  The callers
+ * fold in e * ln 2 (log, log1p), e (log2) or e * log10(2) (log10), so
+ * the integer part enters exactly and the base constant only
+ * multiplies the small log(m).
+ *
+ * x_tail is a third limb of the argument, below the rounding of x_lo.
+ * log1p passes the rounding error of 1 + x there -- the information
+ * whose loss limited log1p just above |x| = 1/16 to 43 bits, since
+ * log1p(x) ~= x is 16x smaller than 1 + x.  The other callers pass 0
+ * and the compiler folds it away.
+ *
+ * The division u = f / g is where the kernel used to lose two bits
+ * near e = 0 (x in [sqrt(1/2), sqrt(2)], where no e * ln 2 term
+ * dilutes it): the generic fast division derives its correction from
+ * a quotient of the high words only, so the single float carrying the
+ * correction is up to 3 * 2^-24 q in size; its own rounding, plus the
+ * 1 ulp of the device's rcp.approx, reach 10-25 u^2.  Here the
+ * quotient is first corrected with the FULL numerator and denominator
+ * (so it is the rounding of the whole quotient), and only then the
+ * exact remainder of that corrected quotient is taken: the correction
+ * is below one ulp of q, and its rounding, the once-refined
+ * reciprocal and the single rounding on g_lo add up to < 5 u^2 (host
+ * model against binary128: 4.8 u^2 max / 0.35 u^2 mean, against
+ * 26 u^2 / 2.2 u^2 for the generic division with a 1-ulp reciprocal).
+ * Cost: 12 flops plus the reciprocal.
+ *
+ * All arithmetic in fp32mp2_low; no fp64 operations.  Denormal x is
+ * pre-scaled by 2^24.  Does not handle NaN, +-0, negative or infinite
+ * inputs.
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_log(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+_CCCL_FPMP_CORE_API fp32mp2_low
+__internal_fpmp2_log_core(const float __x_hi, const float __x_lo, const float __x_tail, int* __e_out) noexcept
 {
   using __ffloat = fp32mp2_low;
-
-  constexpr __ffloat __ln2(0x1.62e42fefa39efp-1); // ln(2)
 
   /* Minimax polynomial coefficients for the atanh series:
    * log(m) = u * (1 + v*(c1 + v*(c2 + ... + v*c8)))
@@ -395,8 +495,7 @@ __internal_fpmp2_log(const float __x_hi, const float __x_lo, float* __res_hi, fl
    * 5 highest-degree entries (atanh_c[3..7] = c4..c8) are plain
    * float literals (.lo() == 0 by construction), so
    * poly_eval<horner_mixed, 5> evaluates them in float and
-   * transitions to ff arithmetic at atanh_c[2] = c3 -- exactly
-   * matching the previous hand-rolled float*float + ff step.
+   * transitions to ff arithmetic at atanh_c[2] = c3.
    */
   constexpr __ffloat __atanh_c[8] = {
     __ffloat(0x1.5555555555554p-4), // [0] (= c1, constant of q)
@@ -410,19 +509,21 @@ __internal_fpmp2_log(const float __x_hi, const float __x_lo, float* __res_hi, fl
     __ffloat(0x1.1380b4p-20f) // [7] (= c8, leading)
   };
 
-  /* Range reduction: x = m * 2^e, m in [1, sqrt(2)] */
-  float __a_hi = __x_hi;
-  float __a_lo = __x_lo;
-  int __e_adj  = 0;
+  /* Range reduction: x = m * 2^e, m in [1, 2) first */
+  float __a_hi   = __x_hi;
+  float __a_lo   = __x_lo;
+  float __a_tail = __x_tail;
+  int __e_adj    = 0;
 
   /* Normalize denormals: scale by 2^24 to make the exponent field nonzero */
   uint32_t __xbits = ::cuda::std::bit_cast<uint32_t>(__a_hi);
   if ((__xbits & 0x7F800000u) == 0u)
   {
-    __a_hi  = __a_hi * 0x1.0p24f;
-    __a_lo  = __a_lo * 0x1.0p24f;
-    __e_adj = -24;
-    __xbits = ::cuda::std::bit_cast<uint32_t>(__a_hi);
+    __a_hi   = __a_hi * 0x1.0p24f;
+    __a_lo   = __a_lo * 0x1.0p24f;
+    __a_tail = __a_tail * 0x1.0p24f;
+    __e_adj  = -24;
+    __xbits  = ::cuda::std::bit_cast<uint32_t>(__a_hi);
   }
 
   int __e = static_cast<int>((__xbits >> 23) & 0xFFu) - 127 + __e_adj;
@@ -430,52 +531,141 @@ __internal_fpmp2_log(const float __x_hi, const float __x_lo, float* __res_hi, fl
   /* m_hi in [1, 2) by replacing exponent field with bias 127 */
   float __m_hi = ::cuda::std::bit_cast<float>((__xbits & 0x007FFFFFu) | 0x3F800000u);
 
-  /* Scale a_lo by 2^(-e_orig) where e_orig = e - e_adj,
+  /* Scale a_lo and a_tail by 2^(-e_orig) where e_orig = e - e_adj,
    * using split factors to stay in normal float range */
-  int __e_orig = __e - __e_adj;
-  int __e2     = __e_orig / 2;
-  float __s1   = ::cuda::std::bit_cast<float>(static_cast<uint32_t>(127 - __e2) << 23);
-  float __s2   = ::cuda::std::bit_cast<float>(static_cast<uint32_t>(127 - (__e_orig - __e2)) << 23);
-  float __m_lo = __a_lo * __s1 * __s2;
+  const int __e_orig = __e - __e_adj;
+  const int __e2     = __e_orig / 2;
+  const float __s1   = ::cuda::std::bit_cast<float>(static_cast<uint32_t>(127 - __e2) << 23);
+  const float __s2   = ::cuda::std::bit_cast<float>(static_cast<uint32_t>(127 - (__e_orig - __e2)) << 23);
+  float __m_lo       = __a_lo * __s1 * __s2;
+  float __m_tail     = __a_tail * __s1 * __s2;
 
-  __ffloat __m = renormalize(__ffloat(__m_hi, __m_lo));
+  /* Guard against an unnormalized input pair (fp32mp2_low operands);
+   * a no-op for the type's normal invariant. */
+  __m_hi = ::cuda::__fpmp_fast_two_sum(__m_hi, __m_lo, &__m_lo);
 
-  /* If m > sqrt(2), halve m and increment e */
-  if (__m.hi() > 0x1.6a09e6p+0f)
+  /* If m > sqrt(2), halve m and increment e (exact) */
+  if (__m_hi > 0x1.6a09e6p+0f)
   {
-    __m = __m * 0.5f;
-    __e = __e + 1;
+    __m_hi   = __m_hi * 0.5f;
+    __m_lo   = __m_lo * 0.5f;
+    __m_tail = __m_tail * 0.5f;
+    __e      = __e + 1;
   }
 
-  /* u = 2*(m-1)/(m+1), v = u^2
-   * Use accurate subtraction for (m - 1) to handle catastrophic
-   * cancellation when m ~= 1 (x near a power of 2).
-   */
-  __ffloat __f = sub<fpmp2_accuracy::high>(__m, 1.0f);
-  __ffloat __g = __m + 1.0f;
-  __ffloat __u = __f / __g;
-  __u          = __u * 2.0f;
-  __u          = renormalize(__u);
-  __ffloat __v = __u * __u;
+  /* f = m - 1 as a normalized pair: m_hi - 1 is exact (Sterbenz), and
+   * Fast2Sum folds m_lo back in (|m_hi - 1| >= ulp(m_hi) >= 2 |m_lo|
+   * whenever it is nonzero).  The tail joins the low word. */
+  float __f_lo;
+  const float __f_hi = ::cuda::__fpmp_fast_two_sum(::cuda::__fpmp_sub_rn(__m_hi, 1.0f), __m_lo, &__f_lo);
+  __f_lo             = __f_lo + __m_tail;
+
+  /* g = m + 1: the high word's rounding error is exact (g_hi - 1 is
+   * representable for g_hi in [1.7, 2.42) and Sterbenz covers the
+   * remaining difference), then a single rounding on the low word,
+   * below u^2 relative to g. */
+  const float __g_hi = ::cuda::__fpmp_add_rn(__m_hi, 1.0f);
+  const float __g_lo = (__m_hi - (__g_hi - 1.0f)) + (__m_lo + __m_tail);
+
+  /* u = 2 f / g with the refined division (see the header comment and
+   * __fpmp_math_div_refined). */
+  float __q1, __lo;
+  ::cuda::__fpmp_math_div_refined(__f_hi, __f_lo, __g_hi, __g_lo, &__q1, &__lo);
+
+  /* The doubling is exact; Fast2Sum yields the normalized u that the
+   * kernel's float-only Horner phase relies on. */
+  float __u_lo;
+  const float __u_hi = ::cuda::__fpmp_fast_two_sum(__q1 + __q1, __lo + __lo, &__u_lo);
+  const __ffloat __u(__u_hi, __u_lo);
+  const __ffloat __v = __u * __u;
 
   /* Horner evaluation: q(v) = c1 + c2*v + c3*v^2 + ... + c8*v^7
    * via the mixed-precision dispatcher (5 high-order terms in
-   * plain float, remaining 3 in ff).  The dispatcher transition
-   * `qf * v.hi() + c3` matches the previous hand-written step
-   * bit-for-bit, so this refactor is numerically identical to
-   * the previous implementation.
-   */
-  __ffloat __q = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 5>(__v, __atanh_c);
+   * plain float, remaining 3 in ff). */
+  __ffloat __q = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, 5>(__v, __atanh_c);
 
   /* log(m) = u + u*v*q(v) */
-  __q              = __q * __v;
-  __ffloat __log_m = __q * __u + __u;
+  __q      = __q * __v;
+  *__e_out = __e;
+  return __q * __u + __u;
+} // __internal_fpmp2_log_core
 
-  /* log(x) = log(m) + e*ln(2) */
-  __ffloat __result = renormalize(__log_m + __ln2 * static_cast<float>(__e));
+/*
+ * --------------------------------------------------------------------
+ * Internal helper: log(m) + e * ln 2 (fp32mp2), the tail of log / log1p
+ * --------------------------------------------------------------------
+ * e * ln 2 is formed as an exact high product plus one rounding on the
+ * low part (the ln 2 pair is accurate to 2^-52.8), then added to log(m)
+ * and renormalized.
+ * --------------------------------------------------------------------
+ */
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_log_finish(const fp32mp2_low __log_m, const int __e, float* __res_hi, float* __res_lo) noexcept
+{
+  using __ffloat = fp32mp2_low;
 
-  *__res_hi = __result.hi();
-  *__res_lo = __result.lo();
+  constexpr float __ln2_hi(0x1.62e4300000000p-1f);
+  constexpr float __ln2_lo(-0x1.05c6100000000p-29f);
+
+  const float __e_f = ::cuda::__fpmp_int2fp_rn<float>(__e);
+  float __p_lo;
+  const float __p_hi = ::cuda::__fpmp_two_mult_fma(__e_f, __ln2_hi, &__p_lo);
+  __p_lo             = ::cuda::__fpmp_fma_rn(__e_f, __ln2_lo, __p_lo);
+
+  const __ffloat __result = renormalize(__log_m + __ffloat(__p_hi, __p_lo));
+  *__res_hi               = __result.hi();
+  *__res_lo               = __result.lo();
+} // __internal_fpmp2_log_finish
+
+/*
+ * --------------------------------------------------------------------
+ * Natural logarithm log(x) (fp32mp2) - dedicated implementation
+ * --------------------------------------------------------------------
+ * log(x) = log(m) + e * ln 2 over the shared core above.
+ * All arithmetic in fp32mp2_low; no fp64 operations.
+ * Handles denormals via pre-scaling by 2^24.
+ * Does not handle NaN, +-0, or negative inputs.
+ * --------------------------------------------------------------------
+ */
+/*
+ * log, log2 and log10 outside (0, +inf): +-0 -> -inf, +inf -> +inf, a negative argument or NaN -> NaN
+ * (C99 Annex F). The core assumes a positive finite input and is left alone; the callers run it
+ * unconditionally and select the special value afterwards, which costs an integer range test and
+ * two selects, no branch. __is_special is true for +-0, negative, +-inf and NaN high limbs (a
+ * subnormal positive limb is not special: the core rescales it).
+ */
+_CCCL_FPMP_CORE_API bool __internal_fpmp2_log_is_special(const float __x_hi) noexcept
+{
+  const uint32_t __xb = ::cuda::std::bit_cast<uint32_t>(__x_hi);
+  return (__xb - 1u) >= 0x7F7FFFFFu;
+}
+_CCCL_FPMP_CORE_API float __internal_fpmp2_log_special_value(const float __x_hi) noexcept
+{
+  const uint32_t __xb = ::cuda::std::bit_cast<uint32_t>(__x_hi);
+  const uint32_t __rb =
+    ((__xb & 0x7FFFFFFFu) == 0u) ? 0xFF800000u /* -inf */
+    : (__xb == 0x7F800000u)
+      ? 0x7F800000u /* +inf */
+      : 0x7FC00000u; /* NaN: negative, -inf or NaN */
+  return ::cuda::std::bit_cast<float>(__rb);
+}
+_CCCL_FPMP_CORE_API void __internal_fpmp2_log_select(
+  const float __x_hi, const float __r_hi, const float __r_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  const bool __special = ::cuda::__internal_fpmp2_log_is_special(__x_hi);
+  const float __sv     = ::cuda::__internal_fpmp2_log_special_value(__x_hi);
+  *__res_hi            = __special ? __sv : __r_hi;
+  *__res_lo            = __special ? ((__sv != __sv) ? __sv : 0.0f) : __r_lo;
+}
+
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_log(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  int __e;
+  const fp32mp2_low __log_m = ::cuda::__internal_fpmp2_log_core(__x_hi, __x_lo, 0.0f, &__e);
+  float __r_hi, __r_lo;
+  ::cuda::__internal_fpmp2_log_finish(__log_m, __e, &__r_hi, &__r_lo);
+  ::cuda::__internal_fpmp2_log_select(__x_hi, __r_hi, __r_lo, __res_hi, __res_lo);
 } // __internal_fpmp2_log
 
 /*
@@ -504,13 +694,14 @@ _CCCL_FPMP_MATH_DISPATCH_1A(log)
  * Strategy:
  *   - Small |x_hi| (< 1/16):  direct Taylor series in (x_hi, x_lo),
  *     keeping the full fp32mp2 input intact.
- *   - Otherwise:              forward to `__fpmp2_log` at (1+x).
+ *   - Otherwise:              1 + x as an exact triple s_hi + s_lo + d
+ *     (two error-free sums), handed to the shared log core with d as
+ *     the third limb, then log(m) + e * ln 2.
  *
  * Why a small-|x| branch is necessary:
- *   The forward-to-log path runs the input through (1+x) packing,
- *   accurate-sub `m - 1`, fast-div `f/g`, and fast-mul Horner.
- *   Each step introduces ~1 ulp of relative error in the *lo* limb
- *   of the intermediate.  These ulps are insignificant when the
+ *   The log path runs the input through the m - 1, f / g and Horner
+ *   steps, each of which leaves ~1 ulp of relative error in the *lo*
+ *   limb of the intermediate.  These ulps are insignificant when the
  *   final |result| is order |x|, but as |x| -> 0 the absolute lo
  *   error stays roughly constant while |result| ~= |x| shrinks, so
  *   the relative error blows up: at |x| ~ 3e-8 the chain leaves
@@ -523,6 +714,13 @@ _CCCL_FPMP_MATH_DISPATCH_1A(log)
  *   correction `x^2 * T` is order x^2, so its ulps cost rel_err of
  *   order x * ulp ~= negligible against |x|.  This restores full
  *   fp32mp2 precision (~46 bits) for arbitrarily small |x|.
+ *
+ * Why the third limb matters on the log path:
+ *   an fp32mp2 pair holds 1 + x only to ~2^-48 absolute, while just
+ *   above the branch point log1p(x) ~= x is 16x smaller than 1 + x;
+ *   dropping the residue d of 1 + x therefore cost three bits there
+ *   (43 bits).  The two error-free sums keep d exactly and the core
+ *   folds it into m - 1, where it is cheap.
  *
  * Branch point 1/16 = 2^-4 keeps the polynomial narrow (covers ~6%
  * of the typical work range) so most threads stay on the log path,
@@ -601,52 +799,43 @@ __internal_fpmp2_log1p(const float __x_hi, const float __x_lo, float* __res_hi, 
 
     __ffloat __x(__x_hi, __x_lo);
     __ffloat __x2     = __x * __x;
-    __ffloat __t      = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 4>(__x, __log1p_poly_c);
+    __ffloat __t      = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, 4>(__x, __log1p_poly_c);
     __ffloat __result = renormalize(__x + __x2 * __t);
     *__res_hi         = __result.hi();
     *__res_lo         = __result.lo();
     return;
   }
 
-  /* Compute (1 + x) in fp32mp2 with accurate add: this preserves
-   * the residual to fp32mp2 precision even when 1 + x.hi cancels
-   * to a small magnitude (i.e., x close to -1).  The lo of the
-   * result captures the rounding loss that a plain fast 2-sum
-   * folds into the leading term and then quantizes to float
-   * precision in the subsequent operations. */
-  __ffloat __sum = add<fpmp2_accuracy::high>(1.0f, __ffloat(__x_hi, __x_lo));
+  /* 1 + x = s_hi + s_lo + d exactly: the high sum and the fold of x_lo
+   * are error-free sums, so the residue d that an fp32mp2 pair cannot
+   * hold is kept and handed to the log core as a third limb.  For
+   * x_hi = -1 the first sum is zero and Fast2Sum promotes x_lo to the
+   * high word, so the core always sees a normalized argument. */
+  float __e_s, __d, __s_lo;
+  const float __s    = ::cuda::__fpmp_two_sum(1.0f, __x_hi, &__e_s);
+  const float __l    = ::cuda::__fpmp_two_sum(__e_s, __x_lo, &__d);
+  const float __s_hi = ::cuda::__fpmp_fast_two_sum(__s, __l, &__s_lo);
 
   /* (1 + x) < 0  -> NaN. */
-  if (__sum.hi() < 0.0f)
+  if (__s_hi < 0.0f)
   {
     *__res_hi = ::cuda::std::__fp_nan<float>();
     *__res_lo = ::cuda::std::__fp_nan<float>();
     return;
   }
 
-  /* (1 + x) == 0 (i.e., x == -1) -> log(0) = -inf. */
-  if (__sum.hi() == 0.0f && __sum.lo() == 0.0f)
+  /* (1 + x) == 0 (i.e., x == -1) -> log(0) = -inf.  A zero high word
+   * here means the whole triple is zero. */
+  if (__s_hi == 0.0f)
   {
     *__res_hi = -::cuda::std::__fp_inf<float>();
     *__res_lo = 0.0f;
     return;
   }
 
-  /* Edge case: sum.hi == 0, sum.lo > 0 (x = -1 + tiny).  Promote
-   * lo to hi so log() sees a normalized argument. */
-  if (__sum.hi() == 0.0f)
-  {
-    if (__sum.lo() < 0.0f)
-    {
-      *__res_hi = ::cuda::std::__fp_nan<float>();
-      *__res_lo = ::cuda::std::__fp_nan<float>();
-      return;
-    }
-    __sum = __ffloat(__sum.lo(), 0.0f);
-  }
-
-  /* Forward to dedicated fp32mp2 log. */
-  ::cuda::__fpmp2_log<float>(__sum.hi(), __sum.lo(), __res_hi, __res_lo);
+  int __e;
+  const __ffloat __log_m = ::cuda::__internal_fpmp2_log_core(__s_hi, __s_lo, __d, &__e);
+  ::cuda::__internal_fpmp2_log_finish(__log_m, __e, __res_hi, __res_lo);
 } // __internal_fpmp2_log1p
 
 /*
@@ -672,16 +861,16 @@ _CCCL_FPMP_MATH_DISPATCH_1A(log1p)
  * --------------------------------------------------------------------
  * Base-2 logarithm log2(x) (fp32mp2) - dedicated implementation
  * --------------------------------------------------------------------
- * Composition over the dedicated fp32mp2 natural log:
- *     log2(x) = log(x) * (1/ln(2))
- * with (1/ln(2)) carried as an fp32mp2 constant (hi+lo).  The single
- * ff-multiply costs ~1 ulp on the lo limb; combined with the ~46-bit
- * precision of __fpmp2_log this still leaves >44 bits of accuracy
- * across the whole representable input range, which matches the
- * fp32mp2 noise floor (cf. log/log1p reports in the test suite).
+ * Over the shared log core:
+ *     log2(x) = log(m) * (1/ln 2) + e
+ * with (1/ln 2) carried as an fp32mp2 constant.  The integer e enters
+ * exactly, so the constant multiplies only |log(m)| <= 0.35 and its
+ * ~u^2-level rounding is diluted by |e| >= 1 everywhere outside
+ * [sqrt(1/2), sqrt(2)].  (The previous composition log(x) * (1/ln 2)
+ * rounded the full-size product and cost a bit on every dataset.)
  *
- * All special cases (x<=0, NaN, +inf) are handled inside
- * __fpmp2_log<float>; this wrapper only scales the result.
+ * Special inputs (x <= 0, NaN, +-inf) are not handled, as in
+ * __internal_fpmp2_log.
  * --------------------------------------------------------------------
  */
 _CCCL_FPMP_CORE_API void
@@ -692,25 +881,10 @@ __internal_fpmp2_log2(const float __x_hi, const float __x_lo, float* __res_hi, f
   /* 1/ln(2) ~= 1.4426950408889634073599... */
   constexpr __ffloat __inv_ln2(0x1.71547652b82fep+0);
 
-  float __l_hi;
-  float __l_lo;
-  ::cuda::__fpmp2_log<float>(__x_hi, __x_lo, &__l_hi, &__l_lo);
-
-  /* Propagate non-finite outputs (NaN, +-inf) unchanged: a multiply
-   * by a finite constant would still yield the same kind for +-inf,
-   * but NaN composition is cleanest with an explicit short-circuit
-   * (avoids an unnecessary mul that could quiet a signaling NaN
-   * on some platforms). */
-  if (__l_hi != __l_hi || __l_hi == ::cuda::std::__fp_inf<float>() || __l_hi == -::cuda::std::__fp_inf<float>())
-  {
-    *__res_hi = __l_hi;
-    *__res_lo = (__l_hi != __l_hi) ? __l_hi : 0.0f;
-    return;
-  }
-
-  __ffloat __result = renormalize(__ffloat(__l_hi, __l_lo) * __inv_ln2);
-  *__res_hi         = __result.hi();
-  *__res_lo         = __result.lo();
+  int __e;
+  const __ffloat __log_m  = ::cuda::__internal_fpmp2_log_core(__x_hi, __x_lo, 0.0f, &__e);
+  const __ffloat __result = renormalize(__log_m * __inv_ln2 + ::cuda::__fpmp_int2fp_rn<float>(__e));
+  ::cuda::__internal_fpmp2_log_select(__x_hi, __result.hi(), __result.lo(), __res_hi, __res_lo);
 } // __internal_fpmp2_log2
 
 /*
@@ -736,10 +910,11 @@ _CCCL_FPMP_MATH_DISPATCH_1A(log2)
  * --------------------------------------------------------------------
  * Base-10 logarithm log10(x) (fp32mp2) - dedicated implementation
  * --------------------------------------------------------------------
- * Composition over the dedicated fp32mp2 natural log:
- *     log10(x) = log(x) * (1/ln(10))
- * with (1/ln(10)) carried as an fp32mp2 constant.  Same accuracy
- * trade-off as log2; see __fpmp2_log2 header comment.
+ * Over the shared log core:
+ *     log10(x) = log(m) * (1/ln 10) + e * log10(2)
+ * with (1/ln 10) as an fp32mp2 constant and e * log10(2) formed as an
+ * exact high product plus one rounding on the low part.  Same
+ * trade-off as log2; see its header comment.
  * --------------------------------------------------------------------
  */
 _CCCL_FPMP_CORE_API void
@@ -749,21 +924,20 @@ __internal_fpmp2_log10(const float __x_hi, const float __x_lo, float* __res_hi, 
 
   /* 1/ln(10) ~= 0.4342944819032518276511289... */
   constexpr __ffloat __inv_ln10(0x1.bcb7b1526e50ep-2);
+  /* log10(2) ~= 0.30102999566398119521 as a float pair (2^-52.4) */
+  constexpr float __log10_2_hi(0x1.3441360000000p-2f);
+  constexpr float __log10_2_lo(-0x1.ec10c00000000p-27f);
 
-  float __l_hi;
-  float __l_lo;
-  ::cuda::__fpmp2_log<float>(__x_hi, __x_lo, &__l_hi, &__l_lo);
+  int __e;
+  const __ffloat __log_m = ::cuda::__internal_fpmp2_log_core(__x_hi, __x_lo, 0.0f, &__e);
 
-  if (__l_hi != __l_hi || __l_hi == ::cuda::std::__fp_inf<float>() || __l_hi == -::cuda::std::__fp_inf<float>())
-  {
-    *__res_hi = __l_hi;
-    *__res_lo = (__l_hi != __l_hi) ? __l_hi : 0.0f;
-    return;
-  }
+  const float __e_f = ::cuda::__fpmp_int2fp_rn<float>(__e);
+  float __p_lo;
+  const float __p_hi = ::cuda::__fpmp_two_mult_fma(__e_f, __log10_2_hi, &__p_lo);
+  __p_lo             = ::cuda::__fpmp_fma_rn(__e_f, __log10_2_lo, __p_lo);
 
-  __ffloat __result = renormalize(__ffloat(__l_hi, __l_lo) * __inv_ln10);
-  *__res_hi         = __result.hi();
-  *__res_lo         = __result.lo();
+  const __ffloat __result = renormalize(__log_m * __inv_ln10 + __ffloat(__p_hi, __p_lo));
+  ::cuda::__internal_fpmp2_log_select(__x_hi, __result.hi(), __result.lo(), __res_hi, __res_lo);
 } // __internal_fpmp2_log10
 
 /*
@@ -854,10 +1028,19 @@ __internal_fpmp2_exp2(const float __x_hi, const float __x_lo, float* __res_hi, f
   const int __n     = ::cuda::__fpmp_fp2int_rn(__x_hi);
   const float __n_f = ::cuda::__fpmp_int2fp_rn<float>(__n);
 
-  /* Step 2: r = x - n.  __ffloat subtraction by an integer is exact
-   * (n_f is representable in float for |n| <= 2^23, which our
-   * overflow/underflow shortcuts guarantee). */
-  const __ffloat __r = __ffloat(__x_hi, __x_lo) - __n_f;
+  /* Step 2: r = x - n as a *normalized* pair.  x_hi - n_f is exact
+   * (both are multiples of ulp(x_hi) and |x_hi - n| <= 1/2), but
+   * x_lo, up to half an ulp of x_hi, can be far larger than the ulp
+   * of that difference once |x| is large (2^-18 against 2^-26 at
+   * |x| ~ 84).  The kernel's float-only Horner phase reads r.hi()
+   * alone, so an unnormalized (x_hi - n, x_lo) pair silently drops
+   * x_lo from the high-degree terms (5 bits lost above |x| ~ 32).
+   * Fast2Sum is valid here: a nonzero x_hi - n_f is at least
+   * ulp(x_hi) >= 2 |x_lo|; when it is zero, (0, x_lo) is exact. */
+  const float __d = ::cuda::__fpmp_sub_rn(__x_hi, __n_f);
+  float __r_lo;
+  const float __r_hi = ::cuda::__fpmp_fast_two_sum(__d, __x_lo, &__r_lo);
+  const __ffloat __r(__r_hi, __r_lo);
 
   /* Step 3: 2^r via the dedicated base-2 Taylor kernel (no r * ln 2
    * detour, no internal natural-log reduction). */
@@ -893,46 +1076,37 @@ _CCCL_FPMP_MATH_DISPATCH_1A(exp2)
  * --------------------------------------------------------------------
  * Base-10 exponential exp10(x) (fp32mp2) - dedicated implementation
  * --------------------------------------------------------------------
- * Strategy:  base-2 integer split + base-10 fractional kernel, with
- *            Cody-Waite reduction for the residual. Split log10(2) into 3 fp32
- *            pieces and accumulate via two_mult_fma + two_sum in a
- *            higher-precision __afloat accumulator, so that the
- *            residual r' avoids the catastrophic-cancellation
- *            precision floor of the naive ff "compute t = x * log2 10,
- *            then r = t - n" path.
+ *   n = round(x * log2 10)          [plain float: an n off by one only
+ *                                    widens |r| by log10(2)]
+ *   r = x - n * log10(2)            [Cody-Waite triple, error-free sums]
+ *   10^r via the base-10 Taylor kernel, |r| <= log10(2)/2 ~= 0.1505
+ *   result = 2^n * 10^r             [split-exponent helper]
  *
- *   n  = round(x * log2 10)             [integer power of 2]
- *   r' = x - n * log10(2)               [Cody-Waite, |r'| <= log10 2 / 2]
- *   10^r' = base-10 Taylor kernel       [|r'| <= 0.151 -> small Horner accum.]
- *   result = 2^n * 10^r'                [split-exponent helper]
- *
- * Why this beats the earlier `2^n * 2^(t - n)` form:
- *   That path computed t = x * log2 10 in ff (~= 100 for x ~= 30),
- *   then r = t - n via 2-sum.  Although the 2-sum captures the exact
- *   difference, the ff representation of t has *absolute* precision
- *   bounded by ulp(t.hi)/2 * 2^-23 ~= 2^-40 (i.e. relative precision
- *   2^-46 times |t|).  Subtracting n exposes this absolute floor as
- *   the relative precision of r ~= 0.04 -- only ~34 bits.  After 2^r
- *   that becomes ~39 bits on the work range -- exactly what we
- *   measured.
- *   The Cody-Waite path computes r' = x - n * log10(2) where the
- *   cancellation is between two values of magnitude |x|, so the
- *   absolute precision of r' tracks ulp(x_hi) * 2^-23 rather than
- *   ulp(t_hi) * 2^-23 -- log2(10) ~= 3.32 worth of bits recovered.
- *   The smaller |r'| <= 0.151 (vs. |r| <= 0.5) also halves the
- *   Horner accumulation in the polynomial.
+ * The reduction mirrors the fp32mp2 exp: log10(2) = c_hi + c_mid + c_lo
+ * where c_hi carries 16 significant bits, so n * c_hi is exact for
+ * |n| < 256 (the finite range needs |n| <= 153) and x_hi - n * c_hi is
+ * exact as well (both are multiples of min(ulp(x_hi), 2^-17) and the
+ * difference is below 2^-2).  n * c_mid is split exactly, then folded
+ * in with x_lo through two error-free sums; the sum errors and
+ * n * c_lo are small enough for plain float.  The resulting pair is
+ * accurate to ~2^-59 absolute versus the ~2^-48 a single float-float
+ * constant allows, and it costs ~20 flops instead of the ~60 of an
+ * fp32mp2_high accumulation.  It is not renormalized: the low word
+ * exceeds half an ulp of the high one only when x lies within ~1e-6
+ * of a multiple of log10(2), which costs the kernel nothing.
  *
  * Overflow boundary: 10^x overflows float at x ~= log10(FLT_MAX) =
- *   38.5318394... -- round generously to 39.
- * Underflow boundary: 10^-45.155 is the smallest positive denormal;
- *   round to -46.
+ *   38.5318394... -- round generously to 39; the 2^n scaling
+ *   overflows naturally in between.
+ * Underflow boundary: 10^x < 2^-150 for x < -45.154...; results in
+ *   [2^-150, FLT_MIN) underflow gradually through the two-step
+ *   scaling.  Below -46 the scaling would collapse to zero anyway.
  * --------------------------------------------------------------------
  */
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_exp10(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
   using __ffloat = fp32mp2_low;
-  using __afloat = fp32mp2_high;
 
   if (__x_hi != __x_hi)
   {
@@ -953,60 +1127,30 @@ __internal_fpmp2_exp10(const float __x_hi, const float __x_lo, float* __res_hi, 
     return;
   }
 
-  /* log2(10) ~= 3.32192809488736234787...  (fp32mp2 constant used
-   * only for the *coarse* n estimate; precision floor of this
-   * value is fine since we only need the integer part). */
-  constexpr __ffloat __log2_10(0x1.a934f0979a371p+1);
+  /* log2(10) ~= 3.3219280948873623 as a single float: only the integer
+   * part of x * log2(10) is used. */
+  constexpr float __log2_10(0x1.a934f0p+1f);
+  /* log10(2) ~= 0.30102999566398119521 as a Cody-Waite triple: the head
+   * carries 16 significant bits (see the header comment). */
+  constexpr float __c_hi(0x1.3440000000000p-2f);
+  constexpr float __c_mid(0x1.3509f80000000p-18f);
+  constexpr float __c_lo(-0x1.80433c0000000p-44f);
 
-  /* log10(2) ~= 0.30102999566398119521  split into 3 fp32 chunks
-   * (Cody-Waite); the sum C1 + C2 + C3 reproduces log10(2)
-   * exactly in double.  Layout mirrors the trig pi/2 split that
-   * already lives in this file. */
-  constexpr float __c1 = 0x1.344136p-2f; /* +0.30103001 */
-  constexpr float __c2 = -0x1.ec10c0p-27f; /* -1.432e-08 */
-  constexpr float __c3 = -0x1.000000p-54f; /*  ~-5.5e-17 */
+  /* Step 1: n = round(x * log2 10). */
+  const int __n     = ::cuda::__fpmp_fp2int_rn(::cuda::__fpmp_mul_rn(__x_hi, __log2_10));
+  const float __n_f = ::cuda::__fpmp_int2fp_rn<float>(__n);
 
-  /* Step 1: coarse integer n = round(x * log2 10).
-   * Uses an ordinary ff multiplication -- we only need the integer
-   * part, so the lo limb of the product is discarded. */
-  const __ffloat __t_approx = __ffloat(__x_hi, __x_lo) * __log2_10;
-  const int __n             = ::cuda::__fpmp_fp2int_rn(__t_approx.hi());
-  const float __n_f         = ::cuda::__fpmp_int2fp_rn<float>(__n);
+  /* Step 2: r = x - n * log10(2) as a pair (see the header comment). */
+  const float __r1 = ::cuda::__fpmp_fma_rn(-__n_f, __c_hi, __x_hi);
+  float __pm_lo;
+  const float __pm_hi = ::cuda::__fpmp_two_mult_fma(__n_f, __c_mid, &__pm_lo);
+  float __e1, __e2;
+  const float __s1   = ::cuda::__fpmp_two_sum(__r1, -__pm_hi, &__e1);
+  const float __s2   = ::cuda::__fpmp_two_sum(__s1, __x_lo, &__e2);
+  const float __tail = (__e1 + __e2) - ::cuda::__fpmp_fma_rn(__n_f, __c_lo, __pm_lo);
+  const __ffloat __r(__s2, __tail);
 
-  /* Step 2: Cody-Waite reduction  r' = x - n * log10(2)
-   *   r' = (x_hi + x_lo) - n_f * (C1 + C2 + C3)
-   * Computed via the same two_mult_fma + two_sum recipe used by
-   * the trig kernel: every product / subtraction is captured as
-   * an exact pair, then accumulated in fp32mp2_high so
-   * the relative precision of r' is bounded by ulp(x_hi)*2^-23,
-   * not by ulp(x*log2 10)*2^-23. */
-
-  /* n_f * C1 = ph + pl  (exact pair) */
-  float __pl;
-  const float __ph = ::cuda::__fpmp_two_mult_fma(__n_f, __c1, &__pl);
-
-  /* x_hi - ph = s + e  (exact pair) */
-  float __e;
-  const float __s = ::cuda::__fpmp_two_sum(__x_hi, -__ph, &__e);
-
-  __afloat __r_acc(__s, __e);
-  __r_acc = __r_acc - __pl;
-  __r_acc = __r_acc + __x_lo;
-
-  /* n_f * C2 = nC2_hi + nC2_lo  (exact pair) */
-  float __n_c2_lo;
-  const float __n_c2_hi = ::cuda::__fpmp_two_mult_fma(__n_f, __c2, &__n_c2_lo);
-  __r_acc               = __r_acc - __afloat(__n_c2_hi, __n_c2_lo);
-
-  /* n_f * C3 is tiny (~10^-14 at the largest n we hit);
-   * single-precision product is below the polynomial noise
-   * floor but cheap to include for completeness. */
-  __r_acc = __r_acc + ::cuda::__fpmp_mul_rn_nocontract(__n_f, -__c3);
-
-  /* Step 3: 10^r' via the dedicated base-10 Taylor kernel.
-   * Hand off the accurate accumulator as fast __ffloat -- the
-   * polynomial cannot consume more than ff precision anyway. */
-  const __ffloat __r = __ffloat(__r_acc.hi(), __r_acc.lo());
+  /* Step 3: 10^r via the dedicated base-10 Taylor kernel. */
   const __ffloat __u = ::cuda::__internal_fpmp2_exp10_kernel(__r);
 
   /* Step 4: scale by 2^n via the split-exponent helper. */
@@ -1139,7 +1283,7 @@ __internal_fpmp2_expm1(const float __x_hi, const float __x_lo, float* __res_hi, 
 
     __ffloat __x(__x_hi, __x_lo);
     __ffloat __x2     = __x * __x;
-    __ffloat __pval   = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 4>(__x, __expm1_poly_c);
+    __ffloat __pval   = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, 4>(__x, __expm1_poly_c);
     __ffloat __result = renormalize(__x + __x2 * __pval);
     *__res_hi         = __result.hi();
     *__res_lo         = __result.lo();

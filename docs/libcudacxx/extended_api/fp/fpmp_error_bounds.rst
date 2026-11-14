@@ -58,8 +58,9 @@ Conventions
   ``fp64mp2`` both reciprocals are correctly rounded, while the device's reciprocal square root
   is close to correctly rounded and the host's ``1/sqrt(x)`` carries two roundings. One Newton
   step leaves about ``(3/2)·ε²`` of a seed error ``ε``, which at double-word precision is
-  visible: a 1u seed leaves 1.5u², a 1.5u seed 3.4u², a 2u seed 6.5u². Where the sides differ,
-  the tables quote the device.
+  visible: a 1u seed leaves 1.5u², a 1.5u seed 3.4u², a 2u seed 6.5u². The ``fp32mp2`` ``sqrt``
+  corrects its seed once more before the low limb is formed and is the same on both sides; the
+  ``fp64mp2`` one is not, and where the sides differ, the tables quote the device.
 
 The bounds
 ----------
@@ -185,7 +186,7 @@ host against binary128 — whichever of the two is larger.
      - —
      - measured
      - ``x > 0``
-     - 9.5
+     - 2.8
      - 2.9 [#seed]_
 
 .. [#host] Measured on the host against an exact reference, the error accumulated from
@@ -198,8 +199,10 @@ host against binary128 — whichever of the two is larger.
 .. [#seed] Measured on the device against binary128 over 2\ :sup:`22` operands spanning 80
    binades, with the host run on the same operands for comparison (5.8): the host's
    two-rounding ``1/sqrt(x)`` seed costs it the difference, as the seed floor in *Conventions*
-   predicts. The specification's own ``fp64mp2`` table reports a smaller maximum for ``sqrt``
-   over its working range.
+   predicts. The ``fp32mp2`` ``sqrt`` takes its Newton step on the exact residual and refines
+   the reciprocal root once more before forming its low limb, so its seed no longer shows: 2.5
+   on both sides in the same run. The specification's own ``fp64mp2`` table reports a smaller
+   maximum for ``sqrt`` over its working range.
 
 ``low`` and ``mid`` addition, ``low`` and ``mid`` ``fma``, and ``low`` and ``mid``
 multiplication by a one-limb scalar compute the *same value*; the normalizing level additionally normalizes it, which is exact, so they share a bound

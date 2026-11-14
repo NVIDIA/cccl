@@ -213,10 +213,48 @@ _CCCL_FPMP_CORE_API void __fpmp2_min(
 
 /*
  * --------------------------------------------------------------------
- * Positive difference fdim(x, y) (fp32mp2) - double fallback
+ * Positive difference fdim(x, y) (fp32mp2) - exact on the limb pair
  * --------------------------------------------------------------------
+ * fdim(x, y) = x - y when x > y, +0 otherwise, NaN when either is NaN.
+ * The comparison is the lexicographic one on the renormalized pairs
+ * (exact), the difference the accurate pair subtraction; a difference
+ * that overflows (x = +inf or y = -inf) is +inf with a zero low limb,
+ * which the subtraction would turn into (inf, NaN).  No FP64.
  */
-_CCCL_FPMP_MATH_FALLBACK_2A(fdim)
+_CCCL_FPMP_CORE_API void __internal_fpmp2_fdim(
+  const float __x_hi,
+  const float __x_lo,
+  const float __y_hi,
+  const float __y_lo,
+  float* __res_hi,
+  float* __res_lo) noexcept
+{
+  if ((__x_hi != __x_hi) || (__y_hi != __y_hi))
+  {
+    *__res_hi = ::cuda::std::__fp_nan<float>();
+    *__res_lo = ::cuda::std::__fp_nan<float>();
+    return;
+  }
+  const bool __gt = (__x_hi > __y_hi) || ((__x_hi == __y_hi) && (__x_lo > __y_lo));
+  if (!__gt)
+  {
+    *__res_hi = 0.0f;
+    *__res_lo = 0.0f;
+    return;
+  }
+  if ((__x_hi == ::cuda::std::__fp_inf<float>()) || (__y_hi == -::cuda::std::__fp_inf<float>()))
+  {
+    *__res_hi = ::cuda::std::__fp_inf<float>();
+    *__res_lo = 0.0f;
+    return;
+  }
+  ::cuda::__fpmp2_high_sub<float>(__x_hi, __x_lo, __y_hi, __y_lo, __res_hi, __res_lo);
+  /* A finite difference beyond FLT_MAX (fdim(FLT_MAX, -FLT_MAX)) overflows the subtraction
+   * into (inf, NaN) or (NaN, NaN): it is +inf. */
+  const bool __finite = *__res_hi < ::cuda::std::__fp_inf<float>();
+  *__res_hi           = __finite ? *__res_hi : ::cuda::std::__fp_inf<float>();
+  *__res_lo           = __finite ? *__res_lo : 0.0f;
+}
 
 /*
  * --------------------------------------------------------------------
@@ -241,92 +279,139 @@ _CCCL_FPMP_MATH_DISPATCH_2A(fdim)
  * ====================================================================
  * isfinite(x), isinf(x), isnan(x), signbit(x) - classification predicates
  * ====================================================================
+ * The value of a pair is hi + lo, and a loose pair out of a low-accuracy
+ * operation can carry an infinity or a NaN in lo alone, or be (+inf, -inf),
+ * which is a NaN.  So every predicate classifies both limbs and combines
+ * the two answers by logic alone -- no arithmetic, not even the sum:
+ *   isnan     : a NaN limb, or two infinities of opposite sign.
+ *   isinf     : no NaN limb, and one infinite limb or two of the same sign.
+ *   isfinite  : both limbs finite (the sum would overflow in float for a
+ *               finite pair such as (FLT_MAX, 2^103)).
+ *   signbit   : hi's sign when the limbs agree or lo is zero (so (-0, 0)
+ *               keeps reporting a negative zero); otherwise the sign of the
+ *               limb with the larger magnitude, and +0 when they cancel.
  */
 
 /*
  * --------------------------------------------------------------------
- * Finite test isfinite(x) (fp32mp2) - hi-limb test
+ * Finite test isfinite(x) (fp32mp2) - both limbs
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API int __internal_fpmp2_isfinite(const float __x_hi, [[maybe_unused]] const float __x_lo) noexcept
+_CCCL_FPMP_CORE_API int __internal_fpmp2_isfinite(const float __x_hi, const float __x_lo) noexcept
 {
-  return ::cuda::std::isfinite(static_cast<double>(__x_hi));
+  return ::cuda::std::isfinite(__x_hi) && ::cuda::std::isfinite(__x_lo);
 }
 
 /*
  * --------------------------------------------------------------------
- * Finite test isfinite(x) (fp64mp2) - hi-limb test
+ * Finite test isfinite(x) (fp64mp2) - both limbs
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API int __internal_fpmp2_isfinite(const double __x_hi, [[maybe_unused]] const double __x_lo) noexcept
+_CCCL_FPMP_CORE_API int __internal_fpmp2_isfinite(const double __x_hi, const double __x_lo) noexcept
 {
-  return ::cuda::std::isfinite(__x_hi);
+  return ::cuda::std::isfinite(__x_hi) && ::cuda::std::isfinite(__x_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A_RETINT(isfinite)
 
 /*
  * --------------------------------------------------------------------
- * Infinity test isinf(x) (fp32mp2) - hi-limb test
+ * Infinity test isinf(x) (fp32mp2) - both limbs
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API int __internal_fpmp2_isinf(const float __x_hi, [[maybe_unused]] const float __x_lo) noexcept
+_CCCL_FPMP_CORE_API int __internal_fpmp2_isinf(const float __x_hi, const float __x_lo) noexcept
 {
-  return ::cuda::std::isinf(static_cast<double>(__x_hi));
+  if (::cuda::std::isnan(__x_hi) || ::cuda::std::isnan(__x_lo))
+  {
+    return 0;
+  }
+  const bool __ih = ::cuda::std::isinf(__x_hi);
+  const bool __il = ::cuda::std::isinf(__x_lo);
+  return (__ih != __il) || (__ih && (::cuda::std::signbit(__x_hi) == ::cuda::std::signbit(__x_lo)));
 }
 
 /*
  * --------------------------------------------------------------------
- * Infinity test isinf(x) (fp64mp2) - hi-limb test
+ * Infinity test isinf(x) (fp64mp2) - both limbs
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API int __internal_fpmp2_isinf(const double __x_hi, [[maybe_unused]] const double __x_lo) noexcept
+_CCCL_FPMP_CORE_API int __internal_fpmp2_isinf(const double __x_hi, const double __x_lo) noexcept
 {
-  return ::cuda::std::isinf(__x_hi);
+  if (::cuda::std::isnan(__x_hi) || ::cuda::std::isnan(__x_lo))
+  {
+    return 0;
+  }
+  const bool __ih = ::cuda::std::isinf(__x_hi);
+  const bool __il = ::cuda::std::isinf(__x_lo);
+  return (__ih != __il) || (__ih && (::cuda::std::signbit(__x_hi) == ::cuda::std::signbit(__x_lo)));
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A_RETINT(isinf)
 
 /*
  * --------------------------------------------------------------------
- * NaN test isnan(x) (fp32mp2) - hi-limb test
+ * NaN test isnan(x) (fp32mp2) - both limbs
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API int __internal_fpmp2_isnan(const float __x_hi, [[maybe_unused]] const float __x_lo) noexcept
+_CCCL_FPMP_CORE_API int __internal_fpmp2_isnan(const float __x_hi, const float __x_lo) noexcept
 {
-  return ::cuda::std::isnan(static_cast<double>(__x_hi));
+  return ::cuda::std::isnan(__x_hi) || ::cuda::std::isnan(__x_lo)
+      || (::cuda::std::isinf(__x_hi) && ::cuda::std::isinf(__x_lo)
+          && (::cuda::std::signbit(__x_hi) != ::cuda::std::signbit(__x_lo)));
 }
 
 /*
  * --------------------------------------------------------------------
- * NaN test isnan(x) (fp64mp2) - hi-limb test
+ * NaN test isnan(x) (fp64mp2) - both limbs
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API int __internal_fpmp2_isnan(const double __x_hi, [[maybe_unused]] const double __x_lo) noexcept
+_CCCL_FPMP_CORE_API int __internal_fpmp2_isnan(const double __x_hi, const double __x_lo) noexcept
 {
-  return ::cuda::std::isnan(__x_hi);
+  return ::cuda::std::isnan(__x_hi) || ::cuda::std::isnan(__x_lo)
+      || (::cuda::std::isinf(__x_hi) && ::cuda::std::isinf(__x_lo)
+          && (::cuda::std::signbit(__x_hi) != ::cuda::std::signbit(__x_lo)));
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A_RETINT(isnan)
 
 /*
  * --------------------------------------------------------------------
- * Sign-bit test signbit(x) (fp32mp2) - hi-limb test
+ * Sign-bit test signbit(x) (fp32mp2) - both limbs
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API int __internal_fpmp2_signbit(const float __x_hi, [[maybe_unused]] const float __x_lo) noexcept
+_CCCL_FPMP_CORE_API int __internal_fpmp2_signbit(const float __x_hi, const float __x_lo) noexcept
 {
-  return ::cuda::std::signbit(static_cast<double>(__x_hi));
+  const bool __sh = ::cuda::std::signbit(__x_hi);
+  const bool __sl = ::cuda::std::signbit(__x_lo);
+  if (__sh == __sl || __x_lo == float(0) || __x_hi != __x_hi || __x_lo != __x_lo)
+  {
+    return __sh;
+  }
+  /* Opposite signs and a nonzero lo (a loose pair): the larger magnitude decides,
+   * equal magnitudes cancel to +0. */
+  const float __ah = ::cuda::__fpmp_internal_fabs(__x_hi);
+  const float __al = ::cuda::__fpmp_internal_fabs(__x_lo);
+  return (__al > __ah) ? __sl : ((__al < __ah) ? __sh : false);
 }
 
 /*
  * --------------------------------------------------------------------
- * Sign-bit test signbit(x) (fp64mp2) - hi-limb test
+ * Sign-bit test signbit(x) (fp64mp2) - both limbs
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API int __internal_fpmp2_signbit(const double __x_hi, [[maybe_unused]] const double __x_lo) noexcept
+_CCCL_FPMP_CORE_API int __internal_fpmp2_signbit(const double __x_hi, const double __x_lo) noexcept
 {
-  return ::cuda::std::signbit(__x_hi);
+  const bool __sh = ::cuda::std::signbit(__x_hi);
+  const bool __sl = ::cuda::std::signbit(__x_lo);
+  if (__sh == __sl || __x_lo == double(0) || __x_hi != __x_hi || __x_lo != __x_lo)
+  {
+    return __sh;
+  }
+  /* Opposite signs and a nonzero lo (a loose pair): the larger magnitude decides,
+   * equal magnitudes cancel to +0. */
+  const double __ah = ::cuda::__fpmp_internal_fabs(__x_hi);
+  const double __al = ::cuda::__fpmp_internal_fabs(__x_lo);
+  return (__al > __ah) ? __sl : ((__al < __ah) ? __sh : false);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A_RETINT(signbit)
