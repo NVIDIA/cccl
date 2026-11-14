@@ -1150,8 +1150,30 @@ class ThreadData:
             )
         return value_type, tuple(converted)
 
+    def _control_flow_metadata(self, value_type: type) -> Any:
+        """Keep dtype signedness and alignment in the control-flow type.
+
+        Integer MLIR scalars are signless. A static layout value distinguishes
+        otherwise identical leaves when branches rebind a payload with different
+        metadata. It has no runtime data and is eliminated during lowering.
+        """
+        from cutlass import cute
+        from cutlass.base_dsl import extract_mlir_values
+
+        from ._compiler._types import INTEGER_VALUE_TYPES
+
+        kind = (
+            1 + int(value_type.signed)
+            if value_type in INTEGER_VALUE_TYPES
+            else 3
+        )
+        layout = cute.make_layout(
+            (kind, value_type.width, (self.alignment or 0) + 1)
+        )
+        return extract_mlir_values(layout)[0]
+
     def __extract_mlir_values__(self) -> list[Any]:
-        """Expose one scalar IR value per payload item to CuTe.
+        """Expose static metadata and one scalar IR value per item to CuTe.
 
         CuTe calls this hook to flatten a Python payload into scalar IR
         operands, including for function calls and runtime branches or loops.
@@ -1161,11 +1183,13 @@ class ThreadData:
         Returns
         -------
         list
-            One typed MLIR scalar per initialized payload item, in index
-            order.
+            Static metadata followed by one typed MLIR scalar per initialized
+            payload item, in index order.
         """
-        _, values = self._dynamic_values()
-        return [value.ir_value() for value in values]
+        value_type, values = self._dynamic_values()
+        return [self._control_flow_metadata(value_type)] + [
+            value.ir_value() for value in values
+        ]
 
     def __new_from_mlir_values__(self, values: list[Any]) -> ThreadData:
         """Rebuild a payload from replacement scalar IR values.
@@ -1175,33 +1199,38 @@ class ThreadData:
         results. A block argument names a value supplied on entry to an IR
         block. The hook wraps the supplied scalars in a new Python container.
 
-        Require one value per item. Keep the alignment and dtype. Keep a
+        Require static metadata and one value per item. Keep a
         declared dtype; without one, record the item type inferred from
         the original payload.
 
         Parameters
         ----------
         values : list
-            Replacement scalar IR values in the item order established by
-            ``__extract_mlir_values__``; their count must match
-            items_per_thread.
+            Static metadata followed by replacement scalar IR values in the
+            item order established by ``__extract_mlir_values__``.
 
         Returns
         -------
         ThreadData
             Reconstructed payload with the same item count and alignment.
         """
-        if len(values) != self.items_per_thread:
+        if len(values) != self.items_per_thread + 1:
             raise ValueError(
-                "ThreadData control flow requires one value per item"
+                "ThreadData control flow requires metadata "
+                "and one value per item"
             )
         from ._compiler._types import thread_data_output_dtype
 
         value_type, _ = self._dynamic_values()
+        if values[0].type != self._control_flow_metadata(value_type).type:
+            raise TypeError(
+                "ThreadData dtype and alignment must remain unchanged across "
+                "runtime branches and loops"
+            )
         result = ThreadData(
             self.items_per_thread,
             dtype=thread_data_output_dtype(self, value_type),
-            values=[value_type(value) for value in values],
+            values=[value_type(value) for value in values[1:]],
             alignment=self.alignment,
         )
         return result

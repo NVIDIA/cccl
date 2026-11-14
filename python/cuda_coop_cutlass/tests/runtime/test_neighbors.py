@@ -153,8 +153,14 @@ def _run(
             )
         else:
             storage = None
-        first = coop.ThreadData(items_per_thread, dtype=result_type)
-        other = coop.ThreadData(items_per_thread, dtype=result_type)
+        # Loop-carried payloads retain the metadata of each returned result.
+        result_alignment = None if payload == "tensor" else alignment
+        first = coop.ThreadData(
+            items_per_thread, dtype=result_type, alignment=result_alignment
+        )
+        other = coop.ThreadData(
+            items_per_thread, dtype=result_type, alignment=result_alignment
+        )
         for item in cutlass.range_constexpr(items_per_thread):
             first[item] = result_type(0)
             other[item] = result_type(0)
