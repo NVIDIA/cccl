@@ -24,6 +24,7 @@
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__random/is_seed_sequence.h>
 #include <cuda/std/__random/is_valid.h>
+#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/climits>
@@ -38,15 +39,18 @@ template <uint64_t _Ap,
           uint64_t _Mp,
           uint64_t _MpMax,
           bool _MightOverflow = (_Ap != 0 && _Mp != 0 && _Mp - 1 > (_MpMax - _Cp) / _Ap),
-          bool _OverflowOk    = ((_Mp | (_Mp - 1)) > _Mp), // m = 2^n
+          bool _OverflowOk    = ((_Mp & (_Mp - 1)) == 0), // m = 2^n
           bool _SchrageOk     = (_Ap != 0 && _Mp != 0 && _Mp % _Ap <= _Mp / _Ap)> // r <= q
 struct __lce_alg_picker
 {
-  static_assert(_Ap != 0 || _Mp != 0 || !_MightOverflow || _OverflowOk || _SchrageOk,
-                "The current values of a, c, and m cannot generate a number "
-                "within bounds of linear_congruential_engine.");
-
   static constexpr const bool __use_schrage = _MightOverflow && !_OverflowOk && _SchrageOk;
+  // Neither wrapping around nor Schrage's algorithm is correct, so compute a * x + c in a wider type
+  static constexpr const bool __use_promotion = _MightOverflow && !_OverflowOk && !_SchrageOk;
+
+#if !_CCCL_HAS_INT128()
+  static_assert(_MpMax != ~uint64_t{0} || !__use_promotion,
+                "The current values of a, c, and m need __int128, which is not available on this platform.");
+#endif // !_CCCL_HAS_INT128()
 };
 
 template <uint64_t _Ap,
@@ -97,7 +101,16 @@ struct __lce_ta<_Ap, _Cp, _Mp, ~uint64_t{0}, false>
   using result_type = uint64_t;
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type next(result_type __x) noexcept
   {
-    return ((_Ap * __x) + _Cp) % _Mp;
+#if _CCCL_HAS_INT128()
+    if constexpr (__lce_alg_picker<_Ap, _Cp, _Mp, ~uint64_t{0}>::__use_promotion)
+    {
+      return static_cast<result_type>(((__uint128_t{_Ap} * __x) + _Cp) % _Mp);
+    }
+    else
+#endif // _CCCL_HAS_INT128()
+    {
+      return ((_Ap * __x) + _Cp) % _Mp;
+    }
   }
 };
 
@@ -160,7 +173,14 @@ struct __lce_ta<_Ap, _Cp, _Mp, ~uint32_t{0}, false>
     constexpr result_type __a = static_cast<result_type>(_Ap);
     constexpr result_type __c = static_cast<result_type>(_Cp);
     constexpr result_type __m = static_cast<result_type>(_Mp);
-    return ((__a * __x) + __c) % __m;
+    if constexpr (__lce_alg_picker<_Ap, _Cp, _Mp, ~uint32_t{0}>::__use_promotion)
+    {
+      return static_cast<result_type>(((uint64_t{__a} * __x) + __c) % __m);
+    }
+    else
+    {
+      return ((__a * __x) + __c) % __m;
+    }
   }
 };
 
@@ -273,7 +293,9 @@ public:
 
   _CCCL_HOST_DEVICE_API constexpr void discard(uint64_t __z) noexcept
   {
-    constexpr bool __can_overflow = (_Av != 0 && _Mv != 0 && _Mv - 1 > (_Mp - _Cv) / _Av);
+    // The products below stay in uint64_t if m <= 2^32. For m = 2^n, wrapping around 2^64 does not change the result.
+    constexpr bool __can_overflow =
+      (_Av != 0 && _Mv != 0 && _Mv - 1 > (_Mp - _Cv) / _Av) || ((_Mv & (_Mv - 1)) != 0 && _Mv > 0x100000000ull);
     // Fallback implementation
     if constexpr (__can_overflow)
     {
@@ -292,20 +314,20 @@ public:
       {
         if (__z & 1)
         {
-          __acc_mult = (__acc_mult * __cur_mult) % modulus;
+          __acc_mult = __reduce(__acc_mult * __cur_mult);
           if constexpr (increment != 0)
           {
-            __acc_plus = ((__acc_plus * __cur_mult) + __cur_plus) % modulus;
+            __acc_plus = __reduce((__acc_plus * __cur_mult) + __cur_plus);
           }
         }
         if constexpr (increment != 0)
         {
-          __cur_plus = ((__cur_mult + 1) * __cur_plus) % modulus;
+          __cur_plus = __reduce((__cur_mult + 1) * __cur_plus);
         }
-        __cur_mult = (__cur_mult * __cur_mult) % modulus;
+        __cur_mult = __reduce(__cur_mult * __cur_mult);
         __z >>= 1;
       }
-      __x_ = (__acc_mult * __x_ + __acc_plus) % modulus;
+      __x_ = static_cast<result_type>(__reduce(__acc_mult * __x_ + __acc_plus));
     }
   }
 
@@ -327,10 +349,14 @@ public:
   {
     using _Ostream                            = ::std::basic_ostream<_CharT, _Traits>;
     const typename _Ostream::fmtflags __flags = __os.flags();
+    const _CharT __fill                       = __os.fill();
     __os.flags(_Ostream::dec | _Ostream::left);
     __os.fill(__os.widen(' '));
+    // Promote, so that an unsigned char state is written as a number and not as a character
+    __os << static_cast<common_type_t<_UIntType, unsigned>>(__e.__x_);
     __os.flags(__flags);
-    return __os << __e.__x_;
+    __os.fill(__fill);
+    return __os;
   }
   template <typename _CharT, typename _Traits>
   _CCCL_HOST_DEVICE_API friend ::std::basic_istream<_CharT, _Traits>&
@@ -339,11 +365,19 @@ public:
     using _Istream                            = ::std::basic_istream<_CharT, _Traits>;
     const typename _Istream::fmtflags __flags = __is.flags();
     __is.flags(_Istream::dec | _Istream::skipws);
-    _UIntType __t;
+    // Read an unsigned char state as a number and not as a character
+    common_type_t<_UIntType, unsigned> __t{};
     __is >> __t;
+    if constexpr (sizeof(_UIntType) < sizeof(unsigned))
+    {
+      if (!__is.fail() && __t > _Mp)
+      {
+        __is.setstate(_Istream::failbit);
+      }
+    }
     if (!__is.fail())
     {
-      __e.__x_ = __t;
+      __e.__x_ = static_cast<_UIntType>(__t);
     }
     __is.flags(__flags);
     return __is;
@@ -351,6 +385,19 @@ public:
 #endif // _CCCL_HOSTED()
 
 private:
+  // Reduces modulo m. For m == 0 the modulus is 2^w, which the conversion to result_type applies.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr uint64_t __reduce(uint64_t __v) noexcept
+  {
+    if constexpr (_Mv == 0)
+    {
+      return __v;
+    }
+    else
+    {
+      return __v % _Mv;
+    }
+  }
+
   _CCCL_HOST_DEVICE_API constexpr void seed(true_type, true_type, result_type __s) noexcept
   {
     __x_ = __s == 0 ? 1 : __s;
@@ -382,7 +429,7 @@ linear_congruential_engine<_UIntType, _Av, _Cv, _Mv>::__seed(_Sseq& __q, integra
   constexpr uint32_t __k = 1;
   uint32_t __ar[__k + 3] = {};
   __q.generate(__ar, __ar + __k + 3);
-  result_type __s = static_cast<result_type>(__ar[3] % _Mv);
+  result_type __s = static_cast<result_type>(__reduce(__ar[3]));
   __x_            = _Cv == 0 && __s == 0 ? result_type(1) : __s;
 }
 
@@ -394,7 +441,7 @@ linear_congruential_engine<_UIntType, _Av, _Cv, _Mv>::__seed(_Sseq& __q, integra
   constexpr uint32_t __k = 2;
   uint32_t __ar[__k + 3] = {};
   __q.generate(__ar, __ar + __k + 3);
-  result_type __s = static_cast<result_type>((__ar[3] + ((uint64_t) __ar[4] << 32)) % _Mv);
+  result_type __s = static_cast<result_type>(__reduce(__ar[3] + ((uint64_t) __ar[4] << 32)));
   __x_            = _Cv == 0 && __s == 0 ? result_type(1) : __s;
 }
 
