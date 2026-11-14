@@ -13,9 +13,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/allocator/temporary_allocator.h>
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/detail/type_traits.h>
-#include <thrust/system/detail/generic/select_system.h>
+#include <thrust/system/detail/generic/select_system.h> // IWYU pragma: keep
 
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__type_traits/is_trivially_copy_constructible.h>

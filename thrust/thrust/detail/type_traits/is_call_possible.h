@@ -15,8 +15,8 @@
 
 #include <thrust/detail/type_traits/has_member_function.h>
 
-#include <cuda/std/__type_traits/copy_cv.h>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/copy_cv.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/integral_constant.h> // IWYU pragma: keep
 
 // inspired by Roman Perepelitsa's presentation from comp.lang.c++.moderated
 // based on the implementation here: http://www.rsdn.ru/forum/cpp/2759773.1.aspx

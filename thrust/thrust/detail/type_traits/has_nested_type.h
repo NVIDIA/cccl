@@ -13,7 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/integral_constant.h> // IWYU pragma: keep
 
 #define __THRUST_DEFINE_HAS_NESTED_TYPE(trait_name, nested_type_name)          \
   template <typename T>                                                        \

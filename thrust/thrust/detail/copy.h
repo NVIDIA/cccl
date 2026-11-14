@@ -57,4 +57,4 @@ _CCCL_HOST_DEVICE_API OutputIterator two_system_copy_n(
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/copy.inl>
+#include <thrust/detail/copy.inl> // IWYU pragma: export

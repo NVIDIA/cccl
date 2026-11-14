@@ -17,8 +17,10 @@
 #include <thrust/detail/raw_pointer_cast.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN

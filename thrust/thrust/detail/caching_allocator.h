@@ -14,7 +14,9 @@
 #endif // no system header
 #include <thrust/mr/allocator.h>
 #include <thrust/mr/device_memory_resource.h>
+#include <thrust/mr/disjoint_pool.h>
 #include <thrust/mr/disjoint_tls_pool.h>
+#include <thrust/mr/memory_resource.h>
 #include <thrust/mr/new.h>
 
 THRUST_NAMESPACE_BEGIN

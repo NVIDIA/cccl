@@ -21,7 +21,6 @@
 
 #include <thrust/detail/execution_policy.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/detail/type_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 

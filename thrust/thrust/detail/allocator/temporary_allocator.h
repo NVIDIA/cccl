@@ -14,14 +14,14 @@
 #endif // no system header
 
 #include <thrust/detail/allocator/tagged_allocator.h>
-#include <thrust/detail/allocator/temporary_allocator.h>
 #include <thrust/detail/execution_policy.h>
+#include <thrust/detail/pointer.h>
 #include <thrust/detail/temporary_buffer.h>
 #include <thrust/memory.h>
 #include <thrust/system/detail/bad_alloc.h>
 
 #include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/__host_stdlib/exception>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cassert>
 

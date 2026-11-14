@@ -18,11 +18,15 @@
 #include <thrust/detail/pointer.h>
 #include <thrust/detail/raw_pointer_cast.h>
 
+#include <cuda/std/__cstddef/types.h>
+
 // Include all active backend system implementations (generic, sequential, host and device)
+// IWYU pragma: begin_keep
 #include <thrust/system/detail/generic/memory.h>
 #include <thrust/system/detail/sequential/malloc_and_free.h>
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(malloc_and_free.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(malloc_and_free.h)
+// IWYU pragma: end_keep
 
 // Some build systems need a hint to know which files we could include
 #if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
