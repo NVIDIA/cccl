@@ -21,8 +21,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/preprocessor.h>
-#include <thrust/detail/type_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 

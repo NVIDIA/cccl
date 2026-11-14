@@ -20,14 +20,11 @@
 
 #include <thrust/detail/contiguous_storage.h>
 #include <thrust/detail/type_traits.h>
-#include <thrust/iterator/detail/normal_iterator.h>
-#include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/reverse_iterator.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_swappable.h>
-#include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/initializer_list>
 
@@ -600,4 +597,4 @@ _CCCL_HOST_API bool operator!=(const std::vector<T1, Alloc1>& lhs, const vector_
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/vector_base.inl>
+#include <thrust/detail/vector_base.inl> // IWYU pragma: export

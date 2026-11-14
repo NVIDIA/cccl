@@ -12,7 +12,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/alignment.h>
 #include <thrust/detail/execute_with_allocator_fwd.h>
 
 #include <cuda/std/__cstddef/types.h>

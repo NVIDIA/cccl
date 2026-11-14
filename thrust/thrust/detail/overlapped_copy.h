@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/copy.h>
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/temporary_array.h>
 #include <thrust/iterator/detail/minimum_system.h>
 #include <thrust/iterator/iterator_traits.h>

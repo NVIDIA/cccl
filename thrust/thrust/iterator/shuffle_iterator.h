@@ -16,15 +16,18 @@
 #endif // no system header
 
 #include <thrust/detail/random_bijection.h>
-#include <thrust/detail/type_traits.h>
+#include <thrust/iterator/detail/any_system_tag.h>
 #include <thrust/iterator/iterator_adaptor.h>
-#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_facade.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN

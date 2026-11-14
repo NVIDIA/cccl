@@ -26,22 +26,24 @@
 #endif // no system header
 
 #include <thrust/detail/type_traits.h>
+#include <thrust/detail/type_traits/minimum_type.h>
 #include <thrust/iterator/detail/minimum_system.h>
 #include <thrust/iterator/detail/tuple_of_iterator_references.h>
 #include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/__iterator/zip_common.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/distance.h>
-#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constructible.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/integer_sequence.h>
-#include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
 
