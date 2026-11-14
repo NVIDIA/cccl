@@ -13,10 +13,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
-#include <cuda/std/__type_traits/is_convertible.h> // IWYU pragma: keep
-#include <cuda/std/__type_traits/is_void.h> // IWYU pragma: keep
-#include <cuda/std/__utility/declval.h> // IWYU pragma: keep
+// IWYU pragma: begin_keep
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/__utility/declval.h>
+// IWYU pragma: end_keep
 
 #define __THRUST_DEFINE_HAS_MEMBER_FUNCTION(trait_name, member_function_name)                                          \
   template <typename T, typename Signature, typename = void>                                                           \
