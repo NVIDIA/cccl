@@ -284,7 +284,7 @@ public:
   {
     return __impl_.count(__group, __key);
   }
-  
+
   //! @brief Applies `__callback_op` to a copy of the stored key equivalent to a query using one thread.
   //!
   //! The callback is not invoked if no equivalent key is present.

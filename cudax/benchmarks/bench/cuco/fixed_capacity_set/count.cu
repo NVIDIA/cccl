@@ -1,4 +1,3 @@
-
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
@@ -37,8 +36,7 @@ void fixed_capacity_set_count(nvbench::state& state, nvbench::type_list<Key, Dis
   gen.generate(bench::dist_from_state<Dist>(state), keys.begin(), keys.end(), exec_policy);
 
   // Construct and populate the set.
-  cudax::cuco::fixed_capacity_set<Key> set{
-    stream, mr, capacity, cudax::cuco::empty_key<Key>{-1}};
+  cudax::cuco::fixed_capacity_set<Key> set{stream, mr, capacity, cudax::cuco::empty_key<Key>{-1}};
   set.insert(stream, keys.begin(), keys.end());
 
   // Modify queries according to the requested matching rate.
@@ -56,8 +54,7 @@ void fixed_capacity_set_count(nvbench::state& state, nvbench::type_list<Key, Dis
 }
 
 NVBENCH_BENCH_TYPES(fixed_capacity_set_count,
-                    NVBENCH_TYPE_AXES(bench::defaults::key_type_range,
-                                      nvbench::type_list<bench::distribution::unique>))
+                    NVBENCH_TYPE_AXES(bench::defaults::key_type_range, nvbench::type_list<bench::distribution::unique>))
   .set_name("fixed_capacity_set_count_unique_capacity")
   .set_type_axes_names({"Key", "Distribution"})
   .add_int64_axis("NumInputs", bench::defaults::n_range_cache)
@@ -65,8 +62,7 @@ NVBENCH_BENCH_TYPES(fixed_capacity_set_count,
   .add_float64_axis("MatchingRate", {bench::defaults::matching_rate});
 
 NVBENCH_BENCH_TYPES(fixed_capacity_set_count,
-                    NVBENCH_TYPE_AXES(bench::defaults::key_type_range,
-                                      nvbench::type_list<bench::distribution::unique>))
+                    NVBENCH_TYPE_AXES(bench::defaults::key_type_range, nvbench::type_list<bench::distribution::unique>))
   .set_name("fixed_capacity_set_count_unique_occupancy")
   .set_type_axes_names({"Key", "Distribution"})
   .add_int64_axis("NumInputs", {bench::defaults::n})
@@ -74,8 +70,7 @@ NVBENCH_BENCH_TYPES(fixed_capacity_set_count,
   .add_float64_axis("MatchingRate", {bench::defaults::matching_rate});
 
 NVBENCH_BENCH_TYPES(fixed_capacity_set_count,
-                    NVBENCH_TYPE_AXES(bench::defaults::key_type_range,
-                                      nvbench::type_list<bench::distribution::unique>))
+                    NVBENCH_TYPE_AXES(bench::defaults::key_type_range, nvbench::type_list<bench::distribution::unique>))
   .set_name("fixed_capacity_set_count_unique_matching_rate")
   .set_type_axes_names({"Key", "Distribution"})
   .add_int64_axis("NumInputs", {bench::defaults::n})

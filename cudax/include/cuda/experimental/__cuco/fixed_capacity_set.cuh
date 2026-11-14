@@ -333,7 +333,7 @@ public:
   {
     return __impl_->count(first, last, ref(), stream);
   }
-  
+
   //! @brief Writes whether each query key is present, or false for keys not selected by `__pred`.
   //!
   //! For each key `__first[i]`, writes whether the key is present when `__pred(__stencil[i])` is
