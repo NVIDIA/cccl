@@ -402,18 +402,14 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __find_if_n(
 
 //! @brief Counts the occurrences of keys in `[__first, __last)` contained in the container
 //! if `pred` of the corresponding stencil returns true.
-template <int _CgSize,
-          int _BlockSize,
-          typename _InputIt,
-          typename _StencilIt,
-          typename _Predicate,
-          typename _Ref>
-_CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __count_if_n(_InputIt __first,
-                                                         detail::__index_type __n,
-                                                         _StencilIt __stencil,
-                                                         _Predicate __pred,
-                                                         typename _Ref::size_type* __count,
-                                                         _Ref __ref)
+template <int _CgSize, int _BlockSize, typename _InputIt, typename _StencilIt, typename _Predicate, typename _Ref>
+_CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __count_if_n(
+  _InputIt __first,
+  detail::__index_type __n,
+  _StencilIt __stencil,
+  _Predicate __pred,
+  typename _Ref::size_type* __count,
+  _Ref __ref)
 {
   using __block_reduce = CUB_NS_QUALIFIER::BlockReduce<typename _Ref::size_type, _BlockSize>;
   __shared__ typename __block_reduce::TempStorage __temp_storage;
@@ -423,16 +419,22 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __count_if_n(_Input
   const auto __loop_stride = detail::__grid_stride() / _CgSize;
   auto __idx               = detail::__global_thread_id() / _CgSize;
 
-  while (__idx < __n) {
-    if constexpr (_CgSize == 1) {
-      if (__pred(*(__stencil + __idx))) {
+  while (__idx < __n)
+  {
+    if constexpr (_CgSize == 1)
+    {
+      if (__pred(*(__stencil + __idx)))
+      {
         const typename ::cuda::std::iterator_traits<_InputIt>::value_type __key = *(__first + __idx);
         __thread_count += __ref.count(__key);
       }
-    } else {
+    }
+    else
+    {
       const auto __tile = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(
-      ::cooperative_groups::this_thread_block());
-      if (__pred(*(__stencil + __idx))) {
+        ::cooperative_groups::this_thread_block());
+      if (__pred(*(__stencil + __idx)))
+      {
         const typename ::cuda::std::iterator_traits<_InputIt>::value_type __key = *(__first + __idx);
         __thread_count += __ref.count(__tile, __key);
       }

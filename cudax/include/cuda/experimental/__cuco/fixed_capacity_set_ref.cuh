@@ -252,6 +252,37 @@ public:
   {
     return __impl_.contains(__group, __key);
   }
+
+  //!
+  //! @brief Counts the occurrence of a given key contained in the container
+  //!
+  //! @tparam _ProbeKey Probe key type
+  //!
+  //! @param __key The key to count for
+  //!
+  //! @return Number of occurrences found by the current thread
+  template <typename _ProbeKey>
+  [[nodiscard]] _CCCL_DEVICE_API size_type count(_ProbeKey __key) const noexcept
+  {
+    return __impl_.count(__key);
+  }
+
+  //!
+  //! @brief Counts the occurrence of a given key contained in the container
+  //!
+  //! @tparam _ProbeKey Probe key type
+  //! @tparam _ParentCG Type of parent Cooperative Group
+  //!
+  //! @param __group The Cooperative Group used to perform group count
+  //! @param __key The key to count for
+  //!
+  //! @return Number of occurrences found by the current thread
+  template <typename _ProbeKey, typename _ParentCG>
+  [[nodiscard]] _CCCL_DEVICE_API size_type
+  count(cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
+  {
+    return __impl_.count(__group, __key);
+  }
 #endif // _CCCL_CUDA_COMPILATION()
 };
 } // namespace cuda::experimental::cuco

@@ -575,37 +575,6 @@ public:
     return __impl.find(__group, __key);
   }
 
-    //!
-  //! @brief Counts the occurrence of a given key contained in the container
-  //!
-  //! @tparam _ProbeKey Probe key type
-  //!
-  //! @param __key The key to count for
-  //!
-  //! @return Number of occurrences found by the current thread
-  template <typename _ProbeKey>
-  [[nodiscard]] _CCCL_DEVICE_API __size_type count(_ProbeKey __key) const noexcept
-  {
-    return __impl.count(__key);
-  }
-
-  //!
-  //! @brief Counts the occurrence of a given key contained in the container
-  //!
-  //! @tparam _ProbeKey Probe key type
-  //! @tparam _ParentCG Type of parent Cooperative Group
-  //!
-  //! @param __group The Cooperative Group used to perform group count
-  //! @param __key The key to count for
-  //!
-  //! @return Number of occurrences found by the current thread
-  template <typename _ProbeKey, typename _ParentCG>
-  [[nodiscard]] _CCCL_DEVICE_API __size_type
-  count(cooperative_groups::thread_block_tile<__cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
-  {
-    return __impl.count(__group, __key);
-  }
-
   //! @brief Applies `__callback_op` to a copy of every slot whose key is equivalent to `__key`.
   //!
   //! @note The return value of `__callback_op`, if any, is ignored.

@@ -857,27 +857,37 @@ public:
   template <typename _ProbeKey>
   [[nodiscard]] _CCCL_DEVICE_API __size_type count(_ProbeKey __key) const noexcept
   {
-    if constexpr (not allows_duplicates) {
+    if constexpr (!__allows_duplicates)
+    {
       return static_cast<__size_type>(contains(__key));
-    } else {
+    }
+    else
+    {
       auto __probing_iter =
         __probing_scheme.template make_iterator<__bucket_size>(__key, __storage_ref.capacity_extent());
       auto const __init_idx = *__probing_iter;
-      __size_type __count     = 0;
+      __size_type __count   = 0;
 
-      while (true) {
-        auto const __bucket_slots                = __storage_ref[*__probing_iter];
+      while (true)
+      {
+        auto const __bucket_slots                  = __storage_ref[*__probing_iter];
         cuda::std::int32_t __equals[__bucket_size] = {0};
-        bool __empty_found                       = false;
+        bool __empty_found                         = false;
 
         ::cuda::static_for<__bucket_size>(__check_bucket_fn{}, *this, __key, __bucket_slots, __equals, __empty_found);
 
         __count += ::thrust::reduce(thrust::seq, __equals, __equals + __bucket_size);
 
-        if (__empty_found) { return __count; }
+        if (__empty_found)
+        {
+          return __count;
+        }
 
         ++__probing_iter;
-        if (*__probing_iter == __init_idx) { return __count; }
+        if (*__probing_iter == __init_idx)
+        {
+          return __count;
+        }
       }
     }
   }
@@ -899,21 +909,28 @@ public:
     auto __probing_iter =
       __probing_scheme.template make_iterator<__bucket_size>(__group, __key, __storage_ref.capacity_extent());
     auto const __init_idx = *__probing_iter;
-    __size_type __count     = 0;
+    __size_type __count   = 0;
 
-    while (true) {
-      auto const __bucket_slots                = __storage_ref[*__probing_iter];
+    while (true)
+    {
+      auto const __bucket_slots                  = __storage_ref[*__probing_iter];
       cuda::std::int32_t __equals[__bucket_size] = {0};
-      bool __empty_found                       = false;
+      bool __empty_found                         = false;
 
       ::cuda::static_for<__bucket_size>(__check_bucket_fn{}, *this, __key, __bucket_slots, __equals, __empty_found);
 
       __count += ::thrust::reduce(thrust::seq, __equals, __equals + __bucket_size);
 
-      if (__group.any(__empty_found)) { return __count; }
+      if (__group.any(__empty_found))
+      {
+        return __count;
+      }
 
       ++__probing_iter;
-      if (*__probing_iter == __init_idx) { return __count; }
+      if (*__probing_iter == __init_idx)
+      {
+        return __count;
+      }
     }
   }
 

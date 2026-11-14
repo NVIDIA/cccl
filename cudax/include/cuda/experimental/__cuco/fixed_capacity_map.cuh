@@ -706,26 +706,6 @@ public:
     __impl->for_each_async(__stream, __first, __last, __callback_op, ref());
   }
 
-  //!
-  //! @brief Counts the occurrences of keys in `[first, last)` contained in the set
-  //!
-  //! @note This function synchronizes the given stream.
-  //!
-  //! @tparam _InputIt Device accessible input iterator
-  //!
-  //! @param __first Beginning of the sequence of keys to count
-  //! @param __last End of the sequence of keys to count
-  //! @param __stream CUDA stream used for count
-  //!
-  //! @return The sum of total occurrences of all keys in `[__first, __last)`
-  template <typename InputIt>
-  size_type count(InputIt first,
-                  InputIt last,
-                  cuda::stream_ref stream = cuda::stream_ref{cudaStream_t{nullptr}}) const
-  {
-    return __impl->count(first, last, ref(op::count), stream);
-  }
-
   // ===== Retrieve All =====
 
   //! @brief Retrieves all keys and their associated mapped values.
