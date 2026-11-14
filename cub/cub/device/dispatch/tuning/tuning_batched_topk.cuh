@@ -198,22 +198,23 @@ struct baseline_topk_policy
     multi_worker_policy{256, 64}};
 }
 
-//! SM 12.0 baseline sub-policy, measured on RTX 5090: the default worker shapes with vectorized loads and direct
-//! stores, so the backend coverage is unchanged.
+//! SM 12.0 baseline sub-policy, measured on RTX 5090. Tiles of up to 1Ki keys use vectorized loads and direct stores
+//! and the 2Ki tile vectorized loads; the 4Ki and larger tiles keep the default warp-transpose loads and stores, which
+//! were faster there for decode-style batches with few segments and large k. The worker shapes are the default ones,
+//! so the backend coverage is unchanged.
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_sm120_baseline_policy() -> baseline_topk_policy
 {
-  constexpr auto load_alg  = BLOCK_LOAD_VECTORIZE;
-  constexpr auto store_alg = BLOCK_STORE_DIRECT;
-  constexpr auto epilogue =
-    epilogue_policy{16, BLOCK_LOAD_WARP_TRANSPOSE, BLOCK_STORE_WARP_TRANSPOSE, BLOCK_SCAN_WARP_SCANS};
+  constexpr auto default_load  = BLOCK_LOAD_WARP_TRANSPOSE;
+  constexpr auto default_store = BLOCK_STORE_WARP_TRANSPOSE;
+  constexpr auto epilogue      = epilogue_policy{16, default_load, default_store, BLOCK_SCAN_WARP_SCANS};
   return baseline_topk_policy{
     {
-      worker_policy{256, 64, load_alg, store_alg, epilogue},
-      worker_policy{256, 32, load_alg, store_alg, epilogue},
-      worker_policy{256, 16, load_alg, store_alg, epilogue},
-      worker_policy{256, 8, load_alg, store_alg, epilogue},
-      worker_policy{256, 4, load_alg, store_alg, epilogue},
-      worker_policy{128, 2, load_alg, store_alg, epilogue},
+      worker_policy{256, 64, default_load, default_store, epilogue},
+      worker_policy{256, 32, default_load, default_store, epilogue},
+      worker_policy{256, 16, default_load, default_store, epilogue},
+      worker_policy{256, 8, BLOCK_LOAD_VECTORIZE, default_store, epilogue},
+      worker_policy{256, 4, BLOCK_LOAD_VECTORIZE, BLOCK_STORE_DIRECT, epilogue},
+      worker_policy{128, 2, BLOCK_LOAD_VECTORIZE, BLOCK_STORE_DIRECT, epilogue},
     },
     multi_worker_policy{256, 64}};
 }
