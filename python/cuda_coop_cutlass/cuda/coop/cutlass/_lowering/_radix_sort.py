@@ -599,7 +599,9 @@ def _materialize(
         arguments.extend(_typed_item(item, dtype) for item in items)
         parameter_types.extend([dtype] * len(items))
     for value in bounds:
-        arguments.append(Int64(value))
+        arguments.append(
+            Int64(int(value) if isinstance(value, Integral) else value)
+        )
         parameter_types.append(Int64)
     result_types = (
         [Int32] if request.is_rank else [dtype for dtype, _ in resolved]
