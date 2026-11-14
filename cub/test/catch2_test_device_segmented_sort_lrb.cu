@@ -26,8 +26,8 @@ struct test_policy_selector
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const
   {
     auto policy                                   = capacity::policy_selector<Key>{}(cc);
-    policy.partition.block_threads                = cc >= cuda::compute_capability{10, 0} ? 128 : 256;
-    policy.group_merge.warp.min_ipt               = cc >= cuda::compute_capability{10, 0} ? 10 : 9;
+    policy.partition.threads_per_block            = cc >= cuda::compute_capability{10, 0} ? 128 : 256;
+    policy.group_merge.warp.min_items_per_thread  = cc >= cuda::compute_capability{10, 0} ? 10 : 9;
     policy.group_merge.large.grid_size_multiplier = 1;
     return policy;
   }
@@ -56,8 +56,8 @@ CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[se
   using kernels      = capacity::group_merge_sort_kernels_t<int, policies>;
   using sm90_policy  = cub::detail::policy_getter<policies, cuda::compute_capability{9, 0}.get()>;
   using sm100_policy = cub::detail::policy_getter<policies, cuda::compute_capability{10, 0}.get()>;
-  static_assert(sm90_policy{}().partition.block_threads == 256);
-  static_assert(sm100_policy{}().partition.block_threads == 128);
+  static_assert(sm90_policy{}().partition.threads_per_block == 256);
+  static_assert(sm100_policy{}().partition.threads_per_block == 128);
   static_assert(kernels::capacities_t<sm90_policy>::size == 77);
   static_assert(kernels::capacities_t<sm100_policy>::size == 71);
 

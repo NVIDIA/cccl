@@ -16,11 +16,15 @@
 #endif // no system header
 
 #include <cub/agent/agent_segmented_sort_lrb.cuh>
+#include <cub/block/block_scan.cuh>
 #include <cub/detail/segmented_sort_lrb.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/warp/warp_load.cuh>
+#include <cub/warp/warp_store.cuh>
 
 #include <cuda/__atomic/atomic.h>
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -29,6 +33,37 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort_lrb
 {
+// One warp converts bin counts into global ID offsets and initial scatter cursors.
+template <int NumBins>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_bin_counts(const unsigned* counts, unsigned* offsets, unsigned* cursors)
+{
+  constexpr int items_per_thread = ::cuda::ceil_div(NumBins, detail::warp_threads);
+  using load_t                   = WarpLoad<unsigned, items_per_thread, WARP_LOAD_TRANSPOSE>;
+  using scan_t                   = BlockScan<unsigned, detail::warp_threads>;
+  using store_t                  = WarpStore<unsigned, items_per_thread, WARP_STORE_TRANSPOSE>;
+  __shared__ typename load_t::TempStorage load_storage;
+  __shared__ scan_t::TempStorage scan_storage;
+  __shared__ typename store_t::TempStorage store_storage;
+  unsigned items[items_per_thread];
+  unsigned prefixes[items_per_thread];
+  unsigned cursor_prefixes[items_per_thread];
+  unsigned total;
+  load_t(load_storage).Load(counts, items, NumBins, 0u);
+  scan_t(scan_storage).ExclusiveSum(items, prefixes, total);
+  // WarpStore transposes its input registers; retain a copy for the second output.
+  for (int item = 0; item < items_per_thread; ++item)
+  {
+    cursor_prefixes[item] = prefixes[item];
+  }
+  store_t(store_storage).Store(offsets, prefixes, NumBins);
+  __syncwarp(); // Reuse the transpose storage after every lane has read it.
+  store_t(store_storage).Store(cursors, cursor_prefixes, NumBins);
+  if (threadIdx.x == 0)
+  {
+    offsets[NumBins] = total;
+  }
+}
+
 // Count nonempty segments by capacity, or scatter their IDs into reserved per-bin ranges.
 // Partition receives capacity bounds only; it never receives sorting configurations.
 template <typename Capacities,
@@ -36,7 +71,7 @@ template <typename Capacities,
           typename BeginIterator,
           typename EndIterator,
           typename PolicySelector = partition_policy_selector>
-__launch_bounds__(current_policy<PolicySelector>().block_threads) _CCCL_KERNEL_ATTRIBUTES void partition_kernel(
+__launch_bounds__(current_policy<PolicySelector>().threads_per_block) _CCCL_KERNEL_ATTRIBUTES void partition_kernel(
   BeginIterator begins,
   EndIterator ends,
   unsigned num_segments,
@@ -87,19 +122,21 @@ __launch_bounds__(current_policy<PolicySelector>().block_threads) _CCCL_KERNEL_A
       ids[bin_starts_shared[bin_idx] + segment_rank_in_bin] = static_cast<unsigned>(seg_id);
     }
   }
-  else if (threadIdx.x == 0)
+  else
   {
-    auto completed = ::cuda::atomic_ref<unsigned, ::cuda::thread_scope_device>{*blocks_completed};
-    // The last block to finish acquires all preceding counts; no block waits for another.
-    if (completed.fetch_add(1, ::cuda::std::memory_order_acq_rel) == gridDim.x - 1)
+    bool is_last_block = false;
+    if (threadIdx.x == 0)
     {
-      unsigned prefix = 0;
-      for (int bin_idx = 0; bin_idx < total_bins; ++bin_idx)
+      auto completed = ::cuda::atomic_ref<unsigned, ::cuda::thread_scope_device>{*blocks_completed};
+      // The last block acquires preceding counts; the barrier shares that visibility with its warp.
+      is_last_block = completed.fetch_add(1, ::cuda::memory_order_acq_rel) == gridDim.x - 1;
+    }
+    if (__syncthreads_or(is_last_block))
+    {
+      if (threadIdx.x < detail::warp_threads)
       {
-        offsets[bin_idx] = cursors[bin_idx] = prefix;
-        prefix += counts_or_cursors[bin_idx];
+        scan_bin_counts<total_bins>(counts_or_cursors, offsets, cursors);
       }
-      offsets[total_bins] = prefix;
     }
   }
 }
@@ -107,8 +144,8 @@ __launch_bounds__(current_policy<PolicySelector>().block_threads) _CCCL_KERNEL_A
 // Consume this kernel's bins, packing segments into groups and invoking its sorting implementation.
 // The kernel type carries the selector; launch bounds and the body select tuning for the compiled target.
 template <typename Kernel, typename Key, typename BeginIterator, typename EndIterator, bool Descending = false>
-__launch_bounds__(current_policy<typename Kernel::policy_selector>().block_threads,
-                  current_policy<typename Kernel::policy_selector>().min_blocks_per_sm)
+__launch_bounds__(current_policy<typename Kernel::policy_selector>().threads_per_block,
+                  current_policy<typename Kernel::policy_selector>().min_resident_blocks_per_sm)
   _CCCL_KERNEL_ATTRIBUTES void sort_kernel(
     partition_result partition, BeginIterator begins, EndIterator ends, const Key* in, Key* out)
 {

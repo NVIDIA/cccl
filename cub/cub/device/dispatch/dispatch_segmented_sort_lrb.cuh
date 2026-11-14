@@ -92,12 +92,12 @@ _CCCL_HOST_API cudaError_t dispatch_partition(
   {
     return error;
   }
-  const unsigned block_threads = static_cast<unsigned>(tuning.block_threads);
-  const unsigned grid_size     = (num_segments / block_threads) + (num_segments % block_threads != 0);
+  const unsigned threads_per_block = static_cast<unsigned>(tuning.threads_per_block);
+  const unsigned grid_size         = ::cuda::ceil_div(num_segments, threads_per_block);
   if (num_segments)
   {
     if (const auto error = CubDebug(
-          launcher_factory(grid_size, block_threads, 0, stream)
+          launcher_factory(grid_size, threads_per_block, 0, stream)
             .doit(partition_kernel<Capacities, false, BeginIterator, EndIterator, PartitionPolicySelector>,
                   begins,
                   ends,
@@ -114,7 +114,7 @@ _CCCL_HOST_API cudaError_t dispatch_partition(
   if (num_segments)
   {
     if (const auto error = CubDebug(
-          launcher_factory(grid_size, block_threads, 0, stream)
+          launcher_factory(grid_size, threads_per_block, 0, stream)
             .doit(partition_kernel<Capacities, true, BeginIterator, EndIterator, PartitionPolicySelector>,
                   begins,
                   ends,
@@ -166,7 +166,7 @@ _CCCL_HOST_API cudaError_t launch_sort_kernel(
   }
   int occupancy = 0;
   if (const auto error =
-        CubDebug(launcher_factory.MaxSmOccupancy(occupancy, kernel, tuning.block_threads, dynamic_smem_bytes)))
+        CubDebug(launcher_factory.MaxSmOccupancy(occupancy, kernel, tuning.threads_per_block, dynamic_smem_bytes)))
   {
     return error;
   }
@@ -177,7 +177,7 @@ _CCCL_HOST_API cudaError_t launch_sort_kernel(
   }
   const unsigned long long grid_size = static_cast<unsigned long long>(sm_count) * tuning.grid_size_multiplier;
   if (const auto error = CubDebug(
-        launcher_factory(static_cast<unsigned>(grid_size), tuning.block_threads, dynamic_smem_bytes, stream)
+        launcher_factory(static_cast<unsigned>(grid_size), tuning.threads_per_block, dynamic_smem_bytes, stream)
           .doit(kernel, bins, begins, ends, in, out)))
   {
     return error;
@@ -408,7 +408,7 @@ _CCCL_HOST_API cudaError_t dispatch(
         const int final_selector = is_overwrite_okay ? (keys.selector + num_passes) % 2 : 1 - keys.selector;
         Key* out                 = keys.d_buffers[final_selector];
         Key* intermediate        = static_cast<Key*>(allocations[1]);
-        device_double_buffer<Key> radix_buffers(
+        const device_double_buffer<Key> radix_buffers(
           (is_overwrite_okay || odd_passes) ? keys.Alternate() : intermediate,
           is_overwrite_okay ? keys.Current() : (odd_passes ? intermediate : keys.Alternate()));
         // Copy only the overflow boundaries; segment IDs stay on the device.
