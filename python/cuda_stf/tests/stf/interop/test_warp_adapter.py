@@ -215,6 +215,58 @@ def test_scope_token_orders_tasks():
     assert topo == (4, 3)  # k1 -> {A, B} -> k4
 
 
+def test_serialize_records_reads_as_read_write(monkeypatch):
+    """CUDA_STF_WARP_SERIALIZE=1: the two tasks that read the scope token run
+    one after the other (longest path 3 -> 4), the code and the result are the
+    same; without the variable the recording is unchanged."""
+    n = 1 << 14
+
+    def body(x, y, z):
+        s = scope_token()
+        with warp_task(s.rw(), symbol="k1"):
+            wp.launch(scale, dim=n, inputs=[2.0, x])
+        with warp_task(s.read(), symbol="A"):
+            wp.launch(axpy, dim=n, inputs=[1.0, x, y])
+        with warp_task(s.read(), symbol="B"):
+            wp.launch(axpy, dim=n, inputs=[1.0, x, z])
+        with warp_task(s.rw(), symbol="k4"):
+            wp.launch(axpy, dim=n, inputs=[1.0, y, z])
+
+    results, topos = {}, {}
+    for value in ("0", "1"):
+        monkeypatch.setenv("CUDA_STF_WARP_SERIALIZE", value)
+        x, y, z = (
+            wp.full(n, 1.0, dtype=float),
+            wp.zeros(n, dtype=float),
+            wp.zeros(n, dtype=float),
+        )
+        topos[value] = _record_and_replay(lambda ctx: body(x, y, z), 3)
+        results[value] = float(z.numpy()[0])
+    assert topos == {"0": (4, 3), "1": (4, 4)}
+    assert results["0"] == results["1"]
+
+
+def test_serialize_orders_sibling_scopes(monkeypatch):
+    """Two scopes that read the same parent token overlap; with
+    CUDA_STF_WARP_SERIALIZE=1 the second waits for the first."""
+    n = 1 << 14
+
+    def frame(x, y):
+        s = scope_token()
+        for a in (x, y):
+            with scope(reads=(s,)):
+                with warp_task(scope_token().rw()):
+                    wp.launch(scale, dim=n, inputs=[2.0, a])
+
+    topos = {}
+    for value in ("0", "1"):
+        monkeypatch.setenv("CUDA_STF_WARP_SERIALIZE", value)
+        x, y = wp.full(n, 1.0, dtype=float), wp.full(n, 1.0, dtype=float)
+        topos[value] = _record_and_replay(lambda ctx: frame(x, y), 2)[1]
+        assert float(x.numpy()[0]) == float(y.numpy()[0]) == 4.0
+    assert topos == {"0": 1, "1": 2}
+
+
 def test_back_to_back_tasks_stay_siblings():
     n = 1 << 12
     a, b = wp.zeros(n, dtype=float), wp.zeros(n, dtype=float)

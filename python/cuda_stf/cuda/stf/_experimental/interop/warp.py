@@ -58,12 +58,21 @@ boundary is a graph scope. And ``wp.capture_end`` returns a ``Graph`` whose
 destructor destroys the captured ``cudaGraph_t``, which belongs to STF: the
 adapter keeps those handles alive until :func:`release_graph_handles`.
 
+To look for a missing dependency, set ``CUDA_STF_WARP_SERIALIZE=1`` in the
+environment of the code that records: every ``read()`` dependency of a
+:func:`warp_task` and every ``reads`` entry of a :func:`scope` is then
+recorded read-write, so tasks that share a token or a logical data run one
+after the other, in program order. Nothing changes in the code. If the results
+differ from those of the normal recording, two tasks that were allowed to
+overlap depend on each other. Tasks that share no dependency stay unordered.
+
 Warp is imported lazily; importing this module does not require ``warp-lang``.
 """
 
 from __future__ import annotations
 
 import contextlib
+import os
 import sys
 
 from .. import AccessMode as _AccessMode
@@ -76,6 +85,16 @@ _WARP_INSTALL_HINT = (
 _graph_handles = []  # Graph objects from wp.capture_end inside tasks (see module docstring)
 _scopes = []  # the open scopes, innermost last: [ctx, symbol, scope token or None]
 _open_tasks = []  # the warp_task blocks currently open (_Task), innermost last
+
+
+def _serialize():
+    """True when read access is to be recorded read-write (module docstring)."""
+    return os.environ.get("CUDA_STF_WARP_SERIALIZE", "0") not in ("", "0")
+
+
+def _as_rw(dep):
+    """``dep`` with read-write access to the same token or logical data."""
+    return dep if int(dep.mode) & int(_AccessMode.WRITE) else dep.ld.rw()
 
 
 def current_context():
@@ -491,7 +510,8 @@ def scope(ctx=None, launchable=False, reads=(), writes=(), symbol=None):
             ctx.set_scope_symbol(str(symbol))  # names the scope in STF's DOT output
         # one push per logical data, with the union of the requested modes
         pushes = {}
-        for deps, mode in ((reads, _AccessMode.READ), (writes, _AccessMode.RW)):
+        read_mode = _AccessMode.RW if _serialize() else _AccessMode.READ
+        for deps, mode in ((reads, read_mode), (writes, _AccessMode.RW)):
             for d in deps:
                 if d is not None and not isinstance(d, _NullToken):
                     prev = pushes.get(id(d))
@@ -638,6 +658,8 @@ def warp_task(*args, symbol=None, capture="auto", dtypes=None):
     deps = [a for a in args if a is not None]
     if ctx is None:
         return _no_task(wp)
+    if _serialize():
+        deps = [_as_rw(d) for d in deps]
     if _open_tasks and not explicit:
         return _no_task(wp)  # the code runs as part of the open task
     if _in_task(ctx):
