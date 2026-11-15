@@ -1153,3 +1153,59 @@ def test_exchange_dtype_diagnostic_names_the_public_operation(
             (_FakeCudaArray((128,), "|b1"), _FakeCudaArray((128,), "|b1")),
             default_tile_context,
         )
+
+
+@pytest.mark.link
+@pytest.mark.parametrize("pairs", [False, True])
+@pytest.mark.parametrize(
+    "control", ["k", "valid_items", "begin_bit", "end_bit"]
+)
+@pytest.mark.parametrize("control_dtype", ["<i4", "<f4", "|b1"])
+def test_topk_checks_runtime_integer_controls(
+    monkeypatch, pairs, control, control_dtype
+):
+    _configure_tile_library(monkeypatch)
+    _configure_imports(monkeypatch)
+    global ct, coop
+    ct = importlib.import_module("cuda.tile")
+    coop = importlib.import_module("cuda.coop.tile")
+    from cuda.tile._cext import default_tile_context
+    from cuda.tile._exception import TileTypeError
+
+    @ct.kernel
+    def kernel(inp: ct.Array, controls: ct.Array, out: ct.Array):
+        keys = ct.load(inp, (0,), shape=(128,))
+        runtime_control = ct.load(controls, (0,), shape=())
+        k = runtime_control if control == "k" else 7
+        valid_items = runtime_control if control == "valid_items" else 128
+        begin_bit = runtime_control if control == "begin_bit" else 0
+        end_bit = runtime_control if control == "end_bit" else 32
+        if pairs:
+            result, _ = coop.topk_max_pairs(
+                keys,
+                keys,
+                k=k,
+                valid_items=valid_items,
+                begin_bit=begin_bit,
+                end_bit=end_bit,
+            )
+        else:
+            result = coop.topk_max_keys(
+                keys,
+                k=k,
+                valid_items=valid_items,
+                begin_bit=begin_bit,
+                end_bit=end_bit,
+            )
+        ct.store(out, (0,), result)
+
+    arguments = (
+        _FakeCudaArray((128,)),
+        _FakeCudaArray((1,), control_dtype),
+        _FakeCudaArray((128,)),
+    )
+    if control_dtype == "<i4":
+        _get_final_ir(kernel._pyfunc, arguments, default_tile_context)
+    else:
+        with pytest.raises(TileTypeError, match=f"{control} must be an int"):
+            _get_final_ir(kernel._pyfunc, arguments, default_tile_context)

@@ -358,7 +358,7 @@ def _scalar_tile_operand(
         Constant substituted for ``None``. With no default, omission is an
         error.
     int_value : bool, optional
-        Require an integer Python constant, excluding booleans.
+        Require an integer constant or runtime dtype, excluding booleans.
     numeric_value : bool, optional
         Check numeric constants and require integers for integer element types.
     allow_shape_one : bool, optional
@@ -400,6 +400,8 @@ def _scalar_tile_operand(
     var_ty = (
         get_type() if get_type is not None else getattr(var, "tile_type", None)
     )
+    if int_value and getattr(var_ty, "dtype", var_ty) not in _INTEGER_DTYPES:
+        raise TileTypeError(f"coop.{primitive} {name} must be an int")
     if hasattr(var_ty, "numel"):
         if not allow_shape_one and getattr(var_ty, "shape", None) != ():
             raise TileTypeError(
