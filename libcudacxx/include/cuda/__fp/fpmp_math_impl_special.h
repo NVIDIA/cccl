@@ -703,11 +703,14 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_erfcinv_core(const fp32mp2_low 
   float __y0;
   if (__far)
   {
-    /* Abramowitz-Stegun 26.2.23 on the normal quantile, 2^-11. */
+    /* Abramowitz-Stegun 26.2.23 on the normal quantile, 2^-11. Both polynomials are Horner
+     * forms in explicit fmas: written with * and +, the compiler decides which products to
+     * contract, the seed differs between builds, and so does the last bit of the result. */
     const float __t = ::cuda::std::sqrt(-2.0f * (::cuda::std::log(__q.hi()) - 0.6931472f));
-    const float __z = __t
-                    - (2.515517f + 0.802853f * __t + 0.010328f * __t * __t)
-                        / (1.0f + 1.432788f * __t + 0.189269f * __t * __t + 0.001308f * __t * __t * __t);
+    const float __n = ::cuda::__fpmp_fma_rn(::cuda::__fpmp_fma_rn(0.010328f, __t, 0.802853f), __t, 2.515517f);
+    const float __d = ::cuda::__fpmp_fma_rn(
+      ::cuda::__fpmp_fma_rn(::cuda::__fpmp_fma_rn(0.001308f, __t, 0.189269f), __t, 1.432788f), __t, 1.0f);
+    const float __z = __t - __n / __d;
     __y0            = __z * 0x1.6a09e6p-1f;
   }
   else
