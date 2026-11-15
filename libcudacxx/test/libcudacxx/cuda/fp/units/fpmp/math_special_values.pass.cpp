@@ -416,6 +416,28 @@ TEST_HOST_DEVICE_FUNC void test_trig_zero()
   assert(cos(T(-0.0f)) == T(1.0f));
 }
 
+// sinpi, the sine of sincospi, erf and erfinv return a zero argument with its sign, sinpi of a
+// nonzero integer has the sign of the argument, and cospi is +0 at every half-integer
+// (IEEE 754-2019, 9.2), at every accuracy level.
+
+template <typename T>
+TEST_HOST_DEVICE_FUNC void test_pi_trig_and_erf_zero()
+{
+  assert(is_neg_zero(sinpi(T(-0.0f))) && is_pos_zero(sinpi(T(0.0f))));
+  assert(is_pos_zero(sinpi(T(1.0f))) && is_neg_zero(sinpi(T(-1.0f))) && is_neg_zero(sinpi(T(-2.0f))));
+  assert(is_pos_zero(cospi(T(0.5f))) && is_pos_zero(cospi(T(-0.5f))) && is_pos_zero(cospi(T(1.5f))));
+  assert(is_pos_zero(cospi(T(-1.5f))) && is_pos_zero(cospi(T(2.5f))) && is_pos_zero(cospi(T(-2.5f))));
+  T s, c;
+  sincospi(T(-0.0f), &s, &c);
+  assert(is_neg_zero(s) && c == T(1.0f));
+  sincospi(T(0.0f), &s, &c);
+  assert(is_pos_zero(s) && c == T(1.0f));
+  sincospi(T(-0.5f), &s, &c);
+  assert(s == T(-1.0f) && is_pos_zero(c));
+  assert(is_neg_zero(erf(T(-0.0f))) && is_pos_zero(erf(T(0.0f))));
+  assert(is_neg_zero(erfinv(T(-0.0f))) && is_pos_zero(erfinv(T(0.0f))));
+}
+
 // ---- roots, distances and the positive difference ------------------------------
 
 TEST_HOST_DEVICE_FUNC void test_roots_and_distances()
@@ -600,6 +622,9 @@ int main(int, char**)
   test_trig_zero<cuda::fp32mp2>();
   test_trig_zero<cuda::fp32mp2_low>();
   test_trig_zero<cuda::fp32mp2_high>();
+  test_pi_trig_and_erf_zero<cuda::fp32mp2>();
+  test_pi_trig_and_erf_zero<cuda::fp32mp2_low>();
+  test_pi_trig_and_erf_zero<cuda::fp32mp2_high>();
   test_roots_and_distances();
   test_norm_specials<cuda::fp32mp2>();
   test_norm_specials<cuda::fp32mp2_low>();

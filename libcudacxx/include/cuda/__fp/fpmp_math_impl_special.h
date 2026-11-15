@@ -324,7 +324,8 @@ __internal_fpmp2_erf(const float __x_hi, const float __x_lo, float* __res_hi, fl
     __result = -__result;
   }
 
-  *__res_hi = __result.hi();
+  // erf(-0) is -0; the renormalized argument and the kernel are +0 there.
+  *__res_hi = (__x_hi == 0.0f) ? __x_hi : __result.hi();
   *__res_lo = __result.lo();
 } // __internal_fpmp2_erf
 
@@ -1864,9 +1865,9 @@ __internal_fpmp2_erfinv(const float __x_hi, const float __x_lo, float* __res_hi,
     *__res_lo = 0.0f;
     return;
   }
-  if (__x.hi() == 0.0f) /* +-0 */
+  if (__x.hi() == 0.0f) /* +-0: the sign is the argument's, which the renormalization drops */
   {
-    *__res_hi = __x.hi();
+    *__res_hi = __x_hi;
     *__res_lo = 0.0f;
     return;
   }

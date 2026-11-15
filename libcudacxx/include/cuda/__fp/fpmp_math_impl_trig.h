@@ -1730,7 +1730,8 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
   {
     float __a_hi, __a_lo;
     ::cuda::__internal_fpmp2_pi_times(__x_hi * 0x1p64f, __x_lo * 0x1p64f, &__a_hi, &__a_lo);
-    *__sin_hi = (__a_hi * 0x1p-32f) * 0x1p-32f;
+    // sinpi(-0) is -0; the sum of the products is +0 there.
+    *__sin_hi = (__x_hi == 0.0f) ? __x_hi : (__a_hi * 0x1p-32f) * 0x1p-32f;
     *__sin_lo = (__a_lo * 0x1p-32f) * 0x1p-32f;
     *__cos_hi = 1.0f;
     *__cos_lo = 0.0f;
@@ -1836,7 +1837,9 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
       __s_hi = -__s_hi;
       __s_lo = -__s_lo;
     }
-    __c_hi = -__c_hi;
+    // 0 - c, not -c: cospi is +0 at every half-integer (IEEE 754-2019, 9.2). There the cosine
+    // is the kernel's sine of a zero fraction, +0, and the subtraction leaves it +0.
+    __c_hi = 0.0f - __c_hi;
     __c_lo = -__c_lo;
   }
   if (__exact_integer)
