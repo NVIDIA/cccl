@@ -1007,8 +1007,9 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincos(
     __s_lo = -__s_lo;
   }
 
-  // sin(-0) is -0; the kernels' x + x z is +0 there.
-  *__sin_hi = (__x_hi == 0.0f) ? __x_hi : __s_hi;
+  // sin(-0) is -0; the kernels' x + x z is +0 there. Both limbs are tested: a low-accuracy
+  // difference can carry a zero high limb over a nonzero low one.
+  *__sin_hi = (__x_hi == 0.0f && __x_lo == 0.0f) ? __x_hi : __s_hi;
   *__sin_lo = __s_lo;
   *__cos_hi = __c_hi;
   *__cos_lo = __c_lo;
@@ -1146,7 +1147,7 @@ __internal_fpmp2_tan(const float __x_hi, const float __x_lo, float* __res_hi, fl
   __mp2_t __result = (__quadrant & 1) ? __mp2_t(-__c / __s) : __mp2_t(__s / __c);
 
   // tan(-0) is -0; the quotient of the kernels is +0 there.
-  *__res_hi = (__x_hi == 0.0f) ? __x_hi : __result.hi();
+  *__res_hi = (__x_hi == 0.0f && __x_lo == 0.0f) ? __x_hi : __result.hi();
   *__res_lo = __result.lo();
 }
 
@@ -1731,7 +1732,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
     float __a_hi, __a_lo;
     ::cuda::__internal_fpmp2_pi_times(__x_hi * 0x1p64f, __x_lo * 0x1p64f, &__a_hi, &__a_lo);
     // sinpi(-0) is -0; the sum of the products is +0 there.
-    *__sin_hi = (__x_hi == 0.0f) ? __x_hi : (__a_hi * 0x1p-32f) * 0x1p-32f;
+    *__sin_hi = (__x_hi == 0.0f && __x_lo == 0.0f) ? __x_hi : (__a_hi * 0x1p-32f) * 0x1p-32f;
     *__sin_lo = (__a_lo * 0x1p-32f) * 0x1p-32f;
     *__cos_hi = 1.0f;
     *__cos_lo = 0.0f;

@@ -86,6 +86,12 @@ TEST_HOST_DEVICE_FUNC bool is_neg_zero(MP2 r)
   return is_zero(r) && cuda::fpmp_signbit(r) != 0;
 }
 
+template <typename MP2>
+TEST_HOST_DEVICE_FUNC bool is_minus_one(MP2 r)
+{
+  return r.hi() == -1 && r.lo() == 0;
+}
+
 // For the finite limits (atan at +-inf is +-pi/2): well within fp32mp2 accuracy.
 TEST_HOST_DEVICE_FUNC bool approx_eq(double a, double b)
 {
@@ -160,7 +166,9 @@ TEST_HOST_DEVICE_FUNC void test_atan()
 //
 // An infinity and NaN pass through unchanged, and a value beyond the last
 // fractional magnitude is already an integer, so the largest finite values pass
-// through as well. The same templates serve fp32mp2 and fp64mp2.
+// through as well. -0.25 goes to -1 under floor and to -0 under the other five
+// (rint and nearbyint in the default rounding mode). The same templates serve
+// fp32mp2 and fp64mp2.
 
 template <typename MP2>
 TEST_HOST_DEVICE_FUNC void test_rounding()
@@ -169,22 +177,22 @@ TEST_HOST_DEVICE_FUNC void test_rounding()
   const MP2 pinf = nl::infinity();
   const MP2 qnan = nl::quiet_NaN();
 
-#define CHECK_ROUNDING(name)                  \
-  assert(is_pos_inf(name(pinf)));             \
-  assert(is_neg_inf(name(-pinf)));            \
-  assert(is_nan(name(qnan)));                 \
-  assert(name(nl::max()) == nl::max());       \
-  assert(name(nl::lowest()) == nl::lowest()); \
-  assert(is_pos_zero(name(MP2(0.0f))));       \
-  assert(is_neg_zero(name(MP2(-0.0f))));      \
-  assert(is_neg_zero(name(MP2(-0.25f))) || name(MP2(-0.25f)) == MP2(-1.0f))
+#define CHECK_ROUNDING(name, at_minus_quarter) \
+  assert(is_pos_inf(name(pinf)));              \
+  assert(is_neg_inf(name(-pinf)));             \
+  assert(is_nan(name(qnan)));                  \
+  assert(name(nl::max()) == nl::max());        \
+  assert(name(nl::lowest()) == nl::lowest());  \
+  assert(is_pos_zero(name(MP2(0.0f))));        \
+  assert(is_neg_zero(name(MP2(-0.0f))));       \
+  assert(at_minus_quarter(name(MP2(-0.25f))))
 
-  CHECK_ROUNDING(ceil);
-  CHECK_ROUNDING(floor);
-  CHECK_ROUNDING(trunc);
-  CHECK_ROUNDING(round);
-  CHECK_ROUNDING(rint);
-  CHECK_ROUNDING(nearbyint);
+  CHECK_ROUNDING(ceil, is_neg_zero);
+  CHECK_ROUNDING(floor, is_minus_one);
+  CHECK_ROUNDING(trunc, is_neg_zero);
+  CHECK_ROUNDING(round, is_neg_zero);
+  CHECK_ROUNDING(rint, is_neg_zero);
+  CHECK_ROUNDING(nearbyint, is_neg_zero);
 
 #undef CHECK_ROUNDING
 }
@@ -227,9 +235,11 @@ TEST_HOST_DEVICE_FUNC void test_normcdfinv()
 
 // ---- boys_f0 -------------------------------------------------------------------
 //
-// F_0(0) = 1, F_0(+inf) = 0, F_0(NaN) = NaN. For a < 0 the function grows like
-// exp(-a) / (2 |a|), which passes the largest float near a = -94: +inf from there
-// down to -inf.
+// F_0(0) = 1, F_0(+inf) = 0, F_0(NaN) = NaN. The kernels cover a >= 0, the domain
+// the function is used on; below 0 they extrapolate the polynomial for [0, 2) and
+// lose its accuracy quickly, so no value is checked there. The function itself
+// grows like exp(-a) / (2 |a|) for a < 0 and passes the largest float near
+// a = -94: +inf from there down to -inf.
 
 TEST_HOST_DEVICE_FUNC void test_boys_f0()
 {
@@ -243,7 +253,6 @@ TEST_HOST_DEVICE_FUNC void test_boys_f0()
   assert(is_zero(boys_f0(pinf)));
   assert(is_nan(boys_f0(qnan)));
 
-  assert(is_finite(boys_f0(T(-80.0f))) && boys_f0(T(-80.0f)) > T(0.0f));
   assert(is_pos_inf(boys_f0(T(-100.0f))));
   assert(is_pos_inf(boys_f0(nl::lowest())));
   assert(is_pos_inf(boys_f0(-pinf)));
@@ -331,7 +340,7 @@ TEST_HOST_DEVICE_FUNC void test_exp_hyperbolic_edges()
 
   // atanh(1 - d) = (ln 2 - ln d) / 2 to d / 4
   assert(approx_eq(static_cast<double>(atanh(T(1.0f, -0x1p-100f))), 35.00393261827724));
-#if !defined(TEST_HAS_CUDA_FAST_MATH)
+#if !TEST_HAS_CUDA_FAST_MATH
   assert(approx_eq(static_cast<double>(atanh(T(1.0f, -0x1p-140f))), 48.86687622947614));
   assert(approx_eq(static_cast<double>(atanh(T(-1.0f, 0x1p-140f))), -48.86687622947614));
 #endif // !TEST_HAS_CUDA_FAST_MATH
@@ -521,6 +530,17 @@ TEST_HOST_DEVICE_FUNC void test_erf_family()
   assert(erf(pinf) == T(1.0f) && erf(-pinf) == T(-1.0f) && is_nan(erf(qnan)));
   assert(is_zero(erfc(pinf)) && erfc(-pinf) == T(2.0f) && is_nan(erfc(qnan)));
   assert(is_zero(erfcx(pinf)) && is_pos_inf(erfcx(-pinf)) && is_nan(erfcx(qnan)));
+  // erfcx(x) ~ 2 exp(x^2) passes the largest fp32mp2 inside the low limb of x = -0x1.2c3cbcp+3
+  assert(is_finite(erfcx(T(-0x1.2c3cbcp+3f))) && erfcx(T(-0x1.2c3cbcp+3f)) > T(0x1.ffffp+127f));
+  assert(is_finite(erfcx(T(-0x1.2c3cbcp+3f, -0x1p-24f))));
+  assert(is_pos_inf(erfcx(T(-0x1.2c3cbcp+3f, -0x1p-23f))) && erfcx(T(-0x1.2c3cbcp+3f, -0x1p-23f)).lo() == 0.0f);
+  assert(is_pos_inf(erfcx(T(-0x1.2c3cbep+3f))) && is_pos_inf(erfcx(nl::lowest())));
+#if !TEST_HAS_CUDA_FAST_MATH
+  // 1 / (x sqrt(pi)) at the largest arguments is a subnormal number, which --use_fast_math
+  // flushes to zero on the device (FTZ)
+  assert(erfcx(T(0x1p127f)) > T(0x1p-128f) && erfcx(T(0x1p127f)) < T(0x1p-127f));
+  assert(erfcx(nl::max()) > T(0x1p-129f) && erfcx(nl::max()) < T(0x1p-128f));
+#endif // !TEST_HAS_CUDA_FAST_MATH
   assert(normcdf(pinf) == T(1.0f) && is_zero(normcdf(-pinf)) && is_nan(normcdf(qnan)));
 
   assert(is_pos_inf(erfinv(T(1.0f))) && is_neg_inf(erfinv(T(-1.0f))) && is_zero(erfinv(T(0.0f))));
@@ -545,10 +565,55 @@ TEST_HOST_DEVICE_FUNC void test_erfc_ends()
   assert(is_pos_zero(erfc(T(0x1.41c002p+3f))) && is_pos_zero(erfc(T(11.0f))) && is_pos_zero(erfc(T(27.0f))));
   assert(erfc(T(-0x1.41c002p+3f)).hi() == 2.0f && erfc(T(-0x1.41c002p+3f)).lo() == 0.0f);
   assert(erfc(T(-27.0f)).hi() == 2.0f && erfc(T(-27.0f)).lo() == 0.0f);
-#if !defined(TEST_HAS_CUDA_FAST_MATH)
+#if !TEST_HAS_CUDA_FAST_MATH
   assert(erfc(T(10.0f)) > T(0.0f)); // subnormal, just below the cut-off
 #endif // !TEST_HAS_CUDA_FAST_MATH
   assert(is_nan(erfc(T(1.0f, nl::quiet_NaN().hi()))) && is_nan(erfc(T(0.25f, nl::quiet_NaN().hi()))));
+}
+
+// ---- a zero high limb over a nonzero low limb -----------------------------------
+//
+// Low-accuracy arithmetic can leave one: (1, 2^-30) - 1 is (0, 2^-30). Such an argument is
+// not a zero, and the functions that return a zero argument with its sign must not take it
+// for one.
+
+TEST_HOST_DEVICE_FUNC void test_loose_zero_high_limb()
+{
+  using T = cuda::fp32mp2_low;
+  const T x(0.0f, 0x1p-30f);
+  assert(approx_eq(static_cast<double>(sin(x)), 0x1p-30));
+  assert(approx_eq(static_cast<double>(tan(x)), 0x1p-30));
+  assert(approx_eq(static_cast<double>(sinpi(x)), 3.141592653589793 * 0x1p-30));
+  assert(approx_eq(static_cast<double>(erf(x)), 1.1283791670955126 * 0x1p-30));
+  assert(approx_eq(static_cast<double>(sin(-x)), -0x1p-30));
+  assert(approx_eq(static_cast<double>(sinpi(-x)), -3.141592653589793 * 0x1p-30));
+}
+
+// ---- llrint and llround at the ends of long long --------------------------------
+//
+// -2^63 + lo and 2^63 - |lo| are in range although their high limb is not below 2^63, and
+// so is a pair below 2^63 whose rounding carries into the high limb.
+
+TEST_HOST_DEVICE_FUNC void test_llrint_ends()
+{
+  using T               = cuda::fp32mp2;
+  const long long llmax = (cuda::std::numeric_limits<long long>::max)();
+  const long long llmin = (cuda::std::numeric_limits<long long>::min)();
+  const long long p38   = 1LL << 38;
+
+  assert(llrint(T(-0x1p63f)) == llmin && llround(T(-0x1p63f)) == llmin);
+  assert(llrint(T(-0x1p63f, 1.0f)) == llmin + 1 && llround(T(-0x1p63f, 1.0f)) == llmin + 1);
+  assert(llrint(T(-0x1p63f, 0x1p38f)) == llmin + p38 && llround(T(-0x1p63f, 0x1p38f)) == llmin + p38);
+  assert(llrint(T(0x1p63f, -1.0f)) == llmax && llround(T(0x1p63f, -1.0f)) == llmax);
+  assert(llrint(T(0x1p63f, -0x1p38f)) == llmax - p38 + 1 && llround(T(0x1p63f, -0x1p38f)) == llmax - p38 + 1);
+  // ties: to even for llrint, away from zero for llround
+  assert(llrint(T(-0x1p63f, 0.5f)) == llmin && llround(T(-0x1p63f, 0.5f)) == llmin);
+  assert(llrint(T(-0x1p63f, 1.5f)) == llmin + 2 && llround(T(-0x1p63f, 1.5f)) == llmin + 1);
+  assert(llrint(T(0x1p63f, -1.5f)) == llmax - 1 && llround(T(0x1p63f, -1.5f)) == llmax);
+  // the rounded pair is renormalized to (2^63, -2^38)
+  assert(llrint(T(0x1.fffffep62f, 0x1p38f)) == llmax - p38 + 1);
+  assert(llround(T(0x1.fffffep62f, 0x1p38f)) == llmax - p38 + 1);
+  assert(llrint(T(-0x1.fffffep62f, -0x1p38f)) == llmin + p38);
 }
 
 // ---- modf and the classification predicates on loose pairs --------------------
@@ -634,6 +699,8 @@ int main(int, char**)
   test_erfc_ends<cuda::fp32mp2>();
   test_erfc_ends<cuda::fp32mp2_low>();
   test_erfc_ends<cuda::fp32mp2_high>();
+  test_loose_zero_high_limb();
+  test_llrint_ends();
   test_modf_and_classify();
   return 0;
 }

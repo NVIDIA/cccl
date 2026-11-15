@@ -104,6 +104,9 @@ TEST_HOST_DEVICE_FUNC void test_cbrt()
      -0x1.1f941548cbbdbp-96,
      -0x1.5d7a3c316ap+41,
      -0x1.31398dd733737p-13},
+#if !TEST_HAS_CUDA_FAST_MATH
+    // subnormal arguments: --use_fast_math flushes them to zero on the device (FTZ), so these
+    // two are left to the IEEE build
     {0x1.499c8p-128f,
      0x0p+0f,
      0x1.5ee3c6d24e20cp-43,
@@ -116,6 +119,7 @@ TEST_HOST_DEVICE_FUNC void test_cbrt()
      0x1.77e05f390229dp-97,
      -0x1.44ccac5870666p+42,
      0x1.4c1b7e64450ap-18},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {0x1.103268p-37f,
      -0x1.482748p-63f,
      0x1.9ec535360affdp-13,

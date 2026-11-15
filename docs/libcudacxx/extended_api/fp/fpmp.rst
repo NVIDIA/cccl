@@ -445,7 +445,9 @@ hardware where FP64 is rationed:
   uniform integer into a Gaussian variate. Taking an integer rather than a pair, it is the one
   function here that ADL cannot find, so it has to be written ``cuda::icdf(bits)``, and its
   accuracy level is a defaulted template parameter rather than a deduced one
-- **Special** — ``boys_f0``, the zeroth-order Boys function, for ``a >= 0``
+- **Special** — ``boys_f0``, the zeroth-order Boys function, for arguments ``a >= 0``. A negative
+  argument is outside the domain the kernels cover: they extrapolate there, with a relative error
+  of ``2e-13`` at ``-0.25`` that grows to ``4%`` at ``-8``, and return ``+inf`` below ``-94``
 
 The exact operations — ``rint``, ``nearbyint``, ``lrint``, ``lround``, ``llrint``, ``llround``,
 ``copysign``, ``scalbln``, ``frexp``, ``modf``, ``logb``, ``ilogb``, ``fdim``, ``remquo`` and the

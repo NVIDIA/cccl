@@ -325,7 +325,7 @@ __internal_fpmp2_erf(const float __x_hi, const float __x_lo, float* __res_hi, fl
   }
 
   // erf(-0) is -0; the renormalized argument and the kernel are +0 there.
-  *__res_hi = (__x_hi == 0.0f) ? __x_hi : __result.hi();
+  *__res_hi = (__x_hi == 0.0f && __x_lo == 0.0f) ? __x_hi : __result.hi();
   *__res_lo = __result.lo();
 } // __internal_fpmp2_erf
 
@@ -1950,9 +1950,11 @@ __internal_fpmp2_erfcx(const float __x_hi, const float __x_lo, float* __res_hi, 
   {
     if (__neg)
     {
-      /* erfcx(-a) reaches FLT_MAX at a = 9.38241397; 0x1.2c3cbap+3 is the last float whose
-       * pairs (any low limb) stay below it, so 2 exp(a^2) cannot overflow past this test. */
-      if (__a.hi() > 0x1.2c3cbap+3f) /* including -inf */
+      /* 2 e^{x^2} passes the largest float between |x| = 0x1.2c3cbcp+3 and the next float
+       * up: a larger high limb is +inf outright, and at that high limb the low limb decides,
+       * through the check after the doubling (an overflowed sum has an infinite or a NaN
+       * high limb). */
+      if (__a.hi() > 0x1.2c3cbcp+3f) /* including -inf */
       {
         *__res_hi = ::cuda::std::__fp_inf<float>();
         *__res_lo = 0.0f;
@@ -1963,6 +1965,12 @@ __internal_fpmp2_erfcx(const float __x_hi, const float __x_lo, float* __res_hi, 
       ::cuda::__internal_fpmp2_exp_sq(__a.hi(), __a.lo(), 1.0f, &__e_hi, &__e_lo);
       __r =
         renormalize(sub<fpmp2_accuracy::high>(__ffloat(__e_hi + __e_hi, __e_lo + __e_lo), __ffloat(__k_hi, __k_lo)));
+      if (!(__r.hi() < ::cuda::std::__fp_inf<float>()))
+      {
+        *__res_hi = ::cuda::std::__fp_inf<float>();
+        *__res_lo = 0.0f;
+        return;
+      }
     }
     else if (__a.hi() > 40.0f)
     {
@@ -1973,12 +1981,17 @@ __internal_fpmp2_erfcx(const float __x_hi, const float __x_lo, float* __res_hi, 
         return;
       }
       /* 1/(x sqrt pi) by one refined division; y = 1/x^2 = pi (1/(x sqrt pi))^2
-       * only needs ~36 bits (its terms are below 2^-11 of the sum) */
+       * only needs ~36 bits (its terms are below 2^-11 of the sum).  The division is
+       * by x 2^-64 and its quotient is scaled back (exact on the high limbs while the
+       * result is normal; a low limb of x below 2^-62 loses bits under 2^-67 of x): the
+       * device's approximate reciprocal flushes 1/x to zero for x above 2^126, where the
+       * result is a subnormal number. */
       constexpr __ffloat __inv_sqrtpi(0x1.20dd750429b6dp-1), __pi(0x1.921fb54442d18p+1);
       constexpr float __ac[8] = {1.0f, -0.5f, 0.75f, -1.875f, 6.5625f, -29.53125f, 162.421875f, -1055.7421875f};
       float __i_hi, __i_lo;
-      ::cuda::__fpmp_math_div_refined<true>(__inv_sqrtpi.hi(), __inv_sqrtpi.lo(), __a.hi(), __a.lo(), &__i_hi, &__i_lo);
-      const __ffloat __rx(__i_hi, __i_lo);
+      ::cuda::__fpmp_math_div_refined<true>(
+        __inv_sqrtpi.hi(), __inv_sqrtpi.lo(), __a.hi() * 0x1p-64f, __a.lo() * 0x1p-64f, &__i_hi, &__i_lo);
+      const __ffloat __rx(__i_hi * 0x1p-64f, __i_lo * 0x1p-64f);
       const __ffloat __y = renormalize(__rx * __rx) * __pi;
       __ffloat __v(__ac[7]);
       _CCCL_PRAGMA_UNROLL_FULL()
