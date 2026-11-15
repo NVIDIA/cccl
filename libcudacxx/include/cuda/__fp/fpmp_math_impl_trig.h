@@ -742,8 +742,335 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincos_kernel(
  * Internal kernels for asin, acos, atan and atan2 (fp32mp2)
  * ====================================================================
  *
- * Polynomials in fp32mp2 arithmetic, 2 to 3.4 u^2 at most.  The asin/acos
- * kernels run in pure compensated Horner (M = 0): on their ranges even the
+ * This table-driven kernel serves fpmp2_accuracy::low and the default level;
+ * fpmp2_accuracy::high has the polynomial kernels further down (__internal_fpmp2_high_*),
+ * 1 to 1.5 bits more accurate for two to three times the instructions. Both sit behind the
+ * same entry code, so the special values are those of one function.
+ *
+ * All four functions find the angle of a point (M, m), 0 <= m <= M, from one table:
+ *
+ *   atan(m / M) = atan(c) + atan(t),   c = i/16,   t = (m - c M) / (M + c m).
+ *
+ * i is the integer part of 16 m/M + 1/4 (from a single-precision quotient), which leaves
+ * -1/64 <= t <= 3/64 and makes the leading words of m and c M cancel exactly (Sterbenz:
+ * m / (c M) is within [3/4, 7/4] for i >= 1). The asymmetric interval keeps the first table
+ * entry from cancelling half of its own magnitude against t.
+ *
+ *   atan(x), atan2(y, x):  (M, m) = (|x|, |y|) sorted, one pair division for t.
+ *   asin(x), acos(x):      (M, m) = (|x|, sqrt((1 - |x|)(1 + |x|))) sorted, a point of the
+ *                          unit circle. There t is replaced by the sine of the same angle,
+ *                          (m - c M) cos(atan(c)), a product by a table entry instead of a
+ *                          division, and the kernel is asin instead of atan. For i = 0 that
+ *                          is m itself, so asin(x) for small x does not depend on the root.
+ *
+ * The octant is folded into the table: its four rows hold atan(c), pi/2 - atan(c),
+ * pi/2 + atan(c) and pi - atan(c), and the odd rows take -t. The rows at c = 0 and c = 1
+ * are also the exact results for zero and infinite arguments.
+ *
+ * Both kernels are t (1 + k1 t^2 + k2 t^4 + k3 t^6 + k4 t^8), minimax on |t| <= 0.04689
+ * (Sollya fpminimax, k1 and k2 as 48-bit pairs, k3 and k4 as single floats; relative error
+ * below 2^-56.3 for atan and 2^-58.4 for asin).
+ *
+ * NaN, infinite and out-of-domain arguments are answered on entry: nothing below relies on
+ * them propagating through the arithmetic.
+ * ====================================================================
+ */
+
+struct alignas(8) __fpmp2_atan_entry
+{
+  float __hi;
+  float __lo;
+};
+
+// Rounded from 400-bit values (Sollya). Hidden in host code, like the functions that read
+// it, so that shared libraries built against different versions of this table do not share
+// one copy. The device pass takes no visibility: without RDC the table has internal linkage
+// there, where nvcc rejects the attribute.
+#  if _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)
+#    define _CCCL_FPMP_ATAN_TABLE _CCCL_GLOBAL_CONSTANT
+#  else // ^^^ device pass ^^^ / vvv host code vvv
+#    define _CCCL_FPMP_ATAN_TABLE _CCCL_VISIBILITY_HIDDEN _CCCL_GLOBAL_CONSTANT
+#  endif // ^^^ host code ^^^
+_CCCL_FPMP_ATAN_TABLE __fpmp2_atan_entry __fpmp2_atan_table[5][17] = {
+  // atan(i/16)
+  {
+    {0.0f, 0.0f},
+    {0x1.ff55bcp-5f, -0x1.1a6042p-30f},
+    {0x1.fd5baap-4f, -0x1.54f424p-30f},
+    {0x1.7b97b4p-3f, 0x1.79cb6p-28f},
+    {0x1.f5b76p-3f, -0x1.b4dfc8p-29f},
+    {0x1.362774p-2f, -0x1.1f0286p-27f},
+    {0x1.6f6194p-2f, 0x1.e4defp-30f},
+    {0x1.a64eecp-2f, 0x1.e611fep-29f},
+    {0x1.dac67p-2f, 0x1.586ed4p-28f},
+    {0x1.0657eap-1f, -0x1.6499e6p-26f},
+    {0x1.1e00bap-1f, 0x1.7bdfd6p-26f},
+    {0x1.345f02p-1f, -0x1.98e422p-28f},
+    {0x1.4978fap-1f, 0x1.934f7p-28f},
+    {0x1.5d5898p-1f, 0x1.c5a6c6p-27f},
+    {0x1.700a7cp-1f, 0x1.5e118cp-27f},
+    {0x1.819d0cp-1f, -0x1.1d4eb6p-26f},
+    {0x1.921fb6p-1f, -0x1.777a5cp-26f},
+  },
+  // pi/2 - atan(i/16)
+  {
+    {0x1.921fb6p0f, -0x1.777a5cp-25f},
+    {0x1.822508p0f, -0x1.2ea75ap-25f},
+    {0x1.7249fap0f, 0x1.532d44p-25f},
+    {0x1.62acbep0f, 0x1.594c38p-25f},
+    {0x1.5368cap0f, -0x1.5c2c6p-25f},
+    {0x1.4495d8p0f, 0x1.a08c8ap-26f},
+    {0x1.36475p0f, 0x1.e57aaep-27f},
+    {0x1.288bfap0f, 0x1.a8920cp-27f},
+    {0x1.1b6e1ap0f, -0x1.a28838p-25f},
+    {0x1.0ef3cp0f, 0x1.3ad296p-25f},
+    {0x1.031f58p0f, -0x1.ab5242p-28f},
+    {0x1.efe068p-1f, 0x1.77444ep-26f},
+    {0x1.dac67p-1f, 0x1.586ed4p-27f},
+    {0x1.c6e6d2p-1f, 0x1.71bf18p-29f},
+    {0x1.b434eep-1f, 0x1.8809fep-28f},
+    {0x1.a2a26p-1f, -0x1.d1a604p-26f},
+    {0x1.921fb6p-1f, -0x1.777a5cp-26f},
+  },
+  // pi/2 + atan(i/16)
+  {
+    {0x1.921fb6p0f, -0x1.777a5cp-25f},
+    {0x1.a21a64p0f, -0x1.c04d6p-25f},
+    {0x1.b1f57p0f, -0x1.0887f8p-27f},
+    {0x1.c192acp0f, -0x1.2103c4p-27f},
+    {0x1.d0d6a2p0f, -0x1.92c85ap-25f},
+    {0x1.dfa992p0f, 0x1.031406p-27f},
+    {0x1.edf81ap0f, 0x1.2f5936p-26f},
+    {0x1.fbb37p0f, 0x1.4dcd86p-26f},
+    {0x1.0468a8p1f, 0x1.59c9bep-24f},
+    {0x1.0aa5d4p1f, 0x1.eb1c58p-24f},
+    {0x1.10900ap1f, -0x1.5cc538p-24f},
+    {0x1.16279cp1f, -0x1.d54b7p-24f},
+    {0x1.1b6e1ap1f, -0x1.a28838p-24f},
+    {0x1.2066p1f, 0x1.7cf7aap-24f},
+    {0x1.25127ap1f, -0x1.1ff5fap-25f},
+    {0x1.29771ep1f, -0x1.0310dcp-24f},
+    {0x1.2d97c8p1f, -0x1.99bc5cp-28f},
+  },
+  // pi - atan(i/16)
+  {
+    {0x1.921fb6p1f, -0x1.777a5cp-24f},
+    {0x1.8a225ep1f, 0x1.59de48p-25f},
+    {0x1.8234d8p1f, -0x1.2268c6p-28f},
+    {0x1.7a663ap1f, -0x1.e2e26p-29f},
+    {0x1.72c44p1f, -0x1.69d35ep-24f},
+    {0x1.6b5ac6p1f, 0x1.ac65f4p-24f},
+    {0x1.643382p1f, 0x1.80f228p-24f},
+    {0x1.5d55d8p1f, -0x1.0d55dap-25f},
+    {0x1.56c6e8p1f, -0x1.8d014ap-24f},
+    {0x1.5089bap1f, 0x1.e1ac1cp-24f},
+    {0x1.4a9f86p1f, 0x1.298daep-24f},
+    {0x1.4507f4p1f, 0x1.a213e6p-24f},
+    {0x1.3fc176p1f, 0x1.6f50acp-24f},
+    {0x1.3ac99p1f, -0x1.b02f36p-24f},
+    {0x1.361d16p1f, 0x1.730dc6p-26f},
+    {0x1.31b872p1f, 0x1.9fb2a2p-25f},
+    {0x1.2d97c8p1f, -0x1.99bc5cp-28f},
+  },
+  // cos(atan(i/16))
+  {
+    {1.0f, 0.0f},
+    {0x1.ff00cp-1f, -0x1.3ee8fcp-26f},
+    {0x1.fc0bd8p-1f, 0x1.141e3cp-26f},
+    {0x1.f73b06p-1f, -0x1.3e058ep-30f},
+    {0x1.f0b684p-1f, 0x1.1a55e4p-26f},
+    {0x1.e8b19ap-1f, -0x1.ed38d4p-27f},
+    {0x1.df668ap-1f, -0x1.20672cp-27f},
+    {0x1.d51292p-1f, 0x1.fd94eap-26f},
+    {0x1.c9f25cp-1f, 0x1.6ffb76p-27f},
+    {0x1.be3f26p-1f, 0x1.7e31cp-29f},
+    {0x1.b22cd6p-1f, -0x1.24f05p-26f},
+    {0x1.a5e8d2p-1f, 0x1.6be074p-26f},
+    {0x1.99999ap-1f, -0x1.99999ap-27f},
+    {0x1.8d5edp-1f, 0x1.c3bcap-27f},
+    {0x1.8151bcp-1f, -0x1.e40478p-27f},
+    {0x1.7585e6p-1f, 0x1.03fcdep-26f},
+    {0x1.6a09e6p-1f, 0x1.9fcef4p-27f},
+  },
+};
+#  undef _CCCL_FPMP_ATAN_TABLE
+
+/*
+ * atan(m / M) for pairs 0 <= m <= M (to within rounding), M normal, folded into `__row` of
+ * the table; `__rho` is m / M in single precision. With `__unit`, (M, m) is a point of the
+ * unit circle and the reduced argument is a sine (see above).
+ *
+ * In the kernel, k3 and k4 run in single precision; the step at k2 adds its product to the
+ * low word of k2, which is exact enough because the product is below 2^-9 of k2. The
+ * remaining steps are pair steps whose sums are Fast2Sums: each adds a product to a term
+ * at least 2^8 times larger.
+ */
+template <typename _FpType>
+_CCCL_FPMP_CORE_API void __internal_fpmp2_atan_kernel(
+  const bool __unit,
+  const _FpType __m_hi,
+  const _FpType __m_lo,
+  const _FpType __M_hi,
+  const _FpType __M_lo,
+  const _FpType __rho,
+  const int __row,
+  _FpType* __res_hi,
+  _FpType* __res_lo) noexcept
+{
+  const float __k1_hi = __unit ? 0x1.555556p-3f : -0x1.555556p-2f;
+  const float __k1_lo = __unit ? -0x1.5555fcp-28f : 0x1.5556a8p-27f;
+  const float __k2_hi = __unit ? 0x1.333334p-4f : 0x1.99999ap-3f;
+  const float __k2_lo = __unit ? -0x1.834838p-29f : -0x1.f455e8p-29f;
+  const float __k3    = __unit ? 0x1.6db664p-5f : -0x1.2491dp-3f;
+  const float __k4    = __unit ? 0x1.f3bf64p-6f : 0x1.c51d9ap-4f;
+
+  float __e;
+
+  const int __i   = static_cast<int>(::cuda::__fpmp_fma_rn(16.0f, __rho, 0.25f));
+  const float __c = ::cuda::__fpmp_mul_rn(static_cast<float>(__i), 0.0625f);
+
+  // n = m - c M: the high words cancel exactly, and the difference is renormalized because
+  // its low word can exceed what is left of the high one
+  float __cM_lo;
+  const float __cM_hi = ::cuda::__fpmp_two_mult_fma(__c, __M_hi, &__cM_lo);
+  __cM_lo             = ::cuda::__fpmp_fma_rn(__c, __M_lo, __cM_lo);
+  float __n_lo;
+  const float __n_hi =
+    ::cuda::__fpmp_two_sum(::cuda::__fpmp_sub_rn(__m_hi, __cM_hi), ::cuda::__fpmp_sub_rn(__m_lo, __cM_lo), &__n_lo);
+
+  float __t_hi;
+  float __t_lo;
+  if (__unit)
+  {
+    // t = n cos(atan(c))
+    const __fpmp2_atan_entry __cos = __fpmp2_atan_table[4][__i];
+    __t_hi                         = ::cuda::__fpmp_two_mult_fma(__n_hi, __cos.__hi, &__t_lo);
+    __t_lo                         = ::cuda::__fpmp_fma_rn(__n_hi, __cos.__lo, __t_lo);
+    __t_lo                         = ::cuda::__fpmp_fma_rn(__n_lo, __cos.__hi, __t_lo);
+  }
+  else
+  {
+    // t = n / (M + c m)
+    float __cm_lo;
+    const float __cm_hi = ::cuda::__fpmp_two_mult_fma(__c, __m_hi, &__cm_lo);
+    __cm_lo             = ::cuda::__fpmp_fma_rn(__c, __m_lo, __cm_lo);
+    const float __d_hi  = ::cuda::__fpmp_fast_two_sum(__M_hi, __cm_hi, &__e);
+    const float __d_lo  = ::cuda::__fpmp_add_rn(::cuda::__fpmp_add_rn(__M_lo, __cm_lo), __e);
+    ::cuda::__fpmp2_div(__n_hi, __n_lo, __d_hi, __d_lo, &__t_hi, &__t_lo);
+  }
+  if ((__row & 1) != 0)
+  {
+    __t_hi = -__t_hi;
+    __t_lo = -__t_lo;
+  }
+
+  // u = t^2
+  float __u_lo;
+  const float __u_hi = ::cuda::__fpmp_two_mult_fma(__t_hi, __t_hi, &__u_lo);
+  __u_lo             = ::cuda::__fpmp_fma_rn(::cuda::__fpmp_add_rn(__t_hi, __t_hi), __t_lo, __u_lo);
+
+  // q2 = k2 + u (k3 + u k4), as k2_hi plus a low word
+  const float __w     = ::cuda::__fpmp_fma_rn(__k4, __u_hi, __k3);
+  const float __q2_lo = ::cuda::__fpmp_fma_rn(__w, __u_hi, __k2_lo);
+
+  // q1 = k1 + u q2
+  float __p_lo;
+  const float __p_hi  = ::cuda::__fpmp_two_mult_fma(__k2_hi, __u_hi, &__p_lo);
+  __p_lo              = ::cuda::__fpmp_fma_rn(__q2_lo, __u_hi, __p_lo);
+  __p_lo              = ::cuda::__fpmp_fma_rn(__k2_hi, __u_lo, __p_lo);
+  const float __q1_hi = ::cuda::__fpmp_fast_two_sum(__k1_hi, __p_hi, &__e);
+  const float __q1_lo = ::cuda::__fpmp_add_rn(::cuda::__fpmp_add_rn(__k1_lo, __p_lo), __e);
+
+  // z = u q1
+  const float __z_hi = ::cuda::__fpmp_two_mult_fma(__q1_hi, __u_hi, &__p_lo);
+  __p_lo             = ::cuda::__fpmp_fma_rn(__q1_hi, __u_lo, __p_lo);
+  const float __z_lo = ::cuda::__fpmp_fma_rn(__q1_lo, __u_hi, __p_lo);
+
+  // y = t z
+  const float __y_hi = ::cuda::__fpmp_two_mult_fma(__t_hi, __z_hi, &__p_lo);
+  __p_lo             = ::cuda::__fpmp_fma_rn(__t_hi, __z_lo, __p_lo);
+  const float __y_lo = ::cuda::__fpmp_fma_rn(__t_lo, __z_hi, __p_lo);
+
+  // table entry + t + y: the entry is zero or exceeds |t|, and |y| < 2^-9 |t|
+  const __fpmp2_atan_entry __s = __fpmp2_atan_table[__row][__i];
+  float __e2;
+  const float __h1 = ::cuda::__fpmp_fast_two_sum(__s.__hi, __t_hi, &__e);
+  const float __h2 = ::cuda::__fpmp_fast_two_sum(__h1, __y_hi, &__e2);
+  const float __l  = ::cuda::__fpmp_add_rn(
+    ::cuda::__fpmp_add_rn(::cuda::__fpmp_add_rn(__e, __e2), __s.__lo), ::cuda::__fpmp_add_rn(__t_lo, __y_lo));
+  *__res_hi = ::cuda::__fpmp_fast_two_sum(__h2, __l, __res_lo);
+}
+
+/*
+ * The pair s = sqrt((1 - a)(1 + a)) for a pair 0 <= a <= 1, and min(a, s) / max(a, s) in
+ * single precision (`__rho`).
+ *
+ * 1 - a and 1 + a are exact up to the rounding of their low words, so the product keeps its
+ * relative accuracy as a approaches 1. The root is y ~ sqrt(v) and h ~ 1 / (2 sqrt(v)) in
+ * single precision, then the residual v - y^2 (exact in its high word) times h. The host takes
+ * y from sqrtf; the device refines its approximate reciprocal square root by one coupled
+ * Newton step on y and h, and since that instruction flushes subnormals to zero, a product
+ * below 2^-64 is scaled first.
+ */
+template <typename _FpType>
+_CCCL_FPMP_CORE_API void __internal_fpmp2_asin_cofunction(
+  const _FpType __a_hi, const _FpType __a_lo, _FpType* __s_hi, _FpType* __s_lo, _FpType* __rho) noexcept
+{
+  float __e;
+  float __om_lo;
+  const float __h     = ::cuda::__fpmp_fast_two_sum(1.0f, -__a_hi, &__e);
+  const float __om_hi = ::cuda::__fpmp_fast_two_sum(__h, ::cuda::__fpmp_sub_rn(__e, __a_lo), &__om_lo);
+  const float __op_hi = ::cuda::__fpmp_fast_two_sum(1.0f, __a_hi, &__e);
+  const float __op_lo = ::cuda::__fpmp_add_rn(__e, __a_lo);
+
+  float __v_lo;
+  float __v_hi = ::cuda::__fpmp_two_mult_fma(__om_hi, __op_hi, &__v_lo);
+  __v_lo       = ::cuda::__fpmp_fma_rn(__om_hi, __op_lo, __v_lo);
+  __v_lo       = ::cuda::__fpmp_fma_rn(__om_lo, __op_hi, __v_lo);
+
+  const bool __tiny  = __v_hi < 0x1p-64f;
+  const float __up   = __tiny ? 0x1p64f : 1.0f;
+  const float __down = __tiny ? 0x1p-32f : 1.0f;
+  __v_hi             = ::cuda::__fpmp_mul_rn(__v_hi, __up);
+  __v_lo             = ::cuda::__fpmp_mul_rn(__v_lo, __up);
+
+  // v = 0 only for a = 1
+  float __y;
+  float __hh;
+  NV_IF_ELSE_TARGET(
+    NV_IS_DEVICE,
+    ({
+      const float __r0 = (__v_hi > 0.0f) ? ::cuda::__fpmp_rsqrt_rn(__v_hi) : 0.0f;
+      const float __y0 = ::cuda::__fpmp_mul_rn(__v_hi, __r0);
+      const float __h0 = ::cuda::__fpmp_mul_rn(0.5f, __r0);
+      const float __d  = ::cuda::__fpmp_fma_rn(-__y0, __h0, 0.5f);
+      __y              = ::cuda::__fpmp_fma_rn(__y0, __d, __y0);
+      __hh             = ::cuda::__fpmp_fma_rn(__h0, __d, __h0);
+    }),
+    ({
+      __y  = ::sqrtf(__v_hi);
+      __hh = (__v_hi > 0.0f) ? 0.5f / __y : 0.0f;
+    }))
+  float __resid = ::cuda::__fpmp_fma_rn(-__y, __y, __v_hi);
+  __resid       = ::cuda::__fpmp_add_rn(__resid, __v_lo);
+
+  *__s_hi = ::cuda::__fpmp_mul_rn(__y, __down);
+  *__s_lo = ::cuda::__fpmp_mul_rn(::cuda::__fpmp_mul_rn_nocontract(__resid, __hh), __down);
+
+  // a > s: s / a, the only case the scaling above can apply to; else a / s, with 1 / s = 2 h
+  *__rho = (__a_hi > *__s_hi) ? ::cuda::__fpmp_mul_rn(*__s_hi, ::cuda::__fpmp_rcp_rn(__a_hi))
+                              : ::cuda::__fpmp_mul_rn(__a_hi, ::cuda::__fpmp_add_rn(__hh, __hh));
+}
+
+/*
+ * ====================================================================
+ * fpmp2_accuracy::high kernels for asin, acos, atan and atan2 (fp32mp2)
+ * ====================================================================
+ *
+ * The high level evaluates polynomials in fp32mp2 arithmetic instead of
+ * the table: 2 to 3.4 u^2 at most where the table-driven kernel reaches
+ * 4 to 7, for two to three times the instructions.  The asin/acos kernels
+ * run in pure compensated Horner (M = 0): on their ranges even the
  * highest coefficients carry float-rounding noise above the fp32mp2 ulp
  * when stored as `float`.  The atan kernel's argument is folded once by
  * its callers (see kernel 1), which shrinks its polynomial to 13
@@ -792,7 +1119,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincos_kernel(
  * template spares every translation unit that never calls it an
  * unused-function warning. */
 template <typename _FpType>
-_CCCL_FPMP_CORE_API void __internal_fpmp2_atan_kernel(const fp32mp2_low& __t, fp32mp2_low* __result) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_high_atan_kernel(const fp32mp2_low& __t, fp32mp2_low* __result) noexcept
 {
   using __ffloat = fp32mp2_low;
 
@@ -830,7 +1157,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_atan_kernel(const fp32mp2_low& __t, fp
  * above the fold point, where the result is only twice the reduced
  * argument. */
 template <typename _FpType>
-_CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_compose_base_tw(
+_CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_high_compose_base_tw(
   const float __b_hi, const float __b_lo, const fp32mp2_low& __t, const fp32mp2_low& __w, const bool __negate) noexcept
 {
   using __ffloat   = fp32mp2_low;
@@ -856,7 +1183,7 @@ _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_compose_base_tw(
 
 /* ---- (kernel 2) asin polynomial P(y); used by both asin & acos ---- */
 template <typename _FpType>
-_CCCL_FPMP_CORE_API void __internal_fpmp2_asin_poly(const fpmp2<_FpType>& __y, fpmp2<_FpType>* __result) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_high_asin_poly(const fpmp2<_FpType>& __y, fpmp2<_FpType>* __result) noexcept
 {
   using __ffloat = fp32mp2_low;
 
@@ -888,13 +1215,13 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_asin_poly(const fpmp2<_FpType>& __y, f
 
 /* ---- (kernel 3) acos large-branch polynomial P(y); used by acos only ----
  *
- * Companion to `__internal_fpmp2_asin_poly` for the |x| >= 0.575 branch
+ * Companion to `__internal_fpmp2_high_asin_poly` for the |x| >= 0.575 branch
  * of acos.  Evaluates the 13-coefficient minimax
  * P(y) such that, for y = 1 - |x|, acos(|x|) = sqrt(2y)*(1 + y*P(y)).
  * Same fp32mp2_low internal evaluation as the asin kernel -- no
  * per-op renormalisation, single conversion in/out around the call. */
 template <typename _FpType>
-_CCCL_FPMP_CORE_API void __internal_fpmp2_acos_poly(const fpmp2<_FpType>& __y, fpmp2<_FpType>* __result) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_high_acos_poly(const fpmp2<_FpType>& __y, fpmp2<_FpType>* __result) noexcept
 {
   using __ffloat = fp32mp2_low;
 
@@ -929,7 +1256,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_acos_poly(const fpmp2<_FpType>& __y, f
  * root's own. */
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void
-__internal_fpmp2_asin_sqrt(const _FpType __v_hi, const _FpType __v_lo, _FpType* __s_hi, _FpType* __s_lo) noexcept
+__internal_fpmp2_high_asin_sqrt(const _FpType __v_hi, const _FpType __v_lo, _FpType* __s_hi, _FpType* __s_lo) noexcept
 {
   const bool __tiny  = __v_hi < 0x1p-64f;
   const float __up   = __tiny ? 0x1p64f : 1.0f;
@@ -943,7 +1270,7 @@ __internal_fpmp2_asin_sqrt(const _FpType __v_hi, const _FpType __v_lo, _FpType* 
 /* ---- atan(a) for a pair 0 <= a <= 2^60 ---- */
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void
-__internal_fpmp2_atan_abs(const _FpType __ah, const _FpType __al, _FpType* __res_hi, _FpType* __res_lo) noexcept
+__internal_fpmp2_high_atan_abs(const _FpType __ah, const _FpType __al, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
   using __ffloat = fp32mp2_low;
 
@@ -973,12 +1300,12 @@ __internal_fpmp2_atan_abs(const _FpType __ah, const _FpType __al, _FpType* __res
   const __ffloat __t = (__fold || __inv) ? __ffloat(__q_hi, __q_lo) : __ffloat(__ah, __al);
 
   __ffloat __w;
-  ::cuda::__internal_fpmp2_atan_kernel<float>(__t, &__w);
+  ::cuda::__internal_fpmp2_high_atan_kernel<float>(__t, &__w);
 
   /* r = base + (t + w), or pi/2 - (t + w) for the reciprocal range */
   const float __b_hi = __inv ? __pio4_hi * 2.0f : (__fold ? __pio4_hi : 0.0f);
   const float __b_lo = __inv ? __pio4_lo * 2.0f : (__fold ? __pio4_lo : 0.0f);
-  const __ffloat __r = ::cuda::__internal_fpmp2_compose_base_tw<float>(__b_hi, __b_lo, __t, __w, __inv);
+  const __ffloat __r = ::cuda::__internal_fpmp2_high_compose_base_tw<float>(__b_hi, __b_lo, __t, __w, __inv);
 
   *__res_hi = __r.hi();
   *__res_lo = __r.lo();
@@ -987,7 +1314,7 @@ __internal_fpmp2_atan_abs(const _FpType __ah, const _FpType __al, _FpType* __res
 /* ---- atan2(|y|, |x|) reflected for x < 0: the angle in [0, pi] of the point (+-|x|, |y|) ----
  * for finite magnitudes, not both zero, the larger in [1, 2^64). */
 template <typename _FpType>
-_CCCL_FPMP_CORE_API void __internal_fpmp2_atan2_abs(
+_CCCL_FPMP_CORE_API void __internal_fpmp2_high_atan2_abs(
   const _FpType __ay_hi,
   const _FpType __ay_lo,
   const _FpType __ax_hi,
@@ -1029,7 +1356,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_atan2_abs(
     &__t_lo);
   const __ffloat __t(__t_hi, __t_lo);
   __ffloat __w;
-  ::cuda::__internal_fpmp2_atan_kernel<float>(__t, &__w);
+  ::cuda::__internal_fpmp2_high_atan_kernel<float>(__t, &__w);
 
   /* First octant: atan2(|y|, |x|) = pi/4 + (t + w) folded, pi/2 - (t + w)
    * for |y| > |x|, else t + w; x < 0 mirrors it to pi - that, i.e. the
@@ -1053,7 +1380,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_atan2_abs(
     __b_hi = __x_is_neg ? __pio4_hi * 4.0f : 0.0f;
     __b_lo = __x_is_neg ? __pio4_lo * 4.0f : 0.0f;
   }
-  const __ffloat __r = ::cuda::__internal_fpmp2_compose_base_tw<float>(__b_hi, __b_lo, __t, __w, __neg_w);
+  const __ffloat __r = ::cuda::__internal_fpmp2_high_compose_base_tw<float>(__b_hi, __b_lo, __t, __w, __neg_w);
 
   *__res_hi = __r.hi();
   *__res_lo = __r.lo();
@@ -1061,8 +1388,8 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_atan2_abs(
 
 /* ---- asin(a) for a pair 0 <= a <= 1 ---- */
 template <typename _FpType>
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_asin_abs(const _FpType __a_hi, const _FpType __a_lo, _FpType* __res_hi, _FpType* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_high_asin_abs(
+  const _FpType __a_hi, const _FpType __a_lo, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
   using __ffloat = fpmp2<float>;
   const __ffloat __absx(__a_hi, __a_lo);
@@ -1078,7 +1405,7 @@ __internal_fpmp2_asin_abs(const _FpType __a_hi, const _FpType __a_lo, _FpType* _
     /* Small branch: asin(|x|) = |x| + |x|*(|x|^2*P(|x|^2)) */
     __ffloat __a2 = __absx * __absx;
     __ffloat __p;
-    ::cuda::__internal_fpmp2_asin_poly<float>(__a2, &__p);
+    ::cuda::__internal_fpmp2_high_asin_poly<float>(__a2, &__p);
     __r = renormalize(__absx + __absx * (__a2 * __p));
   }
   else
@@ -1087,11 +1414,11 @@ __internal_fpmp2_asin_abs(const _FpType __a_hi, const _FpType __a_lo, _FpType* _
      *   asin(|x|) = pi/2 - 2*sqrty*(1 + y*P(y)) */
     __ffloat __y = 0.5f - __absx * 0.5f;
     float __sy_hi, __sy_lo;
-    ::cuda::__internal_fpmp2_asin_sqrt<float>(__y.hi(), __y.lo(), &__sy_hi, &__sy_lo);
+    ::cuda::__internal_fpmp2_high_asin_sqrt<float>(__y.hi(), __y.lo(), &__sy_hi, &__sy_lo);
     __ffloat __sy(__sy_hi, __sy_lo);
 
     __ffloat __p;
-    ::cuda::__internal_fpmp2_asin_poly<float>(__y, &__p);
+    ::cuda::__internal_fpmp2_high_asin_poly<float>(__y, &__p);
 
     /* 2 sqrt(y) (1 + y P) = 2 sqrt(y) + 2 sqrt(y) (y P): the second term is
      * at most 8 % of the first, so its own roundings are immaterial, and
@@ -1102,7 +1429,7 @@ __internal_fpmp2_asin_abs(const _FpType __a_hi, const _FpType __a_lo, _FpType* _
     const __ffloat __c = __sy * (__y * __p);
     constexpr float __pio2_hi(0x1.921fb6p+0f);
     constexpr float __pio2_lo(-0x1.777a5cp-25f);
-    const fp32mp2_low __r_low = ::cuda::__internal_fpmp2_compose_base_tw<float>(
+    const fp32mp2_low __r_low = ::cuda::__internal_fpmp2_high_compose_base_tw<float>(
       __pio2_hi,
       __pio2_lo,
       fp32mp2_low(__sy_hi + __sy_hi, __sy_lo + __sy_lo),
@@ -1117,7 +1444,7 @@ __internal_fpmp2_asin_abs(const _FpType __a_hi, const _FpType __a_lo, _FpType* _
 
 /* ---- acos(+-a) for a pair 0 <= a <= 1 ---- */
 template <typename _FpType>
-_CCCL_FPMP_CORE_API void __internal_fpmp2_acos_abs(
+_CCCL_FPMP_CORE_API void __internal_fpmp2_high_acos_abs(
   const _FpType __a_hi, const _FpType __a_lo, const bool __is_neg, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
   using __ffloat = fpmp2<float>;
@@ -1134,7 +1461,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_acos_abs(
      *   acos(x) = pi/2 - asin(x)   (sign of x already in asin) */
     __ffloat __a2 = __absx * __absx;
     __ffloat __p;
-    ::cuda::__internal_fpmp2_asin_poly<float>(__a2, &__p);
+    ::cuda::__internal_fpmp2_high_asin_poly<float>(__a2, &__p);
     __ffloat __asin_abs = renormalize(__absx + __absx * (__a2 * __p));
     __r                 = __is_neg ? renormalize(__PIO2 + __asin_abs) : renormalize(__PIO2 - __asin_abs);
   }
@@ -1143,17 +1470,17 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_acos_abs(
     /* Large branch:
      *   y = 1 - |x|;   acos(|x|) = sqrt(2y)*(1 + y*P(y))
      *   x < 0  ->  acos(x) = pi - acos(|x|)
-     * Polynomial P(y) is evaluated by `__internal_fpmp2_acos_poly`
-     * (analogous to `__internal_fpmp2_asin_poly` used by the small
+     * Polynomial P(y) is evaluated by `__internal_fpmp2_high_acos_poly`
+     * (analogous to `__internal_fpmp2_high_asin_poly` used by the small
      *  branch and by asin). */
     __ffloat __y     = 1.0f - __absx;
     __ffloat __two_y = __y * 2.0f;
     float __s_hi, __s_lo;
-    ::cuda::__internal_fpmp2_asin_sqrt<float>(__two_y.hi(), __two_y.lo(), &__s_hi, &__s_lo);
+    ::cuda::__internal_fpmp2_high_asin_sqrt<float>(__two_y.hi(), __two_y.lo(), &__s_hi, &__s_lo);
     __ffloat __s(__s_hi, __s_lo);
 
     __ffloat __p;
-    ::cuda::__internal_fpmp2_acos_poly<float>(__y, &__p);
+    ::cuda::__internal_fpmp2_high_acos_poly<float>(__y, &__p);
     /* s (1 + y P) = s + s (y P), the second term at most 4 % of the first: one Fast2Sum. */
     const __ffloat __c = __s * (__y * __p);
     float __al;
@@ -1510,13 +1837,15 @@ _CCCL_FPMP_MATH_DISPATCH_1A(high_tan)
  * --------------------------------------------------------------------
  * Arc tangent atan(x) (fp32mp2)
  * --------------------------------------------------------------------
- * atan(|x|) through the polynomial kernel. Beyond 2^60, and for an infinite x, the result is
- * +-pi/2 to the last bit; a NaN gives NaN in both limbs. The sign is applied last, so
- * atan(-0) = -0.
+ * atan(|x|) is the angle of (1, |x|), or of (|x|, 1) taken from pi/2 for |x| > 1, through
+ * the shared kernel; with `__high`, the polynomial kernel of fpmp2_accuracy::high on |x|.
+ * Beyond 2^60, and for an infinite x, the result is +-pi/2 to the last bit; a NaN gives NaN
+ * in both limbs. The sign is applied last, so atan(-0) = -0. The entry code is the same at
+ * every accuracy level.
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_atan(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_atan_core(
+  const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo, const bool __high) noexcept
 {
   const uint32_t __x_bits = ::cuda::std::bit_cast<uint32_t>(__x_hi);
   const bool __neg        = (__x_bits & 0x80000000u) != 0u;
@@ -1533,16 +1862,45 @@ __internal_fpmp2_atan(const float __x_hi, const float __x_lo, float* __res_hi, f
       *__res_lo = __x_hi;
       return;
     }
-    __r_hi = 0x1.921fb6p+0f; // pi/2
-    __r_lo = -0x1.777a5cp-25f;
+    __r_hi = __fpmp2_atan_table[1][0].__hi;
+    __r_lo = __fpmp2_atan_table[1][0].__lo;
+  }
+  else if (__high)
+  {
+    ::cuda::__internal_fpmp2_high_atan_abs(__a_hi, __a_lo, &__r_hi, &__r_lo);
   }
   else
   {
-    ::cuda::__internal_fpmp2_atan_abs(__a_hi, __a_lo, &__r_hi, &__r_lo);
+    // |x| > 1: the angle is taken from pi/2
+    const bool __swap = __a_hi > 1.0f;
+    const float __rho = __swap ? ::cuda::__fpmp_rcp_rn(__a_hi) : __a_hi;
+    ::cuda::__internal_fpmp2_atan_kernel(
+      false,
+      __swap ? 1.0f : __a_hi,
+      __swap ? 0.0f : __a_lo,
+      __swap ? __a_hi : 1.0f,
+      __swap ? __a_lo : 0.0f,
+      __rho,
+      __swap ? 1 : 0,
+      &__r_hi,
+      &__r_lo);
   }
 
   *__res_hi = __neg ? -__r_hi : __r_hi;
   *__res_lo = __neg ? -__r_lo : __r_lo;
+}
+
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_atan(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  ::cuda::__internal_fpmp2_atan_core(__x_hi, __x_lo, __res_hi, __res_lo, false);
+}
+
+/* fpmp2_accuracy::high: the polynomial kernel behind the same entry code */
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_high_atan(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  ::cuda::__internal_fpmp2_atan_core(__x_hi, __x_lo, __res_hi, __res_lo, true);
 }
 
 /*
@@ -1556,7 +1914,15 @@ __internal_fpmp2_atan(const double __x_hi, const double __x_lo, double* __res_hi
   _CCCL_FPMP_CALL_FP64MP2_MATH(atan, _CCCL_FPMP_ATANQ, __x_hi, __x_lo, __res_hi, __res_lo);
 }
 
+/* fp64mp2 has one atan for every level */
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_high_atan(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
+{
+  ::cuda::__internal_fpmp2_atan(__x_hi, __x_lo, __res_hi, __res_lo);
+}
+
 _CCCL_FPMP_MATH_DISPATCH_1A(atan)
+_CCCL_FPMP_MATH_DISPATCH_1A(high_atan)
 
 /*
  * ====================================================================
@@ -1568,8 +1934,9 @@ _CCCL_FPMP_MATH_DISPATCH_1A(atan)
  * --------------------------------------------------------------------
  * Arc tangent atan2(y, x) (fp32mp2)
  * --------------------------------------------------------------------
- * The polynomial kernel on the scaled magnitudes of the operands, with the sign of y applied
- * last. Special values follow C99 F.10.1.4:
+ * The angle of (max(|x|, |y|), min(|x|, |y|)) through the shared kernel, in the table row
+ * of its octant, with the sign of y applied last; with `__high`, the polynomial kernel of
+ * fpmp2_accuracy::high on the same scaled magnitudes. Special values follow C99 F.10.1.4:
  *
  *   atan2(+-0, x)   = +-0 for x > 0 or +0, +-pi for x < 0 or -0
  *   atan2(y, +-0)   = +-pi/2 for y != 0
@@ -1577,17 +1944,19 @@ _CCCL_FPMP_MATH_DISPATCH_1A(atan)
  *   atan2(y, +inf)  = +-0, atan2(y, -inf) = +-pi for finite y
  *   NaN in either argument gives NaN in both limbs
  *
- * Signs are those of the high limbs. A low-accuracy difference can carry a zero high limb over
- * a nonzero low one ((1, 0) - (1, 2^-30) is (0, -2^-30)): such an operand is its low limb.
+ * These are the table entries at c = 0 and c = 1 of the same row. Signs are those of the
+ * high limbs. A low-accuracy difference can carry a zero high limb over a nonzero low one
+ * ((1, 0) - (1, 2^-30) is (0, -2^-30)): such an operand is its low limb.
  *
  * The operands are scaled by a common power of two that brings the larger one into
  * [1, 2^64): its reciprocal then stays normal (the device's approximate reciprocal flushes
  * subnormals to zero), the divisor cannot overflow, and the quotient keeps its low word
- * whenever the result has room for one. Subnormal operands are ordinary inputs.
+ * whenever the result has room for one. Subnormal operands are ordinary inputs. The entry
+ * code, special values and scaling included, is the same at every accuracy level.
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void __internal_fpmp2_atan2(
-  float __y_hi, float __y_lo, float __x_hi, float __x_lo, float* __res_hi, float* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_atan2_core(
+  float __y_hi, float __y_lo, float __x_hi, float __x_lo, float* __res_hi, float* __res_lo, const bool __high) noexcept
 {
   // An operand with a zero high limb over a nonzero low limb is that low limb. One test of the
   // bit patterns keeps this off the path of ordinary operands.
@@ -1616,6 +1985,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_atan2(
 
   // |y| > |x|: the angle is taken from the y axis
   const bool __swap = __ay_bits > __ax_bits;
+  const int __row   = (__x_neg ? 3 : 0) ^ (__swap ? 1 : 0);
 
   float __r_hi;
   float __r_lo;
@@ -1627,12 +1997,10 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_atan2(
       *__res_lo = *__res_hi;
       return;
     }
-    // Both infinite: the diagonal, pi/4 or 3 pi/4. Otherwise an axis (one operand infinite, or
-    // both zero): 0 or pi along x, pi/2 along y.
-    const bool __diag = __ax_bits == __ay_bits && __ax_bits != 0u;
-    const float __q   = __diag ? 0.5f : ((__swap || !__x_neg) ? 1.0f : 2.0f);
-    __r_hi = (__diag && __x_neg) ? 0x1.2d97c8p+1f : ((__diag || __swap || __x_neg) ? 0x1.921fb6p+0f * __q : 0.0f);
-    __r_lo = (__diag && __x_neg) ? -0x1.99bc5cp-28f : ((__diag || __swap || __x_neg) ? -0x1.777a5cp-25f * __q : 0.0f);
+    // Both infinite: the diagonal. Otherwise an axis: one operand infinite, or both zero.
+    const __fpmp2_atan_entry __s = __fpmp2_atan_table[__row][(__ax_bits == __ay_bits && __ax_bits != 0u) ? 16 : 0];
+    __r_hi                       = __s.__hi;
+    __r_lo                       = __s.__lo;
   }
   else
   {
@@ -1658,19 +2026,50 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_atan2(
       __M_lo = ::cuda::__fpmp_mul_rn(__M_lo, 0x1p86f);
     }
 
-    // back to (|y|, |x|): the polynomial kernel does its own sorting and folding
-    ::cuda::__internal_fpmp2_atan2_abs(
-      __swap ? __M_hi : __m_hi,
-      __swap ? __M_lo : __m_lo,
-      __swap ? __m_hi : __M_hi,
-      __swap ? __m_lo : __M_lo,
-      __x_neg,
-      &__r_hi,
-      &__r_lo);
+    if (__high)
+    {
+      // back to (|y|, |x|): the polynomial kernel does its own sorting and folding
+      ::cuda::__internal_fpmp2_high_atan2_abs(
+        __swap ? __M_hi : __m_hi,
+        __swap ? __M_lo : __m_lo,
+        __swap ? __m_hi : __M_hi,
+        __swap ? __m_lo : __M_lo,
+        __x_neg,
+        &__r_hi,
+        &__r_lo);
+    }
+    else
+    {
+      const float __rho = ::cuda::__fpmp_mul_rn(__m_hi, ::cuda::__fpmp_rcp_rn(__M_hi));
+      ::cuda::__internal_fpmp2_atan_kernel(false, __m_hi, __m_lo, __M_hi, __M_lo, __rho, __row, &__r_hi, &__r_lo);
+    }
   }
 
   *__res_hi = __y_neg ? -__r_hi : __r_hi;
   *__res_lo = __y_neg ? -__r_lo : __r_lo;
+}
+
+_CCCL_FPMP_CORE_API void __internal_fpmp2_atan2(
+  const float __y_hi,
+  const float __y_lo,
+  const float __x_hi,
+  const float __x_lo,
+  float* __res_hi,
+  float* __res_lo) noexcept
+{
+  ::cuda::__internal_fpmp2_atan2_core(__y_hi, __y_lo, __x_hi, __x_lo, __res_hi, __res_lo, false);
+}
+
+/* fpmp2_accuracy::high: the polynomial kernel behind the same entry code */
+_CCCL_FPMP_CORE_API void __internal_fpmp2_high_atan2(
+  const float __y_hi,
+  const float __y_lo,
+  const float __x_hi,
+  const float __x_lo,
+  float* __res_hi,
+  float* __res_lo) noexcept
+{
+  ::cuda::__internal_fpmp2_atan2_core(__y_hi, __y_lo, __x_hi, __x_lo, __res_hi, __res_lo, true);
 }
 
 /*
@@ -1699,7 +2098,20 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_atan2(
 #  endif
 } // __internal_fpmp2_atan2
 
+/* fp64mp2 has one atan2 for every level */
+_CCCL_FPMP_CORE_API void __internal_fpmp2_high_atan2(
+  const double __y_hi,
+  const double __y_lo,
+  const double __x_hi,
+  const double __x_lo,
+  double* __res_hi,
+  double* __res_lo) noexcept
+{
+  ::cuda::__internal_fpmp2_atan2(__y_hi, __y_lo, __x_hi, __x_lo, __res_hi, __res_lo);
+}
+
 _CCCL_FPMP_MATH_DISPATCH_2A_YX(atan2)
+_CCCL_FPMP_MATH_DISPATCH_2A_YX(high_atan2)
 
 /*
  * ====================================================================
@@ -1711,12 +2123,14 @@ _CCCL_FPMP_MATH_DISPATCH_2A_YX(atan2)
  * --------------------------------------------------------------------
  * Arc sine asin(x) (fp32mp2)
  * --------------------------------------------------------------------
- * asin(|x|) through the polynomial kernel. The sign is applied last, so asin(-0) = -0.
- * |x| > 1 (decided on both limbs) and NaN give NaN in both limbs.
+ * asin(|x|) is the angle of the unit-circle point (s, |x|), s = sqrt((1 - |x|)(1 + |x|)),
+ * through the shared kernel; with `__high`, the polynomial kernel of fpmp2_accuracy::high on
+ * |x|. The sign is applied last, so asin(-0) = -0. |x| > 1 (decided on both limbs) and NaN
+ * give NaN in both limbs. The entry code is the same at every accuracy level.
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_asin(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_asin_core(
+  const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo, const bool __high) noexcept
 {
   const uint32_t __x_bits = ::cuda::std::bit_cast<uint32_t>(__x_hi);
   const bool __neg        = (__x_bits & 0x80000000u) != 0u;
@@ -1732,10 +2146,46 @@ __internal_fpmp2_asin(const float __x_hi, const float __x_lo, float* __res_hi, f
 
   float __r_hi;
   float __r_lo;
-  ::cuda::__internal_fpmp2_asin_abs(__a_hi, __a_lo, &__r_hi, &__r_lo);
+  if (__high)
+  {
+    ::cuda::__internal_fpmp2_high_asin_abs(__a_hi, __a_lo, &__r_hi, &__r_lo);
+  }
+  else
+  {
+    float __s_hi;
+    float __s_lo;
+    float __rho;
+    ::cuda::__internal_fpmp2_asin_cofunction(__a_hi, __a_lo, &__s_hi, &__s_lo, &__rho);
+
+    // |x| > s: the angle is taken from pi/2
+    const bool __swap = __a_hi > __s_hi;
+    ::cuda::__internal_fpmp2_atan_kernel(
+      true,
+      __swap ? __s_hi : __a_hi,
+      __swap ? __s_lo : __a_lo,
+      __swap ? __a_hi : __s_hi,
+      __swap ? __a_lo : __s_lo,
+      __rho,
+      __swap ? 1 : 0,
+      &__r_hi,
+      &__r_lo);
+  }
 
   *__res_hi = __neg ? -__r_hi : __r_hi;
   *__res_lo = __neg ? -__r_lo : __r_lo;
+}
+
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_asin(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  ::cuda::__internal_fpmp2_asin_core(__x_hi, __x_lo, __res_hi, __res_lo, false);
+}
+
+/* fpmp2_accuracy::high: the polynomial kernel behind the same entry code */
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_high_asin(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  ::cuda::__internal_fpmp2_asin_core(__x_hi, __x_lo, __res_hi, __res_lo, true);
 }
 
 /*
@@ -1749,7 +2199,15 @@ __internal_fpmp2_asin(const double __x_hi, const double __x_lo, double* __res_hi
   _CCCL_FPMP_CALL_FP64MP2_MATH(asin, _CCCL_FPMP_ASINQ, __x_hi, __x_lo, __res_hi, __res_lo);
 }
 
+/* fp64mp2 has one asin for every level */
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_high_asin(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
+{
+  ::cuda::__internal_fpmp2_asin(__x_hi, __x_lo, __res_hi, __res_lo);
+}
+
 _CCCL_FPMP_MATH_DISPATCH_1A(asin)
+_CCCL_FPMP_MATH_DISPATCH_1A(high_asin)
 
 /*
  * ====================================================================
@@ -1761,13 +2219,16 @@ _CCCL_FPMP_MATH_DISPATCH_1A(asin)
  * --------------------------------------------------------------------
  * Arc cosine acos(x) (fp32mp2)
  * --------------------------------------------------------------------
- * acos(x) through the polynomial kernel on |x|. The result stays accurate for x near 1,
- * where it is small, and acos(1) = +0. |x| > 1 (decided on both limbs) and NaN give NaN in
- * both limbs.
+ * acos(x) is the angle of the unit-circle point (x, s), s = sqrt((1 - |x|)(1 + |x|)),
+ * through the shared kernel, in the table rows of the right or the left half plane; with
+ * `__high`, the polynomial kernel of fpmp2_accuracy::high on |x|. Either way the result
+ * stays accurate for x near 1, where it is small, and acos(1) = +0. |x| > 1 (decided on
+ * both limbs) and NaN give NaN in both limbs. The entry code is the same at every accuracy
+ * level.
  * --------------------------------------------------------------------
  */
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_acos(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+_CCCL_FPMP_CORE_API void __internal_fpmp2_acos_core(
+  const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo, const bool __high) noexcept
 {
   const uint32_t __x_bits = ::cuda::std::bit_cast<uint32_t>(__x_hi);
   const bool __neg        = (__x_bits & 0x80000000u) != 0u;
@@ -1781,7 +2242,42 @@ __internal_fpmp2_acos(const float __x_hi, const float __x_lo, float* __res_hi, f
     return;
   }
 
-  ::cuda::__internal_fpmp2_acos_abs(__a_hi, __a_lo, __neg, __res_hi, __res_lo);
+  if (__high)
+  {
+    ::cuda::__internal_fpmp2_high_acos_abs(__a_hi, __a_lo, __neg, __res_hi, __res_lo);
+    return;
+  }
+
+  float __s_hi;
+  float __s_lo;
+  float __rho;
+  ::cuda::__internal_fpmp2_asin_cofunction(__a_hi, __a_lo, &__s_hi, &__s_lo, &__rho);
+
+  // s > |x|: the angle is taken from pi/2
+  const bool __swap = __s_hi > __a_hi;
+  ::cuda::__internal_fpmp2_atan_kernel(
+    true,
+    __swap ? __a_hi : __s_hi,
+    __swap ? __a_lo : __s_lo,
+    __swap ? __s_hi : __a_hi,
+    __swap ? __s_lo : __a_lo,
+    __rho,
+    (__neg ? 3 : 0) ^ (__swap ? 1 : 0),
+    __res_hi,
+    __res_lo);
+}
+
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_acos(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  ::cuda::__internal_fpmp2_acos_core(__x_hi, __x_lo, __res_hi, __res_lo, false);
+}
+
+/* fpmp2_accuracy::high: the polynomial kernel behind the same entry code */
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_high_acos(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  ::cuda::__internal_fpmp2_acos_core(__x_hi, __x_lo, __res_hi, __res_lo, true);
 }
 
 /*
@@ -1795,7 +2291,15 @@ __internal_fpmp2_acos(const double __x_hi, const double __x_lo, double* __res_hi
   _CCCL_FPMP_CALL_FP64MP2_MATH(acos, _CCCL_FPMP_ACOSQ, __x_hi, __x_lo, __res_hi, __res_lo);
 }
 
+/* fp64mp2 has one acos for every level */
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_high_acos(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
+{
+  ::cuda::__internal_fpmp2_acos(__x_hi, __x_lo, __res_hi, __res_lo);
+}
+
 _CCCL_FPMP_MATH_DISPATCH_1A(acos)
+_CCCL_FPMP_MATH_DISPATCH_1A(high_acos)
 
 /*
  * ====================================================================

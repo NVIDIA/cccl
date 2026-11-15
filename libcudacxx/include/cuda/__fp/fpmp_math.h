@@ -410,16 +410,6 @@
       Core: degree-24 Remez polynomial P for the argument, followed by
       expm1 via argument reduction + polynomial, all in fp32mp2.
 
-    asin(x), acos(x), atan(x), atan2(y, x) for fp32mp2:
-      13-coefficient polynomials in fp32mp2 arithmetic: atan and atan2
-      after one fold and a refined division, asin and acos in x^2 below
-      0.575 and in 1 - |x| above.  At most 1.9 (atan) to 3.4 (acos, atan2)
-      u^2.  The entry code returns the C99 Annex F special values, keeps
-      the sign of a zero argument (asin, atan, atan2), decides the domain
-      of asin and acos on both limbs, returns NaN in both limbs, and
-      scales the operands of atan2 by a common power of two, so that
-      subnormal operands are ordinary inputs.
-
     erfc(x) for fp32mp2:
       |x| < 1/2: 1 - x Q(x^2), the small erf (no cancellation).
       |x| >= 1/2: erfc(x) = erfcx(|x|)*exp(-x^2).
@@ -532,6 +522,26 @@
       sinpi and cospi call sincospi. fp64mp2 stays on the double-precision
       fallback, the same at every level.
       Accuracy: 46 bits.
+
+    asin(x), acos(x), atan(x), atan2(y, x) for fp32mp2:
+      Two kernels behind one entry code, selected by the accuracy level of
+      the type.  fpmp2_accuracy::low and the default level take the angle
+      of a point (M, m), 0 <= m <= M, from a table of atan(i/16):
+      atan(m/M) = atan(c) + atan(t), c = i/16, t = (m - c M)/(M + c m),
+      |t| < 3/64, with a 4-coefficient kernel; asin and acos enter as the
+      unit-circle point (x, sqrt((1 - |x|)(1 + |x|))), where the division
+      becomes a product by a tabulated cosine.  At most 4 (atan) to 7.2
+      (acos) u^2, 45 to 46 bits.
+      fpmp2_accuracy::high evaluates 13-coefficient polynomials in
+      fp32mp2 arithmetic: atan and atan2 after one fold and a refined
+      division, asin and acos in x^2 below 0.575 and in 1 - |x| above.
+      At most 1.9 (atan) to 3.4 (acos, atan2) u^2, 46 to 47 bits, for two
+      to three times the instructions.
+      The entry code is shared, so every level returns the C99 Annex F
+      special values, keeps the sign of a zero argument (asin, atan,
+      atan2), decides the domain of asin and acos on both limbs, returns
+      NaN in both limbs, and scales the operands of atan2 by a common
+      power of two.  fp64mp2 has one implementation for every level.
 
     Placeholder functions:
     - Delegate to standard double-precision system functions
@@ -754,7 +764,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> asin(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_asin(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_asin(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_asin(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -762,7 +779,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> acos(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_acos(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_acos(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_acos(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -770,7 +794,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> atan(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_atan(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_atan(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_atan(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -779,7 +810,14 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 atan2(const fpmp2<_FpType, _TypeAcc>& __y, const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_atan2(__y.hi(), __y.lo(), __x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_atan2(__y.hi(), __y.lo(), __x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_atan2(__y.hi(), __y.lo(), __x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 

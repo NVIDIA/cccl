@@ -6,10 +6,13 @@
 // error: device math intrinsics are unsupported in tile code
 
 // fp32mp2 asin, acos, atan and atan2: within a few u^2 (u = 2^-24) of an MPFR reference over
-// the whole range of each, including small arguments, x near +-1 for asin and acos (where acos
-// is small), every octant of atan2, and atan2 operands near both ends of the exponent range,
-// subnormal ones included (which gave NaN or lost the low limb); and the C99 Annex F special
-// values, with the sign of zero. Every accuracy level is checked.
+// the whole range of each, including both sides of the table's first interval, x near +-1 for
+// asin and acos (where acos is small), every octant of atan2, and atan2 operands near both
+// ends of the exponent range, subnormal ones included (which gave NaN or lost the low limb);
+// and the C99 Annex F special values, with the sign of zero. The low and the default accuracy
+// levels share the table-driven kernel and its bounds; fpmp2_accuracy::high has polynomial
+// kernels behind the same entry code and is held to tighter bounds on the same arguments. The
+// special values are checked at every level.
 
 #include <cuda/fpmp>
 #include <cuda/std/cassert>
@@ -75,8 +78,8 @@ TEST_HOST_DEVICE_FUNC void test_accuracy(const double* tolerance)
   const double atan2_tolerance = tolerance[fn_count];
   const float inf              = cuda::std::numeric_limits<float>::infinity();
   // MPFR 4.2.2, 256-bit precision: the function, x, and its value. Small arguments, the worst
-  // arguments of the sweeps, arguments around 1/32, and the ends of each range, where asin and
-  // atan reach +-pi/2.
+  // arguments of the sweeps, both sides of the first table interval, and the ends of each
+  // range, where asin and atan reach +-pi/2.
   const unary_case cases[] = {
     {fn_asin, 0x1p-40f, 0x1.8p-66f, 0x1.0000006p-40, 0x1.555556d55555ep-123},
     {fn_asin, -0x1.8p-100f, 0x1p-126f, -0x1.7fffffcp-100, -0x1.1fffff7000002p-301},
@@ -398,12 +401,14 @@ TEST_HOST_DEVICE_FUNC void test_atan2_special_values()
 int main(int, char**)
 {
   // asin, acos, atan, atan2: the largest error MPFR sweeps of 2M to 4M arguments per range
-  // found, on the host and on an sm_89 device, rounded up: 2.8 for asin, 3.4 for acos, 1.9
-  // for atan, 3.4 for atan2.
-  const double tolerance[fn_count + 1] = {4.0, 4.5, 3.0, 4.5};
-  test_accuracy<cuda::fp32mp2>(tolerance);
-  test_accuracy<cuda::fp32mp2_low>(tolerance);
-  test_accuracy<cuda::fp32mp2_high>(tolerance);
+  // found, on the host and on an sm_89 device, rounded up. Table-driven kernel (low and
+  // default): 6.5 for asin, 7.8 for acos, 4.1 for atan, 6.4 for atan2. Polynomial kernels
+  // (high): 2.8 for asin, 3.4 for acos, 1.9 for atan, 3.4 for atan2.
+  const double table_tolerance[fn_count + 1] = {8.0, 8.0, 5.0, 7.0};
+  const double high_tolerance[fn_count + 1]  = {4.0, 4.5, 3.0, 4.5};
+  test_accuracy<cuda::fp32mp2>(table_tolerance);
+  test_accuracy<cuda::fp32mp2_low>(table_tolerance);
+  test_accuracy<cuda::fp32mp2_high>(high_tolerance);
   test_special_values<cuda::fp32mp2, float>();
   test_special_values<cuda::fp32mp2_low, float>();
   test_special_values<cuda::fp32mp2_high, float>();
