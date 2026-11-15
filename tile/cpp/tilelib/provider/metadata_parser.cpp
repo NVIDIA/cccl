@@ -2137,6 +2137,12 @@ MetadataResult materialize_call_request(
     {
       threads = 32;
     }
+    // A small Adjacent Difference can use one participant warp even when the
+    // enclosing kernel requests more workers than the logical input contains.
+    if (std::holds_alternative<AdjacentDifferenceSpec>(demand.primitive()) && demand.extent() < threads)
+    {
+      threads = 32;
+    }
   }
   const auto selected = select_implementation(demand, threads, &out->request);
   if (!selected.is_supported())

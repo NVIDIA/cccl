@@ -23,7 +23,7 @@ bool fail(std::string message, std::string* error)
 
 constexpr char adjacent_difference_template[] = R"CUDA(
 %EXTRA_INCLUDE%
-#include <cub/block/block_adjacent_difference.cuh>
+#include <%PRIMITIVE_HEADER%>
 
 namespace {
 #ifndef CUDA_COOP_TILE_BLOCK_THREADS
@@ -35,14 +35,14 @@ constexpr int kBlockThreads = CUDA_COOP_TILE_BLOCK_THREADS;
 #endif
 constexpr int kItemsPerThread = CUDA_COOP_TILE_ITEMS_PER_THREAD;
 using ValueT = %VALUE_T%;
-using BlockAdjacentDifferenceT = cub::BlockAdjacentDifference<ValueT, kBlockThreads>;
+%PRIMITIVE_TYPE%
 struct DifferenceOp {
     __device__ __forceinline__ ValueT operator()(const ValueT& a, const ValueT& b) const {
         return a - b;
     }
 };
 struct ScratchStorage {
-    typename BlockAdjacentDifferenceT::TempStorage temp_storage;
+    %TEMP_STORAGE_TYPE% temp_storage;
 };
 static_assert(sizeof(ScratchStorage) <= %ADVERTISED_SCRATCH_BYTES%,
               "[LP-SCRATCH-001] advertised BlockAdjacentDifference scratch is too small");
@@ -55,20 +55,41 @@ extern "C" __device__ void %ENTRY_NAME%(
     ValueT* output_rmem,
     void* scratch_smem)
 {
-    auto& scratch = *reinterpret_cast<ScratchStorage*>(scratch_smem);
+    %SCRATCH_REFERENCE%
     ValueT thread_data[kItemsPerThread];
 #pragma unroll
     for (int i = 0; i < kItemsPerThread; ++i) {
         thread_data[i] = input_rmem[i];
     }
     ValueT thread_out[kItemsPerThread];
-    BlockAdjacentDifferenceT(scratch.temp_storage).%METHOD%(thread_data, thread_out, DifferenceOp{});
+%DIFFERENCE_CALL%
 #pragma unroll
     for (int i = 0; i < kItemsPerThread; ++i) {
         output_rmem[i] = thread_out[i];
     }
-    __syncthreads();
+    %FINAL_SYNC%
 }
+)CUDA";
+
+constexpr char warp_subtract_left[] = R"CUDA(
+    const int lane = static_cast<int>(threadIdx.x % 32);
+    const ValueT predecessor = cub::ShuffleUp<32>(thread_data[kItemsPerThread - 1], 1, 0, 0xffffffffu);
+    thread_out[0] = lane == 0 ? thread_data[0] : DifferenceOp{}(thread_data[0], predecessor);
+#pragma unroll
+    for (int i = 1; i < kItemsPerThread; ++i) {
+        thread_out[i] = DifferenceOp{}(thread_data[i], thread_data[i - 1]);
+    }
+)CUDA";
+
+constexpr char warp_subtract_right[] = R"CUDA(
+    const int lane = static_cast<int>(threadIdx.x % 32);
+    const ValueT successor = cub::ShuffleDown<32>(thread_data[0], 1, 31, 0xffffffffu);
+#pragma unroll
+    for (int i = 0; i < kItemsPerThread - 1; ++i) {
+        thread_out[i] = DifferenceOp{}(thread_data[i], thread_data[i + 1]);
+    }
+    thread_out[kItemsPerThread - 1] = lane == 31 ? thread_data[kItemsPerThread - 1]
+        : DifferenceOp{}(thread_data[kItemsPerThread - 1], successor);
 )CUDA";
 } // namespace
 
@@ -109,12 +130,32 @@ bool emit_adjacent_difference_source(
 
   const std::string& entry_name  = requested_entry_name;
   const std::string include_line = extra_include.empty() ? "" : "#include <" + extra_include + ">\n";
+  const bool warp_scope          = uses_warp_execution_scope(request);
   std::string result             = adjacent_difference_template;
   result                         = replace_all(std::move(result), "%EXTRA_INCLUDE%", include_line);
   result                         = replace_all(std::move(result), "%VALUE_T%", cpp_type);
-  result                         = replace_all(std::move(result), "%METHOD%", method);
-  result                         = replace_all(std::move(result), "%ENTRY_NAME%", entry_name);
-  *source                        = std::move(result);
+  result = replace_all(std::move(result),
+                       "%PRIMITIVE_HEADER%",
+                       warp_scope ? "cub/util_ptx.cuh" : "cub/block/block_adjacent_difference.cuh");
+  result = replace_all(
+    std::move(result),
+    "%PRIMITIVE_TYPE%",
+    warp_scope ? "" : "using BlockAdjacentDifferenceT = cub::BlockAdjacentDifference<ValueT, kBlockThreads>;");
+  result = replace_all(std::move(result),
+                       "%TEMP_STORAGE_TYPE%",
+                       warp_scope ? "unsigned char" : "typename BlockAdjacentDifferenceT::TempStorage");
+  result = replace_all(std::move(result),
+                       "%SCRATCH_REFERENCE%",
+                       warp_scope ? "" : "auto& scratch = *reinterpret_cast<ScratchStorage*>(scratch_smem);");
+  result = replace_all(
+    std::move(result),
+    "%DIFFERENCE_CALL%",
+    warp_scope
+      ? (spec->mode == "subtract_left" ? warp_subtract_left : warp_subtract_right)
+      : "    BlockAdjacentDifferenceT(scratch.temp_storage)." + method + "(thread_data, thread_out, DifferenceOp{});");
+  result  = replace_all(std::move(result), "%FINAL_SYNC%", warp_scope ? "__syncwarp();" : "__syncthreads();");
+  result  = replace_all(std::move(result), "%ENTRY_NAME%", entry_name);
+  *source = std::move(result);
   return true;
 }
 } // namespace cuda::coop::tile::detail::provider

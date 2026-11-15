@@ -18,6 +18,7 @@ from .harness import (
     TILEIR_CONSTANT_PARAMETER_STRING,
     TILEIR_DIM_CONCRETE,
     TILEIR_DTYPE_I32,
+    TILEIR_EXEC_SCOPE_WARP,
     TILEIR_LP_ACCESS_IN,
     TILEIR_LP_ACCESS_INOUT,
     TILEIR_LP_ACCESS_OUT,
@@ -293,6 +294,8 @@ def _resolved_adjacent_difference_call(
     )
     context = _execution_context(architecture)
     context.num_warps_per_cta = resolved_threads // 32
+    if resolved_threads == 32:
+        context.scope = TILEIR_EXEC_SCOPE_WARP
     impl = TileIRForeignImpl(
         _string_view(
             impl_symbol

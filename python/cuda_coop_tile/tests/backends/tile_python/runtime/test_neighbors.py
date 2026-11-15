@@ -16,32 +16,57 @@ def _import_e2e_modules():
     return torch, ct, coop
 
 
-def test_cuda_coop_tile_executes_adjacent_difference_neighbors(monkeypatch):
+@pytest.mark.parametrize(
+    ("num_items", "worker_warps", "dtype"),
+    [
+        (32, None, "int32"),
+        (64, None, "int32"),
+        (128, None, "int32"),
+        (32, 4, "float16"),
+        (64, 4, "float64"),
+        (128, 1, "int64"),
+    ],
+)
+def test_cuda_coop_tile_executes_adjacent_difference_neighbors(
+    monkeypatch, num_items, worker_warps, dtype
+):
     _configure_e2e_environment(monkeypatch)
     torch, _, _ = _import_e2e_modules()
 
-    num_items = 128
     batch_size = 2
-    diffs = torch.arange(num_items, device="cuda", dtype=torch.int32)
+    diffs = torch.arange(num_items, device="cuda", dtype=getattr(torch, dtype))
     diffs = (diffs * 3 + 1).repeat(batch_size, 1)
+    if dtype == "int64":
+        diffs += 1 << 40
+    elif dtype == "float64":
+        diffs += 2.0**-40
     diff_data = diffs.flatten()
     left_out = torch.zeros_like(diff_data)
     right_out = torch.zeros_like(diff_data)
+    preserved = torch.zeros_like(diff_data)
 
-    @ct.kernel
-    def kernel(diffs_in: ct.Array, left_arr: ct.Array, right_arr: ct.Array):
+    options = {} if worker_warps is None else {"num_worker_warps": worker_warps}
+
+    @ct.kernel(**options)
+    def kernel(
+        diffs_in: ct.Array,
+        left_arr: ct.Array,
+        right_arr: ct.Array,
+        preserved_arr: ct.Array,
+    ):
         batch_idx = ct.bid(0)
         diff_tile = ct.load(diffs_in, (batch_idx,), shape=(num_items,))
         left = coop.adjacent_difference_subtract_left(diff_tile)
         right = coop.adjacent_difference_subtract_right(diff_tile)
         ct.store(left_arr, (batch_idx,), left)
         ct.store(right_arr, (batch_idx,), right)
+        ct.store(preserved_arr, (batch_idx,), diff_tile)
 
     ct.launch(
         torch.cuda.current_stream(),
         (batch_size, 1, 1),
         kernel,
-        (diff_data, left_out, right_out),
+        (diff_data, left_out, right_out, preserved),
     )
     torch.cuda.synchronize()
 
@@ -53,6 +78,7 @@ def test_cuda_coop_tile_executes_adjacent_difference_neighbors(monkeypatch):
     expected_right[:, -1] = diffs[:, -1]
     assert torch.equal(left_out.view_as(expected_left), expected_left)
     assert torch.equal(right_out.view_as(expected_right), expected_right)
+    assert torch.equal(preserved, diff_data)
 
 
 @pytest.mark.parametrize("num_items", [128, 512, 1024])
