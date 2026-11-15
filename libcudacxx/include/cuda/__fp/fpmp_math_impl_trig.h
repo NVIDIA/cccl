@@ -1260,7 +1260,8 @@ _CCCL_FPMP_MATH_DISPATCH_1A(atan)
  *   atan2(y, +inf)  = +-0, atan2(y, -inf) = +-pi for finite y
  *   NaN in either argument gives NaN in both limbs
  *
- * Signs are those of the high limbs.
+ * Signs are those of the high limbs. A low-accuracy difference can carry a zero high limb over
+ * a nonzero low one ((1, 0) - (1, 2^-30) is (0, -2^-30)): such an operand is its low limb.
  *
  * The operands are scaled by a common power of two that brings the larger one into
  * [1, 2^64): its reciprocal then stays normal (the device's approximate reciprocal flushes
@@ -1269,13 +1270,24 @@ _CCCL_FPMP_MATH_DISPATCH_1A(atan)
  * --------------------------------------------------------------------
  */
 _CCCL_FPMP_CORE_API void __internal_fpmp2_atan2(
-  const float __y_hi,
-  const float __y_lo,
-  const float __x_hi,
-  const float __x_lo,
-  float* __res_hi,
-  float* __res_lo) noexcept
+  float __y_hi, float __y_lo, float __x_hi, float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
+  // An operand with a zero high limb over a nonzero low limb is that low limb. One test of the
+  // bit patterns keeps this off the path of ordinary operands.
+  if (((::cuda::std::bit_cast<uint32_t>(__x_hi) << 1) == 0u) | ((::cuda::std::bit_cast<uint32_t>(__y_hi) << 1) == 0u))
+  {
+    if (__x_hi == 0.0f && __x_lo != 0.0f)
+    {
+      __x_hi = __x_lo;
+      __x_lo = 0.0f;
+    }
+    if (__y_hi == 0.0f && __y_lo != 0.0f)
+    {
+      __y_hi = __y_lo;
+      __y_lo = 0.0f;
+    }
+  }
+
   const uint32_t __x_bits  = ::cuda::std::bit_cast<uint32_t>(__x_hi);
   const uint32_t __y_bits  = ::cuda::std::bit_cast<uint32_t>(__y_hi);
   const uint32_t __ax_bits = __x_bits & 0x7FFFFFFFu;
@@ -1350,7 +1362,8 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_atan2(
  * reconstructed from __nv_fp128_pow.
  *
  * The conversions do not keep the sign of a zero y, so that case is answered here:
- * atan2(+-0, x) = +-0 for x > 0 or +0, +-pi for x < 0 or -0.
+ * atan2(+-0, x) = +-0 for x > 0 or +0, +-pi for x < 0 or -0. The sign of x is that of its high
+ * limb, or of its low limb under a zero high limb (a low-accuracy difference).
  */
 _CCCL_FPMP_CORE_API void __internal_fpmp2_atan2(
   const double __y_hi,
@@ -1362,7 +1375,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_atan2(
 {
   if (__y_hi == 0.0 && __y_lo == 0.0 && __x_hi == __x_hi)
   {
-    const bool __x_neg = ::cuda::std::signbit(__x_hi);
+    const bool __x_neg = ::cuda::std::signbit((__x_hi == 0.0 && __x_lo != 0.0) ? __x_lo : __x_hi);
     const bool __y_neg = ::cuda::std::signbit(__y_hi);
     const double __hi  = __x_neg ? 0x1.921fb54442d18p+1 : 0.0; // pi = __hi + __lo
     const double __lo  = __x_neg ? 0x1.1a62633145c07p-53 : 0.0;

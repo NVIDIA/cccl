@@ -575,7 +575,10 @@ TEST_HOST_DEVICE_FUNC void test_erfc_ends()
 //
 // Low-accuracy arithmetic can leave one: (1, 2^-30) - 1 is (0, 2^-30) and (2^24, 0.25) - 2^24
 // is (0, 0.25). Such an argument is not a zero, and the functions that return a zero argument
-// with its sign, or unchanged, must not take it for one.
+// with its sign, or unchanged, must not take it for one; atan2 takes such an operand for its
+// low limb, sign included. Two more pairs of that arithmetic: (2^24, -0.25) - (2^24 - 1) is
+// (1, -0.25), which is 0.75 and not next to the end of the domain of atanh, and the limbs of
+// (2, -2) cancel, so that erfinv of it is 0.
 
 // The fp32mp2 kernels give a pair with one nonzero limb the accuracy of that limb.
 TEST_HOST_DEVICE_FUNC bool roughly_eq(double a, double b)
@@ -607,6 +610,25 @@ TEST_HOST_DEVICE_FUNC void test_loose_zero_high_limb()
   assert(roughly_eq(static_cast<double>(expm1(-q)), -0.22119921692859512));
   assert(roughly_eq(static_cast<double>(tanh(-q)), -0.24491866240370913));
 
+  // atan2: a loose operand on either side, and on both
+  const double pi = 3.141592653589793;
+  const T m(0.0f, -0x1p-30f);
+  assert(approx_eq(static_cast<double>(atan2(T(0.0f), m)), pi));
+  assert(approx_eq(static_cast<double>(atan2(T(-0.0f), m)), -pi));
+  assert(is_pos_zero(atan2(T(0.0f), x)) && is_neg_zero(atan2(T(-0.0f), x)));
+  assert(approx_eq(static_cast<double>(atan2(x, T(0.0f))), 0.5 * pi));
+  assert(approx_eq(static_cast<double>(atan2(m, T(0.0f))), -0.5 * pi));
+  assert(approx_eq(static_cast<double>(atan2(x, x)), 0.25 * pi));
+  assert(approx_eq(static_cast<double>(atan2(x, m)), 0.75 * pi));
+  assert(approx_eq(static_cast<double>(atan2(m, m)), -0.75 * pi));
+  assert(approx_eq(static_cast<double>(atan2(x, T(1.0f))), 0x1p-30));
+  assert(approx_eq(static_cast<double>(atan2(m, T(-1.0f))), -pi + 0x1p-30));
+  assert(approx_eq(static_cast<double>(atan2(T(1.0f), m)), 0.5 * pi + 0x1p-30));
+
+  assert(approx_eq(static_cast<double>(atanh(T(1.0f, -0.25f))), 0.97295507452765662));
+  assert(approx_eq(static_cast<double>(atanh(T(-1.0f, 0.25f))), -0.97295507452765662));
+  assert(is_pos_zero(erfinv(T(2.0f, -2.0f))));
+
   using D = cuda::fp64mp2_low;
   const D w(0.0, 0.25);
   assert(approx_eq(static_cast<double>(atan(w)), 0.24497866312686414));
@@ -614,6 +636,9 @@ TEST_HOST_DEVICE_FUNC void test_loose_zero_high_limb()
   assert(approx_eq(static_cast<double>(atan2(w, D(1.0))), 0.24497866312686414));
   assert(approx_eq(static_cast<double>(atan2(w, D(-1.0))), 2.8966139904629289));
   assert(approx_eq(static_cast<double>(atan2(-w, D(-1.0))), -2.8966139904629289));
+  assert(approx_eq(static_cast<double>(atan2(D(0.0), -w)), pi));
+  assert(approx_eq(static_cast<double>(atan2(D(-0.0), -w)), -pi));
+  assert(is_pos_zero(atan2(D(0.0), w)) && is_neg_zero(atan2(D(-0.0), w)));
 }
 
 // ---- llrint and llround at the ends of long long --------------------------------

@@ -1865,9 +1865,11 @@ __internal_fpmp2_erfinv(const float __x_hi, const float __x_lo, float* __res_hi,
     *__res_lo = 0.0f;
     return;
   }
-  if (__x.hi() == 0.0f) /* +-0: the sign is the argument's, which the renormalization drops */
+  if (__x.hi() == 0.0f)
   {
-    *__res_hi = __x_hi;
+    /* +-0 keeps its sign, which the renormalization drops. Both limbs are tested: the limbs of
+     * a low-accuracy pair can cancel ((2, -2) is a zero), and its high limb is not the result. */
+    *__res_hi = (__x_hi == 0.0f && __x_lo == 0.0f) ? __x_hi : 0.0f;
     *__res_lo = 0.0f;
     return;
   }

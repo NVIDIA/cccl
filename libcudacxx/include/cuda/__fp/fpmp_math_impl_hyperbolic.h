@@ -786,19 +786,25 @@ __internal_fpmp2_atanh(const float __x_hi, const float __x_lo, float* __res_hi, 
     /* |x| = 1 - d with d = -abs_lo <= 2^-25, down to a subnormal d, for which
      * the quotient of the log1p form below would overflow:
      *   atanh(|x|) = (ln(2 - d) - ln(d)) / 2 = (ln2 - d/2 - ln(d)) / 2
-     * to d^2/8 < 2^-53, and log1p of the pair (-1, d) is ln(d), below -17. */
-    constexpr float __ln2_hi = 0x1.62e43p-1f; /* ln2 = __ln2_hi + __ln2_lo */
-    constexpr float __ln2_lo = -0x1.05c61p-29f;
-    float __r_hi, __r_lo, __e;
-    ::cuda::__fpmp2_log<float>(-__abs_lo, 0.0f, &__r_hi, &__r_lo);
-    const float __s = ::cuda::__fpmp_fast_two_sum(-__r_hi, __ln2_hi, &__e);
-    __r_hi          = ::cuda::__fpmp_fast_two_sum(
-      __s,
-      ::cuda::__fpmp_add_rn(__e, ::cuda::__fpmp_fma_rn(0.5f, __abs_lo, ::cuda::__fpmp_sub_rn(__ln2_lo, __r_lo))),
-      &__r_lo);
-    *__res_hi = __is_neg ? -0.5f * __r_hi : 0.5f * __r_hi;
-    *__res_lo = __is_neg ? -0.5f * __r_lo : 0.5f * __r_lo;
-    return;
+     * to d^2/8 < 2^-53, and log1p of the pair (-1, d) is ln(d), below -17.
+     * A low-accuracy difference can carry a larger d under a high limb of 1
+     * ((2^24, -0.25) - (2^24 - 1) is (1, -0.25)): that one takes the log1p
+     * form, whose quotient is then in range. */
+    if (__abs_lo >= -0x1p-25f)
+    {
+      constexpr float __ln2_hi = 0x1.62e43p-1f; /* ln2 = __ln2_hi + __ln2_lo */
+      constexpr float __ln2_lo = -0x1.05c61p-29f;
+      float __r_hi, __r_lo, __e;
+      ::cuda::__fpmp2_log<float>(-__abs_lo, 0.0f, &__r_hi, &__r_lo);
+      const float __s = ::cuda::__fpmp_fast_two_sum(-__r_hi, __ln2_hi, &__e);
+      __r_hi          = ::cuda::__fpmp_fast_two_sum(
+        __s,
+        ::cuda::__fpmp_add_rn(__e, ::cuda::__fpmp_fma_rn(0.5f, __abs_lo, ::cuda::__fpmp_sub_rn(__ln2_lo, __r_lo))),
+        &__r_lo);
+      *__res_hi = __is_neg ? -0.5f * __r_hi : 0.5f * __r_hi;
+      *__res_lo = __is_neg ? -0.5f * __r_lo : 0.5f * __r_lo;
+      return;
+    }
   }
 
   __ffloat __x(__x_hi, __x_lo);
