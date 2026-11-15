@@ -166,91 +166,49 @@
 
     Dedicated Implementation Details:
     -------------------------------------------------------------------------
-    exp(x) for fp32mp2:
-      Argument reduction: x = n*ln2 + r, |r| < ln2/2, with ln2 as a Cody-Waite
-      triple (exact n*ln2_hi, error-free sums for the rest).
-      Core: 14-term Taylor series for exp(r) in fp32mp2.
-      Reconstruction: result * 2^n via IEEE-754 exponent manipulation.
-      Accuracy: ~1e-14 relative error (46 of 48 bits) wherever the result's
-      low limb is a normal float (exp(x) >= 2^-102, x >= -70.7); below that
-      the pair holds e + 150 bits for a result near 2^e. Underflows gradually
-      like expf: subnormal high limb down to ln(2^-150) ~= -103.97, zero below.
+    exp(x), exp2(x), exp10(x), expm1(x) for fp32mp2:
+      Table driven, on the tables of pow. x is reduced exactly to a
+      multiple k of ln2/128 (of 1/128 for exp2, of log10(2)/128 for
+      exp10) plus a pair phi, |phi| <= ln2/256, by a three-part
+      Cody-Waite step whose leading constant has 9 bits, so that the
+      error does not grow with |x|:
+        b^x = 2^n * 2^(j/128) * e^phi,   k = 128 n + j
+      2^(j/128) comes from a 128-entry table and e^phi - 1 from a
+      degree-5 polynomial; the scaling by 2^n is applied in two steps,
+      so that a subnormal result is rounded once.  exp2 of an integer
+      is the exact power of two.
+      expm1 takes j from [-64, 63], 2^(j/128) - 1 from a table of its
+      own and e^phi - 1 to full relative accuracy, and returns
+      (2^n - 1) + 2^n (2^(j/128) e^phi - 1); the sum is the result
+      itself for |x| < 0.35, where n = 0.  fpmp2_accuracy::high: below
+      2^-7 in magnitude it is the Taylor series x + x^2 P(x) in pair
+      arithmetic instead, which avoids the cancellation in the buckets
+      next to zero (there 2.4u^2 against 4.4u^2).
+      Accuracy against MPFR: within 3.2u^2 (u = 2^-24), 4.5u^2 for expm1
+      (3.9u^2 at high).
+      Special cases: NaN->NaN, overflow->+inf, underflow->+0 (-1 for
+      expm1), expm1(+-0) = +-0.
 
-    log(x) for fp32mp2:
-      Shared core: x = m*2^e, m in [sqrt(1/2), sqrt(2)],
-      log(m) = 2*atanh(u), u = 2(m-1)/(m+1), degree-8 minimax polynomial
-      in u^2.  The division u = f/g corrects a first quotient with the
-      full float-float numerator and denominator before taking its exact
-      remainder, so the correction term stays below one ulp of the
-      quotient (< 5 u^2 against ~25 u^2 for the generic fast division
-      with the device's 1-ulp reciprocal).  Reconstruction:
-      log(x) = log(m) + e*ln2, e*ln2 as an exact product plus one
-      rounding.  Handles denormals via pre-scaling.  Accuracy: 46 bits
-      where |e| >= 1, 45 bits in [sqrt(1/2), sqrt(2)] (no e*ln2 term
-      to dilute the division and polynomial roundings).
-
-    log1p(x) for fp32mp2:
-      |x| < 1/16: direct Taylor series in (x_hi, x_lo).  Otherwise 1+x
-      is formed as an exact triple s_hi + s_lo + d (two error-free
-      sums) and handed to the log core with d as a third limb: an
-      fp32mp2 pair holds 1+x only to ~2^-48 absolute, and dropping d
-      cost three bits just above the branch point, where
-      log1p(x) ~= x is 16x smaller than 1+x.  Special cases
-      (x = -1 -> -inf, x < -1 -> NaN, +-inf) handled explicitly.
-      Accuracy: 46 bits, 45 bits around |x| = 1/16.
-
-    log2(x), log10(x) for fp32mp2:
-      Over the shared log core, with the integer exponent folded in
-      exactly:
-        log2(x)  = log(m) * (1/ln 2)  + e
-        log10(x) = log(m) * (1/ln 10) + e * log10(2)
-      with the reciprocal as an fp32mp2 constant and e*log10(2) as an
-      exact product plus one rounding.  The constant multiplies only
-      |log(m)| <= 0.35, so its rounding is diluted by |e| >= 1
-      everywhere outside [sqrt(1/2), sqrt(2)].  Accuracy: 46-48 bits
-      where |e| >= 1, 44-45 bits in [sqrt(1/2), sqrt(2)].  Special
-      inputs (x <= 0, +-inf, NaN) are not handled, as for log.
-
-    exp2(x), exp10(x) for fp32mp2:
-      Dedicated implementations following a "single base-2
-      split" strategy.  Pseudocode:
-        n      = round(x * log2(base)) [plain float; exact for exp2]
-        r      = x - n * log10(base)   [exp2: x - n, exact, renormalized
-                                        with x_lo by a Fast2Sum;
-                                        exp10: Cody-Waite triple for
-                                        log10(2) with a 16-bit head and
-                                        error-free sums, as in exp]
-        base^r via the inlined Taylor kernel for the base
-               (`__internal_fpmp2_exp2_kernel`, a_k = (ln 2)^k / k!, or
-               `__internal_fpmp2_exp10_kernel`, b_k = (ln 10)^k / k!)
-        result = 2^n * base^r          [via split-exponent helper]
-      The integer split happens in *base-2* units, so the 2^n factor
-      drops out exactly and the kernels only see |r| <= 0.5 (exp2) or
-      |r| <= log10(2)/2 (exp10).  The reduced argument must reach the
-      kernels as a normalized pair: their float-only Horner phase reads
-      the high word alone, and an x_lo left in the low word (up to
-      2^-18 at |x| ~ 84) cost exp2 five bits above |x| ~ 32.
-      Accuracy: 46 bits on the working range (both); results below
-      2^-102 (subnormal low limb) are limited by the format itself.
-      Overflow / underflow shortcuts (|x| at the float exponent
-      boundary) avoid the wasted polynomial / scaling work when the
-      result is already a rounded +-inf / 0; both underflow gradually
-      through the two-step scaling.
-
-    expm1(x) for fp32mp2:
-      Strategy mirrors log1p:
-        |x_hi| < 1/2:  direct Taylor series
-                       expm1(x) = x + x^2 * (1/2 + x/6 + x^2/24 + ...)
-                       evaluated as 12 mixed-precision Horner terms
-                       (M = 4 split, top 4 plain float, bottom 8 ff).
-        |x_hi| >= 1/2: exp(x) - 1 via fp32mp2 accurate sub against
-                       the constant 1.0; the subtraction loses <= 1
-                       bit because |exp(x) - 1| >= 0.4 in this band.
-      The polynomial branch covers ~25 % of a normal-around-0 input
-      distribution; warp divergence cost stays modest.  Truncation
-      noise at the branch point: omitted x^13 term ~= 0.5^13/13!
-      ~= 1.96*10^-14, well below fp32mp2 ulp at expm1(1/2).
-      Special cases: NaN->NaN, +inf->+inf, -inf->-1, x=0->0.
+    log(x), log2(x), log10(x), log1p(x) for fp32mp2:
+      Table driven, on the table of pow. x = 2^k z with z in
+      [0.701, 1.402); the bucket holding z, one of 128, gives 1/c with
+      9 bits, so that r = z/c - 1 is exact, and ln(c) as three floats:
+        ln(x) = k ln2 + ln(c) + r + r^2 (-1/2 + r P(r)),   |r| < 2^-7.5
+      The bucket around 1 has c = 1, which keeps the result relatively
+      accurate as x -> 1.  No division is involved.
+      log2 and log10 scale ln(z) and add k, or k log10(2), afterwards;
+      log2 of a power of two is exact.  log1p forms r from x itself
+      where 1 + x is in [0.701, 1.402), so that the result keeps the
+      relative accuracy of x as x -> 0, and otherwise takes the
+      logarithm of the pair 1 + x.  fpmp2_accuracy::high: below 2^-7
+      in magnitude log1p is the Taylor series x + x^2 P(x) in pair
+      arithmetic instead, which avoids the cancellation in the buckets
+      next to zero (there 1.8u^2 against 9.8u^2).
+      Accuracy against MPFR: within 5u^2 for log, 6u^2 for log2 and
+      log10, 10u^2 for log1p (8u^2 at high).
+      Special cases: NaN->NaN, +-0->-inf, x<0->NaN, +inf->+inf;
+      subnormal x is scaled into the normal range; log1p(-1) = -inf,
+      log1p(x < -1) = NaN, log1p(+-0) = +-0.
 
     pow(x, y) for fp32mp2:
       pow(x, y) = exp(y * log|x|) with log|x| = e*ln2 + L from the shared
@@ -692,7 +650,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> log1p(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_log1p(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_log1p(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_log1p(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -966,7 +931,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> expm1(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_expm1(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_expm1(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_expm1(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
