@@ -84,10 +84,11 @@ __global__ void adjacent_difference_kernel(const _Tp* input, _Tp* output, size_t
  * from the previous non-empty shard (the degenerate one-element halo): no
  * staging buffer, no host round trip.
  *
- * A map-family call with one extra edge per shard boundary: shard g's kernel
+ * A map-family call with one extra edge per shard boundary: shard g's lane
  * waits (event edge, non-blocking, capture-legal) on the lane of the shard
  * whose element it reads, so a predecessor still being produced on its own
- * lane is observed complete. Everything else follows the map-family contract
+ * lane is observed complete. The edges are taken before the call enqueues
+ * any kernel, so the shards of one call still run concurrently. Everything else follows the map-family contract
  * (`__visit_shards`): stream on the call environment = asynchronous,
  * lane-ordered by default, `composition::bracketed` on request; no stream =
  * synchronous convenience (refused under `sync_policy::forbid`).
@@ -141,15 +142,30 @@ adjacent_difference(const _SIn& in, const _Envs& envs, _SOut&& out, _BinaryOp op
     }
   }
 
+  // The halo edges: a shard reads the last INPUT element of its predecessor,
+  // which was (possibly) produced on the predecessor's lane, so each lane must
+  // observe what its predecessor's lane held before this call. All the edges
+  // are taken on the first visit, before any kernel of this call is enqueued:
+  // taken one visit at a time, the edge of shard g would land after the
+  // kernel of shard g-1 and chain the shards one after the other.
+  bool halo_edges_taken = false;
   __detail::__visit_shards(
     out, envs, call_env, "sharded::adjacent_difference", [&](::std::size_t g, const auto& d_out, cudaStream_t s) {
+      if (!halo_edges_taken)
+      {
+        halo_edges_taken = true;
+        for (const auto h : each(num_shards))
+        {
+          if (out.shard(h).size != 0 && pred[h] != no_pred)
+          {
+            // A no-op when both shards share a stream.
+            __detail::__wait_stream_on(::cuda::get_stream(envs[h]).get(), ::cuda::get_stream(envs[pred[h]]).get());
+          }
+        }
+      }
       const elem_t* prev_last = nullptr;
       if (pred[g] != no_pred)
       {
-        // The halo edge: the predecessor was (possibly) produced on its own
-        // lane; make this lane observe that lane's enqueued work before the
-        // read. A no-op when both shards share a stream.
-        __detail::__wait_stream_on(s, ::cuda::get_stream(envs[pred[g]]).get());
         const auto& p = in.shard(pred[g]);
         prev_last     = p.data + p.size - 1;
       }
