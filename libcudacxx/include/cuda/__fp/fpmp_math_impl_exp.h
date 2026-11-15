@@ -829,15 +829,47 @@ _CCCL_FPMP_MATH_DISPATCH_1A(exp10)
  * arguments on both sides of 2^-7 runs both paths, so the other levels leave the series out.
  * --------------------------------------------------------------------
  */
-template <bool _Series>
-_CCCL_FPMP_CORE_API void
-__internal_fpmp2_expm1_core(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+
+// e^x = 2^n (1 + s) for 2^-52 <= |x_hi| <= 89: returns n, with s in [-0.2929, 0.4142] as a pair.
+_CCCL_FPMP_CORE_API int
+__internal_fpmp2_expm1_reduced(const float __x_hi, const float __x_lo, float* __s_hi, float* __s_lo) noexcept
 {
   constexpr float __g0_hi = 0x1.555556p-3f; // g0 = __g0_hi + __g0_lo, fitted with g1 and g2 by Sollya
   constexpr float __g0_lo = -0x1.55555cp-28f;
   constexpr float __g1    = 0x1.55555ap-5f;
   constexpr float __g2    = 0x1.111114p-7f;
 
+  float __phi_hi, __phi_lo;
+  const int __k = ::cuda::__internal_fpmp2_exp_reduce(
+    __x_hi, __x_lo, __fpmp2_inv_ln2_128, __fpmp2_ln2_128_0, __fpmp2_ln2_128_1, __fpmp2_ln2_128_2, &__phi_hi, &__phi_lo);
+  const float __w = ::cuda::__fpmp_fma_rn(__phi_hi, ::cuda::__fpmp_fma_rn(__phi_hi, __g2, __g1), __g0_lo);
+  float __d_hi, __d_lo;
+  ::cuda::__internal_fpmp2_sq_poly(__phi_hi, __phi_lo, 0.5f, __g0_hi, __w, &__d_hi, &__d_lo);
+  float __e_lo;
+  const float __e_hi = ::cuda::__fpmp_fast_two_sum(__phi_hi, __d_hi, &__e_lo);
+  __e_lo             = ::cuda::__fpmp_add_rn(__e_lo, ::cuda::__fpmp_add_rn(__phi_lo, __d_lo));
+
+  // s = T + e + T e. T is zero or at least twice |e|, and T e is below both.
+  const int __kb                    = __k + 64;
+  const __fpmp2_exp_table_entry __t = __fpmp2_expm1_table[__kb & 127];
+  float __te_lo, __b1, __b2;
+  const float __te_hi = ::cuda::__fpmp_two_mult_fma(__t.__hi, __e_hi, &__te_lo);
+  const float __a     = ::cuda::__fpmp_fast_two_sum(__t.__hi, __e_hi, &__b1);
+  const float __s     = ::cuda::__fpmp_fast_two_sum(__a, __te_hi, &__b2);
+  const float __lo    = ::cuda::__fpmp_add_rn(
+    ::cuda::__fpmp_add_rn(__b1, __b2),
+    ::cuda::__fpmp_add_rn(
+      ::cuda::__fpmp_add_rn(__e_lo, __t.__lo),
+      ::cuda::__fpmp_add_rn(
+        __te_lo, ::cuda::__fpmp_fma_rn(__t.__hi, __e_lo, ::cuda::__fpmp_mul_rn_nocontract(__t.__lo, __e_hi)))));
+  *__s_hi = ::cuda::__fpmp_fast_two_sum(__s, __lo, __s_lo);
+  return __kb >> 7; // floor division
+}
+
+template <bool _Series>
+_CCCL_FPMP_CORE_API void
+__internal_fpmp2_expm1_core(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
+{
   constexpr float __small = _Series ? 0x1p-7f : 0x1p-52f; // below it, the special branch
 
   const float __abs_hi = ::cuda::__fpmp_internal_fabs(__x_hi);
@@ -872,31 +904,8 @@ __internal_fpmp2_expm1_core(const float __x_hi, const float __x_lo, float* __res
     }
     return;
   }
-  float __phi_hi, __phi_lo;
-  const int __k = ::cuda::__internal_fpmp2_exp_reduce(
-    __x_hi, __x_lo, __fpmp2_inv_ln2_128, __fpmp2_ln2_128_0, __fpmp2_ln2_128_1, __fpmp2_ln2_128_2, &__phi_hi, &__phi_lo);
-  const float __w = ::cuda::__fpmp_fma_rn(__phi_hi, ::cuda::__fpmp_fma_rn(__phi_hi, __g2, __g1), __g0_lo);
-  float __d_hi, __d_lo;
-  ::cuda::__internal_fpmp2_sq_poly(__phi_hi, __phi_lo, 0.5f, __g0_hi, __w, &__d_hi, &__d_lo);
-  float __e_lo;
-  const float __e_hi = ::cuda::__fpmp_fast_two_sum(__phi_hi, __d_hi, &__e_lo);
-  __e_lo             = ::cuda::__fpmp_add_rn(__e_lo, ::cuda::__fpmp_add_rn(__phi_lo, __d_lo));
-
-  // s = T + e + T e. T is zero or at least twice |e|, and T e is below both.
-  const int __kb                    = __k + 64;
-  const __fpmp2_exp_table_entry __t = __fpmp2_expm1_table[__kb & 127];
-  float __te_lo, __b1, __b2;
-  const float __te_hi = ::cuda::__fpmp_two_mult_fma(__t.__hi, __e_hi, &__te_lo);
-  const float __a     = ::cuda::__fpmp_fast_two_sum(__t.__hi, __e_hi, &__b1);
-  const float __s     = ::cuda::__fpmp_fast_two_sum(__a, __te_hi, &__b2);
-  float __s_lo        = ::cuda::__fpmp_add_rn(
-    ::cuda::__fpmp_add_rn(__b1, __b2),
-    ::cuda::__fpmp_add_rn(
-      ::cuda::__fpmp_add_rn(__e_lo, __t.__lo),
-      ::cuda::__fpmp_add_rn(
-        __te_lo, ::cuda::__fpmp_fma_rn(__t.__hi, __e_lo, ::cuda::__fpmp_mul_rn_nocontract(__t.__lo, __e_hi)))));
-  const float __s_hi = ::cuda::__fpmp_fast_two_sum(__s, __s_lo, &__s_lo);
-  const int __n      = __kb >> 7; // floor division
+  float __s_hi, __s_lo;
+  const int __n = ::cuda::__internal_fpmp2_expm1_reduced(__x_hi, __x_lo, &__s_hi, &__s_lo);
   if (__n == 0)
   {
     *__res_hi = __s_hi;
