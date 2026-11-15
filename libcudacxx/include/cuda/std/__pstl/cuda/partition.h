@@ -36,16 +36,20 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 _CCCL_DIAG_POP
 
+#  include <cuda/__execution/guarantee.h>
+#  include <cuda/__execution/max_num_items.h>
 #  include <cuda/__functional/always_true_false.h>
 #  include <cuda/__functional/call_or.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__algorithm/partition.h>
+#  include <cuda/std/__cccl/assert.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__execution/env.h>
 #  include <cuda/std/__functional/identity.h>
 #  include <cuda/std/__fwd/execution_policy.h>
 #  include <cuda/std/__iterator/incrementable_traits.h>
@@ -58,6 +62,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__tuple_dir/tuple.h>
 #  include <cuda/std/__type_traits/always_false.h>
+#  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__type_traits/is_integral.h>
 #  include <cuda/std/__utility/move.h>
 
@@ -146,19 +151,25 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
     {
       _CCCL_TRY
       {
+        using _Guarantees = __query_result_or_t<_Policy, ::cuda::execution::__get_guarantees_t, env<>>;
+        using _MaxItems   = __query_result_or_t<_Guarantees,
+                                                ::cuda::execution::__get_max_num_items_t,
+                                                integral_constant<size_t, numeric_limits<size_t>::max()>>;
+        using _ValueType  = iter_value_t<_InputIterator>;
+        // Leave headroom for CUB's padded scan. Keep wide offsets for 64-bit integers to avoid a regression.
+        constexpr bool __use_narrow_offsets = _MaxItems::value < static_cast<size_t>(numeric_limits<int>::max() / 2)
+                                           && !(is_integral_v<_ValueType> && sizeof(_ValueType) == 8);
+
         const auto __count = static_cast<size_t>(::cuda::std::distance(__first, __last));
-        using _ValueType   = iter_value_t<_InputIterator>;
-        // Preserve the original dispatch for 64-bit integers.
-        if constexpr (!(is_integral_v<_ValueType> && sizeof(_ValueType) == 8))
+        _CCCL_ASSERT(__count <= _MaxItems::value, "partition input exceeds the max_num_items guarantee");
+        if constexpr (__use_narrow_offsets)
         {
-          // Leave headroom for padding in CUB's signed 32-bit per-partition scan.
-          if (__count < static_cast<size_t>(numeric_limits<int>::max() / 2))
-          {
-            return __par_impl(
-              __policy, ::cuda::std::move(__first), static_cast<int>(__count), ::cuda::std::move(__pred));
-          }
+          return __par_impl(__policy, ::cuda::std::move(__first), static_cast<int>(__count), ::cuda::std::move(__pred));
         }
-        return __par_impl(__policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__pred));
+        else
+        {
+          return __par_impl(__policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__pred));
+        }
       }
       _CCCL_CATCH (const ::cuda::cuda_error& __err)
       {

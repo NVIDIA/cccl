@@ -19,6 +19,7 @@
 #include <thrust/sequence.h>
 
 #include <cuda/cmath>
+#include <cuda/execution>
 #include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/memory_pool>
@@ -105,6 +106,15 @@ C2H_TEST("cuda::std::partition", "[parallel algorithm]", integral_types)
   {
     const cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
+
+    test_partition(policy, input);
+  }
+
+  SECTION("with a maximum input size guarantee and provided stream")
+  {
+    const cuda::stream stream{cuda::device_ref{0}};
+    const auto policy = cuda::execution::gpu.with(cuda::execution::guarantee(cuda::execution::max_num_items<size>{}))
+                          .with(cuda::get_stream, stream);
 
     test_partition(policy, input);
   }
