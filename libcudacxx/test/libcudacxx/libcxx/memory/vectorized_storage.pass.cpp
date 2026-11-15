@@ -65,8 +65,34 @@ TEST_FUNC void test_alias()
   }
 }
 
+// The words of storage with one alignment are assigned to storage with another alignment
+template <class T, cuda::std::size_t Count, cuda::std::size_t To, cuda::std::size_t From>
+TEST_FUNC void test_assignment()
+{
+  using from_t = cuda::__as_vectorized_storage_t<T, Count, From>;
+  using to_t   = cuda::__as_vectorized_storage_t<T, Count, To>;
+  static_assert(alignof(from_t) == From);
+  static_assert(alignof(to_t) == To);
+
+  from_t from;
+  auto* from_bytes = reinterpret_cast<unsigned char*>(from.data());
+  for (cuda::std::size_t i = 0; i < sizeof(from_t); ++i)
+  {
+    from_bytes[i] = static_cast<unsigned char>(i);
+  }
+  to_t to;
+  to = from;
+  assert(cuda::std::memcmp(to.data(), from.data(), sizeof(to_t)) == 0);
+}
+
 TEST_FUNC void test()
 {
+  test_assignment<char, 16, 16, 4>();
+  test_assignment<char, 16, 4, 16>();
+  test_assignment<short, 8, 16, 8>();
+  test_assignment<int, 8, 32, 4>();
+  test_assignment<double, 4, 32, 16>();
+  test_assignment<three_chars_t, 4, 4, 4>();
   test_alias<char, 1>();
   test_alias<char, 64>();
   test_alias<int, 3>();
