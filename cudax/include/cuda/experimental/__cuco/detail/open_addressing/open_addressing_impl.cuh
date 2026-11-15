@@ -584,7 +584,7 @@ public:
 
     auto __counter = __make_counter(__stream);
 
-    const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
+    const auto __grid_size = detail::__grid_size(__num_keys, __cg_size, 4);
     const auto __config    = ::cuda::make_config(
       ::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<detail::__default_block_size>());
 
