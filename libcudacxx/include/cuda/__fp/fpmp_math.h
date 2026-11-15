@@ -421,16 +421,20 @@
       subnormal operands are ordinary inputs.
 
     erfc(x) for fp32mp2:
-      |x| < 1/2: 1 - x Q(x^2), Q a degree-8 fit of erf(x)/x shared by the
-      small-argument paths of this family.  x >= 1/2: erfcx(x) exp(-x^2), the
-      erfcx kernel below times the exact-argument exp(s x^2): x_hi^2 and
-      2 x_hi x_lo are exact products and every piece above 2^-48 |x^2| enters
-      the reduced argument through error-free sums, so no rounding of x^2
-      reaches the exponent.  x <= -1/2: 2 - erfc(|x|).  Zero above 10.0546875,
-      where erfc(x) < 2^-150 (and 2 below -10.0546875).
+      |x| < 1/2: 1 - x Q(x^2), the small erf (no cancellation).
+      |x| >= 1/2: erfc(x) = erfcx(|x|)*exp(-x^2).
+      Core: erfcx(|x|) = s*R(s - 9/16) with s = 4/(|x|+4), from one reciprocal
+      and a degree-18 minimax polynomial R, combined with a dedicated
+      exp(-x^2) evaluation using a degree-11 polynomial, all in fp32mp2.
+      Uses the identity erfc(-x) = 2 - erfc(x) for negative arguments.
+      The result is 0 (or 2) for |x| > 10.0546875, where erfc(|x|) < 2^-150.
+      fpmp2_accuracy::high: the erfcx kernel below in place of the
+      one-reciprocal kernel for |x| >= 1/2 (about half its error, in more
+      operations), with the same cut-off.  fp64mp2 has one erfc for every level.
 
-    erfcx kernel (a >= 1/2), the basis of erfc, erfcx, normcdf and the
-    inverse error functions:
+    erfcx kernel (a >= 1/2), the basis of erfcx, normcdf and the inverse
+    error functions, and of erfc at fpmp2_accuracy::high (the other levels
+    of erfc have their own for |x| >= 1/2, above):
       (1 + 2a) e^{a^2} erfc(a) ~ P(t), t = (a - 4)/(a + 4), P of degree 22,
       both divisions refined with the exact remainder.
 
@@ -782,7 +786,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> erfc(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_erfc(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_erfc(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_erfc(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
