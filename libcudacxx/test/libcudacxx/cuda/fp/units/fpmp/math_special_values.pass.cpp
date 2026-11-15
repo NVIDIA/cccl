@@ -573,9 +573,15 @@ TEST_HOST_DEVICE_FUNC void test_erfc_ends()
 
 // ---- a zero high limb over a nonzero low limb -----------------------------------
 //
-// Low-accuracy arithmetic can leave one: (1, 2^-30) - 1 is (0, 2^-30). Such an argument is
-// not a zero, and the functions that return a zero argument with its sign must not take it
-// for one.
+// Low-accuracy arithmetic can leave one: (1, 2^-30) - 1 is (0, 2^-30) and (2^24, 0.25) - 2^24
+// is (0, 0.25). Such an argument is not a zero, and the functions that return a zero argument
+// with its sign, or unchanged, must not take it for one.
+
+// The fp32mp2 kernels give a pair with one nonzero limb the accuracy of that limb.
+TEST_HOST_DEVICE_FUNC bool roughly_eq(double a, double b)
+{
+  return cuda::std::fabs(a - b) <= 1e-6 * cuda::std::fabs(b);
+}
 
 TEST_HOST_DEVICE_FUNC void test_loose_zero_high_limb()
 {
@@ -587,6 +593,22 @@ TEST_HOST_DEVICE_FUNC void test_loose_zero_high_limb()
   assert(approx_eq(static_cast<double>(erf(x)), 1.1283791670955126 * 0x1p-30));
   assert(approx_eq(static_cast<double>(sin(-x)), -0x1p-30));
   assert(approx_eq(static_cast<double>(sinpi(-x)), -3.141592653589793 * 0x1p-30));
+
+  const T q(0.0f, 0.25f);
+  assert(roughly_eq(static_cast<double>(expm1(q)), 0.2840254166877415));
+  assert(roughly_eq(static_cast<double>(log1p(q)), 0.22314355131420976));
+  assert(roughly_eq(static_cast<double>(sinh(q)), 0.2526123168081683));
+  assert(roughly_eq(static_cast<double>(tanh(q)), 0.24491866240370913));
+  assert(roughly_eq(static_cast<double>(expm1(-q)), -0.22119921692859512));
+  assert(roughly_eq(static_cast<double>(tanh(-q)), -0.24491866240370913));
+
+  using D = cuda::fp64mp2_low;
+  const D w(0.0, 0.25);
+  assert(approx_eq(static_cast<double>(atan(w)), 0.24497866312686414));
+  assert(approx_eq(static_cast<double>(asin(w)), 0.25268025514207865));
+  assert(approx_eq(static_cast<double>(atan2(w, D(1.0))), 0.24497866312686414));
+  assert(approx_eq(static_cast<double>(atan2(w, D(-1.0))), 2.8966139904629289));
+  assert(approx_eq(static_cast<double>(atan2(-w, D(-1.0))), -2.8966139904629289));
 }
 
 // ---- llrint and llround at the ends of long long --------------------------------

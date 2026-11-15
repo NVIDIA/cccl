@@ -103,8 +103,9 @@ __internal_fpmp2_tanh(const float __x_hi, const float __x_lo, float* __res_hi, f
     return;
   }
 
-  /* +-0 returns +-0 (C99 F.10): the evaluation below would leave +0. */
-  if (__x_hi == 0.0f)
+  /* +-0 returns +-0 (C99 F.10): the evaluation below would leave +0. Both limbs are tested:
+   * a low-accuracy difference can carry a zero high limb over a nonzero low one. */
+  if (__x_hi == 0.0f && __x_lo == 0.0f)
   {
     *__res_hi = __x_hi;
     *__res_lo = __x_lo;
@@ -254,8 +255,9 @@ __internal_fpmp2_sinh(const float __x_hi, const float __x_lo, float* __res_hi, f
     return;
   }
 
-  /* +-0 returns +-0 (C99 F.10): the evaluation below would leave +0. */
-  if (__x_hi == 0.0f)
+  /* +-0 returns +-0 (C99 F.10): the evaluation below would leave +0. Both limbs are tested:
+   * a low-accuracy difference can carry a zero high limb over a nonzero low one. */
+  if (__x_hi == 0.0f && __x_lo == 0.0f)
   {
     *__res_hi = __x_hi;
     *__res_lo = __x_lo;

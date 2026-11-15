@@ -1229,7 +1229,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_nan_both_limbs(double* __res_hi, doubl
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_atan(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
-  if (__x_hi == 0.0) // atan(+-0) = +-0: the conversions do not keep the sign of zero
+  if (__x_hi == 0.0 && __x_lo == 0.0) // atan(+-0) = +-0: the conversions do not keep the sign of zero
   {
     *__res_hi = __x_hi;
     *__res_lo = __x_lo;
@@ -1360,7 +1360,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_atan2(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  if (__y_hi == 0.0 && __x_hi == __x_hi)
+  if (__y_hi == 0.0 && __y_lo == 0.0 && __x_hi == __x_hi)
   {
     const bool __x_neg = ::cuda::std::signbit(__x_hi);
     const bool __y_neg = ::cuda::std::signbit(__y_hi);
@@ -1463,7 +1463,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_acos_from_one(
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_asin(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
-  if (__x_hi == 0.0)
+  if (__x_hi == 0.0 && __x_lo == 0.0)
   {
     *__res_hi = __x_hi;
     *__res_lo = __x_lo;
