@@ -491,24 +491,34 @@
       two 24-bit halves, then calls normcdfinv(p).
 
     sin(x), cos(x), sincos(x) for fp32mp2:
-      Argument reduction: x = n*(pi/2) + r, |r| <= pi/4.
+      Argument reduction: x = n*(pi/2) + r, |r| <= 0.908.
       Three paths based on |x|:
         Tiny (|x| < pi/4):  no reduction needed.
-        Fast (|x| < 2^20):  Cody-Waite with a 4-piece pi/2 (94 bits); every
-          n*c_k is split exactly and the first- and second-order terms are
-          folded with error-free sums, so r keeps 46 bits down to
-          |r| ~ 2^-47 |x| (the previous fp32mp2_high accumulation rounded
-          at the scale of the cancelled partial sums: 37 bits at |x| ~ 1e4).
+        Fast (|x| < 2^20):  Cody-Waite with a 4-piece pi/2 (94 bits);
+          x_hi - n*c_1 is one exact fma, n*c_2 and n*c_3 are split exactly,
+          and the third-order terms are added as an exact triple, so r
+          keeps 46 bits down to |r| ~ 2^-47 |x|.  |r| <= 0.908.
         Large (|x| >= 2^20): Payne-Hanek with a 256-bit 2/pi table and a
           96-bit fixed-point fraction (x_hi and x_lo combined before the
           pi/2 multiply), no fp64 operations; 46 bits down to |r| ~ 2^-46.
-      Core: one shared kernel, sin(r) via 8-term Taylor (r through r^15)
-            and cos(r) via 9-term Taylor (1 through r^16) with r^2 shared;
-            coefficients down to 1/9! (sin) and 1/10! (cos) are float-float
-            (1/8! as a float was the family's 41-bit floor), the ff Horner
-            steps use Fast2Sum.
-      sincos computes both; sin/cos call sincos internally.
+      Core: sin(r) = r (1 + r^2 S(r^2)) and cos(r) = 1 + r^2 C(r^2), S and C
+            minimax polynomials of degree 6 on |r| <= 0.91 with three
+            coefficients as float-float and four as floats; the rounding
+            error of the single-precision part is carried into the ff
+            Horner steps, which use Fast2Sum.
+      sincos and tan evaluate both kernels; sin and cos evaluate one, its
+      coefficients selected by the parity of n.
       Quadrant mapping via n mod 4 with sign/swap adjustment.
+      sin(-0), tan(-0) and the sine of sincos(-0) are -0.
+      fpmp2_accuracy::high: the fast path accumulates x_hi - n*c_1 (an exact
+      product and a TwoSum) and the remaining terms in fp32mp2_high, and the
+      core is one shared Taylor kernel, sin(r) via 8 terms (r through r^15)
+      and cos(r) via 9 terms (1 through r^16) with r^2 shared, coefficients
+      down to 1/9! (sin) and 1/10! (cos) as float-float; sin and cos call
+      sincos.  About 1 u^2 less at the worst argument, in more operations.
+      The tiny and Payne-Hanek paths, the quadrant mapping and the special
+      values are those of the other levels.  fp64mp2 has one sin, cos, tan
+      and sincos for every level.
       Accuracy: 46 bits (sin, cos), 45 bits (tan, the quotient of the two).
 
     sinpi(x), cospi(x), sincospi(x) for fp32mp2:
@@ -517,8 +527,10 @@
       x = n + f with |f| <= 1/2, then f is folded into [-1/4, 1/4] and multiplied
       by the 4-piece pi with exact products and error-free sums.  |x| < 2^-64 is
       evaluated as sinpi(x) = pi*x on a scaled argument, so denormal inputs keep
-      their precision.  sin(r) and cos(r) reuse the sincos kernel.
-      sinpi and cospi call sincospi. fp64mp2 stays on the double-precision fallback.
+      their precision.  sin(r) and cos(r) reuse the sincos kernels: the
+      Taylor kernel at fpmp2_accuracy::high, the minimax kernels otherwise.
+      sinpi and cospi call sincospi. fp64mp2 stays on the double-precision
+      fallback, the same at every level.
       Accuracy: 46 bits.
 
     Placeholder functions:
@@ -695,7 +707,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> sin(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_sin(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_sin(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_sin(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -703,7 +722,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> cos(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_cos(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_cos(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_cos(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -712,7 +738,14 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void
 sincos(const fpmp2<_FpType, _TypeAcc>& __x, fpmp2<_FpType, _TypeAcc>* __s, fpmp2<_FpType, _TypeAcc>* __c) noexcept
 {
   _FpType __sin_hi, __sin_lo, __cos_hi, __cos_lo;
-  ::cuda::__fpmp2_sincos(__x.hi(), __x.lo(), &__sin_hi, &__sin_lo, &__cos_hi, &__cos_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_sincos(__x.hi(), __x.lo(), &__sin_hi, &__sin_lo, &__cos_hi, &__cos_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_sincos(__x.hi(), __x.lo(), &__sin_hi, &__sin_lo, &__cos_hi, &__cos_lo);
+  }
   *__s = fpmp2<_FpType, _TypeAcc>(__sin_hi, __sin_lo);
   *__c = fpmp2<_FpType, _TypeAcc>(__cos_hi, __cos_lo);
 }
@@ -863,7 +896,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> tan(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_tan(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_tan(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_tan(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -1049,7 +1089,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> sinpi(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_sinpi(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_sinpi(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_sinpi(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -1057,7 +1104,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> cospi(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_cospi(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_cospi(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_cospi(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -1066,7 +1120,14 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void
 sincospi(const fpmp2<_FpType, _TypeAcc>& __x, fpmp2<_FpType, _TypeAcc>* __s, fpmp2<_FpType, _TypeAcc>* __c) noexcept
 {
   _FpType __sin_hi, __sin_lo, __cos_hi, __cos_lo;
-  ::cuda::__fpmp2_sincospi(__x.hi(), __x.lo(), &__sin_hi, &__sin_lo, &__cos_hi, &__cos_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_sincospi(__x.hi(), __x.lo(), &__sin_hi, &__sin_lo, &__cos_hi, &__cos_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_sincospi(__x.hi(), __x.lo(), &__sin_hi, &__sin_lo, &__cos_hi, &__cos_lo);
+  }
   *__s = fpmp2<_FpType, _TypeAcc>(__sin_hi, __sin_lo);
   *__c = fpmp2<_FpType, _TypeAcc>(__cos_hi, __cos_lo);
 }

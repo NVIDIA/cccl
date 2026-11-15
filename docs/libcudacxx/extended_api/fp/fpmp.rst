@@ -422,13 +422,16 @@ hardware where FP64 is rationed:
 - **Powers, roots and distances** — ``pow``, ``cbrt``, ``rcbrt``, ``hypot``, ``rhypot``, alongside
   the ``sqrt`` and ``rsqrt`` already named above
 - **Trigonometric** — ``sin``, ``cos``, ``tan``, ``sincos``, ``asin``, ``acos``, ``atan``,
-  ``atan2``, and the pi-scaled ``sinpi``, ``cospi``, ``sincospi``, which split the argument over
-  the limb pair rather than reducing it against a radian multiple of pi. The radian reduction is
-  exact (Payne-Hanek) from ``|x| >= 2^20`` on; below that a four-piece ``pi/2`` leaves the reduced
-  argument an absolute error of about ``n * 2^-100`` for ``n = round(2x/pi)``, so the near-zero
-  one of ``sin`` and ``cos`` loses relative accuracy within ``n * 2^-54`` of a multiple of
-  ``pi/2`` (a few u² at ``2^-40`` from a multiple near ``10^5``, 300 u² at ``2^-53`` from
-  ``161 pi/2``, up to ``10^6`` u² for the float pairs closest to a multiple near ``2^19``)
+  ``atan2``, and the pi-scaled ``sinpi``, ``cospi``, ``sincospi``, which split the argument over the
+  limb pair rather than reducing it against a radian multiple of pi. The radian reduction is exact
+  (Payne-Hanek) from ``|x| >= 2^20`` on; below that a four-piece ``pi/2`` leaves the reduced
+  argument an absolute error of about ``n * 2^-100`` for ``n = round(2x/pi)``, so the near-zero one
+  of ``sin`` and ``cos`` loses relative accuracy within ``n * 2^-54`` of a multiple of ``pi/2`` (a
+  few u² at ``2^-40`` from a multiple near ``10^5``, 300 u² at ``2^-53`` from ``161 pi/2``, up to
+  ``10^6`` u² for the float pairs closest to a multiple near ``2^19``). ``sin``, ``cos``, ``tan``,
+  ``sincos``, ``sinpi``, ``cospi`` and ``sincospi`` evaluate a longer kernel in ``fp32mp2_high``,
+  whose largest error for the sine and the cosine is about a quarter below that of the shorter
+  kernel of the other levels
 - **Hyperbolic** — ``sinh``, ``cosh``, ``tanh``, ``asinh``, ``acosh``, ``atanh`` (``sinh`` and ``cosh``
   stay finite up to ``|x| = 89.416``, where ``exp`` alone overflows from ``88.723``)
 - **Error functions** — ``erf``, ``erfc``, ``erfcx``, ``erfinv``, ``erfcinv`` (``erfc`` has a more
