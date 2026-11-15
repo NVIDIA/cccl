@@ -657,6 +657,23 @@ _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_rsqrt_rn(float __x) noexcept
                     }),
                     (return 1.0f / ::sqrtf(__x);))
 }
+// The seed of the fpmp2 square root kernel: returns y ~ sqrt(a) and stores h ~ 1 / (2 sqrt(a)).
+// y is within an ulp of the root, which keeps the residual a - y^2 an exact single-limb
+// number; h only needs a few bits more than half of a limb. The host takes the correctly
+// rounded square root, the device a single-limb Newton step on its approximate reciprocal
+// square root. A zero a gives y = h = 0.
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE float __fpmp_sqrt_seed(const float __a, float* __h) noexcept
+{
+  float __y;
+  NV_IF_ELSE_TARGET(
+    NV_IS_DEVICE,
+    (const float __r = (__a == 0.0f) ? 0.0f : ::cuda::__fpmp_rsqrt_rn(__a);
+     const float __z = ::cuda::__fpmp_mul_rn(__a, __r);
+     *__h            = ::cuda::__fpmp_mul_rn(0.5f, __r);
+     __y             = ::cuda::__fpmp_fma_rn(*__h, ::cuda::__fpmp_fma_rn(-__z, __z, __a), __z);),
+    (__y = ::sqrtf(__a); *__h = (__a == 0.0f) ? 0.0f : 0.5f / __y;))
+  return __y;
+}
 // Fast single-precision base-2 exp / log mapped to the FP32 SFU approximation units
 // (ex2.approx / lg2.approx) on device and to the libm single-precision routines on the
 // host. Neither is correctly rounded; both only serve as the initial estimate for
@@ -857,6 +874,18 @@ _CCCL_TRIVIAL_HOST_DEVICE_API double __fpmp_rcp_rn(double __x) noexcept
 _CCCL_TRIVIAL_HOST_DEVICE_API double __fpmp_rsqrt_rn(double __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::rsqrt(__x);), (return 1.0 / ::cuda::std::sqrt(__x);))
+}
+// The double-precision seed of the fpmp2 square root kernel: as above, the device taking its
+// reciprocal square root as it is.
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE double __fpmp_sqrt_seed(const double __a, double* __h) noexcept
+{
+  double __y;
+  NV_IF_ELSE_TARGET(
+    NV_IS_DEVICE,
+    (const double __r = (__a == 0.0) ? 0.0 : ::cuda::__fpmp_rsqrt_rn(__a); *__h = ::cuda::__fpmp_mul_rn(0.5, __r);
+     __y                                                                        = ::cuda::__fpmp_mul_rn(__a, __r);),
+    (__y = ::cuda::std::sqrt(__a); *__h = (__a == 0.0) ? 0.0 : 0.5 / __y;))
+  return __y;
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rz(double __x) noexcept
 {

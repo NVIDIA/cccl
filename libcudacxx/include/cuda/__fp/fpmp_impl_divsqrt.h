@@ -345,6 +345,157 @@ __fpmp2_sqrt(const _FpType __a_hi, const _FpType __a_lo, _FpType* __res_hi, _FpT
   }
 } // __fpmp2_sqrt
 
+/*
+ * --------------------------------------------------------------------
+ * Square root & reciprocal square root, fpmp2_accuracy::high
+ * --------------------------------------------------------------------
+ * Both kernels are one Newton step from a single-limb seed, in the form of Alan Karp and
+ * Peter Markstein, High Precision Division and Square Root, ACM TOMS, vol. 23, no. 4,
+ * December 1997, pp. 561-589, with the step's own second-order term added, so that the
+ * error of the seed, squared, does not remain in the result.
+ *
+ * They take a positive, finite operand whose square root's low limb is a normal number
+ * (the square root kernel also takes zero); the entry points below, __fpmp2_high_sqrt and
+ * __fpmp2_high_rsqrt, deal with the rest. The kernels above stay branch-free and serve the
+ * default and low levels, and the math functions that take a root internally.
+ */
+
+/* Compute high-accuracy reciprocal square root. With r the seed and s = 1 - a r^2,
+1/sqrt(a) = r (1 - s)^(-1/2) = r + (r/2) s + (3r/8) s^2 + O(s^3). a r is the single-limb
+product e and its error, to which the low limb's a_lo r is added before both enter s.
+*/
+template <typename _FpType>
+_CCCL_FPMP_CORE_API void
+__fpmp2_high_rsqrt_kernel(const _FpType __a_hi, const _FpType __a_lo, _FpType* __res_hi, _FpType* __res_lo) noexcept
+{
+  const _FpType __r    = ::cuda::__fpmp_rsqrt_rn(__a_hi);
+  _FpType __e          = ::cuda::__fpmp_mul_rn(__a_hi, __r);
+  _FpType __s          = ::cuda::__fpmp_fma_rn(__e, -__r, static_cast<_FpType>(1.0));
+  __e                  = ::cuda::__fpmp_fma_rn(__a_hi, __r, -__e);
+  __e                  = ::cuda::__fpmp_fma_rn(__a_lo, __r, __e);
+  __s                  = ::cuda::__fpmp_fma_rn(__e, -__r, __s);
+  const _FpType __h    = ::cuda::__fpmp_mul_rn(static_cast<_FpType>(0.5), __r);
+  const _FpType __z_hi = ::cuda::__fpmp_mul_rn(__h, __s);
+  _FpType __z_lo       = ::cuda::__fpmp_fma_rn(__h, __s, -__z_hi);
+  // The second-order term (3r/8) s^2 = (3/4) s z.
+  __z_lo            = ::cuda::__fpmp_fma_rn(::cuda::__fpmp_mul_rn(static_cast<_FpType>(0.75), __s), __z_hi, __z_lo);
+  const _FpType __t = ::cuda::__fpmp_add_rn(__r, __z_hi);
+  _FpType __u       = ::cuda::__fpmp_add_rn(::cuda::__fpmp_sub_rn(__r, __t), __z_hi);
+  __u               = ::cuda::__fpmp_add_rn(__u, __z_lo);
+
+  *__res_hi = ::cuda::__fpmp_fast_two_sum(__t, __u, __res_lo);
+} // __fpmp2_high_rsqrt_kernel
+
+/* Compute high-accuracy square root. With y ~ sqrt(a_hi) and e = a - y^2,
+sqrt(a) = y + t - t^2 / (2y) + O(t^3),  t = e / (2y).  t is the product of e and the seed
+h ~ 1 / (2y), corrected by its own residual e - 2y t, so that the accuracy of h does not
+enter.
+*/
+template <typename _FpType>
+_CCCL_FPMP_CORE_API void
+__fpmp2_high_sqrt_kernel(const _FpType __a_hi, const _FpType __a_lo, _FpType* __res_hi, _FpType* __res_lo) noexcept
+{
+  _FpType __h;
+  const _FpType __y    = ::cuda::__fpmp_sqrt_seed(__a_hi, &__h);
+  const _FpType __s    = ::cuda::__fpmp_fma_rn(-__y, __y, __a_hi);
+  const _FpType __e    = ::cuda::__fpmp_add_rn(__s, __a_lo);
+  const _FpType __e_lo = ::cuda::__fpmp_add_rn(::cuda::__fpmp_sub_rn(__s, __e), __a_lo);
+  const _FpType __t    = ::cuda::__fpmp_mul_rn(__h, __e);
+  _FpType __t_lo       = ::cuda::__fpmp_fma_rn(-::cuda::__fpmp_add_rn(__y, __y), __t, __e);
+  __t_lo               = ::cuda::__fpmp_add_rn(__t_lo, __e_lo);
+  __t_lo               = ::cuda::__fpmp_fma_rn(-__t, __t, __t_lo);
+  __t_lo               = ::cuda::__fpmp_mul_rn(__h, __t_lo);
+  const _FpType __r    = ::cuda::__fpmp_add_rn(__y, __t);
+  _FpType __u          = ::cuda::__fpmp_add_rn(::cuda::__fpmp_sub_rn(__y, __r), __t);
+  __u                  = ::cuda::__fpmp_add_rn(__u, __t_lo);
+
+  *__res_hi = ::cuda::__fpmp_fast_two_sum(__r, __u, __res_lo);
+} // __fpmp2_high_sqrt_kernel
+
+/*
+ * --------------------------------------------------------------------
+ * Square root and reciprocal square root over the whole range, fpmp2_accuracy::high
+ * --------------------------------------------------------------------
+ * The kernels above with the IEEE 754 special cases answered on entry, and with operands
+ * too small for the kernels scaled by a power of four, which is exact both ways. The
+ * common case is the first branch and adds nothing to the kernel but its two comparisons:
+ *   sqrt(+-0) = +-0, sqrt(+inf) = +inf, sqrt(x < 0) = NaN, sqrt(NaN) = NaN
+ *   rsqrt(+-0) = +-inf, rsqrt(+inf) = +0, rsqrt(x < 0) = NaN, rsqrt(NaN) = NaN
+ * The square root kernel needs a high limb of at least 2^(2p) times the smallest normal
+ * number (p = 24 or 53 bits), so that the residual of its Newton step and the low limb of
+ * the root are normal numbers; the reciprocal's kernel needs a normal high limb, the
+ * device's approximate seed reading a subnormal as zero. Against MPFR the results are
+ * within 0.5 u^2 of the square root (1.9 u^2 for fp64mp2 on the device) and 2.7 u^2 of
+ * its reciprocal (4 u^2 for fp32mp2 on the device), u = 2^-p.
+ */
+template <typename _FpType>
+_CCCL_FPMP_CORE_API void
+__fpmp2_high_sqrt(const _FpType __a_hi, const _FpType __a_lo, _FpType* __res_hi, _FpType* __res_lo) noexcept
+{
+  constexpr _FpType __max        = (::cuda::std::numeric_limits<_FpType>::max)();
+  constexpr _FpType __kernel_min = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p-78f) : _FpType(0x1.0p-916);
+  if (__a_hi >= __kernel_min && __a_hi <= __max)
+  {
+    ::cuda::__fpmp2_high_sqrt_kernel(__a_hi, __a_lo, __res_hi, __res_lo);
+  }
+  else if (__a_hi == _FpType(0) || __a_hi > __max)
+  {
+    *__res_hi = __a_hi;
+    *__res_lo = _FpType(0);
+  }
+  else if (!(__a_hi > _FpType(0)))
+  {
+    *__res_hi = *__res_lo = ::cuda::std::numeric_limits<_FpType>::quiet_NaN();
+  }
+  else
+  {
+    // 2^(4p) and 2^(-2p)
+    constexpr _FpType __up   = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p96f) : _FpType(0x1.0p212);
+    constexpr _FpType __down = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p-48f) : _FpType(0x1.0p-106);
+    _FpType __r_hi, __r_lo;
+    ::cuda::__fpmp2_high_sqrt_kernel(
+      ::cuda::__fpmp_mul_rn(__a_hi, __up), ::cuda::__fpmp_mul_rn(__a_lo, __up), &__r_hi, &__r_lo);
+    *__res_hi = ::cuda::__fpmp_mul_rn(__r_hi, __down);
+    *__res_lo = ::cuda::__fpmp_mul_rn(__r_lo, __down);
+  }
+}
+
+template <typename _FpType>
+_CCCL_FPMP_CORE_API void
+__fpmp2_high_rsqrt(const _FpType __a_hi, const _FpType __a_lo, _FpType* __res_hi, _FpType* __res_lo) noexcept
+{
+  constexpr _FpType __max = (::cuda::std::numeric_limits<_FpType>::max)();
+  constexpr _FpType __inf = ::cuda::std::numeric_limits<_FpType>::infinity();
+  if (__a_hi >= (::cuda::std::numeric_limits<_FpType>::min)() && __a_hi <= __max)
+  {
+    ::cuda::__fpmp2_high_rsqrt_kernel(__a_hi, __a_lo, __res_hi, __res_lo);
+  }
+  else if (__a_hi == _FpType(0))
+  {
+    *__res_hi = ::cuda::std::signbit(__a_hi) ? -__inf : __inf;
+    *__res_lo = _FpType(0);
+  }
+  else if (__a_hi > __max)
+  {
+    *__res_hi = *__res_lo = _FpType(0);
+  }
+  else if (!(__a_hi > _FpType(0)))
+  {
+    *__res_hi = *__res_lo = ::cuda::std::numeric_limits<_FpType>::quiet_NaN();
+  }
+  else
+  {
+    // 2^(4p) and 2^(2p)
+    constexpr _FpType __up      = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p96f) : _FpType(0x1.0p212);
+    constexpr _FpType __up_sqrt = __fpmp2_is_fp32_v<_FpType> ? _FpType(0x1.0p48f) : _FpType(0x1.0p106);
+    _FpType __r_hi, __r_lo;
+    ::cuda::__fpmp2_high_rsqrt_kernel(
+      ::cuda::__fpmp_mul_rn(__a_hi, __up), ::cuda::__fpmp_mul_rn(__a_lo, __up), &__r_hi, &__r_lo);
+    *__res_hi = ::cuda::__fpmp_mul_rn(__r_hi, __up_sqrt);
+    *__res_lo = ::cuda::__fpmp_mul_rn(__r_lo, __up_sqrt);
+  }
+}
+
 #else // _CCCL_FPMP_USE_LIB
 
 // -- fp32 (single precision) built-in declarations --
@@ -380,6 +531,10 @@ _CCCL_FPMP_BUILTIN_DECL void
 __fp32mp2_sqrt(const float __a_hi, const float __a_lo, float* __res_hi, float* __res_lo) noexcept;
 _CCCL_FPMP_BUILTIN_DECL void
 __fp32mp2_rsqrt(const float __a_hi, const float __a_lo, float* __res_hi, float* __res_lo) noexcept;
+_CCCL_FPMP_BUILTIN_DECL void
+__fp32mp2_high_sqrt(const float __a_hi, const float __a_lo, float* __res_hi, float* __res_lo) noexcept;
+_CCCL_FPMP_BUILTIN_DECL void
+__fp32mp2_high_rsqrt(const float __a_hi, const float __a_lo, float* __res_hi, float* __res_lo) noexcept;
 
 // -- fp64 (double precision) built-in declarations --
 _CCCL_FPMP_BUILTIN_DECL void __fp64mp2_div(
@@ -414,6 +569,10 @@ _CCCL_FPMP_BUILTIN_DECL void
 __fp64mp2_sqrt(const double __a_hi, const double __a_lo, double* __res_hi, double* __res_lo) noexcept;
 _CCCL_FPMP_BUILTIN_DECL void
 __fp64mp2_rsqrt(const double __a_hi, const double __a_lo, double* __res_hi, double* __res_lo) noexcept;
+_CCCL_FPMP_BUILTIN_DECL void
+__fp64mp2_high_sqrt(const double __a_hi, const double __a_lo, double* __res_hi, double* __res_lo) noexcept;
+_CCCL_FPMP_BUILTIN_DECL void
+__fp64mp2_high_rsqrt(const double __a_hi, const double __a_lo, double* __res_hi, double* __res_lo) noexcept;
 
 // -- type-generic template declarations (dispatch to fp32/fp64) --
 template <typename _Tp>
@@ -434,6 +593,12 @@ __fpmp2_sqrt(const _Tp __a_hi, const _Tp __a_lo, _Tp* __res_hi, _Tp* __res_lo) n
 template <typename _Tp>
 _CCCL_HOST_DEVICE_API inline void
 __fpmp2_rsqrt(const _Tp __a_hi, const _Tp __a_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
+template <typename _Tp>
+_CCCL_HOST_DEVICE_API inline void
+__fpmp2_high_sqrt(const _Tp __a_hi, const _Tp __a_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
+template <typename _Tp>
+_CCCL_HOST_DEVICE_API inline void
+__fpmp2_high_rsqrt(const _Tp __a_hi, const _Tp __a_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 
 // -- fp32 template specializations --
 template <>
@@ -492,6 +657,18 @@ __fpmp2_rsqrt<float>(const float __a_hi, const float __a_lo, float* __res_hi, fl
 {
   ::cuda::__fp32mp2_rsqrt(__a_hi, __a_lo, __res_hi, __res_lo);
 }
+template <>
+_CCCL_HOST_DEVICE_API inline void
+__fpmp2_high_sqrt<float>(const float __a_hi, const float __a_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  ::cuda::__fp32mp2_high_sqrt(__a_hi, __a_lo, __res_hi, __res_lo);
+}
+template <>
+_CCCL_HOST_DEVICE_API inline void
+__fpmp2_high_rsqrt<float>(const float __a_hi, const float __a_lo, float* __res_hi, float* __res_lo) noexcept
+{
+  ::cuda::__fp32mp2_high_rsqrt(__a_hi, __a_lo, __res_hi, __res_lo);
+}
 
 // -- fp64 template specializations --
 template <>
@@ -549,6 +726,18 @@ _CCCL_HOST_DEVICE_API inline void
 __fpmp2_rsqrt<double>(const double __a_hi, const double __a_lo, double* __res_hi, double* __res_lo) noexcept
 {
   ::cuda::__fp64mp2_rsqrt(__a_hi, __a_lo, __res_hi, __res_lo);
+}
+template <>
+_CCCL_HOST_DEVICE_API inline void
+__fpmp2_high_sqrt<double>(const double __a_hi, const double __a_lo, double* __res_hi, double* __res_lo) noexcept
+{
+  ::cuda::__fp64mp2_high_sqrt(__a_hi, __a_lo, __res_hi, __res_lo);
+}
+template <>
+_CCCL_HOST_DEVICE_API inline void
+__fpmp2_high_rsqrt<double>(const double __a_hi, const double __a_lo, double* __res_hi, double* __res_lo) noexcept
+{
+  ::cuda::__fp64mp2_high_rsqrt(__a_hi, __a_lo, __res_hi, __res_lo);
 }
 
 #endif // _CCCL_FPMP_USE_LIB

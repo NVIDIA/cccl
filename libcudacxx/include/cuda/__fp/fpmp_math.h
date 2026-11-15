@@ -134,7 +134,7 @@
     - fmin(x,y) : Minimum - dedicated fp32mp2 optimization (lexicographic compare on (hi, lo), NaN-aware)
     - max(x,y)  : Maximum - dedicated fp32mp2 optimization (std::max-like, first-arg tie/unordered behavior)
     - min(x,y)  : Minimum - dedicated fp32mp2 optimization (std::min-like, first-arg tie/unordered behavior)
-    - fdim(x,y) : Positive difference - dedicated fp32mp2 (exact compare, accurate difference)
+    - fdim(x,y) : Positive difference - dedicated fp32mp2 and fp64mp2 (accurate pair subtraction)
 
     Remainder:
     - fmod(x,y) : Floating-point remainder - dedicated fp32mp2
@@ -142,14 +142,14 @@
     - remquo(x,y,*q): Remainder with quotient bits - dedicated fp32mp2 (remainder's reduction)
 
     Distance:
-    - hypot(x,y): Hypotenuse sqrt(x^2+y^2) - dedicated fp32mp2
-    - rhypot(x,y): Reciprocal hypotenuse 1/hypot(x,y) - dedicated fp32mp2
+    - hypot(x,y): Hypotenuse sqrt(x^2+y^2) - dedicated fp32mp2 and fp64mp2
+    - rhypot(x,y): Reciprocal hypotenuse - dedicated fp32mp2 and fp64mp2
 
     Vector Norms:
-    - norm3d(a,b,c)    : 3D Euclidean norm sqrt(a^2+b^2+c^2) - placeholder
-    - norm4d(a,b,c,d)  : 4D Euclidean norm sqrt(a^2+b^2+c^2+d^2) - placeholder
-    - rnorm3d(a,b,c)   : Reciprocal 3D norm - placeholder
-    - rnorm4d(a,b,c,d) : Reciprocal 4D norm - placeholder
+    - norm3d(a,b,c)    : 3D Euclidean norm sqrt(a^2+b^2+c^2) - dedicated fp32mp2 and fp64mp2
+    - norm4d(a,b,c,d)  : 4D Euclidean norm sqrt(a^2+b^2+c^2+d^2) - dedicated fp32mp2 and fp64mp2
+    - rnorm3d(a,b,c)   : Reciprocal 3D norm - dedicated fp32mp2 and fp64mp2
+    - rnorm4d(a,b,c,d) : Reciprocal 4D norm - dedicated fp32mp2 and fp64mp2
 
     Classification (portable prefixed API + conditional standard overloads):
     - fpmp_isfinite(x): Test for finite value - exact on the limb pair (both limbs)
@@ -250,19 +250,6 @@
       1-ulp rcp.approx; rcbrt was 46).  The 2^n scaling is exact; the
       sign is restored at the end.
 
-    hypot(x, y), rhypot(x, y) for fp32mp2:
-      Both inputs scaled by one power of two chosen from the larger
-      magnitude (exact; no overflow or underflow of the squares); x^2 +
-      y^2 formed as a normalized pair from the two error-free squares
-      with their cross terms 2 x_hi x_lo folded in by one fma each, the
-      pieces joined by Fast2Sums in magnitude order; then the sqrt
-      (rsqrt) core and the exact back-scaling by 2^k.  An infinite
-      argument gives +inf (hypot) / +0 (rhypot) even when the other is
-      NaN; rhypot(0, 0) = +inf.  Host model against binary128: 2.6 u^2
-      worst, 0.3 mean (the sqrt core alone is 2.5).  Accuracy: 46 bits,
-      against the 48 bits of the former double fallback, at a small
-      fraction of its cost wherever FP64 is rationed.
-
     sinh(x), cosh(x), tanh(x) for fp32mp2:
       On the reduction and tables of exp and expm1: |x| is reduced to a
       multiple k of ln2/128 plus a pair phi, |phi| <= ln2/256, and none
@@ -317,6 +304,38 @@
       atanh(+-0) = +-0, atanh(+-1) = +-inf, atanh(|x| > 1) = NaN,
       NaN->NaN.  The domains of acosh and atanh are decided on both
       limbs.
+
+    hypot(x, y) for fp32mp2:
+      Both inputs scaled by one power of two chosen from the larger
+      magnitude (exact; no overflow or underflow of the squares); x^2 +
+      y^2 formed as a normalized pair from the two error-free squares
+      with their cross terms 2 x_hi x_lo folded in by one fma each, the
+      pieces joined by Fast2Sums in magnitude order; then the sqrt
+      core and the exact back-scaling by 2^k.  An infinite argument
+      gives +inf even when the other is NaN, a NaN otherwise gives NaN
+      in both limbs, and a norm past FLT_MAX is +inf with a zero low
+      limb.  Host model against binary128: 2.6 u^2 worst, 0.3 mean (the
+      sqrt core alone is 2.5).
+
+    rhypot, norm3d, norm4d, rnorm3d, rnorm4d for fp32mp2 and fp64mp2,
+    hypot for fp64mp2:
+      One kernel for the Euclidean norm of 2, 3 or 4 pairs and its
+      reciprocal.  The operands are scaled by a power of two taken from
+      the largest high limb, so that no square overflows or loses its
+      rounding error to underflow; the squares are formed and summed as
+      pairs, and the sum goes through the pair square root, or the pair
+      reciprocal square root.  No double-precision arithmetic is used
+      for fp32mp2, and fp64mp2 results carry both limbs.
+      Accuracy against MPFR: see fpmp_math_impl_pow.h.
+      Special cases: an infinite operand gives +inf (+0 for the
+      reciprocal) even next to a NaN, otherwise NaN->NaN; all operands
+      zero give +0 (+inf); overflow gives +inf.
+      fpmp2_accuracy::high, fp32mp2: norm3d, norm4d, rnorm3d and
+      rnorm4d convert the operands to double, which holds each pair
+      exactly, and take the norm in double (CUDA's norm3d etc. on the
+      device): within 0.6 u^2 against 5 u^2 for the norms and 8 u^2 for
+      the reciprocals of the pair kernel, at the price of FP64
+      arithmetic.  Same special cases, answered on entry.
 
     ldexp(x, n) for fp32mp2:
       result = x * 2^n built directly in fp32 via bit-cast of the
@@ -1217,7 +1236,14 @@ norm3d(const fpmp2<_FpType, _TypeAcc>& __a,
        const fpmp2<_FpType, _TypeAcc>& __c) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_norm3d(__a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_norm3d(__a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_norm3d(__a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -1229,8 +1255,16 @@ norm4d(const fpmp2<_FpType, _TypeAcc>& __a,
        const fpmp2<_FpType, _TypeAcc>& __d) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_norm4d(
-    __a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), __d.hi(), __d.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_norm4d(
+      __a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), __d.hi(), __d.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_norm4d(
+      __a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), __d.hi(), __d.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -1241,7 +1275,14 @@ rnorm3d(const fpmp2<_FpType, _TypeAcc>& __a,
         const fpmp2<_FpType, _TypeAcc>& __c) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_rnorm3d(__a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_rnorm3d(__a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_rnorm3d(__a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -1253,8 +1294,16 @@ rnorm4d(const fpmp2<_FpType, _TypeAcc>& __a,
         const fpmp2<_FpType, _TypeAcc>& __d) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_rnorm4d(
-    __a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), __d.hi(), __d.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_rnorm4d(
+      __a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), __d.hi(), __d.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_rnorm4d(
+      __a.hi(), __a.lo(), __b.hi(), __b.lo(), __c.hi(), __c.lo(), __d.hi(), __d.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
