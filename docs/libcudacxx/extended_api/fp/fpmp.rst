@@ -438,8 +438,10 @@ hardware where FP64 is rationed:
   table-driven one in ``fp32mp2_low`` and the default level, and polynomial ones in
   ``fp32mp2_high``, 1 to 1.5 bits more accurate for two to three times the instructions; the
   special values are the same at every level
-- **Hyperbolic** — ``sinh``, ``cosh``, ``tanh``, ``asinh``, ``acosh``, ``atanh`` (``sinh`` and ``cosh``
-  stay finite up to ``|x| = 89.416``, where ``exp`` alone overflows from ``88.723``)
+- **Hyperbolic** — ``sinh``, ``cosh``, ``tanh``, ``asinh``, ``acosh``, ``atanh`` (``sinh`` and
+  ``cosh`` stay finite up to ``|x| = 89.416``, where ``exp`` alone overflows from ``88.723``;
+  ``sinh``, ``tanh`` and ``atanh`` have a second ``fp32mp2`` kernel in ``fp32mp2_high``, with about
+  half the worst-case error of the faster one the other levels share)
 - **Error functions** — ``erf``, ``erfc``, ``erfcx``, ``erfinv``, ``erfcinv`` (``erfc`` has a more
   accurate and slower kernel in ``fp32mp2_high``, with about half the error of the other levels
   for ``|x| >= 1/2``)

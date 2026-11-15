@@ -264,53 +264,59 @@
       fraction of its cost wherever FP64 is rationed.
 
     sinh(x), cosh(x), tanh(x) for fp32mp2:
-      sinh: Taylor series x + x^3 P(x^2) (11 terms) for |x| <= 1, else
-      (e - 1/e)/2 with e = exp(|x|).  The exp branch's error is exp's
-      scaled by coth(x) plus the reciprocal's scaled by 1/(e^2x - 1):
-      with the former crossover at 0.6554 that was 1.74 exp + 0.37 div
-      (45 bits; the test suite's worst cases all sat at |x| ~ 0.9), at
-      1 it is 1.31 exp + 0.16 div.  The polynomial cannot take over much
-      further out: its Horner roundings scale with the x^3 term's share
-      and it reads 4.2 u^2 at |x| = 1.5 in the host model.  cosh:
-      (e + 1/e)/2 everywhere.  tanh: degree-22 minimax in x^2 for
-      |x| < 0.6554, saturation to +-1 above 17.5, and 1 - 2/(e^2x + 1)
-      in between, where the quotient's error reaches the result scaled
-      by up to 0.74.  sinh's and tanh's divisions are the refined one
-      (5 u^2 worst, 3.5 with the exact remainder used by tanh, against
-      26 for the generic fast division; cosh keeps the generic one, its
-      reciprocal weighs at most half and the refined one bought 0.5 u^2
-      for 10 % of the latency); the polynomials use the Fast2Sum Horner
-      (bit-identical).  Past exp's overflow (|x| > 88.72) sinh and cosh
-      return +-inf directly (0.5 / inf through the division was 0 * inf
-      = NaN).  Accuracy: 46 bits (sinh and tanh were 45).
+      On the reduction and tables of exp and expm1: |x| is reduced to a
+      multiple k of ln2/128 plus a pair phi, |phi| <= ln2/256, and none
+      of the three evaluates a polynomial in x.
+        sinh: e^(k ln2/128) = 2^n (1 + A) and its reciprocal
+              2^n' (1 + B) from the table of expm1, combined with
+              sinh(phi) and cosh(phi) without a division; for
+              |x| < 0.34 the leading term is A - B, which keeps the
+              relative accuracy down to x = 0.
+        cosh: 2^(n-1) (y + 4^-n / y) with e^|x| = 2^n y from the tail
+              of exp: one reciprocal.
+        tanh: ((1 - z) + s) / ((1 + z) + s) with e^(2|x|) = 2^n (1 + s),
+              z = 2^-n, below 3/4; 1 - 2 z / (y + z) above; and
+              x - x^3/3 + 2 x^5/15 below 2^-12.
+      sinh and cosh scale by 2^(n-1) at the end, so they stay finite up
+      to their own overflow threshold ln(2^129) = 89.416, past the
+      threshold 88.72 of exp.
+      Accuracy against MPFR: within 6.2u^2 (sinh), 3.5u^2 (cosh) and
+      7.4u^2 (tanh), u = 2^-24.
+      fpmp2_accuracy::high types get a second kernel for sinh and tanh
+      (the default and low levels share the one above): a polynomial
+      in x next to zero (|x| < 1.25 for sinh, 0.655 for tanh) and
+      (e - 1/e)/2 or 1 - 2/(e^(2|x|) + 1) with a refined division
+      beyond, within 3.8u^2 (sinh) and 2.3u^2 (tanh), and slower past
+      the polynomial's range.  cosh has one kernel for every level.
+      Special cases: sinh(+-0) = +-0, sinh(+-inf) = +-inf,
+      cosh(+-inf) = +inf, tanh(+-0) = +-0, tanh(+-inf) = +-1, NaN->NaN.
 
     asinh(x), acosh(x), atanh(x) for fp32mp2:
-      Inverse hyperbolic family -- all three reduce to a single log1p
-      call with cancellation-safe arithmetic forms:
-        asinh(x) = sign(x)*log1p(|x| + x^2/(sqrt(x^2+1)+1))
-        acosh(x) = log1p((x-1) + sqrt((x-1)*(x+1)))     for x >= 1
-        atanh(x) = 0.5*sign(x)*log1p(2|x|/(1-|x|))      for |x| >= 0.25
-        atanh(x) = x*(1 + y*P(y)),  y = x^2,             for |x| < 0.25
-                   P(y) = 1/3 + y/5 + y^2/7 + ... + y^11/25
-      The rationalized arguments avoid the (1 - cos)-style cancellation
-      that breaks the textbook formulas around x = 0 (asinh, atanh)
-      and x = 1 (acosh).  acosh's `(x-1)*(x+1)` factorization sidesteps
-      the catastrophic cancellation that `x^2-1` would suffer near 1.
-      atanh's polynomial branch covers ~25 % of the typical work range:
-      it bypasses the divide-driven precision loss in the log1p form
-      around 0 while keeping warp divergence small.  Large-|x| paths
-      (asinh, acosh) switch to log(2|x|) above 2^25 -- early enough
-      that the lo-limb ulp accumulation in the (x^2+1)/(x-1)(x+1) chain
-      doesn't degrade precision, and the dropped 1/(4x^2) correction
-      sits below fp32mp2 ulp throughout the asymptotic region.
-      atanh's division is the refined one with the exact remainder and
-      its argument is split as 2|x| + 2x^2 / (1 - |x|), so the
-      quotient's share of it is |x| (0.25 at the branch point) instead
-      of 1: 44 -> 46 bits.  x_hi = +-1 with a low limb pointing inwards
-      is inside atanh's domain (it returned NaN).  asinh and acosh stay
-      at 45 bits: their worst cases are log1p arguments near sqrt(2) - 1
-      (|x| ~ 0.35 for asinh, x ~ 1.06 for acosh), the log core's e = 0
-      band; the refined division in asinh did not move them.
+      Each forms the argument of one logarithm from the limbs, with
+      every sum that can cancel taken exactly:
+        asinh(|x|) = log1p(|x| + x^2/(1 + r)), r = sqrt(1 + x^2), |x| < 3/4
+                   = log(|x| + r)                              up to 2^25
+                   = log(|x|) + ln2                            beyond
+        acosh(x)   = log1p(d + r), d = x - 1, r = sqrt(d (d + 2)), x < 5/4
+                   = log(x + r)                                up to 2^25
+                   = log(x) + ln2                              beyond
+        atanh(|x|) = |x| + |x|^3 P(x^2)                        for |x| < 1/4
+                   = log1p(2|x|/(1 - |x|))/2                   up to 1
+      The log1p forms keep the relative accuracy of the result where it
+      is small (x near 0, or near 1 for acosh); where the result is
+      above 0.69 the logarithm of the sum itself is as accurate.  For
+      x - 1 < 2^-60 acosh is sqrt(2 (x - 1)).
+      Accuracy against MPFR: within 7u^2 (asinh), 10u^2 (acosh) and
+      9.3u^2 (atanh).
+      fpmp2_accuracy::high types get a second kernel for atanh, which
+      splits the exact 2|x| off the argument of log1p and refines the
+      division of the rest: within 5.2u^2.  asinh and acosh have one
+      kernel for every level.
+      Special cases: asinh(+-0) = +-0, asinh(+-inf) = +-inf,
+      acosh(1) = +0, acosh(+inf) = +inf, acosh(x < 1) = NaN,
+      atanh(+-0) = +-0, atanh(+-1) = +-inf, atanh(|x| > 1) = NaN,
+      NaN->NaN.  The domains of acosh and atanh are decided on both
+      limbs.
 
     ldexp(x, n) for fp32mp2:
       result = x * 2^n built directly in fp32 via bit-cast of the
@@ -790,7 +796,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> sinh(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_sinh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_sinh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_sinh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -806,7 +819,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> tanh(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_tanh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_tanh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_tanh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -890,7 +910,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> atanh(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_atanh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_atanh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_atanh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
