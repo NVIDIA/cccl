@@ -29,9 +29,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/device/device_transform.cuh>
+
 #include <cuda/std/functional>
+#include <cuda/std/tuple>
 
 #include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__sharded/algorithm/transform/transform.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
 #include <cuda/experimental/__sharded/concepts/guards.cuh>
 #include <cuda/experimental/__sharded/container/default_envs.cuh>
@@ -48,28 +52,18 @@ namespace cuda::experimental::sharded
 namespace reserved
 {
 /**
- * @brief Per-shard adjacent difference kernel.
+ * @brief Boundary element of a shard's adjacent difference.
  *
- * output[i] = op(input[i], input[i-1]) for i > 0.
  * output[0] = op(input[0], *prev_last) when a predecessor exists (the last
  * element of the previous non-empty shard, read in place), otherwise input[0].
+ * The interior, output[i] = op(input[i], input[i-1]) for i > 0, is a
+ * `cub::DeviceTransform` over the shard's input and the same input shifted by
+ * one element.
  */
 template <typename _Tp, typename _BinaryOp>
-__global__ void adjacent_difference_kernel(const _Tp* input, _Tp* output, size_t n, const _Tp* prev_last, _BinaryOp op)
+__global__ void adjacent_difference_boundary_kernel(const _Tp* input, _Tp* output, const _Tp* prev_last, _BinaryOp op)
 {
-  // Promote before multiplying: blockIdx.x * blockDim.x overflows unsigned
-  // int for grids past 2^32 threads. Callers never launch over empty shards,
-  // so thread 0 writing output[0] unconditionally is safe.
-  const size_t idx = size_t{blockIdx.x} * blockDim.x + threadIdx.x;
-
-  if (idx == 0)
-  {
-    output[0] = prev_last ? op(input[0], *prev_last) : input[0];
-  }
-  else if (idx < n)
-  {
-    output[idx] = op(input[idx], input[idx - 1]);
-  }
+  output[0] = prev_last ? op(input[0], *prev_last) : input[0];
 }
 } // namespace reserved
 
@@ -169,10 +163,18 @@ adjacent_difference(const _SIn& in, const _Envs& envs, _SOut&& out, _BinaryOp op
         const auto& p = in.shard(pred[g]);
         prev_last     = p.data + p.size - 1;
       }
-      constexpr int block_size = 256;
-      const int num_blocks     = static_cast<int>((d_out.size + block_size - 1) / block_size);
-      reserved::adjacent_difference_kernel<<<num_blocks, block_size, 0, s>>>(
-        in.shard(g).data, d_out.data, d_out.size, prev_last, op);
+      // Callers never visit empty shards: the boundary element always exists.
+      const auto& d_in = in.shard(g);
+      if (d_out.size > 1)
+      {
+        cuda_safe_call(cub::DeviceTransform::Transform(
+          ::cuda::std::tuple{d_in.data + 1, d_in.data},
+          ::cuda::std::tuple{d_out.data + 1},
+          d_out.size - 1,
+          reserved::__tuple_result_op<_BinaryOp>{op},
+          envs[g]));
+      }
+      reserved::adjacent_difference_boundary_kernel<<<1, 1, 0, s>>>(d_in.data, d_out.data, prev_last, op);
       cuda_safe_call(cudaGetLastError());
     });
 }
