@@ -405,21 +405,27 @@
       one-reciprocal kernel for |x| >= 1/2 (about half its error, in more
       operations), with the same cut-off.  fp64mp2 has one erfc for every level.
 
-    erfcx kernel (a >= 1/2), the basis of erfcx, normcdf and the inverse
-    error functions, and of erfc at fpmp2_accuracy::high (the other levels
-    of erfc have their own for |x| >= 1/2, above):
+    erfcx kernel (a >= 1/2), the basis of the inverse error functions, and
+    of erfc, erfcx and normcdf at fpmp2_accuracy::high (at the other levels
+    these three use the one-reciprocal kernel of erfc, above, up to
+    a = 10.0546875, where its fit ends):
       (1 + 2a) e^{a^2} erfc(a) ~ P(t), t = (a - 4)/(a + 4), P of degree 22,
       both divisions refined with the exact remainder.
 
     erfcx(x) for fp32mp2:
-      |x| < 1/2: exp(x^2) (1 - x Q(x^2)).  x >= 1/2: the kernel up to 40,
-      then the asymptotic series (1/(x sqrt pi)) sum (-1)^k (2k-1)!!/(2x^2)^k,
+      |x| < 1/2: exp(x^2) (1 - x Q(x^2)).  x >= 1/2: a kernel up to 40 (the
+      one-reciprocal kernel up to 10.0546875 and the erfcx kernel beyond it;
+      the erfcx kernel throughout at fpmp2_accuracy::high), then the
+      asymptotic series (1/(x sqrt pi)) sum (-1)^k (2k-1)!!/(2x^2)^k,
       8 terms.  x <= -1/2: 2 exp(x^2) - erfcx(|x|); +inf below -9.3824.
 
     normcdf(x) for fp32mp2:
       y = |x|/sqrt 2 < 1/2: (1 +- y Q(y^2))/2; otherwise h = erfcx(y)
       exp(-x^2/2)/2 with the exact-argument exp applied to x itself, h for
-      x < 0 and 1 - h for x > 0.  Zero below -14.5, one from 8.4 on.
+      x < 0 and 1 - h for x > 0; erfcx(y) by the one-reciprocal kernel, or by
+      the erfcx kernel at fpmp2_accuracy::high.  One from 8.4 on; zero below
+      -14.5 at fpmp2_accuracy::high and below -14.219 at the other levels,
+      where the result is under 2^-151.
 
     erfinv(x), erfcinv(q) for fp32mp2:
       Giles' single-precision erfinv as the seed (2^-22 up to
@@ -1193,7 +1199,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> normcdf(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_normcdf(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_normcdf(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_normcdf(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -1225,7 +1238,14 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> erfcx(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_erfcx(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_erfcx(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_erfcx(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
