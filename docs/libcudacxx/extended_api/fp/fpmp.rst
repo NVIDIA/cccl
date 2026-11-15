@@ -431,7 +431,9 @@ hardware where FP64 is rationed:
   ``161 pi/2``, up to ``10^6`` u² for the float pairs closest to a multiple near ``2^19``)
 - **Hyperbolic** — ``sinh``, ``cosh``, ``tanh``, ``asinh``, ``acosh``, ``atanh`` (``sinh`` and ``cosh``
   stay finite up to ``|x| = 89.416``, where ``exp`` alone overflows from ``88.723``)
-- **Error functions** — ``erf``, ``erfc``, ``erfcx``, ``erfinv``, ``erfcinv``
+- **Error functions** — ``erf``, ``erfc``, ``erfcx``, ``erfinv``, ``erfcinv`` (``erfc`` has a more
+  accurate and slower kernel in ``fp32mp2_high``, with about half the error of the other levels
+  for ``|x| >= 1/2``)
 - **Rounding, magnitude and scaling** — ``ceil``, ``floor``, ``trunc``, ``round``, ``fabs``,
   ``ldexp``, ``scalbn``
 - **Minimum, maximum and remainder** — ``fmin``, ``fmax``, ``min``, ``max``, ``fmod``,
