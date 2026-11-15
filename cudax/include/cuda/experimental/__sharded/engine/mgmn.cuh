@@ -267,8 +267,10 @@ struct __lane_ordered_t
 //! environments, as the `cuda::execution::__get_requirements` property the
 //! CUB environment overloads read: the call environment's own requirements
 //! when it carries any (`cuda::execution::require(...)`), else
-//! `determinism::run_to_run` when @p _RunToRun (CUB's local scans default to
-//! `not_guaranteed`; reductions to `run_to_run`), else no requirement.
+//! `determinism::run_to_run` when @p _RunToRun, else no requirement. The
+//! verbs follow CUB's defaults: the reductions pass `true` (CUB's reductions
+//! default to `run_to_run`), the scans pass `false` (CUB's scans default to
+//! `not_guaranteed`; `run_to_run` there is the caller's opt-in).
 template <bool _RunToRun, class _CallEnv>
 [[nodiscard]] auto __mgmn_requirements(const _CallEnv& __call_env)
 {
@@ -289,15 +291,6 @@ template <bool _RunToRun, class _CallEnv>
     return ::cuda::execution::require();
   }
 }
-
-//! @brief Can CUB honor `determinism::run_to_run` for a scan of `_Tp` under
-//! `_Op`? (Its static contract: a known CUB operator on an integral type,
-//! or `plus` on a floating-point type.) Reductions honor it for every
-//! operator.
-template <class _Op, class _Tp>
-inline constexpr bool __scan_run_to_run_v =
-  (::cuda::std::is_integral_v<_Tp> && CUB_NS_QUALIFIER::detail::is_cuda_binary_operator<_Op>)
-  || (::cuda::std::is_floating_point_v<_Tp> && CUB_NS_QUALIFIER::detail::is_cuda_std_plus_v<_Op, _Tp>);
 
 //! @brief A `cuda::mr::resource` that declares no `default_queries`, given
 //! the `device_accessible` property set the MGMN algorithms size their

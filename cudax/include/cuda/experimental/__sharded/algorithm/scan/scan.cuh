@@ -24,10 +24,16 @@
  * their signatures and their contract; the engine is not visible to the
  * caller.
  *
- * Determinism: the per-shard CUB scans run under `determinism::run_to_run`
- * whenever CUB can honor it for the operator and type (its known operators
- * on integers, `plus` on floating point), or under the requirements the call
- * environment carries (`cuda::execution::require`).
+ * Determinism: the per-shard CUB scans run with CUB's own default for a scan
+ * (`determinism::not_guaranteed`), so a sharded scan costs what the per-shard
+ * CUB scans cost. A caller that needs the same bits from one run to the next
+ * asks for it on the call environment,
+ * `cuda::execution::require(cuda::execution::determinism::run_to_run)`, which
+ * is forwarded to the per-shard scans (CUB honors it for its known operators
+ * on integers and for `plus` on floating point, and refuses it at compile
+ * time otherwise). The cross-shard combine is in fixed shard order either
+ * way. `run_to_run` is a statement about one partition: it does not make the
+ * result bit-identical to the whole-array scan or to another shard count.
  *
  * Exclusive semantics are the global ones: `out[i] = fold(init,
  * x_0..x_{i-1})` — init enters the fold exactly once.
@@ -77,7 +83,9 @@ _CCCL_HOST_API void __mgmn_scan(
   const _CallEnv& __call_env,
   const char* __what)
 {
-  const auto __reqs = __mgmn_requirements<__scan_run_to_run_v<_ScanOp, _Tp>>(__call_env);
+  // No requirement of our own: CUB's scan default (`not_guaranteed`) unless
+  // the call environment carries requirements.
+  const auto __reqs = __mgmn_requirements<false>(__call_env);
   __mgmn_drive<true>(
     __data,
     __envs,

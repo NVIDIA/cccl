@@ -14,8 +14,10 @@
  * @brief Run-to-run bit determinism of the sharded reductions and scans on
  *        fractional floating-point data: two runs of every verb from the
  *        same input produce identical bit patterns (`memcmp`). The scans
- *        forward `determinism::run_to_run` to their per-shard CUB scans
- *        (whose environment default is `not_guaranteed`); the cross-shard
+ *        are called with `require(determinism::run_to_run)` on the call
+ *        environment, which they forward to their per-shard CUB scans (the
+ *        default of a scan, sharded or CUB, is `not_guaranteed`); the
+ *        reductions are run-to-run deterministic by default; the cross-shard
  *        folds run in fixed shard order.
  */
 
@@ -65,21 +67,24 @@ void test_type(place_group& group, size_t n, cudaStream_t cs)
   const size_t P   = data.num_shards();
   const auto ce = ::cuda::std::execution::env{::cuda::std::execution::prop{::cuda::get_stream, ::cuda::stream_ref{cs}}};
 
-  // inclusive_sum, exclusive_sum: two runs from the same input
+  // inclusive_sum, exclusive_sum: two runs from the same input, run-to-run
+  // determinism requested on the call environment (the scans' opt-in)
+  const auto rtr    = ::cuda::execution::require(::cuda::execution::determinism::run_to_run);
+  const auto ce_rtr = ::cuda::std::execution::env{ce, rtr};
   data.copy_from_host(input.data());
-  inclusive_sum(data);
+  inclusive_sum(data, rtr);
   const auto inc_1 = host_of(data);
   data.copy_from_host(input.data());
-  inclusive_sum(data);
+  inclusive_sum(data, rtr);
   EXPECT(bits_equal(inc_1, host_of(data)));
 
   data.copy_from_host(input.data());
-  exclusive_sum(data, envs, static_cast<T>(0.3), ce);
+  exclusive_sum(data, envs, static_cast<T>(0.3), ce_rtr);
   cuda_safe_call(cudaStreamSynchronize(cs));
   barrier(envs);
   const auto exc_1 = host_of(data);
   data.copy_from_host(input.data());
-  exclusive_sum(data, envs, static_cast<T>(0.3), ce);
+  exclusive_sum(data, envs, static_cast<T>(0.3), ce_rtr);
   cuda_safe_call(cudaStreamSynchronize(cs));
   barrier(envs);
   EXPECT(bits_equal(exc_1, host_of(data)));
