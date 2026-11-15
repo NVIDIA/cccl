@@ -230,3 +230,58 @@ def test_cuda_coop_tile_scan_prefixes_match_independent_host_fold(
                 row.append(result)
         assert output.cpu().reshape(8, extent).tolist() == expected
         assert torch.equal(source, preserved)
+
+
+@pytest.mark.parametrize(
+    "mode,selection,value,kind",
+    [
+        ("initial", "direct", 3.1, "python"),
+        ("prefix", "direct", 1e100, "python"),
+        ("initial", "methods", 3.1, "python"),
+        ("prefix", "methods", 1e100, "python"),
+        ("initial", "direct", 3.1, "float32"),
+        ("prefix", "direct", 1e100, "runtime"),
+    ],
+)
+def test_float64_scan_control_precision(
+    monkeypatch, mode, selection, value, kind
+):
+    _configure_e2e_environment(monkeypatch)
+    torch, _, _ = _import_e2e_modules()
+    source = torch.zeros(128, device="cuda", dtype=torch.float64)
+    seed = torch.tensor([value], device="cuda", dtype=torch.float64)
+    output = torch.empty_like(source)
+    methods = (
+        "initial_value" if mode == "initial" else "prefix_value",
+        value,
+    )
+
+    @ct.kernel(num_worker_warps=4)
+    def kernel(inp: ct.Array, seeds: ct.Array, out: ct.Array):
+        values = ct.load(inp, (0,), shape=(128,))
+        if kind == "runtime":
+            control = ct.load(seeds, (0,), shape=(1,))
+        elif kind == "float32":
+            control = ct.full((), value, dtype=ct.float32)
+        else:
+            control = value
+        if mode == "initial":
+            if selection == "methods":
+                result = coop.exclusive_scan(values, methods=methods)
+            else:
+                result = coop.exclusive_scan(values, initial_value=control)
+        else:
+            if selection == "methods":
+                result = coop.inclusive_sum(values, methods=methods)
+            else:
+                result = coop.inclusive_sum(values, prefix_value=control)
+        ct.store(out, (0,), result)
+
+    ct.launch(torch.cuda.current_stream(), (1,), kernel, (source, seed, output))
+    torch.cuda.synchronize()
+    expected = (
+        torch.tensor(value, dtype=torch.float32).item()
+        if kind == "float32"
+        else value
+    )
+    assert torch.equal(output, torch.full_like(output, expected))

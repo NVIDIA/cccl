@@ -324,3 +324,31 @@ def test_cuda_coop_tile_executes_merge_sort_pairs_full_and_partial(
         partial_vals_out_2d[:, valid_items:],
         torch.zeros_like(partial_vals_out_2d[:, valid_items:]),
     )
+
+
+@pytest.mark.parametrize("value", [3.1, 1e100])
+@pytest.mark.parametrize("selection", ["direct", "methods"])
+def test_float64_merge_sort_default_precision(monkeypatch, value, selection):
+    _configure_e2e_environment(monkeypatch)
+    torch, _, _ = _import_e2e_modules()
+    source = torch.zeros(128, device="cuda", dtype=torch.float64)
+    source[:3] = torch.tensor([3, 1, 2], device="cuda")
+    output = torch.empty_like(source)
+    methods = ("valid_items", 3, "oob_default", value)
+
+    @ct.kernel(num_worker_warps=4)
+    def kernel(inp: ct.Array, out: ct.Array):
+        values = ct.load(inp, (0,), shape=(128,))
+        if selection == "methods":
+            result = coop.merge_sort_keys(values, methods=methods)
+        else:
+            result = coop.merge_sort_keys(
+                values, valid_items=3, oob_default=value
+            )
+        ct.store(out, (0,), result)
+
+    ct.launch(torch.cuda.current_stream(), (1,), kernel, (source, output))
+    torch.cuda.synchronize()
+    expected = torch.full_like(output, value)
+    expected[:3] = torch.tensor([1, 2, 3], device="cuda")
+    assert torch.equal(output, expected)

@@ -54,6 +54,9 @@ class _Const:
     def get_type(self):
         return self.tile_type
 
+    def get_loose_type(self):
+        return self.tile_type
+
 
 class _TileType:
     def __init__(self, dtype, shape):
@@ -324,6 +327,8 @@ def _load_lowerings_with_cuda_tile_stubs(monkeypatch, tile_library_path=None):
     types_mod = types.ModuleType("cuda.tile._ir.type")
     types_mod.TileTy = _TileType
     types_mod.TokenTy = _TokenType
+    types_mod.LooselyTypedScalar = type("LooselyTypedScalar", (), {})
+    types_mod.TupleTy = type("TupleTy", (), {})
 
     pathfinder = types.ModuleType("cuda.pathfinder")
     pathfinder.find_nvidia_header_directory = lambda library: None
