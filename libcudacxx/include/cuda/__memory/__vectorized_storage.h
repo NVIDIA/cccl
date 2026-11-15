@@ -21,18 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__new/launder.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
-#include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/climits>
 
@@ -43,42 +40,31 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 // 32-byte accesses are supported since PTX ISA 9.0, and only for global memory on sm_100 and newer
 inline constexpr size_t __max_memory_access_width = (__cccl_ptx_isa >= 900ULL) ? 32ull : 16ull;
 
-//! Uninitialized storage of `_NumVectors` vectors of `_WordsPerVector` words, aligned for the widest vector access that
-//! evenly divides it, at most to `_MaxMemoryAccessWidth` but at least to `_MinAlignment`
+//! `_NumWords` words of `_WordType`, aligned to `_Alignment` bytes
 //!
-//! It is equivalent to _WordType[_NumVectors][_WordsPerVector], which represents the _Tp[_Count] of
-//! `__as_vectorized_storage_t` with the alignment and vectorization optimized for the widest memory access that evenly
-//! divides the storage size, at most to `_MaxMemoryAccessWidth` but at least to `_MinAlignment`.
-//!
-//! - The alignment determines how the storage is loaded. The compiler splits a copy of the storage into the widest
-//!   loads that its alignment and size allow, so storage that is only aligned to its words is loaded word by word. The
-//!   alignment must divide the size, so that the storage has no padding and an array of storage has the layout of the
-//!   objects it holds.
-//! - `_WordType` determines how the objects are extracted after the load. Extracting an object from a wider word takes
-//!   a single shift or byte permutation, but an object that spans several narrower words is reassembled from them
-//!   piece by piece. Words as wide as the alignment of the objects avoid the reassembly.
-//! - 32-bit words suit any type aligned to more than `_MaxMemoryAccessWidth`, whatever the layout of its members.
-//!   They have the width of a register, so members aligned to 4 bytes or more occupy whole registers, while wider words
-//!   can make the compiler split the copy into narrower loads or rebuild the members from bytes.
-template <class _WordType, size_t _NumVectors, size_t _WordsPerVector, size_t _MinAlignment, size_t _MaxMemoryAccessWidth>
+//! The compiler copies the storage with accesses of up to `_Alignment` bytes. The alignment must divide the size, so
+//! that an array of storage has the layout of the objects it holds. Storage of another alignment is assigned word by
+//! word, so that the same words can be loaded with accesses of different widths.
+template <class _WordType, size_t _NumWords, size_t _Alignment>
 struct __vectorized_storage_t
 {
-  static_assert(sizeof(_WordType) * _WordsPerVector <= _MaxMemoryAccessWidth,
-                "A vector must fit into a single vector access");
+  static_assert(_NumWords > 0, "Vectorized storage must hold at least one word");
+  static_assert(alignof(_WordType) <= _Alignment, "Vectorized storage must be at least as aligned as its words");
+  static_assert(sizeof(_WordType) * _NumWords % _Alignment == 0, "The alignment must divide the size of the storage");
 
-  using value_type = _WordType[_WordsPerVector];
+  alignas(_Alignment) _WordType __storage_[_NumWords];
 
-  // The widest alignment that evenly divides the storage size
-  static constexpr size_t __max_alignment = size_t{1} << ::cuda::std::countr_zero(sizeof(value_type) * _NumVectors);
-
-  // The chosen alignment determines how the storage is loaded
-  static constexpr size_t __alignment =
-    ::cuda::std::max(_MinAlignment, ::cuda::std::min(__max_alignment, _MaxMemoryAccessWidth));
-
-  // A single array, so that a pointer to the first word can be iterated over the whole storage
-  alignas(__alignment) _WordType __storage_[_NumVectors * _WordsPerVector];
-
-  static_assert(sizeof(__storage_) % __alignment == 0, "Storage size must be a multiple of its alignment");
+  template <size_t _OtherAlignment>
+  _CCCL_API constexpr __vectorized_storage_t&
+  operator=(const __vectorized_storage_t<_WordType, _NumWords, _OtherAlignment>& __other) noexcept
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (size_t __i = 0; __i < _NumWords; ++__i)
+    {
+      __storage_[__i] = __other.__storage_[__i];
+    }
+    return *this;
+  }
 
   [[nodiscard]] _CCCL_API constexpr _WordType* data() noexcept
   {
@@ -96,7 +82,7 @@ struct __vectorized_storage_t
   {
     static_assert(::cuda::std::__cccl_is_integer_v<_Index>, "The index must be an integer");
     static_assert(sizeof(__storage_) % sizeof(_Tp) == 0, "T does not fit in vectorized storage");
-    static_assert(alignof(_Tp) <= __alignment, "T is more aligned than vectorized storage");
+    static_assert(alignof(_Tp) <= _Alignment, "T is more aligned than vectorized storage");
     if constexpr (::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Tp>, _WordType>)
     {
       return __storage_[__index];
@@ -113,7 +99,7 @@ struct __vectorized_storage_t
   {
     static_assert(::cuda::std::__cccl_is_integer_v<_Index>, "The index must be an integer");
     static_assert(sizeof(__storage_) % sizeof(_Tp) == 0, "T does not fit in vectorized storage");
-    static_assert(alignof(_Tp) <= __alignment, "T is more aligned than vectorized storage");
+    static_assert(alignof(_Tp) <= _Alignment, "T is more aligned than vectorized storage");
     if constexpr (::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Tp>, _WordType>)
     {
       return __storage_[__index];
@@ -125,41 +111,40 @@ struct __vectorized_storage_t
   }
 };
 
-template <class _Tp, size_t _Count, size_t _MaxMemoryAccessWidth>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __as_vectorized_storage_impl() noexcept
+//! The width in bytes of the words in which `__as_vectorized_storage_t` holds `_Count` objects of `_Tp`
+//!
+//! - Words of at least 4 bytes keep objects narrower than a register packed in registers, so that the compiler does
+//!   not split a vector into its objects before the code that uses them.
+//! - Words as wide as the alignment of the objects, up to 8 bytes, keep the padding of padded objects within words of
+//!   their members, so that the compiler does not drop words of padding and split a vector load around them.
+//! - The words are no wider than the largest power of two that divides the storage, so that they divide it.
+template <class _Tp, size_t _Count>
+[[nodiscard]] _CCCL_API constexpr size_t __vectorized_storage_word_size() noexcept
 {
   static_assert(_Count > 0, "Vectorized storage must hold at least one object");
-  if constexpr (alignof(_Tp) <= _MaxMemoryAccessWidth)
-  { // Arithmetic types use themselves as the word, except for 128-bit integers. The compiler handles those as two
-    // 64-bit integers, which breaks the vectorized load.
-    using _Word _CCCL_NODEBUG =
-      ::cuda::std::conditional_t<::cuda::std::is_arithmetic_v<_Tp> && sizeof(_Tp) <= 8ull,
-                                 ::cuda::std::remove_cv_t<_Tp>,
-                                 ::cuda::std::__make_nbit_uint_t<::cuda::std::min(alignof(_Tp), size_t{8}) * CHAR_BIT>>;
-    constexpr size_t __num_plain_words = sizeof(_Tp) / sizeof(_Word) * _Count;
-    constexpr size_t __words_per_vector =
-      ::cuda::std::min(size_t{1} << ::cuda::std::countr_zero(__num_plain_words), _MaxMemoryAccessWidth / sizeof(_Word));
-    return __vectorized_storage_t<_Word,
-                                  __num_plain_words / __words_per_vector,
-                                  __words_per_vector,
-                                  alignof(_Tp),
-                                  _MaxMemoryAccessWidth>{};
-  }
-  else
-  { // Default case: use 32 bit words as the vectorized storage
-    return __vectorized_storage_t<::cuda::std::uint32_t,
-                                  ::cuda::ceil_div(sizeof(_Tp), sizeof(::cuda::std::uint32_t)) * _Count,
-                                  1,
-                                  alignof(_Tp),
-                                  _MaxMemoryAccessWidth>{};
-  }
+  const size_t __size_alignment = size_t{1} << ::cuda::std::countr_zero(sizeof(_Tp) * _Count);
+  return ::cuda::std::min(::cuda::std::clamp(alignof(_Tp), size_t{4}, size_t{8}), __size_alignment);
 }
 
-//! Creates storage for _Tp[_Count] effectively as a _WordType[_NumVectors][_WordsPerVector].
-//! The goal is to have the most efficient load and extraction properties
-template <class _Tp, size_t _Count, size_t _MaxMemoryAccessWidth = __max_memory_access_width>
+//! The words in which `__as_vectorized_storage_t` holds `_Count` objects of `_Tp`
+template <class _Tp, size_t _Count>
+using __vectorized_storage_word_t _CCCL_NODEBUG =
+  ::cuda::std::__make_nbit_uint_t<::cuda::__vectorized_storage_word_size<_Tp, _Count>() * CHAR_BIT>;
+
+//! The alignment of the widest access to `_Count` objects of `_Tp`: the largest power of two that divides their size,
+//! at most `__max_memory_access_width`, but at least the alignment of `_Tp`
+template <class _Tp, size_t _Count>
+inline constexpr size_t __vectorized_storage_alignment_v = ::cuda::std::max(
+  alignof(_Tp),
+  ::cuda::std::min(size_t{1} << ::cuda::std::countr_zero(sizeof(_Tp) * _Count), __max_memory_access_width));
+
+//! Storage for `_Tp[_Count]` as words of `__vectorized_storage_word_t<_Tp, _Count>`, aligned to `_Alignment` bytes,
+//! but at least to the alignment of `_Tp`
+template <class _Tp, size_t _Count, size_t _Alignment = __vectorized_storage_alignment_v<_Tp, _Count>>
 using __as_vectorized_storage_t _CCCL_NODEBUG =
-  decltype(::cuda::__as_vectorized_storage_impl<_Tp, _Count, _MaxMemoryAccessWidth>());
+  __vectorized_storage_t<__vectorized_storage_word_t<_Tp, _Count>,
+                         sizeof(_Tp) * _Count / sizeof(__vectorized_storage_word_t<_Tp, _Count>),
+                         ::cuda::std::max(alignof(_Tp), _Alignment)>;
 
 _CCCL_END_NAMESPACE_CUDA
 
