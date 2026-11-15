@@ -38,7 +38,7 @@ def exclusive_sum(
     algorithm : str
         Compile-time choice of ``"raking"``, ``"raking_memoize"``, or
         ``"warp_scans"``. Defaults to ``"raking"``.
-    methods : collections.abc.Mapping or tuple
+    methods : tuple or None
         Compile-time options for ``algorithm`` and ``prefix_value``.
 
     Returns
@@ -88,7 +88,7 @@ def inclusive_sum(
     algorithm : str
         Compile-time choice of ``"raking"``, ``"raking_memoize"``, or
         ``"warp_scans"``. Defaults to ``"raking"``.
-    methods : collections.abc.Mapping or tuple
+    methods : tuple or None
         Compile-time options for ``algorithm`` and ``prefix_value``.
 
     Returns
@@ -152,7 +152,7 @@ def scan(
     algorithm : str
         Compile-time ``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``.
         Defaults to ``"raking"``.
-    methods : collections.abc.Mapping or tuple
+    methods : tuple or None
         Compile-time options for ``scan_op``, ``initial_value``,
         ``prefix_value``, and ``algorithm``. Pass ``mode`` directly.
 
@@ -213,7 +213,7 @@ def exclusive_scan(
     algorithm : str
         Compile-time ``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``.
         Defaults to ``"raking"``.
-    methods : collections.abc.Mapping or tuple
+    methods : tuple or None
         Compile-time options for ``scan_op``, ``initial_value``,
         ``prefix_value``, and ``algorithm``.
 
@@ -273,7 +273,7 @@ def inclusive_scan(
     algorithm : str
         Compile-time ``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``.
         Defaults to ``"raking"``.
-    methods : collections.abc.Mapping or tuple
+    methods : tuple or None
         Compile-time options for ``scan_op``, ``prefix_value``, and
         ``algorithm``; ``initial_value`` may only be ``None``.
 
@@ -332,7 +332,7 @@ def reduce(
         Compile-time ``"raking_commutative_only"``, ``"raking"``, or
         ``"warp_reductions"``. The first requires a commutative operation.
         Defaults to ``"warp_reductions"``.
-    methods : collections.abc.Mapping or tuple
+    methods : tuple or None
         Compile-time options for ``binary_op`` and ``algorithm``.
     broadcast : bool
         Broadcast aggregates back to the input shape when ``True``.
@@ -401,7 +401,7 @@ def sum(
     algorithm : str
         Compile-time ``"raking_commutative_only"``, ``"raking"``, or
         ``"warp_reductions"``. Defaults to ``"warp_reductions"``.
-    methods : collections.abc.Mapping or tuple
+    methods : tuple or None
         Compile-time ``algorithm`` option.
     broadcast : bool
         Broadcast aggregates back to the input shape when ``True``.
@@ -471,7 +471,7 @@ def merge_sort_keys(
         Integer keys require an integer constant; floating-point keys accept
         numeric constants. Runtime values are cast to the key dtype.
         Supply with ``valid_items``.
-    methods : collections.abc.Mapping or tuple
+    methods : tuple or None
         Compile-time ``descending``, ``valid_items``, and ``oob_default``
         options.
 
@@ -537,7 +537,7 @@ def merge_sort_pairs(
         integer constant; floating-point keys accept numeric constants.
         Runtime values are cast to the key dtype. Padded payloads are zeroed
         before sorting.
-    methods : collections.abc.Mapping or tuple
+    methods : tuple or None
         Compile-time ``descending``, ``valid_items``, and ``oob_default``
         options.
 
@@ -612,7 +612,7 @@ def radix_sort_keys(
         Compile-time ``"four_byte"`` (default) or ``"eight_byte"`` bank
         configuration. Aliases are ``4``, ``8``, ``"4"``, ``"8"``, and
         ``"default"`` (four-byte banks).
-    methods : collections.abc.Mapping or tuple
+    methods : tuple or None
         Compile-time values for the seven options above.
 
     Returns
@@ -688,7 +688,7 @@ def radix_sort_pairs(
         Compile-time ``"four_byte"`` (default) or ``"eight_byte"`` bank
         configuration. Aliases are ``4``, ``8``, ``"4"``, ``"8"``, and
         ``"default"`` (four-byte banks).
-    methods : collections.abc.Mapping or tuple
+    methods : tuple or None
         Compile-time values for the seven options above.
 
     Returns
@@ -751,7 +751,7 @@ def topk_max_keys(
         to zero and the key width. Require
         ``0 <= begin_bit < end_bit <= key_bits``. Scalar restrictions match
         ``k``. Signed and floating-point keys use CUB's ordering transform.
-    methods : collections.abc.Mapping or tuple
+    methods : tuple or None
         Compile-time ``begin_bit`` and ``end_bit`` options only.
 
     Returns
@@ -815,7 +815,7 @@ def topk_min_keys(
         to zero and the key width. Require
         ``0 <= begin_bit < end_bit <= key_bits``. Scalar restrictions match
         ``k``. Signed and floating-point keys use CUB's ordering transform.
-    methods : collections.abc.Mapping or tuple
+    methods : tuple or None
         Compile-time ``begin_bit`` and ``end_bit`` options only.
 
     Returns
@@ -880,7 +880,7 @@ def topk_max_pairs(
         to zero and the key width. Require
         ``0 <= begin_bit < end_bit <= key_bits``. Scalar restrictions match
         ``k``. Signed and floating-point keys use CUB's ordering transform.
-    methods : collections.abc.Mapping or tuple
+    methods : tuple or None
         Compile-time ``begin_bit`` and ``end_bit`` options only.
 
     Returns
@@ -948,7 +948,7 @@ def topk_min_pairs(
         to zero and the key width. Require
         ``0 <= begin_bit < end_bit <= key_bits``. Scalar restrictions match
         ``k``. Signed and floating-point keys use CUB's ordering transform.
-    methods : collections.abc.Mapping or tuple
+    methods : tuple or None
         Compile-time ``begin_bit`` and ``end_bit`` options only.
 
     Returns
@@ -995,8 +995,8 @@ def histogram_256(samples: Tile, /, *, methods=None) -> Tile:
         ``uint8`` input of shape ``(N,)``. The implementation's worker width
         must divide both ``N`` and 256.
         ``N`` must be a positive multiple of 32.
-    methods : collections.abc.Mapping or tuple
-        Must be omitted or empty.
+    methods : tuple or None
+        Must be ``None`` or ``()``.
 
     Returns
     -------
@@ -1036,8 +1036,8 @@ def histogram(samples: Tile, /, *, bins: int = 256, methods=None) -> Tile:
         The result extent must be a power of two. A supported worker width
         must divide both ``N`` and ``bins``. For 128 workers, use 128 or
         256 bins and an input extent divisible by 128.
-    methods : collections.abc.Mapping or tuple
-        Must be omitted or empty. There is no algorithm selector.
+    methods : tuple or None
+        Must be ``None`` or ``()``. There is no algorithm selector.
 
     Returns
     -------
@@ -1091,8 +1091,8 @@ def run_length_decode(
         A constant, runtime integral scalar, or single-element integer Tile
         converts to the run-length dtype. The offset must be nonnegative
         and representable in that dtype.
-    methods : collections.abc.Mapping or tuple
-        Must be omitted or empty.
+    methods : tuple or None
+        Must be ``None`` or ``()``.
 
     Returns
     -------
@@ -1149,8 +1149,8 @@ def run_length_decode_with_offsets(
         A constant, runtime integral scalar, or single-element integer Tile
         converts to the run-length dtype. The offset must be nonnegative
         and representable in that dtype.
-    methods : collections.abc.Mapping or tuple
-        Must be omitted or empty.
+    methods : tuple or None
+        Must be ``None`` or ``()``.
 
     Returns
     -------
@@ -1189,8 +1189,8 @@ def discontinuity_flag_heads(value: Tile, /, *, methods=None) -> Tile:
     value : Tile
         Numeric input of shape ``(N,)``.
         ``N`` must be a positive multiple of 32.
-    methods : collections.abc.Mapping or tuple
-        Must be omitted or empty.
+    methods : tuple or None
+        Must be ``None`` or ``()``.
 
     Returns
     -------
@@ -1230,8 +1230,8 @@ def discontinuity_flag_tails(value: Tile, /, *, methods=None) -> Tile:
     value : Tile
         Numeric input of shape ``(N,)``.
         ``N`` must be a positive multiple of 32.
-    methods : collections.abc.Mapping or tuple
-        Must be omitted or empty.
+    methods : tuple or None
+        Must be ``None`` or ``()``.
 
     Returns
     -------
@@ -1272,8 +1272,8 @@ def discontinuity_flag_heads_and_tails(
     value : Tile
         Numeric input of shape ``(N,)``.
         ``N`` must be a positive multiple of 32.
-    methods : collections.abc.Mapping or tuple
-        Must be omitted or empty.
+    methods : tuple or None
+        Must be ``None`` or ``()``.
 
     Returns
     -------
@@ -1313,8 +1313,8 @@ def adjacent_difference_subtract_left(value: Tile, /, *, methods=None) -> Tile:
     value : Tile
         Numeric input of shape ``(N,)``.
         ``N`` must be a positive multiple of 32.
-    methods : collections.abc.Mapping or tuple
-        Must be omitted or empty.
+    methods : tuple or None
+        Must be ``None`` or ``()``.
 
     Returns
     -------
@@ -1354,8 +1354,8 @@ def adjacent_difference_subtract_right(value: Tile, /, *, methods=None) -> Tile:
     value : Tile
         Numeric input of shape ``(N,)``.
         ``N`` must be a positive multiple of 32.
-    methods : collections.abc.Mapping or tuple
-        Must be omitted or empty.
+    methods : tuple or None
+        Must be ``None`` or ``()``.
 
     Returns
     -------
@@ -1400,8 +1400,8 @@ def exchange_striped_to_blocked(
         Required compile-time width ``B``: a multiple of 32 in
         ``[32, 1024]`` that divides ``N``. The kernel must admit this width.
         Changing it changes the permutation.
-    methods : collections.abc.Mapping or tuple
-        Must be omitted or empty.
+    methods : tuple or None
+        Must be ``None`` or ``()``.
 
     Returns
     -------
@@ -1442,8 +1442,8 @@ def exchange_blocked_to_striped(
         Required compile-time width ``B``: a multiple of 32 in
         ``[32, 1024]`` that divides ``N``. The kernel must admit this width.
         Use the same width as the forward exchange to invert it.
-    methods : collections.abc.Mapping or tuple
-        Must be omitted or empty.
+    methods : tuple or None
+        Must be ``None`` or ``()``.
 
     Returns
     -------
@@ -1480,8 +1480,8 @@ def shuffle_up(value: Tile, /, *, methods=None) -> Tile:
         Numeric input of shape ``(N,)``. Multiple items per worker are
         supported; the compiler selects a compatible implementation.
         ``N`` must be a positive multiple of 32.
-    methods : collections.abc.Mapping or tuple
-        Must be omitted or empty.
+    methods : tuple or None
+        Must be ``None`` or ``()``.
 
     Returns
     -------
@@ -1516,8 +1516,8 @@ def shuffle_down(value: Tile, /, *, methods=None) -> Tile:
         Numeric input of shape ``(N,)``. Multiple items per worker are
         supported; the compiler selects a compatible implementation.
         ``N`` must be a positive multiple of 32.
-    methods : collections.abc.Mapping or tuple
-        Must be omitted or empty.
+    methods : tuple or None
+        Must be ``None`` or ``()``.
 
     Returns
     -------
@@ -1559,8 +1559,8 @@ def shuffle_offset(
         Source offset, defaulting to 1. Accepts a constant, runtime scalar,
         or single-element Tile, with ``-N < distance < N``. A positive
         offset reads a higher index and moves values toward lower positions.
-    methods : collections.abc.Mapping or tuple
-        Must be omitted or empty.
+    methods : tuple or None
+        Must be ``None`` or ``()``.
 
     Returns
     -------
@@ -1602,8 +1602,8 @@ def shuffle_rotate(
         Source offset, defaulting to 1. Accepts a constant, runtime scalar,
         or single-element Tile, with ``0 <= distance < N``. Positive values
         move data toward lower output positions.
-    methods : collections.abc.Mapping or tuple
-        Must be omitted or empty.
+    methods : tuple or None
+        Must be ``None`` or ``()``.
 
     Returns
     -------
@@ -1672,8 +1672,8 @@ def radix_rank_keys(
         Compile-time ``"four_byte"`` (default) or ``"eight_byte"`` bank
         configuration. Aliases are ``4``, ``8``, ``"4"``, ``"8"``, and
         ``"default"`` (four-byte banks).
-    methods : collections.abc.Mapping or tuple
-        Must be omitted or empty.
+    methods : tuple or None
+        Must be ``None`` or ``()``.
 
     Returns
     -------

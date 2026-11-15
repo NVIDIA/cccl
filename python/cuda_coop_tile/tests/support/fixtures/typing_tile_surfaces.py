@@ -13,7 +13,12 @@ if TYPE_CHECKING:
     import cuda.coop.tile as tile_coop
 
     tile_value = cast(Tile, object())
-    tile_reduce: Tile = tile_coop.reduce(tile_value)
+    tile_reduce: Tile = tile_coop.reduce(
+        tile_value, methods=("binary_op", "max")
+    )
+    tile_histogram: Tile = tile_coop.histogram(tile_value, methods=())
+    mapping_methods: dict[str, object] = {}
+    tile_coop.histogram(tile_value, methods=mapping_methods)  # pyright: ignore[reportArgumentType]
     tile_scan: Tile = tile_coop.scan(tile_value, mode="inclusive")
     tile_discontinuity: tuple[Tile, Tile] = (
         tile_coop.discontinuity_flag_heads_and_tails(tile_value)

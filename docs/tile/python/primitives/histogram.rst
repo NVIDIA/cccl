@@ -40,7 +40,7 @@ Interface and examples
    divide both the input extent and the bin count. For example, a 128-worker
    implementation can produce 128 or 256 bins.
 ``methods``
-   Must be omitted or empty. The current API does not expose a histogram
+   Must be ``None`` or ``()``. The current API does not expose a histogram
    algorithm selector.
 
 .. rubric:: Example: count byte values

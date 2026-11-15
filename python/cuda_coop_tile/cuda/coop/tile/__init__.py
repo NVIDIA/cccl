@@ -24,14 +24,14 @@ for its result and boundary contracts.
 Examples in the function docstrings assume the ``coop`` import above and
 already loaded Tiles inside a kernel.
 
-The optional ``methods`` argument is a compile-time mapping or flat tuple
-of alternating names and values, such as ``("algorithm", "raking")``.
-Prefer named keyword arguments. A non-``None`` constant keyword overrides
-the corresponding method value; a runtime keyword cannot also appear in
-``methods``. Unknown method keys are errors. Numeric runtime controls
-convert to the required dtype; integer controls use signed 32-bit values,
-except Run Length Decode offsets, which use the unsigned length dtype.
-For integer data, constant seeds and padding keys must be integers, not
+The optional ``methods`` argument is a compile-time flat tuple of alternating
+names and values, such as ``("algorithm", "raking")``. Use ``None`` or ``()``
+when no options are needed. Prefer named keyword arguments. A non-``None``
+constant keyword overrides the corresponding method value; a runtime keyword
+cannot also appear in ``methods``. Unknown method keys are errors. Numeric
+runtime controls convert to the required dtype; integer controls use signed
+32-bit values, except Run Length Decode offsets, which use the unsigned length
+dtype. For integer data, constant seeds and padding keys must be integers, not
 floating-point values or booleans. Invalid constant controls fail during
 compilation; runtime controls must satisfy each family's documented bounds.
 

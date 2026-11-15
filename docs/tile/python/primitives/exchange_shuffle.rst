@@ -66,7 +66,7 @@ Interface and examples
    ``0 <= distance < N``. A positive distance reads from a higher index, so
    data moves toward lower output positions.
 ``methods``
-   Must be omitted or empty for all six functions.
+   Must be ``None`` or ``()`` for all six functions.
 
 .. rubric:: Example: inspect exchange and its inverse
 

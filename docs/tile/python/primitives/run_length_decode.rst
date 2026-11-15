@@ -51,7 +51,7 @@ Interface and examples
    representable in that dtype. A window may begin inside a run or beyond
    the entire sequence.
 ``methods``
-   Must be omitted or empty.
+   Must be ``None`` or ``()``.
 
 ``run_length_decode`` returns a Tile of shape ``(decoded_items,)`` with
 the run-value dtype. ``run_length_decode_with_offsets`` returns

@@ -80,7 +80,7 @@ single-element Tiles, but must satisfy
 ``end_bit - begin_bit <= radix_bits``. ``descending`` is a compile-time boolean
 with a default of ``False``. ``memoize_outer_scan`` and ``inner_scan_algorithm``
 have the same defaults and accepted values as radix sort.
-``methods`` must be omitted or empty.
+``methods`` must be ``None`` or ``()``.
 
 See :ref:`Radix scratch capacity <tile-radix-capacity>` for resource limits
 on these policies.

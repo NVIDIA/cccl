@@ -50,7 +50,7 @@ Interface and examples
 ``value`` is a numeric Tile of shape ``(N,)``. Adjacent difference returns the
 same dtype and shape. Discontinuity returns ``int32`` masks of shape ``(N,)``;
 each element is 0 or 1. The combined function returns two such Tiles in head,
-then tail order. ``methods`` must be omitted or empty.
+then tail order. ``methods`` must be ``None`` or ``()``.
 
 .. rubric:: Example: number equal-value runs
 

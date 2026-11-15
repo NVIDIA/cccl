@@ -95,10 +95,10 @@ Most scalar controls accept a Tile containing one element and normalize its
 shape; TopK requires a scalar or rank-zero Tile.
 
 Option strings, booleans, ``bins``, ``decoded_items``, and ``block_threads``
-are compile-time parameters. ``methods`` is an optional compile-time mapping
-or a flat tuple of alternating names and values, for example
-``methods=("algorithm", "raking")``. Prefer named keyword arguments in new
-code. The family page lists accepted method keys. An explicit non-``None``
+are compile-time parameters. ``methods`` is an optional compile-time flat tuple
+of alternating names and values, for example ``methods=("algorithm", "raking")``.
+Use ``None`` or ``()`` when no options are needed. Prefer named keyword arguments
+in new code. The family page lists accepted method keys. An explicit non-``None``
 constant keyword overrides the corresponding method value. A runtime keyword
 cannot also appear in ``methods``. Unknown method keys are errors.
 
