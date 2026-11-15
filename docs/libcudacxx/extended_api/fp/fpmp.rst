@@ -428,7 +428,10 @@ hardware where FP64 is rationed:
   ``10^6`` u² for the float pairs closest to a multiple near ``2^19``). ``sin``, ``cos``, ``tan``,
   ``sincos``, ``sinpi``, ``cospi`` and ``sincospi`` evaluate a longer kernel in ``fp32mp2_high``,
   whose largest error for the sine and the cosine is about a quarter below that of the shorter
-  kernel of the other levels
+  kernel of the other levels. ``asin``, ``acos``, ``atan`` and ``atan2`` have two kernels: a
+  table-driven one in ``fp32mp2_low`` and the default level, and polynomial ones in
+  ``fp32mp2_high``, 1 to 1.5 bits more accurate for two to three times the instructions; the
+  special values are the same at every level
 - **Hyperbolic** — ``sinh``, ``cosh``, ``tanh``, ``asinh``, ``acosh``, ``atanh`` (``sinh`` and ``cosh``
   stay finite up to ``|x| = 89.416``, where ``exp`` alone overflows from ``88.723``)
 - **Error functions** — ``erf``, ``erfc``, ``erfcx``, ``erfinv``, ``erfcinv`` (``erfc`` has a more
