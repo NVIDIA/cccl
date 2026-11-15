@@ -384,9 +384,16 @@ argument and for NaN, and on the device both return NaN for a subnormal argument
 its accuracy down to a high limb of about ``2^-100``; below that its residual term is subnormal
 and the error grows (11 u² at ``2^-108``). Code that can meet such arguments should test for them
 before the call, and scale a subnormal or tiny argument by an even power of two (and the result
-back by its square root) around it. The math functions below
-return the C99 Annex F values for infinities, NaN and arguments outside their domain, except for
-the sign of a zero result, covered next.
+back by its square root) around it. In the ``high`` types (``fp32mp2_high``, ``fp64mp2_high``)
+``sqrt`` and ``rsqrt`` are a different kernel, which adds the second-order term of its Newton step
+(within ``0.5u²`` and ``2.7u²`` on the host, ``3.9u²`` for ``rsqrt`` on the device, against
+``2.5u²`` and ``8u²``, ``13u²`` on the device, for ``fp32mp2``) and returns the IEEE 754 values:
+``sqrt(±0)`` is ``±0`` and ``rsqrt(±0)`` is ``±inf``, ``sqrt(+inf)`` is ``+inf`` and
+``rsqrt(+inf)`` is ``+0``, a negative argument or NaN gives NaN, and an argument too small for the
+kernel is scaled by a power of four around it, on the host and on the device. It costs about half
+the throughput of the short kernel on a GPU. The math functions below return the C99 Annex F
+values for infinities, NaN and arguments outside their domain, except for the sign of a zero
+result, covered next.
 
 The sign of zero is not tracked, by the arithmetic or by most math functions. A pair is stored
 renormalized, and the renormalization adds the two limbs, which turns a ``-0`` high limb into
@@ -394,19 +401,17 @@ renormalized, and the renormalization adds the two limbs, which turns a ``-0`` h
 ``(-0) * 1`` and ``x * (-0)``, where IEEE 754 gives ``-0``. A zero from ``/`` or from a math
 function carries whichever sign its evaluation happens to leave. The exceptions that do follow C99
 are the operations that act on the sign bit itself (unary negation, ``fabs``, ``copysign``,
-construction from a built-in ``-0.0``) and the rounding functions ``ceil``, ``floor``, ``trunc``,
-``round``, ``rint``, ``nearbyint`` and the fraction of ``modf``, whose zero result carries the sign
-of the argument on the host and the device alike. For ``fp32mp2`` they also include ``sin``,
-``tan`` and the sine of ``sincos``, ``sinpi`` and the sine of ``sincospi``, ``expm1``, ``log1p``,
-``sinh``, ``tanh``, ``asinh``, ``atanh``, ``erf`` and ``erfinv``, which return a zero argument
-unchanged, ``asin``, ``atan`` and ``atan2``, which answer a zero argument on entry (``asin(-0)``
-and ``atan(-0)`` are ``-0``, and ``atan2`` reads the sign bit of a zero ``y``), ``sinpi`` at a
-nonzero integer, whose zero has the sign of the argument, ``cospi``, which is ``+0`` at every
-half-integer, and ``fmax`` and ``fmin``, which order ``-0`` below ``+0``. For ``fp64mp2``,
-``sin(-0)`` and ``atan(-0)`` return ``+0`` where C99 Annex F has ``-0``, and ``atan2`` reads a zero
-argument as ``+0``, so ``atan2(-0, -1)`` is ``+pi``. ``signbit`` reports the high limb. Code that
-distinguishes ``-0`` from ``+0`` anywhere else has to take the sign from the operands, before the
-arithmetic.
+construction from a built-in ``-0.0``), ``sin``, ``tan`` and the sine of ``sincos``, ``sinpi`` and
+the sine of ``sincospi``, ``expm1``, ``log1p``, ``sinh``, ``tanh``, ``asinh``, ``atanh``, ``erf``
+and ``erfinv``, which return a zero argument unchanged, as does ``sqrt`` in the ``high`` types,
+``asin``, ``atan`` and ``atan2``, which answer a zero argument on entry (``asin(-0)`` and
+``atan(-0)`` are ``-0``, and ``atan2`` reads the sign bit of a zero ``y``), ``sinpi`` at a nonzero
+integer, whose zero has the sign of the argument, ``cospi``, which is ``+0`` at every half-integer,
+``fmax`` and ``fmin``, which order ``-0`` below ``+0``, and the rounding functions ``ceil``,
+``floor``, ``trunc``, ``round``, ``rint``, ``nearbyint`` and the fraction of ``modf``, whose zero
+result carries the sign of the argument on the host and the device alike. ``signbit`` reports the
+high limb. Code that distinguishes ``-0`` from ``+0`` anywhere else has to take the sign from the
+operands, before the arithmetic.
 
 ``renormalize(x)`` restores the non-overlap invariant, ``|lo| <= ulp(hi)/2``, which only ``low``
 accuracy can leave broken; see :ref:`accuracy levels <libcudacxx-extended-api-fp-fpmp-accuracy>`
@@ -422,8 +427,12 @@ hardware where FP64 is rationed:
   ``fp32mp2_high``, which keeps them within ``2.4u²`` and ``1.8u²`` there, against ``4.4u²`` and
   ``9.8u²`` at the other levels; the extra branch costs throughput on a GPU where a warp mixes
   arguments on both sides of ``2^-7``)
-- **Powers, roots and distances** — ``pow``, ``cbrt``, ``rcbrt``, ``hypot``, ``rhypot``, alongside
-  the ``sqrt`` and ``rsqrt`` already named above
+- **Powers and roots** — ``pow``, ``cbrt``, ``rcbrt``, alongside the ``sqrt`` and ``rsqrt``
+  already named above
+- **Distances and norms** — ``hypot``, ``rhypot``, ``norm3d``, ``norm4d``, ``rnorm3d``,
+  ``rnorm4d``, for ``fp64mp2`` as well, where they carry both limbs (``fp32mp2_high`` computes
+  the four norms through ``double``, within ``0.6u²``, where the pair kernel of the other levels,
+  with no FP64 operation, errs by up to ``5.1u²``, and ``8.1u²`` for the reciprocals)
 - **Trigonometric** — ``sin``, ``cos``, ``tan``, ``sincos``, ``asin``, ``acos``, ``atan``,
   ``atan2``, and the pi-scaled ``sinpi``, ``cospi``, ``sincospi``, which split the argument over the
   limb pair rather than reducing it against a radian multiple of pi. The radian reduction is exact
@@ -447,16 +456,15 @@ hardware where FP64 is rationed:
   for ``|x| >= 1/2``)
 - **Rounding, magnitude and scaling** — ``ceil``, ``floor``, ``trunc``, ``round``, ``fabs``,
   ``ldexp``, ``scalbn``
-- **Minimum, maximum and remainder** — ``fmin``, ``fmax``, ``min``, ``max``, ``fmod``,
-  ``remainder`` (in ``fp32mp2_high``, ``fmod``, ``remainder`` and ``remquo`` reduce sparse pairs,
-  whose tail sits far below the head, exactly and return the nearest pair to the remainder, as
-  long as the divisor fits in 126 bits of the frame both operands are read in, which starts at
-  the lowest set bit of either one: in
-  ``fmod(2^100 + 2^-120, 2^100)`` the dividend's tail puts that bit at ``2^-120``, where the
-  divisor spans 221 bits and the call is past the limit; the other levels compute on the pair
-  rounded to 53 significant bits, as a ``double`` would. The ``fp64mp2`` ``remquo``, ``lrint``,
-  ``lround``, ``llrint`` and ``llround`` are ``double`` fallbacks on the high limb, not exact on
-  the pair)
+- **Minimum, maximum, difference and remainder** — ``fmin``, ``fmax``, ``min``, ``max``,
+  ``fdim``, ``fmod``, ``remainder`` (in ``fp32mp2_high``, ``fmod``, ``remainder`` and ``remquo``
+  reduce sparse pairs, whose tail sits far below the head, exactly and return the nearest pair to
+  the remainder, as long as the divisor fits in 126 bits of the frame both operands are read in,
+  which starts at the lowest set bit of either one: in ``fmod(2^100 + 2^-120, 2^100)`` the
+  dividend's tail puts that bit at ``2^-120``, where the divisor spans 221 bits and the call is
+  past the limit; the other levels compute on the pair rounded to 53 significant bits, as a
+  ``double`` would. The ``fp64mp2`` ``remquo``, ``lrint``, ``lround``, ``llrint`` and ``llround``
+  are ``double`` fallbacks on the high limb, not exact on the pair)
 - **Probability** — ``normcdf``, ``normcdfinv``, and ``icdf`` for ``fp32mp2`` only, which turns a 32- or 64-bit
   uniform integer into a Gaussian variate. Taking an integer rather than a pair, it is the one
   function here that ADL cannot find, so it has to be written ``cuda::icdf(bits)``, and its
@@ -466,14 +474,14 @@ hardware where FP64 is rationed:
   of ``2e-13`` at ``-0.25`` that grows to ``4%`` at ``-8``, and return ``+inf`` below ``-94``
 
 The exact operations — ``rint``, ``nearbyint``, ``lrint``, ``lround``, ``llrint``, ``llround``,
-``copysign``, ``scalbln``, ``frexp``, ``modf``, ``logb``, ``ilogb``, ``fdim``, ``remquo`` and the
+``copysign``, ``scalbln``, ``frexp``, ``modf``, ``logb``, ``ilogb``, ``remquo`` and the
 classification predicates — are written directly on the two float limbs, with no FP64 anywhere:
 an exact operation is exact however it is written, and the limb pair is the cheapest place to
 write it. The remaining names are present with the same signatures, but implemented generically
-rather than through a dedicated float-float path: ``tgamma``, ``lgamma``, the Bessel family ``j0``, ``j1``, ``jn``, ``y0``, ``y1``, ``yn``,
-``cyl_bessel_i0`` and ``cyl_bessel_i1``, the vector norms ``norm3d``, ``norm4d``, ``rnorm3d`` and
-``rnorm4d``, and ``nextafter``; for the transcendentals among them that means evaluation through
-the backend covered in the next section.
+rather than through a dedicated float-float path: ``tgamma``, ``lgamma``, the Bessel family ``j0``,
+``j1``, ``jn``, ``y0``, ``y1``, ``yn``, ``cyl_bessel_i0`` and ``cyl_bessel_i1``, and ``nextafter``;
+for the transcendentals among them that means evaluation through the backend covered in the next
+section.
 
 The predicates come in two spellings. ``fpmp_isfinite``, ``fpmp_isinf``, ``fpmp_isnan`` and
 ``fpmp_signbit`` are always available, while the standard names ``isfinite``, ``isinf``, ``isnan``
