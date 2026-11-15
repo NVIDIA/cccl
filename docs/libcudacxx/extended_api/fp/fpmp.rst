@@ -451,9 +451,9 @@ hardware where FP64 is rationed:
   ``cosh`` stay finite up to ``|x| = 89.416``, where ``exp`` alone overflows from ``88.723``;
   ``sinh``, ``tanh`` and ``atanh`` have a second ``fp32mp2`` kernel in ``fp32mp2_high``, with about
   half the worst-case error of the faster one the other levels share)
-- **Error functions** — ``erf``, ``erfc``, ``erfcx``, ``erfinv``, ``erfcinv`` (``erfc`` has a more
-  accurate and slower kernel in ``fp32mp2_high``, with about half the error of the other levels
-  for ``|x| >= 1/2``)
+- **Error functions** — ``erf``, ``erfc``, ``erfcx``, ``erfinv``, ``erfcinv`` (``erfc`` and
+  ``erfcx`` have a more accurate and slower kernel in ``fp32mp2_high``, with about half the error
+  of the other levels for ``|x| >= 1/2``, and so does ``normcdf``)
 - **Rounding, magnitude and scaling** — ``ceil``, ``floor``, ``trunc``, ``round``, ``fabs``,
   ``ldexp``, ``scalbn``
 - **Minimum, maximum, difference and remainder** — ``fmin``, ``fmax``, ``min``, ``max``,
