@@ -594,6 +594,11 @@ TEST_HOST_DEVICE_FUNC void test_loose_zero_high_limb()
   assert(approx_eq(static_cast<double>(sin(-x)), -0x1p-30));
   assert(approx_eq(static_cast<double>(sinpi(-x)), -3.141592653589793 * 0x1p-30));
 
+  // fmax and fmin order two zero high limbs by the low limbs before the sign of zero
+  assert(is_zero(fmax(T(0.0f, -0x1p-30f), T(-0.0f))) && is_zero(fmax(T(-0.0f), T(0.0f, -0x1p-30f))));
+  assert(is_zero(fmin(T(-0.0f, 0x1p-30f), T(0.0f))) && is_zero(fmin(T(0.0f), T(-0.0f, 0x1p-30f))));
+  assert(is_pos_zero(fmax(T(0.0f), T(-0.0f))) && is_neg_zero(fmin(T(0.0f), T(-0.0f))));
+
   const T q(0.0f, 0.25f);
   assert(roughly_eq(static_cast<double>(expm1(q)), 0.2840254166877415));
   assert(roughly_eq(static_cast<double>(log1p(q)), 0.22314355131420976));

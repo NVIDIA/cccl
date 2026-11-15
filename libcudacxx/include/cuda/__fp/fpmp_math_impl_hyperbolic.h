@@ -283,9 +283,16 @@ __internal_fpmp2_sinh(const float __x_hi, const float __x_lo, float* __res_hi, f
       return;
     }
     const __ffloat __half_e(__u_hi, __u_lo);
+    /* Past e/2 = 2^31 the reciprocal is under 2^-63 of the result and is dropped, with the
+     * divisor clamped there: dividing by a larger e forms subnormal products (and, next to the
+     * overflow threshold, a subnormal reciprocal), for which Intel cores take a microcode
+     * assist each; see __internal_fpmp2_half_inv_exp. */
+    const bool __negligible = __u_hi > 0x1p31f;
     float __i_hi, __i_lo;
-    ::cuda::__fpmp_math_div_refined<false>(0.25f, 0.0f, __u_hi, __u_lo, &__i_hi, &__i_lo);
-    __ffloat __result = renormalize(__half_e - __ffloat(__i_hi, __i_lo));
+    ::cuda::__fpmp_math_div_refined<false>(
+      0.25f, 0.0f, __negligible ? 0x1p31f : __u_hi, __negligible ? 0.0f : __u_lo, &__i_hi, &__i_lo);
+    const __ffloat __half_inv_e = __negligible ? __ffloat(0.0f) : __ffloat(__i_hi, __i_lo);
+    __ffloat __result           = renormalize(__half_e - __half_inv_e);
     if (__is_neg)
     {
       __result = -__result;

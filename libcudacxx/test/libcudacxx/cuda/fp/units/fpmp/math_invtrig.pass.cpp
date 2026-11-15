@@ -112,7 +112,11 @@ TEST_HOST_DEVICE_FUNC void test_accuracy(const double* tolerance)
     {fn_acos, 0x1.fffffep-1f, 0x1.4p-27f, 0x1.4c8dc2fb858fbp-12, 0x1.79d0b39c90a9cp-66},
     {fn_acos, 0x1p+0f, -0x1p-40f, 0x1.6a09e667f3dafp-20, 0x1.21a43e8525b27p-74},
     {fn_acos, 0x1p+0f, -0x1p-100f, 0x1.6a09e667f3bcdp-50, -0x1.bdd3413b2644ep-104},
+#if !TEST_HAS_CUDA_FAST_MATH
+    // a subnormal low limb: --use_fast_math flushes it to zero on the device (FTZ), so this row
+    // is left to the IEEE build
     {fn_acos, 0x1p+0f, -0x1p-140f, 0x1.6a09e667f3bcdp-70, -0x1.bdd3413b26456p-124},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_acos, -0x1p+0f, 0x1p-40f, 0x1.921fa9f3f39e4p+1, 0x1.32ac7a2423cc4p-53},
     {fn_acos, -0x1p-1f, 0x0p+0f, 0x1.0c152382d7366p+1, -0x1.ee6913347c2a6p-53},
     {fn_acos, -0x1p+0f, 0x0p+0f, 0x1.921fb54442d18p+1, 0x1.1a62633145c07p-53},
@@ -171,11 +175,16 @@ TEST_HOST_DEVICE_FUNC void test_accuracy(const double* tolerance)
     {0x1p+0f, 0x0p+0f, 0x1p-40f, 0x1.8p-66f, 0x1.921fb54441d18p+0, 0x1.1a4a633145c07p-54},
     {-0x1p+0f, 0x0p+0f, -0x1p-40f, 0x1.8p-66f, -0x1.921fb54443d18p+0, -0x1.1a4a633145c07p-54},
     {0x1.1b3a64p-99f, 0x1.5e6bap-124f, 0x1.148f82p-90f, -0x1.e2b75p-115f, 0x1.062be72d6077bp-9, 0x1.918b128fdcc2bp-66},
-    {0x1.1190ep-126f, 0x0p+0f, 0x1.0c2acep-117f, -0x1.f8p-142f, 0x1.052747583804fp-9, -0x1.9ad05263cae75p-63},
     {-0x1.2b4be6p-126f, 0x0p+0f, 0x1.07edcp-33f, -0x1.abb3fp-58f, -0x1.224e27c6a3058p-93, -0x1.a8d2c0a985f69p-147},
+#if !TEST_HAS_CUDA_FAST_MATH
+    // subnormal operands: --use_fast_math flushes them to zero on the device (FTZ), so these
+    // rows are left to the IEEE build
+    {0x1.1190ep-126f, 0x0p+0f, 0x1.0c2acep-117f, -0x1.f8p-142f, 0x1.052747583804fp-9, -0x1.9ad05263cae75p-63},
     {0x1p-149f, 0x0p+0f, 0x1p-148f, 0x0p+0f, 0x1.dac670561bb4fp-2, 0x1.a2b7f222f65e2p-56},
     {0x1.4p-140f, 0x0p+0f, -0x1.cp-141f, 0x0p+0f, 0x1.173c1f5810bb8p+1, -0x1.fa63753b6372ep-53},
     {0x1.2p-130f, 0x1p-149f, 0x1p-100f, 0x1.8p-126f, 0x1.20001f93fff43p-30, -0x1.e1e4e46bddbbep-84},
+    {0x1.00baecp-107f, -0x1.9a02p-132f, 0x1.ffa1bep-66f, 0x1.aea9bp-91f, 0x1.00ea36e5373bdp-42, 0x1.847fbc674ad78p-97},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {0x1.682978p+61f,
      0x1.f3d62cp+36f,
      0x1.41e276p+115f,
@@ -190,7 +199,6 @@ TEST_HOST_DEVICE_FUNC void test_accuracy(const double* tolerance)
     // the worst arguments of the sweeps of the polynomial kernel
     {-0x1.373bf2p+2f, 0x1.674224p-23f, 0x1.0029a2p+3f, 0x1.f968fp-22f, -0x1.1781a6850f628p-1, -0x1.862dc6c1f97bcp-55},
     {0x1.004c32p-28f, -0x1.d8b1e8p-53f, 0x1.eda682p-3f, 0x1.e1d7aep-28f, 0x1.09d312dc06c99p-26, -0x1.251483053c965p-80},
-    {0x1.00baecp-107f, -0x1.9a02p-132f, 0x1.ffa1bep-66f, 0x1.aea9bp-91f, 0x1.00ea36e5373bdp-42, 0x1.847fbc674ad78p-97},
   };
   for (atan2_case c : cases2)
   {
@@ -234,11 +242,17 @@ struct exact_case
 template <class T, class F>
 TEST_HOST_DEVICE_FUNC void test_special_values()
 {
-  const F inf                 = cuda::std::numeric_limits<F>::infinity();
-  const F nan                 = cuda::std::numeric_limits<F>::quiet_NaN();
-  const F maxn                = cuda::std::numeric_limits<F>::max();
-  const F minn                = cuda::std::numeric_limits<F>::min();
-  const F mind                = cuda::std::numeric_limits<F>::denorm_min();
+  const F inf  = cuda::std::numeric_limits<F>::infinity();
+  const F nan  = cuda::std::numeric_limits<F>::quiet_NaN();
+  const F maxn = cuda::std::numeric_limits<F>::max();
+  const F minn = cuda::std::numeric_limits<F>::min();
+#if TEST_HAS_CUDA_FAST_MATH
+  // --use_fast_math flushes subnormals to zero on the device (FTZ): the smallest normal stands
+  // in for the smallest subnormal there
+  const F mind = minn;
+#else
+  const F mind = cuda::std::numeric_limits<F>::denorm_min();
+#endif // TEST_HAS_CUDA_FAST_MATH
   const F above1              = F(1) + cuda::std::numeric_limits<F>::epsilon();
   const exact_case<F> cases[] = {
     {fn_asin, nan, F(0), nan},     {fn_asin, -nan, F(0), nan},    {fn_asin, F(0), F(0), F(0)},
@@ -294,11 +308,17 @@ struct atan2_special
 template <class T, class F>
 TEST_HOST_DEVICE_FUNC void test_atan2_special_values()
 {
-  const F inf                    = cuda::std::numeric_limits<F>::infinity();
-  const F nan                    = cuda::std::numeric_limits<F>::quiet_NaN();
-  const F maxn                   = cuda::std::numeric_limits<F>::max();
-  const F minn                   = cuda::std::numeric_limits<F>::min();
-  const F mind                   = cuda::std::numeric_limits<F>::denorm_min();
+  const F inf  = cuda::std::numeric_limits<F>::infinity();
+  const F nan  = cuda::std::numeric_limits<F>::quiet_NaN();
+  const F maxn = cuda::std::numeric_limits<F>::max();
+  const F minn = cuda::std::numeric_limits<F>::min();
+#if TEST_HAS_CUDA_FAST_MATH
+  // --use_fast_math flushes subnormals to zero on the device (FTZ): the smallest normal stands
+  // in for the smallest subnormal there
+  const F mind = minn;
+#else
+  const F mind = cuda::std::numeric_limits<F>::denorm_min();
+#endif // TEST_HAS_CUDA_FAST_MATH
   const F zero                   = F(0);
   const atan2_special<F> cases[] = {
     // y = +-0: +-0 for x > 0 or +0, +-pi for x < 0 or -0
