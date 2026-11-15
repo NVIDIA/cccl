@@ -645,6 +645,31 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  * big to GCC to inline into the loops that call them, and those loops are then not vectorized.
  */
 
+/*
+ * The argument of expm1, log1p, sinh, tanh, asinh and atanh. Their fp32mp2 kernels take the size
+ * of the argument, and with it the tiny-argument result f(x) = x and the table entry, from the
+ * high limb alone. A low-accuracy operation can leave a pair whose high limb does not carry it:
+ * (2^24, 0.25) - 2^24 is (0, 0.25). At fpmp2_accuracy::low a pair with |lo| > 2^-20 |hi| is
+ * therefore renormalized first. A normalized pair, a zero of either sign and a limb that is not
+ * finite pass through unchanged; the other levels keep their operands normalized.
+ */
+template <typename _FpType, fpmp2_accuracy _TypeAcc>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void
+__fpmp2_math_arg(const fpmp2<_FpType, _TypeAcc>& __x, _FpType* __x_hi, _FpType* __x_lo) noexcept
+{
+  *__x_hi = __x.hi();
+  *__x_lo = __x.lo();
+  if constexpr (__fpmp2_is_fp32_v<_FpType> && _TypeAcc == fpmp2_accuracy::low)
+  {
+    const _FpType __abs_lo = ::cuda::__fpmp_internal_fabs(__x.lo());
+    if (__abs_lo > _FpType(0x1p-20f) * ::cuda::__fpmp_internal_fabs(__x.hi())
+        && __abs_lo <= (::cuda::std::numeric_limits<_FpType>::max)())
+    {
+      *__x_hi = ::cuda::__fpmp_two_sum(__x.hi(), __x.lo(), __x_lo);
+    }
+  }
+}
+
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> exp(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
@@ -680,14 +705,15 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> log10(const fpm
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> log1p(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
-  _FpType __res_hi, __res_lo;
+  _FpType __x_hi, __x_lo, __res_hi, __res_lo;
+  ::cuda::__fpmp2_math_arg(__x, &__x_hi, &__x_lo);
   if constexpr (_TypeAcc == fpmp2_accuracy::high)
   {
-    ::cuda::__fpmp2_high_log1p(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_high_log1p(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   else
   {
-    ::cuda::__fpmp2_log1p(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_log1p(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
@@ -820,14 +846,15 @@ atan2(const fpmp2<_FpType, _TypeAcc>& __y, const fpmp2<_FpType, _TypeAcc>& __x) 
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> sinh(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
-  _FpType __res_hi, __res_lo;
+  _FpType __x_hi, __x_lo, __res_hi, __res_lo;
+  ::cuda::__fpmp2_math_arg(__x, &__x_hi, &__x_lo);
   if constexpr (_TypeAcc == fpmp2_accuracy::high)
   {
-    ::cuda::__fpmp2_high_sinh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_high_sinh(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   else
   {
-    ::cuda::__fpmp2_sinh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_sinh(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
@@ -843,14 +870,15 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> cosh(const fpmp
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> tanh(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
-  _FpType __res_hi, __res_lo;
+  _FpType __x_hi, __x_lo, __res_hi, __res_lo;
+  ::cuda::__fpmp2_math_arg(__x, &__x_hi, &__x_lo);
   if constexpr (_TypeAcc == fpmp2_accuracy::high)
   {
-    ::cuda::__fpmp2_high_tanh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_high_tanh(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   else
   {
-    ::cuda::__fpmp2_tanh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_tanh(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
@@ -926,22 +954,24 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> acosh(const fpm
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> asinh(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
-  _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_asinh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+  _FpType __x_hi, __x_lo, __res_hi, __res_lo;
+  ::cuda::__fpmp2_math_arg(__x, &__x_hi, &__x_lo);
+  ::cuda::__fpmp2_asinh(__x_hi, __x_lo, &__res_hi, &__res_lo);
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> atanh(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
-  _FpType __res_hi, __res_lo;
+  _FpType __x_hi, __x_lo, __res_hi, __res_lo;
+  ::cuda::__fpmp2_math_arg(__x, &__x_hi, &__x_lo);
   if constexpr (_TypeAcc == fpmp2_accuracy::high)
   {
-    ::cuda::__fpmp2_high_atanh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_high_atanh(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   else
   {
-    ::cuda::__fpmp2_atanh(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_atanh(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
@@ -982,14 +1012,15 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> exp10(const fpm
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> expm1(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
 {
-  _FpType __res_hi, __res_lo;
+  _FpType __x_hi, __x_lo, __res_hi, __res_lo;
+  ::cuda::__fpmp2_math_arg(__x, &__x_hi, &__x_lo);
   if constexpr (_TypeAcc == fpmp2_accuracy::high)
   {
-    ::cuda::__fpmp2_high_expm1(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_high_expm1(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   else
   {
-    ::cuda::__fpmp2_expm1(__x.hi(), __x.lo(), &__res_hi, &__res_lo);
+    ::cuda::__fpmp2_expm1(__x_hi, __x_lo, &__res_hi, &__res_lo);
   }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }

@@ -567,12 +567,6 @@ TEST_HOST_DEVICE_FUNC void test_erfc_ends()
 // (1, -0.25), which is 0.75 and not next to the end of the domain of atanh, and the limbs of
 // (2, -2) cancel, so that erfinv of it is 0.
 
-// The fp32mp2 kernels give a pair with one nonzero limb the accuracy of that limb.
-TEST_HOST_DEVICE_FUNC bool roughly_eq(double a, double b)
-{
-  return cuda::std::fabs(a - b) <= 1e-6 * cuda::std::fabs(b);
-}
-
 TEST_HOST_DEVICE_FUNC void test_loose_zero_high_limb()
 {
   using T = cuda::fp32mp2_low;
@@ -589,13 +583,31 @@ TEST_HOST_DEVICE_FUNC void test_loose_zero_high_limb()
   assert(is_zero(fmin(T(-0.0f, 0x1p-30f), T(0.0f))) && is_zero(fmin(T(0.0f), T(-0.0f, 0x1p-30f))));
   assert(is_pos_zero(fmax(T(0.0f), T(-0.0f))) && is_neg_zero(fmin(T(0.0f), T(-0.0f))));
 
-  const T q(0.0f, 0.25f);
-  assert(roughly_eq(static_cast<double>(expm1(q)), 0.2840254166877415));
-  assert(roughly_eq(static_cast<double>(log1p(q)), 0.22314355131420976));
-  assert(roughly_eq(static_cast<double>(sinh(q)), 0.2526123168081683));
-  assert(roughly_eq(static_cast<double>(tanh(q)), 0.24491866240370913));
-  assert(roughly_eq(static_cast<double>(expm1(-q)), -0.22119921692859512));
-  assert(roughly_eq(static_cast<double>(tanh(-q)), -0.24491866240370913));
+  // expm1, log1p, sinh, tanh, asinh and atanh return a tiny argument unchanged, and read "tiny"
+  // off the high limb; a low-accuracy pair whose high limb does not carry the value is
+  // renormalized before it reaches them.
+  const T loose[] = {T(0.0f, 0.25f), T(-0.0f, 0.25f), T(16777216.0f, 0.25f) - T(16777216.0f)};
+  for (int i = 0; i < 3; ++i)
+  {
+    const T q = loose[i];
+    assert(approx_eq(static_cast<double>(expm1(q)), 0.2840254166877415));
+    assert(approx_eq(static_cast<double>(log1p(q)), 0.22314355131420976));
+    assert(approx_eq(static_cast<double>(sinh(q)), 0.2526123168081683));
+    assert(approx_eq(static_cast<double>(tanh(q)), 0.24491866240370913));
+    assert(approx_eq(static_cast<double>(asinh(q)), 0.24746646154726346));
+    assert(approx_eq(static_cast<double>(atanh(q)), 0.25541281188299536));
+    assert(approx_eq(static_cast<double>(expm1(-q)), -0.22119921692859512));
+    assert(approx_eq(static_cast<double>(log1p(-q)), -0.2876820724517809));
+    assert(approx_eq(static_cast<double>(tanh(-q)), -0.24491866240370913));
+  }
+  // a high limb far below the low limb, and limbs of like size
+  assert(approx_eq(static_cast<double>(expm1(T(0x1p-60f, 0.25f))), 0.2840254166877415));
+  assert(approx_eq(static_cast<double>(log1p(T(-0x1p-40f, 0x1p-9f))), 0.0019512201303540276));
+  assert(approx_eq(static_cast<double>(asinh(T(0.125f, 0.125f))), 0.24746646154726346));
+  // a zero keeps its sign, and a low limb that is not finite is left where it is
+  assert(is_neg_zero(expm1(T(-0.0f))) && is_neg_zero(log1p(T(-0.0f))) && is_neg_zero(sinh(T(-0.0f))));
+  assert(is_neg_zero(tanh(T(-0.0f))) && is_neg_zero(asinh(T(-0.0f))) && is_neg_zero(atanh(T(-0.0f))));
+  assert(is_nan(expm1(T(0.0f, cuda::std::numeric_limits<float>::quiet_NaN()))));
 
   // atan2: a loose operand on either side, and on both
   const double pi = 3.141592653589793;
