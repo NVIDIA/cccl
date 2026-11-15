@@ -48,8 +48,8 @@ from cuda.tile._ir.ops import (
     permute,
     reshape,
 )
+from cuda.tile._ir.type import LooselyTypedScalar, TokenTy, TupleTy
 from cuda.tile._ir.type import TileTy as make_tile_ty
-from cuda.tile._ir.type import TokenTy
 
 from ._block.adjacent_difference import (
     BlockAdjacentDifferenceSubtractLeft,
@@ -253,15 +253,33 @@ _MISSING = object()
 _RUNTIME_VALUE = object()
 
 
+def _constant_value(var):
+    """Preserve Python scalar precision until the operand dtype is known.
+
+    cuTile's ordinary constant value may already be rounded to its default
+    dtype. Loose scalar metadata retains the original value, including in
+    method tuples. Explicitly typed constants keep their converted value.
+    """
+
+    ty = var.get_loose_type()
+    if isinstance(ty, LooselyTypedScalar):
+        return ty.value
+    if isinstance(ty, TupleTy):
+        return tuple(
+            _constant_value(item) for item in var.get_aggregate().items
+        )
+    return var.get_constant()
+
+
 def _require_optional_constant_object(var, name: str):
     if var.is_constant():
-        return var.get_constant()
+        return _constant_value(var)
     raise TileTypeError(f"{name} must be a compile-time constant")
 
 
 def _const_value_or_runtime(var):
     if var.is_constant():
-        return var.get_constant()
+        return _constant_value(var)
     return _RUNTIME_VALUE
 
 
@@ -381,7 +399,7 @@ def _scalar_tile_operand(
     """
 
     if var.is_constant():
-        value = var.get_constant()
+        value = _constant_value(var)
         if value is None:
             if default is _MISSING:
                 raise TileTypeError(f"coop.{primitive} {name} must be provided")
