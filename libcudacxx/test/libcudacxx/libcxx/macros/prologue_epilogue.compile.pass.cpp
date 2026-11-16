@@ -19,15 +19,6 @@
 
 // __declspec modifiers
 
-#undef align
-#define align 1
-
-#undef allocate
-#define allocate 1
-
-#undef allocator
-#define allocator 1
-
 #undef appdomain
 #define appdomain 1
 
@@ -153,18 +144,6 @@
 #define makedev 1
 
 #include <cuda/std/__cccl/prologue.h>
-
-#if defined(align)
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `align`"
-#endif
-
-#if defined(allocate)
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `allocate`"
-#endif
-
-#if defined(allocator)
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `allocator`"
-#endif
 
 #if defined(appdomain)
 #  error "<cuda/std/__cccl/prologue.h> must undefine macro `appdomain`"
@@ -319,18 +298,6 @@
 #endif
 
 #include <cuda/std/__cccl/epilogue.h>
-
-#if align != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `align`"
-#endif
-
-#if allocate != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `allocate`"
-#endif
-
-#if allocator != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `allocator`"
-#endif
 
 #if appdomain != 1
 #  error "<cuda/std/__cccl/epilogue.h> must restore macro `appdomain`"

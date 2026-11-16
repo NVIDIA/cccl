@@ -51,13 +51,11 @@ FOOTER = """\
 // NO include guards here (this file is included multiple times)
 """
 
-# Standard attribute-tokens like `deprecated` or `noreturn` are not listed, because a
-# program must not define them as macros ([macro.names]).
+# Standard attribute-tokens like `deprecated` and names declared by the standard library
+# like `allocator` are not listed, because a program must not define them as macros
+# ([macro.names]). `min` and `max` are the exception, because <windows.h> defines them.
 PUSH_POP_MACROS = {
     "__declspec modifiers": [
-        "align",
-        "allocate",
-        "allocator",
         "appdomain",
         "code_seg",
         "dllimport",
