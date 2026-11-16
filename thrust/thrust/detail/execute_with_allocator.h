@@ -20,7 +20,6 @@
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
@@ -32,27 +31,22 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 template <typename Allocator, typename T, typename = void>
-struct has_rebind_other : ::cuda::std::false_type
-{};
+inline constexpr bool has_rebind_other_v = false;
 
 template <typename Allocator, typename T>
-struct has_rebind_other<Allocator, T, ::cuda::std::void_t<typename Allocator::template rebind<T>::other>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  has_rebind_other_v<Allocator, T, ::cuda::std::void_t<typename Allocator::template rebind<T>::other>> = true;
 
 // Like allocator_traits::rebind_alloc, but false instead of a hard error. Without a nested rebind, only
 // allocators whose first template argument is their value_type are rebound (not e.g. alloc<Pool>).
 template <typename Allocator, typename T>
-struct is_rebindable_allocator : has_rebind_other<Allocator, T>
-{};
+inline constexpr bool is_rebindable_allocator_v = has_rebind_other_v<Allocator, T>;
 
 template <template <typename, typename...> class Allocator, typename U, typename... Args, typename T>
-struct is_rebindable_allocator<Allocator<U, Args...>, T>
-    : ::cuda::std::bool_constant<has_rebind_other<Allocator<U, Args...>, T>::value
-                                 || ::cuda::std::is_same_v<U, typename Allocator<U, Args...>::value_type>>
-{};
+inline constexpr bool is_rebindable_allocator_v<Allocator<U, Args...>, T> =
+  has_rebind_other_v<Allocator<U, Args...>, T> || ::cuda::std::is_same_v<U, typename Allocator<U, Args...>::value_type>;
 
-template <typename Allocator, typename T, bool = is_rebindable_allocator<Allocator, T>::value>
+template <typename Allocator, typename T, bool = is_rebindable_allocator_v<Allocator, T>>
 struct temporary_buffer_allocator_impl
 {
   using type = Allocator;
