@@ -160,41 +160,19 @@ _CCCL_HOST_API void segmented_reduce(
   reserved::__check_copartitioned(out, seg_end, "sharded::segmented_reduce (out/seg_end)");
 
   __detail::__visit_shards(
-    out, envs, call_env, "sharded::segmented_reduce", [&](::std::size_t g, const auto& o, cudaStream_t s) {
-      const ::cuda::stream_ref stream{s};
-      // Two-phase CUB: size query (host-only, no work recorded), then run
-      // with stream-ordered scratch from the shard's environment.
-      void* d_temp        = nullptr;
-      ::std::size_t bytes = 0;
+    out, envs, call_env, "sharded::segmented_reduce", [&](::std::size_t g, const auto& o, cudaStream_t) {
+      // CUB's environment overload: scratch from the shard environment's
+      // resource, stream-ordered on its stream, and any CUB parameter the
+      // environment carries (`cuda::execution::tune`) reaches the kernels.
       cuda_safe_call(cub::DeviceSegmentedReduce::Reduce(
-        d_temp,
-        bytes,
         in.shard(g).data,
         o.data,
-        static_cast<int>(o.size),
+        static_cast<::cuda::std::int64_t>(o.size),
         seg_begin.shard(g).data,
         seg_end.shard(g).data,
         op,
         init,
-        s));
-      auto mr = ::cuda::mr::get_memory_resource(envs[g]);
-      d_temp  = mr.allocate(stream, bytes, 256);
-      SCOPE(fail)
-      {
-        mr.deallocate(stream, d_temp, bytes, 256);
-      };
-      cuda_safe_call(cub::DeviceSegmentedReduce::Reduce(
-        d_temp,
-        bytes,
-        in.shard(g).data,
-        o.data,
-        static_cast<int>(o.size),
-        seg_begin.shard(g).data,
-        seg_end.shard(g).data,
-        op,
-        init,
-        s));
-      mr.deallocate(stream, d_temp, bytes, 256);
+        envs[g]));
     });
 }
 
@@ -330,29 +308,18 @@ _CCCL_HOST_API void segmented_reduce(
   }
 
   __detail::__visit_shards(
-    out, envs, call_env, "sharded::segmented_reduce", [&](::std::size_t g, const auto& o, cudaStream_t s) {
-      const ::cuda::stream_ref stream{s};
+    out, envs, call_env, "sharded::segmented_reduce", [&](::std::size_t g, const auto& o, cudaStream_t) {
       const auto& i = in.shard(g);
       // Global -> shard-local offsets on the fly: offsets[s0 + k] - value base.
       const auto begin = ::cuda::make_transform_iterator(
         offsets + static_cast<_Diff>(o.global_offset),
         __detail::__rebase_offset<_Off>{static_cast<_Off>(i.global_offset)});
       const auto end = begin + 1;
-      // Two-phase CUB: size query (host-only, no work recorded), then run
-      // with stream-ordered scratch from the shard's environment.
-      void* d_temp        = nullptr;
-      ::std::size_t bytes = 0;
+      // CUB's environment overload: scratch from the shard environment's
+      // resource, stream-ordered on its stream, and any CUB parameter the
+      // environment carries (`cuda::execution::tune`) reaches the kernels.
       cuda_safe_call(cub::DeviceSegmentedReduce::Reduce(
-        d_temp, bytes, i.data, o.data, static_cast<int>(o.size), begin, end, op, init, s));
-      auto mr = ::cuda::mr::get_memory_resource(envs[g]);
-      d_temp  = mr.allocate(stream, bytes, 256);
-      SCOPE(fail)
-      {
-        mr.deallocate(stream, d_temp, bytes, 256);
-      };
-      cuda_safe_call(cub::DeviceSegmentedReduce::Reduce(
-        d_temp, bytes, i.data, o.data, static_cast<int>(o.size), begin, end, op, init, s));
-      mr.deallocate(stream, d_temp, bytes, 256);
+        i.data, o.data, static_cast<::cuda::std::int64_t>(o.size), begin, end, op, init, envs[g]));
     });
 }
 
