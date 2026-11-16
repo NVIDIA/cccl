@@ -417,9 +417,10 @@ hardware where FP64 is rationed:
 - **Rounding, magnitude and scaling** — ``ceil``, ``floor``, ``trunc``, ``round``, ``fabs``,
   ``ldexp``, ``scalbn``
 - **Minimum, maximum and remainder** — ``fmin``, ``fmax``, ``min``, ``max``, ``fmod``,
-  ``remainder`` (``fmod``, ``remainder`` and ``remquo`` are exact on sparse pairs, whose tail sits
-  far below the head, in ``fp32mp2_high``, as long as the divisor fits in 126 bits of the frame
-  both operands are read in, which starts at the lowest set bit of either one: in
+  ``remainder`` (in ``fp32mp2_high``, ``fmod``, ``remainder`` and ``remquo`` reduce sparse pairs,
+  whose tail sits far below the head, exactly and return the nearest pair to the remainder, as
+  long as the divisor fits in 126 bits of the frame both operands are read in, which starts at
+  the lowest set bit of either one: in
   ``fmod(2^100 + 2^-120, 2^100)`` the dividend's tail puts that bit at ``2^-120``, where the
   divisor spans 221 bits and the call is past the limit; the other levels compute on the pair
   rounded to 53 significant bits, as a ``double`` would. The ``fp64mp2`` ``remquo``, ``lrint``,
