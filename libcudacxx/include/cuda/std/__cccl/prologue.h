@@ -24,24 +24,6 @@
 
 // __declspec modifiers
 
-#ifdef align
-#  pragma push_macro("align")
-#  undef align
-#  define _CCCL_POP_MACRO_align
-#endif // defined(align)
-
-#ifdef allocate
-#  pragma push_macro("allocate")
-#  undef allocate
-#  define _CCCL_POP_MACRO_allocate
-#endif // defined(allocate)
-
-#ifdef allocator
-#  pragma push_macro("allocator")
-#  undef allocator
-#  define _CCCL_POP_MACRO_allocator
-#endif // defined(allocator)
-
 #ifdef appdomain
 #  pragma push_macro("appdomain")
 #  undef appdomain

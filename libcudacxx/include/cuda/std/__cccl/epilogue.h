@@ -25,30 +25,6 @@ _CCCL_DIAG_POP
 
 // __declspec modifiers
 
-#ifdef align
-#  error \
-    "cccl internal error: macro `align` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
-#elif defined(_CCCL_POP_MACRO_align)
-#  pragma pop_macro("align")
-#  undef _CCCL_POP_MACRO_align
-#endif
-
-#ifdef allocate
-#  error \
-    "cccl internal error: macro `allocate` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
-#elif defined(_CCCL_POP_MACRO_allocate)
-#  pragma pop_macro("allocate")
-#  undef _CCCL_POP_MACRO_allocate
-#endif
-
-#ifdef allocator
-#  error \
-    "cccl internal error: macro `allocator` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
-#elif defined(_CCCL_POP_MACRO_allocator)
-#  pragma pop_macro("allocator")
-#  undef _CCCL_POP_MACRO_allocator
-#endif
-
 #ifdef appdomain
 #  error \
     "cccl internal error: macro `appdomain` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
