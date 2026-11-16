@@ -22,14 +22,92 @@
 #endif // no system header
 
 #include <cuda/__memory/is_aligned.h>
-#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__bit/endian.h>
+#include <cuda/std/__cstddef/byte.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__memory/assume_aligned.h>
-#include <cuda/std/array>
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
+//! @brief Loads the `_Up` at a byte offset of a `_Tp` chunk, shifted to its position in the chunk
+//!
+//! @tparam _Tp The type of the chunk
+//! @tparam _Up The unsigned integer type to load
+//! @param __ptr Pointer to the first byte of the chunk
+//! @param __offset The byte offset of the `_Up` in the chunk, `__ptr + __offset` must be aligned to `alignof(_Up)`
+//! @return The loaded value at its position in the chunk
+template <typename _Tp, typename _Up>
+[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::uint64_t
+__load_chunk_part(const ::cuda::std::byte* const __ptr, const ::cuda::std::size_t __offset) noexcept
+{
+  _Up __value;
+  ::cuda::std::memcpy(&__value, ::cuda::std::assume_aligned<alignof(_Up)>(__ptr + __offset), sizeof(_Up));
+  const auto __shift = (::cuda::std::endian::native == ::cuda::std::endian::little)
+                       ? 8 * __offset
+                       : 8 * (sizeof(_Tp) - sizeof(_Up) - __offset);
+  return ::cuda::std::uint64_t{__value} << __shift;
+}
+
+//! @brief Loads a chunk of type _Tp from a byte pointer that is not aligned to `alignof(_Tp)`
+//!
+//! Kept out of line so that the aligned path of `__load_chunk` stays a single check and load.
+//!
+//! @tparam _Tp The type of the chunk to load (must be 4 or 8 bytes)
+//! @param __ptr Pointer to the first byte of the chunk
+//! @return The loaded chunk of type _Tp
+template <typename _Tp>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_NOINLINE_DEVICE _Tp
+__load_chunk_underaligned(const ::cuda::std::byte* const __ptr) noexcept
+{
+  // NVCC/NVRTC can propagate guarded alignment assumptions into unaligned memcpy loads.
+  // Keep each load no wider than the alignment checked for it to avoid misaligned device accesses.
+  // TODO: Revert to the original 8/4/2-byte alignment dispatch once nvbug 6898681 is resolved.
+  // https://nvbugspro.nvidia.com/bug/6898681
+  if constexpr (sizeof(_Tp) == 8)
+  {
+    if (::cuda::is_aligned(__ptr, 4))
+    {
+      return static_cast<_Tp>(::cuda::__load_chunk_part<_Tp, ::cuda::std::uint32_t>(__ptr, 0)
+                              | ::cuda::__load_chunk_part<_Tp, ::cuda::std::uint32_t>(__ptr, 4));
+    }
+    if (::cuda::is_aligned(__ptr, 2))
+    {
+      return static_cast<_Tp>(
+        ::cuda::__load_chunk_part<_Tp, ::cuda::std::uint16_t>(__ptr, 0)
+        | ::cuda::__load_chunk_part<_Tp, ::cuda::std::uint32_t>(__ptr, 2)
+        | ::cuda::__load_chunk_part<_Tp, ::cuda::std::uint16_t>(__ptr, 6));
+    }
+    if (::cuda::is_aligned(__ptr + 1, 4))
+    {
+      return static_cast<_Tp>(
+        ::cuda::__load_chunk_part<_Tp, ::cuda::std::uint8_t>(__ptr, 0)
+        | ::cuda::__load_chunk_part<_Tp, ::cuda::std::uint32_t>(__ptr, 1)
+        | ::cuda::__load_chunk_part<_Tp, ::cuda::std::uint16_t>(__ptr, 5)
+        | ::cuda::__load_chunk_part<_Tp, ::cuda::std::uint8_t>(__ptr, 7));
+    }
+    return static_cast<_Tp>(
+      ::cuda::__load_chunk_part<_Tp, ::cuda::std::uint8_t>(__ptr, 0)
+      | ::cuda::__load_chunk_part<_Tp, ::cuda::std::uint16_t>(__ptr, 1)
+      | ::cuda::__load_chunk_part<_Tp, ::cuda::std::uint32_t>(__ptr, 3)
+      | ::cuda::__load_chunk_part<_Tp, ::cuda::std::uint8_t>(__ptr, 7));
+  }
+  else
+  {
+    if (::cuda::is_aligned(__ptr, 2))
+    {
+      return static_cast<_Tp>(::cuda::__load_chunk_part<_Tp, ::cuda::std::uint16_t>(__ptr, 0)
+                              | ::cuda::__load_chunk_part<_Tp, ::cuda::std::uint16_t>(__ptr, 2));
+    }
+    return static_cast<_Tp>(
+      ::cuda::__load_chunk_part<_Tp, ::cuda::std::uint8_t>(__ptr, 0)
+      | ::cuda::__load_chunk_part<_Tp, ::cuda::std::uint16_t>(__ptr, 1)
+      | ::cuda::__load_chunk_part<_Tp, ::cuda::std::uint8_t>(__ptr, 3));
+  }
+}
+
 //! @brief Loads a chunk of type _Tp from a byte pointer at a given index, handling alignment
 //!
 //! @tparam _Tp The type of the chunk to load (must be 4 or 8 bytes)
@@ -50,17 +128,7 @@ template <typename _Tp, typename _Extent>
     ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<alignof(_Tp)>(__ptr), sizeof(_Tp));
     return __chunk;
   }
-
-  // NVCC/NVRTC can propagate guarded alignment assumptions into unaligned memcpy loads.
-  // Copy individual bytes here to avoid misaligned device accesses.
-  // TODO: Revert to the original 8/4/2-byte alignment dispatch once nvbug 6898681 is resolved.
-  // https://nvbugspro.nvidia.com/bug/6898681
-  ::cuda::std::array<::cuda::std::byte, sizeof(_Tp)> __bytes_copy{};
-  for (::cuda::std::size_t __i = 0; __i < sizeof(_Tp); ++__i)
-  {
-    __bytes_copy[__i] = __ptr[__i];
-  }
-  return ::cuda::std::bit_cast<_Tp>(__bytes_copy);
+  return ::cuda::__load_chunk_underaligned<_Tp>(__ptr);
 }
 
 //! @brief Type erased holder of all the bytes
