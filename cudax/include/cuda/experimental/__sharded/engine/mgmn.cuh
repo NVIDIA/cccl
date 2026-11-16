@@ -57,6 +57,7 @@
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
+#include <cuda/__execution/tune.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__stream/get_stream.h>
@@ -356,18 +357,35 @@ using __mgmn_resource_t = ::cuda::std::conditional_t<
 //! @brief The MGMN environment of an allocating sharded environment: its
 //! stream, its memory resource (the MGMN algorithms size their `cuda::buffer`
 //! temporaries from its `default_queries`; a resource declaring none is
-//! wrapped in `__device_resource_adaptor`), and the requirements of
-//! `__mgmn_requirements`.
+//! wrapped in `__device_resource_adaptor`), the requirements of
+//! `__mgmn_requirements`, and the shard environment's CUB tuning when it
+//! carries one (`cuda::execution::tune`): the engine forwards its
+//! environments to the per-rank CUB calls, so a policy placed on a shard
+//! environment reaches the reduce and scan kernels as it reaches the
+//! transform ones.
 template <class _Env, class _Reqs>
 [[nodiscard]] auto __mgmn_alloc_env(const _Env& __env, const _Reqs& __reqs)
 {
   using __mr_t    = __mgmn_resource_t<_Env>;
   using __sprop_t = ::cuda::std::execution::prop<::cuda::get_stream_t, ::cuda::stream_ref>;
   using __mprop_t = ::cuda::std::execution::prop<::cuda::mr::get_memory_resource_t, __mr_t>;
-  return ::cuda::std::execution::env<__sprop_t, __mprop_t, _Reqs>{
-    __sprop_t{::cuda::get_stream, ::cuda::stream_ref{::cuda::get_stream(__env)}},
-    __mprop_t{::cuda::mr::get_memory_resource, __mr_t{::cuda::mr::get_memory_resource(__env)}},
-    __reqs};
+  if constexpr (::cuda::std::execution::__queryable_with<_Env, ::cuda::execution::__get_tuning_t>)
+  {
+    using __tuning_t = ::cuda::std::remove_cvref_t<decltype(::cuda::execution::__get_tuning(__env))>;
+    using __tprop_t  = ::cuda::std::execution::prop<::cuda::execution::__get_tuning_t, __tuning_t>;
+    return ::cuda::std::execution::env<__sprop_t, __mprop_t, _Reqs, __tprop_t>{
+      __sprop_t{::cuda::get_stream, ::cuda::stream_ref{::cuda::get_stream(__env)}},
+      __mprop_t{::cuda::mr::get_memory_resource, __mr_t{::cuda::mr::get_memory_resource(__env)}},
+      __reqs,
+      __tprop_t{::cuda::execution::__get_tuning_t{}, ::cuda::execution::__get_tuning(__env)}};
+  }
+  else
+  {
+    return ::cuda::std::execution::env<__sprop_t, __mprop_t, _Reqs>{
+      __sprop_t{::cuda::get_stream, ::cuda::stream_ref{::cuda::get_stream(__env)}},
+      __mprop_t{::cuda::mr::get_memory_resource, __mr_t{::cuda::mr::get_memory_resource(__env)}},
+      __reqs};
+  }
 }
 
 //! @brief The communicator group a `place_group` owns for the lane the

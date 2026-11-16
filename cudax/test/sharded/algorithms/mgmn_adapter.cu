@@ -22,10 +22,15 @@
  *        on a locality-domain group and on a single-place group, at
  *        divisible and non-divisible sizes, with custom operators and
  *        initial values; the environment's memory resource is the one
- *        allocating the MGMN temporaries; and the MGMN device-selection
- *        guard activates the shard stream's (green) context.
+ *        allocating the MGMN temporaries; a CUB tuning placed on the shard
+ *        environments (`cuda::execution::tune`) is forwarded to the engine's
+ *        environments; and the MGMN device-selection guard activates the
+ *        shard stream's (green) context.
  */
 
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+
+#include <cuda/__execution/tune.h>
 #include <cuda/__runtime/ensure_current_context.h>
 
 #include <cuda/experimental/__sharded/reference/mgmn_transform.cuh>
@@ -727,6 +732,54 @@ void test_dispatch_context_guard(place_group& group)
   // stream; a whole-device fallback has none. Either way the guard matched.
   (void) green_streams;
 }
+// A reduce policy that differs from every default: the default selector's
+// policy with other block and tile sizes.
+struct test_reduce_policy
+{
+  __host__ __device__ constexpr auto operator()(::cuda::compute_capability cc) const -> cub::ReducePolicy
+  {
+    auto p = cub::detail::reduce::policy_selector_from_types<double, ::cuda::std::int64_t, ::cuda::std::plus<double>>{}(
+      cc);
+    p.multi_tile.threads_per_block = 128;
+    p.multi_tile.items_per_thread  = 16;
+    return p;
+  }
+};
+
+// A CUB tuning on the shard environments reaches the engine's environments
+// (which the MGMN algorithms forward to their per-rank CUB calls), and the
+// verbs stay correct under it. Environments without a tuning carry none.
+void test_env_tuning_forwarded(place_group& group)
+{
+  const size_t n = 262147;
+  auto a         = sharded_array<double>::allocate(group, n);
+  fill(a, 1.0);
+  const auto base = default_envs(a);
+  const auto tune = ::cuda::execution::tune(test_reduce_policy{});
+  using tuned_env_t = decltype(::cuda::std::execution::env{base[0], tune});
+  ::std::vector<tuned_env_t> envs;
+  for (const auto& e : base)
+  {
+    envs.push_back(::cuda::std::execution::env{e, tune});
+  }
+
+  const ::cuda::std::execution::env<> no_requirements{};
+  static_assert(::cuda::std::execution::__queryable_with<
+                  decltype(reserved::__mgmn_alloc_env(envs[0], no_requirements)),
+                  ::cuda::execution::__get_tuning_t>,
+                "the shard environment's tuning must reach the engine's environment");
+  static_assert(!::cuda::std::execution::__queryable_with<
+                  decltype(reserved::__mgmn_alloc_env(base[0], no_requirements)),
+                  ::cuda::execution::__get_tuning_t>,
+                "an environment without a tuning must not grow one");
+
+  EXPECT(sum(a, envs) == static_cast<double>(n));
+  inclusive_sum(a, envs);
+  ::std::vector<double> h(n);
+  a.copy_to_host(h.data());
+  EXPECT(h.front() == 1.0);
+  EXPECT(h.back() == static_cast<double>(n));
+}
 } // namespace
 
 int main()
@@ -748,6 +801,7 @@ int main()
     test_empty_shards(*group);
     test_reduce_fallback_path(*group);
     test_env_resource_allocates(*group);
+    test_env_tuning_forwarded(*group);
     test_dispatch_context_guard(*group);
   }
 
