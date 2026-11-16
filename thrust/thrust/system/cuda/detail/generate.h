@@ -14,19 +14,21 @@
 
 #if _CCCL_CUDA_COMPILATION()
 #  include <cub/device/device_transform.cuh>
+#  include <cub/util_namespace.cuh>
 
+#  include <thrust/generate.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
+#  include <thrust/system/cuda/detail/util.h>
 
 #  include <cuda/std/__iterator/distance.h>
-#  include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class OutputIt, class Size, class Generator>
-OutputIt _CCCL_HOST_DEVICE
+OutputIt _CCCL_HOST_DEVICE_API
 generate_n(execution_policy<Derived>& policy, OutputIt result, Size count, Generator generator)
 {
   THRUST_CDP_DISPATCH(({
@@ -44,7 +46,8 @@ generate_n(execution_policy<Derived>& policy, OutputIt result, Size count, Gener
 }
 
 template <class Derived, class OutputIt, class Generator>
-void _CCCL_HOST_DEVICE generate(execution_policy<Derived>& policy, OutputIt first, OutputIt last, Generator generator)
+void _CCCL_HOST_DEVICE_API
+generate(execution_policy<Derived>& policy, OutputIt first, OutputIt last, Generator generator)
 {
   cuda_cub::generate_n(policy, first, ::cuda::std::distance(first, last), generator);
 }

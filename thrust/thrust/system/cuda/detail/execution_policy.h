@@ -55,7 +55,7 @@ struct execution_policy : thrust::execution_policy<Derived>
   using tag_type = tag;
 
   // allow conversion to tag when it is not a successor
-  _CCCL_HOST_DEVICE operator tag() const
+  _CCCL_HOST_DEVICE_API operator tag() const
   {
     return {};
   }
@@ -68,11 +68,11 @@ private:
   cudaStream_t stream;
 
 public:
-  _CCCL_HOST_DEVICE execute_on_stream_base(cudaStream_t stream_ = cuda_cub::default_stream())
+  _CCCL_HOST_DEVICE_API execute_on_stream_base(cudaStream_t stream_ = cuda_cub::default_stream())
       : stream(stream_)
   {}
 
-  _CCCL_HOST_DEVICE Derived on(::cudaStream_t s) const
+  _CCCL_HOST_DEVICE_API Derived on(::cudaStream_t s) const
   {
     Derived result = derived_cast(*this);
     result.stream  = s;
@@ -80,7 +80,7 @@ public:
   }
 
 private:
-  friend _CCCL_HOST_DEVICE cudaStream_t get_stream(const execute_on_stream_base& exec)
+  _CCCL_HOST_DEVICE_API friend cudaStream_t get_stream(const execute_on_stream_base& exec)
   {
     return exec.stream;
   }
@@ -93,11 +93,11 @@ private:
   cudaStream_t stream;
 
 public:
-  _CCCL_HOST_DEVICE execute_on_stream_nosync_base(cudaStream_t stream_ = cuda_cub::default_stream())
+  _CCCL_HOST_DEVICE_API execute_on_stream_nosync_base(cudaStream_t stream_ = cuda_cub::default_stream())
       : stream(stream_)
   {}
 
-  _CCCL_HOST_DEVICE Derived on(::cudaStream_t s) const
+  _CCCL_HOST_DEVICE_API Derived on(::cudaStream_t s) const
   {
     Derived result = derived_cast(*this);
     result.stream  = s;
@@ -105,12 +105,12 @@ public:
   }
 
 private:
-  friend _CCCL_HOST_DEVICE cudaStream_t get_stream(const execute_on_stream_nosync_base& exec)
+  _CCCL_HOST_DEVICE_API friend cudaStream_t get_stream(const execute_on_stream_nosync_base& exec)
   {
     return exec.stream;
   }
 
-  friend _CCCL_HOST_DEVICE bool must_perform_optional_stream_synchronization(const execute_on_stream_nosync_base&)
+  _CCCL_HOST_DEVICE_API friend bool must_perform_optional_stream_synchronization(const execute_on_stream_nosync_base&)
   {
     return false;
   }
@@ -118,17 +118,17 @@ private:
 
 struct execute_on_stream : execute_on_stream_base<execute_on_stream>
 {
-  execute_on_stream() = default;
+  _CCCL_HIDE_FROM_ABI execute_on_stream() = default;
 
-  _CCCL_HOST_DEVICE execute_on_stream(cudaStream_t stream)
+  _CCCL_HOST_DEVICE_API execute_on_stream(cudaStream_t stream)
       : execute_on_stream_base(stream) {};
 };
 
 struct execute_on_stream_nosync : execute_on_stream_nosync_base<execute_on_stream_nosync>
 {
-  execute_on_stream_nosync() = default;
+  _CCCL_HIDE_FROM_ABI execute_on_stream_nosync() = default;
 
-  _CCCL_HOST_DEVICE execute_on_stream_nosync(cudaStream_t stream)
+  _CCCL_HOST_DEVICE_API execute_on_stream_nosync(cudaStream_t stream)
       : execute_on_stream_nosync_base(stream) {};
 };
 
@@ -141,7 +141,7 @@ struct par_t
   using stream_attachment_type = execute_on_stream;
 
   //! Sets the stream on which to execute algorithm with this policy.
-  _CCCL_HOST_DEVICE stream_attachment_type on(::cudaStream_t s) const
+  _CCCL_HOST_DEVICE_API stream_attachment_type on(::cudaStream_t s) const
   {
     return execute_on_stream(s);
   }
@@ -157,7 +157,7 @@ struct par_nosync_t
   using stream_attachment_type = execute_on_stream_nosync;
 
   //! Sets the stream on which to execute algorithm with this policy.
-  _CCCL_HOST_DEVICE stream_attachment_type on(::cudaStream_t s) const
+  _CCCL_HOST_DEVICE_API stream_attachment_type on(::cudaStream_t s) const
   {
     return execute_on_stream_nosync(s);
   }
@@ -165,7 +165,7 @@ struct par_nosync_t
 private:
   // this function is defined to allow non-blocking calls on the default_stream() with thrust::cuda::par_nosync
   // without explicitly using thrust::cuda::par_nosync.on(default_stream())
-  friend _CCCL_HOST_DEVICE bool must_perform_optional_stream_synchronization(const par_nosync_t&)
+  _CCCL_HOST_DEVICE_API friend bool must_perform_optional_stream_synchronization(const par_nosync_t&)
   {
     return false;
   }
@@ -234,7 +234,7 @@ _CCCL_GLOBAL_CONSTANT par_nosync_t par_nosync;
 //! \}
 
 template <class Policy>
-auto _CCCL_HOST_DEVICE cvt_to_seq(Policy&) -> thrust::detail::seq_t
+auto _CCCL_HOST_DEVICE_API cvt_to_seq(Policy&) -> thrust::detail::seq_t
 {
   // TODO(bgruber): we completely discard the previous policy, including any allocators it contains. A proper
   // implementation would carry over this information to the sequential policy. However, AFAIK no sequential algorithm

@@ -18,6 +18,7 @@
 #endif // no system header
 #include <thrust/detail/pointer.h>
 #include <thrust/detail/reference.h>
+#include <thrust/system/cpp/detail/execution_policy.h>
 #include <thrust/system/cuda/detail/execution_policy.h>
 
 #include <cuda/std/__type_traits/add_lvalue_reference.h>

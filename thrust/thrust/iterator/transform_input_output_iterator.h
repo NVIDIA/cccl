@@ -38,17 +38,17 @@ class transform_input_output_iterator_proxy
   using Value               = ::cuda::std::invoke_result_t<InputFunction, iterator_value_type>;
 
 public:
-  _CCCL_HOST_DEVICE transform_input_output_iterator_proxy(
+  _CCCL_HOST_DEVICE_API transform_input_output_iterator_proxy(
     const Iterator& io, InputFunction input_function, OutputFunction output_function)
       : io(io)
       , input_function(input_function)
       , output_function(output_function)
   {}
 
-  transform_input_output_iterator_proxy(const transform_input_output_iterator_proxy&) = default;
+  _CCCL_HIDE_FROM_ABI transform_input_output_iterator_proxy(const transform_input_output_iterator_proxy&) = default;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE operator Value() const
+  _CCCL_HOST_DEVICE_API operator Value() const
   {
     return input_function(*io);
   }
@@ -58,14 +58,14 @@ public:
   // NOLINTBEGIN(misc-unconventional-assign-operator)
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T>
-  _CCCL_HOST_DEVICE transform_input_output_iterator_proxy operator=(const T& x)
+  _CCCL_HOST_DEVICE_API transform_input_output_iterator_proxy operator=(const T& x)
   {
     *io = output_function(x);
     return *this;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE transform_input_output_iterator_proxy operator=(const transform_input_output_iterator_proxy& x)
+  _CCCL_HOST_DEVICE_API transform_input_output_iterator_proxy operator=(const transform_input_output_iterator_proxy& x)
   {
     *io = output_function(x);
     return *this;
@@ -169,7 +169,7 @@ public:
   friend class iterator_core_access;
   //! \endcond
 
-  transform_input_output_iterator() = default;
+  _CCCL_HIDE_FROM_ABI transform_input_output_iterator() = default;
 
   //!  This constructor takes as argument a \c Iterator an \c InputFunction and an
   //! \c OutputFunction and copies them to a new \p transform_input_output_iterator
@@ -178,7 +178,7 @@ public:
   //!           OutputFunction will be written to
   //! \param input_function An \c InputFunction to be executed on values read from the iterator
   //! \param output_function An \c OutputFunction to be executed on values written to the iterator
-  _CCCL_HOST_DEVICE
+  _CCCL_HOST_DEVICE_API
   transform_input_output_iterator(Iterator const& io, InputFunction input_function, OutputFunction output_function)
       : super_t(io)
       , input_function(input_function)
@@ -188,7 +188,7 @@ public:
   //! \cond
 
 private:
-  _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+  _CCCL_HOST_DEVICE_API typename super_t::reference dereference() const
   {
     return detail::transform_input_output_iterator_proxy<InputFunction, OutputFunction, Iterator>(
       this->base_reference(), input_function, output_function);
@@ -209,7 +209,7 @@ private:
 //! \param output_function An \c OutputFunction to be executed on values written to the iterator
 //! \see transform_input_output_iterator
 template <typename InputFunction, typename OutputFunction, typename Iterator>
-transform_input_output_iterator<InputFunction, OutputFunction, Iterator> _CCCL_HOST_DEVICE
+transform_input_output_iterator<InputFunction, OutputFunction, Iterator> _CCCL_HOST_DEVICE_API
 make_transform_input_output_iterator(Iterator io, InputFunction input_function, OutputFunction output_function)
 {
   return transform_input_output_iterator<InputFunction, OutputFunction, Iterator>(io, input_function, output_function);

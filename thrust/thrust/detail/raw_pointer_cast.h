@@ -18,20 +18,20 @@
 THRUST_NAMESPACE_BEGIN
 
 template <typename Pointer>
-_CCCL_HOST_DEVICE auto* raw_pointer_cast(Pointer ptr)
+_CCCL_HOST_DEVICE_API auto* raw_pointer_cast(Pointer ptr)
 {
   return ::cuda::std::to_address(ptr);
 }
 
 template <typename ToPointer, typename FromPointer>
-_CCCL_HOST_DEVICE ToPointer reinterpret_pointer_cast(FromPointer ptr)
+_CCCL_HOST_DEVICE_API ToPointer reinterpret_pointer_cast(FromPointer ptr)
 {
   using to_element = typename ::cuda::std::pointer_traits<ToPointer>::element_type;
   return ToPointer(reinterpret_cast<to_element*>(::cuda::std::to_address(ptr)));
 }
 
 template <typename ToPointer, typename FromPointer>
-_CCCL_HOST_DEVICE ToPointer static_pointer_cast(FromPointer ptr)
+_CCCL_HOST_DEVICE_API ToPointer static_pointer_cast(FromPointer ptr)
 {
   using to_element = typename ::cuda::std::pointer_traits<ToPointer>::element_type;
   return ToPointer(static_cast<to_element*>(::cuda::std::to_address(ptr)));

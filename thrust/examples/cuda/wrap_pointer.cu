@@ -1,6 +1,8 @@
 #include <thrust/device_ptr.h>
 #include <thrust/fill.h>
 
+#include <cuda/__runtime/api_wrapper.h>
+
 #include <cuda.h>
 
 int main()
@@ -9,19 +11,19 @@ int main()
 
   // obtain raw pointer to device memory
   int* raw_ptr;
-  cudaMalloc(reinterpret_cast<void**>(&raw_ptr), N * sizeof(int));
+  _CCCL_TRY_RUNTIME_API(cudaMalloc, "cudaMalloc failed", reinterpret_cast<void**>(&raw_ptr), N * sizeof(int));
 
   // wrap raw pointer with a device_ptr
   const thrust::device_ptr<int> dev_ptr = thrust::device_pointer_cast(raw_ptr);
 
   // use device_ptr in Thrust algorithms
-  thrust::fill(dev_ptr, dev_ptr + static_cast<std::ptrdiff_t>(N), (int) 0);
+  thrust::fill(dev_ptr, dev_ptr + static_cast<std::ptrdiff_t>(N), 0);
 
   // access device memory transparently through device_ptr
   dev_ptr[0] = 1;
 
   // free memory
-  cudaFree(raw_ptr);
+  _CCCL_TRY_RUNTIME_API(cudaFree, "cudaFree failed", raw_ptr);
 
   return 0;
 }

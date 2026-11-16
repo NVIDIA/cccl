@@ -32,7 +32,9 @@ void run()
   Ctx ctx;
 
   const int N = 16;
-  double X[N], Y[N], Z[N];
+  double X[N];
+  double Y[N];
+  double Z[N];
 
   for (size_t ind = 0; ind < N; ind++)
   {

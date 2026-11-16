@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: nvrtc, nvcc-11, nvcc-12.0, nvcc-12.1
+// Fast device intrinsics do not produce bit-identical results to host math over every input.
+// UNSUPPORTED: fast-math
 
 #include <cuda/std/cmath>
 

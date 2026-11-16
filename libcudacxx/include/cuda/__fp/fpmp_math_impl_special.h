@@ -81,7 +81,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  * Four ranges with transformed-argument Horner polynomials:
  *   x > 34.38    : asymptotic  (sqrt(pi)/2) * rsqrt(x)
  *   x < 4        : 17-term minimax in (3 - x)
- *   4 <= x < 11.46: 20-term minimax in (6.92 - x)
+ *   4 <= x < 11.46: 20-term minimax in (3.46 - x)
  *   11.46 <= x <= 34.38: 19-term minimax in (rsqrt(x)^2 - 0.058)
  *
  * No erf, no sqrt.  Only rsqrt in ranges 1 and 4.
@@ -287,8 +287,8 @@ __internal_fpmp2_erf(const float __x_hi, const float __x_lo, float* __res_hi, fl
   __ffloat __neg_arg  = -__arg;
   float __neg_arg_l2e = (__neg_arg * __L2E).hi();
   int __n             = ::cuda::__fpmp_fp2int_rn(__neg_arg_l2e);
-  __ffloat __fn       = ::cuda::__fpmp_int2fp_rn<float>(__n);
-  __ffloat __r        = __neg_arg - __fn * __ln2_hi;
+  const float __fn    = ::cuda::__fpmp_int2fp_rn<float>(__n);
+  __ffloat __r        = __neg_arg - __ln2_hi * __fn;
 
   /* Evaluate u(r) = m2 + m3*r + ... + m11*r^9 via the mixed-precision
    * dispatcher (4 high-order float coeffs m8..m11, 6 low-order ff
@@ -313,11 +313,14 @@ __internal_fpmp2_erf(const float __x_hi, const float __x_lo, float* __res_hi, fl
   {
     __en = 254;
   }
-  float __scale      = ::cuda::std::bit_cast<float>(static_cast<unsigned>(__en) << 23);
-  __ffloat __scalem1 = __ffloat(1.f, 0.f) - __ffloat(__scale, 0.f);
+  float __scale = ::cuda::std::bit_cast<float>(static_cast<unsigned>(__en) << 23);
+  /* Exact: n <= 0, so scale <= 1 and Fast2Sum applies. */
+  float __scalem1_lo;
+  const float __scalem1_hi = ::cuda::__fpmp_fast_two_sum(1.f, -__scale, &__scalem1_lo);
+  const __ffloat __scalem1(__scalem1_hi, __scalem1_lo);
 
   /* result = -expm1(-arg) = -u*scale + scalem1 */
-  __ffloat __result = renormalize(-__u * __ffloat(__scale, 0.f) + __scalem1);
+  __ffloat __result = renormalize(-__u * __scale + __scalem1);
 
   /* Apply sign */
   if (__is_neg)
@@ -369,7 +372,7 @@ _CCCL_FPMP_MATH_DISPATCH_1A(erf)
  *      (1+2|x|)*exp(x^2)*erfc(|x|), then divide by (1+2|x|) to get erfcx.
  *   3. Evaluate exp(-x^2) via argument reduction x^2 = n*ln2 + r and a
  *      degree-11 polynomial for exp(r), with split exponent scaling
- *      for large |x^2| and a fma-style correction for rounding of x^2.
+ *      for large |x^2|; x^2 enters the reduction exactly.
  *   4. Multiply erfcx * exp(-x^2) to obtain erfc(|x|).
  *   5. For negative x, apply erfc(-x) = 2 - erfc(x).
  *
@@ -442,9 +445,10 @@ __internal_fpmp2_erfc(const float __x_hi, const float __x_lo, float* __res_hi, f
     __ffloat(2.5022323e-8f) // [11] (= ep0, leading)
   };
 
-  constexpr __ffloat __L2E(1.4426950408889634e+0);
-  constexpr __ffloat __ln2_hi(6.9314718055994529e-1);
-  constexpr __ffloat __LN2_LO(2.3190468138462996e-17);
+  constexpr float __l2e   = 0x1.715476p+0f;
+  constexpr float __ln2_1 = 0x1.62ep-1f;
+  constexpr float __ln2_2 = 0x1.0bfbe8p-15f;
+  constexpr float __ln2_3 = 0x1.cf79acp-40f;
 
   __ffloat __x   = renormalize(__ffloat(__x_hi, __x_lo));
   bool __is_neg  = __x.hi() < 0.f;
@@ -460,12 +464,12 @@ __internal_fpmp2_erfc(const float __x_hi, const float __x_lo, float* __res_hi, f
   }
 
   /* erfcx kernel: (1+2*a)*exp(a^2)*erfc(a) on a = |x|, transform (a-4)/(a+4) */
-  __ffloat __t1 = __a - __ffloat(4.0);
-  __ffloat __t2 = __a + __ffloat(4.0);
+  __ffloat __t1 = __a - 4.0f;
+  __ffloat __t2 = __a + 4.0f;
   __t2          = __ffloat(1.0) / __t2;
   __ffloat __t3 = (__t1 * __t2);
-  __ffloat __t4 = __t3 + __ffloat(1.0);
-  __t1          = (__ffloat(-4.0) * __t4 + __a);
+  __ffloat __t4 = __t3 + 1.0f;
+  __t1          = (__t4 * -4.0f + __a);
   __t1          = __t1 - __t3 * __a;
   __t2          = (__t2 * __t1 + __t3);
 
@@ -473,21 +477,36 @@ __internal_fpmp2_erfc(const float __x_hi, const float __x_lo, float* __res_hi, f
   __t1 = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 7>(__t2, __cheb);
 
   /* (1+2*a)*exp(a^2)*erfc(a) / (1+2*a) -> exp(a^2)*erfc(a) = erfcx */
-  __t2 = (__ffloat(2.0) * __a + __ffloat(1.0));
+  __t2 = (__a * 2.0f + 1.0f);
   __t2 = __ffloat(1.0) / __t2;
   __t3 = __t1 * __t2;
-  __t4 = __a * (__ffloat(-2.0) * __t3) + __t1;
+  __t4 = __a * (__t3 * -2.0f) + __t1;
   __t4 = (__t4 - __t3);
   __t1 = (__t4 * __t2 + __t3);
 
-  /* erfc(x) = erfcx * exp(-x^2) */
-  __ffloat __xx = renormalize(-__a * __a);
+  /* erfc(x) = erfcx * exp(-a^2), with -a^2 = z + i * ln 2. a^2 is taken exactly, as
+   * a_hi^2 = p_hi + p_lo and 2 a_hi a_lo = q_hi + q_lo plus a_lo^2, and ln 2 as L1 + L2 + L3
+   * with L1 to 12 bits, so i * L1 is exact for |i| <= 1091 and -p_hi - i * L1 is exact by
+   * Sterbenz's lemma. The other terms are at most |i * L2| or 2^-22 * a^2 and are summed as
+   * a pair before the leading one, which leaves z with an absolute error of about u^2;
+   * rounding -a^2 to a pair first costs about u^2 * a^2. */
+  const float __a_hi = __a.hi();
+  const float __a_lo = __a.lo();
+  float __p_lo;
+  const float __p_hi = ::cuda::__fpmp_two_mult_fma(__a_hi, __a_hi, &__p_lo);
+  float __q_lo;
+  const float __q_hi = ::cuda::__fpmp_two_mult_fma(__a_hi, 2.0f * __a_lo, &__q_lo);
 
-  /* i = round(xx * L2E); t = exp_mantissa(xx); t3 = accurate_scale(t, i) */
-  float __prod_hi   = (__xx * __L2E).hi();
-  int __i           = ::cuda::__fpmp_fp2int_rn(__prod_hi);
-  __ffloat __t_rint = ::cuda::__fpmp_int2fp_rn<float>(__i);
-  __ffloat __z      = renormalize(__xx - __t_rint * __ln2_hi - __t_rint * __LN2_LO);
+  const int __i        = ::cuda::__fpmp_fp2int_rn(::cuda::__fpmp_mul_rn(-__p_hi, __l2e));
+  const float __t_rint = ::cuda::__fpmp_int2fp_rn<float>(__i);
+  float __b_lo;
+  const float __b_hi = ::cuda::__fpmp_two_mult_fma(__t_rint, __ln2_2, &__b_lo);
+  const float __tiny = ::cuda::__fpmp_fma_rn(
+    __t_rint, __ln2_3, ::cuda::__fpmp_fma_rn(__a_lo, __a_lo, ::cuda::__fpmp_add_rn(__b_lo, __q_lo)));
+  float __m_lo;
+  const float __m_hi = ::cuda::__fpmp_two_sum(-__b_hi, -__q_hi, &__m_lo);
+  const __ffloat __m = __ffloat(__m_hi, ::cuda::__fpmp_sub_rn(__m_lo, __tiny)) - __p_lo;
+  __ffloat __z       = renormalize(__m + ::cuda::__fpmp_fma_rn(-__t_rint, __ln2_1, -__p_hi));
 
   // exp polynomial: 5 high-order terms in float, remaining 7 in ff
   __ffloat __t = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 5>(__z, __exp_c);
@@ -509,14 +528,11 @@ __internal_fpmp2_erfc(const float __x_hi, const float __x_lo, float* __res_hi, f
   float __scale_hi      = ::cuda::std::bit_cast<float>(static_cast<unsigned>(__ek2) << 23);
   __ffloat __exp_scaled = __ffloat(__t.hi() * __scale_lo * __scale_hi, __t.lo() * __scale_lo * __scale_hi);
 
-  /* Correction: exp(-x^2) = exp_scaled * (1 + (-x^2 - xx)) same as double fma(t3, -x*x - xx, t3) */
-  __ffloat __remainder = renormalize(-__a * __a - __xx);
-  __ffloat __exp_xx    = __exp_scaled * __remainder + __exp_scaled;
-  __ffloat __erfc_val  = renormalize(__t1 * __exp_xx);
+  __ffloat __erfc_val = renormalize(__t1 * __exp_scaled);
 
   if (__is_neg)
   {
-    __erfc_val = renormalize(__ffloat(2.0) - __erfc_val);
+    __erfc_val = renormalize(2.0f - __erfc_val);
   }
 
   *__res_hi = __erfc_val.hi();
@@ -599,7 +615,7 @@ __internal_fpmp2_boys_f0(const float __a_hi, const float __a_lo, float* __res_hi
      * just barely surfaces above the precision floor.  M = 4 is the
      * sweet spot.
      */
-    __ffloat __x               = _CCCL_FPMP_SUB(__ffloat(0x1.8p1), __a);
+    __ffloat __x               = _CCCL_FPMP_SUB(0x1.8p1f, __a);
     constexpr __ffloat __c[17] = {
       __ffloat(0x1.023951b248d32p-1),
       __ffloat(0x1.364f8131f82eap-4),
@@ -626,11 +642,11 @@ __internal_fpmp2_boys_f0(const float __a_hi, const float __a_lo, float* __res_hi
 
   if (__a_hi < 0x1.6ebc6ap3f)
   {
-    /* 4 <= a < 11.46: 20-term minimax in x = 6.92 - a (degree 19).
+    /* 4 <= a < 11.46: 20-term minimax in x = 3.46 - a (degree 19).
      * Standard ff-Horner with periodic renormalization -- the
      * compensated variant loses accuracy here because the
      * coefficients span ~22 orders of magnitude. */
-    __ffloat __x = _CCCL_FPMP_SUB(__ffloat(0x1.baf1a8p1), __a);
+    __ffloat __x = _CCCL_FPMP_SUB(0x1.baf1a8p1f, __a);
     __ffloat __v = __ffloat(0x1.95402da668f4fp-73);
     __v          = __v * __x + __ffloat(0x1.43744ab1a0e5ap-66);
     __v          = __v * __x + __ffloat(0x1.f70f3953813b1p-61);
@@ -686,7 +702,7 @@ __internal_fpmp2_boys_f0(const float __a_hi, const float __a_lo, float* __res_hi
     __ffloat(-0x1.ba4d5cfd521a5p50),
     __ffloat(-0x1.6d64bf85e3416p50)};
   __ffloat __v      = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_comp>(__x, __c);
-  __r               = __r * __ffloat(0x1.c5bf8ap-1);
+  __r               = __r * 0x1.c5bf8ap-1f;
   __ffloat __result = __v * __r;
   _CCCL_FPMP_RENORMALIZE(__result);
 
@@ -871,7 +887,7 @@ __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res
   }
 
   /* a = 2p - 1, accurate subtraction for p ~= 0.5 */
-  __ffloat __two_p = __p + __p;
+  __ffloat __two_p = __p * 2.0f;
   __ffloat __a     = sub<fpmp2_accuracy::high>(__two_p, 1.0f);
 
   /* w = -log(1 - a^2) = -log(4p(1-p))
@@ -894,7 +910,7 @@ __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res
    * Horner in tc = w - 3.125 via the mixed-precision dispatcher
    * (9 high-order float coeffs c0..c8, 14 low-order ff coeffs c9..c22).
    */
-  __ffloat __tc   = __w - __ffloat(3.125f);
+  __ffloat __tc   = __w - 3.125f;
   __ffloat __poly = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 9>(__tc, __rc_c);
 
   /* Tail regions (w >= 6.125): branched since <0.1% of inputs.
@@ -911,7 +927,7 @@ __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res
      * Horner in tt = sqrt(w) - 3.25 via the dispatcher
      * (9 high-order float coeffs t0..t8, 10 low-order ff coeffs t9..t18).
      */
-    __ffloat __tt = __sw - __ffloat(3.25f);
+    __ffloat __tt = __sw - 3.25f;
     __poly        = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 9>(__tt, __rt_c);
 
     /* Tail 2 (w >= 16, |z| > 5.5 sigma):
@@ -926,7 +942,7 @@ __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res
      */
     if (__w.hi() >= 16.0f)
     {
-      __ffloat __tt2 = __sw - __ffloat(7.25f);
+      __ffloat __tt2 = __sw - 7.25f;
       __poly         = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 13>(__tt2, __rt2_c);
     }
   }

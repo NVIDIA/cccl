@@ -46,7 +46,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Predicate>
 class __invert // invert the sense of a comparison
 {
-private:
   _Predicate __p_{};
 
 public:

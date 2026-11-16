@@ -27,6 +27,8 @@
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/is_empty.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -52,9 +54,56 @@ struct __get_tuning_t
 
 _CCCL_GLOBAL_CONSTANT auto __get_tuning = __get_tuning_t{};
 
+struct __converts_to_anything
+{
+  template <typename _Tp>
+  _CCCL_API operator _Tp() const
+  {
+    return {};
+  }
+};
+
+template <class _PolicySelector>
+_CCCL_NODEBUG_API constexpr auto __detect_policy_return_type()
+{
+  constexpr bool __is_selector = ::cuda::std::is_invocable_v<_PolicySelector, ::cuda::compute_capability>;
+  static_assert(
+    !(__is_selector
+      && ::cuda::std::is_invocable_v<_PolicySelector, ::cuda::compute_capability, __converts_to_anything>),
+    "A callable passed to tune must either be a policy selector (callable with cuda::compute_capability) or "
+    "a policy transformer (callable with cuda::compute_capability and a policy)");
+  if constexpr (__is_selector)
+  {
+    return decltype(_PolicySelector{}(::cuda::compute_capability{})){};
+  }
+  else
+  {
+    constexpr bool __is_transformer =
+      ::cuda::std::is_invocable_v<_PolicySelector, ::cuda::compute_capability, __converts_to_anything>;
+    static_assert(__is_transformer,
+                  "Policy selectors must be invocable with cuda::compute_capability and an optional policy");
+    // only look at the return type if the call operator is usable, to not follow up with more errors
+    if constexpr (__is_transformer)
+    {
+      using ret_t = decltype(_PolicySelector{}(::cuda::compute_capability{}, __converts_to_anything{}));
+      static_assert(!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<ret_t>, __converts_to_anything>,
+                    "Policy selectors must return a concrete policy type");
+      static_assert(::cuda::std::is_invocable_v<_PolicySelector, ::cuda::compute_capability, ret_t>,
+                    "Policy selectors with more than one argument must accept the returned policy type as second "
+                    "argument");
+      return ret_t{};
+    }
+    else
+    {
+      return int{}; // already diagnosed
+    }
+  }
+}
+
 //! @rst
-//! Creates an environment from a pack of policy selectors that can be passed to device-wide parallel algorithms to
-//! select tunings for different target architectures. See the :ref:`policy selector documentation
+//! Creates an environment from a pack of policy selectors or policy transformers that can be passed to device-wide
+//! parallel algorithms to select tunings for different target architectures. A policy transformer additionally receives
+//! the policy of the default policy selector and returns a modified policy. See the :ref:`policy selector documentation
 //! <cub-policy-selectors>` for more information on how algorithms can be tuned.
 //! @endrst
 template <class... _PolicySelectors>
@@ -62,14 +111,12 @@ template <class... _PolicySelectors>
 {
   static_assert((::cuda::std::is_empty_v<_PolicySelectors> && ...), "Policy selectors must be stateless");
   static_assert((::cuda::std::semiregular<_PolicySelectors> && ...), "Policy selectors must be semiregular types");
-  static_assert((::cuda::std::is_invocable_v<_PolicySelectors, ::cuda::compute_capability> && ...),
-                "Policy selectors must be invocable with cuda::compute_capability");
 
   // since all the tunings are stateless, let's ignore incoming parameters
 
   // we use the return type of the policy_selector as tag
   using tuning_env = ::cuda::std::execution::env<
-    ::cuda::std::execution::prop<decltype(_PolicySelectors{}(::cuda::compute_capability{})), _PolicySelectors>...>;
+    ::cuda::std::execution::prop<decltype(__detect_policy_return_type<_PolicySelectors>()), _PolicySelectors>...>;
 
   return ::cuda::std::execution::prop{__get_tuning_t{}, tuning_env{}};
 }

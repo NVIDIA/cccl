@@ -128,7 +128,6 @@ public:
   _CCCL_API friend constexpr void swap(unexpected& __lhs, unexpected& __rhs) noexcept(is_nothrow_swappable_v<_Err2>)
   {
     __lhs.swap(__rhs);
-    return;
   }
 
   // [expected.un.eq]

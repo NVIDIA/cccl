@@ -37,6 +37,10 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
 
+// Isolate the status-returning driver APIs from the earlier pointer/error-code-returning ABI which was publicly
+// visible.
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
+
 enum class __driver_error_source
 {
   __success,
@@ -202,7 +206,7 @@ __getProcAddressFn(decltype(::cuGetProcAddress)* __ptr = nullptr, bool __set = f
 {
   _CCCL_ASSERT(__major >= 2, "invalid major CUDA Driver version");
   _CCCL_ASSERT(__minor >= 0 && __minor < 100, "invalid minor CUDA Driver version");
-  return __major * 1000 + __minor * 10;
+  return (__major * 1000) + (__minor * 10);
 }
 
 //! @brief Get a driver function pointer for a given API name and optionally specific CUDA version without initializing
@@ -308,6 +312,8 @@ __get_driver_entry_point(const char* __name, int __major = 12, int __minor = 0) 
     _CCCLRT_GET_DRIVER_FUNCTION_TYPED(decltype(&::versioned_fn_name), #function_name, major, minor)
 
 #  undef _CCCLRT_GET_DRIVER_FUNCTION_NO_INIT
+
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
 _CCCL_END_NAMESPACE_CUDA_DRIVER
 

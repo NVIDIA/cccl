@@ -157,7 +157,6 @@ struct test_resource
     CHECK(bytes == fixture->bytes_);
     CHECK(align == fixture->align_);
     ++fixture->counts.deallocate_count;
-    return;
   }
 
   void* allocate(::cuda::stream_ref, std::size_t bytes, std::size_t align)
@@ -176,7 +175,6 @@ struct test_resource
     CHECK(bytes == fixture->bytes_);
     CHECK(align == fixture->align_);
     ++fixture->counts.deallocate_async_count;
-    return;
   }
 
   friend bool operator==(const test_resource& lhs, const test_resource& rhs)
@@ -208,7 +206,7 @@ struct test_resource
   static void operator delete(void* pv) noexcept
   {
     ++test_fixture_::counts_->delete_count;
-    return ::operator delete(pv);
+    ::operator delete(pv);
   }
 
   friend constexpr void get_property(const test_resource&, ::cuda::mr::host_accessible) noexcept {}

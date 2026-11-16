@@ -19,7 +19,7 @@
       requires cuda::std::same_as</*mapping-result-of*/<Unit, ParentGroup, Mapping>, MappingResult>
     __device__ explicit virtual_group(const Unit& unit,
                                       const ParentGroup& parent_group,
-                                      Mapping&& mapping) noexcept;
+                                      Mapping&& mapping);
 
     virtual_group(const virtual_group&) = delete;
 
@@ -32,7 +32,7 @@
 
   template </*hierarchy-level-type*/ Unit, group ParentGroup, typename Mapping>
     requires /*unit-same-as-or-below*/<Unit, typename ParentGroup::unit_type>
-  virtual_group(const Unit&, const ParentGroup&, const Mapping&)
+  virtual_group(const Unit&, const ParentGroup&, Mapping&&)
     -> virtual_group<Unit,
                       ParentGroup,
                       /*mapping-result-of*/<Unit, ParentGroup, Mapping>>;
@@ -46,12 +46,14 @@ Overview
 
 Because of this limitation, a virtual group doesn't support optional participation in the group. If the input mapping outputs a unit without a valid mapping result, the behaviour is undefined.
 
+The parent group and its synchronization resources must outlive all uses of the virtual group.
+
 The type can be constructed by specifying what is being grouped (``unit``) within what (``parent_group``) and how (``mapping``). The type is not copyable, movable, or assignable. The user should always use deduction guides to deduce the template parameters.
 
 Queries
 -------
 
-Sub-unit queries work as with any other group type. The group may be queried for rank and (static) count within the parent group.
+Sub-unit queries work as with any other group type. The group may be queried for (static) rank and (static) count within the parent group.
 
 Examples
 --------

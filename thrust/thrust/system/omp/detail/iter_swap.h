@@ -14,4 +14,4 @@
 #endif // no system header
 
 // omp system inherits iter_swap
-#include <thrust/system/cpp/detail/iter_swap.h>
+#include <thrust/system/cpp/detail/iter_swap.h> // IWYU pragma: export

@@ -20,19 +20,19 @@ namespace random::detail
 struct random_core_access
 {
   template <typename OStream, typename EngineOrDistribution>
-  static OStream& stream_out(OStream& os, const EngineOrDistribution& x)
+  _CCCL_HOST_API static OStream& stream_out(OStream& os, const EngineOrDistribution& x)
   {
     return x.stream_out(os);
   }
 
   template <typename IStream, typename EngineOrDistribution>
-  static IStream& stream_in(IStream& is, EngineOrDistribution& x)
+  _CCCL_HOST_API static IStream& stream_in(IStream& is, EngineOrDistribution& x)
   {
     return x.stream_in(is);
   }
 
   template <typename EngineOrDistribution>
-  _CCCL_HOST_DEVICE static bool equal(const EngineOrDistribution& lhs, const EngineOrDistribution& rhs)
+  _CCCL_HOST_DEVICE_API static bool equal(const EngineOrDistribution& lhs, const EngineOrDistribution& rhs)
   {
     return lhs.equal(rhs);
   }

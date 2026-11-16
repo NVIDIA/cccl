@@ -48,7 +48,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _InputFn, class _OutputFn, class _Iter>
 class __transform_input_output_proxy
 {
-private:
   template <class, class, class>
   friend class transform_input_output_iterator;
 
@@ -56,7 +55,7 @@ private:
   _InputFn& __input_func_;
   _OutputFn& __output_func_;
 
-  using _InputValueType = ::cuda::std::invoke_result_t<_InputFn, ::cuda::std::iter_value_t<_Iter>>;
+  using _InputValueType _CCCL_NODEBUG = ::cuda::std::invoke_result_t<_InputFn, ::cuda::std::iter_value_t<_Iter>>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr explicit __transform_input_output_proxy(

@@ -25,12 +25,12 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 template <typename T, typename System>
-_CCCL_HOST_DEVICE temporary_array<T, System>::temporary_array(thrust::execution_policy<System>& system)
+_CCCL_HOST_DEVICE_API temporary_array<T, System>::temporary_array(thrust::execution_policy<System>& system)
     : super_t(alloc_type(temporary_allocator<T, System>(system)))
 {} // end temporary_array::temporary_array()
 
 template <typename T, typename System>
-_CCCL_HOST_DEVICE temporary_array<T, System>::temporary_array(thrust::execution_policy<System>& system, size_type n)
+_CCCL_HOST_DEVICE_API temporary_array<T, System>::temporary_array(thrust::execution_policy<System>& system, size_type n)
     : super_t(n, alloc_type(temporary_allocator<T, System>(system)))
 {
   if constexpr (!::cuda::std::is_trivially_copy_constructible_v<T>)
@@ -40,7 +40,8 @@ _CCCL_HOST_DEVICE temporary_array<T, System>::temporary_array(thrust::execution_
 } // end temporary_array::temporary_array()
 
 template <typename T, typename System>
-_CCCL_HOST_DEVICE temporary_array<T, System>::temporary_array(int, thrust::execution_policy<System>& system, size_type n)
+_CCCL_HOST_DEVICE_API
+temporary_array<T, System>::temporary_array(int, thrust::execution_policy<System>& system, size_type n)
     : super_t(n, alloc_type(temporary_allocator<T, System>(system)))
 {
   // avoid initialization
@@ -49,7 +50,7 @@ _CCCL_HOST_DEVICE temporary_array<T, System>::temporary_array(int, thrust::execu
 
 template <typename T, typename System>
 template <typename InputIterator>
-_CCCL_HOST_DEVICE
+_CCCL_HOST_DEVICE_API
 temporary_array<T, System>::temporary_array(thrust::execution_policy<System>& system, InputIterator first, size_type n)
     : super_t(alloc_type(temporary_allocator<T, System>(system)))
 {
@@ -60,7 +61,7 @@ temporary_array<T, System>::temporary_array(thrust::execution_policy<System>& sy
 
 template <typename T, typename System>
 template <typename InputIterator, typename InputSystem>
-_CCCL_HOST_DEVICE temporary_array<T, System>::temporary_array(
+_CCCL_HOST_DEVICE_API temporary_array<T, System>::temporary_array(
   thrust::execution_policy<System>& system,
   thrust::execution_policy<InputSystem>& input_system,
   InputIterator first,
@@ -74,7 +75,7 @@ _CCCL_HOST_DEVICE temporary_array<T, System>::temporary_array(
 
 template <typename T, typename System>
 template <typename InputIterator>
-_CCCL_HOST_DEVICE temporary_array<T, System>::temporary_array(
+_CCCL_HOST_DEVICE_API temporary_array<T, System>::temporary_array(
   thrust::execution_policy<System>& system, InputIterator first, InputIterator last)
     : super_t(alloc_type(temporary_allocator<T, System>(system)))
 {
@@ -85,7 +86,7 @@ _CCCL_HOST_DEVICE temporary_array<T, System>::temporary_array(
 
 template <typename T, typename System>
 template <typename InputSystem, typename InputIterator>
-_CCCL_HOST_DEVICE temporary_array<T, System>::temporary_array(
+_CCCL_HOST_DEVICE_API temporary_array<T, System>::temporary_array(
   thrust::execution_policy<System>& system,
   thrust::execution_policy<InputSystem>& input_system,
   InputIterator first,
@@ -98,7 +99,7 @@ _CCCL_HOST_DEVICE temporary_array<T, System>::temporary_array(
 } // end temporary_array::temporary_array()
 
 template <typename T, typename System>
-_CCCL_HOST_DEVICE temporary_array<T, System>::~temporary_array()
+_CCCL_HOST_DEVICE_API temporary_array<T, System>::~temporary_array()
 {
   // note that super_t::destroy will ignore trivial destructors automatically
   super_t::destroy(super_t::begin(), super_t::end());

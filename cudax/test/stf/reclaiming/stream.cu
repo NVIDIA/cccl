@@ -32,11 +32,11 @@ static __global__ void cuda_sleep_kernel(long long int clock_cnt)
 void cuda_sleep(double ms, cudaStream_t stream)
 {
   int device;
-  cudaGetDevice(&device);
+  cuda_safe_call(cudaGetDevice(&device));
 
   // cudaDevAttrClockRate: Peak clock frequency in kilohertz;
   int clock_rate;
-  cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device);
+  cuda_safe_call(cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device));
 
   const long long int clock_cnt = (long long int) (ms * clock_rate);
   cuda_sleep_kernel<<<1, 1, 0, stream>>>(clock_cnt);
@@ -51,7 +51,6 @@ class one_block_allocator : public block_allocator_interface
 public:
   one_block_allocator() = default;
 
-public:
   // Note that this allocates memory immediately, so we just do not modify the event list and ignore it
   void* allocate(backend_ctx_untyped&, const data_place& memory_node, ::std::ptrdiff_t& s, event_list&) override
   {

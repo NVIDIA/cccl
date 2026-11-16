@@ -14,4 +14,4 @@
 #endif // no system header
 
 // omp system inherits equal
-#include <thrust/system/cpp/detail/equal.h>
+#include <thrust/system/cpp/detail/equal.h> // IWYU pragma: export

@@ -319,7 +319,8 @@ CUB_TEST("Deterministic Device reduce works with integral types on gpu with diff
   const auto env          = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
   constexpr int num_items = 1 << 10;
 
-  type min_value{}, max_value{};
+  type min_value{};
+  type max_value{};
 
   min_value = static_cast<type>(-50);
   max_value = static_cast<type>(50);

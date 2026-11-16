@@ -20,7 +20,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename MR, typename DerivedPolicy>
-_CCCL_HOST MR* get_per_device_resource(thrust::detail::execution_policy_base<DerivedPolicy>&)
+_CCCL_HOST_API MR* get_per_device_resource(thrust::detail::execution_policy_base<DerivedPolicy>&)
 {
   return mr::get_global_resource<MR>();
 }

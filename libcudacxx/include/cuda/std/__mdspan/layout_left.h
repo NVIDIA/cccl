@@ -53,12 +53,12 @@ public:
   static_assert(__is_cuda_std_extents_v<_Extents>,
                 "layout_left::mapping template argument must be a specialization of extents.");
 
-  using extents_type = _Extents;
-  using index_type   = typename extents_type::index_type;
-  using size_type    = typename extents_type::size_type;
-  using rank_type    = typename extents_type::rank_type;
-  using layout_type  = layout_left;
-  using __base       = __mdspan_ebco<_Extents>;
+  using extents_type         = _Extents;
+  using index_type           = typename extents_type::index_type;
+  using size_type            = typename extents_type::size_type;
+  using rank_type            = typename extents_type::rank_type;
+  using layout_type          = layout_left;
+  using __base _CCCL_NODEBUG = __mdspan_ebco<_Extents>;
 
   template <class, class, class, class>
   friend class mdspan;

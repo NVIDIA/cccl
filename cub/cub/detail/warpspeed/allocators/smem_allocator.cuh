@@ -12,7 +12,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/warpspeed/optimize_smem_ptr.cuh>
+#include <cub/detail/warpspeed/optimize_smem_ptr.cuh> // IWYU pragma: keep
 
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstdint>
@@ -68,7 +68,7 @@ struct SmemAllocator
           // Convert allocated smem address to generic pointer
           const void* mPtrAllocation = __cvta_shared_to_generic(ptrAllocation32);
           // Ensure alignment calculation does not move down into rest of kernel code.
-          return optimizeSmemPtr(mPtrAllocation);))
+          return _CUB::detail::warpspeed::optimizeSmemPtr(mPtrAllocation);))
     }
     return nullptr;
   }

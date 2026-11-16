@@ -16,14 +16,16 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/cstddef>
+#include <cuda/std/functional>
 #include <cuda/std/optional>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
-#include <cuda/std/utility>
 #include <cuda/stream>
 
 #include <cuda/experimental/coop/group>
 
-#include <cooperative_groups.h>
+#include <nv/target>
 
 #include "group_testing.cuh"
 

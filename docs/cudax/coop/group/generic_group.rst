@@ -25,7 +25,7 @@
     __device__ explicit generic_group(const Unit& unit,
                                      const ParentGroup& parent_group,
                                      Mapping&& mapping,
-                                     Synchronizer&& synchronizer) noexcept;
+                                     Synchronizer&& synchronizer);
 
     generic_group(const generic_group&) = delete;
 
@@ -58,7 +58,7 @@ Overview
 Queries
 -------
 
-Sub-unit queries work as with any other group type. The group may be queried for rank and (static) count within the parent group.
+Sub-unit queries work as with any other group type. The group may be queried for (static) rank and (static) count within the parent group.
 
 Examples
 --------

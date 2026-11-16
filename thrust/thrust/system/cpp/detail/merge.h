@@ -14,4 +14,4 @@
 #endif // no system header
 
 // this system inherits merge
-#include <thrust/system/detail/sequential/merge.h>
+#include <thrust/system/detail/sequential/merge.h> // IWYU pragma: export

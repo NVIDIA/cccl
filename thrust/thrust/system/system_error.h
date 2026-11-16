@@ -134,7 +134,7 @@ public:
 
   /*! Destructor does not throw.
    */
-  inline ~system_error() noexcept override = default;
+  _CCCL_HIDE_FROM_ABI ~system_error() noexcept override = default;
 
   /*! Returns an object encoding the error.
    *  \return <tt>ec</tt> or <tt>error_code(ev, ecat)</tt>, from the
@@ -169,4 +169,4 @@ using system::system_error;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/system/detail/system_error.inl>
+#include <thrust/system/detail/system_error.inl> // IWYU pragma: export

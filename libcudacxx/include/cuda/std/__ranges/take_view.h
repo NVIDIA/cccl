@@ -266,7 +266,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr auto size()
   {
     const auto __n = ::cuda::std::ranges::size(__base_);
-    return (::cuda::std::ranges::min) (__n, static_cast<decltype(__n)>(__count_));
+    return ::cuda::std::ranges::min(__n, static_cast<decltype(__n)>(__count_));
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
@@ -274,7 +274,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr auto size() const
   {
     auto __n = ::cuda::std::ranges::size(__base_);
-    return (::cuda::std::ranges::min) (__n, static_cast<decltype(__n)>(__count_));
+    return ::cuda::std::ranges::min(__n, static_cast<decltype(__n)>(__count_));
   }
 };
 
@@ -284,6 +284,14 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES take_view(_Range&&, range_difference_t<_Range>)
 
 template <class _Tp>
 inline constexpr bool enable_borrowed_range<take_view<_Tp>> = enable_borrowed_range<_Tp>;
+
+// A runtime count cannot change the size of an empty range.
+template <class _View>
+inline constexpr size_t __static_size_v<take_view<_View>> = (__static_size_v<_View> == 0) ? 0 : dynamic_extent;
+
+template <class _View>
+inline constexpr size_t __static_size_v<const take_view<_View>> =
+  (range<const take_view<_View>> && __static_size_v<const _View> == 0) ? 0 : dynamic_extent;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
@@ -326,14 +334,14 @@ struct __passthrough_type<span<_Tp, _Extent>>
 template <class _CharT, class _Traits>
 struct __passthrough_type<basic_string_view<_CharT, _Traits>>
 {
-  using type = _CCCL_NODEBUG basic_string_view<_CharT, _Traits>;
+  using type _CCCL_NODEBUG = basic_string_view<_CharT, _Traits>;
 };
 
 template <class _Iter, class _Sent, ::cuda::std::ranges::subrange_kind _Kind>
 struct __passthrough_type<::cuda::std::ranges::subrange<_Iter, _Sent, _Kind>,
                           void_t<typename ::cuda::std::ranges::subrange<_Iter>>>
 {
-  using type = _CCCL_NODEBUG ::cuda::std::ranges::subrange<_Iter>;
+  using type _CCCL_NODEBUG = ::cuda::std::ranges::subrange<_Iter>;
 };
 
 template <class _Tp>

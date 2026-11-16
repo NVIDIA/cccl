@@ -81,7 +81,7 @@ void histogram_even(
   int num_output_levels_val,
   cccl_value_t lower_level,
   cccl_value_t upper_level,
-  int64_t num_row_pixels,
+  int64_t num_row_items,
   int64_t num_rows,
   int64_t row_stride_samples)
 {
@@ -101,7 +101,7 @@ void histogram_even(
       num_output_levels,
       lower_level,
       upper_level,
-      num_row_pixels,
+      num_row_items,
       num_rows,
       row_stride_samples,
       nullptr));
@@ -119,7 +119,7 @@ void histogram_even(
       num_output_levels,
       lower_level,
       upper_level,
-      num_row_pixels,
+      num_row_items,
       num_rows,
       row_stride_samples,
       nullptr));
@@ -135,7 +135,7 @@ auto generate_level_counts_to_test(int max_level_count) -> std::vector<int>
   std::vector<int> r{max_level_count};
   for (size_t c = 1; c < ActiveChannels; ++c)
   {
-    r[c] = r[c - 1] / 2 + 1;
+    r[c] = (r[c - 1] / 2) + 1;
   }
   return r;
 }
@@ -187,11 +187,11 @@ auto compute_reference_result(
   }
   for (OffsetT row = 0; row < height; ++row)
   {
-    for (OffsetT pixel = 0; pixel < width; ++pixel)
+    for (OffsetT item = 0; item < width; ++item)
     {
       for (size_t c = 0; c < ActiveChannels; ++c)
       {
-        const auto offset = row * (row_pitch / sizeof(SampleT)) + pixel * Channels + c;
+        const auto offset = row * (row_pitch / sizeof(SampleT)) + item * Channels + c;
         const int bin     = sample_to_bin_index(static_cast<int>(c), h_samples[offset]);
         if (bin >= 0 && bin < static_cast<int>(h_histogram[c].size())) // if bin is valid
         {
@@ -262,7 +262,7 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
   constexpr int active_channels = 1;
 
   const auto padding_bytes     = static_cast<offset_t>(GENERATE(size_t{0}, 13 * sizeof(sample_t)));
-  const offset_t row_pitch     = width * channels * sizeof(sample_t) + padding_bytes;
+  const offset_t row_pitch     = (width * channels * sizeof(sample_t)) + padding_bytes;
   const auto num_levels        = generate_level_counts_to_test<active_channels>(max_level_count);
   const offset_t total_samples = height * (row_pitch / sizeof(sample_t));
 
@@ -431,7 +431,7 @@ C2H_TEST("Histogram build result has serialization metadata populated", "[histog
       build_info.get_libcudacxx_path(),
       build_info.get_ctk_path()));
 
-  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK(build.cc == (build_info.get_cc_major() * 10) + build_info.get_cc_minor());
   CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
   CHECK(build.payload_size > 0);
   CHECK(build.runtime_policy != nullptr);
@@ -510,7 +510,7 @@ C2H_TEST("Histogram compile/load round-trip", "[histogram][device][serialization
       num_levels_val,
       lower_level_val,
       upper_level_val,
-      /*num_row_pixels=*/static_cast<int64_t>(n_samples),
+      /*num_row_items=*/static_cast<int64_t>(n_samples),
       /*num_rows=*/1,
       /*row_stride_samples=*/static_cast<int64_t>(n_samples),
       null_stream));
@@ -526,7 +526,7 @@ C2H_TEST("Histogram compile/load round-trip", "[histogram][device][serialization
       num_levels_val,
       lower_level_val,
       upper_level_val,
-      /*num_row_pixels=*/static_cast<int64_t>(n_samples),
+      /*num_row_items=*/static_cast<int64_t>(n_samples),
       /*num_rows=*/1,
       /*row_stride_samples=*/static_cast<int64_t>(n_samples),
       null_stream));

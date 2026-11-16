@@ -29,6 +29,7 @@
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/array>
 
 CUB_NAMESPACE_BEGIN
 
@@ -114,7 +115,7 @@ private:
   static constexpr auto max_out_per_thread = ::cuda::ceil_div(Batches, LogicalWarpThreads);
 
   template <class InputT, class OutputT, class ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void check_constraints()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void check_constraints()
   {
     static_assert(detail::is_fixed_size_random_access_range_v<InputT>,
                   "InputT must support the subscript operator[] and have a compile-time size");
@@ -131,7 +132,7 @@ private:
   };
 
   //! Shared memory storage layout type for WarpReduceBatched
-  using _TempStorage = typename InternalWarpReduceBatched::TempStorage;
+  using _TempStorage _CCCL_NODEBUG = typename InternalWarpReduceBatched::TempStorage;
 
   //! Shared storage reference
   _TempStorage& temp_storage;

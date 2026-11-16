@@ -14,13 +14,13 @@
 #include "test_macros.h"
 
 template <long long N, long long D, long long eN, long long eD>
-TEST_FUNC void test()
+TEST_FUNC constexpr void test()
 {
   static_assert((cuda::std::ratio<N, D>::num == eN));
   static_assert((cuda::std::ratio<N, D>::den == eD));
 }
 
-int main(int, char**)
+TEST_FUNC constexpr bool test()
 {
   test<1, 1, 1, 1>();
   test<1, 10, 1, 10>();
@@ -42,6 +42,14 @@ int main(int, char**)
   test<-0x7FFFFFFFFFFFFFFFLL, 127, -72624976668147841LL, 1>();
   test<0x7FFFFFFFFFFFFFFFLL, -127, -72624976668147841LL, 1>();
   test<-0x7FFFFFFFFFFFFFFFLL, -127, 72624976668147841LL, 1>();
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }

@@ -1651,6 +1651,8 @@ void run(int N, int NB)
 #endif
 
   float milliseconds;
+  // finalize() does not wait for work recorded in a stream returned by fence().
+  cuda_safe_call(cudaEventSynchronize(stopEvent));
   cuda_safe_call(cudaEventElapsedTime(&milliseconds, startEvent, stopEvent));
 
   double gflops = flops_dpotri((double) N) / (1000000000.0);

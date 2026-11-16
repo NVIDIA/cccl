@@ -23,7 +23,7 @@ using some_offset_types = nvbench::type_list<int32_t>;
 #endif
 
 template <typename T, typename OffsetT>
-void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+_CCCL_HOST_API void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   static constexpr bool is_argmin = std::is_same_v<op_t, cub::detail::arg_min>;
   static constexpr bool is_argmax = std::is_same_v<op_t, cub::detail::arg_max>;

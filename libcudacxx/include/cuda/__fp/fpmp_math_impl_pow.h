@@ -319,19 +319,22 @@ __internal_fpmp2_cbrt(const float __x_hi, const float __x_lo, float* __res_hi, f
   const __ffloat __r(__r_hi, __r_lo);
   const __ffloat __t(__s);
 
-  const __ffloat __t2 = __t * __t; // t^2
+  // t^2 = s^2 exactly
+  float __t2_lo;
+  const float __t2_hi = ::cuda::__fpmp_two_mult_fma(__s, __s, &__t2_lo);
+  const __ffloat __t2(__t2_hi, __t2_lo);
   // numer = r - t^3 (computed as fma(-t^2, t, r) with accurate ff fma)
   const __ffloat __numer = fma<fpmp2_accuracy::high>(-__t2, __t, __r);
   // denom = 2 t^3 + r ~= 3 r, well-conditioned so fast add suffices
-  const __ffloat __t3    = __t2 * __t;
-  const __ffloat __denom = (__t3 + __t3) + __r;
+  const __ffloat __t3    = __t2 * __s;
+  const __ffloat __denom = __t3 * 2.0f + __r;
 
   /* Single-precision reciprocal of denom.hi() is enough: the
    * correction u_corr ~ 2^-23 contributes t * u_corr ~ 2^-46 to
    * t_new -- exactly fp32mp2 precision. */
   const float __inv_denom = ::cuda::__fpmp_rcp_rn(__denom.hi());
   const __ffloat __u_corr = __numer * __inv_denom;
-  const __ffloat __t_new  = __t + __t * __u_corr;
+  const __ffloat __t_new  = __s + __s * __u_corr;
 
   /* Scale back by 2^(nexpo - denorm_div3) via an exact power-of-two
    * float multiply.  back_shift stays in a range that keeps the
@@ -501,10 +504,12 @@ __internal_fpmp2_rcbrt(const float __x_hi, const float __x_lo, float* __res_hi, 
    * combination) is well conditioned in fast fp32mp2 arithmetic.
    */
   const __ffloat __r(__r_hi, __r_lo);
-  const __ffloat __t(__s);
 
-  const __ffloat __t2 = __t * __t; // t^2
-  const __ffloat __t3 = __t2 * __t; // t^3
+  // t^2 = s^2 exactly
+  float __t2_lo;
+  const float __t2_hi = ::cuda::__fpmp_two_mult_fma(__s, __s, &__t2_lo);
+  const __ffloat __t2(__t2_hi, __t2_lo);
+  const __ffloat __t3 = __t2 * __s; // t^3
 
   // u = 1 - r*t^3 (accurate fma to preserve catastrophic cancellation)
   const __ffloat __u = fma<fpmp2_accuracy::high>(-__r, __t3, 1.0f);
@@ -513,8 +518,8 @@ __internal_fpmp2_rcbrt(const float __x_hi, const float __x_lo, float* __res_hi, 
   const __ffloat __hf = fma<fpmp2_accuracy::def>(__two_ninths_f, __u, __third_f);
 
   // delta = u * t * hf,  then  t_new = t + delta
-  const __ffloat __ut    = __u * __t;
-  const __ffloat __t_new = __t + __hf * __ut;
+  const __ffloat __ut    = __u * __s;
+  const __ffloat __t_new = __s + __hf * __ut;
 
   /* Scale back by 2^(-nexpo + denorm_div3) via an exact power-of-two
    * float multiply.  back_shift stays in [-43, +49] for all valid

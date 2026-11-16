@@ -18,11 +18,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/config/memory_resource.h>
-
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__memory/is_valid_alignment.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace mr
@@ -89,7 +87,7 @@ struct pool_options
    *
    *  /returns true if the options are self-consistent, false otherwise.
    */
-  bool validate() const
+  _CCCL_HOST_API bool validate() const
   {
     if (smallest_block_size != 0 && !::cuda::is_power_of_two(smallest_block_size))
     {
@@ -148,12 +146,7 @@ struct pool_options
       return false;
     }
 
-    if (alignment > smallest_block_size)
-    {
-      return false;
-    }
-
-    return true;
+    return alignment <= smallest_block_size;
   }
 };
 
