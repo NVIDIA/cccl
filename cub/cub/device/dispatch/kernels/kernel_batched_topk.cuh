@@ -53,7 +53,7 @@ struct find_sort_policy_index
 {
 private:
   template <int Index>
-  [[nodiscard]] static constexpr int find_index()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr int find_index()
   {
     if constexpr (Index >= sorted_output_policy_count)
     {
@@ -149,7 +149,7 @@ private:
   static constexpr topk_policy active_policy             = PolicyGetter{}();
 
   template <int Index>
-  [[nodiscard]] static constexpr int find_index()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr int find_index()
   {
     if constexpr (Index >= active_policy.baseline.worker_per_segment_policies.size())
     {

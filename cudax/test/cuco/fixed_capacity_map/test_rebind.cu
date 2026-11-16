@@ -55,7 +55,7 @@ struct original_hash
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t operator()(int key) const noexcept
   {
-    return static_cast<::cuda::std::size_t>(key) * 33 + static_cast<::cuda::std::size_t>(seed);
+    return (static_cast<::cuda::std::size_t>(key) * 33) + static_cast<::cuda::std::size_t>(seed);
   }
 };
 
@@ -121,7 +121,7 @@ template <class Ref>
 __global__ void contains_with_rebound_ref(Ref ref, int offset, int num_keys, int* found)
 {
   const auto tile = cg::tiled_partition<Ref::cg_size>(cg::this_thread_block());
-  const int index = (static_cast<int>(blockIdx.x) * blockDim.x + threadIdx.x) / Ref::cg_size;
+  const int index = ((static_cast<int>(blockIdx.x) * blockDim.x) + threadIdx.x) / Ref::cg_size;
   if (index < num_keys)
   {
     const auto rebound_ref = make_rebound_ref(ref, offset);

@@ -516,6 +516,12 @@ template <typename _Tp, typename _Fp>
 inline constexpr bool __fpmp2_int_fits_limb_v =
   __fpmp2_int_value_bits_v<_Tp> >= 0 && __fpmp2_int_value_bits_v<_Tp> <= __fpmp2_mantissa_bits_v<_Fp>;
 
+// Scalars that one limb of an fpmp2 with element type _Fp holds exactly for every value of
+// the type. Arithmetic with such a scalar takes the single-limb kernels, whose low operand
+// limb is known to be zero, instead of promoting the scalar to a pair.
+template <typename _Tp, typename _Fp>
+inline constexpr bool __fpmp2_is_limb_v = __fpmp2_is_lossless_fp_v<_Tp, _Fp> || __fpmp2_int_fits_limb_v<_Tp, _Fp>;
+
 /*
 // Integer sources that the fpmp2 pair represents exactly for every value of the type.
 // The two limbs cover twice the significand of one, so the pair holds any integer up to
@@ -528,6 +534,44 @@ inline constexpr bool __fpmp2_int_fits_limb_v =
 template <typename _Tp, typename _Fp>
 inline constexpr bool __fpmp2_is_lossless_int_v =
   __fpmp2_int_value_bits_v<_Tp> >= 0 && __fpmp2_int_value_bits_v<_Tp> <= 2 * __fpmp2_mantissa_bits_v<_Fp>;
+
+// Scalar types wider than one limb whose values often fit it, such as the constants in
+// `y * 2.0` and `y + 2`: double next to a float limb, and integers wider than one
+// significand. Disjoint from __fpmp2_is_limb_v. 128-bit integers stay out: the pair
+// deletes its conversion from them.
+template <typename _Tp, typename _Fp>
+inline constexpr bool __fpmp2_is_wide_scalar_v =
+  (::cuda::std::is_same_v<_Tp, double> && __fpmp2_is_fp32_v<_Fp>)
+  || (__fpmp2_int_value_bits_v<_Tp> > __fpmp2_mantissa_bits_v<_Fp> && __fpmp2_int_value_bits_v<_Tp> <= 64);
+
+// Whether one limb holds the wide scalar __c exactly: an integer of magnitude at most 2^24
+// (2^53 for a double limb), or a double that is zero or a normal float. Callers ask only
+// about a __c the compiler knows (_CCCL_IS_CONSTANT_P), so the test is never executed and
+// a run-time scalar keeps the conversion to a pair.
+template <typename _Fp, typename _Tp>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool __fpmp2_value_fits_limb(const _Tp __c) noexcept
+{
+  if constexpr (::cuda::std::is_same_v<_Tp, double>)
+  {
+    const uint64_t __bits = ::cuda::std::bit_cast<uint64_t>(__c);
+    // The low 52 - 23 = 29 significand bits are zero, and biased exponents 897 to 1150 are the
+    // normal float range, 2^-126 to 2^127.
+    const uint32_t __exp = static_cast<uint32_t>(__bits >> 52) & 0x7FFU;
+    return (static_cast<uint32_t>(__bits) & 0x1FFFFFFFU) == 0 && (__exp - 897U <= 253U || (__bits << 1) == 0);
+  }
+  else
+  {
+    constexpr _Tp __max = _Tp{1} << __fpmp2_mantissa_bits_v<_Fp>;
+    if constexpr (::cuda::std::is_signed_v<_Tp>)
+    {
+      return __c >= -__max && __c <= __max;
+    }
+    else
+    {
+      return __c <= __max;
+    }
+  }
+}
 
 /*
 // Internal basic arith operations
@@ -960,6 +1004,16 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_ceil(const _FpType __x) no
 /*
 // Internal operations for 2-precision arithmetic
 */
+// x * y rounded once, as an fma with a zero addend: GCC fuses a plain product whose only
+// uses are adds into those adds, which __fmul_rn and __dmul_rn on the device never allow.
+// An exactly zero product comes out as +0; the addend cannot be -0, since clang folds
+// fma(x, y, -0) back into a plain multiply.
+template <typename _FpType>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE _FpType __fpmp_mul_rn_nocontract(const _FpType __x, const _FpType __y) noexcept
+{
+  return ::cuda::__fpmp_fma_rn(__x, __y, _FpType{0});
+}
+
 // Multiply 2 floats exactly, assuming no over/underflow.
 template <typename _FpType>
 _CCCL_TRIVIAL_HOST_DEVICE_API _FpType

@@ -35,6 +35,7 @@ struct range
   StrictWeakOrdering comp;
   size_t grain_size;
 
+  _CCCL_HOST_API
   range(InputIterator1 first1,
         InputIterator1 last1,
         InputIterator2 first2,
@@ -51,7 +52,7 @@ struct range
       , grain_size(grain_size)
   {}
 
-  range(range& r, ::tbb::split)
+  _CCCL_HOST_API range(range& r, ::tbb::split)
       : first1(r.first1)
       , last1(r.last1)
       , first2(r.first2)
@@ -88,12 +89,12 @@ struct range
     result += ::cuda::std::distance(r.first1, mid1) + ::cuda::std::distance(r.first2, mid2);
   }
 
-  bool empty() const
+  _CCCL_HOST_API bool empty() const
   {
     return (first1 == last1) && (first2 == last2);
   }
 
-  bool is_divisible() const
+  _CCCL_HOST_API bool is_divisible() const
   {
     return static_cast<size_t>(::cuda::std::distance(first1, last1) + ::cuda::std::distance(first2, last2))
          > grain_size;
@@ -103,7 +104,7 @@ struct range
 struct body
 {
   template <typename Range>
-  void operator()(Range& r) const
+  _CCCL_HOST_API void operator()(Range& r) const
   {
     thrust::merge(thrust::seq, r.first1, r.last1, r.first2, r.last2, r.result, r.comp);
   }
@@ -130,16 +131,17 @@ struct range
   StrictWeakOrdering comp;
   size_t grain_size;
 
-  range(InputIterator1 keys_first1,
-        InputIterator1 keys_last1,
-        InputIterator2 keys_first2,
-        InputIterator2 keys_last2,
-        InputIterator3 values_first1,
-        InputIterator4 values_first2,
-        OutputIterator1 keys_result,
-        OutputIterator2 values_result,
-        StrictWeakOrdering comp,
-        size_t grain_size = 1024)
+  _CCCL_HOST_API range(
+    InputIterator1 keys_first1,
+    InputIterator1 keys_last1,
+    InputIterator2 keys_first2,
+    InputIterator2 keys_last2,
+    InputIterator3 values_first1,
+    InputIterator4 values_first2,
+    OutputIterator1 keys_result,
+    OutputIterator2 values_result,
+    StrictWeakOrdering comp,
+    size_t grain_size = 1024)
       : keys_first1(keys_first1)
       , keys_last1(keys_last1)
       , keys_first2(keys_first2)
@@ -152,7 +154,7 @@ struct range
       , grain_size(grain_size)
   {}
 
-  range(range& r, ::tbb::split)
+  _CCCL_HOST_API range(range& r, ::tbb::split)
       : keys_first1(r.keys_first1)
       , keys_last1(r.keys_last1)
       , keys_first2(r.keys_first2)
@@ -196,12 +198,12 @@ struct range
     values_result += ::cuda::std::distance(r.keys_first1, mid1) + ::cuda::std::distance(r.keys_first2, mid2);
   }
 
-  bool empty() const
+  _CCCL_HOST_API bool empty() const
   {
     return (keys_first1 == keys_last1) && (keys_first2 == keys_last2);
   }
 
-  bool is_divisible() const
+  _CCCL_HOST_API bool is_divisible() const
   {
     return static_cast<size_t>(
              ::cuda::std::distance(keys_first1, keys_last1) + ::cuda::std::distance(keys_first2, keys_last2))
@@ -212,7 +214,7 @@ struct range
 struct body
 {
   template <typename Range>
-  void operator()(Range& r) const
+  _CCCL_HOST_API void operator()(Range& r) const
   {
     thrust::merge_by_key(
       thrust::seq,
@@ -234,14 +236,14 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename StrictWeakOrdering>
-OutputIterator
-merge(execution_policy<DerivedPolicy>&,
-      InputIterator1 first1,
-      InputIterator1 last1,
-      InputIterator2 first2,
-      InputIterator2 last2,
-      OutputIterator result,
-      StrictWeakOrdering comp)
+_CCCL_HOST_API OutputIterator merge(
+  execution_policy<DerivedPolicy>&,
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  InputIterator2 last2,
+  OutputIterator result,
+  StrictWeakOrdering comp)
 {
   using Range = typename merge_detail::range<InputIterator1, InputIterator2, OutputIterator, StrictWeakOrdering>;
   using Body  = merge_detail::body;
@@ -263,7 +265,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakOrdering>
-::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   execution_policy<DerivedPolicy>&,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,

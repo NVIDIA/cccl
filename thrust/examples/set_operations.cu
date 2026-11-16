@@ -138,8 +138,8 @@ int main()
   int a[] = {0, 2, 4, 5, 6, 8, 9};
   int b[] = {0, 1, 2, 3, 5, 7, 8};
 
-  const thrust::device_vector<int> A(a, a + sizeof(a) / sizeof(int));
-  const thrust::device_vector<int> B(b, b + sizeof(b) / sizeof(int));
+  const thrust::device_vector<int> A(a, a + (sizeof(a) / sizeof(int)));
+  const thrust::device_vector<int> B(b, b + (sizeof(b) / sizeof(int)));
 
   print("Set A", A);
   print("Set B", B);

@@ -37,7 +37,7 @@ struct body
   thrust::detail::wrapped_function<Predicate, bool> pred;
   Size sum;
 
-  body(InputIterator1 first, InputIterator2 stencil, OutputIterator result, Predicate pred)
+  _CCCL_HOST_API body(InputIterator1 first, InputIterator2 stencil, OutputIterator result, Predicate pred)
       : first(first)
       , stencil(stencil)
       , result(result)
@@ -45,7 +45,7 @@ struct body
       , sum(0)
   {}
 
-  body(body& b, ::tbb::split)
+  _CCCL_HOST_API body(body& b, ::tbb::split)
       : first(b.first)
       , stencil(b.stencil)
       , result(b.result)
@@ -53,7 +53,7 @@ struct body
       , sum(0)
   {}
 
-  void operator()(const ::tbb::blocked_range<Size>& r, ::tbb::pre_scan_tag)
+  _CCCL_HOST_API void operator()(const ::tbb::blocked_range<Size>& r, ::tbb::pre_scan_tag)
   {
     InputIterator2 iter = stencil + r.begin();
 
@@ -66,7 +66,7 @@ struct body
     }
   }
 
-  void operator()(const ::tbb::blocked_range<Size>& r, ::tbb::final_scan_tag)
+  _CCCL_HOST_API void operator()(const ::tbb::blocked_range<Size>& r, ::tbb::final_scan_tag)
   {
     InputIterator1 iter1 = first + r.begin();
     InputIterator2 iter2 = stencil + r.begin();
@@ -83,12 +83,12 @@ struct body
     }
   }
 
-  void reverse_join(body& b)
+  _CCCL_HOST_API void reverse_join(body& b)
   {
     sum = b.sum + sum;
   }
 
-  void assign(body& b)
+  _CCCL_HOST_API void assign(body& b)
   {
     sum = b.sum;
   }
@@ -96,7 +96,7 @@ struct body
 } // namespace copy_if_detail
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 copy_if(tag, InputIterator1 first, InputIterator1 last, InputIterator2 stencil, OutputIterator result, Predicate pred)
 {
   using Size = thrust::detail::it_difference_t<InputIterator1>;

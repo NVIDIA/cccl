@@ -119,14 +119,14 @@ struct AgentSegmentedRadixSort
 
   DecomposerT decomposer;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE
   AgentSegmentedRadixSort(OffsetT num_items, TempStorage& temp_storage, DecomposerT decomposer = {})
       : num_items(num_items)
       , temp_storage(temp_storage.Alias())
       , decomposer(decomposer)
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessSinglePass(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ProcessSinglePass(
     int begin_bit, int end_bit, const KeyT* d_keys_in, const ValueT* d_values_in, KeyT* d_keys_out, ValueT* d_values_out)
   {
     KeyT thread_keys[ITEMS_PER_THREAD];
@@ -171,7 +171,7 @@ struct AgentSegmentedRadixSort
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessIterative(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ProcessIterative(
     int current_bit,
     int pass_bits,
     const KeyT* d_keys_in,

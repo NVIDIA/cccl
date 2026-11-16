@@ -76,7 +76,7 @@ namespace detail
 #endif // _CCCL_HOSTED()
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, ScanAlgorithm algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, ScanAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }
@@ -89,7 +89,7 @@ template <::cuda::std::same_as<char> CharT>
 struct std::formatter<_CUB::ScanAlgorithm, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const _CUB::ScanAlgorithm& algo, FmtCtx& ctx) const
+  _CCCL_HOST_API auto format(const _CUB::ScanAlgorithm& algo, FmtCtx& ctx) const
   {
     const auto str = _CUB::detail::to_string(algo);
     return formatter<const CharT*, CharT>::format(str, ctx);
@@ -132,7 +132,7 @@ struct ScanLookbackPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ScanLookbackPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const ScanLookbackPolicy& p)
   {
     return os
         << "ScanLookbackPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
@@ -187,7 +187,7 @@ struct ScanLookaheadPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ScanLookaheadPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const ScanLookaheadPolicy& p)
   {
     return os
         << "ScanLookaheadPolicy { .reduce_and_scan_warps = " << p.reduce_and_scan_warps << ", .items_per_thread = "
@@ -219,7 +219,7 @@ struct ScanPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ScanPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const ScanPolicy& p)
   {
     return os << "ScanPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback
               << ", .lookahead = " << p.lookahead << " }";
@@ -277,21 +277,21 @@ enum class accum_size
 
 // TODO(bgruber): remove this in CCCL 4.0 when we remove the public scan dispatcher
 template <class AccumT>
-constexpr _CCCL_HOST_DEVICE primitive_accum is_primitive_accum()
+_CCCL_HOST_DEVICE_API constexpr primitive_accum is_primitive_accum()
 {
   return is_primitive<AccumT>::value ? primitive_accum::yes : primitive_accum::no;
 }
 
 // TODO(bgruber): remove this in CCCL 4.0 when we remove the public scan dispatcher
 template <class ScanOpT>
-constexpr _CCCL_HOST_DEVICE primitive_op is_primitive_op()
+_CCCL_HOST_DEVICE_API constexpr primitive_op is_primitive_op()
 {
   return basic_binary_op_v<ScanOpT> ? primitive_op::yes : primitive_op::no;
 }
 
 // TODO(bgruber): remove this in CCCL 4.0 when we remove the public scan dispatcher
 template <class ValueT>
-constexpr _CCCL_HOST_DEVICE value_size classify_value_size()
+_CCCL_HOST_DEVICE_API constexpr value_size classify_value_size()
 {
   return sizeof(ValueT) == 1 ? value_size::_1
        : sizeof(ValueT) == 2 ? value_size::_2
@@ -304,7 +304,7 @@ constexpr _CCCL_HOST_DEVICE value_size classify_value_size()
 
 // TODO(bgruber): remove this in CCCL 4.0 when we remove the public scan dispatcher
 template <class AccumT>
-constexpr _CCCL_HOST_DEVICE accum_size classify_accum_size()
+_CCCL_HOST_DEVICE_API constexpr accum_size classify_accum_size()
 {
   return sizeof(AccumT) == 1 ? accum_size::_1
        : sizeof(AccumT) == 2 ? accum_size::_2
@@ -317,7 +317,7 @@ constexpr _CCCL_HOST_DEVICE accum_size classify_accum_size()
 
 // TODO(bgruber): remove this in CCCL 4.0 when we remove the public scan dispatcher
 template <class OffsetT>
-constexpr _CCCL_HOST_DEVICE offset_size classify_offset_size()
+_CCCL_HOST_DEVICE_API constexpr offset_size classify_offset_size()
 {
   return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
 }
@@ -869,7 +869,7 @@ _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(
   warpspeed::SmemAllocator smemAllocator{};
 
   const int align_inout = ::cuda::std::max({16, input_align, output_align});
-  const int inout_bytes = policy.tile_size() * input_size + 16;
+  const int inout_bytes = (policy.tile_size() * input_size) + 16;
   // Match sizeof(InOutT): round up to the alignment so each stage matches SmemResource<InOutT>.
   const int inout_stride    = (inout_bytes + align_inout - 1) & ~(align_inout - 1);
   const auto reduce_squad   = _CUB::detail::scan::squad_reduce(policy);
@@ -941,7 +941,7 @@ struct policy_selector
     // manual tuning based on cub.bench.scan.exclusive.sum.base
     // 256 / sizeof(InputValueT) - 1 should minimize bank conflicts (and fits into 48KiB SMEM)
     // 2-byte types and double needed special handling
-    lookahead_policy.items_per_thread = ::cuda::std::max(256 / (input_value_size == 2 ? 2 : accum_size) - 1, 1);
+    lookahead_policy.items_per_thread = ::cuda::std::max((256 / (input_value_size == 2 ? 2 : accum_size)) - 1, 1);
     // TODO(bgruber): the special handling of double below is a LOT faster on B200, but exceeds 48KiB SMEM
     // clang-format off
       // |   F64   |      I64      |     72576      |  12.301 us |       8.18% |  12.987 us |       5.75% |     0.686 us |   5.58% |   SAME   |
@@ -1112,19 +1112,15 @@ struct policy_selector
       return false;
     }
 
-    if (_CUB::detail::scan::smem_for_stages(
-          lookahead_policy,
-          /* num_stages */ 1,
-          input_value_size,
-          input_value_alignment,
-          output_value_alignment,
-          accum_size,
-          accum_alignment)
-        > static_cast<int>(max_smem_per_block))
-    {
-      return false;
-    }
-    return true;
+    return _CUB::detail::scan::smem_for_stages(
+             lookahead_policy,
+             /* num_stages */ 1,
+             input_value_size,
+             input_value_alignment,
+             output_value_alignment,
+             accum_size,
+             accum_alignment)
+        <= static_cast<int>(max_smem_per_block);
 #endif
   }
 

@@ -27,6 +27,7 @@
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__utility/forward.h>
 
 CUB_NAMESPACE_BEGIN
@@ -268,7 +269,7 @@ template <typename EnvT, typename AlgorithmCallable>
 //!
 //! Advertised query expressions are validated before dispatch. Stream and tuning queries are also
 //! used when callable without being advertised. Objects without metadata must provide at least a
-//! stream or memory resource.
+//! stream or memory resource. Legacy integral stream arguments retain their default-stream behavior.
 //!
 //! @tparam EnvT The execution environment or query-providing object type.
 //! @tparam AlgorithmCallable The algorithm implementation callable type.
@@ -281,7 +282,11 @@ template <typename EnvT, typename AlgorithmCallable>
 [[nodiscard]] CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_validation(
   void* d_temp_storage, size_t& temp_storage_bytes, const EnvT& env, AlgorithmCallable&& algorithm_callable)
 {
-  _CUB::detail::validate_env_or_object<EnvT>();
+  // A legacy trailing 0 stream argument now deduces an integral environment type.
+  if constexpr (!::cuda::std::is_integral_v<EnvT>)
+  {
+    _CUB::detail::validate_env_or_object<EnvT>();
+  }
   return _CUB::detail::dispatch_with_env(
     d_temp_storage, temp_storage_bytes, env, ::cuda::std::forward<AlgorithmCallable>(algorithm_callable));
 }

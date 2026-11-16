@@ -18,11 +18,11 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename BidirectionalIterator>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 reverse(thrust::execution_policy<DerivedPolicy>& exec, BidirectionalIterator first, BidirectionalIterator last);
 
 template <typename DerivedPolicy, typename BidirectionalIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator reverse_copy(
+_CCCL_HOST_DEVICE_API OutputIterator reverse_copy(
   thrust::execution_policy<DerivedPolicy>& exec,
   BidirectionalIterator first,
   BidirectionalIterator last,

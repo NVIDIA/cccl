@@ -172,8 +172,8 @@ struct DeviceScanKernelSource
     return arg;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr auto
-  lookahead_make_tile_state_kernel_arg(void* ts, ::cuda::std::uint32_t* atomic_counter = nullptr)
+  CUB_RUNTIME_FUNCTION static constexpr auto lookahead_make_tile_state_kernel_arg(
+    void* ts, ::cuda::std::uint32_t* atomic_counter = nullptr) // NOLINT(readability-non-const-parameter)
   {
     tile_state_kernel_arg_t<ScanTileStateT, AccumT> arg;
     ::cuda::std::__construct_at(
@@ -848,7 +848,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
     struct policy_getter
     {
       // host-device not api, because clang warns about exclude_from_explicit_instantiation in local types
-      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()() const
+      _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
       {
         return _CUB::detail::scan::convert_policy<ActivePolicyT>();
       }

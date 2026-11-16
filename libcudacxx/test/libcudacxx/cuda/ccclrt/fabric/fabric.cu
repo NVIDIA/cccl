@@ -280,17 +280,17 @@ struct multicast_kernel : fabric_case<cuda::std::uint32_t>
         if constexpr (Kind == multicast_kind::pull_add)
         {
           // Each staging word receives 8 + 12 = 20; both endpoint payloads stay unchanged.
-          cuda::fabric::try_pull_reduce_add(endpoint, data_offset, staging, sizeof(staging), bar);
+          cuda::fabric::warp_try_pull_reduce_add(endpoint, data_offset, staging, sizeof(staging), bar);
         }
         else if constexpr (Kind == multicast_kind::pull_min)
         {
           // Each staging word receives min(8, 12) = 8.
-          cuda::fabric::try_pull_reduce_min(endpoint, data_offset, staging, sizeof(staging), bar);
+          cuda::fabric::warp_try_pull_reduce_min(endpoint, data_offset, staging, sizeof(staging), bar);
         }
         else
         {
           // Each staging word receives max(8, 12) = 12.
-          cuda::fabric::try_pull_reduce_max(endpoint, data_offset, staging, sizeof(staging), bar);
+          cuda::fabric::warp_try_pull_reduce_max(endpoint, data_offset, staging, sizeof(staging), bar);
         }
         cuda::fabric::submit_restrict_fetching();
       }

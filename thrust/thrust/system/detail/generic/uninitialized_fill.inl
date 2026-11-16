@@ -26,7 +26,7 @@ namespace system::detail::generic
 namespace detail
 {
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void uninitialized_fill(
+_CCCL_HOST_DEVICE_API void uninitialized_fill(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -37,7 +37,7 @@ _CCCL_HOST_DEVICE void uninitialized_fill(
 } // end uninitialized_fill()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void uninitialized_fill(
+_CCCL_HOST_DEVICE_API void uninitialized_fill(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -50,7 +50,7 @@ _CCCL_HOST_DEVICE void uninitialized_fill(
 } // end uninitialized_fill()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename Size, typename T>
-_CCCL_HOST_DEVICE ForwardIterator uninitialized_fill_n(
+_CCCL_HOST_DEVICE_API ForwardIterator uninitialized_fill_n(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   Size n,
@@ -61,7 +61,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_fill_n(
 } // end uninitialized_fill()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename Size, typename T>
-_CCCL_HOST_DEVICE ForwardIterator uninitialized_fill_n(
+_CCCL_HOST_DEVICE_API ForwardIterator uninitialized_fill_n(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   Size n,
@@ -75,7 +75,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_fill_n(
 } // namespace detail
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void uninitialized_fill(
+_CCCL_HOST_DEVICE_API void uninitialized_fill(
   thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, const T& x)
 {
   using ValueType = thrust::detail::it_value_t<ForwardIterator>;
@@ -87,7 +87,7 @@ _CCCL_HOST_DEVICE void uninitialized_fill(
 } // end uninitialized_fill()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename Size, typename T>
-_CCCL_HOST_DEVICE ForwardIterator
+_CCCL_HOST_DEVICE_API ForwardIterator
 uninitialized_fill_n(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, Size n, const T& x)
 {
   using ValueType = thrust::detail::it_value_t<ForwardIterator>;

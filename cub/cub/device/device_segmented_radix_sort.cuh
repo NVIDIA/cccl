@@ -88,7 +88,7 @@ struct DeviceSegmentedRadixSort
 {
 private:
   // Name reported for NVTX ranges
-  _CCCL_HOST_DEVICE static constexpr auto GetName() -> const char*
+  _CCCL_HOST_DEVICE_API static constexpr auto GetName() -> const char*
   {
     return "cub::DeviceSegmentedRadixSort";
   }
@@ -610,8 +610,8 @@ public:
         bytes,
         d_keys,
         d_values,
-        static_cast<::cuda::std::int64_t>(num_items),
-        static_cast<::cuda::std::int64_t>(num_segments),
+        num_items,
+        num_segments,
         d_begin_offsets,
         d_end_offsets,
         begin_bit,

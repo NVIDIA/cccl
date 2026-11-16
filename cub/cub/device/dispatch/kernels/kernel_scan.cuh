@@ -123,7 +123,7 @@ union tile_state_kernel_arg_t
   // ScanTileState<AccumT> is not trivially [default|copy]-constructible, so because of
   // https://eel.is/c++draft/class.union#general-note-3, tile_state_kernel_arg_t's special members are deleted. We work
   // around it by explicitly defining the ones we need.
-  _CCCL_HOST_DEVICE tile_state_kernel_arg_t() noexcept {}
+  _CCCL_HOST_DEVICE_API tile_state_kernel_arg_t() noexcept {}
 };
 
 /******************************************************************************
@@ -437,7 +437,7 @@ struct batch_completion_op
   {
     static_assert(tiles_per_batch <= ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max());
     // The final batch never reuses the tile state, so it needs no retirement tracking.
-    if ((tile_idx / tiles_per_batch + 1) * tiles_per_batch >= num_tiles)
+    if (((tile_idx / tiles_per_batch) + 1) * tiles_per_batch >= num_tiles)
     {
       return;
     }

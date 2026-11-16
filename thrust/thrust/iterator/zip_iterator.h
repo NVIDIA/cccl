@@ -177,12 +177,12 @@ public:
   //! The underlying iterator tuple type. Alias to zip_iterator's first template argument.
   using iterator_tuple = IteratorTuple;
 
-  zip_iterator() = default;
+  _CCCL_HIDE_FROM_ABI zip_iterator() = default;
 
   //! This constructor creates a new \p zip_iterator from a \p tuple of iterators.
   //!
   //! \param iterator_tuple The \p tuple of iterators to copy from.
-  _CCCL_HOST_DEVICE zip_iterator(IteratorTuple iterator_tuple)
+  _CCCL_HOST_DEVICE_API zip_iterator(IteratorTuple iterator_tuple)
       : m_iterator_tuple(iterator_tuple)
   {}
 
@@ -192,7 +192,7 @@ public:
   template <class... Iterators,
             ::cuda::std::enable_if_t<(sizeof...(Iterators) != 0), int>                                  = 0,
             ::cuda::std::enable_if_t<::cuda::std::is_constructible_v<IteratorTuple, Iterators...>, int> = 0>
-  _CCCL_HOST_DEVICE zip_iterator(Iterators&&... iterators)
+  _CCCL_HOST_DEVICE_API zip_iterator(Iterators&&... iterators)
       : m_iterator_tuple(::cuda::std::forward<Iterators>(iterators)...)
   {}
 
@@ -200,7 +200,7 @@ public:
   //!
   //! \param other The \p zip_iterator to copy.
   template <typename OtherIteratorTuple, detail::enable_if_convertible_t<OtherIteratorTuple, IteratorTuple, int> = 0>
-  _CCCL_HOST_DEVICE zip_iterator(const zip_iterator<OtherIteratorTuple>& other)
+  _CCCL_HOST_DEVICE_API zip_iterator(const zip_iterator<OtherIteratorTuple>& other)
       : m_iterator_tuple(other.get_iterator_tuple())
   {}
 
@@ -208,7 +208,7 @@ public:
   //! \p tuple of iterators.
   //!
   //! \return A \c const reference to this \p zip_iterator's \p tuple  of iterators.
-  _CCCL_HOST_DEVICE const IteratorTuple& get_iterator_tuple() const
+  _CCCL_HOST_DEVICE_API const IteratorTuple& get_iterator_tuple() const
   {
     return m_iterator_tuple;
   }
@@ -224,13 +224,13 @@ private:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <size_t... Is>
-  _CCCL_HOST_DEVICE typename super_t::reference dereference_impl(::cuda::std::index_sequence<Is...>) const
+  _CCCL_HOST_DEVICE_API typename super_t::reference dereference_impl(::cuda::std::index_sequence<Is...>) const
   {
     return {*::cuda::std::get<Is>(m_iterator_tuple)...};
   }
 
   // Dereferencing returns a tuple built from the dereferenced iterators in the iterator tuple.
-  _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+  _CCCL_HOST_DEVICE_API typename super_t::reference dereference() const
   {
     return dereference_impl(index_seq{});
   }
@@ -239,53 +239,54 @@ private:
   // implementation, which considers the entire tuple.
   _CCCL_EXEC_CHECK_DISABLE
   template <typename OtherIteratorTuple>
-  _CCCL_HOST_DEVICE bool equal(const zip_iterator<OtherIteratorTuple>& other) const
+  _CCCL_HOST_DEVICE_API bool equal(const zip_iterator<OtherIteratorTuple>& other) const
   {
     return ::cuda::std::get<0>(get_iterator_tuple()) == ::cuda::std::get<0>(other.get_iterator_tuple());
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   template <size_t... Is>
-  _CCCL_HOST_DEVICE void advance_impl(typename super_t::difference_type n, ::cuda::std::index_sequence<Is...>)
+  _CCCL_HOST_DEVICE_API void advance_impl(typename super_t::difference_type n, ::cuda::std::index_sequence<Is...>)
   {
     (..., ::cuda::std::advance(::cuda::std::get<Is>(m_iterator_tuple), n));
   }
 
   // Advancing a zip_iterator means to advance all iterators in the tuple
-  _CCCL_HOST_DEVICE void advance(typename super_t::difference_type n)
+  _CCCL_HOST_DEVICE_API void advance(typename super_t::difference_type n)
   {
     advance_impl(n, index_seq{});
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   template <size_t... Is>
-  _CCCL_HOST_DEVICE void increment_impl(::cuda::std::index_sequence<Is...>)
+  _CCCL_HOST_DEVICE_API void increment_impl(::cuda::std::index_sequence<Is...>)
   {
     (..., ++::cuda::std::get<Is>(m_iterator_tuple));
   }
 
   // Incrementing a zip iterator means to increment all iterators in the tuple
-  _CCCL_HOST_DEVICE void increment()
+  _CCCL_HOST_DEVICE_API void increment()
   {
     increment_impl(index_seq{});
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   template <size_t... Is>
-  _CCCL_HOST_DEVICE void decrement_impl(::cuda::std::index_sequence<Is...>)
+  _CCCL_HOST_DEVICE_API void decrement_impl(::cuda::std::index_sequence<Is...>)
   {
     (..., --::cuda::std::get<Is>(m_iterator_tuple));
   }
 
   // Decrementing a zip iterator means to decrement all iterators in the tuple
-  _CCCL_HOST_DEVICE void decrement()
+  _CCCL_HOST_DEVICE_API void decrement()
   {
     decrement_impl(index_seq{});
   }
 
   // Distance is calculated using the first iterator in the tuple.
   template <typename OtherIteratorTuple>
-  _CCCL_HOST_DEVICE typename super_t::difference_type distance_to(const zip_iterator<OtherIteratorTuple>& other) const
+  _CCCL_HOST_DEVICE_API typename super_t::difference_type
+  distance_to(const zip_iterator<OtherIteratorTuple>& other) const
   {
     return ::cuda::std::distance(
       ::cuda::std::get<0>(get_iterator_tuple()), ::cuda::std::get<0>(other.get_iterator_tuple()));
@@ -308,7 +309,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES zip_iterator(Iterators...) -> zip_iterator<::cu
 //! \return A newly created \p zip_iterator which zips the iterators encapsulated in \p t.
 //! \see zip_iterator
 template <typename... Iterators>
-inline _CCCL_HOST_DEVICE zip_iterator<::cuda::std::tuple<Iterators...>>
+_CCCL_HOST_DEVICE_API inline zip_iterator<::cuda::std::tuple<Iterators...>>
 make_zip_iterator(::cuda::std::tuple<Iterators...> t)
 {
   return zip_iterator<::cuda::std::tuple<Iterators...>>{t};
@@ -322,7 +323,7 @@ make_zip_iterator(::cuda::std::tuple<Iterators...> t)
 //!
 //! \see zip_iterator
 template <typename... Iterators>
-inline _CCCL_HOST_DEVICE zip_iterator<::cuda::std::tuple<Iterators...>> make_zip_iterator(Iterators... its)
+_CCCL_HOST_DEVICE_API inline zip_iterator<::cuda::std::tuple<Iterators...>> make_zip_iterator(Iterators... its)
 {
   return zip_iterator<::cuda::std::tuple<Iterators...>>{its...};
 }

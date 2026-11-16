@@ -25,7 +25,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(fill.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/fill.h>
 #  include <thrust/system/cuda/detail/fill.h>
 #  include <thrust/system/omp/detail/fill.h>
@@ -36,7 +36,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 fill(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
      ForwardIterator first,
      ForwardIterator last,
@@ -49,7 +49,7 @@ fill(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename OutputIterator, typename Size, typename T>
-_CCCL_HOST_DEVICE OutputIterator
+_CCCL_HOST_DEVICE_API OutputIterator
 fill_n(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, OutputIterator first, Size n, const T& value)
 {
   _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<DerivedPolicy>(), "thrust::fill_n");
@@ -58,7 +58,7 @@ fill_n(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, OutputI
 } // end fill_n()
 
 template <typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void fill(ForwardIterator first, ForwardIterator last, const T& value)
+_CCCL_HOST_DEVICE_API void fill(ForwardIterator first, ForwardIterator last, const T& value)
 {
   using System = typename thrust::iterator_system<ForwardIterator>::type;
   _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<System>(), "thrust::fill");
@@ -70,7 +70,7 @@ _CCCL_HOST_DEVICE void fill(ForwardIterator first, ForwardIterator last, const T
 } // end fill()
 
 template <typename OutputIterator, typename Size, typename T>
-_CCCL_HOST_DEVICE OutputIterator fill_n(OutputIterator first, Size n, const T& value)
+_CCCL_HOST_DEVICE_API OutputIterator fill_n(OutputIterator first, Size n, const T& value)
 {
   using System = typename thrust::iterator_system<OutputIterator>::type;
   _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<System>(), "thrust::fill_n");

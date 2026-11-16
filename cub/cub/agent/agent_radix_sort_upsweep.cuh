@@ -219,7 +219,7 @@ struct AgentRadixSortUpsweep
   //---------------------------------------------------------------------
   // Utility methods
   //---------------------------------------------------------------------
-  _CCCL_DEVICE _CCCL_FORCEINLINE digit_extractor_t digit_extractor()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE digit_extractor_t digit_extractor()
   {
     return traits::template digit_extractor<fundamental_digit_extractor_t>(current_bit, num_bits, decomposer);
   }
@@ -227,7 +227,7 @@ struct AgentRadixSortUpsweep
   /**
    * Decode a key and increment corresponding smem digit counter
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Bucket(bit_ordered_type key)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Bucket(bit_ordered_type key)
   {
     // Perform transform op
     // `Digit()` takes a mutable reference for the decomposer overload.
@@ -251,7 +251,7 @@ struct AgentRadixSortUpsweep
   /**
    * Reset composite counters
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ResetDigitCounters()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ResetDigitCounters()
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int LANE = 0; LANE < COUNTER_LANES; LANE++)
@@ -263,7 +263,7 @@ struct AgentRadixSortUpsweep
   /**
    * Reset the unpacked counters in each thread
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ResetUnpackedCounters()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ResetUnpackedCounters()
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int LANE = 0; LANE < LANES_PER_WARP; LANE++)
@@ -280,7 +280,7 @@ struct AgentRadixSortUpsweep
    * Extracts and aggregates the digit counters for each counter lane
    * owned by this warp
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void UnpackDigitCounts()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void UnpackDigitCounts()
   {
     const unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
     const unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();
@@ -308,7 +308,7 @@ struct AgentRadixSortUpsweep
   /**
    * Processes a single, full tile
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessFullTile(OffsetT block_offset)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ProcessFullTile(OffsetT block_offset)
   {
     // Tile of keys
     bit_ordered_type keys[KEYS_PER_THREAD];
@@ -327,7 +327,7 @@ struct AgentRadixSortUpsweep
   /**
    * Processes a single load (may have some threads masked off)
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessPartialTile(OffsetT block_offset, const OffsetT& block_end)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ProcessPartialTile(OffsetT block_offset, const OffsetT& block_end)
   {
     // Process partial tile if necessary using single loads
     for (OffsetT offset = threadIdx.x; offset < block_end - block_offset; offset += BLOCK_THREADS)
@@ -345,7 +345,7 @@ struct AgentRadixSortUpsweep
   /**
    * Constructor
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentRadixSortUpsweep(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentRadixSortUpsweep(
     TempStorage& temp_storage, const KeyT* d_keys_in, int current_bit, int num_bits, DecomposerT decomposer = {})
       : temp_storage(temp_storage.Alias())
       , d_keys_in(reinterpret_cast<const bit_ordered_type*>(d_keys_in))
@@ -357,7 +357,7 @@ struct AgentRadixSortUpsweep
   /**
    * Compute radix digit histograms from a segment of input tiles.
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessRegion(OffsetT block_offset, const OffsetT& block_end)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ProcessRegion(OffsetT block_offset, const OffsetT& block_end)
   {
     // Reset digit counters in smem and unpacked counters in registers
     ResetDigitCounters();
@@ -403,7 +403,7 @@ struct AgentRadixSortUpsweep
    * Extract counts (saving them to the external array)
    */
   template <bool IsDescending>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExtractCounts(OffsetT* counters, int bin_stride = 1, int bin_offset = 0)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExtractCounts(OffsetT* counters, int bin_stride = 1, int bin_offset = 0)
   {
     const unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
     const unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();
@@ -483,7 +483,7 @@ struct AgentRadixSortUpsweep
    * 1]
    */
   template <int BinsTrackedPerThread>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExtractCounts(OffsetT (&bin_count)[BinsTrackedPerThread])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ExtractCounts(OffsetT (&bin_count)[BinsTrackedPerThread])
   {
     const unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
     const unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();

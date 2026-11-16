@@ -23,7 +23,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(mismatch.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/mismatch.h>
 #  include <thrust/system/cuda/detail/mismatch.h>
 #  include <thrust/system/omp/detail/mismatch.h>
@@ -34,7 +34,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2>
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<InputIterator1, InputIterator2>
 mismatch(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
          InputIterator1 first1,
          InputIterator1 last1,
@@ -47,7 +47,7 @@ mismatch(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -60,7 +60,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
 } // end mismatch()
 
 template <typename InputIterator1, typename InputIterator2>
-::cuda::std::pair<InputIterator1, InputIterator2>
+_CCCL_HOST_API ::cuda::std::pair<InputIterator1, InputIterator2>
 mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::mismatch");
@@ -76,7 +76,7 @@ mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
 } // end mismatch()
 
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-::cuda::std::pair<InputIterator1, InputIterator2>
+_CCCL_HOST_API ::cuda::std::pair<InputIterator1, InputIterator2>
 mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::mismatch");
@@ -93,7 +93,7 @@ mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, Bin
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -107,7 +107,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -121,7 +121,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
 } // end mismatch()
 
 template <typename InputIterator1, typename InputIterator2>
-::cuda::std::pair<InputIterator1, InputIterator2>
+_CCCL_HOST_API ::cuda::std::pair<InputIterator1, InputIterator2>
 mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::mismatch");
@@ -137,7 +137,7 @@ mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, Inp
 } // end mismatch()
 
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-::cuda::std::pair<InputIterator1, InputIterator2>
+_CCCL_HOST_API ::cuda::std::pair<InputIterator1, InputIterator2>
 mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, BinaryPredicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::mismatch");

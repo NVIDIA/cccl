@@ -31,7 +31,7 @@ template <typename InputType, typename OutputType>
 struct uninitialized_copy_functor
 {
   template <typename Tuple>
-  _CCCL_HOST_DEVICE void operator()(Tuple t)
+  _CCCL_HOST_DEVICE_API void operator()(Tuple t)
   {
     const InputType& in = ::cuda::std::get<0>(t);
     OutputType& out     = ::cuda::std::get<1>(t);
@@ -41,7 +41,7 @@ struct uninitialized_copy_functor
 
 // non-trivial copy constructor path
 template <typename ExecutionPolicy, typename InputIterator, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
+_CCCL_HOST_DEVICE_API ForwardIterator uninitialized_copy(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -74,7 +74,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
 
 // trivial copy constructor path
 template <typename ExecutionPolicy, typename InputIterator, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
+_CCCL_HOST_DEVICE_API ForwardIterator uninitialized_copy(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -86,7 +86,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
 
 // non-trivial copy constructor path
 template <typename ExecutionPolicy, typename InputIterator, typename Size, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
+_CCCL_HOST_DEVICE_API ForwardIterator uninitialized_copy_n(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator first,
   Size n,
@@ -114,7 +114,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
 
 // trivial copy constructor path
 template <typename ExecutionPolicy, typename InputIterator, typename Size, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
+_CCCL_HOST_DEVICE_API ForwardIterator uninitialized_copy_n(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator first,
   Size n,
@@ -126,7 +126,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
 } // namespace detail
 
 template <typename ExecutionPolicy, typename InputIterator, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
+_CCCL_HOST_DEVICE_API ForwardIterator uninitialized_copy(
   thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, ForwardIterator result)
 {
   using ResultType = thrust::detail::it_value_t<ForwardIterator>;
@@ -138,7 +138,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
 } // end uninitialized_copy()
 
 template <typename ExecutionPolicy, typename InputIterator, typename Size, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
+_CCCL_HOST_DEVICE_API ForwardIterator uninitialized_copy_n(
   thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, Size n, ForwardIterator result)
 {
   using ResultType = thrust::detail::it_value_t<ForwardIterator>;

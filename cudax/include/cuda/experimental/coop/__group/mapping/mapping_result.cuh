@@ -93,13 +93,26 @@ struct __mapping_result<__uniform_static_unit_count<_StaticGroupCount, _StaticUn
     }
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_rank()
+  {
+    return _StaticGroupCount == 1 ? 0 : ::cuda::std::dynamic_extent;
+  }
+
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_rank() const
   {
     if constexpr (!_IsAlwaysExhaustive)
     {
       _CCCL_ASSERT(is_valid(), "getting group rank of thread that is not part of the group is UB");
     }
-    return __group_rank_;
+
+    if constexpr (static_group_rank() != ::cuda::std::dynamic_extent)
+    {
+      return static_cast<::cuda::std::uint32_t>(static_group_rank());
+    }
+    else
+    {
+      return __group_rank_;
+    }
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool has_uniform_static_unit_count()
@@ -144,7 +157,15 @@ struct __mapping_result<__uniform_static_unit_count<_StaticGroupCount, _StaticUn
     {
       _CCCL_ASSERT(is_valid(), "getting unit rank of thread that is not part of the group is UB");
     }
-    return __unit_rank_;
+
+    if constexpr (_StaticUnitCount == 1)
+    {
+      return 0;
+    }
+    else
+    {
+      return __unit_rank_;
+    }
   }
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::device::lane_mask lane_mask() const
@@ -211,13 +232,25 @@ struct __mapping_result<__static_unit_counts<_StaticUnitCounts...>, _IsAlwaysExh
     return static_cast<::cuda::std::uint32_t>(_StaticGroupCount);
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_rank()
+  {
+    return _StaticGroupCount == 1 ? 0 : ::cuda::std::dynamic_extent;
+  }
+
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_rank() const
   {
     if constexpr (!_IsAlwaysExhaustive)
     {
       _CCCL_ASSERT(is_valid(), "getting group rank of thread that is not part of the group is UB");
     }
-    return __group_rank_;
+    if constexpr (static_group_rank() != ::cuda::std::dynamic_extent)
+    {
+      return static_cast<::cuda::std::uint32_t>(static_group_rank());
+    }
+    else
+    {
+      return __group_rank_;
+    }
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool has_uniform_static_unit_count()

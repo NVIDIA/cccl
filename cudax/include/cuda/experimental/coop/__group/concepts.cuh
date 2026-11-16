@@ -70,6 +70,8 @@ _CCCL_CONCEPT __group_mapping_result = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __v
   _Same_as(::cuda::std::size_t) _Tp::static_group_count(),
   (::cuda::std::integral_constant<::cuda::std::size_t, _Tp::static_group_count()>::value),
   _Same_as(::cuda::std::uint32_t) __v.group_count(),
+  _Same_as(::cuda::std::size_t) _Tp::static_group_rank(),
+  (::cuda::std::integral_constant<::cuda::std::size_t, _Tp::static_group_rank()>::value),
   _Same_as(::cuda::std::uint32_t) __v.group_rank(),
   _Same_as(::cuda::std::size_t) _Tp::static_unit_count(),
   (::cuda::std::integral_constant<::cuda::std::size_t, _Tp::static_unit_count()>::value),

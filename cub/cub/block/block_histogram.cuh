@@ -185,7 +185,7 @@ class BlockHistogram
   unsigned int linear_tid;
 
   /// Internal storage allocator
-  _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
   {
     __shared__ _TempStorage private_storage;
     return private_storage;
@@ -204,7 +204,7 @@ public:
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //! @endrst
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogram()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockHistogram()
       : temp_storage(PrivateStorage())
       , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
@@ -220,7 +220,7 @@ public:
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogram(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockHistogram(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
       , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
@@ -272,7 +272,7 @@ public:
   //! @tparam CounterT
   //!   **[inferred]** Histogram counter type
   template <typename CounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InitHistogram(CounterT histogram[Bins])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InitHistogram(CounterT histogram[Bins])
   {
     // Initialize histogram bin counts to zeros
     int histo_offset = 0;
@@ -338,7 +338,7 @@ public:
   //! @param[out] histogram
   //!   Reference to shared/device-accessible memory histogram
   template <typename CounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Histogram(T (&items)[ItemsPerThread], CounterT histogram[Bins])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Histogram(T (&items)[ItemsPerThread], CounterT histogram[Bins])
   {
     // Initialize histogram bin counts to zeros
     InitHistogram(histogram);
@@ -402,7 +402,7 @@ public:
   //! @param[out] histogram
   //!   Reference to shared/device-accessible memory histogram
   template <typename CounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ItemsPerThread], CounterT histogram[Bins])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Composite(T (&items)[ItemsPerThread], CounterT histogram[Bins])
   {
     InternalBlockHistogram(temp_storage).Composite(items, histogram);
   }

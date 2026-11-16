@@ -31,6 +31,7 @@
 #  include <cuda/__utility/basic_any.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__optional/optional.h>
+#  include <cuda/std/__type_traits/is_void.h>
 #  include <cuda/std/__type_traits/type_list_operations.h>
 #  include <cuda/std/__utility/delegate_constructors.h>
 #  include <cuda/std/__utility/forward.h>
@@ -55,13 +56,13 @@ struct __with_property
   template <class _Ty, class _ReturnType = __property_result_t<_Property>>
   _CCCL_PUBLIC_HOST_API static _ReturnType __get_property(const _Ty& __obj)
   {
-    if constexpr (!::cuda::std::is_same_v<__property_result_t<_Property>, void>)
+    if constexpr (!::cuda::std::is_void_v<__property_result_t<_Property>>)
     {
       return get_property(__obj, _Property());
     }
     else
     {
-      return void();
+      return;
     }
   }
 
@@ -71,13 +72,15 @@ struct __with_property
     _CCCL_HOST_API friend auto get_property([[maybe_unused]] const __iproperty& __obj, _Property)
       -> __property_result_t<_Property>
     {
-      if constexpr (!::cuda::std::is_same_v<__property_result_t<_Property>, void>)
+      if constexpr (!::cuda::std::is_void_v<__property_result_t<_Property>>)
       {
         return ::cuda::__virtcall<&__get_property<__iproperty>>(&__obj);
       }
       else
       {
-        return void();
+        // For whatever reason MSVC does not like a bare "return" here, even though
+        // __property_result_t is exactly void.
+        return void(); // NOLINT(readability-avoid-return-with-void-value)
       }
     }
 
@@ -201,7 +204,7 @@ using __iasync_resource _CCCL_NODEBUG = __iset<__iresource<_Properties...>, __ib
 
 template <class _Property>
 using __try_property_result_t _CCCL_NODEBUG =
-  ::cuda::std::conditional_t<!::cuda::std::is_same_v<__property_result_t<_Property>, void>, //
+  ::cuda::std::conditional_t<!::cuda::std::is_void_v<__property_result_t<_Property>>, //
                              ::cuda::std::optional<__property_result_t<_Property>>, //
                              bool>;
 
@@ -213,7 +216,7 @@ struct __with_try_get_property
     -> __try_property_result_t<_Property>
   {
     auto __prop = ::cuda::__dynamic_any_cast<const __iproperty<_Property>*>(&__self);
-    if constexpr (::cuda::std::is_same_v<__property_result_t<_Property>, void>)
+    if constexpr (::cuda::std::is_void_v<__property_result_t<_Property>>)
     {
       return __prop != nullptr;
     }
@@ -288,7 +291,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES any_resource
   using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
   //! @cond
-  explicit any_resource(__from_base_tag, __base&& __b) noexcept
+  _CCCL_HOST_API explicit any_resource(__from_base_tag, __base&& __b) noexcept
       : __base(::cuda::std::move(__b))
   {}
   //! @endcond
@@ -299,7 +302,7 @@ private:
 
   using __base::interface;
 
-  __base& __get_base() noexcept
+  _CCCL_HOST_API __base& __get_base() noexcept
   {
     return *this;
   }
@@ -315,32 +318,33 @@ struct _CCCL_DECLSPEC_EMPTY_BASES synchronous_resource_ref
   // Inherit constructors from __basic_any
   _CCCL_DELEGATE_CONSTRUCTORS(synchronous_resource_ref, ::cuda::__basic_any, __iresource<_Properties...>&);
 
-  synchronous_resource_ref(const synchronous_resource_ref& __other) noexcept = default;
+  _CCCL_HIDE_FROM_ABI synchronous_resource_ref(const synchronous_resource_ref& __other) noexcept = default;
 
   // Allow narrowing conversion from a synchronous_resource_ref with a superset
   // of properties by rebinding to the same underlying object.
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
-  synchronous_resource_ref(const synchronous_resource_ref<_OtherProperties...>& __other) noexcept
+  _CCCL_HOST_API synchronous_resource_ref(const synchronous_resource_ref<_OtherProperties...>& __other) noexcept
       : __base(__other.__get_base())
   {}
 
   // resource_ref is convertible to synchronous_resource_ref
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
-  synchronous_resource_ref(resource_ref<_OtherProperties...> __other) noexcept
+  _CCCL_HOST_API synchronous_resource_ref(resource_ref<_OtherProperties...> __other) noexcept
       : __base(__other.__get_base())
   {}
 
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
-  synchronous_resource_ref& operator=(const synchronous_resource_ref<_OtherProperties...>& __other) noexcept
+  _CCCL_HOST_API synchronous_resource_ref&
+  operator=(const synchronous_resource_ref<_OtherProperties...>& __other) noexcept
   {
     __basic_any_access::__cast_to(__other.__get_base(), __get_base());
     return *this;
   }
 
-  synchronous_resource_ref& operator=(const synchronous_resource_ref& __other) noexcept
+  _CCCL_HOST_API synchronous_resource_ref& operator=(const synchronous_resource_ref& __other) noexcept
   {
     __basic_any_access::__cast_to(__other.__get_base(), __get_base());
     return *this;
@@ -349,7 +353,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES synchronous_resource_ref
   using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
   //! @cond
-  explicit synchronous_resource_ref(__from_base_tag, __base&& __b) noexcept
+  _CCCL_HOST_API explicit synchronous_resource_ref(__from_base_tag, __base&& __b) noexcept
       : __base(::cuda::std::move(__b))
   {}
   //! @endcond
@@ -360,12 +364,12 @@ private:
 
   using __base::interface;
 
-  __base& __get_base() noexcept
+  _CCCL_HOST_API __base& __get_base() noexcept
   {
     return *this;
   }
 
-  const __base& __get_base() const noexcept
+  _CCCL_HOST_API const __base& __get_base() const noexcept
   {
     return *this;
   }
@@ -384,25 +388,25 @@ struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
   // Inherit other constructors from __basic_any
   _CCCL_DELEGATE_CONSTRUCTORS(resource_ref, ::cuda::__basic_any, __iasync_resource<_Properties...>&);
 
-  resource_ref(const resource_ref& __other) noexcept = default;
+  _CCCL_HIDE_FROM_ABI resource_ref(const resource_ref& __other) noexcept = default;
 
   // Allow narrowing conversion from a resource_ref with a superset of
   // properties by rebinding to the same underlying object.
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
-  resource_ref(const resource_ref<_OtherProperties...>& __other) noexcept
+  _CCCL_HOST_API resource_ref(const resource_ref<_OtherProperties...>& __other) noexcept
       : __base(__other.__get_base())
   {}
 
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
-  resource_ref& operator=(const resource_ref<_OtherProperties...>& __other) noexcept
+  _CCCL_HOST_API resource_ref& operator=(const resource_ref<_OtherProperties...>& __other) noexcept
   {
     __basic_any_access::__cast_to(__other.__get_base(), __get_base());
     return *this;
   }
 
-  resource_ref& operator=(const resource_ref& __other) noexcept
+  _CCCL_HOST_API resource_ref& operator=(const resource_ref& __other) noexcept
   {
     __basic_any_access::__cast_to(__other.__get_base(), __get_base());
     return *this;
@@ -418,7 +422,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
   }
 
   //! @cond
-  explicit resource_ref(__from_base_tag, __base&& __b) noexcept
+  _CCCL_HOST_API explicit resource_ref(__from_base_tag, __base&& __b) noexcept
       : __base(::cuda::std::move(__b))
   {}
   //! @endcond
@@ -431,12 +435,12 @@ private:
 
   using __base::interface;
 
-  __base& __get_base() noexcept
+  _CCCL_HOST_API __base& __get_base() noexcept
   {
     return *this;
   }
 
-  const __base& __get_base() const noexcept
+  _CCCL_HOST_API const __base& __get_base() const noexcept
   {
     return *this;
   }
@@ -455,19 +459,21 @@ inline constexpr bool __disable_default_dynamic_accessibility_property<synchrono
 
 _CCCL_TEMPLATE(class... _Properties, class _Resource)
 _CCCL_REQUIRES(mr::synchronous_resource_with<_Resource, _Properties...>)
-synchronous_resource_ref<_Properties...> __as_resource_ref(_Resource& __mr) noexcept
+_CCCL_HOST_API synchronous_resource_ref<_Properties...> __as_resource_ref(_Resource& __mr) noexcept
 {
   return synchronous_resource_ref<_Properties...>(__mr);
 }
 
 template <class... _Properties>
-synchronous_resource_ref<_Properties...> __as_resource_ref(synchronous_resource_ref<_Properties...> const __mr) noexcept
+_CCCL_HOST_API synchronous_resource_ref<_Properties...>
+__as_resource_ref(synchronous_resource_ref<_Properties...> const __mr) noexcept
 {
   return __mr;
 }
 
 template <class... _Properties>
-synchronous_resource_ref<_Properties...> __as_resource_ref(resource_ref<_Properties...> const __mr) noexcept
+_CCCL_HOST_API synchronous_resource_ref<_Properties...>
+__as_resource_ref(resource_ref<_Properties...> const __mr) noexcept
 {
   return __mr;
 }
@@ -999,7 +1005,7 @@ inline constexpr bool __is_resource_ref<resource_ref<_Properties...>> = true;
 //!
 //! @endrst
 template <class _Resource, class... _Properties, class... _Args>
-auto make_any_synchronous_resource(_Args&&... __args) -> any_synchronous_resource<_Properties...>
+_CCCL_HOST_API auto make_any_synchronous_resource(_Args&&... __args) -> any_synchronous_resource<_Properties...>
 {
   static_assert(::cuda::mr::synchronous_resource<_Resource>,
                 "_Resource does not satisfy the cuda::mr::synchronous_resource concept");
@@ -1026,7 +1032,7 @@ auto make_any_synchronous_resource(_Args&&... __args) -> any_synchronous_resourc
 //!
 //! @endrst
 template <class _Resource, class... _Properties, class... _Args>
-auto make_any_resource(_Args&&... __args) -> any_resource<_Properties...>
+_CCCL_HOST_API auto make_any_resource(_Args&&... __args) -> any_resource<_Properties...>
 {
   static_assert(::cuda::mr::resource<_Resource>, "_Resource does not satisfy the cuda::mr::resource concept");
   static_assert(::cuda::mr::resource_with<_Resource, _Properties...>,

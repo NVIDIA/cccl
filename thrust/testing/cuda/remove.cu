@@ -63,7 +63,7 @@ struct is_true
 {
   _CCCL_HOST_DEVICE bool operator()(T x)
   {
-    return x ? true : false;
+    return static_cast<bool>(x);
   }
 };
 

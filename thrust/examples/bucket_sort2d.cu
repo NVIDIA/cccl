@@ -41,7 +41,7 @@ struct point_to_bucket_index
     const unsigned int y = static_cast<unsigned int>(cuda::std::get<1>(v) * static_cast<float>(height));
 
     // return the bucket's linear index
-    return y * width + x;
+    return (y * width) + x;
   }
 };
 
@@ -94,7 +94,7 @@ int main()
     bucket_end.begin());
 
   // write out bucket (150, 50)'s list of points
-  const unsigned int bucket_idx = 50 * w + 150;
+  const unsigned int bucket_idx = (50 * w) + 150;
   std::cout << "bucket (150, 50)'s list of points:" << '\n';
   std::cout << std::fixed << std::setprecision(6);
   for (unsigned int point_idx = bucket_begin[bucket_idx]; point_idx != bucket_end[bucket_idx]; ++point_idx)

@@ -80,7 +80,7 @@ struct DeviceFor
     RandomAccessIteratorT input;
     OpT op;
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()(OffsetT i)
     {
       // Dereferencing `thrust::device_vector<T>` iterators returns a `thrust::device_reference<T>`
       // instead of `T`. Since user-provided operator expects `T` as an argument, we need to unwrap.
@@ -108,7 +108,7 @@ struct DeviceFor
     // Type of the vector that is used to load the input data
     using vector_t = typename CubVector<T, vec_size>::Type;
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()(OffsetT i)
     {
       // Surrounding `Bulk` call doesn't invoke this operator on invalid indices, so we don't need to
       // check for out-of-bounds access here.
@@ -121,7 +121,7 @@ struct DeviceFor
       }
       else
       { // Case of fully filled vector
-        const vector_t vec = *reinterpret_cast<const vector_t*>(input + vec_size * i);
+        const vector_t vec = *reinterpret_cast<const vector_t*>(input + (vec_size * i));
 
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int j = 0; j < vec_size; j++)

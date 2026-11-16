@@ -91,94 +91,94 @@ struct CubVector<T, 4>
 /**
  * Macro for expanding partially-specialized built-in vector types
  */
-#  define CUB_DEFINE_VECTOR_TYPE(base_type, short_type)                                     \
-                                                                                            \
-    template <>                                                                             \
-    struct CubVector<base_type, 1> : short_type##1                                          \
-    {                                                                                       \
-      using BaseType = base_type;                                                           \
-      using Type     = short_type##1;                                                       \
-      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CubVector operator+(const CubVector& other) const \
-      {                                                                                     \
-        CubVector retval;                                                                   \
-        retval.x = x + other.x;                                                             \
-        return retval;                                                                      \
-      }                                                                                     \
-      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CubVector operator-(const CubVector& other) const \
-      {                                                                                     \
-        CubVector retval;                                                                   \
-        retval.x = x - other.x;                                                             \
-        return retval;                                                                      \
-      }                                                                                     \
-    };                                                                                      \
-                                                                                            \
-    template <>                                                                             \
-    struct CubVector<base_type, 2> : short_type##2                                          \
-    {                                                                                       \
-      using BaseType = base_type;                                                           \
-      using Type     = short_type##2;                                                       \
-      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CubVector operator+(const CubVector& other) const \
-      {                                                                                     \
-        CubVector retval;                                                                   \
-        retval.x = x + other.x;                                                             \
-        retval.y = y + other.y;                                                             \
-        return retval;                                                                      \
-      }                                                                                     \
-      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CubVector operator-(const CubVector& other) const \
-      {                                                                                     \
-        CubVector retval;                                                                   \
-        retval.x = x - other.x;                                                             \
-        retval.y = y - other.y;                                                             \
-        return retval;                                                                      \
-      }                                                                                     \
-    };                                                                                      \
-                                                                                            \
-    template <>                                                                             \
-    struct CubVector<base_type, 3> : short_type##3                                          \
-    {                                                                                       \
-      using BaseType = base_type;                                                           \
-      using Type     = short_type##3;                                                       \
-      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CubVector operator+(const CubVector& other) const \
-      {                                                                                     \
-        CubVector retval;                                                                   \
-        retval.x = x + other.x;                                                             \
-        retval.y = y + other.y;                                                             \
-        retval.z = z + other.z;                                                             \
-        return retval;                                                                      \
-      }                                                                                     \
-      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CubVector operator-(const CubVector& other) const \
-      {                                                                                     \
-        CubVector retval;                                                                   \
-        retval.x = x - other.x;                                                             \
-        retval.y = y - other.y;                                                             \
-        retval.z = z - other.z;                                                             \
-        return retval;                                                                      \
-      }                                                                                     \
-    };                                                                                      \
-                                                                                            \
-    template <>                                                                             \
-    struct CubVector<base_type, 4> : short_type##4                                          \
-    {                                                                                       \
-      using BaseType = base_type;                                                           \
-      using Type     = short_type##4;                                                       \
-      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CubVector operator+(const CubVector& other) const \
-      {                                                                                     \
-        CubVector retval;                                                                   \
-        retval.x = x + other.x;                                                             \
-        retval.y = y + other.y;                                                             \
-        retval.z = z + other.z;                                                             \
-        retval.w = w + other.w;                                                             \
-        return retval;                                                                      \
-      }                                                                                     \
-      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CubVector operator-(const CubVector& other) const \
-      {                                                                                     \
-        CubVector retval;                                                                   \
-        retval.x = x - other.x;                                                             \
-        retval.y = y - other.y;                                                             \
-        retval.z = z - other.z;                                                             \
-        retval.w = w - other.w;                                                             \
-        return retval;                                                                      \
-      }                                                                                     \
+#  define CUB_DEFINE_VECTOR_TYPE(base_type, short_type)                                         \
+                                                                                                \
+    template <>                                                                                 \
+    struct CubVector<base_type, 1> : short_type##1                                              \
+    {                                                                                           \
+      using BaseType = base_type;                                                               \
+      using Type     = short_type##1;                                                           \
+      _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE CubVector operator+(const CubVector& other) const \
+      {                                                                                         \
+        CubVector retval;                                                                       \
+        retval.x = x + other.x;                                                                 \
+        return retval;                                                                          \
+      }                                                                                         \
+      _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE CubVector operator-(const CubVector& other) const \
+      {                                                                                         \
+        CubVector retval;                                                                       \
+        retval.x = x - other.x;                                                                 \
+        return retval;                                                                          \
+      }                                                                                         \
+    };                                                                                          \
+                                                                                                \
+    template <>                                                                                 \
+    struct CubVector<base_type, 2> : short_type##2                                              \
+    {                                                                                           \
+      using BaseType = base_type;                                                               \
+      using Type     = short_type##2;                                                           \
+      _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE CubVector operator+(const CubVector& other) const \
+      {                                                                                         \
+        CubVector retval;                                                                       \
+        retval.x = x + other.x;                                                                 \
+        retval.y = y + other.y;                                                                 \
+        return retval;                                                                          \
+      }                                                                                         \
+      _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE CubVector operator-(const CubVector& other) const \
+      {                                                                                         \
+        CubVector retval;                                                                       \
+        retval.x = x - other.x;                                                                 \
+        retval.y = y - other.y;                                                                 \
+        return retval;                                                                          \
+      }                                                                                         \
+    };                                                                                          \
+                                                                                                \
+    template <>                                                                                 \
+    struct CubVector<base_type, 3> : short_type##3                                              \
+    {                                                                                           \
+      using BaseType = base_type;                                                               \
+      using Type     = short_type##3;                                                           \
+      _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE CubVector operator+(const CubVector& other) const \
+      {                                                                                         \
+        CubVector retval;                                                                       \
+        retval.x = x + other.x;                                                                 \
+        retval.y = y + other.y;                                                                 \
+        retval.z = z + other.z;                                                                 \
+        return retval;                                                                          \
+      }                                                                                         \
+      _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE CubVector operator-(const CubVector& other) const \
+      {                                                                                         \
+        CubVector retval;                                                                       \
+        retval.x = x - other.x;                                                                 \
+        retval.y = y - other.y;                                                                 \
+        retval.z = z - other.z;                                                                 \
+        return retval;                                                                          \
+      }                                                                                         \
+    };                                                                                          \
+                                                                                                \
+    template <>                                                                                 \
+    struct CubVector<base_type, 4> : short_type##4                                              \
+    {                                                                                           \
+      using BaseType = base_type;                                                               \
+      using Type     = short_type##4;                                                           \
+      _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE CubVector operator+(const CubVector& other) const \
+      {                                                                                         \
+        CubVector retval;                                                                       \
+        retval.x = x + other.x;                                                                 \
+        retval.y = y + other.y;                                                                 \
+        retval.z = z + other.z;                                                                 \
+        retval.w = w + other.w;                                                                 \
+        return retval;                                                                          \
+      }                                                                                         \
+      _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE CubVector operator-(const CubVector& other) const \
+      {                                                                                         \
+        CubVector retval;                                                                       \
+        retval.x = x - other.x;                                                                 \
+        retval.y = y - other.y;                                                                 \
+        retval.z = z - other.z;                                                                 \
+        retval.w = w - other.w;                                                                 \
+        return retval;                                                                          \
+      }                                                                                         \
     };
 
 // Expand CUDA vector types for built-in primitives

@@ -168,7 +168,7 @@ inline void check_device_launch_completion(cuda::stream_ref stream, const cuda::
 template <class ActionT, class... Args>
 __global__ void device_side_api_launch_kernel(
   cuda::std::uint8_t* d_temp_storage,
-  std::size_t* temp_storage_bytes,
+  std::size_t* temp_storage_bytes, // NOLINT(readability-non-const-parameter)
   cudaError_t* d_error,
   ActionT action,
   Args... args)

@@ -148,7 +148,7 @@ $L__BB1_2:
 #if _CCCL_CTK_AT_LEAST(12, 1)
 extern "C" __global__ void kernel_rt(int* data, int size)
 {
-  const auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+  const auto idx = (blockIdx.x * blockDim.x) + threadIdx.x;
   if (idx < size)
   {
     data[idx] += 1;

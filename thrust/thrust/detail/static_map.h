@@ -36,7 +36,7 @@ struct cons
   };
 
   template <unsigned int DefaultValue>
-  _CCCL_HOST_DEVICE static unsigned int get(unsigned int key)
+  _CCCL_HOST_DEVICE_API static unsigned int get(unsigned int key)
   {
     return (key == Head::key) ? (Head::value) : Tail::template get<DefaultValue>(key);
   }
@@ -52,7 +52,7 @@ struct cons<Head, void>
   };
 
   template <unsigned int DefaultValue>
-  _CCCL_HOST_DEVICE static unsigned int get(unsigned int key)
+  _CCCL_HOST_DEVICE_API static unsigned int get(unsigned int key)
   {
     return (key == Head::key) ? (Head::value) : DefaultValue;
   }
@@ -91,7 +91,7 @@ struct static_map
     static const unsigned int value = impl::template static_get<Key, DefaultValue>::value;
   };
 
-  _CCCL_HOST_DEVICE static unsigned int get(unsigned int key)
+  _CCCL_HOST_DEVICE_API static unsigned int get(unsigned int key)
   {
     return impl::template get<DefaultValue>(key);
   }
@@ -143,7 +143,7 @@ struct static_lookup
 };
 
 template <typename StaticMap>
-_CCCL_HOST_DEVICE unsigned int lookup(unsigned int key)
+_CCCL_HOST_DEVICE_API unsigned int lookup(unsigned int key)
 {
   return StaticMap::get(key);
 }

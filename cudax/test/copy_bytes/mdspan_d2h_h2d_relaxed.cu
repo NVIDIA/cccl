@@ -61,7 +61,7 @@ TEST_CASE("copy_bytes layout_stride_relaxed, sliding window", "[copy_bytes][rela
   // A sliding window (Toeplitz matrix) using strides {1, 1}:
   // data = [0, 1, 2, ..., 2N-2], src(i, j) = data[i + j]
   constexpr int N       = 5;
-  constexpr int DataLen = 2 * N - 1; // = 9
+  constexpr int DataLen = (2 * N) - 1; // = 9
   thrust::host_vector<int> input(DataLen);
   for (int i = 0; i < DataLen; ++i)
   {
@@ -72,7 +72,7 @@ TEST_CASE("copy_bytes layout_stride_relaxed, sliding window", "[copy_bytes][rela
   {
     for (int j = 0; j < N; ++j)
     {
-      expected[static_cast<std::size_t>(i) * N + j] = i + j;
+      expected[(static_cast<std::size_t>(i) * N) + j] = i + j;
     }
   }
 
@@ -118,7 +118,8 @@ TEST_CASE("copy_bytes layout_stride_relaxed, 2D column-reversed", "[copy_bytes][
   {
     for (int j = 0; j < N; ++j)
     {
-      expected[static_cast<std::size_t>(i) * N + j] = static_cast<int>(static_cast<std::size_t>(i) * N + (N - 1 - j));
+      expected[(static_cast<std::size_t>(i) * N) + j] =
+        static_cast<int>((static_cast<std::size_t>(i) * N) + (N - 1 - j));
     }
   }
   using extents_t = cuda::std::extents<int, M, N>;
@@ -132,7 +133,7 @@ TEST_CASE("copy_bytes layout_stride_relaxed, offset subarray", "[copy_bytes][rel
   constexpr int Cols    = 2;
   constexpr int Ld      = 4;
   constexpr int Offset  = 2;
-  constexpr int DataLen = Offset + (Rows - 1) * Ld + (Cols - 1) + 1; // = 12
+  constexpr int DataLen = Offset + ((Rows - 1) * Ld) + (Cols - 1) + 1; // = 12
   // input: [0, 1, 2, ..., 11]
   thrust::host_vector<int> input(DataLen);
   for (int i = 0; i < DataLen; ++i)

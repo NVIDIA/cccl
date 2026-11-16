@@ -67,7 +67,7 @@ struct RleLookbackPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const RleLookbackPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const RleLookbackPolicy& p)
   {
     return os
         << "RleLookbackPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
@@ -100,7 +100,7 @@ namespace detail
 }
 } // namespace detail
 
-inline ::std::ostream& operator<<(::std::ostream& os, RleAlgorithm algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, RleAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }
@@ -166,8 +166,8 @@ struct RleLookaheadPolicy
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t
   dyn_smem_bytes(int key_size, int key_align) const noexcept
   {
-    return static_cast<::cuda::std::size_t>(key_ring_stages) * slot_stride(key_size, key_align) * key_size
-         + static_cast<::cuda::std::size_t>(pos_ring_stages) * tile_size() * sizeof(detail::rle::encode::position_t);
+    return (static_cast<::cuda::std::size_t>(key_ring_stages) * slot_stride(key_size, key_align) * key_size)
+         + (static_cast<::cuda::std::size_t>(pos_ring_stages) * tile_size() * sizeof(detail::rle::encode::position_t));
   }
 
   static constexpr ::cuda::std::size_t static_smem_budget = 8 * 1024;
@@ -212,7 +212,7 @@ struct RleLookaheadPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const RleLookaheadPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const RleLookaheadPolicy& p)
   {
     return os
         << "RleLookaheadPolicy { .items_per_thread = " << p.items_per_thread << ", .compute_warps = " << p.compute_warps
@@ -245,7 +245,7 @@ struct RleEncodePolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const RleEncodePolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const RleEncodePolicy& p)
   {
     return os << "RleEncodePolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback
               << ", .lookahead = " << p.lookahead << " }";

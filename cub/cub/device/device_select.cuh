@@ -88,13 +88,13 @@ CUB_NAMESPACE_BEGIN
 //! custom :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::UniqueByKeyPolicy`, as shown
 //! in the example below:
 //!
-//!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_unique_by_key_api.cu
 //!      :language: c++
 //!      :dedent:
 //!      :start-after: example-begin unique-by-key-policy-selector
 //!      :end-before: example-end unique-by-key-policy-selector
 //!
-//!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_unique_by_key_api.cu
 //!      :language: c++
 //!      :dedent:
 //!      :start-after: example-begin unique-by-key-tuning
@@ -1853,7 +1853,7 @@ struct DeviceSelect
   //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector
   //! using environment-based API:
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_unique_by_key_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin select-uniquebykey-env
@@ -1981,7 +1981,7 @@ struct DeviceSelect
   //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector
   //! using environment-based API and default key equality:
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_unique_by_key_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin select-uniquebykey-default-eq-env

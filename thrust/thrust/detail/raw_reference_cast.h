@@ -142,25 +142,25 @@ struct raw_reference<tuple_of_iterator_references<Ts...>>
 
 // provide declarations of raw_reference_cast's overloads for raw_reference_caster below
 template <typename T>
-_CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T& ref)
+_CCCL_HOST_DEVICE_API typename detail::raw_reference<T>::type raw_reference_cast(T& ref)
 {
   return *thrust::raw_pointer_cast(&ref);
 }
 
 template <typename T>
-_CCCL_HOST_DEVICE typename detail::raw_reference<const T>::type raw_reference_cast(const T& ref)
+_CCCL_HOST_DEVICE_API typename detail::raw_reference<const T>::type raw_reference_cast(const T& ref)
 {
   return *thrust::raw_pointer_cast(&ref);
 }
 
 template <typename T, ::cuda::std::enable_if_t<detail::is_proxy_reference_v<::cuda::std::remove_cv_t<T>>, int> = 0>
-_CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T&& t)
+_CCCL_HOST_DEVICE_API typename detail::raw_reference<T>::type raw_reference_cast(T&& t)
 {
   return ::cuda::std::forward<T>(t);
 }
 
 template <typename... Ts>
-_CCCL_HOST_DEVICE auto raw_reference_cast(detail::tuple_of_iterator_references<Ts...> t) ->
+_CCCL_HOST_DEVICE_API auto raw_reference_cast(detail::tuple_of_iterator_references<Ts...> t) ->
   typename detail::raw_reference<detail::tuple_of_iterator_references<Ts...>>::type
 {
   if constexpr (detail::can_unwrap<detail::tuple_of_iterator_references<Ts...>>)

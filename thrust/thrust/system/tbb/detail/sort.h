@@ -33,12 +33,13 @@ namespace sort_detail
 const static int threshold = 128 * 1024;
 
 template <typename DerivedPolicy, typename Iterator1, typename Iterator2, typename StrictWeakOrdering>
-void merge_sort(execution_policy<DerivedPolicy>& exec,
-                Iterator1 first1,
-                Iterator1 last1,
-                Iterator2 first2,
-                StrictWeakOrdering comp,
-                bool inplace);
+_CCCL_HOST_API void merge_sort(
+  execution_policy<DerivedPolicy>& exec,
+  Iterator1 first1,
+  Iterator1 last1,
+  Iterator2 first2,
+  StrictWeakOrdering comp,
+  bool inplace);
 
 template <typename DerivedPolicy, typename Iterator1, typename Iterator2, typename StrictWeakOrdering>
 struct merge_sort_closure
@@ -49,7 +50,7 @@ struct merge_sort_closure
   StrictWeakOrdering comp;
   bool inplace;
 
-  merge_sort_closure(
+  _CCCL_HOST_API merge_sort_closure(
     execution_policy<DerivedPolicy>& exec,
     Iterator1 first1,
     Iterator1 last1,
@@ -64,19 +65,20 @@ struct merge_sort_closure
       , inplace(inplace)
   {}
 
-  void operator()() const
+  _CCCL_HOST_API void operator()() const
   {
     merge_sort(exec, first1, last1, first2, comp, inplace);
   }
 };
 
 template <typename DerivedPolicy, typename Iterator1, typename Iterator2, typename StrictWeakOrdering>
-void merge_sort(execution_policy<DerivedPolicy>& exec,
-                Iterator1 first1,
-                Iterator1 last1,
-                Iterator2 first2,
-                StrictWeakOrdering comp,
-                bool inplace)
+_CCCL_HOST_API void merge_sort(
+  execution_policy<DerivedPolicy>& exec,
+  Iterator1 first1,
+  Iterator1 last1,
+  Iterator2 first2,
+  StrictWeakOrdering comp,
+  bool inplace)
 {
   using difference_type = thrust::detail::it_difference_t<Iterator1>;
 
@@ -127,7 +129,7 @@ template <typename DerivedPolicy,
           typename Iterator3,
           typename Iterator4,
           typename StrictWeakOrdering>
-void merge_sort_by_key(
+_CCCL_HOST_API void merge_sort_by_key(
   execution_policy<DerivedPolicy>& exec,
   Iterator1 first1,
   Iterator1 last1,
@@ -153,7 +155,7 @@ struct merge_sort_by_key_closure
   StrictWeakOrdering comp;
   bool inplace;
 
-  merge_sort_by_key_closure(
+  _CCCL_HOST_API merge_sort_by_key_closure(
     execution_policy<DerivedPolicy>& exec,
     Iterator1 first1,
     Iterator1 last1,
@@ -172,7 +174,7 @@ struct merge_sort_by_key_closure
       , inplace(inplace)
   {}
 
-  void operator()() const
+  _CCCL_HOST_API void operator()() const
   {
     merge_sort_by_key(exec, first1, last1, first2, first3, first4, comp, inplace);
   }
@@ -184,7 +186,7 @@ template <typename DerivedPolicy,
           typename Iterator3,
           typename Iterator4,
           typename StrictWeakOrdering>
-void merge_sort_by_key(
+_CCCL_HOST_API void merge_sort_by_key(
   execution_policy<DerivedPolicy>& exec,
   Iterator1 first1,
   Iterator1 last1,
@@ -238,7 +240,7 @@ void merge_sort_by_key(
 } // namespace sort_by_key_detail
 
 template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
-void stable_sort(
+_CCCL_HOST_API void stable_sort(
   execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp)
 {
   using key_type = thrust::detail::it_value_t<RandomAccessIterator>;
@@ -252,7 +254,7 @@ template <typename DerivedPolicy,
           typename RandomAccessIterator1,
           typename RandomAccessIterator2,
           typename StrictWeakOrdering>
-void stable_sort_by_key(
+_CCCL_HOST_API void stable_sort_by_key(
   execution_policy<DerivedPolicy>& exec,
   RandomAccessIterator1 first1,
   RandomAccessIterator1 last1,

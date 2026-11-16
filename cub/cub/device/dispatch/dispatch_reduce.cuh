@@ -480,11 +480,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") DispatchRe
       // Small, single tile size
       return InvokeSingleTile(kernel_source.SingleTileKernel(), wrapped_policy);
     }
-    else
-    {
-      // Regular size
-      return InvokePasses(kernel_source.ReductionKernel(), kernel_source.SingleTileSecondKernel(), wrapped_policy);
-    }
+    // Regular size
+    return InvokePasses(kernel_source.ReductionKernel(), kernel_source.SingleTileSecondKernel(), wrapped_policy);
   }
 
   //---------------------------------------------------------------------------

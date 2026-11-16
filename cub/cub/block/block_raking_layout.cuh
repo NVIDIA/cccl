@@ -98,7 +98,7 @@ struct BlockRakingLayout
   /**
    * @brief Returns the location for the calling thread to place data into the grid
    */
-  static _CCCL_DEVICE _CCCL_FORCEINLINE T* PlacementPtr(TempStorage& temp_storage, unsigned int linear_tid)
+  _CCCL_DEVICE_API static _CCCL_FORCEINLINE T* PlacementPtr(TempStorage& temp_storage, unsigned int linear_tid)
   {
     // Offset for partial
     unsigned int offset = linear_tid;
@@ -116,7 +116,7 @@ struct BlockRakingLayout
   /**
    * @brief Returns the location for the calling thread to begin sequential raking
    */
-  static _CCCL_DEVICE _CCCL_FORCEINLINE T* RakingPtr(TempStorage& temp_storage, unsigned int linear_tid)
+  _CCCL_DEVICE_API static _CCCL_FORCEINLINE T* RakingPtr(TempStorage& temp_storage, unsigned int linear_tid)
   {
     return temp_storage.Alias().buff + (linear_tid * (SEGMENT_LENGTH + USE_SEGMENT_PADDING));
   }
