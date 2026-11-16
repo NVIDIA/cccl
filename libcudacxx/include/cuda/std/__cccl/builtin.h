@@ -213,21 +213,6 @@
 #  define _CCCL_BUILTIN_PREFETCH(...)
 #endif // _CCCL_CHECK_BUILTIN(builtin_prefetch)
 
-#if _CCCL_CHECK_BUILTIN(has_nothrow_assign) || _CCCL_COMPILER(GCC, >=, 4, 3) || _CCCL_COMPILER(MSVC) \
-  || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_HAS_NOTHROW_ASSIGN(...) __has_nothrow_assign(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(has_nothrow_assign) && gcc >= 4.3
-
-#if _CCCL_CHECK_BUILTIN(has_nothrow_constructor) || _CCCL_COMPILER(GCC, >=, 4, 3) || _CCCL_COMPILER(MSVC) \
-  || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_HAS_NOTHROW_CONSTRUCTOR(...) __has_nothrow_constructor(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(has_nothrow_constructor) && gcc >= 4.3
-
-#if _CCCL_CHECK_BUILTIN(has_nothrow_copy) || _CCCL_COMPILER(GCC, >=, 4, 3) || _CCCL_COMPILER(MSVC) \
-  || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_HAS_NOTHROW_COPY(...) __has_nothrow_copy(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(has_nothrow_copy) && gcc >= 4.3
-
 #if _CCCL_CHECK_BUILTIN(is_layout_compatible) || _CCCL_COMPILER(MSVC, >=, 19, 29)
 #  define _CCCL_BUILTIN_IS_LAYOUT_COMPATIBLE(...) __is_layout_compatible(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_layout_compatible) || _CCCL_COMPILER(MSVC, >=, 19, 29)
