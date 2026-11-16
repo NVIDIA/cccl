@@ -299,10 +299,11 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_exp_core(
  * k = n + 254 (the sum of the two biased exponents). */
 _CCCL_FPMP_CORE_API void __internal_fpmp2_exp_scales(const int32_t __k, float* __fscale, float* __fscale_lo) noexcept
 {
-  int32_t __scale     = __k << 23;
-  uint32_t __scale_lo = static_cast<uint32_t>(__scale >> 1);
-  __scale_lo &= 0x7F800000u;
-  __scale -= static_cast<int32_t>(__scale_lo);
+  /* Unsigned throughout: k = 256 (2^2 from exp_sq) puts the shifted field at 2^31, where the
+   * signed form would overflow; the wrap-around is the intended bit pattern. */
+  uint32_t __scale          = static_cast<uint32_t>(__k) << 23;
+  const uint32_t __scale_lo = (__scale >> 1) & 0x7F800000u;
+  __scale -= __scale_lo;
   *__fscale    = ::cuda::std::bit_cast<float>(__scale);
   *__fscale_lo = ::cuda::std::bit_cast<float>(__scale_lo);
 }

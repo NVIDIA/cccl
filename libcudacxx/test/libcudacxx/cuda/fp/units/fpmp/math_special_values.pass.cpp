@@ -34,6 +34,7 @@
 
 #include <cuda/fpmp>
 #include <cuda/std/cassert>
+#include <cuda/std/climits>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
 
@@ -120,7 +121,7 @@ TEST_HOST_DEVICE_FUNC void test_log()
 
   // A subnormal argument is finite and gives a negative result; --use_fast_math flushes it to
   // zero on the device (FTZ), so that part is left to the IEEE build.
-#if defined(TEST_HAS_CUDA_FAST_MATH)
+#if TEST_HAS_CUDA_FAST_MATH
 #  define CHECK_LOG_SUBNORMAL(name) static_cast<void>(0)
 #else
 #  define CHECK_LOG_SUBNORMAL(name)            \
@@ -207,7 +208,7 @@ TEST_HOST_DEVICE_FUNC void test_normcdfinv()
 
   assert(is_nan(normcdfinv(T(-1.0f))));
   assert(is_nan(normcdfinv(T(2.0f))));
-#if !defined(TEST_HAS_CUDA_FAST_MATH)
+#if !TEST_HAS_CUDA_FAST_MATH
   // --use_fast_math flushes subnormals to zero on the device (FTZ), which turns -denorm_min
   // into -0 and the result into -inf; the subnormal arguments are left to the IEEE build.
   assert(is_nan(normcdfinv(-nl::denorm_min()))); // just below 0
@@ -219,7 +220,7 @@ TEST_HOST_DEVICE_FUNC void test_normcdfinv()
 
   // The pairs just inside the ends are finite, large and of the right sign.
   assert(is_finite(normcdfinv(T(1.0f, -0x1p-30f))) && normcdfinv(T(1.0f, -0x1p-30f)) > T(0.0f));
-#if !defined(TEST_HAS_CUDA_FAST_MATH)
+#if !TEST_HAS_CUDA_FAST_MATH
   assert(is_finite(normcdfinv(nl::denorm_min())) && normcdfinv(nl::denorm_min()) < T(0.0f));
 #endif // !TEST_HAS_CUDA_FAST_MATH
 }
@@ -457,6 +458,26 @@ TEST_HOST_DEVICE_FUNC void test_modf_and_classify()
   // and the integer conversions route such a pair to the scalar fallback instead of UB
   (void) llrint(T(1.0f, nl::quiet_NaN().hi()));
   (void) llround(T(1.0f, nl::infinity().hi()));
+
+  // A head of exactly +-2^63 is in range when the tail points inward, with the tail rounded
+  // as part of the pair (rint ties to even, round ties away from zero).
+  assert(llrint(T(-0x1p63f, 1.0f)) == LLONG_MIN + 1);
+  assert(llround(T(-0x1p63f, 1.0f)) == LLONG_MIN + 1);
+  assert(llrint(T(-0x1p63f, 0.0f)) == LLONG_MIN);
+  assert(llrint(T(0x1p63f, -1.0f)) == LLONG_MAX);
+  assert(llround(T(0x1p63f, -1.0f)) == LLONG_MAX);
+  assert(llrint(T(0x1p63f, -0x1p39f)) == LLONG_MAX - 0x7FFFFFFFFFLL); // 2^63 - 2^39, the head itself
+  assert(llrint(T(0x1p63f, -2.5f)) == LLONG_MAX - 1); // ties to even: 2^63 - 2
+  assert(llround(T(0x1p63f, -2.5f)) == LLONG_MAX - 1); // ties away from zero: 2^63 - 2
+  assert(llrint(T(0x1p63f, -1.5f)) == LLONG_MAX - 1); // ties to even: 2^63 - 2
+  assert(llround(T(0x1p63f, -1.5f)) == LLONG_MAX); // ties away from zero: 2^63 - 1
+  assert(llrint(T(-0x1p63f, 0.5f)) == LLONG_MIN); // ties to even: -2^63
+  assert(llround(T(-0x1p63f, 0.5f)) == LLONG_MIN); // ties away from zero: -2^63
+  assert(llrint(T(-0x1p63f, 1.5f)) == LLONG_MIN + 2);
+  assert(llround(T(-0x1p63f, 1.5f)) == LLONG_MIN + 1);
+  // out of range either way: the scalar function's value on the head
+  assert(llrint(T(0x1p63f, 0.0f)) == ::cuda::std::llrint(0x1p63));
+  assert(llround(T(-0x1p63f, -1.0f)) == ::cuda::std::llround(-0x1p63));
 }
 
 int main(int, char**)

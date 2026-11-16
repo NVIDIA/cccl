@@ -337,9 +337,10 @@ arithmetic will use, so it does not change by accident:
 
 Conversion **out of** ``low`` renormalizes. The reason is the state ``low`` leaves its results
 in: they can carry overlapping limbs, while the ``mid`` and ``high`` algorithms are written
-against the non-overlap invariant on their inputs. Handing them an overlapping pair compiles
-without complaint and quietly returns a worse answer, so the conversion repairs the invariant
-rather than leaving it to be remembered. That makes the mixed-accuracy pattern — ``low`` for the
+against the non-overlap invariant on their inputs, and so are the math functions, which read a
+``low`` argument as it arrives. Handing them an overlapping pair compiles without complaint and
+quietly returns a worse answer, so the conversion repairs the invariant rather than leaving it to
+be remembered. That makes the mixed-accuracy pattern — ``low`` for the
 bulk of the work, a higher level across a critical stretch — correct as written.
 
 The step is one ``fast_two_sum`` and it is exact, so it changes how the number is stored and
@@ -417,8 +418,10 @@ hardware where FP64 is rationed:
   ``ldexp``, ``scalbn``
 - **Minimum, maximum and remainder** — ``fmin``, ``fmax``, ``min``, ``max``, ``fmod``,
   ``remainder`` (``fmod``, ``remainder`` and ``remquo`` are exact on sparse pairs, whose tail sits
-  far below the head, in ``fp32mp2_high``, as long as the divisor's two limbs span at most 126
-  bits, ``fmod(2^100 + 2^-120, 2^100)`` being past that; the other levels compute on the pair
+  far below the head, in ``fp32mp2_high``, as long as the divisor fits in 126 bits of the frame
+  both operands are read in, which starts at the lowest set bit of either one: in
+  ``fmod(2^100 + 2^-120, 2^100)`` the dividend's tail puts that bit at ``2^-120``, where the
+  divisor spans 221 bits and the call is past the limit; the other levels compute on the pair
   rounded to 53 significant bits, as a ``double`` would. The ``fp64mp2`` ``remquo``, ``lrint``,
   ``lround``, ``llrint`` and ``llround`` are ``double`` fallbacks on the high limb, not exact on
   the pair)
@@ -426,7 +429,7 @@ hardware where FP64 is rationed:
   uniform integer into a Gaussian variate. Taking an integer rather than a pair, it is the one
   function here that ADL cannot find, so it has to be written ``cuda::icdf(bits)``, and its
   accuracy level is a defaulted template parameter rather than a deduced one
-- **Special** — ``boys_f0``, the zeroth-order Boys function
+- **Special** — ``boys_f0``, the zeroth-order Boys function, for ``a >= 0``
 
 The exact operations — ``rint``, ``nearbyint``, ``lrint``, ``lround``, ``llrint``, ``llround``,
 ``copysign``, ``scalbln``, ``frexp``, ``modf``, ``logb``, ``ilogb``, ``fdim``, ``remquo`` and the

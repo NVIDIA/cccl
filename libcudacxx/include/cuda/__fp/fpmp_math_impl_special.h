@@ -1919,7 +1919,7 @@ _CCCL_FPMP_MATH_DISPATCH_1A(erfinv)
  *   x >= 1/2   : the erfcx kernel up to 40, beyond it the asymptotic series
  *                (1/(x sqrt pi)) sum_k (-1)^k (2k-1)!!/(2x^2)^k, 8 terms
  *                (truncation below 2^-65 at 40)
- *   x <= -1/2  : 2 exp(x^2) - erfcx(|x|); +inf below -9.3824, where
+ *   x <= -1/2  : 2 exp(x^2) - erfcx(|x|); +inf below -9.3824139, where
  *                2 exp(x^2) passes FLT_MAX
  * erfcx(+inf) = 0.  Host check against binary128: 3.7 u^2 worst up to 40,
  * 4.5 u^2 in the asymptotic tail (one refined division and a product).
@@ -1944,7 +1944,9 @@ __internal_fpmp2_erfcx(const float __x_hi, const float __x_lo, float* __res_hi, 
   {
     if (__neg)
     {
-      if (__a.hi() > 9.3824f) /* including -inf */
+      /* erfcx(-a) reaches FLT_MAX at a = 9.38241397; 0x1.2c3cbap+3 is the last float whose
+       * pairs (any low limb) stay below it, so 2 exp(a^2) cannot overflow past this test. */
+      if (__a.hi() > 0x1.2c3cbap+3f) /* including -inf */
       {
         *__res_hi = ::cuda::std::__fp_inf<float>();
         *__res_lo = 0.0f;
