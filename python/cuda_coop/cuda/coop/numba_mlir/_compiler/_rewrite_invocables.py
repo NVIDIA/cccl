@@ -26,13 +26,14 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, cast
 
 from .._types import (
+    RawCAbiInvocable,
     _hash_symbol_value,
     collect_specializations,
     make_invocable_from_specialization,
     prepare_ltoir_bundle,
 )
 from ._operations import FactoryOperation
-from ._rewrite_support import CoopSinglePhaseRewriteError, _RewriteMatch
+from ._rewrite_support import CoopSinglePhaseRewriteError, _RewriteMatch, ir
 
 if TYPE_CHECKING:
     from ._rewrite import CoopSinglePhaseRewrite
@@ -177,8 +178,11 @@ class _InvocableRewrite:
 
         Collect factory specializations without immediately building each
         invocable and deduplicate identical matches. Each collected algorithm
-        already stores its thread dimensions. Bundling is attempted only for
-        at least two unique matches. Launch deferral happens during call
+        already stores its thread dimensions. Group planning has also placed
+        uncompiled query and synchronization helpers in IR globals. Include
+        those helpers even when the function contains no primitive matches.
+        Bundling is attempted for at least two distinct providers or helpers.
+        Launch deferral happens during call
         analysis, so a retry reaches bundling before any provider is emitted.
 
         This is an optional compilation optimization. Clear the previous
@@ -205,8 +209,18 @@ class _InvocableRewrite:
         """
 
         self._prebundled_specializations = {}
-        if not matches:
-            return
+        rewrite = cast("CoopSinglePhaseRewrite", self)
+        raw_invocables = list(
+            dict.fromkeys(
+                inst.value.value
+                for block in rewrite._func_ir.blocks.values()
+                for inst in block.body
+                if isinstance(inst, ir.Assign)
+                and isinstance(inst.value, ir.Global)
+                and isinstance(inst.value.value, RawCAbiInvocable)
+                and inst.value.value._temp_file is None
+            )
+        )
         matches_by_specialization: dict[
             tuple[str, tuple[tuple[str, str, str], ...]], _RewriteMatch
         ] = {}
@@ -220,7 +234,7 @@ class _InvocableRewrite:
                 matches_by_specialization[key] = match
         # Repeated calls already reuse one invocable; bundling only helps when
         # there are distinct specializations to compile together.
-        if len(matches_by_specialization) < 2:
+        if len(matches_by_specialization) + len(raw_invocables) < 2:
             return
         try:
             with collect_specializations() as collected:
@@ -228,7 +242,10 @@ class _InvocableRewrite:
                     _ = match.factory(**match.factory_kwargs)
             if len(collected) != len(matches_by_specialization):
                 return
-            prepare_ltoir_bundle(collected)
+            if raw_invocables:
+                prepare_ltoir_bundle(collected, raw_invocables=raw_invocables)
+            else:
+                prepare_ltoir_bundle(collected)
             self._prebundled_specializations = dict(
                 zip(matches_by_specialization, collected)
             )

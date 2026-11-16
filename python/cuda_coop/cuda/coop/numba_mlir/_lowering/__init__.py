@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Hold the private Load/Store factories and the Numba core adapter.
+"""Collect private Load/Store and Reduce provider factories.
 
-Group planning selects a factory in ``_load_store`` after validating a
-public call. The package re-exports the storage-free block ``load`` and
-``store``. Calling a factory specializes device code; it does not move data.
+Importing this package registers each factory and its scratch ABI. Group
+planning selects a factory after validating a public call. Calling a factory
+specializes device code but does not run the device operation.
 """
 
 from ._load_store import load as load

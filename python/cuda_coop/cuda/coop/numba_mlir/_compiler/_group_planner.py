@@ -45,6 +45,7 @@ from cuda.coop._core import (
     LaunchFacts,
     ThreadGroup,
     ThreadHierarchy,
+    normalize_thread_level,
     resolve_thread_group,
 )
 
@@ -60,14 +61,17 @@ from ._group_errors import (
     InvalidGroupSelectorError,
     NonConstantGroupArgumentError,
     NonConstantThreadGroupError,
+    UnknownResultExtentError,
 )
 from ._group_planner_support import (
     _COMMON_GROUP_CONSTRUCTORS,
     _GROUP_CONSTRUCTORS,
+    _GROUP_METHODS,
     _NAME_COUNTER,
     GroupRewriteError,
     _group_operation_name,
     _is_common_root_operation,
+    _typed_group_payload_like,
     ir,
 )
 from ._group_planning import GroupPlanningContext
@@ -145,7 +149,23 @@ class _GroupCallPlanner:
         # Host-side thread groups and hierarchies, keyed by IR variable name.
         self._group_cache: dict[str, ThreadGroup] = {}
         self._hierarchy_cache: dict[str, ThreadHierarchy] = {}
+        self._compile_context = None
+        self._group_method_invocables: dict[tuple[Any, ...], Any] = {}
         self.context = GroupPlanningContext(self)
+
+    def _provider_compile_context(self):
+        """Resolve and reuse one provider compile context for this planner.
+
+        All generated group-method helpers in the attempt share the same
+        header and option context. Cache it lazily so plans with no such
+        helper do not need to resolve compiler inputs here.
+        """
+
+        if self._compile_context is None:
+            from ._nvrtc import resolve_shared_compile_context
+
+            self._compile_context = resolve_shared_compile_context()
+        return self._compile_context
 
     @staticmethod
     def _make_launch_facts(config: dict[str, Any]) -> LaunchFacts:
@@ -889,6 +909,57 @@ class _GroupCallPlanner:
             return True
         return None
 
+    def _result_source(self, definition: Any, index: int | None = None):
+        """Find the argument policy for a registered group call's result.
+
+        For example, planning ``sum(group, sum(group, value))`` needs the
+        inner Sum result's element type before either public call has been
+        replaced.
+
+        Return the selected ``GroupResultSource`` and bound public arguments,
+        or ``None`` for an unrelated call or invalid result selection. Without
+        ``index``, only a single-result operation qualifies. With ``index``,
+        only a multiple-result operation qualifies: indexing a single array
+        result selects an element, not a tuple result.
+
+        Dtype, array-origin, and extent queries share this policy. It lets
+        later group calls consume the result before provider rewriting and
+        ordinary typing.
+
+        Parameters
+        ----------
+        definition : object
+            Right-hand side of an IR assignment being queried. Only a
+            registered public group-operation call provides a result
+            policy.
+        index : int or None, optional
+            Tuple-result position, including supported negative indices.
+            ``None`` requests the policy for a directly returned value;
+            it does not select an array element.
+        """
+
+        if not isinstance(definition, ir.Expr) or definition.op != "call":
+            return None
+        operation = _group_operation_name(self._callable(definition.func))
+        registration = None if operation is None else group_primitive(operation)
+        if registration is None:
+            return None
+        results = registration.results
+        if index is None:
+            if len(results) != 1:
+                return None
+            result = results[0]
+        else:
+            if len(results) == 1:
+                # A single-result primitive returns its value directly, so an
+                # integer subscript selects an element of that value (a
+                # scalar), not a tuple item.
+                return None
+            if not -len(results) <= index < len(results):
+                return None
+            result = results[index]
+        return result, self._bind(self._callable(definition.func), definition)
+
     def _is_array_tuple_item(
         self,
         value: Any,
@@ -965,6 +1036,10 @@ class _GroupCallPlanner:
         its inputs must all be checked. When a ``build_tuple`` expression is
         reached, classify the selected element with ``_is_array_value``.
 
+        For a registered operation with multiple results, follow the selected
+        result's array-source argument. A single-result array call is not a
+        tuple producer; indexing it selects a scalar element.
+
         Parameters
         ----------
         definition : object
@@ -983,8 +1058,8 @@ class _GroupCallPlanner:
         bool or None
             The selected element's array classification. ``False`` means an
             unsupported source or invalid index. ``None`` means a recursive
-            path supplied no constructor evidence; ``True`` means a supported
-            constructor was found without a conflicting source.
+            path supplied no array evidence; ``True`` means a supported
+            array source was found without a conflicting source.
         """
 
         if isinstance(definition, ir.Var):
@@ -1022,7 +1097,17 @@ class _GroupCallPlanner:
             )
         if definition.op != "call":
             return False
-        return False
+        resolved = self._result_source(definition, index)
+        if resolved is None:
+            return False
+        result, bound = resolved
+        if result.array_parameter is None:
+            return False
+        return self._is_array_value(
+            bound.arguments[result.array_parameter],
+            seen=seen,
+            thread_data_only=thread_data_only,
+        )
 
     def _is_array_value(
         self,
@@ -1095,11 +1180,15 @@ class _GroupCallPlanner:
         """Check whether one assignment supplies a supported array payload.
 
         ``_is_array_value`` calls this for each possible source of an operation
-        operand. Tracing the assignment back to its constructor tells Load/Store
+        operand. Tracing the assignment back to its constructor tells operation
         planning whether it has a per-thread array or must apply scalar rules.
         For a value selected from a tuple, resolve the index before examining
         that tuple element. Branch and loop merges inspect all alternatives;
         an unsupported source cannot be hidden by another valid source.
+
+        A generated result marker follows its prototype's origin. A registered
+        single-result operation follows the array-source argument declared by
+        its result policy, preserving the ThreadData-only restriction.
 
         Parameters
         ----------
@@ -1116,11 +1205,11 @@ class _GroupCallPlanner:
         Returns
         -------
         bool or None
-            ``True`` for a supported constructor or alternatives that agree;
+            ``True`` for a supported array source or alternatives that agree;
             ``False`` for an unsupported source or unresolved tuple index;
             ``None`` when following aliases or loop inputs only leads back to
             a variable already being examined. Operand validation reports that
-            unresolved cycle if no other path supplies a constructor.
+            unresolved cycle if no other path supplies an array source.
         """
 
         if isinstance(definition, ir.Var):
@@ -1164,9 +1253,23 @@ class _GroupCallPlanner:
         function = self._callable(definition.func)
         if function in {ThreadData, _common_api.ThreadData}:
             return True
+        if function is _typed_group_payload_like:
+            return self._is_array_value(
+                definition.args[0], seen=seen, thread_data_only=thread_data_only
+            )
         if function is _cuda_local_array:
             return not thread_data_only
-        return False
+        resolved = self._result_source(definition)
+        if resolved is None:
+            return False
+        result, bound = resolved
+        if result.array_parameter is None:
+            return False
+        return self._is_array_value(
+            bound.arguments[result.array_parameter],
+            seen=seen,
+            thread_data_only=thread_data_only,
+        )
 
     @staticmethod
     def _new_var(scope: Any, loc: ir.Loc, stem: str) -> ir.Var:
@@ -1257,6 +1360,7 @@ class _GroupCallPlanner:
         factory: Any,
         args: list[Any],
         kwargs: dict[str, Any],
+        return_alias: ir.Var | tuple[ir.Var, ...] | None = None,
         common_root_operation: str | None = None,
     ) -> list[Any]:
         """Build replacement IR calling the selected provider.
@@ -1278,6 +1382,10 @@ class _GroupCallPlanner:
             Positional IR variables or Python values supplied to the provider.
         kwargs : dict of str to object
             Named IR variables or Python values supplied to the provider.
+        return_alias : ir.Var or tuple of ir.Var, optional
+            Public result value or values to assign to the original target
+            after the provider runs. When supplied, discard the provider
+            return value and preserve the public result ownership contract.
         common_root_operation : str, optional
             Public operation identity forwarded to provider validation. It
             keeps common-API rules available after the public wrapper has been
@@ -1287,7 +1395,7 @@ class _GroupCallPlanner:
         -------
         list
             Ordered assignments defining the callable and arguments and making
-            the replacement call.
+            the replacement call, followed by any requested result aliases.
         """
 
         statements: list[Any] = []
@@ -1319,15 +1427,30 @@ class _GroupCallPlanner:
                 for name, value in kwargs.items()
             )
         )
+        call_target = (
+            inst.target
+            if return_alias is None
+            else self._new_var(scope, loc, "ignored_result")
+        )
         statements.append(
             ir.Assign(
                 ir.Expr.call(
                     function_var, rewritten_args, rewritten_kwargs, loc
                 ),
-                inst.target,
+                call_target,
                 loc,
             )
         )
+        if isinstance(return_alias, tuple):
+            statements.append(
+                ir.Assign(
+                    ir.Expr.build_tuple(list(return_alias), loc),
+                    inst.target,
+                    loc,
+                )
+            )
+        elif return_alias is not None:
+            statements.append(ir.Assign(return_alias, inst.target, loc))
         return statements
 
     def _array_operand_state(self, operation: str, value: Any) -> bool:
@@ -1551,6 +1674,10 @@ class _GroupCallPlanner:
         so known counts on its inputs must agree. At a tuple construction,
         ``_array_extent`` examines the selected payload itself.
 
+        Registered multiple-result calls follow the selected result policy's
+        array-source argument. A policy with no array source describes one
+        scalar item.
+
         Parameters
         ----------
         definition : object
@@ -1605,7 +1732,16 @@ class _GroupCallPlanner:
             return self._array_extent(items[index], seen=set(seen))
         if definition.op != "call":
             return None
-        return None
+        resolved = self._result_source(definition, index)
+        if resolved is None:
+            return None
+        result, bound = resolved
+        if result.array_parameter is None:
+            return 1
+        return self._array_extent(
+            bound.arguments[result.array_parameter],
+            seen=seen,
+        )
 
     def _array_extent_definition(
         self, definition: Any, *, seen: set[str]
@@ -1613,11 +1749,16 @@ class _GroupCallPlanner:
         """Read one payload assignment to recover its per-thread element count.
 
         ``_array_extent`` calls this for every assignment that might supply an
-        operand. Provider selection needs the constructor's fixed element
-        count, even when the operation receives a copied value or one selected
-        from a tuple. Follow these intermediate expressions until a recognized
-        ``ThreadData`` or CUDA local-array constructor is reached, then resolve
-        its ``items_per_thread`` or integer ``shape`` argument.
+        operand. Provider selection needs a fixed element count, even when
+        the operation receives a copied value or one selected from a tuple.
+        Follow intermediate expressions to a constructor or registered result
+        policy. Constructors supply ``items_per_thread`` or an integer
+        ``shape`` argument.
+
+        Generated result markers use an explicit extent when present,
+        otherwise inherit array extent or use one scalar item. Registered
+        direct results follow their declared array-source argument, or use one
+        item when the policy declares a scalar.
 
         Parameters
         ----------
@@ -1631,9 +1772,10 @@ class _GroupCallPlanner:
         Returns
         -------
         int or None
-            The constructor's number of elements per thread, as an integer
-            excluding booleans. ``None`` means no usable count was found. In
-            particular, an unsupported source, nonconstant tuple index, or
+            Known number of elements per thread. Constructor and generated
+            marker counts are integers excluding booleans.
+            ``None`` means no usable count was found. An unsupported source,
+            nonconstant tuple index, or
             noninteger local-array shape supplies no count. This does not
             establish that every source is an array or that the count is
             positive.
@@ -1681,6 +1823,24 @@ class _GroupCallPlanner:
         if definition.op != "call":
             return None
         function = self._callable(definition.func)
+        if function is _typed_group_payload_like:
+            try:
+                is_array = self._constant(definition.args[1])
+            except (GroupRewriteError, IndexError):
+                return None
+            if len(definition.args) >= 4:
+                try:
+                    extent = self._constant(definition.args[3])
+                except GroupRewriteError:
+                    return None
+                if isinstance(extent, Integral) and (
+                    not isinstance(extent, bool)
+                ):
+                    return int(extent)
+                return None
+            if is_array is False:
+                return 1
+            return self._array_extent(definition.args[0], seen=seen)
         if function in {ThreadData, _common_api.ThreadData}:
             bound = self._bind(function, definition)
             extent_argument = bound.arguments["items_per_thread"]
@@ -1708,7 +1868,181 @@ class _GroupCallPlanner:
             if isinstance(extent, Integral) and (not isinstance(extent, bool)):
                 return int(extent)
             return None
-        return None
+        resolved = self._result_source(definition)
+        if resolved is None:
+            return None
+        result, bound = resolved
+        if result.array_parameter is None:
+            return 1
+        return self._array_extent(
+            bound.arguments[result.array_parameter], seen=seen
+        )
+
+    def _copy_array_payload(
+        self,
+        statements: list[Any],
+        *,
+        operation: str,
+        source: ir.Var,
+        destination: ir.Var,
+        scope: Any,
+        loc: ir.Loc,
+        known_items_per_thread: int | None = None,
+    ) -> None:
+        """Append an unrolled copy between two fixed-size local payloads.
+
+        Use ``known_items_per_thread`` when supplied; otherwise infer the
+        source extent. Emit one item read and write per index into
+        ``statements``. Define ``destination`` in earlier pending statements.
+        It usually names a result marker that the provider rewrite allocates
+        later. The copy keeps caller-owned input intact when a native provider
+        may modify it.
+
+        Raise ``UnknownResultExtentError`` if no static extent is available.
+        The statements remain pending until the owning planner installs them.
+
+        Parameters
+        ----------
+        statements : list of IR statements
+            Pending replacement statements, appended to in execution
+            order. The function's blocks are unchanged until the owning
+            planner installs this list.
+        operation : str
+            Canonical public operation name, used in diagnostics and
+            generated temporary names.
+        source : ir.Var
+            Input payload whose elements must be preserved.
+        destination : ir.Var
+            Previously defined writable payload with enough slots for
+            the copy.
+        scope : ir.Scope
+            Scope in which to create temporary IR variables.
+        loc : ir.Loc
+            Source location attached to generated statements and
+            diagnostics.
+        known_items_per_thread : int or None, optional
+            Validated number of elements to copy per thread. ``None``
+            asks the planner to infer this count from the source.
+        """
+
+        extent = (
+            known_items_per_thread
+            if known_items_per_thread is not None
+            else self._array_extent(source)
+        )
+        if extent is None:
+            raise UnknownResultExtentError(operation)
+        for item_index in range(extent):
+            index = self._value_var(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem=f"{operation}_copy_index_{item_index}",
+                value=item_index,
+            )
+            item = self._new_var(
+                scope, loc, f"{operation}_copy_item_{item_index}"
+            )
+            statements.append(
+                ir.Assign(ir.Expr.getitem(source, index, loc), item, loc)
+            )
+            statements.append(ir.SetItem(destination, index, item, loc))
+
+    def _typed_payload_like(
+        self,
+        statements: list[Any],
+        *,
+        scope: Any,
+        loc: ir.Loc,
+        stem: str,
+        prototype: ir.Var,
+        is_array: bool,
+        dtype_policy: str,
+        items_per_thread: Any = None,
+    ) -> ir.Var:
+        """Append a fresh result marker and return its IR variable.
+
+        Operation-family planners call this while constructing their
+        replacement IR. Deferring allocation lets later payload inference
+        establish the element type before a concrete local array is created.
+
+        The marker retains ``prototype`` for dtype inference and ``is_array``
+        for extent selection. An explicit ``items_per_thread`` overrides the
+        inherited extent. ``dtype_policy`` identifies how the later rewrite
+        should obtain the element type.
+
+        Materialize the marker callable and constant controls in
+        ``statements``. No local array is allocated here. The provider rewrite
+        resolves the marker after payload facts are available and emits the
+        allocation.
+
+        Parameters
+        ----------
+        statements : list of IR statements
+            Pending replacement statements, appended to in execution
+            order. The function's blocks are unchanged until the owning
+            planner installs this list.
+        scope : ir.Scope
+            Scope in which to create temporary IR variables.
+        loc : ir.Loc
+            Source location attached to generated statements and
+            diagnostics.
+        stem : str
+            Readable prefix for fresh temporary names.
+        prototype : ir.Var
+            Existing scalar or array supplying type evidence for the new
+            payload.
+        is_array : bool
+            Whether to inherit the prototype's per-thread array item
+            count; false selects one item unless an explicit count is
+            supplied.
+        dtype_policy : str
+            Registered rule for deriving the element dtype from the
+            prototype or selecting a fixed result type.
+        items_per_thread : int or ir.Var or None, optional
+            Explicit compile-time item count, as a value or an IR
+            variable that resolves to one. ``None`` uses the prototype-
+            based count.
+        """
+
+        function_var = self._new_var(scope, loc, f"{stem}_payload_factory")
+        statements.append(
+            ir.Assign(
+                ir.Global(function_var.name, _typed_group_payload_like, loc),
+                function_var,
+                loc,
+            )
+        )
+        is_array_var = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{stem}_is_array",
+            value=is_array,
+        )
+        dtype_policy_var = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{stem}_dtype_policy",
+            value=dtype_policy,
+        )
+        args = [prototype, is_array_var, dtype_policy_var]
+        if items_per_thread is not None:
+            args.append(
+                self._value_var(
+                    statements,
+                    scope=scope,
+                    loc=loc,
+                    stem=f"{stem}_items_per_thread",
+                    value=items_per_thread,
+                )
+            )
+        payload = self._new_var(scope, loc, f"{stem}_payload")
+        statements.append(
+            ir.Assign(ir.Expr.call(function_var, args, (), loc), payload, loc)
+        )
+        return payload
 
     def _lower_root_operation(
         self, inst: ir.Assign, call: ir.Expr, function: Any, operation: str
@@ -1785,6 +2119,199 @@ class _GroupCallPlanner:
         )
         self.dead_func_names.add(call.func.name)
         self.replacements[inst] = replacement
+
+    def _group_method(self, call: ir.Expr) -> tuple[str, ThreadGroup] | None:
+        """Recognize a supported method on a resolvable group descriptor.
+
+        ``run`` uses this probe to distinguish executable queries such as
+        ``group.rank()`` from descriptor construction before it chooses a
+        replacement device helper.
+
+        Return the method name and group, or ``None`` for unrelated calls.
+        ``group_by`` is excluded because it constructs another descriptor;
+        this path handles methods that must become executable device helpers.
+
+        Parameters
+        ----------
+        call : ir.Expr
+            Call expression inspected by ``run`` while the original
+            group descriptors and their aliases are still present.
+        """
+
+        definition = self._definition(call.func)
+        if (
+            not isinstance(definition, ir.Expr)
+            or definition.op != "getattr"
+            or definition.attr not in _GROUP_METHODS
+            or definition.attr == "group_by"
+        ):
+            return None
+        group = self._group(definition.value)
+        if group is None:
+            return None
+        return definition.attr, group
+
+    def _lower_group_method(
+        self, inst: ir.Assign, call: ir.Expr, *, method: str, group: ThreadGroup
+    ) -> None:
+        """Plan a group method and stage its no-argument device helper call.
+
+        ``run`` calls this after recognizing a query or synchronization
+        method. Unlike an ordinary Python object method, the receiver
+        describes compile-time thread membership and must disappear before
+        device typing.
+
+        Validate argument shape and resolve dtype/level controls as constants.
+        Resolve the group through the requested hierarchy level and reject
+        unsupported mapped-parent queries, mapped-warp synchronization, and
+        grid synchronization. Grid sync needs a cooperative launch, which this
+        launch descriptor cannot request.
+
+        Reuse an invocable keyed by group semantics, operation, dtype, and
+        level within this planner attempt. Its C++ helper embeds the
+        descriptor, so the replacement passes no runtime group object. Record
+        the old callee as dead and stage the replacement; the normal planner
+        run installs it later.
+
+        Parameters
+        ----------
+        inst : ir.Assign
+            Original public call assignment. Its target, scope, and
+            source location identify the replacement result and
+            generated temporaries.
+        call : ir.Expr
+            Method-call expression stored in ``inst.value``, retaining
+            the public positional and keyword arguments.
+        method : str
+            Supported method name returned by ``_group_method``,
+            including typed query variants such as ``rank_as``.
+        group : ThreadGroup
+            Descriptor recovered from the method receiver. Its hierarchy
+            is resolved against this compilation's launch before code
+            generation.
+        """
+
+        if call.vararg is not None or call.varkwarg is not None:
+            raise GroupRewriteError(
+                f"ThreadGroup.{method} does not support splats"
+            )
+        kwargs = dict(call.kws)
+        dtype = None
+        level = "thread"
+        if method in {"rank", "count"}:
+            if len(call.args) > 1 or any(name != "level" for name in kwargs):
+                raise GroupRewriteError(
+                    f"invalid ThreadGroup.{method} arguments"
+                )
+            if call.args and "level" in kwargs:
+                raise GroupRewriteError(
+                    f"ThreadGroup.{method} received level more than once"
+                )
+            if call.args:
+                level = self._constant(call.args[0])
+            elif "level" in kwargs:
+                level = self._constant(kwargs["level"])
+            operation = method
+        elif method in {"rank_as", "count_as"}:
+            if len(call.args) > 2 or any(
+                name not in {"dtype", "level"} for name in kwargs
+            ):
+                raise GroupRewriteError(
+                    f"invalid ThreadGroup.{method} arguments"
+                )
+            if call.args and "dtype" in kwargs:
+                raise GroupRewriteError(
+                    f"ThreadGroup.{method} received dtype more than once"
+                )
+            if len(call.args) > 1 and "level" in kwargs:
+                raise GroupRewriteError(
+                    f"ThreadGroup.{method} received level more than once"
+                )
+            if call.args:
+                dtype = self._constant(call.args[0])
+            elif "dtype" in kwargs:
+                dtype = self._constant(kwargs["dtype"])
+            if len(call.args) > 1:
+                level = self._constant(call.args[1])
+            elif "level" in kwargs:
+                level = self._constant(kwargs["level"])
+            operation = method.removesuffix("_as")
+        else:
+            if call.args or kwargs:
+                raise GroupRewriteError(
+                    f"ThreadGroup.{method} accepts no arguments"
+                )
+            operation = method
+
+        if operation in {"rank", "count"}:
+            level = normalize_thread_level(
+                level,
+                scope="cuda.coop.numba_mlir",
+                feature=f"ThreadGroup.{operation}",
+            )
+            if group.mapping is not None:
+                level_order = {
+                    "thread": 0,
+                    "warp": 1,
+                    "block": 2,
+                    "cluster": 3,
+                    "grid": 4,
+                }
+                if level_order[level] > level_order[group.mapping.parent]:
+                    raise NotImplementedError(
+                        "cuda.coop.numba_mlir mapped ThreadGroup queries above "
+                        "the immediate parent require "
+                        "recursive group composition"
+                    )
+            group = self._resolve_group(
+                group, feature=f"ThreadGroup.{operation}", through_level=level
+            )
+        else:
+            group = self._resolve_group(
+                group, feature=f"ThreadGroup.{operation}"
+            )
+        if group.kind == "warps_within_block" and operation in {
+            "sync",
+            "sync_aligned",
+        }:
+            raise NotImplementedError(
+                "cuda.coop.numba_mlir mapped-Warp synchronization requires "
+                "planner-owned barrier lifetime"
+            )
+        if group.kind == "grid" and operation in {"sync", "sync_aligned"}:
+            raise NotImplementedError(
+                "cuda.coop.numba_mlir grid synchronization requires a verified "
+                "cooperative launch, which the "
+                "current launch descriptor cannot "
+                "request"
+            )
+
+        from .._lowering._thread_group import (
+            _normalize_query_dtype,
+            make_group_method_invocable,
+        )
+
+        if operation in {"rank", "count"}:
+            dtype = _normalize_query_dtype(group, level, dtype)
+
+        key = (group.semantic_key, operation, dtype, level)
+        invocable = self._group_method_invocables.get(key)
+        if invocable is None:
+            invocable = make_group_method_invocable(
+                group=group,
+                operation=operation,
+                dtype=dtype,
+                level=level,
+                compile_context=self._provider_compile_context(),
+            )
+            self._group_method_invocables[key] = invocable
+        self.dead_func_names.add(call.func.name)
+        self.replacements[inst] = self._rewritten_call(
+            inst,
+            factory=invocable,
+            args=[],
+            kwargs={},
+        )
 
     def _mark_descriptor_calls(self) -> None:
         """Mark thread-group and hierarchy assignments for removal.
@@ -1917,6 +2444,10 @@ class _GroupCallPlanner:
         instance's caches, dtype facts, and replacement bookkeeping; block
         bodies change only after all calls and descriptor uses pass.
 
+        Recognized rank, count, membership, and synchronization methods also
+        become provider calls. Their helpers embed the resolved group and
+        compile-time query controls before the descriptor is erased.
+
         Returns
         -------
         bool
@@ -1954,6 +2485,15 @@ class _GroupCallPlanner:
                 if operation is not None:
                     self._lower_root_operation(inst, call, function, operation)
                     continue
+                method = self._group_method(call)
+                if method is not None:
+                    method_name, group = method
+                    self._lower_group_method(
+                        inst,
+                        call,
+                        method=method_name,
+                        group=group,
+                    )
         self._validate_group_descriptor_references()
         if not (
             self.descriptor_assigns or self.replacements or self.dead_func_names
@@ -1986,11 +2526,13 @@ def has_group_markers(func_ir: ir.FunctionIR) -> bool:
 
     One recognized call anywhere in the function is enough: a group
     constructor such as ``this_block()``, ``ThreadHierarchy()``, a registered
-    public group operation such as ``load()`` or ``store()``, or
-    ``group_by()`` on a recognized group descriptor. For ``group_by()``, trace
-    the receiver through aliases, casts, control-flow merges, and earlier
-    subgroup calls to distinguish group descriptors from unrelated objects
-    with that method.
+    public group operation such as ``load()`` or ``store()``, or a supported
+    method on a recognized group descriptor. Partitioning, hierarchy queries,
+    and synchronization need planning even when no primitive remains.
+
+    Trace method receivers through aliases, casts, control-flow merges, and
+    earlier subgroup calls to distinguish group descriptors from unrelated
+    objects with the same method name.
 
     Inspect only the supplied IR. Calls inside device helpers become visible
     here after inlining; this scan does not visit their bodies. ``ThreadData``
@@ -2082,7 +2624,7 @@ def has_group_markers(func_ir: ir.FunctionIR) -> bool:
             if (
                 isinstance(function_definition, ir.Expr)
                 and function_definition.op == "getattr"
-                and (function_definition.attr == "group_by")
+                and function_definition.attr in _GROUP_METHODS
                 and is_group_descriptor(function_definition.value, set())
             ):
                 return True

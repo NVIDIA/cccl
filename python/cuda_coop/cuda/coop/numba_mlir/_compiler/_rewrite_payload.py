@@ -144,10 +144,12 @@ class PayloadInference:
     def candidate(
         self, index: int
     ) -> tuple[ir.Var | None, _ThreadDataSpecification | None]:
-        """Look up an operand and its available per-thread payload facts.
+        """Look up an operand and its available payload facts.
 
-        Return ``(None, None)`` for an absent or non-variable operand at
-        ``index``. A valid variable can still have no payload description.
+        Return ``(None, None)`` for an absent or non-variable operand. A valid
+        variable can still have no payload description. A generated result
+        with unknown extent is an error: its marker must become a fixed local
+        array. Other unresolved candidates remain available for family checks.
         """
 
         if not 0 <= index < len(self.runtime_args):
@@ -156,7 +158,62 @@ class PayloadInference:
         if not isinstance(value, ir.Var):
             return (None, None)
         specification = self.context.thread_data(value)
+        if self.context.is_typed_group_payload(value) and (
+            specification is None or specification.items_per_thread is None
+        ):
+            raise CoopSinglePhaseRewriteError(
+                f"cooperative group operation {self.op_name!r} could not "
+                "infer the static "
+                "extent of a typed group payload"
+            )
         return (value, specification)
+
+    def array_candidate(
+        self, index: int
+    ) -> tuple[ir.Var | None, _ThreadDataSpecification | None]:
+        """Inspect one operand for local, shared, or ThreadData array facts.
+
+        Return the IR variable and any recovered specification, or ``(None,
+        None)`` for a missing/non-variable operand. As with ``candidate``, a
+        planner-created result must have a known extent. Family hooks decide
+        whether other missing array facts are acceptable for their operation.
+        """
+
+        if not 0 <= index < len(self.runtime_args):
+            return (None, None)
+        value = self.runtime_args[index]
+        if not isinstance(value, ir.Var):
+            return (None, None)
+        specification = self.context.array(value)
+        if self.context.is_typed_group_payload(value) and (
+            specification is None or specification.items_per_thread is None
+        ):
+            raise CoopSinglePhaseRewriteError(
+                f"cooperative group operation {self.op_name!r} could not "
+                "infer the static "
+                "extent of a typed group payload"
+            )
+        return (value, specification)
+
+    def inferred_array_dtype(
+        self,
+        value: ir.Var | None,
+        specification: _ThreadDataSpecification | None,
+    ):
+        """Find an array dtype from its specification, IR type, or writes.
+
+        Prefer an explicit recovered element type. Otherwise ask the context
+        for the variable's dtype, then inspect payload writes. Return
+        ``None`` if all sources are unresolved; the family can then apply its
+        own inference fallback.
+        """
+
+        dtype = specification.dtype if specification is not None else None
+        if dtype is None and value is not None:
+            dtype = self.context.dtype(value)
+        if dtype is None and value is not None:
+            dtype = self.context.infer_thread_data_write_dtype(value)
+        return dtype
 
 
 class _PayloadRewrite:
