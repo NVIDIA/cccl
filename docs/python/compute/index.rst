@@ -420,7 +420,9 @@ mutable host-side argument state while sharing compiled code:
    unbound_executor = bound_executor.clone(device_id=None)
 
 Use ``clone`` to create a copy of an executor. The required keyword argument
-``device_id`` specifies the device to which the executor is bound.
+``device_id`` specifies the device to which the executor is bound. Before
+invoking a bound executor, make sure its associated device is set as the current
+device.
 
 Specifying ``device_id=None`` leaves the executor unbound, and it resolves the
 current device when called. This can incur additional overhead.
