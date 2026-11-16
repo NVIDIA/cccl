@@ -415,7 +415,7 @@ struct policy_selector
 
       auto prefetch = TransformPrefetchPolicy{256};
 #if __cccl_ptx_isa >= 940
-      // the prefetch kernel prefetches into L1 with an instruction that fetches 32 bytes (see prefetch())
+      // on SM90+ we prefetch to L1 using 32 bytes
       prefetch.prefetch_byte_stride = 32;
 #endif // __cccl_ptx_isa >= 940
       const auto vectorized = _CUB::detail::transform::tuned_vectorized_policy(
