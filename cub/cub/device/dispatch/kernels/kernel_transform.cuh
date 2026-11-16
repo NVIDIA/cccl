@@ -34,9 +34,11 @@
 #include <cuda/__ptx/instructions/mbarrier_expect_tx.h>
 #include <cuda/__ptx/instructions/mbarrier_init.h>
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
+#include <cuda/__ptx/instructions/prefetch.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cccl/ptx_isa.h>
 #include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__memory/construct_at.h>
@@ -77,7 +79,9 @@ _CCCL_IKET_CREATE_PUSH_POP_RANGE(ProcessAndStore);
 template <typename T>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void prefetch(const T* addr)
 {
-  // TODO(bgruber): prefetch to L1 may be even better
+#if __cccl_ptx_isa >= 940
+  NV_IF_TARGET(NV_PROVIDES_SM_90, (::cuda::ptx::prefetch_L1_32B(addr); return;))
+#endif // __cccl_ptx_isa >= 940
   asm volatile("prefetch.global.L2 [%0];" : : "l"(__cvta_generic_to_global(addr)) : "memory");
 }
 
