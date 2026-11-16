@@ -103,10 +103,9 @@ static void triad_zip_transform_iterator(nvbench::state& state)
                                              return x * scalar;
                                             }};
   auto zip       = cuda::zip_iterator{id_b, scaled_c};
-  auto add       = [] _CCCL_DEVICE(T ib, T sc) -> T {
-    return ib + sc;
-  };
-  bench_transform(state, cuda::std::tuple{zip}, a.begin(), n, cuda::zip_function<decltype(add)>{add});
+  bench_transform(state, cuda::std::tuple{zip}, a.begin(), n, cuda::make_zip_function([] _CCCL_DEVICE(T ib, T sc) -> T {
+                    return ib + sc;
+                  }));
 }
 
 NVBENCH_BENCH(triad_zip_transform_iterator)
@@ -129,14 +128,10 @@ static void triad_nested(nvbench::state& state)
   state.add_global_memory_writes<T>(n);
 
   // the constant 1 cancels out, but the iterator is still part of the tree
-  auto add = [] _CCCL_DEVICE(T x, T y, T one) -> T {
-    return (x + y) * one;
-  };
-  auto combine = [] _CCCL_DEVICE(T sum, int i, T k) -> T {
-    return sum * k + static_cast<T>(i & 1);
-  };
   auto inner = cuda::zip_iterator{a.begin(), b.begin(), cuda::constant_iterator{T{1}}};
-  auto sum   = cuda::transform_iterator{inner, cuda::zip_function<decltype(add)>{add}};
+  auto sum   = cuda::transform_iterator{inner, cuda::make_zip_function([] _CCCL_DEVICE(T x, T y, T one) -> T {
+                                        return (x + y) * one;
+                                        })};
   auto outer = cuda::zip_iterator{sum, cuda::counting_iterator<int>{0}, cuda::constant_iterator{startScalar}};
   bench_transform(
     state,
@@ -147,7 +142,9 @@ static void triad_nested(nvbench::state& state)
         return x;
       }),
     n,
-    cuda::zip_function<decltype(combine)>{combine});
+    cuda::make_zip_function([] _CCCL_DEVICE(T sum, int i, T k) -> T {
+      return sum * k + static_cast<T>(i & 1);
+    }));
 }
 
 NVBENCH_BENCH(triad_nested).set_name("triad_nested").add_int64_power_of_two_axis("Elements{io}", {28});
