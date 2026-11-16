@@ -419,19 +419,11 @@ mutable host-side argument state while sharing compiled code:
    bound_executor = executor.clone(device_id=0)
    unbound_executor = bound_executor.clone(device_id=None)
 
-``device_id`` is required and keyword-only. An integer binds the clone to that
-device, loading code once without recompiling; calls then skip device queries
-and build-result lookups. The device must be current during execution. Cloning
-restores the previous CUDA context even on failure.
+Use ``clone`` to create a copy of an executor. The required keyword argument
+``device_id`` specifies the device to which the executor is bound.
 
-``None`` clears any binding on the copy, including in nested algorithms, without
-device access or code loading. The unbound copy resolves the current device when
-called. Cloning leaves the source unchanged, and serialization omits bindings.
-
-Use each executor from one thread at a time (see
-:ref:`Free-threaded Python <cuda.compute.free_threading>`). For concurrent use,
-give each thread its own clone; deserializing separately also works but loads
-native build state independently.
+Specifying ``device_id=None`` leaves the executor unbound, and it resolves the
+current device when called. This can incur additional overhead.
 
 Blobs are versioned and self-describing, but they are not a long-term storage
 format: compatibility across ``cuda-cccl`` versions is not guaranteed, and
