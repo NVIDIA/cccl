@@ -29,6 +29,18 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// <sys/sysmacros.h> defines `major` and `minor` as function-like macros.
+#ifdef major
+#  pragma push_macro("major")
+#  undef major
+#  define _LIBCUDACXX_POP_MACRO_major
+#endif // defined(major)
+#ifdef minor
+#  pragma push_macro("minor")
+#  undef minor
+#  define _LIBCUDACXX_POP_MACRO_minor
+#endif // defined(minor)
+
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief Type representing the CUDA compute capability.
@@ -266,6 +278,15 @@ current_compute_capability() noexcept
 _CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #endif // _CCCL_CUDA_COMPILATION()
+
+#ifdef _LIBCUDACXX_POP_MACRO_minor
+#  pragma pop_macro("minor")
+#  undef _LIBCUDACXX_POP_MACRO_minor
+#endif // defined(_LIBCUDACXX_POP_MACRO_minor)
+#ifdef _LIBCUDACXX_POP_MACRO_major
+#  pragma pop_macro("major")
+#  undef _LIBCUDACXX_POP_MACRO_major
+#endif // defined(_LIBCUDACXX_POP_MACRO_major)
 
 #include <cuda/std/__cccl/epilogue.h>
 
