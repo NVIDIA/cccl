@@ -40,13 +40,16 @@ struct has_rebind_other<Allocator, T, ::cuda::std::void_t<typename Allocator::te
     : ::cuda::std::true_type
 {};
 
-// Same rules as allocator_traits::rebind_alloc, but false instead of a hard error.
+// Like allocator_traits::rebind_alloc, but false instead of a hard error. Without a nested rebind, only
+// allocators whose first template argument is their value_type are rebound (not e.g. alloc<Pool>).
 template <typename Allocator, typename T>
 struct is_rebindable_allocator : has_rebind_other<Allocator, T>
 {};
 
 template <template <typename, typename...> class Allocator, typename U, typename... Args, typename T>
-struct is_rebindable_allocator<Allocator<U, Args...>, T> : ::cuda::std::true_type
+struct is_rebindable_allocator<Allocator<U, Args...>, T>
+    : ::cuda::std::bool_constant<has_rebind_other<Allocator<U, Args...>, T>::value
+                                 || ::cuda::std::is_same_v<U, typename Allocator<U, Args...>::value_type>>
 {};
 
 template <typename Allocator, typename T, bool = is_rebindable_allocator<Allocator, T>::value>
@@ -66,6 +69,7 @@ struct temporary_buffer_allocator_impl<Allocator, T, true>
 template <typename Allocator, typename T>
 using temporary_buffer_allocator_t = typename temporary_buffer_allocator_impl<Allocator, T>::type;
 
+// decltype(auto): returns either a reference to alloc or a rebound copy
 template <typename T, typename Allocator>
 _CCCL_HOST_API decltype(auto) temporary_buffer_allocator(Allocator& alloc)
 {

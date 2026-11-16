@@ -93,6 +93,33 @@ struct byte_allocator
   std::size_t outstanding = 0;
 };
 
+struct byte_pool
+{
+  using pointer = char*;
+};
+
+// a template, but over a pool rather than the value type, so it must not be rebound
+template <typename Pool>
+struct pool_byte_allocator
+{
+  using value_type = char;
+  using pointer    = typename Pool::pointer;
+
+  pointer allocate(std::size_t n)
+  {
+    outstanding += n;
+    return std::allocator<char>{}.allocate(n);
+  }
+
+  void deallocate(pointer ptr, std::size_t n)
+  {
+    outstanding -= n;
+    std::allocator<char>{}.deallocate(ptr, n);
+  }
+
+  std::size_t outstanding = 0;
+};
+
 template <typename Policy, template <typename> class CRTPBase>
 struct policy_info
 {
@@ -164,8 +191,8 @@ struct TestAllocatorAttachment
 
     allocation_record record;
     {
-      auto p = policy(recording_allocator<char>(record));
-      auto b = get_temporary_buffer<double>(p, 123);
+      auto p       = policy(recording_allocator<char>(record));
+      const auto b = get_temporary_buffer<double>(p, 123);
       REQUIRE(record.element_size == sizeof(double));
       REQUIRE(record.count == 123);
       return_temporary_buffer(p, b.first, b.second);
@@ -173,8 +200,8 @@ struct TestAllocatorAttachment
 
     record = allocation_record{};
     {
-      auto p = policy(recording_allocator<void>(record));
-      auto b = get_temporary_buffer<int>(p, 42);
+      auto p       = policy(recording_allocator<void>(record));
+      const auto b = get_temporary_buffer<int>(p, 42);
       REQUIRE(record.element_size == sizeof(int));
       REQUIRE(record.count == 42);
       return_temporary_buffer(p, b.first, b.second);
@@ -182,11 +209,20 @@ struct TestAllocatorAttachment
 
     byte_allocator bytes;
     {
-      auto p = policy(bytes);
-      auto b = get_temporary_buffer<double>(p, 10);
+      auto p       = policy(bytes);
+      const auto b = get_temporary_buffer<double>(p, 10);
       REQUIRE(bytes.outstanding == 10 * sizeof(double));
       return_temporary_buffer(p, b.first, b.second);
       REQUIRE(bytes.outstanding == 0);
+    }
+
+    pool_byte_allocator<byte_pool> pool_bytes;
+    {
+      auto p       = policy(pool_bytes);
+      const auto b = get_temporary_buffer<double>(p, 10);
+      REQUIRE(pool_bytes.outstanding == 10 * sizeof(double));
+      return_temporary_buffer(p, b.first, b.second);
+      REQUIRE(pool_bytes.outstanding == 0);
     }
   }
 };
