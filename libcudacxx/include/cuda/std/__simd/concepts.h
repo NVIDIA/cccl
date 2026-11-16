@@ -66,12 +66,19 @@ _CCCL_CONCEPT __simd_vec_type = _CCCL_REQUIRES_EXPR(
 
 // [simd.expos], constexpr-wrapper-like concept
 
+template <typename _Tp, typename = void>
+inline constexpr bool __constexpr_wrapper_like_v = false;
+
+// Check constant expressions before conversions, which can recurse through the value constructor.
 template <typename _Tp>
-_CCCL_CONCEPT __constexpr_wrapper_like = _CCCL_REQUIRES_EXPR((_Tp))(
-  requires(convertible_to<_Tp, decltype(_Tp::value)>),
-  requires(equality_comparable_with<_Tp, decltype(_Tp::value)>),
-  declval<char (&)[(_Tp() == _Tp::value) ? 1 : -1]>(),
-  declval<char (&)[(static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value) ? 1 : -1]>());
+inline constexpr bool __constexpr_wrapper_like_v<
+  _Tp,
+  void_t<decltype(::cuda::std::declval<char (&)[(_Tp() == _Tp::value) ? 1 : -1]>()),
+         decltype(::cuda::std::declval<char (&)[(static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value) ? 1 : -1]>())>> =
+  convertible_to<_Tp, decltype(_Tp::value)> && equality_comparable_with<_Tp, decltype(_Tp::value)>;
+
+template <typename _Tp>
+_CCCL_CONCEPT __constexpr_wrapper_like = __constexpr_wrapper_like_v<_Tp>;
 
 // Covers all integral types including character types (char16_t, char32_t, wchar_t, char8_t),
 // which are excluded by __cccl_is_integer_v
