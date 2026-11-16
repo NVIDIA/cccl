@@ -95,7 +95,6 @@ Checks:
   - '-readability-use-concise-preprocessor-directives'
   - '-readability-uppercase-literal-suffix'
   - '-readability-avoid-nested-conditional-operator'
-  - '-readability-make-member-function-const'
   - '-readability-suspicious-call-argument'
   # Handled by clang-tidy
   - '-readability-misleading-indentation'

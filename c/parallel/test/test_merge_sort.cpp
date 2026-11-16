@@ -107,7 +107,7 @@ C2H_TEST("DeviceMergeSort::SortKeys works", "[merge_sort]", key_types)
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
 
-  operation_t op                      = make_operation("op", get_merge_sort_op(get_type_info<key_t>().type));
+  const operation_t op                = make_operation("op", get_merge_sort_op(get_type_info<key_t>().type));
   const std::vector<key_t> input_keys = make_shuffled_sequence<key_t>(num_items);
   std::vector<key_t> expected_keys    = input_keys;
 
@@ -153,7 +153,7 @@ C2H_TEST("DeviceMergeSort::SortKeysCopy works", "[merge_sort]", key_types)
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
 
-  operation_t op                      = make_operation("op", get_merge_sort_op(get_type_info<key_t>().type));
+  const operation_t op                = make_operation("op", get_merge_sort_op(get_type_info<key_t>().type));
   const std::vector<key_t> input_keys = make_shuffled_sequence<key_t>(num_items);
   const std::vector<key_t> output_keys(num_items);
   std::vector<key_t> expected_keys = input_keys;
@@ -178,7 +178,7 @@ C2H_TEST("DeviceMergeSort::SortPairs works", "[merge_sort]", key_types)
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
 
-  operation_t op                = make_operation("op", get_merge_sort_op(get_type_info<key_t>().type));
+  const operation_t op          = make_operation("op", get_merge_sort_op(get_type_info<key_t>().type));
   std::vector<key_t> input_keys = make_shuffled_sequence<key_t>(num_items);
   std::vector<item_t> input_items(num_items);
   std::transform(input_keys.begin(), input_keys.end(), input_items.begin(), [](key_t key) {
@@ -208,7 +208,7 @@ C2H_TEST("DeviceMergeSort::SortPairsCopy works ", "[merge_sort]", key_types)
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
 
-  operation_t op                = make_operation("op", get_merge_sort_op(get_type_info<key_t>().type));
+  const operation_t op          = make_operation("op", get_merge_sort_op(get_type_info<key_t>().type));
   std::vector<key_t> input_keys = make_shuffled_sequence<key_t>(num_items);
   std::vector<item_t> input_items(num_items);
   std::transform(input_keys.begin(), input_keys.end(), input_items.begin(), [](key_t key) {
@@ -251,7 +251,7 @@ struct DeviceMergeSort_SortPairsCopy_CustomType_Fixture_Tag;
 C2H_TEST("DeviceMergeSort:SortPairsCopy works with custom types", "[merge_sort]")
 {
   const size_t num_items      = GENERATE_COPY(take(2, random(1, 100000)), values({5, 10000, 100000}));
-  operation_t op              = make_operation("op",
+  const operation_t op        = make_operation("op",
                                                R"(struct key_pair { short a; size_t b; };
 extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
   key_pair* lhs = static_cast<key_pair*>(lhs_ptr);
@@ -307,7 +307,7 @@ struct DeviceMergeSort_SortPairsCopy_CustomType_WellKnown_Fixture_Tag;
 C2H_TEST("DeviceMergeSort:SortPairsCopy works with custom types with well-known predicates", "[merge_sort][well_known]")
 {
   const size_t num_items      = GENERATE_COPY(take(2, random(1, 100000)), values({5, 10000, 100000}));
-  operation_t op_state        = make_operation("op",
+  const operation_t op_state  = make_operation("op",
                                                R"(struct key_pair { short a; size_t b; };
 extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
   key_pair* lhs = static_cast<key_pair*>(lhs_ptr);
@@ -367,7 +367,7 @@ C2H_TEST("DeviceMergeSort::SortKeys works with input iterators", "[merge_sort]")
   using T             = int;
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
 
-  operation_t op = make_operation("op", get_merge_sort_op(get_type_info<T>().type));
+  const operation_t op = make_operation("op", get_merge_sort_op(get_type_info<T>().type));
   iterator_t<T, random_access_iterator_state_t<T>> input_keys_it =
     make_random_access_iterator<T>(iterator_kind::INPUT, "int");
   const std::vector<T> input_keys = make_shuffled_sequence<T>(num_items);
@@ -393,7 +393,7 @@ C2H_TEST("DeviceMergeSort::SortPairs works with input iterators", "[merge_sort]"
   using int_item_t    = int;
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
 
-  operation_t op = make_operation("op", get_merge_sort_op(get_type_info<key_t>().type));
+  const operation_t op = make_operation("op", get_merge_sort_op(get_type_info<key_t>().type));
   iterator_t<key_t, random_access_iterator_state_t<key_t>> input_keys_it =
     make_random_access_iterator<key_t>(iterator_kind::INPUT, "int", "key");
   iterator_t<key_t, random_access_iterator_state_t<key_t>> input_items_it =
@@ -527,7 +527,7 @@ C2H_TEST("MergeSort works with C++ source operations", "[merge_sort]")
     }
   )";
 
-  operation_t op = make_cpp_operation("op", cpp_source);
+  const operation_t op = make_cpp_operation("op", cpp_source);
 
   const std::vector<key_t> input_keys = make_shuffled_sequence<key_t>(num_items);
   pointer_t<key_t> input_keys_ptr(input_keys);
@@ -570,7 +570,7 @@ C2H_TEST("MergeSort works with C++ source operations using custom headers", "[me
     }
   )";
 
-  operation_t op = make_cpp_operation("op", cpp_source);
+  const operation_t op = make_cpp_operation("op", cpp_source);
 
   const std::vector<key_t> input_keys = make_shuffled_sequence<key_t>(num_items);
   pointer_t<key_t> input_keys_ptr(input_keys);

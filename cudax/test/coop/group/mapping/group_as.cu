@@ -42,7 +42,7 @@ struct ConstSizedCounts : cuda::std::ranges::view_base
     return counts;
   }
 
-  __host__ __device__ constexpr const unsigned* end()
+  __host__ __device__ constexpr const unsigned* end() // NOLINT(readability-make-member-function-const)
   {
     return counts + 2;
   }
@@ -52,7 +52,7 @@ struct ConstSizedCounts : cuda::std::ranges::view_base
     return counts + 3;
   }
 
-  __host__ __device__ constexpr cuda::std::size_t size()
+  __host__ __device__ constexpr cuda::std::size_t size() // NOLINT(readability-make-member-function-const)
   {
     return 2;
   }
@@ -137,9 +137,24 @@ static_assert(!cuda::std::ranges::random_access_range<const ForwardCounts>);
 
 namespace
 {
+template <class Mapping, class Parent, class Result, class = void>
+inline constexpr bool can_map_group_as = false;
+
+template <class Mapping, class Parent, class Result>
+inline constexpr bool can_map_group_as<
+  Mapping,
+  Parent,
+  Result,
+  cuda::std::void_t<decltype(cuda::std::declval<Mapping&>().map(
+                      cuda::gpu_thread, cuda::std::declval<const Parent&>(), cuda::std::declval<const Result&>())),
+                    decltype(cuda::std::declval<Mapping&>().map(cudax::coop::non_exhaustive,
+                                                                cuda::gpu_thread,
+                                                                cuda::std::declval<const Parent&>(),
+                                                                cuda::std::declval<const Result&>()))>> = true;
+
 // Use the same checks for exhaustive and non-exhaustive mapping.
 template <bool Exhaustive, class Mapping, class ParentGroup, class PrevMappingResult>
-__device__ auto map_group_as(const Mapping& mapping, const ParentGroup& parent, const PrevMappingResult& prev)
+__device__ auto map_group_as(Mapping& mapping, const ParentGroup& parent, const PrevMappingResult& prev)
 {
   if constexpr (Exhaustive)
   {
@@ -212,11 +227,16 @@ __device__ void test_range_input(Config config, Input&& input, const Range& coun
   static_assert(!cuda::std::is_default_constructible_v<Mapping>);
   static_assert(cuda::std::is_constructible_v<Mapping, Input>);
 
-  const cudax::coop::group_as mapping{cuda::std::forward<Input>(input)};
+  using QualifiedMapping =
+    cuda::std::conditional_t<cuda::std::ranges::range<const cuda::std::views::all_t<Input>>, const Mapping, Mapping>;
+  QualifiedMapping mapping{cuda::std::forward<Input>(input)};
   static_assert(cuda::std::is_same_v<cuda::std::remove_const_t<decltype(mapping)>, Mapping>);
 
   const cudax::coop::this_warp parent{config};
   const ThreadsInWarpMappingResult prev;
+
+  static_assert(can_map_group_as<const Mapping, decltype(parent), ThreadsInWarpMappingResult>
+                == cuda::std::ranges::range<const cuda::std::views::all_t<Input>>);
 
   const auto result = map_group_as<Exhaustive>(mapping, parent, prev);
   using Result      = decltype(result);
@@ -248,6 +268,11 @@ __device__ void test_runtime_counts(Config config)
   test_range_input<Exhaustive, sizeof...(Counts)>(config, array);
   test_range_input<Exhaustive, sizeof...(Counts)>(config, cuda::std::span{c_array});
   test_range_input<Exhaustive, cuda::std::dynamic_extent>(config, cuda::std::span{c_array, sizeof...(Counts)});
+
+  using MutableView = NonConstView<const cuda::std::uint32_t>;
+  static_assert(cuda::std::ranges::sized_range<MutableView>);
+  static_assert(!cuda::std::ranges::range<const MutableView>);
+  test_range_input<Exhaustive, cuda::std::dynamic_extent>(config, MutableView{c_array, sizeof...(Counts)}, c_array);
 
   // Rvalue arrays are owned; use the separate C array as the independent reference.
   test_range_input<Exhaustive, sizeof...(Counts)>(config, cuda::std::array{Counts...}, c_array);

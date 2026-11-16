@@ -147,7 +147,7 @@ template <typename Fixture, typename Value, typename Variant, typename HostVaria
 void test_vectorized(Variant variant, HostVariant host_variant)
 {
   const std::size_t num_items = GENERATE(0, 43, take(4, random(1 << 12, 1 << 16)));
-  operation_t op              = make_operation("op", get_merge_sort_op(get_type_info<Value>().type));
+  const operation_t op        = make_operation("op", get_merge_sort_op(get_type_info<Value>().type));
 
   const std::vector<Value> target_values = generate<Value>(num_items / 100);
   std::vector<Value> data                = generate<Value>(num_items);
@@ -238,7 +238,7 @@ C2H_TEST("BinarySearch compile/load round-trip", "[binary_search][serialization]
   constexpr int device_id = 0;
   const auto& build_info  = BuildInformation<device_id>::init();
 
-  operation_t op = make_operation("op", get_merge_sort_op(get_type_info<T>().type));
+  const operation_t op = make_operation("op", get_merge_sort_op(get_type_info<T>().type));
   pointer_t<T> dummy_data(1);
   pointer_t<T> dummy_values(1);
   pointer_t<std::ptrdiff_t> dummy_out(1);
