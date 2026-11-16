@@ -40,7 +40,7 @@
 THRUST_NAMESPACE_BEGIN
 
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator1, ForwardIterator2>
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<ForwardIterator1, ForwardIterator2>
 unique_by_key( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator1 keys_first,
@@ -51,7 +51,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2>
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2>
 unique_by_key_copy( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
@@ -176,7 +176,7 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeyOutputIt, ValOutputIt> unique_by_ke
 //-------------------------
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, class ValOutputIt, class BinaryPred>
-::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE unique_by_key_copy(
+::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE_API unique_by_key_copy(
   execution_policy<Derived>& policy,
   KeyInputIt keys_first,
   KeyInputIt keys_last,
@@ -194,7 +194,7 @@ template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, 
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, class ValOutputIt>
-::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE unique_by_key_copy(
+::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE_API unique_by_key_copy(
   execution_policy<Derived>& policy,
   KeyInputIt keys_first,
   KeyInputIt keys_last,
@@ -208,7 +208,7 @@ template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, 
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class BinaryPred>
-::cuda::std::pair<KeyInputIt, ValInputIt> _CCCL_HOST_DEVICE unique_by_key(
+::cuda::std::pair<KeyInputIt, ValInputIt> _CCCL_HOST_DEVICE_API unique_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt keys_first,
   KeyInputIt keys_last,
@@ -224,7 +224,7 @@ template <class Derived, class KeyInputIt, class ValInputIt, class BinaryPred>
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt>
-::cuda::std::pair<KeyInputIt, ValInputIt> _CCCL_HOST_DEVICE
+::cuda::std::pair<KeyInputIt, ValInputIt> _CCCL_HOST_DEVICE_API
 unique_by_key(execution_policy<Derived>& policy, KeyInputIt keys_first, KeyInputIt keys_last, ValInputIt values_first)
 {
   using key_type = thrust::detail::it_value_t<KeyInputIt>;

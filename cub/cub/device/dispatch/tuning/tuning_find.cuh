@@ -46,7 +46,7 @@ struct FindIfPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const FindIfPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const FindIfPolicy& p)
   {
     return os
         << "FindIfPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "

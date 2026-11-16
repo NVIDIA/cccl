@@ -103,7 +103,7 @@ public:
    *  \param b The largest integer to potentially produce. Defaults to the largest representable integer in
    *           the platform.
    */
-  _CCCL_HOST_DEVICE explicit uniform_int_distribution(
+  _CCCL_HOST_DEVICE_API explicit uniform_int_distribution(
     IntType a = 0, IntType b = ::cuda::std::numeric_limits<IntType>::max());
 
   /*! This constructor creates a new \p uniform_int_distribution from a \p param_type object
@@ -111,11 +111,11 @@ public:
    *
    *  \param parm A \p param_type object encapsulating the parameters (i.e., the range) of the distribution.
    */
-  _CCCL_HOST_DEVICE explicit uniform_int_distribution(const param_type& parm);
+  _CCCL_HOST_DEVICE_API explicit uniform_int_distribution(const param_type& parm);
 
   /*! This does nothing.  It is included to conform to the requirements of the RandomDistribution concept.
    */
-  _CCCL_HOST_DEVICE void reset();
+  _CCCL_HOST_DEVICE_API void reset();
 
   // generating functions
 
@@ -125,7 +125,7 @@ public:
    *  \param urng The \p UniformRandomNumberGenerator to use as a source of randomness.
    */
   template <typename UniformRandomNumberGenerator>
-  _CCCL_HOST_DEVICE result_type operator()(UniformRandomNumberGenerator& urng);
+  _CCCL_HOST_DEVICE_API result_type operator()(UniformRandomNumberGenerator& urng);
 
   /*! This method produces a new uniform random integer as if by creating a new \p uniform_int_distribution
    *  from the given \p param_type object, and calling its <tt>operator()</tt> method with the given
@@ -136,7 +136,7 @@ public:
    *              to draw from.
    */
   template <typename UniformRandomNumberGenerator>
-  _CCCL_HOST_DEVICE result_type operator()(UniformRandomNumberGenerator& urng, const param_type& parm);
+  _CCCL_HOST_DEVICE_API result_type operator()(UniformRandomNumberGenerator& urng, const param_type& parm);
 
   // property functions
 
@@ -145,40 +145,40 @@ public:
    *
    *  \return The lower bound of this \p uniform_int_distribution's range.
    */
-  _CCCL_HOST_DEVICE result_type a() const;
+  _CCCL_HOST_DEVICE_API result_type a() const;
 
   /*! This method returns the value of the parameter with which this \p uniform_int_distribution
    *  was constructed.
    *
    *  \return The upper bound of this \p uniform_int_distribution's range.
    */
-  _CCCL_HOST_DEVICE result_type b() const;
+  _CCCL_HOST_DEVICE_API result_type b() const;
 
   /*! This method returns a \p param_type object encapsulating the parameters with which this
    *  \p uniform_int_distribution was constructed.
    *
    *  \return A \p param_type object enapsulating the range of this \p uniform_int_distribution.
    */
-  _CCCL_HOST_DEVICE param_type param() const;
+  _CCCL_HOST_DEVICE_API param_type param() const;
 
   /*! This method changes the parameters of this \p uniform_int_distribution using the values encapsulated
    *  in a given \p param_type object.
    *
    *  \param parm A \p param_type object encapsulating the new range of this \p uniform_int_distribution.
    */
-  _CCCL_HOST_DEVICE void param(const param_type& parm);
+  _CCCL_HOST_DEVICE_API void param(const param_type& parm);
 
   /*! This method returns the smallest integer this \p uniform_int_distribution can potentially produce.
    *
    *  \return The lower bound of this \p uniform_int_distribution's range.
    */
-  _CCCL_HOST_DEVICE result_type min THRUST_PREVENT_MACRO_SUBSTITUTION() const;
+  _CCCL_HOST_DEVICE_API result_type min THRUST_PREVENT_MACRO_SUBSTITUTION() const;
 
   /*! This method returns the largest integer this \p uniform_int_distribution can potentially produce.
    *
    *  \return The upper bound of this \p uniform_int_distribution's range.
    */
-  _CCCL_HOST_DEVICE result_type max THRUST_PREVENT_MACRO_SUBSTITUTION() const;
+  _CCCL_HOST_DEVICE_API result_type max THRUST_PREVENT_MACRO_SUBSTITUTION() const;
 
   /*! \cond
    */
@@ -188,7 +188,7 @@ private:
 
   friend struct thrust::random::detail::random_core_access;
 
-  _CCCL_HOST_DEVICE bool equal(const uniform_int_distribution& rhs) const;
+  _CCCL_HOST_DEVICE_API bool equal(const uniform_int_distribution& rhs) const;
 
   template <typename CharT, typename Traits>
   std::basic_ostream<CharT, Traits>& stream_out(std::basic_ostream<CharT, Traits>& os) const;
@@ -205,7 +205,7 @@ private:
  *  \return \c true if \p lhs is equal to \p rhs; \c false, otherwise.
  */
 template <typename IntType>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 operator==(const uniform_int_distribution<IntType>& lhs, const uniform_int_distribution<IntType>& rhs);
 
 /*! This function checks two \p uniform_int_distributions for inequality.
@@ -214,7 +214,7 @@ operator==(const uniform_int_distribution<IntType>& lhs, const uniform_int_distr
  *  \return \c true if \p lhs is not equal to \p rhs; \c false, otherwise.
  */
 template <typename IntType>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 operator!=(const uniform_int_distribution<IntType>& lhs, const uniform_int_distribution<IntType>& rhs);
 
 /*! This function streams a uniform_int_distribution to a \p std::basic_ostream.
@@ -223,7 +223,7 @@ operator!=(const uniform_int_distribution<IntType>& lhs, const uniform_int_distr
  *  \return \p os
  */
 template <typename IntType, typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>&
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
 operator<<(std::basic_ostream<CharT, Traits>& os, const uniform_int_distribution<IntType>& d);
 
 /*! This function streams a uniform_int_distribution in from a std::basic_istream.
@@ -232,7 +232,7 @@ operator<<(std::basic_ostream<CharT, Traits>& os, const uniform_int_distribution
  *  \return \p is
  */
 template <typename IntType, typename CharT, typename Traits>
-std::basic_istream<CharT, Traits>&
+_CCCL_HOST_API std::basic_istream<CharT, Traits>&
 operator>>(std::basic_istream<CharT, Traits>& is, uniform_int_distribution<IntType>& d);
 
 /*! \} // end random_number_distributions

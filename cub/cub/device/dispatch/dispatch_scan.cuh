@@ -848,7 +848,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
     struct policy_getter
     {
       // host-device not api, because clang warns about exclude_from_explicit_instantiation in local types
-      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()() const
+      _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
       {
         return _CUB::detail::scan::convert_policy<ActivePolicyT>();
       }

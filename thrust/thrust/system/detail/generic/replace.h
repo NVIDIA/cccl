@@ -18,7 +18,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate, typename T>
-_CCCL_HOST_DEVICE OutputIterator replace_copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator replace_copy_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -32,7 +32,7 @@ template <typename DerivedPolicy,
           typename OutputIterator,
           typename Predicate,
           typename T>
-_CCCL_HOST_DEVICE OutputIterator replace_copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator replace_copy_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -42,7 +42,7 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
   const T& new_value);
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
-_CCCL_HOST_DEVICE OutputIterator replace_copy(
+_CCCL_HOST_DEVICE_API OutputIterator replace_copy(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -51,7 +51,7 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy(
   const T& new_value);
 
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate, typename T>
-_CCCL_HOST_DEVICE void replace_if(
+_CCCL_HOST_DEVICE_API void replace_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -59,7 +59,7 @@ _CCCL_HOST_DEVICE void replace_if(
   const T& new_value);
 
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate, typename T>
-_CCCL_HOST_DEVICE void replace_if(
+_CCCL_HOST_DEVICE_API void replace_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -68,7 +68,7 @@ _CCCL_HOST_DEVICE void replace_if(
   const T& new_value);
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 replace(thrust::execution_policy<DerivedPolicy>& exec,
         ForwardIterator first,
         ForwardIterator last,

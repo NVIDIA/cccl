@@ -97,7 +97,7 @@ THRUST_RUNTIME_FUNCTION T transform_reduce_n_impl(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class TransformOp, class T, class ReduceOp>
-T _CCCL_HOST_DEVICE transform_reduce(
+T _CCCL_HOST_DEVICE_API transform_reduce(
   execution_policy<Derived>& policy, InputIt first, InputIt last, TransformOp transform_op, T init, ReduceOp reduce_op)
 {
   using size_type           = thrust::detail::it_difference_t<InputIt>;

@@ -25,7 +25,7 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
 template <class Derived, class ItemsIt, class MapIt, class ResultIt>
-void _CCCL_HOST_DEVICE
+void _CCCL_HOST_DEVICE_API
 scatter(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, MapIt map, ResultIt result)
 {
   cuda_cub::transform(
@@ -37,7 +37,7 @@ scatter(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, MapIt ma
 }
 
 template <class Derived, class ItemsIt, class MapIt, class StencilIt, class ResultIt, class Predicate>
-void _CCCL_HOST_DEVICE scatter_if(
+void _CCCL_HOST_DEVICE_API scatter_if(
   execution_policy<Derived>& policy,
   ItemsIt first,
   ItemsIt last,
@@ -57,7 +57,7 @@ void _CCCL_HOST_DEVICE scatter_if(
 }
 
 template <class Derived, class ItemsIt, class MapIt, class StencilIt, class ResultIt>
-void _CCCL_HOST_DEVICE scatter_if(
+void _CCCL_HOST_DEVICE_API scatter_if(
   execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, MapIt map, StencilIt stencil, ResultIt result)
 {
   cuda_cub::scatter_if(

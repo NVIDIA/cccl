@@ -23,7 +23,7 @@ struct static_mod
   static const T q = M / A;
   static const T r = M % A;
 
-  _CCCL_HOST_DEVICE T operator()(T x) const
+  _CCCL_HOST_DEVICE_API T operator()(T x) const
   {
     if constexpr (A == 1)
     {
@@ -64,14 +64,14 @@ struct static_mod
 template <typename T, T A, T C, T M>
 struct static_mod<T, A, C, M, true>
 {
-  _CCCL_HOST_DEVICE T operator()(T x) const
+  _CCCL_HOST_DEVICE_API T operator()(T x) const
   {
     return (A * x) + C;
   }
 }; // end static_mod
 
 template <typename T, T A, T C, T M>
-_CCCL_HOST_DEVICE T mod(T x)
+_CCCL_HOST_DEVICE_API T mod(T x)
 {
   const static_mod<T, A, C, M> f;
   return f(x);

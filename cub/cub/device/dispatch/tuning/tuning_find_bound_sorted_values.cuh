@@ -49,7 +49,7 @@ struct FindBoundSortedValuesPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const FindBoundSortedValuesPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const FindBoundSortedValuesPolicy& p)
   {
     return os << "FindBoundSortedValuesPolicy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << ", .load_modifier = " << p.load_modifier << " }";

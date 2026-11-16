@@ -50,7 +50,7 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 // TODO(bgruber): drop in CCCL 4.0 when we drop the public dispatchers
 #ifndef CUB_DEFINE_SUB_POLICY_GETTER
 #  define CUB_DEFINE_SUB_POLICY_GETTER(name)                                          \
-    _CCCL_HOST_DEVICE static constexpr auto name()                                    \
+    _CCCL_HOST_DEVICE_API static constexpr auto name()                                \
     {                                                                                 \
       return _CUB::detail::MakePolicyWrapper(typename StaticPolicyT::name##Policy()); \
     }

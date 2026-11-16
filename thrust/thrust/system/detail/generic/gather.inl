@@ -25,7 +25,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename InputIterator, typename RandomAccessIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator gather(
+_CCCL_HOST_DEVICE_API OutputIterator gather(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator map_first,
   InputIterator map_last,
@@ -45,7 +45,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename RandomAccessIterator,
           typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator gather_if(
+_CCCL_HOST_DEVICE_API OutputIterator gather_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 map_first,
   InputIterator1 map_last,
@@ -62,7 +62,7 @@ template <typename DerivedPolicy,
           typename RandomAccessIterator,
           typename OutputIterator,
           typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator gather_if(
+_CCCL_HOST_DEVICE_API OutputIterator gather_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 map_first,
   InputIterator1 map_last,

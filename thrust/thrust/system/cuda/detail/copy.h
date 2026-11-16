@@ -41,11 +41,11 @@ namespace cuda_cub
 {
 // Forward declare since we need it in the implementation non_trivial_cross_system_copy_n
 template <class System, class InputIterator, class Size, class OutputIterator>
-OutputIterator _CCCL_HOST_DEVICE
-copy_n(execution_policy<System>& system, // NOLINT(readability-redundant-declaration)
-       InputIterator first,
-       Size n,
-       OutputIterator result);
+OutputIterator _CCCL_HOST_DEVICE_API copy_n( // NOLINT(readability-redundant-declaration)
+  execution_policy<System>& system,
+  InputIterator first,
+  Size n,
+  OutputIterator result);
 
 // Forward declare to work around a cyclic include, since "cuda/detail/transform.h" includes this header
 template <class Derived, class InputIt, class OutputIt, class TransformOp>
@@ -74,7 +74,7 @@ OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many( // NOLINT(r
 namespace __copy
 {
 template <class H, class D, class T, class Size>
-void _CCCL_HOST trivial_cross_system_copy_n(
+void _CCCL_HOST_API trivial_cross_system_copy_n(
   cpp::execution_policy<H>&, cuda_cub::execution_policy<D>& device_s, T* dst, const T* src, Size n)
 {
   const auto status = cuda_cub::trivial_copy_to_device(dst, src, n, cuda_cub::stream(device_s));
@@ -82,7 +82,7 @@ void _CCCL_HOST trivial_cross_system_copy_n(
 }
 
 template <class H, class D, class T, class Size>
-void _CCCL_HOST trivial_cross_system_copy_n(
+void _CCCL_HOST_API trivial_cross_system_copy_n(
   cuda_cub::execution_policy<D>& device_s, cpp::execution_policy<H>&, T* dst, const T* src, Size n)
 {
   const auto status = cuda_cub::trivial_copy_from_device(dst, src, n, cuda_cub::stream(device_s));
@@ -90,7 +90,7 @@ void _CCCL_HOST trivial_cross_system_copy_n(
 }
 
 template <class H, class D, class InputIt, class Size, class OutputIt>
-OutputIt _CCCL_HOST non_trivial_cross_system_copy_n(
+OutputIt _CCCL_HOST_API non_trivial_cross_system_copy_n(
   cpp::execution_policy<H>& host_s,
   cuda_cub::execution_policy<D>& device_s,
   InputIt first,
@@ -124,7 +124,7 @@ OutputIt _CCCL_HOST non_trivial_cross_system_copy_n(
 // because copy ctor must have  __device__ annotations, which is nvcc-only
 // feature
 template <class D, class H, class InputIt, class Size, class OutputIt>
-OutputIt _CCCL_HOST non_trivial_cross_system_copy_n(
+OutputIt _CCCL_HOST_API non_trivial_cross_system_copy_n(
   cuda_cub::execution_policy<D>& device_s,
   cpp::execution_policy<H>& host_s,
   InputIt first,
@@ -149,7 +149,8 @@ OutputIt _CCCL_HOST non_trivial_cross_system_copy_n(
 #endif // _CCCL_CUDA_COMPILATION()
 
 template <class System1, class System2, class InputIt, class Size, class OutputIt>
-OutputIt _CCCL_HOST cross_system_copy_n(cross_system<System1, System2> systems, InputIt begin, Size n, OutputIt result)
+OutputIt
+  _CCCL_HOST_API cross_system_copy_n(cross_system<System1, System2> systems, InputIt begin, Size n, OutputIt result)
 {
   if (n == 0)
   {
@@ -216,7 +217,7 @@ device_to_device(execution_policy<Derived>& policy, InputIt first, InputIt last,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class System, class InputIterator, class OutputIterator>
-OutputIterator _CCCL_HOST_DEVICE
+OutputIterator _CCCL_HOST_DEVICE_API
 copy(execution_policy<System>& system, InputIterator first, InputIterator last, OutputIterator result)
 {
   THRUST_CDP_DISPATCH((result = __copy::device_to_device(system, first, last, result);),
@@ -226,7 +227,7 @@ copy(execution_policy<System>& system, InputIterator first, InputIterator last, 
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class System, class InputIterator, class Size, class OutputIterator>
-OutputIterator _CCCL_HOST_DEVICE
+OutputIterator _CCCL_HOST_DEVICE_API
 copy_n(execution_policy<System>& system, InputIterator first, Size n, OutputIterator result)
 {
   THRUST_CDP_DISPATCH((result = __copy::device_to_device(system, first, ::cuda::std::next(first, n), result);),
@@ -236,14 +237,14 @@ copy_n(execution_policy<System>& system, InputIterator first, Size n, OutputIter
 #endif // _CCCL_CUDA_COMPILATION()
 
 template <class System1, class System2, class InputIterator, class OutputIterator>
-OutputIterator _CCCL_HOST
+OutputIterator _CCCL_HOST_API
 copy(cross_system<System1, System2> systems, InputIterator first, InputIterator last, OutputIterator result)
 {
   return __copy::cross_system_copy_n(systems, first, ::cuda::std::distance(first, last), result);
 }
 
 template <class System1, class System2, class InputIterator, class Size, class OutputIterator>
-OutputIterator _CCCL_HOST
+OutputIterator _CCCL_HOST_API
 copy_n(cross_system<System1, System2> systems, InputIterator first, Size n, OutputIterator result)
 {
   return __copy::cross_system_copy_n(systems, first, n, result);

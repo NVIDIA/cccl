@@ -108,7 +108,7 @@ CUB_NAMESPACE_BEGIN
  *
  * \return The CUDA error.
  */
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cudaError_t
 Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]] int line)
 {
   // Clear the global CUDA error state which may have been set by the last

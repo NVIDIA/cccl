@@ -41,7 +41,7 @@
 THRUST_NAMESPACE_BEGIN
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator adjacent_difference( // NOLINT(readability-redundant-declaration)
+_CCCL_HOST_DEVICE_API OutputIterator adjacent_difference( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -144,7 +144,7 @@ adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt la
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class OutputIt, class BinaryOp>
-OutputIt _CCCL_HOST_DEVICE
+OutputIt _CCCL_HOST_DEVICE_API
 adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, BinaryOp binary_op)
 {
   THRUST_CDP_DISPATCH(
@@ -154,7 +154,7 @@ adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt la
 }
 
 template <class Derived, class InputIt, class OutputIt>
-OutputIt _CCCL_HOST_DEVICE
+OutputIt _CCCL_HOST_DEVICE_API
 adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
 {
   using input_type = thrust::detail::it_value_t<InputIt>;

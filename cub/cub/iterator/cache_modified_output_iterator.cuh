@@ -91,12 +91,12 @@ class CacheModifiedOutputIterator
     ValueType* ptr;
 
     /// Constructor
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE Reference(ValueType* ptr)
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE Reference(ValueType* ptr)
         : ptr(ptr)
     {}
 
     /// Assignment
-    _CCCL_DEVICE _CCCL_FORCEINLINE ValueType operator=(ValueType val)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE ValueType operator=(ValueType val)
     {
       _CUB::ThreadStore<MODIFIER>(ptr, val);
       return val;
@@ -135,12 +135,12 @@ public:
    *   Native pointer to wrap
    */
   template <typename QualifiedValueType>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CacheModifiedOutputIterator(QualifiedValueType* ptr)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE CacheModifiedOutputIterator(QualifiedValueType* ptr)
       : ptr(const_cast<::cuda::std::remove_cv_t<QualifiedValueType>*>(ptr))
   {}
 
   /// Postfix increment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type operator++(int)
   {
     self_type retval = *this;
     ptr++;
@@ -148,21 +148,21 @@ public:
   }
 
   /// Prefix increment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type operator++()
   {
     ptr++;
     return *this;
   }
 
   /// Indirection
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE reference operator*() const
   {
     return Reference(ptr);
   }
 
   /// Addition
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type operator+(Distance n) const
   {
     self_type retval(ptr + n);
     return retval;
@@ -170,7 +170,7 @@ public:
 
   /// Addition assignment
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type& operator+=(Distance n)
   {
     ptr += n;
     return *this;
@@ -178,7 +178,7 @@ public:
 
   /// Subtraction
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type operator-(Distance n) const
   {
     self_type retval(ptr - n);
     return retval;
@@ -186,40 +186,40 @@ public:
 
   /// Subtraction assignment
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE self_type& operator-=(Distance n)
   {
     ptr -= n;
     return *this;
   }
 
   /// Distance
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE difference_type operator-(self_type other) const
   {
     return ptr - other.ptr;
   }
 
   /// Array subscript
   template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE reference operator[](Distance n) const
   {
     return Reference(ptr + n);
   }
 
   /// Equal to
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool operator==(const self_type& rhs)
   {
     return (ptr == rhs.ptr);
   }
 
   /// Not equal to
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool operator!=(const self_type& rhs)
   {
     return (ptr != rhs.ptr);
   }
 
 #if _CCCL_HOSTED()
   /// ostream operator
-  friend ::std::ostream& operator<<(::std::ostream& os, const self_type& itr)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const self_type& itr)
   {
     return os;
   }
