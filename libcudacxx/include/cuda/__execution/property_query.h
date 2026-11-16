@@ -74,9 +74,11 @@ template <class _Tp, bool = __has_reserved_property_keys<_Tp>, bool = __has_publ
 extern ::cuda::std::__undefined<_Tp>* __property_keys;
 
 template <class _Tp, bool _HasPublicPropertyKeys>
+// NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
 extern typename ::cuda::std::remove_cvref_t<_Tp>::__property_keys __property_keys<_Tp, true, _HasPublicPropertyKeys>;
 
 template <class _Tp>
+// NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
 extern typename ::cuda::std::remove_cvref_t<_Tp>::property_keys __property_keys<_Tp, false, true>;
 
 template <class _Tp>
