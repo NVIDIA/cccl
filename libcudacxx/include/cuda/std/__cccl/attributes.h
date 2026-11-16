@@ -136,7 +136,10 @@
 
 // MSVC provides a way to mark functions as intrinsic provided the function's body consists of a single
 // return statement of a cast expression (e.g., move(x) or forward<T>(u)).
-#if _CCCL_COMPILER(MSVC) && _CCCL_HAS_CPP_ATTRIBUTE(msvc::intrinsic)
+// The attribute is optional, so skip it if users define its names as macros, which would break it and its check.
+#if defined(msvc) || defined(intrinsic)
+#  define _CCCL_INTRINSIC
+#elif _CCCL_COMPILER(MSVC) && _CCCL_HAS_CPP_ATTRIBUTE(msvc::intrinsic)
 #  define _CCCL_INTRINSIC [[msvc::intrinsic]]
 #else
 #  define _CCCL_INTRINSIC
@@ -172,7 +175,11 @@
 
 // _CCCL_NO_SPECIALIZATIONS
 
-#if _CCCL_HAS_CPP_ATTRIBUTE(clang::__no_specializations__)
+// The attribute is optional, so skip it if users define its names as macros, which would break it and its check.
+#if defined(clang) || defined(msvc) || defined(no_specializations)
+#  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)
+#  define _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS() 0
+#elif _CCCL_HAS_CPP_ATTRIBUTE(clang::__no_specializations__)
 #  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)   [[clang::__no_specializations__(_MSG)]]
 #  define _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS() 1
 #elif _CCCL_HAS_CPP_ATTRIBUTE(msvc::no_specializations)
@@ -188,7 +195,10 @@
 
 // _CCCL_LIFETIMEBOUND
 
-#if _CCCL_HAS_CPP_ATTRIBUTE(clang::lifetimebound) || _CCCL_COMPILER(CLANG)
+// The attribute is optional, so skip it if users define its names as macros, which would break it and its check.
+#if defined(clang) || defined(msvc) || defined(lifetimebound)
+#  define _CCCL_LIFETIMEBOUND
+#elif _CCCL_HAS_CPP_ATTRIBUTE(clang::lifetimebound) || _CCCL_COMPILER(CLANG)
 #  define _CCCL_LIFETIMEBOUND [[clang::lifetimebound]]
 #elif _CCCL_HAS_CPP_ATTRIBUTE(msvc::lifetimebound) || _CCCL_COMPILER(MSVC, >=, 19, 37)
 #  define _CCCL_LIFETIMEBOUND [[msvc::lifetimebound]]

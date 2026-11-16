@@ -54,20 +54,16 @@ FOOTER = """\
 # Standard attribute-tokens like `deprecated` and names declared by the standard library
 # like `allocator` or `thread` are not listed, because a program must not define them as
 # macros ([macro.names]). `min` and `max` are the exception, because <windows.h> defines
-# them.
+# them. Names that only spell vendor attributes, like `clang` or `intrinsic`, are not
+# listed to keep the prologue cheap.
 PUSH_POP_MACROS = {
     "__declspec modifiers": [
         "appdomain",
         "code_seg",
-        "dllimport",
         "dllexport",
-        "empty_bases",
         "hybrid_patchable",
         "jitintrinsic",
-        "lifetimebound",
         "naked",
-        "noalias",
-        "noinline",
         "nothrow",
         "novtable",
         "no_sanitize_address",
@@ -80,17 +76,14 @@ PUSH_POP_MACROS = {
         "uuid",
     ],
     "[[msvc::attribute]] attributes": [
-        "msvc",
         "flatten",
         "forceinline",
         "forceinline_calls",
-        "intrinsic",
         "noinline_calls",
         "no_tls_guard",
     ],
     "Windows nasty macros": ["min", "max"],
     "sal.h on Windows": ["__callback"],
-    "other macros": ["clang"],
 }
 
 
