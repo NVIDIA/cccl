@@ -60,23 +60,11 @@
 #  define _CCCL_POP_MACRO_deprecated
 #endif // defined(deprecated)
 
-#if defined(dllimport)
-#  pragma push_macro("dllimport")
-#  undef dllimport
-#  define _CCCL_POP_MACRO_dllimport
-#endif // defined(dllimport)
-
 #if defined(dllexport)
 #  pragma push_macro("dllexport")
 #  undef dllexport
 #  define _CCCL_POP_MACRO_dllexport
 #endif // defined(dllexport)
-
-#if defined(empty_bases)
-#  pragma push_macro("empty_bases")
-#  undef empty_bases
-#  define _CCCL_POP_MACRO_empty_bases
-#endif // defined(empty_bases)
 
 #if defined(hybrid_patchable)
 #  pragma push_macro("hybrid_patchable")
@@ -90,29 +78,11 @@
 #  define _CCCL_POP_MACRO_jitintrinsic
 #endif // defined(jitintrinsic)
 
-#if defined(lifetimebound)
-#  pragma push_macro("lifetimebound")
-#  undef lifetimebound
-#  define _CCCL_POP_MACRO_lifetimebound
-#endif // defined(lifetimebound)
-
 #if defined(naked)
 #  pragma push_macro("naked")
 #  undef naked
 #  define _CCCL_POP_MACRO_naked
 #endif // defined(naked)
-
-#if defined(noalias)
-#  pragma push_macro("noalias")
-#  undef noalias
-#  define _CCCL_POP_MACRO_noalias
-#endif // defined(noalias)
-
-#if defined(noinline)
-#  pragma push_macro("noinline")
-#  undef noinline
-#  define _CCCL_POP_MACRO_noinline
-#endif // defined(noinline)
 
 #if defined(noreturn)
 #  pragma push_macro("noreturn")
@@ -188,12 +158,6 @@
 
 // [[msvc::attribute]] attributes
 
-#if defined(msvc)
-#  pragma push_macro("msvc")
-#  undef msvc
-#  define _CCCL_POP_MACRO_msvc
-#endif // defined(msvc)
-
 #if defined(flatten)
 #  pragma push_macro("flatten")
 #  undef flatten
@@ -211,18 +175,6 @@
 #  undef forceinline_calls
 #  define _CCCL_POP_MACRO_forceinline_calls
 #endif // defined(forceinline_calls)
-
-#if defined(intrinsic)
-#  pragma push_macro("intrinsic")
-#  undef intrinsic
-#  define _CCCL_POP_MACRO_intrinsic
-#endif // defined(intrinsic)
-
-#if defined(noinline)
-#  pragma push_macro("noinline")
-#  undef noinline
-#  define _CCCL_POP_MACRO_noinline
-#endif // defined(noinline)
 
 #if defined(noinline_calls)
 #  pragma push_macro("noinline_calls")
@@ -269,14 +221,6 @@
 #  undef __callback
 #  define _CCCL_POP_MACRO___callback
 #endif // defined(__callback)
-
-// other macros
-
-#if defined(clang)
-#  pragma push_macro("clang")
-#  undef clang
-#  define _CCCL_POP_MACRO_clang
-#endif // defined(clang)
 
 // sys/sysmacros.h on linux
 
