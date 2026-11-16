@@ -64,7 +64,7 @@ Randomly seeding many ``mwc64x32`` engines can lead to overlapping streams becau
     #include <cuda/random>
 
     __global__ void sample(unsigned* output) {
-        unsigned long long tid = blockIdx.x * blockDim.x + threadIdx.x;
+        auto tid = static_cast<unsigned long long>(blockIdx.x) * blockDim.x + threadIdx.x;
         cuda::experimental::mwc128x32 engine(42);
         engine.discard(tid * 1024); // Reserve 1024 outputs per thread
         output[tid] = engine();
