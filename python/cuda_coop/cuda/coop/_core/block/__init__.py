@@ -25,6 +25,12 @@ from .reduce import (
     make_block_reduce_specialization,
     normalize_block_reduce_algorithm,
 )
+from .scan import (
+    BlockScanAlgorithm,
+    BlockScanSpecialization,
+    make_block_scan_specialization,
+    normalize_block_scan_algorithm,
+)
 
 __all__ = [
     "ArgumentBinding",
@@ -38,6 +44,8 @@ __all__ = [
     "BlockReduceSemantics",
     "BlockReduceSpecialization",
     "BlockReduceValueKind",
+    "BlockScanAlgorithm",
+    "BlockScanSpecialization",
     "BlockStoreAlgorithm",
     "binding",
     "make_block_load_specialization",
@@ -45,8 +53,10 @@ __all__ = [
     "make_block_load_store_specialization",
     "make_block_reduce_semantics",
     "make_block_reduce_specialization",
+    "make_block_scan_specialization",
     "make_block_store_specialization",
     "normalize_block_dim",
     "normalize_block_reduce_algorithm",
+    "normalize_block_scan_algorithm",
     "normalize_positive_int",
 ]
