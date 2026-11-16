@@ -362,11 +362,19 @@ public:
 
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type infinity() noexcept
   {
+#if defined(_CCCL_BUILTIN_HUGE_VALF)
     return _CCCL_BUILTIN_HUGE_VALF();
+#else // ^^^ _CCCL_BUILTIN_HUGE_VALF ^^^ // vvv !_CCCL_BUILTIN_HUGE_VALF vvv
+    return ::cuda::std::bit_cast<type>(0x7f800000);
+#endif // ^^^ !_CCCL_BUILTIN_HUGE_VALF ^^^
   }
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type quiet_NaN() noexcept
   {
+#if defined(_CCCL_BUILTIN_NANF)
     return _CCCL_BUILTIN_NANF();
+#else // ^^^ _CCCL_BUILTIN_NANF ^^^ // vvv !_CCCL_BUILTIN_NANF vvv
+    return ::cuda::std::bit_cast<type>(0x7fc00000);
+#endif // ^^^ !_CCCL_BUILTIN_NANF ^^^
   }
 #if defined(_CCCL_BUILTIN_NANSF)
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type signaling_NaN() noexcept
@@ -447,11 +455,19 @@ public:
 
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type infinity() noexcept
   {
+#if defined(_CCCL_BUILTIN_HUGE_VAL)
     return _CCCL_BUILTIN_HUGE_VAL();
+#else // ^^^ _CCCL_BUILTIN_HUGE_VAL ^^^ // vvv !_CCCL_BUILTIN_HUGE_VAL vvv
+    return ::cuda::std::bit_cast<type>(0x7ff0000000000000);
+#endif // ^^^ !_CCCL_BUILTIN_HUGE_VAL ^^^
   }
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type quiet_NaN() noexcept
   {
+#if defined(_CCCL_BUILTIN_NAN)
     return _CCCL_BUILTIN_NAN();
+#else // ^^^ _CCCL_BUILTIN_NAN ^^^ // vvv !_CCCL_BUILTIN_NAN vvv
+    return ::cuda::std::bit_cast<type>(0x7ff8000000000000);
+#endif // ^^^ !_CCCL_BUILTIN_NAN ^^^
   }
 #if defined(_CCCL_BUILTIN_NANS)
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr type signaling_NaN() noexcept
