@@ -102,8 +102,13 @@ struct TransformPrefetchPolicy
                                      //!< number of items written per thread in this case.
   int min_items_per_thread = 1; //!< Minimum number of items per thread (inclusive)
   int max_items_per_thread = 32; //!< Maximum number of items per thread (inclusive)
+#if __cccl_ptx_isa >= 940
+  int prefetch_byte_stride = 32; //!< The stride in bytes to issue prefetch requests to memory. Corresponds somewhat to
+                                 //!< the size of a cache line.
+#else // __cccl_ptx_isa >= 940
   int prefetch_byte_stride = 128; //!< The stride in bytes to issue prefetch requests to memory. Corresponds somewhat to
                                   //!< the size of a cache line.
+#endif // __cccl_ptx_isa >= 940
   // ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost, so prevent unrolling
   // bgruber: but A6000 and H100 show small gains without pragma, so omitting pragma
   int unroll_factor = 0; //!< For any value >1, the unroll factor for the transformation loop in the kernel. The value 0
@@ -413,11 +418,7 @@ struct policy_selector
       const int async_block_size = (cc < ::cuda::compute_capability{10, 0}) ? 256 : 128;
       const int alignment        = _CUB::detail::transform::bulk_copy_alignment(cc);
 
-      auto prefetch = TransformPrefetchPolicy{256};
-#if __cccl_ptx_isa >= 940
-      // the prefetch kernel then prefetches into L1 with an instruction that fetches 32 bytes (see prefetch())
-      prefetch.prefetch_byte_stride = 32;
-#endif // __cccl_ptx_isa >= 940
+      const auto prefetch   = TransformPrefetchPolicy{256};
       const auto vectorized = _CUB::detail::transform::tuned_vectorized_policy(
         cc, ::cuda::std::max(1, output.value_type_size), no_input_streams);
       auto async           = TransformAsyncCopyPolicy{async_block_size};

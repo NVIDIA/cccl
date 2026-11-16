@@ -73,28 +73,16 @@ _CCCL_IKET_CREATE_PUSH_POP_RANGE(ExpectTx);
 _CCCL_IKET_CREATE_PUSH_POP_RANGE(SyncAndBarrierWait);
 _CCCL_IKET_CREATE_PUSH_POP_RANGE(ProcessAndStore);
 
-// Prefetches (at least on Hopper) a 128 byte cache line into L2. Out-of-bounds addresses have no side effects
+// Prefetches (at least on Hopper) a 128 byte cache line. Prefetching out-of-bounds addresses has no side effects
 // TODO(bgruber): there is also the cp.async.bulk.prefetch instruction available on Hopper. May improve perf a tiny bit
 // as we need to create less instructions to prefetch the same amount of data.
-template <typename T>
-_CCCL_DEVICE_API _CCCL_FORCEINLINE void prefetch_l2(const T* addr)
-{
-  asm volatile("prefetch.global.L2 [%0];" : : "l"(__cvta_generic_to_global(addr)) : "memory");
-}
-
-// Prefetches the 32 byte sector containing addr into L1 where supported (sm_90+, PTX ISA 9.4+), otherwise into L2.
-// prefetch.global.L1 is not usable for this, because the hardware treats it like a prefetch into L2. The L1 prefetch
-// instruction requires addr to be a valid, accessible address. The prefetch_byte_stride of the prefetch policy needs to
-// be 32 when this instruction is used. The hardware may fetch more than 32 bytes.
 template <typename T>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void prefetch(const T* addr)
 {
 #if __cccl_ptx_isa >= 940
-  NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_90, (::cuda::ptx::prefetch_L1_32B(addr);), (_CUB::detail::transform::prefetch_l2(addr);))
-#else // __cccl_ptx_isa >= 940
-  _CUB::detail::transform::prefetch_l2(addr);
+  NV_IF_TARGET(NV_PROVIDES_SM_90, (::cuda::ptx::prefetch_L1_32B(addr); return;))
 #endif // __cccl_ptx_isa >= 940
+  asm volatile("prefetch.global.L2 [%0];" : : "l"(__cvta_generic_to_global(addr)) : "memory");
 }
 
 template <int BlockDim, int PrefetchStride, typename It>
