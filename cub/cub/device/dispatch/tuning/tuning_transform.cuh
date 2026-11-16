@@ -21,6 +21,7 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__cccl/ptx_isa.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/is_void.h>
@@ -412,7 +413,11 @@ struct policy_selector
       const int async_block_size = (cc < ::cuda::compute_capability{10, 0}) ? 256 : 128;
       const int alignment        = _CUB::detail::transform::bulk_copy_alignment(cc);
 
-      const auto prefetch   = TransformPrefetchPolicy{256};
+      auto prefetch = TransformPrefetchPolicy{256};
+#if __cccl_ptx_isa >= 940
+      // the prefetch kernel then prefetches into L1 with an instruction that fetches 32 bytes (see prefetch())
+      prefetch.prefetch_byte_stride = 32;
+#endif // __cccl_ptx_isa >= 940
       const auto vectorized = _CUB::detail::transform::tuned_vectorized_policy(
         cc, ::cuda::std::max(1, output.value_type_size), no_input_streams);
       auto async           = TransformAsyncCopyPolicy{async_block_size};
