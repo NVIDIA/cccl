@@ -35,10 +35,10 @@ static void triad_transform_iterator(nvbench::state& state)
   state.add_global_memory_writes<T>(n);
 
   const T scalar = startScalar;
-  auto id_b      = cuda::transform_iterator{b.begin(), [] _CCCL_DEVICE(T x) -> T {
+  auto id_b      = cuda::transform_iterator{b.begin(), [] _CCCL_HOST_DEVICE(T x) -> T {
                                          return x;
                                             }};
-  auto scaled_c  = cuda::transform_iterator{c.begin(), [=] _CCCL_DEVICE(T x) -> T {
+  auto scaled_c  = cuda::transform_iterator{c.begin(), [=] _CCCL_HOST_DEVICE(T x) -> T {
                                              return x * scalar;
                                             }};
   bench_transform(state, cuda::std::tuple{id_b, scaled_c}, a.begin(), n, [] _CCCL_DEVICE(T ib, T sc) -> T {
@@ -96,10 +96,10 @@ static void triad_zip_transform_iterator(nvbench::state& state)
   state.add_global_memory_writes<T>(n);
 
   const T scalar = startScalar;
-  auto id_b      = cuda::transform_iterator{b.begin(), [] _CCCL_DEVICE(T x) -> T {
+  auto id_b      = cuda::transform_iterator{b.begin(), [] _CCCL_HOST_DEVICE(T x) -> T {
                                          return x;
                                             }};
-  auto scaled_c  = cuda::transform_iterator{c.begin(), [=] _CCCL_DEVICE(T x) -> T {
+  auto scaled_c  = cuda::transform_iterator{c.begin(), [=] _CCCL_HOST_DEVICE(T x) -> T {
                                              return x * scalar;
                                             }};
   auto zip       = cuda::zip_iterator{id_b, scaled_c};
@@ -129,7 +129,7 @@ static void triad_nested(nvbench::state& state)
 
   // the constant 1 cancels out, but the iterator is still part of the tree
   auto inner = cuda::zip_iterator{a.begin(), b.begin(), cuda::constant_iterator{T{1}}};
-  auto sum   = cuda::transform_iterator{inner, cuda::make_zip_function([] _CCCL_DEVICE(T x, T y, T one) -> T {
+  auto sum   = cuda::transform_iterator{inner, cuda::make_zip_function([] _CCCL_HOST_DEVICE(T x, T y, T one) -> T {
                                         return (x + y) * one;
                                         })};
   auto outer = cuda::zip_iterator{sum, cuda::counting_iterator<int>{0}, cuda::constant_iterator{startScalar}};
