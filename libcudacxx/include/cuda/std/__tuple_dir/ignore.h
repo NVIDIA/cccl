@@ -26,7 +26,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct __ignore_t
 {
-  __ignore_t() = default;
+  _CCCL_HIDE_FROM_ABI __ignore_t() = default;
 
   template <class _Tp, class... _Ts>
   _CCCL_API constexpr __ignore_t(const _Tp&, const _Ts&...) noexcept

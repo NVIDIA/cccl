@@ -187,7 +187,7 @@ public:
   // Constructor
   //---------------------------------------------------------------------
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE agent_segmented_scan(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE agent_segmented_scan(
     TempStorage& temp_storage, InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, InitValueT initial_value)
       : temp_storage(temp_storage.Alias())
       , d_in(d_in)
@@ -207,7 +207,7 @@ public:
   //! @param output_begin_idx
   //!  Index of start of the segment's prefix scan result in the output array
   //!
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   scan_one_segment(OffsetT input_begin_idx, OffsetT input_end_idx, OffsetT output_begin_idx)
   {
     const OffsetT segment_items = ::cuda::std::max(input_end_idx, input_begin_idx) - input_begin_idx;
@@ -279,7 +279,7 @@ public:
             typename OutputBeginOffsetIteratorT,
             ::cuda::std::size_t NumSegments                  = max_segments,
             ::cuda::std::enable_if_t<(NumSegments > 1), int> = 0>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_segments(
     InputBeginOffsetIteratorT input_begin_idx_it,
     InputEndOffsetIteratorT input_end_idx_it,
     OutputBeginOffsetIteratorT output_begin_idx_it,
@@ -416,7 +416,7 @@ public:
 
 private:
   template <typename SearcherT, typename InputBeginOffsetIteratorT, typename OutputBeginOffsetIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments_chunked(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_segments_chunked(
     const SearcherT& searcher,
     InputBeginOffsetIteratorT input_begin_idx_it,
     OutputBeginOffsetIteratorT output_begin_idx_it,
@@ -548,7 +548,7 @@ private:
             typename ScanOpTy,
             bool IsInclusive = is_inclusive,
             bool HasInit     = has_init>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void scan_first_tile(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_first_tile(
     ScannerT& scanner,
     ItemTy (&items)[items_per_thread],
     InitValueTy init_value,
@@ -576,7 +576,7 @@ private:
   }
 
   template <typename ScannerT, typename ItemTy, typename ScanOpTy, typename PrefixCallback, bool IsInclusive = is_inclusive>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   scan_later_tile(ScannerT& scanner, ItemTy (&items)[items_per_thread], ScanOpTy scan_op, PrefixCallback& prefix_op)
   {
     if constexpr (IsInclusive)
@@ -623,7 +623,7 @@ __launch_bounds__(_CUB::detail::current_policy<PolicySelector>().block.threads_p
 
   struct policy_getter
   {
-    constexpr auto operator()() const
+    _CCCL_HOST_DEVICE_API constexpr auto operator()() const
     {
       return policy;
     }

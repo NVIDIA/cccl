@@ -34,9 +34,9 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename BidirectionalIterator>
-_CCCL_HOST_DEVICE void reverse(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-                               BidirectionalIterator first,
-                               BidirectionalIterator last)
+_CCCL_HOST_DEVICE_API void reverse(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+                                   BidirectionalIterator first,
+                                   BidirectionalIterator last)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::reverse");
   using thrust::system::detail::generic::reverse;
@@ -45,7 +45,7 @@ _CCCL_HOST_DEVICE void reverse(const thrust::detail::execution_policy_base<Deriv
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename BidirectionalIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator reverse_copy(
+_CCCL_HOST_DEVICE_API OutputIterator reverse_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   BidirectionalIterator first,
   BidirectionalIterator last,
@@ -57,7 +57,7 @@ _CCCL_HOST_DEVICE OutputIterator reverse_copy(
 } // end reverse_copy()
 
 template <typename BidirectionalIterator>
-void reverse(BidirectionalIterator first, BidirectionalIterator last)
+_CCCL_HOST_API void reverse(BidirectionalIterator first, BidirectionalIterator last)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::reverse");
   using thrust::system::detail::generic::select_system;
@@ -70,7 +70,8 @@ void reverse(BidirectionalIterator first, BidirectionalIterator last)
 } // end reverse()
 
 template <typename BidirectionalIterator, typename OutputIterator>
-OutputIterator reverse_copy(BidirectionalIterator first, BidirectionalIterator last, OutputIterator result)
+_CCCL_HOST_API OutputIterator
+reverse_copy(BidirectionalIterator first, BidirectionalIterator last, OutputIterator result)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::reverse_copy");
   using thrust::system::detail::generic::select_system;

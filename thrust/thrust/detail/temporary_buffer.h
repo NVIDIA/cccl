@@ -38,8 +38,8 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 template <typename T, typename DerivedPolicy, typename Pair>
-_CCCL_HOST_DEVICE ::cuda::std::pair<thrust::pointer<T, DerivedPolicy>,
-                                    typename thrust::pointer<T, DerivedPolicy>::difference_type>
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<thrust::pointer<T, DerivedPolicy>,
+                                        typename thrust::pointer<T, DerivedPolicy>::difference_type>
 down_cast_pair(Pair p)
 {
   // XXX should use a hypothetical thrust::static_pointer_cast here
@@ -54,8 +54,8 @@ down_cast_pair(Pair p)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename DerivedPolicy>
-_CCCL_HOST_DEVICE ::cuda::std::pair<thrust::pointer<T, DerivedPolicy>,
-                                    typename thrust::pointer<T, DerivedPolicy>::difference_type>
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<thrust::pointer<T, DerivedPolicy>,
+                                        typename thrust::pointer<T, DerivedPolicy>::difference_type>
 get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>& system,
                      typename thrust::pointer<T, DerivedPolicy>::difference_type n)
 {
@@ -68,7 +68,7 @@ get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>&
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 return_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>& system, Pointer p, std::ptrdiff_t n)
 {
   using thrust::detail::return_temporary_buffer; // execute_with_allocator

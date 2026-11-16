@@ -51,7 +51,7 @@ class buddy_allocator_metadata
   struct avail_block
   {
     // Copy prereqs
-    avail_block(size_t index_, event_list prereqs_)
+    _CCCL_HOST_API avail_block(size_t index_, event_list prereqs_)
         : index(index_)
         , prereqs(mv(prereqs_))
     {}
@@ -61,7 +61,7 @@ class buddy_allocator_metadata
   };
 
 public:
-  buddy_allocator_metadata(size_t size, event_list init_prereqs)
+  _CCCL_HOST_API buddy_allocator_metadata(size_t size, event_list init_prereqs)
       : free_lists_(int_log2(next_power_of_two(size)) + 1)
   {
     _CCCL_ASSERT(size && (size & (size - 1)) == 0,
@@ -70,7 +70,7 @@ public:
     free_lists_.back().emplace_back(0, mv(init_prereqs));
   }
 
-  ::std::ptrdiff_t allocate(size_t size, event_list& prereqs)
+  _CCCL_HOST_API ::std::ptrdiff_t allocate(size_t size, event_list& prereqs)
   {
     size               = next_power_of_two(size);
     const size_t level = int_log2(size);
@@ -90,7 +90,7 @@ public:
     return alloc_index;
   }
 
-  void deallocate(::std::ptrdiff_t index, size_t size, event_list& prereqs)
+  _CCCL_HOST_API void deallocate(::std::ptrdiff_t index, size_t size, event_list& prereqs)
   {
     size         = next_power_of_two(size);
     size_t level = int_log2(size);
@@ -123,7 +123,7 @@ public:
     free_lists_[level].emplace_back(index, prereqs);
   }
 
-  void deinit(event_list& prereqs)
+  _CCCL_HOST_API void deinit(event_list& prereqs)
   {
     for (auto& level : free_lists_)
     {
@@ -135,7 +135,7 @@ public:
     }
   }
 
-  void debug_print() const
+  _CCCL_HOST_API void debug_print() const
   {
     size_t power = 1;
     for (size_t i = 0; i < free_lists_.size(); ++i, power *= 2)
@@ -153,7 +153,7 @@ public:
   }
 
 private:
-  static size_t next_power_of_two(size_t size)
+  _CCCL_HOST_API static size_t next_power_of_two(size_t size)
   {
     static_assert(sizeof(size_t) <= 8, "You must be from the future. Review and adjust this code.");
     if (size == 0)
@@ -173,7 +173,7 @@ private:
     return size + 1;
   }
 
-  static size_t int_log2(size_t n)
+  _CCCL_HOST_API static size_t int_log2(size_t n)
   {
     assert(n > 0);
 
@@ -185,7 +185,7 @@ private:
     return log;
   }
 
-  ::std::ptrdiff_t find_free_block(size_t level, event_list& prereqs)
+  _CCCL_HOST_API ::std::ptrdiff_t find_free_block(size_t level, event_list& prereqs)
   {
     for (size_t current_level : each(level, free_lists_.size()))
     {
@@ -215,7 +215,7 @@ private:
     return -1; // No block available
   }
 
-  size_t get_buddy_index(size_t index, size_t level)
+  _CCCL_HOST_API size_t get_buddy_index(size_t index, size_t level)
   {
     assert(level <= 63);
     return index ^ (1ull << level); // XOR to find the buddy block
@@ -232,8 +232,8 @@ private:
 class buddy_allocator : public block_allocator_interface
 {
 public:
-  buddy_allocator() = default;
-  buddy_allocator(block_allocator_untyped root_allocator_)
+  _CCCL_HIDE_FROM_ABI buddy_allocator() = default;
+  _CCCL_HOST_API buddy_allocator(block_allocator_untyped root_allocator_)
       : root_allocator(mv(root_allocator_))
   {}
 
@@ -241,16 +241,16 @@ private:
   // Per data place buffer and its corresponding metadata
   struct per_place
   {
-    per_place(void* base_, size_t size, event_list prereqs)
+    _CCCL_HOST_API per_place(void* base_, size_t size, event_list prereqs)
         : base(base_)
         , buffer_size(size)
         , metadata(buffer_size, mv(prereqs))
     {}
 
-    per_place& operator=(const per_place&) = delete;
-    per_place& operator=(per_place&&)      = default;
-    per_place(const per_place&)            = delete;
-    per_place(per_place&&)                 = default;
+    per_place& operator=(const per_place&)                = delete;
+    _CCCL_HIDE_FROM_ABI per_place& operator=(per_place&&) = default;
+    per_place(const per_place&)                           = delete;
+    _CCCL_HIDE_FROM_ABI per_place(per_place&&)            = default;
 
     void* base         = nullptr;
     size_t buffer_size = 0;
@@ -258,7 +258,7 @@ private:
   };
 
 public:
-  void*
+  _CCCL_HOST_API void*
   allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
     auto it = map.find(memory_node);
@@ -283,7 +283,7 @@ public:
     return static_cast<char*>(m.base) + offset;
   }
 
-  void deallocate(
+  _CCCL_HOST_API void deallocate(
     backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
     (void) ctx;
@@ -296,7 +296,7 @@ public:
     m.metadata.deallocate(static_cast<::std::ptrdiff_t>(offset), sz, prereqs);
   }
 
-  event_list deinit(backend_ctx_untyped& ctx) override
+  _CCCL_HOST_API event_list deinit(backend_ctx_untyped& ctx) override
   {
     event_list result;
     // For every place in the map
@@ -316,7 +316,7 @@ public:
     return result;
   }
 
-  ::std::string to_string() const override
+  _CCCL_HOST_API ::std::string to_string() const override
   {
     return "buddy allocator";
   }

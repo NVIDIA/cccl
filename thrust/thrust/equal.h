@@ -74,7 +74,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 equal(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
       InputIterator1 first1,
       InputIterator1 last1,
@@ -122,7 +122,7 @@ equal(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2>
-bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
+_CCCL_HOST_API bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
 
 /*! \p equal returns \c true if the two ranges <tt>[first1, last1)</tt>
  *  and <tt>[first2, first2 + (last1 - first1))</tt> are identical when
@@ -181,7 +181,7 @@ bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 equal(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
       InputIterator1 first1,
       InputIterator1 last1,
@@ -239,7 +239,8 @@ equal(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate binary_pred);
+_CCCL_HOST_API bool
+equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate binary_pred);
 
 /*! \} // end comparisons
  *  \} // end reductions

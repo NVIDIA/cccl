@@ -71,7 +71,7 @@ namespace detail
 #endif // _CCCL_HOSTED()
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, RadixSortAlgorithm algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, RadixSortAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }
@@ -118,7 +118,7 @@ struct RadixSortHistogramPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortHistogramPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortHistogramPolicy& p)
   {
     return os << "RadixSortHistogramPolicy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << ", .private_partitions = " << p.private_partitions
@@ -146,7 +146,7 @@ struct RadixSortExclusiveSumPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortExclusiveSumPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortExclusiveSumPolicy& p)
   {
     return os << "RadixSortExclusiveSumPolicy { .threads_per_block = " << p.threads_per_block
               << ", .radix_bits = " << p.radix_bits << " }";
@@ -186,7 +186,7 @@ struct RadixSortOnesweepPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortOnesweepPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortOnesweepPolicy& p)
   {
     return os
         << "RadixSortOnesweepPolicy { .threads_per_block = " << p.threads_per_block
@@ -224,7 +224,7 @@ struct RadixSortDownsweepPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortDownsweepPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortDownsweepPolicy& p)
   {
     return os
         << "RadixSortDownsweepPolicy { .threads_per_block = " << p.threads_per_block
@@ -257,7 +257,7 @@ struct RadixSortUpsweepPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortUpsweepPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortUpsweepPolicy& p)
   {
     return os
         << "RadixSortUpsweepPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
@@ -297,7 +297,7 @@ struct RadixSortPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const RadixSortPolicy& p)
   {
     return os
         << "RadixSortPolicy { .algorithm = " << p.algorithm << ", .histogram = " << p.histogram
@@ -971,7 +971,7 @@ get_sm107_tuning(int key_size, int value_size, int offset_size, type_t key_type)
 template <typename PolicyT, typename = void>
 struct RadixSortPolicyWrapper : PolicyT
 {
-  _CCCL_HOST_DEVICE RadixSortPolicyWrapper(PolicyT base)
+  _CCCL_HOST_DEVICE_API RadixSortPolicyWrapper(PolicyT base)
       : PolicyT(base)
   {}
 };
@@ -992,23 +992,23 @@ struct RadixSortPolicyWrapper<
                       typename StaticPolicyT::SegmentedPolicy,
                       typename StaticPolicyT::AltSegmentedPolicy>> : StaticPolicyT
 {
-  _CCCL_HOST_DEVICE RadixSortPolicyWrapper(StaticPolicyT base)
+  _CCCL_HOST_DEVICE_API RadixSortPolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
-  _CCCL_HOST_DEVICE static constexpr bool IsOnesweep()
+  _CCCL_HOST_DEVICE_API static constexpr bool IsOnesweep()
   {
     return StaticPolicyT::ONESWEEP;
   }
 
   template <typename PolicyT>
-  _CCCL_HOST_DEVICE static constexpr int RadixBits(PolicyT /*policy*/)
+  _CCCL_HOST_DEVICE_API static constexpr int RadixBits(PolicyT /*policy*/)
   {
     return PolicyT::RADIX_BITS;
   }
 
   template <typename PolicyT>
-  _CCCL_HOST_DEVICE static constexpr int ThreadsPerBlock(PolicyT /*policy*/)
+  _CCCL_HOST_DEVICE_API static constexpr int ThreadsPerBlock(PolicyT /*policy*/)
   {
     return PolicyT::BLOCK_THREADS;
   }
@@ -1028,7 +1028,7 @@ struct RadixSortPolicyWrapper<
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
 template <typename PolicyT>
-_CCCL_HOST_DEVICE RadixSortPolicyWrapper<PolicyT> MakeRadixSortPolicyWrapper(PolicyT policy)
+_CCCL_HOST_DEVICE_API RadixSortPolicyWrapper<PolicyT> MakeRadixSortPolicyWrapper(PolicyT policy)
 {
   return RadixSortPolicyWrapper<PolicyT>{policy};
 }

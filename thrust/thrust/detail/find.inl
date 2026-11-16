@@ -33,7 +33,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename T>
-_CCCL_HOST_DEVICE InputIterator
+_CCCL_HOST_DEVICE_API InputIterator
 find(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
      InputIterator first,
      InputIterator last,
@@ -46,7 +46,7 @@ find(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE InputIterator find_if(
+_CCCL_HOST_DEVICE_API InputIterator find_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -59,7 +59,7 @@ _CCCL_HOST_DEVICE InputIterator find_if(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE InputIterator find_if_not(
+_CCCL_HOST_DEVICE_API InputIterator find_if_not(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -71,7 +71,7 @@ _CCCL_HOST_DEVICE InputIterator find_if_not(
 } // end find_if_not()
 
 template <typename InputIterator, typename T>
-InputIterator find(InputIterator first, InputIterator last, const T& value)
+_CCCL_HOST_API InputIterator find(InputIterator first, InputIterator last, const T& value)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::find");
   using thrust::system::detail::generic::select_system;
@@ -84,7 +84,7 @@ InputIterator find(InputIterator first, InputIterator last, const T& value)
 }
 
 template <typename InputIterator, typename Predicate>
-InputIterator find_if(InputIterator first, InputIterator last, Predicate pred)
+_CCCL_HOST_API InputIterator find_if(InputIterator first, InputIterator last, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::find_if");
   using thrust::system::detail::generic::select_system;
@@ -97,7 +97,7 @@ InputIterator find_if(InputIterator first, InputIterator last, Predicate pred)
 }
 
 template <typename InputIterator, typename Predicate>
-InputIterator find_if_not(InputIterator first, InputIterator last, Predicate pred)
+_CCCL_HOST_API InputIterator find_if_not(InputIterator first, InputIterator last, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::find_if_not");
   using thrust::system::detail::generic::select_system;

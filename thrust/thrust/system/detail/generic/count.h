@@ -21,14 +21,14 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename InputIterator, typename EqualityComparable>
-_CCCL_HOST_DEVICE thrust::detail::it_difference_t<InputIterator>
+_CCCL_HOST_DEVICE_API thrust::detail::it_difference_t<InputIterator>
 count(thrust::execution_policy<DerivedPolicy>& exec,
       InputIterator first,
       InputIterator last,
       const EqualityComparable& value);
 
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE thrust::detail::it_difference_t<InputIterator>
+_CCCL_HOST_DEVICE_API thrust::detail::it_difference_t<InputIterator>
 count_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred);
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

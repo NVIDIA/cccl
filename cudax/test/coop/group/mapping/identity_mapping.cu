@@ -49,6 +49,7 @@ __device__ void test_identity_mapping(Config config, const NonExhaustive&... non
     static_assert(cuda::std::is_same_v<Result, ThreadsInWarpMappingResult>);
 
     static_assert(Result::static_group_count() == ThreadsInWarpMappingResult::static_group_count());
+    static_assert(Result::static_group_rank() == ThreadsInWarpMappingResult::static_group_rank());
     CHECK(result.group_count() == prev_mapping_result.group_count());
     CHECK(result.group_rank() == prev_mapping_result.group_rank());
 

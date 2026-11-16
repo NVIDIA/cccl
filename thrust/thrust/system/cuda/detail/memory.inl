@@ -23,20 +23,20 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-_CCCL_HOST_DEVICE pointer<void> malloc(std::size_t n)
+_CCCL_HOST_DEVICE_API pointer<void> malloc(std::size_t n)
 {
   tag cuda_tag;
   return pointer<void>(thrust::cuda_cub::malloc(cuda_tag, n));
 } // end malloc()
 
 template <typename T>
-_CCCL_HOST_DEVICE pointer<T> malloc(std::size_t n)
+_CCCL_HOST_DEVICE_API pointer<T> malloc(std::size_t n)
 {
   const pointer<void> raw_ptr = thrust::cuda_cub::malloc(sizeof(T) * n);
   return pointer<T>(reinterpret_cast<T*>(raw_ptr.get()));
 } // end malloc()
 
-_CCCL_HOST_DEVICE void free(pointer<void> ptr)
+_CCCL_HOST_DEVICE_API void free(pointer<void> ptr)
 {
   tag cuda_tag;
   thrust::cuda_cub::free(cuda_tag, ptr.get());

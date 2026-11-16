@@ -75,7 +75,7 @@ namespace detail::batched_topk
 // value-less static_discrete_param. Because the direction is fixed at compile time and carries no runtime value, it
 // can never disagree with its only supported option, so dispatch can never silently degrade to a no-op.
 template <detail::topk::select Dir, typename Tp>
-[[nodiscard]] _CCCL_HOST_DEVICE auto wrap_select_direction(::cuda::args::constant<Dir, Tp>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API auto wrap_select_direction(::cuda::args::constant<Dir, Tp>)
 {
   return params::static_discrete_param<detail::topk::select, Dir>{};
 }
@@ -87,7 +87,7 @@ template <detail::topk::select Dir, typename Tp>
 // reach the algorithm through the min/max device entry points (DeviceBatchedTopK::{Max,Min}{Keys,Pairs}), which
 // construct the matching `constant<Dir>` internally, so `dispatch` is only ever invoked with a direction we create.
 template <typename SelectDirectionT>
-[[nodiscard]] _CCCL_HOST_DEVICE auto wrap_select_direction(SelectDirectionT)
+[[nodiscard]] _CCCL_HOST_DEVICE_API auto wrap_select_direction(SelectDirectionT)
 {
   static_assert(::cuda::std::__always_false_v<SelectDirectionT>,
                 "DeviceBatchedTopK currently supports only compile-time selection directions: the min/max entry "
@@ -112,7 +112,7 @@ struct segment_size_to_tile_count_op
   int large_segment_agent_tile_size;
 
   template <typename SegmentIndexT>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr TotalNumItemsValueType operator()(SegmentIndexT segment_id) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE constexpr TotalNumItemsValueType operator()(SegmentIndexT segment_id) const
   {
     return static_cast<TotalNumItemsValueType>(
       ::cuda::ceil_div(_CUB::detail::params::__get_and_clamp_param_to_nonnegative(segment_sizes, segment_id),

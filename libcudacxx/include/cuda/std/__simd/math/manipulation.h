@@ -51,13 +51,14 @@ _CCCL_SIMD_MATH_BINARY_FUNCTION(copysign, copysign, constexpr)
 //----------------------------------------------------------------------------------------------------------------------
 // ldexp, scalbn, scalbln
 
-#define _CCCL_SIMD_MATH_BINARY_REBIND_FUNCTION(_NAME, _Tp, _CONSTEXPR)                          \
-  _CCCL_TEMPLATE(typename _Vp, typename _Result = __deduced_vec_t<_Vp>)                         \
-  _CCCL_REQUIRES(__is_simd_math_floating_point_v<_Vp>)                                          \
-  [[nodiscard]] _CCCL_HOST_DEVICE_API _CONSTEXPR _Result _NAME(                                 \
-    const _Vp& __x, const rebind_t<_Tp, _Result>& __y) noexcept                                 \
-  {                                                                                             \
-    return _Result{__simd_##_NAME##_generator<_Result, _Vp, rebind_t<_Tp, _Result>>{__x, __y}}; \
+#define _CCCL_SIMD_MATH_BINARY_REBIND_FUNCTION(_NAME, _Tp, _CONSTEXPR)                                  \
+  _CCCL_TEMPLATE(typename _Vp, typename _Result = __deduced_vec_t<_Vp>)                                 \
+  _CCCL_REQUIRES(__is_simd_math_floating_point_v<_Vp>)                                                  \
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _CONSTEXPR _Result _NAME(                                         \
+    const _Vp& __x, const rebind_t<_Tp, _Result>& __y) noexcept                                         \
+  {                                                                                                     \
+    const _Result __x_vec(__x);                                                                         \
+    return _Result{__simd_##_NAME##_generator<_Result, _Result, rebind_t<_Tp, _Result>>{__x_vec, __y}}; \
   }
 
 _CCCL_SIMD_MATH_BINARY_REBIND_FUNCTION(ldexp, int, )
@@ -93,7 +94,8 @@ _CCCL_REQUIRES(__is_simd_math_floating_point_v<_Vp>)
   using __exp_t = rebind_t<int, _Result>;
   array<int, _Result::__usize> __exponents{};
 
-  const _Result __values{__simd_frexp_generator<_Result, _Vp>{__x, __exponents}};
+  const _Result __x_vec(__x);
+  const _Result __values{__simd_frexp_generator<_Result, _Result>{__x_vec, __exponents}};
   *__exp = __exp_t{__exponents};
   return __values;
 }

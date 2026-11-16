@@ -22,7 +22,7 @@ struct bounds_bench_data
   std::size_t elements{};
   std::size_t needles{};
 
-  explicit bounds_bench_data(nvbench::state& state)
+  _CCCL_HOST_API explicit bounds_bench_data(nvbench::state& state)
   {
     elements                 = static_cast<std::size_t>(state.get_int64("Elements{io}"));
     const auto needles_ratio = static_cast<std::size_t>(state.get_int64("NeedlesRatio"));
@@ -35,23 +35,23 @@ struct bounds_bench_data
                  data.begin() + static_cast<typename thrust::device_vector<T>::difference_type>(elements));
   }
 
-  void sort_needles()
+  _CCCL_HOST_API void sort_needles()
   {
     thrust::sort(data.begin() + static_cast<typename thrust::device_vector<T>::difference_type>(elements), data.end());
   }
 
-  T* range_ptr()
+  _CCCL_HOST_API T* range_ptr()
   {
     return thrust::raw_pointer_cast(data.data());
   }
 
-  T* values_ptr()
+  _CCCL_HOST_API T* values_ptr()
   {
     return thrust::raw_pointer_cast(
       data.data() + static_cast<typename thrust::device_vector<T>::difference_type>(elements));
   }
 
-  std::ptrdiff_t* output_ptr()
+  _CCCL_HOST_API std::ptrdiff_t* output_ptr()
   {
     return thrust::raw_pointer_cast(result.data());
   }

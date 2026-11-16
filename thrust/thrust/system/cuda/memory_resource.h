@@ -40,8 +40,8 @@ template <allocation_fn Alloc, deallocation_fn Dealloc, typename Pointer>
 class cuda_memory_resource final : public mr::memory_resource<Pointer>
 {
 public:
-  Pointer do_allocate(std::size_t bytes, // NOLINT(google-default-arguments)
-                      [[maybe_unused]] std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  _CCCL_HOST_API Pointer do_allocate(std::size_t bytes, // NOLINT(google-default-arguments)
+                                     [[maybe_unused]] std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     void* ret;
     const cudaError_t status = Alloc(&ret, bytes);
@@ -55,7 +55,8 @@ public:
     return Pointer(ret);
   }
 
-  void do_deallocate(Pointer p, [[maybe_unused]] std::size_t bytes, [[maybe_unused]] std::size_t alignment) override
+  _CCCL_HOST_API void
+  do_deallocate(Pointer p, [[maybe_unused]] std::size_t bytes, [[maybe_unused]] std::size_t alignment) override
   {
     // We skip error checking here, we shouldn't throw in deallocate in case this is called in a destructor or after
     // main exits and CUDA calls can start returning errors about CUDA being cleaned up.
@@ -63,7 +64,7 @@ public:
   }
 };
 
-inline cudaError_t CUDARTAPI cuda_malloc_managed(void** ptr, std::size_t bytes)
+_CCCL_HOST_API inline cudaError_t CUDARTAPI cuda_malloc_managed(void** ptr, std::size_t bytes)
 {
   return ::cudaMallocManaged(ptr, bytes, cudaMemAttachGlobal);
 }

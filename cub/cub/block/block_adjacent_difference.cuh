@@ -112,7 +112,7 @@ class BlockAdjacentDifference
   };
 
   /// Internal storage allocator
-  _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
   {
     __shared__ _TempStorage private_storage;
     return private_storage;
@@ -123,7 +123,7 @@ class BlockAdjacentDifference
   struct ApplyOp
   {
     // Apply flag operator
-    static _CCCL_DEVICE _CCCL_FORCEINLINE T FlagT(FlagOp flag_op, const T& a, const T& b, int idx)
+    _CCCL_DEVICE_API static _CCCL_FORCEINLINE T FlagT(FlagOp flag_op, const T& a, const T& b, int idx)
     {
       return flag_op(b, a, idx);
     }
@@ -134,7 +134,7 @@ class BlockAdjacentDifference
   struct ApplyOp<FlagOp, false>
   {
     // Apply flag operator
-    static _CCCL_DEVICE _CCCL_FORCEINLINE T FlagT(FlagOp flag_op, const T& a, const T& b, int /*idx*/)
+    _CCCL_DEVICE_API static _CCCL_FORCEINLINE T FlagT(FlagOp flag_op, const T& a, const T& b, int /*idx*/)
     {
       return flag_op(b, a);
     }
@@ -152,7 +152,7 @@ class BlockAdjacentDifference
      * @param[in] flag_op Binary boolean flag predicate
      */
     template <int ItemsPerThread, typename FlagT, typename FlagOp>
-    static _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeads(
+    _CCCL_DEVICE_API static _CCCL_FORCEINLINE void FlagHeads(
       int linear_tid,
       FlagT (&flags)[ItemsPerThread],
       T (&input)[ItemsPerThread],
@@ -175,7 +175,7 @@ class BlockAdjacentDifference
      * @param[in] flag_op Binary boolean flag predicate
      */
     template <int ItemsPerThread, typename FlagT, typename FlagOp>
-    static _CCCL_DEVICE _CCCL_FORCEINLINE void
+    _CCCL_DEVICE_API static _CCCL_FORCEINLINE void
     FlagTails(int linear_tid, FlagT (&flags)[ItemsPerThread], T (&input)[ItemsPerThread], FlagOp flag_op)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -205,7 +205,7 @@ public:
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //! @endrst
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockAdjacentDifference()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockAdjacentDifference()
       : temp_storage(PrivateStorage())
       , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
@@ -218,7 +218,7 @@ public:
   //! @endrst
   //!
   //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockAdjacentDifference(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockAdjacentDifference(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
       , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
@@ -290,7 +290,7 @@ public:
   //! @param[in] difference_op
   //!   Binary difference operator
   template <int ItemsPerThread, typename OutputType, typename DifferenceOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   SubtractLeft(T (&input)[ItemsPerThread], OutputType (&output)[ItemsPerThread], DifferenceOpT difference_op)
   {
     // Share last item
@@ -389,7 +389,7 @@ public:
   //!   (*input*\ :sub:`0` from *thread*\ :sub:`0`).
   //!   @endrst
   template <int ItemsPerThread, typename OutputT, typename DifferenceOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SubtractLeft(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SubtractLeft(
     T (&input)[ItemsPerThread], OutputT (&output)[ItemsPerThread], DifferenceOpT difference_op, T tile_predecessor_item)
   {
     // Share last item
@@ -483,7 +483,7 @@ public:
   //! @param[in] valid_items
   //!   Number of valid items in thread block
   template <int ItemsPerThread, typename OutputType, typename DifferenceOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SubtractLeftPartialTile(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SubtractLeftPartialTile(
     T (&input)[ItemsPerThread], OutputType (&output)[ItemsPerThread], DifferenceOpT difference_op, int valid_items)
   {
     // Share last item
@@ -605,7 +605,7 @@ public:
   //!   (*input*\ :sub:`0` from *thread*\ :sub:`0`).
   //!   @endrst
   template <int ItemsPerThread, typename OutputType, typename DifferenceOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SubtractLeftPartialTile(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SubtractLeftPartialTile(
     T (&input)[ItemsPerThread],
     OutputType (&output)[ItemsPerThread],
     DifferenceOpT difference_op,
@@ -726,7 +726,7 @@ public:
   //! @param[in] difference_op
   //!   Binary difference operator
   template <int ItemsPerThread, typename OutputT, typename DifferenceOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   SubtractRight(T (&input)[ItemsPerThread], OutputT (&output)[ItemsPerThread], DifferenceOpT difference_op)
   {
     // Share first item
@@ -826,7 +826,7 @@ public:
   //!   (*input*\ :sub:`ItemsPerThread` from *thread*\ :sub:`BLOCK_THREADS`).
   //!   @endrst
   template <int ItemsPerThread, typename OutputT, typename DifferenceOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SubtractRight(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SubtractRight(
     T (&input)[ItemsPerThread], OutputT (&output)[ItemsPerThread], DifferenceOpT difference_op, T tile_successor_item)
   {
     // Share first item
@@ -918,7 +918,7 @@ public:
   //! @param[in] valid_items
   //!   Number of valid items in thread block
   template <int ItemsPerThread, typename OutputT, typename DifferenceOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SubtractRightPartialTile(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SubtractRightPartialTile(
     T (&input)[ItemsPerThread], OutputT (&output)[ItemsPerThread], DifferenceOpT difference_op, int valid_items)
   {
     // Share first item

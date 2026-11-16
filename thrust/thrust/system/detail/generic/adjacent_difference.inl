@@ -23,7 +23,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator adjacent_difference(
+_CCCL_HOST_DEVICE_API OutputIterator adjacent_difference(
   thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
 {
   using InputType = thrust::detail::it_value_t<InputIterator>;
@@ -33,7 +33,7 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
 } // end adjacent_difference()
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator adjacent_difference(
+_CCCL_HOST_DEVICE_API OutputIterator adjacent_difference(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,

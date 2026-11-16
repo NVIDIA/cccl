@@ -321,7 +321,7 @@ private:
   using SortSecondHalfT                = WarpBitonicSort<KeyT, second_half_len, LogicalWarpThreads, ValueT>;
 
   template <typename CompareOp, bool Reverse>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op) const
   {
     SortFirstHalfT{}.template sort<CompareOp, !Reverse>(keys, values, compare_op);
     SortSecondHalfT{}.template sort<CompareOp, Reverse>(
@@ -344,7 +344,7 @@ private:
   //! @param[in,out] values Values to merge (reordered to match key order)
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
   template <typename CompareOp, bool Reverse>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void merge(KeyT* keys, ValueT* values, CompareOp compare_op) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void merge(KeyT* keys, ValueT* values, CompareOp compare_op) const
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < second_half_len; ++i)
@@ -371,7 +371,7 @@ private:
   }
 
   template <typename CompareOp, bool Reverse>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
   {
     if (valid_items > first_half_len * LogicalWarpThreads)
     {
@@ -402,7 +402,7 @@ private:
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second
   //! @param[in] valid_items Total number of valid items across the logical warp
   template <typename CompareOp, bool Reverse>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void merge(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void merge(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < second_half_len; ++i)
@@ -537,13 +537,13 @@ private:
   unsigned int member_mask = _CUB::detail::warp_mask<LogicalWarpThreads>();
 
   template <typename CompareOp, bool Reverse>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op) const
   {
     ::cuda::static_for<num_stages>(merge_stage_op_t<CompareOp, Reverse, true>{*this, keys, values, compare_op});
   }
 
   template <typename CompareOp, bool Reverse>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void merge(KeyT* keys, ValueT* values, CompareOp compare_op) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void merge(KeyT* keys, ValueT* values, CompareOp compare_op) const
   {
     // A single-lane logical warp holds a single item, so there is nothing to merge.
     if constexpr (num_stages > 0)
@@ -553,14 +553,14 @@ private:
   }
 
   template <typename CompareOp, bool Reverse>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void sort(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
   {
     ::cuda::static_for<num_stages>(
       merge_stage_op_t<CompareOp, Reverse, false>{*this, keys, values, compare_op, valid_items});
   }
 
   template <typename CompareOp, bool Reverse>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void merge(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void merge(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
   {
     if constexpr (num_stages > 0)
     {
@@ -592,7 +592,7 @@ private:
   //! @tparam Full If true, all items are valid (no boundary checks: ``valid_items`` is not used)
   //! @tparam Stage Stage index in ``[0, num_stages)``
   template <typename CompareOp, bool Reverse, bool Full, int Stage>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   merge_stage(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items = -1) const
   {
     // Each stage divides the inputs into groups and sorts within each group.

@@ -40,11 +40,11 @@ struct min_element_reduction
 {
   BinaryPredicate comp;
 
-  _CCCL_HOST_DEVICE min_element_reduction(BinaryPredicate comp)
+  _CCCL_HOST_DEVICE_API min_element_reduction(BinaryPredicate comp)
       : comp(comp)
   {}
 
-  _CCCL_HOST_DEVICE ::cuda::std::tuple<InputType, IndexType>
+  _CCCL_HOST_DEVICE_API ::cuda::std::tuple<InputType, IndexType>
   operator()(const ::cuda::std::tuple<InputType, IndexType>& lhs, const ::cuda::std::tuple<InputType, IndexType>& rhs)
   {
     if (comp(::cuda::std::get<0>(lhs), ::cuda::std::get<0>(rhs)))
@@ -70,11 +70,11 @@ struct max_element_reduction
 {
   BinaryPredicate comp;
 
-  _CCCL_HOST_DEVICE max_element_reduction(BinaryPredicate comp)
+  _CCCL_HOST_DEVICE_API max_element_reduction(BinaryPredicate comp)
       : comp(comp)
   {}
 
-  _CCCL_HOST_DEVICE ::cuda::std::tuple<InputType, IndexType>
+  _CCCL_HOST_DEVICE_API ::cuda::std::tuple<InputType, IndexType>
   operator()(const ::cuda::std::tuple<InputType, IndexType>& lhs, const ::cuda::std::tuple<InputType, IndexType>& rhs)
   {
     if (comp(::cuda::std::get<0>(lhs), ::cuda::std::get<0>(rhs)))
@@ -103,11 +103,12 @@ struct minmax_element_reduction
 {
   BinaryPredicate comp;
 
-  _CCCL_HOST_DEVICE minmax_element_reduction(BinaryPredicate comp)
+  _CCCL_HOST_DEVICE_API minmax_element_reduction(BinaryPredicate comp)
       : comp(comp)
   {}
 
-  _CCCL_HOST_DEVICE ::cuda::std::tuple<::cuda::std::tuple<InputType, IndexType>, ::cuda::std::tuple<InputType, IndexType>>
+  _CCCL_HOST_DEVICE_API ::cuda::std::tuple<::cuda::std::tuple<InputType, IndexType>,
+                                           ::cuda::std::tuple<InputType, IndexType>>
   operator()(
     const ::cuda::std::tuple<::cuda::std::tuple<InputType, IndexType>, ::cuda::std::tuple<InputType, IndexType>>& lhs,
     const ::cuda::std::tuple<::cuda::std::tuple<InputType, IndexType>, ::cuda::std::tuple<InputType, IndexType>>& rhs)
@@ -123,7 +124,8 @@ struct minmax_element_reduction
 template <typename InputType, typename IndexType>
 struct duplicate_tuple
 {
-  _CCCL_HOST_DEVICE ::cuda::std::tuple<::cuda::std::tuple<InputType, IndexType>, ::cuda::std::tuple<InputType, IndexType>>
+  _CCCL_HOST_DEVICE_API ::cuda::std::tuple<::cuda::std::tuple<InputType, IndexType>,
+                                           ::cuda::std::tuple<InputType, IndexType>>
   operator()(const ::cuda::std::tuple<InputType, IndexType>& t)
   {
     return ::cuda::std::make_tuple(t, t);
@@ -132,7 +134,7 @@ struct duplicate_tuple
 } // end namespace detail
 
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator
+_CCCL_HOST_DEVICE_API ForwardIterator
 min_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last)
 {
   using value_type = thrust::detail::it_value_t<ForwardIterator>;
@@ -141,7 +143,7 @@ min_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first
 } // end min_element()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ForwardIterator min_element(
+_CCCL_HOST_DEVICE_API ForwardIterator min_element(
   thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
   if (first == last)
@@ -163,7 +165,7 @@ _CCCL_HOST_DEVICE ForwardIterator min_element(
 } // end min_element()
 
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator
+_CCCL_HOST_DEVICE_API ForwardIterator
 max_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last)
 {
   using value_type = thrust::detail::it_value_t<ForwardIterator>;
@@ -172,7 +174,7 @@ max_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first
 } // end max_element()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ForwardIterator max_element(
+_CCCL_HOST_DEVICE_API ForwardIterator max_element(
   thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
   if (first == last)
@@ -194,7 +196,7 @@ _CCCL_HOST_DEVICE ForwardIterator max_element(
 } // end max_element()
 
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator>
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<ForwardIterator, ForwardIterator>
 minmax_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last)
 {
   using value_type = thrust::detail::it_value_t<ForwardIterator>;
@@ -203,7 +205,7 @@ minmax_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator fi
 } // end minmax_element()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
   thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
   if (first == last)

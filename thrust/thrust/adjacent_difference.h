@@ -76,7 +76,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator adjacent_difference(
+_CCCL_HOST_DEVICE_API OutputIterator adjacent_difference(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -139,7 +139,7 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator adjacent_difference(
+_CCCL_HOST_DEVICE_API OutputIterator adjacent_difference(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -193,7 +193,7 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator>
-OutputIterator adjacent_difference(InputIterator first, InputIterator last, OutputIterator result);
+_CCCL_HOST_API OutputIterator adjacent_difference(InputIterator first, InputIterator last, OutputIterator result);
 
 /*! \p adjacent_difference calculates the differences of adjacent elements in the
  *  range <tt>[first, last)</tt>. That is, <tt>*first</tt> is assigned to
@@ -246,7 +246,7 @@ OutputIterator adjacent_difference(InputIterator first, InputIterator last, Outp
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename BinaryFunction>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 adjacent_difference(InputIterator first, InputIterator last, OutputIterator result, BinaryFunction binary_op);
 
 /*! \}

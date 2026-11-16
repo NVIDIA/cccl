@@ -26,26 +26,26 @@ THRUST_NAMESPACE_BEGIN
 namespace random
 {
 template <typename RealType>
-_CCCL_HOST_DEVICE normal_distribution<RealType>::normal_distribution(RealType mean, RealType stddev)
+_CCCL_HOST_DEVICE_API normal_distribution<RealType>::normal_distribution(RealType mean, RealType stddev)
     : super_t()
     , m_param(mean, stddev)
 {} // end normal_distribution::normal_distribution()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE normal_distribution<RealType>::normal_distribution(const param_type& parm)
+_CCCL_HOST_DEVICE_API normal_distribution<RealType>::normal_distribution(const param_type& parm)
     : super_t()
     , m_param(parm)
 {} // end normal_distribution::normal_distribution()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE void normal_distribution<RealType>::reset()
+_CCCL_HOST_DEVICE_API void normal_distribution<RealType>::reset()
 {
   super_t::reset();
 } // end normal_distribution::reset()
 
 template <typename RealType>
 template <typename UniformRandomNumberGenerator>
-_CCCL_HOST_DEVICE typename normal_distribution<RealType>::result_type
+_CCCL_HOST_DEVICE_API typename normal_distribution<RealType>::result_type
 normal_distribution<RealType>::operator()(UniformRandomNumberGenerator& urng)
 {
   return operator()(urng, m_param);
@@ -53,59 +53,60 @@ normal_distribution<RealType>::operator()(UniformRandomNumberGenerator& urng)
 
 template <typename RealType>
 template <typename UniformRandomNumberGenerator>
-_CCCL_HOST_DEVICE typename normal_distribution<RealType>::result_type
+_CCCL_HOST_DEVICE_API typename normal_distribution<RealType>::result_type
 normal_distribution<RealType>::operator()(UniformRandomNumberGenerator& urng, const param_type& parm)
 {
   return super_t::sample(urng, parm.first, parm.second);
 } // end normal_distribution::operator()()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE typename normal_distribution<RealType>::param_type normal_distribution<RealType>::param() const
+_CCCL_HOST_DEVICE_API typename normal_distribution<RealType>::param_type normal_distribution<RealType>::param() const
 {
   return m_param;
 } // end normal_distribution::param()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE void normal_distribution<RealType>::param(const param_type& parm)
+_CCCL_HOST_DEVICE_API void normal_distribution<RealType>::param(const param_type& parm)
 {
   m_param = parm;
 } // end normal_distribution::param()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE typename normal_distribution<RealType>::result_type normal_distribution<RealType>::min
+_CCCL_HOST_DEVICE_API typename normal_distribution<RealType>::result_type normal_distribution<RealType>::min
 THRUST_PREVENT_MACRO_SUBSTITUTION() const
 {
   return ::cuda::std::numeric_limits<RealType>::lowest();
 } // end normal_distribution::min()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE typename normal_distribution<RealType>::result_type normal_distribution<RealType>::max
+_CCCL_HOST_DEVICE_API typename normal_distribution<RealType>::result_type normal_distribution<RealType>::max
 THRUST_PREVENT_MACRO_SUBSTITUTION() const
 {
   return ::cuda::std::numeric_limits<RealType>::max();
 } // end normal_distribution::max()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE typename normal_distribution<RealType>::result_type normal_distribution<RealType>::mean() const
+_CCCL_HOST_DEVICE_API typename normal_distribution<RealType>::result_type normal_distribution<RealType>::mean() const
 {
   return m_param.first;
 } // end normal_distribution::mean()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE typename normal_distribution<RealType>::result_type normal_distribution<RealType>::stddev() const
+_CCCL_HOST_DEVICE_API typename normal_distribution<RealType>::result_type normal_distribution<RealType>::stddev() const
 {
   return m_param.second;
 } // end normal_distribution::stddev()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE bool normal_distribution<RealType>::equal(const normal_distribution& rhs) const
+_CCCL_HOST_DEVICE_API bool normal_distribution<RealType>::equal(const normal_distribution& rhs) const
 {
   return m_param == rhs.param();
 }
 
 template <typename RealType>
 template <typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>& normal_distribution<RealType>::stream_out(std::basic_ostream<CharT, Traits>& os) const
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
+normal_distribution<RealType>::stream_out(std::basic_ostream<CharT, Traits>& os) const
 {
   using ostream_type = std::basic_ostream<CharT, Traits>;
   using ios_base     = typename ostream_type::ios_base;
@@ -128,7 +129,8 @@ std::basic_ostream<CharT, Traits>& normal_distribution<RealType>::stream_out(std
 
 template <typename RealType>
 template <typename CharT, typename Traits>
-std::basic_istream<CharT, Traits>& normal_distribution<RealType>::stream_in(std::basic_istream<CharT, Traits>& is)
+_CCCL_HOST_API std::basic_istream<CharT, Traits>&
+normal_distribution<RealType>::stream_in(std::basic_istream<CharT, Traits>& is)
 {
   using istream_type = std::basic_istream<CharT, Traits>;
   using ios_base     = typename istream_type::ios_base;
@@ -146,26 +148,27 @@ std::basic_istream<CharT, Traits>& normal_distribution<RealType>::stream_in(std:
 }
 
 template <typename RealType>
-_CCCL_HOST_DEVICE bool operator==(const normal_distribution<RealType>& lhs, const normal_distribution<RealType>& rhs)
+_CCCL_HOST_DEVICE_API bool operator==(const normal_distribution<RealType>& lhs, const normal_distribution<RealType>& rhs)
 {
   return thrust::random::detail::random_core_access::equal(lhs, rhs);
 }
 
 template <typename RealType>
-_CCCL_HOST_DEVICE bool operator!=(const normal_distribution<RealType>& lhs, const normal_distribution<RealType>& rhs)
+_CCCL_HOST_DEVICE_API bool operator!=(const normal_distribution<RealType>& lhs, const normal_distribution<RealType>& rhs)
 {
   return !(lhs == rhs);
 }
 
 template <typename RealType, typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>&
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
 operator<<(std::basic_ostream<CharT, Traits>& os, const normal_distribution<RealType>& d)
 {
   return thrust::random::detail::random_core_access::stream_out(os, d);
 }
 
 template <typename RealType, typename CharT, typename Traits>
-std::basic_istream<CharT, Traits>& operator>>(std::basic_istream<CharT, Traits>& is, normal_distribution<RealType>& d)
+_CCCL_HOST_API std::basic_istream<CharT, Traits>&
+operator>>(std::basic_istream<CharT, Traits>& is, normal_distribution<RealType>& d)
 {
   return thrust::random::detail::random_core_access::stream_in(is, d);
 }
