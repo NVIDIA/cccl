@@ -9,6 +9,10 @@ ci:
     skip: [secret-scan-trufflehog]
     submodules: false
 
+# Generated and signed by NVSkills CI. Any change to these files invalidates
+# the skill signature, so no hook may rewrite them.
+exclude: ^skills/[^/]+/(skill\.oms\.sig|skill-card\.md|BENCHMARK\.md)$
+
 repos:
   # Runs first so a leaked credential blocks the commit before any formatter runs.
   # Self-installing: the hook downloads a pinned, checksum-verified trufflehog on
