@@ -207,14 +207,6 @@
 #  endif // _CCCL_CUDA_COMPILER(NVCC)
 #endif // _CCCL_HAS_FLOAT128()
 
-#if _CCCL_CHECK_BUILTIN(builtin_memmove) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_MEMMOVE(...) __builtin_memmove(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_memmove) || _CCCL_COMPILER(GCC)
-
-#if _CCCL_CUDA_COMPILER(NVCC)
-#  undef _CCCL_BUILTIN_MEMMOVE
-#endif // _CCCL_CUDA_COMPILER(NVCC)
-
 #if _CCCL_CHECK_BUILTIN(builtin_prefetch) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_PREFETCH(...) NV_IF_TARGET(NV_IS_HOST, __builtin_prefetch(__VA_ARGS__);)
 #else
