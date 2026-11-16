@@ -1,0 +1,18 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+[workspace]
+members = ["cuda-coop", "cuda-coop-codegen"]
+resolver = "3"
+
+[workspace.package]
+edition = "2024"
+license = "Apache-2.0 WITH LLVM-exception"
+rust-version = "1.85"
+
+[workspace.lints.rust]
+missing_docs = "deny"
+unsafe_op_in_unsafe_fn = "deny"
+
+[workspace.lints.rustdoc]
+broken_intra_doc_links = "deny"
