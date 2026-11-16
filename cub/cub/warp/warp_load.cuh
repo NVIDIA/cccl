@@ -87,8 +87,11 @@ enum WarpLoadAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
   //!   back to cub::WARP_LOAD_DIRECT:
   //!
   //!   - The ``InputIteratorT`` is not a simple pointer type
-  //!   - The block input offset is not aligned to the vector access width
+  //!   - The block input offset is not aligned to more than ``T`` and to at least 4 bytes, otherwise the widest vectors
+  //!     that its alignment allows are used
   //!   - The value type of the input is volatile or not trivially copyable
+  //!
+  //! - Inputs that are not vectorized are loaded without the cache modifier of a cub::CacheModifiedInputIterator.
   //! @endrst
   WARP_LOAD_VECTORIZE,
 
