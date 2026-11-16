@@ -31,13 +31,13 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Lhs, class _Rhs>
-using __fp_common_type_t =
+using __fp_common_type_t _CCCL_NODEBUG =
   enable_if_t<__fp_conv_rank_order_v<_Lhs, _Rhs> != __fp_conv_rank_order::__unordered
                 && __fp_conv_rank_order_v<_Lhs, _Rhs> != __fp_conv_rank_order::__invalid,
               conditional_t<__fp_conv_rank_order_v<_Lhs, _Rhs> == __fp_conv_rank_order::__greater, _Lhs, _Rhs>>;
 
 template <class _Lhs, class _Rhs>
-using __fp_int_ext_common_type_t =
+using __fp_int_ext_common_type_t _CCCL_NODEBUG =
   __fp_common_type_t<conditional_t<is_integral_v<_Lhs>, double, _Lhs>, conditional_t<is_integral_v<_Rhs>, double, _Rhs>>;
 
 _CCCL_END_NAMESPACE_CUDA_STD

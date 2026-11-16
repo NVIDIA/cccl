@@ -21,26 +21,25 @@
 #endif // no system header
 
 #include <cub/agent/agent_scan_by_key.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/detail/delay_constructor.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/null_type.cuh>
-#include <cub/device/dispatch/dispatch_scan.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan_by_key.cuh>
-#include <cub/thread/thread_operators.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
-
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 
@@ -127,7 +126,7 @@ template <typename PolicySelector,
           typename OffsetT,
           typename AccumT,
           typename KeyT = cub::detail::it_value_t<KeysInputIteratorT>>
-__launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_block))
+__launch_bounds__(int(_CUB::detail::current_policy<PolicySelector>().lookback.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceScanByKeyKernel(
     const KeysInputIteratorT d_keys_in,
     KeyT* const d_keys_prev_in,
@@ -140,7 +139,11 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
     const InitValueT init_value,
     const OffsetT num_items)
 {
-  static constexpr ScanByKeyPolicy policy = current_policy<PolicySelector>();
+  static constexpr ScanByKeyPolicy policy = _CUB::detail::current_policy<PolicySelector>();
+  static_assert(
+    policy.lookback.load_modifier != CacheLoadModifier::LOAD_LDG,
+    "ScanByKeyLookbackPolicy: load_modifier must not be LOAD_LDG, since the memory consistency model does not apply "
+    "to texture accesses");
 
   using scan_by_key_policy_t = agent_scan_by_key_policy<
     policy.lookback.threads_per_block,
@@ -184,7 +187,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);
 
-  const int tid           = static_cast<int>(blockDim.x * blockIdx.x + threadIdx.x);
+  const int tid           = static_cast<int>((blockDim.x * blockIdx.x) + threadIdx.x);
   const OffsetT tile_base = static_cast<OffsetT>(tid) * items_per_tile;
   if (tid > 0 && tid < num_tiles)
   {
@@ -406,7 +409,7 @@ struct dispatch_scan_by_key
     // the necessary size of the blob)
     void* allocations[2] = {};
     if (const auto error =
-          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+          CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -448,7 +451,7 @@ struct dispatch_scan_by_key
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -500,7 +503,7 @@ struct dispatch_scan_by_key
       }
 
       // Sync the stream if specified to flush runtime errors
-      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -512,7 +515,7 @@ struct dispatch_scan_by_key
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT = {})
   {
-    return __invoke(detail::scan_by_key::convert_policy<ActivePolicyT>());
+    return __invoke(_CUB::detail::scan_by_key::convert_policy<ActivePolicyT>());
   }
 
   /**
@@ -612,7 +615,7 @@ struct dispatch_scan_by_key
 
     const ScanByKeyPolicy active_policy = policy_selector(cc);
 
-    detail::log_dispatch("DeviceScanByKey", cc, active_policy);
+    _CUB::detail::log_dispatch("DeviceScanByKey", cc, active_policy);
 
     return dispatch_scan_by_key<
              KeysInputIteratorT,
@@ -709,7 +712,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   const ScanByKeyPolicy active_policy = policy_selector(cc);
 
-  detail::log_dispatch("DeviceScanByKey", cc, active_policy);
+  _CUB::detail::log_dispatch("DeviceScanByKey", cc, active_policy);
 
   // Get device ordinal
   int device_ordinal;
@@ -737,7 +740,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   // the necessary size of the blob)
   void* allocations[2] = {};
   if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -779,7 +782,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   // Sync the stream if specified to flush runtime errors
-  if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+  if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
   {
     return error;
   }
@@ -831,7 +834,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }

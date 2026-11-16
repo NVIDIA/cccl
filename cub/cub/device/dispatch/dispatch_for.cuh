@@ -13,21 +13,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_for.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/kernels/kernel_for_each.cuh>
 #include <cub/device/dispatch/tuning/tuning_for.cuh>
-#include <cub/thread/thread_load.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
-
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/std/__host_stdlib/sstream>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/__device/compute_capability.h>
+
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 
@@ -61,16 +59,15 @@ invoke_dynamic_block_size(OffsetT num_items, OpT op, cudaStream_t stream, ForPol
     "");
 
   if (const auto error = CubDebug(
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+        detail::TripleChevronFactory{}(
           static_cast<unsigned int>(num_tiles), static_cast<unsigned int>(threads_per_block), 0, stream)
           .doit(kernel, num_items, op)))
   {
     return error;
   }
 
-  if (auto error = CubDebug(detail::DebugSyncStream(stream)))
+  if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
   {
-    CubDebug(error = SyncStream(stream)); // TODO(bgruber): this does not make sense to me
     return error;
   }
 
@@ -97,16 +94,15 @@ invoke_static_block_size(OffsetT num_items, OpT op, cudaStream_t stream, ForPoli
     "");
 
   if (const auto error = CubDebug(
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+        detail::TripleChevronFactory{}(
           static_cast<unsigned int>(num_tiles), static_cast<unsigned int>(threads_per_block), 0, stream)
           .doit(detail::for_each::static_kernel<PolicySelector, OffsetT, OpT>, num_items, op)))
   {
     return error;
   }
 
-  if (auto error = CubDebug(detail::DebugSyncStream(stream)))
+  if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
   {
-    CubDebug(error = SyncStream(stream)); // TODO(bgruber): this does not make sense to me
     return error;
   }
 
@@ -124,23 +120,23 @@ dispatch(OffsetT num_items, OpT op, cudaStream_t stream, PolicySelector policy_s
   }
 
   ::cuda::compute_capability cc{};
-  if (const auto error = CubDebug(ptx_compute_cap(cc)))
+  if (const auto error = CubDebug(_CUB::detail::ptx_compute_cap(cc)))
   {
     return error;
   }
 
-  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+  return _CUB::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     constexpr ForPolicy active_policy = policy_getter();
 
-    detail::log_dispatch("DeviceFor", cc, active_policy);
+    _CUB::detail::log_dispatch("DeviceFor", cc, active_policy);
 
     if constexpr (active_policy.threads_per_block > 0)
     {
-      return invoke_static_block_size<PolicySelector>(num_items, op, stream, active_policy);
+      return _CUB::detail::for_each::invoke_static_block_size<PolicySelector>(num_items, op, stream, active_policy);
     }
     else
     {
-      return invoke_dynamic_block_size<PolicySelector>(num_items, op, stream, active_policy);
+      return _CUB::detail::for_each::invoke_dynamic_block_size<PolicySelector>(num_items, op, stream, active_policy);
     }
   });
 }

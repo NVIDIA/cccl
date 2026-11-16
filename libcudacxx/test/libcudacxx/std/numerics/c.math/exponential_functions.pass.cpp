@@ -333,17 +333,30 @@ TEST_HOST_DEVICE_FUNC void test_pow(T val)
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::pow(T{}, T{})), ret>);
 
+  // Fast float pow uses exp2(y * log2(x)), which does not preserve all IEEE special cases.
+  // Small floating-point types also use the float implementation; integral overloads use double.
+  bool test_special_values = true;
+  NV_IF_TARGET(
+    NV_IS_DEVICE,
+    (test_special_values = !TEST_HAS_CUDA_FAST_MATH || cuda::std::is_integral_v<T> || sizeof(T) > sizeof(float);))
+
   assert(eq(cuda::std::pow(T(2.0), T(10.0)), T(1024.0)));
-  assert(eq(cuda::std::pow(val, cuda::std::numeric_limits<T>::infinity()), val));
-  assert(eq(cuda::std::pow(-val, cuda::std::numeric_limits<T>::infinity()), val));
+  if (test_special_values)
+  {
+    assert(eq(cuda::std::pow(val, cuda::std::numeric_limits<T>::infinity()), val));
+    assert(eq(cuda::std::pow(-val, cuda::std::numeric_limits<T>::infinity()), val));
+  }
   assert(eq(cuda::std::pow(T(0.0), val), T(0.0)));
   assert(eq(cuda::std::pow(T(-0.0), val), T(-0.0)));
   if constexpr (!cuda::std::is_integral_v<T>)
   {
     assert(eq(cuda::std::pow(T(2), T(-3)), T(0.125)));
 
-    // Returns always 1 even for NaN
-    assert(eq(cuda::std::pow(val, cuda::std::numeric_limits<T>::quiet_NaN()), val));
+    if (test_special_values)
+    {
+      // Returns always 1 even for NaN
+      assert(eq(cuda::std::pow(val, cuda::std::numeric_limits<T>::quiet_NaN()), val));
+    }
 
     assert(
       eq(cuda::std::pow(T(2.0), cuda::std::numeric_limits<T>::infinity()), cuda::std::numeric_limits<T>::infinity()));
@@ -357,8 +370,11 @@ TEST_HOST_DEVICE_FUNC void test_pow(T val)
   {
     assert(eq(cuda::std::powf(T(2), T(-3)), T(0.125)));
 
-    // Returns always 1 even for NaN
-    assert(eq(cuda::std::powf(val, cuda::std::numeric_limits<T>::quiet_NaN()), val));
+    if (test_special_values)
+    {
+      // Returns always 1 even for NaN
+      assert(eq(cuda::std::powf(val, cuda::std::numeric_limits<T>::quiet_NaN()), val));
+    }
 
     assert(
       eq(cuda::std::powf(T(2.0), cuda::std::numeric_limits<T>::infinity()), cuda::std::numeric_limits<T>::infinity()));

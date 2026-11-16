@@ -9,13 +9,13 @@
 template <typename T>
 struct reference
 {
-  using type = T&;
+  using type _CCCL_NODEBUG = T&;
 };
 
 template <>
 struct reference<void>
 {
-  using type = void;
+  using type _CCCL_NODEBUG = void;
 };
 
 struct unit

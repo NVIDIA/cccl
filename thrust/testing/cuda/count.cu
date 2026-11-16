@@ -92,11 +92,11 @@ TEST_CASE("TestCountCudaStreams", "[count]")
   thrust::device_vector<int> data{1, 1, 0, 0, 1};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   REQUIRE(thrust::count(thrust::cuda::par.on(s), data.begin(), data.end(), 0) == 2);
   REQUIRE(thrust::count(thrust::cuda::par.on(s), data.begin(), data.end(), 1) == 3);
   REQUIRE(thrust::count(thrust::cuda::par.on(s), data.begin(), data.end(), 2) == 0);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }

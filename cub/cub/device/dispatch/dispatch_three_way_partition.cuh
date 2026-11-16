@@ -13,25 +13,22 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_three_way_partition.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
-#include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/kernels/kernel_three_way_partition.cuh>
 #include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
-
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__host_stdlib/sstream>
-#include <cuda/std/__utility/swap.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 #include <nv/target>
 
@@ -192,7 +189,7 @@ struct dispatch_three_way_partition_if
     void* allocations[2] = {};
 
     if (const auto error =
-          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+          CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -248,7 +245,7 @@ struct dispatch_three_way_partition_if
       }
 
       // Sync the stream if specified to flush runtime errors
-      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -264,7 +261,7 @@ struct dispatch_three_way_partition_if
 #ifdef CUB_DEBUG_LOG
       constexpr bool cub_debug_log_three_way_partition_kernel = true;
 #else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
-      const bool cub_debug_log_three_way_partition_kernel = detail::logging_enabled();
+      const bool cub_debug_log_three_way_partition_kernel = _CUB::detail::logging_enabled();
 #endif // !CUB_DEBUG_LOG
       if (cub_debug_log_three_way_partition_kernel)
       {
@@ -316,7 +313,7 @@ struct dispatch_three_way_partition_if
       }
 
       // Sync the stream if specified to flush runtime errors
-      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -342,7 +339,7 @@ struct dispatch_three_way_partition_if
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
-    const auto wrapped_policy = detail::three_way_partition::MakeThreeWayPartitionPolicyWrapper(active_policy);
+    const auto wrapped_policy = _CUB::detail::three_way_partition::MakeThreeWayPartitionPolicyWrapper(active_policy);
     return Invoke(wrapped_policy, kernel_source.ThreeWayPartitionInitKernel(), kernel_source.ThreeWayPartitionKernel());
   }
 
@@ -490,7 +487,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   const ThreeWayPartitionPolicy active_policy = policy_selector(cc);
 
-  detail::log_dispatch("DevicePartition (three way)", cc, active_policy);
+  _CUB::detail::log_dispatch("DevicePartition (three way)", cc, active_policy);
 
   static constexpr per_partition_offset_t partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
   static constexpr int init_kernel_threads               = 256;
@@ -531,7 +528,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   void* allocations[2] = {};
 
   if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -585,7 +582,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -601,7 +598,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 #ifdef CUB_DEBUG_LOG
     constexpr bool cub_debug_log_three_way_partition_kernel = true;
 #else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
-    const bool cub_debug_log_three_way_partition_kernel = logging_enabled();
+    const bool cub_debug_log_three_way_partition_kernel = _CUB::detail::logging_enabled();
 #endif // !CUB_DEBUG_LOG
     if (cub_debug_log_three_way_partition_kernel)
     {
@@ -653,7 +650,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }

@@ -46,14 +46,14 @@ inline enum class use_dynamic_cast {} use_dynamic_cast = {};
 
 /// @brief Performs bitwise OR operation on `handle_flags`.
 /// @return The result of bitwise OR operation.
-constexpr handle_flags operator|(handle_flags a, handle_flags b)
+_CCCL_HOST_API constexpr handle_flags operator|(handle_flags a, handle_flags b)
 {
   return handle_flags(static_cast<unsigned>(a) | static_cast<unsigned>(b));
 }
 
 /// @brief Performs bitwise AND operation on `handle_flags`.
 /// @return The result of bitwise AND operation.
-constexpr handle_flags operator&(handle_flags a, handle_flags b)
+_CCCL_HOST_API constexpr handle_flags operator&(handle_flags a, handle_flags b)
 {
   return handle_flags(static_cast<unsigned>(a) & static_cast<unsigned>(b));
 }
@@ -79,15 +79,15 @@ class handle
 public:
   /// @name Defaulted constructors and assignment operators
   /// @{
-  handle(handle&)                  = default;
-  handle(const handle&)            = default;
-  handle(handle&&)                 = default;
-  handle& operator=(const handle&) = default;
-  handle& operator=(handle&&)      = default;
+  _CCCL_HIDE_FROM_ABI handle(handle&)                  = default;
+  _CCCL_HIDE_FROM_ABI handle(const handle&)            = default;
+  _CCCL_HIDE_FROM_ABI handle(handle&&)                 = default;
+  _CCCL_HIDE_FROM_ABI handle& operator=(const handle&) = default;
+  _CCCL_HIDE_FROM_ABI handle& operator=(handle&&)      = default;
   /// @}
 
   /// @brief Default constructor.
-  handle()
+  _CCCL_HOST_API handle()
   {
     static_assert(!::cuda::std::is_constructible_v<T>, "T's default constructor must be protected.");
     if constexpr ((f & handle_flags::non_null) != handle_flags::defaults)
@@ -100,7 +100,7 @@ public:
 
   /// @brief Constructs a handle from another handle.
   template <typename T1, handle_flags f1>
-  handle(handle<T1, f1> rhs)
+  _CCCL_HOST_API handle(handle<T1, f1> rhs)
       : impl(mv(rhs.impl))
   {
     if constexpr ((f & handle_flags::non_null) != handle_flags::defaults)
@@ -112,7 +112,7 @@ public:
 
   /// @brief Variadic template constructor for creating a handle.
   template <typename... Args>
-  handle(Args&&... args)
+  _CCCL_HOST_API handle(Args&&... args)
       : impl(make(::cuda::std::forward<Args>(args)...))
   {
     static_assert(!::cuda::std::is_constructible_v<T, Args...>, "T's constructors must be protected.");
@@ -120,13 +120,13 @@ public:
 
   /// @brief Constructs a handle from another handle with static_cast.
   template <typename T1, handle_flags f1>
-  handle(handle<T1, f1>& src, decltype(use_static_cast))
+  _CCCL_HOST_API handle(handle<T1, f1>& src, decltype(use_static_cast))
       : handle(const_cast<const handle<T1, f1>&>(src), use_static_cast)
   {}
 
   /// @brief Similar constructor as above but for const handle.
   template <typename T1, handle_flags f1>
-  handle(const handle<T1, f1>& src, decltype(use_static_cast))
+  _CCCL_HOST_API handle(const handle<T1, f1>& src, decltype(use_static_cast))
       : handle(::std::static_pointer_cast<T>(src.impl))
   {
     if constexpr ((f & handle_flags::non_null) != handle_flags::defaults)
@@ -138,13 +138,13 @@ public:
 
   /// @brief Constructs a handle from another handle with dynamic_cast.
   template <typename T1, handle_flags f1>
-  handle(handle<T1, f1>& src, decltype(use_dynamic_cast))
+  _CCCL_HOST_API handle(handle<T1, f1>& src, decltype(use_dynamic_cast))
       : handle(const_cast<const handle<T1, f1>&>(src), use_dynamic_cast)
   {}
 
   /// @brief Similar constructor as above but for const handle.
   template <typename T1, handle_flags f1>
-  handle(const handle<T1, f1>& src, decltype(use_dynamic_cast))
+  _CCCL_HOST_API handle(const handle<T1, f1>& src, decltype(use_dynamic_cast))
       : handle(::std::dynamic_pointer_cast<T>(src.impl))
   {
     if constexpr ((f & handle_flags::non_null) != handle_flags::defaults)
@@ -156,13 +156,13 @@ public:
 
   /// @brief Constructs a handle from a shared_ptr with dynamic_cast.
   template <typename T1>
-  handle(const ::std::shared_ptr<T1>& src, decltype(use_dynamic_cast))
+  _CCCL_HOST_API handle(const ::std::shared_ptr<T1>& src, decltype(use_dynamic_cast))
       : handle(::std::dynamic_pointer_cast<T>(src))
   {}
 
   /// @brief Assignment operator for assigning one handle to another.
   template <typename T1, handle_flags f1>
-  handle& operator=(handle<T1, f1> rhs)
+  _CCCL_HOST_API handle& operator=(handle<T1, f1> rhs)
   {
     if constexpr ((f & handle_flags::non_null) != handle_flags::defaults)
     {
@@ -173,43 +173,43 @@ public:
     return *this;
   }
 
-  ~handle() = default;
+  _CCCL_HIDE_FROM_ABI ~handle() = default;
 
   /// @brief Dereference operator.
-  T* operator->() const
+  _CCCL_HOST_API T* operator->() const
   {
     assert(*this);
     return impl.get();
   }
 
   /// @brief Dereference the handle to get the actual object.
-  T& operator*()
+  _CCCL_HOST_API T& operator*()
   {
     return *operator->();
   }
 
   /// @brief Const version of the dereference operator.
-  const T& operator*() const
+  _CCCL_HOST_API const T& operator*() const
   {
     return *operator->();
   }
 
   /// @brief Conversion operator to bool.
-  explicit operator bool() const
+  _CCCL_HOST_API explicit operator bool() const
   {
     return impl.get() != nullptr;
   }
 
   /// @brief Conversion operator to shared_ptr.
   template <typename T1>
-  operator ::std::shared_ptr<T1>() const
+  _CCCL_HOST_API operator ::std::shared_ptr<T1>() const
   {
     return impl;
   }
 
   /// @brief Equality operator.
   template <typename T1, handle_flags f1>
-  bool operator==(const handle<T1, f1>& rhs)
+  _CCCL_HOST_API bool operator==(const handle<T1, f1>& rhs)
   {
     return impl == rhs.impl;
   }
@@ -218,14 +218,14 @@ public:
   using weak_t = ::std::weak_ptr<T>;
 
   /// @brief Returns a weak pointer to the underlying object.
-  weak_t weak() const
+  _CCCL_HOST_API weak_t weak() const
   {
     return impl;
   }
 
   /// @brief If weak_ptr is null, does nothing and returns false. Otherwise, calls the lambda and returns true.
   template <typename Fun>
-  static bool if_valid(const weak_t& wp, Fun&& fun)
+  _CCCL_HOST_API static bool if_valid(const weak_t& wp, Fun&& fun)
   {
     if (auto p = wp.lock())
     {
@@ -246,13 +246,13 @@ private:
   struct Derived : public U
   {
     template <typename... Args>
-    Derived(Args&&... args)
+    _CCCL_HOST_API Derived(Args&&... args)
         : U(::cuda::std::forward<Args>(args)...)
     {}
   };
 
   template <typename Arg, typename... Args>
-  static auto make(Arg&& arg, Args&&... args)
+  _CCCL_HOST_API static auto make(Arg&& arg, Args&&... args)
   {
     if constexpr (sizeof...(args) == 0 && ::cuda::std::is_convertible_v<Arg, ::std::shared_ptr<T>>)
     {

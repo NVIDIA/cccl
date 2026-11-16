@@ -75,7 +75,7 @@ TEST_CASE("TestMinElementCudaStreams", "[min_element]")
   data[5] = 1;
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   REQUIRE(*thrust::min_element(thrust::cuda::par.on(s), data.begin(), data.end()) == 1);
   REQUIRE(thrust::min_element(thrust::cuda::par.on(s), data.begin(), data.end()) - data.begin() == 2);
@@ -85,7 +85,7 @@ TEST_CASE("TestMinElementCudaStreams", "[min_element]")
     thrust::min_element(thrust::cuda::par.on(s), data.begin(), data.end(), ::cuda::std::greater<T>()) - data.begin()
     == 1);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestMinElementDevicePointer", "[min_element]")

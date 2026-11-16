@@ -197,3 +197,36 @@ CUB_TEST("DeviceFor::ForEachInExtents works", "[ForEachInExtents]", CUB_SMALL)
     static_cast<offset_t>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
   REQUIRE(num_of_once_marked_items == num_items);
 }
+
+struct call_counter_t
+{
+  int* d_count;
+
+  template <class... Ts>
+  __device__ void operator()(Ts...) const
+  {
+    atomicAdd(d_count, 1);
+  }
+};
+
+CUB_TEST("DeviceFor::ForEachInExtents handles extents with a zero dimension", "[ForEachInExtents][device]", CUB_SMALL)
+{
+  c2h::device_vector<int> count(1, 0);
+  const call_counter_t op{thrust::raw_pointer_cast(count.data())};
+
+  SECTION("dynamic extents")
+  {
+    device_for_each_in_extents(cuda::std::dextents<int, 2>{0, 5}, op);
+    device_for_each_in_extents(cuda::std::dextents<int, 2>{5, 0}, op);
+    device_for_each_in_extents(cuda::std::dextents<int, 3>{3, 0, 4}, op);
+  }
+
+  SECTION("static extents")
+  {
+    device_for_each_in_extents(cuda::std::extents<int, 0, 5>{}, op);
+    device_for_each_in_extents(cuda::std::extents<int, 5, 0>{}, op);
+    device_for_each_in_extents(cuda::std::extents<int, 3, cuda::std::dynamic_extent, 4>{0}, op);
+  }
+
+  REQUIRE(count[0] == 0);
+}

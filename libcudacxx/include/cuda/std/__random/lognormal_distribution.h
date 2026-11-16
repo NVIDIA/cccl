@@ -42,7 +42,6 @@ public:
 
   class param_type
   {
-  private:
     result_type __m_ = result_type{0};
     result_type __s_ = result_type{1};
 
@@ -83,7 +82,7 @@ private:
 
 public:
   // constructor and reset functions
-  constexpr lognormal_distribution() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr lognormal_distribution() noexcept = default;
   _CCCL_HOST_DEVICE_API constexpr explicit lognormal_distribution(
     result_type __m, result_type __s = result_type{1}) noexcept
       : __nd_{__m, __s}
@@ -154,14 +153,14 @@ public:
 
 #if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
-  friend ::std::basic_ostream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const lognormal_distribution& __x)
   {
     return __os << __x.__nd_;
   }
 
   template <class _CharT, class _Traits>
-  friend ::std::basic_istream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is, lognormal_distribution& __x)
   {
     return __is >> __x.__nd_;

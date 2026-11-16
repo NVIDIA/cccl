@@ -52,6 +52,7 @@ fill_n([[maybe_unused]] const _Policy& __policy, _InputIterator __first, _Size _
 {
   static_assert(indirectly_writable<_InputIterator, const _Tp&>,
                 "cuda::std::fill_n requires InputIterator to be indirectly writable with const T&");
+  static_assert(__is_convertible_to_integral_v<_Size>, "_Size must be convertible to an integral");
 
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__generate_n, _Policy>();

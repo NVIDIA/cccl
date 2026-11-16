@@ -24,7 +24,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(uninitialized_copy.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/uninitialized_copy.h>
 #  include <thrust/system/cuda/detail/uninitialized_copy.h>
 #  include <thrust/system/omp/detail/uninitialized_copy.h>
@@ -35,7 +35,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
+_CCCL_HOST_DEVICE_API ForwardIterator uninitialized_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -48,7 +48,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
+_CCCL_HOST_DEVICE_API ForwardIterator uninitialized_copy_n(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, Size n, ForwardIterator result)
 {
   _CCCL_NVTX_RANGE_SCOPE("uninitialized_copy_n");
@@ -57,7 +57,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
 } // end uninitialized_copy_n()
 
 template <typename InputIterator, typename ForwardIterator>
-ForwardIterator uninitialized_copy(InputIterator first, InputIterator last, ForwardIterator result)
+_CCCL_HOST_API ForwardIterator uninitialized_copy(InputIterator first, InputIterator last, ForwardIterator result)
 {
   _CCCL_NVTX_RANGE_SCOPE("uninitialized_copy");
   using thrust::system::detail::generic::select_system;
@@ -72,7 +72,7 @@ ForwardIterator uninitialized_copy(InputIterator first, InputIterator last, Forw
 } // end uninitialized_copy()
 
 template <typename InputIterator, typename Size, typename ForwardIterator>
-ForwardIterator uninitialized_copy_n(InputIterator first, Size n, ForwardIterator result)
+_CCCL_HOST_API ForwardIterator uninitialized_copy_n(InputIterator first, Size n, ForwardIterator result)
 {
   _CCCL_NVTX_RANGE_SCOPE("uninitialized_copy_n");
   using thrust::system::detail::generic::select_system;

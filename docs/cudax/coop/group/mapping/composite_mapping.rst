@@ -14,7 +14,6 @@
 
   public:
     __device__ constexpr composite_mapping(const Mappings&... mappings)
-      noexcept((cuda::std::is_nothrow_copy_constructible_v<Mappings> && ...))
       : /*mappings_*/{mappings...}
     {}
   };
@@ -25,29 +24,19 @@
   template </*mapping-type*/ Lhs, /*mapping-type*/ Rhs>
   [[nodiscard]] __device__ constexpr
   composite_mapping<Lhs, Rhs> operator|(const Lhs& lhs, const Rhs& rhs)
-    noexcept(cuda::std::is_nothrow_constructible_v<composite_mapping<Lhs, Rhs>, const Lhs&, const Rhs&>);
 
   template <typename... LhsMappings, /*mapping-type*/ Rhs>
   [[nodiscard]] __device__ constexpr
-  composite_mapping<LhsMappings..., Rhs> operator|(const composite_mapping<LhsMappings...>& lhs, const Rhs& rhs)
-    noexcept(cuda::std::is_nothrow_constructible_v<composite_mapping<LhsMappings..., Rhs>,
-                                                    const LhsMappings&...,
-                                                    const Rhs&>);
+  composite_mapping<LhsMappings..., Rhs> operator|(const composite_mapping<LhsMappings...>& lhs, const Rhs& rhs);
 
   template </*mapping-type*/ Lhs, typename... RhsMappings>
   [[nodiscard]] __device__ constexpr
-  composite_mapping<Lhs, RhsMappings...> operator|(const Lhs& lhs, const composite_mapping<RhsMappings...>& rhs)
-    noexcept(cuda::std::is_nothrow_constructible_v<composite_mapping<Lhs, RhsMappings...>,
-                                                    const Lhs&,
-                                                    const RhsMappings&...>);
+  composite_mapping<Lhs, RhsMappings...> operator|(const Lhs& lhs, const composite_mapping<RhsMappings...>& rhs);
 
   template <typename... LhsMappings, typename... RhsMappings>
   [[nodiscard]] __device__ constexpr
   composite_mapping<LhsMappings..., RhsMappings...> operator|(const composite_mapping<LhsMappings...>& lhs,
-                                                              const composite_mapping<RhsMappings...>& rhs)
-    noexcept(cuda::std::is_nothrow_constructible_v<composite_mapping<LhsMappings..., RhsMappings...>,
-                                                    const LhsMappings&...,
-                                                    const RhsMappings&...>);
+                                                              const composite_mapping<RhsMappings...>& rhs);
 
   } // namespace cuda::experimental::coop
 

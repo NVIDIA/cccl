@@ -54,12 +54,12 @@ C2H_CCCLRT_TEST("Stream logical device without a green context", "[stream][logic
   {
     const cuda::__ensure_current_context guard(device);
     ::cudaStream_t handle{};
-    CUDART(cudaStreamCreate(&handle));
+    REQUIRE_CUDART(cudaStreamCreate(&handle));
 
     const cuda::stream_ref str{handle};
     REQUIRE(str.__logical_device() == cuda::__logical_device_ref{device});
 
-    CUDART(cudaStreamDestroy(handle));
+    REQUIRE_CUDART(cudaStreamDestroy(handle));
   }
 
   SECTION("The query leaves the driver context stack unchanged")
@@ -265,7 +265,7 @@ C2H_CCCLRT_TEST("Stream from a logical device", "[stream][logical_device]")
     int greatest_priority{};
     {
       const cuda::__ensure_current_context guard(device);
-      CUDART(cudaDeviceGetStreamPriorityRange(&least_priority, &greatest_priority));
+      REQUIRE_CUDART(cudaDeviceGetStreamPriorityRange(&least_priority, &greatest_priority));
     }
 
     if (least_priority != greatest_priority)

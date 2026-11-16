@@ -36,10 +36,10 @@ template <::std::ptrdiff_t which_dim = -1>
 class blocked_partition_custom
 {
 public:
-  blocked_partition_custom() = default;
+  _CCCL_HIDE_FROM_ABI blocked_partition_custom() = default;
 
   template <size_t dimensions>
-  _CCCL_HOST_DEVICE static auto apply(const box<dimensions>& in, pos4 place_position, dim4 grid_dims)
+  _CCCL_HOST_DEVICE_API static auto apply(const box<dimensions>& in, pos4 place_position, dim4 grid_dims)
   {
     ::std::array<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>, dimensions> bounds;
     size_t target_dim = (which_dim == -1) ? dimensions - 1 : size_t(which_dim);
@@ -67,14 +67,14 @@ public:
     // If first = second, this means it's an empty shape. This may happen
     // when there are more entries in grid_dims than in the shape for
     // example
-    bounds[target_dim].first  = ::cuda::std::min(dim_beg + part_size * place_position.x, dim_end);
-    bounds[target_dim].second = ::cuda::std::min(dim_beg + part_size * (place_position.x + 1), dim_end);
+    bounds[target_dim].first  = ::cuda::std::min(dim_beg + (part_size * place_position.x), dim_end);
+    bounds[target_dim].second = ::cuda::std::min(dim_beg + (part_size * (place_position.x + 1)), dim_end);
 
     return box(bounds);
   }
 
   template <typename mdspan_shape_t>
-  _CCCL_HOST_DEVICE static auto apply(const mdspan_shape_t& in, pos4 place_position, dim4 grid_dims)
+  _CCCL_HOST_DEVICE_API static auto apply(const mdspan_shape_t& in, pos4 place_position, dim4 grid_dims)
   {
     constexpr size_t dimensions = mdspan_shape_t::rank();
 
@@ -103,7 +103,7 @@ public:
     return box<dimensions>(bounds);
   }
 
-  _CCCL_HOST_DEVICE static void get_executor(pos4* result, pos4 data_coords, dim4 data_dims, dim4 grid_dims)
+  _CCCL_HOST_DEVICE_API static void get_executor(pos4* result, pos4 data_coords, dim4 data_dims, dim4 grid_dims)
   {
     // Find the largest dimension
     const size_t rank = data_dims.get_rank();
@@ -163,7 +163,9 @@ UNITTEST("blocked partition with very large data arrays")
   pos4 middle_coord(200, 150, 100, 500);
   pos4 last_coord(399, 299, 199, 999);
 
-  pos4 first_pos, middle_pos, last_pos;
+  pos4 first_pos;
+  pos4 middle_pos;
+  pos4 last_pos;
   blocked_partition::get_executor(&first_pos, first_coord, massive_4d_dims, grid_dims);
   blocked_partition::get_executor(&middle_pos, middle_coord, massive_4d_dims, grid_dims);
   blocked_partition::get_executor(&last_pos, last_coord, massive_4d_dims, grid_dims);

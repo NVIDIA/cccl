@@ -21,6 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/mul_hi.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/__type_traits/num_bits.h>
+#include <cuda/std/array>
+#include <cuda/std/cstdint>
+
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental::cuco::detail
@@ -34,6 +41,46 @@ class __probing_scheme_base
 public:
   static constexpr int __cg_size = _CgSize;
 };
+
+//! @brief Maps a hash to an index in `[0, __size)` without a division.
+//!
+//! The hash is read as a fraction of its type's range and scaled by `__size` (multiply-high), so the
+//! high bits of the hash pick the index. Narrower hashes are left-aligned to 64 bits; 128-bit hashes
+//! contribute their high word.
+//!
+//! @tparam _HashType Unsigned hash type of at most 128 bits
+//!
+//! @param[in] __hash Hash value
+//! @param[in] __size Exclusive upper bound
+//! @return An index smaller than `__size`
+template <class _HashType>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t
+__hash_to_index(_HashType __hash, ::cuda::std::size_t __size) noexcept
+{
+  static_assert(::cuda::std::is_unsigned_v<_HashType> && ::cuda::std::__num_bits_v<_HashType> <= 128,
+                "The hash type must be an unsigned integer of at most 128 bits");
+  ::cuda::std::uint64_t __fraction{};
+  if constexpr (::cuda::std::__num_bits_v<_HashType> > 64)
+  {
+    __fraction = static_cast<::cuda::std::uint64_t>(__hash >> 64);
+  }
+  else
+  {
+    __fraction = ::cuda::std::uint64_t{__hash} << (64 - ::cuda::std::__num_bits_v<_HashType>);
+  }
+  return ::cuda::mul_hi<::cuda::std::uint64_t>(__fraction, __size);
+}
+
+//! @brief Maps a 128-bit array hash, low word first, to an index in `[0, __size)` using its high word.
+//!
+//! @param[in] __hash Hash value with the low word first
+//! @param[in] __size Exclusive upper bound
+//! @return An index smaller than `__size`
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t
+__hash_to_index(const ::cuda::std::array<::cuda::std::uint64_t, 2>& __hash, ::cuda::std::size_t __size) noexcept
+{
+  return __hash_to_index(__hash[1], __size);
+}
 
 //! @brief Probing iterator class.
 //!

@@ -114,7 +114,7 @@ template <class _Tp>
 
 #if _CCCL_CUDA_COMPILATION()
 template <class _Tp>
-[[nodiscard]] _CCCL_DEVICE_API _Tp __saturating_add_impl_device(_Tp __x, _Tp __y) noexcept
+[[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API _Tp __saturating_add_impl_device(_Tp __x, _Tp __y) noexcept
 {
   // Narrow branches differ only when target-specific inline PTX is available.
   // NOLINTBEGIN(bugprone-branch-clone)

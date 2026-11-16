@@ -26,6 +26,7 @@
 #include <cub/detail/null_type.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_ptx.cuh>
+#include <cub/warp/warp_utils.cuh>
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/operator_properties.h>
@@ -58,9 +59,6 @@ struct WarpScanShfl
   // Constants and type definitions
   //---------------------------------------------------------------------
 
-  /// Whether the logical warp size and the PTX warp size coincide
-  static constexpr bool IS_ARCH_WARP = (LogicalWarpThreads == warp_threads);
-
   /// The number of warp scan steps
   static constexpr int STEPS = Log2<LogicalWarpThreads>::VALUE;
 
@@ -84,29 +82,17 @@ struct WarpScanShfl
   //---------------------------------------------------------------------
 
   /// Lane index in logical warp
-  unsigned int lane_id;
-
-  /// Logical warp index in 32-thread physical warp
-  unsigned int warp_id;
+  unsigned int lane_id = _CUB::detail::logical_lane_id<LogicalWarpThreads>();
 
   /// 32-thread physical warp member mask of logical warp
-  unsigned int member_mask;
+  unsigned int member_mask = _CUB::detail::warp_mask<LogicalWarpThreads>();
 
   //---------------------------------------------------------------------
   // Construction
   //---------------------------------------------------------------------
 
   /// Constructor
-  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpScanShfl(TempStorage& /*temp_storage*/)
-      : lane_id(::cuda::ptx::get_sreg_laneid())
-      , warp_id(IS_ARCH_WARP ? 0 : (lane_id / LogicalWarpThreads))
-      , member_mask(WarpMask<LogicalWarpThreads>(warp_id))
-  {
-    if (!IS_ARCH_WARP)
-    {
-      lane_id = lane_id % LogicalWarpThreads;
-    }
-  }
+  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpScanShfl(TempStorage& /*temp_storage*/) {}
 
   //---------------------------------------------------------------------
   // Inclusive scan steps
@@ -127,7 +113,7 @@ struct WarpScanShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE int
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE int
   InclusiveScanStep(int input, ::cuda::std::plus<> /*scan_op*/, int first_lane, int offset)
   {
     int output;
@@ -163,7 +149,7 @@ struct WarpScanShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned int
   InclusiveScanStep(unsigned int input, ::cuda::std::plus<> /*scan_op*/, int first_lane, int offset)
   {
     unsigned int output;
@@ -199,7 +185,7 @@ struct WarpScanShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE float
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE float
   InclusiveScanStep(float input, ::cuda::std::plus<> /*scan_op*/, int first_lane, int offset)
   {
     float output;
@@ -235,7 +221,7 @@ struct WarpScanShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE unsigned long long
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE unsigned long long
   InclusiveScanStep(unsigned long long input, ::cuda::std::plus<> /*scan_op*/, int first_lane, int offset)
   {
     unsigned long long output;
@@ -276,7 +262,7 @@ struct WarpScanShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE long long
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE long long
   InclusiveScanStep(long long input, ::cuda::std::plus<> /*scan_op*/, int first_lane, int offset)
   {
     long long output;
@@ -317,7 +303,7 @@ struct WarpScanShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE double
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE double
   InclusiveScanStep(double input, ::cuda::std::plus<> /*scan_op*/, int first_lane, int offset)
   {
     double output;
@@ -382,9 +368,9 @@ struct WarpScanShfl
    *   Up-offset to pull from
    */
   template <typename Tp, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE Tp InclusiveScanStep(Tp input, ScanOpT scan_op, int first_lane, int offset)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE Tp InclusiveScanStep(Tp input, ScanOpT scan_op, int first_lane, int offset)
   {
-    Tp temp = ShuffleUp<LogicalWarpThreads>(input, offset, first_lane, member_mask);
+    Tp temp = _CUB::ShuffleUp<LogicalWarpThreads>(input, offset, first_lane, member_mask);
 
     // Perform scan op if from a valid peer
     Tp output = scan_op(temp, input);
@@ -415,7 +401,7 @@ struct WarpScanShfl
    *   Up-offset to pull from
    */
   template <typename Tp, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE Tp
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE Tp
   InclusiveScanStepPartial(Tp input, ScanOpT scan_op, int valid_items, int first_lane, int offset)
   {
     _CCCL_ASSERT((first_lane >= 0) && (first_lane <= static_cast<int>(lane_id)),
@@ -452,7 +438,7 @@ struct WarpScanShfl
    *   Marker type indicating whether T is a small integer
    */
   template <typename Tp, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE Tp
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE Tp
   InclusiveScanStep(Tp input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::true_type /*is_small_unsigned*/)
   {
     return InclusiveScanStep(input, scan_op, first_lane, offset);
@@ -478,8 +464,8 @@ struct WarpScanShfl
    *   Marker type indicating whether T is a small integer
    */
   template <typename Tp, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE Tp InclusiveScanStep(
-    Tp input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE Tp InclusiveScanStep(
+    const Tp& input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
   {
     return InclusiveScanStep(input, scan_op, first_lane, offset);
   }
@@ -501,9 +487,9 @@ struct WarpScanShfl
    * @param[in] src_lane
    *   Which warp lane is to do the broadcasting
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Broadcast(T input, int src_lane)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Broadcast(T input, int src_lane)
   {
-    return ShuffleIndex<LogicalWarpThreads>(input, src_lane, member_mask);
+    return _CUB::ShuffleIndex<LogicalWarpThreads>(input, src_lane, member_mask);
   }
 
   //---------------------------------------------------------------------
@@ -523,7 +509,7 @@ struct WarpScanShfl
    *   Binary scan operator
    */
   template <typename Tp, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(Tp input, Tp& inclusive_output, ScanOpT scan_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(Tp input, Tp& inclusive_output, ScanOpT scan_op)
   {
     inclusive_output = input;
 
@@ -559,7 +545,7 @@ struct WarpScanShfl
    *   Number of valid items in warp
    */
   template <typename Tp, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   InclusiveScanPartial(Tp input, Tp& inclusive_output, ScanOpT scan_op, int valid_items)
   {
     if (static_cast<int>(lane_id) < valid_items)
@@ -589,12 +575,12 @@ struct WarpScanShfl
    *   Binary scan operator
    */
   template <typename KeyT, typename ValueT, typename ReductionOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(
     KeyValuePair<KeyT, ValueT> input, KeyValuePair<KeyT, ValueT>& inclusive_output, ReduceByKeyOp<ReductionOpT> scan_op)
   {
     inclusive_output = input;
 
-    KeyT pred_key = ShuffleUp<LogicalWarpThreads>(inclusive_output.key, 1, 0, member_mask);
+    KeyT pred_key = _CUB::ShuffleUp<LogicalWarpThreads>(inclusive_output.key, 1, 0, member_mask);
 
     unsigned int ballot = __ballot_sync(member_mask, (pred_key != inclusive_output.key));
 
@@ -633,12 +619,12 @@ struct WarpScanShfl
    *   Warp-wide aggregate reduction of input items
    */
   template <typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOpT scan_op, T& warp_aggregate)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOpT scan_op, T& warp_aggregate)
   {
     InclusiveScan(input, inclusive_output, scan_op);
 
     // Grab aggregate from last warp lane
-    warp_aggregate = ShuffleIndex<LogicalWarpThreads>(inclusive_output, LogicalWarpThreads - 1, member_mask);
+    warp_aggregate = _CUB::ShuffleIndex<LogicalWarpThreads>(inclusive_output, LogicalWarpThreads - 1, member_mask);
   }
 
   /**
@@ -660,7 +646,7 @@ struct WarpScanShfl
    *   Warp-wide aggregate reduction of input items
    */
   template <typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   InclusiveScanPartial(T input, T& inclusive_output, ScanOpT scan_op, int valid_items, T& warp_aggregate)
   {
     InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
@@ -689,18 +675,18 @@ struct WarpScanShfl
    * @param[in] is_integer
    */
   template <typename ScanOpT, typename IsIntegerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Update(T /*input*/, T& inclusive, T& exclusive, ScanOpT /*scan_op*/, IsIntegerT /*is_integer*/)
   {
     // initial value unknown
-    exclusive = ShuffleUp<LogicalWarpThreads>(inclusive, 1, 0, member_mask);
+    exclusive = _CUB::ShuffleUp<LogicalWarpThreads>(inclusive, 1, 0, member_mask);
   }
 
   /**
    * @brief Update inclusive and exclusive using input and inclusive (specialized for summation of
    *        integer types)
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Update(T input, T& inclusive, T& exclusive, ::cuda::std::plus<> /*scan_op*/, ::cuda::std::true_type /*is_integer*/)
   {
     // initial value presumed 0
@@ -712,11 +698,11 @@ struct WarpScanShfl
    *        value
    */
   template <typename ScanOpT, typename IsIntegerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Update(T /*input*/, T& inclusive, T& exclusive, ScanOpT scan_op, T initial_value, IsIntegerT /*is_integer*/)
   {
     inclusive = scan_op(initial_value, inclusive);
-    exclusive = ShuffleUp<LogicalWarpThreads>(inclusive, 1, 0, member_mask);
+    exclusive = _CUB::ShuffleUp<LogicalWarpThreads>(inclusive, 1, 0, member_mask);
 
     if (lane_id == 0)
     {
@@ -728,7 +714,7 @@ struct WarpScanShfl
    * @brief Update inclusive and exclusive using initial value using input and inclusive
    *        (specialized for summation of integer types)
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Update(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Update(
     T input,
     T& inclusive,
     T& exclusive,
@@ -744,10 +730,10 @@ struct WarpScanShfl
    * @brief Update inclusive, exclusive, and warp aggregate using input and inclusive
    */
   template <typename ScanOpT, typename IsIntegerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Update(T input, T& inclusive, T& exclusive, T& warp_aggregate, ScanOpT scan_op, IsIntegerT is_integer)
   {
-    warp_aggregate = ShuffleIndex<LogicalWarpThreads>(inclusive, LogicalWarpThreads - 1, member_mask);
+    warp_aggregate = _CUB::ShuffleIndex<LogicalWarpThreads>(inclusive, LogicalWarpThreads - 1, member_mask);
     Update(input, inclusive, exclusive, scan_op, is_integer);
   }
 
@@ -756,10 +742,10 @@ struct WarpScanShfl
    *        value
    */
   template <typename ScanOpT, typename IsIntegerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Update(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Update(
     T input, T& inclusive, T& exclusive, T& warp_aggregate, ScanOpT scan_op, T initial_value, IsIntegerT is_integer)
   {
-    warp_aggregate = ShuffleIndex<LogicalWarpThreads>(inclusive, LogicalWarpThreads - 1, member_mask);
+    warp_aggregate = _CUB::ShuffleIndex<LogicalWarpThreads>(inclusive, LogicalWarpThreads - 1, member_mask);
     Update(input, inclusive, exclusive, scan_op, initial_value, is_integer);
   }
 
@@ -782,7 +768,7 @@ struct WarpScanShfl
    *   Number of valid items in warp
    */
   template <typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   UpdatePartial([[maybe_unused]] T input, T& inclusive, T& exclusive, [[maybe_unused]] ScanOpT scan_op, int valid_items)
   {
     if constexpr (::cuda::std::is_integral_v<T> && ::cuda::__is_cuda_std_plus_v<ScanOpT, T>)
@@ -828,7 +814,7 @@ struct WarpScanShfl
    *   Initial value to seed the scan (uniform across warp)
    */
   template <typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   UpdatePartial(T input, T& inclusive, T& exclusive, ScanOpT scan_op, int valid_items, T initial_value)
   {
     // Update inclusive
@@ -872,7 +858,7 @@ struct WarpScanShfl
    *   Number of valid items in warp
    */
   template <typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   UpdatePartial(T input, T& inclusive, T& exclusive, T& warp_aggregate, ScanOpT scan_op, int valid_items)
   {
     // Get aggregate
@@ -909,7 +895,7 @@ struct WarpScanShfl
    *   Initial value to seed the scan (uniform across warp)
    */
   template <typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void UpdatePartial(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void UpdatePartial(
     T input, T& inclusive, T& exclusive, T& warp_aggregate, ScanOpT scan_op, int valid_items, T initial_value)
   {
     // Get aggregate (excluding initial_value)

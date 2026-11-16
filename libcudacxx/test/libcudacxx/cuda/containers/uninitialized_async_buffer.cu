@@ -69,16 +69,16 @@ C2H_TEST_LIST(
   {
     {
       __uninitialized_async_buffer from_stream_count{resource, stream, 42};
-      CCCLRT_CHECK(from_stream_count.data() != nullptr);
-      CCCLRT_CHECK(from_stream_count.size() == 42);
+      CHECK(from_stream_count.data() != nullptr);
+      CHECK(from_stream_count.size() == 42);
     }
 
     {
       const ::cuda::std::size_t alignment = 64;
       offset_by_alignment_resource aligned_resource{resource};
       __uninitialized_async_buffer from_stream_count{aligned_resource, stream, 42, alignment};
-      CCCLRT_CHECK(is_pointer_aligned(from_stream_count.data(), alignment));
-      CCCLRT_CHECK(from_stream_count.alignment() == alignment);
+      CHECK(is_pointer_aligned(from_stream_count.data(), alignment));
+      CHECK(from_stream_count.alignment() == alignment);
     }
 
     {
@@ -86,14 +86,14 @@ C2H_TEST_LIST(
       const TestType* ptr = input.data();
 
       __uninitialized_async_buffer from_rvalue{cuda::std::move(input)};
-      CCCLRT_CHECK(from_rvalue.data() == ptr);
-      CCCLRT_CHECK(from_rvalue.size() == 42);
-      CCCLRT_CHECK(from_rvalue.stream() == stream);
+      CHECK(from_rvalue.data() == ptr);
+      CHECK(from_rvalue.size() == 42);
+      CHECK(from_rvalue.stream() == stream);
 
       // Ensure that we properly reset the input buffer
-      CCCLRT_CHECK(input.data() == nullptr);
-      CCCLRT_CHECK(input.size() == 0);
-      CCCLRT_CHECK(input.stream() == cuda::stream_ref{cudaStream_t{}});
+      CHECK(input.data() == nullptr);
+      CHECK(input.size() == 0);
+      CHECK(input.stream() == cuda::stream_ref{cudaStream_t{}});
     }
 
     if constexpr (sizeof(TestType) != 1)
@@ -114,20 +114,48 @@ C2H_TEST_LIST(
     }
   }
 
+  SECTION("release preserves allocation metadata before resetting the source")
+  {
+    const auto count                      = GENERATE(cuda::std::size_t{0}, cuda::std::size_t{42});
+    constexpr cuda::std::size_t alignment = 64;
+    __uninitialized_async_buffer input{resource, stream, count, alignment};
+    const TestType* ptr = input.data();
+
+    auto released = cuda::std::move(input).__release_allocation();
+    static_assert(
+      cuda::std::is_same_v<decltype(released), cuda::__allocation_info<TestType, cuda::mr::device_accessible>>);
+    static_assert(cuda::std::is_nothrow_move_constructible_v<decltype(released)>);
+    REQUIRE(released.ptr == ptr);
+    REQUIRE(released.capacity == count);
+    REQUIRE(released.size == count);
+    REQUIRE(released.alignment == alignment);
+    REQUIRE(released.stream == cuda::stream_ref{stream});
+    REQUIRE(input.data() == nullptr);
+    REQUIRE(input.size() == 0);
+    REQUIRE(input.alignment() == alignof(TestType));
+    REQUIRE(input.stream() == cuda::stream_ref{cuda::invalid_stream});
+
+    auto acquired = __uninitialized_async_buffer::__adopt_allocation(cuda::std::move(released));
+    REQUIRE(acquired.data() == ptr);
+    REQUIRE(acquired.size() == count);
+    REQUIRE(acquired.alignment() == alignment);
+    REQUIRE(acquired.stream() == cuda::stream_ref{stream});
+  }
+
   SECTION("conversion")
   {
     cuda::__uninitialized_async_buffer<TestType, cuda::mr::device_accessible, my_property> input{resource, stream, 42};
     const TestType* ptr = input.data();
 
     __uninitialized_async_buffer from_rvalue{cuda::std::move(input)};
-    CCCLRT_CHECK(from_rvalue.data() == ptr);
-    CCCLRT_CHECK(from_rvalue.size() == 42);
-    CCCLRT_CHECK(from_rvalue.stream() == stream);
+    CHECK(from_rvalue.data() == ptr);
+    CHECK(from_rvalue.size() == 42);
+    CHECK(from_rvalue.stream() == stream);
 
     // Ensure that we properly reset the input buffer
-    CCCLRT_CHECK(input.data() == nullptr);
-    CCCLRT_CHECK(input.size() == 0);
-    CCCLRT_CHECK(input.stream() == cuda::stream_ref{cudaStream_t{}});
+    CHECK(input.data() == nullptr);
+    CHECK(input.size() == 0);
+    CHECK(input.stream() == cuda::stream_ref{cudaStream_t{}});
   }
 
   SECTION("assignment")
@@ -141,16 +169,16 @@ C2H_TEST_LIST(
 
       __uninitialized_async_buffer assign_rvalue{resource, stream, 1337};
       assign_rvalue = cuda::std::move(input);
-      CCCLRT_CHECK(assign_rvalue.data() == ptr);
-      CCCLRT_CHECK(assign_rvalue.size() == 42);
-      CCCLRT_CHECK(assign_rvalue.size_bytes() == 42 * sizeof(TestType));
-      CCCLRT_CHECK(assign_rvalue.stream() == other_stream);
+      CHECK(assign_rvalue.data() == ptr);
+      CHECK(assign_rvalue.size() == 42);
+      CHECK(assign_rvalue.size_bytes() == 42 * sizeof(TestType));
+      CHECK(assign_rvalue.stream() == other_stream);
 
       // Ensure that we properly reset the input buffer
-      CCCLRT_CHECK(input.data() == nullptr);
-      CCCLRT_CHECK(input.size() == 0);
-      CCCLRT_CHECK(input.size_bytes() == 0);
-      CCCLRT_CHECK(input.stream() == cuda::stream_ref{cudaStream_t{}});
+      CHECK(input.data() == nullptr);
+      CHECK(input.size() == 0);
+      CHECK(input.size_bytes() == 0);
+      CHECK(input.stream() == cuda::stream_ref{cudaStream_t{}});
     }
 
     { // Ensure self move assignment does not do anything
@@ -158,10 +186,10 @@ C2H_TEST_LIST(
       const auto* old_ptr = buf.data();
 
       buf = cuda::std::move(buf);
-      CCCLRT_CHECK(buf.data() == old_ptr);
-      CCCLRT_CHECK(buf.stream() == stream);
-      CCCLRT_CHECK(buf.size() == 42);
-      CCCLRT_CHECK(buf.size_bytes() == 42 * sizeof(TestType));
+      CHECK(buf.data() == old_ptr);
+      CHECK(buf.stream() == stream);
+      CHECK(buf.size() == 42);
+      CHECK(buf.size_bytes() == 42 * sizeof(TestType));
     }
   }
 
@@ -171,24 +199,24 @@ C2H_TEST_LIST(
     static_assert(cuda::std::is_same_v<decltype(buf.begin()), TestType*>);
     static_assert(cuda::std::is_same_v<decltype(buf.end()), TestType*>);
     static_assert(cuda::std::is_same_v<decltype(buf.data()), TestType*>);
-    CCCLRT_CHECK(buf.data() != nullptr);
-    CCCLRT_CHECK(buf.size() == 42);
-    CCCLRT_CHECK(buf.size_bytes() == 42 * sizeof(TestType));
-    CCCLRT_CHECK(buf.begin() == buf.data());
-    CCCLRT_CHECK(buf.end() == buf.begin() + buf.size());
-    CCCLRT_CHECK(buf.stream() == stream);
-    CCCLRT_CHECK(buf.memory_resource() == resource);
+    CHECK(buf.data() != nullptr);
+    CHECK(buf.size() == 42);
+    CHECK(buf.size_bytes() == 42 * sizeof(TestType));
+    CHECK(buf.begin() == buf.data());
+    CHECK(buf.end() == buf.begin() + buf.size());
+    CHECK(buf.stream() == stream);
+    CHECK(buf.memory_resource() == resource);
 
     static_assert(cuda::std::is_same_v<decltype(cuda::std::as_const(buf).begin()), TestType const*>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::as_const(buf).end()), TestType const*>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::as_const(buf).data()), TestType const*>);
-    CCCLRT_CHECK(cuda::std::as_const(buf).data() != nullptr);
-    CCCLRT_CHECK(cuda::std::as_const(buf).size() == 42);
-    CCCLRT_CHECK(cuda::std::as_const(buf).size_bytes() == 42 * sizeof(TestType));
-    CCCLRT_CHECK(cuda::std::as_const(buf).begin() == buf.data());
-    CCCLRT_CHECK(cuda::std::as_const(buf).end() == buf.begin() + buf.size());
-    CCCLRT_CHECK(cuda::std::as_const(buf).stream() == stream);
-    CCCLRT_CHECK(cuda::std::as_const(buf).memory_resource() == resource);
+    CHECK(cuda::std::as_const(buf).data() != nullptr);
+    CHECK(cuda::std::as_const(buf).size() == 42);
+    CHECK(cuda::std::as_const(buf).size_bytes() == 42 * sizeof(TestType));
+    CHECK(cuda::std::as_const(buf).begin() == buf.data());
+    CHECK(cuda::std::as_const(buf).end() == buf.begin() + buf.size());
+    CHECK(cuda::std::as_const(buf).stream() == stream);
+    CHECK(cuda::std::as_const(buf).memory_resource() == resource);
   }
 
   SECTION("properties")
@@ -203,8 +231,8 @@ C2H_TEST_LIST(
   {
     __uninitialized_async_buffer buf{resource, stream, 42};
     const cuda::std::span<TestType> as_span{buf};
-    CCCLRT_CHECK(as_span.data() == buf.data());
-    CCCLRT_CHECK(as_span.size() == 42);
+    CHECK(as_span.data() == buf.data());
+    CHECK(as_span.size() == 42);
   }
 
   SECTION("Actually use memory")
@@ -215,7 +243,7 @@ C2H_TEST_LIST(
       stream.sync();
       thrust::fill(thrust::device, buf.begin(), buf.end(), TestType{2});
       const auto res = thrust::reduce(thrust::device, buf.begin(), buf.end(), TestType{0}, cuda::std::plus<int>());
-      CCCLRT_CHECK(res == TestType{84});
+      CHECK(res == TestType{84});
     }
   }
 
@@ -235,19 +263,19 @@ C2H_TEST_LIST(
         ::std::invalid_argument,
         Catch::Matchers::ExceptionMessageMatcher("cuda::__uninitialized_async_buffer: Input size overflow"));
 
-      CCCLRT_CHECK(buf.data() == old_ptr);
-      CCCLRT_CHECK(buf.size() == old_size);
-      CCCLRT_CHECK(buf.stream() == stream);
+      CHECK(buf.data() == old_ptr);
+      CHECK(buf.size() == old_size);
+      CHECK(buf.stream() == stream);
     }
 
     {
       const __uninitialized_async_buffer old_buf = buf.__replace_allocation(1337);
-      CCCLRT_CHECK(buf.data() != old_ptr);
-      CCCLRT_CHECK(buf.size() == 1337);
+      CHECK(buf.data() != old_ptr);
+      CHECK(buf.size() == 1337);
 
-      CCCLRT_CHECK(old_buf.data() == old_ptr);
-      CCCLRT_CHECK(old_buf.size() == old_size);
-      CCCLRT_CHECK(buf.stream() == old_buf.stream());
+      CHECK(old_buf.data() == old_ptr);
+      CHECK(old_buf.size() == old_size);
+      CHECK(buf.stream() == old_buf.stream());
     }
   }
 
@@ -255,14 +283,14 @@ C2H_TEST_LIST(
   {
     __uninitialized_async_buffer buf{resource, stream, 42};
     buf.destroy();
-    CCCLRT_CHECK(buf.data() == nullptr);
-    CCCLRT_CHECK(buf.size() == 0);
-    CCCLRT_CHECK(buf.stream() == stream);
+    CHECK(buf.data() == nullptr);
+    CHECK(buf.size() == 0);
+    CHECK(buf.stream() == stream);
 
     buf = __uninitialized_async_buffer{resource, stream, 42};
-    CCCLRT_CHECK(buf.data() != nullptr);
-    CCCLRT_CHECK(buf.size() == 42);
-    CCCLRT_CHECK(buf.stream() == stream);
+    CHECK(buf.data() != nullptr);
+    CHECK(buf.size() == 42);
+    CHECK(buf.stream() == stream);
   }
 }
 

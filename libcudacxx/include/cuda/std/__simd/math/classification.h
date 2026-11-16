@@ -46,7 +46,9 @@ _CCCL_SIMD_MATH_UNARY_GENERATOR(signbit);
   _CCCL_REQUIRES(__is_simd_math_floating_point_v<_Vp>)                                      \
   [[nodiscard]] _CCCL_HOST_DEVICE_API _CONSTEXPR _Result _NAME(const _Vp& __x) noexcept     \
   {                                                                                         \
-    return _Result{__simd_##_NAME##_generator<_Result, _Vp>{__x}};                          \
+    using __vec_t _CCCL_NODEBUG = __deduced_vec_t<_Vp>;                                     \
+    const __vec_t __x_vec(__x);                                                             \
+    return _Result{__simd_##_NAME##_generator<_Result, __vec_t>{__x_vec}};                  \
   }
 
 //----------------------------------------------------------------------------------------------------------------------

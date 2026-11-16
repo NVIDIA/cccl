@@ -22,7 +22,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(logical.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/logical.h>
 #  include <thrust/system/cuda/detail/logical.h>
 #  include <thrust/system/omp/detail/logical.h>
@@ -33,7 +33,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 all_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
        InputIterator first,
        InputIterator last,
@@ -46,7 +46,7 @@ all_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 any_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
        InputIterator first,
        InputIterator last,
@@ -59,7 +59,7 @@ any_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE bool
+_CCCL_HOST_DEVICE_API bool
 none_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
         InputIterator first,
         InputIterator last,
@@ -71,7 +71,7 @@ none_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
 } // end none_of()
 
 template <typename InputIterator, typename Predicate>
-bool all_of(InputIterator first, InputIterator last, Predicate pred)
+_CCCL_HOST_API bool all_of(InputIterator first, InputIterator last, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("all_of");
   using thrust::system::detail::generic::select_system;
@@ -84,7 +84,7 @@ bool all_of(InputIterator first, InputIterator last, Predicate pred)
 }
 
 template <typename InputIterator, typename Predicate>
-bool any_of(InputIterator first, InputIterator last, Predicate pred)
+_CCCL_HOST_API bool any_of(InputIterator first, InputIterator last, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("any_of");
   using thrust::system::detail::generic::select_system;
@@ -97,7 +97,7 @@ bool any_of(InputIterator first, InputIterator last, Predicate pred)
 }
 
 template <typename InputIterator, typename Predicate>
-bool none_of(InputIterator first, InputIterator last, Predicate pred)
+_CCCL_HOST_API bool none_of(InputIterator first, InputIterator last, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("none_of");
   using thrust::system::detail::generic::select_system;

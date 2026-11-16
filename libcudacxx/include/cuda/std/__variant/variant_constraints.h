@@ -62,7 +62,7 @@ _CCCL_API constexpr size_t __find_index()
 }
 
 template <class _Tp, class... _Types>
-using __find_unambiguous_index_sfinae =
+using __find_unambiguous_index_sfinae _CCCL_NODEBUG =
   enable_if_t<::cuda::std::__find_detail::__find_index<_Tp, _Types...>()
                 != __not_found&& ::cuda::std::__find_detail::__find_index<_Tp, _Types...>() != __ambiguous,
               integral_constant<size_t, ::cuda::std::__find_detail::__find_index<_Tp, _Types...>()>>;
@@ -93,7 +93,7 @@ struct __variant_constraints
   template <size_t _Ip, class... _Args>
   struct __variadic_construct
   {
-    using _Tp = variant_alternative_t<_Ip, variant<_Types...>>;
+    using _Tp _CCCL_NODEBUG = variant_alternative_t<_Ip, variant<_Types...>>;
 
     static constexpr bool __constructible         = is_constructible_v<_Tp, _Args...>;
     static constexpr bool __nothrow_constructible = is_nothrow_constructible_v<_Tp, _Args...>;
@@ -102,7 +102,7 @@ struct __variant_constraints
   template <size_t _Ip, class _Up, class... _Args>
   struct __variadic_ilist_construct
   {
-    using _Tp = variant_alternative_t<_Ip, variant<_Types...>>;
+    using _Tp _CCCL_NODEBUG = variant_alternative_t<_Ip, variant<_Types...>>;
 
     static constexpr bool __constructible         = is_constructible_v<_Tp, initializer_list<_Up>&, _Args...>;
     static constexpr bool __nothrow_constructible = is_nothrow_constructible_v<_Tp, initializer_list<_Up>&, _Args...>;

@@ -42,6 +42,14 @@ using __index_type = ::cuda::std::int64_t;
   return ::cuda::gpu_thread.index_as<__index_type>(::cuda::grid).x;
 }
 
+//! @brief Whether every thread in the current block owns an input element.
+[[nodiscard]] _CCCL_DEVICE_API inline bool __is_full_tile(__index_type __num_elements) noexcept
+{
+  const auto __block_index = ::cuda::block.rank_as<__index_type>(::cuda::grid);
+  const auto __block_size  = ::cuda::gpu_thread.count_as<__index_type>(::cuda::block);
+  return (__block_index + 1) * __block_size <= __num_elements;
+}
+
 [[nodiscard]] _CCCL_DEVICE_API inline __index_type __grid_stride() noexcept
 {
   return ::cuda::gpu_thread.dims_as<__index_type>(::cuda::grid).x;

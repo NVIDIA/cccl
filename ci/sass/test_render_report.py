@@ -14,8 +14,10 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from render_report import (  # noqa: E402
-    _MAX_COMMENT_BYTES,  # noqa: E402
+    _MAX_COMMENT_BYTES,
+    Comparison,
     load_analysis,
+    load_comparison,
     render,
 )
 from render_report import _MAX_DIFF_BLOCKS as _MAX  # noqa: E402
@@ -78,14 +80,29 @@ def _target(
     }
 
 
-def _render(targets: list[dict[str, object]], **kwargs: Any) -> str:
-    return render(
-        _report(targets),
-        base_ref="origin/main",
-        test_ref="HEAD",
-        arch="all-major-cccl",
-        **{"artifacts_url": "", **kwargs},
+def _comparison(
+    targets: list[dict[str, object]],
+    *,
+    project: str = "cub",
+    arch: str = "all-major-cccl",
+    artifacts_url: str = "",
+    analysis: dict[str, dict[str, Any]] | None = None,
+) -> Comparison:
+    return Comparison(
+        meta={
+            "project": project,
+            "base_ref": "origin/main",
+            "test_ref": "HEAD",
+            "arch": arch,
+            "artifacts_url": artifacts_url,
+        },
+        report=_report(targets),
+        analysis=analysis,
     )
+
+
+def _render(targets: list[dict[str, object]], **kwargs: Any) -> str:
+    return render([_comparison(targets, **kwargs)])
 
 
 def _group(
@@ -138,11 +155,183 @@ def test_the_targets_are_listed_in_a_stable_order() -> None:
     assert positions == sorted(positions)
 
 
-def test_the_fragment_carries_the_sticky_comment_marker() -> None:
-    """`bench-results` merges this fragment into one comment, so it must not
-    look like a comment of its own."""
+def test_the_comment_carries_the_sticky_comment_marker() -> None:
     text = _render([_target("cub.bench.reduce.sum.base")])
     assert text.startswith("<!-- cccl-sass-diff -->")
+
+
+def test_the_headline_names_the_project() -> None:
+    changed = _render([_target("thrust.bench.copy.basic.base")], project="thrust")
+    assert "1 of 1 Thrust benchmark target(s)" in changed
+    assert "CUB" not in changed
+
+    unchanged = _render(
+        [_target("thrust.bench.copy.basic.base", changed=False)], project="thrust"
+    )
+    assert "No SASS change in any of the 1 Thrust benchmark target(s)." in unchanged
+
+
+# ============================================================================
+# More than one project
+# ============================================================================
+
+
+def test_one_comment_covers_every_project() -> None:
+    text = render(
+        [
+            _comparison(
+                [
+                    _target("cub.bench.scan.base"),
+                    _target("cub.bench.a.base", changed=False),
+                ]
+            ),
+            _comparison([_target("thrust.bench.copy.base")], project="thrust"),
+        ]
+    )
+    assert text.count("<!-- cccl-sass-diff -->") == 1
+    assert text.count("## 🔬") == 1
+    assert text.count("How to request a benchmark run") == 1
+    assert text.count("| Baseline |") == 1
+    assert "1 of 2 CUB and 1 of 1 Thrust benchmark target(s)" in text
+    assert "'^cub\\.bench\\.scan\\.base$'" in text
+    assert "'^thrust\\.bench\\.copy\\.base$'" in text
+
+
+def test_no_change_counts_every_project() -> None:
+    text = render(
+        [
+            _comparison([_target("cub.bench.scan.base", changed=False)]),
+            _comparison(
+                [_target("thrust.bench.copy.base", changed=False)], project="thrust"
+            ),
+        ]
+    )
+    assert (
+        "No SASS change in any of the 1 CUB and 1 Thrust benchmark target(s)." in text
+    )
+
+
+def test_an_unchanged_project_adds_no_filters() -> None:
+    text = render(
+        [
+            _comparison([_target("cub.bench.scan.base")]),
+            _comparison(
+                [_target("thrust.bench.copy.base", changed=False)], project="thrust"
+            ),
+        ]
+    )
+    assert "thrust\\.bench" not in text
+
+
+def test_each_diff_links_to_the_artifact_of_its_project() -> None:
+    text = render(
+        [
+            _comparison(
+                [_target("cub.bench.scan.base", diff=DIFF)],
+                artifacts_url="https://example.invalid/cub",
+            ),
+            _comparison(
+                [_target("thrust.bench.copy.base", diff=DIFF)],
+                project="thrust",
+                artifacts_url="https://example.invalid/thrust",
+            ),
+        ]
+    )
+    cub, thrust = text.split("<code>thrust.bench.copy.base")
+    assert "(https://example.invalid/cub)" in cub
+    assert "(https://example.invalid/thrust)" in thrust
+
+
+def test_the_projects_must_share_one_run() -> None:
+    """The Run table has one row for each value."""
+    with pytest.raises(ValueError, match="different refs or architectures"):
+        render(
+            [
+                _comparison([_target("cub.bench.scan.base")], arch="90"),
+                _comparison(
+                    [_target("thrust.bench.copy.base")], project="thrust", arch="100"
+                ),
+            ]
+        )
+
+
+def test_the_projects_share_the_diff_block_cap() -> None:
+    cub_names = {f"cub.bench.t{i}.base": "benign" for i in range(_MAX)}
+    text = render(
+        [
+            _comparison(
+                [_target(name, diff=DIFF) for name in cub_names],
+                analysis=_classified(cub_names),
+            ),
+            _comparison(
+                [_target("thrust.bench.copy.base", diff=DIFF)],
+                project="thrust",
+                analysis=_classified({"thrust.bench.copy.base": "significant"}),
+            ),
+        ]
+    )
+    assert text.count("```diff") == _MAX
+    assert f"Showing {_MAX}/{_MAX + 1} summaries." in text
+    assert "thrust.bench.copy.base - sm_90</code> - ⚠️ Significant" in text
+
+
+def test_a_diff_without_an_analysis_sorts_as_unclear() -> None:
+    """The triage of one project can fail while the triage of another succeeds."""
+    text = render(
+        [
+            _comparison(
+                [_target("cub.bench.scan.base", diff=DIFF)],
+                analysis=_classified({"cub.bench.scan.base": "benign"}),
+            ),
+            _comparison(
+                [_target("thrust.bench.copy.base", diff=DIFF)], project="thrust"
+            ),
+        ]
+    )
+    diffs = text.split("Summary of Differences")[1]
+    assert diffs.index("thrust.bench.copy.base") < diffs.index("cub.bench.scan.base")
+
+
+def test_the_comment_of_two_projects_stays_under_the_github_limit() -> None:
+    comparisons = []
+    for project in ("cub", "thrust"):
+        names = [f"{project}.bench.t{i}.base" for i in range(_MAX)]
+        comparisons.append(
+            _comparison(
+                [
+                    _target(name, diff={**DIFF, "excerpt": ["+X" * 400] * 40})
+                    for name in names
+                ],
+                project=project,
+                analysis={
+                    f"{name}.sm_90": _group(
+                        "significant", title="t" * 500, explanation="e" * 5000
+                    )
+                    for name in names
+                },
+            )
+        )
+
+    text = render(comparisons)
+    assert len(text.encode()) <= _MAX_COMMENT_BYTES
+    assert "Summary of Differences" in text
+
+
+def test_a_comparison_is_read_from_its_directory(tmp_path: Path) -> None:
+    comparison = _comparison([_target("cub.bench.scan.base", diff=DIFF)])
+    (tmp_path / "report.json").write_text(json.dumps(comparison.report))
+    (tmp_path / "meta.json").write_text(json.dumps(comparison.meta))
+
+    loaded = load_comparison(tmp_path)
+    assert loaded.meta == comparison.meta
+    assert loaded.report == comparison.report
+    assert loaded.analysis is None
+
+    (tmp_path / "analysis.json").write_text(
+        json.dumps({"groups": [_group("significant")]})
+    )
+    loaded = load_comparison(tmp_path)
+    assert _classes(loaded.analysis) == {"cub.bench.scan.base.sm_90": "significant"}
 
 
 # ============================================================================
@@ -226,6 +415,21 @@ def test_a_long_target_list_becomes_one_regex() -> None:
     assert "'^cub\\.bench\\.t0\\.base$'" not in text
 
 
+def test_a_long_thrust_target_list_becomes_one_thrust_regex() -> None:
+    """A regex for another project would benchmark the wrong targets."""
+    targets = [_target(f"thrust.bench.t{i}.base") for i in range(_MAX_TARGETS + 1)]
+    text = _render(targets, project="thrust")
+    assert f"'^thrust\\.bench\\.'   # all {_MAX_TARGETS + 1} changed targets" in text
+    assert "cub" not in text
+
+
+def test_the_filters_go_under_the_cpp_key() -> None:
+    """ci/bench.template.yaml groups the C++ filters of every project under `cpp:`."""
+    text = _render([_target("cub.bench.scan.base")])
+    body = text.split("How to request a benchmark run", 1)[1].split("```")[1]
+    assert "  filters:\n    cpp:\n      - '^cub\\.bench\\.scan\\.base$'" in body
+
+
 # ============================================================================
 # The triage of the differences
 # ============================================================================
@@ -250,7 +454,7 @@ def _classified(names: dict[str, str]) -> dict[str, dict[str, Any]]:
 
 
 def test_a_block_holds_no_classification_without_an_analysis() -> None:
-    """`--analysis` is optional, and every existing caller omits it."""
+    """analysis.json exists only when the triage succeeded."""
     text = _render([_target("cub.bench.scan.base", diff=DIFF)])
     assert "<summary><code>cub.bench.scan.base - sm_90</code></summary>" in text
 

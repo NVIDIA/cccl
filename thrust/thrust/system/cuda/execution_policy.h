@@ -12,4 +12,4 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/system/cuda/detail/execution_policy.h> // IWYU pragma: export

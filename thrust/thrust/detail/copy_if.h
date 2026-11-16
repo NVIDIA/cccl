@@ -16,8 +16,10 @@
 
 THRUST_NAMESPACE_BEGIN
 
+// NOLINTBEGIN(readability-redundant-declaration)
+
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator copy_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -29,7 +31,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator copy_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -38,11 +40,13 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
   Predicate pred);
 
 template <typename InputIterator, typename OutputIterator, typename Predicate>
-OutputIterator copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred);
+_CCCL_HOST_API OutputIterator copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 copy_if(InputIterator1 first, InputIterator1 last, InputIterator2 stencil, OutputIterator result, Predicate pred);
+
+// NOLINTEND(readability-redundant-declaration)
 
 THRUST_NAMESPACE_END
 

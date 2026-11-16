@@ -91,18 +91,18 @@ C2H_CCCLRT_TEST("default memory pool resolved under stream capture", "[memory_re
 
     cuda::device_memory_pool_ref& pool = cuda::device_default_memory_pool(dev);
     const ::cudaMemPool_t raw          = cuda::__get_default_memory_pool(location, ::CU_MEM_ALLOCATION_TYPE_PINNED);
-    CCCLRT_REQUIRE(raw == pool.get());
+    REQUIRE(raw == pool.get());
 
     void* ptr = pool.allocate(stream, 1 << 20, ::cuda::mr::default_cuda_malloc_alignment);
-    CCCLRT_REQUIRE(ptr != nullptr);
+    REQUIRE(ptr != nullptr);
     pool.deallocate(stream, ptr, 1 << 20);
 
     ::CUgraph graph = nullptr;
     REQUIRE(end_capture(stream.get(), &graph) == ::CUDA_SUCCESS);
-    CCCLRT_CHECK(graph_node_count(graph) >= 1);
+    CHECK(graph_node_count(graph) >= 1);
     destroy_graph(graph);
 
-    CCCLRT_CHECK(cuda::memory_pool_attributes::release_threshold(pool.get()) != 0);
+    CHECK(cuda::memory_pool_attributes::release_threshold(pool.get()) != 0);
   }
 
   SECTION("the thread's capture mode is restored after the accessor returns")
@@ -113,10 +113,10 @@ C2H_CCCLRT_TEST("default memory pool resolved under stream capture", "[memory_re
     const ::cudaMemPool_t raw = cuda::__get_default_memory_pool(location, ::CU_MEM_ALLOCATION_TYPE_PINNED);
 
     // Thread mode was restored: the unsafe call is refused again.
-    CCCLRT_CHECK(unsafe_pool_query(raw) == ::CUDA_ERROR_STREAM_CAPTURE_UNSUPPORTED);
+    CHECK(unsafe_pool_query(raw) == ::CUDA_ERROR_STREAM_CAPTURE_UNSUPPORTED);
 
     // The refused call invalidated the capture; end it.
     ::CUgraph graph = nullptr;
-    CCCLRT_CHECK(end_capture(stream.get(), &graph) == ::CUDA_ERROR_STREAM_CAPTURE_INVALIDATED);
+    CHECK(end_capture(stream.get(), &graph) == ::CUDA_ERROR_STREAM_CAPTURE_INVALIDATED);
   }
 }

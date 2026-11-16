@@ -30,7 +30,8 @@ if [[ "${ctk_flavor}" == "cu" ]]; then
   cupy_req="${cupy_req}[ctk]"
 fi
 
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]" "${cupy_req}" pytest-benchmark
+# pytest-benchmark < 5.3.1 fails with pytest >= 9.2 (Function._nodeid removal, ionelmc/pytest-benchmark#321)
+python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]" "${cupy_req}" "pytest-benchmark>=5.3.1"
 
 cd "${repo_root}/python/cuda_cccl/tests/"
 python -m pytest -n 6 test_examples.py

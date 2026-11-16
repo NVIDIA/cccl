@@ -32,7 +32,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_member_object_pointer : public integral_constant<bool, _CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER(_Tp)>
+is_member_object_pointer : public bool_constant<_CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER(_Tp)>
 {};
 
 template <class _Tp>

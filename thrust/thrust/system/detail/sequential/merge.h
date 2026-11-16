@@ -18,8 +18,9 @@
 #endif // no system header
 #include <thrust/detail/copy.h>
 #include <thrust/detail/function.h>
-#include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
+
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
@@ -30,7 +31,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE OutputIterator merge(
+_CCCL_HOST_DEVICE_API OutputIterator merge(
   sequential::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -70,7 +71,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,

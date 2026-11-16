@@ -46,7 +46,7 @@ inline constexpr __execution_policy __policy_to_execution_policy = __execution_p
 enum __execution_backend : uint8_t // NOLINT(cppcoreguidelines-use-enum-class)
 {
   // The backends we provide
-  __none = 0,
+  __none = 0, // NOLINT(readability-enum-initial-value)
 #if _CCCL_HAS_BACKEND_CUDA()
   __cuda = 1 << 0,
 #endif // _CCCL_HAS_BACKEND_CUDA()
