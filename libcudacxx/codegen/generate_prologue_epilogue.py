@@ -51,6 +51,8 @@ FOOTER = """\
 // NO include guards here (this file is included multiple times)
 """
 
+# Standard attribute-tokens like `deprecated` or `noreturn` are not listed, because a
+# program must not define them as macros ([macro.names]).
 PUSH_POP_MACROS = {
     "__declspec modifiers": [
         "align",
@@ -58,7 +60,6 @@ PUSH_POP_MACROS = {
         "allocator",
         "appdomain",
         "code_seg",
-        "deprecated",
         "dllimport",
         "dllexport",
         "empty_bases",
@@ -68,7 +69,6 @@ PUSH_POP_MACROS = {
         "naked",
         "noalias",
         "noinline",
-        "noreturn",
         "nothrow",
         "novtable",
         "no_sanitize_address",

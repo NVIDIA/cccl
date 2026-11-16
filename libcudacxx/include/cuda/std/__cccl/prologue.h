@@ -54,12 +54,6 @@
 #  define _CCCL_POP_MACRO_code_seg
 #endif // defined(code_seg)
 
-#ifdef deprecated
-#  pragma push_macro("deprecated")
-#  undef deprecated
-#  define _CCCL_POP_MACRO_deprecated
-#endif // defined(deprecated)
-
 #ifdef dllimport
 #  pragma push_macro("dllimport")
 #  undef dllimport
@@ -113,12 +107,6 @@
 #  undef noinline
 #  define _CCCL_POP_MACRO_noinline
 #endif // defined(noinline)
-
-#ifdef noreturn
-#  pragma push_macro("noreturn")
-#  undef noreturn
-#  define _CCCL_POP_MACRO_noreturn
-#endif // defined(noreturn)
 
 #ifdef nothrow
 #  pragma push_macro("nothrow")

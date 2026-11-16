@@ -34,9 +34,6 @@
 #undef code_seg
 #define code_seg 1
 
-#undef deprecated
-#define deprecated 1
-
 #undef dllimport
 #define dllimport 1
 
@@ -63,9 +60,6 @@
 
 #undef noinline
 #define noinline 1
-
-#undef noreturn
-#define noreturn 1
 
 #undef nothrow
 #define nothrow 1
@@ -177,10 +171,6 @@
 #  error "<cuda/std/__cccl/prologue.h> must undefine macro `code_seg`"
 #endif
 
-#ifdef deprecated
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `deprecated`"
-#endif
-
 #ifdef dllimport
 #  error "<cuda/std/__cccl/prologue.h> must undefine macro `dllimport`"
 #endif
@@ -215,10 +205,6 @@
 
 #ifdef noinline
 #  error "<cuda/std/__cccl/prologue.h> must undefine macro `noinline`"
-#endif
-
-#ifdef noreturn
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `noreturn`"
 #endif
 
 #ifdef nothrow
@@ -347,10 +333,6 @@
 #  error "<cuda/std/__cccl/epilogue.h> must restore macro `code_seg`"
 #endif
 
-#if deprecated != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `deprecated`"
-#endif
-
 #if dllimport != 1
 #  error "<cuda/std/__cccl/epilogue.h> must restore macro `dllimport`"
 #endif
@@ -385,10 +367,6 @@
 
 #if noinline != 1
 #  error "<cuda/std/__cccl/epilogue.h> must restore macro `noinline`"
-#endif
-
-#if noreturn != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `noreturn`"
 #endif
 
 #if nothrow != 1
