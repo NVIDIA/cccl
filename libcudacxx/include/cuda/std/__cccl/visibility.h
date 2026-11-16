@@ -80,6 +80,8 @@
 #  define _CCCL_FORCEINLINE_LAMBDA __attribute__((__always_inline__))
 #endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
+// Some code bases define `noinline` as a macro. Push and pop `noinline` around every use of _CCCL_NOINLINE, like
+// <cuda/__memory/address_space.h> does.
 #if _CCCL_COMPILER(NVRTC)
 #  define _CCCL_NOINLINE __attribute__((noinline))
 #elif _CCCL_OS(WINDOWS)
