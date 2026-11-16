@@ -54,10 +54,22 @@ def _validate_radix_ranks(
             assert start <= rank < end
 
 
-@pytest.mark.parametrize("dtype_name", ["int8", "int16", "int32", "int64"])
-@pytest.mark.parametrize("num_items", [128, 512])
+@pytest.mark.parametrize(
+    ("dtype_name", "num_items", "worker_warps"),
+    [
+        (dtype, extent, 4)
+        for dtype in ("int8", "int16", "int32", "int64")
+        for extent in (128, 512)
+    ]
+    + [
+        ("int32", 32, None),
+        ("int64", 64, None),
+        ("int8", 32, 4),
+        ("int64", 64, 4),
+    ],
+)
 def test_radix_rank_keys_signed_order_and_stable_ties(
-    monkeypatch, dtype_name, num_items
+    monkeypatch, dtype_name, num_items, worker_warps
 ):
     _configure_e2e_environment(monkeypatch)
     torch, _, _ = _import_e2e_modules()
@@ -73,7 +85,9 @@ def test_radix_rank_keys_signed_order_and_stable_ties(
     descending = torch.empty_like(ascending)
     begin_bit = bits - 1
 
-    @ct.kernel(num_worker_warps=4)
+    options = {} if worker_warps is None else {"num_worker_warps": worker_warps}
+
+    @ct.kernel(**options)
     def kernel(source: ct.Array, asc: ct.Array, desc: ct.Array):
         tile = ct.load(source, (0,), shape=(num_items,))
         asc_ranks = coop.radix_rank_keys(tile, begin_bit=begin_bit)

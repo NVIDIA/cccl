@@ -7,6 +7,7 @@ from __future__ import annotations
 import re
 
 from ..support.frontend import (
+    FRONTEND_SOURCE_ROOT,
     RADIX_RANK_FRONTEND_SOURCE,
     assert_provider_trace_uses_requested_architecture,
     compile_and_run_frontend,
@@ -58,3 +59,17 @@ def test_cpp_radix_rank_real_frontend_runtime(tmp_path):
         for key in radix_rank_semantics
     )
     assert "PASS: C++ Tile API Radix Rank" in result.stdout
+
+
+def test_cpp_small_radix_rank_worker_selection(tmp_path):
+    result = compile_and_run_frontend(
+        tmp_path,
+        source=FRONTEND_SOURCE_ROOT / "tile_cpp_radix_rank_workers.cu",
+        executable_name="radix_rank_workers",
+        description="small Radix Rank worker selection",
+    )
+    assert_provider_trace_uses_requested_architecture(result)
+    assert (
+        "PASS: small Radix Rank with default and four worker warps"
+        in result.stdout
+    )

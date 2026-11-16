@@ -43,16 +43,9 @@ constexpr cub::BlockScanAlgorithm kInnerScanAlgorithm = %INNER_SCAN_ALGO%;
 constexpr cudaSharedMemConfig kSmemConfig = %SMEM_CONFIG%;
 using KeyT = %KEY_T%;
 using UnsignedKeyT = ::cuda::std::make_unsigned_t<KeyT>;
-using BlockRadixRankT =
-    cub::BlockRadixRank<
-        kBlockThreads,
-        kRadixBits,
-        kDescending,
-        kMemoizeOuterScan,
-        kInnerScanAlgorithm,
-        kSmemConfig>;
+%RANK_TYPE%
 struct ScratchStorage {
-    typename BlockRadixRankT::TempStorage temp_storage;
+    %TEMP_STORAGE_TYPE% temp_storage;
 };
 static_assert(sizeof(ScratchStorage) <= %ADVERTISED_SCRATCH_BYTES%,
               "[LP-SCRATCH-001] advertised BlockRadixRank scratch is too small");
@@ -66,7 +59,7 @@ extern "C" __device__ void %ENTRY_NAME%(
     int* output_rmem,
     void* scratch_smem)
 {
-    auto& scratch = *reinterpret_cast<ScratchStorage*>(scratch_smem);
+    %SCRATCH_REFERENCE%
     const long long runtime_radix_bits_wide =
         static_cast<long long>(runtime_end_bit) - static_cast<long long>(runtime_begin_bit);
     if (runtime_begin_bit < 0 || runtime_begin_bit >= %KEY_BITS% ||
@@ -89,14 +82,45 @@ extern "C" __device__ void %ENTRY_NAME%(
     }
 
     cub::BFEDigitExtractor<UnsignedKeyT> extractor(runtime_begin_bit, runtime_radix_bits);
-    BlockRadixRankT(scratch.temp_storage).RankKeys(thread_keys, thread_ranks, extractor);
+%RANK_CALL%
 
 #pragma unroll
     for (int i = 0; i < kItemsPerThread; ++i) {
         output_rmem[i] = thread_ranks[i];
     }
-    __syncthreads();
+    %FINAL_SYNC%
 }
+)CUDA";
+
+// A small logical Tile may occupy one warp of a wider CTA. Count each digit's
+// predecessors using warp-wide bit masks, including ties in blocked item order.
+// This path is limited to at most two items per lane.
+constexpr char warp_rank_call[] = R"CUDA(
+    const unsigned int lane = threadIdx.x % 32;
+    const unsigned int earlier_lanes = (1u << lane) - 1u;
+#pragma unroll
+    for (int item = 0; item < kItemsPerThread; ++item) {
+        const unsigned int digit = extractor.Digit(thread_keys[item]);
+        int rank = 0;
+#pragma unroll
+        for (int other = 0; other < kItemsPerThread; ++other) {
+            const unsigned int other_digit = extractor.Digit(thread_keys[other]);
+            unsigned int equal = 0xffffffffu;
+            for (int bit = runtime_radix_bits - 1; bit >= 0; --bit) {
+                const unsigned int ones = __ballot_sync(0xffffffffu, (other_digit >> bit) & 1u);
+                const bool set = ((digit >> bit) & 1u) != 0;
+                if (set != kDescending) {
+                    rank += __popc(equal & (kDescending ? ones : ~ones));
+                }
+                equal &= set ? ones : ~ones;
+            }
+            rank += __popc(equal & earlier_lanes);
+            if (other < item && (equal & (1u << lane)) != 0) {
+                ++rank;
+            }
+        }
+        thread_ranks[item] = rank;
+    }
 )CUDA";
 } // namespace
 
@@ -146,17 +170,35 @@ bool emit_radix_rank_source(
 
   const std::string& entry_name            = requested_entry_name;
   const std::string bit_control_parameters = "    int runtime_begin_bit,\n    int runtime_end_bit,\n";
+  const bool warp_scope                    = uses_warp_execution_scope(request);
   std::string result                       = radix_rank_template;
   result                                   = replace_all(
     std::move(result), "%EXTRA_INCLUDE%", extra_include.empty() ? "" : ("#include <" + extra_include + ">\n"));
-  result  = replace_all(std::move(result), "%KEY_T%", cpp_type);
-  result  = replace_all(std::move(result), "%RADIX_BITS%", std::to_string(radix_bits));
-  result  = replace_all(std::move(result), "%DESCENDING%", spec->descending ? "true" : "false");
-  result  = replace_all(std::move(result), "%MEMOIZE_OUTER_SCAN%", spec->memoize_outer_scan ? "true" : "false");
-  result  = replace_all(std::move(result), "%INNER_SCAN_ALGO%", inner_scan_cpp);
-  result  = replace_all(std::move(result), "%SMEM_CONFIG%", smem_cpp);
-  result  = replace_all(std::move(result), "%KEY_BITS%", std::to_string(key_bits));
-  result  = replace_all(std::move(result), "%BIT_CONTROL_PARAMETERS%", bit_control_parameters);
+  result = replace_all(std::move(result), "%KEY_T%", cpp_type);
+  result = replace_all(std::move(result), "%RADIX_BITS%", std::to_string(radix_bits));
+  result = replace_all(std::move(result), "%DESCENDING%", spec->descending ? "true" : "false");
+  result = replace_all(std::move(result), "%MEMOIZE_OUTER_SCAN%", spec->memoize_outer_scan ? "true" : "false");
+  result = replace_all(std::move(result), "%INNER_SCAN_ALGO%", inner_scan_cpp);
+  result = replace_all(std::move(result), "%SMEM_CONFIG%", smem_cpp);
+  result = replace_all(std::move(result), "%KEY_BITS%", std::to_string(key_bits));
+  result = replace_all(std::move(result), "%BIT_CONTROL_PARAMETERS%", bit_control_parameters);
+  result = replace_all(
+    std::move(result),
+    "%RANK_TYPE%",
+    warp_scope ? ""
+               : "using BlockRadixRankT = cub::BlockRadixRank<kBlockThreads, kRadixBits, kDescending, "
+                 "kMemoizeOuterScan, kInnerScanAlgorithm, kSmemConfig>;");
+  result = replace_all(
+    std::move(result), "%TEMP_STORAGE_TYPE%", warp_scope ? "unsigned char" : "typename BlockRadixRankT::TempStorage");
+  result = replace_all(std::move(result),
+                       "%SCRATCH_REFERENCE%",
+                       warp_scope ? "" : "auto& scratch = *reinterpret_cast<ScratchStorage*>(scratch_smem);");
+  result = replace_all(
+    std::move(result),
+    "%RANK_CALL%",
+    warp_scope ? warp_rank_call
+               : "    BlockRadixRankT(scratch.temp_storage).RankKeys(thread_keys, thread_ranks, extractor);");
+  result  = replace_all(std::move(result), "%FINAL_SYNC%", warp_scope ? "__syncwarp();" : "__syncthreads();");
   result  = replace_all(std::move(result), "%ENTRY_NAME%", entry_name);
   *source = std::move(result);
   return true;

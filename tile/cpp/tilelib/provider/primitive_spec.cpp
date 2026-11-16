@@ -41,9 +41,11 @@ bool uses_warp_execution_scope(const ImplementationSpec& request) noexcept
     return reduce->batches > 0 && reduce->algorithm == "warp_reductions";
   }
   // Adjacent Difference exchanges thread-boundary values within one warp.
+  // Small Radix Rank uses warp-wide digit masks and no CTA storage or barriers.
   // Merge Sort uses WarpMergeSort for its one-item-per-lane specialization.
   return request.topology().block_threads == 32
       && (std::holds_alternative<AdjacentDifferenceSpec>(request.primitive())
+          || (request.topology().items_per_thread <= 2 && std::holds_alternative<RadixRankSpec>(request.primitive()))
           || (request.topology().items_per_thread == 1 && std::holds_alternative<MergeSortSpec>(request.primitive())));
 }
 

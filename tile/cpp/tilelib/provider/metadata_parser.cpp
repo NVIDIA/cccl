@@ -2143,6 +2143,12 @@ MetadataResult materialize_call_request(
     {
       threads = 32;
     }
+    // The small Radix Rank path uses warp-wide digit masks independently of the
+    // enclosing CTA. Larger one-warp inputs retain the block implementation.
+    if (std::holds_alternative<RadixRankSpec>(demand.primitive()) && demand.extent() <= 64 && demand.extent() < threads)
+    {
+      threads = 32;
+    }
   }
   const auto selected = select_implementation(demand, threads, &out->request);
   if (!selected.is_supported())
