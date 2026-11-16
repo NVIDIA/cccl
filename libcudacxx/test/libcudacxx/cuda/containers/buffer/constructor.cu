@@ -43,6 +43,21 @@ bool check_offseted_pointer_with_alignment(const T* ptr, ::cuda::std::size_t ali
       && (reinterpret_cast<std::uintptr_t>(ptr) % cuda::mr::default_cuda_malloc_alignment == alignment);
 }
 
+template <class T, class Source, class = void>
+inline constexpr bool can_make_buffer_from = false;
+
+template <class T, class Source>
+inline constexpr bool can_make_buffer_from<
+  T,
+  Source,
+  cuda::std::void_t<decltype(cuda::make_buffer<T>(cuda::std::declval<cuda::stream_ref>(),
+                                                  cuda::std::declval<cuda::mr::legacy_pinned_memory_resource>(),
+                                                  cuda::std::declval<Source>())),
+                    decltype(cuda::make_buffer<T, cuda::mr::device_accessible>(
+                      cuda::std::declval<cuda::stream_ref>(),
+                      cuda::std::declval<cuda::mr::legacy_pinned_memory_resource>(),
+                      cuda::std::declval<Source>()))>> = true;
+
 C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
 {
   using Buffer   = c2h::get<0, TestType>;
@@ -178,6 +193,26 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
 
   SECTION("Construction from initializer_list")
   {
+    using List      = cuda::std::initializer_list<T>;
+    using OtherT    = cuda::std::conditional_t<cuda::std::is_same_v<T, int>, unsigned int, int>;
+    using OtherList = cuda::std::initializer_list<OtherT>;
+    static_assert(cuda::std::is_constructible_v<Buffer, cuda::stream_ref, Resource&, List>);
+    static_assert(cuda::std::is_constructible_v<Buffer, cuda::stream_ref, Resource&, List&>);
+    static_assert(cuda::std::is_constructible_v<Buffer, cuda::stream_ref, Resource&, const List&>);
+    static_assert(cuda::std::is_constructible_v<Buffer, cuda::stream_ref, Resource&, const List&&>);
+    static_assert(!cuda::std::is_constructible_v<Buffer, cuda::stream_ref, Resource&, OtherList>);
+    static_assert(!cuda::std::is_constructible_v<Buffer, cuda::stream_ref, Resource&, OtherList&>);
+    static_assert(!cuda::std::is_constructible_v<Buffer, cuda::stream_ref, Resource&, const OtherList&>);
+    static_assert(!cuda::std::is_constructible_v<Buffer, cuda::stream_ref, Resource&, const OtherList&&>);
+    static_assert(can_make_buffer_from<T, List>);
+    static_assert(can_make_buffer_from<T, List&>);
+    static_assert(can_make_buffer_from<T, const List&>);
+    static_assert(can_make_buffer_from<T, const List&&>);
+    static_assert(!can_make_buffer_from<T, OtherList>);
+    static_assert(!can_make_buffer_from<T, OtherList&>);
+    static_assert(!can_make_buffer_from<T, const OtherList&>);
+    static_assert(!can_make_buffer_from<T, const OtherList&&>);
+
     { // can be constructed from an empty initializer_list
       const cuda::std::initializer_list<T> input{};
       Buffer buf(stream, resource, input);

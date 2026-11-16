@@ -38,6 +38,7 @@
 #  include <cuda/__memory_resource/synchronous_resource_adapter.h>
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/get_stream.h>
+#  include <cuda/__type_traits/is_specialization_of.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__cstddef/byte.h>
 #  include <cuda/std/__exception/cuda_error.h>
@@ -163,7 +164,7 @@ private:
   {
     // Initializer lists must use the overloads that account for the source lifetime.
     return ::cuda::std::ranges::__container_compatible_range<_Range, _Tp>
-        && !::cuda::std::is_same_v<::cuda::std::decay_t<_Range>, ::cuda::std::initializer_list<_Tp>>;
+        && !::cuda::__is_specialization_of_v<::cuda::std::decay_t<_Range>, ::cuda::std::initializer_list>;
   }
 
   //! @brief Helper to check whether a different buffer still satisfies all
@@ -1384,7 +1385,8 @@ _CCCL_TEMPLATE(class _Tp,
                class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
-    __buffer_compatible_env<_Env> _CCCL_AND ::cuda::std::ranges::forward_range<_Range>)
+    __buffer_compatible_env<_Env> _CCCL_AND ::cuda::std::ranges::forward_range<_Range> _CCCL_AND(
+      !::cuda::__is_specialization_of_v<::cuda::std::decay_t<_Range>, ::cuda::std::initializer_list>))
 [[nodiscard]] _CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...>
 make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range, const _Env& __env = {})
 {
@@ -1404,9 +1406,10 @@ template <class _Tp, class _Resource, class _Range, class _Env = ::cuda::std::ex
 _CCCL_HOST_API auto make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range, const _Env& __env = {});
 #  else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Range, class _Env = ::cuda::std::execution::env<>)
-_CCCL_REQUIRES(
-  ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND ::cuda::mr::__has_default_queries<
-    ::cuda::std::decay_t<_Resource>> _CCCL_AND ::cuda::std::ranges::forward_range<_Range>)
+_CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
+                 _CCCL_AND ::cuda::mr::__has_default_queries<::cuda::std::decay_t<_Resource>>
+                   _CCCL_AND ::cuda::std::ranges::forward_range<_Range> _CCCL_AND(
+                     !::cuda::__is_specialization_of_v<::cuda::std::decay_t<_Range>, ::cuda::std::initializer_list>))
 [[nodiscard]] _CCCL_HOST_API auto
 make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range, const _Env& __env = {})
 {

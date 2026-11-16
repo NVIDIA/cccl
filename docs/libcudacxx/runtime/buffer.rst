@@ -92,7 +92,8 @@ For rvalue initializer lists, including braced lists, all source accesses comple
 factory returns. CUDA 13 uses batched memcpy with source access during the API call on supported streams;
 CUDA 12 and legacy default streams synchronize after copying a non-empty list. Named lvalue initializer lists
 are copied in stream order and must remain valid until the copy completes. These rules also apply to ``make_buffer``, ``make_device_buffer``,
-``make_pinned_buffer``, and ``make_managed_buffer``.
+``make_pinned_buffer``, and ``make_managed_buffer``. Explicitly typed initializer lists must have the same
+element type as the buffer.
 
 .. warning::
 
