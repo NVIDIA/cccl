@@ -684,10 +684,10 @@ inline constexpr unwind_t unwind{};
  * value standing in a composite also means.
  *
  * On either channel the answer is the result of invoking the stored value as a nullary
- * callable, a lazy fallback computed only on failure (`subst([]{ return expensive(); })`, which
- * must not throw); else the stored value itself, forwarded out and owned if the policy owns it,
- * referred to if it holds an lvalue reference (so a replacement passed as an lvalue can stand in
- * for a reference result). A reaction that inspects the exception is a raw hook instead:
+ * callable, a lazy fallback computed only on failure (`subst([]{ return expensive(); })`, whose
+ * throw forwards, as from any hook); else the stored value itself, forwarded out and owned if the
+ * policy owns it, referred to if it holds an lvalue reference (so a replacement passed as an
+ * lvalue can stand in for a reference result). A reaction that inspects the exception is a raw hook instead:
  * `noop & [](const std::exception* e, auto, auto&) { ... }`, or `thrown(hook)` on its own.
  */
 template <class _V>
@@ -701,7 +701,8 @@ struct subst_t : basic_sink<subst_t<_V>>
   //! stored nullary callable. On a status the answer must be of the status type
   //! (`subst(cudaSuccess)`, not `subst(0)`).
   template <class _Failure, class _Fn>
-  decltype(auto) on_returned(const _Failure, const ::cuda::std::source_location, _Fn&) noexcept
+  decltype(auto) on_returned(const _Failure, const ::cuda::std::source_location, _Fn&) noexcept(
+    !::cuda::std::is_invocable_v<_V&> || ::cuda::std::is_nothrow_invocable_v<_V&>)
   {
     if constexpr (::cuda::std::is_invocable_v<_V&>)
     {
@@ -715,8 +716,9 @@ struct subst_t : basic_sink<subst_t<_V>>
 
   // The exception channel's failure is the exception pointer, answered as on the code channel.
   template <class _Fn>
-  decltype(auto)
-  on_thrown(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn) noexcept
+  decltype(auto) on_thrown(const ::std::exception* __exception,
+                           const ::cuda::std::source_location __loc,
+                           _Fn& __fn) noexcept(noexcept(on_returned(__exception, __loc, __fn)))
   {
     return on_returned(__exception, __loc, __fn);
   }
@@ -3139,14 +3141,25 @@ template <class _Reaction,
           class _Fn,
           bool _Feed  = false,
           class _Expr = decltype(::cuda::std::declval<_Fn&>()()),
-          bool        = _Feed && __is_status_v<_Expr>>
+          bool        = _Feed && __is_status_v<_Expr>,
+          class _Answer =
+            typename ::cuda::std::conditional_t<__has_exception_hook<_Reaction, _Fn>,
+                                                __exception_hook_impl<::cuda::std::remove_reference_t<_Reaction>, _Fn>,
+                                                ::cuda::std::type_identity<nullval>>::type>
 inline constexpr bool __callable_runner_nothrow_v =
-  (noexcept(::cuda::std::declval<_Fn&>()()) || __never_passes_through_v<_Reaction, _Fn>)
+  (noexcept(::cuda::std::declval<_Fn&>()())
+   // A hook that never forwards can still throw while the runner makes `_Expr` from its answer:
+   // nothing to convert for a void expression or a nullval answer, a default `_Expr` for Nothing
+   // (a void answer), a cast for a value (copying a referred-to string can throw).
+   || (__never_passes_through_v<_Reaction, _Fn>
+       && (::cuda::std::is_void_v<_Expr> || ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Answer>, nullval>
+           || ::cuda::std::is_nothrow_constructible_v<_Expr, _Answer>
+           || (::cuda::std::is_void_v<_Answer> && ::cuda::std::is_nothrow_default_constructible_v<_Expr>) )))
   && __on_enter_nothrow_v<_Reaction>;
 
-template <class _Reaction, class _Fn, bool _Feed, class _Expr>
-inline constexpr bool __callable_runner_nothrow_v<_Reaction, _Fn, _Feed, _Expr, true> =
-  __callable_runner_nothrow_v<_Reaction, _Fn, _Feed, _Expr, false>
+template <class _Reaction, class _Fn, bool _Feed, class _Expr, class _Answer>
+inline constexpr bool __callable_runner_nothrow_v<_Reaction, _Fn, _Feed, _Expr, true, _Answer> =
+  __callable_runner_nothrow_v<_Reaction, _Fn, _Feed, _Expr, false, _Answer>
   && __status_path_nothrow_v<
     _Reaction,
     _Expr,
@@ -5887,6 +5900,37 @@ UNITTEST("policy inventory")
     throw 42;
   };
   EXPECT(s3 == 2); // non-std exception: the hook sees nullptr
+
+  // A throwing lazy callable forwards its exception, as from any hook.
+  const int s4 =
+    (subst([]() -> int {
+       throw ::std::logic_error("lazy");
+     })
+     | if_isa<::std::logic_error>(subst(6)))
+      ->*[]() -> int {
+    throw ::std::runtime_error("x");
+  };
+  EXPECT(s4 == 6);
+
+  // The runner is noexcept only if the answer's conversion is: copying a referred-to string can
+  // throw, moving an owned one or copying an int cannot.
+  // (`.at` copies the sink, so the owned string is checked on the runner.)
+  ::std::string fallback = "fallback";
+  const auto by_ref      = subst(fallback);
+  static_assert(!noexcept(by_ref.at(::cuda::std::source_location{})->*::cuda::std::declval<::std::string (&)()>()));
+  static_assert(__callable_runner_nothrow_v<subst_t<::std::string>, ::std::string (&)()>);
+  const auto by_int = subst(42);
+  static_assert(noexcept(by_int.at(::cuda::std::source_location{})->*::cuda::std::declval<int (&)()>()));
+  auto may_throw = []() -> int {
+    return 42;
+  };
+  auto never_throws = []() noexcept -> int {
+    return 42;
+  };
+  const auto lazy_may_throw    = subst(may_throw);
+  const auto lazy_never_throws = subst(never_throws);
+  static_assert(!noexcept(lazy_may_throw.at(::cuda::std::source_location{})->*::cuda::std::declval<int (&)()>()));
+  static_assert(noexcept(lazy_never_throws.at(::cuda::std::source_location{})->*::cuda::std::declval<int (&)()>()));
 
   // defer composes now: report, then capture.
   ::std::ostringstream noted;
