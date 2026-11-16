@@ -67,12 +67,20 @@ _CCCL_CONCEPT __simd_vec_type = _CCCL_REQUIRES_EXPR(
 // [simd.expos], constexpr-wrapper-like concept
 
 template <typename _Tp, typename = void>
+inline constexpr bool __has_nonstatic_value_v = false;
+
+template <typename _Tp>
+inline constexpr bool __has_nonstatic_value_v<_Tp, void_t<decltype(&_Tp::value)>> =
+  is_member_pointer_v<decltype(&_Tp::value)>;
+
+template <typename _Tp, bool = __has_nonstatic_value_v<_Tp>, typename = void>
 inline constexpr bool __constexpr_wrapper_like_v = false;
 
-// Check constant expressions before conversions, which can recurse through the value constructor.
+// Reject non-static members and invalid constant expressions before checking conversions.
 template <typename _Tp>
 inline constexpr bool __constexpr_wrapper_like_v<
   _Tp,
+  false,
   void_t<decltype(::cuda::std::declval<char (&)[(_Tp() == _Tp::value) ? 1 : -1]>()),
          decltype(::cuda::std::declval<char (&)[(static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value) ? 1 : -1]>())>> =
   convertible_to<_Tp, decltype(_Tp::value)> && equality_comparable_with<_Tp, decltype(_Tp::value)>;
