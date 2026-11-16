@@ -2,15 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 // This benchmark checks that cub::DeviceScan unwraps fancy iterators to the underlying raw pointers, so the algorithm's
-// fast paths (vectorized loads, bulk copy) are still taken. It is a proof of the optimization, not a
-// tuning or sweeping benchmark. It is the reproducer from https://github.com/NVIDIA/cccl/issues/11840, mirroring cuDF's
-// logical stack: a scan of 0/1 reset flags into segment ids. The two benchmarks move the same number of bytes and
-// should perform the same:
+// fast paths (vectorized loads, bulk copy) are still taken. It is a proof of the optimization, not a tuning or sweeping
+// benchmark. It is the reproducer from https://github.com/NVIDIA/cccl/issues/11840, mirroring cuDF's logical stack: a
+// scan of 0/1 reset flags into segment ids. The two benchmarks move the same number of bytes and should perform the
+// same:
 // * reset_segment_scan_pointers scans a materialized buffer of reset flags into a raw output pointer.
 // * reset_segment_scan_fancy_iterators scans a transform_iterator over the raw symbols into a transform_output_iterator
 //   over the raw output pointer.
 
+#include <thrust/count.h>
 #include <thrust/device_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/tabulate.h>
 #include <thrust/transform.h>
 
@@ -18,6 +20,9 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
+
+#include <stdexcept>
+#include <string>
 
 #include <nvbench_helper.cuh>
 
@@ -104,6 +109,18 @@ try
     thrust::device_vector<stack_segment_t> reset_flags(num_symbols);
     thrust::transform(stack_ops.begin(), stack_ops.end(), reset_flags.begin(), newline_to_reset_segment);
     scan(thrust::raw_pointer_cast(reset_flags.data()), thrust::raw_pointer_cast(key_segments.data()));
+  }
+
+  // verify the result: the segment id increments after every reset symbol
+  const auto mismatches = thrust::count_if(
+    thrust::counting_iterator<::cuda::std::size_t>{0},
+    thrust::counting_iterator<::cuda::std::size_t>{num_symbols},
+    [segments = thrust::raw_pointer_cast(key_segments.data()), reset_period] __device__(::cuda::std::size_t i) {
+      return segments[i] != static_cast<stack_segment_t>((i / reset_period + 1) % 256);
+    });
+  if (mismatches != 0)
+  {
+    throw std::runtime_error("Verification failed: " + std::to_string(mismatches) + " mismatches");
   }
 }
 catch (const std::bad_alloc&)
