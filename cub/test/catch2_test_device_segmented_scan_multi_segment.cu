@@ -160,20 +160,16 @@ void run_dispatch_scan(
   InitValueT init_value,
   int segments_per_worker)
 {
+  REQUIRE(!offsets.empty());
   const auto n_segments = static_cast<OffsetT>(offsets.size() - 1);
 
-  const auto d_input       = input.data();
-  const auto d_output      = output.data();
-  const auto d_offsets     = offsets.data();
-  const auto d_out_offsets = out_offsets.data();
-
   dispatch_fn(
-    d_input,
-    d_output,
+    input.data(),
+    output.data(),
     n_segments,
-    d_offsets,
-    d_offsets + 1,
-    d_out_offsets,
+    offsets.data(),
+    offsets.data() + 1,
+    out_offsets.data(),
     scan_op,
     init_value,
     segments_per_worker,
@@ -838,17 +834,13 @@ void run_dispatch_scan_iterator(
 {
   const auto n_segments = static_cast<OffsetT>(offsets.size() - 1);
 
-  const auto d_input   = input_it;
-  const auto d_output  = output_it;
-  const auto d_offsets = offsets.data();
-
   dispatch_fn(
-    d_input,
-    d_output,
+    input_it,
+    output_it,
     n_segments,
-    d_offsets,
-    d_offsets + 1,
-    d_offsets,
+    offsets.data(),
+    offsets.data() + 1,
+    offsets.data(),
     scan_op,
     init_value,
     segments_per_worker,

@@ -188,11 +188,9 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
   // Generate input data
   const auto item_count = static_cast<std::size_t>(num_items);
 
-  auto input_buffers = c2h::gen_buffers<input_t>(stream, C2H_SEED(2), item_count);
-  // TODO(opavlyk): this can become const auto& in_items after unwrap_it provides const pointer
-  // specialization for half/bfloat16 types.
-  auto& in_items      = input_buffers.d_items;
-  const auto& h_input = input_buffers.h_items;
+  auto input_buffers   = c2h::gen_buffers<input_t>(stream, C2H_SEED(2), item_count);
+  const auto& in_items = input_buffers.d_items;
+  const auto& h_input  = input_buffers.h_items;
 
   const auto* h_input_ptr = h_input.data();
   auto d_in_it            = in_items.data();
