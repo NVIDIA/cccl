@@ -65,14 +65,6 @@ _CCCL_DIAG_POP
 #  undef _CCCL_POP_MACRO_code_seg
 #endif
 
-#if defined(deprecated)
-#  error \
-    "cccl internal error: macro `deprecated` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
-#elif defined(_CCCL_POP_MACRO_deprecated)
-#  pragma pop_macro("deprecated")
-#  undef _CCCL_POP_MACRO_deprecated
-#endif
-
 #if defined(dllimport)
 #  error \
     "cccl internal error: macro `dllimport` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
@@ -143,14 +135,6 @@ _CCCL_DIAG_POP
 #elif defined(_CCCL_POP_MACRO_noinline)
 #  pragma pop_macro("noinline")
 #  undef _CCCL_POP_MACRO_noinline
-#endif
-
-#if defined(noreturn)
-#  error \
-    "cccl internal error: macro `noreturn` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
-#elif defined(_CCCL_POP_MACRO_noreturn)
-#  pragma pop_macro("noreturn")
-#  undef _CCCL_POP_MACRO_noreturn
 #endif
 
 #if defined(nothrow)
