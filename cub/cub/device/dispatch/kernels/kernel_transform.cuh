@@ -26,6 +26,7 @@
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__functional/always_true_false.h>
 #include <cuda/__memcpy_async/elect_one.h>
+#include <cuda/__memory/__vectorized_storage.h>
 #include <cuda/__memory/align_down.h>
 #include <cuda/__memory/uninitialized_array.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
@@ -296,7 +297,7 @@ _CCCL_DEVICE_API void transform_kernel_vectorized(
       {
         // TODO(bgruber): we could add a max_load_store_size to the policy to avoid huge load types and huge alignment
         // requirements
-        using load_t   = decltype(_CUB::detail::transform::load_store_type<sizeof(value_t) * VecSize>());
+        using load_t   = ::cuda::__as_vectorized_storage_t<value_t, VecSize>;
         auto in_vec    = reinterpret_cast<const load_t*>(in) + threadIdx.x;
         auto input_vec = reinterpret_cast<load_t*>(input.data());
         _CCCL_PRAGMA_UNROLL_FULL()
@@ -341,7 +342,7 @@ _CCCL_DEVICE_API void transform_kernel_vectorized(
   if constexpr (can_vectorize_store)
   {
     // vector path
-    using store_t   = decltype(_CUB::detail::transform::load_store_type<sizeof(output_t) * VecSize>());
+    using store_t   = ::cuda::__as_vectorized_storage_t<output_t, VecSize>;
     auto output_vec = reinterpret_cast<const store_t*>(output.data());
     auto out_vec    = reinterpret_cast<store_t*>(out) + threadIdx.x;
     _CCCL_PRAGMA_UNROLL_FULL()
