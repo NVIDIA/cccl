@@ -24,6 +24,18 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(is_lvalue_reference)
+#  define _CCCL_BUILTIN_IS_LVALUE_REFERENCE(...) __is_lvalue_reference(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_lvalue_reference)
+
+#if _CCCL_HAS_BUILTIN(__is_reference)
+#  define _CCCL_BUILTIN_IS_REFERENCE(...) __is_reference(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__is_reference)
+
+#if _CCCL_HAS_BUILTIN(__is_rvalue_reference)
+#  define _CCCL_BUILTIN_IS_RVALUE_REFERENCE(...) __is_rvalue_reference(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__is_rvalue_reference)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_LVALUE_REFERENCE) && !defined(_LIBCUDACXX_USE_IS_LVALUE_REFERENCE_FALLBACK)  \
