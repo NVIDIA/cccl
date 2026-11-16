@@ -24,6 +24,7 @@
 // IWYU pragma: begin_exports
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/guarantee.h>
+#include <cuda/__execution/max_num_items.h>
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/policy.h>
 #include <cuda/__execution/require.h>
