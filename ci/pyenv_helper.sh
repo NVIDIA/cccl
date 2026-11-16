@@ -1,3 +1,19 @@
+# pip 26.2.2 is the first release that no longer trusts the compromised eMudhra
+# intermediate CAs through its vendored certifi bundle (see
+# https://discuss.python.org/t/information-for-python-users-regarding-emudhra-emsign-ca-certificate-security-incident/109576).
+# Refreshing the system trust store is not enough for older pips, and upgrading
+# with `pip install -U pip` would download the new pip using the old one, so
+# install the wheel by hash-pinned URL instead.
+readonly CCCL_PINNED_PIP="pip @ https://files.pythonhosted.org/packages/3f/06/3e4420302363fbb71be3c7f35ce042f54bfca330e3e66b3a2e3c4cca579f/pip-26.2.2-py3-none-any.whl#sha256=fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70"
+# First uv release that no longer trusts those CAs.
+readonly CCCL_MIN_UV_VERSION="0.13.4"
+
+# Installs the pinned pip into the interpreter ($1, default: python).
+install_pinned_pip() {
+    local python="${1:-python}"
+    "${python}" -m pip install --quiet --root-user-action=ignore "${CCCL_PINNED_PIP}"
+}
+
 setup_python_env() {
     local py_version=$1
     # Optional venv directory name (under $HOME). Callers whose job runs
@@ -20,9 +36,17 @@ setup_python_env() {
         if command -v curl &> /dev/null; then
             curl -LsSf https://astral.sh/uv/install.sh | sh
         else
-            python3 -m pip install --quiet --root-user-action=ignore uv
+            install_pinned_pip python3
+            python3 -m pip install --quiet --root-user-action=ignore "uv>=${CCCL_MIN_UV_VERSION}"
         fi
         export PATH="$HOME/.local/bin:$PATH"
+    fi
+
+    # A uv already present in the image is not ours to upgrade; flag it instead.
+    local uv_version
+    uv_version="$(uv --version | awk '{print $2}')"
+    if ! "${script_dir}/util/version_compare.sh" "${uv_version}" ge "${CCCL_MIN_UV_VERSION}"; then
+        echo "::warning::uv ${uv_version} is older than ${CCCL_MIN_UV_VERSION}, which still trusts the compromised eMudhra CAs"
     fi
 
     # Create a venv with the requested Python version.
@@ -37,6 +61,8 @@ setup_python_env() {
         #shellcheck disable=SC1091
         source "${venv_path}/bin/activate"
     fi
+
+    install_pinned_pip python
 
     end_group "🐍 Setting up Python ${py_version} (uv)"
 }
