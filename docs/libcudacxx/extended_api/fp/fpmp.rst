@@ -287,9 +287,17 @@ IEEE-754 ``float``-to-``double`` analogy rather than from the paper. ``fp32mp2``
 Conversions are one thing and mixed arithmetic another. A binary operator between an ``fpmp2``
 and a built-in scalar yields the pair, so ``some_fp32mp2 + some_double`` compiles rather than
 being rejected as an expression over two types neither of which contains the other. A scalar that
-one limb holds exactly — the limb type itself, ``float`` for ``fp64mp2``, and integers up to the
-limb's significand width — is used as it is; any other scalar is converted **into** the pair
-first. The ``double`` is brought into ``float`` exponent
+one limb holds exactly is used as it is; any other scalar is converted **into** the pair first.
+One limb holds a scalar exactly by its type — the limb type itself, ``float`` for ``fp64mp2``,
+and integers up to the limb's significand width. A constant of a wider type counts too when its
+value fits: a ``double`` that is zero or a normal ``float``, such as the ``2.0`` in ``y * 2.0``,
+and an integer of magnitude at most ``2^24`` (``2^53`` for ``fp64mp2``), such as the ``2`` in
+``y + 2``. That choice is made at compile time, where the compiler can see the value
+(``__builtin_constant_p``: GCC, Clang, and nvcc and NVRTC from CUDA 13.4), so a scalar known only
+at run time is always converted and pays no test. Sums, differences and quotients are the same
+either way. A product by a constant that is not a power of two can differ in its last bits where
+the compiler does not see the value, as in an unoptimized build; both results are within their
+bounds. The ``double`` is brought into ``float`` exponent
 range as it goes, so one too large for that arrives as infinity and the addition yields NaN.
 Mixing two accuracy levels, ``fp32mp2`` with ``fp32mp2_low``, matches no overload and falls back
 on built-in ``double`` arithmetic. Where the other operand is a ``double`` whose magnitude is not
@@ -312,8 +320,10 @@ the ``__fpmp_fp128`` conversions are the only ones.
 
 The same rule reaches the compound forms: ``+=``, ``-=``, ``*=`` and ``/=`` have overloads taking
 a scalar that one limb holds exactly, and they are constrained the same way. ``acc += 1.5f`` on an
-``fp32mp2`` takes the single-limb path; ``acc += 1.5`` does not, because the ``double`` generally
-needs both limbs.
+``fp32mp2`` takes the single-limb path, and so does ``acc += 2``: an integer the pair converts
+from implicitly is accepted, and this constant fits one limb. ``acc += 1.5`` is rejected, because
+a ``double`` generally needs both limbs; under ``CCCL_FPMP_EXPLICIT_CASTS=0`` it compiles and
+takes the single-limb path, since a ``float`` holds the value of the constant ``1.5`` exactly.
 
 Setting ``CCCL_FPMP_EXPLICIT_CASTS=0`` restores the fully implicit model, which is worth
 considering when ``fpmp2`` is being dropped into a large existing ``double`` codebase and the edit
@@ -361,9 +371,10 @@ directly, so an ``fpmp2`` combines with a built-in scalar without a cast on the 
 With a scalar ``c`` that one limb holds exactly, ``x + c``, ``x - c``, ``c - x``, ``x * c`` and
 ``x / c`` skip the arithmetic on the zero low limb that converting ``c`` to a pair would add. The
 sum is the same value as with the converted ``c``, at 10 instead of 20 instructions at ``high``;
-the product takes 6 instead of 8 at ``mid``, and its error stays below ``2u²`` where the product
-with the converted ``c`` reaches ``3u²``; the quotient is the same value, one instruction cheaper. The :ref:`error bounds
-<libcudacxx-extended-api-fp-fpmp-error-bounds>` page lists each case.
+the product takes 6 instructions instead of 8 at ``mid`` and 9 at ``high``, and its error stays
+below ``2u²`` where the product with the converted ``c`` reaches ``3u²``; the quotient is the same
+value, one instruction cheaper. The :ref:`error bounds <libcudacxx-extended-api-fp-fpmp-error-bounds>`
+page lists each case.
 
 ``renormalize(x)`` restores the non-overlap invariant, ``|lo| <= ulp(hi)/2``, which only ``low``
 accuracy can leave broken; see :ref:`accuracy levels <libcudacxx-extended-api-fp-fpmp-accuracy>`

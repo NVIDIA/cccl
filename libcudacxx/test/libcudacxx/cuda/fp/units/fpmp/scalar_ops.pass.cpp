@@ -8,7 +8,10 @@
 //  At every accuracy level: x + c and x * c within 2u^2 of the exact result,
 //  x + c and x / c equal to the pair operation with c promoted, x * y within
 //  its documented bound (6u^2 at low and mid, 5u^2 at high), and the compound forms
-//  and integer scalars equal to the operators.
+//  and integer scalars equal to the operators. A scalar of a wider type (double
+//  next to a float limb, a 32- or 64-bit integer) whose value fits one limb gives
+//  the result of the limb-typed scalar, or for a product that of the promoted pair
+//  where the compiler does not know the value; any other gives the promoted pair's.
 //
 //===----------------------------------------------------------------------===//
 
@@ -373,12 +376,193 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_selecting()
 }
 
 template <typename P>
+TEST_HOST_DEVICE_FUNC bool same(const P& a, const P& b)
+{
+  return a.hi() == b.hi() && a.lo() == b.lo();
+}
+
+// A wide scalar whose value one limb holds. The single-limb kernels are taken where the
+// compiler knows the value, which a test cannot tell. Sums, differences and quotients are
+// the same either way; a product is the single-limb one or that of the promoted pair.
+template <typename P, typename C>
+TEST_HOST_DEVICE_FUNC void check_fits_limb(const P& x, C c)
+{
+  using T   = decltype(P{}.hi());
+  using acc = cuda::fpmp2_accuracy;
+  const T f = static_cast<T>(c);
+  const P y(c);
+  assert(same(x + c, x + f));
+  assert(same(c + x, f + x));
+  assert(same(x - c, x - f));
+  assert(same(c - x, f - x));
+  assert(same(x * c, x * f) || same(x * c, x * y));
+  assert(same(c * x, x * c));
+  assert(same(x / c, x / f));
+  // A scalar dividend has no single-limb kernel.
+  assert(same(c / x, y / x));
+  assert(same(cuda::add<acc::high>(x, c), cuda::add<acc::high>(x, f)));
+  assert(same(cuda::sub<acc::high>(c, x), cuda::sub<acc::high>(f, x)));
+  assert(same(cuda::mul<acc::high>(c, x), cuda::mul<acc::high>(f, x))
+         || same(cuda::mul<acc::high>(c, x), cuda::mul<acc::high>(y, x)));
+  assert(same(cuda::div<acc::low>(x, c), cuda::div<acc::low>(x, f)));
+  // The compound forms exist for the scalars the pair converts from implicitly.
+  if constexpr (cuda::std::is_convertible_v<C, P>)
+  {
+    P a = x;
+    a += c;
+    assert(same(a, x + f));
+    a = x;
+    a -= c;
+    assert(same(a, x - f));
+    a = x;
+    a *= c;
+    assert(same(a, x * f) || same(a, x * y));
+    a = x;
+    a /= c;
+    assert(same(a, x / f));
+  }
+}
+
+// A wide scalar whose value needs both limbs is converted to the pair.
+template <typename P, typename C>
+TEST_HOST_DEVICE_FUNC void check_needs_pair(const P& x, C c)
+{
+  const P y(c);
+  assert(same(x + c, x + y));
+  assert(same(c + x, y + x));
+  assert(same(x - c, x - y));
+  assert(same(c - x, y - x));
+  assert(same(x * c, x * y));
+  assert(same(c * x, y * x));
+  assert(same(x / c, x / y));
+  assert(same(c / x, y / x));
+  assert(same(cuda::mul<cuda::fpmp2_accuracy::high>(x, c), cuda::mul<cuda::fpmp2_accuracy::high>(x, y)));
+  if constexpr (cuda::std::is_convertible_v<C, P>)
+  {
+    P a = x;
+    a += c;
+    assert(same(a, x + y));
+    a = x;
+    a *= c;
+    assert(same(a, x * y));
+  }
+}
+
+template <typename P>
+TEST_HOST_DEVICE_FUNC void test_wide_scalars()
+{
+  using T = decltype(P{}.hi());
+  generator<T> gen{2024};
+  for (int i = 0; i < 48; ++i)
+  {
+    T xh, xl;
+    gen.pair(i % 3, xh, xl);
+    const P x(xh, xl);
+    if constexpr (cuda::std::is_same_v<T, float>)
+    {
+      const double fits[]  = {2.0, -3.0, 0.5, 2.5, 16777215.0, 0x1.fffffep+60, 0x1.0p-60, gen.scalar(i % 3)};
+      const double pairs[] = {0.1, -1.0 / 3.0, 1.0 + 0x1.0p-30, 16777217.0};
+      for (const double c : fits)
+      {
+        check_fits_limb(x, c);
+      }
+      for (const double c : pairs)
+      {
+        check_needs_pair(x, c);
+      }
+      // The ends of the normal float range fit one limb; a value below it is converted.
+      assert(same(x + 0x1.fffffep+127, x + 0x1.fffffep+127f));
+      assert(same(x * 0x1.0p-126, x * 0x1.0p-126f));
+      assert(same(x + 0x1.0p-130, x + P(0x1.0p-130)));
+      const cuda::std::int32_t fits32[]  = {1, 2, -3, 1000, 16777216, -16777216};
+      const cuda::std::int32_t pairs32[] = {16777217, -16777217, 2147483647, -2147483647 - 1};
+      for (const cuda::std::int32_t c : fits32)
+      {
+        check_fits_limb(x, c);
+        check_fits_limb(x, static_cast<cuda::std::int64_t>(c));
+        if (c > 0)
+        {
+          check_fits_limb(x, static_cast<cuda::std::uint32_t>(c));
+          check_fits_limb(x, static_cast<cuda::std::uint64_t>(c));
+        }
+      }
+      for (const cuda::std::int32_t c : pairs32)
+      {
+        check_needs_pair(x, c);
+        check_needs_pair(x, static_cast<cuda::std::int64_t>(c));
+      }
+      check_needs_pair(x, cuda::std::uint32_t{4294967295u});
+      // 2^40 is a float, but past the magnitude one significand covers.
+      check_needs_pair(x, cuda::std::int64_t{1} << 40);
+    }
+    else
+    {
+      constexpr cuda::std::int64_t two53 = cuda::std::int64_t{1} << 53;
+      const cuda::std::int64_t fits64[]  = {1, 2, -3, 1000, two53, -two53};
+      const cuda::std::int64_t pairs64[] = {two53 + 1, -two53 - 1, (cuda::std::int64_t{1} << 60) + 1};
+      for (const cuda::std::int64_t c : fits64)
+      {
+        check_fits_limb(x, c);
+        if (c > 0)
+        {
+          check_fits_limb(x, static_cast<cuda::std::uint64_t>(c));
+        }
+      }
+      for (const cuda::std::int64_t c : pairs64)
+      {
+        check_needs_pair(x, c);
+      }
+    }
+  }
+}
+
+// Literal scalars, the case the single-limb kernels are selected for at compile time.
+template <typename P>
+TEST_HOST_DEVICE_FUNC void test_literal_scalars()
+{
+  using T = decltype(P{}.hi());
+  generator<T> gen{31337};
+  for (int i = 0; i < 48; ++i)
+  {
+    T xh, xl;
+    gen.pair(i % 3, xh, xl);
+    const P x(xh, xl);
+    assert(same(x + 2, x + T(2)));
+    assert(same(2 + x, x + T(2)));
+    assert(same(x - 3, x - T(3)));
+    assert(same(1 - x, T(1) - x));
+    assert(same(x / 4, x / T(4)));
+    assert(same(x * 2, x * T(2)));
+    assert(same(x * 3, x * T(3)) || same(x * 3, x * P(3)));
+    assert(same(x + 2.0, x + T(2)));
+    assert(same(x - 0.5, x - T(0.5)));
+    assert(same(1.0 - x, T(1) - x));
+    assert(same(x / 2.0, x / T(2)));
+    assert(same(x * 0.5, x * T(0.5)));
+    assert(same(x * 1.5, x * T(1.5)) || same(x * 1.5, x * P(1.5)));
+    // 0.1 needs both limbs of a float pair; for a double pair it is the limb type.
+    if constexpr (cuda::std::is_same_v<T, float>)
+    {
+      assert(same(x * 0.1, x * P(0.1)));
+    }
+    P a = x;
+    a += 2;
+    assert(same(a, x + T(2)));
+    a = x;
+    a *= 2;
+    assert(same(a, x * T(2)));
+  }
+}
+
+template <typename P>
 TEST_HOST_DEVICE_FUNC void test_type()
 {
   test_accuracy<P>();
   test_scalar_minus_pair<P>();
   test_forms<P>();
   test_accuracy_selecting<P>();
+  test_wide_scalars<P>();
+  test_literal_scalars<P>();
 }
 
 TEST_HOST_DEVICE_FUNC void test()
