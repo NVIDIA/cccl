@@ -1196,6 +1196,25 @@ private:
       // no tuning found (e.g. 16-byte keys), fall through to the SM100 tunings
     }
 
+    // thrust::reduce_by_key accumulates 1- and 2-byte values without promotion. Those, as well as some 8-byte
+    // accumulators, are faster on SM100 with the following policies. SM120 still falls through to the SM100 tunings
+    // below.
+    if (cc >= ::cuda::compute_capability{10, 0} && cc < ::cuda::compute_capability{11, 0})
+    {
+      if (key_size == 8 && accum_size == 1)
+      {
+        return __make_thrust_policy(9, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_LDG);
+      }
+      if ((key_size == 2 || key_size == 4) && accum_size == 2)
+      {
+        return __make_thrust_policy(11, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_LDG);
+      }
+      if (((key_size == 2 || key_size == 4 || key_size == 8) && accum_size == 8) || (key_size == 8 && accum_size == 4))
+      {
+        return get_lookback_policy(::cuda::compute_capability{9, 0});
+      }
+    }
+
     if (cc >= ::cuda::compute_capability{10, 0}) // if we don't have a tuning, fall back to SM90
     {
       if (key_size == 1 && accum_size == 1)
