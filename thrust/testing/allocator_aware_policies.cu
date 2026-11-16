@@ -5,6 +5,8 @@
 
 #include <cuda/std/cstddef>
 
+#include <memory>
+
 #include <unittest/unittest.h>
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
@@ -30,6 +32,66 @@ struct test_memory_resource_t final : thrust::mr::memory_resource<>
     REQUIRE(ptr == reinterpret_cast<void*>(size)); // NOLINT(performance-no-int-to-ptr)
   }
 } test_memory_resource;
+
+struct allocation_record
+{
+  std::size_t element_size = 0;
+  std::size_t count        = 0;
+};
+
+template <typename T>
+struct recording_allocator
+{
+  using value_type = T;
+
+  explicit recording_allocator(allocation_record& r)
+      : record(&r)
+  {}
+
+  template <typename U>
+  recording_allocator(const recording_allocator<U>& other)
+      : record(other.record)
+  {}
+
+  T* allocate(std::size_t n)
+  {
+    record->element_size = sizeof(T);
+    record->count        = n;
+    return std::allocator<T>{}.allocate(n);
+  }
+
+  void deallocate(T* ptr, std::size_t n)
+  {
+    REQUIRE(record->element_size == sizeof(T));
+    REQUIRE(record->count == n);
+    std::allocator<T>{}.deallocate(ptr, n);
+  }
+
+  allocation_record* record;
+};
+
+// cannot be rebound and must not be copied
+struct byte_allocator
+{
+  using value_type = char;
+
+  byte_allocator()                      = default;
+  byte_allocator(const byte_allocator&) = delete;
+
+  char* allocate(std::size_t n)
+  {
+    outstanding += n;
+    return std::allocator<char>{}.allocate(n);
+  }
+
+  void deallocate(char* ptr, std::size_t n)
+  {
+    outstanding -= n;
+    std::allocator<char>{}.deallocate(ptr, n);
+  }
+
+  std::size_t outstanding = 0;
+};
 
 template <typename Policy, template <typename> class CRTPBase>
 struct policy_info
@@ -91,6 +153,41 @@ struct TestAllocatorAttachment
     test_temporary_allocation_valid(policy(alloc));
     test_temporary_allocation_valid(policy(const_alloc));
     test_temporary_allocation_valid(policy(&test_memory_resource));
+
+    test_rebinding(policy);
+  }
+
+  template <typename Policy>
+  void test_rebinding(Policy policy)
+  {
+    using thrust::detail::get_temporary_buffer;
+
+    allocation_record record;
+    {
+      auto p = policy(recording_allocator<char>(record));
+      auto b = get_temporary_buffer<double>(p, 123);
+      REQUIRE(record.element_size == sizeof(double));
+      REQUIRE(record.count == 123);
+      return_temporary_buffer(p, b.first, b.second);
+    }
+
+    record = allocation_record{};
+    {
+      auto p = policy(recording_allocator<void>(record));
+      auto b = get_temporary_buffer<int>(p, 42);
+      REQUIRE(record.element_size == sizeof(int));
+      REQUIRE(record.count == 42);
+      return_temporary_buffer(p, b.first, b.second);
+    }
+
+    byte_allocator bytes;
+    {
+      auto p = policy(bytes);
+      auto b = get_temporary_buffer<double>(p, 10);
+      REQUIRE(bytes.outstanding == 10 * sizeof(double));
+      return_temporary_buffer(p, b.first, b.second);
+      REQUIRE(bytes.outstanding == 0);
+    }
   }
 };
 
