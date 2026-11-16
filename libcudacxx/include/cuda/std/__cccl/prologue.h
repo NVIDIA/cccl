@@ -252,12 +252,6 @@
 
 // sal.h on Windows
 
-#ifdef __valid
-#  pragma push_macro("__valid")
-#  undef __valid
-#  define _CCCL_POP_MACRO___valid
-#endif // defined(__valid)
-
 #ifdef __callback
 #  pragma push_macro("__callback")
 #  undef __callback
