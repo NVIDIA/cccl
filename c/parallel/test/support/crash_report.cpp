@@ -47,8 +47,9 @@
 
 namespace
 {
-// dbghelp is single-threaded; serialize and only let the first faulting thread
-// report, so a secondary fault while unwinding cannot interleave or recurse.
+// dbghelp is single-threaded; serialize and only let one faulting thread report
+// at a time, so a secondary fault while unwinding cannot interleave or recurse.
+// g_reported is cleared again once a report finishes (see crash_handler).
 CRITICAL_SECTION g_report_lock;
 LONG g_reported = 0;
 
@@ -198,8 +199,12 @@ LONG CALLBACK crash_handler(EXCEPTION_POINTERS* info) noexcept
     // address is deliberately omitted; formatting it would need the stack we
     // have just run out of, and for a stack overflow it says little anyway.
     static const char message[] = "\n[cccl-crash] stack overflow (stack walk skipped)\n";
-    DWORD written               = 0;
+    // Static so the out-parameter does not take stack either. The value is unused.
+    static DWORD written = 0;
     WriteFile(GetStdHandle(STD_ERROR_HANDLE), message, static_cast<DWORD>(sizeof(message) - 1), &written, nullptr);
+    // This is a first-chance exception: something further up may still handle it
+    // and let the process carry on. Re-arm so a later, real fault is reported.
+    InterlockedExchange(&g_reported, 0);
     return EXCEPTION_CONTINUE_SEARCH;
   }
 
@@ -238,6 +243,10 @@ LONG CALLBACK crash_handler(EXCEPTION_POINTERS* info) noexcept
   std::fflush(stderr);
 
   LeaveCriticalSection(&g_report_lock);
+
+  // This is a first-chance exception: something further up may still handle it
+  // and let the process carry on. Re-arm so a later, real fault is reported.
+  InterlockedExchange(&g_reported, 0);
 
   // Let Catch2 and ctest report exactly as before; this output is additive.
   return EXCEPTION_CONTINUE_SEARCH;
