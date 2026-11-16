@@ -48,7 +48,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float lgamma(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LGAMMAF)
+#ifdef _CCCL_BUILTIN_LGAMMAF
   return _CCCL_BUILTIN_LGAMMAF(__x);
 #else // ^^^ _CCCL_BUILTIN_LGAMMAF ^^^ / vvv !_CCCL_BUILTIN_LGAMMAF vvv
   return ::lgammaf(__x);
@@ -57,7 +57,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float lgammaf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LGAMMAF)
+#ifdef _CCCL_BUILTIN_LGAMMAF
   return _CCCL_BUILTIN_LGAMMAF(__x);
 #else // ^^^ _CCCL_BUILTIN_LGAMMAF ^^^ / vvv !_CCCL_BUILTIN_LGAMMAF vvv
   return ::lgammaf(__x);
@@ -66,7 +66,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double lgamma(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LGAMMA)
+#ifdef _CCCL_BUILTIN_LGAMMA
   return _CCCL_BUILTIN_LGAMMA(__x);
 #else // ^^^ _CCCL_BUILTIN_LGAMMA ^^^ / vvv !_CCCL_BUILTIN_LGAMMA vvv
   return ::lgamma(__x);
@@ -76,7 +76,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double lgamma(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LGAMMAL)
+#  ifdef _CCCL_BUILTIN_LGAMMAL
   return _CCCL_BUILTIN_LGAMMAL(__x);
 #  else // ^^^ _CCCL_BUILTIN_LGAMMAL ^^^ / vvv !_CCCL_BUILTIN_LGAMMAL vvv
   return ::lgammal(__x);
@@ -85,7 +85,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double lgammal(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LGAMMAL)
+#  ifdef _CCCL_BUILTIN_LGAMMAL
   return _CCCL_BUILTIN_LGAMMAL(__x);
 #  else // ^^^ _CCCL_BUILTIN_LGAMMAL ^^^ / vvv !_CCCL_BUILTIN_LGAMMAL vvv
   return ::lgammal(__x);
@@ -129,7 +129,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float tgamma(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_TGAMMAF)
+#ifdef _CCCL_BUILTIN_TGAMMAF
   return _CCCL_BUILTIN_TGAMMAF(__x);
 #else // ^^^ _CCCL_BUILTIN_TGAMMAF ^^^ / vvv !_CCCL_BUILTIN_TGAMMAF vvv
   return ::tgammaf(__x);
@@ -138,7 +138,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float tgammaf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_TGAMMAF)
+#ifdef _CCCL_BUILTIN_TGAMMAF
   return _CCCL_BUILTIN_TGAMMAF(__x);
 #else // ^^^ _CCCL_BUILTIN_TGAMMAF ^^^ / vvv !_CCCL_BUILTIN_TGAMMAF vvv
   return ::tgammaf(__x);
@@ -147,7 +147,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double tgamma(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_TGAMMA)
+#ifdef _CCCL_BUILTIN_TGAMMA
   return _CCCL_BUILTIN_TGAMMA(__x);
 #else // ^^^ _CCCL_BUILTIN_TGAMMA ^^^ / vvv !_CCCL_BUILTIN_TGAMMA vvv
   return ::tgamma(__x);
@@ -157,7 +157,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double tgamma(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_TGAMMAL)
+#  ifdef _CCCL_BUILTIN_TGAMMAL
   return _CCCL_BUILTIN_TGAMMAL(__x);
 #  else // ^^^ _CCCL_BUILTIN_TGAMMAL ^^^ / vvv !_CCCL_BUILTIN_TGAMMAL vvv
   return ::tgammal(__x);
@@ -166,7 +166,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double tgammal(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_TGAMMAL)
+#  ifdef _CCCL_BUILTIN_TGAMMAL
   return _CCCL_BUILTIN_TGAMMAL(__x);
 #  else // ^^^ _CCCL_BUILTIN_TGAMMAL ^^^ / vvv !_CCCL_BUILTIN_TGAMMAL vvv
   return ::tgammal(__x);

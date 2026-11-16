@@ -109,7 +109,7 @@ using u16streampos = fpos<mbstate_t>;
 using u32streampos = fpos<mbstate_t>;
 #endif // _CCCL_HAS_WCHAR_T()
 
-#if defined(_NEWLIB_VERSION)
+#ifdef _NEWLIB_VERSION
 // On newlib, off_t is 'long int'
 using streamoff = long int; // for char_traits in <string>
 #else

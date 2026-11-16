@@ -44,7 +44,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float fma(float __x, float __y, float __z) noexcept
 {
-#if defined(_CCCL_BUILTIN_FMAF)
+#ifdef _CCCL_BUILTIN_FMAF
   return _CCCL_BUILTIN_FMAF(__x, __y, __z);
 #else // ^^^ _CCCL_BUILTIN_FMAF ^^^ / vvv !_CCCL_BUILTIN_FMAF vvv
   return ::fmaf(__x, __y, __z);
@@ -53,7 +53,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float fmaf(float __x, float __y, float __z) noexcept
 {
-#if defined(_CCCL_BUILTIN_FMAF)
+#ifdef _CCCL_BUILTIN_FMAF
   return _CCCL_BUILTIN_FMAF(__x, __y, __z);
 #else // ^^^ _CCCL_BUILTIN_FMAF ^^^ / vvv !_CCCL_BUILTIN_FMAF vvv
   return ::fmaf(__x, __y, __z);
@@ -62,7 +62,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double fma(double __x, double __y, double __z) noexcept
 {
-#if defined(_CCCL_BUILTIN_FMA)
+#ifdef _CCCL_BUILTIN_FMA
   return _CCCL_BUILTIN_FMA(__x, __y, __z);
 #else // ^^^ _CCCL_BUILTIN_FMA ^^^ / vvv !_CCCL_BUILTIN_FMA vvv
   return ::fma(__x, __y, __z);
@@ -72,7 +72,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double fma(long double __x, long double __y, long double __z) noexcept
 {
-#  if defined(_CCCL_BUILTIN_FMAL)
+#  ifdef _CCCL_BUILTIN_FMAL
   return _CCCL_BUILTIN_FMAL(__x, __y, __z);
 #  else // ^^^ _CCCL_BUILTIN_FMAL ^^^ / vvv !_CCCL_BUILTIN_FMAL vvv
   return ::fmal(__x, __y, __z);
@@ -81,7 +81,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double fmal(long double __x, long double __y, long double __z) noexcept
 {
-#  if defined(_CCCL_BUILTIN_FMAL)
+#  ifdef _CCCL_BUILTIN_FMAL
   return _CCCL_BUILTIN_FMAL(__x, __y, __z);
 #  else // ^^^ _CCCL_BUILTIN_FMAL ^^^ / vvv !_CCCL_BUILTIN_FMAL vvv
   return ::fmal(__x, __y, __z);

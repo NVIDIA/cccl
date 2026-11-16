@@ -903,7 +903,7 @@ public:
 #  endif // _CCCL_NO_RTTI
 };
 
-#  if defined(_LIBCUDACXX_HAS_BLOCKS_RUNTIME)
+#  ifdef _LIBCUDACXX_HAS_BLOCKS_RUNTIME
 
 extern "C" void* _Block_copy(const void*);
 extern "C" void _Block_release(const void*);

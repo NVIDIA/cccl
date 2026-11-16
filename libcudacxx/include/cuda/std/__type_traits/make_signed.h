@@ -48,7 +48,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_MAKE_SIGNED)
+#ifdef _CCCL_BUILTIN_MAKE_SIGNED
 
 template <class _Tp>
 using make_signed_t _CCCL_NODEBUG = _CCCL_BUILTIN_MAKE_SIGNED(_Tp);

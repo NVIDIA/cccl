@@ -27,7 +27,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_VIRTUAL_BASE_OF)
+#ifdef _CCCL_BUILTIN_IS_VIRTUAL_BASE_OF
 
 template <class _Base, class _Derived>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT

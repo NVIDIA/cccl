@@ -403,7 +403,7 @@ static_assert(sizeof(__fpmp_fp128) == 16, "__fpmp_fp128 must be a 128-bit floati
 // decoration is unchanged, preserving CCCL styling and inline-mode codegen (adding
 // static in inline mode caps registers and hurts performance).
 */
-#if defined(_CCCL_FPMP_BUILD_LIB)
+#ifdef _CCCL_FPMP_BUILD_LIB
 #  define _CCCL_FPMP_CORE_API        static _CCCL_TRIVIAL_HOST_DEVICE_API
 #  define _CCCL_FPMP_CORE_DEVICE_API static _CCCL_DEVICE_API
 #else
@@ -427,7 +427,7 @@ static_assert(sizeof(__fpmp_fp128) == 16, "__fpmp_fp128 must be a 128-bit floati
 #  define _CCCL_FPMP_FP128_BUILTIN_DECL _CCCL_FPMP_BUILTIN_DECL
 #else
 #  define _CCCL_FPMP_FP128_API _CCCL_HOST_API
-#  if defined(_CCCL_FPMP_BUILD_LIB)
+#  ifdef _CCCL_FPMP_BUILD_LIB
 #    define _CCCL_FPMP_FP128_CORE_API static _CCCL_TRIVIAL_HOST_API
 #  else
 #    define _CCCL_FPMP_FP128_CORE_API _CCCL_TRIVIAL_HOST_API

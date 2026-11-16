@@ -30,7 +30,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_REMOVE_ALL_EXTENTS)
+#ifdef _CCCL_BUILTIN_REMOVE_ALL_EXTENTS
 
 template <class _Tp>
 struct remove_all_extents

@@ -45,7 +45,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 [[nodiscard]] _CCCL_HOST_API _Tp __saturating_add_impl_host(_Tp __x, _Tp __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ELEMENTWISE_ADD_SAT)
+#  ifdef _CCCL_BUILTIN_ELEMENTWISE_ADD_SAT
 // Clang below 21 seems not to be working correctly for 8 and 16-bit types.
 #    if _CCCL_COMPILER(CLANG, <, 21)
   if constexpr (sizeof(_Tp) < sizeof(int32_t))

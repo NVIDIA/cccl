@@ -94,7 +94,7 @@ template <typename _Tp>
 [[nodiscard]] _CCCL_HOST_API int __cccl_countr_zero_impl_host(_Tp __v) noexcept
 {
   // nvcc does not support __builtin_ctz, so we use it only for host code
-#    if defined(_CCCL_BUILTIN_CTZ)
+#    ifdef _CCCL_BUILTIN_CTZ
   if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
     return _CCCL_BUILTIN_CTZ(__v);
@@ -159,7 +159,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 {
   int __count{};
 
-#if defined(_CCCL_BUILTIN_CTZG)
+#ifdef _CCCL_BUILTIN_CTZG
   __count = _CCCL_BUILTIN_CTZG(__v, numeric_limits<_Tp>::digits);
 #else // ^^^ __CCCL_BUILTIN_CTZG ^^^ / vvv !__CCCL_BUILTIN_CTZG vvv
   if constexpr (sizeof(_Tp) <= sizeof(uint64_t))

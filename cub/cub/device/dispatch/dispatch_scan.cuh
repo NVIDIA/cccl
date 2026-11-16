@@ -578,7 +578,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
       static_cast<int>(kernel_src.OutputAlign()),
       static_cast<int>(kernel_src.AccumSize()),
       static_cast<int>(kernel_src.AccumAlign()));
-#  if defined(CUB_DEFINE_RUNTIME_POLICIES)
+#  ifdef CUB_DEFINE_RUNTIME_POLICIES
     _CCCL_ASSERT(smem_size_1_stage <= int{detail::max_smem_per_block},
                  "Single-stage lookahead scan exceeds architecture independent SMEM (48KiB)");
 #  else // defined(CUB_DEFINE_RUNTIME_POLICIES)
@@ -1323,7 +1323,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
     static_cast<int>(kernel_src.OutputAlign()),
     static_cast<int>(kernel_src.AccumSize()),
     static_cast<int>(kernel_src.AccumAlign()));
-#  if defined(CUB_DEFINE_RUNTIME_POLICIES)
+#  ifdef CUB_DEFINE_RUNTIME_POLICIES
   _CCCL_ASSERT(smem_size_1_stage <= int{detail::max_smem_per_block},
                "Single-stage lookahead scan exceeds architecture independent SMEM (48KiB)");
 #  else // defined(CUB_DEFINE_RUNTIME_POLICIES)

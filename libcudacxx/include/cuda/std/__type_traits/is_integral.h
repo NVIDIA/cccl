@@ -31,7 +31,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_INTEGRAL)
+#ifdef _CCCL_BUILTIN_IS_INTEGRAL
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_integral : bool_constant<_CCCL_BUILTIN_IS_INTEGRAL(_Tp)>

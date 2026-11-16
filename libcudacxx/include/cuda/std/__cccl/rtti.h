@@ -28,7 +28,7 @@
 // feature. This is why we have separate macros for each.
 
 #ifndef _CCCL_NO_RTTI
-#  if defined(CCCL_DISABLE_RTTI) // Escape hatch for users to manually disable RTTI
+#  ifdef CCCL_DISABLE_RTTI // Escape hatch for users to manually disable RTTI
 #    define _CCCL_NO_RTTI
 #  elif defined(__CUDA_ARCH__)
 #    define _CCCL_NO_RTTI // No RTTI in CUDA device code
@@ -50,7 +50,7 @@
 #endif // !_CCCL_NO_RTTI
 
 #ifndef _CCCL_NO_TYPEID
-#  if defined(CCCL_DISABLE_RTTI) // CCCL_DISABLE_RTTI disables typeid also
+#  ifdef CCCL_DISABLE_RTTI // CCCL_DISABLE_RTTI disables typeid also
 #    define _CCCL_NO_TYPEID
 #  elif defined(__CUDA_ARCH__)
 #    define _CCCL_NO_TYPEID // No typeid in CUDA device code

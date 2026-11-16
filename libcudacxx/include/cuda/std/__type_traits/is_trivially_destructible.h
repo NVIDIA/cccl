@@ -35,7 +35,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE)
+#ifdef _CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE
 
 template <class _Tp>
 inline constexpr bool is_trivially_destructible_v = _CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE(_Tp);

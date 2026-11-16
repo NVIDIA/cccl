@@ -41,7 +41,7 @@
 #endif // _CCCL_FREESTANDING()
 
 // In tile mode the builtin is tile annotated which can have unintended consequences in SIMT code with e.g int128
-#if defined(__CUDACC_TILE__)
+#ifdef __CUDACC_TILE__
 #  undef _CCCL_HAS_BUILTIN_STD_AS_CONST
 #  define _CCCL_HAS_BUILTIN_STD_AS_CONST() 0
 #endif // defined(__CUDACC_TILE__)

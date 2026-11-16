@@ -23,7 +23,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(CCCL_DISABLE_EXCEPTIONS) // Escape hatch for users to manually disable exceptions
+#ifdef CCCL_DISABLE_EXCEPTIONS // Escape hatch for users to manually disable exceptions
 #  define _CCCL_HAS_EXCEPTIONS() 0
 #elif _CCCL_COMPILER(NVRTC) // NVRTC has no exceptions
 #  define _CCCL_HAS_EXCEPTIONS() 0

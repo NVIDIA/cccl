@@ -38,7 +38,7 @@ template <class _Tp>
 {
   static_assert(!is_function_v<_Tp>, "can't launder functions");
   static_assert(!is_void_v<_Tp>, "can't launder cv-void");
-#if defined(_CCCL_BUILTIN_LAUNDER)
+#ifdef _CCCL_BUILTIN_LAUNDER
   return _CCCL_BUILTIN_LAUNDER(__p);
 #else
   return __p;

@@ -38,10 +38,10 @@
 #  endif // ^^^ has cuda compiler ^^^
 
 #  if !defined(_LIBCUDA_PTX_ARCH_SPECIFIC)
-#    if defined(__CUDA_ARCH_SPECIFIC__)
+#    ifdef __CUDA_ARCH_SPECIFIC__
 #      define _LIBCUDA_PTX_ARCH_SPECIFIC() __CUDA_ARCH_SPECIFIC__
 #    else
-#      if defined(__CUDA_ARCH_FEAT_SM90_ALL)
+#      ifdef __CUDA_ARCH_FEAT_SM90_ALL
 #        define _LIBCUDA_PTX_ARCH_SPECIFIC() 900
 #      elif defined(__CUDA_ARCH_FEAT_SM100_ALL)
 #        define _LIBCUDA_PTX_ARCH_SPECIFIC() 1000

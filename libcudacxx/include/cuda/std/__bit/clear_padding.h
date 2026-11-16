@@ -33,7 +33,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_CLEAR_PADDING)
+#ifdef _CCCL_BUILTIN_CLEAR_PADDING
 
 template <class _Tp>
 _CCCL_HOST_DEVICE_API void __clear_padding(_Tp& __value) noexcept;

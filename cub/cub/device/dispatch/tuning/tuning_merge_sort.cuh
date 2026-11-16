@@ -114,7 +114,7 @@ struct policy_hub
   };
 
   // NVBug 3384810
-#if defined(_NVHPC_CUDA)
+#ifdef _NVHPC_CUDA
   using Policy520 = Policy500;
 #else
   struct Policy520 : detail::chained_policy<520, Policy520, Policy500>

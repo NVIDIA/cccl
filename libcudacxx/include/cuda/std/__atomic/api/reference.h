@@ -49,7 +49,7 @@ struct __atomic_ref_common
 
   __atomic_ref_storage<_Tp> __a;
 
-#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+#ifdef _CCCL_ATOMIC_ALWAYS_LOCK_FREE
   static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
@@ -65,7 +65,7 @@ struct __atomic_ref_arithmetic
 
   __atomic_ref_storage<_Tp> __a;
 
-#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+#ifdef _CCCL_ATOMIC_ALWAYS_LOCK_FREE
   static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
@@ -82,7 +82,7 @@ struct __atomic_ref_bitwise
 
   __atomic_ref_storage<_Tp> __a;
 
-#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+#ifdef _CCCL_ATOMIC_ALWAYS_LOCK_FREE
   static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
@@ -100,7 +100,7 @@ struct __atomic_ref_pointer
 
   __atomic_ref_storage<_Tp> __a;
 
-#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+#ifdef _CCCL_ATOMIC_ALWAYS_LOCK_FREE
   static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
 #endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 

@@ -31,7 +31,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_BOUNDED_ARRAY)
+#ifdef _CCCL_BUILTIN_IS_BOUNDED_ARRAY
 
 template <class _Tp>
 inline constexpr bool is_bounded_array_v = _CCCL_BUILTIN_IS_BOUNDED_ARRAY(_Tp);

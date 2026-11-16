@@ -124,7 +124,7 @@ struct __unique_ptr_deleter_sfinae<_Deleter&>
   using __enable_rval_overload _CCCL_NODEBUG = false_type;
 };
 
-#if defined(_LIBCUDACXX_ABI_ENABLE_UNIQUE_PTR_TRIVIAL_ABI)
+#ifdef _LIBCUDACXX_ABI_ENABLE_UNIQUE_PTR_TRIVIAL_ABI
 #  define _LIBCUDACXX_UNIQUE_PTR_TRIVIAL_ABI __attribute__((__trivial_abi__))
 #else
 #  define _LIBCUDACXX_UNIQUE_PTR_TRIVIAL_ABI

@@ -30,7 +30,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_VOLATILE)
+#ifdef _CCCL_BUILTIN_IS_VOLATILE
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_volatile : bool_constant<_CCCL_BUILTIN_IS_VOLATILE(_Tp)>

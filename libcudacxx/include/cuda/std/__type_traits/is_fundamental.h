@@ -33,7 +33,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_FUNDAMENTAL)
+#ifdef _CCCL_BUILTIN_IS_FUNDAMENTAL
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental : bool_constant<_CCCL_BUILTIN_IS_FUNDAMENTAL(_Tp)>

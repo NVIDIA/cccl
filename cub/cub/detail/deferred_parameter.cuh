@@ -76,7 +76,7 @@ template <typename TargetT, typename ParameterT>
 
   if constexpr (args_traits_t::is_deferred)
   {
-#  if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
+#  ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     return parameter;
 #  else
     return ::cuda::args::__unwrap(parameter);
@@ -88,7 +88,7 @@ template <typename TargetT, typename ParameterT>
   }
 }
 
-#  if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
+#  ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
 // Work around for NVCC emitting invalid lambda-dependent type aliases
 template <typename TargetT, typename SourceT, typename StaticBoundsT>
 [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE constexpr auto

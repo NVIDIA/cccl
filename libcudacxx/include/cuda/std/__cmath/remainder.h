@@ -49,7 +49,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline float remainder(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_REMAINDERF)
+#ifdef _CCCL_BUILTIN_REMAINDERF
   return _CCCL_BUILTIN_REMAINDERF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_REMAINDERF ^^^ / vvv !_CCCL_BUILTIN_REMAINDERF vvv
   return ::remainderf(__x, __y);
@@ -58,7 +58,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline float remainderf(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_REMAINDERF)
+#ifdef _CCCL_BUILTIN_REMAINDERF
   return _CCCL_BUILTIN_REMAINDERF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_REMAINDERF ^^^ / vvv !_CCCL_BUILTIN_REMAINDERF vvv
   return ::remainderf(__x, __y);
@@ -67,7 +67,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline double remainder(double __x, double __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_REMAINDER)
+#ifdef _CCCL_BUILTIN_REMAINDER
   return _CCCL_BUILTIN_REMAINDER(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_REMAINDER ^^^ / vvv !_CCCL_BUILTIN_REMAINDER vvv
   return ::remainder(__x, __y);
@@ -77,7 +77,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double remainder(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_REMAINDERL)
+#  ifdef _CCCL_BUILTIN_REMAINDERL
   return _CCCL_BUILTIN_REMAINDERL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_REMAINDERL ^^^ / vvv !_CCCL_BUILTIN_REMAINDERL vvv
   return ::remainderl(__x, __y);
@@ -86,7 +86,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline long double remainderl(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_REMAINDERL)
+#  ifdef _CCCL_BUILTIN_REMAINDERL
   return _CCCL_BUILTIN_REMAINDERL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_REMAINDERL ^^^ / vvv !_CCCL_BUILTIN_REMAINDERL vvv
   return ::remainderl(__x, __y);
@@ -133,7 +133,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 
 [[nodiscard]] _CCCL_API inline float remquo(float __x, float __y, int* __quotient) noexcept
 {
-#if defined(_CCCL_BUILTIN_REMQUOF)
+#ifdef _CCCL_BUILTIN_REMQUOF
   return _CCCL_BUILTIN_REMQUOF(__x, __y, __quotient);
 #else // ^^^ _CCCL_BUILTIN_REMQUOF ^^^ / vvv !_CCCL_BUILTIN_REMQUOF vvv
   return ::remquof(__x, __y, __quotient);
@@ -142,7 +142,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 
 [[nodiscard]] _CCCL_API inline float remquof(float __x, float __y, int* __quotient) noexcept
 {
-#if defined(_CCCL_BUILTIN_REMQUOF)
+#ifdef _CCCL_BUILTIN_REMQUOF
   return _CCCL_BUILTIN_REMQUOF(__x, __y, __quotient);
 #else // ^^^ _CCCL_BUILTIN_REMQUOF ^^^ / vvv !_CCCL_BUILTIN_REMQUOF vvv
   return ::remquof(__x, __y, __quotient);
@@ -151,7 +151,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 
 [[nodiscard]] _CCCL_API inline double remquo(double __x, double __y, int* __quotient) noexcept
 {
-#if defined(_CCCL_BUILTIN_REMQUO)
+#ifdef _CCCL_BUILTIN_REMQUO
   return _CCCL_BUILTIN_REMQUO(__x, __y, __quotient);
 #else // ^^^ _CCCL_BUILTIN_REMQUO ^^^ / vvv !_CCCL_BUILTIN_REMQUO vvv
   return ::remquo(__x, __y, __quotient);
@@ -161,7 +161,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double remquo(long double __x, long double __y, int* __quotient) noexcept
 {
-#  if defined(_CCCL_BUILTIN_REMQUOL)
+#  ifdef _CCCL_BUILTIN_REMQUOL
   return _CCCL_BUILTIN_REMQUOL(__x, __y, __quotient);
 #  else // ^^^ _CCCL_BUILTIN_REMQUOL ^^^ / vvv !_CCCL_BUILTIN_REMQUOL vvv
   return ::remquol(__x, __y, __quotient);
@@ -170,7 +170,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 
 [[nodiscard]] _CCCL_API inline long double remquol(long double __x, long double __y, int* __quotient) noexcept
 {
-#  if defined(_CCCL_BUILTIN_REMQUOL)
+#  ifdef _CCCL_BUILTIN_REMQUOL
   return _CCCL_BUILTIN_REMQUOL(__x, __y, __quotient);
 #  else // ^^^ _CCCL_BUILTIN_REMQUOL ^^^ / vvv !_CCCL_BUILTIN_REMQUOL vvv
   return ::remquol(__x, __y, __quotient);

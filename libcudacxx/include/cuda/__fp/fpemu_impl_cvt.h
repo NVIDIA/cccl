@@ -807,7 +807,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64_unpacked __internal_fp64emu_ll_to_fpbit
 // ============================================================================
 // Builtin declarations/implementations for conversion operations
 // ============================================================================
-#if defined(_CCCL_FPEMU_INLINE)
+#ifdef _CCCL_FPEMU_INLINE
 #  if (_CCCL_FPEMU_PACKED_VIA_UNPACKED == 1)
 // Packed-via-unpacked (testing): route the packed conversion builtins through the
 // unpacked cores. fp->int unpack(x) then the rounding-aware unpacked core; fp->fp

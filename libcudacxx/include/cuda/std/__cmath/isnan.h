@@ -58,7 +58,7 @@ template <class _Tp>
 
 [[nodiscard]] _CCCL_API constexpr bool isnan(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ISNAN)
+#ifdef _CCCL_BUILTIN_ISNAN
   return _CCCL_BUILTIN_ISNAN(__x);
 #else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
   return ::cuda::std::__isnan_impl(__x);
@@ -86,7 +86,7 @@ template <class _Tp>
   {
     _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__isnan_storage(__x);)
   }
-#if defined(_CCCL_BUILTIN_ISNAN)
+#ifdef _CCCL_BUILTIN_ISNAN
   return _CCCL_BUILTIN_ISNAN(__x);
 #else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
   return ::cuda::std::__isnan_impl(__x);
@@ -96,7 +96,7 @@ template <class _Tp>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API constexpr bool isnan(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ISNAN)
+#  ifdef _CCCL_BUILTIN_ISNAN
   return _CCCL_BUILTIN_ISNAN(__x);
 #  else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
   return ::cuda::std::__isnan_impl(__x);
@@ -195,7 +195,7 @@ template <class _Tp>
     NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_isnan(__x);)) // preserve NaN behavior even with optimization
                                                                         // flags
   }
-#  if defined(_CCCL_BUILTIN_ISNAN)
+#  ifdef _CCCL_BUILTIN_ISNAN
   return _CCCL_BUILTIN_ISNAN(__x);
 #  else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
   return __x != __x;

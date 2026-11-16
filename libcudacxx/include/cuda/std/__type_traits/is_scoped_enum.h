@@ -33,7 +33,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_SCOPED_ENUM)
+#ifdef _CCCL_BUILTIN_IS_SCOPED_ENUM
 
 template <class _Tp>
 inline constexpr bool is_scoped_enum_v = _CCCL_BUILTIN_IS_SCOPED_ENUM(_Tp);

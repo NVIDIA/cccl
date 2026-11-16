@@ -70,7 +70,7 @@ template <typename _Tp>
 
   if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
-#  if defined(_CCCL_BUILTIN_CLZ)
+#  ifdef _CCCL_BUILTIN_CLZ
     return _CCCL_BUILTIN_CLZ(__v);
 #  else // ^^^ _CCCL_BUILTIN_CLZ ^^^ // vvv !_CCCL_BUILTIN_CLZ vvv
     uint32_t __res = 0;
@@ -88,7 +88,7 @@ template <typename _Tp>
   }
   else
   {
-#  if defined(_CCCL_BUILTIN_CLZLL)
+#  ifdef _CCCL_BUILTIN_CLZLL
     return _CCCL_BUILTIN_CLZLL(__v);
 #  else // ^^^ _CCCL_BUILTIN_CLZLL ^^^ // vvv !_CCCL_BUILTIN_CLZLL vvv
     const auto __hi = static_cast<uint32_t>(__v >> 32);
@@ -153,7 +153,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr int countl_zero(_Tp __v) noexcept
 {
   int __count{};
-#if defined(_CCCL_BUILTIN_CLZG)
+#ifdef _CCCL_BUILTIN_CLZG
   __count = _CCCL_BUILTIN_CLZG(__v, numeric_limits<_Tp>::digits);
 #else // ^^^ _CCCL_BUILTIN_CLZG ^^^ // vvv !_CCCL_BUILTIN_CLZG vvv
   if constexpr (sizeof(_Tp) <= sizeof(uint64_t))

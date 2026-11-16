@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
+#ifdef _LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS
 
 #  include <cuda/std/__functional/binary_function.h>
 

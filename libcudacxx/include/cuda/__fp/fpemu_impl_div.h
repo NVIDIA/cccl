@@ -446,7 +446,7 @@ __internal_fp64emu_ddiv_unpacked(__fpbits64_unpacked __x, __fpbits64_unpacked __
 // ============================================================================
 // Builtin declarations/implementations for division operations
 // ============================================================================
-#if defined(_CCCL_FPEMU_INLINE)
+#ifdef _CCCL_FPEMU_INLINE
 _CCCL_FPEMU_BUILTIN_DECL __fpbits64 __fp64emu_ddiv_rn(__fpbits64 __x, __fpbits64 __y) noexcept
 {
   return ::cuda::__internal_fp64emu_ddiv<__fpemu_rounding::rn, fpemu_accuracy::high>(__x, __y);

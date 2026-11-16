@@ -25,7 +25,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS)
+#ifdef _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS
 
 template <class _Sp, class _Mp>
 [[nodiscard]] _CCCL_API constexpr bool is_pointer_interconvertible_with_class(_Mp _Sp::* __m_ptr) noexcept

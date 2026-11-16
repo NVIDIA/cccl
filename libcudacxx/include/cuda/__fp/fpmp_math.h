@@ -603,7 +603,7 @@
 #  undef _CCCL_FPMP_MATH_DISPATCH_2A_QUO
 #endif // !_CCCL_FPMP_USE_LIB
 
-#if (defined _CCCL_FPMP_USE_LIB)
+#ifdef _CCCL_FPMP_USE_LIB
 #  include <cuda/__fp/fpmp_math_impl_lib.h>
 #endif // _CCCL_FPMP_USE_LIB
 

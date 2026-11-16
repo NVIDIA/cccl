@@ -66,7 +66,7 @@ template <class _Tp>
 {
   if constexpr (sizeof(_Tp) == sizeof(uint8_t))
   {
-#  if defined(_CCCL_BUILTIN_ROTATELEFT8)
+#  ifdef _CCCL_BUILTIN_ROTATELEFT8
     return _CCCL_BUILTIN_ROTATELEFT8(__v, __cnt);
 #  elif _CCCL_COMPILER(MSVC)
     return ::_rotl8(__v, static_cast<unsigned char>(__cnt));
@@ -76,7 +76,7 @@ template <class _Tp>
   }
   else if constexpr (sizeof(_Tp) == sizeof(uint16_t))
   {
-#  if defined(_CCCL_BUILTIN_ROTATELEFT16)
+#  ifdef _CCCL_BUILTIN_ROTATELEFT16
     return _CCCL_BUILTIN_ROTATELEFT16(__v, __cnt);
 #  elif _CCCL_COMPILER(MSVC)
     return ::_rotl16(__v, static_cast<unsigned char>(__cnt));
@@ -86,7 +86,7 @@ template <class _Tp>
   }
   else if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
-#  if defined(_CCCL_BUILTIN_ROTATELEFT32)
+#  ifdef _CCCL_BUILTIN_ROTATELEFT32
     return _CCCL_BUILTIN_ROTATELEFT32(__v, __cnt);
 #  elif _CCCL_COMPILER(MSVC)
     return ::_rotl(__v, __cnt);
@@ -96,7 +96,7 @@ template <class _Tp>
   }
   else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
   {
-#  if defined(_CCCL_BUILTIN_ROTATELEFT64)
+#  ifdef _CCCL_BUILTIN_ROTATELEFT64
     return _CCCL_BUILTIN_ROTATELEFT64(__v, __cnt);
 #  elif _CCCL_COMPILER(MSVC)
     return ::_rotl64(__v, __cnt);

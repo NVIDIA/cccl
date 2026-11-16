@@ -76,14 +76,14 @@ _CCCL_REQUIRES(::cuda::std::__is_extended_arithmetic_v<_Tp>)
   else
   {
     [[maybe_unused]] sincos_result<_Tp> __ret{};
-#if defined(_CCCL_BUILTIN_SINCOSF)
+#ifdef _CCCL_BUILTIN_SINCOSF
     if constexpr (::cuda::std::is_same_v<_Tp, float>)
     {
       _CCCL_BUILTIN_SINCOSF(__v, &__ret.sin, &__ret.cos);
       return __ret;
     }
 #endif // _CCCL_BUILTIN_SINCOSF
-#if defined(_CCCL_BUILTIN_SINCOS)
+#ifdef _CCCL_BUILTIN_SINCOS
     if constexpr (::cuda::std::is_same_v<_Tp, double>)
     {
       _CCCL_BUILTIN_SINCOS(__v, &__ret.sin, &__ret.cos);

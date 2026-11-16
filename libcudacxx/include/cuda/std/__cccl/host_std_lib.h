@@ -38,7 +38,7 @@
 #define _CCCL_HOST_STD_LIB(...) _CCCL_VERSION_COMPARE(_CCCL_HOST_STD_LIB_, _CCCL_HOST_STD_LIB_##__VA_ARGS__)
 
 #if _CCCL_HOSTED()
-#  if defined(_MSVC_STL_VERSION)
+#  ifdef _MSVC_STL_VERSION
 #    undef _CCCL_HOST_STD_LIB_STL
 #    define _CCCL_HOST_STD_LIB_STL() (_MSVC_STL_VERSION, 0)
 #  elif defined(__GLIBCXX__)

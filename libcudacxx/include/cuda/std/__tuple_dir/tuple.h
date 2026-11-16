@@ -208,7 +208,7 @@ public:
       : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
   {}
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <class... _UTypes,
             enable_if_t<_DisambiguateVariadic<_UTypes...>::value, int> = 0,
             __select_constructor _Constraints =
@@ -239,7 +239,7 @@ public:
       : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, ::cuda::std::forward<_UTypes>(__u)...)
   {}
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <class _Alloc,
             class... _UTypes,
             enable_if_t<_DisambiguateVariadic<_UTypes...>::value, int> = 0,
@@ -296,7 +296,7 @@ public:
       : __base_(__tuple_like_constructor_tag{}, __t)
   {}
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <class... _UTypes,
             enable_if_t<_DisambiguateTupleLike<tuple<_UTypes...>&>::value, int> = 0,
             __select_constructor _Constraints =
@@ -325,7 +325,7 @@ public:
       : __base_(__tuple_like_constructor_tag{}, __t)
   {}
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <class... _UTypes,
             enable_if_t<_DisambiguateTupleLike<const tuple<_UTypes...>&>::value, int> = 0,
             __select_constructor _Constraints =
@@ -353,7 +353,7 @@ public:
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::move(__t))
   {}
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <class... _UTypes,
             enable_if_t<_DisambiguateTupleLike<tuple<_UTypes...>&&>::value, int> = 0,
             __select_constructor _Constraints =
@@ -382,7 +382,7 @@ public:
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::move(__t))
   {}
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <class... _UTypes,
             enable_if_t<_DisambiguateTupleLike<const tuple<_UTypes...>&&>::value, int> = 0,
             __select_constructor _Constraints =
@@ -416,7 +416,7 @@ public:
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::forward<_Tuple>(__t))
   {}
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <class _Tuple,
             enable_if_t<_DisambiguateTupleLike<_Tuple>::value, int> = 0,
             class _Constraints                                      = _TupleLikeConstructible<_Tuple>,
@@ -449,7 +449,7 @@ public:
       : __base_(__tuple_like_constructor_tag{}, allocator_arg_t(), __a, ::cuda::std::forward<_Tuple>(__t))
   {}
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <class _Alloc,
             class _Tuple,
             enable_if_t<_DisambiguateTupleLike<_Tuple>::value, int> = 0,

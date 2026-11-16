@@ -41,7 +41,7 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-#if (defined _CCCL_FPMP_USE_LIB)
+#ifdef _CCCL_FPMP_USE_LIB
 /*
  * ============================================================================
  * Forwarding factory macros

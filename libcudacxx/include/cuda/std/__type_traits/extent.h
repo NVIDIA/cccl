@@ -32,7 +32,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_ARRAY_EXTENT)
+#ifdef _CCCL_BUILTIN_ARRAY_EXTENT
 
 template <class _Tp, size_t _Ip = 0>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT extent : integral_constant<size_t, _CCCL_BUILTIN_ARRAY_EXTENT(_Tp, _Ip)>

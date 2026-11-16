@@ -680,7 +680,7 @@ _CCCL_HOST_DEVICE_API constexpr int LoadToSharedBufferSizeBytes(::cuda::std::siz
   return ::cuda::round_up(num_bytes, detail::bulk_copy_min_align) + extra_space;
 }
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES)
+#ifdef CUB_DEFINE_RUNTIME_POLICIES
 // TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 #  if !_CCCL_HAS_CONCEPTS()
 #    error Generation of runtime policy wrappers requires C++20 concepts.

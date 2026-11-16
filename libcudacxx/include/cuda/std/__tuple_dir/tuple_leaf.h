@@ -102,7 +102,7 @@ class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__default>
 {
   _Hp __value_;
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <class _Up>
   static constexpr bool __can_bind_reference = !reference_constructs_from_temporary_v<_Hp&, _Up>;
 #else
@@ -202,7 +202,7 @@ class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__synthesize_assignmen
 {
   _Hp __value_;
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <class _Up>
   static constexpr bool __can_bind_reference = !reference_constructs_from_temporary_v<_Hp&, _Up>;
 #else

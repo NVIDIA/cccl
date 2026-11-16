@@ -23,7 +23,7 @@
 #include <cuda/std/__internal/version.h>
 
 // During the header testing, we want to check if the code is wrapped by the prologue/epilogue
-#if defined(_CCCL_HEADER_TEST)
+#ifdef _CCCL_HEADER_TEST
 #  define _CCCL_PROLOGUE_INCLUDE_CHECK() \
     static_assert(_CCCL_PROLOGUE_INCLUDED(), "missing #include <cuda/std/__cccl/prologue.h>");
 #else // ^^^ defined(_CCCL_HEADER_TEST) ^^^ / vvv !defined(_CCCL_HEADER_TEST) vvv
@@ -140,7 +140,7 @@
 #  define _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(_CLASS)
 #endif // !_CCCL_COMPILER(CLANG, >, 16)
 
-#if defined(CCCL_DISABLE_ARCH_DEPENDENT_NAMESPACE)
+#ifdef CCCL_DISABLE_ARCH_DEPENDENT_NAMESPACE
 #  define _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 #  define _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 #else // not defined(CCCL_DISABLE_ARCH_DEPENDENT_NAMESPACE)

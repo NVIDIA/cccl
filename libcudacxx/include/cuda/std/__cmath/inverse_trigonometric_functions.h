@@ -50,7 +50,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float acos(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ACOSF)
+#ifdef _CCCL_BUILTIN_ACOSF
   return _CCCL_BUILTIN_ACOSF(__x);
 #else // ^^^ _CCCL_BUILTIN_ACOSF ^^^ / vvv !_CCCL_BUILTIN_ACOSF vvv
   return ::acosf(__x);
@@ -59,7 +59,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float acosf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ACOSF)
+#ifdef _CCCL_BUILTIN_ACOSF
   return _CCCL_BUILTIN_ACOSF(__x);
 #else // ^^^ _CCCL_BUILTIN_ACOSF ^^^ / vvv !_CCCL_BUILTIN_ACOSF vvv
   return ::acosf(__x);
@@ -68,7 +68,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double acos(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ACOS)
+#ifdef _CCCL_BUILTIN_ACOS
   return _CCCL_BUILTIN_ACOS(__x);
 #else // ^^^ _CCCL_BUILTIN_ACOS ^^^ / vvv !_CCCL_BUILTIN_ACOS vvv
   return ::acos(__x);
@@ -78,7 +78,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double acos(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ACOSL)
+#  ifdef _CCCL_BUILTIN_ACOSL
   return _CCCL_BUILTIN_ACOSL(__x);
 #  else // ^^^ _CCCL_BUILTIN_ACOSL ^^^ / vvv !_CCCL_BUILTIN_ACOSL vvv
   return ::acosl(__x);
@@ -87,7 +87,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double acosl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ACOSL)
+#  ifdef _CCCL_BUILTIN_ACOSL
   return _CCCL_BUILTIN_ACOSL(__x);
 #  else // ^^^ _CCCL_BUILTIN_ACOSL ^^^ / vvv !_CCCL_BUILTIN_ACOSL vvv
   return ::acosl(__x);
@@ -131,7 +131,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float asin(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ASINF)
+#ifdef _CCCL_BUILTIN_ASINF
   return _CCCL_BUILTIN_ASINF(__x);
 #else // ^^^ _CCCL_BUILTIN_ASINF ^^^ / vvv !_CCCL_BUILTIN_ASINF vvv
   return ::asinf(__x);
@@ -140,7 +140,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float asinf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ASINF)
+#ifdef _CCCL_BUILTIN_ASINF
   return _CCCL_BUILTIN_ASINF(__x);
 #else // ^^^ _CCCL_BUILTIN_ASINF ^^^ / vvv !_CCCL_BUILTIN_ASINF vvv
   return ::asinf(__x);
@@ -149,7 +149,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double asin(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ASIN)
+#ifdef _CCCL_BUILTIN_ASIN
   return _CCCL_BUILTIN_ASIN(__x);
 #else // ^^^ _CCCL_BUILTIN_ASIN ^^^ / vvv !_CCCL_BUILTIN_ASIN vvv
   return ::asin(__x);
@@ -159,7 +159,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double asin(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ASINL)
+#  ifdef _CCCL_BUILTIN_ASINL
   return _CCCL_BUILTIN_ASINL(__x);
 #  else // ^^^ _CCCL_BUILTIN_ASINL ^^^ / vvv !_CCCL_BUILTIN_ASINL vvv
   return ::asinl(__x);
@@ -168,7 +168,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double asinl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ASINL)
+#  ifdef _CCCL_BUILTIN_ASINL
   return _CCCL_BUILTIN_ASINL(__x);
 #  else // ^^^ _CCCL_BUILTIN_ASINL ^^^ / vvv !_CCCL_BUILTIN_ASINL vvv
   return ::asinl(__x);
@@ -212,7 +212,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float atan(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ATANF)
+#ifdef _CCCL_BUILTIN_ATANF
   return _CCCL_BUILTIN_ATANF(__x);
 #else // ^^^ _CCCL_BUILTIN_ATANF ^^^ / vvv !_CCCL_BUILTIN_ATANF vvv
   return ::atanf(__x);
@@ -221,7 +221,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float atanf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ATANF)
+#ifdef _CCCL_BUILTIN_ATANF
   return _CCCL_BUILTIN_ATANF(__x);
 #else // ^^^ _CCCL_BUILTIN_ATANF ^^^ / vvv !_CCCL_BUILTIN_ATANF vvv
   return ::atanf(__x);
@@ -230,7 +230,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double atan(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ATAN)
+#ifdef _CCCL_BUILTIN_ATAN
   return _CCCL_BUILTIN_ATAN(__x);
 #else // ^^^ _CCCL_BUILTIN_ATAN ^^^ / vvv !_CCCL_BUILTIN_ATAN vvv
   return ::atan(__x);
@@ -240,7 +240,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double atan(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ATANL)
+#  ifdef _CCCL_BUILTIN_ATANL
   return _CCCL_BUILTIN_ATANL(__x);
 #  else // ^^^ _CCCL_BUILTIN_ATANL ^^^ / vvv !_CCCL_BUILTIN_ATANL vvv
   return ::atanl(__x);
@@ -249,7 +249,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double atanl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ATANL)
+#  ifdef _CCCL_BUILTIN_ATANL
   return _CCCL_BUILTIN_ATANL(__x);
 #  else // ^^^ _CCCL_BUILTIN_ATANL ^^^ / vvv !_CCCL_BUILTIN_ATANL vvv
   return ::atanl(__x);
@@ -293,7 +293,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float atan2(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_ATAN2F)
+#ifdef _CCCL_BUILTIN_ATAN2F
   return _CCCL_BUILTIN_ATAN2F(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_ATAN2F ^^^ // vvv !_CCCL_BUILTIN_ATAN2F vvv
   return ::atan2f(__x, __y);
@@ -302,7 +302,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float atan2f(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_ATAN2F)
+#ifdef _CCCL_BUILTIN_ATAN2F
   return _CCCL_BUILTIN_ATAN2F(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_ATAN2F ^^^ // vvv !_CCCL_BUILTIN_ATAN2F vvv
   return ::atan2f(__x, __y);
@@ -311,7 +311,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double atan2(double __x, double __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_ATAN2)
+#ifdef _CCCL_BUILTIN_ATAN2
   return _CCCL_BUILTIN_ATAN2(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_ATAN2 ^^^ // vvv !_CCCL_BUILTIN_ATAN2 vvv
   return ::atan2(__x, __y);
@@ -321,7 +321,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double atan2(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ATAN2L)
+#  ifdef _CCCL_BUILTIN_ATAN2L
   return _CCCL_BUILTIN_ATAN2L(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_ATAN2L ^^^ // vvv !_CCCL_BUILTIN_ATAN2L vvv
   return ::atan2l(__x, __y);
@@ -330,7 +330,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double atan2l(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ATAN2L)
+#  ifdef _CCCL_BUILTIN_ATAN2L
   return _CCCL_BUILTIN_ATAN2L(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_ATAN2L ^^^ // vvv !_CCCL_BUILTIN_ATAN2L vvv
   return ::atan2l(__x, __y);

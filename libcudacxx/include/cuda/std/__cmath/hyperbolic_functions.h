@@ -48,7 +48,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float cosh(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_COSHF)
+#ifdef _CCCL_BUILTIN_COSHF
   return _CCCL_BUILTIN_COSHF(__x);
 #else // ^^^ _CCCL_BUILTIN_COSHF ^^^ / vvv !_CCCL_BUILTIN_COSHF vvv
   return ::coshf(__x);
@@ -57,7 +57,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float coshf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_COSHF)
+#ifdef _CCCL_BUILTIN_COSHF
   return _CCCL_BUILTIN_COSHF(__x);
 #else // ^^^ _CCCL_BUILTIN_COSHF ^^^ / vvv !_CCCL_BUILTIN_COSHF vvv
   return ::coshf(__x);
@@ -66,7 +66,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double cosh(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_COSH)
+#ifdef _CCCL_BUILTIN_COSH
   return _CCCL_BUILTIN_COSH(__x);
 #else // ^^^ _CCCL_BUILTIN_COSH ^^^ / vvv !_CCCL_BUILTIN_COSH vvv
   return ::cosh(__x);
@@ -76,7 +76,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double cosh(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_COSHL)
+#  ifdef _CCCL_BUILTIN_COSHL
   return _CCCL_BUILTIN_COSHL(__x);
 #  else // ^^^ _CCCL_BUILTIN_COSHL ^^^ / vvv !_CCCL_BUILTIN_COSHL vvv
   return ::coshl(__x);
@@ -85,7 +85,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double coshl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_COSHL)
+#  ifdef _CCCL_BUILTIN_COSHL
   return _CCCL_BUILTIN_COSHL(__x);
 #  else // ^^^ _CCCL_BUILTIN_COSHL ^^^ / vvv !_CCCL_BUILTIN_COSHL vvv
   return ::coshl(__x);
@@ -129,7 +129,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float sinh(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_SINHF)
+#ifdef _CCCL_BUILTIN_SINHF
   return _CCCL_BUILTIN_SINHF(__x);
 #else // ^^^ _CCCL_BUILTIN_SINHF ^^^ / vvv !_CCCL_BUILTIN_SINHF vvv
   return ::sinhf(__x);
@@ -138,7 +138,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float sinhf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_SINHF)
+#ifdef _CCCL_BUILTIN_SINHF
   return _CCCL_BUILTIN_SINHF(__x);
 #else // ^^^ _CCCL_BUILTIN_SINHF ^^^ / vvv !_CCCL_BUILTIN_SINHF vvv
   return ::sinhf(__x);
@@ -147,7 +147,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double sinh(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_SINH)
+#ifdef _CCCL_BUILTIN_SINH
   return _CCCL_BUILTIN_SINH(__x);
 #else // ^^^ _CCCL_BUILTIN_SINH ^^^ / vvv !_CCCL_BUILTIN_SINH vvv
   return ::sinh(__x);
@@ -157,7 +157,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double sinh(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_SINHL)
+#  ifdef _CCCL_BUILTIN_SINHL
   return _CCCL_BUILTIN_SINHL(__x);
 #  else // ^^^ _CCCL_BUILTIN_SINHL ^^^ / vvv !_CCCL_BUILTIN_SINHL vvv
   return ::sinhl(__x);
@@ -166,7 +166,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double sinhl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_SINHL)
+#  ifdef _CCCL_BUILTIN_SINHL
   return _CCCL_BUILTIN_SINHL(__x);
 #  else // ^^^ _CCCL_BUILTIN_SINHL ^^^ / vvv !_CCCL_BUILTIN_SINHL vvv
   return ::sinhl(__x);
@@ -210,7 +210,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float tanh(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_TANHF)
+#ifdef _CCCL_BUILTIN_TANHF
   return _CCCL_BUILTIN_TANHF(__x);
 #else // ^^^ _CCCL_BUILTIN_TANHF ^^^ / vvv !_CCCL_BUILTIN_TANHF vvv
   return ::tanhf(__x);
@@ -219,7 +219,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float tanhf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_TANHF)
+#ifdef _CCCL_BUILTIN_TANHF
   return _CCCL_BUILTIN_TANHF(__x);
 #else // ^^^ _CCCL_BUILTIN_TANHF ^^^ / vvv !_CCCL_BUILTIN_TANHF vvv
   return ::tanhf(__x);
@@ -228,7 +228,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double tanh(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_TANH)
+#ifdef _CCCL_BUILTIN_TANH
   return _CCCL_BUILTIN_TANH(__x);
 #else // ^^^ _CCCL_BUILTIN_TANH ^^^ / vvv !_CCCL_BUILTIN_TANH vvv
   return ::tanh(__x);
@@ -238,7 +238,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double tanh(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_TANHL)
+#  ifdef _CCCL_BUILTIN_TANHL
   return _CCCL_BUILTIN_TANHL(__x);
 #  else // ^^^ _CCCL_BUILTIN_TANHL ^^^ / vvv !_CCCL_BUILTIN_TANHL vvv
   return ::tanhl(__x);
@@ -247,7 +247,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double tanhl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_TANHL)
+#  ifdef _CCCL_BUILTIN_TANHL
   return _CCCL_BUILTIN_TANHL(__x);
 #  else // ^^^ _CCCL_BUILTIN_TANHL ^^^ / vvv !_CCCL_BUILTIN_TANHL vvv
   return ::tanhl(__x);

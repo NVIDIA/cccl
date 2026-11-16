@@ -263,7 +263,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> add_overflow(const _Lhs __lhs
   // We want to use __builtin_add_overflow only in host code. When compiling CUDA source file, we cannot use it in
   // constant expressions, because it doesn't work before nvcc 13.1 and is buggy in 13.1. When compiling C++ source
   // file, we can use it all the time.
-#if defined(_CCCL_BUILTIN_ADD_OVERFLOW)
+#ifdef _CCCL_BUILTIN_ADD_OVERFLOW
 #  if _CCCL_CUDA_COMPILATION()
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
 #  endif // _CCCL_CUDA_COMPILATION()

@@ -50,7 +50,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_MAKE_UNSIGNED)
+#ifdef _CCCL_BUILTIN_MAKE_UNSIGNED
 
 template <class _Tp>
 using make_unsigned_t _CCCL_NODEBUG = _CCCL_BUILTIN_MAKE_UNSIGNED(_Tp);

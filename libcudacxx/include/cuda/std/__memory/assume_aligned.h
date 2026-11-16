@@ -43,7 +43,7 @@ template <size_t _Align, class _Tp>
 #  if !_CCCL_COMPILER(MSVC) // MSVC checks within the builtin
     _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<_Align>(__ptr), "Alignment assumption is violated");
 #  endif // !_CCCL_COMPILER(MSVC) && defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
-#  if defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
+#  ifdef _CCCL_BUILTIN_ASSUME_ALIGNED
     return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, _Align));
 #  endif // defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
   }

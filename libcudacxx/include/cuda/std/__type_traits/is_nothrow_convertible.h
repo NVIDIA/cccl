@@ -34,7 +34,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_IS_NOTHROW_CONVERTIBLE)
+#ifdef _CCCL_IS_NOTHROW_CONVERTIBLE
 
 template <class _Fm, class _To>
 struct is_nothrow_convertible : bool_constant<_CCCL_IS_NOTHROW_CONVERTIBLE(_Fm, _To)>

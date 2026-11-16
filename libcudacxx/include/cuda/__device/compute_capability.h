@@ -194,7 +194,7 @@ template <int... _Vs>
 template <int... _Vs>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __make_cc_list() noexcept
 {
-#  if defined(__CUDA_ARCH_LIST__)
+#  ifdef __CUDA_ARCH_LIST__
   return ::cuda::std::array{compute_capability{_Vs / 10}...};
 #  elif defined(NV_TARGET_SM_INTEGER_LIST)
   return ::cuda::std::array{compute_capability{_Vs}...};
@@ -207,7 +207,7 @@ template <int... _Vs>
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __target_compute_capabilities() noexcept
 {
-#  if defined(__CUDA_ARCH_LIST__)
+#  ifdef __CUDA_ARCH_LIST__
   return ::cuda::__make_cc_list<__CUDA_ARCH_LIST__>();
 #  elif defined(NV_TARGET_SM_INTEGER_LIST)
   return ::cuda::__make_cc_list<NV_TARGET_SM_INTEGER_LIST>();

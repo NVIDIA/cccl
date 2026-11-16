@@ -278,7 +278,7 @@ _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 // There are many complications with defining a unique constexpr global object
 // for each type in device code, particularly on Windows. So rather than try,
 // we use an alternate formulation of typeid that does not require such objects.
-#if defined(__CUDA_ARCH__)
+#ifdef __CUDA_ARCH__
 
 struct __type_info;
 struct __type_info_ptr_;

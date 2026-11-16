@@ -136,7 +136,7 @@ template <class _Tp>
 
 [[nodiscard]] _CCCL_API constexpr uint16_t __byteswap_impl(uint16_t __val) noexcept
 {
-#if defined(_CCCL_BUILTIN_BSWAP16)
+#ifdef _CCCL_BUILTIN_BSWAP16
   return _CCCL_BUILTIN_BSWAP16(__val);
 #else // ^^^ _CCCL_BUILTIN_BSWAP16 ^^^ / vvv !_CCCL_BUILTIN_BSWAP16 vvv
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
@@ -154,7 +154,7 @@ template <class _Tp>
 
 [[nodiscard]] _CCCL_API constexpr uint32_t __byteswap_impl(uint32_t __val) noexcept
 {
-#if defined(_CCCL_BUILTIN_BSWAP32)
+#ifdef _CCCL_BUILTIN_BSWAP32
   return _CCCL_BUILTIN_BSWAP32(__val);
 #else // ^^^ _CCCL_BUILTIN_BSWAP32 ^^^ / vvv !_CCCL_BUILTIN_BSWAP32 vvv
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
@@ -172,7 +172,7 @@ template <class _Tp>
 
 [[nodiscard]] _CCCL_API constexpr uint64_t __byteswap_impl(uint64_t __val) noexcept
 {
-#if defined(_CCCL_BUILTIN_BSWAP64)
+#ifdef _CCCL_BUILTIN_BSWAP64
   return _CCCL_BUILTIN_BSWAP64(__val);
 #else // ^^^ _CCCL_BUILTIN_BSWAP64 ^^^ / vvv !_CCCL_BUILTIN_BSWAP64 vvv
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
@@ -191,7 +191,7 @@ template <class _Tp>
 #if _CCCL_HAS_INT128()
 [[nodiscard]] _CCCL_API constexpr __uint128_t __byteswap_impl(__uint128_t __val) noexcept
 {
-#  if defined(_CCCL_BUILTIN_BSWAP128)
+#  ifdef _CCCL_BUILTIN_BSWAP128
   // nvcc fails to use this builtin in constexpr context
 #    if _CCCL_CUDA_COMPILER(NVCC)
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
@@ -210,7 +210,7 @@ _CCCL_REQUIRES(is_integral_v<_Integer>)
 {
   if constexpr (sizeof(_Integer) > 1)
   {
-#if defined(_CCCL_BUILTIN_BSWAPG)
+#ifdef _CCCL_BUILTIN_BSWAPG
 #  if _CCCL_CUDA_COMPILER(NVCC)
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
 #  endif // _CCCL_CUDA_COMPILER(NVCC)

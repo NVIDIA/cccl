@@ -25,7 +25,7 @@
 #endif // no system header
 
 // Check for deprecation opt outs
-#if defined(LIBCUDACXX_IGNORE_DEPRECATED_CPP_DIALECT)
+#ifdef LIBCUDACXX_IGNORE_DEPRECATED_CPP_DIALECT
 #  if !defined(CCCL_IGNORE_DEPRECATED_CPP_DIALECT)
 #    define CCCL_IGNORE_DEPRECATED_CPP_DIALECT
 #  endif

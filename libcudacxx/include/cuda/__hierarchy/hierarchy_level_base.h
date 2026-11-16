@@ -34,7 +34,7 @@
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__type_traits/is_integer.h>
 
-#  if defined(_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX)
+#  ifdef _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
 #    include <cuda/experimental/coop/__group/concepts.cuh>
 #    include <cuda/experimental/coop/__group/fwd.cuh>
 #    include <cuda/experimental/coop/__group/queries.cuh>
@@ -168,7 +168,7 @@ struct hierarchy_level_base
   }
 #  endif // _CCCL_CUDA_COMPILATION()
 
-#  if defined(_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX)
+#  ifdef _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
 #    if _CCCL_CUDA_COMPILATION()
 
   _CCCL_TEMPLATE(class _Group)

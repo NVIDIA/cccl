@@ -74,7 +74,7 @@ class optional<_Tp&>
     return *__value_;
   }
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   template <class _Up>
   static constexpr bool __from_temporary = reference_constructs_from_temporary_v<_Tp&, _Up>;
 #else

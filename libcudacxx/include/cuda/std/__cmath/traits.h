@@ -116,7 +116,7 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
         _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__fp_compare_generic(__x, __y, ::cuda::std::greater<>{});)
       }
 
-#if defined(_CCCL_BUILTIN_ISGREATER)
+#ifdef _CCCL_BUILTIN_ISGREATER
       NV_IF_TARGET(NV_IS_HOST, (return _CCCL_BUILTIN_ISGREATER(__x, __y);))
 #else // ^^^ _CCCL_BUILTIN_ISGREATER ^^^ / vvv !_CCCL_BUILTIN_ISGREATER vvv
       NV_IF_TARGET(NV_IS_HOST, (return ::isgreater(__x, __y);))
@@ -179,7 +179,7 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
           return ::cuda::std::__fp_compare_generic(__x, __y, ::cuda::std::greater_equal<>{});)
       }
 
-#if defined(_CCCL_BUILTIN_ISGREATEREQUAL)
+#ifdef _CCCL_BUILTIN_ISGREATEREQUAL
       NV_IF_TARGET(NV_IS_HOST, (return _CCCL_BUILTIN_ISGREATEREQUAL(__x, __y);))
 #else // ^^^ _CCCL_BUILTIN_ISGREATEREQUAL ^^^ / vvv !_CCCL_BUILTIN_ISGREATEREQUAL vvv
       NV_IF_TARGET(NV_IS_HOST, (return ::isgreaterequal(__x, __y);))
@@ -241,7 +241,7 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
         _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__fp_compare_generic(__x, __y, ::cuda::std::less<>{});)
       }
 
-#if defined(_CCCL_BUILTIN_ISLESS)
+#ifdef _CCCL_BUILTIN_ISLESS
       NV_IF_TARGET(NV_IS_HOST, (return _CCCL_BUILTIN_ISLESS(__x, __y);))
 #else // ^^^ _CCCL_BUILTIN_ISLESS ^^^ / vvv !_CCCL_BUILTIN_ISLESS vvv
       NV_IF_TARGET(NV_IS_HOST, (return ::isless(__x, __y);))
@@ -304,7 +304,7 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
           return ::cuda::std::__fp_compare_generic(__x, __y, ::cuda::std::less_equal<>{});)
       }
 
-#if defined(_CCCL_BUILTIN_ISLESSEQUAL)
+#ifdef _CCCL_BUILTIN_ISLESSEQUAL
       NV_IF_TARGET(NV_IS_HOST, (return _CCCL_BUILTIN_ISLESSEQUAL(__x, __y);))
 #else // ^^^ _CCCL_BUILTIN_ISLESSEQUAL ^^^ / vvv !_CCCL_BUILTIN_ISLESSEQUAL vvv
       NV_IF_TARGET(NV_IS_HOST, (return ::islessequal(__x, __y);))
@@ -367,7 +367,7 @@ _CCCL_REQUIRES(__is_fp_v<_Tp>)
           return ::cuda::std::__fp_compare_generic(__x, __y, ::cuda::std::not_equal_to<>{});)
       }
 
-#if defined(_CCCL_BUILTIN_ISLESSGREATER)
+#ifdef _CCCL_BUILTIN_ISLESSGREATER
       NV_IF_TARGET(NV_IS_HOST, (return _CCCL_BUILTIN_ISLESSGREATER(__x, __y);))
 #else // ^^^ _CCCL_BUILTIN_ISLESSGREATER ^^^ / vvv !_CCCL_BUILTIN_ISLESSGREATER vvv
       NV_IF_TARGET(NV_IS_HOST, (return ::islessgreater(__x, __y);))

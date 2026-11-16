@@ -72,7 +72,7 @@ THRUST_NAMESPACE_END
   _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count1)                \
   _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count2)
 
-#if defined(THRUST_FORCE_64_BIT_OFFSET_TYPE)
+#ifdef THRUST_FORCE_64_BIT_OFFSET_TYPE
 //! @brief Always dispatches to 64 bit offset version of an algorithm
 #  define THRUST_INDEX_TYPE_DISPATCH(status, call, count, arguments) \
     _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)               \

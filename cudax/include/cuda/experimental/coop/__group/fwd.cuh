@@ -149,7 +149,7 @@ _CG_BEGIN_NAMESPACE
 
 class thread_group;
 class grid_group;
-#    if defined(_CG_HAS_CLUSTER_GROUP)
+#    ifdef _CG_HAS_CLUSTER_GROUP
 class cluster_group;
 #    endif // _CG_HAS_CLUSTER_GROUP
 class thread_block;

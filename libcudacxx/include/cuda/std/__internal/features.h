@@ -83,7 +83,7 @@
 #endif // ^^^ no constexpr allocations ^^^
 
 // Enable removed C++17 features
-#if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES)
+#ifdef _LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES
 #  define _LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS
 #endif // _LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES
 

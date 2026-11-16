@@ -146,7 +146,7 @@ template <class _Iter>
 using _ITER_TRAITS _CCCL_NODEBUG = typename __iter_traits_cache<_Iter>::type;
 
 #if _CCCL_HOSTED()
-#  if defined(_GLIBCXX_DEBUG)
+#  ifdef _GLIBCXX_DEBUG
 _CCCL_TEMPLATE(class _Iter, class _Ty, class _Range)
 _CCCL_REQUIRES(is_same_v<_Iter, ::__gnu_debug::_Safe_iterator<_Ty*, _Range>>)
 _CCCL_API inline auto __iter_concept_fn(::__gnu_debug::_Safe_iterator<_Ty*, _Range>, __priority_tag<3>)

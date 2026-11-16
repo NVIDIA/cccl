@@ -143,7 +143,7 @@ make_group(const ::cooperative_groups::grid_group&, const _HierarchyLike& __hier
   return this_grid{__hier_like};
 }
 
-#    if defined(_CG_HAS_CLUSTER_GROUP)
+#    ifdef _CG_HAS_CLUSTER_GROUP
 _CCCL_TEMPLATE(class _HierarchyLike)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
 [[nodiscard]] _CCCL_DEVICE_API auto

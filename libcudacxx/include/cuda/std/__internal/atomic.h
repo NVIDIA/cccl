@@ -39,7 +39,7 @@
 #define _CCCL_ATOMIC_FLAG_TYPE int
 
 // Clang provides 128b atomics as a builtin
-#if defined(CCCL_ENABLE_EXPERIMENTAL_HOST_ATOMICS_128B)
+#ifdef CCCL_ENABLE_EXPERIMENTAL_HOST_ATOMICS_128B
 #  define _CCCL_HOST_128_ATOMICS_ENABLED() 1
 #  define _CCCL_HOST_128_ATOMICS_MAYBE()   0
 // GCC does not provide 128b atomics, but they may be available as a library, this requires opt-in usage.

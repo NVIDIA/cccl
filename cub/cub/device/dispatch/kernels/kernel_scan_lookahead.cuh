@@ -49,7 +49,7 @@
 
 #include <nv/target>
 
-#if defined(_CCCL_ENABLE_IKET)
+#ifdef _CCCL_ENABLE_IKET
 #  include <cub/agent/agent_scan.cuh>
 #endif // defined(_CCCL_ENABLE_IKET)
 

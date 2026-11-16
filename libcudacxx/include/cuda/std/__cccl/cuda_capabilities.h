@@ -103,7 +103,7 @@
 #endif // ^^^ no RDC ^^^
 
 // Check whether extensible whole program is being compiled.
-#if defined(__CUDACC_EWP__)
+#ifdef __CUDACC_EWP__
 #  define _CCCL_HAS_EWP() 1
 #else // ^^^ has EWP ^^^ / vvv no EWP vvv
 #  define _CCCL_HAS_EWP() 0

@@ -139,7 +139,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 #if _CCCL_HAS_FLOAT128()
     if constexpr (is_same_v<_Tp, __float128>)
     {
-#  if defined(_CCCL_BUILTIN_FABSF128)
+#  ifdef _CCCL_BUILTIN_FABSF128
       // nvcc doesn't support _CCCL_BUILTIN_FABSF128 in constexpr context
 #    if _CCCL_CUDA_COMPILER(NVCC)
       _CCCL_IF_NOT_CONSTEVAL_DEFAULT

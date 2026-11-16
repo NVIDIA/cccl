@@ -34,7 +34,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_PTX
 
-#if defined(__input)
+#ifdef __input
 #  pragma push_macro("__input")
 #  undef __input
 #  define _CUDA_PTX_STMATRIX_POP_MACRO___INPUT
@@ -42,7 +42,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_PTX
 
 #include <cuda/__ptx/instructions/generated/stmatrix.h>
 
-#if defined(_CUDA_PTX_STMATRIX_POP_MACRO___INPUT)
+#ifdef _CUDA_PTX_STMATRIX_POP_MACRO___INPUT
 #  pragma pop_macro("__input")
 #  undef _CUDA_PTX_STMATRIX_POP_MACRO___INPUT
 #endif // defined(_CUDA_PTX_STMATRIX_POP_MACRO___INPUT)

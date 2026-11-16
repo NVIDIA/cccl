@@ -53,7 +53,7 @@ template <typename _Tp>
       return __ptr;
     }
   }
-#if defined(_CCCL_BUILTIN_ALIGN_DOWN)
+#ifdef _CCCL_BUILTIN_ALIGN_DOWN
   return (_Tp*) _CCCL_BUILTIN_ALIGN_DOWN(__ptr, __alignment);
 #else // ^^^ _CCCL_BUILTIN_ALIGN_DOWN ^^^ / vvv !_CCCL_BUILTIN_ALIGN_DOWN vvv
   // all code below is translated to a single LOP3.LUT instruction

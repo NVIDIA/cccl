@@ -139,7 +139,7 @@ template <class _Tp>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API constexpr bool isinf(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ISINF)
+#  ifdef _CCCL_BUILTIN_ISINF
   return _CCCL_BUILTIN_ISINF(__x);
 #  else // ^^^ _CCCL_BUILTIN_ISINF ^^^ / vvv !_CCCL_BUILTIN_ISINF vvv
   return ::cuda::std::__isinf_impl(__x);

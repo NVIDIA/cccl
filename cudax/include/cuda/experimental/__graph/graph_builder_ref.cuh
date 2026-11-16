@@ -38,7 +38,7 @@
 
 // work around breathe "_CUDAX_CONSTEXPR_FRIEND friend" bug.
 // See: https://github.com/breathe-doc/breathe/issues/916
-#if defined(_CCCL_DOXYGEN_INVOKED)
+#ifdef _CCCL_DOXYGEN_INVOKED
 #  define _CUDAX_CONSTEXPR_FRIEND friend
 #else
 #  define _CUDAX_CONSTEXPR_FRIEND constexpr friend

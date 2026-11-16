@@ -383,7 +383,7 @@ _CCCL_HOST_API void inline __do_launch(
   ::cuda::stream_ref __stream, ::CUlaunchConfig& __config, ::CUfunction __kernel, void** __args_ptrs)
 {
   __config.hStream = __stream.get();
-#  if defined(_CCCLRT_LAUNCH_CONFIG_TEST)
+#  ifdef _CCCLRT_LAUNCH_CONFIG_TEST
   test_launch_kernel_replacement(__config, __kernel, __args_ptrs);
 #  else // ^^^ _CUDAX_LAUNCH_CONFIG_TEST ^^^ / vvv !_CUDAX_LAUNCH_CONFIG_TEST vvv
   ::cuda::__driver::__launchKernel(__config, __kernel, __args_ptrs);

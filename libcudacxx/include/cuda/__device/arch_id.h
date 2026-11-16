@@ -204,7 +204,7 @@ template <class _Dummy = void>
   }
 #  elif _CCCL_DEVICE_COMPILATION()
   constexpr auto __cc = ::cuda::device::current_compute_capability();
-#    if defined(__CUDA_ARCH_SPECIFIC__)
+#    ifdef __CUDA_ARCH_SPECIFIC__
   constexpr auto __is_known_cc = ::cuda::std::__always_false_v<_Dummy> || ::cuda::__has_known_specific_arch(__cc);
   static_assert(__is_known_cc, "unknown CUDA specific architecture");
   return ::cuda::to_arch_specific_id(__cc);

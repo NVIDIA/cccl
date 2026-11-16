@@ -46,7 +46,7 @@
 
 namespace cuda::experimental::execution
 {
-#if defined(_CCCL_BUILTIN_STRUCTURED_BINDING_SIZE)
+#ifdef _CCCL_BUILTIN_STRUCTURED_BINDING_SIZE
 
 #  if _CCCL_HAS_CONCEPTS()
 

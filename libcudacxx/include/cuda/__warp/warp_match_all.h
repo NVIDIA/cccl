@@ -56,7 +56,7 @@ warp_match_all(const _Tp& __data, const lane_mask __lane_mask = lane_mask::all()
     constexpr int __ratio = ::cuda::ceil_div(sizeof(_Tp), sizeof(::cuda::std::uint32_t));
     ::cuda::std::uint32_t __array[__ratio]{};
 
-#  if defined(_CCCL_BUILTIN_CLEAR_PADDING)
+#  ifdef _CCCL_BUILTIN_CLEAR_PADDING
     auto __data_copy = ::cuda::std::__create_copy(__data);
     ::cuda::std::__clear_padding(__data_copy);
     const auto __data_ptr = ::cuda::std::addressof(__data_copy);

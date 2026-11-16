@@ -25,7 +25,7 @@
 #  include <cuda/std/__atomic/platform/msvc_to_builtins.h>
 #endif
 
-#if defined(__CLANG_ATOMIC_BOOL_LOCK_FREE)
+#ifdef __CLANG_ATOMIC_BOOL_LOCK_FREE
 #  define LIBCUDACXX_ATOMIC_BOOL_LOCK_FREE     __CLANG_ATOMIC_BOOL_LOCK_FREE
 #  define LIBCUDACXX_ATOMIC_CHAR_LOCK_FREE     __CLANG_ATOMIC_CHAR_LOCK_FREE
 #  define LIBCUDACXX_ATOMIC_CHAR16_T_LOCK_FREE __CLANG_ATOMIC_CHAR16_T_LOCK_FREE
@@ -66,7 +66,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+#ifdef _CCCL_ATOMIC_ALWAYS_LOCK_FREE
 template <typename _Tp>
 struct __atomic_is_always_lock_free
 {

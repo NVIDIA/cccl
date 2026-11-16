@@ -69,7 +69,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 #endif
 
 // If neither host nor device is defined, default to device
-#if defined __CUDACC__
+#ifdef __CUDACC__
 #  undef _CCCL_FPEMU_HOST
 #  undef _CCCL_FPEMU_DEVICE
 #  define _CCCL_FPEMU_DEVICE
@@ -114,7 +114,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //   _CCCL_DEVICE_API  — device-only overloads
 // The only decorator that still needs a dedicated macro is the extern-"C"
 // ABI symbol used when building or linking the standalone libcufp library.
-#if defined __CUDA_LIBDEVICE__
+#ifdef __CUDA_LIBDEVICE__
 #  define _CCCL_FPEMU_BUILTIN_DECL _CCCL_FPEMU_ABI extern "C" _CCCL_HOST_DEVICE
 #elif defined _CCCL_FPEMU_INLINE
 #  define _CCCL_FPEMU_BUILTIN_DECL _CCCL_TRIVIAL_HOST_DEVICE_API
@@ -197,7 +197,7 @@ enum struct __fpemu_rounding
  * this flag.
  */
 
-#if defined(__CUDA_LIBDEVICE__)
+#ifdef __CUDA_LIBDEVICE__
 // Map CUDA built-ins to NVVM analogs
 #  define __umul64hi(x, y) __nvvm_mulhi_ull(x, y)
 #  define __ddiv_rn(x, y)  __nvvm_div_rn_d((x), (y))

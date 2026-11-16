@@ -52,7 +52,7 @@ struct __integer_sequence
   using __to_tuple_indices _CCCL_NODEBUG = __tuple_indices<(_Values + _Sp)...>;
 };
 
-#if defined(_CCCL_BUILTIN_MAKE_INTEGER_SEQ)
+#ifdef _CCCL_BUILTIN_MAKE_INTEGER_SEQ
 
 template <size_t _Ep, size_t _Sp>
 using __make_indices_imp _CCCL_NODEBUG =
@@ -212,7 +212,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT integer_sequence
 template <size_t... _Ip>
 using index_sequence = integer_sequence<size_t, _Ip...>;
 
-#if defined(_CCCL_BUILTIN_MAKE_INTEGER_SEQ)
+#ifdef _CCCL_BUILTIN_MAKE_INTEGER_SEQ
 
 template <class _Tp, _Tp _Ep>
 using __make_integer_sequence _CCCL_NODEBUG = _CCCL_BUILTIN_MAKE_INTEGER_SEQ(integer_sequence, _Tp, _Ep);

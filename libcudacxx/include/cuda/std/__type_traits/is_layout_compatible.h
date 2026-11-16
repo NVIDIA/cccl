@@ -27,7 +27,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_LAYOUT_COMPATIBLE)
+#ifdef _CCCL_BUILTIN_IS_LAYOUT_COMPATIBLE
 
 template <class _Tp, class _Up>
 inline constexpr bool is_layout_compatible_v = _CCCL_BUILTIN_IS_LAYOUT_COMPATIBLE(_Tp, _Up);
