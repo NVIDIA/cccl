@@ -353,30 +353,4 @@ _CCCL_DIAG_POP
 #  undef _CCCL_POP_MACRO_clang
 #endif
 
-// sys/sysmacros.h on linux
-
-#ifdef major
-#  error \
-    "cccl internal error: macro `major` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
-#elif defined(_CCCL_POP_MACRO_major)
-#  pragma pop_macro("major")
-#  undef _CCCL_POP_MACRO_major
-#endif
-
-#ifdef minor
-#  error \
-    "cccl internal error: macro `minor` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
-#elif defined(_CCCL_POP_MACRO_minor)
-#  pragma pop_macro("minor")
-#  undef _CCCL_POP_MACRO_minor
-#endif
-
-#ifdef makedev
-#  error \
-    "cccl internal error: macro `makedev` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
-#elif defined(_CCCL_POP_MACRO_makedev)
-#  pragma pop_macro("makedev")
-#  undef _CCCL_POP_MACRO_makedev
-#endif
-
 // NO include guards here (this file is included multiple times)
