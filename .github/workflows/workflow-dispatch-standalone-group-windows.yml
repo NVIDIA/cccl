@@ -30,6 +30,7 @@ jobs:
       matrix:
         include: ${{ fromJSON(inputs.job-array) }}
     permissions:
+      actions: read
       id-token: write
       contents: read
     runs-on: |-

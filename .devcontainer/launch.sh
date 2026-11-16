@@ -15,6 +15,7 @@ print_help() {
     echo "  --cuda-ext               Use a docker image with extended CTK libraries."
     echo "  --tidy-ext               Use a docker image with Clang/LLVM development libraries."
     echo "  -H, --host               Specify the host compiler. E.g., gcc12"
+    echo "  --extra-devcontainers    Search this directory for named configs before .devcontainer."
     echo "  -d, --docker             Launch the development environment in Docker directly without using VSCode."
     echo "  --gpus gpu-request       GPU devices to add to the container ('all' to pass all GPUs)."
     echo "  -e, --env list           Set additional container environment variables."
@@ -70,7 +71,7 @@ parse_options() {
     set -- "${@:1:$#-1}";
 
     local OPTIONS=c:e:H:dhv:
-    local LONG_OPTIONS=cuda:,cuda-ext,tidy-ext,env:,host:,gpus:,volume:,ulimit:,docker,help
+    local LONG_OPTIONS=cuda:,cuda-ext,tidy-ext,env:,host:,extra-devcontainers:,gpus:,volume:,ulimit:,docker,help
     # shellcheck disable=SC2155
     local PARSED_OPTIONS="$(getopt -n "$0" -o "${OPTIONS}" --long "${LONG_OPTIONS}" -- "$@")"
 
@@ -110,6 +111,10 @@ parse_options() {
                 ;;
             -H|--host)
                 host_compiler="$2"
+                shift 2
+                ;;
+            --extra-devcontainers)
+                extra_devcontainers="$2"
                 shift 2
                 ;;
             --gpus)
@@ -370,10 +375,19 @@ main() {
         if ${tidy_ext:-false}; then
           suffix+="tidy"
         fi
-        path=".devcontainer/cuda${cuda_version}${suffix:-}-${host_compiler}"
+        local config="cuda${cuda_version}${suffix:-}-${host_compiler}"
+        path=".devcontainer/${config}"
+        if [[ -n ${extra_devcontainers:-} && -f "${extra_devcontainers}/${config}/devcontainer.json" ]]; then
+            echo "Using devcontainer from ${extra_devcontainers}"
+            path="${extra_devcontainers}/${config}"
+        fi
         if [[ ! -f "${path}/devcontainer.json" ]]; then
             echo "Unknown CUDA [${cuda_version}] compiler [${host_compiler}] combination"
-            echo "Requested devcontainer ${path}/devcontainer.json does not exist"
+            printf "Requested devcontainer %s/devcontainer.json does not exist in " "${config}"
+            if [[ -n ${extra_devcontainers:-} ]]; then
+                printf "%s/ or " "${extra_devcontainers}"
+            fi
+            printf ".devcontainer/\n"
             exit 1
         fi
     fi
