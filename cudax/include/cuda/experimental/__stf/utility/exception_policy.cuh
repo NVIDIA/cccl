@@ -750,7 +750,8 @@ struct retry_t : basic_sink<retry_t>
   static constexpr bool __produces_value = true;
 
   // decltype(auto), not auto: a reference-returning callable must re-run to the same object,
-  // not to a copy. A throw from the re-run is the forward.
+  // not to a copy. A throw from the re-run is the forward, so the hook is never noexcept: a
+  // nothrow exception hook reads as never forwarding (unlike `on_returned`, which forwards by value).
   template <class _Fn>
   decltype(auto) on_thrown(const ::std::exception*, const ::cuda::std::source_location, _Fn& __fn)
   {
@@ -760,6 +761,7 @@ struct retry_t : basic_sink<retry_t>
   //! @brief The code-channel hook: one re-run of a status-returning action; its status decides.
   template <class _Status, class _Fn>
   __status_answer<_Status> on_returned(const _Status, const ::cuda::std::source_location, _Fn& __fn) const
+    noexcept(noexcept(__fn()))
   {
     static_assert(::cuda::std::is_same_v<::cuda::std::remove_cvref_t<decltype(__fn())>, _Status>,
                   "re-running on the code channel needs an action that returns the same status type");
@@ -7992,6 +7994,15 @@ UNITTEST("error sinks: retry on a status-returning action")
   };
   EXPECT(c2.status<cudaError_t>() == cudaErrorNotReady); // exhausted: forwarded
   EXPECT(n == 3); // one attempt plus two retries
+
+  // The code channel forwards by value, so a re-run of a nothrow action keeps `<<` noexcept.
+  const auto thrice     = retry * 3;
+  using nothrow_action  = cudaError_t (&)() noexcept;
+  using throwing_action = cudaError_t (&)();
+  static_assert(noexcept(retry.at(::cuda::std::source_location{}) << ::cuda::std::declval<nothrow_action>()));
+  static_assert(noexcept(thrice.at(::cuda::std::source_location{}) << ::cuda::std::declval<nothrow_action>()));
+  static_assert(!noexcept(retry.at(::cuda::std::source_location{}) << ::cuda::std::declval<throwing_action>()));
+  static_assert(!noexcept(thrice.at(::cuda::std::source_location{}) << ::cuda::std::declval<throwing_action>()));
 };
 
 UNITTEST("error sinks: backoff on a status-returning action")
