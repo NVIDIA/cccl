@@ -272,7 +272,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES any_synchronous_resource
   //! @endcond
 
 private:
-  using __base::interface;
+  using __base::__get_interface;
 };
 
 // ``any_resource`` wraps any given resource that satisfies the
@@ -300,7 +300,7 @@ private:
   template <class...>
   friend struct any_synchronous_resource;
 
-  using __base::interface;
+  using __base::__get_interface;
 
   _CCCL_HOST_API __base& __get_base() noexcept
   {
@@ -362,7 +362,7 @@ private:
   template <class...>
   friend struct synchronous_resource_ref;
 
-  using __base::interface;
+  using __base::__get_interface;
 
   _CCCL_HOST_API __base& __get_base() noexcept
   {
@@ -433,7 +433,7 @@ private:
   template <class...>
   friend struct resource_ref;
 
-  using __base::interface;
+  using __base::__get_interface;
 
   _CCCL_HOST_API __base& __get_base() noexcept
   {

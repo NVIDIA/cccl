@@ -325,14 +325,6 @@ _CCCL_DIAG_POP
 #  undef _CCCL_POP_MACRO_max
 #endif
 
-#if defined(interface)
-#  error \
-    "cccl internal error: macro `interface` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
-#elif defined(_CCCL_POP_MACRO_interface)
-#  pragma pop_macro("interface")
-#  undef _CCCL_POP_MACRO_interface
-#endif
-
 // sal.h on Windows
 
 #if defined(__valid)
