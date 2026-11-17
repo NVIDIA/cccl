@@ -345,10 +345,11 @@ trip:
    :dedent: 4
 
 To keep the aggregate in a payload created before the loop, give that
-payload a value first, as in
-``outer = coop.ThreadData.from_values(cutlass.Int32(0))``, and assign the
-item in the loop: ``outer[0] = tile_total[0]``. The same holds inside a
-runtime ``if``, and for ``exclusive_digit_prefix`` of ``radix_rank_keys``.
+payload a value of the aggregate's element type first, as in
+``outer = coop.ThreadData.from_values(cutlass.Int32(0))`` for the ``Int32``
+values here, and assign the item in the loop:
+``outer[0] = tile_total[0]``. The same holds inside a runtime ``if``, and
+for ``exclusive_digit_prefix`` of ``radix_rank_keys``.
 
 The loop count or condition must be the same in every thread of the group.
 Every thread receives the aggregate, whereas a ``reduce`` result is defined
