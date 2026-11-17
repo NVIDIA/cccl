@@ -98,10 +98,12 @@ kernel built with ``ThreadData(n)``, ``from_values`` or ``from_fn`` and no
 ``dtype``, pass ``dtype`` to the call, or ``like`` to ``to_tensor_ssa``.
 
 Passing ``dtype`` to ``ThreadData(...)`` assigns no missing items. Python
-numbers among the items take that type. An item that already has a CuTe type
-is not converted and must have exactly that type. ``ThreadData.from_fn``
-with ``dtype`` converts. :ref:`ThreadData <coop-thread-data>` in the API
-reference lists the supported types.
+numbers among the items take that type if it can hold them. An integer out
+of range, or a float in an integer payload, is a compile error. An item
+that already has a CuTe type is not converted and must have exactly that
+type. ``ThreadData.from_fn`` with ``dtype`` converts.
+:ref:`ThreadData <coop-thread-data>` in the API reference lists the
+supported types.
 
 .. _coop-faq-producer:
 
