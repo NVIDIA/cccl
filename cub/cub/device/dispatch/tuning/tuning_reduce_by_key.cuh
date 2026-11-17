@@ -1409,6 +1409,11 @@ private:
                 BLOCK_SCAN_WARP_SCANS,
                 {LookbackDelayAlgorithm::no_delay, 0, 735}};
       }
+      // F64 uses more registers with the shuffle-add warp reduction and would lose a block per SM with the row below
+      if (key_size == 1 && accum_size == 8 && accum_t == type_t::float64)
+      {
+        return __make_thrust_policy(11);
+      }
       if (key_size == 1 && accum_size == 8)
       {
         return {128,
