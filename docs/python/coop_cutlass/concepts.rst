@@ -59,7 +59,6 @@ Shared execution model
 ----------------------
 
 .. _coop-concepts-groups:
-.. _coop-thread-groups:
 .. _groups-and-thread-data:
 
 Groups and tiles
@@ -87,7 +86,6 @@ adds the group's within-block tile origin to the memory address. A caller's
 origin in a larger array; do not add the within-block group origin again.
 
 .. _coop-concepts-participation:
-.. _coop-participation:
 .. _load-and-store-semantics:
 
 Participation and valid prefixes
