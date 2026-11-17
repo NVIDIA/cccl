@@ -6,9 +6,9 @@
 
 Every primitive takes a group as its first argument. ``this_block()`` is the
 calling thread's block, ``this_warp()`` is its warp of 32 threads, and
-``this_warp().group_by(8)`` is its group of eight neighboring lanes, as the
-threads of a warp are called. This kernel sums the same values over each of
-the three:
+``this_warp().group_by(8)`` is its group of eight neighboring lanes. A lane
+is one thread of a warp. This kernel sums the same values over each of the
+three:
 
 `Full example and test on GitHub
 <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
@@ -89,14 +89,15 @@ These rules hold for every primitive:
 * A warp group needs a block whose size is a multiple of 32, so that every
   warp is complete.
 * Each group works on its own :term:`tile`. Load and Store place the tiles
-  of a block's warps, or of its groups of lanes, one after another. A kernel
-  with more than one block gives them an ``offset`` computed from
-  ``cute.arch.block_idx()``.
+  of a block's warps, or of its groups of lanes, one after another. In a
+  kernel with more than one block, pass Load and Store an ``offset``
+  computed from ``cute.arch.block_idx()``.
 
 ``this_thread()``, ``this_cluster()`` and ``this_grid()`` name the other
 levels of a launch, and ``this_block().group_by(n)`` names ``n`` whole warps.
-No primitive takes these four. They are for the queries that every group
-answers, which tell a thread where it is:
+No primitive takes these four. Like every group, they answer queries, which
+tell a thread where it is. Here a block, a warp and a group of lanes answer
+them:
 
 `Full example and test on GitHub
 <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
@@ -113,8 +114,10 @@ answers, which tell a thread where it is:
 ``rank`` is where this thread, or its warp, sits in the group, and ``count``
 is how many the group holds. For a level outside the group, ``rank`` is
 where the group sits in that level, and ``count`` is how many such groups
-the level holds. A query at the ``"grid"`` level needs a launch that states
-the grid size with constants, as it does the block size.
+the level holds. A group made with ``group_by`` takes the levels up to the
+group it splits: ``"thread"`` and ``"warp"`` for a group of lanes. A query
+at the ``"grid"`` level needs a launch that states the grid size with
+constants, as it does the block size.
 
 The results are CuTe scalars, so a kernel can use them in
 arithmetic, as an index, or in a condition. A query emits no barrier and

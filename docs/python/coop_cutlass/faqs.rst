@@ -90,13 +90,17 @@ When its items are raw MLIR integers, which have a width and no sign. Pass
 
 Otherwise leave it out. ``load`` takes the type from the memory, and a
 primitive takes it from the items of a payload the kernel fills, which must
-all have the same type. ``to_tensor_ssa`` and ``to_register_tensor`` need
-the type named: for a payload built without ``dtype``, pass ``dtype`` to the
-call, or ``like`` to ``to_tensor_ssa``.
+all have the same type.
 
-Passing ``dtype`` to ``ThreadData(...)`` assigns no missing items and
-converts no item that already has another type. ``ThreadData.from_fn`` with
-``dtype`` converts. :ref:`ThreadData <coop-thread-data>` in the API
+``to_tensor_ssa`` and ``to_register_tensor`` need the type as well. A
+payload from ``load``, a primitive or a conversion carries it. For one the
+kernel built with ``ThreadData(n)``, ``from_values`` or ``from_fn`` and no
+``dtype``, pass ``dtype`` to the call, or ``like`` to ``to_tensor_ssa``.
+
+Passing ``dtype`` to ``ThreadData(...)`` assigns no missing items. Python
+numbers among the items take that type. An item that already has a CuTe type
+is not converted and must have exactly that type. ``ThreadData.from_fn``
+with ``dtype`` converts. :ref:`ThreadData <coop-thread-data>` in the API
 reference lists the supported types.
 
 .. _coop-faq-producer:

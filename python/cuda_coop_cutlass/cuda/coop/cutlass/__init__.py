@@ -36,10 +36,10 @@ space in shared memory comes from the compiler, or from a
 :ref:`Single-phase calls <coop-concepts-single-phase>` shows the same kernel
 written with CUB's C++ classes.
 
-Controls that select code are Python values, fixed when the kernel is
-compiled: ``items_per_thread``, ``algorithm``, operators, the group, and
-the options of a ``TempStorage``. A kernel receives such a value as an
-argument declared ``cutlass.Constexpr``, as ``items_per_thread`` is above.
+Arguments that select code are Python values, fixed when the kernel is
+compiled: the group, ``items_per_thread``, ``algorithm``, operators and the
+options of a ``TempStorage``. A kernel receives such a value as an argument
+declared ``cutlass.Constexpr``, as ``items_per_thread`` is above.
 Controls that describe data can also be CuTe values, read while the kernel
 runs: ``valid_items``, ``offset``, ``oob_default`` and a scan's
 ``initial_value`` are examples. Each entry says what its controls accept.
