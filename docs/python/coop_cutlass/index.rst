@@ -4,42 +4,46 @@
 
 .. _coop-overview:
 
-``cuda.coop.cutlass``
-=====================
+``cuda.coop.cutlass``: Cooperative Primitives for CuTe Kernels
+==============================================================
 
-``cuda.coop.cutlass`` provides CUB cooperative primitives inside CuTe kernels.
-Threads in a block or warp load and store tiles, reduce or scan values,
-rearrange payloads, sort or select keys, compare neighbors, count samples,
-and decode runs. CuTe compiles the enclosing kernel and links the generated
-CUB device functions into it.
+``cuda.coop.cutlass`` brings CUB's block and warp primitives to kernels
+written in the CUTLASS CuTe DSL. The threads of a block or warp call one
+function together to load and store data, reduce, scan, sort, select and more.
 
-.. code-block:: python
+This kernel computes a running sum across a block of 128 threads:
 
-   import cuda.coop.cutlass as coop
+.. literalinclude:: ../../../python/cuda_coop_cutlass/examples/prefix_sum.py
+   :language: python
+   :start-after: docs: start cutlass-prefix-sum
+   :end-before: docs: end cutlass-prefix-sum
+
+The :doc:`Programming Guide <programming_guide>` shows the whole program and
+explains each line.
 
 Installation
 ------------
 
-From the repository root, install the standalone package:
+From the repository root, install the package:
 
 .. code-block:: bash
 
    python -m pip install ./python/cuda_coop_cutlass
 
+.. _coop-cutlass-requirements:
+
 Requirements
 ~~~~~~~~~~~~
 
 * Python 3.10 or later.
-* CUDA 13 on Linux, with a compatible NVIDIA GPU and driver. NVRTC compiles
-  the CUB device functions.
-* CUTLASS CuTe DSL 4.9.0.dev1 or later in the 4.x series, with support for
-  external NVIDIA LTO-IR linking and trace-finalization hooks. See
-  :ref:`compiler requirements <coop-cutlass-compiler-requirements>` for the
-  required interfaces.
+* Linux with CUDA 13, an NVIDIA GPU and its driver.
+* CUTLASS CuTe DSL 4.9.0.dev1 or later in the 4.x series. The package depends
+  on ``nvidia-cutlass-dsl[cu13]``, which brings CuTe's CUDA 13 libraries.
 
-The wheel includes the required CCCL headers and licenses. Package metadata
-selects the CuTe CUDA 13 libraries through the ``nvidia-cutlass-dsl[cu13]``
-dependency, including the 4.9.0.dev1 prerelease.
+The wheel includes the CCCL headers it needs. The CUB code behind each
+primitive is compiled with NVRTC when a kernel is compiled, and linked into
+that kernel. :ref:`Compiler requirements <coop-cutlass-compiler-requirements>`
+lists the CuTe interfaces this depends on.
 
 Documentation
 -------------
