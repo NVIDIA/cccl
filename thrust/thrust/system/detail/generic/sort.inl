@@ -12,11 +12,13 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/internal_functional.h>
+#include <thrust/detail/static_assert.h>
 #include <thrust/find.h>
-#include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/sort.h>
 #include <thrust/system/detail/generic/sort.h>
 
 #include <cuda/std/__functional/operations.h>

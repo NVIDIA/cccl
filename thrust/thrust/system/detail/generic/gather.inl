@@ -13,8 +13,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/functional.h>
-#include <thrust/iterator/iterator_traits.h>
+#include <thrust/detail/execution_policy.h>
+#include <thrust/gather.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/system/detail/generic/gather.h>
 #include <thrust/transform.h>
