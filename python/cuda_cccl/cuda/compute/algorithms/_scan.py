@@ -49,11 +49,8 @@ class _Scan(Serializable):
         "init_kind",
         "force_inclusive",
         "device_scan_fn",
-        # Perf: see the matching comment on _Reduce.__slots__ -- same
-        # rationale, same strong-reference-identity caching, applied here.
-        # init_value is NOT cached this way for the same reason h_init isn't
-        # in _Reduce: it's a plain mutable array/GpuStruct/iterator the
-        # caller may mutate in place while reusing the same object.
+        # Perf cache; see _Reduce.__slots__ for rationale. init_value isn't
+        # cached this way -- same reason h_init isn't: it's mutable.
         "_last_loaded_build_result",
         "_last_stateless_op",
     ]
@@ -155,9 +152,8 @@ class _Scan(Serializable):
         # serialized as a function); bound at __call__ once resolve_build_result picks
         # + loads the current device's build result.
         #
-        # Perf: force_inclusive/init_kind are fixed for this instance, so the
-        # match below is a pure function of loaded_build_result's identity --
-        # see the matching comment on _Reduce._bind_device_reduce_fn.
+        # Perf: skip re-deriving when loaded_build_result's identity is
+        # unchanged (see _Reduce._bind_device_reduce_fn).
         if self.loaded_build_result is self._last_loaded_build_result:
             return
         match (self.force_inclusive, self.init_kind):
@@ -179,39 +175,30 @@ class _Scan(Serializable):
                 raise ValueError("Exclusive scan with No init value is not supported")
         self._last_loaded_build_result = self.loaded_build_result
 
-    def set_op(self, op: Callable | OpAdapter) -> None:
-        """Explicitly rebind this scanner's operator.
+    def update_op_state(self, op: Callable | OpAdapter) -> None:
+        """Rebind this scanner's op state in place.
 
-        ``execute()`` (unlike ``__call__``) never re-derives op state on its
-        own -- if the operator or its captured state has changed since
-        construction or the last ``set_op()``, you must call this first, or
-        ``execute()`` will silently launch with stale op state. Call this
-        only when it has actually changed; it is not needed after every
-        ``execute()``.
+        ``op`` must be the same code as the one the scanner was built
+        with -- only its state may differ. ``execute()`` never re-derives
+        op state, so call this before ``execute()`` whenever it changes.
         """
         op_adapter = make_op_adapter(op)
         self.op_cccl.state = op_adapter.get_state()
-        # Perf: invalidate __call__'s stateless-op cache -- a RawOp with
-        # state still reports is_stateful=False, so without this, a later
-        # __call__ with the same (now stale) op object would see the
-        # identity match and skip rebinding, launching with this op's state
-        # instead of that op's.
+        # Invalidate __call__'s stateless-op cache: a RawOp with state
+        # still reports is_stateful=False, so without this a later
+        # __call__ on the same object would reuse the stale state.
         self._last_stateless_op = None
 
-    def set_h_init(self, init_value: np.ndarray | DeviceArrayLike | GpuStruct) -> None:
-        """Explicitly rebind this scanner's initial value.
+    def update_h_init_state(
+        self, init_value: np.ndarray | DeviceArrayLike | GpuStruct
+    ) -> None:
+        """Rebind this scanner's initial-value state in place.
 
-        For ``VALUE_INIT``, the underlying ``Value`` object points directly
-        at ``init_value``'s host buffer, so mutating that same array object
-        in place is picked up automatically. What is NOT picked up
-        automatically (for either ``VALUE_INIT`` or ``FUTURE_VALUE_INIT``) is
-        passing a *different* array/iterator object as the initial value on a
-        later ``execute()`` call: ``execute()`` has no ``init_value``
-        parameter and never re-reads it, so the bound state keeps referencing
-        whichever object was bound by ``__init__`` or the last
-        ``set_h_init()``. Call this whenever you swap in a new ``init_value``
-        object, or ``execute()`` will silently launch against the old one.
-        Has no effect when this scanner was built with ``NO_INIT``.
+        ``init_value`` must have the same dtype as the one used at
+        construction. For ``VALUE_INIT``, mutating the same array object
+        in place is picked up automatically; passing a *different* object
+        requires this call -- ``execute()`` never re-reads ``init_value``.
+        No effect when built with ``NO_INIT``.
         """
         match self.init_kind:
             case _bindings.InitKind.FUTURE_VALUE_INIT:
@@ -233,12 +220,11 @@ class _Scan(Serializable):
         num_items: int,
         stream=None,
     ):
-        """Minimal per-call path: updates only the ``d_in``/``d_out`` pointer
-        state and issues the launch. Unlike ``__call__``, this never
-        re-derives op state or the initial-value state -- construct with the
-        right initial value (or call ``set_op``/``set_h_init`` beforehand)
-        and reuse this for repeat calls against the same op/init_value. See
-        ``_Reduce.execute`` for the full rationale; the tradeoff is identical.
+        """Minimal per-call path: updates ``d_in``/``d_out`` and launches.
+
+        Unlike ``__call__``, never re-derives op or init-value state --
+        call ``update_op_state``/``update_h_init_state`` first if either
+        changed. See ``_Reduce.execute``.
         """
         self.loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result

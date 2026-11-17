@@ -38,11 +38,8 @@ class _SegmentedReduce(Serializable):
         "end_offsets_in_cccl",
         "h_init_cccl",
         "op_cccl",
-        # Perf: see _Reduce's identical cache for rationale. Stateless op
-        # state is a constant (b"" by definition) once seen for a given op
-        # object, so __call__ can skip re-deriving it on repeat calls.
-        # Holds a strong reference (not a bare id) so identity can never
-        # false-positive against a GC'd-and-reused object.
+        # Perf cache, keyed by identity (strong ref, no GC-reuse false
+        # positives). See _Reduce.__slots__ for the full rationale.
         "_last_stateless_op",
     ]
 
@@ -106,37 +103,28 @@ class _SegmentedReduce(Serializable):
         # first time __call__ reads it.
         self._last_stateless_op = None
 
-    def set_op(self, op: Callable | OpAdapter) -> None:
-        """Explicitly rebind this reducer's operator.
+    def update_op_state(self, op: Callable | OpAdapter) -> None:
+        """Rebind this reducer's op state in place.
 
-        ``execute()`` (unlike ``__call__``) never re-derives op state on its
-        own -- if the operator or its captured state has changed since
-        construction or the last ``set_op()``, you must call this first, or
-        ``execute()`` will silently launch with stale op state. Call this
-        only when it has actually changed; it is not needed after every
-        ``execute()``.
+        ``op`` must be the same code as the one the reducer was built
+        with -- only its state may differ. ``execute()`` never re-derives
+        op state, so call this before ``execute()`` whenever it changes.
         """
         op_adapter = make_op_adapter(op)
         self.op_cccl.state = op_adapter.get_state()
-        # Perf: invalidate __call__'s stateless-op cache -- a RawOp with
-        # state still reports is_stateful=False, so without this, a later
-        # __call__ with the same (now stale) op object would see the
-        # identity match and skip rebinding, launching with this op's state
-        # instead of that op's.
+        # Invalidate __call__'s stateless-op cache: a RawOp with state
+        # still reports is_stateful=False, so without this a later
+        # __call__ on the same object would reuse the stale state.
         self._last_stateless_op = None
 
-    def set_h_init(self, h_init) -> None:
-        """Explicitly rebind this reducer's initial value.
+    def update_h_init_state(self, h_init) -> None:
+        """Rebind this reducer's h_init state in place.
 
-        The underlying ``Value`` object points directly at ``h_init``'s host
-        buffer, so mutating that same array object in place is picked up
-        automatically. What is NOT picked up automatically is passing a
-        *different* array object as the initial value on a later
-        ``execute()`` call: ``execute()`` has no ``h_init`` parameter and
-        never re-reads it, so the pointer keeps referencing whichever buffer
-        was bound by ``__init__`` or the last ``set_h_init()``. Call this
-        whenever you swap in a new ``h_init`` object, or ``execute()`` will
-        silently launch against the old one.
+        ``h_init`` must have the same dtype as the one used at
+        construction. Mutating the same array object in place is picked
+        up automatically; passing a *different* object requires this
+        call -- ``execute()`` has no ``h_init`` parameter and never
+        re-reads it.
         """
         self.h_init_cccl.state = to_cccl_value_state(h_init)
 
@@ -152,18 +140,11 @@ class _SegmentedReduce(Serializable):
         max_segment_size: int | None = None,
         stream=None,
     ):
-        """Minimal per-call path: updates only the ``d_in``/``d_out``/offset
-        pointer state and issues the launch. Unlike ``__call__``, this never
-        re-derives op state or ``h_init`` state -- construct with the right
-        initial values (or call ``set_op``/``set_h_init`` beforehand) and
-        reuse this for repeat calls against the same op/h_init. This is the
-        deliberately-unsafe-by-default counterpart to ``__call__``: it trades
-        the implicit per-call re-derivation (and its correctness margin for
-        mutated/varying op or h_init) for the lower fixed cost of a call
-        where op and h_init are call-invariant, which is the common case in
-        a hot loop. Use ``__call__`` (via ``segmented_reduce``/the object
-        returned by ``make_segmented_reduce``) if you can't make that
-        guarantee.
+        """Minimal per-call path: updates ``d_in``/``d_out``/offsets and launches.
+
+        Unlike ``__call__``, never re-derives op or ``h_init`` state --
+        call ``update_op_state``/``update_h_init_state`` first if either
+        changed. See ``_Reduce.execute``.
         """
         self.loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result

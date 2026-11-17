@@ -52,20 +52,9 @@ class _Reduce(Serializable):
         "build_results",
         "loaded_build_result",
         "device_reduce_fn",
-        # Perf: these cache two things that are data-independent once bound
-        # (device_reduce_fn only depends on which build result got loaded;
-        # a *stateless* op's state is always b"" by definition). Caching
-        # them costs one extra `is` check but skips a `Determinism(...)`
-        # reconstruction / adapter re-derivation on every call in the
-        # common "same reducer, same op, repeated calls" case.
-        #
-        # These hold strong references (not bare ids) so identity can never
-        # false-positive against a GC'd-and-reused object. h_init is
-        # deliberately NOT cached this way: it's a plain mutable
-        # numpy array/GpuStruct the caller may mutate in place between calls
-        # while reusing the same object, and identity alone can't detect
-        # that -- so h_init state is still re-marshaled every call in
-        # __call__.
+        # Perf caches, keyed by identity (strong refs, so no GC-reuse false
+        # positives). h_init isn't cached this way: it's mutable, and
+        # identity can't detect an in-place change.
         "_last_loaded_build_result",
         "_last_stateless_op",
     ]
@@ -168,13 +157,8 @@ class _Reduce(Serializable):
         # Derived from the loaded build result (not serialized); bound at __call__
         # once resolve_build_result picks + loads the current device's build result.
         # compute() handles both init kinds: it ignores h_init for NO_INIT builds.
-        #
-        # Perf: device_reduce_fn is a pure function of `loaded_build_result`'s
-        # identity -- nothing else it's derived from can change without
-        # `loaded_build_result` itself changing first. resolve_build_result()
-        # already returns the same object every call on the construction-time
-        # bound fast path, so this guard turns a `Determinism(...)`
-        # reconstruction + an attribute write into a no-op on repeat calls.
+        # Perf: device_reduce_fn depends only on loaded_build_result's
+        # identity, so skip re-deriving it when that's unchanged.
         if self.loaded_build_result is self._last_loaded_build_result:
             return
         if (
@@ -186,37 +170,28 @@ class _Reduce(Serializable):
             self.device_reduce_fn = self.loaded_build_result.compute
         self._last_loaded_build_result = self.loaded_build_result
 
-    def set_op(self, op: Callable | OpAdapter) -> None:
-        """Explicitly rebind this reducer's operator.
+    def update_op_state(self, op: Callable | OpAdapter) -> None:
+        """Rebind this reducer's op state in place.
 
-        ``execute()`` (unlike ``__call__``) never re-derives op state on its
-        own -- if the operator or its captured state has changed since
-        construction or the last ``set_op()``, you must call this first, or
-        ``execute()`` will silently launch with stale op state. Call this
-        only when it has actually changed; it is not needed after every
-        ``execute()``.
+        ``op`` must be the same code as the one the reducer was built
+        with -- only its state may differ. ``execute()`` never re-derives
+        op state, so call this before ``execute()`` whenever it changes.
         """
         op_adapter = make_op_adapter(op)
         self.op_cccl.state = op_adapter.get_state()
-        # Perf: invalidate __call__'s stateless-op cache -- a RawOp with
-        # state still reports is_stateful=False, so without this, a later
-        # __call__ with the same (now stale) op object would see the
-        # identity match and skip rebinding, launching with this op's state
-        # instead of that op's.
+        # Invalidate __call__'s stateless-op cache: a RawOp with state
+        # still reports is_stateful=False, so without this a later
+        # __call__ on the same object would reuse the stale state.
         self._last_stateless_op = None
 
-    def set_h_init(self, h_init: np.ndarray | GpuStruct) -> None:
-        """Explicitly rebind this reducer's initial value.
+    def update_h_init_state(self, h_init: np.ndarray | GpuStruct) -> None:
+        """Rebind this reducer's h_init state in place.
 
-        The underlying ``Value`` object points directly at ``h_init``'s host
-        buffer, so mutating that same array object in place is picked up
-        automatically. What is NOT picked up automatically is passing a
-        *different* array object as the initial value on a later
-        ``execute()`` call: ``execute()`` has no ``h_init`` parameter and
-        never re-reads it, so the pointer keeps referencing whichever buffer
-        was bound by ``__init__`` or the last ``set_h_init()``. Call this
-        whenever you swap in a new ``h_init`` object, or ``execute()`` will
-        silently launch against the old one.
+        ``h_init`` must have the same dtype as the one used at
+        construction. Mutating the same array object in place is picked
+        up automatically; passing a *different* object requires this
+        call -- ``execute()`` has no ``h_init`` parameter and never
+        re-reads it.
         """
         if self.init_kind is _bindings.InitKind.VALUE_INIT:
             self.h_init_cccl = cast(_bindings.Value, self.h_init_cccl)
@@ -231,17 +206,11 @@ class _Reduce(Serializable):
         num_items: int,
         stream=None,
     ):
-        """Minimal per-call path: updates only the ``d_in``/``d_out`` pointer
-        state and issues the launch. Unlike ``__call__``, this never
-        re-derives op state or ``h_init`` state -- construct with the right
-        initial values (or call ``set_op``/``set_h_init`` beforehand) and
-        reuse this for repeat calls against the same op/h_init. This is the
-        deliberately-unsafe-by-default counterpart to ``__call__``: it trades
-        the implicit per-call re-derivation (and its correctness margin for
-        mutated/varying op or h_init) for the lower fixed cost of a call
-        where op and h_init are call-invariant, which is the common case in
-        a hot loop. Use ``__call__`` (via ``reduce_into``/the object
-        returned by ``make_reduce_into``) if you can't make that guarantee.
+        """Minimal per-call path: updates ``d_in``/``d_out`` and launches.
+
+        Unlike ``__call__``, never re-derives op or ``h_init`` state --
+        call ``update_op_state``/``update_h_init_state`` first if either
+        changed.
         """
         self.loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
@@ -293,15 +262,10 @@ class _Reduce(Serializable):
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
-        # Update op state for stateful ops.
-        #
-        # Perf: for a *stateless* op, get_state() is a constant (b"" by
-        # definition -- see OpAdapter.get_state), so once we've seen this
-        # exact op object with is_stateful=False, re-running that derivation
-        # on a repeat call is pure waste. Stateful ops are NOT cached this
-        # way: get_state() can legitimately return different bytes across
-        # calls for the same object (e.g. an op capturing evolving runtime
-        # state), so those always re-derive.
+        # Perf: a stateless op's state is always b"" (OpAdapter.get_state),
+        # so skip re-deriving it once we've seen this exact op object.
+        # Stateful ops always re-derive -- their state can legitimately
+        # change across calls for the same object.
         op_adapter = make_op_adapter(op)
         if op_adapter.is_stateful or op is not self._last_stateless_op:
             self.op_cccl.state = op_adapter.get_state()
