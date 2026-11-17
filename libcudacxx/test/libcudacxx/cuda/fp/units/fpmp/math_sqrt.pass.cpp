@@ -8,19 +8,18 @@
 // fp32mp2 and fp64mp2 sqrt, rsqrt, fdim, hypot, rhypot, norm3d, rnorm3d, norm4d and rnorm4d:
 // within a few u^2 (u = 2^-24 or 2^-53) of an MPFR reference over the whole range of each,
 // subnormal operands and results and operands whose squares overflow or underflow included;
-// the results that must be exact; and the IEEE 754 special values, with those of fabs,
-// copysign, fmax and fmin.
+// the results that must be exact; and the special values (IEEE 754 but for sqrt and rsqrt,
+// which take no branch for them), with those of fabs, copysign, fmax and fmin.
 //
-// sqrt and rsqrt have two kernels: the default and low accuracy levels get a short one that
-// takes no branch (a positive, finite operand with a normal high limb; within 2.5 u^2 and 8 u^2
-// for fp32mp2, 13 u^2 for rsqrt on the device), and fpmp2_accuracy::high one that adds the
-// second-order term of its Newton step,
-// answers the special values and scales small operands (0.5 u^2 and 3.9 u^2). Every check runs
-// on the default, low and high types; sqrt and rsqrt are held to the bound of the kernel the
-// type gets, and the short kernel is not asked for special values or for operands below its
-// range. The norms and fdim take their roots from the short kernel at every level, except the
-// fp32mp2 norm3d, norm4d, rnorm3d and rnorm4d at fpmp2_accuracy::high, which are computed in
-// double and held to 2 u^2.
+// sqrt and rsqrt have two kernels, neither of which takes a branch (a positive, finite operand
+// with a normal high limb): the default and low accuracy levels get a short one (within 2.5 u^2
+// and 8 u^2 for fp32mp2, 13 u^2 for rsqrt on the device), and fpmp2_accuracy::high one that adds
+// the second-order term of its Newton step (1.3 u^2 for fp32mp2, 0.5 u^2 for fp64mp2, and
+// 4.2 u^2 for rsqrt). Every check runs on the default, low and high types; sqrt and rsqrt are
+// held to the bound of the kernel the type gets, and are not asked for positive operands below
+// their range. The norms and fdim take their roots from the short kernel at every level, except
+// the fp32mp2 norm3d, norm4d, rnorm3d and rnorm4d at fpmp2_accuracy::high, which are computed
+// in double and held to 2 u^2.
 
 #include <cuda/fpmp>
 #include <cuda/std/cassert>
@@ -90,8 +89,8 @@ struct acc_case
   double ref[3];
 };
 
-// The smallest high limb the short sqrt and rsqrt kernels are asked for: below it the residual of
-// the Newton step is subnormal.
+// The smallest high limb the sqrt and rsqrt kernels are asked for: below it the residual of the
+// Newton step is subnormal.
 template <class F>
 TEST_HOST_DEVICE_FUNC F short_kernel_min()
 {
@@ -100,7 +99,7 @@ TEST_HOST_DEVICE_FUNC F short_kernel_min()
 
 // The largest error MPFR sweeps of 1M (fp32mp2) and 262144 (fp64mp2) operand sets per range
 // found on the host and on the device, in u^2 of the result. sqrt and rsqrt at the high level:
-// 0.5 (1.9 for fp64mp2 on the device) and 3.9; at the default and low levels: 2.5 (fp32mp2) and
+// 1.3 (fp32mp2; 0.5 for fp64mp2, 1.9 on the device) and 4.2; at the default and low levels: 2.5 (fp32mp2) and
 // 8 on the host, 13 on the device, whose seed is the approximate reciprocal square root. fdim:
 // 2.5. The norms take the roots of the short kernels at every level: 4 for the fp32mp2 hypot,
 // norm3d and norm4d, and the error of the short rsqrt for rhypot, rnorm3d and rnorm4d; the
@@ -120,7 +119,7 @@ TEST_HOST_DEVICE_FUNC void check_accuracy(const acc_case<F> (&cases)[N], bool hi
   const double denorm                            = static_cast<double>(cuda::std::numeric_limits<F>::denorm_min());
   for (const acc_case<F>& c : cases)
   {
-    if (!high && (c.fn == fn_sqrt || c.fn == fn_rsqrt) && c.x[0] < short_kernel_min<F>())
+    if ((c.fn == fn_sqrt || c.fn == fn_rsqrt) && c.x[0] < short_kernel_min<F>())
     {
       continue;
     }
@@ -139,13 +138,17 @@ template <class T>
 TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
 {
   const acc_case<float> cases[] = {
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_sqrt, {0x1p-149f, 0x0p+0f}, {0x1.6a09e667f3bcdp-75, -0x1.bdd3413b26456p-129, 0x1.57d3e3adec175p-183}},
     {fn_sqrt, {0x1.8p-148f, 0x0p+0f}, {0x1.3988e1409212ep-74, 0x1.f40c86450c869p-128, 0x1.56473db022875p-182}},
     {fn_sqrt, {0x1.fffffcp-127f, 0x0p+0f}, {0x1.fffffdffffffp-64, -0x1.000001400001cp-136, -0x1.5000021000036p-207}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_sqrt, {0x1p-126f, 0x0p+0f}, {0x1p-63, 0x0p+0, 0x0p+0}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_sqrt, {0x1p-126f, 0x1p-149f}, {0x1.000000ffffff8p-63, 0x1.fffffd8000038p-137, -0x1.4ffffdf000036p-207}},
     {fn_sqrt, {0x1p-125f, -0x1p-149f}, {0x1.6a09e5b2eec96p-63, 0x1.f365ecbbfdd7dp-117, 0x1.c524c1d7584d4p-173}},
     {fn_sqrt, {0x1p-103f, 0x1p-128f}, {0x1.6a09e6c276365p-52, 0x1.ed54bf3a8263cp-106, -0x1.35546047b03d5p-166}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_sqrt, {0x1p+1f, 0x0p+0f}, {0x1.6a09e667f3bcdp+0, -0x1.bdd3413b26456p-54, 0x1.57d3e3adec175p-108}},
     {fn_sqrt, {0x1p+1f, 0x1p-24f}, {0x1.6a09e6c276365p+0, 0x1.ed54bf3a8263cp-54, -0x1.35546047b03d5p-114}},
     {fn_sqrt, {0x1.8p+1f, -0x1p-23f}, {0x1.bb67adf1b7906p+0, 0x1.0bac1667072fap-55, 0x1.ebf0922839aep-113}},
@@ -160,13 +163,17 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
     {fn_sqrt,
      {0x1.fffffep+127f, -0x1.fffffep+102f},
      {0x1.fffffe7ffffffp+63, -0x1.800001280000fp-14, 0x1.7fffd0afffd8fp-68}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_rsqrt, {0x1p-149f, 0x0p+0f}, {0x1.6a09e667f3bcdp+74, -0x1.bdd3413b26456p+20, 0x1.57d3e3adec175p-34}},
     {fn_rsqrt, {0x1.8p-148f, 0x0p+0f}, {0x1.a20bd700c2c3ep+73, -0x1.fde99f28943c7p+14, -0x1.25d6dfe8fb206p-42}},
     {fn_rsqrt, {0x1.fffffcp-127f, 0x0p+0f}, {0x1.0000010000018p+63, 0x1.400002300003fp-8, 0x1.ce00035a00065p-78}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_rsqrt, {0x1p-126f, 0x0p+0f}, {0x1p+63, 0x0p+0, 0x0p+0}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_rsqrt, {0x1p-126f, 0x1p-149f}, {0x1.fffffe000003p+62, -0x1.3ffffdd00003fp-8, 0x1.cdfffca600065p-78}},
     {fn_rsqrt, {0x1p-125f, -0x1p-149f}, {0x1.6a09e71cf8b08p+62, 0x1.31920ded8fe5cp+8, -0x1.55eafda73a632p-49}},
     {fn_rsqrt, {0x1p-103f, 0x1p-128f}, {0x1.6a09e60d71435p+51, 0x1.f962a8d761c99p-6, 0x1.da388300f7af3p-61}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_rsqrt, {0x1p+1f, 0x0p+0f}, {0x1.6a09e667f3bcdp-1, -0x1.bdd3413b26456p-55, 0x1.57d3e3adec175p-109}},
     {fn_rsqrt, {0x1p+1f, 0x1p-24f}, {0x1.6a09e60d71435p-1, 0x1.f962a8d761c99p-58, 0x1.da388300f7af3p-113}},
     {fn_rsqrt, {0x1.8p+1f, -0x1p-23f}, {0x1.279a74bb8c037p-1, -0x1.ba1b67046534dp-55, 0x1.48186c4712af7p-110}},
@@ -190,6 +197,7 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
     {fn_hypot,
      {0x1.8p+1f, 0x1p-24f, -0x1p+2f, 0x1p-23f},
      {0x1.3fffffc000002p+2, -0x1.99999851eb852p-52, 0x1.47adfa43fe54bp-108}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_hypot,
      {0x1p-149f, 0x0p+0f, 0x1p-149f, 0x0p+0f},
      {0x1.6a09e667f3bcdp-149, -0x1.bdd3413b26456p-203, 0x1.57d3e3adec175p-257}},
@@ -202,15 +210,18 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
     {fn_hypot,
      {0x1p-80f, 0x0p+0f, 0x1p-80f, 0x0p+0f},
      {0x1.6a09e667f3bcdp-80, -0x1.bdd3413b26456p-134, 0x1.57d3e3adec175p-188}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_hypot,
      {0x1.8p+80f, 0x0p+0f, -0x1.8p+80f, 0x0p+0f},
      {0x1.0f876ccdf6cd9p+81, 0x1.b1a18f13a34cp+27, -0x1.fc422a7b1dddp-28}},
     {fn_hypot,
      {0x1.fffffep+126f, 0x0p+0f, 0x1.fffffep+126f, 0x0p+0f},
      {0x1.6a09e4fde9d66p+127, 0x1.14f6320ab3ef8p+71, 0x1.0b29d2b0c19d2p+16}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_hypot,
      {0x1.fffffep+125f, 0x1.fffffep+99f, 0x1p-149f, 0x0p+0f},
      {0x1.fffffe7fffff8p+125, 0x1.000000c00000dp-425, 0x1.9800019a0001ap-498}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_hypot, {0x1p+0f, 0x0p+0f, 0x1p-80f, 0x0p+0f}, {0x1p+0, 0x1p-161, -0x1p-323}},
     {fn_hypot, {0x1.8p+80f, 0x0p+0f, 0x1p+0f, 0x0p+0f}, {0x1.8p+80, 0x1.5555555555555p-82, 0x1.5555555555555p-136}},
     {fn_hypot,
@@ -231,12 +242,15 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
     {fn_rhypot,
      {0x1p-126f, 0x0p+0f, -0x1p-126f, 0x0p+0f},
      {0x1.6a09e667f3bcdp+125, -0x1.bdd3413b26456p+71, 0x1.57d3e3adec175p+17}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_rhypot,
      {0x1.fffffcp-127f, 0x0p+0f, 0x1.8p-148f, 0x0p+0f},
      {0x1.000001fffff2p+126, -0x1.8ffffee7ffca1p+60, 0x1.429ff63bbfaf4p-5}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_rhypot,
      {0x1p-80f, 0x0p+0f, 0x1p-80f, 0x0p+0f},
      {0x1.6a09e667f3bcdp+79, -0x1.bdd3413b26456p+25, 0x1.57d3e3adec175p-29}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_rhypot,
      {0x1.8p+80f, 0x0p+0f, -0x1.8p+80f, 0x0p+0f},
      {0x1.e2b7dddfefa66p-82, 0x1.60eea419de8e2p-138, -0x1.ac812e1629b1fp-193}},
@@ -246,13 +260,16 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
     {fn_rhypot,
      {0x1.fffffep+125f, 0x1.fffffep+99f, 0x1p-149f, 0x0p+0f},
      {0x1.000000c00000dp-126, 0x1.9800019a0001ap-199, -0x1.9fff9997ff99ap-253}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_rhypot, {0x1p+0f, 0x0p+0f, 0x1p-80f, 0x0p+0f}, {0x1p+0, -0x1p-161, 0x1.8p-322}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_rhypot,
      {0x1.8p+80f, 0x0p+0f, 0x1p+0f, 0x0p+0f},
      {0x1.5555555555555p-81, 0x1.5555555555555p-135, 0x1.5555555555555p-189}},
     {fn_rhypot,
      {0x1.fffffep+127f, 0x0p+0f, 0x1p-126f, 0x0p+0f},
      {0x1.000001000001p-128, 0x1.000001000001p-200, 0x1.000001000001p-272}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_rhypot,
      {0x1.2a05f2p+33f, 0x0p+0f, 0x1.b7cdfep-34f, 0x0p+0f},
      {0x1.b7cdfd9d7bdbbp-34, -0x1.20a5465df8d2cp-88, 0x1.09a3658026f64p-142}},
@@ -262,6 +279,7 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
     {fn_norm3d,
      {0x1p+0f, 0x1p-25f, -0x1p+1f, 0x0p+0f, 0x1.8p+1f, -0x1p-23f},
      {0x1.deeea05a5d10ep+1, -0x1.57e8c781ac2d9p-53, 0x1.b4db12b1763cap-107}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_norm3d,
      {0x1p-149f, 0x0p+0f, 0x1p-149f, 0x0p+0f, 0x1p-149f, 0x0p+0f},
      {0x1.bb67ae8584caap-149, 0x1.cec95d0b5c1e3p-203, -0x1.f11db689f2ccfp-259}},
@@ -271,27 +289,33 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
     {fn_norm3d,
      {0x1p-80f, 0x0p+0f, 0x1p-80f, 0x0p+0f, -0x1p-80f, 0x0p+0f},
      {0x1.bb67ae8584caap-80, 0x1.cec95d0b5c1e3p-134, -0x1.f11db689f2ccfp-190}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_norm3d,
      {0x1.8p+80f, 0x0p+0f, 0x1.8p+80f, 0x0p+0f, 0x1.8p+80f, 0x0p+0f},
      {0x1.4c8dc2e42398p+81, -0x1.49d1f46ef5d2cp+26, 0x1.4594db8c44f32p-28}},
     {fn_norm3d,
      {0x1.fffffep+126f, 0x0p+0f, 0x1.fffffep+125f, 0x0p+0f, 0x1.fffffep+126f, 0x0p+0f},
      {0x1.7ffffe8p+127, 0x0p+0, 0x0p+0}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_norm3d,
      {0x1.fffffep+126f, 0x0p+0f, 0x1p+0f, 0x0p+0f, 0x1p-149f, 0x0p+0f},
      {0x1.fffffep+126, 0x1.000001000001p-128, 0x1.000001000001p-200}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_rnorm3d,
      {0x1p+0f, 0x0p+0f, 0x1p+0f, 0x0p+0f, 0x1p+0f, 0x0p+0f},
      {0x1.279a74590331cp-1, 0x1.34863e0792bedp-55, -0x1.a82f9e6c53222p-109}},
     {fn_rnorm3d,
      {0x1p+0f, 0x1p-25f, -0x1p+1f, 0x0p+0f, 0x1.8p+1f, -0x1p-23f},
      {0x1.11aceec18632ap-2, -0x1.556cacb71d45fp-57, 0x1.9b79be860d3b9p-111}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_rnorm3d,
      {0x1p-126f, 0x0p+0f, 0x1p-126f, 0x1p-149f, -0x1p-126f, 0x0p+0f},
      {0x1.279a7393f18eep+125, -0x1.30078696fcc6ap+69, -0x1.269fc8130debbp+11}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_rnorm3d,
      {0x1p-80f, 0x0p+0f, 0x1p-80f, 0x0p+0f, -0x1p-80f, 0x0p+0f},
      {0x1.279a74590331cp+79, 0x1.34863e0792bedp+25, -0x1.a82f9e6c53222p-29}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_rnorm3d,
      {0x1.8p+80f, 0x0p+0f, 0x1.8p+80f, 0x0p+0f, 0x1.8p+80f, 0x0p+0f},
      {0x1.8a2345cc04426p-82, -0x1.0f4d02a091ac5p-136, 0x1.ca6b2cc4e67d2p-190}},
@@ -301,12 +325,14 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
     {fn_rnorm3d,
      {0x1.fffffep+126f, 0x0p+0f, 0x1p+0f, 0x0p+0f, 0x1p-149f, 0x0p+0f},
      {0x1.000001000001p-127, 0x1.000001000001p-199, 0x1.000001000001p-271}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_norm4d,
      {0x1p+0f, 0x0p+0f, 0x1p+1f, 0x0p+0f, 0x1.8p+1f, 0x0p+0f, 0x1.4p+2f, 0x0p+0f},
      {0x1.8fae0c15ad38ap+2, -0x1.db7adb6817f6dp-54, 0x1.792d5c133a726p-108}},
     {fn_norm4d,
      {0x1p+0f, 0x1p-25f, -0x1p+1f, 0x0p+0f, 0x1.8p+1f, -0x1p-23f, 0x1p-1f, 0x1p-26f},
      {0x1.e3307c0f2b837p+1, 0x1.86820e34e6f19p-53, -0x1.77142565d7df7p-110}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_norm4d,
      {0x1p-149f, 0x0p+0f, 0x1p-149f, 0x0p+0f, 0x1p-149f, 0x0p+0f, 0x1p-148f, 0x0p+0f},
      {0x1.52a7fa9d2f8eap-148, -0x1.21c62b033c079p-202, -0x1.77caad6200612p-259}},
@@ -316,27 +342,33 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
     {fn_norm4d,
      {0x1p-80f, 0x0p+0f, 0x1p-80f, 0x0p+0f, -0x1p-80f, 0x0p+0f, 0x1p-80f, 0x0p+0f},
      {0x1p-79, 0x0p+0, 0x0p+0}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_norm4d,
      {0x1.8p+80f, 0x0p+0f, 0x1.8p+80f, 0x0p+0f, 0x1.8p+80f, 0x0p+0f, -0x1.8p+80f, 0x0p+0f},
      {0x1.8p+81, 0x0p+0, 0x0p+0}},
     {fn_norm4d,
      {0x1.fffffep+125f, 0x0p+0f, 0x1.fffffep+125f, 0x0p+0f, 0x1.fffffep+125f, 0x0p+0f, 0x1.fffffep+125f, 0x0p+0f},
      {0x1.fffffep+126, 0x0p+0, 0x0p+0}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_norm4d,
      {0x1.fffffep+126f, 0x0p+0f, 0x1p+0f, 0x0p+0f, 0x1p-149f, 0x0p+0f, -0x1.fffffep+126f, 0x0p+0f},
      {0x1.6a09e4fde9d66p+127, 0x1.14f6320ab3ef8p+71, 0x1.0b29d2b0c19d2p+16}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_rnorm4d,
      {0x1p+0f, 0x0p+0f, 0x1p+1f, 0x0p+0f, 0x1.8p+1f, 0x0p+0f, 0x1.4p+2f, 0x0p+0f},
      {0x1.47f144fe17f9fp-3, 0x1.590ac8b1276ap-59, 0x1.357a8d3098fb6p-113}},
     {fn_rnorm4d,
      {0x1p+0f, 0x1p-25f, -0x1p+1f, 0x0p+0f, 0x1.8p+1f, -0x1p-23f, 0x1p-1f, 0x1p-26f},
      {0x1.0f43a4c330827p-2, -0x1.df553e4f4ac41p-56, -0x1.3b8629c269355p-111}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_rnorm4d,
      {0x1p-126f, 0x0p+0f, 0x1p-126f, 0x1p-149f, -0x1p-126f, 0x0p+0f, 0x1p-149f, 0x0p+0f},
      {0x1.279a7393f18e2p+125, -0x1.906a389d761a9p+71, 0x1.203623792c5c8p+17}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_rnorm4d,
      {0x1p-80f, 0x0p+0f, 0x1p-80f, 0x0p+0f, -0x1p-80f, 0x0p+0f, 0x1p-80f, 0x0p+0f},
      {0x1p+79, 0x0p+0, 0x0p+0}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_rnorm4d,
      {0x1.8p+80f, 0x0p+0f, 0x1.8p+80f, 0x0p+0f, 0x1.8p+80f, 0x0p+0f, -0x1.8p+80f, 0x0p+0f},
      {0x1.5555555555555p-82, 0x1.5555555555555p-136, 0x1.5555555555555p-190}},
@@ -346,17 +378,22 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
     {fn_rnorm4d,
      {0x1.fffffep+126f, 0x0p+0f, 0x1p+0f, 0x0p+0f, 0x1p-149f, 0x0p+0f, -0x1.fffffep+126f, 0x0p+0f},
      {0x1.6a09e7d1fda4ap-128, -0x1.3e6a1a79905fdp-182, -0x1.0c44115e57fa1p-236}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_fdim, {0x1.8p+1f, 0x1p-24f, 0x1.8p+1f, -0x1p-24f}, {0x1p-23, 0x0p+0, 0x0p+0}},
     {fn_fdim, {0x1p+0f, 0x1p-25f, 0x1p+0f, -0x1p-25f}, {0x1p-24, 0x0p+0, 0x0p+0}},
     {fn_fdim, {0x1p+0f, 0x0p+0f, 0x1p-23f, 0x0p+0f}, {0x1.fffffcp-1, 0x0p+0, 0x0p+0}},
     {fn_fdim, {0x1p+1f, 0x0p+0f, -0x1.8p+1f, 0x1p-23f}, {0x1.3fffff8p+2, 0x0p+0, 0x0p+0}},
     {fn_fdim, {0x1.fffffep+127f, 0x0p+0f, 0x1.fffffep+126f, 0x0p+0f}, {0x1.fffffep+126, 0x0p+0, 0x0p+0}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_fdim, {0x1p-126f, 0x1p-149f, 0x1p-126f, 0x0p+0f}, {0x1p-149, 0x0p+0, 0x0p+0}},
     {fn_fdim, {0x1p-125f, 0x0p+0f, 0x1p-126f, 0x1p-149f}, {0x1.fffffcp-127, 0x0p+0, 0x0p+0}},
     {fn_fdim, {0x1p-149f, 0x0p+0f, -0x1p-149f, 0x0p+0f}, {0x1p-148, 0x0p+0, 0x0p+0}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_fdim, {0x1.2a05f2p+33f, 0x0p+0f, 0x1p+0f, 0x1p-25f}, {0x1.2a05f1ff8p+33, -0x1p-25, 0x0p+0}},
     {fn_fdim, {0x1.fffffep+126f, 0x0p+0f, -0x1.fffffep+125f, 0x0p+0f}, {0x1.7ffffe8p+127, 0x0p+0, 0x0p+0}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_sqrt, {0x1.002e4p-130f, 0x0p+0f}, {0x1.00171ef4b6248p-65, 0x1.a94f3e9d1fe91p-123, -0x1.89ce7b90bf812p-183}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_sqrt, {0x1.000016p-122f, 0x0p+0f}, {0x1.00000affffc38p-61, 0x1.4cbfee20b1134p-124, -0x1.106f566d56e11p-178}},
     {fn_sqrt,
      {0x1.002aacp-46f, -0x1.6f7e2p-71f},
@@ -366,7 +403,9 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
      {0x1.008416p+20f, 0x1.3acc88p-5f},
      {0x1.004202cbfa878p+10, -0x1.3d46781491626p-49, -0x1.9c2626dce6db9p-104}},
     {fn_sqrt, {0x1.000016p+126f, 0x0p+0f}, {0x1.00000affffc38p+63, 0x1.4cbfee20b1134p+0, -0x1.106f566d56e11p-54}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_rsqrt, {0x1.c3989p-127f, 0x0p+0f}, {0x1.10956f3d72b49p+63, 0x1.240a15b2a3e4p+2, 0x1.94f0fa6d7f059p-56}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_rsqrt,
      {0x1.eefe6ep-81f, 0x1.cc7946p-108f},
      {0x1.045c47532a309p+40, 0x1.9981cc07cc85cp-18, 0x1.f5100c5026639p-73}},
@@ -397,10 +436,12 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
     {fn_fdim,
      {0x1.004d3p+126f, 0x1.a3cb54p+101f, 0x1.fa9306p+124f, 0x1.d29352p+96f},
      {0x1.0350de9536b97p+125, 0x0p+0, 0x0p+0}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_fdim,
      {0x1.007efcp-95f, -0x1.75f9cep-120f, 0x1.ffe9c2p-97f, 0x1.48b49p-125f},
      {0x1.0109157fc08d8p-96, 0x0p+0, 0x0p+0}},
     {fn_fdim, {0x1.112372p-105f, 0x0p+0f, 0x1.ccb254p-107f, 0x0p+0f}, {0x1.3bedbap-106, 0x0p+0, 0x0p+0}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_fdim,
      {0x1.0702ccp-38f, -0x1.4a73e2p-63f, 0x1.ca0a7ap-40f, 0x1.f37ac4p-66f},
      {0x1.290059771cc58p-39, 0x0p+0, 0x0p+0}},
@@ -419,12 +460,14 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
     {fn_hypot,
      {-0x1.678c5p+123f, 0x1.0d9e26p+98f, 0x1.020938p+126f, -0x1.297d44p+101f},
      {0x1.05ebb88b47b8ep+126, -0x1.84d8e34423d69p+72, -0x1.b11437f53c0e8p+18}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_hypot,
      {0x1.03bf5ep-94f, 0x0p+0f, -0x1.00128ep-91f, 0x1.8eead4p-117f},
      {0x1.021f671b9bec5p-91, 0x1.a8282455841e3p-147, -0x1.0ecd4422702cap-202}},
     {fn_hypot,
      {-0x1.b33496p-103f, -0x0p+0f, 0x1.14fa12p-103f, 0x0p+0f},
      {0x1.01ef1ea943066p-102, -0x1.c55cf9cf1f3d5p-156, 0x1.f17f6b69d4397p-215}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_hypot,
      {0x1.1d5e86p+75f, 0x1.e016fap+50f, -0x1.06a966p+87f, -0x1.e25f22p+62f},
      {0x1.06a9678c34ab3p+87, -0x1.b586cb0a39ca4p+32, -0x1.36fca7dffe123p-22}},
@@ -440,9 +483,11 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
     {fn_rhypot,
      {0x1.6be1bp+65f, 0x1.c41cfep+39f, -0x1.166f08p+67f, 0x1.32a3fp+42f},
      {0x1.bf785014bf06dp-68, -0x1.33faf5442b36ap-122, -0x1.70843bf1e4905p-178}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_rhypot,
      {0x1.4db81ap+125f, -0x1.0678dp+98f, -0x1.1a288ap+126f, 0x1.1eb314p+100f},
      {0x1.8fd945000017ep-127, 0x1.d2a8ef35991a7p-181, 0x1.7446834434326p-238}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_rhypot,
      {0x1.0e9712p-68f, -0x1.e428a8p-93f, 0x1.7d1186p-69f, 0x0p+0f},
      {0x1.8c0ed12b3d61p+67, 0x1.08757cd55433bp+13, -0x1.ea8893826155ap-43}},
@@ -467,12 +512,14 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
     {fn_norm3d,
      {0x1.61f1cap+125f, 0x1.61c854p+97f, 0x1.329p+126f, 0x1.ce4eacp+101f, 0x1.a72c6p+124f, -0x1.e4e0b4p+99f},
      {0x1.7172bdd6a1b34p+126, -0x1.529a95f8b7bd5p+69, -0x1.a9869a06ce71p+12}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_norm3d,
      {0x1.04b9bp-83f, 0x1.1db1cp-108f, 0x1.5cb392p-86f, -0x1.138568p-113f, -0x1.d75c24p-86f, -0x1.92d4acp-113f},
      {0x1.0ed49b9f67688p-83, 0x1.128026b38db9cp-137, -0x1.6118accd10cbp-191}},
     {fn_norm3d,
      {0x1.3b05c6p-104f, 0x0p+0f, -0x1.ef90d2p-103f, -0x0p+0f, 0x1.a47b48p-105f, 0x0p+0f},
      {0x1.0941d5eef31e9p-102, 0x1.25a5d17184b32p-157, 0x1.a7be1f7d5f7b2p-213}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_norm3d,
      {-0x1.04fc3ap+55f, -0x1.c80812p+30f, 0x1.fb3f6ap+48f, 0x1.8bffd6p+21f, 0x1.bf5c24p+35f, -0x1.c0cc54p+8f},
      {0x1.0503ee89a6856p+55, 0x1.8ec884529b31fp+0, 0x1.a09c05494932bp-54}},
@@ -485,12 +532,14 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
     {fn_rnorm3d,
      {0x1.5749dcp-17f, -0x1.cf73c8p-45f, -0x1.0a2798p-38f, 0x1.d7a894p-65f, -0x1.052514p+1f, -0x1.df488cp-24f},
      {0x1.f5e9bb8225ddfp-2, -0x1.bd9ca3a57061bp-56, 0x1.8fea08b438287p-110}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_rnorm3d,
      {0x1.1d157ap+85f, -0x1.4dce1ep+59f, 0x1.0b7756p+86f, -0x1.f958eap+61f, 0x1.b8468ep+84f, 0x0p+0f},
      {0x1.967e222e42bf4p-87, -0x1.267d5900cb7e4p-141, 0x1.c4e253f119ed3p-200}},
     {fn_rnorm3d,
      {0x1.88981p+125f, -0x1.cd7a42p+100f, -0x1.939c2ap+123f, -0x0p+0f, 0x1.ccbd96p+126f, 0x1.244974p+99f},
      {0x1.04666d0000383p-127, -0x1.2781cbfe68893p-182, 0x1.d050b7a855447p-237}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_rnorm3d,
      {0x1.d47de8p-97f, -0x1.87a142p-122f, 0x1.7ed16ap-97f, -0x1.73cbccp-125f, 0x1.7b8b3ap-99f, -0x1.2e7eb8p-126f},
      {0x1.ac0ed4094bdd4p+95, 0x1.ec62bb599ffbcp+39, -0x1.807a3af9aa0a1p-16}},
@@ -550,6 +599,7 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
       -0x1.5a4168p+124f,
       -0x1.a5681p+99f},
      {0x1.aa5a7260540cfp+126, 0x1.75edba660ccabp+72, -0x1.af79a03a47c4ep+18}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_norm4d,
      {-0x1.f045d8p-94f,
       -0x1.2f61d8p-121f,
@@ -563,6 +613,7 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
     {fn_norm4d,
      {0x1.530f96p-103f, 0x0p+0f, 0x1.c78b02p-103f, 0x0p+0f, -0x1.c1c186p-106f, -0x0p+0f, 0x1.e71ec4p-104f, 0x0p+0f},
      {0x1.363a2edb5b8acp-102, 0x1.9340ff833fac6p-156, -0x1.5bb89a7dbc63bp-211}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_norm4d,
      {-0x1.0ad55cp+24f,
       0x1.bdc254p-1f,
@@ -613,6 +664,7 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
       -0x1.339752p+70f,
       -0x1.ab2266p+42f},
      {0x1.b7b06e995c647p-74, 0x1.5e751d817a892p-128, 0x1.3cfdb693c0765p-183}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_rnorm4d,
      {0x1.1566bcp+123f,
       0x1.a9006ap+96f,
@@ -623,6 +675,7 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
       -0x1.9f7ee4p+123f,
       0x1.724572p+98f},
      {0x1.3a2ebaffff0ecp-127, 0x1.e59cfe96bf91fp-181, 0x1.edcfcafb8bfb5p-235}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_rnorm4d,
      {-0x1.121144p-95f,
       -0x1.64a262p-121f,
@@ -646,7 +699,9 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
       0x1.02a0ccp+72f,
       0x1.6987d6p+47f},
      {0x1.facba01380591p-73, -0x1.cdb9994ae7409p-127, -0x1.142cb2f395599p-182}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_rsqrt, {0x1.b879p-133f, 0x0p+0f}, {0x1.14010a0430955p+66, 0x1.afacb132828cbp+8, 0x1.0fab218d82efbp-46}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_rsqrt,
      {0x1.67f1c2p-99f, -0x1.d9fea6p-125f},
      {0x1.315247f151308p+49, -0x1.2f116707179fap-5, 0x1.d6ff878051348p-59}},
@@ -671,24 +726,30 @@ TEST_HOST_DEVICE_FUNC void test_accuracy_fp32mp2(bool high)
     {fn_rhypot,
      {0x1.722186p-1f, 0x1.b1710cp-26f, 0x1.226ad6p-50f, 0x1.1538b2p-76f},
      {0x1.621f90e190befp+0, 0x1.4dbab9b2373d2p-55, -0x1.372f0cb8481e8p-109}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_rhypot,
      {-0x1.48adfcp+93f, -0x1.51f976p+66f, 0x1.45c4b6p+94f, -0x1.112a26p+69f},
      {0x1.6739d6f0acb65p-95, 0x1.e8e5bc229eb99p-149, 0x1.7c2b0411bab3fp-205}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_rhypot,
      {-0x1.660184p-115f, -0x0p+0f, -0x1.199512p-117f, -0x0p+0f},
      {0x1.673ce503665a9p+114, -0x1.0b6a3d0c26694p+58, 0x1.03270c4bb87fcp+4}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_rhypot,
      {-0x1.058fep+82f, 0x1.fe3658p+57f, -0x1.202adp+62f, 0x1.6a2526p+35f},
      {0x1.f51cd05037823p-83, 0x1.a062f8f2fcb28p-138, -0x1.1a13a4a46e2c3p-193}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_rnorm3d,
      {-0x1.760b96p+0f, -0x1.88f5d8p-27f, 0x1.97192p+0f, 0x1.b527dcp-28f, -0x1.dc6d92p+0f, -0x1.3956aap-28f},
      {0x1.6731e759db432p-2, -0x1.720e55980322bp-56, -0x1.b814ada44eb5p-110}},
     {fn_rnorm3d,
      {0x1.3d512cp-15f, 0x1.fe4d48p-43f, 0x1.6f9e8cp-1f, -0x1.db60e8p-26f, -0x1.3dadcep-9f, -0x0p+0f},
      {0x1.648a6c94c1747p+0, 0x1.200938ea57952p-54, -0x1.4b0599f44a962p-109}},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_rnorm3d,
      {-0x1.dd0caap+82f, -0x0p+0f, 0x1.63b8ecp+82f, -0x1.b2a4eap+57f, 0x1.a659e8p+82f, 0x1.1c1d5cp+54f},
      {0x1.673ce4ddb3641p-84, -0x1.34f7d150b0f1bp-138, 0x1.a4b8309c7bfbcp-195}},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_rnorm3d,
      {0x1.a1eb36p-73f, 0x1.22ba16p-101f, -0x1.9fec2cp-71f, -0x1.363a82p-96f, -0x1.3e2deep-74f, -0x1.8fabcep-102f},
      {0x1.30557b3c077e6p+70, -0x1.372221214425ep+15, -0x1.202cf4ab9b16fp-41}},
@@ -1601,15 +1662,14 @@ TEST_HOST_DEVICE_FUNC T operand(F x)
   return cuda::std::isnan(x) ? T(x, x) : T(x);
 }
 
-// The high limb is the expected one, and the low limb is zero, or NaN if the result is NaN. The
-// short sqrt and rsqrt kernels are only asked for positive, finite operands in their range.
+// The high limb is the expected one, and the low limb is zero, or NaN if the result is NaN.
+// sqrt and rsqrt are not asked for positive operands below their range.
 template <class T, class F, int N>
-TEST_HOST_DEVICE_FUNC void check_exact(const exact_case<F> (&cases)[N], bool high)
+TEST_HOST_DEVICE_FUNC void check_exact(const exact_case<F> (&cases)[N])
 {
   for (const exact_case<F>& c : cases)
   {
-    if (!high && (c.fn == fn_sqrt || c.fn == fn_rsqrt)
-        && !(c.x[0] >= short_kernel_min<F>() && c.x[0] <= cuda::std::numeric_limits<F>::max()))
+    if ((c.fn == fn_sqrt || c.fn == fn_rsqrt) && c.x[0] > F(0) && c.x[0] < short_kernel_min<F>())
     {
       continue;
     }
@@ -1629,7 +1689,7 @@ TEST_HOST_DEVICE_FUNC void check_exact(const exact_case<F> (&cases)[N], bool hig
 // Results that are exact, with a zero low limb: roots of squares, their reciprocals where those
 // are powers of two, Pythagorean operands, and operands scaled to both ends of the range.
 template <class T, class F>
-TEST_HOST_DEVICE_FUNC void test_exact(bool high)
+TEST_HOST_DEVICE_FUNC void test_exact()
 {
   const F maxn                = cuda::std::numeric_limits<F>::max();
   const F minn                = cuda::std::numeric_limits<F>::min();
@@ -1642,24 +1702,32 @@ TEST_HOST_DEVICE_FUNC void test_exact(bool high)
     {fn_sqrt, {F(0.25)}, F(0.5)},
     {fn_sqrt, {F(1764)}, F(42)},
     {fn_sqrt, {minn}, sizeof(F) == 4 ? F(0x1p-63) : F(0x1p-511)},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_sqrt, {tiny}, sizeof(F) == 4 ? F(0x1p-74) : F(0x1p-536)},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_rsqrt, {F(4)}, F(0.5)},
     {fn_rsqrt, {F(1)}, F(1)},
     {fn_rsqrt, {F(0.0625)}, F(4)},
     {fn_rsqrt, {minn}, sizeof(F) == 4 ? F(0x1p63) : F(0x1p511)},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_rsqrt, {tiny}, sizeof(F) == 4 ? F(0x1p74) : F(0x1p536)},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_hypot, {F(3), F(4)}, F(5)},
     {fn_hypot, {F(-5), F(12)}, F(13)},
     {fn_hypot, {F(0), F(-7)}, F(7)},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_hypot, {F(-0.0), -mind}, mind},
     {fn_hypot, {3 * mind, 4 * mind}, 5 * mind},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_hypot, {3 * minn, -4 * minn}, 5 * minn},
     {fn_hypot, {3 * big, 4 * big}, 5 * big},
     {fn_rhypot, {F(0), F(4)}, F(0.25)},
     {fn_rhypot, {F(-2), F(0)}, F(0.5)},
     {fn_norm3d, {F(1), F(2), F(2)}, F(3)},
     {fn_norm3d, {F(2), F(-3), F(6)}, F(7)},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_norm3d, {mind, 2 * mind, -2 * mind}, 3 * mind},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_norm3d, {big, 2 * big, 2 * big}, 3 * big},
     {fn_rnorm3d, {F(0), F(0), F(-8)}, F(0.125)},
     {fn_norm4d, {F(1), F(1), F(1), F(1)}, F(2)},
@@ -1671,9 +1739,11 @@ TEST_HOST_DEVICE_FUNC void test_exact(bool high)
     {fn_fdim, {F(3), F(5)}, F(0)},
     {fn_fdim, {F(-3), F(-5)}, F(2)},
     {fn_fdim, {F(3), F(3)}, F(0)},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_fdim, {mind, -mind}, 2 * mind},
+#endif // !TEST_HAS_CUDA_FAST_MATH
   };
-  check_exact<T>(cases, high);
+  check_exact<T>(cases);
   // The largest operand is its own norm. The short fp64mp2 square root is not exact on it.
   if (sizeof(F) == 4)
   {
@@ -1681,13 +1751,13 @@ TEST_HOST_DEVICE_FUNC void test_exact(bool high)
       {fn_hypot, {maxn, F(0)}, maxn},
       {fn_norm3d, {F(0), F(0), maxn}, maxn},
     };
-    check_exact<T>(max_cases, high);
+    check_exact<T>(max_cases);
   }
 }
 
-// IEEE 754 / C Annex F special values.
+// IEEE 754 / C Annex F special values, and what sqrt and rsqrt return in their place.
 template <class T, class F>
-TEST_HOST_DEVICE_FUNC void test_special_values(bool high)
+TEST_HOST_DEVICE_FUNC void test_special_values()
 {
   const F inf                 = cuda::std::numeric_limits<F>::infinity();
   const F nan                 = cuda::std::numeric_limits<F>::quiet_NaN();
@@ -1695,23 +1765,21 @@ TEST_HOST_DEVICE_FUNC void test_special_values(bool high)
   const F minn                = cuda::std::numeric_limits<F>::min();
   const F mind                = cuda::std::numeric_limits<F>::denorm_min();
   const exact_case<F> cases[] = {
-    // sqrt: +-0 and +inf are their own roots, a negative operand has none
+    // sqrt and rsqrt take no branch: sqrt(0) is 0, and every other operand that is not
+    // positive and finite gives NaN, the zero and +inf of rsqrt included (a subnormal operand
+    // is outside their range on the device and is not asked for)
     {fn_sqrt, {F(0)}, F(0)},
-    {fn_sqrt, {F(-0.0)}, F(-0.0)},
-    {fn_sqrt, {inf}, inf},
+    {fn_sqrt, {inf}, nan},
     {fn_sqrt, {-inf}, nan},
     {fn_sqrt, {F(-1)}, nan},
-    {fn_sqrt, {-mind}, nan},
     {fn_sqrt, {-maxn}, nan},
     {fn_sqrt, {nan}, nan},
     {fn_sqrt, {-nan}, nan},
-    // rsqrt: an infinity with the sign of the zero, +0 at +inf
-    {fn_rsqrt, {F(0)}, inf},
-    {fn_rsqrt, {F(-0.0)}, -inf},
-    {fn_rsqrt, {inf}, F(0)},
+    {fn_rsqrt, {F(0)}, nan},
+    {fn_rsqrt, {F(-0.0)}, nan},
+    {fn_rsqrt, {inf}, nan},
     {fn_rsqrt, {-inf}, nan},
     {fn_rsqrt, {F(-1)}, nan},
-    {fn_rsqrt, {-mind}, nan},
     {fn_rsqrt, {nan}, nan},
     // hypot: an infinity wins over a NaN; overflow
     {fn_hypot, {F(0), F(0)}, F(0)},
@@ -1732,8 +1800,10 @@ TEST_HOST_DEVICE_FUNC void test_special_values(bool high)
     {fn_rhypot, {nan, -inf}, F(0)},
     {fn_rhypot, {nan, F(1)}, nan},
     {fn_rhypot, {F(0), nan}, nan},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_rhypot, {mind, F(0)}, inf},
     {fn_rhypot, {mind, -mind}, inf},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     // norm3d, norm4d and their reciprocals
     {fn_norm3d, {F(0), F(-0.0), F(0)}, F(0)},
     {fn_norm3d, {nan, inf, F(1)}, inf},
@@ -1744,7 +1814,9 @@ TEST_HOST_DEVICE_FUNC void test_special_values(bool high)
     {fn_rnorm3d, {F(0), F(0), F(0)}, inf},
     {fn_rnorm3d, {inf, nan, F(0)}, F(0)},
     {fn_rnorm3d, {F(1), nan, F(0)}, nan},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_rnorm3d, {mind, mind, mind}, inf},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_norm4d, {F(0), F(0), F(0), F(-0.0)}, F(0)},
     {fn_norm4d, {nan, F(1), -inf, F(0)}, inf},
     {fn_norm4d, {nan, nan, nan, inf}, inf},
@@ -1770,7 +1842,9 @@ TEST_HOST_DEVICE_FUNC void test_special_values(bool high)
     // fabs and copysign act on the sign alone
     {fn_fabs, {F(-0.0)}, F(0)},
     {fn_fabs, {-inf}, inf},
+#if !TEST_HAS_CUDA_FAST_MATH // subnormal operand, result or low limb: flushed to zero on the device
     {fn_fabs, {-mind}, mind},
+#endif // !TEST_HAS_CUDA_FAST_MATH
     {fn_fabs, {-maxn}, maxn},
     {fn_fabs, {nan}, nan},
     {fn_copysign, {F(1), F(-0.0)}, F(-1)},
@@ -1800,7 +1874,7 @@ TEST_HOST_DEVICE_FUNC void test_special_values(bool high)
     {fn_fmin, {-inf, -maxn}, -inf},
     {fn_fmin, {inf, maxn}, maxn},
   };
-  check_exact<T>(cases, high);
+  check_exact<T>(cases);
 }
 
 int main(int, char**)
@@ -1811,18 +1885,18 @@ int main(int, char**)
   test_accuracy_fp64mp2<cuda::fp64mp2>(false);
   test_accuracy_fp64mp2<cuda::fp64mp2_low>(false);
   test_accuracy_fp64mp2<cuda::fp64mp2_high>(true);
-  test_exact<cuda::fp32mp2, float>(false);
-  test_exact<cuda::fp32mp2_low, float>(false);
-  test_exact<cuda::fp32mp2_high, float>(true);
-  test_exact<cuda::fp64mp2, double>(false);
-  test_exact<cuda::fp64mp2_low, double>(false);
-  test_exact<cuda::fp64mp2_high, double>(true);
-  test_special_values<cuda::fp32mp2, float>(false);
-  test_special_values<cuda::fp32mp2_low, float>(false);
-  test_special_values<cuda::fp32mp2_high, float>(true);
-  test_special_values<cuda::fp64mp2, double>(false);
-  test_special_values<cuda::fp64mp2_low, double>(false);
-  test_special_values<cuda::fp64mp2_high, double>(true);
+  test_exact<cuda::fp32mp2, float>();
+  test_exact<cuda::fp32mp2_low, float>();
+  test_exact<cuda::fp32mp2_high, float>();
+  test_exact<cuda::fp64mp2, double>();
+  test_exact<cuda::fp64mp2_low, double>();
+  test_exact<cuda::fp64mp2_high, double>();
+  test_special_values<cuda::fp32mp2, float>();
+  test_special_values<cuda::fp32mp2_low, float>();
+  test_special_values<cuda::fp32mp2_high, float>();
+  test_special_values<cuda::fp64mp2, double>();
+  test_special_values<cuda::fp64mp2_low, double>();
+  test_special_values<cuda::fp64mp2_high, double>();
 
   return 0;
 }

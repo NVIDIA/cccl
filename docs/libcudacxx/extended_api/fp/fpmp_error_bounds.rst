@@ -185,8 +185,8 @@ host against binary128 — whichever of the two is larger.
      - ``high``
      - —
      - measured
-     - ``x ≥ 0``
-     - 0.5
+     - ``x > 0``
+     - 1.3
      - 1.9 [#high]_
 
 .. [#host] Measured on the host against an exact reference, the error accumulated from
@@ -204,12 +204,16 @@ host against binary128 — whichever of the two is larger.
    on both sides in the same run. The specification's own ``fp64mp2`` table reports a smaller
    maximum for ``sqrt`` over its working range.
 .. [#high] ``sqrt`` and ``rsqrt`` of a ``high`` type add the second-order term of their Newton
-   step, which removes the seed floor described in *Conventions*, and answer the IEEE 754
-   special values. Measured against MPFR over 2\ :sup:`20` (``fp32mp2``) and 2\ :sup:`18`
-   (``fp64mp2``) operands in each of six ranges that together span the type, subnormal operands
-   included, on the host and on the device. The ``fp64mp2`` figure is the device's, which takes
-   its reciprocal square root as the seed without refining it; the host stays within 0.5.
-   ``rsqrt(x)`` stays within 2.7 on the host and 3.9 on the device at ``high``.
+   step, which removes the seed floor described in *Conventions*. Like the short kernels they
+   take no branch, and the same operands. The ``fp32mp2`` ``sqrt`` rounds its remainder and its
+   correction once each, which keeps it within three operations of the short kernel: 1.26 on
+   the host and on the device, whose results differ in the last bit for 7% of the operands,
+   against a reference with a 64-bit significand over 2\ :sup:`21` to 2\ :sup:`23` operands in
+   each of six ranges. The ``fp64mp2`` ``sqrt``
+   carries both rounding errors: measured against MPFR over 2\ :sup:`18` operands per range,
+   the figure is the device's, which takes its reciprocal square root as the seed without
+   refining it; the host stays within 0.5. ``rsqrt(x)`` stays within 2.9 on the host and 4.2
+   on the device at ``high``.
 
 ``low`` and ``mid`` addition, ``low`` and ``mid`` ``fma``, and multiplication by a one-limb
 scalar at every level compute the *same value*; the normalizing levels additionally normalize it, which is exact, so they share a bound
