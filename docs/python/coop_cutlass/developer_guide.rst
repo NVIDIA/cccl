@@ -519,6 +519,17 @@ not regenerate them.
   sizes change, measure again and update all three.
   ``cute.arch.dynamic_smem_size()`` inside each kernel gives the totals, and
   releasing one ``TempStorage`` per call gives each call's size.
+* ``concept-thread-groups.svg`` and ``concept-thread-data.svg`` draw the
+  ``group_sums`` kernel in that test file and the ``prefix_sum`` example: a
+  block of 128 threads, groups of 32 and 8, and four ``Int32`` items per
+  thread. Each appears in ``concepts.rst`` and in a module docstring
+  (``_thread_group`` and ``_thread_data``). When either kernel's block size,
+  groups or item count changes, redraw the figure and update both captions.
+* Module docstrings of ``__init__``, ``_thread_group``, ``_thread_data`` and
+  ``_temp_storage`` are user documentation. ``api.rst`` renders each under
+  its section heading with ``automodule``, followed by
+  ``.. currentmodule:: cuda.coop.cutlass``. Notes for maintainers go in the
+  comment block below the docstring.
 
 Build the documentation with Sphinx warnings treated as errors and run the
 affected examples or runtime tests. Inspect the rendered pages, source

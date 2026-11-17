@@ -27,7 +27,7 @@ warp. This kernel sums the same values over each of the three:
 
    The three groups of the kernel above, on its block of 128 threads.
 
-The group selects the CUB class that runs. Six families work on a block or
+The group selects the CUB class that runs. Five families work on a block or
 a warp, one on warps only, and the rest on blocks only:
 
 .. list-table::
@@ -91,8 +91,8 @@ These rules hold for every primitive:
 
 ``this_thread()``, ``this_cluster()`` and ``this_grid()`` name the other
 levels of a launch, and ``this_block().group_by(n)`` names ``n`` whole warps.
-These four are for questions and barriers. Any group can tell a thread where
-it is:
+No primitive takes these four. They are for the queries that every group
+answers, which tell a thread where it is:
 
 `Full example and test on GitHub
 <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
