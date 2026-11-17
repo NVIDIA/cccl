@@ -193,10 +193,10 @@ reads the first 45, and every thread of the group still calls ``load``.
 
 The count is the same for every thread of the group. For Load and Store it
 is in elements of the group's :term:`tile`, from zero to the tile's size.
-For ``reduce``, ``sum`` and a warp scan, each thread passes a scalar, such
-as ``values[0]``, and the count is in threads, from one to the group's
-size. A Python count outside the range is rejected when the kernel is
-compiled. A runtime count outside it traps on the device.
+With ``valid_items``, ``reduce``, ``sum`` and a warp scan take a scalar
+from each thread, such as ``values[0]``, and the count is in threads, from
+one to the group's size. A Python count outside the range is rejected when
+the kernel is compiled. A runtime count outside it traps on the device.
 
 .. _coop-concepts-layouts:
 .. _exchange-semantics:
