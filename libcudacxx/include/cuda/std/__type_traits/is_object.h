@@ -28,6 +28,10 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(is_object)
+#  define _CCCL_BUILTIN_IS_OBJECT(...) __is_object(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_object)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_OBJECT) && !defined(_LIBCUDACXX_USE_IS_OBJECT_FALLBACK)
