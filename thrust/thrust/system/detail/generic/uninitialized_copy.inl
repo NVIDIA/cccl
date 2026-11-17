@@ -13,12 +13,16 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/copy.h>
-#include <thrust/detail/internal_functional.h>
+#include <thrust/detail/execution_policy.h>
 #include <thrust/for_each.h>
 #include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/zip_iterator.h>
 #include <thrust/system/detail/generic/uninitialized_copy.h>
 
-#include <cuda/std/__new/device_new.h>
+#include <cuda/std/__iterator/advance.h>
+#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 
