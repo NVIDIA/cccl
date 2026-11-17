@@ -29,7 +29,7 @@ def test_partial_warp_scan_example():
 
     from cutlass import cute
 
-    import cuda.coop.cutlass as cutlass_coop
+    import cuda.coop.cutlass as coop
 
     @cute.kernel
     def scan_prefix(
@@ -37,13 +37,13 @@ def test_partial_warp_scan_example():
         destination: cute.Pointer,
         aggregates: cute.Pointer,
     ):
-        thread = cutlass_coop.this_block().rank()
-        group = cutlass_coop.this_warp().group_by(8)
+        thread = coop.this_block().rank()
+        group = coop.this_warp().group_by(8)
         inputs = cute.make_tensor(source, cute.make_layout(64))
         outputs = cute.make_tensor(destination, cute.make_layout(64))
         totals = cute.make_tensor(aggregates, cute.make_layout(64))
-        aggregate = cutlass_coop.ThreadData(items_per_thread=1)
-        result = cutlass_coop.exclusive_scan(
+        aggregate = coop.ThreadData(items_per_thread=1)
+        result = coop.exclusive_scan(
             group,
             inputs[thread],
             scan_op=operator.add,
@@ -149,3 +149,54 @@ def test_scan_example(items_per_thread):
     np.testing.assert_array_equal(maxima, np.maximum.accumulate(values))
     np.testing.assert_array_equal(exclusive, expected - values)
     np.testing.assert_array_equal(inclusive, expected)
+
+
+def test_running_total_example():
+    """Check an exclusive sum that continues across four tiles in a loop.
+
+    Each trip scans one tile of 256 values, starting from the total of the
+    tiles before it. The host compares the output with one exclusive sum
+    over all 1,024 values.
+    """
+
+    # cutlass-scan-running-total-example-begin
+    import cutlass
+    from cutlass import cute
+
+    import cuda.coop.cutlass as coop
+
+    @cute.kernel
+    def running_sum(
+        source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32
+    ):
+        block = coop.this_block()
+        total = coop.ThreadData.from_values(cutlass.Int32(0))
+        for tile in cutlass.range(tiles):
+            offset = tile * 256
+            values = coop.load(block, source, items_per_thread=4, offset=offset)
+            # Start this tile's sums from the total of the tiles before it.
+            tile_total = coop.ThreadData(1)
+            sums = coop.exclusive_scan(
+                block,
+                values,
+                initial_value=total[0],
+                aggregate_output=tile_total,
+            )
+            coop.store(block, destination, sums, offset=offset)
+            # Carry the total into the next trip with an item assignment.
+            total[0] = total[0] + tile_total[0]
+
+    @cute.jit
+    def launch(
+        source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32
+    ):
+        running_sum(source, destination, tiles).launch(grid=1, block=64)
+
+    # cutlass-scan-running-total-example-end
+    values = (np.arange(4 * 256, dtype=np.int32) * 13) % 31 - 15
+    observed = np.full_like(values, -101)
+    with device_array(values) as src, device_array(observed) as dst:
+        launch(src, dst, cutlass.Int32(4))
+    np.testing.assert_array_equal(
+        observed, values.cumsum(dtype=np.int32) - values
+    )

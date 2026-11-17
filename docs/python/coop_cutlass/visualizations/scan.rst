@@ -6,11 +6,10 @@
 Scan
 ====
 
-A scan gives each item the aggregate of earlier items in its group. An
-inclusive scan includes the current item; an exclusive scan stops before it.
-The order is blocked: all of thread zero's items, then thread one's items,
-and so on. Scans return a new scalar or ``ThreadData`` without modifying the
-input.
+A scan gives each item the running result of the items before it in its
+group. An inclusive scan includes the item itself, and an exclusive scan
+stops before it. Items are ordered thread by thread: all of thread 0's
+items, then thread 1's, and so on.
 
 The explorer covers :func:`cuda.coop.cutlass.exclusive_sum`,
 :func:`cuda.coop.cutlass.inclusive_sum`, :func:`cuda.coop.cutlass.exclusive_scan`, and
@@ -44,37 +43,23 @@ Reading the stages
 ------------------
 
 Local prefixes include only a thread's own items. The propagation stage
-computes what enters each thread from preceding threads. Combining that
-incoming prefix with the local sequence produces the final inclusive or
-exclusive result. ``∅`` means there is no preceding value, as at the start
-of an inclusive scan without an added prefix.
+computes what enters each thread from the threads before it. Combining that
+incoming prefix with the local sequence gives the final result. ``∅`` means
+that nothing enters a thread, as in the first thread of an inclusive scan.
 
-Block Scan offers ``raking``, ``raking_memoize``, and ``warp_scans``.
-Raking uses shared-memory segments to propagate prefixes. The memoized form
-retains partials in registers to reduce shared-memory reads. Warp scans
-compute local warp prefixes and propagate preceding warp aggregates. These
-algorithms preserve the same sequence and result ownership; the picture
-shows the mathematical dependencies, not an instruction trace. Executable
-blocks selecting ``warp_scans`` must contain a multiple of 32 threads.
+The three block algorithms give the same results to the same threads.
+``raking`` passes prefixes through shared-memory segments.
+``raking_memoize`` keeps partial results in registers to save shared-memory
+reads. ``warp_scans`` scans inside each warp and then adds the totals of the
+warps before it. The picture shows which values depend on which, and is not
+an instruction trace. A real block that selects ``warp_scans`` has a
+multiple of 32 threads.
 
-Block scans accept scalars or several items per thread. Physical- and
-logical-warp scans accept one scalar per lane. Warp scans accept ``valid_items``: every lane participates, but only the first
-``valid_items`` lanes have defined scan results. The explorer marks other
-results with ``?``. The count must be uniform and between one and the group's
-width, inclusive.
-
-Exclusive sums begin at zero. A generic exclusive scan accepts
-``initial_value``; a non-sum operator requires it. Inclusive
-scans reject ``initial_value``. The initial value is an operand: for maximum,
-an initial value of 10 keeps every output at least 10.
-
-Scans can write ``aggregate_output``, a separate one-item
-payload containing the input aggregate at every member. It excludes the
-initial value and any input lanes beyond ``valid_items``.
-
-Built-in scans, initial values, and aggregate outputs are supported.
-The kernel API also accepts :ref:`compiled scalar binary operators
-<coop-cutlass-device-operators>`. Prefix callbacks are unsupported.
+With ``valid_items`` on a warp, the explorer marks the lanes past the count
+with ``?``. The initial value of an exclusive scan is an operand: with
+maximum, an initial value of 10 keeps every result at least 10.
+:ref:`Scan <coop-cutlass-scan>` in the API reference has the rules for each
+control.
 
 Using Scan in a kernel
 ----------------------
@@ -112,5 +97,5 @@ it is not a custom device callback.
    :end-before: # cutlass-exclusive-scan-example-end
    :dedent: 4
 
-See :doc:`../api` and :ref:`the Programming Guide <coop-cutlass-scan>`
-for initial values, aggregate outputs, and participation requirements.
+:ref:`Scan <coop-cutlass-scan>` in the API reference covers initial values,
+aggregate outputs and which groups take which controls.

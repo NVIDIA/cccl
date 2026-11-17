@@ -341,69 +341,6 @@ and a scalar valid-prefix sum whose result is read only at block rank zero.
    :start-after: docs: start cutlass-reduce
    :end-before: docs: end cutlass-reduce
 
-.. _coop-cutlass-scan:
-
-Scan
-----
-
-``scan``, ``exclusive_scan``, ``inclusive_scan``, ``exclusive_sum``, and
-``inclusive_sum`` support block, physical warp, and logical warp groups. Block
-primitives accept scalars and fixed multi-item payloads; warp primitives
-accept one scalar per lane. A ``ThreadData(1)`` remains an array payload and
-is not accepted by Warp Scan. Input values are preserved. A scalar input
-returns a scalar; a block payload returns a fresh ``ThreadData`` with the same
-dtype and extent in blocked order.
-
-Scan supports the same seven built-in operators as Reduce. Values may be
-signed or unsigned 8-, 16-, 32-, or 64-bit integers, or 32- or 64-bit floats;
-bitwise operators require integers. ``scan`` defaults to exclusive Sum.
-Exclusive Sum starts from typed zero unless ``scan`` or ``exclusive_scan``
-supplies ``initial_value``. Other exclusive operators require that initial
-value. Inclusive scans do not accept an initial value.
-
-The initial value must be uniform within the group. A typed value must match
-the input dtype exactly. Python numeric literals must be finite and
-representable in that dtype; integer input requires an integer literal.
-For a custom binary operator, pass a
-:ref:`DeviceOperator <coop-cutlass-device-operators>` through ``scan_op``.
-Prefix callbacks and runtime callback state are unsupported.
-
-The block algorithms are ``raking`` (the default), ``raking_memoize``, and
-``warp_scans``. The last requires a block size divisible by 32. All block Scan
-algorithms use scratch and accept a :ref:`TempStorage <coop-temp-storage>`,
-which Scan can share with Load/Store. Warp Scan manages independent scratch per
-group and rejects algorithm selectors and explicit storage. Every member of
-each participating group must call the primitive, including on repeated
-calls and loop iterations.
-
-All five Scan spellings support these controls:
-
-.. list-table:: CUTLASS Scan controls
-   :header-rows: 1
-
-   * - Keyword
-     - Contract
-   * - ``valid_items``
-     - Warp-only valid prefix of one through the group width, uniform within
-       the group. Every lane participates; only lanes below the count have
-       defined scan results.
-   * - ``aggregate_output``
-     - Writable one-element ``ThreadData`` in the input dtype, inferred if
-       omitted from the descriptor. Receives the aggregate of input values,
-       excluding the initial value, at every group member.
-
-For a partial warp scan, the aggregate includes only the valid prefix and is
-available even on lanes outside that prefix. A zero count is invalid. Block Scan also
-accepts CuTe register tensors for block Scan and returns ``ThreadData``; use
-its conversion methods when a register-tensor result is needed.
-
-Inside runtime control flow, create ``aggregate_output`` in the current
-branch or loop body. Carry its value out with an explicit subscript
-assignment; see :ref:`scan aggregates in loops <coop-faq-scan-loop-aggregate>`.
-
-The :doc:`scan.py example <examples>` uses ``exclusive_scan`` with an
-initial value of seven and shares scratch with Load and Store.
-
 .. _coop-cutlass-exchange:
 
 Exchange layouts and scatter
@@ -412,8 +349,8 @@ Exchange layouts and scatter
 ``exchange(group, values, mode=...)`` rearranges fixed per-thread payloads
 across a block, physical warp, or logical warp. It returns a fresh
 ``ThreadData`` with the same dtype and extent and preserves the input. Scalar
-payloads are unsupported. Values may use the ten numeric dtypes supported by
-Scan.
+payloads are unsupported. Values may use the ten element types of
+:ref:`ThreadData <coop-thread-data>`.
 
 The API modes are ``striped_to_blocked`` (the default) and
 ``blocked_to_striped``. For group rank ``t``, item index ``i``, group size ``G``,
@@ -578,8 +515,8 @@ accepted. Sort preserves the key and value dtypes; Rank returns signed
 and sorted positions.
 
 The API accepts payloads of ``int32``, ``uint32``, ``int64``, or
-``uint64`` keys. Pair values may use any of the ten numeric dtypes supported
-by Scan; key and value extents must match. The API additionally
+``uint64`` keys. Pair values may use any of the ten element types of
+:ref:`ThreadData <coop-thread-data>`; key and value extents must match. The API additionally
 accepts scalars and CuTe register tensors. Scalar pairs require two scalars;
 array pairs require two arrays. Scalar inputs produce scalar results.
 Register-tensor inputs produce ``ThreadData`` results.

@@ -330,28 +330,26 @@ not replace synchronization required by earlier application writes.
 How do I carry a scan aggregate across loop iterations?
 -------------------------------------------------------
 
-Create ``aggregate_output`` inside the loop, then explicitly assign its
-item to the payload carried across iterations. CuTe recognizes that
-assignment as a loop-carried update. An outer payload used without an
-explicit loop-carried update is rejected: the implicit mutation alone cannot
-carry its new value out of the runtime region.
+Create the ``aggregate_output`` payload inside the loop, and copy its item
+into a payload that lives outside the loop with an assignment. CuTe carries
+an assigned item from one trip to the next. A payload created outside the
+loop and passed as ``aggregate_output`` is rejected when the kernel is
+compiled.
 
-.. code-block:: python
+In this kernel ``tile_total`` is created on each trip, and
+``total[0] = total[0] + tile_total[0]`` carries the running total:
 
-   aggregate = coop.ThreadData.from_values(cutlass.Int32(0))
-   total = cutlass.Int32(0)
-   for _ in cutlass.range(iterations):
-       total = total + aggregate[0]
-       current = coop.ThreadData(1)
-       prefix = coop.inclusive_sum(block, value, aggregate_output=current)
-       aggregate[0] = current[0]
+.. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_scan_documentation.py
+   :language: python
+   :start-after: # cutlass-scan-running-total-example-begin
+   :end-before: # cutlass-scan-running-total-example-end
+   :dedent: 4
 
-The same rule applies to runtime branches and Radix Rank's
-``exclusive_digit_prefix``: create the output in that region and copy its
-items explicitly before leaving it. Keep the condition or iteration count
-uniform across the participating group. The scan aggregate excludes the
-exclusive seed and is available to every member; an ordinary Reduce result
-is defined only at group rank zero.
+The same holds inside a runtime ``if``, and for ``exclusive_digit_prefix``
+of ``radix_rank_keys``. The loop count or condition must be the same in
+every thread of the group. Every thread receives the aggregate, where a
+``reduce`` result is defined at rank 0 only. The aggregate leaves out
+``initial_value``.
 
 .. _coop-faq-payload-conversion:
 
