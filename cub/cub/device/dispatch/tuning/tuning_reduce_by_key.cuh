@@ -1210,9 +1210,11 @@ private:
       {
         return __make_thrust_policy(11, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_LDG);
       }
-      // F64 with 2- or 4-byte keys, and F32 or I64 with 8-byte keys, keep the SM100 tunings below
+      // F32 or I64 with 8-byte keys, and F64 with 2- or 4-byte keys on SM100 (but not SM103), keep the SM100 tunings
+      // below
       if ((key_size == 8 && accum_size == 8 && accum_t != type_t::int64)
-          || ((key_size == 2 || key_size == 4) && accum_size == 8 && accum_t != type_t::float64)
+          || ((key_size == 2 || key_size == 4) && accum_size == 8
+              && (accum_t != type_t::float64 || cc >= ::cuda::compute_capability{10, 3}))
           || (key_size == 8 && accum_size == 4 && accum_t != type_t::float32))
       {
         return get_lookback_policy(::cuda::compute_capability{9, 0});
