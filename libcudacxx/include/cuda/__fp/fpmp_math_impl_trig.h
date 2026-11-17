@@ -1274,7 +1274,9 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_atan2(
 {
   // An operand with a zero high limb over a nonzero low limb is that low limb. One test of the
   // bit patterns keeps this off the path of ordinary operands.
-  if (((::cuda::std::bit_cast<uint32_t>(__x_hi) << 1) == 0u) | ((::cuda::std::bit_cast<uint32_t>(__y_hi) << 1) == 0u))
+  const bool __x_hi_zero = (::cuda::std::bit_cast<uint32_t>(__x_hi) << 1) == 0u;
+  const bool __y_hi_zero = (::cuda::std::bit_cast<uint32_t>(__y_hi) << 1) == 0u;
+  if (__x_hi_zero | __y_hi_zero)
   {
     if (__x_hi == 0.0f && __x_lo != 0.0f)
     {
