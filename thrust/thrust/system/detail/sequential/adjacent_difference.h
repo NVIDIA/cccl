@@ -16,40 +16,26 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/iterator/iterator_traits.h>
+#include <thrust/detail/function.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
+
+#include <cuda/std/__numeric/adjacent_difference.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator adjacent_difference(
+_CCCL_HOST_DEVICE_API OutputIterator adjacent_difference(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator first,
   InputIterator last,
   OutputIterator result,
   BinaryFunction binary_op)
 {
-  using InputType = thrust::detail::it_value_t<InputIterator>;
-
-  if (first == last)
-  {
-    return result;
-  }
-
-  InputType curr = *first;
-
-  *result = curr;
-
-  while (++first != last)
-  {
-    const InputType next = *first; // NOLINT(performance-unnecessary-copy-initialization)
-    *(++result)          = binary_op(next, curr);
-    curr                 = next;
-  }
-
-  return ++result;
+  // wrap binary_op to handle proxy references
+  return ::cuda::std::adjacent_difference(
+    first, last, result, thrust::detail::wrapped_function<BinaryFunction>{binary_op});
 }
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

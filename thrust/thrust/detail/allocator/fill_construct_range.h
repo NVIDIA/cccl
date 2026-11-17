@@ -45,13 +45,13 @@ struct construct2_via_allocator
   Arg1 arg;
 
   template <typename T>
-  _CCCL_HOST_DEVICE void operator()(T& x)
+  _CCCL_HOST_DEVICE_API void operator()(T& x)
   {
     ::cuda::std::allocator_traits<Allocator>::construct(a, &x, arg);
   }
 };
 template <typename Allocator, typename Pointer, typename Size, typename T>
-_CCCL_HOST_DEVICE void fill_construct_range(Allocator& a, Pointer p, Size n, const T& value)
+_CCCL_HOST_DEVICE_API void fill_construct_range(Allocator& a, Pointer p, Size n, const T& value)
 {
   if constexpr (has_effectful_member_construct2<Allocator, typename ::cuda::std::pointer_traits<Pointer>::element_type, T>)
   {

@@ -78,7 +78,7 @@ struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
     cudaError_t (*)(void*, size_t&, CUB_NS_QUALIFIER::DoubleBuffer<_Tp>&, size_t, int, int, const _Policy&);
 
   template <class _Tp, class _Policy, class _BinaryPredicate>
-  [[nodiscard]] static _CCCL_CONSTEVAL _DeviceRadixSort<_Tp, _Policy> __select_radix_impl() noexcept
+  [[nodiscard]] _CCCL_HOST_API static _CCCL_CONSTEVAL _DeviceRadixSort<_Tp, _Policy> __select_radix_impl() noexcept
   {
     if constexpr (__is_one_of_v<remove_cvref_t<_BinaryPredicate>, less<>, less<_Tp>>)
     {

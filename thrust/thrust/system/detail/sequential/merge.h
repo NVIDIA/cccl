@@ -20,6 +20,7 @@
 #include <thrust/detail/function.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
+#include <cuda/std/__algorithm/merge.h>
 #include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -31,8 +32,8 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE OutputIterator merge(
-  sequential::execution_policy<DerivedPolicy>& exec,
+_CCCL_HOST_DEVICE_API OutputIterator merge(
+  sequential::execution_policy<DerivedPolicy>&,
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
@@ -40,26 +41,8 @@ _CCCL_HOST_DEVICE OutputIterator merge(
   OutputIterator result,
   StrictWeakOrdering comp)
 {
-  // wrap comp
-  const thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
-
-  while (first1 != last1 && first2 != last2)
-  {
-    if (wrapped_comp(*first2, *first1))
-    {
-      *result = *first2;
-      ++first2;
-    } // end if
-    else
-    {
-      *result = *first1;
-      ++first1;
-    } // end else
-
-    ++result;
-  } // end while
-
-  return thrust::copy(exec, first2, last2, thrust::copy(exec, first1, last1, result));
+  return ::cuda::std::merge(
+    first1, last1, first2, last2, result, thrust::detail::wrapped_function<StrictWeakOrdering>{comp});
 } // end merge()
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -71,7 +54,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -83,8 +66,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_k
   OutputIterator2 values_result,
   StrictWeakOrdering comp)
 {
-  // wrap comp
-  const thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
 
   while (keys_first1 != keys_last1 && keys_first2 != keys_last2)
   {

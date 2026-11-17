@@ -64,9 +64,9 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename BidirectionalIterator>
-_CCCL_HOST_DEVICE void reverse(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-                               BidirectionalIterator first,
-                               BidirectionalIterator last);
+_CCCL_HOST_DEVICE_API void reverse(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+                                   BidirectionalIterator first,
+                                   BidirectionalIterator last);
 
 /*! \p reverse reverses a range. That is: for every <tt>i</tt> such that
  *  <tt>0 <= i <= (last - first) / 2</tt>, it exchanges <tt>*(first + i)</tt>
@@ -101,7 +101,7 @@ _CCCL_HOST_DEVICE void reverse(const thrust::detail::execution_policy_base<Deriv
  *  \endverbatim
  */
 template <typename BidirectionalIterator>
-void reverse(BidirectionalIterator first, BidirectionalIterator last);
+_CCCL_HOST_API void reverse(BidirectionalIterator first, BidirectionalIterator last);
 
 /*! \p reverse_copy differs from \p reverse only in that the reversed range
  *  is written to a different output range, rather than inplace.
@@ -155,7 +155,7 @@ void reverse(BidirectionalIterator first, BidirectionalIterator last);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename BidirectionalIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator reverse_copy(
+_CCCL_HOST_DEVICE_API OutputIterator reverse_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   BidirectionalIterator first,
   BidirectionalIterator last,
@@ -207,7 +207,8 @@ _CCCL_HOST_DEVICE OutputIterator reverse_copy(
  *  \endverbatim
  */
 template <typename BidirectionalIterator, typename OutputIterator>
-OutputIterator reverse_copy(BidirectionalIterator first, BidirectionalIterator last, OutputIterator result);
+_CCCL_HOST_API OutputIterator
+reverse_copy(BidirectionalIterator first, BidirectionalIterator last, OutputIterator result);
 
 /*!
  * \} end group reordering

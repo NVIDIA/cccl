@@ -35,7 +35,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2>
-_CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
+_CCCL_HOST_DEVICE_API ForwardIterator2 swap_ranges(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator1 first1,
   ForwardIterator1 last1,
@@ -47,7 +47,7 @@ _CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
 } // end swap_ranges()
 
 template <typename ForwardIterator1, typename ForwardIterator2>
-ForwardIterator2 swap_ranges(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterator2 first2)
+_CCCL_HOST_API ForwardIterator2 swap_ranges(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterator2 first2)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::swap_ranges");
   using thrust::system::detail::generic::select_system;

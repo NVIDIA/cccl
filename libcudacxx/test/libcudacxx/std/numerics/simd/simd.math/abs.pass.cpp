@@ -20,6 +20,7 @@
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"
+#include "math_test_utils.h"
 
 template <typename T>
 struct signed_values
@@ -33,8 +34,24 @@ struct signed_values
 
 // floating point types
 template <typename T, int N>
+TEST_HOST_DEVICE_FUNC void test_wrapper()
+{
+  using V = simd::vec<T, N>;
+  const explicit_math_wrapper<V> x{V(T{4})};
+  static_assert(cuda::std::is_same_v<decltype(simd::abs(x)), V>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::abs(x)), V>);
+  static_assert(noexcept(simd::abs(x)));
+  static_assert(noexcept(simd::fabs(x)));
+  static_assert(noexcept(cuda::std::abs(x)));
+
+  check_math_values(simd::abs(x), T{4});
+  check_math_values(simd::fabs(x), T{4});
+}
+
+template <typename T, int N>
 TEST_HOST_DEVICE_FUNC void test_type()
 {
+  test_wrapper<T, N>();
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec vec(math_values<T>{});
 
@@ -94,6 +111,10 @@ DEFINE_SIMD_MATH_FLOATING_TEST_RUNTIME()
 
 int main(int, char**)
 {
+  test_wrapper<float, 1>();
+  test_wrapper<float, 3>();
+  test_wrapper<double, 1>();
+  test_wrapper<double, 3>();
   assert(test());
   assert(test_runtime());
   test_signed_integral();

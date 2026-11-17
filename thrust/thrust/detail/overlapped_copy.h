@@ -23,7 +23,7 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 template <typename InputIterator, typename OutputIterator>
-OutputIterator sequential_copy(InputIterator first, InputIterator last, OutputIterator result)
+_CCCL_HOST_API OutputIterator sequential_copy(InputIterator first, InputIterator last, OutputIterator result)
 {
   for (; first != last; ++first, ++result)
   {
@@ -34,7 +34,7 @@ OutputIterator sequential_copy(InputIterator first, InputIterator last, OutputIt
 } // end sequential_copy()
 
 template <typename BidirectionalIterator1, typename BidirectionalIterator2>
-BidirectionalIterator2
+_CCCL_HOST_API BidirectionalIterator2
 sequential_copy_backward(BidirectionalIterator1 first, BidirectionalIterator1 last, BidirectionalIterator2 result)
 {
   // yes, we preincrement
@@ -50,7 +50,7 @@ sequential_copy_backward(BidirectionalIterator1 first, BidirectionalIterator1 la
 namespace dispatch
 {
 template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
-RandomAccessIterator2 overlapped_copy(
+_CCCL_HOST_API RandomAccessIterator2 overlapped_copy(
   cpp::execution_policy<DerivedPolicy>&,
   RandomAccessIterator1 first,
   RandomAccessIterator1 last,
@@ -74,7 +74,7 @@ RandomAccessIterator2 overlapped_copy(
 } // end overlapped_copy()
 
 template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
-RandomAccessIterator2 overlapped_copy(
+_CCCL_HOST_API RandomAccessIterator2 overlapped_copy(
   thrust::execution_policy<DerivedPolicy>& exec,
   RandomAccessIterator1 first,
   RandomAccessIterator1 last,
@@ -89,7 +89,7 @@ RandomAccessIterator2 overlapped_copy(
 } // namespace dispatch
 
 template <typename RandomAccessIterator1, typename RandomAccessIterator2>
-RandomAccessIterator2
+_CCCL_HOST_API RandomAccessIterator2
 overlapped_copy(RandomAccessIterator1 first, RandomAccessIterator1 last, RandomAccessIterator2 result)
 {
   using System1 = typename thrust::iterator_system<RandomAccessIterator2>::type;

@@ -73,7 +73,7 @@ public:
 
   //! @brief Constructs an empty `__basic_any` object.
   //! @post `has_value() == false`
-  __basic_any() = default;
+  _CCCL_HIDE_FROM_ABI __basic_any() = default;
 
   // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   //! @brief Constructs a `__basic_any` object that contains a copy of `__value`.
@@ -136,8 +136,8 @@ public:
 
   // We use base classes to implement movability and copyability. All we need here is to
   // accept the default implementations.
-  __basic_any(__basic_any&& __other)      = default;
-  __basic_any(__basic_any const& __other) = default;
+  _CCCL_HIDE_FROM_ABI __basic_any(__basic_any&& __other)      = default;
+  _CCCL_HIDE_FROM_ABI __basic_any(__basic_any const& __other) = default;
 
   //! @brief Converting constructor that move constructs from a compatible
   //! `__basic_any` object.
@@ -213,8 +213,8 @@ public:
 
   // We use base classes to implement movability and copyability. All we need here is to
   // accept the default implementations.
-  auto operator=(__basic_any&& __other) -> __basic_any&      = default;
-  auto operator=(__basic_any const& __other) -> __basic_any& = default;
+  _CCCL_HIDE_FROM_ABI auto operator=(__basic_any&& __other) -> __basic_any&      = default;
+  _CCCL_HIDE_FROM_ABI auto operator=(__basic_any const& __other) -> __basic_any& = default;
 
 #if !_CCCL_CUDA_COMPILER(NVCC, <, 12, 9)
   //! @brief Converting move assignment operator from a compatible `__basic_any`

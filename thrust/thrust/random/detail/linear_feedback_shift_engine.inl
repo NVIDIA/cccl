@@ -25,19 +25,19 @@ THRUST_NAMESPACE_BEGIN
 namespace random
 {
 template <typename UIntType, size_t W, size_t K, size_t Q, size_t S>
-_CCCL_HOST_DEVICE linear_feedback_shift_engine<UIntType, W, K, Q, S>::linear_feedback_shift_engine(result_type value)
+_CCCL_HOST_DEVICE_API linear_feedback_shift_engine<UIntType, W, K, Q, S>::linear_feedback_shift_engine(result_type value)
 {
   seed(value);
 } // end linear_feedback_shift_engine::linear_feedback_shift_engine()
 
 template <typename UIntType, size_t W, size_t K, size_t Q, size_t S>
-_CCCL_HOST_DEVICE void linear_feedback_shift_engine<UIntType, W, K, Q, S>::seed(result_type value)
+_CCCL_HOST_DEVICE_API void linear_feedback_shift_engine<UIntType, W, K, Q, S>::seed(result_type value)
 {
   m_value = value;
 } // end linear_feedback_shift_engine::seed()
 
 template <typename UIntType, size_t W, size_t K, size_t Q, size_t S>
-_CCCL_HOST_DEVICE typename linear_feedback_shift_engine<UIntType, W, K, Q, S>::result_type
+_CCCL_HOST_DEVICE_API typename linear_feedback_shift_engine<UIntType, W, K, Q, S>::result_type
 linear_feedback_shift_engine<UIntType, W, K, Q, S>::operator()()
 {
   const UIntType b    = (((m_value << Q) ^ m_value) & wordmask) >> (K - S);
@@ -47,7 +47,7 @@ linear_feedback_shift_engine<UIntType, W, K, Q, S>::operator()()
 } // end linear_feedback_shift_engine::operator()()
 
 template <typename UIntType, size_t W, size_t K, size_t Q, size_t S>
-_CCCL_HOST_DEVICE void linear_feedback_shift_engine<UIntType, W, K, Q, S>::discard(unsigned long long z)
+_CCCL_HOST_DEVICE_API void linear_feedback_shift_engine<UIntType, W, K, Q, S>::discard(unsigned long long z)
 {
   for (; z > 0; --z)
   {
@@ -57,7 +57,7 @@ _CCCL_HOST_DEVICE void linear_feedback_shift_engine<UIntType, W, K, Q, S>::disca
 
 template <typename UIntType, size_t W, size_t K, size_t Q, size_t S>
 template <typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>&
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
 linear_feedback_shift_engine<UIntType, W, K, Q, S>::stream_out(std::basic_ostream<CharT, Traits>& os) const
 {
   using ostream_type = std::basic_ostream<CharT, Traits>;
@@ -82,7 +82,7 @@ linear_feedback_shift_engine<UIntType, W, K, Q, S>::stream_out(std::basic_ostrea
 
 template <typename UIntType, size_t W, size_t K, size_t Q, size_t S>
 template <typename CharT, typename Traits>
-std::basic_istream<CharT, Traits>&
+_CCCL_HOST_API std::basic_istream<CharT, Traits>&
 linear_feedback_shift_engine<UIntType, W, K, Q, S>::stream_in(std::basic_istream<CharT, Traits>& is)
 {
   using istream_type = std::basic_istream<CharT, Traits>;
@@ -103,35 +103,35 @@ linear_feedback_shift_engine<UIntType, W, K, Q, S>::stream_in(std::basic_istream
 }
 
 template <typename UIntType, size_t W, size_t K, size_t Q, size_t S>
-_CCCL_HOST_DEVICE bool linear_feedback_shift_engine<UIntType, W, K, Q, S>::equal(
+_CCCL_HOST_DEVICE_API bool linear_feedback_shift_engine<UIntType, W, K, Q, S>::equal(
   const linear_feedback_shift_engine<UIntType, W, K, Q, S>& rhs) const
 {
   return m_value == rhs.m_value;
 }
 
 template <typename UIntType, size_t W, size_t K, size_t Q, size_t S>
-_CCCL_HOST_DEVICE bool operator==(const linear_feedback_shift_engine<UIntType, W, K, Q, S>& lhs,
-                                  const linear_feedback_shift_engine<UIntType, W, K, Q, S>& rhs)
+_CCCL_HOST_DEVICE_API bool operator==(const linear_feedback_shift_engine<UIntType, W, K, Q, S>& lhs,
+                                      const linear_feedback_shift_engine<UIntType, W, K, Q, S>& rhs)
 {
   return thrust::random::detail::random_core_access::equal(lhs, rhs);
 }
 
 template <typename UIntType, size_t W, size_t K, size_t Q, size_t S>
-_CCCL_HOST_DEVICE bool operator!=(const linear_feedback_shift_engine<UIntType, W, K, Q, S>& lhs,
-                                  const linear_feedback_shift_engine<UIntType, W, K, Q, S>& rhs)
+_CCCL_HOST_DEVICE_API bool operator!=(const linear_feedback_shift_engine<UIntType, W, K, Q, S>& lhs,
+                                      const linear_feedback_shift_engine<UIntType, W, K, Q, S>& rhs)
 {
   return !(lhs == rhs);
 }
 
 template <typename UIntType, size_t W, size_t K, size_t Q, size_t S, typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>&
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
 operator<<(std::basic_ostream<CharT, Traits>& os, const linear_feedback_shift_engine<UIntType, W, K, Q, S>& e)
 {
   return thrust::random::detail::random_core_access::stream_out(os, e);
 }
 
 template <typename UIntType, size_t W, size_t K, size_t Q, size_t S, typename CharT, typename Traits>
-std::basic_istream<CharT, Traits>&
+_CCCL_HOST_API std::basic_istream<CharT, Traits>&
 operator>>(std::basic_istream<CharT, Traits>& is, linear_feedback_shift_engine<UIntType, W, K, Q, S>& e)
 {
   return thrust::random::detail::random_core_access::stream_in(is, e);

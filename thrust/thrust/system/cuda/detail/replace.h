@@ -14,7 +14,12 @@
 #endif // no system header
 
 #if _CCCL_CUDA_COMPILATION()
+#  include <cub/device/device_transform.cuh>
+#  include <cub/util_namespace.cuh>
+
 #  include <thrust/detail/internal_functional.h>
+#  include <thrust/iterator/iterator_traits.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/transform.h>
 
 #  include <cuda/__functional/equal_to_value.h>
@@ -23,7 +28,7 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
 template <class Derived, class Iterator, class T>
-void _CCCL_HOST_DEVICE
+void _CCCL_HOST_DEVICE_API
 replace(execution_policy<Derived>& policy, Iterator first, Iterator last, T const& old_value, T const& new_value)
 {
   cuda_cub::transform_if(
@@ -36,14 +41,14 @@ replace(execution_policy<Derived>& policy, Iterator first, Iterator last, T cons
 }
 
 template <class Derived, class Iterator, class Predicate, class T>
-void _CCCL_HOST_DEVICE
+void _CCCL_HOST_DEVICE_API
 replace_if(execution_policy<Derived>& policy, Iterator first, Iterator last, Predicate pred, T const& new_value)
 {
   cuda_cub::transform_if(policy, first, last, first, CUB_NS_QUALIFIER::detail::__return_constant<T>{new_value}, pred);
 }
 
 template <class Derived, class Iterator, class StencilIt, class Predicate, class T>
-void _CCCL_HOST_DEVICE replace_if(
+void _CCCL_HOST_DEVICE_API replace_if(
   execution_policy<Derived>& policy,
   Iterator first,
   Iterator last,
@@ -56,7 +61,7 @@ void _CCCL_HOST_DEVICE replace_if(
 }
 
 template <class Derived, class InputIt, class OutputIt, class Predicate, class T>
-OutputIt _CCCL_HOST_DEVICE replace_copy_if(
+OutputIt _CCCL_HOST_DEVICE_API replace_copy_if(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -70,7 +75,7 @@ OutputIt _CCCL_HOST_DEVICE replace_copy_if(
 }
 
 template <class Derived, class InputIt, class StencilIt, class OutputIt, class Predicate, class T>
-OutputIt _CCCL_HOST_DEVICE replace_copy_if(
+OutputIt _CCCL_HOST_DEVICE_API replace_copy_if(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -85,7 +90,7 @@ OutputIt _CCCL_HOST_DEVICE replace_copy_if(
 }
 
 template <class Derived, class InputIt, class OutputIt, class T>
-OutputIt _CCCL_HOST_DEVICE replace_copy(
+OutputIt _CCCL_HOST_DEVICE_API replace_copy(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,

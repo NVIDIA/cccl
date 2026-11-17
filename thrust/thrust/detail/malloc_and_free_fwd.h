@@ -19,14 +19,14 @@
 THRUST_NAMESPACE_BEGIN
 
 template <typename DerivedPolicy>
-_CCCL_HOST_DEVICE pointer<void, DerivedPolicy>
+_CCCL_HOST_DEVICE_API pointer<void, DerivedPolicy>
 malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::size_t n);
 
 template <typename T, typename DerivedPolicy>
-_CCCL_HOST_DEVICE pointer<T, DerivedPolicy>
+_CCCL_HOST_DEVICE_API pointer<T, DerivedPolicy>
 malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::size_t n);
 
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedPolicy>& system, Pointer ptr);
+_CCCL_HOST_DEVICE_API void free(const thrust::detail::execution_policy_base<DerivedPolicy>& system, Pointer ptr);
 
 THRUST_NAMESPACE_END

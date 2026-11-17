@@ -9,6 +9,7 @@
 #include "algorithm_execution.h"
 #include "build_result_caching.h"
 #include "test_util.h"
+#include <cccl/c/serialization.h>
 #include <cccl/c/transform.h>
 #include <cccl/c/types.h>
 
@@ -1024,7 +1025,7 @@ C2H_TEST("Transform build result has serialization metadata populated", "[transf
   REQUIRE(CUDA_SUCCESS == cccl_device_transform_cleanup(&build));
 }
 
-C2H_TEST("Transform compile/load round-trip", "[transform][serialization]")
+C2H_TEST("Transform compile/serialize/load round-trip", "[transform][serialization]")
 {
   using T = int32_t;
 
@@ -1056,6 +1057,14 @@ C2H_TEST("Transform compile/load round-trip", "[transform][serialization]")
   REQUIRE(build.transform_kernel_lowered_name != nullptr);
   CHECK(build.library == nullptr);
   CHECK(build.transform_kernel == nullptr);
+
+  void* serialized       = nullptr;
+  size_t serialized_size = 0;
+  REQUIRE(CUDA_SUCCESS == cccl_device_transform_serialize(&build, &serialized, &serialized_size));
+  REQUIRE(CUDA_SUCCESS == cccl_device_transform_cleanup(&build));
+  build = {};
+  REQUIRE(CUDA_SUCCESS == cccl_device_transform_deserialize(&build, serialized, serialized_size));
+  cccl_serialization_buffer_free(serialized);
 
   REQUIRE(CUDA_SUCCESS == cccl_device_transform_load(&build));
   REQUIRE(build.library != nullptr);

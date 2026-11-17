@@ -133,6 +133,10 @@ test_queries(const cudax::coop::generic_group<cuda::thread_level, ParentGroup, M
   const auto group_count_ref        = group.__mapping_result().group_count();
   const auto group_rank_ref         = group.__mapping_result().group_rank();
 
+  static_assert(cuda::std::is_same_v<decltype(group.static_rank(parent_group)), cuda::std::size_t>);
+  REQUIRE(group_view.static_rank(parent_group) == MappingResult::static_group_rank());
+  REQUIRE(group.static_rank(parent_group) == MappingResult::static_group_rank());
+
   REQUIRE(group.static_count(parent_group) == static_group_count_ref);
   REQUIRE(group.count(parent_group) == group_count_ref);
   REQUIRE(group.rank(parent_group) == group_rank_ref);
@@ -153,6 +157,7 @@ __device__ void test_group_by_group(Unit unit, Level level, Config config)
     cudax::coop::generic_group group{unit, parent_group, mapping, synchronizer};
 
     test_common_properties<Unit, Level>(config.hierarchy(), group);
+    static_assert(group.static_rank(parent_group) == (nbarriers == 1 ? 0 : cuda::std::dynamic_extent));
     test_queries<N>(group, parent_group);
     group.sync();
   }
@@ -164,6 +169,7 @@ __device__ void test_group_by_group(Unit unit, Level level, Config config)
     cudax::coop::generic_group group{unit, parent_group, mapping, synchronizer};
 
     test_common_properties<Unit, Level>(config.hierarchy(), group);
+    static_assert(group.static_rank(parent_group) == cuda::std::dynamic_extent);
     test_queries<cuda::std::dynamic_extent>(group, parent_group);
     group.sync();
   }

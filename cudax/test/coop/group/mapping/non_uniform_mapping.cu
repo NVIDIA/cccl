@@ -28,6 +28,7 @@ __device__ void test_result_storage()
 
   static_assert(cudax::coop::__group_mapping_result<Result>);
   static_assert(Result::static_group_count() == 3);
+  static_assert(Result::static_group_rank() == cuda::std::dynamic_extent);
   static_assert(!Result::has_uniform_static_unit_count());
   static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
 
@@ -75,6 +76,24 @@ __device__ void test_result_storage()
   const Uniform uniform{2, 7, cuda::device::lane_mask::all()};
 
   CHECK(uniform.unit_count() == 8);
+
+  using Single = cudax::coop::__mapping_result<cudax::coop::__static_unit_counts<32>, Exhaustive, Contiguous>;
+
+  static_assert(cudax::coop::__group_mapping_result<Single>);
+  static_assert(Single::static_group_rank() == 0);
+
+  const Single single{0, 7, cuda::device::lane_mask::all()};
+
+  CHECK(single.static_group_rank() == 0);
+  CHECK(single.group_rank() == single.static_group_rank());
+
+  if constexpr (!Exhaustive)
+  {
+    const auto invalid = Single::__invalid();
+
+    CHECK(!invalid.is_valid());
+    static_assert(invalid.static_group_rank() == 0);
+  }
 }
 
 template <unsigned N, bool Static, bool Exhaustive, bool Contiguous = true, class Config>
@@ -112,6 +131,8 @@ __device__ void test_group_by_counts(Config config)
   constexpr auto group_count = (4 / N) + (12 / N) + (16 / N);
 
   static_assert(Result::static_group_count() == (Static ? group_count : cuda::std::dynamic_extent));
+  static_assert(Result::static_group_rank()
+                == ((Static ? group_count : cuda::std::dynamic_extent) == 1 ? 0 : cuda::std::dynamic_extent));
   static_assert(Result::has_uniform_static_unit_count());
   static_assert(Result::static_unit_count() == (Static ? N : cuda::std::dynamic_extent));
   static_assert(Result::is_always_exhaustive() == (Exhaustive || (Static && N == 4)));

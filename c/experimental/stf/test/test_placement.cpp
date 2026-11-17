@@ -197,7 +197,7 @@ C2H_TEST("shaped allocation on composite data places", "[places][placement][allo
   REQUIRE(dp != nullptr);
 
   // A byte count alone cannot carry the tensor geometry: must fail cleanly
-  void* bad = stf_data_place_allocate(dp, static_cast<ptrdiff_t>(n * sizeof(int)), nullptr);
+  const void* bad = stf_data_place_allocate(dp, static_cast<ptrdiff_t>(n * sizeof(int)), nullptr);
   REQUIRE(bad == nullptr);
 
   void* ptr = stf_data_place_allocate_nd(dp, &dims, sizeof(int), nullptr);

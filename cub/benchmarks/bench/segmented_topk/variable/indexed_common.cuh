@@ -111,7 +111,7 @@ inline constexpr auto selected_tie_break =
 template <typename KeyT, typename ValueT, typename OffsetT, cuda::std::int64_t MaxK>
 struct topk_backend_selector
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability cc) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const
     -> cub::detail::batched_topk::topk_policy
   {
     // The baseline backend cannot honor a deterministic result set / concrete tie-break request. The `sizeof(KeyT) ==
@@ -221,7 +221,7 @@ _CCCL_HOST_API cudaError_t batched_topk_indexed(
 // produced by a counting iterator that restarts at 0 for every segment, so indices are not (pre-)materialized in global
 // memory
 template <typename KeyT, typename IndexT, int MaxSegmentSize, int K>
-void decode_style_variable_topk_indexed(
+_CCCL_HOST_API void decode_style_variable_topk_indexed(
   nvbench::state& state, nvbench::type_list<KeyT, IndexT, nvbench::enum_type<MaxSegmentSize>, nvbench::enum_type<K>>)
 {
   if constexpr (K > MaxSegmentSize)
