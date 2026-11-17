@@ -46,10 +46,10 @@ Important concepts
   thread. Load returns a payload whose element type comes from its source;
   other primitives consume or return these per-thread values. See
   :ref:`per-thread payloads <coop-concepts-payloads>`.
-* ``TempStorage`` controls temporary shared storage. Usually you can omit
-  it and let the compiler allocate and synchronize scratch. An explicit
-  descriptor lets calls share an allocation or request separate slices.
-  See :ref:`TempStorage <coop-concepts-storage>`.
+* ``TempStorage`` is scratch space in shared memory. Usually you can leave
+  it out and the compiler provides the scratch and the barriers. Pass one to
+  choose which calls share bytes. See
+  :ref:`TempStorage <coop-concepts-storage>`.
 * Thread groups identify the participating threads. Use ``this_block()``
   or ``this_warp()`` for block or warp primitives, and query a group's rank
   and size through the thread hierarchy. See
@@ -213,9 +213,9 @@ TempStorage
 
 Some primitives need scratch space in shared memory. Leave ``temp_storage``
 out and the compiler provides it, with a barrier after each call. Pass a
-``TempStorage`` to choose which calls share bytes. This is the
-:ref:`prefix-sum kernel <coop-cutlass-load-store>` with one region shared by
-its three calls:
+``TempStorage`` to choose which calls share bytes. This prefix sum shares one
+region among its three calls. Load and Store ask for ``algorithm="transpose"``
+because their default algorithm uses no scratch:
 
 .. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
    :language: python
@@ -224,18 +224,21 @@ its three calls:
 
 .. figure:: visualizations/concept-temp-storage.svg
    :alt: Three rows of bars on one byte axis. With temp_storage left out,
-         Load, Scan and Store each have their own region, 4,784 bytes in
-         all. With a shared TempStorage, all three start at offset 0 of one
-         2,064-byte region. With an exclusive TempStorage, they sit end to
-         end in one 4,784-byte region.
+         Load, Scan and Store each have their own region. With a shared
+         TempStorage, all three start at offset 0 of one region as large as
+         the largest call. With an exclusive TempStorage, they sit end to
+         end in one region.
    :width: 100%
 
    Scratch for the three calls above, to scale, on a block of 128 threads
-   with four ``Int32`` items each. Sizes vary with the block shape, the
-   element type and the CUB version.
+   with four ``Int32`` items each: 4,784 bytes left out, 2,064 shared, 4,784
+   exclusive. Sizes vary with the block shape, the element type and the CUB
+   version.
 
-The kernel above is the middle row. Remove its three ``temp_storage``
-arguments for the top row, or construct
-``coop.TempStorage(sharing="exclusive", auto_sync=True)`` for the bottom
-row. :ref:`TempStorage <coop-temp-storage>` in the API reference covers
-barriers, ``reserve`` and ``release``.
+The kernel above is the middle row: one region the size of its largest call.
+Without the three ``temp_storage`` arguments it is the top row.
+``sharing="exclusive"`` gives the bottom row, where no call reuses another
+call's bytes, so no barrier is needed between them. ``auto_sync=True`` keeps
+a barrier after each call. Without it you place the barriers yourself with
+``scratch.sync()``. :ref:`TempStorage <coop-temp-storage>` in the API
+reference shows how, and covers ``reserve`` and ``release``.

@@ -142,7 +142,7 @@ Terms
       descriptor can control allocation sharing and synchronization for
       supported operations. A reservation returns a typed shared view for application data; its
       lifetime and synchronization remain the caller's responsibility.
-      See :ref:`the temporary-storage FAQ <coop-faq-temp-storage>`.
+      See :ref:`TempStorage <coop-temp-storage>`.
 
    thread group
       The threads participating in a primitive, such as a block, a physical

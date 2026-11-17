@@ -120,8 +120,9 @@ See :ref:`producer interoperability <coop-cutlass-producer-interop>`.
 Does releasing storage wait for its users?
 ------------------------------------------
 
-No. ``release`` adds no barrier and waits for nothing, so finish and
-synchronize the earlier work first. See
+No. ``release`` adds no barrier. Every thread must be past the last
+primitive that used the region before any thread writes through the returned
+tensor. See
 :meth:`TempStorage.release <cuda.coop.cutlass.TempStorage.release>`.
 
 .. _coop-faq-exclusive-storage:
@@ -131,16 +132,14 @@ synchronize the earlier work first. See
 Why use ``TempStorage`` with ``sharing="exclusive"``?
 -----------------------------------------------------
 
-To trade shared memory for barriers. With ``sharing="exclusive"`` each call
-site has its own slice, so two different calls never reuse each other's
-scratch and need no barrier between them when ``auto_sync=False``. The region
-is as large as all the calls together. A call site that runs again, as in a
-loop, still reuses its own slice and needs a barrier before it does.
-Barriers that the algorithm or your own shared data need still apply.
+It uses more shared memory and needs fewer barriers. With
+``sharing="exclusive"`` each call site has its own slice, so two different
+calls never reuse each other's scratch and need no barrier between them when
+``auto_sync=False``. See :ref:`TempStorage <coop-temp-storage>` for the two
+layouts side by side.
 
-Leaving ``temp_storage`` out does not promise a slice per call. The compiler
-chooses the layout and adds the barriers. See
-:ref:`TempStorage <coop-temp-storage>` for the two layouts side by side.
+Leaving ``temp_storage`` out always adds a barrier after each call. The
+compiler picks the layout, which today is one region per call.
 
 .. _coop-faq-temp-storage:
 
@@ -149,7 +148,7 @@ Why or when would I provide my own ``TempStorage``?
 
 Usually you can leave it out. The compiler provides the scratch each call
 needs and adds a barrier after it. Pass your own to choose which calls share
-bytes, to place the barriers yourself, to cap the capacity or raise the
+bytes, to place the barriers yourself, to set the region's size or
 alignment, or to keep your own data in the region. This kernel shares one
 region across three calls:
 
@@ -160,8 +159,8 @@ region across three calls:
 
 :ref:`TempStorage <coop-temp-storage>` in the API reference lists the
 primitives that accept one and shows the layouts and the barriers.
-:ref:`Exclusive slices <coop-faq-exclusive-storage>` trade shared memory for
-barriers.
+:ref:`Exclusive slices <coop-faq-exclusive-storage>` use more shared memory
+and need fewer barriers.
 
 .. _coop-faq-topk-order:
 
@@ -390,19 +389,10 @@ compile-time condition when each alternative needs a different representation.
 Can I choose temporary storage inside a branch or loop?
 --------------------------------------------------------
 
-Construct one ``TempStorage`` inside the kernel before the control flow
-when calls must reuse one allocation. Aliases of that descriptor are
-supported. Selecting between different descriptors at a runtime join is
-rejected, even when their capacities happen to match. A fresh descriptor
-created and used entirely inside one branch or loop iteration is also
-supported. Host-created descriptors can be used directly, but cannot be
-carried through runtime control flow.
-
-Let ``TempStorage()`` infer capacity unless an explicit limit is needed.
-A supplied capacity must fit both the device's shared-memory budget and the
-signed 32-bit byte-count representation. Shared-storage alignment must be a
-power of two no greater than 1024 bytes. A capacity smaller than the required
-allocation raises a compilation error.
+Yes, as long as every path uses the same object. Construct one
+``TempStorage`` inside the kernel before the ``if`` or loop. The Notes under
+:class:`TempStorage <cuda.coop.cutlass.TempStorage>` list what the compiler
+rejects.
 
 .. _coop-faq-floating-prefix:
 

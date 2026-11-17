@@ -513,9 +513,12 @@ not regenerate them.
   for the ``prefix_sum_shared``, ``prefix_sum_exclusive`` and
   ``prefix_sum_omitted`` kernels in
   ``python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py``:
-  128 threads, four ``Int32`` items each, CUDA 13.3. The same numbers appear
-  in the ``_temp_storage`` module docstring. Measure again and update both
-  when the planner's layout or CUB's scratch sizes change.
+  128 threads, four ``Int32`` items each, CUB from CCCL 3.7. The same sizes
+  appear in the ``_temp_storage`` module docstring and in the figure's
+  caption in ``concepts.rst``. When the planner's layout or CUB's scratch
+  sizes change, measure again and update all three.
+  ``cute.arch.dynamic_smem_size()`` inside each kernel gives the totals, and
+  releasing one ``TempStorage`` per call gives each call's size.
 
 Build the documentation with Sphinx warnings treated as errors and run the
 affected examples or runtime tests. Inspect the rendered pages, source
