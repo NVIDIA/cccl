@@ -23,14 +23,18 @@
 // graph launch.
 // %PARAM% TEST_LAUNCH lid 0:1
 // %PARAM% TEST_TYPES types 0:1
+// %PARAM% TEST_ALGORITHM alg 0:1
+// Algorithm 0 retains public API coverage; algorithm 1 tests supported cases through internal dispatch.
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortKeys, stable_sort_keys);
 
 #if TEST_TYPES == 0
 using key_types = c2h::type_list<bool, std::uint8_t>;
 #elif TEST_TYPES == 1
-using key_types =
-  c2h::type_list<std::uint64_t
+using full_key_types =
+  c2h::type_list<std::uint64_t,
+                 float,
+                 double
 #  if TEST_HALF_T()
                  ,
                  half_t
@@ -40,6 +44,8 @@ using key_types =
                  bfloat16_t
 #  endif // TEST_BF_T()
                  >;
+using key_types =
+  cuda::std::conditional_t<test_lrb, full_key_types, c2h::remove<c2h::remove<full_key_types, float>, double>>;
 #endif
 
 #if TEST_TYPES == 0
@@ -69,6 +75,7 @@ CUB_TEST("DeviceSegmentedSortKeys: No segments", "[keys][segmented][sort][device
     static_cast<cub::NullType*>(nullptr),
     int{},
     int{},
+    nullptr,
     nullptr,
     &keys_buffer.selector,
     &values_buffer.selector);
@@ -107,6 +114,7 @@ CUB_TEST("DeviceSegmentedSortKeys: Empty segments", "[keys][segmented][sort][dev
     int{},
     num_segments,
     d_offsets,
+    d_offsets + 1,
     &keys_buffer.selector,
     &values_buffer.selector);
 
@@ -194,40 +202,47 @@ CUB_TEST("DeviceSegmentedSortKeys: very large number of segments",
          all_offset_types)
 try
 {
-  using key_t                        = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
-  using segment_offset_t             = std::int64_t;
-  using offset_t                     = c2h::get<0, TestType>;
-  using segment_iterator_t           = segment_index_to_offset_op<offset_t, segment_offset_t>;
-  constexpr std::size_t segment_size = 1000000;
-  constexpr std::size_t uint32_max   = cuda::std::numeric_limits<std::uint32_t>::max();
-  constexpr std::size_t num_items =
-    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : cuda::std::numeric_limits<offset_t>::max();
-  constexpr segment_offset_t num_empty_segments = uint32_max;
-  const segment_offset_t num_segments           = num_empty_segments + cuda::ceil_div(num_items, segment_size);
-  CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
+  if constexpr (test_lrb)
+  {
+    SKIP("CCCL_SKIP_TEST: The internal LRB backend does not yet support more than UINT_MAX segments.");
+  }
+  else
+  {
+    using key_t              = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
+    using segment_offset_t   = std::int64_t;
+    using offset_t           = c2h::get<0, TestType>;
+    using segment_iterator_t = segment_index_to_offset_op<offset_t, segment_offset_t>;
+    constexpr std::size_t segment_size = 1000000;
+    constexpr std::size_t uint32_max   = cuda::std::numeric_limits<std::uint32_t>::max();
+    constexpr std::size_t num_items =
+      (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : cuda::std::numeric_limits<offset_t>::max();
+    constexpr segment_offset_t num_empty_segments = uint32_max;
+    const segment_offset_t num_segments           = num_empty_segments + cuda::ceil_div(num_items, segment_size);
+    CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
 
-  c2h::device_vector<key_t> in_keys(num_items);
-  c2h::device_vector<key_t> out_keys(num_items);
+    c2h::device_vector<key_t> in_keys(num_items);
+    c2h::device_vector<key_t> out_keys(num_items);
 
-  // Generate input keys
-  constexpr auto max_histo_size = 250;
-  const segmented_verification_helper<key_t> verification_helper{max_histo_size};
-  verification_helper.prepare_input_data(in_keys);
+    // Generate input keys
+    constexpr auto max_histo_size = 250;
+    const segmented_verification_helper<key_t> verification_helper{max_histo_size};
+    verification_helper.prepare_input_data(in_keys);
 
-  auto offsets = cuda::transform_iterator(
-    cuda::counting_iterator(std::size_t{0}),
-    segment_iterator_t{num_empty_segments, num_segments, segment_size, num_items});
+    auto offsets = cuda::transform_iterator(
+      cuda::counting_iterator(std::size_t{0}),
+      segment_iterator_t{num_empty_segments, num_segments, segment_size, num_items});
 
-  stable_sort_keys(
-    thrust::raw_pointer_cast(in_keys.data()),
-    thrust::raw_pointer_cast(out_keys.data()),
-    static_cast<offset_t>(num_items),
-    static_cast<segment_offset_t>(num_segments),
-    offsets,
-    offsets + 1);
+    stable_sort_keys(
+      thrust::raw_pointer_cast(in_keys.data()),
+      thrust::raw_pointer_cast(out_keys.data()),
+      static_cast<offset_t>(num_items),
+      static_cast<segment_offset_t>(num_segments),
+      offsets,
+      offsets + 1);
 
-  // Verify the keys are sorted correctly
-  verification_helper.verify_sorted(out_keys, offsets + num_empty_segments, num_segments - num_empty_segments);
+    // Verify the keys are sorted correctly
+    verification_helper.verify_sorted(out_keys, offsets + num_empty_segments, num_segments - num_empty_segments);
+  }
 }
 catch (...)
 {
@@ -240,38 +255,45 @@ CUB_TEST("DeviceSegmentedSort::SortKeys: very large segments",
          all_offset_types)
 try
 {
-  using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
-  using segment_offset_t           = std::int32_t;
-  using offset_t                   = c2h::get<0, TestType>;
-  constexpr std::size_t uint32_max = cuda::std::numeric_limits<std::uint32_t>::max();
-  constexpr int num_key_seeds      = 1;
-  constexpr std::size_t num_items =
-    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : cuda::std::numeric_limits<offset_t>::max();
-  const segment_offset_t num_segments = 2;
-  CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
+  if constexpr (test_lrb)
+  {
+    SKIP("CCCL_SKIP_TEST: The internal LRB backend does not yet sort oversized segments.");
+  }
+  else
+  {
+    using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
+    using segment_offset_t           = std::int32_t;
+    using offset_t                   = c2h::get<0, TestType>;
+    constexpr std::size_t uint32_max = cuda::std::numeric_limits<std::uint32_t>::max();
+    constexpr int num_key_seeds      = 1;
+    constexpr std::size_t num_items =
+      (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : cuda::std::numeric_limits<offset_t>::max();
+    const segment_offset_t num_segments = 2;
+    CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
 
-  c2h::device_vector<key_t> in_keys(num_items);
-  c2h::device_vector<key_t> out_keys(num_items);
-  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
-  c2h::device_vector<offset_t> offsets(num_segments + 1);
-  offsets[0] = 0;
-  offsets[1] = static_cast<offset_t>(num_items);
-  offsets[2] = static_cast<offset_t>(num_items);
+    c2h::device_vector<key_t> in_keys(num_items);
+    c2h::device_vector<key_t> out_keys(num_items);
+    c2h::gen(C2H_SEED(num_key_seeds), in_keys);
+    c2h::device_vector<offset_t> offsets(num_segments + 1);
+    offsets[0] = 0;
+    offsets[1] = static_cast<offset_t>(num_items);
+    offsets[2] = static_cast<offset_t>(num_items);
 
-  // Prepare information for later verification
-  short_key_verification_helper<key_t> verification_helper{};
-  verification_helper.prepare_verification_data(in_keys);
+    // Prepare information for later verification
+    short_key_verification_helper<key_t> verification_helper{};
+    verification_helper.prepare_verification_data(in_keys);
 
-  stable_sort_keys(
-    thrust::raw_pointer_cast(in_keys.data()),
-    thrust::raw_pointer_cast(out_keys.data()),
-    static_cast<offset_t>(num_items),
-    static_cast<segment_offset_t>(num_segments),
-    thrust::raw_pointer_cast(offsets.data()),
-    offsets.cbegin() + 1);
+    stable_sort_keys(
+      thrust::raw_pointer_cast(in_keys.data()),
+      thrust::raw_pointer_cast(out_keys.data()),
+      static_cast<offset_t>(num_items),
+      static_cast<segment_offset_t>(num_segments),
+      thrust::raw_pointer_cast(offsets.data()),
+      offsets.cbegin() + 1);
 
-  // Verify the keys are sorted correctly
-  verification_helper.verify_sorted(out_keys);
+    // Verify the keys are sorted correctly
+    verification_helper.verify_sorted(out_keys);
+  }
 }
 catch (...)
 {
