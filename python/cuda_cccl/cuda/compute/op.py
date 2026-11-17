@@ -9,7 +9,7 @@ from __future__ import annotations
 import sys
 import sysconfig
 import warnings
-from typing import Callable
+from typing import Callable, TypeVar
 
 from ._bindings import Op, OpKind, TypeEnum
 from ._caching import CachableFunction, cache_with_registered_key_functions
@@ -307,11 +307,14 @@ def make_op_adapter(op) -> OpAdapter:
     return _get_jit_op_adapter()(op)
 
 
+_OpT = TypeVar("_OpT", bound="Callable | OpKind | RawOp | OpAdapter")
+
+
 def rebind_op_state(
     op_cccl: Op,
-    op: Callable | OpAdapter,
-    last_stateless_op: Callable | OpAdapter | None,
-) -> Callable | OpAdapter | None:
+    op: _OpT,
+    last_stateless_op: _OpT | None,
+) -> _OpT | None:
     """Update ``op_cccl``'s state from ``op``, in place.
 
     Skips the update when ``op`` is a stateless op already bound by

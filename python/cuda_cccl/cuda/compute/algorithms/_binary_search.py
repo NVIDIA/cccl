@@ -20,7 +20,7 @@ from .._serialization import (
     Serializable,
 )
 from .._utils import protocols
-from ..op import OpAdapter, OpKind, make_op_adapter
+from ..op import OpAdapter, OpKind, make_op_adapter, rebind_op_state
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
@@ -47,6 +47,9 @@ class _BinarySearch:
         "op_cccl",
         "data_ptr",
         "out_ptr",
+        # Perf cache, keyed by identity (strong ref, so no GC-reuse false
+        # positives).
+        "_last_stateless_op",
     ]
 
     __serialization_schema__ = (
@@ -88,6 +91,7 @@ class _BinarySearch:
 
         self.op_cccl = comp.compile((data_value_type, data_value_type), types.uint8)
 
+        self._last_stateless_op: Operator | None = None
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceBinarySearchBuildResult,
             d_data,
@@ -105,6 +109,58 @@ class _BinarySearch:
                 self.op_cccl,
                 compute_capability=compute_capability,
             ),
+        )
+
+    def _after_deserialize(self) -> None:
+        # deserialize() bypasses __init__ (see Serializable.deserialize),
+        # where this cache is otherwise initialized.
+        self._last_stateless_op = None
+
+    def update_op_state(self, comp: Operator | None) -> None:
+        """Rebind this object's comparison op state in place.
+
+        ``comp`` must be the same code as the one it was built with (``None``
+        resolves to the same ``OpKind.LESS`` default) -- only its state may
+        differ. ``execute()`` never re-derives op state, so call this before
+        ``execute()`` whenever it changes.
+        """
+        rebind_op_state(
+            self.op_cccl, OpKind.LESS if comp is None else comp, last_stateless_op=None
+        )
+        self._last_stateless_op = None
+
+    def execute(
+        self,
+        *,
+        d_data,
+        num_items: int,
+        d_values,
+        num_values: int,
+        d_out,
+        stream=None,
+    ):
+        """Minimal per-call path: updates the iterators and launches.
+
+        Unlike ``__call__``, never re-derives op state -- call
+        ``update_op_state`` first if it changed.
+        """
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
+
+        set_cccl_iterator_state(self.d_data_cccl, d_data)
+        set_cccl_iterator_state(self.d_values_cccl, d_values)
+        set_cccl_iterator_state(self.d_out_cccl, d_out)
+
+        stream_handle = protocols.validate_and_get_stream(stream)
+        self.loaded_build_result.compute(
+            self.d_data_cccl,
+            num_items,
+            self.d_values_cccl,
+            num_values,
+            self.d_out_cccl,
+            self.op_cccl,
+            stream_handle,
         )
 
     def __call__(
@@ -127,9 +183,11 @@ class _BinarySearch:
         set_cccl_iterator_state(self.d_values_cccl, d_values)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
-        # Update op state for stateful ops
-        comp_adapter = make_op_adapter(OpKind.LESS if comp is None else comp)
-        self.op_cccl.state = comp_adapter.get_state()
+        self._last_stateless_op = rebind_op_state(
+            self.op_cccl,
+            OpKind.LESS if comp is None else comp,
+            self._last_stateless_op,
+        )
 
         stream_handle = protocols.validate_and_get_stream(stream)
         self.loaded_build_result.compute(
