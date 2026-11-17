@@ -136,12 +136,12 @@ template <class _Tp>
     return static_cast<_Tp>(_CCCL_BUILTIN_NANSL());
   }
 #  endif // _CCCL_HAS_LONG_DOUBLE
-#  if defined(_CCCL_BUILTIN_NANFS128)
+#  if defined(_CCCL_BUILTIN_NANSF128)
   else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary128)
   {
-    return static_cast<_Tp>(_CCCL_BUILTIN_NANFS128());
+    return static_cast<_Tp>(_CCCL_BUILTIN_NANSF128());
   }
-#  endif // _CCCL_BUILTIN_NANFS128
+#  endif // _CCCL_BUILTIN_NANSF128
   else
 #endif // _CCCL_BUILTIN_NANS
   {
