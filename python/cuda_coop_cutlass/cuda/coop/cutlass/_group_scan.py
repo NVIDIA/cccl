@@ -170,6 +170,9 @@ def scan(
     The launcher accepts device pointers and a compile-time
     ``items_per_thread`` value.
 
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_scan_documentation.py>`__
+
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_scan_documentation.py
         :language: python
@@ -272,6 +275,9 @@ def exclusive_scan(
     Every lane participates and receives the aggregate. Only valid lanes
     write their prefixes. ``operator.add`` selects the built-in sum.
 
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_scan_documentation.py>`__
+
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_scan_documentation.py
         :language: python
@@ -337,6 +343,9 @@ def inclusive_scan(
     The launcher accepts device pointers and a compile-time
     ``items_per_thread`` value.
 
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_scan_documentation.py>`__
+
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_scan_documentation.py
         :language: python
@@ -399,6 +408,9 @@ def exclusive_sum(
     The launcher accepts device pointers and a compile-time
     ``items_per_thread`` value.
 
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_scan_documentation.py>`__
+
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_scan_documentation.py
         :language: python
@@ -459,6 +471,9 @@ def inclusive_sum(
 
     The launcher accepts device pointers and a compile-time
     ``items_per_thread`` value.
+
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_scan_documentation.py>`__
 
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_scan_documentation.py

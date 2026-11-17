@@ -156,6 +156,9 @@ def topk_min_keys(
     The launcher accepts device pointers and a compile-time
     ``items_per_thread`` value.
 
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py>`__
+
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py
         :language: python
@@ -232,6 +235,9 @@ def topk_max_keys(
 
     The launcher accepts device pointers and a compile-time
     ``items_per_thread`` value.
+
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py>`__
 
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py
@@ -314,6 +320,9 @@ def topk_min_pairs(
 
     The launcher accepts device pointers and a compile-time
     ``items_per_thread`` value.
+
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py>`__
 
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py
@@ -398,6 +407,9 @@ def topk_max_pairs(
 
     The launcher accepts device pointers and a compile-time
     ``items_per_thread`` value.
+
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py>`__
 
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py

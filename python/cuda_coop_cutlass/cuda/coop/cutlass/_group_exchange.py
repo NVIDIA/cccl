@@ -189,6 +189,9 @@ def exchange(
     Reverse a 128-item block tile by assigning each input its destination
     rank. Each of the 64 threads holds two items.
 
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_collective_documentation.py>`__
+
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_collective_documentation.py
         :language: python

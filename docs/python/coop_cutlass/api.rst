@@ -120,21 +120,23 @@ Temporary storage
 .. automethod:: TempStorage.reserve
 .. automethod:: TempStorage.release
 
-Memory operations
-^^^^^^^^^^^^^^^^^
+.. _memory-operations:
+
+Load & Store
+------------
 
 .. autofunction:: load
 .. autofunction:: store
 
 Reduction
-^^^^^^^^^
+---------
 
 .. autofunction:: reduce
 .. autofunction:: reduce_batched
 .. autofunction:: sum
 
 Scan
-^^^^
+----
 
 .. autofunction:: scan
 .. autofunction:: exclusive_sum
@@ -143,26 +145,26 @@ Scan
 .. autofunction:: inclusive_scan
 
 Data rearrangement
-^^^^^^^^^^^^^^^^^^
+------------------
 
 .. autofunction:: exchange
 .. autofunction:: shuffle
 
 Comparison sorting
-^^^^^^^^^^^^^^^^^^
+------------------
 
 .. autofunction:: merge_sort_keys
 .. autofunction:: merge_sort_pairs
 
 Radix sorting and ranking
-^^^^^^^^^^^^^^^^^^^^^^^^^
+-------------------------
 
 .. autofunction:: radix_sort_keys
 .. autofunction:: radix_sort_pairs
 .. autofunction:: radix_rank_keys
 
 Top-k selection
-^^^^^^^^^^^^^^^
+---------------
 
 .. autofunction:: topk_min_keys
 .. autofunction:: topk_max_keys
@@ -170,18 +172,18 @@ Top-k selection
 .. autofunction:: topk_max_pairs
 
 Neighbor comparisons
-^^^^^^^^^^^^^^^^^^^^
+--------------------
 
 .. autofunction:: adjacent_difference
 .. autofunction:: discontinuity
 
 Histogram
-^^^^^^^^^
+---------
 
 .. autofunction:: histogram
 
 Run Length Decode
-^^^^^^^^^^^^^^^^^
+-----------------
 
 .. autofunction:: run_length_decode
 .. autofunction:: run_length_decode_into

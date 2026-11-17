@@ -172,6 +172,9 @@ def load(
     The launcher accepts device pointers and a compile-time
     ``items_per_thread`` value.
 
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_load_store_documentation.py>`__
+
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_load_store_documentation.py
         :language: python
@@ -253,6 +256,9 @@ def store(
     Copy a partial tile between different source and destination offsets.
     The launcher accepts device pointers and a compile-time
     ``items_per_thread`` value.
+
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_load_store_documentation.py>`__
 
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_load_store_documentation.py

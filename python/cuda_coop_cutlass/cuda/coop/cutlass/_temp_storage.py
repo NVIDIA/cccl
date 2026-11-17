@@ -59,11 +59,14 @@ class TempStorage:
     sharing : {"shared", "exclusive"}
         Shared calls and reservations alias one slice sized for the largest
         requirement. Exclusive calls and reservations get separate slices
-        in trace order. Repeated
-        execution of one call site reuses its slice, including in a loop.
+        in trace order. Repeated execution of one call site reuses its slice,
+        including in a loop.
 
-    Equal settings do not combine separate descriptors. Reuse the same object
-    to share an allocation across calls in a kernel. Finalization validates
+    Notes
+    -----
+    Each descriptor owns a separate allocation, even when its constructor
+    arguments match another descriptor's. Pass the same descriptor to calls
+    that should reuse its allocation. Finalization validates
     descriptor lifetimes and supplies the storage operands. ``release``
     consumes the descriptor and returns its complete region as a native view.
     Runtime branches and loops may carry aliases of the same kernel-local

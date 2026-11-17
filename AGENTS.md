@@ -355,6 +355,18 @@ When writing, updating, reviewing, or validating CCCL tests, read `.agent/skills
 
 ---
 
+## cuda.coop.cutlass documentation maintenance
+
+For changes to `python/cuda_coop_cutlass/`, `docs/python/coop_cutlass/`,
+`docs/_static/coop-*`, or `docs/_ext/coop_visualization.py`, read
+[the package's contributor and review guidance](python/cuda_coop_cutlass/AGENTS.md).
+Update affected documentation, runnable examples, and diagrams in the same
+change when behavior or a depicted compiler path changes. Reviewers should
+check for stale contracts, symbol names, phase order, and storage ownership.
+Only update material affected by the change; do not add FAQs by default.
+
+---
+
 ## General Guidelines
 
 * Validate changes with builds/tests; report results.

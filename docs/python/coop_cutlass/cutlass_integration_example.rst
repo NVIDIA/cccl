@@ -10,22 +10,22 @@ Minimal CuTe DSL Integration Example
 ``cuda.coop.cutlass`` integrates with the CUTLASS CuTe DSL through a handful
 of mechanisms that are easy to lose among planners, thread groups, payloads,
 and caches. This page isolates them. One script,
-:download:`cutlass_integration_example.py <cutlass_integration_example.py>`,
+`cutlass_integration_example.py on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/docs/python/coop_cutlass/cutlass_integration_example.py>`_,
 calls ``cub::BlockReduce`` from a CuTe kernel using only the DSL's own
 interfaces, NVRTC, and the CCCL headers. It imports nothing from
-``cuda.coop``.
+``cuda.coop.cutlass``.
 
 The intended readers are CUTLASS developers reviewing whether this is how
-the DSL is meant to be extended, and ``cuda.coop`` developers who want the
-mechanisms without the abstractions. The closing section lists the
+the DSL is meant to be extended, and ``cuda.coop.cutlass`` developers who
+want the mechanisms without the abstractions. The closing section lists the
 questions we would like CUTLASS reviewers to answer. :doc:`cutlass_primer`
 explains the DSL's tracing model that the script builds on.
 
 Run it on Linux from a CCCL checkout with a compatible CUTLASS 4.9 CuTe DSL,
-CUDA 13 driver and toolkit, ``cuda-bindings``, and NumPy. This example was
-validated with the retained 4.9 candidate and requires its launch-facts and
-trace-finalization interfaces; see :doc:`index` for installation and
-qualification details.
+CUDA 13 driver and toolkit, ``cuda-bindings``, and NumPy. The DSL must expose
+launch facts and trace-finalization hooks; see :doc:`index` for installation
+and :ref:`coop-cutlass-compiler-requirements` for the required interfaces.
 
 With those prerequisites available:
 
