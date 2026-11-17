@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__bit/bit_compress.h>
+#include <cuda/std/__bit/bit_expand.h>
 #include <cuda/std/__bit/bit_repeat.h>
 #include <cuda/std/__bit/bit_reverse.h>
 #include <cuda/std/__bit/byteswap.h>
@@ -343,6 +345,32 @@ struct __simd_popcount_generator
   }
 };
 
+template <typename _Vec>
+struct __simd_bit_compress_generator
+{
+  const _Vec& __v_;
+  const _Vec& __mask_;
+
+  template <typename _Idx>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr typename _Vec::value_type operator()(_Idx) const noexcept
+  {
+    return ::cuda::std::bit_compress(__v_[_Idx::value], __mask_[_Idx::value]);
+  }
+};
+
+template <typename _Vec>
+struct __simd_bit_expand_generator
+{
+  const _Vec& __v_;
+  const _Vec& __mask_;
+
+  template <typename _Idx>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr typename _Vec::value_type operator()(_Idx) const noexcept
+  {
+    return ::cuda::std::bit_expand(__v_[_Idx::value], __mask_[_Idx::value]);
+  }
+};
+
 //----------------------------------------------------------------------------------------------------------------------
 // [simd.bit], bit manipulation
 
@@ -548,6 +576,35 @@ _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
   using __vec_t _CCCL_NODEBUG    = basic_vec<_Tp, _Abi>;
   using __result_t _CCCL_NODEBUG = __simd_bit_count_result_t<_Tp, __vec_t>;
   return __result_t{__simd_popcount_generator<__vec_t, __result_t>{__v}};
+}
+
+_CCCL_TEMPLATE(typename _Vec)
+_CCCL_REQUIRES(__simd_vec_type<_Vec> _CCCL_AND __cccl_is_unsigned_integer_v<typename _Vec::value_type>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Vec bit_compress(const _Vec& __v, const _Vec& __mask) noexcept
+{
+  return _Vec{__simd_bit_compress_generator<_Vec>{__v, __mask}};
+}
+
+_CCCL_TEMPLATE(typename _Vec)
+_CCCL_REQUIRES(__simd_vec_type<_Vec> _CCCL_AND __cccl_is_unsigned_integer_v<typename _Vec::value_type>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Vec
+bit_compress(const _Vec& __v, typename _Vec::value_type __mask) noexcept
+{
+  return ::cuda::std::simd::bit_compress(__v, _Vec{__mask});
+}
+
+_CCCL_TEMPLATE(typename _Vec)
+_CCCL_REQUIRES(__simd_vec_type<_Vec> _CCCL_AND __cccl_is_unsigned_integer_v<typename _Vec::value_type>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Vec bit_expand(const _Vec& __v, const _Vec& __mask) noexcept
+{
+  return _Vec{__simd_bit_expand_generator<_Vec>{__v, __mask}};
+}
+
+_CCCL_TEMPLATE(typename _Vec)
+_CCCL_REQUIRES(__simd_vec_type<_Vec> _CCCL_AND __cccl_is_unsigned_integer_v<typename _Vec::value_type>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Vec bit_expand(const _Vec& __v, typename _Vec::value_type __mask) noexcept
+{
+  return ::cuda::std::simd::bit_expand(__v, _Vec{__mask});
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD_SIMD
