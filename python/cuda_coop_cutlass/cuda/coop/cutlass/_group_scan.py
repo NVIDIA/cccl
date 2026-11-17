@@ -15,8 +15,9 @@ its own result, and an inclusive scan includes it.
          1, up to 105 and 120 in thread 7.
    :width: 100%
 
-   ``exclusive_sum`` over eight threads with two items each.
-   ``inclusive_sum`` of the same values is 1, 3, 6, 10 and so on, up to 136.
+   ``exclusive_sum`` over eight threads with two items each. The middle row
+   is the sum of all earlier threads' items. ``inclusive_sum`` of the same
+   values is 1, 3, 6, 10 and so on, up to 136.
 
 ``scan`` takes every choice as an argument, and the four helpers make some
 of the choices for you:
@@ -91,9 +92,9 @@ far. In this kernel ``aggregate_output`` returns each tile's total and
     :dedent: 4
 
 A scan reads a payload thread by thread, in :term:`blocked` order, whichever
-call made the payload. Pass one that was loaded with
-``algorithm="striped"`` through :func:`~cuda.coop.cutlass.exchange` before
-scanning it.
+call made the payload. If the payload was loaded with
+``algorithm="striped"``, run it through
+:func:`~cuda.coop.cutlass.exchange` before scanning it.
 """
 
 # Implementation notes.
@@ -227,7 +228,7 @@ def scan(
         Blocks take ``None``.
     aggregate_output : ThreadData, optional
         A payload of one item, such as ``coop.ThreadData(1)``, that
-        receives the result of combining all of the group's inputs. The
+        receives the result of combining the inputs that were scanned. The
         result has the element type of ``value``, so leave the payload's
         ``dtype`` out or give that type. Every thread receives it. It
         leaves out ``initial_value`` and, with ``valid_items``, the lanes
@@ -380,9 +381,9 @@ def exclusive_scan(
 
     Examples
     --------
-    In each group of eight lanes, sum the first five lanes starting from
-    seven. Every lane makes the call and receives the sum of those five
-    lanes, without the seven, in ``aggregate``. Only the five valid lanes
+    In each group of eight lanes, sum the first five lanes, with an initial
+    value of seven. Every lane makes the call and receives the sum of those
+    five lanes, without the seven, in ``aggregate``. Only those five lanes
     store a result.
     ``operator.add`` selects the built-in sum.
 
