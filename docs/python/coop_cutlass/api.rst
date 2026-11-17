@@ -122,8 +122,17 @@ Reduction
 .. autofunction:: reduce_batched
 .. autofunction:: sum
 
+.. _coop-cutlass-scan:
+
 Scan
 ----
+
+.. automodule:: cuda.coop.cutlass._group_scan
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. autofunction:: scan
 .. autofunction:: exclusive_sum
