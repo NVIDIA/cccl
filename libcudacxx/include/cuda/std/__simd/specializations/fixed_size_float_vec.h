@@ -114,7 +114,7 @@ struct __simd_operations<float, __fixed_size<_Np>, __simd_operations_kind::__fix
     return __base::__multiplies(__lhs, __rhs);
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API static _SimdStorage
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _SimdStorage
   __fma(const _SimdStorage& __lhs, const _SimdStorage& __rhs, const _SimdStorage& __add) noexcept
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
