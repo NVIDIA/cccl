@@ -16,10 +16,10 @@ returns one payload in each thread of the group:
    ``values = coop.load(block, source, items_per_thread=4)`` on a block of
    128 threads.
 
-Other primitives read a payload and return a new one, and
-:func:`~cuda.coop.cutlass.store` writes one to memory. A kernel can also
-fill a payload with values it computes. This kernel squares the items it
-loaded and sums the squares over the block:
+A scan or a sort reads a payload and returns a new one, a reduction returns
+one value, and :func:`~cuda.coop.cutlass.store` writes a payload to memory.
+A kernel can also fill a payload with values it computes. This kernel
+squares the items it loaded and sums the squares over the block:
 
 `Full example and test on GitHub
 <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
@@ -38,9 +38,9 @@ loaded and sums the squares over the block:
   ``cutlass.range_constexpr`` loop. Negative indices count from the end.
 * ``ThreadData(n)`` starts with no values. Assign every item before a
   primitive reads the payload.
-* A loaded payload has the element type of the memory it came from. A
-  payload the kernel fills takes the type of its items, which must all be
-  the same. Wrap an expression in a CUTLASS type, as in
+* A loaded payload has the element type of the memory it came from. For a
+  payload the kernel fills, a primitive takes the type from the items,
+  which must all be the same. Wrap an expression in a CUTLASS type, as in
   ``cutlass.Int32(x)``, to give an item that type.
 * A primitive that returns a payload returns a new one and leaves its input
   unchanged. Two arguments are written in place: ``aggregate_output`` of a
@@ -67,12 +67,12 @@ function of the index. It replaces the loop in the kernel above:
 
 A kernel can assign items inside a runtime ``if`` or loop, and the new
 values are visible afterwards. Every item of the payload must have a value
-before the ``if`` or loop begins, and the payload keeps its element type
-and alignment on every path.
+before the ``if`` or loop begins, and every path must leave the payload
+with the same element type and alignment.
 
-Where a primitive works on one value per thread, pass the value itself. A
-payload of one item is still a payload: a warp scan takes scalars only, so
-it needs ``values[0]``.
+A primitive that takes one scalar per thread, such as a warp scan, needs the
+item itself. ``load`` returns a payload even when ``items_per_thread`` is 1,
+so pass ``values[0]``.
 
 CuTe has two register forms of its own, and the methods below copy items to
 and from both:
@@ -85,7 +85,7 @@ and from both:
 Each conversion copies, so a later write to one side leaves the other as it
 was. To write a payload into a register tensor that already exists, use
 ``tensor.store(values.to_tensor_ssa(like=tensor))``. Primitives other than
-``load`` and ``store`` also take either CuTe form directly where they take
+``load`` and ``store`` also take either CuTe form directly where they read
 a payload. :doc:`tensor_memory_topk` is a complete kernel that moves a
 Tensor Core accumulator through a payload.
 """

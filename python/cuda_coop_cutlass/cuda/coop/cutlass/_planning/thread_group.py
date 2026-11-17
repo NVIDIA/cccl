@@ -753,9 +753,10 @@ class ThreadGroup:
         of warps answers ``rank``, ``count`` and ``is_member``. Primitives
         do not take one, and it has no ``sync``.
 
-        A group of lanes can ask about its threads and its warp. A group of
-        warps can ask about its threads, its warps and its block. Levels
-        above those are rejected.
+        On a group of lanes, ``rank`` and ``count`` take the levels
+        ``"thread"`` and ``"warp"``. On a group of warps they take
+        ``"thread"``, ``"warp"`` and ``"block"``. Higher levels are
+        rejected.
 
         Examples
         --------

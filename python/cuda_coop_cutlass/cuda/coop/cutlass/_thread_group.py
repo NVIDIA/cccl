@@ -6,8 +6,9 @@
 
 Every primitive takes a group as its first argument. ``this_block()`` is the
 calling thread's block, ``this_warp()`` is its warp of 32 threads, and
-``this_warp().group_by(8)`` is its group of eight neighboring lanes in that
-warp. This kernel sums the same values over each of the three:
+``this_warp().group_by(8)`` is its group of eight neighboring lanes, as the
+threads of a warp are called. This kernel sums the same values over each of
+the three:
 
 `Full example and test on GitHub
 <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
@@ -80,14 +81,17 @@ These rules hold for every primitive:
   not use its result. A warp call involves that warp only, so another warp
   of the block can skip it.
 * The launch states the block size with constants, as in
-  ``launch(grid=1, block=128)``. Each call is compiled for that size, and a
-  kernel whose block size is known only at run time is rejected. Most
-  primitives take blocks of one, two or three dimensions. Threads are
-  ranked x first: ``x + block_x * (y + block_y * z)``.
+  ``kernel.launch(grid=1, block=128)``. Each call is compiled for that size,
+  and a kernel whose block size is known only at run time is rejected.
+* A block can have one, two or three dimensions, and its threads are ranked
+  x first, then y, then z. ``histogram``, the four ``topk`` functions and
+  the two ``run_length_decode`` functions take one-dimensional blocks only.
 * A warp group needs a block whose size is a multiple of 32, so that every
   warp is complete.
-* Each block works on its own tile. A kernel with more than one block gives
-  Load and Store an ``offset`` computed from ``cute.arch.block_idx()``.
+* Each group works on its own :term:`tile`. Load and Store place the tiles
+  of a block's warps, or of its groups of lanes, one after another. A kernel
+  with more than one block gives them an ``offset`` computed from
+  ``cute.arch.block_idx()``.
 
 ``this_thread()``, ``this_cluster()`` and ``this_grid()`` name the other
 levels of a launch, and ``this_block().group_by(n)`` names ``n`` whole warps.
@@ -109,7 +113,10 @@ answers, which tell a thread where it is:
 ``rank`` is where this thread, or its warp, sits in the group, and ``count``
 is how many the group holds. For a level outside the group, ``rank`` is
 where the group sits in that level, and ``count`` is how many such groups
-the level holds. The results are CuTe scalars, so a kernel can use them in
+the level holds. A query at the ``"grid"`` level needs a launch that states
+the grid size with constants, as it does the block size.
+
+The results are CuTe scalars, so a kernel can use them in
 arithmetic, as an index, or in a condition. A query emits no barrier and
 uses no shared memory, and only the threads that want the answer need to
 ask.
@@ -179,16 +186,17 @@ class ThreadGroup(PlanningThreadGroup):
         level : str, optional
             ``"thread"`` (the default), ``"warp"``, ``"block"``,
             ``"cluster"`` or ``"grid"``. ``"gpu_thread"`` also means
-            ``"thread"``.
+            ``"thread"``. ``"grid"`` needs a launch that states the grid
+            size with constants.
 
         Returns
         -------
         cutlass.Uint32 or cutlass.Uint64
-            For a level inside the group, the position within the group of
-            this thread's unit of that level. ``this_block().rank()`` is the
-            thread's position in its block, and
-            ``this_block().rank("warp")`` is its warp's. For a level outside
-            the group, the group's position in that level:
+            For a level inside the group, where this thread, or the warp,
+            block or cluster that holds it, sits in the group.
+            ``this_block().rank()`` is the thread's position in its block,
+            and ``this_block().rank("warp")`` is its warp's. For a level
+            outside the group, the group's position in that level:
             ``this_block().rank("grid")`` is the block's position in the
             grid. The result is ``Uint64`` when the group or the level is
             the grid.
@@ -212,8 +220,9 @@ class ThreadGroup(PlanningThreadGroup):
         Returns
         -------
         cutlass.Uint32 or cutlass.Uint64
-            For a level inside the group, the number of those units in the
-            group: ``this_block().count()`` is the block's thread count and
+            For a level inside the group, how many threads, warps, blocks or
+            clusters the group holds: ``this_block().count()`` is the
+            block's thread count and
             ``this_block().count("warp")`` is its warp count. For a level
             outside the group, the number of such groups in that level:
             ``this_block().count("grid")`` is the number of blocks in the
@@ -311,8 +320,9 @@ class ThreadGroup(PlanningThreadGroup):
 
         Notes
         -----
-        A thread that is not a member skips the group's primitives, and its
-        ``rank`` in the group means nothing.
+        For a group made with ``exhaustive=False``, call its primitives
+        inside ``if group.is_member():``, so that the threads left over skip
+        them. A left-over thread's ``rank`` in the group means nothing.
         :meth:`~cuda.coop.cutlass.ThreadGroup.group_by` has an example.
         """
         from ._lowering._thread_group import provider_group_membership

@@ -32,8 +32,8 @@ Why use ``ThreadData`` for per-thread values?
 A primitive is compiled for a known number of items per thread and a known
 element type. ``ThreadData`` carries both, so a call such as
 ``coop.inclusive_sum(block, values)`` needs no other arguments. The item
-count is the ``ITEMS_PER_THREAD`` parameter of the CUB class behind the
-call, which is why it is a Python integer and cannot come from device data.
+count is a template argument of the CUB code behind the call, which is why
+it is a Python integer and cannot come from device data.
 
 :ref:`ThreadData <coop-thread-data>` in the API reference has the rules and
 the conversions to and from CuTe register tensors. A conversion copies the
@@ -89,9 +89,14 @@ When its items are raw MLIR integers, which have a width and no sign. Pass
 ``cutlass.Uint32``.
 
 Otherwise leave it out. ``load`` takes the type from the memory, and a
-payload the kernel fills takes it from its items, which must all have the
-same type. Naming a type assigns no missing items and converts no item that
-already has another type. :ref:`ThreadData <coop-thread-data>` in the API
+primitive takes it from the items of a payload the kernel fills, which must
+all have the same type. ``to_tensor_ssa`` and ``to_register_tensor`` need
+the type named: for a payload built without ``dtype``, pass ``dtype`` to the
+call, or ``like`` to ``to_tensor_ssa``.
+
+Passing ``dtype`` to ``ThreadData(...)`` assigns no missing items and
+converts no item that already has another type. ``ThreadData.from_fn`` with
+``dtype`` converts. :ref:`ThreadData <coop-thread-data>` in the API
 reference lists the supported types.
 
 .. _coop-faq-producer:

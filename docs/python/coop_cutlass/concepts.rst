@@ -10,9 +10,10 @@ Programming concepts
 ====================
 
 A cooperative primitive is one call that a group of threads makes together.
-Four things appear in every kernel that uses one: the call, the thread group,
-each thread's data, and scratch space in shared memory. This page introduces
-each with an example. The :doc:`API reference <api>` has the complete rules.
+Four ideas cover any kernel that uses one: the single-phase call, the thread
+group, each thread's data, and the scratch space in shared memory that some
+primitives need. This page introduces each with an example. The
+:doc:`API reference <api>` has the complete rules.
 
 .. _coop-concepts-single-phase:
 
@@ -47,9 +48,10 @@ per thread, and declares the scratch the scan needs. Then it calls them:
 
 In the Python kernel, each of those facts has one source:
 
-* The block size, 128, comes from ``launch(grid=1, block=128)``.
-* The element type comes from the pointer the host passes as ``source``,
-  made with ``make_ptr(cutlass.Int32, ...)``.
+* The block size, 128, comes from ``kernel.launch(grid=1, block=128)``.
+* The element type comes from the pointer the host passes as ``source``. The
+  :ref:`first program <coop-cutlass-load-store>` makes it with
+  ``make_ptr(cutlass.Int32, ...)``.
 * The four items per thread come from ``items_per_thread``.
 * The scratch comes from the compiler.
 
@@ -64,7 +66,7 @@ Thread groups
 
 The first argument of a primitive names the threads that make the call
 together. One ``sum`` works on a block, on each warp, and on each group of
-eight lanes:
+eight lanes, as the threads of a warp are called:
 
 .. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
    :language: python
@@ -80,17 +82,17 @@ eight lanes:
 
    The three groups of the kernel above, on its block of 128 threads.
 
-Every thread of a group makes the call, and a reduction leaves its result in
-the thread with rank 0. A group also answers ``rank`` and ``count``, and
-``sync`` is its barrier. :ref:`Thread groups <coop-thread-groups>` in the
-API reference lists the groups each primitive takes.
+A thread's rank is its position in its group. ``rank`` returns it,
+``count`` returns the size of the group, and ``sync`` is the group's
+barrier. :ref:`Thread groups <coop-thread-groups>` in the API reference
+lists the groups each primitive takes.
 
 .. _coop-concepts-payloads:
 
 ThreadData
 ----------
 
-A ``ThreadData`` holds one thread's items, a fixed number of values in
+A ``ThreadData`` is one thread's payload: a fixed number of items held in
 registers. ``load`` returns one in each thread:
 
 .. figure:: visualizations/concept-thread-data.svg
@@ -102,9 +104,10 @@ registers. ``load`` returns one in each thread:
    ``values = coop.load(block, source, items_per_thread=4)`` on a block of
    128 threads.
 
-Other primitives read a payload and return a new one, and ``store`` writes
-one to memory. A kernel can fill a payload itself. This one squares the
-items it loaded and sums the squares:
+A scan or a sort reads a payload and returns a new one, a reduction returns
+one value, and ``store`` writes a payload to memory. A kernel can also fill
+a payload itself. This kernel squares the items it loaded and sums the
+squares:
 
 .. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
    :language: python
@@ -165,16 +168,14 @@ by position. Controls come after ``*`` and are passed by keyword:
 .. code-block:: python
 
    items = coop.load(
-       group, source, items_per_thread=items_per_thread,
-       valid_items=count, offset=offset,
+       group, source, items_per_thread=items_per_thread, offset=offset
    )
    result = coop.reduce(group, items, binary_op="max")
 
 ``items_per_thread`` and ``binary_op`` select code, so they are Python
-values, fixed when the kernel is compiled. ``valid_items`` and ``offset``
-describe data and can also be CuTe values computed while the kernel runs.
-The call can sit in the kernel or in a ``@cute.jit`` function that the
-kernel calls.
+values, fixed when the kernel is compiled. ``offset`` describes data and can
+also be a CuTe value computed while the kernel runs. The call can sit in the
+kernel or in a ``@cute.jit`` function that the kernel calls.
 
 Rules every kernel follows
 --------------------------
@@ -189,9 +190,11 @@ Every thread of the group makes the call. ``valid_items`` shortens the data
 and leaves the group whole: with ``valid_items=45``, a Load of 64 elements
 reads the first 45, and every thread of the group still calls ``load``.
 
-The count is in elements of the group's :term:`tile`, from zero to the
-tile's size, and is the same for every thread of the group. A Python count
-outside that range is rejected when the kernel is compiled. A runtime count
+The count is the same for every thread of the group. For Load and Store it
+is in elements of the group's :term:`tile`, from zero to the tile's size.
+``reduce``, ``sum`` and a warp scan take ``valid_items`` with one value per
+thread, and count threads, from one to the group's size. A Python count
+outside the range is rejected when the kernel is compiled. A runtime count
 outside it traps on the device.
 
 .. _coop-concepts-layouts:
@@ -207,8 +210,9 @@ layout each thread holds neighboring elements of the tile. In a
 :term:`striped` layout, neighboring threads hold neighboring elements. The
 :ref:`glossary <coop-glossary-layouts>` has a table of both.
 
-Load and Store with the same ``algorithm`` agree on the layout, and
-:doc:`Exchange <visualizations/exchange>` converts one into the other. A
+A payload keeps no record of its layout. Load and Store with the same
+``algorithm`` agree on it, and :doc:`Exchange <visualizations/exchange>`
+converts one layout into the other. A
 scan reads values in blocked order, so a kernel that loads with
 ``algorithm="striped"`` converts the payload before it scans.
 

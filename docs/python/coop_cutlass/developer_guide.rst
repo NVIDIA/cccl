@@ -89,8 +89,8 @@ descriptor, with ``auto_sync=True`` synchronizing scratch reuse.
 The `complete example on GitHub
 <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/scan.py>`_ includes
 allocation, launch, cleanup, and an independent NumPy result check. From the
-repository root, run it in the compatible environment described in the
-programming guide:
+repository root, run it in an environment that meets the
+:ref:`requirements <coop-cutlass-requirements>`:
 
 .. code-block:: bash
 
@@ -591,7 +591,7 @@ Configure VS Code
 Open this CCCL checkout as the VS Code folder. Use **Python: Select
 Interpreter** to select an environment satisfying the
 :ref:`CUTLASS compiler requirements <coop-cutlass-compiler-requirements>`
-and the :doc:`programming guide's installation requirements <programming_guide>`.
+and the :ref:`installation requirements <coop-cutlass-requirements>`.
 A CUTLASS package that imports successfully may still lack an interface
 needed by this walkthrough. Install the Python and Python Debugger
 extensions where the program runs, including the remote side when using

@@ -29,7 +29,8 @@ Every primitive is called the same way:
 
 Each call is single-phase: there is nothing to construct first. The block
 size comes from the launch, the element type from the memory or the items,
-and the number of items from ``items_per_thread`` or the payload. Scratch
+and the number of items from ``items_per_thread`` or the ``ThreadData``.
+Scratch
 space in shared memory comes from the compiler, or from a
 :ref:`TempStorage <coop-temp-storage>` that the kernel passes.
 :ref:`Single-phase calls <coop-concepts-single-phase>` shows the same kernel
@@ -50,8 +51,9 @@ Primitives work in a kernel and in any ``@cute.jit`` function that the
 kernel calls. When CuTe finishes tracing, the package compiles the CUB code
 for every call it traced in one NVRTC compilation, and CuTe links the
 result into the kernel. The compiled code is kept in a cache on disk,
-described in :doc:`configuration`. To launch a kernel more than once,
-compile it with ``cute.compile`` and keep the callable it returns.
+described in :doc:`configuration`. To launch a kernel more than once, pass
+the ``@cute.jit`` function that launches it to ``cute.compile`` and keep the
+callable it returns.
 
 The package includes ``.pyi`` stubs for type checkers.
 """

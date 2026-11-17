@@ -42,9 +42,9 @@ The kernel has four lines. Each one shows something that
 * ``coop.inclusive_sum(block, values)`` is a
   :ref:`single-phase call <coop-concepts-single-phase>`. It takes the block
   size from the launch, and the element type and item count from ``values``.
-* The scan needs scratch space in shared memory, and the compiler provides
-  it. A kernel that wants to size or share that space passes a
-  :ref:`TempStorage <coop-concepts-storage>`.
+* ``coop.inclusive_sum`` also needs scratch space in shared memory, and the
+  compiler provides it. A kernel that wants to size or share that space
+  passes a :ref:`TempStorage <coop-concepts-storage>`.
 
 On the host side:
 
@@ -266,8 +266,9 @@ The dtype must match the input values exactly. Block Reduce's
 ``raking_commutative_only`` algorithm rejects custom operators because the
 compiler does not prove their commutativity.
 
-An operator is a scalar function and cannot call a primitive. A ``@cute.jit``
-function that the kernel calls is different: it is part of the kernel and can.
+An operator is a scalar function and cannot call a primitive. Call
+primitives from the kernel, or from a ``@cute.jit`` function that the kernel
+calls.
 
 This requires CUTLASS DSL 4.9 device-function export support through
 ``cute.compile_to`` and ``cutlass.compiler.ArtifactType.LtoIr``, including
@@ -400,9 +401,8 @@ Inside runtime control flow, create ``aggregate_output`` in the current
 branch or loop body. Carry its value out with an explicit subscript
 assignment; see :ref:`scan aggregates in loops <coop-faq-scan-loop-aggregate>`.
 
-The :ref:`introductory prefix-sum example <coop-cutlass-load-store>` uses
-``exclusive_scan`` with an initial value of seven and shares scratch with
-Load and Store.
+The :doc:`scan.py example <examples>` uses ``exclusive_scan`` with an
+initial value of seven and shares scratch with Load and Store.
 
 .. _coop-cutlass-exchange:
 
