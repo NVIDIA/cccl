@@ -3,7 +3,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 426" role="img" aria-labelledby="title desc">
 <title id="title">The groups a kernel can name, and three of them in one block</title>
-<desc id="desc">Five levels of a launch from largest to smallest: grid, cluster, block, warp and thread, each named by a call from this_grid() to this_thread(). Block and warp are filled because primitives accept them. Below, one block of 128 threads is drawn three ways on a thread axis: as one group from this_block(), as four groups of 32 from this_warp(), and as sixteen groups of 8 from this_warp().group_by(8). A dot marks rank 0 of every group, the thread where a reduction leaves that group's result.</desc>
+<desc id="desc">Five levels of a launch from largest to smallest: grid, cluster, block, warp and thread, each named by a call from this_grid() to this_thread(). Block and warp are filled because primitives accept them. Below, one block of 128 threads is drawn three ways on a thread axis: as one group from this_block(), as four groups of 32 from this_warp(), and as sixteen groups of 8 from this_warp().group_by(8). A dot marks rank 0 of every group, the thread that holds that group's sum.</desc>
 <rect width="760" height="426" rx="12" fill="#f7f9fc"/>
 <g font-family="sans-serif">
 <rect x="30.0" y="22.0" width="122.4" height="48.0" rx="6" fill="#ffffff" stroke="#68798b" stroke-width="1.2"/>
@@ -87,6 +87,6 @@
 <text x="730.0" y="359.0" font-size="12" text-anchor="end" fill="#44556b">128</text>
 <text x="380.0" y="380.0" font-size="13" text-anchor="middle" fill="#44556b">thread rank in a block of 128</text>
 <circle cx="34.0" cy="404.0" r="3.5" fill="#172b3a"/>
-<text x="46.0" y="408.5" font-size="13" text-anchor="start" fill="#44556b">rank 0 of each group, where a reduction leaves its result</text>
+<text x="46.0" y="408.5" font-size="13" text-anchor="start" fill="#44556b">rank 0 of each group, the thread that holds the group's sum</text>
 </g>
 </svg>
