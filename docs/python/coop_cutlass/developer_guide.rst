@@ -509,6 +509,13 @@ not regenerate them.
 * For operation visualizations, update the RST explanation, static SVG, and
   corresponding ``docs/_static/coop-*.js`` explorer together. The mapping in
   ``docs/_ext/coop_visualization.py`` connects API entries to these pages.
+* ``concept-temp-storage.svg`` is drawn to scale from scratch sizes measured
+  for the ``prefix_sum_shared``, ``prefix_sum_exclusive`` and
+  ``prefix_sum_omitted`` kernels in
+  ``python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py``:
+  128 threads, four ``Int32`` items each, CUDA 13.3. The same numbers appear
+  in the ``_temp_storage`` module docstring. Measure again and update both
+  when the planner's layout or CUB's scratch sizes change.
 
 Build the documentation with Sphinx warnings treated as errors and run the
 affected examples or runtime tests. Inspect the rendered pages, source

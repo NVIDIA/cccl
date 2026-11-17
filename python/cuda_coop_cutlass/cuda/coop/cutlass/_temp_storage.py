@@ -53,7 +53,9 @@ Before scratch is reused, every thread in the block must be finished with
 what was there. ``auto_sync=True`` adds a block barrier after each call that
 used the region. The default is ``auto_sync=False``, as in CUB: you call
 :meth:`~cuda.coop.cutlass.TempStorage.sync` before the bytes are reused. This
-is the body of the same kernel with its barriers written by hand.
+is the body of the same kernel with its barriers written by hand. These
+barriers are for scratch. Shared data of your own needs its own
+synchronization.
 
 `Full example and test on GitHub
 <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__

@@ -49,7 +49,7 @@ Important concepts
 * ``TempStorage`` controls temporary shared storage. Usually you can omit
   it and let the compiler allocate and synchronize scratch. An explicit
   descriptor lets calls share an allocation or request separate slices.
-  See :ref:`scratch allocation and reuse <coop-concepts-storage>`.
+  See :ref:`TempStorage <coop-concepts-storage>`.
 * Thread groups identify the participating threads. Use ``this_block()``
   or ``this_warp()`` for block or warp primitives, and query a group's rank
   and size through the thread hierarchy. See
@@ -208,45 +208,34 @@ for sorting and selection operations.
 .. _coop-concepts-storage:
 .. _temporary-storage:
 
-Scratch allocation and reuse
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TempStorage
+^^^^^^^^^^^
 
-The compiler allocates temporary shared storage for operations that need
-it. Direct, striped, and vectorized Load/Store are storage-free: they add
-no scratch pointer, shared allocation, or reuse barrier. Other algorithms
-use the concrete CUB specialization's required size and alignment.
+Some primitives need scratch space in shared memory. Leave ``temp_storage``
+out and the compiler provides it, with a barrier after each call. Pass a
+``TempStorage`` to choose which calls share bytes. This is the
+:ref:`prefix-sum kernel <coop-cutlass-load-store>` with one region shared by
+its three calls:
 
-For operations that accept an explicit descriptor, construct ``TempStorage``
-inside the kernel. A descriptor lets several calls reuse one region or request
-capacity and minimum alignment. An undersized request is an error.
-``sharing="shared"`` overlaps the uses of one descriptor;
-``sharing="exclusive"`` assigns distinct call sites separate slices. With
-automatic synchronization disabled, separate slices avoid barriers needed
-solely for cross-call scratch reuse, at the cost of more shared memory.
-Independent descriptors do not alias. See :ref:`the exclusive-storage FAQ
-<coop-faq-exclusive-storage>`.
+.. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
+   :language: python
+   :start-after: # cutlass-concept-temp-storage-begin
+   :end-before: # cutlass-concept-temp-storage-end
 
-Explicit descriptors default to ``auto_sync=False`` for both sharing modes.
-The kernel must provide the required barrier before reuse, including across
-iterations: a call site inside a loop reuses its slice even with exclusive
-storage. Set ``auto_sync=True`` to insert a trailing reuse barrier after each
-storage-using call. Compiler-managed scratch, used when no descriptor is
-supplied, synchronizes automatically. A scratch reuse barrier does not replace
-synchronization for the kernel's own shared data.
+.. figure:: visualizations/concept-temp-storage.svg
+   :alt: Three rows of bars on one byte axis. With temp_storage left out,
+         Load, Scan and Store each have their own region, 4,784 bytes in
+         all. With a shared TempStorage, all three start at offset 0 of one
+         2,064-byte region. With an exclusive TempStorage, they sit end to
+         end in one 4,784-byte region.
+   :width: 100%
 
-Warp operations that need scratch keep independent storage per physical or
-logical group and use the appropriate warp mask. Each primitive documents
-whether it accepts explicit storage. See :ref:`CUTLASS storage
-<coop-cutlass-storage>` and :ref:`the storage FAQ <coop-faq-temp-storage>`
-for examples and limits.
+   Scratch for the three calls above, to scale, on a block of 128 threads
+   with four ``Int32`` items each. Sizes vary with the block shape, the
+   element type and the CUB version.
 
-``reserve(num_elems, dtype, alignment=...)`` returns a typed shared view
-from a descriptor. Shared policy may alias primitive scratch; exclusive policy
-assigns slices. A reservation is application data, so a scratch-reuse barrier
-alone does not establish that another thread can consume its contents.
-
-``release()`` consumes the descriptor and its aliases on the executing path
-and exposes the entire existing region, including padding and exclusive
-slices. It inserts no barrier or wait. Finish outstanding uses and synchronize
-as required before release; subsequent descriptor or stale-alias use is an
-error. Conditional and repeated execution must respect the same lifetime.
+The kernel above is the middle row. Remove its three ``temp_storage``
+arguments for the top row, or construct
+``coop.TempStorage(sharing="exclusive", auto_sync=True)`` for the bottom
+row. :ref:`TempStorage <coop-temp-storage>` in the API reference covers
+barriers, ``reserve`` and ``release``.
