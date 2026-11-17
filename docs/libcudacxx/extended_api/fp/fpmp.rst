@@ -378,20 +378,20 @@ value, one instruction cheaper. The :ref:`error bounds <libcudacxx-extended-api-
 page lists each case.
 
 ``sqrt`` and ``rsqrt`` are kept as short as the arithmetic itself and take no branch for special
-arguments: they expect a positive, finite argument whose high limb is a normal number. ``sqrt(0)``
+arguments, at every accuracy level: they expect a positive, finite argument whose high limb is a normal number. ``sqrt(0)``
 is ``0``, but ``rsqrt(0)`` is NaN rather than infinity, both return NaN for ``+inf``, for a negative
 argument and for NaN, and on the device both return NaN for a subnormal argument. ``sqrt`` keeps
 its accuracy down to a high limb of about ``2^-100``; below that its residual term is subnormal
 and the error grows (11 u² at ``2^-108``). Code that can meet such arguments should test for them
 before the call, and scale a subnormal or tiny argument by an even power of two (and the result
 back by its square root) around it. In the ``high`` types (``fp32mp2_high``, ``fp64mp2_high``)
-``sqrt`` and ``rsqrt`` are a different kernel, which adds the second-order term of its Newton step
-(within ``0.5u²`` and ``2.7u²`` on the host, ``3.9u²`` for ``rsqrt`` on the device, against
-``2.5u²`` and ``8u²``, ``13u²`` on the device, for ``fp32mp2``) and returns the IEEE 754 values:
-``sqrt(±0)`` is ``±0`` and ``rsqrt(±0)`` is ``±inf``, ``sqrt(+inf)`` is ``+inf`` and
-``rsqrt(+inf)`` is ``+0``, a negative argument or NaN gives NaN, and an argument too small for the
-kernel is scaled by a power of four around it, on the host and on the device. It costs about half
-the throughput of the short kernel on a GPU. The math functions below return the C99 Annex F
+``sqrt`` and ``rsqrt`` are a different kernel, which adds the second-order term of its Newton step:
+for ``fp32mp2`` within ``1.3u²`` and ``2.9u²``, ``4.2u²`` for ``rsqrt`` on the device, against
+``2.5u²`` and ``8u²``, ``13u²`` on the device. It takes the same arguments, returns the same
+values for the special ones, and costs about 12% (``sqrt``) and 5% (``rsqrt``) of the throughput
+of the short kernel on a GPU; a branch that returned the IEEE 754 values would cost another 10 to
+15%.
+The math functions below return the C99 Annex F
 values for infinities, NaN and arguments outside their domain, except for the sign of a zero
 result, covered next.
 
@@ -403,7 +403,7 @@ function carries whichever sign its evaluation happens to leave. The exceptions 
 are the operations that act on the sign bit itself (unary negation, ``fabs``, ``copysign``,
 construction from a built-in ``-0.0``), ``sin``, ``tan`` and the sine of ``sincos``, ``sinpi`` and
 the sine of ``sincospi``, ``expm1``, ``log1p``, ``sinh``, ``tanh``, ``asinh``, ``atanh``, ``erf``
-and ``erfinv``, which return a zero argument unchanged, as does ``sqrt`` in the ``high`` types,
+and ``erfinv``, which return a zero argument unchanged,
 ``asin``, ``atan`` and ``atan2``, which answer a zero argument on entry (``asin(-0)`` and
 ``atan(-0)`` are ``-0``, and ``atan2`` reads the sign bit of a zero ``y``), ``sinpi`` at a nonzero
 integer, whose zero has the sign of the argument, ``cospi``, which is ``+0`` at every half-integer,
