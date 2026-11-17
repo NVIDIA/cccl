@@ -39,7 +39,7 @@ struct disable_if_bool_sort
 {};
 
 template <typename DerivedPolicy, typename RandomAccessIterator>
-typename enable_if_bool_sort<RandomAccessIterator>::type _CCCL_HOST_DEVICE stable_primitive_sort(
+typename enable_if_bool_sort<RandomAccessIterator>::type _CCCL_HOST_DEVICE_API stable_primitive_sort(
   sequential::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last)
 {
   // use stable_partition if we're sorting bool
@@ -48,7 +48,7 @@ typename enable_if_bool_sort<RandomAccessIterator>::type _CCCL_HOST_DEVICE stabl
 }
 
 template <typename DerivedPolicy, typename RandomAccessIterator>
-typename disable_if_bool_sort<RandomAccessIterator>::type _CCCL_HOST_DEVICE stable_primitive_sort(
+typename disable_if_bool_sort<RandomAccessIterator>::type _CCCL_HOST_DEVICE_API stable_primitive_sort(
   sequential::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last)
 {
   // call stable_radix_sort
@@ -58,14 +58,14 @@ typename disable_if_bool_sort<RandomAccessIterator>::type _CCCL_HOST_DEVICE stab
 struct logical_not_first
 {
   template <typename Tuple>
-  _CCCL_HOST_DEVICE bool operator()(Tuple t)
+  _CCCL_HOST_DEVICE_API bool operator()(Tuple t)
   {
     return !::cuda::std::get<0>(t);
   }
 };
 
 template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
-typename enable_if_bool_sort<RandomAccessIterator1>::type _CCCL_HOST_DEVICE stable_primitive_sort_by_key(
+typename enable_if_bool_sort<RandomAccessIterator1>::type _CCCL_HOST_DEVICE_API stable_primitive_sort_by_key(
   sequential::execution_policy<DerivedPolicy>& exec,
   RandomAccessIterator1 keys_first,
   RandomAccessIterator1 keys_last,
@@ -81,7 +81,7 @@ typename enable_if_bool_sort<RandomAccessIterator1>::type _CCCL_HOST_DEVICE stab
 }
 
 template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
-typename disable_if_bool_sort<RandomAccessIterator1>::type _CCCL_HOST_DEVICE stable_primitive_sort_by_key(
+typename disable_if_bool_sort<RandomAccessIterator1>::type _CCCL_HOST_DEVICE_API stable_primitive_sort_by_key(
   sequential::execution_policy<DerivedPolicy>& exec,
   RandomAccessIterator1 keys_first,
   RandomAccessIterator1 keys_last,
@@ -93,14 +93,14 @@ typename disable_if_bool_sort<RandomAccessIterator1>::type _CCCL_HOST_DEVICE sta
 } // end namespace stable_primitive_sort_detail
 
 template <typename DerivedPolicy, typename RandomAccessIterator>
-_CCCL_HOST_DEVICE void stable_primitive_sort(
+_CCCL_HOST_DEVICE_API void stable_primitive_sort(
   sequential::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last)
 {
   stable_primitive_sort_detail::stable_primitive_sort(exec, first, last);
 }
 
 template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
-_CCCL_HOST_DEVICE void stable_primitive_sort_by_key(
+_CCCL_HOST_DEVICE_API void stable_primitive_sort_by_key(
   sequential::execution_policy<DerivedPolicy>& exec,
   RandomAccessIterator1 keys_first,
   RandomAccessIterator1 keys_last,

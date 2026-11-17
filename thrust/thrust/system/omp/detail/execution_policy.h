@@ -43,7 +43,7 @@ struct execution_policy : cpp::execution_policy<Derived>
   using tag_type = tag;
 
   // allow conversion to tag when it is not a successor
-  operator tag() const
+  _CCCL_HOST_API operator tag() const
   {
     return tag();
   }
@@ -58,13 +58,13 @@ struct par_t
 // which we arbitrarily define in the omp backend
 
 template <typename System1, typename System2>
-_CCCL_HOST_DEVICE System1 select_system(execution_policy<System1> s, tbb::execution_policy<System2>)
+_CCCL_HOST_DEVICE_API System1 select_system(execution_policy<System1> s, tbb::execution_policy<System2>)
 {
   return thrust::detail::derived_cast(s);
 }
 
 template <typename System1, typename System2>
-_CCCL_HOST_DEVICE System2 select_system(tbb::execution_policy<System1>, execution_policy<System2> s)
+_CCCL_HOST_DEVICE_API System2 select_system(tbb::execution_policy<System1>, execution_policy<System2> s)
 {
   return thrust::detail::derived_cast(s);
 }

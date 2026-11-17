@@ -27,7 +27,7 @@ THRUST_NAMESPACE_BEGIN
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, typename... Args>
-_CCCL_HOST auto device_make_unique(Args&&... args)
+_CCCL_HOST_API auto device_make_unique(Args&&... args)
   -> decltype(uninitialized_allocate_unique<T>(::cuda::std::declval<device_allocator<T>>()))
 {
   // FIXME: This is crude - we construct an unnecessary T on the host for

@@ -115,7 +115,7 @@ copy(::cuda::std::mdspan<TIn, EIn, LIn, AIn> mdspan_in,
     ::cuda::std::mdspan<TOut, EOut, LOut, AOut> output;
     const EnvT& environment;
 
-    _CCCL_HOST ::cudaError_t operator()() const
+    _CCCL_HOST_API ::cudaError_t operator()() const
     {
       _CCCL_TRY
       {

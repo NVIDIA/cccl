@@ -66,7 +66,7 @@ struct MergePolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const MergePolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const MergePolicy& p)
   {
     return os
         << "MergePolicy { .threads_per_block = " << p.threads_per_block

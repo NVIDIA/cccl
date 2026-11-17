@@ -41,14 +41,14 @@ namespace cuda::experimental::stf
 namespace reserved
 {
 // host-allocated pool, modeled as a hashtable keyed by size
-inline auto& host_pool()
+_CCCL_HOST_API inline auto& host_pool()
 {
   static ::std::unordered_multimap<size_t, void*> result;
   return result;
 }
 
 // managed memory pool, modeled as a hashtable keyed by size
-inline auto& managed_pool()
+_CCCL_HOST_API inline auto& managed_pool()
 {
   static ::std::unordered_multimap<size_t, void*> result;
   return result;
@@ -64,7 +64,7 @@ inline constexpr size_t maxPoolEntries = 16 * 1024;
  * @param sz Number of bytes to allocate
  * @return void* pointer to allocated data
  */
-inline void* allocateHostMemory(size_t sz)
+_CCCL_HOST_API inline void* allocateHostMemory(size_t sz)
 {
   auto& pool = reserved::host_pool();
   if (auto i = pool.find(sz); i != pool.end())
@@ -104,7 +104,7 @@ inline void* allocateHostMemory(size_t sz)
  * @param sz Number of bytes to allocate
  * @return void* pointer to allocated data
  */
-inline void* allocateManagedMemory(size_t sz)
+_CCCL_HOST_API inline void* allocateManagedMemory(size_t sz)
 {
   auto& pool = reserved::managed_pool();
 
@@ -143,7 +143,7 @@ inline void* allocateManagedMemory(size_t sz)
  * @param sz size in bytes
  * @param loc location of the call, defaulted
  */
-inline void deallocateHostMemory(
+_CCCL_HOST_API inline void deallocateHostMemory(
   void* p, size_t sz, const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
 {
   ::std::ignore = loc;
@@ -186,7 +186,7 @@ inline void deallocateHostMemory(
  * @param sz size in bytes
  * @param loc location of the call, defaulted
  */
-inline void deallocateManagedMemory(
+_CCCL_HOST_API inline void deallocateManagedMemory(
   void* p, size_t sz, const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
 {
   ::std::ignore = loc;
@@ -230,7 +230,7 @@ inline void deallocateManagedMemory(
  * @param sz size in bytes
  * @param stream the stream used for ordering
  */
-inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
+_CCCL_HOST_API inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
 {
   SCOPE(fail)
   {
@@ -268,7 +268,7 @@ inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
  * @param sz size in bytes
  * @param stream the stream used for ordering
  */
-inline void deallocateManagedMemory(void* p, size_t sz, cudaStream_t stream)
+_CCCL_HOST_API inline void deallocateManagedMemory(void* p, size_t sz, cudaStream_t stream)
 {
   SCOPE(fail)
   {
@@ -305,7 +305,7 @@ inline void deallocateManagedMemory(void* p, size_t sz, cudaStream_t stream)
  * @param numDependencies number of elements in `pDependencies`
  * @return cudaGraphNode_t the newly inserted node
  */
-inline cudaGraphNode_t deallocateHostMemory(
+_CCCL_HOST_API inline cudaGraphNode_t deallocateHostMemory(
   void* p, size_t sz, cudaGraph_t graph, const cudaGraphNode_t* pDependencies, size_t numDependencies)
 {
   // Own the heap pair until the graph-node add succeeds; release to the
@@ -339,7 +339,7 @@ inline cudaGraphNode_t deallocateHostMemory(
  * @return bool value indicating if p corresponds to a piece of memory that is already pinned or not.
  */
 template <typename T>
-bool address_is_pinned(T* p)
+_CCCL_HOST_API bool address_is_pinned(T* p)
 {
   const auto attr = cuda_try<cudaPointerGetAttributes>(p);
   EXPECT(attr.type != cudaMemoryTypeDevice);
@@ -354,7 +354,7 @@ bool address_is_pinned(T* p)
  * @param n number of elements in the block
  */
 template <typename T>
-cudaError_t pin_memory(T* p, size_t n)
+_CCCL_HOST_API cudaError_t pin_memory(T* p, size_t n)
 {
   assert(p);
   if (address_is_pinned(p))
@@ -384,7 +384,7 @@ cudaError_t pin_memory(T* p, size_t n)
  * @param p pointer to beginning of memory block
  */
 template <typename T>
-void unpin_memory(T* p)
+_CCCL_HOST_API void unpin_memory(T* p)
 {
   assert(p);
 
@@ -405,7 +405,7 @@ void unpin_memory(T* p)
  * @brief Pins arrays in host memory
  */
 template <typename T, size_t N>
-cudaError_t pin_memory(T (&array)[N])
+_CCCL_HOST_API cudaError_t pin_memory(T (&array)[N])
 {
   return pin_memory(array, N);
 }
@@ -414,7 +414,7 @@ cudaError_t pin_memory(T (&array)[N])
  * @brief Pins vectors in host memory
  */
 template <typename T>
-cudaError_t pin_memory(::std::vector<T>& v)
+_CCCL_HOST_API cudaError_t pin_memory(::std::vector<T>& v)
 {
   return pin_memory(v.data(), v.size());
 }
@@ -423,7 +423,7 @@ cudaError_t pin_memory(::std::vector<T>& v)
  * @brief Unpin vectors in host memory
  */
 template <typename T>
-void unpin_memory(::std::vector<T>& v)
+_CCCL_HOST_API void unpin_memory(::std::vector<T>& v)
 {
   unpin_memory(v.data());
 }
@@ -502,9 +502,9 @@ public:
   using const_reverse_iterator = ::std::reverse_iterator<const_iterator>;
 
   // Constructors
-  small_vector() = default;
+  _CCCL_HIDE_FROM_ABI small_vector() = default;
 
-  small_vector(const small_vector& rhs)
+  _CCCL_HOST_API small_vector(const small_vector& rhs)
   {
     if (rhs.size() <= small_cap)
     {
@@ -525,7 +525,7 @@ public:
     }
   }
 
-  small_vector(small_vector&& rhs) noexcept
+  _CCCL_HOST_API small_vector(small_vector&& rhs) noexcept
   {
     if (rhs.size() <= small_cap)
     {
@@ -548,7 +548,7 @@ public:
     }
   }
 
-  small_vector(::std::initializer_list<T> init)
+  _CCCL_HOST_API small_vector(::std::initializer_list<T> init)
   {
     if (init.size() <= small_cap)
     {
@@ -570,7 +570,7 @@ public:
   }
 
   // Assignment operators
-  small_vector& operator=(const small_vector& rhs)
+  _CCCL_HOST_API small_vector& operator=(const small_vector& rhs)
   {
     if (this == &rhs)
     {
@@ -599,7 +599,7 @@ public:
     return *this;
   }
 
-  small_vector& operator=(small_vector&& rhs) noexcept
+  _CCCL_HOST_API small_vector& operator=(small_vector&& rhs) noexcept
   {
     if (this == &rhs)
     {
@@ -644,7 +644,7 @@ public:
 
   small_vector& operator=(::std::initializer_list<T> ilist);
 
-  ~small_vector()
+  _CCCL_HOST_API ~small_vector()
   {
     if (is_small())
     {
@@ -665,7 +665,7 @@ public:
   }
 
   // Element access
-  T& operator[](size_t pos)
+  _CCCL_HOST_API T& operator[](size_t pos)
   {
     if (is_small())
     {
@@ -676,7 +676,7 @@ public:
     return big()[pos];
   }
 
-  const T& operator[](size_t pos) const
+  _CCCL_HOST_API const T& operator[](size_t pos) const
   {
     if (is_small())
     {
@@ -689,11 +689,11 @@ public:
 
   T& at(size_t pos);
   const T& at(size_t pos) const;
-  T& front()
+  _CCCL_HOST_API T& front()
   {
     return *begin();
   }
-  const T& front() const
+  _CCCL_HOST_API const T& front() const
   {
     return *begin();
   }
@@ -704,30 +704,30 @@ public:
   const T* data() const noexcept;
 
   // Iterators
-  iterator begin() noexcept
+  _CCCL_HOST_API iterator begin() noexcept
   {
     return is_small() ? small_begin() : big().data();
   }
-  const_iterator begin() const noexcept
-  {
-    return is_small() ? small_begin() : big().data();
-  }
-
-  const_iterator cbegin() const noexcept
+  _CCCL_HOST_API const_iterator begin() const noexcept
   {
     return is_small() ? small_begin() : big().data();
   }
 
-  iterator end() noexcept
+  _CCCL_HOST_API const_iterator cbegin() const noexcept
+  {
+    return is_small() ? small_begin() : big().data();
+  }
+
+  _CCCL_HOST_API iterator end() noexcept
   {
     return begin() + size();
   }
 
-  const_iterator end() const noexcept
+  _CCCL_HOST_API const_iterator end() const noexcept
   {
     return begin() + size();
   }
-  const_iterator cend() const noexcept
+  _CCCL_HOST_API const_iterator cend() const noexcept
   {
     return begin() + size();
   }
@@ -740,22 +740,22 @@ public:
   const_reverse_iterator crend() const noexcept;
 
   // Capacity
-  bool empty() const noexcept
+  _CCCL_HOST_API bool empty() const noexcept
   {
     return is_small() ? small_length == 0 : big().empty();
   }
 
-  size_t size() const noexcept
+  _CCCL_HOST_API size_t size() const noexcept
   {
     return is_small() ? small_length : big().size();
   }
 
-  size_t max_size() const noexcept
+  _CCCL_HOST_API size_t max_size() const noexcept
   {
     return big().max_size();
   }
 
-  void reserve(size_t new_cap)
+  _CCCL_HOST_API void reserve(size_t new_cap)
   {
     if (is_small())
     {
@@ -786,14 +786,14 @@ public:
     big().reserve(new_cap);
   }
 
-  size_t capacity() const noexcept
+  _CCCL_HOST_API size_t capacity() const noexcept
   {
     return is_small() ? small_cap : big().capacity();
   }
   void shrink_to_fit();
 
   // Modifiers
-  void clear() noexcept
+  _CCCL_HOST_API void clear() noexcept
   {
     if (is_small())
     {
@@ -818,7 +818,7 @@ public:
   iterator insert(const_iterator pos, size_t count, const T& value);
 
   template <class InputIt>
-  iterator insert(iterator pos, InputIt first, InputIt last)
+  _CCCL_HOST_API iterator insert(iterator pos, InputIt first, InputIt last)
   {
     if (is_small())
     {
@@ -873,7 +873,7 @@ public:
   iterator emplace(const_iterator pos, Args&&... args);
   iterator erase(const_iterator pos);
 
-  iterator erase(iterator first, iterator last)
+  _CCCL_HOST_API iterator erase(iterator first, iterator last)
   {
     if (is_small())
     {
@@ -891,12 +891,12 @@ public:
     return big().data() + (result - big().begin());
   }
 
-  void push_back(const T& value)
+  _CCCL_HOST_API void push_back(const T& value)
   {
     push_back(T(value)); // force an rvalue
   }
 
-  void push_back(T&& value)
+  _CCCL_HOST_API void push_back(T&& value)
   {
     if (is_small())
     {
@@ -916,7 +916,7 @@ public:
   template <class... Args>
   void emplace_back(Args&&... args);
 
-  void pop_back()
+  _CCCL_HOST_API void pop_back()
   {
     if (is_small())
     {
@@ -930,7 +930,7 @@ public:
     }
   }
 
-  void resize(size_t new_size)
+  _CCCL_HOST_API void resize(size_t new_size)
   {
     if (is_small())
     {
@@ -949,7 +949,7 @@ public:
     }
   }
 
-  void resize(size_t new_size, const value_type& value)
+  _CCCL_HOST_API void resize(size_t new_size, const value_type& value)
   {
     if (is_small())
     {
@@ -995,7 +995,7 @@ public:
     }
   }
 
-  void swap(small_vector& other) noexcept
+  _CCCL_HOST_API void swap(small_vector& other) noexcept
   {
     if (is_small())
     {
@@ -1042,7 +1042,7 @@ public:
   }
 
   // Non-member functions
-  friend bool operator==(const small_vector& lhs, const small_vector& rhs)
+  _CCCL_HOST_API friend bool operator==(const small_vector& lhs, const small_vector& rhs)
   {
     return lhs.size() == rhs.size() && ::std::equal(lhs.begin(), lhs.end(), rhs.begin());
   }
@@ -1054,32 +1054,32 @@ public:
   // friend void swap(small_vector& lhs, small_vector& rhs) noexcept;
 
 private:
-  auto small_begin()
+  _CCCL_HOST_API auto small_begin()
   {
     return reinterpret_cast<T*>(&small_);
   }
 
-  auto small_begin() const
+  _CCCL_HOST_API auto small_begin() const
   {
     return reinterpret_cast<const T*>(&small_);
   }
 
-  auto& big()
+  _CCCL_HOST_API auto& big()
   {
     return *reinterpret_cast<::std::vector<T>*>(&big_);
   }
 
-  auto& big() const
+  _CCCL_HOST_API auto& big() const
   {
     return *reinterpret_cast<const ::std::vector<T>*>(&big_);
   }
 
-  bool is_small() const
+  _CCCL_HOST_API bool is_small() const
   {
     return small_length <= small_cap;
   }
 
-  void shrink_small(size_t delta)
+  _CCCL_HOST_API void shrink_small(size_t delta)
   {
     assert(delta <= small_length);
     assert(is_small());
@@ -1098,7 +1098,7 @@ private:
   // Return false from @p construct_one to stop. On success sets small_length; on
   // throw destroys any elements constructed so far and rethrows.
   template <typename F>
-  void construct_small_elements(F&& construct_one)
+  _CCCL_HOST_API void construct_small_elements(F&& construct_one)
   {
     small_size_t n = 0;
     SCOPE(fail)
@@ -1115,14 +1115,14 @@ private:
     small_length = n;
   }
 
-  void adopt_big_vector(::std::vector<T>&& vec)
+  _CCCL_HOST_API void adopt_big_vector(::std::vector<T>&& vec)
   {
     new (&big())::std::vector<T>(::cuda::std::move(vec));
     small_length = small_size_t(-1);
   }
 
   template <typename F>
-  void loop(F&& f)
+  _CCCL_HOST_API void loop(F&& f)
   {
     if constexpr (small_cap < 16)
     {

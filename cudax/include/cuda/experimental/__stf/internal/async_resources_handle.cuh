@@ -93,7 +93,7 @@ class async_resources_handle
     // located on stream "from" to stream "dst" (stream dst waits for the
     // event)
     // Returned value : boolean indicating if we can skip the synchronization
-    bool validate_sync_and_update(unsigned long long dst, unsigned long long src, int event_id)
+    _CCCL_HOST_API bool validate_sync_and_update(unsigned long long dst, unsigned long long src, int event_id)
     {
       // If either of the streams has no valid id, do not skip
       if (dst == k_no_stream_id || src == k_no_stream_id)
@@ -141,7 +141,7 @@ class async_resources_handle
   class impl
   {
   public:
-    impl()
+    _CCCL_HOST_API impl()
     {
 #if _CCCL_CTK_AT_LEAST(12, 4)
       const int ndevices = cuda_try<cudaGetDeviceCount>();
@@ -183,13 +183,13 @@ class async_resources_handle
   mutable ::std::shared_ptr<impl> pimpl;
 
 public:
-  async_resources_handle()
+  _CCCL_HOST_API async_resources_handle()
       : pimpl(::std::make_shared<impl>())
   {}
 
-  explicit async_resources_handle(::std::nullptr_t) {}
+  _CCCL_HOST_API explicit async_resources_handle(::std::nullptr_t) {}
 
-  explicit operator bool() const
+  _CCCL_HOST_API explicit operator bool() const
   {
     return pimpl != nullptr;
   }
@@ -209,13 +209,13 @@ public:
    * the same handle share one registry. The registry itself is internally
    * mutex-guarded for concurrent lookups.
    */
-  [[nodiscard]] ::cuda::experimental::places::exec_place_resources& get_place_resources() const
+  [[nodiscard]] _CCCL_HOST_API ::cuda::experimental::places::exec_place_resources& get_place_resources() const
   {
     assert(pimpl);
     return pimpl->place_resources;
   }
 
-  bool validate_sync_and_update(unsigned long long dst, unsigned long long src, int event_id)
+  _CCCL_HOST_API bool validate_sync_and_update(unsigned long long dst, unsigned long long src, int event_id)
   {
     assert(pimpl);
     return pimpl->cached_syncs.validate_sync_and_update(dst, src, event_id);
@@ -223,14 +223,14 @@ public:
 
   // The graph is only used during the call (to update or instantiate); it is never stored, so the
   // caller only needs to keep it valid for the duration of the call.
-  ::cuda::std::pair<::std::shared_ptr<cudaGraphExec_t>, bool>
+  _CCCL_HOST_API ::cuda::std::pair<::std::shared_ptr<cudaGraphExec_t>, bool>
   cached_graphs_query(size_t nnodes, size_t nedges, cudaGraph_t g)
   {
     _CCCL_ASSERT(pimpl, "async_resources_handle is not initialized");
     return pimpl->cached_graphs.query(nnodes, nedges, g);
   }
 
-  ::cuda::std::pair<::std::shared_ptr<cudaGraphExec_t>, bool> cached_graphs_query(cudaGraph_t g)
+  _CCCL_HOST_API ::cuda::std::pair<::std::shared_ptr<cudaGraphExec_t>, bool> cached_graphs_query(cudaGraph_t g)
   {
     const size_t nnodes = cuda_try<cudaGraphGetNodes>(g, nullptr);
 #if _CCCL_CTK_AT_LEAST(13, 0)
@@ -245,7 +245,7 @@ public:
 
 #if _CCCL_CTK_AT_LEAST(12, 4)
   // Get the green context helper cached for this device (or let the user initialize it)
-  auto& gc_helper(int dev_id)
+  _CCCL_HOST_API auto& gc_helper(int dev_id)
   {
     assert(pimpl);
     assert(dev_id < int(pimpl->per_device_gc_helper.size()));
@@ -253,7 +253,7 @@ public:
   }
 
   // Get green context helper with lazy initialization
-  ::std::shared_ptr<green_context_helper> get_gc_helper(int dev_id, int sm_count)
+  _CCCL_HOST_API ::std::shared_ptr<green_context_helper> get_gc_helper(int dev_id, int sm_count)
   {
     assert(pimpl);
     assert(dev_id < int(pimpl->per_device_gc_helper.size()));
@@ -266,7 +266,7 @@ public:
   }
 
   // Register an external green context helper
-  void register_gc_helper(int dev_id, ::std::shared_ptr<green_context_helper> helper)
+  _CCCL_HOST_API void register_gc_helper(int dev_id, ::std::shared_ptr<green_context_helper> helper)
   {
     assert(pimpl);
     assert(dev_id < int(pimpl->per_device_gc_helper.size()));
@@ -274,43 +274,43 @@ public:
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
-  exec_affinity& get_affinity()
+  _CCCL_HOST_API exec_affinity& get_affinity()
   {
     assert(pimpl);
     return pimpl->affinity;
   }
 
-  const exec_affinity& get_affinity() const
+  _CCCL_HOST_API const exec_affinity& get_affinity() const
   {
     assert(pimpl);
     return pimpl->affinity;
   }
 
-  bool has_affinity() const
+  _CCCL_HOST_API bool has_affinity() const
   {
     assert(pimpl);
     return pimpl->affinity.has_affinity();
   }
 
-  void push_affinity(::std::vector<::std::shared_ptr<exec_place>> p) const
+  _CCCL_HOST_API void push_affinity(::std::vector<::std::shared_ptr<exec_place>> p) const
   {
     assert(pimpl);
     pimpl->affinity.push(mv(p));
   }
 
-  void push_affinity(::std::shared_ptr<exec_place> p) const
+  _CCCL_HOST_API void push_affinity(::std::shared_ptr<exec_place> p) const
   {
     assert(pimpl);
     pimpl->affinity.push(mv(p));
   }
 
-  void pop_affinity() const
+  _CCCL_HOST_API void pop_affinity() const
   {
     assert(pimpl);
     pimpl->affinity.pop();
   }
 
-  const ::std::vector<::std::shared_ptr<exec_place>>& current_affinity() const
+  _CCCL_HOST_API const ::std::vector<::std::shared_ptr<exec_place>>& current_affinity() const
   {
     assert(pimpl);
     return pimpl->affinity.top();
@@ -339,30 +339,31 @@ namespace cuda::experimental::places
 // layer; they are only available to code that already includes
 // async_resources_handle.cuh.
 
-[[nodiscard]] inline stream_pool&
+[[nodiscard]] _CCCL_HOST_API inline stream_pool&
 exec_place::get_stream_pool(bool for_computation, ::cuda::experimental::stf::async_resources_handle& h) const
 {
   return get_stream_pool(for_computation, h.get_place_resources());
 }
 
-[[nodiscard]] inline augmented_stream
+[[nodiscard]] _CCCL_HOST_API inline augmented_stream
 exec_place::getStream(::cuda::experimental::stf::async_resources_handle& h, bool for_computation) const
 {
   return getStream(h.get_place_resources(), for_computation);
 }
 
-[[nodiscard]] inline cudaStream_t
+[[nodiscard]] _CCCL_HOST_API inline cudaStream_t
 exec_place::pick_stream(::cuda::experimental::stf::async_resources_handle& h, bool for_computation) const
 {
   return pick_stream(h.get_place_resources(), for_computation);
 }
 
-[[nodiscard]] inline size_t exec_place::stream_pool_size(::cuda::experimental::stf::async_resources_handle& h) const
+[[nodiscard]] _CCCL_HOST_API inline size_t
+exec_place::stream_pool_size(::cuda::experimental::stf::async_resources_handle& h) const
 {
   return stream_pool_size(h.get_place_resources());
 }
 
-[[nodiscard]] inline ::std::vector<cudaStream_t>
+[[nodiscard]] _CCCL_HOST_API inline ::std::vector<cudaStream_t>
 exec_place::pick_all_streams(::cuda::experimental::stf::async_resources_handle& h) const
 {
   return pick_all_streams(h.get_place_resources());

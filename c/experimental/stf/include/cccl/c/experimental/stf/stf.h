@@ -1775,7 +1775,7 @@ stf_error_t stf_cuda_kernel_add_desc_cufunc(
 //!
 //! \see stf_cuda_kernel_add_desc_cufunc(), stf_cuda_kernel_get_arg()
 
-inline cudaError_t stf_cuda_kernel_add_desc(
+inline cudaError_t stf_cuda_kernel_add_desc( // NOLINT(cccl-hide-from-abi)
   stf_cuda_kernel_handle k,
   const void* func,
   dim3 grid_dim_,

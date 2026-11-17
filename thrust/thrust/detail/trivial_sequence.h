@@ -41,27 +41,27 @@ struct _trivial_sequence<Iterator, DerivedPolicy, true>
   using iterator_type = Iterator;
   Iterator first, last;
 
-  _CCCL_HOST_DEVICE _trivial_sequence(thrust::execution_policy<DerivedPolicy>&, Iterator _first, Iterator _last)
+  _CCCL_HOST_DEVICE_API _trivial_sequence(thrust::execution_policy<DerivedPolicy>&, Iterator _first, Iterator _last)
       : first(_first)
       , last(_last)
   {}
 
-  _CCCL_HOST_DEVICE iterator_type begin()
+  _CCCL_HOST_DEVICE_API iterator_type begin()
   {
     return first;
   }
 
-  _CCCL_HOST_DEVICE friend iterator_type begin(_trivial_sequence& sequence)
+  _CCCL_HOST_DEVICE_API friend iterator_type begin(_trivial_sequence& sequence)
   {
     return sequence.first;
   }
 
-  _CCCL_HOST_DEVICE iterator_type end()
+  _CCCL_HOST_DEVICE_API iterator_type end()
   {
     return last;
   }
 
-  _CCCL_HOST_DEVICE friend iterator_type end(_trivial_sequence& sequence)
+  _CCCL_HOST_DEVICE_API friend iterator_type end(_trivial_sequence& sequence)
   {
     return sequence.last;
   }
@@ -76,26 +76,26 @@ struct _trivial_sequence<Iterator, DerivedPolicy, false>
 
   thrust::detail::temporary_array<iterator_value, DerivedPolicy> buffer;
 
-  _CCCL_HOST_DEVICE _trivial_sequence(thrust::execution_policy<DerivedPolicy>& exec, Iterator first, Iterator last)
+  _CCCL_HOST_DEVICE_API _trivial_sequence(thrust::execution_policy<DerivedPolicy>& exec, Iterator first, Iterator last)
       : buffer(exec, first, last)
   {}
 
-  _CCCL_HOST_DEVICE iterator_type begin()
+  _CCCL_HOST_DEVICE_API iterator_type begin()
   {
     return buffer.begin();
   }
 
-  _CCCL_HOST_DEVICE friend iterator_type begin(_trivial_sequence& sequence)
+  _CCCL_HOST_DEVICE_API friend iterator_type begin(_trivial_sequence& sequence)
   {
     return sequence.begin();
   }
 
-  _CCCL_HOST_DEVICE iterator_type end()
+  _CCCL_HOST_DEVICE_API iterator_type end()
   {
     return buffer.end();
   }
 
-  _CCCL_HOST_DEVICE friend iterator_type end(_trivial_sequence& sequence)
+  _CCCL_HOST_DEVICE_API friend iterator_type end(_trivial_sequence& sequence)
   {
     return sequence.end();
   }
@@ -106,7 +106,7 @@ struct trivial_sequence : detail::_trivial_sequence<Iterator, DerivedPolicy, is_
 {
   using super_t = _trivial_sequence<Iterator, DerivedPolicy, is_contiguous_iterator_v<Iterator>>;
 
-  _CCCL_HOST_DEVICE trivial_sequence(thrust::execution_policy<DerivedPolicy>& exec, Iterator first, Iterator last)
+  _CCCL_HOST_DEVICE_API trivial_sequence(thrust::execution_policy<DerivedPolicy>& exec, Iterator first, Iterator last)
       : super_t(exec, first, last)
   {}
 };

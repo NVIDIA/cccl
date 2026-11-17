@@ -47,7 +47,7 @@ namespace detail
  *   Binary scan operator
  */
 template <int LENGTH, typename T, typename ScanOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanExclusive(
+_CCCL_DEVICE_API _CCCL_FORCEINLINE T ThreadScanExclusive(
   T inclusive, T exclusive, T* input, T* output, ScanOp scan_op, detail::constant_t<LENGTH> /*length*/)
 {
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -93,7 +93,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanExclusive(
  *   (Handy for preventing thread-0 from applying a prefix.)
  */
 template <int LENGTH, typename T, typename ScanOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE T
+_CCCL_DEVICE_API _CCCL_FORCEINLINE T
 ThreadScanExclusive(T* input, T* output, ScanOp scan_op, T prefix, bool apply_prefix = true)
 {
   T inclusive = input[0];
@@ -139,7 +139,7 @@ ThreadScanExclusive(T* input, T* output, ScanOp scan_op, T prefix, bool apply_pr
  *   (Handy for preventing thread-0 from applying a prefix.)
  */
 template <int LENGTH, typename T, typename ScanOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE T
+_CCCL_DEVICE_API _CCCL_FORCEINLINE T
 ThreadScanExclusive(T (&input)[LENGTH], T (&output)[LENGTH], ScanOp scan_op, T prefix, bool apply_prefix = true)
 {
   return _CUB::detail::ThreadScanExclusive<LENGTH>((T*) input, (T*) output, scan_op, prefix, apply_prefix);
@@ -190,7 +190,7 @@ template <typename Input,
           typename PrefixT,
           typename ValueT = ::cuda::std::iter_value_t<Input>,
           typename AccumT = ::cuda::std::__accumulator_t<ScanOp, ValueT, PrefixT>>
-_CCCL_DEVICE _CCCL_FORCEINLINE void ThreadScanExclusivePartial(
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void ThreadScanExclusivePartial(
   Input& input, Output& output, ScanOp scan_op, int valid_items, PrefixT prefix, bool apply_prefix = true)
 {
   static_assert(is_fixed_size_random_access_range_v<Input>,
@@ -236,7 +236,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadScanExclusivePartial(
  *   Binary scan operator
  */
 template <int LENGTH, typename T, typename ScanOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE T
+_CCCL_DEVICE_API _CCCL_FORCEINLINE T
 ThreadScanInclusive(T inclusive, T* input, T* output, ScanOp scan_op, detail::constant_t<LENGTH> /*length*/)
 {
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -273,7 +273,7 @@ ThreadScanInclusive(T inclusive, T* input, T* output, ScanOp scan_op, detail::co
  *   Binary scan operator
  */
 template <int LENGTH, typename T, typename ScanOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanInclusive(T* input, T* output, ScanOp scan_op)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE T ThreadScanInclusive(T* input, T* output, ScanOp scan_op)
 {
   T inclusive = input[0];
   output[0]   = inclusive;
@@ -306,7 +306,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanInclusive(T* input, T* output, ScanOp
  *   Binary scan operator
  */
 template <int LENGTH, typename T, typename ScanOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanInclusive(T (&input)[LENGTH], T (&output)[LENGTH], ScanOp scan_op)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE T ThreadScanInclusive(T (&input)[LENGTH], T (&output)[LENGTH], ScanOp scan_op)
 {
   return _CUB::detail::ThreadScanInclusive<LENGTH>((T*) input, (T*) output, scan_op);
 }
@@ -343,7 +343,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanInclusive(T (&input)[LENGTH], T (&out
  *   (Handy for preventing thread-0 from applying a prefix.)
  */
 template <int LENGTH, typename T, typename ScanOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE T
+_CCCL_DEVICE_API _CCCL_FORCEINLINE T
 ThreadScanInclusive(T* input, T* output, ScanOp scan_op, T prefix, bool apply_prefix = true)
 {
   T inclusive = input[0];
@@ -389,7 +389,7 @@ ThreadScanInclusive(T* input, T* output, ScanOp scan_op, T prefix, bool apply_pr
  *   (Handy for preventing thread-0 from applying a prefix.)
  */
 template <int LENGTH, typename T, typename ScanOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE T
+_CCCL_DEVICE_API _CCCL_FORCEINLINE T
 ThreadScanInclusive(T (&input)[LENGTH], T (&output)[LENGTH], ScanOp scan_op, T prefix, bool apply_prefix = true)
 {
   return _CUB::detail::ThreadScanInclusive<LENGTH>((T*) input, (T*) output, scan_op, prefix, apply_prefix);
@@ -440,7 +440,7 @@ template <typename Input,
           typename PrefixT,
           typename ValueT = ::cuda::std::iter_value_t<Input>,
           typename AccumT = ::cuda::std::__accumulator_t<ScanOp, ValueT, PrefixT>>
-_CCCL_DEVICE _CCCL_FORCEINLINE void ThreadScanInclusivePartial(
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void ThreadScanInclusivePartial(
   Input& input, Output& output, ScanOp scan_op, int valid_items, PrefixT prefix, bool apply_prefix = true)
 {
   static_assert(is_fixed_size_random_access_range_v<Input>,

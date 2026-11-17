@@ -151,21 +151,21 @@ public:
    *
    *  \param s The seed used to initialize this \p linear_congruential_engine's state.
    */
-  _CCCL_HOST_DEVICE explicit linear_congruential_engine(result_type s = default_seed);
+  _CCCL_HOST_DEVICE_API explicit linear_congruential_engine(result_type s = default_seed);
 
   /*! This method initializes this \p linear_congruential_engine's state, and optionally accepts
    *  a seed value.
    *
    *  \param s The seed used to initializes this \p linear_congruential_engine's state.
    */
-  _CCCL_HOST_DEVICE void seed(result_type s = default_seed);
+  _CCCL_HOST_DEVICE_API void seed(result_type s = default_seed);
 
   // generating functions
 
   /*! This member function produces a new random value and updates this \p linear_congruential_engine's state.
    *  \return A new random number.
    */
-  _CCCL_HOST_DEVICE result_type operator()();
+  _CCCL_HOST_DEVICE_API result_type operator()();
 
   /*! This member function advances this \p linear_congruential_engine's state a given number of times
    *  and discards the results.
@@ -173,7 +173,7 @@ public:
    *  \param z The number of random values to discard.
    *  \note This function is provided because an implementation may be able to accelerate it.
    */
-  _CCCL_HOST_DEVICE void discard(unsigned long long z);
+  _CCCL_HOST_DEVICE_API void discard(unsigned long long z);
 
   /*! \cond
    */
@@ -187,7 +187,7 @@ private:
 
   friend struct thrust::random::detail::linear_congruential_engine_discard;
 
-  _CCCL_HOST_DEVICE bool equal(const linear_congruential_engine& rhs) const;
+  _CCCL_HOST_DEVICE_API bool equal(const linear_congruential_engine& rhs) const;
 
   template <typename CharT, typename Traits>
   std::basic_ostream<CharT, Traits>& stream_out(std::basic_ostream<CharT, Traits>& os) const;
@@ -205,8 +205,8 @@ private:
  *  \return \c true if \p lhs is equal to \p rhs; \c false, otherwise.
  */
 template <typename UIntType, UIntType A, UIntType C, UIntType M>
-_CCCL_HOST_DEVICE bool operator==(const linear_congruential_engine<UIntType, A, C, M>& lhs,
-                                  const linear_congruential_engine<UIntType, A, C, M>& rhs);
+_CCCL_HOST_DEVICE_API bool operator==(const linear_congruential_engine<UIntType, A, C, M>& lhs,
+                                      const linear_congruential_engine<UIntType, A, C, M>& rhs);
 
 /*! This function checks two \p linear_congruential_engines for inequality.
  *  \param lhs The first \p linear_congruential_engine to test.
@@ -214,8 +214,8 @@ _CCCL_HOST_DEVICE bool operator==(const linear_congruential_engine<UIntType, A, 
  *  \return \c true if \p lhs is not equal to \p rhs; \c false, otherwise.
  */
 template <typename UIntType, UIntType A, UIntType C, UIntType M>
-_CCCL_HOST_DEVICE bool operator!=(const linear_congruential_engine<UIntType, A, C, M>& lhs,
-                                  const linear_congruential_engine<UIntType, A, C, M>& rhs);
+_CCCL_HOST_DEVICE_API bool operator!=(const linear_congruential_engine<UIntType, A, C, M>& lhs,
+                                      const linear_congruential_engine<UIntType, A, C, M>& rhs);
 
 /*! This function streams a linear_congruential_engine to a \p std::basic_ostream.
  *  \param os The \p basic_ostream to stream out to.
@@ -223,7 +223,7 @@ _CCCL_HOST_DEVICE bool operator!=(const linear_congruential_engine<UIntType, A, 
  *  \return \p os
  */
 template <typename UIntType, UIntType A, UIntType C, UIntType M, typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>&
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
 operator<<(std::basic_ostream<CharT, Traits>& os, const linear_congruential_engine<UIntType, A, C, M>& e);
 
 /*! This function streams a linear_congruential_engine in from a std::basic_istream.
@@ -232,7 +232,7 @@ operator<<(std::basic_ostream<CharT, Traits>& os, const linear_congruential_engi
  *  \return \p is
  */
 template <typename UIntType, UIntType A, UIntType C, UIntType M, typename CharT, typename Traits>
-std::basic_istream<CharT, Traits>&
+_CCCL_HOST_API std::basic_istream<CharT, Traits>&
 operator>>(std::basic_istream<CharT, Traits>& is, linear_congruential_engine<UIntType, A, C, M>& e);
 
 /*! \} // random_number_engine_templates
