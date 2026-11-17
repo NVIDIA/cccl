@@ -12,39 +12,13 @@
    This is an experimental API and is subject to change.
 
 .. py:module:: cuda.coop.cutlass
-.. currentmodule:: cuda.coop.cutlass
 
-Use ``import cuda.coop.cutlass as coop`` inside programs compiled with CuTe.
-The installed ``.pyi`` files describe overload and result typing. The
-:doc:`Programming Guide <programming_guide>` explains payload ownership,
-participation, layouts, and operation-specific controls.
-
-Load always returns a fresh ``ThreadData``, including when
-``items_per_thread=1``. Global and shared tensors can be Load sources or
-Store destinations. CuTe register and immutable-vector adapters provide the
-conversion rules for operations accepting those forms.
-
-Reduce and Sum return CuTe scalars, even when a NumPy dtype selects the
-payload type; stubs report that NumPy type for static checks. Array operations
-return ``ThreadData`` unless their documented contract says otherwise. Warp
-Scan accepts one scalar per lane. Rank results and Discontinuity flags have
-signed ``Int32`` dtype. Bulk Run Length Decode returns a ``Uint32`` total to
-every block member.
-
-Recognized ``operator`` functions and NumPy ufuncs select built-in operators.
-For custom Reduce and Scan binary operators, prepare a :class:`DeviceOperator`
-with :func:`compile_operator` before tracing. See
-:ref:`coop-cutlass-device-operators` for the scalar signature and compiler
-requirements. Scan prefix callbacks and runtime callback state are unsupported.
-
-Compiled device operators
--------------------------
-
-.. autofunction:: compile_operator
-
-.. autoclass:: DeviceOperator
+.. automodule:: cuda.coop.cutlass
    :no-members:
    :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. _coop-thread-groups:
 .. _coop-cutlass-hierarchy:
@@ -112,24 +86,6 @@ ThreadData: per-thread payloads and CuTe conversion
 .. automethod:: ThreadData.load
 .. automethod:: ThreadData.to_tensor_ssa
 .. automethod:: ThreadData.to_register_tensor
-
-Producer protocols
-------------------
-
-.. autoclass:: ThreadDataLoadSource
-   :no-members:
-   :no-special-members:
-
-.. autoclass:: ThreadDataTensorMetadata
-   :no-members:
-   :no-special-members:
-
-.. autoclass:: ThreadDataSource
-   :no-members:
-   :no-special-members:
-
-See :ref:`producer interoperability <coop-cutlass-producer-interop>` for
-capability detection, copy ownership, and lifetime requirements.
 
 .. _coop-temp-storage:
 
@@ -218,3 +174,30 @@ Run Length Decode
 
 .. autofunction:: run_length_decode
 .. autofunction:: run_length_decode_into
+
+Compiled device operators
+-------------------------
+
+.. autofunction:: compile_operator
+
+.. autoclass:: DeviceOperator
+   :no-members:
+   :no-special-members:
+
+Producer protocols
+------------------
+
+.. autoclass:: ThreadDataLoadSource
+   :no-members:
+   :no-special-members:
+
+.. autoclass:: ThreadDataTensorMetadata
+   :no-members:
+   :no-special-members:
+
+.. autoclass:: ThreadDataSource
+   :no-members:
+   :no-special-members:
+
+See :ref:`producer interoperability <coop-cutlass-producer-interop>` for
+capability detection, copy ownership, and lifetime requirements.
