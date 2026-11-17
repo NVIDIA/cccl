@@ -238,18 +238,17 @@ struct __simd_bit_repeat_generator
   template <typename _Idx>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr typename _Vp0::value_type operator()(_Idx) const noexcept(false)
   {
-    // Check before conversion to int so a negative wide count cannot become positive.
+    const auto __count = __v1_[_Idx::value];
+    // Check the original count before the conversion. Scalar bit_repeat checks the converted count.
     _CCCL_IF_CONSTEVAL_DEFAULT
     {
-      _CCCL_VERIFY(::cuda::std::in_range<int>(__v1_[_Idx::value]) && __v1_[_Idx::value] > 0,
-                   "bit_repeat: count must be in (0, INT_MAX]");
+      _CCCL_VERIFY(__count > 0, "bit_repeat: count must be positive");
     }
     else
     {
-      _CCCL_ASSERT(::cuda::std::in_range<int>(__v1_[_Idx::value]) && __v1_[_Idx::value] > 0,
-                   "bit_repeat: count must be in (0, INT_MAX]");
+      _CCCL_ASSERT(__count > 0, "bit_repeat: count must be positive");
     }
-    return ::cuda::std::bit_repeat(__v0_[_Idx::value], static_cast<int>(__v1_[_Idx::value]));
+    return ::cuda::std::bit_repeat(__v0_[_Idx::value], static_cast<int>(__count));
   }
 };
 
