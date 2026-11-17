@@ -356,8 +356,8 @@ warp_redux(const T input, const ::cuda::std::uint32_t mask, ReductionOp reductio
     }
 #endif // __cccl_ptx_isa >= 860
 
-    using op_t       = _CUB::detail::generalize_operator_t<ReductionOp>;
-    const auto value = _CUB::detail::floating_point_min_max_conversion(input, op_t{});
+    using op_t _CCCL_NODEBUG = _CUB::detail::generalize_operator_t<ReductionOp>;
+    const auto value         = _CUB::detail::floating_point_min_max_conversion(input, op_t{});
     if (const auto output = cub::detail::warp_redux(value, mask, op_t{}))
     {
       return cub::detail::comparable_int_to_floating_point<T>(*output);

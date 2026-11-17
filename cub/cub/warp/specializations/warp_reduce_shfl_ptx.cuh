@@ -123,16 +123,17 @@ template <typename T, typename ReductionOp>
     if constexpr (::cuda::std::is_same_v<T, double>)
     {
       _CCCL_DISPATCH_SLOW_FP64_TARGET(
-        using op_t        = _CUB::detail::generalize_operator_t<ReductionOp>;
-        const auto value  = _CUB::detail::floating_point_min_max_conversion(input, op_t{});
-        const auto result = _CUB::detail::shfl_down_op(value, op_t{}, offset, shfl_c, member_mask);
+        using op_t _CCCL_NODEBUG = _CUB::detail::generalize_operator_t<ReductionOp>;
+        const auto value         = _CUB::detail::floating_point_min_max_conversion(input, op_t{});
+        const auto result        = _CUB::detail::shfl_down_op(value, op_t{}, offset, shfl_c, member_mask);
         return _CUB::detail::comparable_int_to_floating_point<T>(result);)
     }
     // Promote narrow integers without losing their signedness. Normalize aliases such as long and long long
     // to one fixed-width type, while recognizing typed operators against the original T.
-    using integer_t  = ::cuda::std::__make_nbit_int_t<(sizeof(T) <= 4 ? 32 : 64), ::cuda::std::is_signed_v<T>>;
-    using shuffle_t  = ::cuda::std::conditional_t<::cuda::std::__cccl_is_integer_v<T>, integer_t, T>;
-    const auto value = static_cast<shuffle_t>(input);
+    using integer_t _CCCL_NODEBUG =
+      ::cuda::std::__make_nbit_int_t<(sizeof(T) <= 4 ? 32 : 64), ::cuda::std::is_signed_v<T>>;
+    using shuffle_t _CCCL_NODEBUG = ::cuda::std::conditional_t<::cuda::std::__cccl_is_integer_v<T>, integer_t, T>;
+    const auto value              = static_cast<shuffle_t>(input);
     if constexpr (::cuda::__is_cuda_minimum_v<ReductionOp, T>)
     {
       return static_cast<T>(_CUB::detail::shfl_down_min(value, offset, shfl_c, member_mask));
