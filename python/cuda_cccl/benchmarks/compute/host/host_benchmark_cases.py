@@ -32,6 +32,11 @@ class HostBenchmarkCase:
     twoshot: Callable[[SimpleNamespace, Any], None]
     noop_return_kind: NoopReturnKind
     skip_reason: str | None = None
+    # Set only for algorithms with an execute() fast path (reduce, scan,
+    # segmented_reduce); calls wrapper.execute() with construction-time
+    # op/h_init already bound, skipping the per-call re-derivation twoshot
+    # exercises.
+    execute: Callable[[SimpleNamespace, Any], None] | None = None
 
 
 class NoopBuildResult:
@@ -266,6 +271,15 @@ def _twoshot_reduce(state: SimpleNamespace, wrapper) -> None:
     )
 
 
+def _execute_reduce(state: SimpleNamespace, wrapper) -> None:
+    wrapper.execute(
+        temp_storage=state.temp_storage,
+        d_in=state.d_in,
+        d_out=state.d_out[:1],
+        num_items=state.num_items,
+    )
+
+
 def _oneshot_reduce_stream(state: SimpleNamespace) -> None:
     cc.reduce_into(
         d_in=state.d_in,
@@ -285,6 +299,16 @@ def _twoshot_reduce_stream(state: SimpleNamespace, wrapper) -> None:
         num_items=state.num_items,
         op=state.op,
         h_init=state.h_init,
+        stream=state.stream,
+    )
+
+
+def _execute_reduce_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper.execute(
+        temp_storage=state.temp_storage,
+        d_in=state.d_in,
+        d_out=state.d_out[:1],
+        num_items=state.num_items,
         stream=state.stream,
     )
 
@@ -327,6 +351,15 @@ def _twoshot_scan(state: SimpleNamespace, wrapper) -> None:
     )
 
 
+def _execute_scan(state: SimpleNamespace, wrapper) -> None:
+    wrapper.execute(
+        temp_storage=state.temp_storage,
+        d_in=state.d_in,
+        d_out=state.d_out,
+        num_items=state.num_items,
+    )
+
+
 def _oneshot_scan_stream(state: SimpleNamespace) -> None:
     cc.exclusive_scan(
         d_in=state.d_in,
@@ -345,6 +378,16 @@ def _twoshot_scan_stream(state: SimpleNamespace, wrapper) -> None:
         d_out=state.d_out,
         op=state.op,
         init_value=state.h_init,
+        num_items=state.num_items,
+        stream=state.stream,
+    )
+
+
+def _execute_scan_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper.execute(
+        temp_storage=state.temp_storage,
+        d_in=state.d_in,
+        d_out=state.d_out,
         num_items=state.num_items,
         stream=state.stream,
     )
@@ -402,6 +445,17 @@ def _twoshot_segmented_reduce(state: SimpleNamespace, wrapper) -> None:
     )
 
 
+def _execute_segmented_reduce(state: SimpleNamespace, wrapper) -> None:
+    wrapper.execute(
+        temp_storage=state.temp_storage,
+        d_in=state.d_in,
+        d_out=state.d_out,
+        num_segments=state.num_segments,
+        start_offsets_in=state.start_offsets,
+        end_offsets_in=state.end_offsets,
+    )
+
+
 def _oneshot_segmented_reduce_stream(state: SimpleNamespace) -> None:
     cc.segmented_reduce(
         d_in=state.d_in,
@@ -425,6 +479,18 @@ def _twoshot_segmented_reduce_stream(state: SimpleNamespace, wrapper) -> None:
         end_offsets_in=state.end_offsets,
         op=state.op,
         h_init=state.h_init,
+        stream=state.stream,
+    )
+
+
+def _execute_segmented_reduce_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper.execute(
+        temp_storage=state.temp_storage,
+        d_in=state.d_in,
+        d_out=state.d_out,
+        num_segments=state.num_segments,
+        start_offsets_in=state.start_offsets,
+        end_offsets_in=state.end_offsets,
         stream=state.stream,
     )
 
@@ -1131,6 +1197,7 @@ def _make_case(
     twoshot: Callable[[SimpleNamespace, Any], None],
     noop_return_kind: NoopReturnKind,
     skip_reason: str | None = None,
+    execute: Callable[[SimpleNamespace, Any], None] | None = None,
 ) -> HostBenchmarkCase:
     return HostBenchmarkCase(
         name,
@@ -1140,6 +1207,7 @@ def _make_case(
         twoshot,
         noop_return_kind,
         skip_reason,
+        execute,
     )
 
 
@@ -1151,6 +1219,7 @@ CASES = [
         _oneshot_reduce,
         _twoshot_reduce,
         "temp_storage_bytes",
+        execute=_execute_reduce,
     ),
     _make_case(
         "reduce.raw_cpp",
@@ -1159,6 +1228,7 @@ CASES = [
         _oneshot_reduce,
         _twoshot_reduce,
         "temp_storage_bytes",
+        execute=_execute_reduce,
     ),
     _make_case(
         "reduce.python",
@@ -1168,6 +1238,7 @@ CASES = [
         _twoshot_reduce,
         "temp_storage_bytes",
         _NUMBA_CUDA_MLIR_SKIP_REASON,
+        execute=_execute_reduce,
     ),
     _make_case(
         "exclusive_scan.plus",
@@ -1176,6 +1247,7 @@ CASES = [
         _oneshot_scan,
         _twoshot_scan,
         "temp_storage_bytes",
+        execute=_execute_scan,
     ),
     _make_case(
         "exclusive_scan.raw_cpp",
@@ -1184,6 +1256,7 @@ CASES = [
         _oneshot_scan,
         _twoshot_scan,
         "temp_storage_bytes",
+        execute=_execute_scan,
     ),
     _make_case(
         "exclusive_scan.python",
@@ -1193,6 +1266,7 @@ CASES = [
         _twoshot_scan,
         "temp_storage_bytes",
         _NUMBA_CUDA_MLIR_SKIP_REASON,
+        execute=_execute_scan,
     ),
     _make_case(
         "segmented_reduce.plus",
@@ -1201,6 +1275,7 @@ CASES = [
         _oneshot_segmented_reduce,
         _twoshot_segmented_reduce,
         "temp_storage_bytes",
+        execute=_execute_segmented_reduce,
     ),
     _make_case(
         "segmented_reduce.raw_cpp",
@@ -1209,6 +1284,7 @@ CASES = [
         _oneshot_segmented_reduce,
         _twoshot_segmented_reduce,
         "temp_storage_bytes",
+        execute=_execute_segmented_reduce,
     ),
     _make_case(
         "segmented_reduce.python",
@@ -1218,6 +1294,7 @@ CASES = [
         _twoshot_segmented_reduce,
         "temp_storage_bytes",
         _NUMBA_CUDA_MLIR_SKIP_REASON,
+        execute=_execute_segmented_reduce,
     ),
     _make_case(
         "unary_transform.identity",
@@ -1444,6 +1521,7 @@ STREAM_CASES = [
         _oneshot_reduce_stream,
         _twoshot_reduce_stream,
         "temp_storage_bytes",
+        execute=_execute_reduce_stream,
     ),
     _make_case(
         "exclusive_scan.plus.stream",
@@ -1452,6 +1530,7 @@ STREAM_CASES = [
         _oneshot_scan_stream,
         _twoshot_scan_stream,
         "temp_storage_bytes",
+        execute=_execute_scan_stream,
     ),
     _make_case(
         "segmented_reduce.plus.stream",
@@ -1462,6 +1541,7 @@ STREAM_CASES = [
         _oneshot_segmented_reduce_stream,
         _twoshot_segmented_reduce_stream,
         "temp_storage_bytes",
+        execute=_execute_segmented_reduce_stream,
     ),
     _make_case(
         "unary_transform.identity.stream",
@@ -1562,3 +1642,4 @@ STREAM_CASES = [
 ]
 
 CALL_CASES = CASES + STREAM_CASES
+EXECUTE_CASES = [case for case in CALL_CASES if case.execute is not None]
