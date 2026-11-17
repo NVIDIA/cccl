@@ -280,7 +280,7 @@ public:
   //! @return Number of occurrences found by the current thread
   template <typename _ProbeKey, typename _ParentCG>
   [[nodiscard]] _CCCL_DEVICE_API size_type
-  count(cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
+  count(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
   {
     return __impl_.count(__group, __key);
   }

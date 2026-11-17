@@ -902,7 +902,7 @@ public:
   //! @return Number of occurrences found by the current thread
   template <typename _ProbeKey, typename _ParentCG>
   [[nodiscard]] _CCCL_DEVICE_API __size_type
-  count(cooperative_groups::thread_block_tile<__cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
+  count(::cooperative_groups::thread_block_tile<__cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
   {
     auto __probing_iter =
       __probing_scheme.template make_iterator<__bucket_size>(__group, __key, __storage_ref.capacity_extent());

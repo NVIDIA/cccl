@@ -49,7 +49,7 @@ void fixed_capacity_set_count(nvbench::state& state, nvbench::type_list<Key, Dis
 
   // Count the number of query occurrences present in the set.
   state.exec(nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    set.count(keys.begin(), keys.end(), cuda::stream_ref{launch.get_stream()});
+    (void) set.count(cuda::stream_ref{launch.get_stream()}, keys.begin(), keys.end());
   });
 }
 
