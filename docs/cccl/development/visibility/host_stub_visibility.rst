@@ -92,7 +92,7 @@ This sometimes leads to ``__global__ function call is not configured``. However,
 and the kernel launch is silently skipped.
 
 A simple example program that exemplifies this can be found
-`on github <https://github.com/NVIDIA/cccl/tree/main/docs/cub/developer/visibility/examples/host_stub_visibility>`_
+`on github <https://github.com/NVIDIA/cccl/tree/main/docs/cccl/development/visibility/examples/host_stub_visibility>`_
 
 .. code-block:: bash
 
