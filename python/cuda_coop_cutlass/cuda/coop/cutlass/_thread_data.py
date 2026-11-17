@@ -2,23 +2,111 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Represent a thread's fixed payload as CuTe scalar expressions.
+"""A ``ThreadData`` holds one thread's items, a fixed number of values.
 
-The Python container supports static indexing and in-place item replacement.
-Register conversion methods copy values. When a kernel changes a payload in
-a runtime ``if`` or loop, CuTe passes its items through the generated compiler
-IR region. The control-flow hooks split the payload into one IR scalar per
-item and rebuild it from the region results. Every item must be initialized
-first because an unset slot has no IR value to pass.
+:func:`~cuda.coop.cutlass.load` reads them from memory into registers and
+returns one payload in each thread of the group:
 
-Module helpers identify supported register payloads and convert native
-CuTe register tensors and vectors to ThreadData.
+.. figure:: visualizations/concept-thread-data.svg
+   :alt: An array named source with 512 numbered cells. An arrow leads from
+         each run of four cells to a card for one thread, from thread 0 to
+         thread 127. Each card holds those four numbers as items 0 to 3.
+   :width: 100%
 
-The snapshot helper copies readable payloads into new ThreadData before
-lowering, so the operation can leave its inputs unchanged. The copy only
-reads items, so these operations also accept read-only inputs. Lowerings
-allocate register outputs with the payload's alignment when one is set.
+   ``values = coop.load(block, source, items_per_thread=4)`` on a block of
+   128 threads.
+
+Other primitives read a payload and return a new one, and
+:func:`~cuda.coop.cutlass.store` writes one to memory. A kernel can also
+fill a payload with values it computes. This kernel squares the items it
+loaded and sums the squares over the block:
+
+`Full example and test on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
+
+.. literalinclude::
+    ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
+    :language: python
+    :start-after: # cutlass-concept-thread-data-begin
+    :end-before: # cutlass-concept-thread-data-end
+
+* The number of items is fixed when the kernel is compiled. ``load`` takes
+  it from ``items_per_thread``, a Python integer or a kernel argument
+  declared ``cutlass.Constexpr``. Later calls take it from the payload, and
+  ``len(values)`` returns it.
+* An index is a Python integer or the variable of a
+  ``cutlass.range_constexpr`` loop. Negative indices count from the end.
+* ``ThreadData(n)`` starts with no values. Assign every item before a
+  primitive reads the payload.
+* A loaded payload has the element type of the memory it came from. A
+  payload the kernel fills takes the type of its items, which must all be
+  the same. Wrap an expression in a CUTLASS type, as in
+  ``cutlass.Int32(x)``, to give an item that type.
+* A primitive that returns a payload returns a new one and leaves its input
+  unchanged. Two arguments are written in place: ``aggregate_output`` of a
+  scan and ``exclusive_digit_prefix`` of ``radix_rank_keys``.
+
+Items can be ``Int8`` to ``Int64``, ``Uint8`` to ``Uint64``, ``Float32`` or
+``Float64``. Some primitives accept fewer types, and their entries say
+which. If memory has a different element type than its data, such as signed
+where the values are unsigned, view it with ``cute.recast_tensor`` before
+``load`` or ``store``.
+
+:meth:`~cuda.coop.cutlass.ThreadData.from_fn` fills a payload from a Python
+function of the index. It replaces the loop in the kernel above:
+
+`Full example and test on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
+
+.. literalinclude::
+    ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
+    :language: python
+    :start-after: # cutlass-concept-thread-data-from-fn-begin
+    :end-before: # cutlass-concept-thread-data-from-fn-end
+    :dedent: 4
+
+A kernel can assign items inside a runtime ``if`` or loop, and the new
+values are visible afterwards. Every item of the payload must have a value
+before the ``if`` or loop begins, and the payload keeps its element type
+and alignment on every path.
+
+Where a primitive works on one value per thread, pass the value itself. A
+payload of one item is still a payload: a warp scan takes scalars only, so
+it needs ``values[0]``.
+
+CuTe has two register forms of its own, and the methods below copy items to
+and from both:
+
+* A register tensor, made with ``cute.make_rmem_tensor``:
+  ``from_register_tensor`` and ``to_register_tensor``.
+* An immutable ``TensorSSA``, such as the result of ``tensor.load()``:
+  ``from_vector`` and ``to_tensor_ssa``.
+
+Each conversion copies, so a later write to one side leaves the other as it
+was. To write a payload into a register tensor that already exists, use
+``tensor.store(values.to_tensor_ssa(like=tensor))``. Primitives other than
+``load`` and ``store`` also take either CuTe form directly where they take
+a payload. :doc:`tensor_memory_topk` is a complete kernel that moves a
+Tensor Core accumulator through a payload.
 """
+
+# Implementation notes.
+#
+# The Python container supports static indexing and in-place item
+# replacement. Register conversion methods copy values. When a kernel
+# changes a payload in a runtime ``if`` or loop, CuTe passes its items
+# through the generated compiler IR region. The control-flow hooks split the
+# payload into one IR scalar per item and rebuild it from the region
+# results. Every item must be initialized first because an unset slot has
+# no IR value to pass.
+#
+# Module helpers identify supported register payloads and convert native
+# CuTe register tensors and vectors to ThreadData.
+#
+# The snapshot helper copies readable payloads into new ThreadData before
+# lowering, so the operation can leave its inputs unchanged. The copy only
+# reads items, so these operations also accept read-only inputs. Lowerings
+# allocate register outputs with the payload's alignment when one is set.
 
 from __future__ import annotations
 
@@ -537,41 +625,43 @@ def _resolve_export_dtype(dtype: Any, *, fallback: Any, source: str) -> Any:
 
 
 class ThreadData:
-    """Hold a fixed number of items per thread inside a CuTe kernel.
-
-    Primitives infer the item count from the payload. Indexing uses
-    compile-time integers; initialize each item before reading it or passing
-    it to an operation that reads the payload.
-
-    The conversion methods below copy values between this payload and CuTe
-    registers. Use :func:`cuda.coop.cutlass.load` and
-    :func:`cuda.coop.cutlass.store` to move data to or from global or shared
-    memory. See :ref:`coop-cutlass-register-payloads`
-    for the distinction between mutable register tensors and ``TensorSSA``.
+    """One thread's items inside a CuTe kernel.
 
     Parameters
     ----------
     items_per_thread : int
-        Positive compile-time item count.
+        Number of items, a positive Python integer.
     dtype : type, optional
-        Optional numeric element-type metadata. Load supplies the memory
-        element type; consuming primitives can infer it from homogeneous
-        initialized values. Advanced interop may need explicit metadata
-        when a raw integer IR value has no signedness. See
-        :ref:`coop-cutlass-dtype-inference`. The constructor does not cast
-        entries supplied in ``values``.
+        Element type, usually left out. Name it with a CUTLASS type such as
+        ``cutlass.Int32``, a NumPy type, or Python ``int`` or ``float``,
+        which mean ``Int32`` and ``Float32``. Python numbers among the items
+        take this type. Items that already have a CuTe type are not
+        converted and must have exactly this type. Pass ``dtype`` when the
+        items are raw MLIR integers, which have a width and no sign.
     values : tuple or list, optional
-        Initial values, with exactly ``items_per_thread`` entries. When
-        omitted, the items remain uninitialized until assigned or loaded.
+        Initial values, exactly ``items_per_thread`` of them. Without this
+        argument the items have no value until they are assigned.
     alignment : int, optional
-        Minimum byte alignment for materialized storage. Must be a positive
-        power of two. The backend may select a larger alignment.
+        Smallest byte alignment, a power of two, for register storage made
+        from this payload. That storage is aligned to at least 32 bytes in
+        any case, so only larger values change it. A payload that a
+        primitive returns keeps the alignment of its input.
+
+    Attributes
+    ----------
+    items_per_thread : int
+        Number of items. ``len(payload)`` returns the same number.
+    dtype : type or None
+        Element type. ``None`` until the constructor, ``load``, a
+        conversion or a primitive sets it.
+    alignment : int or None
+        Requested byte alignment.
 
     Examples
     --------
-    Convert a CuTe register tensor to a payload, change one item, and export
-    both immutable and mutable register results. The original tensor retains
-    its values:
+    Copy a CuTe register tensor into a payload, change one item, and copy
+    the payload out as an immutable value and as a new register tensor. The
+    original tensor keeps its values:
 
     `Full example and test on GitHub
     <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_payload_documentation.py>`__
@@ -648,24 +738,38 @@ class ThreadData:
         *,
         dtype: Any = None,
     ) -> ThreadData:
-        """Initialize each item with a compile-time Python callable.
+        """Build a payload by calling a Python function for each index.
 
         Parameters
         ----------
         items_per_thread : int
-            Positive compile-time item count.
+            Number of items, a positive Python integer.
         fn : callable
-            Called once for each integer index from zero to
-            ``items_per_thread - 1`` while tracing the kernel. It may build
-            CuTe scalar expressions; it is not a device callback.
+            Called with each index from 0 to ``items_per_thread - 1``, in
+            order, while the kernel is compiled. It returns the item for
+            that index and may build it from CuTe values.
         dtype : type, optional
-            Dtype for the generated values. An explicit CUTLASS numeric type
-            casts each item to that type.
+            Element type. A CUTLASS type casts each item to it, which makes
+            ``from_fn`` the way to change a payload's element type.
 
         Returns
         -------
         ThreadData
-            A new initialized payload in increasing item-index order.
+            A new payload with every item assigned.
+
+        Examples
+        --------
+        Square each item of a loaded payload:
+
+        `Full example and test on GitHub
+        <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
+
+        .. literalinclude::
+            ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
+            :language: python
+            :start-after: # cutlass-concept-thread-data-from-fn-begin
+            :end-before: # cutlass-concept-thread-data-from-fn-end
+            :dedent: 4
         """
         items_per_thread = _validate_items_per_thread(items_per_thread)
         if not callable(fn):
