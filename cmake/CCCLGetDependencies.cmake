@@ -14,9 +14,7 @@ macro(cccl_get_boost)
     # nvbench_helper only links Boost.Math. The full superproject also configures
     # Boost.Locale, whose source_group(TREE) rejects include/boost/locale.hpp on
     # CMake 4.5 because that header is not under include/boost/locale.
-    OPTIONS
-      "CMAKE_POLICY_VERSION_MINIMUM 3.5"
-      "BOOST_INCLUDE_LIBRARIES math"
+    OPTIONS "CMAKE_POLICY_VERSION_MINIMUM 3.5" "BOOST_INCLUDE_LIBRARIES math"
   )
 endmacro()
 
