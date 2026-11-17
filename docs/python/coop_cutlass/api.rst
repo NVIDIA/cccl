@@ -110,13 +110,23 @@ Producer protocols
 See :ref:`producer interoperability <coop-cutlass-producer-interop>` for
 capability detection, copy ownership, and lifetime requirements.
 
-Temporary storage
------------------
+.. _coop-temp-storage:
+
+TempStorage: temporary storage
+------------------------------
+
+.. automodule:: cuda.coop.cutlass._temp_storage
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. autoclass:: TempStorage
    :no-members:
    :no-special-members:
 
+.. automethod:: TempStorage.sync
 .. automethod:: TempStorage.reserve
 .. automethod:: TempStorage.release
 

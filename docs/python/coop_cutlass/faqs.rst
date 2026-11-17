@@ -120,11 +120,9 @@ See :ref:`producer interoperability <coop-cutlass-producer-interop>`.
 Does releasing storage wait for its users?
 ------------------------------------------
 
-``TempStorage.release()`` inserts no barrier or wait. Complete and synchronize
-outstanding uses before releasing the descriptor. Release consumes it and
-its aliases on the executing path, including within branches and loops, and
-returns the whole allocated region including padding and exclusive slices.
-Using the descriptor or stale aliases after release is an error.
+No. ``release`` adds no barrier and waits for nothing, so finish and
+synchronize the earlier work first. See
+:meth:`TempStorage.release <cuda.coop.cutlass.TempStorage.release>`.
 
 .. _coop-faq-exclusive-storage:
 .. _why-use-sharing-exclusive-instead-of-omitting-storage:
@@ -133,69 +131,37 @@ Using the descriptor or stale aliases after release is an error.
 Why use ``TempStorage`` with ``sharing="exclusive"``?
 -----------------------------------------------------
 
-Passing ``coop.TempStorage(sharing="exclusive")`` as ``temp_storage`` gives
-distinct call sites separate scratch slices. Omitting ``temp_storage`` lets
-the compiler choose the scratch layout and insert reuse barriers. It may
-reuse scratch across compatible calls; omission does not guarantee a
-separate slice for each call site.
+To trade shared memory for barriers. With ``sharing="exclusive"`` each call
+site has its own slice, so two different calls never reuse each other's
+scratch and need no barrier between them when ``auto_sync=False``. The region
+is as large as all the calls together. A call site that runs again, as in a
+loop, still reuses its own slice and needs a barrier before it does.
+Barriers that the algorithm or your own shared data need still apply.
 
-The explicit ``TempStorage`` descriptor retains its capacity, alignment, and
-synchronization controls. Two calls with separate slices need no barrier
-solely to reuse each other's scratch. This can save that synchronization when
-``auto_sync=False``, at the cost of more shared memory. Barriers required by
-the algorithm or by application data dependencies still apply.
-
-Repeated execution of one call site, including a loop, reuses its slice.
-Synchronize before that reuse or set ``auto_sync=True`` to request trailing
-reuse barriers. ``sharing`` controls layout independently of ``auto_sync``.
-The backend accounts for cooperative scratch with either explicit or omitted
-storage; ``exclusive`` is a choice about which calls may share its bytes.
+Leaving ``temp_storage`` out does not promise a slice per call. The compiler
+chooses the layout and adds the barriers. See
+:ref:`TempStorage <coop-temp-storage>` for the two layouts side by side.
 
 .. _coop-faq-temp-storage:
 
 Why or when would I provide my own ``TempStorage``?
 ---------------------------------------------------
 
-Usually, you can omit it. The compiler allocates the scratch required by
-an operation and inserts a barrier to make reuse safe. Direct, striped, and
-vectorized Load/Store need no shared scratch.
+Usually you can leave it out. The compiler provides the scratch each call
+needs and adds a barrier after it. Pass your own to choose which calls share
+bytes, to place the barriers yourself, to cap the capacity or raise the
+alignment, or to keep your own data in the region. This kernel shares one
+region across three calls:
 
-An explicit descriptor lets you choose which supported block operations
-share an allocation. For example, a transpose Load and Store can
-share scratch while the values stay in each thread's payload:
+.. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
+   :language: python
+   :start-after: # cutlass-concept-temp-storage-begin
+   :end-before: # cutlass-concept-temp-storage-end
 
-.. code-block:: python
-
-   # Inside a kernel; source, destination, and items_per_thread are arguments.
-   block = coop.this_block()
-   scratch = coop.TempStorage(auto_sync=True)
-   items = coop.load(
-       block, source, items_per_thread=items_per_thread,
-       algorithm="transpose", temp_storage=scratch,
-   )
-   coop.store(
-       block, destination, items, algorithm="transpose", temp_storage=scratch
-   )
-
-The compiler sizes and aligns the shared region for both calls. It inserts
-a barrier after each use. Construct the descriptor inside the kernel, and
-keep application values in ``ThreadData`` or your own arrays.
-
-A descriptor also lets you request capacity or alignment, or choose separate
-slices with ``sharing="exclusive"``. Explicit descriptors default to
-``auto_sync=False``, so the kernel must provide reuse barriers, including across
-loop iterations. The example requests ``auto_sync=True`` to insert those
-barriers automatically. See :ref:`exclusive scratch slices
-<coop-faq-exclusive-storage>` for the tradeoff between memory and reuse
-synchronization.
-
-Explicit block descriptors are supported by transpose-family Load/Store,
-Reduce, Scan, Merge Sort, Radix Sort, TopK, Adjacent Difference,
-Discontinuity, Histogram, and both Run Length Decode forms. Storage-free
-Load/Store accept a descriptor without using scratch. Warp operations manage
-their own resources and reject explicit descriptors. See
-:ref:`the storage model <coop-concepts-storage>` and
-:ref:`storage requirements <coop-cutlass-storage>` for each family's limits.
+:ref:`TempStorage <coop-temp-storage>` in the API reference lists the
+primitives that accept one and shows the layouts and the barriers.
+:ref:`Exclusive slices <coop-faq-exclusive-storage>` trade shared memory for
+barriers.
 
 .. _coop-faq-topk-order:
 

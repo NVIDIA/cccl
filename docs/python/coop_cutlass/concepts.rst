@@ -206,7 +206,6 @@ payload positions are not output. See the :doc:`API reference <api>`
 for sorting and selection operations.
 
 .. _coop-concepts-storage:
-.. _coop-temp-storage:
 .. _temporary-storage:
 
 Scratch allocation and reuse
