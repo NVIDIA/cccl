@@ -97,7 +97,8 @@ public:
   operator-(const timed_event& __end, const timed_event& __start)
   {
     const auto __ms = ::cuda::__driver::__eventElapsedTime(__start.get(), __end.get());
-    return ::cuda::std::chrono::nanoseconds(static_cast<::cuda::std::chrono::nanoseconds::rep>(__ms * 1'000'000.0));
+    return ::cuda::std::chrono::nanoseconds(
+      static_cast<::cuda::std::chrono::nanoseconds::rep>(static_cast<double>(__ms) * 1'000'000.0));
   }
 
 private:

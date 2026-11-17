@@ -229,16 +229,31 @@ function(cccl_build_compiler_targets)
       cxx_compile_options
     )
     append_option_if_available("-fmacro-backtrace-limit=0" cxx_compile_options)
-    # Disable GNU extensions (flag is clang only)
-    append_option_if_available("-Wgnu" cxx_compile_options)
-    append_option_if_available("-Wno-gnu-line-marker" cxx_compile_options) # WAR 3916341
-    # Calling a variadic macro with zero args is a GNU extension until C++20,
-    # but the THRUST_PP_ARITY macro is used with zero args. Need to see if this
-    # is a real problem worth fixing.
-    append_option_if_available(
-      "-Wno-gnu-zero-variadic-macro-arguments"
-      cxx_compile_options
-    )
+    # Disable GNU extensions (flags are clang only — GCC rejects unknown
+    # -Wno-* flags under -Werror)
+    if ("Clang" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+      append_option_if_available("-Wgnu" cxx_compile_options)
+      append_option_if_available("-Wno-gnu-line-marker" cxx_compile_options) # WAR 3916341
+      # Calling a variadic macro with zero args is a GNU extension until C++20,
+      # but the THRUST_PP_ARITY macro is used with zero args. Need to see if this
+      # is a real problem worth fixing.
+      append_option_if_available(
+        "-Wno-gnu-zero-variadic-macro-arguments"
+        cxx_compile_options
+      )
+    endif()
+
+    # Strict warnings: catch shadowed variables, missing virtual destructors,
+    # implicit float-to-double, and format string issues.
+    # Note: -Wpedantic is intentionally omitted — nvcc's preprocessor emits
+    # GCC-style line directives that trigger unavoidable pedantic warnings.
+    # Note: -Wnull-dereference is intentionally omitted — GCC produces many
+    # false positives in system headers (e.g. streambuf) when inlining user code.
+    append_option_if_available("-Wshadow=local" cxx_compile_options)
+    append_option_if_available("-Wnon-virtual-dtor" cxx_compile_options)
+    append_option_if_available("-Wdouble-promotion" cxx_compile_options)
+    append_option_if_available("-Wformat=2" cxx_compile_options)
+
     # clang added this to -Wall in LLVM 23, but it's basically unusable for GPU code
     # because NVCC will make all the kernel call stubs static. So we must disable it. See
     # https://github.com/llvm/llvm-project/issues/219968.

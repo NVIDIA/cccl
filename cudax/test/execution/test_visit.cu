@@ -60,18 +60,18 @@ C2H_TEST("sender visitation API works", "[visit]")
                 return x + y + z;
               });
 
-  auto count_leaves = recursive_lambda{[](auto& self, int& leaves, auto, auto&, auto&... child) {
-    leaves += (sizeof...(child) == 0);
-    ((cudax_async::visit(self, child, leaves)), ...);
+  auto count_leaves = recursive_lambda{[](auto& self, int& leaf_count, auto, auto&, auto&... child) {
+    leaf_count += (sizeof...(child) == 0);
+    ((cudax_async::visit(self, child, leaf_count)), ...);
   }};
 
   cudax_async::visit(count_leaves, snd1, leaves);
   CHECK(leaves == 3);
 
-  auto max_depth = recursive_lambda{[i = 0](auto& self, int& depth, auto, auto&, auto&... child) mutable {
+  auto max_depth = recursive_lambda{[i = 0](auto& self, int& max_d, auto, auto&, auto&... child) mutable {
     ++i;
-    depth = cuda::std::max(depth, i);
-    ((cudax_async::visit(self, child, depth)), ...);
+    max_d = cuda::std::max(max_d, i);
+    ((cudax_async::visit(self, child, max_d)), ...);
     --i;
   }};
 
