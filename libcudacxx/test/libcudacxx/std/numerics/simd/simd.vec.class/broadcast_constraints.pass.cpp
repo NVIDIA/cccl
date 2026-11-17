@@ -277,10 +277,40 @@ TEST_HOST_DEVICE_FUNC constexpr void test_width()
 #endif // _CCCL_HAS_HOST_STD_LIB()
 }
 
+struct lvalue_only
+{
+  TEST_HOST_DEVICE_FUNC constexpr operator int() &
+  {
+    return 1;
+  }
+};
+
+struct rvalue_only
+{
+  TEST_HOST_DEVICE_FUNC constexpr operator int() &&
+  {
+    return 2;
+  }
+};
+
+TEST_HOST_DEVICE_FUNC constexpr void test_broadcast_forwarding()
+{
+  using Vec = simd::vec<int, 4>;
+  lvalue_only lvalue;
+  const Vec from_lvalue(lvalue);
+  const Vec from_rvalue(rvalue_only{});
+  for (int i = 0; i < Vec::size(); ++i)
+  {
+    assert(from_lvalue[i] == 1);
+    assert(from_rvalue[i] == 2);
+  }
+}
+
 TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test_width<1>();
   test_width<4>();
+  test_broadcast_forwarding();
   return true;
 }
 
