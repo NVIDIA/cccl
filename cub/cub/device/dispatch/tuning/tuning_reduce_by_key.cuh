@@ -1618,7 +1618,10 @@ private:
       {
         return __make_thrust_policy(11);
       }
-      if (accum_size <= 2)
+      // Thrust's former policy is also faster for large inputs with 8-byte accumulators, and with 4-byte accumulators
+      // and 8-byte keys
+      if (accum_size <= 2 || (key_size <= 4 && accum_size == 8)
+          || (key_size == 8 && (accum_size == 4 || accum_size == 8)))
       {
         return __make_thrust_policy();
       }
