@@ -495,6 +495,12 @@ def generate_dispatch_job_name(matrix_job, job_type):
         if "args" in matrix_job and matrix_job["args"]
         else ""
     )
+    # The environment tag is not exploded, so it remains a list of "K=V"
+    # strings. Displayed in the job name so opt-in variants (e.g.
+    # ENABLE_CUDA_COMPAT=1 forward compatibility lanes) are distinguishable
+    # from otherwise identical jobs.
+    environment = matrix_job.get("environment") or []
+    env_str = (" env{" + ",".join(environment) + "}") if environment else ""
 
     ctk = matrix_job["ctk"]
     host_compiler = get_host_compiler(matrix_job["cxx"])
@@ -511,8 +517,8 @@ def generate_dispatch_job_name(matrix_job, job_type):
     config_tag = f"CTK{ctk} {host_compiler['name']}{host_compiler['version']}{std_str}{py_str}{ctk_mode_str}"
 
     extra_info = (
-        f":{cuda_compile_arch}{cmake_options}{extra_args}"
-        if cuda_compile_arch or cmake_options or extra_args
+        f":{cuda_compile_arch}{cmake_options}{extra_args}{env_str}"
+        if cuda_compile_arch or cmake_options or extra_args or env_str
         else ""
     )
 
