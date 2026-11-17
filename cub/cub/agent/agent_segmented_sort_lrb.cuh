@@ -16,6 +16,10 @@
 #endif // no system header
 
 #include <cub/detail/segmented_sort_lrb.cuh>
+#include <cub/thread/thread_scan.cuh>
+
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__functional/operations.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -56,16 +60,17 @@ struct agent_t
     auto& bin_work_offsets = temp_storage.bin_work_offsets;
     if (threadIdx.x == 0)
     {
-      unsigned prefix     = 0;
+      unsigned bin_work_counts[num_kernel_bins];
       bin_work_offsets[0] = 0;
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int bin_idx = 0; bin_idx < num_kernel_bins; ++bin_idx)
       {
         const auto config                  = lookup_bin_config<typename implementation_t::expansion>(bin_idx);
         const unsigned segments_per_group  = threads_per_group / config.threads_per_segment;
         const unsigned num_segments_in_bin = partition.bin_offsets[bin_idx + 1] - partition.bin_offsets[bin_idx];
-        prefix += (num_segments_in_bin / segments_per_group) + (num_segments_in_bin % segments_per_group != 0);
-        bin_work_offsets[bin_idx + 1] = prefix;
+        bin_work_counts[bin_idx]           = ::cuda::ceil_div(num_segments_in_bin, segments_per_group);
       }
+      _CUB::detail::ThreadScanInclusive<num_kernel_bins>(bin_work_counts, bin_work_offsets + 1, ::cuda::std::plus<>{});
     }
     __syncthreads();
     const unsigned thread_idx_in_group = threadIdx.x % threads_per_group;

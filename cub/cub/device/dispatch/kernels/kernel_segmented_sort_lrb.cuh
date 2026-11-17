@@ -98,10 +98,8 @@ __launch_bounds__(current_policy<PolicySelector>().threads_per_block) _CCCL_KERN
     const auto end   = ends[seg_id];
     if (end > begin)
     {
-      bin_idx = Capacities::first_fit(end - begin);
-      segment_rank_in_bin =
-        ::cuda::atomic_ref<unsigned, ::cuda::thread_scope_block>{bin_counts_shared[bin_idx]}.fetch_add(
-          1u, ::cuda::memory_order_relaxed);
+      bin_idx             = Capacities::first_fit(end - begin);
+      segment_rank_in_bin = atomicAdd(&bin_counts_shared[bin_idx], 1u);
     }
   }
   __syncthreads();
@@ -109,8 +107,7 @@ __launch_bounds__(current_policy<PolicySelector>().threads_per_block) _CCCL_KERN
   {
     if (bin_counts_shared[i])
     {
-      bin_starts_shared[i] = ::cuda::atomic_ref<unsigned, ::cuda::thread_scope_device>{counts_or_cursors[i]}.fetch_add(
-        bin_counts_shared[i], ::cuda::memory_order_relaxed);
+      bin_starts_shared[i] = atomicAdd(&counts_or_cursors[i], bin_counts_shared[i]);
     }
   }
   // Publish this block's counts only after every thread has finished its global updates.
