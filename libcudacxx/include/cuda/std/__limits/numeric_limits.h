@@ -31,6 +31,30 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(builtin_huge_val) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
+#  define _CCCL_BUILTIN_HUGE_VAL() __builtin_huge_val()
+#elif _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_HUGE_VAL() static_cast<double>(__INFINITY__)
+#endif // ^^^ has _CCCL_BUILTIN_HUGE_VAL ^^^
+
+#if _CCCL_CHECK_BUILTIN(builtin_huge_vall) || _CCCL_COMPILER(GCC, <, 10)
+#  define _CCCL_BUILTIN_HUGE_VALL() __builtin_huge_vall()
+#elif _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_HUGE_VALL() static_cast<long double>(_CCCL_BUILTIN_HUGE_VAL())
+#endif // ^^^ has _CCCL_BUILTIN_HUGE_VALL ^^^
+
+#if _CCCL_CHECK_BUILTIN(builtin_nan) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
+#  define _CCCL_BUILTIN_NAN() __builtin_nan("")
+#elif _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_NAN() static_cast<double>(__NAN__)
+#endif // ^^^ has _CCCL_BUILTIN_NAN ^^^
+
+#if _CCCL_CHECK_BUILTIN(builtin_nanl) || _CCCL_COMPILER(GCC, <, 10)
+#  define _CCCL_BUILTIN_NANL() __builtin_nanl("")
+#elif _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_NANL() static_cast<long double>(_CCCL_BUILTIN_NAN())
+#endif // ^^^ has _CCCL_BUILTIN_NANL ^^^
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 enum float_round_style // NOLINT(cppcoreguidelines-use-enum-class,readability-enum-initial-value)
