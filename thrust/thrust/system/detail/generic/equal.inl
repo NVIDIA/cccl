@@ -12,7 +12,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/iterator/iterator_traits.h>
+#include <thrust/detail/execution_policy.h>
+#include <thrust/equal.h>
 #include <thrust/mismatch.h>
 #include <thrust/system/detail/generic/equal.h>
 
