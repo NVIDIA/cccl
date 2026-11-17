@@ -117,11 +117,11 @@ reviews:
     - path: "ci/bench.yaml"
       instructions: |
         Treat benchmark requests as intentional temporary configuration during PR
-        development. Do not request a reset or restoration to ci/bench.template.yaml, even
-        when the header requires it before merge. Do not flag active filters, selected
-        GPUs, or omitted optional fields solely because they differ from the template. CI
-        branch protections enforce the reset before merge; do not repeat that requirement
-        in comments or summaries. Report configuration errors that prevent the requested
+        development. Do not request a reset or restoration to ci/bench.yaml, even when the
+        header requires it before merge. Do not flag active filters, selected GPUs, or
+        omitted optional fields solely because they differ from the template. CI branch
+        protections enforce the reset before merge; do not repeat that requirement in
+        comments or summaries. Report configuration errors that prevent the requested
         benchmarks from running correctly.
 
     - path: "ci/matrix.yaml"
