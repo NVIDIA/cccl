@@ -41,7 +41,7 @@ static void projection_zip_output(nvbench::state& state)
     cuda::std::tuple{next.begin(), delta.begin(), extrapolated.begin()},
     n,
     [=] _CCCL_DEVICE(T xi, T oi, T ai) -> cuda::std::tuple<T, T, T> {
-      const T next_xi = xi - step * (oi - ai);
+      const T next_xi = static_cast<T>(xi - (step * (oi - ai)));
       return {next_xi, next_xi - xi, next_xi - xi + next_xi};
     });
 }

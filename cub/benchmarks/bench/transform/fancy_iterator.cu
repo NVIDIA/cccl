@@ -39,10 +39,10 @@ static void triad_transform_iterator(nvbench::state& state)
                                          return x;
                                             }};
   auto scaled_c  = cuda::transform_iterator{c.begin(), [=] _CCCL_HOST_DEVICE(T x) -> T {
-                                             return x * scalar;
+                                             return static_cast<T>(x * scalar);
                                             }};
   bench_transform(state, cuda::std::tuple{id_b, scaled_c}, a.begin(), n, [] _CCCL_DEVICE(T ib, T sc) -> T {
-    return ib + sc;
+    return static_cast<T>(ib + sc);
   });
 }
 
@@ -70,11 +70,11 @@ static void triad_transform_output_iterator(nvbench::state& state)
     cuda::make_transform_output_iterator(
       a.begin(),
       [=] _CCCL_DEVICE(T x) -> T {
-        return x * scalar;
+        return static_cast<T>(x * scalar);
       }),
     n,
     [] _CCCL_DEVICE(T bi, T ci) -> T {
-      return bi + ci;
+      return static_cast<T>(bi + ci);
     });
 }
 
@@ -100,11 +100,11 @@ static void triad_zip_transform_iterator(nvbench::state& state)
                                          return x;
                                             }};
   auto scaled_c  = cuda::transform_iterator{c.begin(), [=] _CCCL_HOST_DEVICE(T x) -> T {
-                                             return x * scalar;
+                                             return static_cast<T>(x * scalar);
                                             }};
   auto zip       = cuda::zip_iterator{id_b, scaled_c};
   bench_transform(state, cuda::std::tuple{zip}, a.begin(), n, cuda::make_zip_function([] _CCCL_DEVICE(T ib, T sc) -> T {
-                    return ib + sc;
+                    return static_cast<T>(ib + sc);
                   }));
 }
 
@@ -130,7 +130,7 @@ static void triad_nested(nvbench::state& state)
   // the constant 1 cancels out, but the iterator is still part of the tree
   auto inner = cuda::zip_iterator{a.begin(), b.begin(), cuda::constant_iterator{T{1}}};
   auto sum   = cuda::transform_iterator{inner, cuda::make_zip_function([] _CCCL_HOST_DEVICE(T x, T y, T one) -> T {
-                                        return (x + y) * one;
+                                        return static_cast<T>((x + y) * one);
                                         })};
   auto outer = cuda::zip_iterator{sum, cuda::counting_iterator<int>{0}, cuda::constant_iterator{startScalar}};
   bench_transform(
@@ -143,7 +143,7 @@ static void triad_nested(nvbench::state& state)
       }),
     n,
     cuda::make_zip_function([] _CCCL_DEVICE(T sum, int i, T k) -> T {
-      return sum * k + static_cast<T>(i & 1);
+      return static_cast<T>((sum * k) + static_cast<T>(i & 1));
     }));
 }
 
