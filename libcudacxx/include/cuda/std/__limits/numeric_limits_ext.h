@@ -30,6 +30,34 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_HAS_FLOAT128()
+#  if _CCCL_CHECK_BUILTIN(builtin_huge_valf128) || _CCCL_COMPILER(GCC, >=, 7)
+#    define _CCCL_BUILTIN_HUGE_VALF128() __builtin_huge_valf128()
+#  elif _CCCL_COMPILER(NVRTC)
+#    define _CCCL_BUILTIN_HUGE_VALF128() static_cast<__float128>(__INFINITY__)
+#  endif // ^^^ has _CCCL_BUILTIN_HUGE_VALF128 ^^^
+
+// nvcc does not implement __builtin_huge_valf128
+#  if _CCCL_CUDA_COMPILER(NVCC)
+#    undef _CCCL_BUILTIN_HUGE_VALF128
+#    define _CCCL_BUILTIN_HUGE_VALF128() static_cast<__float128>(__INFINITY__)
+#  endif // _CCCL_CUDA_COMPILER(NVCC)
+#endif // _CCCL_HAS_FLOAT128()
+
+#if _CCCL_HAS_FLOAT128()
+#  if _CCCL_CHECK_BUILTIN(builtin_nanf128) || _CCCL_COMPILER(GCC, >=, 7)
+#    define _CCCL_BUILTIN_NANF128() __builtin_nanf128("")
+#  elif _CCCL_COMPILER(NVRTC)
+#    define _CCCL_BUILTIN_NANF128() static_cast<__float128>(__NAN__)
+#  endif // ^^^ has _CCCL_BUILTIN_NANF128 ^^^
+
+// nvcc does not implement __builtin_nanf128
+#  if _CCCL_CUDA_COMPILER(NVCC)
+#    undef _CCCL_BUILTIN_NANF128
+#    define _CCCL_BUILTIN_NANF128() static_cast<__float128>(__NAN__)
+#  endif // _CCCL_CUDA_COMPILER(NVCC)
+#endif // _CCCL_HAS_FLOAT128()
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // nvfp16
