@@ -10,8 +10,9 @@ Programming Guide
 =================
 
 This guide starts with a complete program and explains its parts. The later
-sections cover each family of primitives. :doc:`concepts` introduces the
-ideas they share, and the :doc:`API reference <api>` has every signature.
+sections cover families of primitives, and :ref:`Scan <coop-cutlass-scan>`
+in the API reference covers scans. :doc:`concepts` introduces the ideas the
+families share, and the :doc:`API reference <api>` has every signature.
 
 .. _coop-cutlass-load-store:
 

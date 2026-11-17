@@ -47,17 +47,18 @@ computes what enters each thread from the threads before it. Combining that
 incoming prefix with the local sequence gives the final result. ``∅`` means
 that nothing enters a thread, as in the first thread of an inclusive scan.
 
-The three block algorithms give the same results to the same threads.
-``raking`` passes prefixes through shared-memory segments.
-``raking_memoize`` keeps partial results in registers to save shared-memory
-reads. ``warp_scans`` scans inside each warp and then adds the totals of the
-warps before it. The picture shows which values depend on which, and is not
-an instruction trace. A real block that selects ``warp_scans`` has a
-multiple of 32 threads.
+The three block algorithms compute the same scan and return each result to
+the same thread. They group the operations differently, so floating-point
+results can differ from one algorithm to another. ``raking`` passes prefixes
+through shared-memory segments. ``raking_memoize`` keeps partial results in
+registers to save shared-memory reads. ``warp_scans`` scans inside each warp
+and then combines each result with what the earlier warps produced. The
+picture shows which values depend on which. In a kernel, ``warp_scans``
+needs a block size that is a multiple of 32.
 
-With ``valid_items`` on a warp, the explorer marks the lanes past the count
-with ``?``. The initial value of an exclusive scan is an operand: with
-maximum, an initial value of 10 keeps every result at least 10.
+With ``valid_items``, the explorer marks the lanes at or past the count
+with ``?``. An exclusive scan combines its initial value into every result:
+with maximum, an initial value of 10 keeps every result at least 10.
 :ref:`Scan <coop-cutlass-scan>` in the API reference has the rules for each
 control.
 
