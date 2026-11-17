@@ -757,7 +757,7 @@ struct batch_policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanPolicy
   {
     auto policy                    = PolicySelector{}(cc);
-    policy.lookback.lookback_delay = make_batched_delay_policy(policy.lookback.lookback_delay);
+    policy.lookback.lookback_delay = _CUB::detail::scan::make_batched_delay_policy(policy.lookback.lookback_delay);
     return policy;
   }
 };
