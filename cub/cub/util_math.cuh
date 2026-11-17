@@ -46,7 +46,7 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OffsetT safe_add_bound_to_max(OffsetT lh
 {
   static_assert(::cuda::std::is_integral_v<OffsetT>, "OffsetT must be an integral type");
   static_assert(sizeof(OffsetT) >= 4, "OffsetT must be at least 32 bits in size");
-  auto const capped_operand_rhs = (::cuda::std::min) (rhs, ::cuda::std::numeric_limits<OffsetT>::max() - lhs);
+  auto const capped_operand_rhs = (::cuda::std::min) (rhs, (::cuda::std::numeric_limits<OffsetT>::max)() - lhs);
   return lhs + capped_operand_rhs;
 }
 

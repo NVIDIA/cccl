@@ -109,12 +109,12 @@ public:
       return;
     }
 
-    this->block_offset = num_items_; // Initialize past-the-end
-    this->block_end    = num_items_; // Initialize past-the-end
-    this->num_items    = num_items_;
-    this->total_tiles  = static_cast<int>(
-      ::cuda::std::min(OffsetT{::cuda::std::numeric_limits<int>::max()}, ::cuda::ceil_div(num_items_, tile_items)));
-    this->grid_size               = ::cuda::std::min(total_tiles, max_grid_size);
+    this->block_offset            = num_items_; // Initialize past-the-end
+    this->block_end               = num_items_; // Initialize past-the-end
+    this->num_items               = num_items_;
+    this->total_tiles             = static_cast<int>((
+      ::cuda::std::min) (OffsetT{(::cuda::std::numeric_limits<int>::max)()}, ::cuda::ceil_div(num_items_, tile_items)));
+    this->grid_size               = (::cuda::std::min) (total_tiles, max_grid_size);
     const int avg_tiles_per_block = total_tiles / grid_size;
     // leftover grains go to big blocks:
     this->big_shares         = total_tiles - (avg_tiles_per_block * grid_size);
@@ -143,7 +143,7 @@ public:
       // This thread block gets a normal share of grains (avg_tiles_per_block)
       block_offset = normal_base_offset + (block_id * normal_share_items);
       // Avoid generating values greater than num_items, as it may cause overflow
-      block_end = block_offset + ::cuda::std::min(num_items - block_offset, normal_share_items);
+      block_end = block_offset + (::cuda::std::min) (num_items - block_offset, normal_share_items);
     }
     // Else default past-the-end
   }

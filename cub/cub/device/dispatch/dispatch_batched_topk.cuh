@@ -653,7 +653,7 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
   // stay the x-extent) and the CTA rank from cluster_ctarank (linearized across the cluster's dims), so this needs no
   // agent change.
   _CCCL_ASSERT(::cuda::std::cmp_greater_equal(+num_seg_val, 0)
-                 && ::cuda::std::cmp_less_equal(+num_seg_val, ::cuda::std::numeric_limits<int>::max()),
+                 && ::cuda::std::cmp_less_equal(+num_seg_val, (::cuda::std::numeric_limits<int>::max)()),
                "num_segments must be non-negative and fit a signed 32-bit grid dimension");
   const dim3 grid_dim{static_cast<unsigned>(num_seg_val), static_cast<unsigned>(cluster_blocks), 1u};
   const dim3 cluster_dim{1u, static_cast<unsigned>(cluster_blocks), 1u};
@@ -820,7 +820,7 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
         // Query the temporary storage requirement of the segment-size transform-scan.
         _CCCL_ASSERT(::cuda::std::cmp_greater_equal(+num_segments_val, 0)
                        && ::cuda::std::cmp_less_equal(
-                         +num_segments_val, ::cuda::std::numeric_limits<segment_size_scan_offset_t>::max()),
+                         +num_segments_val, (::cuda::std::numeric_limits<segment_size_scan_offset_t>::max)()),
                      "num_segments must be non-negative and fit the segment-size scan offset type");
         if (const auto error = CubDebug(_CUB::detail::scan::dispatch(
               nullptr,
@@ -866,7 +866,7 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
         }
       }
       _CCCL_ASSERT(::cuda::std::cmp_greater_equal(+num_segments_val, 0)
-                     && ::cuda::std::cmp_less_equal(+num_segments_val, ::cuda::std::numeric_limits<int>::max()),
+                     && ::cuda::std::cmp_less_equal(+num_segments_val, (::cuda::std::numeric_limits<int>::max)()),
                    "num_segments must be non-negative and fit a signed 32-bit grid dimension");
       const int grid_dim      = static_cast<int>(num_segments_val);
       constexpr int block_dim = worker_per_segment_policy.threads_per_block;
@@ -908,7 +908,7 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
       // No small segments: compute the per-segment tile offsets directly via a transform-scan over all segment sizes.
       _CCCL_ASSERT(::cuda::std::cmp_greater_equal(+num_segments_val, 0)
                      && ::cuda::std::cmp_less_equal(
-                       +num_segments_val, ::cuda::std::numeric_limits<segment_size_scan_offset_t>::max()),
+                       +num_segments_val, (::cuda::std::numeric_limits<segment_size_scan_offset_t>::max)()),
                    "num_segments must be non-negative and fit the segment-size scan offset type");
       if (const auto error = CubDebug(_CUB::detail::scan::dispatch(
             allocations[1],
@@ -1260,7 +1260,7 @@ _CCCL_HOST_API cudaError_t dispatch(
     _CUB::detail::params::get_param(num_segments, num_segments_value_t{0});
   // Unary `+` integer-promotes the count to a standard integer type so the sign-safe `cmp_*` comparators accept it:
   // they are constrained to `__cccl_is_integer_v`, which excludes the character count types the public API permits.
-  if (::cuda::std::cmp_greater(+num_segments_value, ::cuda::std::numeric_limits<int>::max()))
+  if (::cuda::std::cmp_greater(+num_segments_value, (::cuda::std::numeric_limits<int>::max)()))
   {
     return cudaErrorInvalidValue;
   }
@@ -1328,14 +1328,14 @@ _CCCL_HOST_API cudaError_t dispatch(
       {
         const size_t num_segments_size = static_cast<size_t>(num_segments_value);
         const size_t max_out_size      = static_cast<size_t>(max_out);
-        if (num_segments_size > ::cuda::std::numeric_limits<size_t>::max() / max_out_size)
+        if (num_segments_size > (::cuda::std::numeric_limits<size_t>::max)() / max_out_size)
         {
           return cudaErrorInvalidValue;
         }
 
         scratch_elements = num_segments_size * max_out_size;
-        if (scratch_elements > ::cuda::std::numeric_limits<size_t>::max() / sizeof(key_t)
-            || (!is_keys_only && scratch_elements > ::cuda::std::numeric_limits<size_t>::max() / sizeof(value_t)))
+        if (scratch_elements > (::cuda::std::numeric_limits<size_t>::max)() / sizeof(key_t)
+            || (!is_keys_only && scratch_elements > (::cuda::std::numeric_limits<size_t>::max)() / sizeof(value_t)))
         {
           return cudaErrorInvalidValue;
         }
@@ -1416,7 +1416,7 @@ _CCCL_HOST_API cudaError_t dispatch(
 
       constexpr sort_policy sort = find_smallest_sort_policy<key_t, value_t, static_max_out>::policy;
       _CCCL_ASSERT(::cuda::std::cmp_greater(+num_segments_value, 0)
-                     && ::cuda::std::cmp_less_equal(+num_segments_value, ::cuda::std::numeric_limits<int>::max()),
+                     && ::cuda::std::cmp_less_equal(+num_segments_value, (::cuda::std::numeric_limits<int>::max)()),
                    "num_segments must be positive and fit a signed 32-bit grid dimension");
       const int grid_dim = static_cast<int>(num_segments_value);
       if (const auto error = CubDebug(

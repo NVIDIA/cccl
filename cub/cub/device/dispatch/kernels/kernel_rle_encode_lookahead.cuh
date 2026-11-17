@@ -659,7 +659,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
                 "the unstaged floor configuration must launch within the default shared memory limit on every device");
 
   static_assert(
-    policy.tile_size() <= 0xffff && policy.tile_size() - 1 <= ::cuda::std::numeric_limits<position_t>::max(),
+    policy.tile_size() <= 0xffff && policy.tile_size() - 1 <= (::cuda::std::numeric_limits<position_t>::max)(),
     "tile_size must fit the 16-bit state words and the staged position type");
   static_assert(policy.poll_items_per_thread >= 3 && policy.poll_items_per_thread <= 32,
                 "poll_items_per_thread must be in [3, 32] so the fold windows cover the dense cap and the int "
@@ -670,7 +670,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
                 "reg-buf rounds must fit the 64B/lane register budget");
   static_assert(
     (::cuda::std::is_same_v<OffT, ::cuda::std::int32_t> || ::cuda::std::is_same_v<OffT, ::cuda::std::int64_t>)
-      && policy.tile_size() <= ::cuda::std::numeric_limits<OffT>::max(),
+      && policy.tile_size() <= (::cuda::std::numeric_limits<OffT>::max)(),
     "OffT must be the internal signed 32/64-bit offset type, wide enough for one tile");
   constexpr int items_per_thread    = policy.items_per_thread;
   constexpr int compute_warps       = policy.compute_warps;

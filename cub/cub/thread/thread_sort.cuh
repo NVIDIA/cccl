@@ -47,7 +47,7 @@ template <bool Unroll, int ItemsPerThread>
 inline constexpr int sort_unroll_count = Unroll ? 65534 : 1;
 #else // ^^^ host GCC ^^^ / vvv other compilers vvv
 template <bool Unroll, int ItemsPerThread>
-inline constexpr int sort_unroll_count = Unroll ? ::cuda::std::numeric_limits<int>::max() : 1;
+inline constexpr int sort_unroll_count = Unroll ? (::cuda::std::numeric_limits<int>::max)() : 1;
 #endif // ^^^ other compilers ^^^
 
 template <typename KeyT, typename ValueT, typename CompareOp>

@@ -212,7 +212,7 @@ struct AgentReduceImpl
   /// Constants
   static constexpr int ITEMS_PER_THREAD = AgentReducePolicy::ITEMS_PER_THREAD;
   static constexpr int TILE_ITEMS       = NumThreads * ITEMS_PER_THREAD;
-  static constexpr int vec_size         = ::cuda::std::min(ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
+  static constexpr int vec_size         = (::cuda::std::min) (ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
 
   // Vectorize if the policy asks for vector loads (vec_size > 1) and the input is a contiguous range of small trivially
   // copyable values

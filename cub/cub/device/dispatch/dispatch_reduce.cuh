@@ -738,7 +738,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
     {
       // The grid size for DeviceReduceKernel can be zero if the input size is zero.
       // The atomic code path does not run a second kernel, so block zero handles an empty input.
-      return ::cuda::std::max(1, even_share.grid_size);
+      return (::cuda::std::max) (1, even_share.grid_size);
     }
     else
     {

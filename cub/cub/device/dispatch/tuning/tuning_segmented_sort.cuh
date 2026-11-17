@@ -165,7 +165,7 @@ struct policy_selector
 
   _CCCL_HOST_DEVICE_API constexpr auto __dominant_size() const
   {
-    return ::cuda::std::max(key_size, value_size);
+    return (::cuda::std::max) (key_size, value_size);
   }
 
   _CCCL_HOST_DEVICE_API constexpr auto __make_scaled_segmented_radix_sort_policy(

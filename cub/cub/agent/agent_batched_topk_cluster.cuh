@@ -3346,9 +3346,9 @@ private:
     // Read the clamped-to-nonnegative size before narrowing to `segment_size_val_t`, so the assert sees the caller's
     // value: sizes are clamped >= 0 and capped at 2^21, so a value exceeding 32-bit `offset_t` is a violation.
     const auto segment_size_raw = _CUB::detail::params::__get_and_clamp_param_to_nonnegative(segment_sizes, segment_id);
-    _CCCL_ASSERT(
-      static_cast<::cuda::std::uint64_t>(segment_size_raw) <= ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max(),
-      "segment size must be non-negative and fit the 32-bit cluster offset type");
+    _CCCL_ASSERT(static_cast<::cuda::std::uint64_t>(segment_size_raw)
+                   <= (::cuda::std::numeric_limits<::cuda::std::uint32_t>::max)(),
+                 "segment size must be non-negative and fit the 32-bit cluster offset type");
     segment_size = static_cast<segment_size_val_t>(segment_size_raw);
     // Clamp `k` (already floored to >= 0) to the segment size in a 64-bit width holding both operands.
     const auto k_clamped =

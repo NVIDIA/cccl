@@ -70,8 +70,8 @@ public:
       const auto traits = ::cuda::arch_traits_for(__compute_capability());
 
       blocks_per_sm =
-        ::cuda::std::min(traits.max_blocks_per_multiprocessor,
-                         traits.max_warps_per_multiprocessor / ::cuda::ceil_div(threads_per_block, traits.warp_size));
+        (::cuda::std::min) (traits.max_blocks_per_multiprocessor,
+                            traits.max_warps_per_multiprocessor / ::cuda::ceil_div(threads_per_block, traits.warp_size));
 
       return ::cudaSuccess;
     }

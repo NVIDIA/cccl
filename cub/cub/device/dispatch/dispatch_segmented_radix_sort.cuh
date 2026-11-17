@@ -297,7 +297,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
     PassConfigT& pass_config)
   {
     // The number of bits to process in this pass
-    const int pass_bits = ::cuda::std::min(pass_config.radix_bits, (end_bit - current_bit));
+    const int pass_bits = (::cuda::std::min) (pass_config.radix_bits, (end_bit - current_bit));
 
     // The offset type (used to specialize the kernel template), large enough to index any segment within a single
     // invocation
@@ -305,7 +305,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
 
     // The upper bound of segments that a single kernel invocation will process
     constexpr auto max_num_segments_per_invocation =
-      static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<per_invocation_segment_offset_t>::max());
+      static_cast<::cuda::std::int64_t>((::cuda::std::numeric_limits<per_invocation_segment_offset_t>::max)());
 
     // Number of radix sort invocations until all segments have been processed
     const auto num_invocations = ::cuda::ceil_div(num_segments, max_num_segments_per_invocation);
@@ -318,7 +318,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
     {
       const auto current_segment_offset = invocation_index * max_num_segments_per_invocation;
       const auto num_current_segments =
-        ::cuda::std::min(max_num_segments_per_invocation, num_segments - current_segment_offset);
+        (::cuda::std::min) (max_num_segments_per_invocation, num_segments - current_segment_offset);
 
       // Log kernel configuration
       _CUB_LOG_KERNEL_LAUNCH(
@@ -476,10 +476,10 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
       const int radix_bits     = policy.RadixBits(policy.Segmented());
       const int alt_radix_bits = policy.RadixBits(policy.AltSegmented());
       const int num_bits       = end_bit - begin_bit;
-      int num_passes           = ::cuda::std::max(::cuda::ceil_div(num_bits, radix_bits), 1); // num_bits may be zero
+      int num_passes           = (::cuda::std::max) (::cuda::ceil_div(num_bits, radix_bits), 1); // num_bits may be zero
       const bool is_num_passes_odd = num_passes & 1;
       const int max_alt_passes     = (num_passes * radix_bits) - num_bits;
-      const int alt_end_bit        = ::cuda::std::min(end_bit, begin_bit + (max_alt_passes * alt_radix_bits));
+      const int alt_end_bit        = (::cuda::std::min) (end_bit, begin_bit + (max_alt_passes * alt_radix_bits));
 
       DoubleBuffer<KeyT> d_keys_remaining_passes(
         (is_overwrite_okay || is_num_passes_odd) ? d_keys.Alternate() : static_cast<KeyT*>(allocations[0]),
@@ -746,10 +746,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
   const int radix_bits         = active_policy.regular_pass.radix_bits;
   const int alt_radix_bits     = active_policy.alternate_pass.radix_bits;
   const int num_bits           = end_bit - begin_bit;
-  const int num_passes         = ::cuda::std::max(::cuda::ceil_div(num_bits, radix_bits), 1);
+  const int num_passes         = (::cuda::std::max) (::cuda::ceil_div(num_bits, radix_bits), 1);
   const bool is_num_passes_odd = num_passes & 1;
   const int max_alt_passes     = (num_passes * radix_bits) - num_bits;
-  const int alt_end_bit        = ::cuda::std::min(end_bit, begin_bit + (max_alt_passes * alt_radix_bits));
+  const int alt_end_bit        = (::cuda::std::min) (end_bit, begin_bit + (max_alt_passes * alt_radix_bits));
 
   DoubleBuffer<KeyT> d_keys_remaining_passes(
     (is_overwrite_okay || is_num_passes_odd) ? d_keys.Alternate() : static_cast<KeyT*>(allocations[0]),
@@ -769,7 +769,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
 
   // The upper bound of segments that a single kernel invocation will process
   constexpr auto max_num_segments_per_invocation =
-    static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<per_invocation_segment_offset_t>::max());
+    static_cast<::cuda::std::int64_t>((::cuda::std::numeric_limits<per_invocation_segment_offset_t>::max)());
 
   // Number of radix sort invocations until all segments have been processed
   const auto num_invocations = ::cuda::ceil_div(num_segments, max_num_segments_per_invocation);
@@ -784,7 +784,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
         auto kernel,
         KernelConfig config) -> cudaError_t {
     // The number of bits to process in this pass
-    const int pass_bits = ::cuda::std::min(pass_radix_bits, (end_bit - current_bit));
+    const int pass_bits = (::cuda::std::min) (pass_radix_bits, (end_bit - current_bit));
 
     BeginOffsetIteratorT begin_it = d_begin_offsets;
     EndOffsetIteratorT end_it     = d_end_offsets;
@@ -794,7 +794,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
     {
       const auto current_segment_offset = invocation_index * max_num_segments_per_invocation;
       const auto num_current_segments =
-        ::cuda::std::min(max_num_segments_per_invocation, num_segments - current_segment_offset);
+        (::cuda::std::min) (max_num_segments_per_invocation, num_segments - current_segment_offset);
 
       // Log kernel configuration
       _CUB_LOG_KERNEL_LAUNCH(

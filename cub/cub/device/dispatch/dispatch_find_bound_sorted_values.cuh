@@ -138,7 +138,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   _CUB::detail::log_dispatch("DeviceFind (bound sorted values)", cc, active_policy);
 
   const Offset tile_size = static_cast<Offset>(active_policy.threads_per_block) * active_policy.items_per_thread;
-  if (range_count > cuda::std::numeric_limits<Offset>::max() - values_count)
+  if (range_count > (cuda::std::numeric_limits<Offset>::max)() - values_count)
   {
     return cudaErrorInvalidValue;
   }
@@ -176,7 +176,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   {
     // Lightweight pass; not worth exposing through the tuning system.
     const int partition_grid_size =
-      static_cast<int>(::cuda::std::min(static_cast<Offset>(max_dim_x), num_partition_blocks - start_block));
+      static_cast<int>((::cuda::std::min) (static_cast<Offset>(max_dim_x), num_partition_blocks - start_block));
 
     if (const auto error = CubDebug(
           launcher_factory(partition_grid_size, threads_per_partition_block, 0, stream)
@@ -206,7 +206,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   for (Offset start_tile = 0; start_tile < num_tiles;)
   {
     const int search_grid_size =
-      static_cast<int>(::cuda::std::min(static_cast<Offset>(max_dim_x), num_tiles - start_tile));
+      static_cast<int>((::cuda::std::min) (static_cast<Offset>(max_dim_x), num_tiles - start_tile));
     if (const auto error = CubDebug(
           launcher_factory(search_grid_size, active_policy.threads_per_block, 0, stream)
             .doit(

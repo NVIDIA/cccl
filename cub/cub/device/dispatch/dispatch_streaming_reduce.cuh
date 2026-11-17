@@ -226,7 +226,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
 #  endif // _CCCL_HAS_CONCEPTS()
 
   // Upper bound at which we want to cut the input into multiple partitions. Align to 4096 bytes for performance reasons
-  static constexpr PerPartitionOffsetT max_offset_size = ::cuda::std::numeric_limits<PerPartitionOffsetT>::max();
+  static constexpr PerPartitionOffsetT max_offset_size = (::cuda::std::numeric_limits<PerPartitionOffsetT>::max)();
   static constexpr PerPartitionOffsetT max_partition_size =
     max_offset_size - (max_offset_size % PerPartitionOffsetT{4096});
 
@@ -382,7 +382,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
     if constexpr (::cuda::std::is_same_v<ReductionOpT, arg_min>
                   && ::cuda::std::numeric_limits<input_value_t>::is_specialized)
     {
-      return ::cuda::std::numeric_limits<input_value_t>::max();
+      return (::cuda::std::numeric_limits<input_value_t>::max)();
     }
     // The ArgMax overloads without a comparison operator use cuda::std::greater instead of swap_args<less>
     else if constexpr ((::cuda::std::is_same_v<ReductionOpT, arg_max>

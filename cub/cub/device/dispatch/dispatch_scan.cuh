@@ -463,7 +463,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
     }
 
     // Run grids in epochs (in case number of tiles exceeds max x-dimension
-    const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
+    const int scan_grid_size = (::cuda::std::min) (num_tiles, max_dim_x);
     for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
     {
       // Log scan_kernel configuration
@@ -793,7 +793,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
     }
 
     // Run grids in epochs (in case number of tiles exceeds max x-dimension
-    const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
+    const int scan_grid_size = (::cuda::std::min) (num_tiles, max_dim_x);
     for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
     {
       // Log scan_kernel configuration
@@ -1086,7 +1086,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
                                "The memory consistency model does not apply to texture accesses");
   CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.tiles_per_batch > 0, "Lookback scan batch size must be positive");
   CUB_DETAIL_STATIC_ISH_ASSERT(
-    active_policy.tiles_per_batch <= ::cuda::std::numeric_limits<int>::max() - detail::warp_threads,
+    active_policy.tiles_per_batch <= (::cuda::std::numeric_limits<int>::max)() - detail::warp_threads,
     "Lookback scan batch size must leave room for tile-state padding");
 
   // Number of input tiles
@@ -1192,7 +1192,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
   }
 
   // Run grids in epochs (in case number of tiles exceeds max x-dimension
-  const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
+  const int scan_grid_size = (::cuda::std::min) (num_tiles, max_dim_x);
   for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
   {
     // Log scan_kernel configuration

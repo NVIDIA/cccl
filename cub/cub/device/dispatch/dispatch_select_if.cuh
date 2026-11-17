@@ -483,8 +483,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
   // per_partition_offset_t.
   static constexpr bool use_streaming_context =
     (!is_partitioning_invocation)
-    || (static_cast<::cuda::std::uint64_t>(::cuda::std::numeric_limits<per_partition_offset_t>::max())
-        < static_cast<::cuda::std::uint64_t>(::cuda::std::numeric_limits<OffsetT>::max()));
+    || (static_cast<::cuda::std::uint64_t>((::cuda::std::numeric_limits<per_partition_offset_t>::max)())
+        < static_cast<::cuda::std::uint64_t>((::cuda::std::numeric_limits<OffsetT>::max)()));
 
   using streaming_context_t = detail::select::streaming_context_t<num_total_items_t, use_streaming_context>;
 
@@ -615,7 +615,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
     constexpr auto tile_size         = OffsetT{threads_per_block * items_per_thread};
 
     // The maximum number of items per partition
-    static constexpr auto max_supported_partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
+    static constexpr auto max_supported_partition_size = (::cuda::std::numeric_limits<per_partition_offset_t>::max)();
     static constexpr auto full_tile_partition_size =
       max_supported_partition_size - (max_supported_partition_size % (threads_per_block * items_per_thread));
 
@@ -697,7 +697,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
         }
 
         // Log scan_init_kernel configuration
-        const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
+        const int init_grid_size = (::cuda::std::max) (1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
 
         _CUB_LOG_KERNEL_LAUNCH("scan_init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
 
@@ -911,8 +911,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
   static constexpr bool is_partitioning_invocation = (SelectionOpt == SelectImpl::Partition);
   static constexpr bool use_streaming_context =
     (!is_partitioning_invocation)
-    || (static_cast<::cuda::std::uint64_t>(::cuda::std::numeric_limits<per_partition_offset_t>::max())
-        < static_cast<::cuda::std::uint64_t>(::cuda::std::numeric_limits<OffsetT>::max()));
+    || (static_cast<::cuda::std::uint64_t>((::cuda::std::numeric_limits<per_partition_offset_t>::max)())
+        < static_cast<::cuda::std::uint64_t>((::cuda::std::numeric_limits<OffsetT>::max)()));
   using streaming_context_t                = streaming_context_t<OffsetT, use_streaming_context>;
   using ScanTileStateT                     = ScanTileState<per_partition_offset_t>;
   static constexpr int init_kernel_threads = 128;
@@ -932,7 +932,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
   constexpr auto items_per_thread  = vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD;
   constexpr auto tile_size         = OffsetT{threads_per_block * items_per_thread};
 
-  static constexpr auto max_supported_partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
+  static constexpr auto max_supported_partition_size = (::cuda::std::numeric_limits<per_partition_offset_t>::max)();
   static constexpr auto full_tile_partition_size =
     max_supported_partition_size - (max_supported_partition_size % (threads_per_block * items_per_thread));
   static constexpr per_partition_offset_t capped_partition_size =
@@ -986,7 +986,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
       return error;
     }
 
-    const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, init_kernel_threads));
+    const int init_grid_size = (::cuda::std::max) (1, ::cuda::ceil_div(current_num_tiles, init_kernel_threads));
 
     _CUB_LOG_KERNEL_LAUNCH("scan_init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
 

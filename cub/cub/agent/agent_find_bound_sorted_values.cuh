@@ -180,7 +180,7 @@ struct agent_t
     int d0_thread = ItemsPerThread * static_cast<int>(threadIdx.x); // NOLINT(misc-const-correctness)
     if constexpr (!IsFullTile)
     {
-      d0_thread = ::cuda::std::min(d0_thread, total_in_tile);
+      d0_thread = (::cuda::std::min) (d0_thread, total_in_tile);
     }
 
     const int i0 =
@@ -192,7 +192,7 @@ struct agent_t
     int haystack_remaining = haystack_count - i0;
     int needles_remaining  = needles_count - j0;
 
-    const int steps = IsFullTile ? ItemsPerThread : ::cuda::std::min(total_in_tile - d0_thread, ItemsPerThread);
+    const int steps = IsFullTile ? ItemsPerThread : (::cuda::std::min) (total_in_tile - d0_thread, ItemsPerThread);
     _CCCL_PRAGMA_UNROLL(ItemsPerThread)
     for (int step = 0; step < steps; ++step)
     {
@@ -223,7 +223,7 @@ struct agent_t
     // cuda::std::min(static_cast<Offset>(tile_size) + diag0, range_count + values_count)
     // but avoid overflow of the offset type
     const int total_in_tile =
-      static_cast<int>(::cuda::std::min(static_cast<Offset>(tile_size), range_count + values_count - diag0));
+      static_cast<int>((::cuda::std::min) (static_cast<Offset>(tile_size), range_count + values_count - diag0));
 
     if (total_in_tile == tile_size)
     {

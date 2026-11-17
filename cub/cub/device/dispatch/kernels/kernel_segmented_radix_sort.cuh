@@ -187,7 +187,7 @@ __launch_bounds__(
 
   // Ensure the size of the current segment does not overflow SegmentSizeT
   _CCCL_ASSERT(static_cast<decltype(d_end_offsets[segment_id] - d_begin_offsets[segment_id])>(
-                 ::cuda::std::numeric_limits<SegmentSizeT>::max())
+                 (::cuda::std::numeric_limits<SegmentSizeT>::max)())
                  > (d_end_offsets[segment_id] - d_begin_offsets[segment_id]),
                "A single segment size is limited to the maximum value representable by SegmentSizeT");
   const auto num_items = static_cast<SegmentSizeT>(d_end_offsets[segment_id] - d_begin_offsets[segment_id]);

@@ -72,7 +72,7 @@ struct BlockReduceRakingCommutativeOnly
   static constexpr int RAKING_THREADS = WARP_THREADS;
 
   /// Number of threads actually sharing items with the raking threads
-  static constexpr int SHARING_THREADS = ::cuda::std::max(1, BLOCK_THREADS - RAKING_THREADS);
+  static constexpr int SHARING_THREADS = (::cuda::std::max) (1, BLOCK_THREADS - RAKING_THREADS);
 
   /// Number of raking elements per warp synchronous raking thread
   static constexpr int SEGMENT_LENGTH = SHARING_THREADS / WARP_THREADS;

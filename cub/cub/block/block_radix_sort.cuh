@@ -376,7 +376,7 @@ class BlockRadixSort
     // Radix sorting passes
     while (true)
     {
-      const int pass_bits = ::cuda::std::min(RadixBits, end_bit - begin_bit);
+      const int pass_bits = (::cuda::std::min) (RadixBits, end_bit - begin_bit);
       auto digit_extractor =
         traits::template digit_extractor<fundamental_digit_extractor_t>(begin_bit, pass_bits, decomposer);
 
@@ -455,7 +455,7 @@ public:
     // Radix sorting passes
     while (true)
     {
-      const int pass_bits = ::cuda::std::min(RadixBits, end_bit - begin_bit);
+      const int pass_bits = (::cuda::std::min) (RadixBits, end_bit - begin_bit);
       auto digit_extractor =
         traits::template digit_extractor<fundamental_digit_extractor_t>(begin_bit, pass_bits, decomposer);
 

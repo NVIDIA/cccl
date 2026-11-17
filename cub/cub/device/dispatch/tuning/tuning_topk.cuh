@@ -132,7 +132,7 @@ struct policy_selector
     if (cc >= ::cuda::compute_capability{9, 0})
     {
       // Try to load 16 bytes per thread: int64 -> 2, int32 -> 4, int16 -> 8.
-      const int items_per_thread = ::cuda::std::max(1, nominal_4b_items_per_thread * 4 / key_size);
+      const int items_per_thread = (::cuda::std::max) (1, nominal_4b_items_per_thread * 4 / key_size);
       return topk_policy{512, items_per_thread, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS, bits_per_pass};
     }
 

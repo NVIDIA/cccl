@@ -315,7 +315,7 @@ template <int NumTileStatesPerThread, typename AccumT, typename ScanOpT>
 
       // Only reduce once 32 contiguous tile aggregates are available, so the reduction order is fixed.
       const ::cuda::std::uint32_t expected_count =
-        static_cast<::cuda::std::uint32_t>(::cuda::std::min(32, idxTileNext - idxTileCur));
+        static_cast<::cuda::std::uint32_t>((::cuda::std::min) (32, idxTileNext - idxTileCur));
       if (warp_right_aggregates_count < expected_count)
       {
         break;
