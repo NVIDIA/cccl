@@ -79,6 +79,6 @@ _CCCL_HOST_DEVICE_API OutputIterator fill_n(OutputIterator first, Size n, const 
   System system;
 
   return thrust::fill_n(select_system(system), first, n, value);
-} // end fill()
+} // end fill_n()
 
 THRUST_NAMESPACE_END

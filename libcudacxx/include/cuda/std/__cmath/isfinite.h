@@ -37,7 +37,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_CHECK_BUILTIN(builtin_isfinite) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC, >, 12, 2)
 #  define _CCCL_BUILTIN_ISFINITE(...) __builtin_isfinite(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(isfinite)
+#endif // _CCCL_CHECK_BUILTIN(builtin_isfinite)
 
 #if _CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
 #  undef _CCCL_BUILTIN_ISFINITE

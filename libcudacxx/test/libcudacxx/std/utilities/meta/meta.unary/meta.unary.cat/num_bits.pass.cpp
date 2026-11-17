@@ -76,10 +76,10 @@ int main(int, char**)
 #endif // _CCCL_HAS_NVFP6_E3M2()
 #if _CCCL_HAS_NVFP6_E2M3()
   test_num_bits<__nv_fp6_e2m3, 6>();
-#endif // _CCCL_HAS_NVFP6_E3M2()
+#endif // _CCCL_HAS_NVFP6_E2M3()
 #if _CCCL_HAS_NVFP4_E2M1()
   test_num_bits<__nv_fp4_e2m1, 4>();
-#endif // _CCCL_HAS_NVFP8_E8M0()
+#endif // _CCCL_HAS_NVFP4_E2M1()
   test_num_bits<int*>();
   return 0;
 }

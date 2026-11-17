@@ -37,7 +37,7 @@
 //! The \c legacy_pinned_memory_resource class provides a memory resource that allocates pinned memory.
 _CCCL_BEGIN_NAMESPACE_CUDA_MR
 
-//! @brief legacy_pinned_memory_resource uses `cudaMallocHost` / `cudaFreeAsync` for allocation / deallocation.
+//! @brief legacy_pinned_memory_resource uses `cudaMallocHost` / `cudaFreeHost` for allocation / deallocation.
 //! @note This memory resource will be deprecated in the future. For CUDA 12.9 and above, use
 //! `cuda::pinned_memory_resource` instead, which is the long-term replacement.
 class legacy_pinned_memory_resource : public memory_resource_base<legacy_pinned_memory_resource>

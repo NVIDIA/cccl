@@ -73,4 +73,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_STD___FWD_MDSPAN_H
+#endif // _CUDA_STD___FWD_EXTENTS_H

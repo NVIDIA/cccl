@@ -120,4 +120,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_STD__FORMAT_FORMATERS_CHAR_H
+#endif // _CUDA_STD___FORMAT_FORMATERS_CHAR_H

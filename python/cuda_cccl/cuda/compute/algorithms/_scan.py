@@ -231,7 +231,7 @@ def make_exclusive_scan(
     init_value: np.ndarray | DeviceArrayLike | GpuStruct,
     compute_capability=None,
 ):
-    """Computes a device-wide scan using the specified binary ``op`` and initial value ``init``.
+    """Computes a device-wide scan using the specified binary ``op`` and initial value ``init_value``.
 
     Example:
         Below, ``make_exclusive_scan`` is used to create an exclusive scan object that can be reused.
@@ -333,7 +333,7 @@ def make_inclusive_scan(
     init_value: np.ndarray | DeviceArrayLike | GpuStruct | None = None,
     compute_capability=None,
 ):
-    """Computes a device-wide scan using the specified binary ``op`` and initial value ``init``.
+    """Computes a device-wide scan using the specified binary ``op`` and initial value ``init_value``.
 
     Example:
         Below, ``make_inclusive_scan`` is used to create an inclusive scan object that can be reused.

@@ -95,7 +95,7 @@ int main()
   ctx.task(lX.write())->*[](cudaStream_t, auto) {};
 
   std::vector<std::thread> threads;
-  // Launch 8 threads.
+  // Launch 10 threads.
   threads.reserve(10);
   for (int i = 0; i < 10; ++i)
   {

@@ -333,7 +333,7 @@ _CCCL_HOST_API inline cudaGraphNode_t deallocateHostMemory(
 /**
  * @brief Checks whether an address is pinned or not.
  *
- * Note that this call will erase the last CUDA error (see cudaGetLastError).
+ * Throws if the `cudaPointerGetAttributes` query fails.
  *
  * @param p address to check
  * @return bool value indicating if p corresponds to a piece of memory that is already pinned or not.

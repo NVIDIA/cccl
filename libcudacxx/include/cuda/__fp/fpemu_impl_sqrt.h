@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-//! @file fpemu_dsqrt_impl.hpp
+//! @file fpemu_impl_sqrt.h
 //! @brief Implementation of double-precision square root operations for FPEMU floating point emulation library
 //!
 //! This header provides the implementation of double-precision square root operations for the FPEMU library.

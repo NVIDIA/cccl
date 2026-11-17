@@ -84,7 +84,7 @@ get_temporary_buffer(execute_on_stream_nosync& system, ::cuda::std::ptrdiff_t n)
     static_cast<void>(cudaGetLastError()); // Clear the CUDA global error state.
 
     // That didn't work. We could be somewhere where async allocation isn't
-    // supported like Windows, so try again with cudaFree.
+    // supported like Windows, so try again with cudaMalloc.
     status = cudaMalloc(&ptr, sizeof(T) * n);
 
     if (status != cudaSuccess)
@@ -108,7 +108,7 @@ _CCCL_HOST_API void return_temporary_buffer(execute_on_stream_nosync& system, Po
     static_cast<void>(cudaGetLastError()); // Clear the CUDA global error state.
 
     // That didn't work. We could be somewhere where async allocation isn't
-    // supported like Windows, so try again with cudaMalloc.
+    // supported like Windows, so try again with cudaFree.
     status = cudaFree(void_ptr);
 
     if (status != cudaSuccess)

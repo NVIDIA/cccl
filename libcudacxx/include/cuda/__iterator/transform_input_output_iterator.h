@@ -500,7 +500,7 @@ public:
   {
     return __lhs.__iter() <=> __rhs.__iter();
   }
-#endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
 
 //! @brief make_transform_output_iterator creates a @c transform_input_output_iterator from an iterator, an input

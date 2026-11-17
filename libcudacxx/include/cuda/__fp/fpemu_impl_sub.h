@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-//! @file fpemu_dsub_impl.hpp
+//! @file fpemu_impl_sub.h
 //! @brief Implementation of double-precision subtraction operations for FPEMU floating point emulation library
 //!
 //! This header provides the implementation of double-precision subtraction operations for the FPEMU library.

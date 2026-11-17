@@ -5,7 +5,7 @@
 """Device-less placeholders for ahead-of-time (no-GPU) compilation.
 
 ``ProxyArray`` / ``ProxyValue`` describe *only* the dtype (and, for arrays,
-shape/contiguity) of an argument, with no backing GPU allocation. Pass them to
+contiguity) of an argument, with no backing GPU allocation. Pass them to
 ``make_<algo>(...)`` together with ``compute_capability=`` to compile an
 algorithm on a machine that has no GPU (or no live data), then ``serialize()``
 the result. The real device arrays / scalars are supplied later at ``__call__``.

@@ -81,7 +81,7 @@ TEST_FUNC constexpr void test_signed(int zero_value)
 
   test_saturating_mul_overflow<I>(maxVal, I{-1}, -maxVal, false, zero_value);
   test_saturating_mul_overflow<I>(maxVal, I{0}, I{0}, false, zero_value);
-  test_saturating_mul_overflow<I>(maxVal, I{1}, maxVal, false, zero_value); // saturated
+  test_saturating_mul_overflow<I>(maxVal, I{1}, maxVal, false, zero_value);
   test_saturating_mul_overflow<I>(maxVal, minVal, minVal, true, zero_value); // saturated
 
   // No saturation (no limit values)

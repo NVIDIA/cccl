@@ -114,7 +114,7 @@ _CCCL_END_NAMESPACE_CUDA
 // Hook for the NestedNVTXRangeGuard from the unit tests
 #  ifndef _CCCL_BEFORE_NVTX_RANGE_SCOPE
 #    define _CCCL_BEFORE_NVTX_RANGE_SCOPE(name)
-#  endif // !CCCL_DETAIL_BEFORE_NVTX_RANGE_SCOPE
+#  endif // !_CCCL_BEFORE_NVTX_RANGE_SCOPE
 
 #  if _CCCL_HOST_COMPILATION()
 // Conditionally inserts a NVTX range starting here until the end of the current function scope in host code. Does

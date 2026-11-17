@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-//! @file fpemu_dmul_impl.hpp
+//! @file fpemu_impl_mul.h
 //! @brief Implementation of double-precision multiplication operations for FPEMU floating point emulation library
 //!
 //! This header provides the implementation of double-precision multiplication operations for the FPEMU library.

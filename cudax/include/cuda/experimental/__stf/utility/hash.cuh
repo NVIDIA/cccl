@@ -200,22 +200,22 @@ struct hash<::std::tuple<Ts...>>
 namespace reserved
 {
 /**
- * @brief Trait to check if std::hash<E> is defined.
+ * @brief Trait to check if stf::hash<E> is defined.
  *
- * Primary template assumes std::hash<E> is not defined.
+ * Primary template assumes stf::hash<E> is not defined.
  *
- * @tparam E The type to check for std::hash definition.
+ * @tparam E The type to check for stf::hash definition.
  */
 template <typename E, typename = void>
 struct has_cudastf_hash : ::std::false_type
 {};
 
 /**
- * @brief Specialization of has_std_hash for types where std::hash<E> is defined.
+ * @brief Specialization of has_cudastf_hash for types where stf::hash<E> is defined.
  *
- * Uses SFINAE to detect if std::hash<E> can be instantiated.
+ * Uses SFINAE to detect if stf::hash<E> can be instantiated.
  *
- * @tparam E The type to check for std::hash definition.
+ * @tparam E The type to check for stf::hash definition.
  */
 template <typename E>
 struct has_cudastf_hash<
@@ -225,11 +225,11 @@ struct has_cudastf_hash<
 {};
 
 /**
- * @brief Helper variable template to simplify usage of has_std_hash.
+ * @brief Helper variable template to simplify usage of has_cudastf_hash.
  *
- * Provides a convenient way to check if std::hash<E> is defined.
+ * Provides a convenient way to check if stf::hash<E> is defined.
  *
- * @tparam E The type to check for std::hash definition.
+ * @tparam E The type to check for stf::hash definition.
  */
 template <typename E>
 inline constexpr bool has_cudastf_hash_v = has_cudastf_hash<E>::value;

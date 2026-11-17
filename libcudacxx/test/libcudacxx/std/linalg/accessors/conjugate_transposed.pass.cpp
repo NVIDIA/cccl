@@ -26,8 +26,8 @@ int main(int, char**)
       complex_t{10.f, 11.f},
       complex_t{12.f, 13.f},
     };
-    //     42, 43, 44
-    //     45, 46, 47
+    //     2+3i, 4+5i, 6+7i
+    //     8+9i, 10+11i, 12+13i
     cuda::std::mdspan<complex_t, dynamic_extents> md(d.data(), 2, 3);
     auto conj_transposed_md = cuda::std::linalg::conjugate_transposed(md);
 

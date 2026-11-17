@@ -40,7 +40,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  define _CCCL_BUILTIN_FMAF(...) __builtin_fmaf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_FMA(...)  __builtin_fma(__VA_ARGS__)
 #  define _CCCL_BUILTIN_FMAL(...) __builtin_fmal(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_fmax)
+#endif // _CCCL_CHECK_BUILTIN(builtin_fma)
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float fma(float __x, float __y, float __z) noexcept
 {

@@ -181,7 +181,7 @@ public:
     {
       return __x.__current_ <=> __y.__current_;
     }
-#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR()
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
     [[nodiscard]] _CCCL_API friend constexpr bool operator<(const __iterator& __x, const __iterator& __y)
     {

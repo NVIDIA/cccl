@@ -54,12 +54,12 @@ int main()
   auto handle_X = ctx.logical_data(X);
   auto handle_Y = ctx.logical_data(Y);
 
-  /* Compute Y = Y + alpha X, but leave X on the host and access it with mapped memory */
+  /* Compute Y = Y + alpha X on device 1 */
   ctx.task(exec_place::device(1), handle_X.read(), handle_Y.rw())->*[&](cudaStream_t stream, auto X, auto Y) {
     axpy<<<16, 128, 0, stream>>>(n, alpha, X.data_handle(), Y.data_handle());
   };
 
-  // Access Ask to use X, Y and Z on the host
+  // Access Ask to use X and Y on the host
   ctx.task(exec_place::host(), handle_X.read(), handle_Y.read())->*[&](cudaStream_t stream, auto X, auto Y) {
     cuda_safe_call(cudaStreamSynchronize(stream));
 

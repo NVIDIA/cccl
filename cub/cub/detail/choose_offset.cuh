@@ -83,7 +83,7 @@ struct promote_small_offset
                   && !::cuda::std::is_same_v<::cuda::std::remove_cv_t<NumItemsT>, bool>,
                 "NumItemsT must be an integral type, but not bool");
 
-  // Unsigned integer type for global offsets.
+  // Signed 32-bit integer type for types smaller than 32 bits, NumItemsT otherwise.
   using type _CCCL_NODEBUG = ::cuda::std::_If<(sizeof(NumItemsT) < 4), int32_t, NumItemsT>;
 };
 
@@ -108,7 +108,7 @@ struct choose_signed_offset
                 "NumItemsT must be an integral type, but not bool");
 
   // Signed integer type for global offsets.
-  // uint32 -> int64, else
+  // unsigned -> int64, else
   // LEQ 4B -> int32, else
   // int64
   using type = ::cuda::std::_If<(::cuda::std::is_integral_v<NumItemsT> && ::cuda::std::is_unsigned_v<NumItemsT>),

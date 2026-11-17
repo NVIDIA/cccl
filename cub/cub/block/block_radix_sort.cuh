@@ -317,7 +317,7 @@ class BlockRadixSort
   {
     __syncthreads();
 
-    // Exchange values through shared memory in blocked arrangement
+    // Exchange values through shared memory in striped arrangement
     BlockExchangeValues(temp_storage.exchange_values).ScatterToStriped(values, ranks);
   }
 

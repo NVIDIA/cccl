@@ -339,7 +339,7 @@ _CCCL_HOST_API OutputIterator merge(
  *  \param keys_first2 The beginning of the second input range of keys.
  *  \param keys_last2 The end of the second input range of keys.
  *  \param values_first1 The beginning of the first input range of values.
- *  \param values_first2 The beginning of the first input range of values.
+ *  \param values_first2 The beginning of the second input range of values.
  *  \param keys_result The beginning of the merged output range of keys.
  *  \param values_result The beginning of the merged output range of values.
  *  \return A \p pair \c p such that <tt>p.first</tt> is the end of the output range of keys,
@@ -447,7 +447,7 @@ _CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_
  *  \param keys_first2 The beginning of the second input range of keys.
  *  \param keys_last2 The end of the second input range of keys.
  *  \param values_first1 The beginning of the first input range of values.
- *  \param values_first2 The beginning of the first input range of values.
+ *  \param values_first2 The beginning of the second input range of values.
  *  \param keys_result The beginning of the merged output range of keys.
  *  \param values_result The beginning of the merged output range of values.
  *  \return A \p pair \c p such that <tt>p.first</tt> is the end of the output range of keys,
@@ -552,7 +552,7 @@ _CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
  *  \param keys_first2 The beginning of the second input range of keys.
  *  \param keys_last2 The end of the second input range of keys.
  *  \param values_first1 The beginning of the first input range of values.
- *  \param values_first2 The beginning of the first input range of values.
+ *  \param values_first2 The beginning of the second input range of values.
  *  \param keys_result The beginning of the merged output range of keys.
  *  \param values_result The beginning of the merged output range of values.
  *  \param comp Comparison operator.
@@ -661,7 +661,7 @@ _CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_
  *  \param keys_first2 The beginning of the second input range of keys.
  *  \param keys_last2 The end of the second input range of keys.
  *  \param values_first1 The beginning of the first input range of values.
- *  \param values_first2 The beginning of the first input range of values.
+ *  \param values_first2 The beginning of the second input range of values.
  *  \param keys_result The beginning of the merged output range of keys.
  *  \param values_result The beginning of the merged output range of values.
  *  \param comp Comparison operator.

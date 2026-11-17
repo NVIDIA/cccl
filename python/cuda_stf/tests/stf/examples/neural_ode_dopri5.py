@@ -87,7 +87,7 @@ class ODEFunc(nn.Module):
     The ode_demo.py default is ``(dim, hidden) = (2, 50)`` with N(0, 0.1)
     weight init and 0 bias init. We keep that default so
     ``ODEFunc()`` is literally the torchdiffeq tutorial module, and
-    parameterise the dims so the sweep test can exercise realistic
+    parameterise the dims so callers can exercise realistic
     larger shapes (latent-ODE / FFJORD regimes) without duplicating the
     class.
     """

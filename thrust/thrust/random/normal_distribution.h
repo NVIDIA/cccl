@@ -146,7 +146,7 @@ public:
   /*! This method returns the value of the parameter with which this \p normal_distribution
    *  was constructed.
    *
-   *  \return The standard deviation of this \p uniform_real_distribution's output.
+   *  \return The standard deviation of this \p normal_distribution's output.
    */
   _CCCL_HOST_DEVICE_API result_type stddev() const;
 
@@ -173,7 +173,7 @@ public:
   _CCCL_HOST_DEVICE_API result_type min THRUST_PREVENT_MACRO_SUBSTITUTION() const;
 
   /*! This method returns the smallest number larger than largest floating point number this \p
-   * uniform_real_distribution can potentially produce.
+   * normal_distribution can potentially produce.
    *
    *  \return The upper bound of this \p normal_distribution's half-open interval.
    */

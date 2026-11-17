@@ -45,7 +45,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-// Helper for lightweight test checking that one did pass a layout policy as LayoutPolicy template argument
+// Column-major mapping: the leftmost extent is the fastest-varying (stride 1) index
 template <class _Extents>
 class _CCCL_DECLSPEC_EMPTY_BASES layout_left::mapping : private __mdspan_ebco<_Extents>
 {

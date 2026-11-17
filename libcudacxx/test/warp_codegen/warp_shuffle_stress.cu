@@ -2,14 +2,14 @@
 //
 // Part of libcu++ in the CUDA C++ Core Libraries,
 // under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for information.
+// See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// implement a simple warp bitonic sort to check that the register usage of warp shuffle operations matches native
-// shuffle instructions
+// implement the shuffle pattern of a warp bitonic sort (without the compare step) to check that the register usage of
+// warp shuffle operations matches native shuffle instructions
 
 #include <cuda/std/cstdint>
 #include <cuda/warp> // IWYU pragma: keep

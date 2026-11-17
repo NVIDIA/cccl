@@ -314,4 +314,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_STD___LINALG_TRANSPOSED_HPP
+#endif // _CUDA_STD___LINALG_TRANSPOSED_H

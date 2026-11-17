@@ -313,7 +313,7 @@
 #    else
 #      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_120a 0
 #    endif
-#  endif // _CCCL_COMPILER(NVRTC)
+#  endif // NV_HAS_FEATURE_SM_120a
 
 // missing SM_121
 #  if !defined(NV_PROVIDES_SM_121)
@@ -357,7 +357,7 @@
 #    else
 #      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_100f 0
 #    endif
-#  endif // NV_HAS_FEATURE_SM_100
+#  endif // NV_HAS_FEATURE_SM_100f
 
 // missing SM_103f
 #  ifndef NV_HAS_FEATURE_SM_103f

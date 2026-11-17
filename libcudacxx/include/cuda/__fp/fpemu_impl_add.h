@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-//! @file fpemu_dadd_impl.hpp
+//! @file fpemu_impl_add.h
 //! @brief Implementation of double-precision addition operations for FPEMU floating point emulation library
 //!
 //! This header provides the implementation of double-precision addition operations for the FPEMU library.

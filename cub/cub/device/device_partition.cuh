@@ -782,7 +782,7 @@ struct DevicePartition
   //!    int      *d_large_and_unselected_out; // e.g., [ ,  ,  ,  ,  ,  ,  ,  ]
   //!    int      *d_small_out;                // e.g., [ ,  ,  ,  ,  ,  ,  ,  ]
   //!    int      *d_num_selected_out;         // e.g., [ , ]
-  //!    cud::std::reverse_iterator<T> unselected_out(d_large_and_unselected_out + num_items);
+  //!    cuda::std::reverse_iterator<T> unselected_out(d_large_and_unselected_out + num_items);
   //!    LessThan small_items_selector(7);
   //!    GreaterThan large_items_selector(50);
   //!    ...
@@ -792,7 +792,7 @@ struct DevicePartition
   //!    size_t temp_storage_bytes = 0;
   //!    cub::DevicePartition::If(
   //!         d_temp_storage, temp_storage_bytes,
-  //!         d_in, d_large_and_medium_out, d_small_out, unselected_out,
+  //!         d_in, d_large_and_unselected_out, d_small_out, unselected_out,
   //!         d_num_selected_out, num_items,
   //!         large_items_selector, small_items_selector);
   //!
@@ -802,7 +802,7 @@ struct DevicePartition
   //!    // Run selection
   //!    cub::DevicePartition::If(
   //!         d_temp_storage, temp_storage_bytes,
-  //!         d_in, d_large_and_medium_out, d_small_out, unselected_out,
+  //!         d_in, d_large_and_unselected_out, d_small_out, unselected_out,
   //!         d_num_selected_out, num_items,
   //!         large_items_selector, small_items_selector);
   //!

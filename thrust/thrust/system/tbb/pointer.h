@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2008-2020, NVIDIA Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-/*! \file thrust/system/tbb/memory.h
+/*! \file thrust/system/tbb/pointer.h
  *  \brief Managing memory associated with Thrust's TBB system.
  */
 

@@ -100,7 +100,7 @@ public:
   /*! Copy constructor has no effect. */
   _CCCL_HOST_DEVICE_API inline device_new_allocator(device_new_allocator const&) {}
 
-  /*! Constructor from other \p device_malloc_allocator has no effect. */
+  /*! Constructor from other \p device_new_allocator has no effect. */
   template <typename U>
   _CCCL_HOST_DEVICE_API inline device_new_allocator(device_new_allocator<U> const&)
   {}
@@ -177,7 +177,7 @@ public:
     return ::cuda::std::numeric_limits<size_type>::max THRUST_PREVENT_MACRO_SUBSTITUTION() / sizeof(T);
   } // end max_size()
 
-  /*! Compares against another \p device_malloc_allocator for equality.
+  /*! Compares against another \p device_new_allocator for equality.
    *  \return \c true
    *
    *  \verbatim embed:rst:leading-asterisk
@@ -189,7 +189,7 @@ public:
     return true;
   }
 
-  /*! Compares against another \p device_malloc_allocator for inequality.
+  /*! Compares against another \p device_new_allocator for inequality.
    *  \return \c false
    *
    *  \verbatim embed:rst:leading-asterisk

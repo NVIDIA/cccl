@@ -119,7 +119,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #  define _CCCL_BUILTIN_SINHF(...) __builtin_sinhf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_SINH(...)  __builtin_sinh(__VA_ARGS__)
 #  define _CCCL_BUILTIN_SINHL(...) __builtin_sinhl(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_sin)
+#endif // _CCCL_CHECK_BUILTIN(builtin_sinh)
 
 #if _CCCL_CUDA_COMPILER(CLANG)
 #  undef _CCCL_BUILTIN_SINHF
@@ -200,7 +200,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #  define _CCCL_BUILTIN_TANHF(...) __builtin_tanhf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_TANH(...)  __builtin_tanh(__VA_ARGS__)
 #  define _CCCL_BUILTIN_TANHL(...) __builtin_tanhl(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_tan)
+#endif // _CCCL_CHECK_BUILTIN(builtin_tanh)
 
 #if _CCCL_CUDA_COMPILER(CLANG)
 #  undef _CCCL_BUILTIN_TANHF

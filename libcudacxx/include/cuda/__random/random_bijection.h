@@ -71,7 +71,7 @@ public:
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _IndexType operator()(_IndexType __n) const noexcept
   {
-    // The initial index must be be in the range [0, __num_elemments]
+    // The initial index must be in the range [0, __num_elements_)
     // If __n < __num_elements_ Iterating a __bijection_ like this will always terminate.
     // If __n >= __num_elements_, then this may loop forever.
     _CCCL_ASSERT(__n < __num_elements_, "random_bijection::operator(): index out of range");

@@ -219,7 +219,7 @@ TEST_CASE("fill_bytes handles layout_stride_relaxed negative strides and offsets
   using extents_t = cuda::std::extents<int, n>;
   using mapping_t = cuda::layout_stride_relaxed::mapping<extents_t>;
 
-  // int8_t
+  // uint8_t
   {
     auto input = make_host_data<uint8_t>(n, 0xCD);
     const mapping_t mapping(extents_t{}, cuda::dstrides<int, 1>(-1), n - 1);

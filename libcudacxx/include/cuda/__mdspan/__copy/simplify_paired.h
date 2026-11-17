@@ -74,7 +74,8 @@ struct __mode_compare_paired
   }
 };
 
-//! @brief Sorts a source/destination tensor pair by ascending absolute destination stride.
+//! @brief Sorts a source/destination tensor pair by ascending absolute source stride, breaking ties by absolute
+//! destination stride.
 //!
 //! Both tensors are reordered in lockstep so that corresponding modes remain paired.
 //!

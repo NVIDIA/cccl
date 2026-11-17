@@ -228,7 +228,7 @@ public:
     {
       return __x.__current_ <=> __y.__current_;
     }
-#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR()
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
     [[nodiscard]] _CCCL_API friend constexpr range_rvalue_reference_t<_View>
     iter_move(const __iterator& __it) noexcept(noexcept(::cuda::std::ranges::iter_move(__it.__current_)))

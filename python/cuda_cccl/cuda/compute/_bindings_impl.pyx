@@ -759,7 +759,7 @@ cdef class Iterator:
             increment. The argument may only be set for iterators of type
             `IteratorKind.ITERATOR` and raise an exception otherwise. Supported
             types are `int` or `ctypes.c_void_p` (raw pointer), ctypes function
-            pointer, or a Python capsule with name `"void *(void *, cccl_increment_t)"`.
+            pointer, or a Python capsule with name `"void (void *, cccl_increment_t)"`.
     """
     cdef Op advance
     cdef Op dereference

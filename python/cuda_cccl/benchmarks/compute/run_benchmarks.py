@@ -107,7 +107,7 @@ CPP_TO_PY_AXIS_MAP = {
 
 
 def strip_axis_suffix(axis_name: str) -> str:
-    """Strip {ct} or {io} suffix from axis name for Python benchmarks.
+    """Strip {ct} suffix from axis names not in CPP_TO_PY_AXIS_MAP.
 
     e.g., "T{ct}" -> "T{ct}", "Elements{io}" -> "Elements{io}".
     """

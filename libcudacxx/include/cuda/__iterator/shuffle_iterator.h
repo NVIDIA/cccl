@@ -65,7 +65,7 @@ _CCCL_CONCEPT __is_bijection = _CCCL_REQUIRES_EXPR((_Bijection), const _Bijectio
 //! permutation.
 //! @tparam _IndexType The type of the index to shuffle. Defaults to uint64_t
 //! @tparam _BijectionFunc The bijection to use. This should be a bijective function that maps [0..n) -> [0..n). It must
-//! be deterministic and stateless. Defaults to cuda::random_biijection<_IndexType>
+//! be deterministic and stateless. Defaults to cuda::random_bijection<_IndexType>
 //!
 //! @c shuffle_iterator is an iterator which generates a sequence of values representing a random permutation. This
 //! iterator is useful for working with random permutations of a range without explicitly storing them in memory. The
@@ -296,7 +296,7 @@ public:
   {
     return __x.__current_ <=> __y.__current_;
   }
-#else // ^^^ _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR ^^^ / vvv !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR vvv
+#else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
 
   //! @brief Compares two @c shuffle_iterator for less than by comparing their index
   [[nodiscard]] _CCCL_API friend constexpr bool
@@ -325,7 +325,7 @@ public:
   {
     return __x.__current_ >= __y.__current_;
   }
-#endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
 
 _CCCL_TEMPLATE(class _Bijection)
@@ -356,4 +356,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___ITERATOR_TRANSFORM_ITERATOR_H
+#endif // _CUDA___ITERATOR_SHUFFLE_ITERATOR_H

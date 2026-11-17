@@ -292,7 +292,7 @@ def make_op_adapter(op) -> OpAdapter:
         op: Callable or OpKind
 
     Returns:
-        A value with appropriate subtype of _BaseOp
+        A value with appropriate subtype of _OpAdapter
     """
     # Already an _OpAdapter instance:
     if isinstance(op, _OpAdapter):

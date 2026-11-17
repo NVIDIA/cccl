@@ -206,14 +206,14 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_deleter_value_category()
     U1 u1(cuda::std::move(u2));
     assert(checkArg<TD2&&>(u1.get_deleter()));
   }
-  { // Test assignment from non-const ref
+  { // Test construction from non-const ref
     using U1 = cuda::std::unique_ptr<VT, TD1>;
     using U2 = cuda::std::unique_ptr<VT, TD2&>;
     U2 u2(nullptr, d2);
     U1 u1(cuda::std::move(u2));
     assert(checkArg<TD2&>(u1.get_deleter()));
   }
-  { // Test assignment from const ref
+  { // Test construction from const ref
     using U1 = cuda::std::unique_ptr<VT, TD1>;
     using U2 = cuda::std::unique_ptr<VT, TD2 const&>;
     U2 u2(nullptr, d2);

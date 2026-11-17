@@ -463,7 +463,7 @@ public:
   //!   Calling thread's input
   //!
   //! @param[in] tail_flag
-  //!   Head flag denoting whether or not `input` is the start of a new segment
+  //!   Tail flag denoting whether or not `input` is the end of the current segment
   template <typename FlagT>
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T TailSegmentedSum(T input, FlagT tail_flag)
   {

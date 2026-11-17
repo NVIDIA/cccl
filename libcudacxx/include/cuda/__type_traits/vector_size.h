@@ -248,5 +248,5 @@ _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CCCL_HAS_CTK()
+#endif // _CCCL_HAS_CTK()
 #endif // _CUDA___TYPE_TRAITS_VECTOR_SIZE_H

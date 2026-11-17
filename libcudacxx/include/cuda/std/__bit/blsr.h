@@ -48,4 +48,4 @@ _CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCPP___BIT_BLSR_H
+#endif // _CUDA_STD___BIT_BLSR_H

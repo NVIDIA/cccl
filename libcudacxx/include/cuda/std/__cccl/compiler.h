@@ -99,7 +99,7 @@
 #  if _CCCL_COMPILER(MSVC, >=, 19, 50)
 #    undef _CCCL_COMPILER_MSVC2026
 #    define _CCCL_COMPILER_MSVC2026() _CCCL_COMPILER_MSVC()
-#  endif // _CCCL_COMPILER(MSVC, >=, 19, 45)
+#  endif // _CCCL_COMPILER(MSVC, >=, 19, 50)
 #elif defined(__CUDACC_RTC__)
 #  undef _CCCL_COMPILER_NVRTC
 #  define _CCCL_COMPILER_NVRTC() (__CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__)

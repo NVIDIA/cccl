@@ -148,4 +148,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___CMATH_MULTIPLY_HIGH_HALF_H
+#endif // _CUDA___CMATH_MUL_HI_H

@@ -153,7 +153,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder_ref
     return __graph_ != nullptr;
   }
 
-  //! \brief Checks if the graph is not null.
+  //! \brief Checks if the graph is null.
   //! \return `true` if the internal graph handle is null, otherwise `false`.
   [[nodiscard]] _CCCL_HOST_API constexpr auto operator!() const noexcept -> bool
   {
@@ -246,8 +246,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder_ref
     return ::cuda::experimental::__driver::__graphGetNodeCount(__graph_);
   }
 
-  //! \brief Instantiates the CUDA graph into a `graph_exec` object.
-  //! \return A `graph_exec` object representing the instantiated graph.
+  //! \brief Instantiates the CUDA graph into a `graph` object.
+  //! \return A `graph` object representing the instantiated graph.
   //! \throws cuda::std::cuda_error if `cudaGraphInstantiate` fails.
   _CCCL_HOST_API auto instantiate() -> graph
   {

@@ -198,12 +198,12 @@ select_device_system(thrust::cuda::execution_policy<Sys1>& sys1, thrust::executi
   auto select_host_system(thrust::execution_policy<Sys1> const& sys1, thrust::cuda::execution_policy<Sys2> const&)
     THRUST_DECLTYPE_RETURNS(sys1)
 
-  // Device to device.
+  // Host to host.
   template <class Sys1, class Sys2>
   _CCCL_HOST_DEVICE_API auto select_host_system(thrust::execution_policy<Sys1>& sys1, thrust::execution_policy<Sys2>&)
     THRUST_DECLTYPE_RETURNS(sys1)
 
-  // Device to device.
+  // Host to host.
   template <class Sys1, class Sys2>
   _CCCL_HOST_DEVICE_API
   auto select_host_system(thrust::execution_policy<Sys1> const& sys1, thrust::execution_policy<Sys2> const&)
