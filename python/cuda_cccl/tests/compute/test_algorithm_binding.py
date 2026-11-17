@@ -28,9 +28,14 @@ pytestmark = pytest.mark.serialization
 """Test "Binding preserves the computation." invariant"""
 
 
+@pytest.mark.parametrize(
+    "direct_deserialization", [False, True], ids=["clone", "deserialize"]
+)
 @pytest.mark.parametrize("dtype", [np.int32, np.float64])
 @pytest.mark.parametrize("num_items", [0, 1, 257])
-def test_bound_merge_sort_preserves_computation(dtype, num_items, cuda_stream):
+def test_bound_merge_sort_preserves_computation(
+    dtype, num_items, direct_deserialization, cuda_stream
+):
     rng = np.random.default_rng(42)
     # Keep allocated buffers even for an empty logical range (num_items=0).
     h_in = rng.integers(-10, 11, size=max(1, num_items)).astype(dtype)
@@ -40,8 +45,13 @@ def test_bound_merge_sort_preserves_computation(dtype, num_items, cuda_stream):
     algorithm = compute.make_merge_sort(
         d_in_keys=d_in, d_out_keys=d_out, op=OpKind.LESS
     )
-    portable = compute.deserialize(compute.serialize(algorithm))
-    executable = portable.clone(device_id=cuda_stream.device.device_id)
+    device_id = cuda_stream.device.device_id
+    executable = compute.deserialize(
+        compute.serialize(algorithm),
+        device_id=device_id if direct_deserialization else None,
+    )
+    if not direct_deserialization:
+        executable = executable.clone(device_id=device_id)
 
     arguments = dict(
         d_in_keys=d_in,
@@ -102,9 +112,14 @@ def test_bound_merge_sort_queries_and_executes_without_device_lookup(
     np.testing.assert_array_equal(d_out.copy_to_host(), np.sort(h))
 
 
+@pytest.mark.parametrize(
+    "direct_deserialization", [False, True], ids=["clone", "deserialize"]
+)
 @pytest.mark.parametrize("dtype", [np.int32, np.float64])
 @pytest.mark.parametrize("num_items", [0, 1, 257])
-def test_bound_reduce_preserves_computation(dtype, num_items, cuda_stream):
+def test_bound_reduce_preserves_computation(
+    dtype, num_items, direct_deserialization, cuda_stream
+):
     rng = np.random.default_rng(42)
     h_in = rng.integers(-10, 11, size=num_items).astype(dtype)
     h_init = np.asarray([37], dtype=dtype)
@@ -114,8 +129,13 @@ def test_bound_reduce_preserves_computation(dtype, num_items, cuda_stream):
     algorithm = compute.make_reduce_into(
         d_in=d_in, d_out=d_out, op=OpKind.PLUS, h_init=h_init
     )
-    portable = compute.deserialize(compute.serialize(algorithm))
-    executable = portable.clone(device_id=cuda_stream.device.device_id)
+    device_id = cuda_stream.device.device_id
+    executable = compute.deserialize(
+        compute.serialize(algorithm),
+        device_id=device_id if direct_deserialization else None,
+    )
+    if not direct_deserialization:
+        executable = executable.clone(device_id=device_id)
 
     arguments = dict(
         d_in=d_in,
@@ -154,9 +174,14 @@ extern "C" __device__ void {name}(void* input, void* result) {{
     return RawOp(ltoir=ltoir, name=name)
 
 
+@pytest.mark.parametrize(
+    "direct_deserialization", [False, True], ids=["clone", "deserialize"]
+)
 @pytest.mark.parametrize("dtype", [np.int32, np.float64])
 @pytest.mark.parametrize("num_items", [0, 1, 257])
-def test_bound_select_preserves_computation(dtype, num_items, cuda_stream):
+def test_bound_select_preserves_computation(
+    dtype, num_items, direct_deserialization, cuda_stream
+):
     positive_op = _make_is_positive_op(dtype, cuda_stream.device)
     rng = np.random.default_rng(42)
     h_in = rng.integers(-10, 11, size=num_items).astype(dtype)
@@ -170,8 +195,13 @@ def test_bound_select_preserves_computation(dtype, num_items, cuda_stream):
         d_num_selected_out=d_num_selected,
         cond=positive_op,
     )
-    portable = compute.deserialize(compute.serialize(algorithm))
-    executable = portable.clone(device_id=cuda_stream.device.device_id)
+    device_id = cuda_stream.device.device_id
+    executable = compute.deserialize(
+        compute.serialize(algorithm),
+        device_id=device_id if direct_deserialization else None,
+    )
+    if not direct_deserialization:
+        executable = executable.clone(device_id=device_id)
 
     arguments = dict(
         d_in=d_in,

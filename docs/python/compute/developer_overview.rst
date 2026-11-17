@@ -534,15 +534,16 @@ when the wrapper is constructed. A default build already knows its device — th
 wrapper cache queried it to build and keys the wrapper to it — so the wrapper
 resolves that device's loaded result once at construction and stores a direct
 reference; executing it then needs no current-device query and no shared-cache
-lookup. An explicit AOT or deserialized wrapper has no such binding — an AOT
-build targets compute capabilities with no GPU queried, and a deserialized
-wrapper is reconstructed without a device binding — so its device is known only
-at call time. Each call resolves the per-device loaded result from a dictionary
-inside the per-cc build results, where a completed lookup also takes no explicit
-lock. ``clone(device_id=...)`` copies per-call descriptors recursively while
+lookup. An explicit AOT build or ``deserialize(..., device_id=None)`` leaves
+its wrapper unbound, so its device is known only at call time. Each call resolves
+the per-device loaded result from a dictionary inside the per-cc build results,
+where a completed lookup also takes no explicit lock.
+``clone(device_id=...)`` copies per-call descriptors recursively while
 sharing ``_PerCCBuildResults``. An integer selects the bound fast path;
 ``None`` clears bindings without device queries or code loading, deferring
 device resolution to each call. The source wrapper is unchanged.
+``deserialize(..., device_id=ordinal)`` binds the newly decoded wrapper in place,
+avoiding the extra descriptor copy of deserializing and then cloning.
 
 Design requirements
 +++++++++++++++++++

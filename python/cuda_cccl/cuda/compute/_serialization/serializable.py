@@ -15,6 +15,8 @@ auto-register by their ``__qualname__`` for the free-function
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any, Callable, TypeVar
 
 from . import codec
@@ -185,6 +187,29 @@ class _BuildResults(_Kind):
 
         return _PerCCBuildResults(result)
 
+    def resolve(self, value: Any, device_id: int, cc: int) -> Any:
+        """Select and load code for a device that is already current."""
+        from .._cccl_interop import key_to_cc
+
+        # A single cubin also runs on a newer minor of the same SM major.
+        build_cc = cc
+        if len(value) == 1:
+            (candidate,) = value
+            if candidate // 10 == cc // 10 and candidate <= cc:
+                build_cc = candidate
+        if build_cc not in value:
+            available = ", ".join(
+                f"{major}.{minor}"
+                for major, minor in (key_to_cc(k) for k in sorted(value))
+            )
+            major, minor = key_to_cc(cc)
+            raise RuntimeError(
+                f"This algorithm was compiled for compute capabilities [{available}], "
+                f"but device {device_id} has compute capability {major}.{minor}. "
+                f"Rebuild with compute_capability including {cc}."
+            )
+        return value.resolve(build_cc, device_id)
+
 
 def BUILD_RESULTS(cls: type) -> _BuildResults:
     """Schema kind for a ``{cc: Device<Algo>BuildResult}`` build result mapping."""
@@ -226,6 +251,25 @@ class _Conditional(_Kind):
 def CONDITIONAL(selector: str, branches: dict) -> _Conditional:
     """Schema kind for a member whose kind is chosen by ``selector``'s value."""
     return _Conditional(selector, branches)
+
+
+@contextmanager
+def _device_context(device_id: int) -> Iterator[tuple[int, int]]:
+    """Make a binding target current and restore the caller's CUDA context."""
+    from cuda.bindings import driver
+    from cuda.core import Device
+    from cuda.core._utils.cuda_utils import handle_return
+
+    from .._cccl_interop import cc_to_key
+
+    device = Device(device_id)
+    previous_context = handle_return(driver.cuCtxGetCurrent())
+    try:
+        device.set_current()
+        cc = cc_to_key(device.compute_capability)
+        yield device.device_id, cc
+    finally:
+        handle_return(driver.cuCtxSetCurrent(previous_context))
 
 
 _S = TypeVar("_S", bound="Serializable")
@@ -285,56 +329,19 @@ class Serializable:
         if device_id is None:
             return self._clone(device_id=None, cc=None)
 
-        from cuda.bindings import driver
-        from cuda.core import Device
-        from cuda.core._utils.cuda_utils import handle_return
-
-        from .._cccl_interop import cc_to_key
-
-        device = Device(device_id)
-        previous_context = handle_return(driver.cuCtxGetCurrent())
-        try:
-            device.set_current()
-            cc = cc_to_key(tuple(device.compute_capability))
-            return self._clone(device.device_id, cc)
-        finally:
-            handle_return(driver.cuCtxSetCurrent(previous_context))
+        with _device_context(device_id) as (ordinal, cc):
+            return self._clone(ordinal, cc)
 
     def _clone(self: _S, device_id: None | int, cc: None | int) -> _S:
         """Copy per-call descriptors, optionally binding code on the current device."""
-        from .._cccl_interop import key_to_cc
-
         obj = type(self).__new__(type(self))
         obj._bound_build_result = None
         for attr, kind in self.__serialization_schema__:
             value = getattr(self, attr)
-            if isinstance(kind, _BuildResults):
-                # Share the ownership/clone protocol, not mutable descriptors.
-                # A single cubin can also run on a newer minor of the same SM
-                # major, matching the native serialization compatibility rule.
-                if device_id is not None:
-                    assert cc is not None
-                    build_cc = cc
-                    if len(value) == 1:
-                        (candidate,) = value
-                        if candidate // 10 == cc // 10 and candidate <= cc:
-                            build_cc = candidate
-                    if build_cc not in value:
-                        available = ", ".join(
-                            f"{major}.{minor}"
-                            for major, minor in (key_to_cc(k) for k in sorted(value))
-                        )
-                        major, minor = key_to_cc(cc)
-                        raise RuntimeError(
-                            f"This algorithm was compiled for compute capabilities [{available}], "
-                            f"but device {device_id} has compute capability {major}.{minor}. "
-                            f"Rebuild with compute_capability including {cc}."
-                        )
-                    obj._bound_build_result = value.resolve(build_cc, device_id)
-            elif isinstance(kind, _SubObject) and isinstance(value, Serializable):
+            if isinstance(kind, _SubObject) and isinstance(value, Serializable):
                 # For example, select executes a nested three-way partitioner.
-                value = value._clone(device_id, cc)
-            else:
+                value = value._clone(device_id=None, cc=None)
+            elif not isinstance(kind, _BuildResults):
                 # Descriptor codecs omit runtime pointers and reconstruct fresh
                 # Cython objects, without serializing or reloading native code.
                 w = codec.Writer()
@@ -342,6 +349,9 @@ class Serializable:
                 value = kind.read(codec.Reader(w.getvalue()), obj)
             setattr(obj, attr, value)
         obj._after_deserialize()
+        if device_id is not None:
+            assert cc is not None
+            obj._bind_to_device(device_id, cc)
         return obj
 
     def serialize(self) -> bytes:
@@ -352,12 +362,36 @@ class Serializable:
         return w.getvalue()
 
     @classmethod
-    def deserialize(cls: type[_S], blob: bytes) -> _S:
+    def deserialize(cls: type[_S], blob: bytes, *, device_id: None | int = None) -> _S:
         """Reconstruct a built algorithm from a blob; no objects required.
 
         Members are read in schema order and set on the instance as they are
         read, so a ``CONDITIONAL`` member can consult a selector read earlier.
+
+        ``device_id=None`` leaves the executor unbound. An integer binds it
+        directly, without copying host argument state. The bound device must
+        be current during execution; the previous context is restored after
+        deserialization, including on failure.
         """
+        if device_id is None:
+            return cls._deserialize(blob)
+        with _device_context(device_id) as (ordinal, cc):
+            obj = cls._deserialize(blob)
+            obj._bind_to_device(ordinal, cc)
+            return obj
+
+    def _bind_to_device(self, device_id: int, cc: int) -> None:
+        """Bind a freshly constructed executor and its nested algorithms in place."""
+        for attr, kind in self.__serialization_schema__:
+            value = getattr(self, attr)
+            if isinstance(kind, _BuildResults):
+                self._bound_build_result = kind.resolve(value, device_id, cc)
+            elif isinstance(kind, _SubObject) and isinstance(value, Serializable):
+                value._bind_to_device(device_id, cc)
+
+    @classmethod
+    def _deserialize(cls: type[_S], blob: bytes) -> _S:
+        """Read schema members in order before reconstructing derived state."""
         r = codec.open(blob, cls.__qualname__)
         obj = cls.__new__(cls)
         # deserialize() bypasses __init__, which is where default-build

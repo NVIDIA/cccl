@@ -410,22 +410,23 @@ The same argument-matching rules described above for the object-based API apply
 to a deserialized algorithm: the dtypes, iterator kinds, and operator you pass
 when invoking it must match those used when it was originally built.
 
-Use ``clone`` on a deserialized or ``make_*`` executor to obtain independent
-mutable host-side argument state while sharing compiled code:
+Pass ``device_id`` to ``deserialize`` to bind the reconstructed executor directly,
+without an additional copy of host argument state:
 
 .. code-block:: python
 
-   executor = cuda.compute.deserialize(blob)
-   bound_executor = executor.clone(device_id=0)
+   bound_executor = cuda.compute.deserialize(blob, device_id=0)
    unbound_executor = bound_executor.clone(device_id=None)
 
-Use ``clone`` to create a copy of an executor. The required keyword argument
-``device_id`` specifies the device to which the executor is bound. Before
+Use ``clone`` on an executor to copy mutable host-side argument state while
+sharing compiled code. Its required keyword-only argument
+``device_id`` specifies the device to which the copy is bound. Before
 invoking a bound executor, make sure its associated device is set as the current
 device.
 
 Specifying ``device_id=None`` leaves the executor unbound, and it resolves the
-current device when called. This can incur additional overhead.
+current device when called. This is the default for ``deserialize`` and can
+incur additional overhead.
 
 Blobs are versioned and self-describing, but they are not a long-term storage
 format: compatibility across ``cuda-cccl`` versions is not guaranteed, and

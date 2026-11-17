@@ -369,12 +369,11 @@ def test_clone_creates_independent_descriptors_with_reset_runtime_state(
         assert second.h_init_cccl is None
 
 
-def test_clone_nested_select_binds_partitioner():
+def _make_bindable_select(build_results):
     from cuda.compute._bindings import Op
     from cuda.compute.algorithms._select import _Select
     from cuda.compute.algorithms._three_way_partition import _ThreeWayPartition
 
-    source = _FakeBuildResult(b"sm80-cubin")
     partitioner = _ThreeWayPartition.__new__(_ThreeWayPartition)
     partitioner._bound_build_result = None
     for attr in (
@@ -389,11 +388,19 @@ def test_clone_nested_select_binds_partitioner():
         )
     partitioner.select_first_part_op_cccl = Op()
     partitioner.select_second_part_op_cccl = Op()
-    partitioner.build_results = _PerCCBuildResults({80: source})
+    partitioner.build_results = build_results
     portable = _Select.__new__(_Select)
     portable._bound_build_result = None
     portable.partitioner = partitioner
     portable._after_deserialize()
+
+    return portable
+
+
+def test_clone_nested_select_binds_partitioner():
+    source = _FakeBuildResult(b"sm80-cubin")
+    portable = _make_bindable_select(_PerCCBuildResults({80: source}))
+    partitioner = portable.partitioner
 
     bound = portable._clone(device_id=0, cc=80)
     assert bound.partitioner is not portable.partitioner
@@ -413,6 +420,206 @@ def test_clone_nested_select_binds_partitioner():
     assert bound.partitioner._bound_build_result is source
     assert source.load_count == 1
     assert source.serialize_count == 0
+
+
+@pytest.fixture
+def deserialization_environment(monkeypatch):
+    import cuda.core
+    from cuda.bindings import driver
+
+    from cuda.compute._serialization import serializable as schema
+    from cuda.compute.algorithms._three_way_partition import _ThreeWayPartition
+    from cuda.compute.algorithms._transform import _UnaryTransform
+
+    state = SimpleNamespace(
+        current="caller-context",
+        cc=(8, 0),
+        decoded=[],
+        loaded=[],
+        decode_failure=False,
+        load_failure=False,
+    )
+
+    class FakeDevice:
+        def __init__(self, device_id):
+            if device_id not in (0, 1):
+                raise ValueError("invalid device ordinal")
+            self.device_id = device_id
+            self.compute_capability = state.cc
+
+        def set_current(self):
+            state.current = f"device-{self.device_id}"
+
+    def set_context(context):
+        state.current = context
+        return (driver.CUresult.CUDA_SUCCESS,)
+
+    class FakeResult(_FakeBuildResult):
+        @classmethod
+        def deserialize(cls, blob, load=True, check_cc=True):
+            if state.decode_failure:
+                raise RuntimeError("synthetic decode failure")
+            result = super().deserialize(blob, load=load, check_cc=check_cc)
+            state.decoded.append((result, state.current))
+            return result
+
+        def load(self):
+            state.loaded.append(state.current)
+            if state.load_failure:
+                raise RuntimeError("synthetic load failure")
+            super().load()
+
+    monkeypatch.setattr(cuda.core, "Device", FakeDevice)
+    monkeypatch.setattr(
+        driver,
+        "cuCtxGetCurrent",
+        lambda: (
+            driver.CUresult.CUDA_SUCCESS,
+            state.current,
+        ),
+    )
+    monkeypatch.setattr(driver, "cuCtxSetCurrent", set_context)
+    for cls in (_UnaryTransform, _ThreeWayPartition):
+        for _, kind in cls.__serialization_schema__:
+            if isinstance(kind, schema._BuildResults):
+                monkeypatch.setattr(kind, "cls", FakeResult)
+    return state
+
+
+@pytest.mark.parametrize("nested", [False, True], ids=["transform", "select"])
+@pytest.mark.parametrize("entrypoint", ["method", "dispatch"])
+@pytest.mark.parametrize("previous_context", [None, "caller-context"])
+def test_deserialize_binds_without_copying_host_state(
+    monkeypatch, deserialization_environment, nested, entrypoint, previous_context
+):
+    from cuda.compute._serialization import serializable as schema
+
+    state = deserialization_environment
+    state.current = previous_context
+    source = _FakeBuildResult(b"sm80-cubin")
+    make_executor = _make_bindable_select if nested else _make_bindable_transform
+    original = make_executor(_PerCCBuildResults({80: source}))
+    blob = serialize(original)
+    read_descriptors = []
+    read = schema._Descriptor.read
+
+    def track_read(kind, reader, obj):
+        value = read(kind, reader, obj)
+        read_descriptors.append((obj, value))
+        return value
+
+    monkeypatch.setattr(schema._Descriptor, "read", track_read)
+    restore = deserialize if entrypoint == "dispatch" else type(original).deserialize
+    bound = restore(blob, device_id=0)
+    owner = bound.partitioner if nested else bound
+    assert len(read_descriptors) == (7 if nested else 3)
+    assert all(obj is owner for obj, _ in read_descriptors)
+    assert owner._bound_build_result is owner.build_results[80]
+    assert owner._bound_build_result.load_count == 1
+    assert owner._bound_build_result.serialize_count == 0
+    assert state.decoded == [(owner._bound_build_result, "device-0")]
+    assert state.loaded == ["device-0"]
+    assert state.current == previous_context
+    if nested:
+        assert bound.always_false_op.get_state() == b""
+
+    # The direct path preserves the same artifact as deserialize-then-clone.
+    cloned = deserialize(blob).clone(device_id=0)
+    assert serialize(bound) == serialize(cloned) == blob
+    assert source.load_count == 0
+
+
+@pytest.mark.parametrize("entrypoint", ["method", "dispatch"])
+def test_deserialize_device_id_defaults_to_none_and_is_keyword_only(
+    monkeypatch, deserialization_environment, entrypoint
+):
+    import cuda.core
+    from cuda.bindings import driver
+
+    state = deserialization_environment
+    original = _make_bindable_transform(_PerCCBuildResults({80: _FakeBuildResult(b"")}))
+    restore = deserialize if entrypoint == "dispatch" else type(original).deserialize
+    blob = serialize(original)
+
+    def unexpected_device_access(*args):
+        raise AssertionError("unbound deserialization must not select a device")
+
+    monkeypatch.setattr(cuda.core, "Device", unexpected_device_access)
+    monkeypatch.setattr(driver, "cuCtxGetCurrent", unexpected_device_access)
+    monkeypatch.setattr(driver, "cuCtxSetCurrent", unexpected_device_access)
+    for kwargs in ({}, {"device_id": None}):
+        unbound = restore(blob, **kwargs)
+        assert unbound._bound_build_result is None
+        assert unbound.build_results[80].load_count == 0
+    assert state.loaded == []
+    assert state.current == "caller-context"
+    with pytest.raises(TypeError):
+        restore(blob, 0)
+
+
+@pytest.mark.parametrize(
+    "ccs,device_cc,selected",
+    [
+        ([80], (8, 0), 80),
+        ([80], (8, 6), 80),
+        ([80, 90], (9, 0), 90),
+    ],
+)
+def test_deserialize_selects_target_architecture(
+    deserialization_environment, ccs, device_cc, selected
+):
+    state = deserialization_environment
+    state.cc = device_cc
+    original = _make_bindable_transform(
+        _PerCCBuildResults(
+            {cc: _FakeBuildResult(f"sm{cc}-cubin".encode()) for cc in ccs}
+        )
+    )
+    bound = deserialize(serialize(original), device_id=1)
+    assert bound._bound_build_result is bound.build_results[selected]
+    assert state.loaded == ["device-1"]
+    assert all(context == "device-1" for _, context in state.decoded)
+    assert all(
+        result.load_count == (cc == selected)
+        for cc, result in bound.build_results.items()
+    )
+    assert state.current == "caller-context"
+
+
+@pytest.mark.parametrize("previous_context", [None, "caller-context"])
+@pytest.mark.parametrize("entrypoint", ["method", "dispatch"])
+@pytest.mark.parametrize(
+    "failure", ["incompatible", "decode", "load", "invalid-device", "malformed"]
+)
+def test_deserialize_restores_context_on_failure(
+    deserialization_environment, previous_context, entrypoint, failure
+):
+    state = deserialization_environment
+    state.current = previous_context
+    original = _make_bindable_transform(
+        _PerCCBuildResults(
+            {
+                cc: _FakeBuildResult(b"cubin")
+                for cc in ([70, 90] if failure == "incompatible" else [80])
+            }
+        )
+    )
+    blob = serialize(original)
+    state.decode_failure = failure == "decode"
+    state.load_failure = failure == "load"
+    restore = deserialize if entrypoint == "dispatch" else type(original).deserialize
+    if failure == "malformed":
+        blob = b"bad magic"
+    message = {
+        "incompatible": "device 0 has compute capability 8.0",
+        "decode": "synthetic decode failure",
+        "load": "synthetic load failure",
+        "invalid-device": "invalid device ordinal",
+        "malformed": "bad magic",
+    }[failure]
+    with pytest.raises((RuntimeError, ValueError), match=message):
+        restore(blob, device_id=2 if failure == "invalid-device" else 0)
+    assert state.current == previous_context
 
 
 @pytest.mark.parametrize("with_context", [False, True], ids=["no-context", "context"])
