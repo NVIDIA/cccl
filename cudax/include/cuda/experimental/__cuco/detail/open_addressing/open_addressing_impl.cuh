@@ -556,10 +556,10 @@ public:
   //! @return The sum of total occurrences of all keys in `[__first, __last)`
   template <typename _InputIt, typename _Ref>
   _CCCL_HOST_API __size_type
-  count(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream) const
+  count(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _Ref __container_ref) const
   {
     return this->count_if(
-      __first, __last, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __container_ref, __stream);
+      __stream, __first, __last, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __container_ref);
   }
 
   //! @brief Counts the occurrences of keys in `[__first, __last)` contained in the container
@@ -568,12 +568,12 @@ public:
   //! @return The sum of total occurrences of all keys in `[__first, __last)`
   template <typename _InputIt, typename _StencilIt, typename _Predicate, typename _Ref>
   _CCCL_HOST_API __size_type count_if(
+    ::cuda::stream_ref __stream,
     _InputIt __first,
     _InputIt __last,
     _StencilIt __stencil,
     _Predicate __pred,
-    _Ref __container_ref,
-    ::cuda::stream_ref __stream) const
+    _Ref __container_ref) const
   {
     const auto __num_keys = detail::__distance(__first, __last);
     if (__num_keys == 0)

@@ -317,21 +317,21 @@ public:
   }
 
   //!
-  //! @brief Counts the occurrences of keys in `[first, last)` contained in the set
+  //! @brief Counts the occurrences of keys in `[__first, __last)` contained in the set
   //!
   //! @note This function synchronizes the given stream.
   //!
+  //! @throws cuda_error if the operation or stream synchronization fails
   //! @tparam _InputIt Device accessible input iterator
-  //!
-  //! @param __first Beginning of the sequence of keys to count
-  //! @param __last End of the sequence of keys to count
-  //! @param __stream CUDA stream used for count
+  //! @param[in] __stream CUDA stream used for count
+  //! @param[in] __first Beginning of the sequence of keys to count
+  //! @param[in] __last End of the sequence of keys to count
   //!
   //! @return The sum of total occurrences of all keys in `[__first, __last)`
-  template <typename InputIt>
-  size_type count(InputIt first, InputIt last, cuda::stream_ref stream = cuda::stream_ref{cudaStream_t{nullptr}}) const
+  template <typename _InputIt>
+  [[nodiscard]] _CCCL_HOST_API size_type count(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last) const
   {
-    return __impl_->count(first, last, ref(), stream);
+    return __impl_->count(__stream, __first, __last, ref());
   }
 
   //! @brief Writes whether each query key is present, or false for keys not selected by `__pred`.

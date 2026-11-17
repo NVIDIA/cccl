@@ -446,8 +446,7 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __count_if_n(
 
   if (threadIdx.x == 0)
   {
-    ::cuda::atomic_ref<typename _Ref::size_type, _Ref::thread_scope>{*__count}.fetch_add(
-      __block_count, ::cuda::std::memory_order_relaxed);
+    (void) detail::__atomic_fetch_add<_Ref::thread_scope>(__count, __block_count);
   }
 }
 

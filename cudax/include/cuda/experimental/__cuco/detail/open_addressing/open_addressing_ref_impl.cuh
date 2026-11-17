@@ -868,13 +868,13 @@ public:
 
       while (true)
       {
-        auto const __bucket_slots                  = __storage_ref[*__probing_iter];
-        cuda::std::int32_t __equals[__bucket_size] = {0};
-        bool __empty_found                         = false;
+        auto const __bucket_slots                    = __storage_ref[*__probing_iter];
+        ::cuda::std::int32_t __equals[__bucket_size] = {0};
+        bool __empty_found                           = false;
 
         ::cuda::static_for<__bucket_size>(__check_bucket_fn{}, *this, __key, __bucket_slots, __equals, __empty_found);
 
-        __count += ::thrust::reduce(thrust::seq, __equals, __equals + __bucket_size);
+        __count += ::thrust::reduce(::thrust::seq, __equals, __equals + __bucket_size);
 
         if (__empty_found)
         {
@@ -911,15 +911,19 @@ public:
 
     while (true)
     {
-      auto const __bucket_slots                  = __storage_ref[*__probing_iter];
-      cuda::std::int32_t __equals[__bucket_size] = {0};
-      bool __empty_found                         = false;
+      auto const __bucket_slots                    = __storage_ref[*__probing_iter];
+      ::cuda::std::int32_t __equals[__bucket_size] = {0};
+      bool __should_return                         = false;
 
-      ::cuda::static_for<__bucket_size>(__check_bucket_fn{}, *this, __key, __bucket_slots, __equals, __empty_found);
+      ::cuda::static_for<__bucket_size>(__check_bucket_fn{}, *this, __key, __bucket_slots, __equals, __should_return);
 
-      __count += ::thrust::reduce(thrust::seq, __equals, __equals + __bucket_size);
+      __count += ::thrust::reduce(::thrust::seq, __equals, __equals + __bucket_size);
+      if constexpr (!__allows_duplicates)
+      {
+        __should_return |= (__count != 0);
+      }
 
-      if (__group.any(__empty_found))
+      if (__group.any(__should_return))
       {
         return __count;
       }
