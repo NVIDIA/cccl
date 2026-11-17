@@ -62,6 +62,12 @@ abstractions, see :doc:`cutlass_integration_example`. It calls
 ``cub::BlockReduce`` from a CuTe kernel in one file and lists the questions
 open for CUTLASS reviewers.
 
+.. toctree::
+   :maxdepth: 1
+
+   cutlass_primer
+   cutlass_integration_example
+
 Following a prefix sum
 -----------------------
 
@@ -80,8 +86,8 @@ before ``i`` in blocked order. Input ``[0, 1, 2, 3, ...]`` therefore produces
 Every thread calls all three primitives. They reuse one ``TempStorage``
 descriptor, with ``auto_sync=True`` synchronizing scratch reuse.
 
-The :download:`complete example
-<../../../python/cuda_coop_cutlass/examples/scan.py>` includes
+The `complete example on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/scan.py>`_ includes
 allocation, launch, cleanup, and an independent NumPy result check. From the
 repository root, run it in the compatible environment described in the
 programming guide:
@@ -178,7 +184,7 @@ kernel LTO-IR and provider LTO-IR to nvJitLink.
    .. tab-item:: Overview
 
       .. figure:: visualizations/cutlass-compiler-swimlane.svg
-         :alt: Actor swimlanes show CuTe tracing, cuda.coop collecting providers, NVRTC returning LTO-IR and scratch layouts, and CuTe arranging the final device link before launch.
+         :alt: Actor swimlanes show CuTe tracing, cuda.coop.cutlass collecting providers, NVRTC returning LTO-IR and scratch layouts, and CuTe arranging the final device link before launch.
          :width: 100%
          :figclass: coop-cutlass-diagram-desktop
 
@@ -186,7 +192,7 @@ kernel LTO-IR and provider LTO-IR to nvJitLink.
          device link is a later step.
 
       .. figure:: visualizations/cutlass-compiler-swimlane-mobile.svg
-         :alt: CUTLASS compilation handoffs in time order, with CuTe, cuda.coop, NVRTC, and the device linker identified at each step.
+         :alt: CUTLASS compilation handoffs in time order, with CuTe, cuda.coop.cutlass, NVRTC, and the device linker identified at each step.
          :width: 100%
          :figclass: coop-cutlass-diagram-mobile
 
@@ -483,6 +489,32 @@ provider calls.
      - ``_compiler/_layout.py``, ``_compiler/_storage.py``,
        ``_compiler/_lifetime.py``
 
+Keeping documentation in sync
+------------------------------
+
+When changing an API or compiler path, update its documentation in the same
+change. The diagrams are maintained source files; changing Python code does
+not regenerate them.
+
+* Update public docstrings, the Programming Guide, and relevant FAQs when
+  participation, layout, result ownership, or storage rules change. Keep
+  executable examples in ``python/cuda_coop_cutlass/examples/`` and their
+  runtime checks in ``python/cuda_coop_cutlass/tests/runtime/`` consistent
+  with those rules. Preserve the markers used by ``literalinclude``.
+* For compiler changes, check the source map above and the phase and swimlane
+  diagrams in ``docs/python/coop_cutlass/visualizations/``. Update both the
+  overview and Python-class SVGs, including each ``-mobile.svg`` variant.
+  Check class names, call order, ownership, and linking boundaries against
+  the implementation.
+* For operation visualizations, update the RST explanation, static SVG, and
+  corresponding ``docs/_static/coop-*.js`` explorer together. The mapping in
+  ``docs/_ext/coop_visualization.py`` connects API entries to these pages.
+
+Build the documentation with Sphinx warnings treated as errors and run the
+affected examples or runtime tests. Inspect the rendered pages, source
+links, and diagrams at desktop and narrow widths. Check the static fallback
+when an interactive visualization changes.
+
 .. _cuda.coop.cutlass.debugger_walkthrough:
 
 Debugger Walkthrough
@@ -498,7 +530,8 @@ An example to debug
 ^^^^^^^^^^^^^^^^^^^
 
 Open ``docs/python/coop_cutlass/debugger_walkthrough.py`` in your checkout,
-or :download:`download the example <debugger_walkthrough.py>`.
+or `view the example on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/docs/python/coop_cutlass/debugger_walkthrough.py>`_.
 It needs no command-line arguments. Its kernel and launcher are:
 
 .. literalinclude:: debugger_walkthrough.py
@@ -552,7 +585,7 @@ exists, add the entry to its ``configurations`` list:
      "version": "0.2.0",
      "configurations": [
        {
-         "name": "cuda.coop CUTLASS: Debug active Python file",
+         "name": "cuda.coop.cutlass: Debug active Python file",
          "type": "debugpy",
          "request": "launch",
          "program": "${file}",

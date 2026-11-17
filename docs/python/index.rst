@@ -37,7 +37,7 @@ Who is this for?
 
    setup
    compute/index
-   coop_cutlass/index
+   cuda.coop.cutlass: Cooperative primitives <coop_cutlass/index>
    stf
    resources
    api_reference

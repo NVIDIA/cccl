@@ -106,6 +106,9 @@ def shuffle(
     Rotate one scalar per thread by seven positions in a 64-thread block,
     including wraparound.
 
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_collective_documentation.py>`__
+
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_collective_documentation.py
         :language: python

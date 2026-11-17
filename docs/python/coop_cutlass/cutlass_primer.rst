@@ -4,8 +4,8 @@
 
 .. _cuda.coop.cutlass.cutlass_primer:
 
-Introduction to CUTLASS for cuda.coop Developers
-================================================
+Introduction to CUTLASS for cuda.coop.cutlass Developers
+======================================================
 
 This page is for developers who work on ``cuda.coop.cutlass`` and have not
 used CUTLASS or its Python DSL before. It explains what CUTLASS is, how the
@@ -14,7 +14,7 @@ other Python compilers you may know, and which of its mechanisms
 ``cuda.coop.cutlass`` relies on. The :doc:`Developer Guide <developer_guide>`
 then follows one primitive through the implementation, and
 :doc:`cutlass_integration_example` shows every integration point in a
-single file with no ``cuda.coop`` abstractions.
+single file with no ``cuda.coop.cutlass`` abstractions.
 
 Paths to CUTLASS DSL modules below are relative to the installed ``cutlass``
 package, for example ``site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass``
@@ -29,8 +29,8 @@ What CUTLASS is, and which part we use
 CUTLASS is NVIDIA's open-source C++ template library for GEMM and related
 kernels. Its lower layer, **CuTe**, is an algebra of layouts and tensors that
 describes how threads and data map onto each other. ``cuda.coop.cutlass``
-does not use the C++ library. CUB, the library that ``cuda.coop`` wraps, is
-a separate CCCL library.
+does not use the C++ library. CUB, the library that ``cuda.coop.cutlass``
+wraps, is a separate CCCL library.
 
 Since CUTLASS 4, the same project ships a Python front end, the **CUTLASS
 DSL** or **CuTe DSL**, in the ``nvidia-cutlass-dsl`` wheel. You write GPU
@@ -268,9 +268,9 @@ It does not, and the differences matter when deciding where to hook in.
      - Re-traces on every direct call and looks up the module hash; or
        reuses the callable returned by ``cute.compile``.
 
-For ``cuda.coop`` the practical differences are these. There are no guards,
-so a primitive can read any Python-level fact it wants at trace time and the
-DSL will not try to generalize over it; our planners use that to specialize
+For ``cuda.coop.cutlass`` the practical differences are these. There are no
+guards, so a primitive can read any Python-level fact it wants at trace time
+and the DSL will not try to generalize over it; our planners use that to specialize
 on the exact block shape and dtype. There are no graph breaks, so a primitive
 must emit valid IR or raise; it cannot defer to the interpreter. And unlike
 Numba extensions that use typing templates and lowering registrations, our

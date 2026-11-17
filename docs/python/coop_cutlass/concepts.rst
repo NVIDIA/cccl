@@ -3,6 +3,8 @@
 .. SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 .. _coop-programming-concepts:
+.. _coop-api-namespaces:
+.. _kernel-api:
 
 Programming concepts
 ====================
@@ -11,22 +13,6 @@ Cooperative operations let a group of threads work on data together. This
 page explains how threads divide a tile, which threads must participate,
 and how to use results and temporary storage. The :doc:`Programming Guide
 <programming_guide>` provides complete CuTe kernels and launch examples.
-
-.. _coop-api-namespaces:
-.. _kernel-api:
-
-Kernel API
-----------
-
-Use ``import cuda.coop.cutlass as coop``. Calls inside a CuTe kernel are
-compiler markers; compilation turns them into device operations. The
-``cuda.coop`` parent is a namespace package. The standalone distribution
-installs its public operations only under ``cuda.coop.cutlass``.
-
-Built-in operators and their documented aliases are supported. Reduce and
-Scan also accept :ref:`compiled scalar device operators
-<coop-cutlass-device-operators>`. Prepare these operators on the host before
-kernel tracing. Stateful Scan prefix callbacks are unsupported.
 
 .. _coop-concepts-calling-conventions:
 
@@ -48,6 +34,26 @@ Load always returns a fresh ``ThreadData`` payload. An operation that
 returns a new value leaves its input payload unchanged unless its contract
 says otherwise. Check :doc:`api` for each operation's accepted operands,
 controls, and ownership rules.
+
+Important concepts
+------------------
+
+* Single-phase calls: specify a primitive's operands and controls in one
+  call inside a CuTe kernel. Compilation specializes the call and determines
+  its scratch requirements. See the
+  :ref:`complete prefix-sum example <coop-cutlass-load-store>`.
+* ``ThreadData`` holds a fixed number of values for each participating
+  thread. Load returns a payload whose element type comes from its source;
+  other primitives consume or return these per-thread values. See
+  :ref:`per-thread payloads <coop-concepts-payloads>`.
+* ``TempStorage`` controls temporary shared storage. Usually you can omit
+  it and let the compiler allocate and synchronize scratch. An explicit
+  descriptor lets calls share an allocation or request separate slices.
+  See :ref:`scratch allocation and reuse <coop-concepts-storage>`.
+* Thread groups identify the participating threads. Use ``this_block()``
+  or ``this_warp()`` for block or warp primitives, and query a group's rank
+  and size through the thread hierarchy. See
+  :ref:`groups and tiles <coop-concepts-groups>`.
 
 Shared execution model
 ----------------------

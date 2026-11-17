@@ -98,13 +98,25 @@ See the :doc:`../api` reference for dtype and size limits.
 Window and bulk decoding
 ------------------------
 
-This example decodes a fixed window, then reuses scratch to write the complete
-stream at a nonzero destination offset. Window and run extents are independent.
+This example expands the same runs in two ways: an explicit loop over
+``run_length_decode``, then one ``run_length_decode_into`` call. With one run
+per thread, the 32-thread block produces 94 decoded items through windows
+starting at offsets 0, 32, and 64. The last window has 30 valid items. Both
+outputs begin at destination offset 5 and match the CPU reference.
 
-.. literalinclude:: ../../../../python/cuda_coop_cutlass/tests/runtime/test_run_length_examples.py
+The explicit loop prepares the run table on each call. The bulk operation
+keeps one prepared table alive while decoding and storing all three windows.
+It uses the same fixed register window even when the full output is larger.
+For custom work between windows, use the windowed operation; the bulk call
+stores its decoded values directly.
+
+`View the complete example and CPU checks on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_run_length_documentation.py>`_
+
+.. literalinclude:: ../../../../python/cuda_coop_cutlass/tests/runtime/test_run_length_documentation.py
    :language: python
-   :start-after: example-begin
-   :end-before: example-end
+   :start-after: # cutlass-run-length-example-begin
+   :end-before: # cutlass-run-length-example-end
    :dedent: 4
 
 Scratch remains occupied throughout the bulk call's internal loop. Explicit

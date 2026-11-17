@@ -573,6 +573,9 @@ class ThreadData:
     both immutable and mutable register results. The original tensor retains
     its values:
 
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_payload_documentation.py>`__
+
     .. literalinclude::
        ../../../python/cuda_coop_cutlass/tests/runtime/test_payload_documentation.py
        :language: python

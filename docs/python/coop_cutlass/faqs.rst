@@ -13,7 +13,12 @@ FAQs
 Which package and import should I use?
 --------------------------------------
 
-Install ``cuda-coop-cutlass`` and use ``import cuda.coop.cutlass as coop``.
+Install ``cuda-coop-cutlass`` and import its public API:
+
+.. code-block:: python
+
+   import cuda.coop.cutlass as coop
+
 The import activates its CuTe integration. ``cuda.coop`` is a namespace
 parent; public operations live in ``cuda.coop.cutlass``. No separate
 registration call or backend selector is needed.
@@ -50,6 +55,14 @@ What does Load return?
 ``ThreadData``, including when ``N=1``. Separate calls have independent
 result ownership. Use ``ThreadData`` constructors for generated values;
 Load has no caller-provided output parameter.
+
+.. code-block:: python
+
+   # Inside a CuTe kernel; source is a global or shared memory operand.
+   block = coop.this_block()
+   items = coop.load(block, source, items_per_thread=2)
+   one_item = coop.load(block, source, items_per_thread=1)
+   # Both results are ThreadData; each call returns a separate payload.
 
 ``alignment`` requests a minimum alignment when returned payload storage is
 materialized. It does not establish alignment of the source or destination
@@ -273,8 +286,19 @@ each call, even when calls share a ``TempStorage`` descriptor.
 :func:`cuda.coop.cutlass.run_length_decode_into` writes the entire expanded
 sequence into a destination array. It prepares the table once, loops
 over decoding windows internally, and returns the total decoded size to
-every thread. The destination must have enough remaining capacity;
-use separate source and destination storage.
+every thread. That avoids repeating length validation, the prefix scan,
+and shared-table staging for every output window. The destination must
+have enough remaining capacity; use separate source and destination storage.
+
+For example, 94 decoded values with a 32-item window require three decode
+iterations. One bulk call handles all three, writing only the 30 valid items
+in the last window. The :ref:`complete example <coop-cutlass-run-length>`
+compares this with an explicit loop over the windowed operation and checks
+both results against ``numpy.repeat``.
+
+Use the windowed operation when your kernel needs to process register values
+between windows. The bulk operation stores each window directly; it has no
+per-window callback or prepared decoder that can be carried between calls.
 
 The prepared run table persists only within the call. A window offset
 selects a position in the expanded sequence; the decoder does not advance
@@ -372,6 +396,13 @@ Use ``ThreadData.from_fn(len(values), lambda i: values[i], dtype=cutlass.Float32
 to create a converted payload. Supported NumPy scalar classes and ``np.dtype``
 selectors name the same element types as their CUTLASS equivalents. ``int``
 and ``float`` select ``Int32`` and ``Float32`` for runtime CuTe values.
+
+.. code-block:: python
+
+   # Inside a CuTe kernel; values is an initialized integer ThreadData.
+   floating_values = coop.ThreadData.from_fn(
+       len(values), lambda i: values[i], dtype=cutlass.Float32
+   )
 
 ``ThreadData(..., dtype=..., values=...)`` and ``from_values`` declare the
 type of existing items. Typed items must agree with that declaration;

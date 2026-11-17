@@ -158,12 +158,16 @@ def run_length_decode(
 
     Examples
     --------
-    Decode a 64-item window starting inside a run, then write the full
-    decoded stream at destination offset five. A window extending beyond
-    the stream ends with zeros.
+    Advance through the decoded stream in a block-uniform loop, storing
+    each window's valid prefix. Then decode the same stream with one bulk
+    call. Both outputs match the CPU reference, including a partial final
+    window. The windowed calls each prepare the run table again.
 
     The launcher accepts device pointers and a compile-time
     ``items_per_thread`` value.
+
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_run_length_documentation.py>`__
 
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_run_length_documentation.py
@@ -201,7 +205,10 @@ def run_length_decode_into(
 ) -> CompilerIntegerLike:
     """Decode a full stream into a CuTe global-memory tensor.
 
-    The prepared CUB table remains live through all internal decode windows.
+    Use this operation to materialize a decoded stream larger than one
+    register window. It prepares the CUB run table once, then loops over
+    fixed-size windows, decoding and storing each valid prefix. The table
+    remains live throughout that loop; preparation is not repeated per window.
     Both run inputs remain unchanged. The destination must not overlap either
     input, and its remaining capacity must hold the full decoded stream.
 
@@ -237,8 +244,15 @@ def run_length_decode_into(
 
     Notes
     -----
-    The full stream is decoded; ``destination_offset`` chooses where it is
-    written. Offset and capacity validation complete before any output write.
+    One call owns the loop over output windows. ``decoded_items_per_thread``
+    controls the register window size, not the total output size, and
+    ``destination_offset`` selects where the full output begins. Offset and
+    capacity validation complete before any output write.
+
+    This operation stores each window directly. To perform custom work on
+    decoded values before advancing, use :func:`run_length_decode` in a
+    block-uniform loop. Each of those calls prepares its own table;
+    ``TempStorage`` reuse alone does not preserve prepared decoder state.
     Negative lengths, misplaced zero padding, and total-size overflow follow
     :func:`cuda.coop.cutlass.run_length_decode`.
 
@@ -248,12 +262,18 @@ def run_length_decode_into(
 
     Examples
     --------
-    Write the full decoded stream at destination offset five, alongside
-    a register window of the same runs. Every thread receives the total
-    decoded length.
+    Compare an explicit window loop with one bulk call. For one input run
+    per thread, 32 threads expand 94 values through three 32-item windows:
+    offsets 0 and 32 produce full windows, and offset 64 produces the final
+    30 items. The bulk call performs that loop internally with one table
+    preparation. Both variants write at destination offset five and preserve
+    the surrounding sentinels. Every thread receives the full decoded length.
 
     The launcher accepts device pointers and a compile-time
     ``items_per_thread`` value.
+
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_run_length_documentation.py>`__
 
     .. literalinclude::
         ../../../python/cuda_coop_cutlass/tests/runtime/test_run_length_documentation.py

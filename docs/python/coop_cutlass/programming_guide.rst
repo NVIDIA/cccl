@@ -24,6 +24,43 @@ Each thread keeps its items in a ``ThreadData`` object.
 installation, :doc:`concepts` explains the execution rules, and the
 :doc:`Developer Guide <developer_guide>` follows compilation and linking.
 
+.. _coop-cutlass-load-store:
+
+A complete prefix-sum example
+-----------------------------
+
+This example computes exclusive prefix sums across a block: each output is
+seven plus the sum of all preceding input values. For input
+``[0, 1, 2, 3, ...]``, it produces ``[7, 7, 8, 10, ...]``. Load returns the
+per-thread payload, Scan returns a new payload, and Store writes the result.
+All three operations reuse one ``TempStorage`` with automatic synchronization.
+
+The kernel takes ``items_per_thread`` as a compile-time argument. The full
+example launches one ``(8, 4, 2)`` block and defaults to two adjacent items
+per thread, giving 128 input values. Its host entry point checks the output against NumPy.
+`View the example on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/scan.py>`_ to run it with a compatible
+compiler. From the repository root, run:
+
+.. code-block:: bash
+
+   python python/cuda_coop_cutlass/examples/scan.py
+
+The complete program includes imports, device allocation, the kernel and
+launcher, cleanup, and the CPU result check:
+
+.. literalinclude:: ../../../python/cuda_coop_cutlass/examples/scan.py
+   :language: python
+
+Block Load and Store support one-, two-, and three-dimensional blocks.
+``offset`` selects the beginning of the block's tile and ``valid_items``
+specifies the number of valid items in that tile. Load may fill its
+out-of-bounds items with ``oob_default``. Without that default, items beyond
+``valid_items`` have unspecified values after Load, even if you initialized
+them before the call. Supply ``oob_default`` or write those items after Load
+before you read them. All threads in the block must call the primitive with
+uniform controls.
+
 .. _coop-cutlass-api-choice:
 
 Using the API
@@ -76,38 +113,6 @@ CUTLASS CuTe compiler as described in :doc:`index`. The supported compiler
 integration requires external NVIDIA LTO-IR linking, and NVRTC compiles the
 CUB providers. See :ref:`compiler requirements
 <coop-cutlass-compiler-requirements>` for the required interfaces.
-
-.. _coop-cutlass-load-store:
-
-A complete prefix-sum example
------------------------------
-
-This example computes exclusive prefix sums across a block: each output is
-seven plus the sum of all preceding input values. For input
-``[0, 1, 2, 3, ...]``, it produces ``[7, 7, 8, 10, ...]``. Load returns the
-per-thread payload, Scan returns a new payload, and Store writes the result.
-All three operations reuse one ``TempStorage`` with automatic synchronization.
-
-The kernel takes ``items_per_thread`` as a compile-time argument. The full
-example launches one ``(8, 4, 2)`` block and defaults to two adjacent items
-per thread, giving 128 input values. Its host entry point checks the output against NumPy.
-:download:`Download the example
-<../../../python/cuda_coop_cutlass/examples/scan.py>` to run it with a compatible
-compiler:
-
-.. literalinclude:: ../../../python/cuda_coop_cutlass/examples/scan.py
-   :language: python
-   :start-after: docs: start cutlass-scan
-   :end-before: docs: end cutlass-scan
-
-Block Load and Store support one-, two-, and three-dimensional blocks.
-``offset`` selects the beginning of the block's tile and ``valid_items``
-specifies the number of valid items in that tile. Load may fill its
-out-of-bounds items with ``oob_default``. Without that default, items beyond
-``valid_items`` have unspecified values after Load, even if you initialized
-them before the call. Supply ``oob_default`` or write those items after Load
-before you read them. All threads in the block must call the primitive with
-uniform controls.
 
 .. _coop-cutlass-payload-types:
 
@@ -348,8 +353,8 @@ By default, the following example transforms eight independent tiles with
 ``sharing="shared"`` and ``auto_sync=True``. Its ``run_example`` function also
 accepts ``sharing="exclusive"``, and ``manual_sync=True`` replaces automatic
 synchronization with ``storage.sync()`` calls.
-:download:`Download the storage example
-<../../../python/cuda_coop_cutlass/examples/block_storage.py>`:
+`View the storage example on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/block_storage.py>`_:
 
 .. literalinclude:: ../../../python/cuda_coop_cutlass/examples/block_storage.py
    :language: python
@@ -387,8 +392,8 @@ requires separate scratch while it reads or writes that live staging tensor.
 
 The following example passes a reserved tensor to native CuTe code, reuses its
 bytes for a cooperative reduction, and checks that a separate native shared
-array retains its values. :download:`Download the workspace example
-<../../../python/cuda_coop_cutlass/examples/shared_workspace.py>`:
+array retains its values. `View the workspace example on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/shared_workspace.py>`_:
 
 .. literalinclude:: ../../../python/cuda_coop_cutlass/examples/shared_workspace.py
    :language: python
@@ -425,8 +430,8 @@ when using a transpose algorithm.
 
 This example uses two physical warps in an ``(8, 4, 2)`` block and checks the
 independent partial tiles against a CPU reference.
-:download:`Download the Warp example
-<../../../python/cuda_coop_cutlass/examples/warp_load_store.py>`:
+`View the Warp example on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/warp_load_store.py>`_:
 
 .. literalinclude:: ../../../python/cuda_coop_cutlass/examples/warp_load_store.py
    :language: python
@@ -459,8 +464,8 @@ physical warps cannot be used for Load and Store.
 
 This example partitions the two physical warps in an ``(8, 4, 2)`` block into
 eight groups of eight threads, each loading its own partial tile.
-:download:`Download the logical Warp example
-<../../../python/cuda_coop_cutlass/examples/logical_warp_load_store.py>`:
+`View the logical Warp example on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/logical_warp_load_store.py>`_:
 
 .. literalinclude:: ../../../python/cuda_coop_cutlass/examples/logical_warp_load_store.py
    :language: python
@@ -602,8 +607,8 @@ synchronization scoped to its participating lanes.
 
 This example uses block rank queries, a full block sum, logical-warp maxima,
 and a scalar valid-prefix sum whose result is read only at block rank zero.
-:download:`Download the reduction example
-<../../../python/cuda_coop_cutlass/examples/reduce.py>`:
+`View the reduction example on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/reduce.py>`_:
 
 .. literalinclude:: ../../../python/cuda_coop_cutlass/examples/reduce.py
    :language: python
@@ -761,8 +766,8 @@ unsupported.
 This example converts blocked registers to striped registers, shifts that
 payload down, repairs its final boundary, and stores the result. It checks
 the layout and shift against an independent CPU reference.
-:download:`Download the Exchange and Shuffle example
-<../../../python/cuda_coop_cutlass/examples/exchange_shuffle.py>`:
+`View the Exchange and Shuffle example on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/exchange_shuffle.py>`_:
 
 .. literalinclude:: ../../../python/cuda_coop_cutlass/examples/exchange_shuffle.py
    :language: python
@@ -818,8 +823,8 @@ and reject explicit storage. The example below reuses one descriptor for an
 ascending key sort and a descending pair sort, then stores the original
 payloads to verify that they remain unchanged. It checks key order and
 key/value association against independent CPU references.
-:download:`Download the Merge Sort example
-<../../../python/cuda_coop_cutlass/examples/merge_sort.py>`:
+`View the Merge Sort example on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/merge_sort.py>`_:
 
 .. literalinclude:: ../../../python/cuda_coop_cutlass/examples/merge_sort.py
    :language: python
@@ -905,8 +910,8 @@ This example sorts full signed keys, orders pairs by their transformed high
 digit, and computes that digit's inverse ranks. The example also uses
 striped Sort output and descending bin prefixes. CPU checks verify stable
 pair order, the signed-key transformation, ranks, and input preservation.
-:download:`Download the Radix Sort and Rank example
-<../../../python/cuda_coop_cutlass/examples/radix.py>`:
+`View the Radix Sort and Rank example on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/radix.py>`_:
 
 .. literalinclude:: ../../../python/cuda_coop_cutlass/examples/radix.py
    :language: python
@@ -956,8 +961,8 @@ partial tile, reusing scratch and preserving both original payloads. Its CPU
 checks compare selected multisets and pair identities without assuming
 output order or stable ties. The example also demonstrates register
 payload conversion.
-:download:`Download the TopK example
-<../../../python/cuda_coop_cutlass/examples/topk.py>`:
+`View the TopK example on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/topk.py>`_:
 
 .. literalinclude:: ../../../python/cuda_coop_cutlass/examples/topk.py
    :language: python
@@ -987,8 +992,8 @@ built-in operator strings, and the built-in aliases supported by Reduce. There i
 no ``temp_storage`` argument: the CUB provider uses register exchanges and
 needs no shared scratch or trailing storage-reuse barrier.
 
-:download:`Download the feature-sum example
-<../../../python/cuda_coop_cutlass/examples/reduce_batched.py>`:
+`View the feature-sum example on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/reduce_batched.py>`_:
 
 .. literalinclude:: ../../../python/cuda_coop_cutlass/examples/reduce_batched.py
    :language: python
@@ -1028,6 +1033,10 @@ shows, or pass a ``cute.recast_tensor`` view of the memory.
    # Inside a CuTe kernel, with a register-memory fragment:
    values = coop.ThreadData.from_register_tensor(fragment)
    coop.store(coop.this_block(), destination, values)
+
+For a complete kernel that loads a Tensor Core accumulator from TMEM,
+applies cooperative TopK in registers, and stores it back for the next MMA,
+see :doc:`Tensor Core and TopK interop <tensor_memory_topk>`.
 
 .. _coop-cutlass-producer-interop:
 
@@ -1097,6 +1106,9 @@ CuTe register tensors and immutable register vectors. They snapshot the
 input and return fresh ``ThreadData``; flags contain CuTe ``Int32`` values.
 Custom arithmetic and flag callbacks are not supported.
 
+`View test_neighbors.py on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_neighbors.py>`_
+
 .. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_neighbors.py
    :language: python
    :start-after: docs: start cutlass-neighbors
@@ -1119,6 +1131,9 @@ bin, and slots beyond ``bins`` contain zero. Use striped Store to write the
 counters in bin order. In this example, 64 threads each receive two counters
 to cover 65 bins. The first 65 output positions hold counts, and the other
 63 positions are zero:
+
+`View test_histogram.py on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_histogram.py>`_
 
 .. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_histogram.py
    :language: python
@@ -1199,15 +1214,31 @@ all bulk windows.
 Both functions also accept CuTe register payloads. Decoded totals use
 ``Uint32``.
 
-This example decodes a 64-item window starting at decoded index 3, then
-reuses the scratch to write the complete stream at destination offset 5.
-Each of the 32 threads supplies ``items_per_thread`` runs of length two. Bulk
-decoding therefore writes ``64 * items_per_thread`` items through
-``2 * items_per_thread`` internal 32-item windows. The input run extent and
-each operation's decoded window extent are independent.
+Use ``run_length_decode_into`` when the complete decoded result belongs in
+memory. It prepares the run table once, then decodes and stores successive
+windows while keeping that table alive. ``decoded_items_per_thread`` sets
+the size of each register window; the output can be much larger. The call
+handles the final partial window and returns the full decoded size.
 
-.. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_run_length_examples.py
+The example below contrasts this with an explicit loop over
+``run_length_decode``. That form lets the kernel process each window's
+register values before advancing, but each call repeats table preparation.
+Reusing ``TempStorage`` provides storage for those calls; it does not retain
+a prepared decoder between them.
+
+With ``items_per_thread=1``, 32 input runs expand to 94 items: 31 runs have
+length three and the last has length one. One decoded item per thread gives
+32-item windows at decoded offsets 0, 32, and 64. The first two windows are
+full; the last has 30 valid items. Both variants write all 94 items beginning
+at destination offset 5 and preserve the prefix and suffix sentinels. The
+host checks both outputs against ``numpy.repeat``. With four runs per
+thread, the same example expands 382 items through 12 windows.
+
+`View the complete example and CPU checks on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_run_length_documentation.py>`_
+
+.. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_run_length_documentation.py
    :language: python
-   :start-after: example-begin
-   :end-before: example-end
+   :start-after: # cutlass-run-length-example-begin
+   :end-before: # cutlass-run-length-example-end
    :dedent: 4
