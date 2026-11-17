@@ -327,6 +327,7 @@ HeaderFilterRegex: '.*/(thrust|cub|cuda|nv|cccl|c2h|cudastf|test)/.*'
 ExtraArgsBefore:
   # To match _CCCL_DOXYGEN_INVOKED
   - '-D_CCCL_CLANG_TIDY_INVOKED=1'
+  - '-DCCCL_ENABLE_ASSERTIONS=1'
   - '-ftemplate-backtrace-limit=0'
   - '-fmacro-backtrace-limit=0'
 ExtraArgs:

@@ -14,7 +14,6 @@
 #endif // no system header
 
 #include <thrust/detail/execution_policy.h>
-#include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/any_system_tag.h>
 #include <thrust/iterator/detail/device_system_tag.h>
 #include <thrust/iterator/detail/minimum_system.h>

@@ -21,6 +21,8 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
+#include <cuda/std/__algorithm/partition.h>
+#include <cuda/std/__algorithm/partition_copy.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 
@@ -50,35 +52,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
 _CCCL_HOST_DEVICE_API ForwardIterator
 partition(sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, Predicate pred)
 {
-  if (first == last)
-  {
-    return first;
-  }
-
-  // wrap pred
-  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
-
-  while (wrapped_pred(*first))
-  {
-    if (++first == last)
-    {
-      return first;
-    }
-  }
-
-  ForwardIterator next = first;
-
-  while (++next != last)
-  {
-    if (wrapped_pred(*next))
-    {
-      // Fully qualify name to disambiguate overloads found via ADL.
-      THRUST_NS_QUALIFIER::system::detail::sequential::iter_swap(first, next);
-      ++first;
-    }
-  }
-
-  return first;
+  return ::cuda::std::partition(first, last, thrust::detail::wrapped_function<Predicate>{pred});
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -95,8 +69,7 @@ _CCCL_HOST_DEVICE_API ForwardIterator partition(
     return first;
   }
 
-  // wrap pred
-  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
 
   while (wrapped_pred(*stencil_first))
   {
@@ -137,8 +110,7 @@ _CCCL_HOST_DEVICE_API ForwardIterator stable_partition(
     return first;
   }
 
-  // wrap pred
-  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
 
   using T = thrust::detail::it_value_t<ForwardIterator>;
 
@@ -179,8 +151,7 @@ _CCCL_HOST_DEVICE_API ForwardIterator stable_partition(
   InputIterator stencil,
   Predicate pred)
 {
-  // wrap pred
-  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
 
   using T = thrust::detail::it_value_t<ForwardIterator>;
 
@@ -228,24 +199,8 @@ _CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> stable
   OutputIterator2 out_false,
   Predicate pred)
 {
-  // wrap pred
-  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
-
-  for (; first != last; ++first)
-  {
-    if (wrapped_pred(*first))
-    {
-      *out_true = *first;
-      ++out_true;
-    } // end if
-    else
-    {
-      *out_false = *first;
-      ++out_false;
-    } // end else
-  }
-
-  return ::cuda::std::make_pair(out_true, out_false);
+  return ::cuda::std::partition_copy(
+    first, last, out_true, out_false, thrust::detail::wrapped_function<Predicate>{pred});
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -264,8 +219,7 @@ _CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> stable
   OutputIterator2 out_false,
   Predicate pred)
 {
-  // wrap pred
-  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
 
   for (; first != last; ++first, (void) ++stencil)
   {

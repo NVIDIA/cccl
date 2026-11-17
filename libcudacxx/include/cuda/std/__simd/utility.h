@@ -32,7 +32,7 @@
 #include <cuda/std/__simd/flag.h>
 #include <cuda/std/__simd/type_traits.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
-#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
@@ -45,13 +45,19 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 //----------------------------------------------------------------------------------------------------------------------
 // __can_generate_v
 
+template <typename _Tp, typename _From>
+inline constexpr bool __is_generator_result_v =
+  is_same_v<_Tp, bool> // bool is supported by mask only
+    ? is_same_v<_From, bool>
+    : (convertible_to<_From, _Tp> && (!is_arithmetic_v<_From> || __is_value_preserving_v<_From, _Tp>) );
+
 template <typename _Tp, typename _Generator, __simd_size_type _Idx, typename = void>
 inline constexpr bool __is_well_formed = false;
 
 template <typename _Tp, typename _Generator, __simd_size_type _Idx>
 inline constexpr bool
-  __is_well_formed<_Tp, _Generator, _Idx, void_t<decltype(declval<_Generator>()(__simd_size_constant<_Idx>()))>> =
-    is_convertible_v<decltype(declval<_Generator>()(__simd_size_constant<_Idx>())), _Tp>;
+  __is_well_formed<_Tp, _Generator, _Idx, void_t<decltype(declval<_Generator&>()(__simd_size_constant<_Idx>()))>> =
+    __is_generator_result_v<_Tp, decltype(declval<_Generator&>()(__simd_size_constant<_Idx>()))>;
 
 template <typename _Tp, typename _Generator, __simd_size_type... _Indices>
 [[nodiscard]]
