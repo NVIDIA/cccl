@@ -364,8 +364,8 @@ def exclusive_scan(
     """Combine the items before each item, starting from ``initial_value``.
 
     The same as :func:`~cuda.coop.cutlass.scan` in exclusive mode, with the
-    same parameters. A sum starts from zero when ``initial_value`` is left
-    out, and every other operator needs it.
+    same parameters apart from ``mode``. A sum starts from zero when
+    ``initial_value`` is left out, and every other operator needs it.
 
     Returns
     -------
@@ -430,8 +430,8 @@ def inclusive_scan(
     """Combine each item with the items before it.
 
     The same as :func:`~cuda.coop.cutlass.scan` in inclusive mode, with the
-    same parameters apart from ``initial_value``, which an inclusive scan
-    does not take.
+    same parameters apart from ``mode`` and ``initial_value``, which an
+    inclusive scan does not take.
 
     Returns
     -------
