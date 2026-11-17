@@ -46,12 +46,22 @@ Compiled device operators
    :no-members:
    :no-special-members:
 
+.. _coop-thread-groups:
+.. _coop-cutlass-hierarchy:
+
 Thread groups
 -------------
 
-.. autofunction:: this_thread
-.. autofunction:: this_warp
+.. automodule:: cuda.coop.cutlass._thread_group
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
+
 .. autofunction:: this_block
+.. autofunction:: this_warp
+.. autofunction:: this_thread
 .. autofunction:: this_cluster
 .. autofunction:: this_grid
 

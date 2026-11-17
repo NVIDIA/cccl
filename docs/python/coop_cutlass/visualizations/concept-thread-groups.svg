@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 426" role="img" aria-labelledby="title desc">
+<title id="title">The groups a kernel can name, and three of them in one block</title>
+<desc id="desc">Five levels of a launch from largest to smallest: grid, cluster, block, warp and thread, each named by a call from this_grid() to this_thread(). Block and warp are filled because primitives accept them. Below, one block of 128 threads is drawn three ways on a thread axis: as one group from this_block(), as four groups of 32 from this_warp(), and as sixteen groups of 8 from this_warp().group_by(8). A dot marks rank 0 of every group, the thread where a reduction leaves that group's result.</desc>
+<rect width="760" height="426" rx="12" fill="#f7f9fc"/>
+<g font-family="sans-serif">
+<rect x="30.0" y="22.0" width="122.4" height="48.0" rx="6" fill="#ffffff" stroke="#68798b" stroke-width="1.2"/>
+<text x="91.2" y="42.0" font-size="14" text-anchor="middle" fill="#172b3a" font-weight="600">grid</text>
+<text x="91.2" y="60.0" font-size="12.5" text-anchor="middle" fill="#172b3a"><tspan font-family="monospace">this_grid()</tspan></text>
+<rect x="174.4" y="22.0" width="122.4" height="48.0" rx="6" fill="#ffffff" stroke="#68798b" stroke-width="1.2"/>
+<text x="235.6" y="42.0" font-size="14" text-anchor="middle" fill="#172b3a" font-weight="600">cluster</text>
+<text x="235.6" y="60.0" font-size="12.5" text-anchor="middle" fill="#172b3a"><tspan font-family="monospace">this_cluster()</tspan></text>
+<text x="163.4" y="51.0" font-size="18" text-anchor="middle" fill="#44556b">›</text>
+<rect x="318.8" y="22.0" width="122.4" height="48.0" rx="6" fill="#c9eaf0" stroke="#68798b" stroke-width="1.2"/>
+<text x="380.0" y="42.0" font-size="14" text-anchor="middle" fill="#172b3a" font-weight="600">block</text>
+<text x="380.0" y="60.0" font-size="12.5" text-anchor="middle" fill="#172b3a"><tspan font-family="monospace">this_block()</tspan></text>
+<text x="307.8" y="51.0" font-size="18" text-anchor="middle" fill="#44556b">›</text>
+<rect x="463.2" y="22.0" width="122.4" height="48.0" rx="6" fill="#fff0bd" stroke="#68798b" stroke-width="1.2"/>
+<text x="524.4" y="42.0" font-size="14" text-anchor="middle" fill="#172b3a" font-weight="600">warp</text>
+<text x="524.4" y="60.0" font-size="12.5" text-anchor="middle" fill="#172b3a"><tspan font-family="monospace">this_warp()</tspan></text>
+<text x="452.2" y="51.0" font-size="18" text-anchor="middle" fill="#44556b">›</text>
+<rect x="607.6" y="22.0" width="122.4" height="48.0" rx="6" fill="#ffffff" stroke="#68798b" stroke-width="1.2"/>
+<text x="668.8" y="42.0" font-size="14" text-anchor="middle" fill="#172b3a" font-weight="600">thread</text>
+<text x="668.8" y="60.0" font-size="12.5" text-anchor="middle" fill="#172b3a"><tspan font-family="monospace">this_thread()</tspan></text>
+<text x="596.6" y="51.0" font-size="18" text-anchor="middle" fill="#44556b">›</text>
+<text x="30.0" y="92.0" font-size="13" text-anchor="start" fill="#44556b">Each level contains the next. Primitives take a block, a warp, or a group of lanes in a warp.</text>
+<text x="30.0" y="134.0" font-size="15" text-anchor="start" fill="#172b3a" font-weight="600"><tspan font-family="monospace">this_block()</tspan></text>
+<text x="730.0" y="134.0" font-size="13" text-anchor="end" fill="#44556b">128 threads · one result</text>
+<rect x="33.0" y="146.0" width="694.0" height="26.0" rx="4" fill="#c9eaf0" stroke="#68798b" stroke-width="1.2"/>
+<circle cx="42.0" cy="159.0" r="3.5" fill="#172b3a"/>
+<text x="30.0" y="204.0" font-size="15" text-anchor="start" fill="#172b3a" font-weight="600"><tspan font-family="monospace">this_warp()</tspan></text>
+<text x="730.0" y="204.0" font-size="13" text-anchor="end" fill="#44556b">32 threads each · four results</text>
+<rect x="33.0" y="216.0" width="169.0" height="26.0" rx="4" fill="#fff0bd" stroke="#68798b" stroke-width="1.2"/>
+<circle cx="42.0" cy="229.0" r="3.5" fill="#172b3a"/>
+<rect x="208.0" y="216.0" width="169.0" height="26.0" rx="4" fill="#fff0bd" stroke="#68798b" stroke-width="1.2"/>
+<circle cx="217.0" cy="229.0" r="3.5" fill="#172b3a"/>
+<rect x="383.0" y="216.0" width="169.0" height="26.0" rx="4" fill="#fff0bd" stroke="#68798b" stroke-width="1.2"/>
+<circle cx="392.0" cy="229.0" r="3.5" fill="#172b3a"/>
+<rect x="558.0" y="216.0" width="169.0" height="26.0" rx="4" fill="#fff0bd" stroke="#68798b" stroke-width="1.2"/>
+<circle cx="567.0" cy="229.0" r="3.5" fill="#172b3a"/>
+<text x="30.0" y="274.0" font-size="15" text-anchor="start" fill="#172b3a" font-weight="600"><tspan font-family="monospace">this_warp().group_by(8)</tspan></text>
+<text x="730.0" y="274.0" font-size="13" text-anchor="end" fill="#44556b">8 threads each · sixteen results</text>
+<rect x="33.0" y="286.0" width="37.8" height="26.0" rx="4" fill="#dceac1" stroke="#68798b" stroke-width="1.2"/>
+<circle cx="42.0" cy="299.0" r="3.5" fill="#172b3a"/>
+<rect x="76.8" y="286.0" width="37.8" height="26.0" rx="4" fill="#dceac1" stroke="#68798b" stroke-width="1.2"/>
+<circle cx="85.8" cy="299.0" r="3.5" fill="#172b3a"/>
+<rect x="120.5" y="286.0" width="37.8" height="26.0" rx="4" fill="#dceac1" stroke="#68798b" stroke-width="1.2"/>
+<circle cx="129.5" cy="299.0" r="3.5" fill="#172b3a"/>
+<rect x="164.2" y="286.0" width="37.8" height="26.0" rx="4" fill="#dceac1" stroke="#68798b" stroke-width="1.2"/>
+<circle cx="173.2" cy="299.0" r="3.5" fill="#172b3a"/>
+<rect x="208.0" y="286.0" width="37.8" height="26.0" rx="4" fill="#dceac1" stroke="#68798b" stroke-width="1.2"/>
+<circle cx="217.0" cy="299.0" r="3.5" fill="#172b3a"/>
+<rect x="251.8" y="286.0" width="37.8" height="26.0" rx="4" fill="#dceac1" stroke="#68798b" stroke-width="1.2"/>
+<circle cx="260.8" cy="299.0" r="3.5" fill="#172b3a"/>
+<rect x="295.5" y="286.0" width="37.8" height="26.0" rx="4" fill="#dceac1" stroke="#68798b" stroke-width="1.2"/>
+<circle cx="304.5" cy="299.0" r="3.5" fill="#172b3a"/>
+<rect x="339.2" y="286.0" width="37.8" height="26.0" rx="4" fill="#dceac1" stroke="#68798b" stroke-width="1.2"/>
+<circle cx="348.2" cy="299.0" r="3.5" fill="#172b3a"/>
+<rect x="383.0" y="286.0" width="37.8" height="26.0" rx="4" fill="#dceac1" stroke="#68798b" stroke-width="1.2"/>
+<circle cx="392.0" cy="299.0" r="3.5" fill="#172b3a"/>
+<rect x="426.8" y="286.0" width="37.8" height="26.0" rx="4" fill="#dceac1" stroke="#68798b" stroke-width="1.2"/>
+<circle cx="435.8" cy="299.0" r="3.5" fill="#172b3a"/>
+<rect x="470.5" y="286.0" width="37.8" height="26.0" rx="4" fill="#dceac1" stroke="#68798b" stroke-width="1.2"/>
+<circle cx="479.5" cy="299.0" r="3.5" fill="#172b3a"/>
+<rect x="514.2" y="286.0" width="37.8" height="26.0" rx="4" fill="#dceac1" stroke="#68798b" stroke-width="1.2"/>
+<circle cx="523.2" cy="299.0" r="3.5" fill="#172b3a"/>
+<rect x="558.0" y="286.0" width="37.8" height="26.0" rx="4" fill="#dceac1" stroke="#68798b" stroke-width="1.2"/>
+<circle cx="567.0" cy="299.0" r="3.5" fill="#172b3a"/>
+<rect x="601.8" y="286.0" width="37.8" height="26.0" rx="4" fill="#dceac1" stroke="#68798b" stroke-width="1.2"/>
+<circle cx="610.8" cy="299.0" r="3.5" fill="#172b3a"/>
+<rect x="645.5" y="286.0" width="37.8" height="26.0" rx="4" fill="#dceac1" stroke="#68798b" stroke-width="1.2"/>
+<circle cx="654.5" cy="299.0" r="3.5" fill="#172b3a"/>
+<rect x="689.2" y="286.0" width="37.8" height="26.0" rx="4" fill="#dceac1" stroke="#68798b" stroke-width="1.2"/>
+<circle cx="698.2" cy="299.0" r="3.5" fill="#172b3a"/>
+<line x1="30.0" y1="338.0" x2="730.0" y2="338.0" stroke="#68798b" stroke-width="1.2"/>
+<line x1="30.0" y1="338.0" x2="30.0" y2="344.0" stroke="#68798b" stroke-width="1.2"/>
+<text x="30.0" y="359.0" font-size="12" text-anchor="start" fill="#44556b">0</text>
+<line x1="205.0" y1="338.0" x2="205.0" y2="344.0" stroke="#68798b" stroke-width="1.2"/>
+<text x="205.0" y="359.0" font-size="12" text-anchor="middle" fill="#44556b">32</text>
+<line x1="380.0" y1="338.0" x2="380.0" y2="344.0" stroke="#68798b" stroke-width="1.2"/>
+<text x="380.0" y="359.0" font-size="12" text-anchor="middle" fill="#44556b">64</text>
+<line x1="555.0" y1="338.0" x2="555.0" y2="344.0" stroke="#68798b" stroke-width="1.2"/>
+<text x="555.0" y="359.0" font-size="12" text-anchor="middle" fill="#44556b">96</text>
+<line x1="730.0" y1="338.0" x2="730.0" y2="344.0" stroke="#68798b" stroke-width="1.2"/>
+<text x="730.0" y="359.0" font-size="12" text-anchor="end" fill="#44556b">128</text>
+<text x="380.0" y="380.0" font-size="13" text-anchor="middle" fill="#44556b">thread rank in a block of 128</text>
+<circle cx="34.0" cy="404.0" r="3.5" fill="#172b3a"/>
+<text x="46.0" y="408.5" font-size="13" text-anchor="start" fill="#44556b">rank 0 of each group, where a reduction leaves its result</text>
+</g>
+</svg>

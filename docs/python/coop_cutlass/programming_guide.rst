@@ -437,38 +437,6 @@ eight groups of eight threads, each loading its own partial tile.
    :start-after: docs: start cutlass-logical-warp-load-store
    :end-before: docs: end cutlass-logical-warp-load-store
 
-.. _coop-cutlass-hierarchy:
-
-Hierarchy queries and synchronization
--------------------------------------
-
-``this_thread()``, ``this_warp()``, ``this_block()``, ``this_cluster()``, and
-``this_grid()`` describe the corresponding physical groups. ``rank`` and
-``count`` accept a hierarchy level: ``thread`` (also spelled ``gpu_thread``),
-``warp``, ``block``, ``cluster``, or ``grid``. Their default result is a CuTe
-``Uint32``, or ``Uint64`` when the group or queried level is the grid.
-``rank_as(dtype, level="thread")`` and ``count_as`` select a signed or
-unsigned 8-, 16-, 32-, or 64-bit integer type. Floating and Boolean query
-types are unsupported. NumPy integer dtypes and Python ``int`` are also
-accepted as dtype selectors; the compiled values are CuTe scalars.
-``is_member()`` returns a CuTe ``Uint8`` membership flag.
-
-Mapped groups may query their constituents and immediate physical parent.
-Thus ``this_warp().group_by(8)`` supports thread and warp queries, while
-``this_block().group_by(2)`` supports thread, warp, and block queries. Queries
-above that parent are rejected. With ``exhaustive=False``, trailing units that
-cannot form a complete group are excluded; guard rank-dependent work with
-``is_member()``. Metadata queries do not synchronize threads.
-
-``sync()`` supports thread, physical warp, logical warp, block, and cluster
-groups. Every participating member must reach the synchronization;
-``sync_aligned()`` additionally requires an aligned, converged group.
-Synchronization of mapped groups of physical warps and grid groups is
-unsupported. Queries and synchronization consume the exact dimensions and
-launch flags supplied by the compiler. Cluster primitives require consistent
-cluster dimensions and launch mode; grid queries also require exact grid
-dimensions.
-
 .. _coop-cutlass-device-operators:
 
 Compiled scalar device operators
@@ -1133,24 +1101,9 @@ register use. A provider's source or intermediate PTX does not establish what
 remains in the kernel. Use Compute Sanitizer race checking when changing
 scratch reuse or synchronization.
 
-.. _coop-cutlass-launch-facts:
-
-Launch dimensions and resources
--------------------------------
-
-Specify the block dimensions in the CuTe launch, including all dimensions of a
-multidimensional block. Primitives specialize for those exact dimensions. Grid
-queries also need exact grid dimensions; cluster operations require exact
-cluster dimensions and the corresponding launch flags. Grid reductions and
-synchronization are unsupported. A maximum thread bound cannot substitute for
-the actual participating group size. Missing required facts cause a
-compilation error; see :ref:`the compiler launch contract
-<coop-cutlass-exact-launch-facts>`.
-
-More items per thread can increase register use, and additional scratch can
-reduce the number of resident blocks. Check the compiled kernel's resource
-usage as well as its execution time. Use inferred scratch capacity and
-alignment unless the kernel needs an explicit allocation policy.
+More items per thread can increase register use, and more scratch can reduce
+the number of blocks resident on a multiprocessor. Check the compiled kernel's
+resource usage as well as its run time.
 
 .. _coop-cutlass-run-length:
 

@@ -161,27 +161,19 @@ def _dims_token(prefix: str, dims: tuple[int, int, int]) -> str:
 
 @dataclass(frozen=True, init=False)
 class ThreadHierarchy:
-    """CUDA hierarchy descriptor for the current kernel launch.
+    """The grid, cluster and block sizes of the current launch.
 
-    ``ThreadHierarchy()`` and ``ThreadHierarchy.current()`` describe the
-    active launch. ``Hierarchy`` is an alias for this class. The compiler
-    supplies the block, grid, and optional cluster dimensions from the kernel
-    launch; this constructor accepts no dimensions.
+    Kernels rarely need this class. A group from
+    :func:`cuda.coop.cutlass.this_block`, :func:`cuda.coop.cutlass.this_warp`
+    or another ``this_`` function already refers to the current launch, and
+    its ``rank`` and ``count`` methods answer questions about it.
 
-    Use :func:`cuda.coop.cutlass.this_block`,
-    :func:`cuda.coop.cutlass.this_warp`, or another group factory in a kernel
-    to obtain a :class:`cuda.coop.cutlass.ThreadGroup`.
-    See :ref:`thread groups <coop-concepts-groups>` for the hierarchy and
-    :ref:`ranks and sizes <coop-concepts-groups>` for runtime queries.
-    The corresponding C++ abstraction is
+    ``ThreadHierarchy()`` takes no arguments and stands for the launch being
+    compiled. Its ``block_dim``, ``grid_dim`` and ``cluster_dim`` are
+    ``None``, because the compiler reads the sizes from the launch when a
+    primitive or query needs them. ``Hierarchy`` is another name for this
+    class. The matching C++ type is
     :ref:`cuda::hierarchy <cccl-runtime-hierarchy>`.
-
-    Notes
-    -----
-    ``ThreadHierarchy()`` and ``current()`` leave ``block_dim``, ``grid_dim``,
-    and ``cluster_dim`` as ``None``. Creating one does not resolve runtime
-    ranks or allocate device storage. Use group methods inside a kernel to
-    query the actual launch.
     """
 
     # Planner fields: ``block_dim`` counts threads per block, ``cluster_dim``
@@ -253,10 +245,9 @@ class ThreadHierarchy:
 
     @classmethod
     def current(cls) -> ThreadHierarchy:
-        """Return a descriptor for the compiler's current kernel launch.
+        """Return the hierarchy of the launch being compiled.
 
-        Equivalent to ``ThreadHierarchy()``. See
-        :ref:`thread groups <coop-concepts-groups>`.
+        The same as ``ThreadHierarchy()``.
         """
 
         return cls()
@@ -732,37 +723,54 @@ class ThreadGroup:
         *,
         exhaustive: bool = True,
     ) -> _ThreadGroupT:
-        """Partition a physical warp by threads or a block by warps.
+        """Split a warp into groups of lanes, or a block into groups of warps.
 
         Parameters
         ----------
         count : int
-            Compile-time positive number of units in each group. The units
-            are threads for a physical-warp parent and physical warps for a
-            block parent. For example, ``this_block().group_by(2)`` describes
-            64 threads. The count cannot exceed the parent's unit count.
+            A Python integer. On ``this_warp()`` it is the number of
+            neighboring lanes in each group, at most 32. On ``this_block()``
+            it is the number of neighboring warps in each group, so
+            ``this_block().group_by(2)`` is a group of 64 threads.
         exhaustive : bool, optional
-            Compile-time flag, default ``True``. If true, ``count`` must
-            divide the parent's unit count exactly. If false, trailing units
-            that cannot form a complete group are excluded; query
-            ``is_member()`` before using their ranks.
+            With the default ``True``, ``count`` must divide the 32 lanes of
+            the warp, or the number of warps in the block. With ``False``,
+            the lanes or warps left over at the end belong to no group, and
+            :meth:`~cuda.coop.cutlass.ThreadGroup.is_member` tells a thread
+            whether it is in one.
 
         Returns
         -------
         cuda.coop.cutlass.ThreadGroup
-            A descriptor for the calling thread's mapped group. Nested
-            ``group_by()`` calls are unsupported.
+            The calling thread's group. It cannot be split again.
 
         Notes
         -----
-        The enclosing block must contain complete physical warps. Logical
-        Warp primitives support widths of 1, 2, 4, 8, 16, or 32. Mapped
-        groups may query their constituents and immediate physical parent,
-        but not a higher hierarchy level. Groups of physical warps support
-        queries and have no explicit synchronization methods.
-        See :ref:`thread groups <coop-thread-groups>` and
-        :ref:`participation requirements <coop-participation>`.
+        The block size must be a multiple of 32. Primitives accept groups of
+        1, 2, 4, 8, 16 or 32 lanes, which CUB calls logical warps.
+        :func:`cuda.coop.cutlass.reduce` and :func:`cuda.coop.cutlass.sum`
+        also accept 17 to 31 lanes, made with ``exhaustive=False``. A group
+        of warps answers ``rank``, ``count`` and ``is_member``. Primitives
+        do not take one, and it has no ``sync``.
 
+        A group of lanes can ask about its threads and its warp. A group of
+        warps can ask about its threads, its warps and its block. Levels
+        above those are rejected.
+
+        Examples
+        --------
+        Sum the first 24 lanes of each warp. The other eight lanes are in no
+        group and skip the call:
+
+        `Full example and test on GitHub
+        <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
+
+        .. literalinclude::
+            ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
+            :language: python
+            :start-after: # cutlass-concept-group-by-partial-begin
+            :end-before: # cutlass-concept-group-by-partial-end
+            :dedent: 4
         """
 
         if self.mapping is not None:
