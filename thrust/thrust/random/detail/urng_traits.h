@@ -50,7 +50,7 @@ _CCCL_HOST_DEVICE_API constexpr typename UniformRandomNumberGenerator::result_ty
   }
   else
   {
-    return (UniformRandomNumberGenerator::min) (); // NOLINT(readability-redundant-parentheses)
+    return (UniformRandomNumberGenerator::min) ();
   }
 }
 
@@ -63,7 +63,7 @@ _CCCL_HOST_DEVICE_API constexpr typename UniformRandomNumberGenerator::result_ty
   }
   else
   {
-    return (UniformRandomNumberGenerator::max) (); // NOLINT(readability-redundant-parentheses)
+    return (UniformRandomNumberGenerator::max) ();
   }
 }
 
