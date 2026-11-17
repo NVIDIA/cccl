@@ -26,6 +26,10 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(is_assignable) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, >=, 9)
+#  define _CCCL_BUILTIN_IS_ASSIGNABLE(...) __is_assignable(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_assignable) && gcc >= 9.0
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <typename, typename _Tp>

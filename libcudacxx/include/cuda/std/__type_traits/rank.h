@@ -25,6 +25,12 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// TODO: Enable using the builtin __array_rank when https://llvm.org/PR57133 is resolved
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
+#if 0 // _CCCL_CHECK_BUILTIN(array_rank)
+#  define _CCCL_BUILTIN_ARRAY_RANK(...) __array_rank(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(array_rank)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_ARRAY_RANK) && !defined(_LIBCUDACXX_USE_ARRAY_RANK_FALLBACK) && 0

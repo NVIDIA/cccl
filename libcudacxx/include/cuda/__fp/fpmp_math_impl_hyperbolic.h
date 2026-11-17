@@ -59,7 +59,12 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  *      branch point is the optimal crossover (chosen so
  *      that the polynomial side stays within its 1.5-ulp envelope
  *      while keeping the exp-side argument bounded away from cancel-
- *      lation in exp(2x) - 1).
+ *      lation in exp(2x) - 1).  Just above the crossover the
+ *      quotient r = 2/(e + 1) is 0.42 and its error reaches the
+ *      result scaled by r/(1 - r) = 0.74, so the division is the
+ *      refined one with the exact remainder (3.5 u^2 against 26 u^2
+ *      worst for the generic fast division); exp's own error enters
+ *      scaled by 2e/(e^2 - 1) = 0.58.
  *
  *   3. Small-|x| branch (|x| < 0.6554117): degree-22 minimax
  *      polynomial in x^2:
@@ -108,9 +113,10 @@ __internal_fpmp2_tanh(const float __x_hi, const float __x_lo, float* __res_hi, f
     float __u_hi;
     float __u_lo;
     ::cuda::__fpmp2_exp<float>(__two_abs.hi(), __two_abs.lo(), &__u_hi, &__u_lo);
-    __ffloat __denom  = __ffloat(__u_hi, __u_lo) + 1.0f;
-    __ffloat __r      = __ffloat(2.f) / __denom;
-    __ffloat __result = 1.0f - __r;
+    __ffloat __denom = __ffloat(__u_hi, __u_lo) + 1.0f;
+    float __r_hi, __r_lo;
+    ::cuda::__fpmp_math_div_refined<true>(2.0f, 0.0f, __denom.hi(), __denom.lo(), &__r_hi, &__r_lo);
+    __ffloat __result = renormalize(1.0f - __ffloat(__r_hi, __r_lo));
     if (__is_neg)
     {
       __result = -__result;
@@ -150,7 +156,9 @@ __internal_fpmp2_tanh(const float __x_hi, const float __x_lo, float* __res_hi, f
   };
 
   __ffloat __a2 = __x * __x; /* x^2 (sign of x cancels) */
-  __ffloat __q  = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 2>(__a2, __tanh_c);
+  /* Fast2Sum Horner: |v x^2| <= 0.17 |c_k| for these coefficients, so it
+   * is bit-identical to the compensated form and cheaper. */
+  __ffloat __q = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, 2>(__a2, __tanh_c);
 
   /* tanh(x) = x + x * x^2 * Q(x^2). Sign-preserving in x; no
    * separate sign fixup needed for the polynomial branch. */
@@ -180,13 +188,18 @@ _CCCL_FPMP_MATH_DISPATCH_1A(tanh)
 
 /* 0.5/e for e = exp(|x|), or 0 past e = 2^32, where it is under 2^-63 of sinh and cosh. The
  * divisor is clamped there: dividing by e forms a subnormal low limb past |x| = 70, and Intel
- * cores take a microcode assist for each product with a subnormal result. */
+ * cores take a microcode assist for each product with a subnormal result. With _FromHalf the
+ * argument is e/2 (what exp delivers with its scale lowered by one binade) and the quotient is
+ * 0.25 / (e/2), the same value. */
+template <bool _FromHalf = false>
 [[nodiscard]] _CCCL_FPMP_CORE_API fp32mp2_low __internal_fpmp2_half_inv_exp(const fp32mp2_low& __e) noexcept
 {
   using __ffloat = fp32mp2_low;
 
-  const bool __negligible     = __e.hi() > 0x1p32f;
-  const __ffloat __half_inv_e = __ffloat(0.5f) / (__negligible ? __ffloat(0x1p32f) : __e);
+  constexpr float __num       = _FromHalf ? 0.25f : 0.5f;
+  constexpr float __cap       = _FromHalf ? 0x1p31f : 0x1p32f;
+  const bool __negligible     = __e.hi() > __cap;
+  const __ffloat __half_inv_e = __ffloat(__num) / (__negligible ? __ffloat(__cap) : __e);
   return __negligible ? __ffloat(0.f) : __half_inv_e;
 }
 
@@ -199,17 +212,27 @@ _CCCL_FPMP_MATH_DISPATCH_1A(tanh)
  * overflow boundary (~88.7) exp returns +inf and the recombination gives
  * the IEEE-correct infinity; a NaN input propagates on its own.
  *
- * Polynomial branch covers |x| <= 0.6554 (matches the tanh crossover);
- * exp branch covers everything above.  At the crossover point we have
- * sinh(0.6554)/cosh(0.6554) = tanh(0.6554) ~= 0.575, so the exp branch
- * loses < 1 bit of precision to cancellation -- well within fp32mp2 ulp.
+ * Polynomial branch covers |x| <= 1.25; exp branch covers everything
+ * above.  The exp branch's error is exp's scaled by coth(x) plus the
+ * reciprocal's scaled by 1/(e^2x - 1): at the former crossover 0.6554
+ * that was 1.74 exp + 0.37 div (45 bits; all four worst cases of the
+ * test suite sat at |x| ~ 0.9), at 1.25 it is 1.18 exp + 0.09 div, with
+ * the refined division so that the second share is 5 u^2 worst instead
+ * of 26.  The polynomial cannot take over much further out: its Horner
+ * roundings scale with the x^3 term's share of the result and the host
+ * model reads 3.1 u^2 up to |x| = 1.25, 4.2 at 1.5 and 5.3 at 2 (the
+ * 11-term series itself is exact to 2^-60 at 2).  The crossover at 1.25
+ * balances the two sides at ~3.5 u^2, and the polynomial is also cheaper
+ * than exp plus a division.  Past the exp overflow boundary (|x| > 88.72)
+ * the result is +-inf directly: 0.5 / inf through the division would be
+ * 0 * inf = NaN.
  */
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_sinh(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
   using __ffloat = fp32mp2_low;
 
-  constexpr float __branch_point = 0.6554117f;
+  constexpr float __branch_point = 1.25f;
 
   const bool __is_neg  = __x_hi < 0.f;
   const float __abs_hi = __is_neg ? -__x_hi : __x_hi;
@@ -228,14 +251,23 @@ __internal_fpmp2_sinh(const float __x_hi, const float __x_lo, float* __res_hi, f
 
   if (__abs_hi >= __branch_point)
   {
-    /* ---- large-|x| branch:  sinh(|x|) = (e - 1/e) / 2 ---------- */
+    /* ---- large-|x| branch:  sinh(|x|) = e/2 - 1/(2e) ----------
+     * e/2 comes straight out of exp with its power-of-two scale lowered by one, exact, so
+     * the result stays finite up to |x| = 89.416 where exp alone overflows from 88.7228;
+     * 1/(2e) = 0.25 / (e/2) through the refined division. */
     float __u_hi;
     float __u_lo;
-    ::cuda::__fpmp2_exp<float>(__abs_a.hi(), __abs_a.lo(), &__u_hi, &__u_lo);
-    __ffloat __e(__u_hi, __u_lo);
-    __ffloat __half_e     = __e * 0.5f;
-    __ffloat __half_inv_e = ::cuda::__internal_fpmp2_half_inv_exp(__e);
-    __ffloat __result     = renormalize(__half_e - __half_inv_e);
+    ::cuda::__internal_fpmp2_exp_impl<-1>(__abs_a.hi(), __abs_a.lo(), &__u_hi, &__u_lo);
+    if (__u_hi == ::cuda::std::__fp_inf<float>())
+    {
+      *__res_hi = __is_neg ? -::cuda::std::__fp_inf<float>() : ::cuda::std::__fp_inf<float>();
+      *__res_lo = 0.0f;
+      return;
+    }
+    const __ffloat __half_e(__u_hi, __u_lo);
+    float __i_hi, __i_lo;
+    ::cuda::__fpmp_math_div_refined<false>(0.25f, 0.0f, __u_hi, __u_lo, &__i_hi, &__i_lo);
+    __ffloat __result = renormalize(__half_e - __ffloat(__i_hi, __i_lo));
     if (__is_neg)
     {
       __result = -__result;
@@ -251,13 +283,11 @@ __internal_fpmp2_sinh(const float __x_hi, const float __x_lo, float* __res_hi, f
    *
    * Layout for the mixed-precision Horner dispatcher:
    *   - bottom 8 entries (1/3! .. 1/17!) are ff (full double precision):
-   *     these contribute terms |x|^{2k+3} / (2k+3)! that, even at
-   *     |x| = 0.6554, sit above ~3*10^-19 -- float-rounding the
-   *     coefficient would leak ~10^-10 ... 10^-24 of absolute error,
-   *     marginally near the fp32mp2 ulp at the bottom of the range.
+   *     float-rounding these coefficients would leak above the fp32mp2
+   *     ulp of the result somewhere in the range.
    *   - top 3 entries (1/19!, 1/21!, 1/23!) are plain float (.lo == 0):
-   *     contributions stay below 5*10^-24, so float-rounded constants
-   *     are below 0.5 ulp -- same trade-off the tanh kernel makes.
+   *     at |x| = 1.25 their float rounding contributes 2^-24 * 1.25^16 /
+   *     19! = 2*10^-23 absolute, far below 0.5 ulp of sinh(1.25).
    *
    * The exact rational Taylor coefficients have zero truncation
    * noise; the only source of error is fp32mp2 arithmetic.
@@ -279,7 +309,9 @@ __internal_fpmp2_sinh(const float __x_hi, const float __x_lo, float* __res_hi, f
   };
 
   __ffloat __a2 = __x * __x; /* x^2 (sign of x cancels) */
-  __ffloat __q  = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 3>(__a2, __sinh_c);
+  /* Fast2Sum Horner: |v x^2| <= 0.08 |c_k| up to |x| = 1.25 (consecutive
+   * 1/(2k+3)! ratios are below 1/20), bit-identical to the compensated form. */
+  __ffloat __q = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, 3>(__a2, __sinh_c);
 
   /* sinh(x) = x + x * x^2 * P(x^2).  Sign-preserving in x; no
    * separate sign fixup needed for the polynomial branch. */
@@ -316,11 +348,15 @@ _CCCL_FPMP_MATH_DISPATCH_1A(sinh)
  * overflow boundary (~88.7) exp returns +inf and the recombination gives
  * the IEEE-correct infinity; a NaN input propagates on its own.
  *
- * Branchless: cosh is even (cosh(-x) = cosh(x)), and the formula
- * `(e + 1/e) / 2` is well-conditioned everywhere -- both terms are
- * positive, so addition never cancels.  At |x| = 0 the lo parts of
- * e and 1/e carry the x^2/2 correction exactly, so no separate
- * polynomial branch is needed for small |x|.
+ * cosh is even (cosh(-x) = cosh(x)), and the formula `(e + 1/e) / 2`
+ * is well-conditioned everywhere -- both terms are positive, so
+ * addition never cancels.  At |x| = 0 the lo parts of e and 1/e carry
+ * the x^2/2 correction exactly, so no separate polynomial branch is
+ * needed for small |x|.  (The refined division in place of the generic
+ * one moved the worst case from 4.0 to 3.5 u^2 at 10 % of the latency;
+ * not taken.)  Past the exp overflow boundary (|x| > 88.72) the result
+ * is +inf directly: 0.5 / inf through the division would be 0 * inf =
+ * NaN.
  */
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_cosh(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
@@ -340,15 +376,23 @@ __internal_fpmp2_cosh(const float __x_hi, const float __x_lo, float* __res_hi, f
   __ffloat __x(__x_hi, __x_lo);
   __ffloat __abs_a = __is_neg ? -__x : __x;
 
+  /* e/2 straight out of exp with its scale lowered by one binade (exact), so cosh stays
+   * finite up to |x| = 89.416 where exp alone overflows from 88.7228. */
   float __u_hi;
   float __u_lo;
-  ::cuda::__fpmp2_exp<float>(__abs_a.hi(), __abs_a.lo(), &__u_hi, &__u_lo);
-  __ffloat __e(__u_hi, __u_lo);
+  ::cuda::__internal_fpmp2_exp_impl<-1>(__abs_a.hi(), __abs_a.lo(), &__u_hi, &__u_lo);
+  if (__u_hi == ::cuda::std::__fp_inf<float>())
+  {
+    *__res_hi = ::cuda::std::__fp_inf<float>();
+    *__res_lo = 0.0f;
+    return;
+  }
+  const __ffloat __half_e(__u_hi, __u_lo);
 
-  /* cosh(|x|) = 0.5*e + 0.5/e  (both terms positive; no cancellation). */
-  __ffloat __half_e     = __e * 0.5f;
-  __ffloat __half_inv_e = ::cuda::__internal_fpmp2_half_inv_exp(__e);
-  __ffloat __result     = renormalize(__half_e + __half_inv_e);
+  /* cosh(|x|) = e/2 + 0.5/e  (both terms positive; no cancellation); the second term from
+   * e/2 directly, 0 past |x| = 22 in the clamped helper. */
+  const __ffloat __half_inv_e = ::cuda::__internal_fpmp2_half_inv_exp<true>(__half_e);
+  __ffloat __result           = renormalize(__half_e + __half_inv_e);
 
   *__res_hi = __result.hi();
   *__res_lo = __result.lo();
@@ -503,7 +547,10 @@ __internal_fpmp2_asinh(const float __x_hi, const float __x_lo, float* __res_hi, 
     ::cuda::__fpmp2_sqrt<float>(__a2p1.hi(), __a2p1.lo(), &__s_hi, &__s_lo);
     __ffloat __s     = __ffloat(__s_hi, __s_lo);
     __ffloat __denom = add<fpmp2_accuracy::high>(__s, 1.0f);
-    __ffloat __t     = renormalize(__abs_a + __a2 / __denom);
+    /* The worst cases (|x| ~ 0.35, 45 bits) are log1p arguments near
+     * sqrt(2) - 1, the log core's e = 0 band; the refined division in place
+     * of the generic one did not move them and cost 7 % of the latency. */
+    __ffloat __t = renormalize(__abs_a + __a2 / __denom);
 
     float __r_hi;
     float __r_lo;
@@ -692,20 +739,25 @@ __internal_fpmp2_atanh(const float __x_hi, const float __x_lo, float* __res_hi, 
     return;
   }
 
-  /* atanh(+-1) = +-inf.  Strict |x| > 1 -> NaN. */
+  /* atanh(+-1) = +-inf.  Strict |x| > 1 -> NaN.  A high limb of +-1 with
+   * a low limb pointing inwards is |x| < 1 by a sub-ulp amount and stays in
+   * the domain (1 - |x| below is then exact). */
   if (__abs_hi >= 1.0f)
   {
     const float __abs_lo = __is_neg ? -__x_lo : __x_lo;
-    if (__abs_hi == 1.0f && __abs_lo == 0.0f)
+    if (__abs_hi > 1.0f || __abs_lo > 0.0f)
+    {
+      /* |x| > 1 (including +inf): outside domain. */
+      *__res_hi = ::cuda::std::__fp_nan<float>();
+      *__res_lo = ::cuda::std::__fp_nan<float>();
+      return;
+    }
+    if (__abs_lo == 0.0f)
     {
       *__res_hi = __is_neg ? -::cuda::std::__fp_inf<float>() : ::cuda::std::__fp_inf<float>();
       *__res_lo = 0.0f;
       return;
     }
-    /* |x| > 1 (including +inf): outside domain. */
-    *__res_hi = ::cuda::std::__fp_nan<float>();
-    *__res_lo = ::cuda::std::__fp_nan<float>();
-    return;
   }
 
   __ffloat __x(__x_hi, __x_lo);
@@ -756,25 +808,37 @@ __internal_fpmp2_atanh(const float __x_hi, const float __x_lo, float* __res_hi, 
       __ffloat(4.0e-2f), /* [11] 1/25  (leading) */
     };
 
-    __ffloat __y      = __x * __x; /* x^2 (sign of x cancels) */
-    __ffloat __q      = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 4>(__y, __atanh_poly_c);
+    __ffloat __y = __x * __x; /* x^2 (sign of x cancels) */
+    /* Fast2Sum Horner: |v x^2| <= 0.07 |c_k| here, bit-identical to the
+     * compensated form. */
+    __ffloat __q      = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, 4>(__y, __atanh_poly_c);
     __ffloat __result = renormalize(__x + __x * (__y * __q));
     *__res_hi         = __result.hi();
     *__res_lo         = __result.lo();
     return;
   }
 
-  /* t = 2|x| / (1 - |x|) ; result = 0.5 * log1p(t).
+  /* t = 2|x| / (1 - |x|) = 2|x| + 2x^2 / (1 - |x|) ; result = 0.5 * log1p(t).
    *
    * For |x| -> 1-:  1 - |x| -> 0+, t -> +inf, log1p(+inf) = +inf.
    * For |x| ~= 0.25 (lower edge of this branch):  t ~= 0.667,
    *   log1p(0.667) ~= 0.511, * 0.5 = 0.2554 ~= atanh(0.25).
    *
-   * Use accurate sub for 1 - |x| to capture full precision when
-   * |x| is close to 1. */
+   * log1p passes t's relative error on scaled by t/((1+t) log1p(t)), 0.78
+   * at the branch point, and the generic fast division (26 u^2 worst) made
+   * this the family's worst cell (44 bits).  Splitting off the exact 2|x|
+   * leaves the division only the share 2x^2/(1-|x|) : t = |x| of t
+   * (0.25 at the branch point), and it is the refined one (5 u^2 worst; the
+   * exact-remainder variant, 3.5 u^2, changed nothing visible here and cost
+   * 10 % of the throughput).  Accurate sub for 1 - |x| to capture full
+   * precision when |x| is close to 1. */
   __ffloat __one_minus = sub<fpmp2_accuracy::high>(1.0f, __abs_a);
-  __ffloat __two_abs   = __abs_a * 2.0f;
-  __ffloat __t         = __two_abs / __one_minus;
+  __ffloat __two_abs   = __abs_a * 2.0f; /* exact */
+  __ffloat __two_a2    = __two_abs * __abs_a; /* 2 x^2 */
+  float __q_hi, __q_lo;
+  ::cuda::__fpmp_math_div_refined<false>(
+    __two_a2.hi(), __two_a2.lo(), __one_minus.hi(), __one_minus.lo(), &__q_hi, &__q_lo);
+  __ffloat __t = renormalize(__two_abs + __ffloat(__q_hi, __q_lo));
 
   float __l_hi;
   float __l_lo;

@@ -14,7 +14,6 @@
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
 #include <thrust/mr/memory_resource.h>
-#include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
