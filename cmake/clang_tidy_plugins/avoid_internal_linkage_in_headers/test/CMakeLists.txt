@@ -16,9 +16,6 @@ foreach (src IN LISTS test_srcs)
     configure_file("${src}" "${header}" COPYONLY)
     # Parse headers directly so the diagnostic line filter includes their declarations.
     set_source_files_properties("${header}" PROPERTIES LANGUAGE CXX)
-    cccl_create_clang_tidy_test(
-      cccl.tidy.avoid_internal_linkage_in_headers
-      "${header}"
-    )
+    cccl_create_clang_tidy_test(avoid_internal_linkage_in_headers "${header}")
   endforeach()
 endforeach()

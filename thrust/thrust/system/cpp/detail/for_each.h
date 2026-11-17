@@ -14,4 +14,4 @@
 #endif // no system header
 
 // this system inherits for_each
-#include <thrust/system/detail/sequential/for_each.h>
+#include <thrust/system/detail/sequential/for_each.h> // IWYU pragma: export

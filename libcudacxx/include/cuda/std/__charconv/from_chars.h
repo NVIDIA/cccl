@@ -54,18 +54,15 @@ __from_chars_char_to_value(char __c, int __base) noexcept
   {
     return {'0' <= __c && __c < '0' + __base, __c - '0'};
   }
-  else if ('0' <= __c && __c <= '9')
+  if ('0' <= __c && __c <= '9')
   {
     return {true, __c - '0'};
   }
-  else if ('a' <= __c && __c < 'a' + __base - 10)
+  if ('a' <= __c && __c < 'a' + __base - 10)
   {
     return {true, __c - 'a' + 10};
   }
-  else
-  {
-    return {'A' <= __c && __c < 'A' + __base - 10, __c - 'A' + 10};
-  }
+  return {'A' <= __c && __c < 'A' + __base - 10, __c - 'A' + 10};
 }
 
 template <class _Tp>
@@ -97,7 +94,7 @@ __from_chars_int_generic(const char* __first, const char* __last, _Tp& __value, 
       }
     }
   }
-  return {__it, (__overflow) ? errc::result_out_of_range : ((__it == __first) ? errc::invalid_argument : errc{})};
+  return {__it, __overflow ? errc::result_out_of_range : ((__it == __first) ? errc::invalid_argument : errc{})};
 }
 
 _CCCL_TEMPLATE(class _Tp)
@@ -117,7 +114,7 @@ from_chars(const char* __first, const char* __last, _Tp& __value, int __base = 1
     __ret            = ::cuda::std::__from_chars_int_generic(__first + __neg, __last, __result, __base);
     if (__ret.ec == errc{})
     {
-      const auto __max = ::cuda::uabs((__neg) ? numeric_limits<_Tp>::min() : numeric_limits<_Tp>::max());
+      const auto __max = ::cuda::uabs(__neg ? numeric_limits<_Tp>::min() : numeric_limits<_Tp>::max());
       if (__result > __max)
       {
         __ret.ec = errc::result_out_of_range;

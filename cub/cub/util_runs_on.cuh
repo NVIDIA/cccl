@@ -19,11 +19,9 @@
 #include <cuda/__device/arch_traits.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/guarantee.h>
-#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__optional/optional.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>

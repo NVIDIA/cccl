@@ -14,4 +14,4 @@
 #endif // no system header
 
 // this system inherits the set operations
-#include <thrust/system/detail/sequential/set_operations.h>
+#include <thrust/system/detail/sequential/set_operations.h> // IWYU pragma: export

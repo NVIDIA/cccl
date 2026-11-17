@@ -14,4 +14,4 @@
 #endif // no system header
 
 // omp system inherits generate
-#include <thrust/system/cpp/detail/generate.h>
+#include <thrust/system/cpp/detail/generate.h> // IWYU pragma: export

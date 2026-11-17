@@ -8,6 +8,7 @@
 #undef CCCL_ENABLE_ASSERTIONS
 
 #include <cub/device/device_scan.cuh>
+#include <cub/util_debug.cuh>
 
 #include <cstdio>
 
@@ -23,14 +24,14 @@ int main()
   void* tmp{};
   size_t tmp_bytes{};
 
-  cudaMalloc(&in, sizeof(in_h));
-  cudaMalloc(&out, 3 * sizeof(*out));
-  cudaMemcpy(in, in_h, sizeof(in_h), cudaMemcpyHostToDevice);
-  cudaMemset(out, 0, 3 * sizeof(*out));
+  CubDebugExit(cudaMalloc(&in, sizeof(in_h)));
+  CubDebugExit(cudaMalloc(&out, 3 * sizeof(*out)));
+  CubDebugExit(cudaMemcpy(in, in_h, sizeof(in_h), cudaMemcpyHostToDevice));
+  CubDebugExit(cudaMemset(out, 0, 3 * sizeof(*out)));
 
-  cub::DeviceScan::InclusiveScan(tmp, tmp_bytes, in, out + 1, cuda::std::plus<>{}, 2);
-  cudaMalloc(&tmp, tmp_bytes);
-  cub::DeviceScan::InclusiveScan(tmp, tmp_bytes, in, out + 1, cuda::std::plus<>{}, 2);
+  CubDebugExit(cub::DeviceScan::InclusiveScan(tmp, tmp_bytes, in, out + 1, cuda::std::plus<>{}, 2));
+  CubDebugExit(cudaMalloc(&tmp, tmp_bytes));
+  CubDebugExit(cub::DeviceScan::InclusiveScan(tmp, tmp_bytes, in, out + 1, cuda::std::plus<>{}, 2));
 
   auto status = cudaDeviceSynchronize();
   if (status != cudaSuccess)
@@ -40,7 +41,7 @@ int main()
   }
 
   long long out_h[3]{};
-  cudaMemcpy(out_h, out, sizeof(out_h), cudaMemcpyDeviceToHost);
+  CubDebugExit(cudaMemcpy(out_h, out, sizeof(out_h), cudaMemcpyDeviceToHost));
   if (out_h[0] != 0 || out_h[1] != 1 || out_h[2] != 2)
   {
     std::printf("wrong result: {%lld, %lld, %lld}\n", out_h[0], out_h[1], out_h[2]);

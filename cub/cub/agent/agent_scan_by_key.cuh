@@ -22,6 +22,7 @@
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_discontinuity.cuh>
 #include <cub/block/block_load.cuh>
+#include <cub/block/block_raking_layout.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/detail/constant.cuh>
@@ -156,6 +157,19 @@ struct AgentScanByKey
   static constexpr int ITEMS_PER_THREAD = AgentScanByKeyPolicyT::ITEMS_PER_THREAD;
   static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
 
+  // The head flagging and block-wide scan require the items in a blocked arrangement
+  static_assert(AgentScanByKeyPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
+                "ScanByKeyLookbackPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since the scan requires a "
+                "blocked arrangement");
+  static_assert(AgentScanByKeyPolicyT::STORE_ALGORITHM != BLOCK_STORE_STRIPED,
+                "ScanByKeyLookbackPolicy: store_algorithm must not be BLOCK_STORE_STRIPED, since the scan produces a "
+                "blocked arrangement");
+  static_assert(
+    (AgentScanByKeyPolicyT::SCAN_ALGORITHM == BLOCK_SCAN_WARP_SCANS && BLOCK_THREADS % detail::warp_threads == 0)
+      || BlockRakingLayout<int, BLOCK_THREADS>::RAKING_THREADS == detail::warp_threads,
+    "ScanByKeyLookbackPolicy: the decoupled look-back needs a full warp to enter the block-scan prefix callback: with "
+    "warp scans threads_per_block must be a multiple of 32, otherwise the raking layout must yield 32 raking threads");
+
   using WrappedKeysInputIteratorT =
     ::cuda::std::_If<::cuda::std::is_pointer_v<KeysInputIteratorT>,
                      CacheModifiedInputIterator<AgentScanByKeyPolicyT::LOAD_MODIFIER, KeyT, OffsetT>,
@@ -216,7 +230,7 @@ struct AgentScanByKey
   //---------------------------------------------------------------------
 
   // Exclusive scan specialization
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ScanTile(FlagValuePairT (&scan_items)[ITEMS_PER_THREAD],
            FlagValuePairT& tile_aggregate,
            ::cuda::std::false_type /* is_inclusive */)
@@ -225,7 +239,7 @@ struct AgentScanByKey
   }
 
   // Inclusive scan specialization
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ScanTile(FlagValuePairT (&scan_items)[ITEMS_PER_THREAD],
            FlagValuePairT& tile_aggregate,
            ::cuda::std::true_type /* is_inclusive */)
@@ -238,7 +252,7 @@ struct AgentScanByKey
   //---------------------------------------------------------------------
 
   // Exclusive scan specialization (with prefix from predecessors)
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScanTile(
     FlagValuePairT (&scan_items)[ITEMS_PER_THREAD],
     FlagValuePairT& tile_aggregate,
     TilePrefixCallbackT& prefix_op,
@@ -249,7 +263,7 @@ struct AgentScanByKey
   }
 
   // Inclusive scan specialization (with prefix from predecessors)
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScanTile(
     FlagValuePairT (&scan_items)[ITEMS_PER_THREAD],
     FlagValuePairT& tile_aggregate,
     TilePrefixCallbackT& prefix_op,
@@ -264,7 +278,7 @@ struct AgentScanByKey
   //---------------------------------------------------------------------
 
   template <bool IsLastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ZipValuesAndFlags(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ZipValuesAndFlags(
     OffsetT num_remaining,
     AccumT (&values)[ITEMS_PER_THREAD],
     OffsetT (&segment_flags)[ITEMS_PER_THREAD],
@@ -285,7 +299,7 @@ struct AgentScanByKey
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   UnzipValues(AccumT (&values)[ITEMS_PER_THREAD], FlagValuePairT (&scan_items)[ITEMS_PER_THREAD])
   {
     // Unzip values and segment_flags
@@ -297,7 +311,7 @@ struct AgentScanByKey
   }
 
   template <bool IsNull = ::cuda::std::is_same_v<InitValueT, NullType>, ::cuda::std::enable_if_t<!IsNull, int> = 0>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   AddInitToScan(AccumT (&items)[ITEMS_PER_THREAD], OffsetT (&flags)[ITEMS_PER_THREAD])
   {
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -308,7 +322,7 @@ struct AgentScanByKey
   }
 
   template <bool IsNull = ::cuda::std::is_same_v<InitValueT, NullType>, ::cuda::std::enable_if_t<IsNull, int> = 0>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   AddInitToScan(AccumT (& /*items*/)[ITEMS_PER_THREAD], OffsetT (& /*flags*/)[ITEMS_PER_THREAD])
   {}
 
@@ -319,7 +333,7 @@ struct AgentScanByKey
   // Process a tile of input (dynamic chained scan)
   //
   template <bool IsLastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ConsumeTile(OffsetT /*num_items*/, OffsetT num_remaining, int tile_idx, OffsetT tile_base, ScanTileStateT& tile_state)
   {
     // Load items
@@ -415,7 +429,7 @@ struct AgentScanByKey
 
   // Dequeue and scan tiles of items as part of a dynamic chained scan
   // with Init functor
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentScanByKey(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentScanByKey(
     TempStorage& storage,
     KeysInputIteratorT d_keys_in,
     KeyT* d_keys_prev_in,
@@ -447,7 +461,7 @@ struct AgentScanByKey
    * start_tile
    *   The starting tile for the current grid
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT num_items, ScanTileStateT& tile_state, int start_tile)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ConsumeRange(OffsetT num_items, ScanTileStateT& tile_state, int start_tile)
   {
     const int tile_idx    = static_cast<int>(blockIdx.x);
     OffsetT tile_base     = OffsetT(ITEMS_PER_TILE) * tile_idx;

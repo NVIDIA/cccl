@@ -85,6 +85,11 @@ template <>
 inline constexpr bool __is_ext_nv_fp_v<__nv_fp8_e5m2> = true;
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
+#if _CCCL_HAS_NVFP8_UE5M3()
+template <>
+inline constexpr bool __is_ext_nv_fp_v<__nv_fp8_ue5m3> = true;
+#endif // _CCCL_HAS_NVFP8_UE5M3()
+
 #if _CCCL_HAS_NVFP8_E8M0()
 template <>
 inline constexpr bool __is_ext_nv_fp_v<__nv_fp8_e8m0> = true;

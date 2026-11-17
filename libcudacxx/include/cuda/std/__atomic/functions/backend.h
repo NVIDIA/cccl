@@ -178,10 +178,10 @@ __cuda_atomic_compare_exchange_initial_load_order(__cuda_atomic_ptx_order<_Order
 }
 
 template <bool _Volatile>
-using __cuda_atomic_mmio_tag = bool_constant<_Volatile>;
+using __cuda_atomic_mmio_tag _CCCL_NODEBUG = bool_constant<_Volatile>;
 
-using __cuda_atomic_mmio_enable  = __cuda_atomic_mmio_tag<true>;
-using __cuda_atomic_mmio_disable = __cuda_atomic_mmio_tag<false>;
+using __cuda_atomic_mmio_enable _CCCL_NODEBUG  = __cuda_atomic_mmio_tag<true>;
+using __cuda_atomic_mmio_disable _CCCL_NODEBUG = __cuda_atomic_mmio_tag<false>;
 
 enum class __cuda_atomic_operand
 {
@@ -198,32 +198,32 @@ struct __cuda_atomic_operand_tag
   static constexpr auto __size = _Size;
 };
 
-using __cuda_atomic_operand_f8   = __cuda_atomic_operand_tag<__cuda_atomic_operand::_f, 8>;
-using __cuda_atomic_operand_s8   = __cuda_atomic_operand_tag<__cuda_atomic_operand::_s, 8>;
-using __cuda_atomic_operand_u8   = __cuda_atomic_operand_tag<__cuda_atomic_operand::_u, 8>;
-using __cuda_atomic_operand_b8   = __cuda_atomic_operand_tag<__cuda_atomic_operand::_b, 8>;
-using __cuda_atomic_operand_f16  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_f, 16>;
-using __cuda_atomic_operand_s16  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_s, 16>;
-using __cuda_atomic_operand_u16  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_u, 16>;
-using __cuda_atomic_operand_b16  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_b, 16>;
-using __cuda_atomic_operand_f32  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_f, 32>;
-using __cuda_atomic_operand_s32  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_s, 32>;
-using __cuda_atomic_operand_u32  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_u, 32>;
-using __cuda_atomic_operand_b32  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_b, 32>;
-using __cuda_atomic_operand_f64  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_f, 64>;
-using __cuda_atomic_operand_s64  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_s, 64>;
-using __cuda_atomic_operand_u64  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_u, 64>;
-using __cuda_atomic_operand_b64  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_b, 64>;
-using __cuda_atomic_operand_f128 = __cuda_atomic_operand_tag<__cuda_atomic_operand::_f, 128>;
-using __cuda_atomic_operand_s128 = __cuda_atomic_operand_tag<__cuda_atomic_operand::_s, 128>;
-using __cuda_atomic_operand_u128 = __cuda_atomic_operand_tag<__cuda_atomic_operand::_u, 128>;
-using __cuda_atomic_operand_b128 = __cuda_atomic_operand_tag<__cuda_atomic_operand::_b, 128>;
+using __cuda_atomic_operand_f8 _CCCL_NODEBUG   = __cuda_atomic_operand_tag<__cuda_atomic_operand::_f, 8>;
+using __cuda_atomic_operand_s8 _CCCL_NODEBUG   = __cuda_atomic_operand_tag<__cuda_atomic_operand::_s, 8>;
+using __cuda_atomic_operand_u8 _CCCL_NODEBUG   = __cuda_atomic_operand_tag<__cuda_atomic_operand::_u, 8>;
+using __cuda_atomic_operand_b8 _CCCL_NODEBUG   = __cuda_atomic_operand_tag<__cuda_atomic_operand::_b, 8>;
+using __cuda_atomic_operand_f16 _CCCL_NODEBUG  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_f, 16>;
+using __cuda_atomic_operand_s16 _CCCL_NODEBUG  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_s, 16>;
+using __cuda_atomic_operand_u16 _CCCL_NODEBUG  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_u, 16>;
+using __cuda_atomic_operand_b16 _CCCL_NODEBUG  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_b, 16>;
+using __cuda_atomic_operand_f32 _CCCL_NODEBUG  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_f, 32>;
+using __cuda_atomic_operand_s32 _CCCL_NODEBUG  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_s, 32>;
+using __cuda_atomic_operand_u32 _CCCL_NODEBUG  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_u, 32>;
+using __cuda_atomic_operand_b32 _CCCL_NODEBUG  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_b, 32>;
+using __cuda_atomic_operand_f64 _CCCL_NODEBUG  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_f, 64>;
+using __cuda_atomic_operand_s64 _CCCL_NODEBUG  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_s, 64>;
+using __cuda_atomic_operand_u64 _CCCL_NODEBUG  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_u, 64>;
+using __cuda_atomic_operand_b64 _CCCL_NODEBUG  = __cuda_atomic_operand_tag<__cuda_atomic_operand::_b, 64>;
+using __cuda_atomic_operand_f128 _CCCL_NODEBUG = __cuda_atomic_operand_tag<__cuda_atomic_operand::_f, 128>;
+using __cuda_atomic_operand_s128 _CCCL_NODEBUG = __cuda_atomic_operand_tag<__cuda_atomic_operand::_s, 128>;
+using __cuda_atomic_operand_u128 _CCCL_NODEBUG = __cuda_atomic_operand_tag<__cuda_atomic_operand::_u, 128>;
+using __cuda_atomic_operand_b128 _CCCL_NODEBUG = __cuda_atomic_operand_tag<__cuda_atomic_operand::_b, 128>;
 
 template <class _AtomicType, class _OpTag>
 struct __cuda_atomic_operand_deduction
 {
-  using __type = _AtomicType;
-  using __tag  = _OpTag;
+  using __type _CCCL_NODEBUG = _AtomicType;
+  using __tag _CCCL_NODEBUG  = _OpTag;
 };
 
 struct _CCCL_ALIGNAS(16) __cuda_atomic_longlong2
@@ -267,10 +267,12 @@ template <class _Type>
 // TODO: Once CUDA 12.0 is no longer supported, factor the repeated decltype below into a common deduction alias.
 // CUDA 12.0 cudafe can substitute an unrelated alias for an intermediate alias template in large translation units.
 template <class _Type>
-using __cuda_atomic_deduce_bitwise_t = typename decltype(__cuda_atomic_deduce_bitwise_impl<_Type>())::__type;
+using __cuda_atomic_deduce_bitwise_t _CCCL_NODEBUG =
+  typename decltype(__cuda_atomic_deduce_bitwise_impl<_Type>())::__type;
 
 template <class _Type>
-using __cuda_atomic_deduce_bitwise_tag_t = typename decltype(__cuda_atomic_deduce_bitwise_impl<_Type>())::__tag;
+using __cuda_atomic_deduce_bitwise_tag_t _CCCL_NODEBUG =
+  typename decltype(__cuda_atomic_deduce_bitwise_impl<_Type>())::__tag;
 
 template <class _Type>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __cuda_atomic_deduce_arithmetic_impl() noexcept
@@ -291,10 +293,12 @@ template <class _Type>
 }
 
 template <class _Type>
-using __cuda_atomic_deduce_arithmetic_t = typename decltype(__cuda_atomic_deduce_arithmetic_impl<_Type>())::__type;
+using __cuda_atomic_deduce_arithmetic_t _CCCL_NODEBUG =
+  typename decltype(__cuda_atomic_deduce_arithmetic_impl<_Type>())::__type;
 
 template <class _Type>
-using __cuda_atomic_deduce_arithmetic_tag_t = typename decltype(__cuda_atomic_deduce_arithmetic_impl<_Type>())::__tag;
+using __cuda_atomic_deduce_arithmetic_tag_t _CCCL_NODEBUG =
+  typename decltype(__cuda_atomic_deduce_arithmetic_impl<_Type>())::__tag;
 
 template <class _Type>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __cuda_atomic_deduce_minmax_impl() noexcept
@@ -314,10 +318,12 @@ template <class _Type>
 }
 
 template <class _Type>
-using __cuda_atomic_deduce_minmax_t = typename decltype(__cuda_atomic_deduce_minmax_impl<_Type>())::__type;
+using __cuda_atomic_deduce_minmax_t _CCCL_NODEBUG =
+  typename decltype(__cuda_atomic_deduce_minmax_impl<_Type>())::__type;
 
 template <class _Type>
-using __cuda_atomic_deduce_minmax_tag_t = typename decltype(__cuda_atomic_deduce_minmax_impl<_Type>())::__tag;
+using __cuda_atomic_deduce_minmax_tag_t _CCCL_NODEBUG =
+  typename decltype(__cuda_atomic_deduce_minmax_impl<_Type>())::__tag;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

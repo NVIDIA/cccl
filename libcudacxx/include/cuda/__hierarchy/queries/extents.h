@@ -45,10 +45,7 @@ __hierarchy_static_extents_mul_helper(::cuda::std::size_t __lhs, ::cuda::std::si
   {
     return ::cuda::std::dynamic_extent;
   }
-  else
-  {
-    return __lhs * __rhs;
-  }
+  return __lhs * __rhs;
 }
 
 template <class _ResultIndex, class _LhsExts, class _RhsExts, ::cuda::std::size_t... _Is>

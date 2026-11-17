@@ -14,13 +14,17 @@
 #endif // no system header
 
 #include <cub/block/block_scan.cuh>
-#include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
-#include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__host_stdlib/ostream>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/util_device.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 namespace detail::set_ops
@@ -47,7 +51,7 @@ struct SetOpsPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const SetOpsPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SetOpsPolicy& p)
   {
     return os << "SetOpsPolicy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << ", .load_modifier = " << p.load_modifier

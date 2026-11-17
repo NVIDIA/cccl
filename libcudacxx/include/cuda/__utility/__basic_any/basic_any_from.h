@@ -91,10 +91,10 @@ template <template <class...> class _Interface>
 }
 
 template <class _CvInterface>
-using __cvref_basic_any_from_t = decltype(::cuda::__basic_any_from(::cuda::std::declval<_CvInterface>()));
+using __cvref_basic_any_from_t _CCCL_NODEBUG = decltype(::cuda::__basic_any_from(::cuda::std::declval<_CvInterface>()));
 
 template <class _CvInterface>
-using __basic_any_from_t = ::cuda::std::decay_t<__cvref_basic_any_from_t<_CvInterface>>;
+using __basic_any_from_t _CCCL_NODEBUG = ::cuda::std::decay_t<__cvref_basic_any_from_t<_CvInterface>>;
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>

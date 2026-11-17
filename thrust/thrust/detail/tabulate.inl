@@ -23,7 +23,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(tabulate.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/tabulate.h>
 #  include <thrust/system/cuda/detail/tabulate.h>
 #  include <thrust/system/omp/detail/tabulate.h>
@@ -34,7 +34,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename UnaryOperation>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 tabulate(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
          ForwardIterator first,
          ForwardIterator last,
@@ -46,7 +46,7 @@ tabulate(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
 } // end tabulate()
 
 template <typename ForwardIterator, typename UnaryOperation>
-void tabulate(ForwardIterator first, ForwardIterator last, UnaryOperation unary_op)
+_CCCL_HOST_API void tabulate(ForwardIterator first, ForwardIterator last, UnaryOperation unary_op)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::tabulate");
   using thrust::system::detail::generic::select_system;

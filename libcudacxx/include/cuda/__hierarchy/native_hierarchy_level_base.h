@@ -47,7 +47,7 @@ _CCCL_DIAG_SUPPRESS_NVHPC(nodiscard_doesnt_apply)
 template <class _Level>
 struct _CCCL_DECLSPEC_EMPTY_BASES __native_hierarchy_level_base : hierarchy_level_base<_Level>
 {
-  using __base_type = hierarchy_level_base<_Level>;
+  using __base_type _CCCL_NODEBUG = hierarchy_level_base<_Level>;
   using __base_type::count;
   using __base_type::count_as;
   using __base_type::dims;

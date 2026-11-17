@@ -38,7 +38,7 @@ void add_relative_error_summary(
   estimator.add(stream, first, first + num_items);
   const auto estimated_cardinality = estimator.estimate(stream);
   const auto relative_error =
-    cuda::std::abs(static_cast<double>(estimated_cardinality) / static_cast<double>(num_items) - 1.0);
+    cuda::std::abs((static_cast<double>(estimated_cardinality) / static_cast<double>(num_items)) - 1.0);
   estimator.clear(stream);
 
   auto& summary = state.add_summary("RelativeError");

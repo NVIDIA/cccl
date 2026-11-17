@@ -13,7 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/config/memory_resource.h>
 #include <thrust/mr/memory_resource.h>
 
 #include <cuda/std/__type_traits/is_base_of.h>

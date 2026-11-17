@@ -177,6 +177,24 @@ struct AgentRadixSortDownsweep
     RANK_ALGORITHM == RADIX_RANK_MATCH || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ANY
     || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR;
 
+  // The warp-striped loads used for the matching rank algorithms require full warps
+  static_assert(!LOAD_WARP_STRIPED || BLOCK_THREADS % warp_threads == 0,
+                "RadixSortDownsweepPolicy / SegmentedSortRadixSortPolicy: threads_per_block must be a multiple of "
+                "the warp size (32) when rank_algorithm is RADIX_RANK_MATCH or RADIX_RANK_MATCH_EARLY_COUNTS_*");
+
+  // The ranking of the non-matching rank algorithms is only stable for keys loaded in a blocked arrangement
+  static_assert(LOAD_WARP_STRIPED || LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
+                "RadixSortDownsweepPolicy / SegmentedSortRadixSortPolicy: load_algorithm must not be "
+                "BLOCK_LOAD_STRIPED, since ranking requires a blocked arrangement");
+
+  // For descending sorts, BlockRadixRankMatchEarlyCounts returns the exclusive digit prefixes in reversed digit order,
+  // whereas ProcessTile() expects them in digit order (like the other rank algorithms provide)
+  static_assert(!IsDescending
+                  || (RANK_ALGORITHM != RADIX_RANK_MATCH_EARLY_COUNTS_ANY
+                      && RANK_ALGORITHM != RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR),
+                "RadixSortDownsweepPolicy / SegmentedSortRadixSortPolicy: rank_algorithm must not be "
+                "RADIX_RANK_MATCH_EARLY_COUNTS_* for descending sorts");
+
   // Input iterator wrapper type (for applying cache modifier)s
   using KeysItr   = CacheModifiedInputIterator<LOAD_MODIFIER, bit_ordered_type, OffsetT>;
   using ValuesItr = CacheModifiedInputIterator<LOAD_MODIFIER, ValueT, OffsetT>;
@@ -251,7 +269,7 @@ struct AgentRadixSortDownsweep
   // Utility methods
   //---------------------------------------------------------------------
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE digit_extractor_t digit_extractor()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE digit_extractor_t digit_extractor()
   {
     return traits::template digit_extractor<fundamental_digit_extractor_t>(current_bit, num_bits, decomposer);
   }
@@ -260,7 +278,7 @@ struct AgentRadixSortDownsweep
    * Scatter ranked keys through shared memory, then to device-accessible memory
    */
   template <bool FullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterKeys(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterKeys(
     bit_ordered_type (&twiddled_keys)[ITEMS_PER_THREAD],
     OffsetT (&relative_bin_offsets)[ITEMS_PER_THREAD],
     int (&ranks)[ITEMS_PER_THREAD],
@@ -296,7 +314,7 @@ struct AgentRadixSortDownsweep
    * Scatter ranked values through shared memory, then to device-accessible memory
    */
   template <bool FullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterValues(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterValues(
     ValueT (&values)[ITEMS_PER_THREAD],
     OffsetT (&relative_bin_offsets)[ITEMS_PER_THREAD],
     int (&ranks)[ITEMS_PER_THREAD],
@@ -329,94 +347,10 @@ struct AgentRadixSortDownsweep
   }
 
   /**
-   * Load a tile of keys (specialized for full tile)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadKeys(
-    bit_ordered_type (&keys)[ITEMS_PER_THREAD],
-    OffsetT block_offset,
-    OffsetT valid_items,
-    bit_ordered_type oob_item,
-    ::cuda::std::true_type is_full_tile)
-  {
-    if constexpr (LOAD_WARP_STRIPED)
-    {
-      LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys);
-    }
-    else
-    {
-      BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys);
-      __syncthreads();
-    }
-  }
-
-  /**
-   * Load a tile of keys (specialized for partial tile)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadKeys(
-    bit_ordered_type (&keys)[ITEMS_PER_THREAD],
-    OffsetT block_offset,
-    OffsetT valid_items,
-    bit_ordered_type oob_item,
-    ::cuda::std::false_type is_full_tile)
-  {
-    // Register pressure work-around: moving valid_items through shfl prevents compiler
-    // from reusing guards/addressing from prior guarded loads
-    valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
-
-    if constexpr (LOAD_WARP_STRIPED)
-    {
-      LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, valid_items, oob_item);
-    }
-    else
-    {
-      BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys, valid_items, oob_item);
-      __syncthreads();
-    }
-  }
-
-  /**
-   * Load a tile of values (specialized for full tile)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadValues(
-    ValueT (&values)[ITEMS_PER_THREAD], OffsetT block_offset, OffsetT valid_items, ::cuda::std::true_type is_full_tile)
-  {
-    if constexpr (LOAD_WARP_STRIPED)
-    {
-      LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values);
-    }
-    else
-    {
-      BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values);
-      __syncthreads();
-    }
-  }
-
-  /**
-   * Load a tile of values (specialized for partial tile)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadValues(
-    ValueT (&values)[ITEMS_PER_THREAD], OffsetT block_offset, OffsetT valid_items, ::cuda::std::false_type is_full_tile)
-  {
-    // Register pressure work-around: moving valid_items through shfl prevents compiler
-    // from reusing guards/addressing from prior guarded loads
-    valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
-
-    if constexpr (LOAD_WARP_STRIPED)
-    {
-      LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values, valid_items);
-    }
-    else
-    {
-      BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values, valid_items);
-      __syncthreads();
-    }
-  }
-
-  /**
    * Truck along associated values
    */
   template <bool FullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void GatherScatterValues(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void GatherScatterValues(
     OffsetT (&relative_bin_offsets)[ITEMS_PER_THREAD],
     int (&ranks)[ITEMS_PER_THREAD],
     OffsetT block_offset,
@@ -426,7 +360,33 @@ struct AgentRadixSortDownsweep
 
     __syncthreads();
 
-    LoadValues(values, block_offset, valid_items, bool_constant_v<FullTile>);
+    if constexpr (FullTile)
+    {
+      if constexpr (LOAD_WARP_STRIPED)
+      {
+        _CUB::LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values);
+      }
+      else
+      {
+        BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values);
+        __syncthreads();
+      }
+    }
+    else
+    {
+      // Register pressure work-around: moving valid_items through shfl prevents compiler
+      // from reusing guards/addressing from prior guarded loads
+      const OffsetT load_valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
+      if constexpr (LOAD_WARP_STRIPED)
+      {
+        _CUB::LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values, load_valid_items);
+      }
+      else
+      {
+        BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values, load_valid_items);
+        __syncthreads();
+      }
+    }
 
     ScatterValues<FullTile>(values, relative_bin_offsets, ranks, valid_items);
   }
@@ -435,7 +395,7 @@ struct AgentRadixSortDownsweep
    * Process tile
    */
   template <bool FullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessTile(OffsetT block_offset, OffsetT valid_items = TILE_ITEMS)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ProcessTile(OffsetT block_offset, OffsetT valid_items = TILE_ITEMS)
   {
     bit_ordered_type keys[ITEMS_PER_THREAD];
     int ranks[ITEMS_PER_THREAD];
@@ -446,7 +406,33 @@ struct AgentRadixSortDownsweep
       IsDescending ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
 
     // Load tile of keys
-    LoadKeys(keys, block_offset, valid_items, default_key, bool_constant_v<FullTile>);
+    if constexpr (FullTile)
+    {
+      if constexpr (LOAD_WARP_STRIPED)
+      {
+        _CUB::LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys);
+      }
+      else
+      {
+        BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys);
+        __syncthreads();
+      }
+    }
+    else
+    {
+      // Register pressure work-around: moving valid_items through shfl prevents compiler
+      // from reusing guards/addressing from prior guarded loads
+      const OffsetT load_valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
+      if constexpr (LOAD_WARP_STRIPED)
+      {
+        _CUB::LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, load_valid_items, default_key);
+      }
+      else
+      {
+        BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys, load_valid_items, default_key);
+        __syncthreads();
+      }
+    }
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int KEY = 0; KEY < ITEMS_PER_THREAD; KEY++)
@@ -535,16 +521,16 @@ struct AgentRadixSortDownsweep
    * Copy tiles within the range of input
    */
   template <typename InputIteratorT, typename T>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Copy(InputIteratorT d_in, T* d_out, OffsetT block_offset, OffsetT block_end)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Copy(InputIteratorT d_in, T* d_out, OffsetT block_offset, OffsetT block_end)
   {
     // Simply copy the input
     while (block_end - block_offset >= TILE_ITEMS)
     {
       T items[ITEMS_PER_THREAD];
 
-      LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items);
+      _CUB::LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items);
       __syncthreads();
-      StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items);
+      _CUB::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items);
 
       block_offset += TILE_ITEMS;
     }
@@ -556,9 +542,9 @@ struct AgentRadixSortDownsweep
 
       T items[ITEMS_PER_THREAD];
 
-      LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items, valid_items);
+      _CUB::LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items, valid_items);
       __syncthreads();
-      StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items, valid_items);
+      _CUB::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items, valid_items);
     }
   }
 
@@ -566,7 +552,7 @@ struct AgentRadixSortDownsweep
    * Copy tiles within the range of input (specialized for NullType)
    */
   template <typename InputIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   Copy(InputIteratorT /*d_in*/, NullType* /*d_out*/, OffsetT /*block_offset*/, OffsetT /*block_end*/)
   {}
 
@@ -577,7 +563,7 @@ struct AgentRadixSortDownsweep
   /**
    * Constructor
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentRadixSortDownsweep(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentRadixSortDownsweep(
     TempStorage& temp_storage,
     OffsetT (&bin_offset)[BINS_TRACKED_PER_THREAD],
     OffsetT num_items,
@@ -617,7 +603,7 @@ struct AgentRadixSortDownsweep
   /**
    * Constructor
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentRadixSortDownsweep(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentRadixSortDownsweep(
     TempStorage& temp_storage,
     OffsetT num_items,
     OffsetT* d_spine,
@@ -666,7 +652,7 @@ struct AgentRadixSortDownsweep
   /**
    * Distribute keys from a segment of input tiles.
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessRegion(OffsetT block_offset, OffsetT block_end)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ProcessRegion(OffsetT block_offset, OffsetT block_end)
   {
     if (short_circuit)
     {

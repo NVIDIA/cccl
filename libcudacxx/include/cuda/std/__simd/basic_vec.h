@@ -37,12 +37,14 @@
 #include <cuda/std/__simd/exposition.h>
 #include <cuda/std/__simd/flag.h>
 #include <cuda/std/__simd/iterator.h>
+#include <cuda/std/__simd/permute_dynamic.h>
 #include <cuda/std/__simd/specializations/fixed_size_float_vec.h> // IWYU pragma: keep
 #include <cuda/std/__simd/specializations/fixed_size_integral_vec.h> // IWYU pragma: keep
 #include <cuda/std/__simd/specializations/fixed_size_vec.h> // IWYU pragma: keep
 #include <cuda/std/__simd/type_traits.h>
 #include <cuda/std/__simd/utility.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/operations.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -62,6 +64,22 @@ inline constexpr bool __is_complex_real_type_v<_ValueType, _Up, true> = is_same_
 template <typename _Tp>
 inline constexpr bool __is_cccl_complex_v = __is_cuda_std_complex_v<_Tp> || ::cuda::__is_cuda_complex_v<_Tp>;
 
+// workaround for MSVC warnings with conversion of complex types
+template <typename _To, typename _From>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _To __broadcast_cast(_From& __value) noexcept
+{
+  if constexpr (__is_complex_vectorizable_v<_To>
+                && (is_arithmetic_v<_From> || __constexpr_wrapper_like<remove_cvref_t<_From>>) )
+  {
+    using _Real _CCCL_NODEBUG = typename _To::value_type;
+    return _To{static_cast<_Real>(__value)};
+  }
+  else
+  {
+    return static_cast<_To>(__value);
+  }
+}
+
 // [simd.class], class template basic_vec
 
 // If basic_vec<T, Abi> is disabled, the specialization has a deleted default constructor, deleted destructor, deleted
@@ -73,7 +91,7 @@ class basic_vec
 public:
   using value_type = _Tp;
   using abi_type   = _Abi;
-  using mask_type  = basic_mask<sizeof(_Tp), _Abi>;
+  using mask_type  = basic_mask<__simd_element_size<_Tp>::value, _Abi>;
 
   _CCCL_HIDE_FROM_ABI basic_vec()                            = delete;
   _CCCL_HIDE_FROM_ABI ~basic_vec()                           = delete;
@@ -86,11 +104,7 @@ public:
 // - there exists N in [1, 64] derived from deduce-abi-t<T, N>
 // - sizeof(T) is a vectorizable byte size, i.e. sizeof(T) fits in an integer, otherwise mask is not representable
 template <typename _Tp, typename _Abi>
-class basic_vec<
-  _Tp,
-  _Abi,
-  enable_if_t<__is_vectorizable_v<_Tp> && __is_vectorizable_byte_size_v<sizeof(_Tp)> && __is_enabled_abi_v<_Abi>>>
-    : public __simd_operations<_Tp, _Abi>
+class basic_vec<_Tp, _Abi, enable_if_t<__is_enabled_vec_v<_Tp, _Abi>>> : public __simd_operations<_Tp, _Abi>
 {
 public:
   using value_type = _Tp;
@@ -111,8 +125,8 @@ private:
   _CCCL_HOST_DEVICE_API friend constexpr _Result
   __full_load_from_ptr(const _Up*, const typename _Result::mask_type&, flags<_Flags...>) noexcept;
 
-  using _Impl    = __simd_operations<_Tp, _Abi>;
-  using _Storage = typename _Impl::_SimdStorage;
+  using _Impl _CCCL_NODEBUG    = __simd_operations<_Tp, _Abi>;
+  using _Storage _CCCL_NODEBUG = typename _Impl::_SimdStorage;
 
   _Storage __s_{};
 
@@ -254,20 +268,13 @@ public:
 
   // [simd.ctor], basic_vec constructors
 
-  // [simd.ctor] value broadcast constructor (explicit overload)
+  // [simd.ctor] value broadcast constructor
   // The conversion constraints exclude copy and move construction.
   // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_TEMPLATE(typename _Up)
-  _CCCL_REQUIRES((__explicitly_convertible_to<_Up, value_type>) _CCCL_AND(!__is_value_ctor_implicit<_Up, value_type>))
-  _CCCL_HOST_DEVICE_API constexpr explicit basic_vec(_Up&& __v) noexcept
-      : __s_{_Impl::__broadcast(static_cast<value_type>(__v))}
-  {}
-
-  // [simd.ctor] value broadcast constructor (implicit overload)
-  _CCCL_TEMPLATE(typename _Up)
-  _CCCL_REQUIRES((__explicitly_convertible_to<_Up, value_type>) _CCCL_AND(__is_value_ctor_implicit<_Up, value_type>))
+  _CCCL_REQUIRES(__is_value_ctor_implicit<_Up, value_type>)
   _CCCL_HOST_DEVICE_API constexpr basic_vec(_Up&& __v) noexcept
-      : __s_{_Impl::__broadcast(static_cast<value_type>(__v))}
+      : __s_{_Impl::__broadcast(::cuda::std::simd::__broadcast_cast<value_type>(__v))}
   {}
   // NOLINTEND(bugprone-forwarding-reference-overload)
 
@@ -400,9 +407,13 @@ public:
     return __s_.__get(__i);
   }
 
-  // TODO(fbusato): subscript with integral indices, requires permute()
-  // template<simd-integral _Idx>
-  //   constexpr resize_t<_Idx::size(), basic_vec> operator[](const _Idx& __indices) const;
+  _CCCL_TEMPLATE(typename _Indices)
+  _CCCL_REQUIRES(__simd_vec_type<_Indices> _CCCL_AND is_integral_v<typename _Indices::value_type>)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr resize_t<_Indices::size(), basic_vec>
+  operator[](const _Indices& __indices) const
+  {
+    return ::cuda::std::simd::permute(*this, __indices);
+  }
 
   // [simd.complex.access], basic_vec complex accessors
 
@@ -669,7 +680,7 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
   operator<<(const basic_vec& __lhs, const __simd_size_type __n) noexcept
   {
-    return __lhs << basic_vec{__n};
+    return __lhs << basic_vec{static_cast<value_type>(__n)};
   }
 
   _CCCL_TEMPLATE(typename _Tp2 = _Tp)
@@ -677,7 +688,7 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
   operator>>(const basic_vec& __lhs, const __simd_size_type __n) noexcept
   {
-    return __lhs >> basic_vec{__n};
+    return __lhs >> basic_vec{static_cast<value_type>(__n)};
   }
 
   // [simd.cassign], basic_vec compound assignment

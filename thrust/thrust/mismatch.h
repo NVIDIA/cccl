@@ -84,7 +84,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2>
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<InputIterator1, InputIterator2>
 mismatch(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
          InputIterator1 first1,
          InputIterator1 last1,
@@ -139,7 +139,7 @@ mismatch(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2>
-::cuda::std::pair<InputIterator1, InputIterator2>
+_CCCL_HOST_API ::cuda::std::pair<InputIterator1, InputIterator2>
 mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
 
 /*! \p mismatch finds the first position where the two ranges <tt>[first1, last1)</tt>
@@ -197,7 +197,7 @@ mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -254,7 +254,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-::cuda::std::pair<InputIterator1, InputIterator2>
+_CCCL_HOST_API ::cuda::std::pair<InputIterator1, InputIterator2>
 mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate pred);
 
 /*! \p mismatch finds the first position where the two ranges <tt>[first1, last1)</tt>
@@ -282,7 +282,7 @@ mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, Bin
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
-_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -310,7 +310,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2>
-::cuda::std::pair<InputIterator1, InputIterator2>
+_CCCL_HOST_API ::cuda::std::pair<InputIterator1, InputIterator2>
 mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2);
 
 /*! \p mismatch finds the first position where the two ranges <tt>[first1, last1)</tt>
@@ -339,7 +339,7 @@ mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, Inp
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -369,7 +369,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
+_CCCL_HOST_API ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
   InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, BinaryPredicate pred);
 
 /*! \} // end searching

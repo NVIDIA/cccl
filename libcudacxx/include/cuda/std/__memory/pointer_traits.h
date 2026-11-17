@@ -100,7 +100,7 @@ struct __pointer_traits_rebind<_Sp<_Tp, _Args...>, _Up, true>
 template <template <class, class...> class _Sp, class _Tp, class... _Args, class _Up>
 struct __pointer_traits_rebind<_Sp<_Tp, _Args...>, _Up, false>
 {
-  using type = _Sp<_Up, _Args...>;
+  using type _CCCL_NODEBUG = _Sp<_Up, _Args...>;
 };
 
 template <class _Ptr, class = void>

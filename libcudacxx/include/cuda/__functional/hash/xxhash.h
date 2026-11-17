@@ -309,7 +309,7 @@ private:
       __v[__i] = ::cuda::std::rotl(__v[__i], 31);
       __v[__i] *= __prime1;
       __h64 ^= __v[__i];
-      __h64 = __h64 * __prime1 + __prime4;
+      __h64 = (__h64 * __prime1) + __prime4;
     }
   };
 
@@ -399,7 +399,7 @@ private:
         ::cuda::std::uint64_t __k1 = ::cuda::__load_chunk<::cuda::std::uint64_t>(__bytes, __offset / 8) * __prime2;
         __k1                       = ::cuda::std::rotl(__k1, 31) * __prime1;
         __h64 ^= __k1;
-        __h64 = ::cuda::std::rotl(__h64, 27) * __prime1 + __prime4;
+        __h64 = (::cuda::std::rotl(__h64, 27) * __prime1) + __prime4;
       }
     }
 
@@ -409,7 +409,7 @@ private:
       for (; __offset <= __size - 4; __offset += 4)
       {
         __h64 ^= (::cuda::__load_chunk<::cuda::std::uint32_t>(__bytes, __offset / 4)) * __prime1;
-        __h64 = ::cuda::std::rotl(__h64, 23) * __prime2 + __prime3;
+        __h64 = (::cuda::std::rotl(__h64, 23) * __prime2) + __prime3;
       }
     }
 

@@ -97,15 +97,15 @@ TEST_CASE("TestComparisonSortByKeyCudaStreams", "[sort_by_key]")
   thrust::device_vector<int> vals{9, 3, 2, 0, 4, 7, 8, 1, 5, 6};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::sort_by_key(thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin(), my_less<int>());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(thrust::is_sorted(keys.begin(), keys.end()));
   REQUIRE(thrust::is_sorted(vals.begin(), vals.end()));
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestSortByKeyCudaStreams", "[sort_by_key]")
@@ -114,13 +114,13 @@ TEST_CASE("TestSortByKeyCudaStreams", "[sort_by_key]")
   thrust::device_vector<int> vals{9, 3, 2, 0, 4, 7, 8, 1, 5, 6};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::sort_by_key(thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(thrust::is_sorted(keys.begin(), keys.end()));
   REQUIRE(thrust::is_sorted(vals.begin(), vals.end()));
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }

@@ -24,6 +24,7 @@
 
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__memory/align_up.h>
+#include <cuda/std/__cstddef/types.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -46,7 +47,7 @@ namespace detail
 //! @param[in] allocation_sizes
 //!   Sizes in bytes of device allocations needed
 template <int NumAllocations>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t alias_temporaries(
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cudaError_t alias_temporaries(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   void* (&allocations)[NumAllocations],

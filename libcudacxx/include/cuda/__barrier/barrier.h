@@ -36,6 +36,9 @@ class barrier : public ::cuda::std::__barrier_base<_CompletionF, _Sco>
   static_assert(_Sco != thread_scope_cluster, "cuda::barrier does not support thread_scope_cluster");
 
 public:
+  //! @brief The thread scope of the barrier.
+  static constexpr thread_scope scope = _Sco;
+
   _CCCL_HIDE_FROM_ABI barrier() = default;
 
   barrier(const barrier&)            = delete;

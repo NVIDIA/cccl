@@ -14,4 +14,4 @@
 #endif // no system header
 
 // this system inherits sort
-#include <thrust/system/detail/sequential/sort.h>
+#include <thrust/system/detail/sequential/sort.h> // IWYU pragma: export

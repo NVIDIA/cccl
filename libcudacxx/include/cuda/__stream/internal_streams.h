@@ -37,7 +37,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief internal stream used for memory allocations, no real blocking work
 //! should ever be pushed into it
-inline ::cuda::stream_ref __cccl_allocation_stream() noexcept
+_CCCL_HOST_API inline ::cuda::stream_ref __cccl_allocation_stream() noexcept
 {
   // Intentionally leak the stream here to avoid stream destruction when the program exits, which is not guaraneed to
   // work.

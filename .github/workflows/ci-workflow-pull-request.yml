@@ -50,7 +50,6 @@ jobs:
       sass_matrix: ${{ steps.build-sass-matrix.outputs.sass_matrix }}
       vdc_enabled: ${{ steps.export-flags.outputs.vdc_enabled }}
       docs_enabled: ${{ steps.export-flags.outputs.docs_enabled }}
-      branch_notes_dirt: ${{ steps.branch-notes-dirt.outputs.branch_notes_dirt }}
     steps:
       - name: Export workflow flags
         id: export-flags
@@ -173,33 +172,6 @@ jobs:
             echo "sass_enabled=${sass_enabled}"
             echo "sass_matrix=${sass_matrix_json}"
           } >> "${GITHUB_OUTPUT}"
-      - name: Detect .branch_notes changes
-        id: branch-notes-dirt
-        env:
-          BASE_SHA: ${{ steps.export-pr-info.outputs.base_sha }}
-          merge_base_sha: ${{ steps.export-pr-info.outputs.merge_base_sha }}
-        run: |
-          if [[ -z "${BASE_SHA}" ]]; then
-            echo "branch_notes_dirt=" >> "${GITHUB_OUTPUT}"
-            exit 0
-          fi
-
-          echo "Head SHA: ${GITHUB_SHA}"
-          echo "PR Base SHA: ${BASE_SHA}"
-          echo "Merge Base SHA: ${merge_base_sha}"
-
-          # Only diff .branch_notes if it already exists at the merge base.
-          if git cat-file -e "${merge_base_sha}:.branch_notes" 2>/dev/null; then
-            branch_notes_dirt=$(git diff --name-only "${merge_base_sha}" "${GITHUB_SHA}" -- ".branch_notes")
-          else
-            branch_notes_dirt=""
-          fi
-
-          {
-            echo "branch_notes_dirt<<EOF"
-            echo "${branch_notes_dirt}"
-            echo "EOF"
-          } >> "${GITHUB_OUTPUT}"
       - name: Build workflow
         # Skip building the matrix when disabled, but still gather PR info for downstream jobs
         if: steps.export-flags.outputs.matrix_enabled == 'true'
@@ -296,6 +268,8 @@ jobs:
 
   verify-workflow:
     name: Verify and summarize workflow results
+    outputs:
+      pr_comment: ${{ steps.check-workflow.outputs.pr_comment }}
     if: >-
       ${{
         always() &&
@@ -311,7 +285,6 @@ jobs:
     permissions:
       actions: read
       contents: read
-      pull-requests: write # Posts a comment back to the PR.
     runs-on: linux-amd64-cpu4
     steps:
       - name: Checkout repo
@@ -324,7 +297,6 @@ jobs:
         uses: ./.github/actions/workflow-results
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          pr_number: ${{ needs.build-workflow.outputs.pr_number }}
 
   verify-devcontainers:
     name: Verify Dev Containers
@@ -596,8 +568,6 @@ jobs:
 
       - name: Render the comment
         id: compose
-        env:
-          CHECK_RUN_ID: ${{ job.check_run_id }}
         run: |
           # download-artifact puts the artifact of each matrix job into its own
           # directory under sass-comment, named after the artifact:
@@ -630,7 +600,7 @@ jobs:
 
           python3 ci/sass/render_report.py "${inputs[@]}" --output "${comment_path}"
 
-          echo "<!-- sass-diff-CHECK_RUN_ID:${CHECK_RUN_ID} -->" >> "${comment_path}"
+          echo "<!-- sass-diff-GITHUB_SHA:${GITHUB_SHA} -->" >> "${comment_path}"
 
           cat "${comment_path}" >> "${GITHUB_STEP_SUMMARY}"
           echo "SASS outcome: ${outcome}."
@@ -765,15 +735,6 @@ jobs:
             status="failed"
           fi
 
-          branch_notes_dirt="${{ needs.build-workflow.outputs.branch_notes_dirt }}"
-          branch_notes_dirt_trimmed=$(printf '%s' "${branch_notes_dirt}" | tr -d '\n' | tr -d ' ')
-          if [[ -n "${branch_notes_dirt_trimmed}" ]]; then
-            echo "::error::The .branch_notes directory was modified in this PR. Keep local notes there only; reset it before merging by running './.branch_notes/reset.sh'."
-            echo "Changed files:"
-            printf '%s\n' "${branch_notes_dirt}"
-            status="failed"
-          fi
-
           if [[ "$status" != "success" ]]; then
             exit 1
           fi
@@ -806,7 +767,6 @@ jobs:
     timeout-minutes: 30
     outputs:
       github_comment: ${{ steps.render-github-comment.outputs.content }}
-      pr_number: ${{ steps.pull-request.outputs.pr_number }}
     steps:
       - name: Check out CCCL
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -855,25 +815,35 @@ jobs:
           test -s "${SUMMARY_FILE}"
           cat "${SUMMARY_FILE}" >> "${GITHUB_STEP_SUMMARY}"
 
-  publish-failure-analysis:
-    name: Add failure analysis to CI results
+  publish-ci-results:
+    name: Publish CI results
     if: >-
       ${{
         always() &&
         !cancelled() &&
-        needs.analyze-failures.outputs.github_comment != '' &&
-        needs.analyze-failures.outputs.pr_number != ''
+        github.repository == 'NVIDIA/cccl' &&
+        needs.build-workflow.outputs.pr_number != ''
       }}
-    needs: analyze-failures
+    needs:
+      - build-workflow
+      - verify-workflow
+      - analyze-failures
     permissions:
       pull-requests: write
     runs-on: ubuntu-slim
+    continue-on-error: true # Reporting failures must not fail otherwise successful CI.
     steps:
-      - name: Append to CI Workflow Results
+      # This is the sole owner of the PR comment. Publish even without analysis
+      # so successful partial reruns clear the previous failure report.
+      - name: Update CI Workflow Results
         uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           header: ci-results
-          number: ${{ needs.analyze-failures.outputs.pr_number }}
-          message: ${{ needs.analyze-failures.outputs.github_comment }}
-          append: true
+          number: ${{ needs.build-workflow.outputs.pr_number }}
+          message: |
+            ${{ needs.verify-workflow.outputs.pr_comment || format('## [CI Workflow Results](https://github.com/{0}/actions/runs/{1}/attempts/{2})', github.repository, github.run_id, github.run_attempt) }}
+
+            ${{ needs.analyze-failures.result != 'skipped' && (needs.analyze-failures.outputs.github_comment || '**AI failure analysis unavailable.** See the workflow run for details.') || '' }}
+          hide_and_recreate: true
+          hide_classify: "OUTDATED"

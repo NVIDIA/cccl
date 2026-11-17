@@ -20,7 +20,6 @@
 
 #include <thrust/detail/function.h>
 #include <thrust/detail/static_assert.h>
-#include <thrust/for_each.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/system/omp/detail/pragma_omp.h>

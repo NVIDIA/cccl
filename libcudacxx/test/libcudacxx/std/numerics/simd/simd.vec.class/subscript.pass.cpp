@@ -19,6 +19,7 @@
 
 #include <cuda/std/__simd_>
 #include <cuda/std/cassert>
+#include <cuda/std/cstddef>
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"
@@ -30,12 +31,14 @@
 template <typename T, int N>
 TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
-  using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
+  using Vec       = simd::basic_vec<T, simd::fixed_size<N>>;
+  using Subscript = typename Vec::value_type (Vec::*)(cuda::std::ptrdiff_t) const noexcept;
   Vec vec(T{7});
 
   static_assert(cuda::std::is_same_v<decltype(vec[0]), typename Vec::value_type>);
   static_assert(noexcept(vec[0]));
-  static_assert(is_const_member_function_v<decltype(&Vec::operator[])>);
+  // static_cast<Subscript>() is required by NVCC 12.x-13.x
+  static_assert(is_const_member_function_v<decltype(static_cast<Subscript>(&Vec::operator[]))>);
   unused(vec);
 
   Vec iota = make_iota_vec<T, N>();

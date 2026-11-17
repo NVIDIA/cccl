@@ -22,6 +22,7 @@
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_discontinuity.cuh>
 #include <cub/block/block_load.cuh>
+#include <cub/block/block_raking_layout.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/uninitialized.cuh>
@@ -129,6 +130,16 @@ struct AgentUniqueByKey
   static constexpr int ITEMS_PER_THREAD = AgentUniqueByKeyPolicyT::ITEMS_PER_THREAD;
   static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
 
+  // The head flagging, scan and scatter require the items in a blocked arrangement
+  static_assert(AgentUniqueByKeyPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
+                "UniqueByKeyPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since the selection requires a "
+                "blocked arrangement");
+  static_assert(
+    (AgentUniqueByKeyPolicyT::SCAN_ALGORITHM == BLOCK_SCAN_WARP_SCANS && BLOCK_THREADS % detail::warp_threads == 0)
+      || BlockRakingLayout<int, BLOCK_THREADS>::RAKING_THREADS == detail::warp_threads,
+    "UniqueByKeyPolicy: the decoupled look-back needs a full warp to enter the block-scan prefix callback: with warp "
+    "scans threads_per_block must be a multiple of 32, otherwise the raking layout must yield 32 raking threads");
+
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for keys
   using WrappedKeyInputIteratorT = ::cuda::std::conditional_t<
     ::cuda::std::is_pointer_v<KeyInputIteratorT>,
@@ -208,7 +219,7 @@ struct AgentUniqueByKey
   //---------------------------------------------------------------------
 
   // Constructor
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentUniqueByKey(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentUniqueByKey(
     TempStorage& temp_storage_,
     WrappedKeyInputIteratorT d_keys_in_,
     WrappedValueInputIteratorT d_values_in_,
@@ -234,11 +245,11 @@ struct AgentUniqueByKey
   struct ValueTagT
   {};
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE KeyExchangeT& GetShared(KeyTagT)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE KeyExchangeT& GetShared(KeyTagT)
   {
     return temp_storage.shared_keys.Alias();
   }
-  _CCCL_DEVICE _CCCL_FORCEINLINE ValueExchangeT& GetShared(ValueTagT)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE ValueExchangeT& GetShared(ValueTagT)
   {
     return temp_storage.shared_values.Alias();
   }
@@ -247,7 +258,7 @@ struct AgentUniqueByKey
   // Scatter utility methods
   //---------------------------------------------------------------------
   template <typename Tag, typename OutputIt, typename T>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Scatter(
     Tag tag,
     OutputIt items_out,
     T (&items)[ITEMS_PER_THREAD],
@@ -300,7 +311,7 @@ struct AgentUniqueByKey
    * @return The running count of selections (including this tile)
    */
   template <bool IsLastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE OffsetT
   ConsumeFirstTile(int num_tile_items, OffsetT tile_offset, ScanTileStateT& tile_state)
   {
     KeyT keys[ITEMS_PER_THREAD];
@@ -342,7 +353,7 @@ struct AgentUniqueByKey
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set selection_flags for out-of-bounds items
-      if ((IsLastTile) && (OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM >= num_tile_items))
+      if (IsLastTile && (OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM >= num_tile_items))
       {
         selection_flags[ITEM] = 1;
       }
@@ -418,7 +429,7 @@ struct AgentUniqueByKey
    * @return Returns the running count of selections (including this tile)
    */
   template <bool IsLastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE OffsetT
   ConsumeSubsequentTile(int num_tile_items, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state)
   {
     KeyT keys[ITEMS_PER_THREAD];
@@ -462,7 +473,7 @@ struct AgentUniqueByKey
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set selection_flags for out-of-bounds items
-      if ((IsLastTile) && (OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM >= num_tile_items))
+      if (IsLastTile && (OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM >= num_tile_items))
       {
         selection_flags[ITEM] = 1;
       }
@@ -531,7 +542,7 @@ struct AgentUniqueByKey
    *   Global tile state descriptor
    */
   template <bool IsLastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE OffsetT
   ConsumeTile(int num_tile_items, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state)
   {
     OffsetT num_selections;
@@ -564,7 +575,7 @@ struct AgentUniqueByKey
    *
    */
   template <typename NumSelectedIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ConsumeRange(int num_tiles, ScanTileStateT& tile_state, NumSelectedIteratorT d_num_selected_out)
   {
     // Blocks are launched in increasing order, so just assign one tile per block
