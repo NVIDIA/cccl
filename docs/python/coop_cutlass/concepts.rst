@@ -65,8 +65,8 @@ Thread groups
 -------------
 
 The first argument of a primitive names the threads that make the call
-together. One ``sum`` works on a block, on each warp, and on each group of
-eight lanes, as the threads of a warp are called:
+together. Here one ``sum`` works on a block, on each warp, and on each group
+of eight lanes. A lane is one thread of a warp.
 
 .. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
    :language: python
@@ -104,10 +104,10 @@ registers. ``load`` returns one in each thread:
    ``values = coop.load(block, source, items_per_thread=4)`` on a block of
    128 threads.
 
-A scan or a sort reads a payload and returns a new one, a reduction returns
-one value, and ``store`` writes a payload to memory. A kernel can also fill
-a payload itself. This kernel squares the items it loaded and sums the
-squares:
+A block scan or a sort reads a payload and returns a new one, ``reduce`` and
+``sum`` return one value, and ``store`` writes a payload to memory. A kernel
+can also fill a payload itself. This kernel squares the items it loaded and
+sums the squares:
 
 .. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
    :language: python
@@ -145,25 +145,26 @@ because their default algorithm uses no scratch:
    :width: 100%
 
    Scratch for the three calls above, to scale, on a block of 128 threads
-   with four ``Int32`` items each: 4,784 bytes left out, 2,064 shared, 4,784
-   exclusive. Sizes vary with the block shape, the element type and the CUB
-   version.
+   with four ``Int32`` items each: 4,784 bytes with ``temp_storage`` left
+   out, 2,064 with a shared ``TempStorage``, 4,784 with an exclusive one.
+   Sizes vary with the block shape, the element type and the CUB version.
 
 The kernel above is the middle row: one region the size of its largest call.
-Without the three ``temp_storage`` arguments it is the top row.
+Its ``auto_sync=True`` adds a barrier after each call. Without it you place
+the barriers yourself with ``scratch.sync()``. Without the three
+``temp_storage`` arguments the kernel is the top row.
 ``sharing="exclusive"`` gives the bottom row, where no call reuses another
-call's bytes, so no barrier is needed between them. ``auto_sync=True`` keeps
-a barrier after each call. Without it you place the barriers yourself with
-``scratch.sync()``. :ref:`TempStorage <coop-temp-storage>` in the API
-reference shows how, and covers ``reserve`` and ``release``.
+call's bytes, so no barrier is needed between them.
+:ref:`TempStorage <coop-temp-storage>` in the API reference shows each of
+these, and covers ``reserve`` and ``release``.
 
 .. _coop-concepts-calling-conventions:
 
 Calling conventions
 -------------------
 
-In a signature, the group and the operands come before ``/`` and are passed
-by position. Controls come after ``*`` and are passed by keyword:
+The group and the operands are passed by position, and controls by keyword.
+Signatures in the API reference mark the split with ``/`` and ``*``:
 
 .. code-block:: python
 
@@ -192,10 +193,10 @@ reads the first 45, and every thread of the group still calls ``load``.
 
 The count is the same for every thread of the group. For Load and Store it
 is in elements of the group's :term:`tile`, from zero to the tile's size.
-``reduce``, ``sum`` and a warp scan take ``valid_items`` with one value per
-thread, and count threads, from one to the group's size. A Python count
-outside the range is rejected when the kernel is compiled. A runtime count
-outside it traps on the device.
+For ``reduce``, ``sum`` and a warp scan, each thread passes a scalar, such
+as ``values[0]``, and the count is in threads, from one to the group's
+size. A Python count outside the range is rejected when the kernel is
+compiled. A runtime count outside it traps on the device.
 
 .. _coop-concepts-layouts:
 .. _exchange-semantics:

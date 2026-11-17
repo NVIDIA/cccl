@@ -16,10 +16,10 @@ returns one payload in each thread of the group:
    ``values = coop.load(block, source, items_per_thread=4)`` on a block of
    128 threads.
 
-A scan or a sort reads a payload and returns a new one, a reduction returns
-one value, and :func:`~cuda.coop.cutlass.store` writes a payload to memory.
-A kernel can also fill a payload with values it computes. This kernel
-squares the items it loaded and sums the squares over the block:
+A block scan or a sort reads a payload and returns a new one, ``reduce`` and
+``sum`` return one value, and :func:`~cuda.coop.cutlass.store` writes a
+payload to memory. A kernel can also fill a payload with values it computes.
+This kernel squares the items it loaded and sums the squares over the block:
 
 `Full example and test on GitHub
 <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
@@ -40,7 +40,7 @@ squares the items it loaded and sums the squares over the block:
   primitive reads the payload.
 * A loaded payload has the element type of the memory it came from. For a
   payload the kernel fills, a primitive takes the type from the items,
-  which must all be the same. Wrap an expression in a CUTLASS type, as in
+  which must all have the same type. Wrap an expression in a CUTLASS type, as in
   ``cutlass.Int32(x)``, to give an item that type.
 * A primitive that returns a payload returns a new one and leaves its input
   unchanged. Two arguments are written in place: ``aggregate_output`` of a
@@ -48,9 +48,9 @@ squares the items it loaded and sums the squares over the block:
 
 Items can be ``Int8`` to ``Int64``, ``Uint8`` to ``Uint64``, ``Float32`` or
 ``Float64``. Some primitives accept fewer types, and their entries say
-which. If memory has a different element type than its data, such as signed
-where the values are unsigned, view it with ``cute.recast_tensor`` before
-``load`` or ``store``.
+which. If the values in memory have another type than the memory's element
+type, such as unsigned values behind an ``Int32`` pointer, view the memory
+with ``cute.recast_tensor`` before ``load`` or ``store``.
 
 :meth:`~cuda.coop.cutlass.ThreadData.from_fn` fills a payload from a Python
 function of the index. It replaces the loop in the kernel above:
