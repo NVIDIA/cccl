@@ -24,8 +24,7 @@
 #include <cuda/__cmath/min_max.h>
 #include <cuda/__functional/minimum_maximum_common.h>
 #include <cuda/std/__type_traits/common_type.h>
-#include <cuda/std/__type_traits/is_extended_floating_point.h>
-#include <cuda/std/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/is_extended_arithmetic.h>
 #include <cuda/std/__utility/ctad_support.h>
 
 #include <cuda/std/__cccl/prologue.h>
