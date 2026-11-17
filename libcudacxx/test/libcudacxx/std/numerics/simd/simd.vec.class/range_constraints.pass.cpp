@@ -82,8 +82,7 @@ struct vector_wrapper
 
 TEST_FUNC constexpr void test_participation()
 {
-  using Vec  = simd::vec<int, 4>;
-  using Mask = Vec::mask_type;
+  using Vec = simd::vec<int, 4>;
 
   // A non-static vector member must not be mistaken for a constexpr wrapper's static value.
   static_assert(cuda::std::is_constructible_v<Vec, vector_wrapper>);
