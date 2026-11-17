@@ -161,11 +161,11 @@ public:
   }
 
   // Those additional volatile overloads are meant to help with reductions in thrust
-  [[nodiscard]] _CCCL_API inline value_type real() const volatile
+  [[nodiscard]] _CCCL_API value_type real() const volatile
   {
     return __re_;
   }
-  [[nodiscard]] _CCCL_API inline value_type imag() const volatile
+  [[nodiscard]] _CCCL_API value_type imag() const volatile
   {
     return __im_;
   }
@@ -643,23 +643,23 @@ struct __cccl_complex_overload_traits
 template <class _Tp>
 struct __cccl_complex_overload_traits<_Tp, true, false>
 {
-  using _ValueType   = double;
-  using _ComplexType = complex<double>;
+  using _ValueType _CCCL_NODEBUG   = double;
+  using _ComplexType _CCCL_NODEBUG = complex<double>;
 };
 
 // Floating point types
 template <class _Tp>
 struct __cccl_complex_overload_traits<_Tp, false, true>
 {
-  using _ValueType   = _Tp;
-  using _ComplexType = complex<_Tp>;
+  using _ValueType _CCCL_NODEBUG   = _Tp;
+  using _ComplexType _CCCL_NODEBUG = complex<_Tp>;
 };
 
 template <class _Tp>
-using __cccl_complex_value_type = typename __cccl_complex_overload_traits<_Tp>::_ValueType;
+using __cccl_complex_value_type _CCCL_NODEBUG = typename __cccl_complex_overload_traits<_Tp>::_ValueType;
 
 template <class _Tp>
-using __cccl_complex_complex_type = typename __cccl_complex_overload_traits<_Tp>::_ComplexType;
+using __cccl_complex_complex_type _CCCL_NODEBUG = typename __cccl_complex_overload_traits<_Tp>::_ComplexType;
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
@@ -686,7 +686,8 @@ template <class _Tp>
 
 #if _CCCL_HOSTED()
 template <class _Tp, class _CharT, class _Traits>
-::std::basic_istream<_CharT, _Traits>& operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<_Tp>& __x)
+_CCCL_HOST_API ::std::basic_istream<_CharT, _Traits>&
+operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<_Tp>& __x)
 {
   ::std::complex<_Tp> __temp;
   __is >> __temp;
@@ -695,7 +696,8 @@ template <class _Tp, class _CharT, class _Traits>
 }
 
 template <class _Tp, class _CharT, class _Traits>
-::std::basic_ostream<_CharT, _Traits>& operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<_Tp>& __x)
+_CCCL_HOST_API ::std::basic_ostream<_CharT, _Traits>&
+operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<_Tp>& __x)
 {
   return __os << static_cast<::std::complex<_Tp>>(__x);
 }

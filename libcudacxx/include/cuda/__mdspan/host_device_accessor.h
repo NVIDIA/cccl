@@ -93,7 +93,7 @@ class __host_accessor : public _Accessor
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
                 "cuda::__host_accessor/cuda::__device_accessor/cuda::__managed_accessor cannot be nested");
 
-  using __data_handle_type = typename _Accessor::data_handle_type;
+  using __data_handle_type _CCCL_NODEBUG = typename _Accessor::data_handle_type;
 
   static constexpr bool __is_access_noexcept =
     noexcept(::cuda::std::declval<_Accessor>().access(::cuda::std::declval<__data_handle_type>(), 0));
@@ -237,7 +237,7 @@ class __device_accessor : public _Accessor
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
                 "cuda::__host_accessor/cuda::__device_accessor/cuda::__managed_accessor cannot be nested");
 
-  using __data_handle_type = typename _Accessor::data_handle_type;
+  using __data_handle_type _CCCL_NODEBUG = typename _Accessor::data_handle_type;
 
   static constexpr bool __is_access_noexcept =
     noexcept(::cuda::std::declval<_Accessor>().access(::cuda::std::declval<__data_handle_type>(), 0));
@@ -372,7 +372,7 @@ class __managed_accessor : public _Accessor
   static_assert(!is_host_device_managed_accessor_v<_Accessor>,
                 "cuda::__host_accessor/cuda::__device_accessor/cuda::__managed_accessor cannot be nested");
 
-  using __data_handle_type = typename _Accessor::data_handle_type;
+  using __data_handle_type _CCCL_NODEBUG = typename _Accessor::data_handle_type;
 
   static constexpr bool __is_access_noexcept =
     noexcept(::cuda::std::declval<_Accessor>().access(::cuda::std::declval<__data_handle_type>(), 0));

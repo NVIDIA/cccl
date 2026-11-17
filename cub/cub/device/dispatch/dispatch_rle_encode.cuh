@@ -92,7 +92,19 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires rle_encode_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_block))
+__launch_bounds__(int(
+  reduce_by_key::make_vsmem_helper<
+    device_policy_getter<policy_selector_adapter<PolicySelector>, _CUB::detail::current_tuning_cc().get()>,
+    KeysInputIteratorT,
+    UniqueOutputIteratorT,
+    ValuesInputIteratorT,
+    AggregatesOutputIteratorT,
+    NumRunsOutputIteratorT,
+    EqualityOpT,
+    ReductionOpT,
+    OffsetT,
+    AccumT,
+    StreamingContextT>::type::agent_policy_t::BLOCK_THREADS))
   _CCCL_KERNEL_ATTRIBUTES void DeviceRleEncodeStreamingKernel(
     const KeysInputIteratorT d_keys_in,
     const UniqueOutputIteratorT d_unique_out,
@@ -107,7 +119,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
     const StreamingContextT streaming_context,
     vsmem_t vsmem)
 {
-  static constexpr RleEncodePolicy policy = current_policy<PolicySelector>();
+  static constexpr RleEncodePolicy policy = _CUB::detail::current_policy<PolicySelector>();
   // this kernel is launched only from the call path whose lookahead branch is compile-time viable, so on
   // architectures whose policy selects lookahead it can never run and compiles to an empty stub
   if constexpr (policy.algorithm != RleAlgorithm::lookback)
@@ -116,19 +128,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
   }
   else
   {
-    using AgentReduceByKeyPolicyT = agent_reduce_by_key_policy<
-      policy.lookback.threads_per_block,
-      policy.lookback.items_per_thread,
-      policy.lookback.load_algorithm,
-      policy.lookback.load_modifier,
-      policy.lookback.scan_algorithm,
-      delay_constructor_t<policy.lookback.lookback_delay.kind,
-                          policy.lookback.lookback_delay.delay,
-                          policy.lookback.lookback_delay.l2_write_latency>>;
-
-    using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<
-      AgentReduceByKeyPolicyT,
-      reduce_by_key::AgentReduceByKey,
+    using vsmem_helper_t = typename reduce_by_key::make_vsmem_helper<
+      device_policy_getter<policy_selector_adapter<PolicySelector>, _CUB::detail::current_tuning_cc().get()>,
       KeysInputIteratorT,
       UniqueOutputIteratorT,
       ValuesInputIteratorT,
@@ -138,7 +139,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
       ReductionOpT,
       OffsetT,
       AccumT,
-      StreamingContextT>;
+      StreamingContextT>::type;
 
     using agent_reduce_by_key_t = typename vsmem_helper_t::agent_t;
 
@@ -192,7 +193,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_streaming(
 {
   using length_t                 = cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>;
   using lengths_input_iterator_t = ::cuda::constant_iterator<length_t, OffsetT>;
-  return detail::reduce_by_key::dispatch_streaming(
+  return _CUB::detail::reduce_by_key::dispatch_streaming(
     d_temp_storage,
     temp_storage_bytes,
     d_in,
@@ -291,7 +292,7 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
   void* allocations[1]       = {};
   size_t allocation_sizes[1] = {static_cast<size_t>(num_tiles) * sizeof(tile_partial_state_t)};
   if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -356,13 +357,13 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
     {
       return error;
     }
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
   }
   {
-    const int block_dim = num_total_threads(lookahead_policy);
+    const int block_dim = _CUB::detail::rle::encode::num_total_threads(lookahead_policy);
     _CUB_LOG_KERNEL_LAUNCH("DeviceRleEncodeLookaheadKernel", num_tiles, 1, 1, block_dim, dyn_smem_bytes, stream, "");
     if (const auto error = CubDebug(
           launcher_factory(num_tiles,
@@ -388,7 +389,7 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
     {
       return error;
     }
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -437,12 +438,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     {
       return error;
     }
-    return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
-      detail::log_dispatch("DeviceRunLengthEncode::Encode", cc, policy_getter());
+    return _CUB::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
+      _CUB::detail::log_dispatch("DeviceRunLengthEncode::Encode", cc, policy_getter());
 
       if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == RleAlgorithm::lookahead)
       {
-        return invoke_lookahead(
+        return _CUB::detail::rle::encode::invoke_lookahead(
           kernel_source,
           policy_getter().lookahead,
           d_temp_storage,
@@ -457,7 +458,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       }
       else
       {
-        return invoke_streaming<PolicySelector, streaming_kernel_source<PolicySelector>>(
+        return _CUB::detail::rle::encode::invoke_streaming<PolicySelector, streaming_kernel_source<PolicySelector>>(
           d_temp_storage, temp_storage_bytes, d_in, d_unique_out, d_counts_out, d_num_runs_out, num_items, stream);
       }
     });
@@ -465,7 +466,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   else
 #endif // __cccl_ptx_isa >= 920
   {
-    return invoke_streaming<PolicySelector>(
+    return _CUB::detail::rle::encode::invoke_streaming<PolicySelector>(
       d_temp_storage, temp_storage_bytes, d_in, d_unique_out, d_counts_out, d_num_runs_out, num_items, stream);
   }
 }

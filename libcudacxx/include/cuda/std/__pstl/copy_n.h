@@ -49,6 +49,8 @@ _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_t
 _CCCL_HOST_API _OutputIterator
 copy_n([[maybe_unused]] const _Policy& __policy, _InputIterator __first, _Size __count, _OutputIterator __result)
 {
+  static_assert(__is_convertible_to_integral_v<_Size>, "_Size must be convertible to an integral");
+
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__copy_n, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)

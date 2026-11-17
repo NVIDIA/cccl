@@ -23,7 +23,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(remove.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/remove.h>
 #  include <thrust/system/cuda/detail/remove.h>
 #  include <thrust/system/omp/detail/remove.h>
@@ -34,7 +34,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE ForwardIterator remove(
+_CCCL_HOST_DEVICE_API ForwardIterator remove(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -47,7 +47,7 @@ _CCCL_HOST_DEVICE ForwardIterator remove(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
-_CCCL_HOST_DEVICE OutputIterator remove_copy(
+_CCCL_HOST_DEVICE_API OutputIterator remove_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -61,7 +61,7 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator remove_if(
+_CCCL_HOST_DEVICE_API ForwardIterator remove_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -74,7 +74,7 @@ _CCCL_HOST_DEVICE ForwardIterator remove_if(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator remove_copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator remove_copy_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -88,7 +88,7 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator remove_if(
+_CCCL_HOST_DEVICE_API ForwardIterator remove_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -106,7 +106,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator remove_copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator remove_copy_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -121,7 +121,7 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
 } // end remove_copy_if()
 
 template <typename ForwardIterator, typename T>
-ForwardIterator remove(ForwardIterator first, ForwardIterator last, const T& value)
+_CCCL_HOST_API ForwardIterator remove(ForwardIterator first, ForwardIterator last, const T& value)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::remove");
   using thrust::system::detail::generic::select_system;
@@ -134,7 +134,7 @@ ForwardIterator remove(ForwardIterator first, ForwardIterator last, const T& val
 } // end remove()
 
 template <typename InputIterator, typename OutputIterator, typename T>
-OutputIterator remove_copy(InputIterator first, InputIterator last, OutputIterator result, const T& value)
+_CCCL_HOST_API OutputIterator remove_copy(InputIterator first, InputIterator last, OutputIterator result, const T& value)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::remove_copy");
   using thrust::system::detail::generic::select_system;
@@ -149,7 +149,7 @@ OutputIterator remove_copy(InputIterator first, InputIterator last, OutputIterat
 } // end remove_copy()
 
 template <typename ForwardIterator, typename Predicate>
-ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, Predicate pred)
+_CCCL_HOST_API ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::remove_if");
   using thrust::system::detail::generic::select_system;
@@ -162,7 +162,8 @@ ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, Predicate
 } // end remove_if()
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
-ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred)
+_CCCL_HOST_API ForwardIterator
+remove_if(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::remove_if");
   using thrust::system::detail::generic::select_system;
@@ -177,7 +178,8 @@ ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, InputIter
 } // end remove_if()
 
 template <typename InputIterator, typename OutputIterator, typename Predicate>
-OutputIterator remove_copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred)
+_CCCL_HOST_API OutputIterator
+remove_copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::remove_copy_if");
   using thrust::system::detail::generic::select_system;
@@ -192,7 +194,7 @@ OutputIterator remove_copy_if(InputIterator first, InputIterator last, OutputIte
 } // end remove_copy_if()
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 remove_copy_if(InputIterator1 first, InputIterator1 last, InputIterator2 stencil, OutputIterator result, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::remove_copy_if");

@@ -14,10 +14,7 @@
 #endif // no system header
 
 #include <thrust/detail/allocator_aware_execution_policy.h>
-#include <thrust/detail/type_traits.h>
-#include <thrust/iterator/detail/any_system_tag.h>
 #include <thrust/system/cpp/detail/execution_policy.h>
-#include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -46,7 +43,7 @@ struct execution_policy : cpp::execution_policy<Derived>
   using tag_type = tag;
 
   // allow conversion to tag when it is not a successor
-  operator tag() const
+  _CCCL_HOST_API operator tag() const
   {
     return tag();
   }
@@ -61,13 +58,13 @@ struct par_t
 // which we arbitrarily define in the omp backend
 
 template <typename System1, typename System2>
-_CCCL_HOST_DEVICE System1 select_system(execution_policy<System1> s, tbb::execution_policy<System2>)
+_CCCL_HOST_DEVICE_API System1 select_system(execution_policy<System1> s, tbb::execution_policy<System2>)
 {
   return thrust::detail::derived_cast(s);
 }
 
 template <typename System1, typename System2>
-_CCCL_HOST_DEVICE System2 select_system(tbb::execution_policy<System1>, execution_policy<System2> s)
+_CCCL_HOST_DEVICE_API System2 select_system(tbb::execution_policy<System1>, execution_policy<System2> s)
 {
   return thrust::detail::derived_cast(s);
 }

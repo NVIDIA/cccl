@@ -42,7 +42,6 @@ public:
 
   class param_type
   {
-  private:
     result_type __a_ = result_type{1};
     result_type __b_ = result_type{1};
 
@@ -83,7 +82,7 @@ private:
 
 public:
   // constructor and reset functions
-  constexpr weibull_distribution() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr weibull_distribution() noexcept = default;
   _CCCL_HOST_DEVICE_API constexpr explicit weibull_distribution(
     result_type __a, result_type __b = result_type{1}) noexcept
       : __p_{param_type{__a, __b}}
@@ -149,7 +148,7 @@ public:
 
 #if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
-  friend ::std::basic_ostream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const weibull_distribution& __x)
   {
     using _Ostream = ::std::basic_ostream<_CharT, _Traits>;
@@ -166,7 +165,7 @@ public:
   }
 
   template <class _CharT, class _Traits>
-  friend ::std::basic_istream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is, weibull_distribution& __x)
   {
     using _Istream = ::std::basic_istream<_CharT, _Traits>;

@@ -38,7 +38,7 @@ class __cccl_fp
 {
   static_assert(_Fmt != __fp_format::__invalid);
 
-  using __storage_type = __fp_storage_t<_Fmt>;
+  using __storage_type _CCCL_NODEBUG = __fp_storage_t<_Fmt>;
 
   __storage_type __storage_;
 
@@ -117,6 +117,11 @@ _CCCL_REQUIRES(__fp_is_signed_v<_Fmt>)
 {
   return ::cuda::std::__fp_neg(__v);
 }
+
+// Prevent implicit conversions from enabling unary minus for unsigned formats.
+_CCCL_TEMPLATE(__fp_format _Fmt)
+_CCCL_REQUIRES((!__fp_is_signed_v<_Fmt>) )
+[[nodiscard]] _CCCL_API constexpr __cccl_fp<_Fmt> operator-(__cccl_fp<_Fmt>) noexcept = delete;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

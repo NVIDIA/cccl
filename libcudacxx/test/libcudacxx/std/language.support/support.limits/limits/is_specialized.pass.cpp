@@ -78,6 +78,9 @@ int main(int, char**)
 #if _CCCL_HAS_NVFP8_E5M2()
   test<__nv_fp8_e5m2>();
 #endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_UE5M3()
+  test<__nv_fp8_ue5m3>();
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E8M0()
   test<__nv_fp8_e8m0>();
 #endif // _CCCL_HAS_NVFP8_E8M0()

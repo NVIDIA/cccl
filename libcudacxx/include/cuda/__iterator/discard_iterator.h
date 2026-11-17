@@ -69,7 +69,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @endcode
 class discard_iterator
 {
-private:
   ::cuda::std::ptrdiff_t __index_ = 0;
 
 public:

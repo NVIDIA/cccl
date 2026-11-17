@@ -20,8 +20,6 @@
 
 #include <cub/config.cuh>
 
-#include <cub/detail/detect_cuda_runtime.cuh>
-
 #include <nv/target>
 
 /**

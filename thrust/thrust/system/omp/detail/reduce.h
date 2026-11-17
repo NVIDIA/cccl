@@ -19,6 +19,7 @@
 
 #include <thrust/detail/temporary_array.h>
 #include <thrust/iterator/iterator_traits.h>
+#include <thrust/system/detail/internal/decompose.h>
 #include <thrust/system/omp/detail/default_decomposition.h>
 #include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/system/omp/detail/reduce_intervals.h>

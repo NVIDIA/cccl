@@ -14,20 +14,18 @@
 #endif // no system header
 
 #include <cub/agent/single_pass_scan_operators.cuh>
-#include <cub/block/block_discontinuity.cuh>
-#include <cub/block/block_exchange.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
-#include <cub/block/block_store.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_device.cuh>
+#include <cub/thread/thread_load.cuh>
 
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -82,7 +80,7 @@ struct pair_pack_t
 {
   OffsetT x, y;
 
-  _CCCL_DEVICE pair_pack_t<OffsetT> operator+(const pair_pack_t<OffsetT>& other) const
+  _CCCL_DEVICE_API pair_pack_t<OffsetT> operator+(const pair_pack_t<OffsetT>& other) const
   {
     return {x + other.x, y + other.y};
   }
@@ -93,15 +91,15 @@ struct accumulator_pack_base_t
 {
   using pack_t = pair_pack_t<OffsetT>;
 
-  _CCCL_DEVICE static pack_t pack(OffsetT f, OffsetT s)
+  _CCCL_DEVICE_API static pack_t pack(OffsetT f, OffsetT s)
   {
     return {f, s};
   }
-  _CCCL_DEVICE static OffsetT first(pack_t packed)
+  _CCCL_DEVICE_API static OffsetT first(pack_t packed)
   {
     return packed.x;
   }
-  _CCCL_DEVICE static OffsetT second(pack_t packed)
+  _CCCL_DEVICE_API static OffsetT second(pack_t packed)
   {
     return packed.y;
   }
@@ -112,17 +110,17 @@ struct accumulator_pack_base_t<OffsetT, ::cuda::std::enable_if_t<sizeof(OffsetT)
 {
   using pack_t = uint64_t;
 
-  _CCCL_DEVICE static pack_t pack(OffsetT f, OffsetT s)
+  _CCCL_DEVICE_API static pack_t pack(OffsetT f, OffsetT s)
   {
     return (static_cast<pack_t>(f) << 32) | static_cast<pack_t>(s);
   }
 
-  _CCCL_DEVICE static OffsetT first(pack_t packed)
+  _CCCL_DEVICE_API static OffsetT first(pack_t packed)
   {
     return static_cast<OffsetT>(packed >> 32);
   }
 
-  _CCCL_DEVICE static OffsetT second(pack_t packed)
+  _CCCL_DEVICE_API static OffsetT second(pack_t packed)
   {
     return static_cast<OffsetT>(packed & 0xFFFFFFFF);
   }
@@ -134,17 +132,17 @@ struct accumulator_pack_t : accumulator_pack_base_t<OffsetT>
   using base = accumulator_pack_base_t<OffsetT>;
   using typename base::pack_t;
 
-  _CCCL_DEVICE static void subtract(pack_t& packed, OffsetT val)
+  _CCCL_DEVICE_API static void subtract(pack_t& packed, OffsetT val)
   {
     packed = base::pack(base::first(packed) - val, base::second(packed) - val);
   }
 
-  _CCCL_DEVICE static OffsetT sum(pack_t& packed)
+  _CCCL_DEVICE_API static OffsetT sum(pack_t& packed)
   {
     return base::first(packed) + base::second(packed);
   }
 
-  _CCCL_DEVICE static pack_t zero()
+  _CCCL_DEVICE_API static pack_t zero()
   {
     return {};
   }
@@ -187,6 +185,11 @@ struct AgentThreeWayPartition
   static constexpr int BLOCK_THREADS    = PolicyT::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD = PolicyT::ITEMS_PER_THREAD;
   static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
+
+  // The selection flagging, scan and scatter require the items in a blocked arrangement
+  static_assert(PolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
+                "ThreeWayPartitionLookbackPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED, since the "
+                "partitioning requires a blocked arrangement");
 
   using WrappedInputIteratorT =
     ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
@@ -251,7 +254,7 @@ struct AgentThreeWayPartition
   //---------------------------------------------------------------------
 
   // Constructor
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentThreeWayPartition(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentThreeWayPartition(
     TempStorage& temp_storage,
     InputIteratorT d_in,
     FirstOutputIteratorT d_first_part_out,
@@ -277,7 +280,7 @@ struct AgentThreeWayPartition
   //---------------------------------------------------------------------
 
   template <bool IsLastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Initialize(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Initialize(
     OffsetT num_tile_items, InputT (&items)[ITEMS_PER_THREAD], AccumPackT (&items_selection_flags)[ITEMS_PER_THREAD])
   {
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
@@ -295,7 +298,7 @@ struct AgentThreeWayPartition
   }
 
   template <bool IsLastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Scatter(
     InputT (&items)[ITEMS_PER_THREAD],
     AccumPackT (&items_selection_flags)[ITEMS_PER_THREAD],
     AccumPackT (&items_selection_indices)[ITEMS_PER_THREAD],
@@ -393,7 +396,7 @@ struct AgentThreeWayPartition
    * @param second_tile_state Global tile state descriptor
    */
   template <bool IsLastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ConsumeFirstTile(int num_tile_items, OffsetT tile_offset, ScanTileStateT& tile_state, AccumPackT& num_items_selected)
   {
     InputT items[ITEMS_PER_THREAD];
@@ -458,7 +461,7 @@ struct AgentThreeWayPartition
    * @param second_tile_state Global tile state descriptor
    */
   template <bool IsLastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeSubsequentTile(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ConsumeSubsequentTile(
     int num_tile_items, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state, AccumPackT& num_items_selected)
   {
     InputT items[ITEMS_PER_THREAD];
@@ -520,7 +523,7 @@ struct AgentThreeWayPartition
    * Process a tile of input
    */
   template <bool IsLastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ConsumeTile(int num_tile_items, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state, AccumPackT& accum)
   {
     if (tile_idx == 0)
@@ -552,7 +555,7 @@ struct AgentThreeWayPartition
    *   Output total number selection_flags
    */
   template <typename NumSelectedIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ConsumeRange(int num_tiles, ScanTileStateT& tile_state, NumSelectedIteratorT d_num_selected_out)
   {
     // Blocks are launched in increasing order, so just assign one tile per block

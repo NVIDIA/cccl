@@ -19,7 +19,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::tbb::detail
 {
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
-ForwardIterator
+_CCCL_HOST_API ForwardIterator
 remove_if(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Predicate pred)
 {
   // tbb prefers generic::remove_if to cpp::remove_if
@@ -27,7 +27,7 @@ remove_if(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardI
 }
 
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate>
-ForwardIterator remove_if(
+_CCCL_HOST_API ForwardIterator remove_if(
   execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -39,7 +39,7 @@ ForwardIterator remove_if(
 }
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
-OutputIterator remove_copy_if(
+_CCCL_HOST_API OutputIterator remove_copy_if(
   execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result, Predicate pred)
 {
   // tbb prefers generic::remove_copy_if to cpp::remove_copy_if
@@ -51,7 +51,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename Predicate>
-OutputIterator remove_copy_if(
+_CCCL_HOST_API OutputIterator remove_copy_if(
   execution_policy<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,

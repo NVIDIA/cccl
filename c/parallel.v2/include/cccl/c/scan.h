@@ -27,6 +27,7 @@ CCCL_C_EXTERN_C_BEGIN
 typedef struct cccl_device_scan_build_result_t
 {
   int cc;
+  int cudart_version; // CUDART_VERSION of the toolkit the payload was built against (0 = unknown)
   void* payload;
   size_t payload_size;
   void* jit_compiler;
@@ -66,6 +67,31 @@ CCCL_C_API CUresult cccl_device_scan_build_ex(
   const char* libcudacxx_path,
   const char* ctk_path,
   const cccl_build_config* config);
+
+// compile / load / serialize / deserialize: see the AoT contract in serialization.h.
+CCCL_C_API CUresult cccl_device_scan_compile(
+  cccl_device_scan_build_result_t* build_ptr,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  cccl_op_t op,
+  cccl_type_info init,
+  bool force_inclusive,
+  cccl_init_kind_t init_kind,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  const cccl_build_config* config);
+
+CCCL_C_API CUresult cccl_device_scan_load(cccl_device_scan_build_result_t* build_ptr, const char* cudart_path);
+
+CCCL_C_API CUresult
+cccl_device_scan_serialize(const cccl_device_scan_build_result_t* build_ptr, void** out_buf, size_t* out_size);
+
+CCCL_C_API CUresult
+cccl_device_scan_deserialize(cccl_device_scan_build_result_t* build_ptr, const void* buf, size_t size);
 
 CCCL_C_API CUresult cccl_device_exclusive_scan(
   cccl_device_scan_build_result_t build,

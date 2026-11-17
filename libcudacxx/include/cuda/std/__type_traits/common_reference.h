@@ -187,7 +187,7 @@ struct common_reference<>
 template <class _Tp>
 struct common_reference<_Tp>
 {
-  using type = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 // bullet 3 - sizeof...(T) == 2

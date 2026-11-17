@@ -17,6 +17,7 @@
 
 #include <cuda/__cmath/ilog.h>
 #include <cuda/__cmath/pow2.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/swap.h>
 
@@ -30,6 +31,24 @@ inline constexpr bool sort_unroll_default = false;
 #else // ^^^ CCCL_AVOID_SORT_UNROLL ^^^ / vvv !CCCL_AVOID_SORT_UNROLL vvv
 inline constexpr bool sort_unroll_default = true;
 #endif // !CCCL_AVOID_SORT_UNROLL
+
+// Unroll count for the sorting loops. nvcc does not always fully unroll a loop with `#pragma unroll N`, even if N
+// covers the trip count (e.g. N == ItemsPerThread), which leads to local memory spills for larger ItemsPerThread. An
+// unroll count the loop cannot reach behaves like a full unroll.
+// See: https://github.com/NVIDIA-dev/cccl_qa_agent_findings/issues/491
+// Clang, on the other hand, honors the explicit count, but an unreachable count makes it consume excessive memory and
+// time (>100 GB for the sort tests), so we use the trip count there.
+#if _CCCL_COMPILER(CLANG)
+template <bool Unroll, int ItemsPerThread>
+inline constexpr int sort_unroll_count = Unroll ? ItemsPerThread : 1;
+#elif !_CCCL_DEVICE_COMPILATION() && _CCCL_COMPILER(GCC, >=, 8)
+// #pragma GCC unroll supports values up to 65534
+template <bool Unroll, int ItemsPerThread>
+inline constexpr int sort_unroll_count = Unroll ? 65534 : 1;
+#else // ^^^ host GCC ^^^ / vvv other compilers vvv
+template <bool Unroll, int ItemsPerThread>
+inline constexpr int sort_unroll_count = Unroll ? ::cuda::std::numeric_limits<int>::max() : 1;
+#endif // ^^^ other compilers ^^^
 
 template <typename KeyT, typename ValueT, typename CompareOp>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
@@ -50,14 +69,14 @@ template <bool Unroll = sort_unroll_default, typename KeyT, typename ValueT, typ
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 stable_odd_even_sort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op)
 {
-  constexpr int unroll = Unroll ? ItemsPerThread : 1;
+  constexpr int unroll = sort_unroll_count<Unroll, ItemsPerThread>;
   _CCCL_PRAGMA_UNROLL(unroll)
   for (int i = 0; i < ItemsPerThread; ++i)
   {
-    _CCCL_PRAGMA_UNROLL(unroll) // unroll count is higher than loop count, but that's fine
+    _CCCL_PRAGMA_UNROLL(unroll)
     for (int j = i % 2; j < ItemsPerThread - 1; j += 2)
     {
-      cub::detail::compare_swap(keys[j], keys[j + 1], items[j], items[j + 1], compare_op);
+      _CUB::detail::compare_swap(keys[j], keys[j + 1], items[j], items[j + 1], compare_op);
     } // inner loop
   } // outer loop
 }
@@ -79,7 +98,7 @@ unstable_pairwise_sort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThr
       for (int lhs = group_offset; lhs < ItemsPerThread - group_size; lhs += 2 * group_size)
       {
         const int rhs = lhs + group_size;
-        cub::detail::compare_swap(keys[lhs], keys[rhs], items[lhs], items[rhs], compare_op);
+        _CUB::detail::compare_swap(keys[lhs], keys[rhs], items[lhs], items[rhs], compare_op);
       }
     }
   }
@@ -103,7 +122,7 @@ unstable_pairwise_sort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThr
           const int rhs = lhs + stride;
           if (rhs < ItemsPerThread)
           {
-            cub::detail::compare_swap(keys[lhs], keys[rhs], items[lhs], items[rhs], compare_op);
+            _CUB::detail::compare_swap(keys[lhs], keys[rhs], items[lhs], items[rhs], compare_op);
           }
         }
       }
@@ -145,7 +164,7 @@ template <typename KeyT, typename ValueT, typename CompareOp, int ItemsPerThread
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 StableOddEvenSort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op)
 {
-  return cub::detail::stable_odd_even_sort(keys, items, compare_op);
+  return _CUB::detail::stable_odd_even_sort(keys, items, compare_op);
 }
 
 //! @brief Sorts data using Ian Parberry's unstable pairwise sorting network.
@@ -171,7 +190,7 @@ template <typename KeyT, typename ValueT, typename CompareOp, int ItemsPerThread
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 UnstablePairwiseSort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op)
 {
-  return cub::detail::unstable_pairwise_sort(keys, items, compare_op);
+  return _CUB::detail::unstable_pairwise_sort(keys, items, compare_op);
 }
 
 CUB_NAMESPACE_END

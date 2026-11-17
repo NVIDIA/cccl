@@ -132,7 +132,7 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
   {
     return __first2 == __last2;
   }
-  else if (__first2 == __last2)
+  if (__first2 == __last2)
   {
     return false;
   }

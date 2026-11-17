@@ -31,7 +31,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp, bool = is_enum_v<_Tp>>
 struct __cccl_underlying_type_impl
 {
-  using type = _CCCL_BUILTIN_UNDERLYING_TYPE(_Tp);
+  using type _CCCL_NODEBUG = _CCCL_BUILTIN_UNDERLYING_TYPE(_Tp);
 };
 
 template <class _Tp>

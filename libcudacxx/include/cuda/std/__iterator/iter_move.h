@@ -152,7 +152,7 @@ template <class _Tp>
 _CCCL_CONCEPT __can_iter_rvalue_reference_t = _CCCL_FRAGMENT(__can_iter_rvalue_reference_t_, _Tp);
 
 template <class _Tp>
-using __iter_rvalue_reference_t = decltype(::cuda::std::ranges::iter_move(::cuda::std::declval<_Tp&>()));
+using __iter_rvalue_reference_t _CCCL_NODEBUG = decltype(::cuda::std::ranges::iter_move(::cuda::std::declval<_Tp&>()));
 
 template <class _Tp>
 using iter_rvalue_reference_t = enable_if_t<__can_iter_rvalue_reference_t<_Tp>, __iter_rvalue_reference_t<_Tp>>;

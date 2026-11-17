@@ -33,6 +33,7 @@
 #include <cuda/std/__ranges/movable_box.h>
 #include <cuda/std/__ranges/non_propagating_cache.h>
 #include <cuda/std/__ranges/range_adaptor.h>
+#include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/decay.h>
@@ -139,6 +140,11 @@ inline constexpr bool enable_borrowed_range<drop_while_view<_View, _Pred>> = ena
 template <class _Range, class _Pred>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES drop_while_view(_Range&&, _Pred)
   -> drop_while_view<::cuda::std::ranges::views::all_t<_Range>, _Pred>;
+
+// Predicates cannot retain any elements from a statically empty base.
+template <class _View, class _Pred>
+inline constexpr size_t __static_size_v<drop_while_view<_View, _Pred>> =
+  (__static_size_v<_View> == 0) ? 0 : dynamic_extent;
 
 _CCCL_END_NAMESPACE_CUDA_STD_VIEWS
 

@@ -18,19 +18,20 @@
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_adjacent_difference.cuh>
-#  include <cub/util_math.cuh>
+#  include <cub/device/dispatch/dispatch_adjacent_difference.cuh>
+#  include <cub/device/dispatch/dispatch_common.cuh>
 
+#  include <thrust/detail/execution_policy.h>
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/detail/type_traits.h>
-#  include <thrust/functional.h>
+#  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/util.h>
-#  include <thrust/type_traits/is_contiguous_iterator.h>
 #  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #  include <cuda/__memory/check_address.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__type_traits/is_pointer.h>
@@ -40,7 +41,7 @@
 THRUST_NAMESPACE_BEGIN
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator adjacent_difference(
+_CCCL_HOST_DEVICE_API OutputIterator adjacent_difference( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -69,7 +70,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   using InputValueT                    = thrust::detail::it_value_t<InputIt>;
   using OutputValueT                   = thrust::detail::it_value_t<OutputIt>;
   constexpr bool can_compare_iterators = ::cuda::std::is_pointer_v<InputIt> && ::cuda::std::is_pointer_v<OutputIt>
-                                      && std::is_same_v<InputValueT, OutputValueT>;
+                                      && ::cuda::std::is_same_v<InputValueT, OutputValueT>;
 
   if constexpr (can_compare_iterators)
   {
@@ -143,7 +144,7 @@ adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt la
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class OutputIt, class BinaryOp>
-OutputIt _CCCL_HOST_DEVICE
+OutputIt _CCCL_HOST_DEVICE_API
 adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, BinaryOp binary_op)
 {
   THRUST_CDP_DISPATCH(
@@ -153,7 +154,7 @@ adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt la
 }
 
 template <class Derived, class InputIt, class OutputIt>
-OutputIt _CCCL_HOST_DEVICE
+OutputIt _CCCL_HOST_DEVICE_API
 adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
 {
   using input_type = thrust::detail::it_value_t<InputIt>;
@@ -163,6 +164,6 @@ adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt la
 THRUST_NAMESPACE_END
 
 //
-#  include <thrust/adjacent_difference.h>
-#  include <thrust/memory.h>
+#  include <thrust/adjacent_difference.h> // IWYU pragma: keep
+#  include <thrust/memory.h> // IWYU pragma: keep
 #endif // _CCCL_CUDA_COMPILATION()

@@ -24,20 +24,16 @@ void __global__ lambda_launcher(const Dims dims, const Lambda lambda)
 template <typename Comparator, unsigned int FilterArch>
 bool arch_filter(const cudaDeviceProp& props)
 {
-  const int act_arch = props.major * 10 + props.minor;
-  if (Comparator()(act_arch, FilterArch))
-  {
-    return true;
-  }
-  return false;
+  const int act_arch = (props.major * 10) + props.minor;
+  return static_cast<bool>(Comparator()(act_arch, FilterArch));
 }
 
-static bool skip_host_exec(bool (* /* filter */)(const cudaDeviceProp&))
+inline bool skip_host_exec(bool (* /* filter */)(const cudaDeviceProp&))
 {
   return false;
 }
 
-static bool skip_device_exec(bool (*filter)(const cudaDeviceProp&))
+inline bool skip_device_exec(bool (*filter)(const cudaDeviceProp&))
 {
   cudaDeviceProp props{};
   REQUIRE_CUDART(cudaGetDeviceProperties(&props, 0));

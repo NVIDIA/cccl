@@ -14,4 +14,4 @@
 #endif // no system header
 
 // omp system inherits transform
-#include <thrust/system/cpp/detail/transform.h>
+#include <thrust/system/cpp/detail/transform.h> // IWYU pragma: export

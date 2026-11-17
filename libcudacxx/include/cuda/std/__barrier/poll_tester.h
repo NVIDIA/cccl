@@ -40,7 +40,7 @@ public:
       , __phase(::cuda::std::move(__phase_))
   {}
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool operator()() const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator()() const
   {
     return __this->__try_wait(__phase);
   }
@@ -58,7 +58,7 @@ public:
       , __parity(__parity_)
   {}
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool operator()() const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator()() const
   {
     return __this->__try_wait_parity(__parity);
   }

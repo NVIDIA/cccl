@@ -495,6 +495,44 @@ CUB_TEST("DeviceMergeSort::SortPairs can be tuned", "[merge_sort][device]", CUB_
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+template <int ThreadsPerBlock>
+struct merge_sort_tuning_transform
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability, cub::MergeSortPolicy policy) const
+    -> cub::MergeSortPolicy
+  {
+    policy.threads_per_block = ThreadsPerBlock;
+    return policy;
+  }
+};
+
+CUB_TEST_CASE("DeviceMergeSort::SortPairs tuning can be modified", "[merge_sort][device]", CUB_SMALL)
+{
+  constexpr unsigned int target_block_size = 64; // must be different from any value we use in production
+  c2h::device_vector<int> d_keys{4, 1, 3, 2};
+  c2h::device_vector<int> d_values{0, 1, 2, 3};
+  c2h::device_vector<unsigned int> d_block_size(1);
+  auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
+  auto env        = cuda::execution::tune(merge_sort_tuning_transform<target_block_size>{});
+
+  {
+    auto d_keys_default   = d_keys;
+    auto d_values_default = d_values;
+    device_merge_sort_pairs(
+      d_keys_default.data().get(),
+      d_values_default.data().get(),
+      static_cast<int>(d_keys_default.size()),
+      compare_op,
+      stdexec::env<>{});
+    const unsigned int default_block_size = d_block_size[0];
+    REQUIRE(default_block_size != target_block_size);
+    d_block_size[0] = 0;
+  }
+
+  device_merge_sort_pairs(d_keys.data().get(), d_values.data().get(), static_cast<int>(d_keys.size()), compare_op, env);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
 CUB_TEST("DeviceMergeSort::SortPairsCopy can be tuned", "[merge_sort][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;

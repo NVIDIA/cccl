@@ -19,17 +19,23 @@
 
 #include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_policy_wrapper_t.cuh>
+
+#include <cuda/__cmath/round_up.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/type_identity.h>
+
 // for backward compatibility
-#include <cub/util_temporary_storage.cuh>
+#include <cub/util_policy_wrapper_t.cuh> // IWYU pragma: export
+#include <cub/util_temporary_storage.cuh> // IWYU pragma: export
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/__algorithm/find.h>
-#include <cuda/std/__concepts/regular.h>
-#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -39,6 +45,11 @@
 #endif // _CCCL_HOSTED()
 
 #include <nv/target>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cuda/std/__concepts/regular.h>
+#  include <cuda/std/__concepts/same_as.h>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 
@@ -82,24 +93,24 @@ class [[maybe_unused]] SwitchDevice
 public:
   //! @brief Queries the current device and if that is different than @p target_device sets the current device to
   //! @p target_device
-  SwitchDevice(const int target_device)
+  _CCCL_HOST_API SwitchDevice(const int target_device)
       : target_device_(target_device)
       , original_device_(target_device)
   {
-    CubDebug(cudaGetDevice(&original_device_));
+    static_cast<void>(CubDebug(cudaGetDevice(&original_device_)));
     if (original_device_ != target_device_)
     {
-      CubDebug(cudaSetDevice(target_device_));
+      static_cast<void>(CubDebug(cudaSetDevice(target_device_)));
     }
   }
 
   //! @brief If the @p original_device was not equal to @p target_device sets the current device back to
   //! @p original_device
-  ~SwitchDevice()
+  _CCCL_HOST_API ~SwitchDevice()
   {
     if (original_device_ != target_device_)
     {
-      CubDebug(cudaSetDevice(original_device_));
+      static_cast<void>(CubDebug(cudaSetDevice(original_device_)));
     }
   }
 };
@@ -123,9 +134,9 @@ CUB_RUNTIME_FUNCTION inline int device_count_uncached()
 }
 
 // TODO(bgruber): remove in CCCL 4.0
-_CCCL_HOST inline int device_count_cached_value()
+_CCCL_HOST_API inline int device_count_cached_value()
 {
-  static const int count = device_count_uncached();
+  static const int count = _CUB::detail::device_count_uncached();
   return count;
 }
 
@@ -134,8 +145,9 @@ CUB_RUNTIME_FUNCTION inline int device_count()
 {
   int result = -1;
 
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST, ({ result = detail::device_count_cached_value(); }), ({ result = detail::device_count_uncached(); }));
+  NV_IF_ELSE_TARGET(NV_IS_HOST, ({ result = _CUB::detail::device_count_cached_value(); }), ({
+                      result = _CUB::detail::device_count_uncached();
+                    }));
 
   return result;
 }
@@ -149,14 +161,14 @@ CUB_RUNTIME_FUNCTION inline int device_count()
  */
 CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") CUB_RUNTIME_FUNCTION inline int DeviceCountUncached()
 {
-  return detail::device_count_uncached();
+  return _CUB::detail::device_count_uncached();
 }
 
 // TODO(bgruber): remove in CCCL 4.0
 // Host code. This is a separate function to avoid defining a local static in a host/device function.
-CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") _CCCL_HOST inline int DeviceCountCachedValue()
+CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") _CCCL_HOST_API inline int DeviceCountCachedValue()
 {
-  return detail::device_count_cached_value();
+  return _CUB::detail::device_count_cached_value();
 }
 
 // TODO(bgruber): remove in CCCL 4.0
@@ -171,7 +183,7 @@ CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") _CCCL_HOST inline in
  */
 CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") CUB_RUNTIME_FUNCTION inline int DeviceCount()
 {
-  return detail::device_count();
+  return _CUB::detail::device_count();
 }
 
 #  if _CCCL_HOSTED()
@@ -194,7 +206,7 @@ struct PerDeviceAttributeCache
   // i.e. a linear sequence of transitions.
   enum DeviceEntryStatus // NOLINT(cppcoreguidelines-use-enum-class)
   {
-    DeviceEntryEmpty = 0,
+    DeviceEntryEmpty,
     DeviceEntryInitializing,
     DeviceEntryReady
   };
@@ -212,10 +224,10 @@ public:
   /**
    * \brief Construct the cache.
    */
-  _CCCL_HOST inline PerDeviceAttributeCache()
+  _CCCL_HOST_API PerDeviceAttributeCache()
       : entries_()
   {
-    _CCCL_ASSERT(detail::device_count() <= detail::max_devices, "");
+    _CCCL_ASSERT(_CUB::detail::device_count() <= detail::max_devices, "");
   }
 
   /**
@@ -225,9 +237,9 @@ public:
    *       this function has undefined behavior.
    */
   template <typename Invocable>
-  _CCCL_HOST DevicePayload operator()(Invocable&& f, int device)
+  _CCCL_HOST_API DevicePayload operator()(Invocable&& f, int device)
   {
-    if (device >= detail::device_count() || device < 0)
+    if (device >= _CUB::detail::device_count() || device < 0)
     {
       return DevicePayload{0, cudaErrorInvalidDevice};
     }
@@ -262,7 +274,7 @@ public:
           // Clear the global CUDA error state which may have been
           // set by the last call. Otherwise, errors may "leak" to
           // unrelated kernel launches.
-          cudaGetLastError();
+          static_cast<void>(cudaGetLastError());
         }
 
         // Release the lock by setting the state to `DeviceEntryReady`.
@@ -321,15 +333,15 @@ CUB_RUNTIME_FUNCTION cudaError_t PtxVersionUncached(int& ptx_version)
  * \brief Retrieves the PTX version that will be used on \p device (major * 100 + minor * 10).
  */
 template <class T = void>
-_CCCL_HOST cudaError_t PtxVersionUncached(int& ptx_version, int device)
+_CCCL_HOST_API cudaError_t PtxVersionUncached(int& ptx_version, int device)
 {
   const SwitchDevice sd(device);
-  return PtxVersionUncached<T>(ptx_version);
+  return _CUB::PtxVersionUncached<T>(ptx_version);
 }
 
 #  if _CCCL_HOSTED()
 template <typename Tag>
-_CCCL_HOST inline PerDeviceAttributeCache& GetPerDeviceAttributeCache()
+_CCCL_HOST_API inline PerDeviceAttributeCache& GetPerDeviceAttributeCache()
 {
   static PerDeviceAttributeCache cache;
   return cache;
@@ -350,14 +362,14 @@ struct SmVersionCacheTag
  * \note This function is thread safe.
  */
 template <class T = void>
-_CCCL_HOST cudaError_t PtxVersion(int& ptx_version, int device)
+_CCCL_HOST_API cudaError_t PtxVersion(int& ptx_version, int device)
 {
   // Note: the ChainedPolicy pruning (i.e., invoke_static) requites that there's an exact match between one of the
   // architectures in __CUDA_ARCH__ and the runtime queried ptx version.
-  auto const payload = GetPerDeviceAttributeCache<PtxVersionCacheTag>()(
+  auto const payload = _CUB::GetPerDeviceAttributeCache<PtxVersionCacheTag>()(
     // If this call fails, then we get the error code back in the payload, which we check with `CubDebug` below.
     [=](int& pv) {
-      return PtxVersionUncached<T>(pv, device);
+      return _CUB::PtxVersionUncached<T>(pv, device);
     },
     device);
 
@@ -384,10 +396,10 @@ CUB_RUNTIME_FUNCTION cudaError_t PtxVersion(int& ptx_version)
   cudaError_t result = cudaErrorUnknown;
 #  if _CCCL_HOSTED()
   NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (result = PtxVersion<T>(ptx_version, CurrentDevice());),
-                    (result = PtxVersionUncached<T>(ptx_version);));
+                    (result = _CUB::PtxVersion<T>(ptx_version, _CUB::CurrentDevice());),
+                    (result = _CUB::PtxVersionUncached<T>(ptx_version);));
 #  else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
-  result = PtxVersionUncached<T>(ptx_version);
+  result = _CUB::PtxVersionUncached<T>(ptx_version);
 #  endif // !_CCCL_HOSTED()
   return result;
 }
@@ -404,7 +416,7 @@ CUB_RUNTIME_FUNCTION cudaError_t ptx_compute_cap(::cuda::compute_capability& cc)
   cc = ::cuda::compute_capability{NV_TARGET_MINIMUM_SM_INTEGER};
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
   int ptx_version = 0;
-  if (const auto error = PtxVersion<T>(ptx_version))
+  if (const auto error = _CUB::PtxVersion<T>(ptx_version))
   {
     return error;
   }
@@ -428,13 +440,14 @@ CUB_RUNTIME_FUNCTION cudaError_t ptx_compute_cap(::cuda::compute_capability& cc)
 /**
  * \brief Retrieves the SM version (i.e. compute capability) of \p device (major * 100 + minor * 10)
  */
-CUB_RUNTIME_FUNCTION inline cudaError_t SmVersionUncached(int& sm_version, int device = CurrentDevice())
+CUB_RUNTIME_FUNCTION inline cudaError_t SmVersionUncached(int& sm_version, int device = _CUB::CurrentDevice())
 {
   cudaError_t error = cudaSuccess;
   do
   {
-    int major = 0, minor = 0;
-    error = CubDebug(cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, device));
+    int major = 0;
+    int minor = 0;
+    error     = CubDebug(cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, device));
     if (cudaSuccess != error)
     {
       break;
@@ -445,7 +458,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersionUncached(int& sm_version, int d
     {
       break;
     }
-    sm_version = major * 100 + minor * 10;
+    sm_version = (major * 100) + (minor * 10);
   } while (false);
 
   return error;
@@ -457,17 +470,17 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersionUncached(int& sm_version, int d
  * \note This function may cache the result internally.
  * \note This function is thread safe.
  */
-CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = CurrentDevice())
+CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = _CUB::CurrentDevice())
 {
   cudaError_t result = cudaErrorUnknown;
 #  if _CCCL_HOSTED()
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     ({
-                      auto const payload = GetPerDeviceAttributeCache<SmVersionCacheTag>()(
+                      auto const payload = _CUB::GetPerDeviceAttributeCache<SmVersionCacheTag>()(
                         // If this call fails, then we get the error code back in the payload, which we check with
                         // `CubDebug` below.
                         [=](int& pv) {
-                          return SmVersionUncached(pv, device);
+                          return _CUB::SmVersionUncached(pv, device);
                         },
                         device);
 
@@ -478,9 +491,9 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = 
 
                       result = payload.error;
                     }),
-                    (result = SmVersionUncached(sm_version, device);));
+                    (result = _CUB::SmVersionUncached(sm_version, device);));
 #  else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
-  result = SmVersionUncached(sm_version, device);
+  result = _CUB::SmVersionUncached(sm_version, device);
 #  endif // !_CCCL_HOSTED()
 
   return result;
@@ -546,7 +559,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t DebugSyncStream([[maybe_unused]] cudaStr
 {
 #  ifdef CUB_DEBUG_SYNC
   NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (_CubLog("%s", "Synchronizing...\n"); return SyncStream(stream);),
+                    (_CubLog("%s", "Synchronizing...\n"); return _CUB::SyncStream(stream);),
                     (_CubLog("%s", "WARNING: Skipping CUB debug synchronization in device code"); return cudaSuccess;));
 #  else // ^^^ CUB_DEBUG_SYNC / !CUB_DEBUG_SYNC vvv
   return cudaSuccess;
@@ -640,7 +653,7 @@ inline constexpr int bulk_copy_min_align = 16;
 //! @tparam T
 //!   Value type to be loaded.
 template <typename T>
-_CCCL_HOST_DEVICE constexpr int LoadToSharedBufferAlignBytes()
+_CCCL_HOST_DEVICE_API constexpr int LoadToSharedBufferAlignBytes()
 {
   return (::cuda::std::max) (int{alignof(T)}, detail::bulk_copy_min_align);
 }
@@ -653,7 +666,7 @@ _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferAlignBytes()
 //! @param[in] num_items
 //!   Size of the source range in global memory
 template <typename T, ::cuda::std::size_t GmemAlign = alignof(T)>
-_CCCL_HOST_DEVICE constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t num_items)
+_CCCL_HOST_DEVICE_API constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t num_items)
 {
   static_assert(::cuda::__is_valid_alignment<T>(GmemAlign));
   _CCCL_ASSERT(num_items <= ::cuda::std::size_t{::cuda::std::numeric_limits<int>::max()},
@@ -681,10 +694,10 @@ _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t 
 #define CUB_DETAIL_POLICY_WRAPPER_REFINE_CONCEPT(concept) concept<StaticPolicyT>&&
 
 // TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
-#define CUB_DETAIL_POLICY_WRAPPER_ACCESSOR(field)                   \
-  __host__ __device__ static constexpr auto _CCCL_PP_SECOND field() \
-  {                                                                 \
-    return StaticPolicyT::_CCCL_PP_FIRST field;                     \
+#define CUB_DETAIL_POLICY_WRAPPER_ACCESSOR(field)                     \
+  _CCCL_HOST_DEVICE_API static constexpr auto _CCCL_PP_SECOND field() \
+  {                                                                   \
+    return StaticPolicyT::_CCCL_PP_FIRST field;                       \
   }
 
 template <typename T>
@@ -698,14 +711,14 @@ _CCCL_CONCEPT always_true = true;
   template <typename StaticPolicyT>                                                                                    \
   struct concept_name##Wrapper : StaticPolicyT                                                                         \
   {                                                                                                                    \
-    __host__ __device__ constexpr concept_name##Wrapper(StaticPolicyT base)                                            \
+    _CCCL_HOST_DEVICE_API constexpr concept_name##Wrapper(StaticPolicyT base)                                          \
         : StaticPolicyT(base)                                                                                          \
     {}                                                                                                                 \
     _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_ACCESSOR, __VA_ARGS__)                                                 \
   };                                                                                                                   \
   _CCCL_TEMPLATE(typename StaticPolicyT)                                                                               \
   _CCCL_REQUIRES(concept_name<StaticPolicyT>)                                                                          \
-  __host__ __device__ constexpr concept_name##Wrapper<StaticPolicyT> MakePolicyWrapper(StaticPolicyT policy)           \
+  _CCCL_HOST_DEVICE_API constexpr concept_name##Wrapper<StaticPolicyT> MakePolicyWrapper(StaticPolicyT policy)         \
   {                                                                                                                    \
     return concept_name##Wrapper{policy};                                                                              \
   }
@@ -720,7 +733,7 @@ _CCCL_TEMPLATE(typename PolicyT)
 #if _CCCL_STD_VER < 2020
 _CCCL_REQUIRES((!GenericAgentPolicy<PolicyT>) ) // in C++20+ we get this by preferring constrained functions
 #endif
-__host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
+_CCCL_HOST_DEVICE_API constexpr PolicyT MakePolicyWrapper(PolicyT policy)
 {
   return policy;
 }
@@ -728,7 +741,7 @@ __host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
 template <typename T>
 struct get_active_policy
 {
-  using type = typename T::ActivePolicy;
+  using type _CCCL_NODEBUG = typename T::ActivePolicy;
 };
 
 /// Helper for dispatching into a policy chain

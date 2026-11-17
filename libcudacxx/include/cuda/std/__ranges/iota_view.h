@@ -66,7 +66,7 @@ template <class _Start,
 class iota_view : public view_interface<iota_view<_Start, _BoundSentinel>>
 {
 public:
-  using __iterator = ::cuda::counting_iterator<_Start>;
+  using __iterator _CCCL_NODEBUG = ::cuda::counting_iterator<_Start>;
 
   struct __sentinel
   {

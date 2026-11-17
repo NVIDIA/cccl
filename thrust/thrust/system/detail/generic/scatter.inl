@@ -13,16 +13,17 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/copy.h>
-#include <thrust/functional.h>
-#include <thrust/iterator/iterator_traits.h>
+#include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/system/detail/generic/scatter.h>
+
+#include <cuda/std/__functional/identity.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename RandomAccessIterator>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 scatter(thrust::execution_policy<DerivedPolicy>& exec,
         InputIterator1 first,
         InputIterator1 last,
@@ -37,7 +38,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename InputIterator3,
           typename RandomAccessIterator>
-_CCCL_HOST_DEVICE void scatter_if(
+_CCCL_HOST_DEVICE_API void scatter_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -54,7 +55,7 @@ template <typename DerivedPolicy,
           typename InputIterator3,
           typename RandomAccessIterator,
           typename Predicate>
-_CCCL_HOST_DEVICE void scatter_if(
+_CCCL_HOST_DEVICE_API void scatter_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,

@@ -12,16 +12,14 @@
 
 #include <cuda/buffer>
 #include <cuda/devices>
+#include <cuda/execution>
 #include <cuda/hierarchy>
 #include <cuda/iterator>
 #include <cuda/launch>
 #include <cuda/std/algorithm>
 #include <cuda/std/cstddef>
-#include <cuda/std/execution>
-#include <cuda/std/optional>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
-#include <cuda/std/utility>
 #include <cuda/stream>
 
 #include <cuda/experimental/coop/group>

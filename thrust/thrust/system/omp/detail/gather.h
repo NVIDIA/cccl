@@ -14,4 +14,4 @@
 #endif // no system header
 
 // omp system inherits gather
-#include <thrust/system/cpp/detail/gather.h>
+#include <thrust/system/cpp/detail/gather.h> // IWYU pragma: export

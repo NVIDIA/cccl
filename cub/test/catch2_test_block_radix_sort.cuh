@@ -32,7 +32,7 @@ kernel(ActionT action, InputIteratorT input, OutputIteratorT output, int begin_b
 
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    keys[i] = input[threadIdx.x * ItemsPerThread + i];
+    keys[i] = input[(threadIdx.x * ItemsPerThread) + i];
   }
 
   block_radix_sort_t block_radix_sort(storage);
@@ -43,7 +43,7 @@ kernel(ActionT action, InputIteratorT input, OutputIteratorT output, int begin_b
 
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      output[threadIdx.x + ThreadsInBlock * i] = keys[i];
+      output[threadIdx.x + (ThreadsInBlock * i)] = keys[i];
     }
   }
   else
@@ -52,7 +52,7 @@ kernel(ActionT action, InputIteratorT input, OutputIteratorT output, int begin_b
 
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      output[threadIdx.x * ItemsPerThread + i] = keys[i];
+      output[(threadIdx.x * ItemsPerThread) + i] = keys[i];
     }
   }
 }
@@ -110,8 +110,8 @@ __global__ void kernel(
 
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    keys[i]   = input_keys[threadIdx.x * ItemsPerThread + i];
-    values[i] = input_values[threadIdx.x * ItemsPerThread + i];
+    keys[i]   = input_keys[(threadIdx.x * ItemsPerThread) + i];
+    values[i] = input_values[(threadIdx.x * ItemsPerThread) + i];
   }
 
   block_radix_sort_t block_radix_sort(storage);
@@ -122,8 +122,8 @@ __global__ void kernel(
 
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      output_keys[threadIdx.x + ThreadsInBlock * i]   = keys[i];
-      output_values[threadIdx.x + ThreadsInBlock * i] = values[i];
+      output_keys[threadIdx.x + (ThreadsInBlock * i)]   = keys[i];
+      output_values[threadIdx.x + (ThreadsInBlock * i)] = values[i];
     }
   }
   else
@@ -132,8 +132,8 @@ __global__ void kernel(
 
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      output_keys[threadIdx.x * ItemsPerThread + i]   = keys[i];
-      output_values[threadIdx.x * ItemsPerThread + i] = values[i];
+      output_keys[(threadIdx.x * ItemsPerThread) + i]   = keys[i];
+      output_values[(threadIdx.x * ItemsPerThread) + i] = values[i];
     }
   }
 }

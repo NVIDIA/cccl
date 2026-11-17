@@ -83,7 +83,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void uninitialized_fill(
+_CCCL_HOST_DEVICE_API void uninitialized_fill(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -142,7 +142,7 @@ _CCCL_HOST_DEVICE void uninitialized_fill(
  *  \endverbatim
  */
 template <typename ForwardIterator, typename T>
-void uninitialized_fill(ForwardIterator first, ForwardIterator last, const T& x);
+_CCCL_HOST_API void uninitialized_fill(ForwardIterator first, ForwardIterator last, const T& x);
 
 /*! In \c thrust, the function \c thrust::device_new allocates memory for
  *  an object and then creates an object at that location by calling a
@@ -203,7 +203,7 @@ void uninitialized_fill(ForwardIterator first, ForwardIterator last, const T& x)
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename Size, typename T>
-_CCCL_HOST_DEVICE ForwardIterator uninitialized_fill_n(
+_CCCL_HOST_DEVICE_API ForwardIterator uninitialized_fill_n(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, Size n, const T& x);
 
 /*! In \c thrust, the function \c thrust::device_new allocates memory for
@@ -260,7 +260,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_fill_n(
  *  \endverbatim
  */
 template <typename ForwardIterator, typename Size, typename T>
-ForwardIterator uninitialized_fill_n(ForwardIterator first, Size n, const T& x);
+_CCCL_HOST_API ForwardIterator uninitialized_fill_n(ForwardIterator first, Size n, const T& x);
 
 /*!
  * \} end group filling

@@ -100,7 +100,7 @@ template <bool _Convertible>
 struct __different_resource__
 {
   template <class _OtherResource>
-  static constexpr bool __value(_OtherResource*) noexcept
+  _CCCL_HOST_API static constexpr bool __value(_OtherResource*) noexcept
   {
     return synchronous_resource<_OtherResource>;
   }
@@ -109,7 +109,7 @@ struct __different_resource__
 template <>
 struct __different_resource__<true>
 {
-  static constexpr bool __value(void*) noexcept
+  _CCCL_HOST_API static constexpr bool __value(void*) noexcept
   {
     return false;
   }

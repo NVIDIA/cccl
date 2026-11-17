@@ -34,6 +34,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_empty.h>
@@ -150,7 +151,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   const SegmentedScanPolicy active_policy = policy_selector(cc);
 
-  detail::log_dispatch("DeviceSegmentedScan", cc, active_policy);
+  _CUB::detail::log_dispatch("DeviceSegmentedScan", cc, active_policy);
 
   if (d_temp_storage == nullptr)
   {
@@ -246,7 +247,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       output_begin_offsets += num_segments_per_invocation;
     }
 
-    if (const auto error = CubDebug(DebugSyncStream(stream)); cudaSuccess != error)
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)); cudaSuccess != error)
     {
       return error;
     }

@@ -86,11 +86,11 @@ covered in :doc:`/cccl/development/build_and_bisect_tools`.
 
 **Step 4. Reduce overhead further with skip tags.** Combine the override
 with :ref:`[skip-*] tags <infra-ci-skip-tags>` in the last commit message to drop
-devcontainer, docs, and third-party canary jobs:
+devcontainer and docs jobs:
 
 .. code-block:: bash
 
-   git commit -m "Debug <compiler> <project> failure [skip-vdc][skip-docs][skip-tpt]"
+   git commit -m "Debug <compiler> <project> failure [skip-vdc][skip-docs]"
 
 Run scoped CI and merge
 -----------------------
