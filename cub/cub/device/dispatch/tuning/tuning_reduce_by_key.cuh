@@ -1209,7 +1209,10 @@ private:
       {
         return __make_thrust_policy(11, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_LDG);
       }
-      if (((key_size == 2 || key_size == 4 || key_size == 8) && accum_size == 8) || (key_size == 8 && accum_size == 4))
+      // Floating-point accumulators keep the SM100 tunings below
+      if ((key_size == 8 && accum_size == 8)
+          || ((key_size == 2 || key_size == 4) && accum_size == 8 && accum_t != type_t::float64)
+          || (key_size == 8 && accum_size == 4 && accum_t != type_t::float32))
       {
         return get_lookback_policy(::cuda::compute_capability{9, 0});
       }
