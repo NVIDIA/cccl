@@ -100,6 +100,27 @@ TEST_HOST_DEVICE_FUNC constexpr void test_broadcast()
   }
 }
 
+struct explicit_reference_conversion
+{
+  simd::vec<int, 4>& value;
+
+  TEST_HOST_DEVICE_FUNC explicit constexpr operator simd::vec<int, 4>() const
+  {
+    return value;
+  }
+};
+
+TEST_HOST_DEVICE_FUNC constexpr bool test_explicit_reference_conversion()
+{
+  simd::vec<int, 4> original(42);
+  const auto converted = static_cast<simd::vec<int, 4>>(explicit_reference_conversion{original});
+  for (int i = 0; i < 4; ++i)
+  {
+    assert(converted[i] == 42);
+  }
+  return true;
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 // generator constructor
 
@@ -442,6 +463,8 @@ DEFINE_BASIC_VEC_TEST_RUNTIME()
 int main(int, char**)
 {
   test_enable_abi_boundary();
+  assert(test_explicit_reference_conversion());
+  static_assert(test_explicit_reference_conversion());
   assert(test());
   static_assert(test());
   assert(test_runtime());
