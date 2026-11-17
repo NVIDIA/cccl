@@ -32,6 +32,8 @@ size comes from the launch, the element type from the memory or the items,
 and the number of items from ``items_per_thread`` or the payload. Scratch
 space in shared memory comes from the compiler, or from a
 :ref:`TempStorage <coop-temp-storage>` that the kernel passes.
+:ref:`Single-phase calls <coop-concepts-single-phase>` shows the same kernel
+written with CUB's C++ classes.
 
 Controls that select code are Python values, fixed when the kernel is
 compiled: ``items_per_thread``, ``algorithm``, operators, the group, and

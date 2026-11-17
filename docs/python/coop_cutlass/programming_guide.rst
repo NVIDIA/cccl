@@ -7,50 +7,59 @@
 .. _cuda-coop-cutlass-cute-dsl-integration:
 
 Programming Guide
-=========================
+=================
 
-Use ``cuda.coop.cutlass`` inside a CuTe kernel to move data, reduce or scan
-values, rearrange payloads, sort or select keys, compare neighbors, count
-samples, and decode runs. These operations compile to CUB device functions.
-The :doc:`API reference <api>` lists signatures and result types.
-
-.. code-block:: python
-
-   import cuda.coop.cutlass as coop
-
-Each thread keeps its items in a ``ThreadData`` object.
-``load(group, source, items_per_thread=N)`` returns that payload;
-``store`` writes its items to memory. The :doc:`overview <index>` covers
-installation, :doc:`concepts` explains the execution rules, and the
-:doc:`Developer Guide <developer_guide>` follows compilation and linking.
+This guide starts with a complete program and explains its parts. The later
+sections cover each family of primitives. :doc:`concepts` introduces the
+ideas they share, and the :doc:`API reference <api>` has every signature.
 
 .. _coop-cutlass-load-store:
 
-A complete prefix-sum example
------------------------------
+A first program
+---------------
 
-This example computes exclusive prefix sums across a block: each output is
-seven plus the sum of all preceding input values. For input
-``[0, 1, 2, 3, ...]``, it produces ``[7, 7, 8, 10, ...]``. Load returns the
-per-thread payload, Scan returns a new payload, and Store writes the result.
-All three operations reuse one ``TempStorage`` with automatic synchronization.
+This program computes the running sum of 512 integers with one block of 128
+threads. Each thread loads four items, the block computes the running sum
+across all of them, and each thread stores its four results:
 
-The kernel takes ``items_per_thread`` as a compile-time argument. The full
-example launches one ``(8, 4, 2)`` block and defaults to two adjacent items
-per thread, giving 128 input values. Its host entry point checks the output against NumPy.
-`View the example on GitHub
-<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/scan.py>`_ to run it with a compatible
-compiler. From the repository root, run:
+.. literalinclude:: ../../../python/cuda_coop_cutlass/examples/prefix_sum.py
+   :language: python
+
+Run it from the repository root:
 
 .. code-block:: bash
 
-   python python/cuda_coop_cutlass/examples/scan.py
+   python python/cuda_coop_cutlass/examples/prefix_sum.py
 
-The complete program includes imports, device allocation, the kernel and
-launcher, cleanup, and the CPU result check:
+The kernel has four lines. Each one shows something that
+:doc:`Programming concepts <concepts>` explains:
 
-.. literalinclude:: ../../../python/cuda_coop_cutlass/examples/scan.py
-   :language: python
+* ``coop.this_block()`` is a :ref:`thread group <coop-concepts-groups>`, the
+  128 threads that make each call together.
+* ``coop.load`` returns each thread's four items as a
+  :ref:`ThreadData <coop-concepts-payloads>`, and ``coop.store`` writes one
+  to memory.
+* ``coop.inclusive_sum(block, values)`` is a
+  :ref:`single-phase call <coop-concepts-single-phase>`. It takes the block
+  size from the launch, and the element type and item count from ``values``.
+* The scan needs scratch space in shared memory, and the compiler provides
+  it. A kernel that wants to size or share that space passes a
+  :ref:`TempStorage <coop-concepts-storage>`.
+
+On the host side:
+
+* ``make_ptr(cutlass.Int32, ...)`` gives each pointer its element type. That
+  is how ``load`` and ``store`` know the items are ``Int32``.
+* ``items_per_thread`` is declared ``cutlass.Constexpr`` in the kernel and
+  in the launcher, so its value is known when the kernel is compiled.
+* ``kernel.launch(grid=1, block=128)`` sets the block size.
+
+The first call to ``launch`` compiles the kernel.
+:ref:`Checking and tuning a kernel <coop-cutlass-checking>` shows how to
+compile once and launch many times.
+
+Block algorithms
+----------------
 
 Block Load and Store support one-, two-, and three-dimensional blocks.
 ``offset`` selects the beginning of the block's tile and ``valid_items``
@@ -60,55 +69,6 @@ out-of-bounds items with ``oob_default``. Without that default, items beyond
 them before the call. Supply ``oob_default`` or write those items after Load
 before you read them. All threads in the block must call the primitive with
 uniform controls.
-
-.. _coop-cutlass-requirements:
-
-Runtime requirements
---------------------
-
-Install the standalone ``cuda-coop-cutlass`` distribution and a compatible
-CUTLASS CuTe compiler as described in :doc:`index`. The supported compiler
-integration requires external NVIDIA LTO-IR linking, and NVRTC compiles the
-CUB providers. See :ref:`compiler requirements
-<coop-cutlass-compiler-requirements>` for the required interfaces.
-
-.. _coop-shared-load-store:
-
-Shared-memory staging
----------------------
-
-Load accepts compact global- or shared-memory sources, including native CuTe
-shared tensors and typed tensors from ``TempStorage.reserve``. Store accepts
-the corresponding memory destinations. Load infers its dtype from a shared
-tensor just as it does from a global-memory source.
-
-Use native CuTe copies when staging a global tile in shared memory. Partition
-the source and destination with the same thread/value mapping, issue the
-copy, and synchronize before another thread consumes the shared tile.
-Then ``coop.load(block, shared, items_per_thread=N)`` returns a fresh
-payload. Select its algorithm according to the ownership required by the
-next operation; a striped reload changes which thread owns each item.
-
-A predicated native copy leaves masked-out destinations unchanged. Initialize
-invalid slots when the application needs a default value. Without a default,
-do not read values outside the valid prefix. Source and destination must have
-compatible element types, sufficient capacity, and nonoverlapping storage.
-The copy atom and view alignment must satisfy the selected native operation.
-Asynchronous copies also require their own completion protocol before the
-consumer's synchronization.
-
-.. literalinclude:: ../../../python/cuda_coop_cutlass/examples/shared_staging.py
-   :language: python
-   :start-after: docs: start cutlass-native-shared-staging
-   :end-before: docs: end cutlass-native-shared-staging
-
-Store-to-shared is also supported: Load into ``ThreadData``, Store into a
-native shared tensor or reserved workspace, then synchronize before another
-thread reads those writes. Application shared storage must remain disjoint
-from scratch that a concurrent primitive can overwrite.
-
-Block algorithms
-----------------
 
 The six block algorithms use these register layouts. For linear thread rank
 ``t``, item index ``i``, block size ``B``, and ``I`` items per thread, blocked
@@ -182,7 +142,8 @@ so native CuTe code and cooperative primitives can take turns with the same
 bytes. Its API entry has the rules.
 
 A reserved tensor with a supported Load/Store dtype can also serve as the
-shared source or Store destination in the staging example above. Keep live
+shared source or Store destination in the
+:ref:`staging example <coop-shared-load-store>`. Keep live
 staging data separate from scratch that an operation may overwrite. Direct
 and striped Load/Store need no scratch. A transpose Load or Store needs
 scratch of its own while it reads or writes that live tensor.
@@ -765,45 +726,6 @@ needs no shared scratch or trailing storage-reuse barrier.
 See the :doc:`Batched Warp Reduction visualization
 <visualizations/reduce-batched>` for the batch-to-lane mapping.
 
-.. _coop-cutlass-producer-interop:
-
-Producer-owned register loads
------------------------------
-
-``ThreadData.load(source)`` adapts a producer that explicitly provides the
-``__cuda_coop_thread_data_load__`` tracing hook. The producer chooses the
-copy atom and thread partition, ensures that its source is ready, and owns
-its lifetime. A producer can use that hook for a tensor-memory-to-register
-copy when its application supplies the required mapping and synchronization.
-
-Each call invokes the hook exactly once during tracing and propagates the
-producer's exception. A single-use producer must reject subsequent calls
-itself. Capability detection requires a declared hook; a dynamic
-``__getattr__`` fallback does not establish that capability. The hook must
-return ``ThreadData`` or a statically sized per-thread register payload
-accepted by ``from_payload``. Optional ``items_per_thread`` and ``dtype``
-constrain the adapted result; a supplied item count is validated before the
-hook runs. Invalid result diagnostics identify the source and result types.
-
-``ThreadDataLoadSource`` describes the producer hook.
-``ThreadDataTensorMetadata`` describes static ``shape`` and ``dtype``
-properties. ``ThreadDataSource`` combines the two protocols. These protocols
-make the boundary explicit; they do not select a device copy or wait for
-asynchronous work on the producer's behalf.
-
-``values.to_tensor_ssa(like=source)`` supplies omitted shape and dtype from
-that metadata. Explicit arguments take precedence. Shapes must be positive,
-fully static, and contain exactly the payload's item count. Conversion
-preserves flat per-thread item order, and the default shape is
-``(items_per_thread,)``. It does not recover an input fragment's original
-shape or reconstruct distributed MMA ownership from that shape.
-
-A bare TMEM tensor does not carry the copy atom, partition, readiness, and
-lifetime contract needed for this adaptation. Supply an explicit producer
-capability and qualify its copy and synchronization on suitable hardware.
-Register conversions do not promise zero-copy behavior or the absence of
-local-memory spills; inspect the final kernel for those properties.
-
 .. _coop-cutlass-neighbors:
 
 Comparing neighboring values
@@ -954,3 +876,77 @@ thread, the same example expands 382 items through 12 windows.
    :start-after: # cutlass-run-length-example-begin
    :end-before: # cutlass-run-length-example-end
    :dedent: 4
+
+.. _coop-shared-load-store:
+
+Shared-memory staging
+---------------------
+
+Load accepts compact global- or shared-memory sources, including native CuTe
+shared tensors and typed tensors from ``TempStorage.reserve``. Store accepts
+the corresponding memory destinations. Load infers its dtype from a shared
+tensor just as it does from a global-memory source.
+
+Use native CuTe copies when staging a global tile in shared memory. Partition
+the source and destination with the same thread/value mapping, issue the
+copy, and synchronize before another thread consumes the shared tile.
+Then ``coop.load(block, shared, items_per_thread=N)`` returns a fresh
+payload. Select its algorithm according to the ownership required by the
+next operation; a striped reload changes which thread owns each item.
+
+A predicated native copy leaves masked-out destinations unchanged. Initialize
+invalid slots when the application needs a default value. Without a default,
+do not read values outside the valid prefix. Source and destination must have
+compatible element types, sufficient capacity, and nonoverlapping storage.
+The copy atom and view alignment must satisfy the selected native operation.
+Asynchronous copies also require their own completion protocol before the
+consumer's synchronization.
+
+.. literalinclude:: ../../../python/cuda_coop_cutlass/examples/shared_staging.py
+   :language: python
+   :start-after: docs: start cutlass-native-shared-staging
+   :end-before: docs: end cutlass-native-shared-staging
+
+Store-to-shared is also supported: Load into ``ThreadData``, Store into a
+native shared tensor or reserved workspace, then synchronize before another
+thread reads those writes. Application shared storage must remain disjoint
+from scratch that a concurrent primitive can overwrite.
+
+.. _coop-cutlass-producer-interop:
+
+Producer-owned register loads
+-----------------------------
+
+``ThreadData.load(source)`` adapts a producer that explicitly provides the
+``__cuda_coop_thread_data_load__`` tracing hook. The producer chooses the
+copy atom and thread partition, ensures that its source is ready, and owns
+its lifetime. A producer can use that hook for a tensor-memory-to-register
+copy when its application supplies the required mapping and synchronization.
+
+Each call invokes the hook exactly once during tracing and propagates the
+producer's exception. A single-use producer must reject subsequent calls
+itself. Capability detection requires a declared hook; a dynamic
+``__getattr__`` fallback does not establish that capability. The hook must
+return ``ThreadData`` or a statically sized per-thread register payload
+accepted by ``from_payload``. Optional ``items_per_thread`` and ``dtype``
+constrain the adapted result; a supplied item count is validated before the
+hook runs. Invalid result diagnostics identify the source and result types.
+
+``ThreadDataLoadSource`` describes the producer hook.
+``ThreadDataTensorMetadata`` describes static ``shape`` and ``dtype``
+properties. ``ThreadDataSource`` combines the two protocols. These protocols
+make the boundary explicit; they do not select a device copy or wait for
+asynchronous work on the producer's behalf.
+
+``values.to_tensor_ssa(like=source)`` supplies omitted shape and dtype from
+that metadata. Explicit arguments take precedence. Shapes must be positive,
+fully static, and contain exactly the payload's item count. Conversion
+preserves flat per-thread item order, and the default shape is
+``(items_per_thread,)``. It does not recover an input fragment's original
+shape or reconstruct distributed MMA ownership from that shape.
+
+A bare TMEM tensor does not carry the copy atom, partition, readiness, and
+lifetime contract needed for this adaptation. Supply an explicit producer
+capability and qualify its copy and synchronization on suitable hardware.
+Register conversions do not promise zero-copy behavior or the absence of
+local-memory spills; inspect the final kernel for those properties.
