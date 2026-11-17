@@ -13,7 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/select_system.h>
 

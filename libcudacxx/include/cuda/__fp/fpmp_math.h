@@ -43,7 +43,7 @@
     - exp2(x)   : Base-2 exponential (2^x) - dedicated fp32mp2
     - exp10(x)  : Base-10 exponential (10^x) - dedicated fp32mp2
     - expm1(x)  : e^x - 1 - dedicated fp32mp2
-    - logb(x)   : Extract exponent - placeholder
+    - logb(x)   : Extract exponent - exact on the limb pair
 
     Power:
     - pow(x,y)  : Power function x^y - dedicated fp32mp2
@@ -74,9 +74,9 @@
     Error Functions:
     - erf(x)    : Error function - dedicated fp32mp2
     - erfc(x)   : Complementary error function - dedicated fp32mp2
-    - erfcinv(x): Inverse complementary error function - placeholder (device only)
-    - erfinv(x) : Inverse error function - placeholder (device only)
-    - erfcx(x)  : Scaled complementary error function - placeholder (device only)
+    - erfcinv(x): Inverse complementary error function - dedicated fp32mp2
+    - erfinv(x) : Inverse error function - dedicated fp32mp2
+    - erfcx(x)  : Scaled complementary error function - dedicated fp32mp2
 
     Special Functions:
     - boys_f0(x): Boys function of zeroth order F_0(x) - dedicated fp32mp2
@@ -84,7 +84,7 @@
 
     Probability / Statistics:
     - normcdfinv(p) : Inverse normal CDF Phi^-1(p) - dedicated fp32mp2
-    - normcdf(x)    : Normal CDF Phi(x) - placeholder (host: 0.5*erfc(-x/sqrt2))
+    - normcdf(x)    : Normal CDF Phi(x) - dedicated fp32mp2
 
     Non-standard helper functions to convert integer uniform random numbers
     to Gaussian distributed random numbers:
@@ -110,23 +110,23 @@
     - floor(x)  : Round down to nearest integer - dedicated fp32mp2 optimization
     - trunc(x)  : Round toward zero - dedicated fp32mp2 optimization
     - round(x)  : Round to nearest integer - dedicated fp32mp2 optimization
-    - rint(x)   : Round using current rounding mode - placeholder
-    - nearbyint(x): Round using current rounding mode (no FE exception) - placeholder
-    - lrint(x)  : Round to long int - placeholder
-    - lround(x) : Round to long int (away from zero) - placeholder
-    - llrint(x) : Round to long long int - placeholder
-    - llround(x): Round to long long int (away from zero) - placeholder
+    - rint(x)   : Round to nearest, ties to even - exact on the limb pair
+    - nearbyint(x): Round to nearest, ties to even (no FE exception) - exact on the limb pair
+    - lrint(x)  : Round to long int - dedicated fp32mp2 (exact, over rint)
+    - lround(x) : Round to long int (away from zero) - dedicated fp32mp2 (exact, over round)
+    - llrint(x) : Round to long long int - dedicated fp32mp2 (exact, over rint)
+    - llround(x): Round to long long int (away from zero) - dedicated fp32mp2 (exact, over round)
 
     Floating-Point Manipulation:
     - fabs(x)   : Absolute value - dedicated fp32mp2 optimization (operates on (hi, lo) directly)
-    - copysign(x,y): Copy sign of y to x - placeholder
+    - copysign(x,y): Copy sign of y to x - exact on the limb pair
     - ldexp(x,n): x * 2^n - dedicated fp32mp2
     - scalbn(x,n): x * FLT_RADIX^n - dedicated fp32mp2 (forwards to ldexp)
-    - scalbln(x,n): x * FLT_RADIX^n (long exponent) - placeholder
-    - frexp(x,*n): Extract mantissa and exponent - placeholder
-    - modf(x,*i): Split into integer and fractional parts - placeholder
-    - logb(x)   : Extract exponent - placeholder
-    - ilogb(x)  : Extract exponent as int - placeholder
+    - scalbln(x,n): x * FLT_RADIX^n (long exponent) - exact (forwards to ldexp)
+    - frexp(x,*n): Extract mantissa and exponent - exact on the limb pair
+    - modf(x,*i): Split into integer and fractional parts - exact on the limb pair
+    - logb(x)   : Extract exponent - exact on the limb pair
+    - ilogb(x)  : Extract exponent as int - exact on the limb pair
     - nextafter(x,y): Next representable value - placeholder
 
     Min/Max/Difference:
@@ -134,16 +134,16 @@
     - fmin(x,y) : Minimum - dedicated fp32mp2 optimization (lexicographic compare on (hi, lo), NaN-aware)
     - max(x,y)  : Maximum - dedicated fp32mp2 optimization (std::max-like, first-arg tie/unordered behavior)
     - min(x,y)  : Minimum - dedicated fp32mp2 optimization (std::min-like, first-arg tie/unordered behavior)
-    - fdim(x,y) : Positive difference - placeholder
+    - fdim(x,y) : Positive difference - dedicated fp32mp2 (exact compare, accurate difference)
 
     Remainder:
     - fmod(x,y) : Floating-point remainder - dedicated fp32mp2
     - remainder(x,y): IEEE remainder - dedicated fp32mp2
-    - remquo(x,y,*q): Remainder with quotient bits - placeholder
+    - remquo(x,y,*q): Remainder with quotient bits - dedicated fp32mp2 (remainder's reduction)
 
     Distance:
-    - hypot(x,y): Hypotenuse sqrt(x^2+y^2) - placeholder
-    - rhypot(x,y): Reciprocal hypotenuse - placeholder (host: 1/hypot)
+    - hypot(x,y): Hypotenuse sqrt(x^2+y^2) - dedicated fp32mp2
+    - rhypot(x,y): Reciprocal hypotenuse 1/hypot(x,y) - dedicated fp32mp2
 
     Vector Norms:
     - norm3d(a,b,c)    : 3D Euclidean norm sqrt(a^2+b^2+c^2) - placeholder
@@ -152,10 +152,10 @@
     - rnorm4d(a,b,c,d) : Reciprocal 4D norm - placeholder
 
     Classification (portable prefixed API + conditional standard overloads):
-    - fpmp_isfinite(x): Test for finite value - placeholder
-    - fpmp_isinf(x)   : Test for infinity - placeholder
-    - fpmp_isnan(x)   : Test for NaN - placeholder
-    - fpmp_signbit(x) : Test sign bit - placeholder
+    - fpmp_isfinite(x): Test for finite value - exact on the limb pair (both limbs)
+    - fpmp_isinf(x)   : Test for infinity - exact on the limb pair (both limbs)
+    - fpmp_isnan(x)   : Test for NaN - exact on the limb pair (both limbs)
+    - fpmp_signbit(x) : Test sign bit - exact on the limb pair (both limbs)
       Standard names isfinite/isinf/isnan/signbit are exposed only when the
       corresponding macro is not defined.
 
@@ -167,61 +167,75 @@
     Dedicated Implementation Details:
     -------------------------------------------------------------------------
     exp(x) for fp32mp2:
-      Argument reduction: x = n*ln2 + r, |r| < ln2/2.
+      Argument reduction: x = n*ln2 + r, |r| < ln2/2, with ln2 as a Cody-Waite
+      triple (exact n*ln2_hi, error-free sums for the rest).
       Core: 14-term Taylor series for exp(r) in fp32mp2.
       Reconstruction: result * 2^n via IEEE-754 exponent manipulation.
-      Accuracy: ~10^-10 - 10^-11 relative error.
+      Accuracy: ~1e-14 relative error (46 of 48 bits) wherever the result's
+      low limb is a normal float (exp(x) >= 2^-102, x >= -70.7); below that
+      the pair holds e + 150 bits for a result near 2^e. Underflows gradually
+      like expf: subnormal high limb down to ln(2^-150) ~= -103.97, zero below.
 
     log(x) for fp32mp2:
-      Range reduction: x = m*2^e, m  in  [1, sqrt2).
-      Core: log(m) = 2*atanh((m-1)/(m+1)) via degree-8 minimax polynomial.
-      Reconstruction: log(x) = log(m) + e*ln2 with fp32mp2 ln2 constant.
-      Handles denormals via pre-scaling.
+      Shared core: x = m*2^e, m in [sqrt(1/2), sqrt(2)],
+      log(m) = 2*atanh(u), u = 2(m-1)/(m+1), degree-8 minimax polynomial
+      in u^2.  The division u = f/g corrects a first quotient with the
+      full float-float numerator and denominator before taking its exact
+      remainder, so the correction term stays below one ulp of the
+      quotient (< 5 u^2 against ~25 u^2 for the generic fast division
+      with the device's 1-ulp reciprocal).  Reconstruction:
+      log(x) = log(m) + e*ln2, e*ln2 as an exact product plus one
+      rounding.  Handles denormals via pre-scaling.  Accuracy: 46 bits
+      where |e| >= 1, 45 bits in [sqrt(1/2), sqrt(2)] (no e*ln2 term
+      to dilute the division and polynomial roundings).
 
     log1p(x) for fp32mp2:
-      Forwards to log(1+x) after computing 1+x via fp32mp2 2-sum, which
-      preserves the small-x lo (the lo carries x exactly when |x| <= 1
-      causes float hi cancellation).  log()'s accurate sub for (m-1)
-      then recovers full fp32mp2 precision in the asinh-form Horner
-      core, yielding the a - a^2/2 + a^3/3 - ... expansion implicitly.
-      Special cases (x = -1 -> -inf, x < -1 -> NaN, +-inf) handled
-      explicitly before forwarding.
+      |x| < 1/16: direct Taylor series in (x_hi, x_lo).  Otherwise 1+x
+      is formed as an exact triple s_hi + s_lo + d (two error-free
+      sums) and handed to the log core with d as a third limb: an
+      fp32mp2 pair holds 1+x only to ~2^-48 absolute, and dropping d
+      cost three bits just above the branch point, where
+      log1p(x) ~= x is 16x smaller than 1+x.  Special cases
+      (x = -1 -> -inf, x < -1 -> NaN, +-inf) handled explicitly.
+      Accuracy: 46 bits, 45 bits around |x| = 1/16.
 
     log2(x), log10(x) for fp32mp2:
-      Composition over the dedicated fp32mp2 natural log:
-        log2(x)  = log(x) * (1/ln 2)
-        log10(x) = log(x) * (1/ln 10)
-      with the reciprocal stored as a single fp32mp2 (hi+lo) constant.
-      The one ff-multiply costs ~1 ulp on the lo limb; combined with
-      the ~46-bit precision of __fpmp2_log this still leaves >44
-      bits of accuracy across the whole representable input range,
-      matching the fp32mp2 noise floor.  All domain special cases
-      (x<=0, +-inf, NaN) are handled inside __fpmp2_log.
+      Over the shared log core, with the integer exponent folded in
+      exactly:
+        log2(x)  = log(m) * (1/ln 2)  + e
+        log10(x) = log(m) * (1/ln 10) + e * log10(2)
+      with the reciprocal as an fp32mp2 constant and e*log10(2) as an
+      exact product plus one rounding.  The constant multiplies only
+      |log(m)| <= 0.35, so its rounding is diluted by |e| >= 1
+      everywhere outside [sqrt(1/2), sqrt(2)].  Accuracy: 46-48 bits
+      where |e| >= 1, 44-45 bits in [sqrt(1/2), sqrt(2)].  Special
+      inputs (x <= 0, +-inf, NaN) are not handled, as for log.
 
     exp2(x), exp10(x) for fp32mp2:
       Dedicated implementations following a "single base-2
       split" strategy.  Pseudocode:
-        t      = x * log2(base)        [exp2: t = x; exp10: t = x * log2 10]
-        n      = round(t.hi)           [exact integer = binary exponent]
-        r      = t - n                 [|r.hi| <= 0.5]
-        2^r    via the inlined base-2 Taylor kernel
-               `__internal_fpmp2_exp2_kernel` with coefficients
-               a_k = (ln 2)^k / k!     [no r * ln 2 detour, no
-                                        natural-log reduction inside]
-        result = 2^n * 2^r             [via split-exponent helper]
-      The single integer split happens in *base-2* units, so the 2^n
-      factor drops out exactly and the kernel never touches a value
-      outside [-0.5, 0.5].  Compared to the earlier composition
-      exp(x * ln base) -- which forced __fpmp2_exp to re-derive
-      n_internal from the already-amplified product, stacking two
-      reduction errors -- the dedicated path keeps only one __ffloat
-      multiplication on the input side (and zero for exp2).  Net:
-      `exp2` matches the composed path within 1 bit on the `work`
-      dataset while cutting fp32mp2 call cost; `exp10` matches the
-      composed path's 39-bit `work` accuracy at lower instruction
-      count.  Overflow / underflow shortcuts (|x| at the float
-      exponent boundary) avoid the wasted polynomial / scaling work
-      when the result is already a rounded +-inf / 0.
+        n      = round(x * log2(base)) [plain float; exact for exp2]
+        r      = x - n * log10(base)   [exp2: x - n, exact, renormalized
+                                        with x_lo by a Fast2Sum;
+                                        exp10: Cody-Waite triple for
+                                        log10(2) with a 16-bit head and
+                                        error-free sums, as in exp]
+        base^r via the inlined Taylor kernel for the base
+               (`__internal_fpmp2_exp2_kernel`, a_k = (ln 2)^k / k!, or
+               `__internal_fpmp2_exp10_kernel`, b_k = (ln 10)^k / k!)
+        result = 2^n * base^r          [via split-exponent helper]
+      The integer split happens in *base-2* units, so the 2^n factor
+      drops out exactly and the kernels only see |r| <= 0.5 (exp2) or
+      |r| <= log10(2)/2 (exp10).  The reduced argument must reach the
+      kernels as a normalized pair: their float-only Horner phase reads
+      the high word alone, and an x_lo left in the low word (up to
+      2^-18 at |x| ~ 84) cost exp2 five bits above |x| ~ 32.
+      Accuracy: 46 bits on the working range (both); results below
+      2^-102 (subnormal low limb) are limited by the format itself.
+      Overflow / underflow shortcuts (|x| at the float exponent
+      boundary) avoid the wasted polynomial / scaling work when the
+      result is already a rounded +-inf / 0; both underflow gradually
+      through the two-step scaling.
 
     expm1(x) for fp32mp2:
       Strategy mirrors log1p:
@@ -237,6 +251,80 @@
       noise at the branch point: omitted x^13 term ~= 0.5^13/13!
       ~= 1.96*10^-14, well below fp32mp2 ulp at expm1(1/2).
       Special cases: NaN->NaN, +inf->+inf, -inf->-1, x=0->0.
+
+    pow(x, y) for fp32mp2:
+      pow(x, y) = exp(y * log|x|) with log|x| = e*ln2 + L from the shared
+      log core (|L| <= 0.35).  The product y * log|x| is never rounded
+      into a pair: an fp32mp2 t carries only 2^-48 * |t| of absolute
+      accuracy, |t| reaches 88 before the result overflows, and every
+      bit lost in t is lost in the result.  The exp kernel receives a
+      directly reduced argument instead:
+        r = (y*e - N1)*ln2 - N2*ln2 + y*L,   N = N1 + N2 = round(t/ln2)
+      with N1 = round(y_hi*e): y*e as two exact products, y_hi*e - N1
+      the exact fraction of y_hi*e, (y*e - N1)*ln2 a small pair times
+      the ln2 pair, N2*ln2 from the three-piece ln2 of the exp
+      reduction, y*L as an exact product with its exact cross terms,
+      and the pieces combined by error-free sums wherever a piece is
+      above 2^-48 * |y*L| (the products' low words are 2^-19 absolute
+      at |y*L| = 35; adding them in float cost 2^-43 each).  The kernel
+      itself (`__internal_fpmp2_exp_core` / `_exp_scales`) is exp's,
+      factored out.  What remains is the log core's relative error
+      times |y*L| <= 35 plus the kernel's own, in place of the old
+      ~9 u^2 * |t|: 44 bits on the normal dataset (was 41), mean error
+      3.4 u^2 (was 12.5) over [0.01, 100]^2.  Results below 2^-102
+      (subnormal low limb) are limited by the format itself, as for
+      exp.  Special cases (x <= 0, infinities, NaN, integer y) are
+      unchanged.
+
+    cbrt(x), rcbrt(x) for fp32mp2:
+      x = r * 2^(3n), r in [1/4, 2) (denormals pre-scaled by 2^24).  Seed
+      from the SFU lg2/ex2 pair (~2^-22), polished by one Newton step in
+      float so that it sits within an ulp of the root; then one Halley
+      step in which the residual (r - s^3, or 1 - r s^3) is an error-free
+      pair and the correction is formed without a rounding of its own
+      above 2^-47 (cbrt: pair denominator and a quotient corrected from
+      its remainder; rcbrt: u s/3 as exact products with 1/3 as a pair).
+      Every 2^-23-sized piece enters the high word of the correction
+      through an error-free sum; left for the low word it costs 2^-47 in
+      the final addition.  Host model against binary128: 1.5 / 1.4 u^2
+      worst, independent of the seed.  Accuracy: 47 bits (cbrt was 45:
+      its fp32mp2 Halley step rounded a 2^-22 correction through the
+      1-ulp rcp.approx; rcbrt was 46).  The 2^n scaling is exact; the
+      sign is restored at the end.
+
+    hypot(x, y), rhypot(x, y) for fp32mp2:
+      Both inputs scaled by one power of two chosen from the larger
+      magnitude (exact; no overflow or underflow of the squares); x^2 +
+      y^2 formed as a normalized pair from the two error-free squares
+      with their cross terms 2 x_hi x_lo folded in by one fma each, the
+      pieces joined by Fast2Sums in magnitude order; then the sqrt
+      (rsqrt) core and the exact back-scaling by 2^k.  An infinite
+      argument gives +inf (hypot) / +0 (rhypot) even when the other is
+      NaN; rhypot(0, 0) = +inf.  Host model against binary128: 2.6 u^2
+      worst, 0.3 mean (the sqrt core alone is 2.5).  Accuracy: 46 bits,
+      against the 48 bits of the former double fallback, at a small
+      fraction of its cost wherever FP64 is rationed.
+
+    sinh(x), cosh(x), tanh(x) for fp32mp2:
+      sinh: Taylor series x + x^3 P(x^2) (11 terms) for |x| <= 1, else
+      (e - 1/e)/2 with e = exp(|x|).  The exp branch's error is exp's
+      scaled by coth(x) plus the reciprocal's scaled by 1/(e^2x - 1):
+      with the former crossover at 0.6554 that was 1.74 exp + 0.37 div
+      (45 bits; the test suite's worst cases all sat at |x| ~ 0.9), at
+      1 it is 1.31 exp + 0.16 div.  The polynomial cannot take over much
+      further out: its Horner roundings scale with the x^3 term's share
+      and it reads 4.2 u^2 at |x| = 1.5 in the host model.  cosh:
+      (e + 1/e)/2 everywhere.  tanh: degree-22 minimax in x^2 for
+      |x| < 0.6554, saturation to +-1 above 17.5, and 1 - 2/(e^2x + 1)
+      in between, where the quotient's error reaches the result scaled
+      by up to 0.74.  sinh's and tanh's divisions are the refined one
+      (5 u^2 worst, 3.5 with the exact remainder used by tanh, against
+      26 for the generic fast division; cosh keeps the generic one, its
+      reciprocal weighs at most half and the refined one bought 0.5 u^2
+      for 10 % of the latency); the polynomials use the Fast2Sum Horner
+      (bit-identical).  Past exp's overflow (|x| > 88.72) sinh and cosh
+      return +-inf directly (0.5 / inf through the division was 0 * inf
+      = NaN).  Accuracy: 46 bits (sinh and tanh were 45).
 
     asinh(x), acosh(x), atanh(x) for fp32mp2:
       Inverse hyperbolic family -- all three reduce to a single log1p
@@ -257,6 +345,14 @@
       that the lo-limb ulp accumulation in the (x^2+1)/(x-1)(x+1) chain
       doesn't degrade precision, and the dropped 1/(4x^2) correction
       sits below fp32mp2 ulp throughout the asymptotic region.
+      atanh's division is the refined one with the exact remainder and
+      its argument is split as 2|x| + 2x^2 / (1 - |x|), so the
+      quotient's share of it is |x| (0.25 at the branch point) instead
+      of 1: 44 -> 46 bits.  x_hi = +-1 with a low limb pointing inwards
+      is inside atanh's domain (it returned NaN).  asinh and acosh stay
+      at 45 bits: their worst cases are log1p arguments near sqrt(2) - 1
+      (|x| ~ 0.35 for asinh, x ~ 1.06 for acosh), the log core's e = 0
+      band; the refined division in asinh did not move them.
 
     ldexp(x, n) for fp32mp2:
       result = x * 2^n built directly in fp32 via bit-cast of the
@@ -286,7 +382,25 @@
       the former ::fmod(double,double) round-trip bit-for-bit - but
       without any fp64 instructions.  (A 48-bit window rounded away the
       bottom of lo, which fmod's inherent cancellation then amplified to
-      ~27-bit results.)  remainder adds the round-to-
+      ~27-bit results.)  A sparse pair - a tail more than 29 binades below
+      the head, as arithmetic leaves it when a head lands on a power of
+      two - carries more than 53 bits, and rounding it would move the
+      remainder by the whole amount dropped; such an operand takes an
+      exact reduction instead: the divisor and the running remainder on
+      two 64-bit words in the frame of the finer operand (the divisor
+      fits 126 bits there for tails down to 2^-102 ulp(hi); beyond that
+      the 53-bit window applies), the dividend limb by limb in 64-bit
+      arithmetic.  Dense pairs never take that path.  In that level every
+      result is the nearest pair (head and tail each rounded to nearest
+      even), so a result whose head has few bits keeps the tail bits the
+      pair can hold.  fmod, remainder and remquo take the exact path in
+      fpmp2_accuracy::high only; mid and low round the operands to the
+      53-bit window and the result to 48 bits as before, which keeps
+      their size (fmod 277 against 1087 SASS lines, 22 against 32
+      registers) and speed (remainder 210 against 239 clk/ev) where they
+      were - the exact block weighs on a caller's register budget even
+      when it is never entered.
+      remainder adds the round-to-
       nearest-even step (compare 2*ia vs My, ties broken by the parity of
       the accumulated quotient) and the |x| < |y| short-circuit.  Special
       cases: NaN or x = +-inf or y = 0 -> NaN; y = +-inf -> x.
@@ -297,22 +411,58 @@
       expm1 via argument reduction + polynomial, all in fp32mp2.
 
     erfc(x) for fp32mp2:
-      erfc(x) = erfcx(|x|)*exp(-x^2).
-      Core: erfcx approximated by a degree-22 Chebyshev polynomial in
-      the transformed variable t = 1/(1+|x|), combined with a dedicated
-      exp(-x^2) evaluation using a degree-8 polynomial, all in fp32mp2.
-      Uses the identity erfc(-x) = 2 - erfc(x) for negative arguments.
+      |x| < 1/2: 1 - x Q(x^2), Q a degree-8 fit of erf(x)/x shared by the
+      small-argument paths of this family.  x >= 1/2: erfcx(x) exp(-x^2), the
+      erfcx kernel below times the exact-argument exp(s x^2): x_hi^2 and
+      2 x_hi x_lo are exact products and every piece above 2^-48 |x^2| enters
+      the reduced argument through error-free sums, so no rounding of x^2
+      reaches the exponent.  x <= -1/2: 2 - erfc(|x|).  Zero above 27.5.
+
+    erfcx kernel (a >= 1/2), the basis of erfc, erfcx, normcdf and the
+    inverse error functions:
+      (1 + 2a) e^{a^2} erfc(a) ~ P(t), t = (a - 4)/(a + 4), P of degree 22,
+      both divisions refined with the exact remainder.
+
+    erfcx(x) for fp32mp2:
+      |x| < 1/2: exp(x^2) (1 - x Q(x^2)).  x >= 1/2: the kernel up to 40,
+      then the asymptotic series (1/(x sqrt pi)) sum (-1)^k (2k-1)!!/(2x^2)^k,
+      8 terms.  x <= -1/2: 2 exp(x^2) - erfcx(|x|); +inf below -9.3824.
+
+    normcdf(x) for fp32mp2:
+      y = |x|/sqrt 2 < 1/2: (1 +- y Q(y^2))/2; otherwise h = erfcx(y)
+      exp(-x^2/2)/2 with the exact-argument exp applied to x itself, h for
+      x < 0 and 1 - h for x > 0.  Zero below -14.5, one from 8.4 on.
+
+    erfinv(x), erfcinv(q) for fp32mp2:
+      Giles' single-precision erfinv as the seed (2^-22 up to
+      w = -log(q(2 - q)) = 16, the Abramowitz-Stegun normal quantile 26.2.23
+      below q = 1.1e-7), then one Halley step on erf(y) - x or erfc(y) - q
+      with the small erf y Q(y^2) or the erfc tail and f' = -+ (2/sqrt pi)
+      exp(-y^2) from the exact-argument exp.  erfinv(x) for |x| > 1/2 is erfcinv(1 - |x|)
+      with 1 - |x| exact; erfcinv(q) for q in [1/2, 3/2] is erfinv(1 - q);
+      q > 1 mirrors to -erfcinv(2 - q).  Below q = erfc(8) ~ 1e-29, where
+      erfc's low limb is denormal, the equation ln erfcx(y) - y^2 = ln q is
+      solved on the kernel instead.  erfinv(+-1) = +-inf, erfcinv(0) = +inf,
+      erfcinv(2) = -inf, NaN outside, both limbs read.
 
     normcdfinv(p) for fp32mp2:
-      Rational approximation (Mike Giles coefficients).
-      Variable: w = -log(4p(1-p)), computed via fp32mp2 log.
-      Central branch (w < 6.125): degree-22 Horner polynomial in (w - 3.125).
-      Tail 1 branch (6.125 <= w < 16): degree-18 Horner polynomial in (sqrtw - 3.25).
-      Tail 2 branch (w >= 16): degree-24 Horner polynomial in (sqrtw - 7.25),
-        covering all representable float inputs including denormals,
-        with full fp32mp2 precision (~46+ bits) across the entire range.
-      Returns +-infinity for p <= 0 or p >= 1 (standard mathematical convention).
-      The icdf() wrappers clamp to +-FLT_MAX for safe Gaussian variate generation.
+      Giles' polynomials with sqrt 2 folded into the coefficients, z = a R(w),
+      a = 2p - 1, w = -log(4p(1-p)) from the fp32mp2 log.
+      Central branch (w < 6.25): degree 22 in (w - 3.125).
+      Tail 1 branch (6.25 <= w < 16): degree 18 in (sqrt w - 3.25).
+      Tail 2 branch (w >= 16): degree 24 in (sqrt w - 7.25).
+      Mixed Horner with 4 / 4 / 13 leading float coefficients, sized for a
+      Gaussian sampler: 45-46 bits in the central region and tail 1, 41 bits
+      in tail 2 (p < 5.6e-8), covering all float inputs including denormals.
+      Returns +-infinity for p <= 0 or p >= 1, both limbs read: (1, -tiny) is
+      inside the domain.  The icdf() wrappers clamp to +-FLT_MAX for safe
+      Gaussian variate generation.
+
+    boys_f0(x) for fp32mp2:
+      Five ranges: degree 16 in (3 - x) below 4; degree 14 in (x - 5.65) and
+      in (x - 9.38) up to 11.46; rsqrt(x) G(1/x) with G of degree 16 up to
+      34.38; (sqrt pi / 2) rsqrt(x) beyond.  Mixed Horner (compensated for G),
+      no erf, no sqrt.
 
     icdf(uint32_t x) for fp32mp2:
       Converts a 32-bit integer uniform RNG output to a Gaussian sample.
@@ -329,34 +479,67 @@
       Argument reduction: x = n*(pi/2) + r, |r| <= pi/4.
       Three paths based on |x|:
         Tiny (|x| < pi/4):  no reduction needed.
-        Fast (|x| < 2^20):  Cody-Waite with 4-piece pi/2 (within 8.5e-32),
-          error-tracked via two_mult_fma + two_sum.
-        Large (|x| >= 2^20): Payne-Hanek using integer 2/pi table (160 bits),
-          returning fp32mp2 via extended-precision fixed-point conversion
-          without any fp64 operations.
-      Core: sin(r) via 8-term Taylor (x through x^15),
-            cos(r) via 9-term Taylor (1 through x^16),
-            both evaluated in fp32mp2 Horner form.
-      sincos computes both kernels; sin/cos call sincos internally.
+        Fast (|x| < 2^20):  Cody-Waite with a 4-piece pi/2 (94 bits); every
+          n*c_k is split exactly and the first- and second-order terms are
+          folded with error-free sums, so r keeps 46 bits down to
+          |r| ~ 2^-47 |x| (the previous fp32mp2_high accumulation rounded
+          at the scale of the cancelled partial sums: 37 bits at |x| ~ 1e4).
+        Large (|x| >= 2^20): Payne-Hanek with a 256-bit 2/pi table and a
+          96-bit fixed-point fraction (x_hi and x_lo combined before the
+          pi/2 multiply), no fp64 operations; 46 bits down to |r| ~ 2^-46.
+      Core: one shared kernel, sin(r) via 8-term Taylor (r through r^15)
+            and cos(r) via 9-term Taylor (1 through r^16) with r^2 shared;
+            coefficients down to 1/9! (sin) and 1/10! (cos) are float-float
+            (1/8! as a float was the family's 41-bit floor), the ff Horner
+            steps use Fast2Sum.
+      sincos computes both; sin/cos call sincos internally.
       Quadrant mapping via n mod 4 with sign/swap adjustment.
+      Accuracy: 46 bits (sin, cos), 45 bits (tan, the quotient of the two).
 
     sinpi(x), cospi(x), sincospi(x) for fp32mp2:
       The argument is already in units of pi, so reduction is an integer/fraction
       split rather than a radian Payne-Hanek or Cody-Waite reduction.
       x = n + f with |f| <= 1/2, then f is folded into [-1/4, 1/4] and multiplied
-      by a 3-piece pi. sin(r) and cos(r) reuse the sincos Taylor kernels.
+      by the 4-piece pi with exact products and error-free sums.  |x| < 2^-64 is
+      evaluated as sinpi(x) = pi*x on a scaled argument, so denormal inputs keep
+      their precision.  sin(r) and cos(r) reuse the sincos kernel.
       sinpi and cospi call sincospi. fp64mp2 stays on the double-precision fallback.
+      Accuracy: 46 bits.
 
     Placeholder functions:
     - Delegate to standard double-precision system functions
     - Intended as API stubs; they do not provide full multi-precision accuracy yet
 
+    fdim, remquo, lrint, lround, llrint, llround for fp32mp2:
+      Exact on the limb pair, no FP64.  fdim compares the pairs
+      lexicographically and takes the accurate difference (+0 when
+      x <= y, NaN propagated, +inf when the difference overflows).
+      remquo's remainder is remainder's, bit for bit at every level
+      (same core, see above); its quotient is the low bits of
+      rint(x / y) with the sign of x / y, modulo what the platform's
+      own remquo uses (2^3 on the device as CUDA's, 2^31 on the host as
+      glibc's), so that the fp32mp2 and the scalar / fp64mp2 results
+      agree on each platform.  The four integer roundings convert the
+      exact rint / round of the pair limb by limb; NaN, infinities and
+      |x| >= 2^63 go to the platform's conversion of the high limb, as
+      the scalar functions do.  The classification predicates,
+      copysign, frexp, modf, ilogb and logb test the float limbs
+      directly instead of widening them to double, and the predicates
+      classify both limbs and combine the answers by logic alone (no
+      arithmetic): a loose pair out of a low-accuracy operation can
+      carry an infinity or a NaN in lo alone, or be (+inf, -inf), which
+      is a NaN.  isnan: a NaN limb or two infinities of opposite sign;
+      isinf: no NaN limb and one infinite limb or two of the same sign;
+      isfinite: both limbs finite; signbit: hi's sign when the limbs
+      agree or lo is zero (-0 is kept), else the sign of the larger
+      limb, +0 when they cancel.
+
     fp64mp2 implementations:
     - When _CCCL_FPMP_FP128_MATH_FALLBACK=1, route through __float128 (libquadmath
       on host, CUDA fp128 intrinsics on device) for ~113-bit accuracy.
     - When _CCCL_FPMP_FP128_MATH_FALLBACK=0, fall back to double-precision math.
-    - The fp64mp2 normcdfinv uses CUDA erfcinv on device, the fp32mp2 polynomial
-      on host (no standard erfcinv available).
+    - The fp64mp2 normcdfinv uses CUDA erfcinv on device, the fp32mp2 code on
+      host (no standard erfcinv available).
 
     Configuration Macros:
     -------------------------------------------------------------------------
@@ -997,7 +1180,14 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 fmod(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc>& __y) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_fmod(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_fmod(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_fmod(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -1006,7 +1196,14 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 remainder(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc>& __y) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_remainder(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_remainder(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_remainder(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 
@@ -1061,7 +1258,14 @@ _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 remquo(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc>& __y, int* __quo) noexcept
 {
   _FpType __res_hi, __res_lo;
-  ::cuda::__fpmp2_remquo(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo, __quo);
+  if constexpr (_TypeAcc == fpmp2_accuracy::high)
+  {
+    ::cuda::__fpmp2_high_remquo(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo, __quo);
+  }
+  else
+  {
+    ::cuda::__fpmp2_remquo(__x.hi(), __x.lo(), __y.hi(), __y.lo(), &__res_hi, &__res_lo, __quo);
+  }
   return fpmp2<_FpType, _TypeAcc>(__res_hi, __res_lo);
 }
 

@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/execution_policy.h>
 #include <thrust/for_each.h>
 
 #include <cuda/std/__utility/forward.h>

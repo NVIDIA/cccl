@@ -18,7 +18,6 @@
 #include <thrust/detail/allocator/fill_construct_range.h>
 #include <thrust/detail/allocator/value_initialize_range.h>
 #include <thrust/detail/contiguous_storage.h>
-#include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/std/__memory/allocator_traits.h>

@@ -45,4 +45,4 @@ binary_search(RandomAccessIterator first, RandomAccessIterator last, const T& va
 
 THRUST_NAMESPACE_END
 
-#include <thrust/system/detail/generic/scalar/binary_search.inl>
+#include <thrust/system/detail/generic/scalar/binary_search.inl> // IWYU pragma: export
