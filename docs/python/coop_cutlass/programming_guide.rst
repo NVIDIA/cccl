@@ -324,8 +324,8 @@ memory accesses.
 Block scratch and reuse
 -----------------------
 
-Primitives that need scratch shared memory get it from the compiler, or from
-a ``TempStorage`` that you pass. :ref:`TempStorage <coop-temp-storage>` in
+Primitives that need scratch space in shared memory get it from the compiler,
+or from a ``TempStorage`` that you pass. :ref:`TempStorage <coop-temp-storage>` in
 the API reference covers layouts, barriers, ``reserve`` and ``release``.
 
 The following example transforms eight tiles in a loop with one
@@ -562,12 +562,8 @@ elements. The count must be uniform within the group. Zero and out-of-range
 counts are invalid; all members still participate even when their values fall
 outside the prefix.
 
-Omitting ``temp_storage`` uses compiler-managed scratch with automatic
-synchronization. Block Reduce accepts a ``TempStorage`` descriptor with the
-same sizing, alignment, sharing, and synchronization policy as Block
-Load/Store. An explicit descriptor defaults to ``auto_sync=False``: call
-``storage.sync()`` before reusing it, or construct it with
-``auto_sync=True``. Warp Reduce always uses compiler-managed scratch with
+Block Reduce accepts a :ref:`TempStorage <coop-temp-storage>`. Warp Reduce
+always uses compiler-managed scratch with
 synchronization scoped to its participating lanes.
 
 This example uses block rank queries, a full block sum, logical-warp maxima,
@@ -609,9 +605,8 @@ Prefix callbacks and runtime callback state are unsupported.
 
 The block algorithms are ``raking`` (the default), ``raking_memoize``, and
 ``warp_scans``. The last requires a block size divisible by 32. All block Scan
-algorithms use scratch and accept ``temp_storage`` with the size, alignment,
-sharing, and synchronization rules described above. One descriptor can be
-reused between Scan and Load/Store. Warp Scan manages independent scratch per
+algorithms use scratch and accept a :ref:`TempStorage <coop-temp-storage>`,
+which Scan can share with Load/Store. Warp Scan manages independent scratch per
 group and rejects algorithm selectors and explicit storage. Every member of
 each participating group must call the primitive, including on repeated
 calls and loop iterations.
@@ -782,9 +777,8 @@ infinite bounds. A Python or NumPy NaN sentinel is rejected. CuTe values are
 not checked for NaN; callers must supply a valid bound. ``descending`` is a
 compile-time Boolean. Counts and sentinels must be uniform within each group.
 
-Block sorts accept ``temp_storage`` with the size, alignment, sharing, and
-reuse rules described above. Warp sorts manage independent scratch per group
-and reject explicit storage. The example below reuses one descriptor for an
+Block sorts accept a :ref:`TempStorage <coop-temp-storage>`. Warp sorts
+manage independent scratch per group and reject explicit storage. The example below reuses one descriptor for an
 ascending key sort and a descending pair sort, then stores the original
 payloads to verify that they remain unchanged. It checks key order and
 key/value association against independent CPU references.
@@ -846,8 +840,8 @@ Results use blocked layout by default. CUTLASS Sort's compile-time
 ``blocked_to_striped=True`` maps item ``i`` at thread ``t`` to sorted index
 ``i * block_threads + t``. This applies to both outputs of a pair sort.
 Match the Store algorithm to this register layout when writing a contiguous
-sorted tile. Sort accepts ``temp_storage`` with the size, alignment, sharing,
-and synchronization rules described above. It does not accept a valid count,
+sorted tile. Sort accepts a :ref:`TempStorage <coop-temp-storage>`. It does
+not accept a valid count,
 comparison callback, or algorithm selector.
 
 Rank digits and bin prefixes
@@ -917,8 +911,8 @@ NaNs have no guaranteed numeric ordering.
 The API additionally accepts CuTe register tensors and immutable
 register values, including mixed register-tensor and ``ThreadData`` pairs.
 Its results remain ``ThreadData``, and its controls match the API.
-Scalar inputs are unsupported. Block scratch follows the size, alignment,
-sharing, and reuse synchronization rules described above.
+Scalar inputs are unsupported. TopK accepts a
+:ref:`TempStorage <coop-temp-storage>`.
 
 The :doc:`TopK visualization <visualizations/topk>` shows the selected
 prefix. This example selects the smallest keys and largest pairs from a

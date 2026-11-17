@@ -6,7 +6,7 @@
 
 A block scan does, and so do the transpose forms of Load and Store. Leave
 ``temp_storage`` out of a call and the compiler provides the scratch that
-call needs and adds a block barrier after it.
+call needs and adds a barrier after it.
 
 Pass a :class:`~cuda.coop.cutlass.TempStorage` to choose which calls share
 bytes and where the barriers go. Construct it inside the kernel and give the
@@ -25,8 +25,8 @@ kernel asks for ``algorithm="transpose"``.
 
 ``sharing`` sets how the calls are laid out inside the region. The sizes are
 those of the kernel above on a block of 128 threads with four ``Int32`` items
-each, where Load, Scan and Store need 2,048, 672 and 2,064 bytes with
-CUDA 13.3. Other block shapes, element types and CUB versions give other
+each, where Load, Scan and Store need 2,048, 672 and 2,064 bytes with CUB
+from CCCL 3.7. Other block shapes, element types and CUB versions give other
 sizes.
 
 .. list-table::
@@ -44,18 +44,25 @@ sizes.
      - All calls together: 4,784 bytes
    * - When bytes are reused
      - At the next call
-     - When the same call site runs again, as in a loop
+     - When the same call site runs again, as in a runtime loop
 
-Each ``TempStorage`` has its own region. Calls that must keep their scratch
-apart take different objects.
+.. figure:: visualizations/concept-temp-storage.svg
+   :alt: Three rows of bars on one byte axis. With temp_storage left out,
+         Load, Scan and Store each have their own region. With a shared
+         TempStorage, all three start at offset 0 of one region as large as
+         the largest call. With an exclusive TempStorage, they sit end to
+         end in one region.
+   :width: 100%
+
+   The same three calls, to scale. The top row is the kernel with
+   ``temp_storage`` left out.
 
 Before scratch is reused, every thread in the block must be finished with
 what was there. ``auto_sync=True`` adds a block barrier after each call that
-used the region. The default is ``auto_sync=False``, as in CUB: you call
-:meth:`~cuda.coop.cutlass.TempStorage.sync` before the bytes are reused. This
-is the body of the same kernel with its barriers written by hand. These
-barriers are for scratch. Shared data of your own needs its own
-synchronization.
+used the region, with either layout. The default is ``auto_sync=False``, as
+in CUB: you call :meth:`~cuda.coop.cutlass.TempStorage.sync` before the bytes
+are reused. This is the body of the same kernel with its barriers written by
+hand:
 
 `Full example and test on GitHub
 <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
@@ -67,16 +74,24 @@ synchronization.
     :end-before: # cutlass-concept-temp-storage-manual-sync-end
     :dedent: 4
 
-Block primitives that use scratch accept a ``TempStorage``: transpose Load
-and Store, Reduce, Scan, Merge Sort, Radix Sort, TopK, Adjacent Difference,
-Discontinuity, Histogram and Run Length Decode. Warp primitives manage their
-own scratch and reject one.
+With ``sharing="exclusive"`` this kernel needs neither ``sync``, because no
+call reuses another call's bytes. The barriers above are placed for the
+scratch. If your threads also pass data to each other through shared memory,
+add the barriers that needs. The
+:ref:`block storage example <coop-cutlass-storage>` reuses one region on
+every trip around a runtime loop.
 
-The region lasts for one launch of one block. To keep your own data in it,
+These block primitives take a ``temp_storage`` argument: transpose Load and
+Store, Reduce, Scan, Merge Sort, Radix Sort, TopK, Adjacent Difference,
+Discontinuity, Histogram and Run Length Decode. Exchange, Shuffle, Radix
+Rank and the warp primitives always manage their own scratch.
+
+You can also use the region for your own data.
 :meth:`~cuda.coop.cutlass.TempStorage.reserve` returns a typed shared tensor
-from the same region, and :meth:`~cuda.coop.cutlass.TempStorage.release`
-hands the whole region back as ordinary shared memory once the primitives
-are finished with it.
+inside it. :meth:`~cuda.coop.cutlass.TempStorage.release` hands the whole
+region back as ordinary shared memory once the primitives are finished with
+it. The launch's shared-memory size includes the region, along with any
+tensors from CuTe's ``SmemAllocator``.
 """
 
 # Implementation notes. The descriptor holds compile-time policy and identity
@@ -110,7 +125,7 @@ def _normalize_storage_alignment(alignment):
 
 
 class TempStorage:
-    """A region of scratch shared memory that primitives in one kernel share.
+    """Scratch space in shared memory for the primitives of one kernel.
 
     Construct one inside the kernel and pass it as ``temp_storage`` to each
     primitive that should use it.
@@ -118,39 +133,38 @@ class TempStorage:
     Attributes
     ----------
     size_in_bytes : int or None
-        Capacity of the region in bytes. ``None``, the default, lets the
-        compiler size it for every use, including reserved arrays. An
-        explicit capacity must be at least that large and fit a signed
-        32-bit integer. The device's shared-memory limit still applies.
+        Size of the region in bytes. ``None``, the default, lets the
+        compiler size it for every use, including reservations. An explicit
+        size is a positive number of bytes. One smaller than the uses need
+        is a compile error. The device's shared-memory limit still applies.
     alignment : int or None
         Minimum alignment of the region in bytes, a power of two up to 1024.
         The compiler raises it when a primitive needs more.
     auto_sync : bool
         ``True`` adds a block barrier after each call that uses the region.
-        The default, ``False``, leaves the barriers to the kernel: call
+        The default, ``False``, leaves the barriers to you: call
         :meth:`~cuda.coop.cutlass.TempStorage.sync` before scratch is
         reused. ``None`` means ``False``.
     sharing : {"shared", "exclusive"}
         ``"shared"``, the default, places every call and reservation at the
         start of the region, which is sized for the largest of them.
         ``"exclusive"`` gives each call site and reservation its own slice,
-        in trace order. A call site that runs again, as in a loop, reuses
-        its slice.
+        in the order they appear in the kernel. A call site that runs
+        again, as in a runtime loop, reuses its slice.
 
     Notes
     -----
     * Two objects are two regions, even when their arguments are equal.
-      Pass the same object to the calls that should share.
-    * An object created on the host works for straight-line calls. It
-      cannot be carried through a runtime ``if`` or loop and cannot be
-      released.
+    * An object constructed outside the kernel function works only for
+      calls outside a runtime ``if`` or loop, and cannot be released.
     * Inside a runtime ``if`` or loop, keep using the same object. Choosing
       between two objects at run time, or rebinding the name to another
       one, is a compile error. An object created and used entirely inside
       one branch or one loop iteration is fine.
-    * Put a conditional call in an ``if`` statement whose condition is the
-      same for every thread in the group. A conditional expression is
-      rejected.
+    * To make a call that uses scratch conditional, use an ``if`` statement
+      whose condition is the same for every thread in the group. Inside a
+      runtime ``a if c else b`` expression such a call is a compile error.
+    * Error messages call a ``TempStorage`` object a descriptor.
 
     The Developer Guide describes :ref:`how the compiler sizes and places
     the region <coop-cutlass-scratch-allocation>`.
@@ -271,16 +285,17 @@ class TempStorage:
 
         A reservation follows the object's ``sharing``. With ``"shared"``
         it overlaps primitive scratch and other reservations. With
-        ``"exclusive"`` it has its own slice. Each call site has one view,
-        also when it runs again in a loop. Other ``TempStorage`` objects
-        and tensors from CuTe's ``SmemAllocator`` occupy separate bytes.
+        ``"exclusive"`` it has its own slice. A ``reserve`` call inside a
+        runtime loop returns the same bytes on every iteration. Other
+        ``TempStorage`` objects and tensors from CuTe's ``SmemAllocator``
+        occupy separate bytes.
 
-        Reservations need ``auto_sync=False``. Before a primitive or a later
-        phase reuses bytes that a reservation overlaps, finish with them,
-        for example by copying the values into registers, and call
-        :meth:`~cuda.coop.cutlass.TempStorage.sync`. ``sync`` is a block
-        barrier. It does not wait for an asynchronous library operation to
-        complete.
+        Reservations need ``auto_sync=False``. With ``"shared"``, the next
+        primitive that uses the region overwrites the reservation. Copy the
+        values you still need into registers and call
+        :meth:`~cuda.coop.cutlass.TempStorage.sync` first. ``sync`` is only
+        a block barrier. If native code started an asynchronous copy into
+        the tensor, wait for that copy to complete as well.
 
         This kernel hands a reserved tensor to native CuTe code, reuses its
         bytes for a block sum, and checks that a tensor from
@@ -307,22 +322,25 @@ class TempStorage:
         """Return the whole region as an ordinary shared tensor.
 
         ``dtype`` is a supported compile-time scalar type. Without it the
-        tensor holds bytes (``Uint8``). The tensor covers the full capacity:
-        every exclusive slice, any padding, and an explicit
-        ``size_in_bytes``. That size must be a multiple of the element size
-        and the region's alignment must suit the type. An inferred region
-        that nothing uses is empty and is rejected. The object must have
-        been constructed inside the kernel.
+        tensor holds bytes (``Uint8``). The tensor covers the whole region:
+        all of an explicit ``size_in_bytes``, or every slice and any padding
+        of an inferred one. The region's size must be a multiple of the
+        element size and its alignment at least the element's. An inferred
+        region that nothing uses is empty and is rejected. The object must
+        have been constructed inside the kernel.
 
-        ``release`` retires the object and every alias of it. A primitive,
-        ``reserve``, ``sync`` or second ``release`` that uses it afterwards
-        is a compile error, on the same path and on a later loop iteration.
-        An object constructed inside a loop body is a new one each
-        iteration.
+        After ``release`` the object is spent, under every name that refers
+        to it. Using it again in a primitive, ``reserve``, ``sync`` or
+        ``release`` is a compile error. That includes code after an ``if``
+        that released it in one branch, and the next iteration of a loop
+        that contains the ``release``. An object constructed inside the loop
+        body is a new one each iteration.
 
-        ``release`` adds no barrier and waits for nothing. Finish and
-        synchronize the earlier work before writing through the returned
-        tensor.
+        ``release`` adds no barrier. Every thread must be past the last
+        primitive that used the region before any thread writes through the
+        returned tensor. ``auto_sync=True`` provides that barrier, as in the
+        kernel below. Otherwise call
+        :meth:`~cuda.coop.cutlass.TempStorage.sync` before ``release``.
 
         This kernel sums a block, then takes the region back and uses it to
         hand each thread the value of the thread opposite it.

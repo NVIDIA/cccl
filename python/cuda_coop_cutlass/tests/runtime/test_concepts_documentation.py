@@ -20,10 +20,11 @@ from tests.runtime_support import device_array
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
-# TempStorage. Each kernel is the prefix sum from examples/prefix_sum.py.
-# Load and Store ask for the transpose algorithm because their default
-# algorithm uses no scratch. The kernels are defined at module level so the
-# marked lines keep that example's names and need no dedent.
+# TempStorage. The prefix_sum_* kernels are the prefix sum from
+# examples/prefix_sum.py. Load and Store ask for the transpose algorithm
+# because their default algorithm uses no scratch. Kernels that the
+# documentation includes whole are defined at module level, so those snippets
+# keep that example's names and need no dedent.
 
 
 # cutlass-concept-temp-storage-begin
@@ -57,6 +58,29 @@ def prefix_sum_exclusive(
 ):
     block = coop.this_block()
     scratch = coop.TempStorage(sharing="exclusive", auto_sync=True)
+    values = coop.load(
+        block,
+        source,
+        items_per_thread=items_per_thread,
+        algorithm="transpose",
+        temp_storage=scratch,
+    )
+    sums = coop.inclusive_sum(block, values, temp_storage=scratch)
+    coop.store(
+        block, destination, sums, algorithm="transpose", temp_storage=scratch
+    )
+
+
+@cute.kernel
+def prefix_sum_exclusive_no_sync(
+    source: cute.Pointer,
+    destination: cute.Pointer,
+    items_per_thread: cutlass.Constexpr,
+):
+    block = coop.this_block()
+    # Each call has its own slice, so no call reuses another call's bytes
+    # and the kernel needs no barrier between them.
+    scratch = coop.TempStorage(sharing="exclusive")
     values = coop.load(
         block,
         source,
@@ -157,8 +181,13 @@ def _check_prefix_sum(kernel):
 
 @pytest.mark.parametrize(
     "kernel",
-    (prefix_sum_shared, prefix_sum_exclusive, prefix_sum_omitted),
-    ids=("shared", "exclusive", "omitted"),
+    (
+        prefix_sum_shared,
+        prefix_sum_exclusive,
+        prefix_sum_exclusive_no_sync,
+        prefix_sum_omitted,
+    ),
+    ids=("shared", "exclusive", "exclusive-no-sync", "omitted"),
 )
 def test_temp_storage_concept(kernel):
     """Check the prefix sum with each way of giving the calls scratch."""

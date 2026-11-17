@@ -123,4 +123,4 @@ Scratch remains occupied throughout the bulk call's internal loop. Explicit
 descriptors default to ``auto_sync=False``: synchronize before the next use
 or request ``auto_sync=True``. Totals use ``Uint32``; negative lengths,
 misplaced padding, and overflow trap before decoding. See
-:ref:`coop-faq-temp-storage` for reuse requirements.
+:ref:`TempStorage <coop-temp-storage>` for reuse requirements.
