@@ -114,92 +114,10 @@ integration requires external NVIDIA LTO-IR linking, and NVRTC compiles the
 CUB providers. See :ref:`compiler requirements
 <coop-cutlass-compiler-requirements>` for the required interfaces.
 
-.. _coop-cutlass-payload-types:
-
-Payloads, dtypes, and result ownership
---------------------------------------
-
-``ThreadData`` holds a fixed number of values per thread. In blocked order,
-thread ``t`` owns tile positions ``t * items_per_thread + i``. In striped
-order, it owns positions ``t + i * group_size``. A Load/Store algorithm
-determines the layout expected by that call; the payload does not carry a
-layout tag. See the :doc:`Load <visualizations/load>` and
-:doc:`Exchange <visualizations/exchange>` visualizations for the mappings.
-
-Pass the item count as ``items_per_thread: cutlass.Constexpr`` on the
-``@cute.kernel`` and its ``@cute.jit`` launcher, then load values with
-``coop.load(group, source, items_per_thread=items_per_thread)``.
-Forward the host value through the launcher to the kernel. CuTe specializes
-the count during compilation;
-it remains fixed while the kernel executes. Use
-``cutlass.range_constexpr(items_per_thread)`` when indexing each slot.
-
-Load infers the payload's element type from the memory operand. For generated
-values and writable auxiliary outputs, construct
-``coop.ThreadData(items_per_thread)`` directly. Leave its element type
-unspecified for normal use; consuming primitives can infer it from
-homogeneous initialized values. Use typed scalar assignments, such as
-``cutlass.Int32(expression)``, when the computation needs a specific numeric
-representation. Supported payload types are signed and unsigned integers of
-8, 16, 32, or 64 bits and 32- or 64-bit floating point. An individual primitive
-can accept a smaller set; for example, bitwise operators require integers.
-Boolean, half-precision, complex, and structured payloads are unsupported.
-
-CuTe reports integer memory behind a ``cute.Pointer`` as signed, including
-when the host created the pointer with an unsigned type. ``Uint32`` data then
-loads as ``Int32`` with no error, and a maximum or a sort gives the signed
-answer. Declare unsigned memory with ``dtype`` on both calls:
-
-.. code-block:: python
-
-   keys = coop.load(block, source, items_per_thread=4, dtype=cutlass.Uint32)
-   coop.store(block, destination, keys, dtype=cutlass.Uint32)
-
-NumPy types select a numeric representation; expressions inside the kernel
-are CuTe values. Store requires the payload dtype to match the destination
-element type. Cast arithmetic results explicitly when necessary, for example
-with ``cutlass.Int32(value)``. Integer sums can overflow, and a parallel
-floating-point sum can differ from a sequential CPU sum because the order
-of additions differs.
-
-Load with ``items_per_thread`` returns a fresh payload. Both typed and
-dtype-free constructors remain supported for generated values and auxiliary
-outputs. CuTe reconstructs payload values across runtime control flow; an
-alias bound before a runtime loop does not become a mutable storage reference
-to the loop's payload.
-
-Store returns ``None``. Transpose Store
-algorithms may rearrange the input payload; copy values before Store if they
-are needed later. For payload
-inputs, Scan, Exchange, sorting, selection, and array Shuffle return fresh
-payloads. Supported scalar forms return CuTe scalars. Reduce returns one
-scalar even when each thread contributes multiple items. Read results
-only at the positions or threads where the primitive defines them.
-
-Index payloads with compile-time integers and initialize each item before
-reading it. ``coop.load(group, source, items_per_thread=N, alignment=16)``
-requests at least 16-byte alignment when the returned payload's storage is
-materialized. Its alignment follows ``ThreadData(N, alignment=16)``: a positive
-compile-time power of two, preserved across payload reconstruction and register
-exports. Input and output memory alignment is separate; the kwarg makes
-no promise about the source pointer, including a pointer with an element offset.
-
-The compiler decides which values remain in registers
-and which spill to local memory. The :ref:`conversion methods
-<coop-cutlass-register-payloads>` connect payloads to CuTe register tensors
-and immutable register values.
-
-``ThreadData`` holds typed scalar expressions. Load allocates a temporary
-CuTe register tensor for the provider's result and builds the returned
-payload from its scalar expressions. To write an existing native register
-tensor, use ``tensor.store(values.to_tensor_ssa(like=tensor))`` with matching
-shape and item order. The tensor retains its native storage and aliases.
-``values.to_register_tensor()`` instead creates a new register tensor.
-
 .. _coop-shared-load-store:
 
 Shared-memory staging
-~~~~~~~~~~~~~~~~~~~~~
+---------------------
 
 Load accepts compact global- or shared-memory sources, including native CuTe
 shared tensors and typed tensors from ``TempStorage.reserve``. Store accepts
@@ -230,25 +148,6 @@ Store-to-shared is also supported: Load into ``ThreadData``, Store into a
 native shared tensor or reserved workspace, then synchronize before another
 thread reads those writes. Application shared storage must remain disjoint
 from scratch that a concurrent primitive can overwrite.
-
-.. _coop-cutlass-dtype-inference:
-
-Element types in advanced interop
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Raw MLIR integer values may carry a width such as ``i32`` without signedness.
-The adapter cannot determine whether that value represents a signed or
-unsigned integer from its width alone. Preserve the intended type in the
-producer or wrap the value in the appropriate CUTLASS scalar type. Explicit
-payload element-type metadata is also available for this case and must match
-the integer width.
-
-An explicit type does not initialize missing items or make conflicting typed
-values compatible. The ordinary Load and typed-assignment examples retain
-enough information to infer their payload types. Unsigned memory behind a
-``cute.Pointer`` is the exception, and ``load`` takes a ``dtype`` for it, as
-:ref:`Payloads, dtypes, and result ownership <coop-cutlass-payload-types>`
-describes.
 
 .. _coop-cutlass-helpers:
 
@@ -930,45 +829,10 @@ needs no shared scratch or trailing storage-reuse barrier.
 See the :doc:`Batched Warp Reduction visualization
 <visualizations/reduce-batched>` for the batch-to-lane mapping.
 
-.. _coop-cutlass-register-payloads:
-
-CUTLASS register payloads
----------------------------
-
-``ThreadData`` provides
-``from_register_tensor`` and ``to_register_tensor`` for register-memory
-tensors, and ``from_vector`` and ``to_tensor_ssa`` for immutable register
-values. These conversions use the same fixed per-thread item count as the
-load/store payload.
-
-An initialized ``ThreadData`` can cross CuTe runtime loops and branches while
-retaining its fixed item count, dtype, and requested alignment. Initialize
-every item in every participating thread before carrying the payload across
-a runtime control-flow boundary. Changes to dtype or alignment across that
-boundary are rejected; use an explicit conversion to keep both paths consistent.
-
-Load and Store take the memory element type from the CuTe operand. For
-unsigned values behind a ``cute.Pointer`` or a ``cute.make_tensor`` view of
-one, pass ``dtype`` to ``load`` and ``store`` as
-:ref:`Payloads, dtypes, and result ownership <coop-cutlass-payload-types>`
-shows, or pass a ``cute.recast_tensor`` view of the memory.
-
-.. code-block:: python
-
-   import cuda.coop.cutlass as coop
-
-   # Inside a CuTe kernel, with a register-memory fragment:
-   values = coop.ThreadData.from_register_tensor(fragment)
-   coop.store(coop.this_block(), destination, values)
-
-For a complete kernel that loads a Tensor Core accumulator from TMEM,
-applies cooperative TopK in registers, and stores it back for the next MMA,
-see :doc:`Tensor Core and TopK interop <tensor_memory_topk>`.
-
 .. _coop-cutlass-producer-interop:
 
 Producer-owned register loads
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------------
 
 ``ThreadData.load(source)`` adapts a producer that explicitly provides the
 ``__cuda_coop_thread_data_load__`` tracing hook. The producer chooses the

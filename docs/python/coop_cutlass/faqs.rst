@@ -29,32 +29,25 @@ registration call or backend selector is needed.
 Why use ``ThreadData`` for per-thread values?
 ---------------------------------------------
 
-``ThreadData`` carries a compile-time item count, element type, and optional
-alignment through cooperative operations. A returning Load infers its dtype
-from the source. Direct construction supports generated values and auxiliary
-outputs, while register-tensor and immutable-vector adapters connect native
-CuTe values to this payload model.
+A primitive is compiled for a known number of items per thread and a known
+element type. ``ThreadData`` carries both, so a call such as
+``coop.inclusive_sum(block, values)`` needs no other arguments. The item
+count is the ``ITEMS_PER_THREAD`` parameter of the CUB class behind the
+call, which is why it is a Python integer and cannot come from device data.
 
-Declare ``items_per_thread: cutlass.Constexpr`` on the kernel and launcher
-and forward it at launch. The count corresponds to the CUB
-``ITEMS_PER_THREAD`` specialization parameter. A value computed from device
-data cannot supply a static payload extent. Initialize every slot that an
-operation reads and use ``cutlass.range_constexpr`` for payload indexing.
-
-See :ref:`register payloads <coop-cutlass-register-payloads>` for copy,
-identity, lifetime, and reconstruction rules. Conversion does not promise
-zero-copy behavior, absence of spills, or reconstruction of distributed MMA
-ownership from a flat per-thread shape.
+:ref:`ThreadData <coop-thread-data>` in the API reference has the rules and
+the conversions to and from CuTe register tensors. A conversion copies the
+items in flat index order. Which thread owns which element of an MMA
+fragment is for the kernel to keep track of.
 
 .. _coop-faq-returning-load:
 
 What does Load return?
 ----------------------
 
-``coop.load(group, source, items_per_thread=N)`` always returns a fresh
-``ThreadData``, including when ``N=1``. Separate calls have independent
-result ownership. Use ``ThreadData`` constructors for generated values;
-Load has no caller-provided output parameter.
+A new ``ThreadData`` in each thread, with ``items_per_thread`` items of the
+source's element type. That holds for ``items_per_thread=1`` too, and each
+call returns its own payload:
 
 .. code-block:: python
 
@@ -64,11 +57,10 @@ Load has no caller-provided output parameter.
    one_item = coop.load(block, source, items_per_thread=1)
    # Both results are ThreadData; each call returns a separate payload.
 
-``alignment`` requests a minimum alignment when returned payload storage is
-materialized. It does not establish alignment of the source or destination
-pointer. ``offset`` counts source elements, and ``valid_items`` counts tile
-elements across the group. Without ``oob_default``, invalid payload slots
-are unspecified and must not be read.
+``offset`` counts source elements, and ``valid_items`` counts elements of
+the group's tile. Items past ``valid_items`` have no defined value unless the
+call passes ``oob_default``. ``alignment`` applies to register storage made
+from the returned payload, and says nothing about the source pointer.
 
 .. _coop-faq-shared-load:
 
@@ -92,17 +84,15 @@ not replace that protocol.
 When does ``ThreadData`` need an explicit element type?
 -------------------------------------------------------
 
-Load infers its dtype from a supported CuTe source. Direct construction can
-infer it from homogeneous initialized values. Use typed scalar assignments
-when a computation needs a particular width or signedness. Explicit dtype
-construction remains supported, and a consuming primitive may require a
-specific type or a narrower set of types than the general payload supports.
+When its items are raw MLIR integers, which have a width and no sign. Pass
+``dtype`` with that width, or wrap each item in a CUTLASS type such as
+``cutlass.Uint32``.
 
-Raw MLIR integer values can carry a width without signedness. Preserve their
-intended element type in the producer or wrap them in the corresponding
-CUTLASS scalar type. Explicit metadata must agree with that width. Giving a
-dtype does not initialize missing slots or reconcile conflicting values.
-See :ref:`advanced interop <coop-cutlass-dtype-inference>`.
+Otherwise leave it out. ``load`` takes the type from the memory, and a
+payload the kernel fills takes it from its items, which must all have the
+same type. Naming a type assigns no missing items and converts no item that
+already has another type. :ref:`ThreadData <coop-thread-data>` in the API
+reference lists the supported types.
 
 .. _coop-faq-producer:
 

@@ -86,8 +86,19 @@ Thread groups
 
    Alias for :class:`ThreadHierarchy`.
 
-Per-thread payloads and CuTe conversion
----------------------------------------
+.. _coop-thread-data:
+.. _coop-cutlass-register-payloads:
+.. _coop-cutlass-dtype-inference:
+
+ThreadData: per-thread payloads and CuTe conversion
+---------------------------------------------------
+
+.. automodule:: cuda.coop.cutlass._thread_data
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. autoclass:: ThreadData
    :no-members:
