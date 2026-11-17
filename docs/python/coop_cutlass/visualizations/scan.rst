@@ -29,8 +29,8 @@ logical warps. **Physical CUDA warps have 32 lanes.**
 
          Exclusive block sum with two items per thread.
 
-   Local sums establish the prefix entering each thread. Each thread then
-   applies that prefix to its own ordered items.
+   The sum of all earlier threads' items enters each thread, and that
+   thread's results continue from it.
 
    .. code-block:: text
 
@@ -48,13 +48,13 @@ incoming prefix with the local sequence gives the final result. ``∅`` means
 that nothing enters a thread, as in the first thread of an inclusive scan.
 
 The three block algorithms compute the same scan and return each result to
-the same thread. They group the operations differently, so floating-point
-results can differ from one algorithm to another. ``raking`` passes prefixes
-through shared-memory segments. ``raking_memoize`` keeps partial results in
-registers to save shared-memory reads. ``warp_scans`` scans inside each warp
-and then combines each result with what the earlier warps produced. The
-picture shows which values depend on which. In a kernel, ``warp_scans``
-needs a block size that is a multiple of 32.
+the same thread. ``raking`` passes prefixes through shared-memory segments.
+``raking_memoize`` keeps partial results in registers to save shared-memory
+reads. ``warp_scans`` scans inside each warp and then combines each result
+with what the earlier warps produced. It groups the operations differently
+from the two raking algorithms, so floating-point results can differ
+between them. The explorer draws the same stages for all three. In a
+kernel, ``warp_scans`` needs a block size that is a multiple of 32.
 
 With ``valid_items``, the explorer marks the lanes at or past the count
 with ``?``. An exclusive scan combines its initial value into every result:
@@ -80,7 +80,7 @@ own tile independently.
    prefixes = coop.inclusive_sum(block, values, algorithm="raking_memoize")
    coop.store(block, output, prefixes, offset=offset)
 
-To compute an exclusive maximum with a prefix, replace the scan call with:
+For an exclusive maximum that starts from 10, replace the scan call with:
 
 .. code-block:: python
 
@@ -88,9 +88,9 @@ To compute an exclusive maximum with a prefix, replace the scan call with:
        block, values, scan_op="max", initial_value=10
    )
 
-In a complete CuTe kernel, this tested example scans a logical warp's valid
-prefix and writes its aggregate. ``operator.add`` selects the built-in sum;
-it is not a custom device callback.
+This tested kernel scans the first five lanes of each group of eight lanes,
+and every lane writes the sum of those five. ``operator.add`` selects the
+built-in sum.
 
 .. literalinclude:: ../../../../python/cuda_coop_cutlass/tests/runtime/test_scan_documentation.py
    :language: python
