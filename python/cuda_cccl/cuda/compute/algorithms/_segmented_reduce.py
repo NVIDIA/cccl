@@ -15,7 +15,7 @@ from .._caching import cache_build_results, cache_with_registered_key_functions
 from .._cccl_interop import (
     get_value_type,
     set_cccl_iterator_state,
-    to_cccl_value_state,
+    set_cccl_value_state,
 )
 from .._serialization import BUILD_RESULTS, ITER, OP, VALUE, Serializable
 from .._utils.protocols import (
@@ -23,7 +23,7 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..op import OpAdapter, make_op_adapter
+from ..op import OpAdapter, make_op_adapter, rebind_op_state
 from ..typing import DeviceArrayLike, GpuStruct, IteratorT, Operator
 
 
@@ -110,11 +110,10 @@ class _SegmentedReduce(Serializable):
         with -- only its state may differ. ``execute()`` never re-derives
         op state, so call this before ``execute()`` whenever it changes.
         """
-        op_adapter = make_op_adapter(op)
-        self.op_cccl.state = op_adapter.get_state()
-        # Invalidate __call__'s stateless-op cache: a RawOp with state
-        # still reports is_stateful=False, so without this a later
-        # __call__ on the same object would reuse the stale state.
+        # Force the write (bypass identity-cache: a RawOp with state still
+        # reports is_stateful=False), then invalidate the cache -- a later
+        # __call__ on this same op object must not skip re-deriving it.
+        rebind_op_state(self.op_cccl, op, last_stateless_op=None)
         self._last_stateless_op = None
 
     def update_h_init_state(self, h_init) -> None:
@@ -126,7 +125,7 @@ class _SegmentedReduce(Serializable):
         call -- ``execute()`` has no ``h_init`` parameter and never
         re-reads it.
         """
-        self.h_init_cccl.state = to_cccl_value_state(h_init)
+        set_cccl_value_state(self.h_init_cccl, h_init)
 
     def execute(
         self,
@@ -245,14 +244,11 @@ class _SegmentedReduce(Serializable):
         set_cccl_iterator_state(self.start_offsets_in_cccl, start_offsets_in)
         set_cccl_iterator_state(self.end_offsets_in_cccl, end_offsets_in)
 
-        # Update op state for stateful ops; see _Reduce.__call__ for the
-        # stateless-op caching rationale.
-        op_adapter = make_op_adapter(op)
-        if op_adapter.is_stateful or op is not self._last_stateless_op:
-            self.op_cccl.state = op_adapter.get_state()
-            self._last_stateless_op = None if op_adapter.is_stateful else op
+        self._last_stateless_op = rebind_op_state(
+            self.op_cccl, op, self._last_stateless_op
+        )
 
-        self.h_init_cccl.state = to_cccl_value_state(h_init)
+        set_cccl_value_state(self.h_init_cccl, h_init)
 
         stream_handle = validate_and_get_stream(stream)
 

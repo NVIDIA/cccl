@@ -15,7 +15,7 @@ from .._caching import cache_build_results, cache_with_registered_key_functions
 from .._cccl_interop import (
     get_value_type,
     set_cccl_iterator_state,
-    to_cccl_value_state,
+    set_cccl_value_state,
 )
 from .._serialization import (
     BOOL,
@@ -33,7 +33,7 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..op import OpAdapter, make_op_adapter
+from ..op import OpAdapter, make_op_adapter, rebind_op_state
 from ..typing import DeviceArrayLike, GpuStruct, IteratorT, Operator
 
 
@@ -182,11 +182,10 @@ class _Scan(Serializable):
         with -- only its state may differ. ``execute()`` never re-derives
         op state, so call this before ``execute()`` whenever it changes.
         """
-        op_adapter = make_op_adapter(op)
-        self.op_cccl.state = op_adapter.get_state()
-        # Invalidate __call__'s stateless-op cache: a RawOp with state
-        # still reports is_stateful=False, so without this a later
-        # __call__ on the same object would reuse the stale state.
+        # Force the write (bypass identity-cache: a RawOp with state still
+        # reports is_stateful=False), then invalidate the cache -- a later
+        # __call__ on this same op object must not skip re-deriving it.
+        rebind_op_state(self.op_cccl, op, last_stateless_op=None)
         self._last_stateless_op = None
 
     def update_h_init_state(
@@ -207,8 +206,8 @@ class _Scan(Serializable):
 
             case _bindings.InitKind.VALUE_INIT:
                 self.init_value_cccl = cast(_bindings.Value, self.init_value_cccl)
-                self.init_value_cccl.state = to_cccl_value_state(
-                    cast("np.ndarray | GpuStruct", init_value)
+                set_cccl_value_state(
+                    self.init_value_cccl, cast("np.ndarray | GpuStruct", init_value)
                 )
 
     def execute(
@@ -276,12 +275,9 @@ class _Scan(Serializable):
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
-        # Update op state for stateful ops. See _Reduce.__call__ for the
-        # stateless-op caching rationale.
-        op_adapter = make_op_adapter(op)
-        if op_adapter.is_stateful or op is not self._last_stateless_op:
-            self.op_cccl.state = op_adapter.get_state()
-            self._last_stateless_op = None if op_adapter.is_stateful else op
+        self._last_stateless_op = rebind_op_state(
+            self.op_cccl, op, self._last_stateless_op
+        )
 
         match self.init_kind:
             case _bindings.InitKind.FUTURE_VALUE_INIT:
@@ -295,8 +291,8 @@ class _Scan(Serializable):
 
             case _bindings.InitKind.VALUE_INIT:
                 self.init_value_cccl = cast(_bindings.Value, self.init_value_cccl)
-                self.init_value_cccl.state = to_cccl_value_state(
-                    cast("np.ndarray | GpuStruct", init_value)
+                set_cccl_value_state(
+                    self.init_value_cccl, cast("np.ndarray | GpuStruct", init_value)
                 )
 
         stream_handle = validate_and_get_stream(stream)

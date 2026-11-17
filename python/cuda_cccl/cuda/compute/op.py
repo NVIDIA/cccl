@@ -9,6 +9,7 @@ from __future__ import annotations
 import sys
 import sysconfig
 import warnings
+from typing import Callable
 
 from ._bindings import Op, OpKind, TypeEnum
 from ._caching import CachableFunction, cache_with_registered_key_functions
@@ -304,6 +305,24 @@ def make_op_adapter(op) -> OpAdapter:
 
     # It's a Python callable
     return _get_jit_op_adapter()(op)
+
+
+def rebind_op_state(
+    op_cccl: Op,
+    op: Callable | OpAdapter,
+    last_stateless_op: Callable | OpAdapter | None,
+) -> Callable | OpAdapter | None:
+    """Update ``op_cccl``'s state from ``op``, in place.
+
+    Skips the update when ``op`` is a stateless op already bound by
+    identity (its state is a constant, so re-deriving it is wasted work).
+    Returns the new ``last_stateless_op`` cache value to store.
+    """
+    adapter = make_op_adapter(op)
+    if adapter.is_stateful or op is not last_stateless_op:
+        op_cccl.state = adapter.get_state()
+        return None if adapter.is_stateful else op
+    return last_stateless_op
 
 
 cache_with_registered_key_functions.register(
