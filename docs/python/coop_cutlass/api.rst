@@ -122,6 +122,17 @@ TempStorage: temporary storage
 
 .. currentmodule:: cuda.coop.cutlass
 
+.. figure:: visualizations/concept-temp-storage.svg
+   :alt: Three rows of bars on one byte axis. With temp_storage left out,
+         Load, Scan and Store each have their own region, 4,784 bytes in
+         all. With a shared TempStorage, all three start at offset 0 of one
+         2,064-byte region. With an exclusive TempStorage, they sit end to
+         end in one 4,784-byte region.
+   :width: 100%
+
+   Scratch for the first kernel above, to scale: with ``temp_storage`` left
+   out, with the shared ``TempStorage`` it uses, and with an exclusive one.
+
 .. autoclass:: TempStorage
    :no-members:
    :no-special-members:
