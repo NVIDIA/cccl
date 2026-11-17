@@ -483,8 +483,8 @@ def resolve_build_result(build_results: dict, bound_result=None):
 
     ``bound_result`` is a default-build wrapper's construction-time binding
     (see cache_build_results): already the loaded result for the wrapper's
-    device, returned without any device query. Deserialized wrappers have no
-    binding and resolve per call.
+    device, returned without any device query. Deserialized wrappers resolve
+    per call unless explicitly bound with ``clone(device_id=...)``.
     """
     if bound_result is not None:
         return bound_result
