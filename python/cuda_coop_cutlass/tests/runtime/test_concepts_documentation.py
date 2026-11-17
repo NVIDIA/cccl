@@ -46,9 +46,7 @@ def prefix_sum_shared(
     coop.store(
         block, destination, sums, algorithm="transpose", temp_storage=scratch
     )
-
-
-# cutlass-concept-temp-storage-end
+    # cutlass-concept-temp-storage-end
 
 
 @cute.kernel
@@ -132,9 +130,7 @@ def sum_then_mirror(source: cute.Pointer, destination: cute.Pointer):
     output[rank] = shared[127 - rank]
     if rank == 0:
         output[128] = total
-
-
-# cutlass-concept-temp-storage-release-end
+    # cutlass-concept-temp-storage-release-end
 
 
 def _check_prefix_sum(kernel):

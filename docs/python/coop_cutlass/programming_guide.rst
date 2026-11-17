@@ -324,35 +324,15 @@ memory accesses.
 Block scratch and reuse
 -----------------------
 
-Block transpose algorithms and Block Reduce allocate scratch implicitly
-unless passed ``temp_storage``. Construct one ``TempStorage`` inside the
-kernel to share capacity across calls. An omitted size lets the compiler
-allocate enough storage for all uses; an explicit byte capacity must
-accommodate them.
-``alignment`` is a minimum: the allocation also satisfies each primitive's
-alignment requirements.
+Primitives that need scratch shared memory get it from the compiler, or from
+a ``TempStorage`` that you pass. :ref:`TempStorage <coop-temp-storage>` in
+the API reference covers layouts, barriers, ``reserve`` and ``release``.
 
-Scratch belongs to one kernel execution on one block. It cannot preserve
-application state between blocks or launches. CUTLASS materializes scratch
-through CuTe's shared-memory allocator after tracing has collected the
-requirements; CuTe owns the resulting kernel's shared-memory accounting.
-See :ref:`the allocation walkthrough <coop-cutlass-scratch-allocation>` for
-the compiler path.
-
-``sharing="shared"`` reuses one slice across call sites. With
-``sharing="exclusive"``, distinct call sites receive separate slices. This
-uses more shared memory to avoid barriers needed solely for cross-call scratch
-reuse when automatic synchronization is disabled. Both policies default to
-``auto_sync=False``. The kernel must call ``storage.sync()`` before reusing
-that storage, including on the next loop iteration. Set ``auto_sync=True`` to
-insert trailing reuse synchronization after each storage-using call. Without
-an explicit descriptor, the compiler manages scratch and its reuse
-synchronization automatically.
-
-By default, the following example transforms eight independent tiles with
-``sharing="shared"`` and ``auto_sync=True``. Its ``run_example`` function also
-accepts ``sharing="exclusive"``, and ``manual_sync=True`` replaces automatic
-synchronization with ``storage.sync()`` calls.
+The following example transforms eight tiles in a loop with one
+``TempStorage``. Each trip around the loop reuses the same bytes. Its
+``run_example`` function also accepts ``sharing="exclusive"``, and
+``manual_sync=True`` replaces the automatic barriers with ``storage.sync()``
+calls.
 `View the storage example on GitHub
 <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/block_storage.py>`_:
 
@@ -364,31 +344,16 @@ synchronization with ``storage.sync()`` calls.
 Typed workspaces for native CuTe code
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``storage.reserve(num_elems, dtype, alignment=None)`` returns an ordinary
-one-dimensional CuTe shared tensor. Its element count, dtype, and optional
-byte alignment are compile-time constants. Supported dtypes are 8/16/32/64-bit
-signed and unsigned integers, ``Float16``, ``BFloat16``, ``Float32``, and
-``Float64``, including equivalent NumPy types where available.
-
-Reservations inherit the descriptor's sharing policy. With ``sharing="shared"``,
-all reservations and cooperative scratch using that descriptor alias one
-region sized for the largest requirement. With ``sharing="exclusive"``,
-each reservation and primitive call site receives a separate region.
-Different descriptors and ordinary ``SmemAllocator`` allocations remain
-disjoint. CuTe accounts for their combined size at launch.
-
-Descriptors used for reservations require ``auto_sync=False``. Before a new
-phase reuses shared bytes, finish the previous phase's accesses and library
-operations, then synchronize participating threads as required. In particular,
-load inputs into registers and synchronize before invoking a cooperative
-primitive whose scratch aliases those inputs. A block barrier does not replace
-a library's asynchronous completion or release operation.
+:meth:`TempStorage.reserve <cuda.coop.cutlass.TempStorage.reserve>` returns
+an ordinary one-dimensional CuTe shared tensor from a ``TempStorage`` region,
+so native CuTe code and cooperative primitives can take turns with the same
+bytes. Its API entry has the rules.
 
 A reserved tensor with a supported Load/Store dtype can also serve as the
 shared source or Store destination in the staging example above. Keep live
 staging data separate from scratch that an operation may overwrite. Direct
-and striped Load/Store need no cooperative scratch; a transpose operation
-requires separate scratch while it reads or writes that live staging tensor.
+and striped Load/Store need no scratch. A transpose Load or Store needs
+scratch of its own while it reads or writes that live tensor.
 
 The following example passes a reserved tensor to native CuTe code, reuses its
 bytes for a cooperative reduction, and checks that a separate native shared
