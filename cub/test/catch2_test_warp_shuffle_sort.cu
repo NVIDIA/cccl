@@ -65,12 +65,12 @@ __global__ void shuffle_sort_kernel(const Key* input, Key* output, bool descendi
   const int tid           = static_cast<int>(threadIdx.x);
   const int warp          = tid / LogicalWarpThreads;
   const int lane          = tid % LogicalWarpThreads;
-  const int tile          = static_cast<int>(blockIdx.x * blockDim.x) / LogicalWarpThreads + warp;
+  const int tile          = (static_cast<int>(blockIdx.x * blockDim.x) / LogicalWarpThreads) + warp;
 
   const warp_shuffle_sort warp_sort{};
 
   Key keys[Items];
-  const int thread_offset = tile * tile_size + lane * Items;
+  const int thread_offset = (tile * tile_size) + (lane * Items);
   for (int slot = 0; slot < Items; ++slot)
   {
     keys[slot] = input[thread_offset + slot];
@@ -178,7 +178,7 @@ CUB_TEST("Warp shuffle warp_sort preserves blocked keys and permutations",
   {
     for (int rank = 0; rank < tile_size; ++rank)
     {
-      input[tile * tile_size + rank] = make_key<key_t>(rank, tile_size, pattern);
+      input[(tile * tile_size) + rank] = make_key<key_t>(rank, tile_size, pattern);
     }
   }
 
