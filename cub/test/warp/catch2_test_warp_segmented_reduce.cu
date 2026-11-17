@@ -4,6 +4,8 @@
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/functional>
+#include <cuda/std/cstdint>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -227,7 +229,10 @@ using full_type_list =
                  uchar3,
                  short2>;
 
-using builtin_type_list = c2h::type_list<std::uint8_t, std::uint16_t, std::int32_t, std::int64_t>;
+using builtin_type_list =
+  c2h::type_list<uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t, float, double>;
+
+using min_max_ops = c2h::type_list<cuda::minimum<>, cuda::maximum<>>;
 
 // Logical warp sizes to test
 using logical_warp_threads = c2h::enum_type_list<int, 32, 16, 9, 7, 1>;
@@ -308,11 +313,12 @@ CUB_TEST("Warp segmented reduction works",
          CUB_SMALL,
          builtin_type_list,
          logical_warp_threads,
-         segmented_modes)
+         segmented_modes,
+         min_max_ops)
 {
   using params   = params_t<TestType>;
   using type     = typename params::type;
-  using red_op_t = cuda::minimum<>;
+  using red_op_t = c2h::get<3, TestType>;
 
   constexpr auto segmented_mod = c2h::get<2, TestType>::value;
   static_assert(segmented_mod == reduce_mode::tail_flags || segmented_mod == reduce_mode::head_flags,

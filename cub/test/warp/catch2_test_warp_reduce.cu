@@ -174,7 +174,7 @@ using full_type_list =
                  uchar3,
                  short2>;
 
-using builtin_type_list = c2h::type_list<uint8_t, uint16_t, int32_t, int64_t>;
+using builtin_type_list = c2h::type_list<uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t>;
 
 // clang-format off
 using floating_point_redux_type_list = c2h::type_list<
