@@ -330,14 +330,13 @@ not replace synchronization required by earlier application writes.
 How do I carry a scan aggregate across loop iterations?
 -------------------------------------------------------
 
-Create the ``aggregate_output`` payload inside the loop, and copy its item
-into a payload that lives outside the loop with an assignment. CuTe carries
-an assigned item from one trip to the next. A payload created outside the
-loop and passed as ``aggregate_output`` is rejected when the kernel is
-compiled.
+Create the ``aggregate_output`` payload inside the loop and read its item
+there. A payload created outside the loop and only passed as
+``aggregate_output`` is rejected when the kernel is compiled.
 
 In this kernel ``tile_total`` is created on each trip, and
-``total[0] = total[0] + tile_total[0]`` carries the running total:
+``total = total + tile_total[0]`` carries the running total to the next
+trip:
 
 .. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_scan_documentation.py
    :language: python
@@ -345,11 +344,13 @@ In this kernel ``tile_total`` is created on each trip, and
    :end-before: # cutlass-scan-running-total-example-end
    :dedent: 4
 
-The same holds inside a runtime ``if``, and for ``exclusive_digit_prefix``
-of ``radix_rank_keys``. The loop count or condition must be the same in
-every thread of the group. Every thread receives the aggregate, where a
-``reduce`` result is defined at rank 0 only. The aggregate leaves out
-``initial_value``.
+To keep the aggregate in a payload created before the loop, assign the
+item: ``outer[0] = tile_total[0]``. The same holds inside a runtime ``if``,
+and for ``exclusive_digit_prefix`` of ``radix_rank_keys``.
+
+The loop count or condition must be the same in every thread of the group.
+Every thread receives the aggregate. A ``reduce`` result is defined at rank
+0 only. The aggregate leaves out ``initial_value``.
 
 .. _coop-faq-payload-conversion:
 

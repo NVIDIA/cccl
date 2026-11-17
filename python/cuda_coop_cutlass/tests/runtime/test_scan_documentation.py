@@ -170,21 +170,17 @@ def test_running_total_example():
         source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32
     ):
         block = coop.this_block()
-        total = coop.ThreadData.from_values(cutlass.Int32(0))
+        total = cutlass.Int32(0)
         for tile in cutlass.range(tiles):
             offset = tile * 256
             values = coop.load(block, source, items_per_thread=4, offset=offset)
             # Start this tile's sums from the total of the tiles before it.
             tile_total = coop.ThreadData(1)
             sums = coop.exclusive_scan(
-                block,
-                values,
-                initial_value=total[0],
-                aggregate_output=tile_total,
+                block, values, initial_value=total, aggregate_output=tile_total
             )
             coop.store(block, destination, sums, offset=offset)
-            # Carry the total into the next trip with an item assignment.
-            total[0] = total[0] + tile_total[0]
+            total = total + tile_total[0]
 
     @cute.jit
     def launch(

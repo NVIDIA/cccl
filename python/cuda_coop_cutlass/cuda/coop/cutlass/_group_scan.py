@@ -18,7 +18,8 @@ its own result, and an inclusive scan includes it.
    ``exclusive_sum`` over eight threads with two items each.
    ``inclusive_sum`` of the same values is 1, 3, 6, 10 and so on, up to 136.
 
-The five functions differ in what they fix:
+``scan`` takes every choice as an argument, and the four helpers make some
+of the choices for you:
 
 .. list-table::
    :header-rows: 1
@@ -62,11 +63,11 @@ five functions take these controls:
      - What it does
    * - ``aggregate_output``
      - All
-     - Gives every thread the result of combining all of the group's
-       inputs.
+     - Gives every thread the result of combining the inputs that were
+       scanned.
    * - ``valid_items``
      - Warps and groups of lanes
-     - Scans only the first lanes of the group.
+     - Scans only the first ``valid_items`` lanes of the group.
    * - ``algorithm``
      - Blocks
      - Selects ``"raking"``, ``"raking_memoize"`` or ``"warp_scans"``.
@@ -89,9 +90,10 @@ far. In this kernel ``aggregate_output`` returns each tile's total and
     :end-before: # cutlass-scan-running-total-example-end
     :dedent: 4
 
-A scan reads a payload in blocked order, whichever call made the payload.
-Convert one that was loaded with ``algorithm="striped"`` with
-:func:`~cuda.coop.cutlass.exchange` before scanning it.
+A scan reads a payload thread by thread, in :term:`blocked` order, whichever
+call made the payload. Pass one that was loaded with
+``algorithm="striped"`` through :func:`~cuda.coop.cutlass.exchange` before
+scanning it.
 """
 
 # Implementation notes.
@@ -187,11 +189,13 @@ def scan(
         ``TensorSSA`` is read as a payload, and the result is a
         ``ThreadData`` that ``to_register_tensor`` or ``to_tensor_ssa``
         converts back. On a warp or a group of lanes, one scalar per thread:
-        pass ``values[0]`` for a payload of one item.
+        pass ``values[0]`` for a payload of one item. A scalar or an item
+        has one of the ten element types listed under
+        :ref:`ThreadData <coop-thread-data>`.
     mode : {"exclusive", "inclusive"}, optional
         A Python string. The default is ``"exclusive"``.
     scan_op : str, function or DeviceOperator, optional
-        The operator, sum by default. It takes the same seven names as
+        The operator, sum by default. It takes the same seven operators as
         :func:`~cuda.coop.cutlass.reduce`: ``"sum"``, ``"multiplies"``,
         ``"min"``, ``"max"``, ``"bit_and"``, ``"bit_or"`` and ``"bit_xor"``,
         or the matching function from ``operator`` or NumPy, such as
@@ -223,10 +227,12 @@ def scan(
         Blocks take ``None``.
     aggregate_output : ThreadData, optional
         A payload of one item, such as ``coop.ThreadData(1)``, that
-        receives the result of combining all of the group's inputs. Every
-        thread receives it. It leaves out ``initial_value`` and the lanes
-        past ``valid_items``. Inside a runtime ``if`` or loop, create the
-        payload there and copy its item out with an assignment, as in
+        receives the result of combining all of the group's inputs. The
+        result has the element type of ``value``, so leave the payload's
+        ``dtype`` out or give that type. Every thread receives it. It
+        leaves out ``initial_value`` and, with ``valid_items``, the lanes
+        at or past the count. Inside a runtime ``if`` or loop, create the
+        payload there and read its item there, as in
         :ref:`this FAQ <coop-faq-scan-loop-aggregate>`.
 
     algorithm : str, optional
@@ -239,9 +245,9 @@ def scan(
         For blocks. Every block algorithm uses scratch. Leave this out and
         the compiler provides the scratch and a barrier after the call.
         Pass a :ref:`TempStorage <coop-temp-storage>` to share the bytes
-        with other calls, such as Load and Store. Warps and groups of lanes
-        take ``None``: they keep their own scratch and synchronize only
-        their own lanes.
+        with other calls, such as Load and Store. A barrier then follows
+        the call only if the ``TempStorage`` was created with
+        ``auto_sync=True``. Warps and groups of lanes take ``None``.
 
     Returns
     -------
@@ -375,8 +381,9 @@ def exclusive_scan(
     Examples
     --------
     In each group of eight lanes, sum the first five lanes starting from
-    seven. Every lane makes the call and receives the group's total in
-    ``aggregate``. Only the five valid lanes store a result.
+    seven. Every lane makes the call and receives the sum of those five
+    lanes, without the seven, in ``aggregate``. Only the five valid lanes
+    store a result.
     ``operator.add`` selects the built-in sum.
 
     `Full example and test on GitHub
