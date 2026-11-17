@@ -55,13 +55,8 @@ CUB_NAMESPACE_BEGIN
 //! Performance Considerations
 //! ++++++++++++++++++++++++++
 //!
-//! - Uses special instructions when applicable (e.g., warp ``SHFL`` instructions)
-//! - Uses synchronization-free communication between warp lanes when applicable
-//! - Incurs zero bank conflicts for most types
-//! - Computation is slightly more efficient (i.e., having lower instruction overhead) for:
-//!
-//!   - Summation (**vs.** generic reduction)
-//!   - The architecture's warp size is a whole multiple of ``LogicalWarpThreads``
+//! The implementation uses warp-level shuffle, warp redux, vote instructions, and specialized paths, without relying on
+//! shared memory.
 //!
 //! Hardware Warp Redux Optimizations
 //! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -91,6 +86,29 @@ CUB_NAMESPACE_BEGIN
 //! - On SM100f and later in the same architecture family:
 //!
 //!   - ``cuda::minimum`` and ``cuda::maximum`` for ``float``, ``__half``, and ``__nv_bfloat16``.
+//!
+//! Warp Shuffle
+//! ~~~~~~~~~~~~
+//!
+//! The implementation performs an reduction using ``ceil(log2(LogicalWarpThreads))`` warp shuffle steps
+//! without of warp shuffle instructions. This path is used when hardware reduction or vote optimizations do not apply,
+//! and the number of items is known at compile time and a power-of-two.
+//!
+//! PTX Shuffle + Predicate Optimizations
+//! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//!
+//! For segmented reduction, run-time value for the number of items, and non-power-of-two logical-warp, ``WarpReduce``
+//! uses the predicate output of ``shfl.sync.down.b32`` to guard the operation. This path is used for the following
+//! types and reduction operators:
+//!
+//! - ``cuda::std::plus``:
+//!
+//!   - ``unsigned``, ``long long``, ``unsigned long long``, ``float``, and ``double``.
+//!
+//! - ``cuda::minimum`` and ``cuda::maximum``:
+//!
+//!   - 8-, 16-, 32-, and 64-bit signed and unsigned integers.
+//!   - ``float`` and ``double``.
 //!
 //! Warp Vote Optimizations
 //! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
