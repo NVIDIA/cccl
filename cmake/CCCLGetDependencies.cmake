@@ -10,8 +10,13 @@ macro(cccl_get_boost)
     EXCLUDE_FROM_ALL TRUE
     SYSTEM TRUE
     GIT_SHALLOW TRUE
-    # Boost requests compatibility with obsolete CMake versions. Disable warning:
-    OPTIONS "CMAKE_POLICY_VERSION_MINIMUM 3.5"
+    # Boost requests compatibility with obsolete CMake versions. Disable warning.
+    # nvbench_helper only links Boost.Math. The full superproject also configures
+    # Boost.Locale, whose source_group(TREE) rejects include/boost/locale.hpp on
+    # CMake 4.5 because that header is not under include/boost/locale.
+    OPTIONS
+      "CMAKE_POLICY_VERSION_MINIMUM 3.5"
+      "BOOST_INCLUDE_LIBRARIES math"
   )
 endmacro()
 
