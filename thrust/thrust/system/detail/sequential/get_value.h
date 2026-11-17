@@ -13,13 +13,14 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE thrust::detail::it_value_t<Pointer>
+_CCCL_HOST_DEVICE_API thrust::detail::it_value_t<Pointer>
 get_value(sequential::execution_policy<DerivedPolicy>&, Pointer ptr)
 {
   return *thrust::raw_pointer_cast(ptr);

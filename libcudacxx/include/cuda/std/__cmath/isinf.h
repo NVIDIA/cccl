@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
 #include <nv/target>
@@ -89,8 +90,30 @@ template <class _Tp>
 #endif // ^^^ !_CCCL_BUILTIN_ISINF ^^^
 }
 
+[[nodiscard]] _CCCL_API constexpr bool __isinf_storage(double __x) noexcept
+{
+  auto __storage = ::cuda::std::__fp_get_storage(__x);
+#if !_CCCL_TILE_COMPILATION() // asm statement is unsupported in tile code
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    // On SM100+ (new NVVM), integer checks on the storage are turned back into double comparisons, e.g. a check for
+    // the infinity pattern becomes fabs(x) == inf, so hide the storage from the optimizer. asm is not allowed in a
+    // constexpr function before C++20, so wrap it in a lambda.
+    NV_IF_TARGET(NV_PROVIDES_SM_100, ([&] {
+                   asm("mov.b64 %0, %0;" : "+l"(__storage));
+                 }();))
+  }
+#endif // !_CCCL_TILE_COMPILATION()
+  return (__storage & __fp_exp_mant_mask_of_v<double>) == __fp_exp_mask_of_v<double>;
+}
+
 [[nodiscard]] _CCCL_API constexpr bool isinf(double __x) noexcept
 {
+  // See isnan(double): use an integer comparison on GPUs with slow FP64
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__isinf_storage(__x);)
+  }
 #if defined(_CCCL_BUILTIN_ISINF) && !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_CUDA_COMPILER(NVRTC)
   return _CCCL_BUILTIN_ISINF(__x);
 #elif defined(_CCCL_BUILTIN_ISINF)
@@ -174,6 +197,13 @@ template <class _Tp>
   return (__x.__x & __fp_exp_mant_mask_of_v<__nv_fp8_e5m2>) == __fp_exp_mask_of_v<__nv_fp8_e5m2>;
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
+
+#if _CCCL_HAS_NVFP8_UE5M3()
+[[nodiscard]] _CCCL_API constexpr bool isinf(__nv_fp8_ue5m3) noexcept
+{
+  return false;
+}
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 
 #if _CCCL_HAS_NVFP8_E8M0()
 [[nodiscard]] _CCCL_API constexpr bool isinf(__nv_fp8_e8m0) noexcept

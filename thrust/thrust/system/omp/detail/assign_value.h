@@ -14,4 +14,4 @@
 #endif // no system header
 
 // omp system inherits assign_value
-#include <thrust/system/cpp/detail/assign_value.h>
+#include <thrust/system/cpp/detail/assign_value.h> // IWYU pragma: export

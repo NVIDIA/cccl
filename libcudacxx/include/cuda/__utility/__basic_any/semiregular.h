@@ -71,11 +71,8 @@ template <class _Tp>
     ::new (__dst) _Tp(static_cast<_Tp&&>(__src));
     return true;
   }
-  else
-  {
-    ::new (__dst)::cuda::std::type_identity_t<_Tp*>(new _Tp(static_cast<_Tp&&>(__src)));
-    return false;
-  }
+  ::new (__dst)::cuda::std::type_identity_t<_Tp*>(new _Tp(static_cast<_Tp&&>(__src)));
+  return false;
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -88,11 +85,8 @@ template <class _Tp>
     ::new (__dst) _Tp(__src);
     return true;
   }
-  else
-  {
-    ::new (__dst)::cuda::std::type_identity_t<_Tp*>(new _Tp(__src));
-    return false;
-  }
+  ::new (__dst)::cuda::std::type_identity_t<_Tp*>(new _Tp(__src));
+  return false;
 }
 
 _CCCL_EXEC_CHECK_DISABLE

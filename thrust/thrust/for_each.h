@@ -84,7 +84,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename UnaryFunction>
-_CCCL_HOST_DEVICE InputIterator for_each(
+_CCCL_HOST_DEVICE_API InputIterator for_each(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -146,7 +146,7 @@ _CCCL_HOST_DEVICE InputIterator for_each(
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename UnaryFunction>
-_CCCL_HOST_DEVICE InputIterator for_each_n(
+_CCCL_HOST_DEVICE_API InputIterator for_each_n(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, Size n, UnaryFunction f);
 
 /*! \p for_each applies the function object \p f to each element
@@ -201,7 +201,7 @@ _CCCL_HOST_DEVICE InputIterator for_each_n(
  *  \endverbatim
  */
 template <typename InputIterator, typename UnaryFunction>
-InputIterator for_each(InputIterator first, InputIterator last, UnaryFunction f);
+_CCCL_HOST_API InputIterator for_each(InputIterator first, InputIterator last, UnaryFunction f);
 
 /*! \p for_each_n applies the function object \p f to each element
  *  in the range <tt>[first, first + n)</tt>; \p f's return value, if any,
@@ -255,7 +255,7 @@ InputIterator for_each(InputIterator first, InputIterator last, UnaryFunction f)
  *  \endverbatim
  */
 template <typename InputIterator, typename Size, typename UnaryFunction>
-InputIterator for_each_n(InputIterator first, Size n, UnaryFunction f);
+_CCCL_HOST_API InputIterator for_each_n(InputIterator first, Size n, UnaryFunction f);
 
 /*! \} // end modifying
  */

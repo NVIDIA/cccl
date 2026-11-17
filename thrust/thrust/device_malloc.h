@@ -57,7 +57,7 @@ THRUST_NAMESPACE_BEGIN
 //! \see device_ptr
 //! \see device_free
 template <typename T = void>
-device_ptr<T> device_malloc(const std::size_t n)
+_CCCL_HOST_API device_ptr<T> device_malloc(const std::size_t n)
 {
   // using system::detail::generic::select_system;
   // XXX lower to select_system(system) here

@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/select_system.h>
 
 // Include all active backend system implementations (generic, sequential, host and device)
@@ -22,7 +23,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(adjacent_difference.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/adjacent_difference.h>
 #  include <thrust/system/cuda/detail/adjacent_difference.h>
 #  include <thrust/system/omp/detail/adjacent_difference.h>
@@ -33,7 +34,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator adjacent_difference(
+_CCCL_HOST_DEVICE_API OutputIterator adjacent_difference(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -47,7 +48,7 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator adjacent_difference(
+_CCCL_HOST_DEVICE_API OutputIterator adjacent_difference(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -62,7 +63,7 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
 } // end adjacent_difference()
 
 template <typename InputIterator, typename OutputIterator>
-OutputIterator adjacent_difference(InputIterator first, InputIterator last, OutputIterator result)
+_CCCL_HOST_API OutputIterator adjacent_difference(InputIterator first, InputIterator last, OutputIterator result)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::adjacent_difference");
   using thrust::system::detail::generic::select_system;
@@ -77,7 +78,7 @@ OutputIterator adjacent_difference(InputIterator first, InputIterator last, Outp
 } // end adjacent_difference()
 
 template <typename InputIterator, typename OutputIterator, typename BinaryFunction>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 adjacent_difference(InputIterator first, InputIterator last, OutputIterator result, BinaryFunction binary_op)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::adjacent_difference");

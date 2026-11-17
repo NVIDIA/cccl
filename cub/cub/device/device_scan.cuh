@@ -33,6 +33,7 @@
 #include <cub/detail/input_value.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
+#include <cub/detail/policy_selector.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/dispatch_scan_by_key.cuh>
@@ -185,7 +186,7 @@ inline constexpr bool is_num_items_v = ::cuda::std::is_integral_v<NumItemsT> || 
 //!      :start-after: example-begin exclusive-sum-tuning
 //!      :end-before: example-end exclusive-sum-tuning
 //!
-//! All ByKey algorithms in DeviceScan that accept an environment can be tuned by passing a custom :ref:`policy
+//! All ByKey algorithms in DeviceScan can be tuned by passing a custom :ref:`policy
 //! selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::ScanByKeyPolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_scan_by_key_env_api.cu
@@ -224,14 +225,14 @@ private:
     cudaStream_t stream,
     PolicySelectorT policy_selector)
   {
-    return detail::scan::dispatch<EnforceInclusive, StableReductionOrder>(
+    return _CUB::detail::scan::dispatch<EnforceInclusive, StableReductionOrder>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       scan_op,
       init,
-      detail::make_num_items_dispatch_arg(num_items),
+      _CUB::detail::make_num_items_dispatch_arg(num_items),
       stream,
       policy_selector);
   }
@@ -307,7 +308,7 @@ private:
   {
     using traits_t = scan_env_traits<InputIteratorT, OutputIteratorT, ScanOpT, InitValueT, NumItemsT, EnvT>;
 
-    return detail::dispatch_with_env_and_tuning<typename traits_t::default_policy_selector_t>(
+    return _CUB::detail::dispatch_with_env_and_tuning<typename traits_t::default_policy_selector_t>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
         return scan_impl_determinism<EnforceInclusive, traits_t::stable_reduction_order>(
           storage, bytes, d_in, d_out, scan_op, init, num_items, stream, policy_selector);
@@ -333,7 +334,7 @@ private:
   {
     using traits_t = scan_env_traits<InputIteratorT, OutputIteratorT, ScanOpT, InitValueT, NumItemsT, EnvT>;
 
-    return detail::dispatch_with_env_and_tuning<typename traits_t::default_policy_selector_t>(
+    return _CUB::detail::dispatch_with_env_and_tuning<typename traits_t::default_policy_selector_t>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
         return scan_impl_determinism<EnforceInclusive, traits_t::stable_reduction_order>(
           storage, bytes, d_in, d_out, scan_op, init, num_items, stream, policy_selector);
@@ -374,10 +375,10 @@ private:
                                                       ScanOpT>;
 
     using policy_selector_t =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, ScanByKeyPolicy, default_policy_selector_t>;
+      detail::policy_selector_from_tuning_env_t<TuningEnvT, ScanByKeyPolicy, default_policy_selector_t>;
 
     // we would not need to override the accumulator type, but we must ensure it's the same as for the policy here
-    return detail::scan_by_key::dispatch</* OverrideAccumT = */ accum_t>(
+    return _CUB::detail::scan_by_key::dispatch</* OverrideAccumT = */ accum_t>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -2782,6 +2783,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2804,15 +2808,14 @@ public:
   //!   Binary functor that defines the equality of keys.
   //!   Default is cuda::std::equal_to<>{}.
   //!
-  //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = uint32_t>
+            typename NumItemsT   = uint32_t,
+            typename EnvT        = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSumByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -2821,22 +2824,29 @@ public:
     ValuesOutputIteratorT d_values_out,
     NumItemsT num_items,
     EqualityOpT equality_op = EqualityOpT(),
-    cudaStream_t stream     = nullptr)
+    const EnvT& env         = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSumByKey");
     using init_value_t = cub::detail::it_value_t<ValuesInputIteratorT>;
     const init_value_t init_value{};
-    return scan_by_key_impl<::cuda::std::execution::env<>>(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
-      d_keys_in,
-      d_values_in,
-      d_values_out,
-      equality_op,
-      ::cuda::std::plus<>{},
-      init_value,
-      num_items,
-      stream);
+      env,
+      [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_values_in,
+          d_values_out,
+          equality_op,
+          ::cuda::std::plus<>{},
+          init_value,
+          num_items,
+          stream);
+      });
   }
 
   //! @rst
@@ -2945,6 +2955,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //!  @param[in] d_temp_storage
   //!    @devicestorage
   //!
@@ -2975,17 +2988,16 @@ public:
   //!    Binary functor that defines the equality of keys.
   //!    Default is cuda::std::equal_to<>{}.
   //!
-  //!  @param[in] stream
-  //!    @rst
-  //!    **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!    @endrst
+  //!  @param[in] env
+  //!    **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
             typename ScanOpT,
             typename InitValueT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = uint32_t>
+            typename NumItemsT   = uint32_t,
+            typename EnvT        = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScanByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -2996,20 +3008,18 @@ public:
     InitValueT init_value,
     NumItemsT num_items,
     EqualityOpT equality_op = EqualityOpT(),
-    cudaStream_t stream     = nullptr)
+    const EnvT& env         = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScanByKey");
-    return scan_by_key_impl<::cuda::std::execution::env<>>(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
-      d_keys_in,
-      d_values_in,
-      d_values_out,
-      equality_op,
-      scan_op,
-      init_value,
-      num_items,
-      stream);
+      env,
+      [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, init_value, num_items, stream);
+      });
   }
 
   //! @rst
@@ -3083,6 +3093,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //!  @param[in] d_temp_storage
   //!    @devicestorage
   //!
@@ -3105,15 +3118,14 @@ public:
   //!    Binary functor that defines the equality of keys.
   //!    Default is cuda::std::equal_to<>{}.
   //!
-  //!  @param[in] stream
-  //!    @rst
-  //!    **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!    @endrst
+  //!  @param[in] env
+  //!    **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = uint32_t>
+            typename NumItemsT   = uint32_t,
+            typename EnvT        = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSumByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -3122,20 +3134,27 @@ public:
     ValuesOutputIteratorT d_values_out,
     NumItemsT num_items,
     EqualityOpT equality_op = EqualityOpT(),
-    cudaStream_t stream     = nullptr)
+    const EnvT& env         = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSumByKey");
-    return scan_by_key_impl<::cuda::std::execution::env<>>(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
-      d_keys_in,
-      d_values_in,
-      d_values_out,
-      equality_op,
-      ::cuda::std::plus<>{},
-      NullType{},
-      num_items,
-      stream);
+      env,
+      [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_values_in,
+          d_values_out,
+          equality_op,
+          ::cuda::std::plus<>{},
+          NullType{},
+          num_items,
+          stream);
+      });
   }
 
   //! @rst
@@ -3236,6 +3255,9 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
   //!  @param[in] d_temp_storage
   //!    @devicestorage
   //!
@@ -3261,16 +3283,15 @@ public:
   //!    Binary functor that defines the equality of keys.
   //!    Default is cuda::std::equal_to<>{}.
   //!
-  //!  @param[in] stream
-  //!    @rst
-  //!    **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!    @endrst
+  //!  @param[in] env
+  //!    **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
             typename ScanOpT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
-            typename NumItemsT   = uint32_t>
+            typename NumItemsT   = uint32_t,
+            typename EnvT        = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -3280,20 +3301,18 @@ public:
     ScanOpT scan_op,
     NumItemsT num_items,
     EqualityOpT equality_op = EqualityOpT(),
-    cudaStream_t stream     = nullptr)
+    const EnvT& env         = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanByKey");
-    return scan_by_key_impl<::cuda::std::execution::env<>>(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
-      d_keys_in,
-      d_values_in,
-      d_values_out,
-      equality_op,
-      scan_op,
-      NullType{},
-      num_items,
-      stream);
+      env,
+      [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, NullType{}, num_items, stream);
+      });
   }
 
   //! @rst
@@ -3390,20 +3409,21 @@ public:
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSumByKey");
 
     using init_value_t = cub::detail::it_value_t<ValuesInputIteratorT>;
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return scan_by_key_impl<tuning_t>(
-        storage,
-        bytes,
-        d_keys_in,
-        d_values_in,
-        d_values_out,
-        equality_op,
-        ::cuda::std::plus<>{},
-        init_value_t{},
-        num_items,
-        stream);
-    });
+    return _CUB::detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_values_in,
+          d_values_out,
+          equality_op,
+          ::cuda::std::plus<>{},
+          init_value_t{},
+          num_items,
+          stream);
+      });
   }
 
   //! @rst
@@ -3517,11 +3537,12 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveScanByKey");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return scan_by_key_impl<tuning_t>(
-        storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, init_value, num_items, stream);
-    });
+    return _CUB::detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, init_value, num_items, stream);
+      });
   }
 
   //! @rst
@@ -3615,20 +3636,21 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveSumByKey");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return scan_by_key_impl<tuning_t>(
-        storage,
-        bytes,
-        d_keys_in,
-        d_values_in,
-        d_values_out,
-        equality_op,
-        ::cuda::std::plus<>{},
-        NullType{},
-        num_items,
-        stream);
-    });
+    return _CUB::detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_values_in,
+          d_values_out,
+          equality_op,
+          ::cuda::std::plus<>{},
+          NullType{},
+          num_items,
+          stream);
+      });
   }
 
   //! @rst
@@ -3731,11 +3753,12 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveScanByKey");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return scan_by_key_impl<tuning_t>(
-        storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, NullType{}, num_items, stream);
-    });
+    return _CUB::detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, NullType{}, num_items, stream);
+      });
   }
 
   //! @}

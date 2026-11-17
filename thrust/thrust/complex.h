@@ -66,7 +66,6 @@ THRUST_NAMESPACE_BEGIN
 template <typename T>
 struct complex
 {
-public:
   /*! \p value_type is the type of \p complex's real and imaginary parts.
    */
   using value_type = T;
@@ -81,7 +80,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE complex(const T& re);
+  _CCCL_HOST_DEVICE_API complex(const T& re);
 
   /*! Construct a complex number from its real and imaginary parts.
    *
@@ -92,18 +91,18 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE complex(const T& re, const T& im);
+  _CCCL_HOST_DEVICE_API complex(const T& re, const T& im);
 
   /*! Default construct a complex number.
    */
-  complex() = default;
+  _CCCL_HIDE_FROM_ABI complex() = default;
 
   /*! This copy constructor copies from a \p complex with a type that is
    *  convertible to this \p complex's \c value_type.
    *
    *  \param z The \p complex to copy from.
    */
-  complex(const complex<T>& z) = default;
+  _CCCL_HIDE_FROM_ABI complex(const complex<T>& z) = default;
 
   /*! This converting copy constructor copies from a \p complex with a type
    *  that is convertible to this \p complex's \c value_type.
@@ -117,7 +116,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE complex(const complex<U>& z);
+  _CCCL_HOST_DEVICE_API complex(const complex<U>& z);
 
 #if _CCCL_HOSTED()
   /*! This converting copy constructor copies from a <tt>std::complex</tt> with
@@ -129,7 +128,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex(const ::std::complex<T>& z);
+  _CCCL_HOST_API THRUST_STD_COMPLEX_DEVICE complex(const ::std::complex<T>& z);
 
   /*! This converting copy constructor copies from a <tt>std::complex</tt> with
    *  a type that is convertible to this \p complex's \c value_type.
@@ -143,7 +142,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex(const ::std::complex<U>& z);
+  _CCCL_HOST_API THRUST_STD_COMPLEX_DEVICE complex(const ::std::complex<U>& z);
 #endif // _CCCL_HOSTED()
 
   /* --- Assignment Operators --- */
@@ -157,14 +156,14 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE complex& operator=(const T& re);
+  _CCCL_HOST_DEVICE_API complex& operator=(const T& re);
 
   /*! Assign `z.real()` and `z.imag()` to the real and imaginary parts of this
    *  \p complex respectively.
    *
    *  \param z The \p complex to copy from.
    */
-  complex& operator=(const complex<T>& z) = default;
+  _CCCL_HIDE_FROM_ABI complex& operator=(const complex<T>& z) = default;
 
   /*! Assign `z.real()` and `z.imag()` to the real and imaginary parts of this
    *  \p complex respectively.
@@ -178,7 +177,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE complex& operator=(const complex<U>& z);
+  _CCCL_HOST_DEVICE_API complex& operator=(const complex<U>& z);
 
 #if _CCCL_HOSTED()
   /*! Assign `z.real()` and `z.imag()` to the real and imaginary parts of this
@@ -190,7 +189,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex& operator=(const ::std::complex<T>& z);
+  _CCCL_HOST_API THRUST_STD_COMPLEX_DEVICE complex& operator=(const ::std::complex<T>& z);
 
   /*! Assign `z.real()` and `z.imag()` to the real and imaginary parts of this
    *  \p complex respectively.
@@ -204,7 +203,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex& operator=(const ::std::complex<U>& z);
+  _CCCL_HOST_API THRUST_STD_COMPLEX_DEVICE complex& operator=(const ::std::complex<U>& z);
 #endif // _CCCL_HOSTED()
 
   /* --- Compound Assignment Operators --- */
@@ -221,7 +220,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE complex<T>& operator+=(const complex<U>& z);
+  _CCCL_HOST_DEVICE_API complex<T>& operator+=(const complex<U>& z);
 
   /*! Subtracts a \p complex from this \p complex and assigns the result to
    *  this \p complex.
@@ -235,7 +234,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE complex<T>& operator-=(const complex<U>& z);
+  _CCCL_HOST_DEVICE_API complex<T>& operator-=(const complex<U>& z);
 
   /*! Multiplies this \p complex by another \p complex and assigns the result
    *  to this \p complex.
@@ -249,7 +248,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE complex<T>& operator*=(const complex<U>& z);
+  _CCCL_HOST_DEVICE_API complex<T>& operator*=(const complex<U>& z);
 
   /*! Divides this \p complex by another \p complex and assigns the result to
    *  this \p complex.
@@ -263,7 +262,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE complex<T>& operator/=(const complex<U>& z);
+  _CCCL_HOST_DEVICE_API complex<T>& operator/=(const complex<U>& z);
 
   /*! Adds a scalar to this \p complex and assigns the result to this
    *  \p complex.
@@ -277,7 +276,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE complex<T>& operator+=(const U& z);
+  _CCCL_HOST_DEVICE_API complex<T>& operator+=(const U& z);
 
   /*! Subtracts a scalar from this \p complex and assigns the result to
    *  this \p complex.
@@ -291,7 +290,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE complex<T>& operator-=(const U& z);
+  _CCCL_HOST_DEVICE_API complex<T>& operator-=(const U& z);
 
   /*! Multiplies this \p complex by a scalar and assigns the result
    *  to this \p complex.
@@ -305,7 +304,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE complex<T>& operator*=(const U& z);
+  _CCCL_HOST_DEVICE_API complex<T>& operator*=(const U& z);
 
   /*! Divides this \p complex by a scalar and assigns the result to
    *  this \p complex.
@@ -319,7 +318,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE complex<T>& operator/=(const U& z);
+  _CCCL_HOST_DEVICE_API complex<T>& operator/=(const U& z);
 
   /* --- Getter functions ---
    * The volatile ones are there to help for example
@@ -336,7 +335,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE T real() const volatile
+  _CCCL_HOST_DEVICE_API T real() const volatile
   {
     return data.x;
   }
@@ -347,7 +346,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE T imag() const volatile
+  _CCCL_HOST_DEVICE_API T imag() const volatile
   {
     return data.y;
   }
@@ -358,7 +357,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE T real() const
+  _CCCL_HOST_DEVICE_API T real() const
   {
     return data.x;
   }
@@ -369,7 +368,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE T imag() const
+  _CCCL_HOST_DEVICE_API T imag() const
   {
     return data.y;
   }
@@ -387,7 +386,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE void real(T re) volatile
+  _CCCL_HOST_DEVICE_API void real(T re) volatile
   {
     data.x = re;
   }
@@ -400,7 +399,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE void imag(T im) volatile
+  _CCCL_HOST_DEVICE_API void imag(T im) volatile
   {
     data.y = im;
   }
@@ -413,7 +412,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE void real(T re)
+  _CCCL_HOST_DEVICE_API void real(T re)
   {
     data.x = re;
   }
@@ -426,7 +425,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE void imag(T im)
+  _CCCL_HOST_DEVICE_API void imag(T im)
   {
     data.y = im;
   }
@@ -440,7 +439,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST operator ::std::complex<T>() const
+  _CCCL_HOST_API operator ::std::complex<T>() const
   {
     return ::std::complex<T>(real(), imag());
   }
@@ -466,7 +465,7 @@ private:
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE T abs(const complex<T>& z);
+_CCCL_HOST_DEVICE_API T abs(const complex<T>& z);
 
 /*! Returns the phase angle (also known as argument) in radians of a \p complex.
  *
@@ -477,7 +476,7 @@ _CCCL_HOST_DEVICE T abs(const complex<T>& z);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE T arg(const complex<T>& z);
+_CCCL_HOST_DEVICE_API T arg(const complex<T>& z);
 
 /*! Returns the square of the magnitude of a \p complex.
  *
@@ -488,7 +487,7 @@ _CCCL_HOST_DEVICE T arg(const complex<T>& z);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE T norm(const complex<T>& z);
+_CCCL_HOST_DEVICE_API T norm(const complex<T>& z);
 
 /*! Returns the complex conjugate of a \p complex.
  *
@@ -499,7 +498,7 @@ _CCCL_HOST_DEVICE T norm(const complex<T>& z);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> conj(const complex<T>& z);
+_CCCL_HOST_DEVICE_API complex<T> conj(const complex<T>& z);
 
 /*! Returns a \p complex with the specified magnitude and phase.
  *
@@ -511,7 +510,7 @@ _CCCL_HOST_DEVICE complex<T> conj(const complex<T>& z);
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> polar(const T0& m, const T1& theta = T1());
+_CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> polar(const T0& m, const T1& theta = T1());
 
 /*! Returns the projection of a \p complex on the Riemann sphere.
  *  For all finite \p complex it returns the argument. For \p complexs
@@ -525,7 +524,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> polar(const T0& m,
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> proj(const T& z);
+_CCCL_HOST_DEVICE_API complex<T> proj(const T& z);
 
 /* --- Binary Arithmetic operators --- */
 
@@ -542,7 +541,7 @@ _CCCL_HOST_DEVICE complex<T> proj(const T& z);
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator+(const complex<T0>& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator+(const complex<T0>& x, const complex<T1>& y);
 
 /*! Adds a scalar to a \p complex number.
  *
@@ -557,7 +556,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator+(const co
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator+(const complex<T0>& x, const T1& y);
+_CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator+(const complex<T0>& x, const T1& y);
 
 /*! Adds a \p complex number to a scalar.
  *
@@ -572,7 +571,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator+(const co
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator+(const T0& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator+(const T0& x, const complex<T1>& y);
 
 /*! Subtracts two \p complex numbers.
  *
@@ -587,7 +586,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator+(const T0
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator-(const complex<T0>& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator-(const complex<T0>& x, const complex<T1>& y);
 
 /*! Subtracts a scalar from a \p complex number.
  *
@@ -602,7 +601,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator-(const co
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator-(const complex<T0>& x, const T1& y);
+_CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator-(const complex<T0>& x, const T1& y);
 
 /*! Subtracts a \p complex number from a scalar.
  *
@@ -617,7 +616,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator-(const co
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator-(const T0& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator-(const T0& x, const complex<T1>& y);
 
 /*! Multiplies two \p complex numbers.
  *
@@ -632,7 +631,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator-(const T0
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const complex<T0>& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator*(const complex<T0>& x, const complex<T1>& y);
 
 /*! Multiplies a \p complex number by a scalar.
  *
@@ -644,7 +643,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const co
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const complex<T0>& x, const T1& y);
+_CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator*(const complex<T0>& x, const T1& y);
 
 /*! Multiplies a scalar by a \p complex number.
  *
@@ -659,7 +658,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const co
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const T0& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator*(const T0& x, const complex<T1>& y);
 
 /*! Divides two \p complex numbers.
  *
@@ -674,7 +673,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const T0
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const complex<T0>& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator/(const complex<T0>& x, const complex<T1>& y);
 
 /*! Divides a \p complex number by a scalar.
  *
@@ -689,7 +688,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const co
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const complex<T0>& x, const T1& y);
+_CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator/(const complex<T0>& x, const T1& y);
 
 /*! Divides a scalar by a \p complex number.
  *
@@ -704,7 +703,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const co
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const T0& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> operator/(const T0& x, const complex<T1>& y);
 
 /* --- Unary Arithmetic operators --- */
 
@@ -717,7 +716,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const T0
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> operator+(const complex<T>& y);
+_CCCL_HOST_DEVICE_API complex<T> operator+(const complex<T>& y);
 
 /*! Unary minus, returns the additive inverse (negation) of its \p complex
  * argument.
@@ -729,7 +728,7 @@ _CCCL_HOST_DEVICE complex<T> operator+(const complex<T>& y);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> operator-(const complex<T>& y);
+_CCCL_HOST_DEVICE_API complex<T> operator-(const complex<T>& y);
 
 /* --- Exponential Functions --- */
 
@@ -742,7 +741,7 @@ _CCCL_HOST_DEVICE complex<T> operator-(const complex<T>& y);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> exp(const complex<T>& z);
+_CCCL_HOST_DEVICE_API complex<T> exp(const complex<T>& z);
 
 /*! Returns the complex natural logarithm of a \p complex number.
  *
@@ -753,7 +752,7 @@ _CCCL_HOST_DEVICE complex<T> exp(const complex<T>& z);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> log(const complex<T>& z);
+_CCCL_HOST_DEVICE_API complex<T> log(const complex<T>& z);
 
 /*! Returns the complex base 10 logarithm of a \p complex number.
  *
@@ -764,7 +763,7 @@ _CCCL_HOST_DEVICE complex<T> log(const complex<T>& z);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> log10(const complex<T>& z);
+_CCCL_HOST_DEVICE_API complex<T> log10(const complex<T>& z);
 
 /* --- Power Functions --- */
 
@@ -781,7 +780,7 @@ _CCCL_HOST_DEVICE complex<T> log10(const complex<T>& z);
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> pow(const complex<T0>& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> pow(const complex<T0>& x, const complex<T1>& y);
 
 /*! Returns a \p complex number raised to a scalar.
  *
@@ -796,7 +795,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> pow(const complex<
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> pow(const complex<T0>& x, const T1& y);
+_CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> pow(const complex<T0>& x, const T1& y);
 
 /*! Returns a scalar raised to a \p complex number.
  *
@@ -811,7 +810,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> pow(const complex<
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> pow(const T0& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE_API complex<::cuda::std::common_type_t<T0, T1>> pow(const T0& x, const complex<T1>& y);
 
 /*! Returns the complex square root of a \p complex number.
  *
@@ -822,7 +821,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> pow(const T0& x, c
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> sqrt(const complex<T>& z);
+_CCCL_HOST_DEVICE_API complex<T> sqrt(const complex<T>& z);
 
 /* --- Trigonometric Functions --- */
 
@@ -835,7 +834,7 @@ _CCCL_HOST_DEVICE complex<T> sqrt(const complex<T>& z);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> cos(const complex<T>& z);
+_CCCL_HOST_DEVICE_API complex<T> cos(const complex<T>& z);
 
 /*! Returns the complex sine of a \p complex number.
  *
@@ -846,7 +845,7 @@ _CCCL_HOST_DEVICE complex<T> cos(const complex<T>& z);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> sin(const complex<T>& z);
+_CCCL_HOST_DEVICE_API complex<T> sin(const complex<T>& z);
 
 /*! Returns the complex tangent of a \p complex number.
  *
@@ -857,7 +856,7 @@ _CCCL_HOST_DEVICE complex<T> sin(const complex<T>& z);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> tan(const complex<T>& z);
+_CCCL_HOST_DEVICE_API complex<T> tan(const complex<T>& z);
 
 /* --- Hyperbolic Functions --- */
 
@@ -870,7 +869,7 @@ _CCCL_HOST_DEVICE complex<T> tan(const complex<T>& z);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> cosh(const complex<T>& z);
+_CCCL_HOST_DEVICE_API complex<T> cosh(const complex<T>& z);
 
 /*! Returns the complex hyperbolic sine of a \p complex number.
  *
@@ -881,7 +880,7 @@ _CCCL_HOST_DEVICE complex<T> cosh(const complex<T>& z);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> sinh(const complex<T>& z);
+_CCCL_HOST_DEVICE_API complex<T> sinh(const complex<T>& z);
 
 /*! Returns the complex hyperbolic tangent of a \p complex number.
  *
@@ -892,7 +891,7 @@ _CCCL_HOST_DEVICE complex<T> sinh(const complex<T>& z);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> tanh(const complex<T>& z);
+_CCCL_HOST_DEVICE_API complex<T> tanh(const complex<T>& z);
 
 /* --- Inverse Trigonometric Functions --- */
 
@@ -908,7 +907,7 @@ _CCCL_HOST_DEVICE complex<T> tanh(const complex<T>& z);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> acos(const complex<T>& z);
+_CCCL_HOST_DEVICE_API complex<T> acos(const complex<T>& z);
 
 /*! Returns the complex arc sine of a \p complex number.
  *
@@ -922,7 +921,7 @@ _CCCL_HOST_DEVICE complex<T> acos(const complex<T>& z);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> asin(const complex<T>& z);
+_CCCL_HOST_DEVICE_API complex<T> asin(const complex<T>& z);
 
 /*! Returns the complex arc tangent of a \p complex number.
  *
@@ -936,7 +935,7 @@ _CCCL_HOST_DEVICE complex<T> asin(const complex<T>& z);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> atan(const complex<T>& z);
+_CCCL_HOST_DEVICE_API complex<T> atan(const complex<T>& z);
 
 /* --- Inverse Hyperbolic Functions --- */
 
@@ -952,7 +951,7 @@ _CCCL_HOST_DEVICE complex<T> atan(const complex<T>& z);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> acosh(const complex<T>& z);
+_CCCL_HOST_DEVICE_API complex<T> acosh(const complex<T>& z);
 
 /*! Returns the complex inverse hyperbolic sine of a \p complex number.
  *
@@ -966,7 +965,7 @@ _CCCL_HOST_DEVICE complex<T> acosh(const complex<T>& z);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> asinh(const complex<T>& z);
+_CCCL_HOST_DEVICE_API complex<T> asinh(const complex<T>& z);
 
 /*! Returns the complex inverse hyperbolic tangent of a \p complex number.
  *
@@ -980,7 +979,7 @@ _CCCL_HOST_DEVICE complex<T> asinh(const complex<T>& z);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE complex<T> atanh(const complex<T>& z);
+_CCCL_HOST_DEVICE_API complex<T> atanh(const complex<T>& z);
 
 #if _CCCL_HOSTED()
 /* --- Stream Operators --- */
@@ -995,7 +994,7 @@ _CCCL_HOST_DEVICE complex<T> atanh(const complex<T>& z);
  *  \endverbatim
  */
 template <typename T, typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const complex<T>& z);
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const complex<T>& z);
 
 /*! Reads a \p complex number from an input stream.
  *
@@ -1014,7 +1013,7 @@ std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>&
  *  \endverbatim
  */
 template <typename T, typename CharT, typename Traits>
-_CCCL_HOST ::std::basic_istream<CharT, Traits>& operator>>(std::basic_istream<CharT, Traits>& is, complex<T>& z);
+_CCCL_HOST_API ::std::basic_istream<CharT, Traits>& operator>>(std::basic_istream<CharT, Traits>& is, complex<T>& z);
 #endif // _CCCL_HOSTED()
 
 /* --- Equality Operators --- */
@@ -1029,7 +1028,7 @@ _CCCL_HOST ::std::basic_istream<CharT, Traits>& operator>>(std::basic_istream<Ch
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE bool operator==(const complex<T0>& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE_API bool operator==(const complex<T0>& x, const complex<T1>& y);
 
 #if _CCCL_HOSTED()
 /*! Returns true if two \p complex numbers are equal and false otherwise.
@@ -1042,7 +1041,7 @@ _CCCL_HOST_DEVICE bool operator==(const complex<T0>& x, const complex<T1>& y);
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator==(const complex<T0>& x, const ::std::complex<T1>& y);
+_CCCL_HOST_API THRUST_STD_COMPLEX_DEVICE bool operator==(const complex<T0>& x, const ::std::complex<T1>& y);
 
 /*! Returns true if two \p complex numbers are equal and false otherwise.
  *
@@ -1054,7 +1053,7 @@ _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator==(const complex<T0>& x, const
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator==(const ::std::complex<T0>& x, const complex<T1>& y);
+_CCCL_HOST_API THRUST_STD_COMPLEX_DEVICE bool operator==(const ::std::complex<T0>& x, const complex<T1>& y);
 #endif // _CCCL_HOSTED()
 
 /*! Returns true if the imaginary part of the \p complex number is zero and
@@ -1068,7 +1067,7 @@ _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator==(const ::std::complex<T0>& x
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE bool operator==(const T0& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE_API bool operator==(const T0& x, const complex<T1>& y);
 
 /*! Returns true if the imaginary part of the \p complex number is zero and
  *  the real part is equal to the scalar. Returns false otherwise.
@@ -1081,7 +1080,7 @@ _CCCL_HOST_DEVICE bool operator==(const T0& x, const complex<T1>& y);
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE bool operator==(const complex<T0>& x, const T1& y);
+_CCCL_HOST_DEVICE_API bool operator==(const complex<T0>& x, const T1& y);
 
 /*! Returns true if two \p complex numbers are different and false otherwise.
  *
@@ -1093,7 +1092,7 @@ _CCCL_HOST_DEVICE bool operator==(const complex<T0>& x, const T1& y);
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE bool operator!=(const complex<T0>& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE_API bool operator!=(const complex<T0>& x, const complex<T1>& y);
 
 #if _CCCL_HOSTED()
 /*! Returns true if two \p complex numbers are different and false otherwise.
@@ -1106,7 +1105,7 @@ _CCCL_HOST_DEVICE bool operator!=(const complex<T0>& x, const complex<T1>& y);
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator!=(const complex<T0>& x, const ::std::complex<T1>& y);
+_CCCL_HOST_API THRUST_STD_COMPLEX_DEVICE bool operator!=(const complex<T0>& x, const ::std::complex<T1>& y);
 
 /*! Returns true if two \p complex numbers are different and false otherwise.
  *
@@ -1118,7 +1117,7 @@ _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator!=(const complex<T0>& x, const
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator!=(const ::std::complex<T0>& x, const complex<T1>& y);
+_CCCL_HOST_API THRUST_STD_COMPLEX_DEVICE bool operator!=(const ::std::complex<T0>& x, const complex<T1>& y);
 #endif // _CCCL_HOSTED()
 
 /*! Returns true if the imaginary part of the \p complex number is not zero or
@@ -1132,7 +1131,7 @@ _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator!=(const ::std::complex<T0>& x
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE bool operator!=(const T0& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE_API bool operator!=(const T0& x, const complex<T1>& y);
 
 /*! Returns true if the imaginary part of the \p complex number is not zero or
  *  the real part is different from the scalar. Returns false otherwise.
@@ -1145,7 +1144,7 @@ _CCCL_HOST_DEVICE bool operator!=(const T0& x, const complex<T1>& y);
  *  \endverbatim
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE bool operator!=(const complex<T0>& x, const T1& y);
+_CCCL_HOST_DEVICE_API bool operator!=(const complex<T0>& x, const T1& y);
 
 /*!
  * \} end group complex_numbers

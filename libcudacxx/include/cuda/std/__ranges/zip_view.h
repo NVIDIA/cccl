@@ -359,6 +359,33 @@ _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(zip_view)
 template <class... _Views>
 inline constexpr bool enable_borrowed_range<zip_view<_Views...>> = (enable_borrowed_range<_Views> && ...);
 
+template <class... _Views>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL size_t __zip_static_size() noexcept
+{
+  // A zero-sized input makes the zip empty, even if other input sizes are dynamic.
+  if constexpr (((__static_size_v<_Views> == 0) || ...))
+  {
+    return size_t{0};
+  }
+  else if constexpr (((__static_size_v<_Views> != dynamic_extent) && ...))
+  {
+    size_t __size = dynamic_extent;
+    ((__size = (__static_size_v<_Views> < __size) ? __static_size_v<_Views> : __size), ...);
+    return __size;
+  }
+  else
+  {
+    return dynamic_extent;
+  }
+}
+
+template <class... _Views>
+inline constexpr size_t __static_size_v<zip_view<_Views...>> = ::cuda::std::ranges::__zip_static_size<_Views...>();
+
+template <class... _Views>
+inline constexpr size_t __static_size_v<const zip_view<_Views...>> =
+  (range<const zip_view<_Views...>>) ? ::cuda::std::ranges::__zip_static_size<const _Views...>() : dynamic_extent;
+
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS

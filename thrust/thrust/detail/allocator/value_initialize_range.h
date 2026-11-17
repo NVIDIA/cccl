@@ -31,7 +31,7 @@ struct construct1_via_allocator
   Allocator& a;
 
   template <typename T>
-  inline _CCCL_HOST_DEVICE void operator()(T& x)
+  _CCCL_HOST_DEVICE_API void operator()(T& x)
   {
     ::cuda::std::allocator_traits<Allocator>::construct(a, &x);
   }
@@ -51,7 +51,7 @@ inline constexpr bool needs_default_construct_via_allocator<std::allocator<U>, T
   !::cuda::std::is_trivially_default_constructible_v<T>;
 
 template <typename Allocator, typename Pointer, typename Size>
-_CCCL_HOST_DEVICE void value_initialize_range(Allocator& a, Pointer p, Size n)
+_CCCL_HOST_DEVICE_API void value_initialize_range(Allocator& a, Pointer p, Size n)
 {
   if constexpr (needs_default_construct_via_allocator<Allocator,
                                                       typename ::cuda::std::pointer_traits<Pointer>::element_type>)

@@ -89,7 +89,7 @@ logical_warp_base_id(::cuda::std::integral_constant<int, LogicalWarpSize> logica
   }
   else
   {
-    const auto warp_base_id = CUB_NS_QUALIFIER::detail::logical_warp_id(logical_warp_size) * LogicalWarpSize;
+    const auto warp_base_id = _CUB::detail::logical_warp_id(logical_warp_size) * LogicalWarpSize;
     _CCCL_ASSUME(warp_base_id >= 0 && warp_base_id < warp_threads);
     return warp_base_id;
   }
@@ -102,7 +102,7 @@ template <int LogicalWarpSize = warp_threads>
 {
   static_assert(is_valid_logical_warp_size_v<LogicalWarpSize>, "invalid logical warp size");
   constexpr uint32_t member_mask = 0xFFFFFFFFu >> (warp_threads - LogicalWarpSize);
-  return member_mask << CUB_NS_QUALIFIER::detail::logical_warp_base_id<LogicalWarpSize>();
+  return member_mask << _CUB::detail::logical_warp_base_id<LogicalWarpSize>();
 }
 } // namespace detail
 CUB_NAMESPACE_END

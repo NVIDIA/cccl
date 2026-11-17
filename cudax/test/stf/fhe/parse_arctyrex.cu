@@ -191,7 +191,8 @@ void run(const char* inputfile)
         in_body = true;
 
         // Look for parameters
-        size_t begin_params, end_params;
+        size_t begin_params;
+        size_t end_params;
         begin_params       = line.find('(');
         end_params         = line.find(')');
         std::string params = line.substr(begin_params + 1, end_params - begin_params - 1);

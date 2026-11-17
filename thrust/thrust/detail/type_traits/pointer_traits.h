@@ -108,12 +108,15 @@ inline constexpr bool is_pointer_system_convertible_v =
 
 template <typename FromPtr, typename ToPtr>
 inline constexpr bool is_pointer_convertible_v =
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   ::cuda::std::is_convertible_v<typename ::cuda::std::pointer_traits<FromPtr>::element_type*,
+                                // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 false positive.
                                 typename ::cuda::std::pointer_traits<ToPtr>::element_type*>
   && is_pointer_system_convertible_v<FromPtr, ToPtr>;
 
 template <typename FromPtr, typename ToPtr>
 inline constexpr bool is_void_pointer_system_convertible_v =
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   ::cuda::std::is_void_v<typename ::cuda::std::pointer_traits<FromPtr>::element_type> //
   && is_pointer_system_convertible_v<FromPtr, ToPtr>;
 
@@ -142,22 +145,26 @@ using enable_if_void_pointer_is_system_convertible_t =
 template <typename FromPtr, typename ToPtr>
 inline constexpr bool ptr_can_compare_equal =
   is_pointer_system_convertible_v<FromPtr, ToPtr>
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   && ::cuda::std::__is_cpp17_equality_comparable_v<typename FromPtr::value_type*, typename ToPtr::value_type*>;
 
 template <typename FromPtr, typename ToPtr>
 inline constexpr bool ptr_can_compare_less_than =
   is_pointer_system_convertible_v<FromPtr, ToPtr>
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   && ::cuda::std::__is_cpp17_less_than_comparable_v<typename FromPtr::value_type*, typename ToPtr::value_type*>;
 
 // tagged references can only compare if they have a matching system and comparable value type
 template <typename FromPtr, typename ToPtr>
 inline constexpr bool ref_can_compare_equal =
   is_pointer_system_convertible_v<FromPtr, ToPtr>
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   && ::cuda::std::__is_cpp17_equality_comparable_v<typename FromPtr::value_type, typename ToPtr::value_type>;
 
 template <typename FromPtr, typename ToPtr>
 inline constexpr bool ref_can_compare_less_than =
   is_pointer_system_convertible_v<FromPtr, ToPtr>
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   && ::cuda::std::__is_cpp17_less_than_comparable_v<typename FromPtr::value_type, typename ToPtr::value_type>;
 } // namespace detail
 THRUST_NAMESPACE_END

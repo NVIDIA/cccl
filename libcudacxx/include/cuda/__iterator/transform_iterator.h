@@ -25,6 +25,7 @@
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#include <cuda/__iterator/contiguous_iterator_adaptor.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__concepts/equality_comparable.h>
@@ -232,6 +233,18 @@ public:
   {
     return ::cuda::std::move(__iter());
   }
+
+#ifndef _CCCL_DOXYGEN_INVOKED
+  //! @brief Rebuilds the stored iterator in place over the storage at @p __ptr.
+  //! @param[in] __ptr The address of the storage that replaces the storage this iterator reads from.
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__iter_can_rebind<_Iter, _Tp>)
+  _CCCL_API constexpr void __rebind(_Tp* __ptr)
+  {
+    ::cuda::__rebind_iterator_adaptor(__iter(), __ptr);
+  }
+#endif // !_CCCL_DOXYGEN_INVOKED
 
   //! @brief Dereferences the stored iterator and applies the stored functor to the result
   _CCCL_EXEC_CHECK_DISABLE

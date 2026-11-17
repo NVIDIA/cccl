@@ -27,6 +27,7 @@
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
@@ -251,6 +252,42 @@ public:
   contains(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
   {
     return __impl_.contains(__group, __key);
+  }
+
+  //! @brief Applies `__callback_op` to a copy of the stored key equivalent to a query using one thread.
+  //!
+  //! The callback is not invoked if no equivalent key is present.
+  //! @pre `cg_size == 1` and the key differs from the empty sentinel.
+  //! @note The return value of `__callback_op`, if any, is ignored.
+  //! @tparam _ProbeKey Query type compatible with the hash function and equality predicate
+  //! @tparam _CallbackOp Unary callable invocable with `key_type`
+  //! @param[in] __key Key to query
+  //! @param[in] __callback_op Function applied to the matching stored key
+  template <class _ProbeKey, class _CallbackOp>
+  _CCCL_DEVICE_API void for_each(_ProbeKey __key, _CallbackOp&& __callback_op) const noexcept
+  {
+    __impl_.for_each(__key, ::cuda::std::forward<_CallbackOp>(__callback_op));
+  }
+
+  //! @brief Cooperatively applies `__callback_op` to a copy of the stored key equivalent to a query.
+  //!
+  //! The callback is not invoked if no equivalent key is present. The group member that finds the
+  //! match invokes the callback.
+  //! @pre All group members participate with the same query, which differs from the empty sentinel.
+  //! @note Synchronizing `__group` inside `__callback_op` is undefined behavior.
+  //! @note The return value of `__callback_op`, if any, is ignored.
+  //! @tparam _ParentCG Parent cooperative group type
+  //! @tparam _ProbeKey Query type compatible with the hash function and equality predicate
+  //! @tparam _CallbackOp Unary callable invocable with `key_type`
+  //! @param[in] __group Cooperative group of size `cg_size`
+  //! @param[in] __key Key to query
+  //! @param[in] __callback_op Function applied to the matching stored key
+  template <class _ParentCG, class _ProbeKey, class _CallbackOp>
+  _CCCL_DEVICE_API void for_each(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
+                                 _ProbeKey __key,
+                                 _CallbackOp&& __callback_op) const noexcept
+  {
+    __impl_.for_each(__group, __key, ::cuda::std::forward<_CallbackOp>(__callback_op));
   }
 #endif // _CCCL_CUDA_COMPILATION()
 };

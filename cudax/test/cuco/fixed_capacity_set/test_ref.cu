@@ -23,6 +23,7 @@
 #include <testing.cuh>
 
 #include "test_common.cuh"
+#include <cooperative_groups/reduce.h>
 
 using key_types = c2h::type_list<cuda::std::uint8_t, cuda::std::uint16_t, cuda::std::int32_t, cuda::std::int64_t>;
 using cg_sizes  = c2h::type_list<int_c<1>, int_c<2>>;
@@ -78,6 +79,35 @@ struct constant_hash
   }
 };
 
+// Counts the callbacks given a key equivalent to `expected` through a non-const call operator.
+template <class Ref>
+struct count_matches
+{
+  typename Ref::key_type expected;
+  int count = 0;
+
+  _CCCL_DEVICE_API void operator()(typename Ref::key_type key) noexcept
+  {
+    count += static_cast<int>(typename Ref::key_equal{}(key, expected));
+  }
+};
+
+// Returns the number of matching callbacks across the group, which is one if `key` is present.
+template <bool Cooperative, class Ref, class Group>
+[[nodiscard]] _CCCL_DEVICE_API int count_for_each(const Ref& ref, const Group& group, typename Ref::key_type key)
+{
+  count_matches<Ref> callback{key};
+  if constexpr (Cooperative)
+  {
+    ref.for_each(group, key, callback);
+  }
+  else
+  {
+    ref.for_each(key, callback);
+  }
+  return cooperative_groups::reduce(group, callback.count, cooperative_groups::plus<int>{});
+}
+
 struct exercise_ref
 {
   template <class Ref>
@@ -94,28 +124,37 @@ struct exercise_ref
       if constexpr (Ref::cg_size == 1)
       {
         success  = !ref.contains(key) && success;
+        success  = count_for_each<false>(ref, group, key) == 0 && success;
         inserted = ref.insert(key);
       }
       else
       {
         success  = !ref.contains(group, key) && success;
+        success  = count_for_each<true>(ref, group, key) == 0 && success;
         inserted = ref.insert(group, key);
       }
       group.sync();
       success = inserted && success;
-      // Also exercise the cooperative overload when cg_size is one.
+      // Also exercise the cooperative overloads when cg_size is one.
       success = ref.contains(group, key) && success;
       success = !ref.insert(group, key) && success;
+      success = count_for_each<true>(ref, group, key) == 1 && success;
+      if constexpr (Ref::cg_size == 1)
+      {
+        success = count_for_each<false>(ref, group, key) == 1 && success;
+      }
       group.sync();
     }
 
     const auto absent = make_ref_key<key_type>(capacity);
     success           = !ref.insert(group, absent) && success;
     success           = !ref.contains(group, absent) && success;
+    success           = count_for_each<true>(ref, group, absent) == 0 && success;
     if constexpr (Ref::cg_size == 1)
     {
       success = !ref.insert(absent) && success;
       success = !ref.contains(absent) && success;
+      success = count_for_each<false>(ref, group, absent) == 0 && success;
     }
     group.sync();
     if (group.thread_rank() == 0)

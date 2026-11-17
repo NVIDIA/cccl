@@ -81,7 +81,10 @@ class barrier<thread_scope_block, ::cuda::std::__empty_completion> : public __bl
   friend class ::cuda::std::__barrier_poll_tester_parity;
 
 public:
-  using arrival_token           = typename __barrier_base::arrival_token;
+  //! @brief The thread scope of the barrier.
+  static constexpr thread_scope scope = thread_scope_block;
+
+  using arrival_token           = __barrier_base::arrival_token;
   _CCCL_HIDE_FROM_ABI barrier() = default;
 
   barrier(const barrier&)            = delete;
@@ -168,7 +171,7 @@ private:
     const unsigned int __active  = __activeA & __activeB;
     const int __inc              = static_cast<int>(::cuda::std::popcount(__active) * __update);
 
-    const int __leader = static_cast<int>(::__ffs(static_cast<int>(__active))) - 1;
+    const int __leader = ::__ffs(static_cast<int>(__active)) - 1;
     // All threads in mask synchronize here, establishing cummulativity to the __leader:
     ::__syncwarp(__mask);
     arrival_token __token = {};

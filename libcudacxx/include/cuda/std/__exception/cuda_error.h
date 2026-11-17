@@ -44,7 +44,7 @@ template <int _Error>
   const ::cuda::std::source_location& __loc = ::cuda::std::source_location::current());
 
 [[noreturn]] _CCCL_HOST_API void __throw_cuda_error(
-  const int __error,
+  int __error,
   const char* __msg,
   const char* __api                         = nullptr,
   const ::cuda::std::source_location& __loc = ::cuda::std::source_location::current());

@@ -49,7 +49,7 @@ struct FindBoundSortedValuesPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const FindBoundSortedValuesPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const FindBoundSortedValuesPolicy& p)
   {
     return os << "FindBoundSortedValuesPolicy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << ", .load_modifier = " << p.load_modifier << " }";
@@ -73,7 +73,7 @@ struct policy_selector
     -> FindBoundSortedValuesPolicy
   {
     const int combined_size = range_type_size + values_type_size;
-    const int ipt           = cub::detail::nominal_4B_items_to_items(15, combined_size);
+    const int ipt           = _CUB::detail::nominal_4B_items_to_items(15, combined_size);
 
     if (cc >= ::cuda::compute_capability{8, 0})
     {

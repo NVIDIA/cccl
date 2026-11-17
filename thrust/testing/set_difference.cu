@@ -51,7 +51,8 @@ void test_set_difference_simple()
 {
   using Iterator = typename Vector::iterator;
 
-  Vector a{0, 2, 4, 5}, b{0, 3, 3, 4, 6};
+  Vector a{0, 2, 4, 5};
+  Vector b{0, 3, 3, 4, 6};
   Vector ref{2, 5};
   Vector result(2);
 

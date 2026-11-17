@@ -353,6 +353,19 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT vector_type<::__nv_fp8_e5m2, 4>
 };
 #  endif // _CCCL_HAS_NVFP8_E5M2()
 
+#  if _CCCL_HAS_NVFP8_UE5M3()
+template <>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT vector_type<::__nv_fp8_ue5m3, 2>
+{
+  using type _CCCL_NODEBUG = ::__nv_fp8x2_ue5m3;
+};
+template <>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT vector_type<::__nv_fp8_ue5m3, 4>
+{
+  using type _CCCL_NODEBUG = ::__nv_fp8x4_ue5m3;
+};
+#  endif // _CCCL_HAS_NVFP8_UE5M3()
+
 #  if _CCCL_HAS_NVFP8_E8M0()
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT vector_type<::__nv_fp8_e8m0, 2>

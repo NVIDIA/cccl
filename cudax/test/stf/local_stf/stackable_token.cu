@@ -27,7 +27,7 @@ int main()
   lA.set_symbol("A");
 
   sctx.parallel_for(lA.shape(), lA.write())->*[] __device__(size_t i, auto a) {
-    a(i) = 42 + 2 * i;
+    a(i) = 42 + (2 * i);
   };
 
   auto ltoken = sctx.token();
@@ -43,7 +43,7 @@ int main()
   lB.set_symbol("B");
 
   sctx.parallel_for(lB.shape(), lB.write(), lA.read(), ltoken.rw())->*[] __device__(size_t i, auto b, auto a) {
-    b(i) = 17 - 3 * a(i);
+    b(i) = 17 - (3 * a(i));
   };
 
   auto lC = mv(lB);
@@ -61,14 +61,14 @@ int main()
   sctx.host_launch(lC.read(), ltoken2.read())->*[](auto b, auto) {
     for (size_t i = 0; i < b.size(); i++)
     {
-      EXPECT(b(i) == 2 * (17 - 3 * (42 + 2 * i)));
+      EXPECT(b(i) == 2 * (17 - (3 * (42 + (2 * i)))));
     }
   };
 
   sctx.host_launch(lA.read(), ltoken.read())->*[](auto a, auto) {
     for (size_t i = 0; i < a.size(); i++)
     {
-      EXPECT(a(i) == 3 * (42 + 2 * i));
+      EXPECT(a(i) == 3 * (42 + (2 * i)));
     }
   };
 

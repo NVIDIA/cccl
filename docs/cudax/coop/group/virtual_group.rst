@@ -19,7 +19,7 @@
       requires cuda::std::same_as</*mapping-result-of*/<Unit, ParentGroup, Mapping>, MappingResult>
     __device__ explicit virtual_group(const Unit& unit,
                                       const ParentGroup& parent_group,
-                                      Mapping&& mapping) noexcept;
+                                      Mapping&& mapping);
 
     virtual_group(const virtual_group&) = delete;
 
@@ -53,7 +53,7 @@ The type can be constructed by specifying what is being grouped (``unit``) withi
 Queries
 -------
 
-Sub-unit queries work as with any other group type. The group may be queried for rank and (static) count within the parent group.
+Sub-unit queries work as with any other group type. The group may be queried for (static) rank and (static) count within the parent group.
 
 Examples
 --------

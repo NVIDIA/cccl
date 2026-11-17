@@ -45,7 +45,7 @@ struct __read_from_tmp_value_tag
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _BinaryPredicate, class _InputIterator, class _Sent, class _OutputIterator>
-constexpr _CCCL_API inline pair<_InputIterator, _OutputIterator> __unique_copy(
+constexpr _CCCL_API pair<_InputIterator, _OutputIterator> __unique_copy(
   _InputIterator __first,
   _Sent __last,
   _OutputIterator __result,
@@ -72,7 +72,7 @@ constexpr _CCCL_API inline pair<_InputIterator, _OutputIterator> __unique_copy(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _BinaryPredicate, class _ForwardIterator, class _Sent, class _OutputIterator>
-constexpr _CCCL_API inline pair<_ForwardIterator, _OutputIterator> __unique_copy(
+constexpr _CCCL_API pair<_ForwardIterator, _OutputIterator> __unique_copy(
   _ForwardIterator __first,
   _Sent __last,
   _OutputIterator __result,
@@ -99,7 +99,7 @@ constexpr _CCCL_API inline pair<_ForwardIterator, _OutputIterator> __unique_copy
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _BinaryPredicate, class _InputIterator, class _Sent, class _InputAndOutputIterator>
-constexpr _CCCL_API inline pair<_InputIterator, _InputAndOutputIterator> __unique_copy(
+constexpr _CCCL_API pair<_InputIterator, _InputAndOutputIterator> __unique_copy(
   _InputIterator __first,
   _Sent __last,
   _InputAndOutputIterator __result,

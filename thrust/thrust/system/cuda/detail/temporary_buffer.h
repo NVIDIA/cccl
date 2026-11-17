@@ -14,9 +14,10 @@
 #endif // no system header
 
 #include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/system/cuda/error.h>
 #include <thrust/system/detail/bad_alloc.h>
 
-#include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -26,7 +27,8 @@ namespace cuda_cub
 // overloads should be selected.
 
 template <typename T>
-_CCCL_HOST ::cuda::std::pair<T*, ::cuda::std::ptrdiff_t> get_temporary_buffer(par_nosync_t&, ::cuda::std::ptrdiff_t n)
+_CCCL_HOST_API ::cuda::std::pair<T*, ::cuda::std::ptrdiff_t>
+get_temporary_buffer(par_nosync_t&, ::cuda::std::ptrdiff_t n)
 {
   void* ptr;
   cudaError_t status = cudaMallocAsync(&ptr, sizeof(T) * n, nullptr);
@@ -41,7 +43,7 @@ _CCCL_HOST ::cuda::std::pair<T*, ::cuda::std::ptrdiff_t> get_temporary_buffer(pa
 
     if (status != cudaSuccess)
     {
-      throw system::detail::bad_alloc(cuda_category().message(status).c_str());
+      throw system::detail::bad_alloc(cuda_category().message(status));
     }
   }
 
@@ -49,7 +51,7 @@ _CCCL_HOST ::cuda::std::pair<T*, ::cuda::std::ptrdiff_t> get_temporary_buffer(pa
 }
 
 template <typename Pointer>
-_CCCL_HOST void return_temporary_buffer(par_nosync_t&, Pointer ptr, ::cuda::std::ptrdiff_t)
+_CCCL_HOST_API void return_temporary_buffer(par_nosync_t&, Pointer ptr, ::cuda::std::ptrdiff_t)
 {
   void* void_ptr = raw_pointer_cast(ptr);
 
@@ -65,13 +67,13 @@ _CCCL_HOST void return_temporary_buffer(par_nosync_t&, Pointer ptr, ::cuda::std:
 
     if (status != cudaSuccess)
     {
-      throw system::detail::bad_alloc(cuda_category().message(status).c_str());
+      throw system::detail::bad_alloc(cuda_category().message(status));
     }
   }
 }
 
 template <typename T>
-_CCCL_HOST ::cuda::std::pair<T*, ::cuda::std::ptrdiff_t>
+_CCCL_HOST_API ::cuda::std::pair<T*, ::cuda::std::ptrdiff_t>
 get_temporary_buffer(execute_on_stream_nosync& system, ::cuda::std::ptrdiff_t n)
 {
   void* ptr;
@@ -87,7 +89,7 @@ get_temporary_buffer(execute_on_stream_nosync& system, ::cuda::std::ptrdiff_t n)
 
     if (status != cudaSuccess)
     {
-      throw system::detail::bad_alloc(cuda_category().message(status).c_str());
+      throw system::detail::bad_alloc(cuda_category().message(status));
     }
   }
 
@@ -95,7 +97,7 @@ get_temporary_buffer(execute_on_stream_nosync& system, ::cuda::std::ptrdiff_t n)
 }
 
 template <typename Pointer>
-_CCCL_HOST void return_temporary_buffer(execute_on_stream_nosync& system, Pointer ptr, ::cuda::std::ptrdiff_t)
+_CCCL_HOST_API void return_temporary_buffer(execute_on_stream_nosync& system, Pointer ptr, ::cuda::std::ptrdiff_t)
 {
   void* void_ptr = raw_pointer_cast(ptr);
 
@@ -111,7 +113,7 @@ _CCCL_HOST void return_temporary_buffer(execute_on_stream_nosync& system, Pointe
 
     if (status != cudaSuccess)
     {
-      throw system::detail::bad_alloc(cuda_category().message(status).c_str());
+      throw system::detail::bad_alloc(cuda_category().message(status));
     }
   }
 }

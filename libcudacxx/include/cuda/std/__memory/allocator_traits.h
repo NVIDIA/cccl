@@ -346,13 +346,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   using rebind_traits = allocator_traits<rebind_alloc<_Tp>>;
 
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static pointer allocate(allocator_type& __a, size_type __n)
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_CXX20 static pointer allocate(allocator_type& __a, size_type __n)
   {
     return __a.allocate(__n);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static pointer
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_CXX20 static pointer
   allocate(allocator_type& __a, size_type __n, [[maybe_unused]] const_void_pointer __hint)
   {
     if constexpr (__has_allocate_hint<_Alloc, size_type, const_void_pointer>)

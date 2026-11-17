@@ -341,7 +341,7 @@ void TestAlgorithmSpecialisation()
 
   enum class timer_id : uint32_t
   {
-    TIMER_SIZE_BEGIN = 0,
+    TIMER_SIZE_BEGIN,
     TIMER_SIZE_END,
     TIMER_DECODE_BEGIN,
     TIMER_DECODE_END,

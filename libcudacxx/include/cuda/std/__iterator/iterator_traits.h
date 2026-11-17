@@ -72,7 +72,7 @@ inline constexpr bool __cccl_std_contiguous_iterator_tag_exists_v =
 
 #endif // _CCCL_HOSTED()
 
-#include <cuda/std/__cccl/prologue.h>
+#include <cuda/std/__cccl/prologue.h> // NOLINT(readability-duplicate-include)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -535,6 +535,11 @@ inline constexpr bool __has_random_access_traversal =
   __has_iterator_category_convertible_to<_Iter, random_access_iterator_tag>
   || __has_iterator_concept_convertible_to<_Iter, random_access_iterator_tag>;
 
+// in C++17 the standard does not yet know about the contiguous iterator concept, so we need to check for it explicitly
+template <class _Iter>
+_CCCL_CONCEPT __is_cpp17_contiguous_iterator = _CCCL_REQUIRES_EXPR((_Iter)) //
+  (typename(_ITER_CONCEPT<_Iter>), requires(is_convertible_v<_ITER_CONCEPT<_Iter>, contiguous_iterator_tag>));
+
 // __has_contiguous_traversal determines if an iterator is known by
 // libc++ to be contiguous, either because it advertises itself as such
 // (in C++20) or because it is a pointer type or a known trivial wrapper
@@ -545,7 +550,7 @@ inline constexpr bool __has_random_access_traversal =
 template <class _Iter>
 inline constexpr bool __has_contiguous_traversal =
   __has_iterator_category_convertible_to<_Iter, contiguous_iterator_tag>
-  || __has_iterator_concept_convertible_to<_Iter, contiguous_iterator_tag>;
+  || __has_iterator_concept_convertible_to<_Iter, contiguous_iterator_tag> || __is_cpp17_contiguous_iterator<_Iter>;
 
 // Any native pointer which is an iterator is also a contiguous iterator.
 template <class _Tp>
@@ -562,9 +567,6 @@ using __iterator_pointer_type _CCCL_NODEBUG = typename iterator_traits<_Iter>::p
 
 template <class _Iter>
 using __iter_diff_t _CCCL_NODEBUG = typename iterator_traits<_Iter>::difference_type;
-
-template <class _Iter>
-using __iter_value_type _CCCL_NODEBUG = typename iterator_traits<_Iter>::value_type;
 
 // C++20 iterators do not play nicely with C++17 interfaces, because they commmonly use `iterator_concept` to
 // communicate their iterator category. Deduce the actual iterator category from the maximum of `iterator_concept` and
@@ -608,6 +610,6 @@ using __iterator_traits_category_or_concept_t _CCCL_NODEBUG =
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
-#include <cuda/std/__cccl/epilogue.h>
+#include <cuda/std/__cccl/epilogue.h> // NOLINT(readability-duplicate-include)
 
 #endif // _CUDA_STD___ITERATOR_ITERATOR_TRAITS_H

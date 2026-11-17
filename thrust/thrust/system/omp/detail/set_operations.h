@@ -14,4 +14,4 @@
 #endif // no system header
 
 // omp system inherits set_operations
-#include <thrust/system/cpp/detail/set_operations.h>
+#include <thrust/system/cpp/detail/set_operations.h> // IWYU pragma: export
