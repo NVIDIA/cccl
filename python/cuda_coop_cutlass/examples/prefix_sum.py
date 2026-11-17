@@ -32,10 +32,9 @@ def launch(
     destination: cute.Pointer,
     items_per_thread: cutlass.Constexpr,
 ):
-    prefix_sum(source, destination, items_per_thread).launch(grid=1, block=128)
-
-
-# docs: end cutlass-prefix-sum
+    kernel = prefix_sum(source, destination, items_per_thread)
+    kernel.launch(grid=1, block=128)
+    # docs: end cutlass-prefix-sum
 
 
 def _check(result):

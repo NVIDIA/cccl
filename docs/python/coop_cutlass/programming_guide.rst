@@ -61,48 +61,6 @@ them before the call. Supply ``oob_default`` or write those items after Load
 before you read them. All threads in the block must call the primitive with
 uniform controls.
 
-.. _coop-cutlass-api-choice:
-
-Using the API
--------------
-
-Importing ``cuda.coop.cutlass`` activates its CuTe compiler integration.
-Call the primitives inside ``@cute.kernel`` or a ``@cute.jit`` function
-called by that kernel. Compiler markers do not execute operations on the host.
-
-.. _coop-cutlass-differences:
-
-.. _cutlass-specific-behavior-and-current-limits:
-
-CuTe values and supported features
-----------------------------------
-
-Use ``ThreadData`` to work with CuTe register tensors.
-``ThreadData.from_register_tensor(fragment)`` copies a fragment into a
-payload you can pass to ``store`` or another primitive.
-``values.to_register_tensor()`` converts a payload back to a CuTe register
-tensor. See :ref:`coop-cutlass-register-payloads`.
-
-Construct payloads with ``coop.ThreadData`` inside a CuTe kernel.
-They support writable Scan aggregates and Radix Rank prefixes, along with
-CuTe register-tensor and immutable-vector conversions. A Python object does
-not become a supported kernel payload merely by implementing a typing
-protocol.
-
-Group queries return CuTe scalars. For example, ``block.rank()`` returns a
-``cutlass.Uint32`` that you can use in pointer arithmetic or a condition
-inside the kernel. Use ``block.rank_as(cutlass.Int32)`` when you need a signed
-rank.
-
-All threads in the group must call the primitive, even when ``valid_items``
-selects a short tile or only rank zero uses the result. The sections below
-describe the requirements for block, warp, and mapped groups.
-
-Reduce and Scan support the built-in operators listed below and
-:ref:`compiled scalar device operators <coop-cutlass-device-operators>`.
-Scan prefix callbacks are unsupported. See the :doc:`API reference <api>`
-for operation signatures and return values.
-
 .. _coop-cutlass-requirements:
 
 Runtime requirements
@@ -148,31 +106,6 @@ Store-to-shared is also supported: Load into ``ThreadData``, Store into a
 native shared tensor or reserved workspace, then synchronize before another
 thread reads those writes. Application shared storage must remain disjoint
 from scratch that a concurrent primitive can overwrite.
-
-.. _coop-cutlass-helpers:
-
-Helpers and compile-time values
--------------------------------
-
-A ``@cute.jit`` helper called by a ``@cute.kernel`` can contain cooperative
-operations. Its calls are traced in the enclosing kernel's compiler
-environment and contribute to that kernel's provider bundle and scratch
-requirements. Every required group member must reach a cooperative call,
-including when it appears in a helper or loop.
-
-Payload extents, group mappings, dtype selectors, algorithm names, and
-``TempStorage`` constructor options must be known while tracing. Use
-``cutlass.range_constexpr`` when a loop index selects payload items or
-constructs different static calls. Runtime loops may repeat a fixed call
-shape, and an initialized ``ThreadData`` can pass through CuTe runtime
-branches and loops. Scalar controls such as ``valid_items`` and ``offset``
-may be runtime values where the primitive allows them.
-
-A helper containing a cooperative call is different from an operator passed
-to Reduce, Scan, or Merge Sort. Reduce and Scan accept
-:ref:`compiled scalar device operators <coop-cutlass-device-operators>`
-prepared before kernel tracing. Merge Sort accepts its documented built-in
-comparators. Cooperative operations cannot be used inside a scalar callback.
 
 Block algorithms
 ----------------
@@ -371,6 +304,9 @@ requires an explicit initial value, for example
 The dtype must match the input values exactly. Block Reduce's
 ``raking_commutative_only`` algorithm rejects custom operators because the
 compiler does not prove their commutativity.
+
+An operator is a scalar function and cannot call a primitive. A ``@cute.jit``
+function that the kernel calls is different: it is part of the kernel and can.
 
 This requires CUTLASS DSL 4.9 device-function export support through
 ``cute.compile_to`` and ``cutlass.compiler.ArtifactType.LtoIr``, including
