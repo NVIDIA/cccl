@@ -1205,12 +1205,13 @@ private:
       {
         return __make_thrust_policy(9, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_LDG);
       }
-      if ((key_size == 2 || key_size == 4) && accum_size == 2)
+      if (((key_size == 2 || key_size == 4) && accum_size == 2)
+          || (key_size == 4 && accum_size == 4 && accum_t == type_t::float32))
       {
         return __make_thrust_policy(11, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_LDG);
       }
-      // Floating-point accumulators keep the SM100 tunings below
-      if ((key_size == 8 && accum_size == 8)
+      // F64 with 2- or 4-byte keys, and F32 or I64 with 8-byte keys, keep the SM100 tunings below
+      if ((key_size == 8 && accum_size == 8 && accum_t != type_t::int64)
           || ((key_size == 2 || key_size == 4) && accum_size == 8 && accum_t != type_t::float64)
           || (key_size == 8 && accum_size == 4 && accum_t != type_t::float32))
       {
