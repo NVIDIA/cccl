@@ -231,7 +231,7 @@ __device__ void test_group_view(Config config, Level level)
 
     const cudax::coop::group_view g2_view{g2};
     REQUIRE(cuda::warp.count(g2_view) == n);
-    REQUIRE(g2_view.count(g2) == cuda::warp.count(level) / n);
+    REQUIRE(g2_view.count(g) == cuda::warp.count(level) / n);
     static_assert(g2_view.is_always_contiguous());
     g2_view.sync();
     g2_view.wait(g2_view.arrive());
@@ -240,7 +240,7 @@ __device__ void test_group_view(Config config, Level level)
 
     const cudax::coop::group_view g2_view_threads{cuda::gpu_thread, g2_view};
     REQUIRE(cuda::gpu_thread.count(g2_view_threads) == n * cuda::gpu_thread.count(cuda::warp));
-    REQUIRE(g2_view_threads.count(g2) == n);
+    REQUIRE(g2_view_threads.count(g) == cuda::warp.count(level) / n);
     static_assert(g2_view_threads.is_always_contiguous());
     g2_view_threads.sync();
     g2_view_threads.wait(g2_view_threads.arrive());
