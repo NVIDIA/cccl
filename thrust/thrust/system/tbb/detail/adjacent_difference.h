@@ -19,7 +19,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::tbb::detail
 {
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
-OutputIterator adjacent_difference(
+_CCCL_HOST_API OutputIterator adjacent_difference(
   execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,

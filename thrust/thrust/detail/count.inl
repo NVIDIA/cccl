@@ -13,14 +13,17 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/count.h>
+#include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/select_system.h>
 
 // Include all active backend system implementations (generic, sequential, host and device)
+// IWYU pragma: begin_keep
 #include <thrust/system/detail/generic/count.h>
 #include <thrust/system/detail/sequential/count.h>
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(count.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(count.h)
+// IWYU pragma: end_keep
 
 // Some build systems need a hint to know which files we could include
 #if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
@@ -34,7 +37,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename EqualityComparable>
-_CCCL_HOST_DEVICE thrust::detail::it_difference_t<InputIterator>
+_CCCL_HOST_DEVICE_API thrust::detail::it_difference_t<InputIterator>
 count(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
       InputIterator first,
       InputIterator last,
@@ -47,7 +50,7 @@ count(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE thrust::detail::it_difference_t<InputIterator>
+_CCCL_HOST_DEVICE_API thrust::detail::it_difference_t<InputIterator>
 count_if(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
          InputIterator first,
          InputIterator last,
@@ -59,7 +62,7 @@ count_if(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
 } // end count_if()
 
 template <typename InputIterator, typename EqualityComparable>
-thrust::detail::it_difference_t<InputIterator>
+_CCCL_HOST_API thrust::detail::it_difference_t<InputIterator>
 count(InputIterator first, InputIterator last, const EqualityComparable& value)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::count");
@@ -73,7 +76,8 @@ count(InputIterator first, InputIterator last, const EqualityComparable& value)
 } // end count()
 
 template <typename InputIterator, typename Predicate>
-thrust::detail::it_difference_t<InputIterator> count_if(InputIterator first, InputIterator last, Predicate pred)
+_CCCL_HOST_API thrust::detail::it_difference_t<InputIterator>
+count_if(InputIterator first, InputIterator last, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::count_if");
   using thrust::system::detail::generic::select_system;

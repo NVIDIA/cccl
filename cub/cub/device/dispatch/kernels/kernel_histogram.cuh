@@ -60,7 +60,7 @@ struct Transforms
     //!
     //! @param d_levels_ Pointer to levels array
     //! @param num_output_levels_ Number of levels in array
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(LevelIteratorT d_levels_, int num_output_levels_)
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void Init(LevelIteratorT d_levels_, int num_output_levels_)
     {
       this->d_levels          = d_levels_;
       this->num_output_levels = num_output_levels_;
@@ -68,7 +68,7 @@ struct Transforms
 
     // Method for converting samples to bin-ids
     template <CacheLoadModifier LoadModifier, typename Sample>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
     {
       /// Level iterator wrapper type
       // Wrap the native input pointer with CacheModifiedInputIterator
@@ -161,7 +161,7 @@ struct Transforms
     using FractionStorageT = decltype(FractionStorageType());
 
     template <typename T>
-    [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static auto subtract_as_unsigned(T lhs, T rhs) noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE static auto subtract_as_unsigned(T lhs, T rhs) noexcept
     {
       if constexpr (::cuda::std::is_same_v<T, bool>)
       {
@@ -192,7 +192,7 @@ struct Transforms
     ScaleT m_scale; // Bin scaling
 
     template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE ScaleT
     ComputeScale(int num_levels, T max_level, T min_level, ::cuda::std::true_type /* is_fp */)
     {
       // The active scale representation is assigned below.
@@ -203,7 +203,7 @@ struct Transforms
     }
 
     template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE ScaleT
     ComputeScale(int num_levels, T max_level, T min_level, ::cuda::std::false_type /* is_fp */)
     {
       // The active scale representation is assigned below.
@@ -222,13 +222,13 @@ struct Transforms
     }
 
     template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels, T max_level, T min_level)
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels, T max_level, T min_level)
     {
       return this->ComputeScale(num_levels, max_level, min_level, ::cuda::std::is_floating_point<T>{});
     }
 
 #if _CCCL_HAS_NVFP16()
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels, __half max_level, __half min_level)
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels, __half max_level, __half min_level)
     {
       // The active scale representation is assigned below.
       // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
@@ -242,7 +242,7 @@ struct Transforms
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
-    _CCCL_HOST_DEVICE
+    _CCCL_HOST_DEVICE_API
     _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels, __nv_bfloat16 max_level, __nv_bfloat16 min_level)
     {
       // The active scale representation is assigned below.
@@ -328,7 +328,7 @@ struct Transforms
 
   public:
     //! @brief Initializes the ScaleTransform for the given parameters
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(int num_levels, LevelT max_level, LevelT min_level)
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void Init(int num_levels, LevelT max_level, LevelT min_level)
     {
       m_max = static_cast<CommonT>(max_level);
       m_min = static_cast<CommonT>(min_level);
@@ -339,7 +339,7 @@ struct Transforms
     // Method for converting samples to bin-ids. The sample type is a template parameter because the
     // agent also feeds privatized bin indices through this op, which must not round-trip through SampleT.
     template <CacheLoadModifier LoadModifier, typename Sample>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
     {
       const CommonT common_sample = static_cast<CommonT>(sample);
 
@@ -361,17 +361,17 @@ struct Transforms
 
     // No-op Init for uniformity with ScaleTransform
     template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(int, T, T)
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void Init(int, T, T)
     {}
 
     // No-op Init for uniformity with SearchTransform
     template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(T, int)
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void Init(T, int)
     {}
 
     // Method for converting samples to bin-ids
     template <CacheLoadModifier LoadModifier, typename Sample>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
     {
       if (valid)
       {

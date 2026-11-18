@@ -200,7 +200,7 @@ public:
   //! @endrst
   //!
   //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
-  _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpReduce(TempStorage& temp_storage)
       : temp_storage{temp_storage.Alias()}
   {}
 
@@ -245,42 +245,42 @@ public:
   //! ``3568``, respectively (and is undefined in other threads).
   //! @endrst
   //!
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(T input)
   {
     return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, ::cuda::std::plus<>{});
   }
 
   _CCCL_TEMPLATE(typename InputType)
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(const InputType& input)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(const InputType& input)
   {
     auto thread_reduction = _CUB::ThreadReduce(input, ::cuda::std::plus<>{});
     return InternalWarpReduce{temp_storage}.template Reduce<true>(
       thread_reduction, LogicalWarpThreads, ::cuda::std::plus<>{});
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Max(T input)
   {
     return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, ::cuda::maximum<>{});
   }
 
   _CCCL_TEMPLATE(typename InputType)
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(const InputType& input)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Max(const InputType& input)
   {
     auto thread_reduction = _CUB::ThreadReduce(input, ::cuda::maximum<>{});
     return InternalWarpReduce{temp_storage}.template Reduce<true>(
       thread_reduction, LogicalWarpThreads, ::cuda::maximum<>{});
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(T input)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Min(T input)
   {
     return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, ::cuda::minimum<>{});
   }
 
   _CCCL_TEMPLATE(typename InputType)
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(const InputType& input)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Min(const InputType& input)
   {
     auto thread_reduction = _CUB::ThreadReduce(input, ::cuda::minimum<>{});
     return InternalWarpReduce{temp_storage}.template Reduce<true>(
@@ -337,19 +337,19 @@ public:
   //! @param[in] valid_items
   //!   Total number of valid items in the calling thread's logical warp
   //!   (may be less than ``LogicalWarpThreads``)
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int valid_items)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(T input, int valid_items)
   {
     // Determine if we don't need bounds checking
     return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, ::cuda::std::plus<>{});
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input, int valid_items)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Max(T input, int valid_items)
   {
     // Determine if we don't need bounds checking
     return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, ::cuda::maximum<>{});
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(T input, int valid_items)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Min(T input, int valid_items)
   {
     // Determine if we don't need bounds checking
     return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, ::cuda::minimum<>{});
@@ -408,7 +408,7 @@ public:
   //! @param[in] head_flag
   //!   Head flag denoting whether or not `input` is the start of a new segment
   template <typename FlagT>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T HeadSegmentedSum(T input, FlagT head_flag)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T HeadSegmentedSum(T input, FlagT head_flag)
   {
     return HeadSegmentedReduce(input, head_flag, ::cuda::std::plus<>{});
   }
@@ -465,7 +465,7 @@ public:
   //! @param[in] tail_flag
   //!   Head flag denoting whether or not `input` is the start of a new segment
   template <typename FlagT>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T TailSegmentedSum(T input, FlagT tail_flag)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T TailSegmentedSum(T input, FlagT tail_flag)
   {
     return TailSegmentedReduce(input, tail_flag, ::cuda::std::plus<>{});
   }
@@ -530,14 +530,14 @@ public:
   //! @param[in] reduction_op
   //!   Binary reduction operator
   template <typename ReductionOp>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op)
   {
     return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, reduction_op);
   }
 
   _CCCL_TEMPLATE(typename InputType, typename ReductionOp)
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(const InputType& input, ReductionOp reduction_op)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(const InputType& input, ReductionOp reduction_op)
   {
     auto thread_reduction = _CUB::ThreadReduce(input, reduction_op);
     return WarpReduce<T, LogicalWarpThreads>::Reduce(thread_reduction, reduction_op);
@@ -605,7 +605,7 @@ public:
   //!   Total number of valid items in the calling thread's logical warp
   //!   (may be less than ``LogicalWarpThreads``)
   template <typename ReductionOp>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, int valid_items)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, int valid_items)
   {
     return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, reduction_op);
   }
@@ -670,7 +670,8 @@ public:
   //! @param[in] reduction_op
   //!   Reduction operator
   template <typename ReductionOp, typename FlagT>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T HeadSegmentedReduce(T input, FlagT head_flag, ReductionOp reduction_op)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T
+  HeadSegmentedReduce(T input, FlagT head_flag, ReductionOp reduction_op)
   {
     return InternalWarpReduce{temp_storage}.template SegmentedReduce<true>(input, head_flag, reduction_op);
   }
@@ -735,7 +736,8 @@ public:
   //! @param[in] reduction_op
   //!   Reduction operator
   template <typename ReductionOp, typename FlagT>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T TailSegmentedReduce(T input, FlagT tail_flag, ReductionOp reduction_op)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T
+  TailSegmentedReduce(T input, FlagT tail_flag, ReductionOp reduction_op)
   {
     return InternalWarpReduce{temp_storage}.template SegmentedReduce<false>(input, tail_flag, reduction_op);
   }
@@ -754,17 +756,17 @@ public:
   {
     using TempStorage = Uninitialized<_TempStorage>;
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE InternalWarpReduce(TempStorage& /*temp_storage */) {}
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE InternalWarpReduce(TempStorage& /*temp_storage */) {}
 
     template <bool AllLanesValid, typename ReductionOp>
-    [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
+    [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T
     Reduce(T input, int /* valid_items */, ReductionOp /* reduction_op */)
     {
       return input;
     }
 
     template <bool HeadSegmented, typename FlagT, typename ReductionOp>
-    [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
+    [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T
     SegmentedReduce(T input, FlagT /* flag */, ReductionOp /* reduction_op */)
     {
       return input;
@@ -773,99 +775,100 @@ public:
 
   using TempStorage = typename InternalWarpReduce::TempStorage;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage& /*temp_storage */) {}
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpReduce(TempStorage& /*temp_storage */) {}
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(T input)
   {
     return input;
   }
 
   _CCCL_TEMPLATE(typename InputType)
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(const InputType& input)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(const InputType& input)
   {
     return _CUB::ThreadReduce(input, ::cuda::std::plus<>{});
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int /* valid_items */)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(T input, int /* valid_items */)
   {
     return input;
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Max(T input)
   {
     return input;
   }
 
   _CCCL_TEMPLATE(typename InputType)
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(const InputType& input)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Max(const InputType& input)
   {
     return _CUB::ThreadReduce(input, ::cuda::maximum<>{});
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input, int /* valid_items */)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Max(T input, int /* valid_items */)
   {
     return input;
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(T input)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Min(T input)
   {
     return input;
   }
 
   _CCCL_TEMPLATE(typename InputType)
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(const InputType& input)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Min(const InputType& input)
   {
     return _CUB::ThreadReduce(input, ::cuda::minimum<>{});
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(T input, int /* valid_items */)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Min(T input, int /* valid_items */)
   {
     return input;
   }
 
   template <typename FlagT>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T HeadSegmentedSum(T input, FlagT /* head_flag */)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T HeadSegmentedSum(T input, FlagT /* head_flag */)
   {
     return input;
   }
 
   template <typename FlagT>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T TailSegmentedSum(T input, FlagT /* tail_flag */)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T TailSegmentedSum(T input, FlagT /* tail_flag */)
   {
     return input;
   }
 
   template <typename ReductionOp>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp /* reduction_op */)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(T input, ReductionOp /* reduction_op */)
   {
     return input;
   }
 
   _CCCL_TEMPLATE(typename InputType, typename ReductionOp)
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(const InputType& input, ReductionOp reduction_op)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(const InputType& input, ReductionOp reduction_op)
   {
     return _CUB::ThreadReduce(input, reduction_op);
   }
 
   template <typename ReductionOp>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp /* reduction_op */, int /* valid_items */)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T
+  Reduce(T input, ReductionOp /* reduction_op */, int /* valid_items */)
   {
     return input;
   }
 
   template <typename ReductionOp, typename FlagT>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T
   HeadSegmentedReduce(T input, FlagT /* head_flag */, ReductionOp /* reduction_op */)
   {
     return input;
   }
 
   template <typename ReductionOp, typename FlagT>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T
   TailSegmentedReduce(T input, FlagT /* tail_flag */, ReductionOp /* reduction_op */)
   {
     return input;

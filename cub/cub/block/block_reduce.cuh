@@ -177,7 +177,7 @@ namespace detail
 }
 } // namespace detail
 
-inline ::std::ostream& operator<<(::std::ostream& os, BlockReduceAlgorithm algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, BlockReduceAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }
@@ -190,7 +190,7 @@ template <::cuda::std::same_as<char> CharT>
 struct std::formatter<_CUB::BlockReduceAlgorithm, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const _CUB::BlockReduceAlgorithm& algo, FmtCtx& ctx) const
+  _CCCL_HOST_API auto format(const _CUB::BlockReduceAlgorithm& algo, FmtCtx& ctx) const
   {
     return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(algo), ctx);
   }
@@ -330,7 +330,7 @@ class BlockReduce
   using _TempStorage _CCCL_NODEBUG = typename InternalBlockReduce::TempStorage;
 
   /// Internal storage allocator
-  _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
   {
     __shared__ _TempStorage private_storage;
     return private_storage;
@@ -356,7 +356,7 @@ public:
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //! @endrst
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduce()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockReduce()
       : temp_storage(PrivateStorage())
       , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
@@ -372,7 +372,7 @@ public:
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduce(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockReduce(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
       , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
@@ -429,7 +429,7 @@ public:
   //! @param[in] reduction_op
   //!   Binary reduction functor
   template <typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op)
   {
     return InternalBlockReduce(temp_storage).template Reduce<true>(input, BLOCK_THREADS, reduction_op);
   }
@@ -486,7 +486,7 @@ public:
   //! @param[in] reduction_op
   //!   Binary reduction functor
   template <int ItemsPerThread, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T (&inputs)[ItemsPerThread], ReductionOp reduction_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(T (&inputs)[ItemsPerThread], ReductionOp reduction_op)
   {
     // Reduce partials
     T partial = _CUB::ThreadReduce(inputs, reduction_op);
@@ -544,7 +544,7 @@ public:
   //! @param[in] num_valid
   //!   Number of threads containing valid elements (may be less than BLOCK_THREADS)
   template <typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, int num_valid)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, int num_valid)
   {
     // Determine if we skip bounds checking
     if (num_valid >= BLOCK_THREADS)
@@ -599,7 +599,7 @@ public:
   //!
   //! @param[in] input
   //!   Calling thread's input
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(T input)
   {
     return InternalBlockReduce(temp_storage).template Sum<true>(input, BLOCK_THREADS);
   }
@@ -650,7 +650,7 @@ public:
   //! @param[in] inputs
   //!   Calling thread's input segment
   template <int ItemsPerThread>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T (&inputs)[ItemsPerThread])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(T (&inputs)[ItemsPerThread])
   {
     // Reduce partials
     T partial = _CUB::ThreadReduce(inputs, ::cuda::std::plus<>{});
@@ -702,7 +702,7 @@ public:
   //!
   //! @param[in] num_valid
   //!   Number of threads containing valid elements (may be less than BLOCK_THREADS)
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int num_valid)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(T input, int num_valid)
   {
     // Determine if we skip bounds checking
     if (num_valid >= BLOCK_THREADS)

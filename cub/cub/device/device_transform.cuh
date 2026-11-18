@@ -61,7 +61,7 @@ struct __return_constant
   T value;
 
   template <typename... Args>
-  _CCCL_HOST_DEVICE auto operator()(Args&&...) const -> T
+  _CCCL_HOST_DEVICE_API auto operator()(Args&&...) const -> T
   {
     return value;
   }

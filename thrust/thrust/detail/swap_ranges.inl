@@ -13,15 +13,18 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/swap.h>
 #include <thrust/system/detail/generic/select_system.h>
 
 // Include all active backend system implementations (generic, sequential, host and device)
+// IWYU pragma: begin_keep
 #include <thrust/system/detail/generic/swap_ranges.h>
 #include <thrust/system/detail/sequential/swap_ranges.h>
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(swap_ranges.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(swap_ranges.h)
+// IWYU pragma: end_keep
 
 // Some build systems need a hint to know which files we could include
 #if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
@@ -35,7 +38,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2>
-_CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
+_CCCL_HOST_DEVICE_API ForwardIterator2 swap_ranges(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator1 first1,
   ForwardIterator1 last1,
@@ -47,7 +50,7 @@ _CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
 } // end swap_ranges()
 
 template <typename ForwardIterator1, typename ForwardIterator2>
-ForwardIterator2 swap_ranges(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterator2 first2)
+_CCCL_HOST_API ForwardIterator2 swap_ranges(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterator2 first2)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::swap_ranges");
   using thrust::system::detail::generic::select_system;

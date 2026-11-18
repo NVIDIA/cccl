@@ -12,28 +12,29 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/detail/generic/tag.h>
+#include <thrust/detail/execution_policy.h>
+#include <thrust/iterator/iterator_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator
+_CCCL_HOST_DEVICE_API ForwardIterator
 unique(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ForwardIterator unique(
+_CCCL_HOST_DEVICE_API ForwardIterator unique(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
   BinaryPredicate binary_pred);
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator unique_copy(
+_CCCL_HOST_DEVICE_API OutputIterator unique_copy(
   thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator output);
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE OutputIterator unique_copy(
+_CCCL_HOST_DEVICE_API OutputIterator unique_copy(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -41,11 +42,11 @@ _CCCL_HOST_DEVICE OutputIterator unique_copy(
   BinaryPredicate binary_pred);
 
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator>
+_CCCL_HOST_DEVICE_API thrust::detail::it_difference_t<ForwardIterator>
 unique_count(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
+_CCCL_HOST_DEVICE_API thrust::detail::it_difference_t<ForwardIterator> unique_count(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -53,4 +54,4 @@ _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
-#include <thrust/system/detail/generic/unique.inl>
+#include <thrust/system/detail/generic/unique.inl> // IWYU pragma: export

@@ -35,7 +35,7 @@ namespace cuda_cub
  *  \see cuda::free
  *  \see std::malloc
  */
-inline _CCCL_HOST_DEVICE pointer<void> malloc(std::size_t n);
+inline _CCCL_HOST_DEVICE_API pointer<void> malloc(std::size_t n);
 
 /*! Allocates a typed area of memory available to Thrust's <tt>cuda</tt> system.
  *  \param n Number of elements to allocate.
@@ -48,7 +48,7 @@ inline _CCCL_HOST_DEVICE pointer<void> malloc(std::size_t n);
  *  \see std::malloc
  */
 template <typename T>
-inline _CCCL_HOST_DEVICE pointer<T> malloc(std::size_t n);
+inline _CCCL_HOST_DEVICE_API pointer<T> malloc(std::size_t n);
 
 /*! Deallocates an area of memory previously allocated by <tt>cuda::malloc</tt>.
  *  \param ptr A <tt>cuda::pointer<void></tt> pointing to the beginning of an area
@@ -56,7 +56,7 @@ inline _CCCL_HOST_DEVICE pointer<T> malloc(std::size_t n);
  *  \see cuda::malloc
  *  \see std::free
  */
-inline _CCCL_HOST_DEVICE void free(pointer<void> ptr);
+inline _CCCL_HOST_DEVICE_API void free(pointer<void> ptr);
 
 /*! \p cuda::allocator is the default allocator used by the \p cuda system's
  *  containers such as <tt>cuda::vector</tt> if no user-specified allocator is

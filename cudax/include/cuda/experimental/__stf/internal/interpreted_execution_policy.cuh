@@ -64,18 +64,18 @@ public:
   class level
   {
   public:
-    level(::std::pair<hw_scope, size_t> desc, size_t local_mem = 0)
+    _CCCL_HOST_API level(::std::pair<hw_scope, size_t> desc, size_t local_mem = 0)
         : local_mem(local_mem)
     {
       level_desc.push_back(mv(desc));
     }
-    level(::std::initializer_list<::std::pair<hw_scope, size_t>> desc, size_t local_mem = 0)
+    _CCCL_HOST_API level(::std::initializer_list<::std::pair<hw_scope, size_t>> desc, size_t local_mem = 0)
         : level_desc(desc.begin(), desc.end())
         , local_mem(local_mem)
     {}
 
     // Get the total width of the level, which is the product of all sublevel sizes
-    size_t width() const
+    _CCCL_HOST_API size_t width() const
     {
       size_t res = 1;
       for (auto& e : level_desc)
@@ -85,25 +85,25 @@ public:
       return res;
     }
 
-    void set_mem(size_t size)
+    _CCCL_HOST_API void set_mem(size_t size)
     {
       local_mem = size;
     }
-    size_t get_mem() const
+    _CCCL_HOST_API size_t get_mem() const
     {
       return local_mem;
     }
 
-    void set_sync(bool sync)
+    _CCCL_HOST_API void set_sync(bool sync)
     {
       may_sync = sync;
     }
-    bool get_sync() const
+    _CCCL_HOST_API bool get_sync() const
     {
       return may_sync;
     }
 
-    const auto& get_desc() const
+    _CCCL_HOST_API const auto& get_desc() const
     {
       return level_desc;
     }
@@ -114,20 +114,20 @@ public:
     bool may_sync = false;
   };
 
-  interpreted_execution_policy()  = default;
-  ~interpreted_execution_policy() = default;
+  _CCCL_HIDE_FROM_ABI interpreted_execution_policy()  = default;
+  _CCCL_HIDE_FROM_ABI ~interpreted_execution_policy() = default;
 
 private:
   /* A substem that contains sync() related functionality for the thread hierarchy */
   reserved::cooperative_group_system cg_system;
 
 public:
-  reserved::cooperative_group_system& get_cg_system()
+  _CCCL_HOST_API reserved::cooperative_group_system& get_cg_system()
   {
     return cg_system;
   }
 
-  const reserved::cooperative_group_system& get_cg_system() const
+  _CCCL_HOST_API const reserved::cooperative_group_system& get_cg_system() const
   {
     return cg_system;
   }
@@ -135,49 +135,49 @@ public:
   template <typename Fun>
   interpreted_execution_policy(const thread_hierarchy_spec<spec...>& p, const exec_place& where, const Fun& f);
 
-  void add_level(level l)
+  _CCCL_HOST_API void add_level(level l)
   {
     levels.push_back(mv(l));
   }
 
-  void set_level_mem(int level, size_t size)
+  _CCCL_HOST_API void set_level_mem(int level, size_t size)
   {
     assert(level < int(depth));
     levels[level].set_mem(size);
   }
 
-  size_t get_level_mem(int level) const
+  _CCCL_HOST_API size_t get_level_mem(int level) const
   {
     assert(level < depth);
     return levels[level].get_mem();
   }
 
-  void set_level_sync(int level, bool sync)
+  _CCCL_HOST_API void set_level_sync(int level, bool sync)
   {
     assert(level < int(depth));
     levels[level].set_sync(sync);
   }
 
-  bool get_level_sync(size_t level) const
+  _CCCL_HOST_API bool get_level_sync(size_t level) const
   {
     assert(level < int(depth));
     return levels[level].get_sync();
   }
 
   // Returns the width of a level
-  size_t width(int l) const
+  _CCCL_HOST_API size_t width(int l) const
   {
     EXPECT(static_cast<size_t>(l) < depth);
     return levels[l].width();
   }
 
-  const auto& get_levels() const
+  _CCCL_HOST_API const auto& get_levels() const
   {
     return levels;
   }
 
   /* Compute the kernel configuration given all levels */
-  ::std::array<size_t, 3> get_config() const
+  _CCCL_HOST_API ::std::array<size_t, 3> get_config() const
   {
     ::std::array<size_t, 3> config = {1, 1, 1};
 
@@ -215,13 +215,13 @@ public:
 
   /* Helper function to return the hw scope of the last level in the interpreted thread hierarchy. Probably a more
    * elegant and safer way to do the below exists. */
-  hw_scope last_level_scope() const
+  _CCCL_HOST_API hw_scope last_level_scope() const
   {
     return (levels[0].get_desc())[0].first;
   }
 
   /* Compute overall memory requirements */
-  ::std::array<size_t, 3> get_mem_config() const
+  _CCCL_HOST_API ::std::array<size_t, 3> get_mem_config() const
   {
     /* We take the kernel configuration : config[2] is the number of
      * threads per block, config[1] the number of blocks, config[0] the
@@ -280,7 +280,7 @@ public:
     return mem_config;
   }
 
-  bool need_cooperative_kernel_launch() const
+  _CCCL_HOST_API bool need_cooperative_kernel_launch() const
   {
     ::std::array<size_t, 3> config = get_config();
     const size_t block_scope_size  = config[2];
@@ -302,11 +302,11 @@ public:
     return false;
   }
 
-  void set_system_mem(void* addr)
+  _CCCL_HOST_API void set_system_mem(void* addr)
   {
     system_mem = addr;
   }
-  void* get_system_mem() const
+  _CCCL_HOST_API void* get_system_mem() const
   {
     return system_mem;
   }

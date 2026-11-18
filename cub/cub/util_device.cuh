@@ -93,7 +93,7 @@ class [[maybe_unused]] SwitchDevice
 public:
   //! @brief Queries the current device and if that is different than @p target_device sets the current device to
   //! @p target_device
-  SwitchDevice(const int target_device)
+  _CCCL_HOST_API SwitchDevice(const int target_device)
       : target_device_(target_device)
       , original_device_(target_device)
   {
@@ -106,7 +106,7 @@ public:
 
   //! @brief If the @p original_device was not equal to @p target_device sets the current device back to
   //! @p original_device
-  ~SwitchDevice()
+  _CCCL_HOST_API ~SwitchDevice()
   {
     if (original_device_ != target_device_)
     {
@@ -134,7 +134,7 @@ CUB_RUNTIME_FUNCTION inline int device_count_uncached()
 }
 
 // TODO(bgruber): remove in CCCL 4.0
-_CCCL_HOST inline int device_count_cached_value()
+_CCCL_HOST_API inline int device_count_cached_value()
 {
   static const int count = _CUB::detail::device_count_uncached();
   return count;
@@ -166,7 +166,7 @@ CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") CUB_RUNTIME_FUNCTION
 
 // TODO(bgruber): remove in CCCL 4.0
 // Host code. This is a separate function to avoid defining a local static in a host/device function.
-CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") _CCCL_HOST inline int DeviceCountCachedValue()
+CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") _CCCL_HOST_API inline int DeviceCountCachedValue()
 {
   return _CUB::detail::device_count_cached_value();
 }
@@ -224,7 +224,7 @@ public:
   /**
    * \brief Construct the cache.
    */
-  _CCCL_HOST PerDeviceAttributeCache()
+  _CCCL_HOST_API PerDeviceAttributeCache()
       : entries_()
   {
     _CCCL_ASSERT(_CUB::detail::device_count() <= detail::max_devices, "");
@@ -237,7 +237,7 @@ public:
    *       this function has undefined behavior.
    */
   template <typename Invocable>
-  _CCCL_HOST DevicePayload operator()(Invocable&& f, int device)
+  _CCCL_HOST_API DevicePayload operator()(Invocable&& f, int device)
   {
     if (device >= _CUB::detail::device_count() || device < 0)
     {
@@ -333,7 +333,7 @@ CUB_RUNTIME_FUNCTION cudaError_t PtxVersionUncached(int& ptx_version)
  * \brief Retrieves the PTX version that will be used on \p device (major * 100 + minor * 10).
  */
 template <class T = void>
-_CCCL_HOST cudaError_t PtxVersionUncached(int& ptx_version, int device)
+_CCCL_HOST_API cudaError_t PtxVersionUncached(int& ptx_version, int device)
 {
   const SwitchDevice sd(device);
   return _CUB::PtxVersionUncached<T>(ptx_version);
@@ -341,7 +341,7 @@ _CCCL_HOST cudaError_t PtxVersionUncached(int& ptx_version, int device)
 
 #  if _CCCL_HOSTED()
 template <typename Tag>
-_CCCL_HOST inline PerDeviceAttributeCache& GetPerDeviceAttributeCache()
+_CCCL_HOST_API inline PerDeviceAttributeCache& GetPerDeviceAttributeCache()
 {
   static PerDeviceAttributeCache cache;
   return cache;
@@ -362,7 +362,7 @@ struct SmVersionCacheTag
  * \note This function is thread safe.
  */
 template <class T = void>
-_CCCL_HOST cudaError_t PtxVersion(int& ptx_version, int device)
+_CCCL_HOST_API cudaError_t PtxVersion(int& ptx_version, int device)
 {
   // Note: the ChainedPolicy pruning (i.e., invoke_static) requites that there's an exact match between one of the
   // architectures in __CUDA_ARCH__ and the runtime queried ptx version.
@@ -653,7 +653,7 @@ inline constexpr int bulk_copy_min_align = 16;
 //! @tparam T
 //!   Value type to be loaded.
 template <typename T>
-_CCCL_HOST_DEVICE constexpr int LoadToSharedBufferAlignBytes()
+_CCCL_HOST_DEVICE_API constexpr int LoadToSharedBufferAlignBytes()
 {
   return (::cuda::std::max) (int{alignof(T)}, detail::bulk_copy_min_align);
 }
@@ -666,7 +666,7 @@ _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferAlignBytes()
 //! @param[in] num_items
 //!   Size of the source range in global memory
 template <typename T, ::cuda::std::size_t GmemAlign = alignof(T)>
-_CCCL_HOST_DEVICE constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t num_items)
+_CCCL_HOST_DEVICE_API constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t num_items)
 {
   static_assert(::cuda::__is_valid_alignment<T>(GmemAlign));
   _CCCL_ASSERT(num_items <= ::cuda::std::size_t{::cuda::std::numeric_limits<int>::max()},
@@ -694,10 +694,10 @@ _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t 
 #define CUB_DETAIL_POLICY_WRAPPER_REFINE_CONCEPT(concept) concept<StaticPolicyT>&&
 
 // TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
-#define CUB_DETAIL_POLICY_WRAPPER_ACCESSOR(field)                   \
-  __host__ __device__ static constexpr auto _CCCL_PP_SECOND field() \
-  {                                                                 \
-    return StaticPolicyT::_CCCL_PP_FIRST field;                     \
+#define CUB_DETAIL_POLICY_WRAPPER_ACCESSOR(field)                     \
+  _CCCL_HOST_DEVICE_API static constexpr auto _CCCL_PP_SECOND field() \
+  {                                                                   \
+    return StaticPolicyT::_CCCL_PP_FIRST field;                       \
   }
 
 template <typename T>
@@ -711,14 +711,14 @@ _CCCL_CONCEPT always_true = true;
   template <typename StaticPolicyT>                                                                                    \
   struct concept_name##Wrapper : StaticPolicyT                                                                         \
   {                                                                                                                    \
-    __host__ __device__ constexpr concept_name##Wrapper(StaticPolicyT base)                                            \
+    _CCCL_HOST_DEVICE_API constexpr concept_name##Wrapper(StaticPolicyT base)                                          \
         : StaticPolicyT(base)                                                                                          \
     {}                                                                                                                 \
     _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_ACCESSOR, __VA_ARGS__)                                                 \
   };                                                                                                                   \
   _CCCL_TEMPLATE(typename StaticPolicyT)                                                                               \
   _CCCL_REQUIRES(concept_name<StaticPolicyT>)                                                                          \
-  __host__ __device__ constexpr concept_name##Wrapper<StaticPolicyT> MakePolicyWrapper(StaticPolicyT policy)           \
+  _CCCL_HOST_DEVICE_API constexpr concept_name##Wrapper<StaticPolicyT> MakePolicyWrapper(StaticPolicyT policy)         \
   {                                                                                                                    \
     return concept_name##Wrapper{policy};                                                                              \
   }
@@ -733,7 +733,7 @@ _CCCL_TEMPLATE(typename PolicyT)
 #if _CCCL_STD_VER < 2020
 _CCCL_REQUIRES((!GenericAgentPolicy<PolicyT>) ) // in C++20+ we get this by preferring constrained functions
 #endif
-__host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
+_CCCL_HOST_DEVICE_API constexpr PolicyT MakePolicyWrapper(PolicyT policy)
 {
   return policy;
 }

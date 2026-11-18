@@ -18,11 +18,15 @@
 #include <thrust/detail/pointer.h>
 #include <thrust/detail/raw_pointer_cast.h>
 
+#include <cuda/std/__cstddef/types.h>
+
 // Include all active backend system implementations (generic, sequential, host and device)
+// IWYU pragma: begin_keep
 #include <thrust/system/detail/generic/memory.h>
 #include <thrust/system/detail/sequential/malloc_and_free.h>
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(malloc_and_free.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(malloc_and_free.h)
+// IWYU pragma: end_keep
 
 // Some build systems need a hint to know which files we could include
 #if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
@@ -36,7 +40,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy>
-_CCCL_HOST_DEVICE pointer<void, DerivedPolicy>
+_CCCL_HOST_DEVICE_API pointer<void, DerivedPolicy>
 malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::size_t n)
 {
   using thrust::system::detail::generic::malloc;
@@ -52,7 +56,7 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename DerivedPolicy>
-_CCCL_HOST_DEVICE pointer<T, DerivedPolicy>
+_CCCL_HOST_DEVICE_API pointer<T, DerivedPolicy>
 malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::size_t n)
 {
   using thrust::system::detail::generic::malloc;
@@ -65,7 +69,7 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedPolicy>& system, Pointer ptr)
+_CCCL_HOST_DEVICE_API void free(const thrust::detail::execution_policy_base<DerivedPolicy>& system, Pointer ptr)
 {
   using thrust::system::detail::generic::free;
 

@@ -95,7 +95,7 @@ template <typename DerivedPolicy,
           typename OutputIterator,
           typename UnaryFunction,
           typename AssociativeOperator>
-_CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator transform_inclusive_scan(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -154,7 +154,7 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename AssociativeOperator>
-OutputIterator transform_inclusive_scan(
+_CCCL_HOST_API OutputIterator transform_inclusive_scan(
   InputIterator first, InputIterator last, OutputIterator result, UnaryFunction unary_op, AssociativeOperator binary_op);
 
 /*! \p transform_inclusive_scan fuses the \p transform and \p inclusive_scan
@@ -223,7 +223,7 @@ template <typename DerivedPolicy,
           typename UnaryFunction,
           typename T,
           typename AssociativeOperator>
-_CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator transform_inclusive_scan(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -287,7 +287,7 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>
-OutputIterator transform_inclusive_scan(
+_CCCL_HOST_API OutputIterator transform_inclusive_scan(
   InputIterator first,
   InputIterator last,
   OutputIterator result,
@@ -360,7 +360,7 @@ template <typename DerivedPolicy,
           typename UnaryFunction,
           typename T,
           typename AssociativeOperator>
-_CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator transform_exclusive_scan(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -422,7 +422,7 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>
-OutputIterator transform_exclusive_scan(
+_CCCL_HOST_API OutputIterator transform_exclusive_scan(
   InputIterator first,
   InputIterator last,
   OutputIterator result,

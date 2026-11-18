@@ -37,7 +37,7 @@ namespace system::tbb::detail
 namespace reduce_by_key_detail
 {
 template <typename L, typename R>
-inline L divide_ri(const L x, const R y)
+_CCCL_HOST_API inline L divide_ri(const L x, const R y)
 {
   return (x + (y - 1)) / y;
 }
@@ -49,9 +49,9 @@ struct partial_sum_type
 };
 
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate, typename BinaryFunction>
-::cuda::std::pair<InputIterator1,
-                  ::cuda::std::pair<thrust::detail::it_value_t<InputIterator1>,
-                                    typename partial_sum_type<InputIterator2, BinaryFunction>::type>>
+_CCCL_HOST_API ::cuda::std::pair<InputIterator1,
+                                 ::cuda::std::pair<thrust::detail::it_value_t<InputIterator1>,
+                                                   typename partial_sum_type<InputIterator2, BinaryFunction>::type>>
 reduce_last_segment_backward(
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -85,10 +85,10 @@ template <typename InputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate,
           typename BinaryFunction>
-::cuda::std::tuple<OutputIterator1,
-                   OutputIterator2,
-                   thrust::detail::it_value_t<InputIterator1>,
-                   typename partial_sum_type<InputIterator2, BinaryFunction>::type>
+_CCCL_HOST_API ::cuda::std::tuple<OutputIterator1,
+                                  OutputIterator2,
+                                  thrust::detail::it_value_t<InputIterator1>,
+                                  typename partial_sum_type<InputIterator2, BinaryFunction>::type>
 reduce_by_key_with_carry(
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -115,7 +115,8 @@ reduce_by_key_with_carry(
 }
 
 template <typename Iterator>
-bool interval_has_carry(size_t interval_idx, size_t interval_size, size_t num_intervals, Iterator tail_flags)
+_CCCL_HOST_API bool
+interval_has_carry(size_t interval_idx, size_t interval_size, size_t num_intervals, Iterator tail_flags)
 {
   // to discover whether the interval has a carry, look at the tail_flag corresponding to its last element
   // the final interval never has a carry by definition
@@ -148,7 +149,7 @@ struct serial_reduce_by_key_body
   BinaryPredicate binary_pred;
   BinaryFunction binary_op;
 
-  serial_reduce_by_key_body(
+  _CCCL_HOST_API serial_reduce_by_key_body(
     Iterator1 keys_first,
     Iterator2 values_first,
     Iterator3 result_offset,
@@ -173,7 +174,7 @@ struct serial_reduce_by_key_body
       , binary_op(binary_op)
   {}
 
-  void operator()(const ::tbb::blocked_range<size_type>& r) const
+  _CCCL_HOST_API void operator()(const ::tbb::blocked_range<size_type>& r) const
   {
     assert(r.size() == 1);
 
@@ -229,6 +230,7 @@ template <typename Iterator1,
           typename Iterator6,
           typename BinaryPredicate,
           typename BinaryFunction>
+_CCCL_HOST_API
 serial_reduce_by_key_body<Iterator1, Iterator2, Iterator3, Iterator4, Iterator5, Iterator6, BinaryPredicate, BinaryFunction>
 make_serial_reduce_by_key_body(
   Iterator1 keys_first,
@@ -273,7 +275,7 @@ template <typename DerivedPolicy,
           typename Iterator4,
           typename BinaryPredicate,
           typename BinaryFunction>
-::cuda::std::pair<Iterator3, Iterator4> reduce_by_key(
+_CCCL_HOST_API ::cuda::std::pair<Iterator3, Iterator4> reduce_by_key(
   thrust::tbb::execution_policy<DerivedPolicy>& exec,
   Iterator1 keys_first,
   Iterator1 keys_last,

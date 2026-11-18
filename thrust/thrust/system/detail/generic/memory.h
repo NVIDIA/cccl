@@ -19,30 +19,32 @@
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
 #include <thrust/detail/pointer.h>
-#include <thrust/detail/type_traits.h>
 #include <thrust/system/detail/generic/tag.h>
+
+#include <cuda/std/__cstddef/types.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename Size>
-_CCCL_HOST_DEVICE void malloc(thrust::execution_policy<DerivedPolicy>&, Size);
+_CCCL_HOST_DEVICE_API void malloc(thrust::execution_policy<DerivedPolicy>&, Size);
 
 template <typename T, typename DerivedPolicy>
-_CCCL_HOST_DEVICE thrust::pointer<T, DerivedPolicy> malloc(thrust::execution_policy<DerivedPolicy>& exec, std::size_t n);
+_CCCL_HOST_DEVICE_API thrust::pointer<T, DerivedPolicy>
+malloc(thrust::execution_policy<DerivedPolicy>& exec, std::size_t n);
 
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE void free(thrust::execution_policy<DerivedPolicy>&, Pointer);
+_CCCL_HOST_DEVICE_API void free(thrust::execution_policy<DerivedPolicy>&, Pointer);
 
 template <typename Pointer1, typename Pointer2>
-_CCCL_HOST_DEVICE void assign_value(tag, Pointer1, Pointer2);
+_CCCL_HOST_DEVICE_API void assign_value(tag, Pointer1, Pointer2);
 
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE void get_value(thrust::execution_policy<DerivedPolicy>&, Pointer);
+_CCCL_HOST_DEVICE_API void get_value(thrust::execution_policy<DerivedPolicy>&, Pointer);
 
 template <typename DerivedPolicy, typename Pointer1, typename Pointer2>
-_CCCL_HOST_DEVICE void iter_swap(thrust::execution_policy<DerivedPolicy>&, Pointer1, Pointer2);
+_CCCL_HOST_DEVICE_API void iter_swap(thrust::execution_policy<DerivedPolicy>&, Pointer1, Pointer2);
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
-#include <thrust/system/detail/generic/memory.inl>
+#include <thrust/system/detail/generic/memory.inl> // IWYU pragma: export

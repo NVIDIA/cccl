@@ -235,7 +235,7 @@ namespace detail
 } // namespace detail
 
 #if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, LookbackDelayAlgorithm algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, LookbackDelayAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }
@@ -248,7 +248,7 @@ template <::cuda::std::same_as<char> CharT>
 struct std::formatter<_CUB::LookbackDelayAlgorithm, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const _CUB::LookbackDelayAlgorithm& algo, FmtCtx& ctx) const
+  _CCCL_HOST_API auto format(const _CUB::LookbackDelayAlgorithm& algo, FmtCtx& ctx) const
   {
     return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(algo), ctx);
   }
@@ -277,7 +277,7 @@ struct LookbackDelayPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const LookbackDelayPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const LookbackDelayPolicy& p)
   {
     return os << "LookbackDelayPolicy { .kind = " << p.kind << ", .delay = " << p.delay
               << ", .l2_write_latency = " << p.l2_write_latency << " }";

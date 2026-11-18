@@ -26,7 +26,7 @@ namespace detail
 /// \p aligned_reinterpret_cast is responsible for ensuring that the alignment
 /// requirements are actually satisfied.
 template <typename T, typename U>
-_CCCL_HOST_DEVICE T aligned_reinterpret_cast(U u)
+_CCCL_HOST_DEVICE_API T aligned_reinterpret_cast(U u)
 {
   // NOLINTNEXTLINE(bugprone-casting-through-void)
   return reinterpret_cast<T>(reinterpret_cast<void*>(u));
