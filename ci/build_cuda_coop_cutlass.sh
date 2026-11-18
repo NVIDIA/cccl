@@ -30,5 +30,7 @@ fi
 python "$ci_dir/validate_cuda_coop_cutlass_artifacts.py" "${wheels[0]}" "${sdists[0]}"
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
   artifact_name="$(CCCL_WHEEL_KIND=coop-cutlass "$ci_dir/util/workflow/get_wheel_artifact_name.sh")"
-  "$ci_dir/util/artifacts/upload.sh" "$artifact_name" 'wheelhouse/cuda_coop_cutlass-.*\.(whl|tar\.gz)'
+  "$ci_dir/util/artifacts/upload.sh" "$artifact_name" \
+    'wheelhouse/cuda_coop_cutlass-.*\.whl' \
+    'wheelhouse/cuda_coop_cutlass-.*\.tar\.gz'
 fi
