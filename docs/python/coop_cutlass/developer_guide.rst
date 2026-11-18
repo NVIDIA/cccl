@@ -846,9 +846,9 @@ If a breakpoint does not stop
 * If NVRTC is skipped, restart the complete script. Its temporary provider
   cache is created only under ``if __name__ == "__main__"``. Check that
   the provider directory is new and that you set the breakpoint before
-  ``cute.compile``. A stop in ``_compile_bundle_source()`` can show a
-  provider-cache hit. A source dump alone does not prove NVRTC ran: the
-  backend writes the dump before looking up a cached provider.
+  ``cute.compile``. In ``_jit_bundle()``, inspect the result of the provider
+  cache lookup. The backend writes the source dump before that lookup,
+  including when the cache supplies the compiled provider.
 * If a later launch retraces, check that you are calling ``compiled``.
   This walkthrough retains the callable returned by ``cute.compile``
   and invokes it twice; calling the decorated ``launch`` directly follows

@@ -144,12 +144,10 @@ def _resolve_bundle(
         pack_key = hashlib.sha256(
             json.dumps(identity, separators=(",", ":")).encode("utf-8")
         ).hexdigest()
+        dump_source(prepared.source, backend="cutlass", identity=(pack_key,))
         hit = _aot_pack.lookup(pack_key, arch, prepared.expressions)
         if hit is not None:
             blob, layouts, producer_version = hit
-            dump_source(
-                prepared.source, backend="cutlass", identity=(pack_key,)
-            )
             path = _cache.materialize_pack_artifact(blob)
             if _aot_pack.capturing():
                 _aot_pack.record(
@@ -157,7 +155,9 @@ def _resolve_bundle(
                 )
             return path, layouts
 
-    cached, producer_version = _jit_bundle(prepared, arch, required_headers)
+    cached, producer_version = _jit_bundle(
+        prepared, arch, required_headers, dump_jit_source=pack_key is None
+    )
     if pack_key is not None and _aot_pack.capturing():
         blob = Path(cached.path).read_bytes()
         if hashlib.sha256(blob).hexdigest() != cached.artifact_sha256:
@@ -172,6 +172,8 @@ def _jit_bundle(
     prepared: _PreparedLayoutProbes,
     arch: str,
     required_headers: tuple[str, ...],
+    *,
+    dump_jit_source: bool,
 ) -> tuple[_cache._CachedBundle, tuple[int, int]]:
     context = _nvrtc.resolve_compile_context(required_headers)
     options = _nvrtc.compiler_options(context, arch)
@@ -184,7 +186,8 @@ def _jit_bundle(
     if prepared.expressions:
         identity += (prepared.expressions,)
     key = hashlib.sha256(repr(identity).encode("utf-8")).hexdigest()
-    dump_source(prepared.source, backend="cutlass", identity=(key,))
+    if dump_jit_source:
+        dump_source(prepared.source, backend="cutlass", identity=(key,))
 
     def complete(cached):
         if cached is None or set(cached.layouts_by_expression) != set(

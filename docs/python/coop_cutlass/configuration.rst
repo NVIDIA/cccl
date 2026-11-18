@@ -56,6 +56,10 @@ Ahead-of-time provider packs
 
 To move provider compilation off the deployment path, run a representative
 workload once and capture its providers. Start with a new pack directory name.
+Capture checks that the destination filesystem can atomically rename a
+complete directory to an unused name before running the workload. If the
+filesystem lacks this operation, capture on a supported filesystem and
+copy the finished pack to its deployment location.
 The capture must reach CuTe tracing for each specialization you want to ship.
 For example, run these commands from a checkout with the package installed:
 
@@ -71,10 +75,10 @@ command. It contains a manifest, provider LTO-IR, and the scratch sizes and
 alignments from the same compilation. Select a pack from a trusted producer.
 An exact hit uses the compiled CUB implementation from that pack. The GPU
 target, host operating system, generated source, layout queries, provider
-ABI and code-generation options must match. Pack selection checks that the
-nvJitLink library visible to CUDA Python has the same major version as the
-producing NVRTC and at least its minor version. CuTe's final device linker
-must also support that LTO-IR version.
+ABI and code-generation options must match. CuTe links the provider LTO-IR
+with its bundled CUDA toolchain. Pack selection requires that toolchain
+(``cutlass.CUDA_VERSION``) to have the same major version as the producing
+NVRTC and at least its minor version.
 
 In Python, wrap the call that traces the kernel:
 
@@ -88,12 +92,25 @@ In Python, wrap the call that traces the kernel:
    with aot.use("providers", mode="required"):
        compile_my_kernel()
 
+Python capture and selection apply to the current context. To include a
+worker thread in a capture, submit its compilation with
+``contextvars.copy_context().run`` and join the worker before leaving
+``aot.capture``. Capture each process's workload separately, using a distinct
+pack destination.
+For deployment, ``cuda-coop-aot run`` also passes the selected pack to worker
+threads and child processes through the environment. Set CuTe configuration
+variables before starting the CLI.
+
 An exact hit writes verified bytes to the local provider cache for the final
 link. CuTe still compiles and links the enclosing kernel. In ``required``
-mode a missing or incompatible provider raises ``aot.PackMissError``. In
-``auto`` mode it uses the ordinary provider cache and JIT compiler. Use
-``off`` to suspend pack selection inside an enclosing ``aot.use`` context.
-A corrupt pack raises ``aot.PackIntegrityError`` when selected.
+mode CuTe reports a missing or incompatible provider as a
+``DSLRuntimeError`` whose ``__cause__`` is ``aot.PackMissError``. In ``auto``
+mode the provider uses the ordinary cache and JIT compiler. Use ``off`` to
+suspend pack selection inside an enclosing ``aot.use`` context.
+Opening a corrupt pack with ``aot.use`` or ``aot.inspect`` raises
+``aot.PackIntegrityError`` directly. When CuTe first opens an
+environment-selected pack during tracing, it reports that error as the
+cause of ``DSLRuntimeError``.
 
 Walkthrough and test settings
 -----------------------------
