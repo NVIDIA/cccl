@@ -6,7 +6,11 @@
 
 from __future__ import annotations
 
+import atexit
 import os
+import shutil
+import tempfile
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -107,6 +111,54 @@ def compiler_options(context: CompileContext, arch: str) -> tuple[bytes, ...]:
     )
 
 
+_PCH_ENV = "CUDA_COOP_CUTLASS_PROVIDER_PCH"
+_PCH_DIRECTORIES: dict[str, str] = {}
+_PCH_LOCK = threading.Lock()
+
+
+def _reset_pch_after_fork() -> None:
+    # The child must neither reuse nor remove the parent's directories.
+    global _PCH_DIRECTORIES, _PCH_LOCK
+    _PCH_DIRECTORIES = {}
+    _PCH_LOCK = threading.Lock()
+
+
+def _cleanup_pch() -> None:
+    with _PCH_LOCK:
+        for directory in _PCH_DIRECTORIES.values():
+            shutil.rmtree(directory, ignore_errors=True)
+        _PCH_DIRECTORIES.clear()
+
+
+atexit.register(_cleanup_pch)
+if hasattr(os, "register_at_fork"):
+    os.register_at_fork(after_in_child=_reset_pch_after_fork)
+
+
+def pch_options(context: CompileContext) -> tuple[bytes, ...]:
+    """Select a process-private directory for automatic NVRTC PCH reuse.
+
+    NVRTC checks the source prefix, target and compiler options, but does
+    not check header contents. Give each header digest its own directory.
+    These flags apply only to a JIT compile and do not identify its LTO-IR.
+    """
+
+    mode = os.environ.get(_PCH_ENV, "auto").strip().lower()
+    if mode not in ("auto", "off"):
+        raise ValueError(f"{_PCH_ENV} must be 'auto' or 'off', got {mode!r}")
+    if mode == "off" or context.nvrtc_version < (12, 8):
+        return ()
+    with _PCH_LOCK:
+        directory = _PCH_DIRECTORIES.get(context.header_identity)
+        if directory is None:
+            try:
+                directory = tempfile.mkdtemp(prefix="cuda-coop-cutlass-pch-")
+            except OSError:
+                return ()
+            _PCH_DIRECTORIES[context.header_identity] = directory
+    return b"--pch", b"--pch-dir=" + os.fsencode(directory)
+
+
 def _program_log(nvrtc: Any, program: Any) -> str:
     """Read NVRTC diagnostics, or explain why retrieval failed."""
 
@@ -201,6 +253,17 @@ def _compile_ltoir(
         error = nvrtc.nvrtcCompileProgram(program, len(options), list(options))[
             0
         ]
+        if error != nvrtc.nvrtcResult.NVRTC_SUCCESS and b"--pch" in options:
+            # Retry on the same program so registered layout probes survive
+            # a PCH failure. NVRTC exposes output from the last compilation.
+            plain_options = [
+                opt
+                for opt in options
+                if opt != b"--pch" and not opt.startswith(b"--pch-dir=")
+            ]
+            error = nvrtc.nvrtcCompileProgram(
+                program, len(plain_options), plain_options
+            )[0]
         if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
             raise RuntimeError(
                 "CUTLASS provider compilation failed:\n"
