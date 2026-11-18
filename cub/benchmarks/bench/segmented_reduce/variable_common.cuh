@@ -13,7 +13,7 @@
 
 #include "policy_selector.cuh"
 
-#if TUNE_T
+#ifdef TUNE_T
 using value_types = nvbench::type_list<TUNE_T>;
 #else
 using value_types = nvbench::type_list<int32_t, int64_t, float, double>;
@@ -180,26 +180,10 @@ _CCCL_HOST_API void variable_with_guarantee_segmented_reduce(nvbench::state& sta
 
   // TODO(bgruber): rewrite this to use the public CUB API directly. But in order to do this, we need to expose the
   // guaranteed_max_seg_size at the public API
-  cub::detail::segmented_reduce::dispatch<accum_t, override_offset_t>(
-    nullptr,
-    temp_size,
-    d_in,
-    d_out,
-    static_cast<::cuda::std::int64_t>(num_segments),
-    d_begin_offsets,
-    d_end_offsets,
-    op_t{},
-    init_value_t{},
-    guaranteed_max_seg_size,
-    nullptr /* stream */);
-
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
-  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
-
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::segmented_reduce::dispatch<accum_t, override_offset_t>(
-      temp_storage,
-      temp_size,
+  auto dispatch_segmented_reduce = [&](void* d_temp_storage, std::size_t& temp_storage_bytes, cudaStream_t stream) {
+    return cub::detail::segmented_reduce::dispatch<accum_t, override_offset_t>(
+      d_temp_storage,
+      temp_storage_bytes,
       d_in,
       d_out,
       static_cast<::cuda::std::int64_t>(num_segments),
@@ -208,6 +192,15 @@ _CCCL_HOST_API void variable_with_guarantee_segmented_reduce(nvbench::state& sta
       op_t{},
       init_value_t{},
       guaranteed_max_seg_size,
-      launch.get_stream());
+      stream);
+  };
+  _CCCL_TRY_RUNTIME_API(dispatch_segmented_reduce, "Segmented reduce failed", nullptr, temp_size, nullptr /* stream */);
+
+  thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
+  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
+
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+    _CCCL_TRY_RUNTIME_API(
+      dispatch_segmented_reduce, "Segmented reduce failed", temp_storage, temp_size, launch.get_stream());
   });
 }
