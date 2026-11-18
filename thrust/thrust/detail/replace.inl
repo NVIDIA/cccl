@@ -12,15 +12,18 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/replace.h>
 #include <thrust/system/detail/generic/select_system.h>
 
 // Include all active backend system implementations (generic, sequential, host and device)
+// IWYU pragma: begin_keep
 #include <thrust/system/detail/generic/replace.h>
 #include <thrust/system/detail/sequential/replace.h>
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(replace.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(replace.h)
+// IWYU pragma: end_keep
 
 // Some build systems need a hint to know which files we could include
 #if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
@@ -34,7 +37,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 replace(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
         ForwardIterator first,
         ForwardIterator last,
@@ -48,7 +51,7 @@ replace(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate, typename T>
-_CCCL_HOST_DEVICE void replace_if(
+_CCCL_HOST_DEVICE_API void replace_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -62,7 +65,7 @@ _CCCL_HOST_DEVICE void replace_if(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate, typename T>
-_CCCL_HOST_DEVICE void replace_if(
+_CCCL_HOST_DEVICE_API void replace_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -78,7 +81,7 @@ _CCCL_HOST_DEVICE void replace_if(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
-_CCCL_HOST_DEVICE OutputIterator replace_copy(
+_CCCL_HOST_DEVICE_API OutputIterator replace_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -94,7 +97,7 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate, typename T>
-_CCCL_HOST_DEVICE OutputIterator replace_copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator replace_copy_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -115,7 +118,7 @@ template <typename DerivedPolicy,
           typename OutputIterator,
           typename Predicate,
           typename T>
-_CCCL_HOST_DEVICE OutputIterator replace_copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator replace_copy_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -131,7 +134,7 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
 } // end replace_copy_if()
 
 template <typename InputIterator, typename OutputIterator, typename Predicate, typename T>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 replace_copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred, const T& new_value)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::replace_copy_if");
@@ -147,7 +150,7 @@ replace_copy_if(InputIterator first, InputIterator last, OutputIterator result, 
 } // end replace_copy_if()
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate, typename T>
-OutputIterator replace_copy_if(
+_CCCL_HOST_API OutputIterator replace_copy_if(
   InputIterator1 first,
   InputIterator1 last,
   InputIterator2 stencil,
@@ -171,7 +174,7 @@ OutputIterator replace_copy_if(
 } // end replace_copy_if()
 
 template <typename InputIterator, typename OutputIterator, typename T>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 replace_copy(InputIterator first, InputIterator last, OutputIterator result, const T& old_value, const T& new_value)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::replace_copy");
@@ -187,7 +190,7 @@ replace_copy(InputIterator first, InputIterator last, OutputIterator result, con
 } // end replace_copy()
 
 template <typename ForwardIterator, typename Predicate, typename T>
-void replace_if(ForwardIterator first, ForwardIterator last, Predicate pred, const T& new_value)
+_CCCL_HOST_API void replace_if(ForwardIterator first, ForwardIterator last, Predicate pred, const T& new_value)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::replace_if");
   using thrust::system::detail::generic::select_system;
@@ -200,7 +203,8 @@ void replace_if(ForwardIterator first, ForwardIterator last, Predicate pred, con
 } // end replace_if()
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate, typename T>
-void replace_if(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred, const T& new_value)
+_CCCL_HOST_API void
+replace_if(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred, const T& new_value)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::replace_if");
   using thrust::system::detail::generic::select_system;
@@ -215,7 +219,7 @@ void replace_if(ForwardIterator first, ForwardIterator last, InputIterator stenc
 } // end replace_if()
 
 template <typename ForwardIterator, typename T>
-void replace(ForwardIterator first, ForwardIterator last, const T& old_value, const T& new_value)
+_CCCL_HOST_API void replace(ForwardIterator first, ForwardIterator last, const T& old_value, const T& new_value)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::replace");
   using thrust::system::detail::generic::select_system;

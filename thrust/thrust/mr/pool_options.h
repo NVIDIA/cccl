@@ -87,7 +87,7 @@ struct pool_options
    *
    *  /returns true if the options are self-consistent, false otherwise.
    */
-  bool validate() const
+  _CCCL_HOST_API bool validate() const
   {
     if (smallest_block_size != 0 && !::cuda::is_power_of_two(smallest_block_size))
     {

@@ -54,7 +54,7 @@ struct ThreeWayPartitionLookbackPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ThreeWayPartitionLookbackPolicy& policy)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const ThreeWayPartitionLookbackPolicy& policy)
   {
     return os
         << "ThreeWayPartitionLookbackPolicy { .threads_per_block = " << policy.threads_per_block
@@ -85,7 +85,7 @@ namespace detail
 }
 } // namespace detail
 
-inline ::std::ostream& operator<<(::std::ostream& os, ThreeWayPartitionAlgorithm algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, ThreeWayPartitionAlgorithm algo)
 {
   return os << _CUB::detail::to_string(algo);
 }
@@ -111,7 +111,7 @@ struct ThreeWayPartitionPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const ThreeWayPartitionPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const ThreeWayPartitionPolicy& p)
   {
     return os << "ThreeWayPartitionPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback << " }";
   }
@@ -124,7 +124,7 @@ namespace detail::three_way_partition
 template <typename PolicyT, typename = void>
 struct ThreeWayPartitionPolicyWrapper : PolicyT
 {
-  _CCCL_HOST_DEVICE ThreeWayPartitionPolicyWrapper(PolicyT base)
+  _CCCL_HOST_DEVICE_API ThreeWayPartitionPolicyWrapper(PolicyT base)
       : PolicyT(base)
   {}
 };
@@ -134,7 +134,7 @@ template <typename StaticPolicyT>
 struct ThreeWayPartitionPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<typename StaticPolicyT::ThreeWayPartitionPolicy>>
     : StaticPolicyT
 {
-  _CCCL_HOST_DEVICE ThreeWayPartitionPolicyWrapper(StaticPolicyT base)
+  _CCCL_HOST_DEVICE_API ThreeWayPartitionPolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
@@ -143,7 +143,7 @@ struct ThreeWayPartitionPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<typenam
 
 // TODO(bgruber): drop in CCCL 4.0
 template <typename PolicyT>
-_CCCL_HOST_DEVICE ThreeWayPartitionPolicyWrapper<PolicyT> MakeThreeWayPartitionPolicyWrapper(PolicyT policy)
+_CCCL_HOST_DEVICE_API ThreeWayPartitionPolicyWrapper<PolicyT> MakeThreeWayPartitionPolicyWrapper(PolicyT policy)
 {
   return ThreeWayPartitionPolicyWrapper<PolicyT>{policy};
 }
@@ -166,7 +166,7 @@ enum class offset_size
 };
 
 template <class InputT>
-_CCCL_HOST_DEVICE constexpr input_size classify_input_size()
+_CCCL_HOST_DEVICE_API constexpr input_size classify_input_size()
 {
   return sizeof(InputT) == 1 ? input_size::_1
        : sizeof(InputT) == 2 ? input_size::_2
@@ -178,7 +178,7 @@ _CCCL_HOST_DEVICE constexpr input_size classify_input_size()
 }
 
 template <class OffsetT>
-_CCCL_HOST_DEVICE constexpr offset_size classify_offset_size()
+_CCCL_HOST_DEVICE_API constexpr offset_size classify_offset_size()
 {
   return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
 }

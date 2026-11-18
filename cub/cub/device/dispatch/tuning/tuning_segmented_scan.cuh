@@ -56,7 +56,7 @@ struct SegmentedScanBlockPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedScanBlockPolicy& policy)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedScanBlockPolicy& policy)
   {
     return os
         << "SegmentedScanBlockPolicy { .threads_per_block = " << policy.threads_per_block
@@ -86,7 +86,7 @@ struct SegmentedScanPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedScanPolicy& policy)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedScanPolicy& policy)
   {
     return os << "SegmentedScanPolicy { .block = " << policy.block << " }";
   }

@@ -20,10 +20,41 @@
 #include <cuda/std/type_traits>
 
 #include "../simd_test_utils.h"
+#include "math_test_utils.h"
+
+template <typename T, int N>
+TEST_HOST_DEVICE_FUNC constexpr void test_wrapper()
+{
+  using V = simd::vec<T, N>;
+  const explicit_math_wrapper<V> x{V(T{4})};
+  static_assert(cuda::std::is_same_v<decltype(simd::isfinite(x)), typename V::mask_type>);
+  static_assert(cuda::std::is_same_v<decltype(simd::fpclassify(x)), simd::rebind_t<int, V>>);
+  static_assert(noexcept(simd::isfinite(x)));
+  static_assert(noexcept(cuda::std::isfinite(x)));
+  static_assert(noexcept(simd::isinf(x)));
+  static_assert(noexcept(simd::isnan(x)));
+  static_assert(noexcept(simd::isnormal(x)));
+  static_assert(noexcept(simd::signbit(x)));
+  static_assert(noexcept(simd::fpclassify(x)));
+
+  check_math_values(simd::isfinite(x), true);
+  check_math_values(cuda::std::isfinite(x), true);
+  check_math_values(simd::isinf(x), false);
+  check_math_values(simd::isnan(x), false);
+  check_math_values(simd::isnormal(x), true);
+#if !defined(_CCCL_BUILTIN_BIT_CAST) // constexpr bit_cast used by signbit
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+#endif // _CCCL_BUILTIN_BIT_CAST
+  {
+    check_math_values(simd::signbit(x), false);
+  }
+  check_math_values(simd::fpclassify(x), cuda::std::fpclassify(T{4}));
+}
 
 template <typename T, int N>
 TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
+  test_wrapper<T, N>();
   using Vec    = simd::basic_vec<T, simd::fixed_size<N>>;
   using IntVec = simd::rebind_t<int, Vec>;
   using Mask   = typename Vec::mask_type;
@@ -57,7 +88,7 @@ TEST_HOST_DEVICE_FUNC constexpr void test_type()
   Mask normal    = cuda::std::simd::isnormal(vec);
   [[maybe_unused]] Mask signs;
 #if !defined(_CCCL_BUILTIN_BIT_CAST) // constexpr bit_cast used by signbit
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
 #endif // _CCCL_BUILTIN_BIT_CAST
   {
     signs = cuda::std::simd::signbit(vec);
@@ -71,7 +102,7 @@ TEST_HOST_DEVICE_FUNC constexpr void test_type()
     assert(nan[i] == cuda::std::isnan(vec[i]));
     assert(normal[i] == cuda::std::isnormal(vec[i]));
 #if !defined(_CCCL_BUILTIN_BIT_CAST) // constexpr bit_cast used by signbit
-    if (!cuda::std::__cccl_default_is_constant_evaluated())
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
 #endif // _CCCL_BUILTIN_BIT_CAST
     {
       assert(signs[i] == cuda::std::signbit(vec[i]));
@@ -84,7 +115,7 @@ DEFINE_SIMD_MATH_FLOATING_TEST_RUNTIME()
 
 int main(int, char**)
 {
-  assert(test());
+  assert(test()); // NOLINT(misc-static-assert)
   static_assert(test());
   assert(test_runtime());
   return 0;

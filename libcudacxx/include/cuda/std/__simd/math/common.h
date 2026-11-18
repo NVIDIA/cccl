@@ -97,7 +97,8 @@ _CCCL_CONCEPT __is_simd_math_floating_point_v = _CCCL_REQUIRES_EXPR(
   _CCCL_REQUIRES(__is_simd_math_floating_point_v<_Vp>)                                  \
   [[nodiscard]] _CCCL_HOST_DEVICE_API _CONSTEXPR _Result _NAME(const _Vp& __x) noexcept \
   {                                                                                     \
-    return _Result{__simd_##_NAME##_generator<_Result, _Vp>{__x}};                      \
+    const _Result __x_vec(__x);                                                         \
+    return _Result{__simd_##_NAME##_generator<_Result, _Result>{__x_vec}};              \
   }
 
 // common macro to implement (unary) rebind function
@@ -106,8 +107,10 @@ _CCCL_CONCEPT __is_simd_math_floating_point_v = _CCCL_REQUIRES_EXPR(
   _CCCL_REQUIRES(__is_simd_math_floating_point_v<_Vp>)                               \
   [[nodiscard]] _CCCL_HOST_DEVICE_API _CONSTEXPR auto _NAME(const _Vp& __x) noexcept \
   {                                                                                  \
-    using __result_t = rebind_t<_Tp, __deduced_vec_t<_Vp>>;                          \
-    return __result_t{__simd_##_NAME##_generator<__result_t, _Vp>{__x}};             \
+    using __vec_t _CCCL_NODEBUG    = __deduced_vec_t<_Vp>;                           \
+    using __result_t _CCCL_NODEBUG = rebind_t<_Tp, __vec_t>;                         \
+    const __vec_t __x_vec(__x);                                                      \
+    return __result_t{__simd_##_NAME##_generator<__result_t, __vec_t>{__x_vec}};     \
   }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -126,7 +129,7 @@ _CCCL_CONCEPT __is_simd_math_floating_point_v = _CCCL_REQUIRES_EXPR(
 //  template<math-floating-point V>
 //  constexpr deduced-vec-t<V> pow(const V& x, const deduced-vec-t<V>& y);
 
-template <typename _Void, typename... _Args>
+template <typename _Enable, typename... _Args>
 struct __simd_math_result
 {};
 
@@ -172,15 +175,22 @@ struct __simd_math_result_impl
 // Accumulate the result type
 // - no vector argument -> keep the result type
 // - vector argument -> combine with the result type
-template <bool _IsVec, typename _Result, typename _Arg, typename... _Args>
-struct __simd_math_accumulate_vec_result;
-
-template <typename _Result, typename _Arg, typename... _Args>
-struct __simd_math_accumulate_vec_result<false, _Result, _Arg, _Args...> : __simd_math_result_impl<_Result, _Args...>
+template <bool _IsVec, typename _EnableIfConversionSupported, typename _Result, typename _Arg, typename... _Args>
+struct __simd_math_accumulate_vec_result
 {};
 
 template <typename _Result, typename _Arg, typename... _Args>
-struct __simd_math_accumulate_vec_result<true, _Result, _Arg, _Args...>
+struct __simd_math_accumulate_vec_result<false, void, _Result, _Arg, _Args...>
+    : __simd_math_result_impl<_Result, _Args...>
+{};
+
+template <typename _Result, typename _Arg, typename... _Args>
+struct __simd_math_accumulate_vec_result<
+  true,
+  void_t<decltype(::cuda::std::declval<const _Result&>() + ::cuda::std::declval<const __deduced_vec_t<_Arg>&>())>,
+  _Result,
+  _Arg,
+  _Args...>
     : __simd_math_result_impl<
         decltype(::cuda::std::declval<const _Result&>() + ::cuda::std::declval<const __deduced_vec_t<_Arg>&>()),
         _Args...>
@@ -189,7 +199,7 @@ struct __simd_math_accumulate_vec_result<true, _Result, _Arg, _Args...>
 // Derive the result type (with arguments)
 template <typename _Result, typename _Arg, typename... _Args>
 struct __simd_math_result_impl<_Result, _Arg, _Args...>
-    : __simd_math_accumulate_vec_result<__is_simd_math_floating_point_v<_Arg>, _Result, _Arg, _Args...>
+    : __simd_math_accumulate_vec_result<__is_simd_math_floating_point_v<_Arg>, void, _Result, _Arg, _Args...>
 {};
 
 // there is at least one vector argument, invalid otherwise
@@ -209,16 +219,21 @@ template <typename _Arg, typename _Result>
 inline constexpr bool __is_simd_math_same_vec_arg_v<_Arg, _Result, void_t<__deduced_vec_t<_Arg>>> =
   is_same_v<__deduced_vec_t<_Arg>, _Result>;
 
-// Check if the argument is a valid SIMD math argument: same vector argument or convertible to the result type
-template <typename _Arg, typename _Result>
+// Check if the argument is a valid for SIMD math. A deduced argument may use an explicit conversion. Other argument
+// types must convert implicitly
+template <typename _Arg, typename _Result, typename _Vp>
 inline constexpr bool __is_simd_math_arg_v =
-  __is_simd_math_same_vec_arg_v<_Arg, _Result>
-  || (!__is_simd_math_floating_point_v<_Arg>
-      && (is_same_v<remove_cvref_t<_Arg>, typename _Result::value_type> || is_convertible_v<const _Arg&, _Result>) );
+  is_same_v<_Arg, _Vp> || is_same_v<remove_cvref_t<_Arg>, typename _Result::value_type>
+  || is_convertible_v<const _Arg&, _Result>;
 
+template <typename _Result, typename _Vp, typename... _Args>
+inline constexpr bool __is_simd_math_overload_v =
+  __is_simd_math_same_vec_arg_v<_Vp, _Result> && (__is_simd_math_arg_v<_Args, _Result, _Vp> && ...);
+
+// check if there is at least one overload that is valid for the given result type and arguments
 template <typename _Result, typename... _Args>
 inline constexpr bool __is_simd_math_v =
-  __is_simd_floating_point_v<_Result> && (__is_simd_math_arg_v<_Args, _Result> && ...);
+  __is_simd_floating_point_v<_Result> && (__is_simd_math_overload_v<_Result, _Args, _Args...> || ...);
 
 //----------------------------------------------------------------------------------------------------------------------
 // binary macros

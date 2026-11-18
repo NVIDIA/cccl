@@ -310,7 +310,7 @@ private:
   }
 
   // Name reported for NVTX ranges
-  _CCCL_HOST_DEVICE static constexpr auto GetName() -> const char*
+  _CCCL_HOST_DEVICE_API static constexpr auto GetName() -> const char*
   {
     return "cub::DeviceRadixSort";
   }

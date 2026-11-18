@@ -24,7 +24,7 @@ namespace random::detail
 template <typename UIntType, UIntType A, unsigned long long C, UIntType M>
 struct linear_congruential_engine_discard_implementation
 {
-  _CCCL_HOST_DEVICE static void discard(UIntType& state, unsigned long long z)
+  _CCCL_HOST_DEVICE_API static void discard(UIntType& state, unsigned long long z)
   {
     for (; z > 0; --z)
     {
@@ -38,7 +38,7 @@ struct linear_congruential_engine_discard_implementation
 template <std::uint32_t A, std::uint32_t M>
 struct linear_congruential_engine_discard_implementation<std::uint32_t, A, 0, M>
 {
-  _CCCL_HOST_DEVICE static void discard(std::uint32_t& state, unsigned long long z)
+  _CCCL_HOST_DEVICE_API static void discard(std::uint32_t& state, unsigned long long z)
   {
     const std::uint32_t modulus = M;
 
@@ -69,7 +69,7 @@ struct linear_congruential_engine_discard_implementation<std::uint32_t, A, 0, M>
 struct linear_congruential_engine_discard
 {
   template <typename LinearCongruentialEngine>
-  _CCCL_HOST_DEVICE static void discard(LinearCongruentialEngine& lcg, unsigned long long z)
+  _CCCL_HOST_DEVICE_API static void discard(LinearCongruentialEngine& lcg, unsigned long long z)
   {
     using result_type                    = typename LinearCongruentialEngine::result_type;
     [[maybe_unused]] const result_type c = LinearCongruentialEngine::increment;

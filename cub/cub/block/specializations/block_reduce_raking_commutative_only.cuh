@@ -107,7 +107,7 @@ struct BlockReduceRakingCommutativeOnly
   unsigned int linear_tid;
 
   /// Constructor
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduceRakingCommutativeOnly(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockReduceRakingCommutativeOnly(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
       , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
@@ -124,7 +124,7 @@ struct BlockReduceRakingCommutativeOnly
    *   Number of valid elements (may be less than BLOCK_THREADS)
    */
   template <bool FullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T partial, int num_valid)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(T partial, int num_valid)
   {
     if (USE_FALLBACK || !FullTile)
     {
@@ -168,7 +168,7 @@ struct BlockReduceRakingCommutativeOnly
    *   Binary reduction operator
    */
   template <bool FullTile, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T partial, int num_valid, ReductionOp reduction_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(T partial, int num_valid, ReductionOp reduction_op)
   {
     if (USE_FALLBACK || !FullTile)
     {

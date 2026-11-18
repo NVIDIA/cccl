@@ -26,6 +26,10 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_HAS_BUILTIN(__is_member_function_pointer)
+#  define _CCCL_BUILTIN_IS_MEMBER_FUNCTION_POINTER(...) __is_member_function_pointer(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__is_member_function_pointer)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>

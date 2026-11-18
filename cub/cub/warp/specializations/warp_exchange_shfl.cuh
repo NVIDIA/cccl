@@ -35,7 +35,7 @@ class WarpExchangeShfl
                 "LogicalWarpThreads");
 
   template <int NumEntries, int IDX>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   transpose_foreach(InputT (&vals)[ItemsPerThread], const bool xor_bit_set, const unsigned mask)
   {
     // The implementation here is a recursive divide-and-conquer approach
@@ -189,7 +189,7 @@ class WarpExchangeShfl
   }
 
   template <int NumEntries>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   transpose(InputT (&vals)[ItemsPerThread], const unsigned int lane_id, const unsigned int mask)
   {
     if constexpr (NumEntries != 0)
@@ -202,7 +202,7 @@ class WarpExchangeShfl
   }
 
   template <size_t... Is>
-  _CCCL_DEVICE void copy_into(
+  _CCCL_DEVICE_API void copy_into(
     InputT (&vals)[ItemsPerThread], const InputT (&input_items)[ItemsPerThread], ::cuda::std::index_sequence<Is...>)
   {
     // A #pragma unroll'ed for-loop is not sufficient, it produces worse SASS
@@ -210,7 +210,7 @@ class WarpExchangeShfl
   }
 
   template <typename OutputT, size_t... Is>
-  _CCCL_DEVICE void copy_out(
+  _CCCL_DEVICE_API void copy_out(
     OutputT (&output_items)[ItemsPerThread], const InputT (&vals)[ItemsPerThread], ::cuda::std::index_sequence<Is...>)
   {
     // A #pragma unroll'ed for-loop is not sufficient, it produces worse SASS
@@ -225,10 +225,10 @@ public:
 
   WarpExchangeShfl() = delete;
 
-  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpExchangeShfl(TempStorage&) {}
+  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpExchangeShfl(TempStorage&) {}
 
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   BlockedToStriped(const InputT (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
     InputT vals[ItemsPerThread];
@@ -240,7 +240,7 @@ public:
   }
 
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   StripedToBlocked(const InputT (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
     BlockedToStriped(input_items, output_items);
@@ -255,7 +255,7 @@ public:
   };
 
   template <typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStriped(InputT (&)[ItemsPerThread], OffsetT (&)[ItemsPerThread])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterToStriped(InputT (&)[ItemsPerThread], OffsetT (&)[ItemsPerThread])
   {
     static_assert(dependent_false<OffsetT>::value,
                   "Shuffle specialization of warp exchange does not support\n"
@@ -264,7 +264,7 @@ public:
   }
 
   template <typename OutputT, typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ScatterToStriped(const InputT (&)[ItemsPerThread], OutputT (&)[ItemsPerThread], OffsetT (&)[ItemsPerThread])
   {
     static_assert(dependent_false<OffsetT>::value,
