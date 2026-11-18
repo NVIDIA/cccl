@@ -112,12 +112,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
   return _CCCL_BUILTIN_FDIMF128(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_FDIMF128 ^^^ / vvv !_CCCL_BUILTIN_FDIMF128 vvv
   NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fdim(__x, __y);))
-  // Portable fallback: NaNs propagate (and are quieted), otherwise x - y if x > y and +0 if x <= y
-  if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
+  // Portable fallback: x - y if x > y, otherwise NaNs propagate (and are quieted) or +0.
+  // x > y is false when either argument is NaN, so the NaN check is only needed on the second path
+  if (__x > __y)
   {
-    return __x + __y;
+    return __x - __y;
   }
-  return __x > __y ? __x - __y : __float128{0};
+  return (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y)) ? __x + __y : __float128{0};
 #  endif // ^^^ !_CCCL_BUILTIN_FDIMF128 ^^^
 }
 #endif // _CCCL_HAS_FLOAT128()
