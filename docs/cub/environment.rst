@@ -25,12 +25,12 @@ This page explains what the CUB environment APIs are, and how to use them.
 Why environments?
 -----------------
 
-The classic two-phase CUB API requires three steps: query temporary-storage size, allocate,
-then execute. That is fine for situations where precise control over the temporary storage
-allocation is required, or when the temporary storage size needs to be queried independently
-of allocating it. For example, when the temporary storage is combined with other storage, e.g.
-for an output, into a single allocation. But in many cases this is not needed and the two-step
-API is just repetitive boilerplate.
+The original motivation came from the classic two-phase CUB APIs requiring three steps: query
+temporary-storage size, allocate, then execute. That is fine for situations where precise control
+over the temporary storage allocation is required, or when the temporary storage size needs to be
+queried independently of allocating it. For example, when the temporary storage is combined with
+other storage, e.g. for an output, into a single allocation. But in many cases this is not needed
+and the two-phase API is just repetitive boilerplate.
 
 The environment-based single-phase API collapses all of that into one call. The algorithm
 queries the environment for the properties it needs — for example, the stream to run on,
@@ -54,10 +54,10 @@ pass to many different algorithms:
       cub::DeviceReduce::Sum(d_input, d_output, num_items);
 
 
-The two-phase API accepts the same environments as its last argument. Since the caller
-provides the temporary storage there, a memory resource in the environment is ignored, while
-all other properties, like the stream, determinism requirements, or a tuning policy selector,
-are honored:
+Over time, environments accumulated more useful properties like requirements and tunings, so the
+classic two-phase APIs were also extended to accept the same environments as their last argument.
+Since the caller provides the temporary storage there, a memory resource in the environment is
+ignored, while all other properties are honored:
 
 .. code-block:: c++
 

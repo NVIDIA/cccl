@@ -15,7 +15,7 @@ Here is a generic example:
 .. code-block:: c++
 
     struct DeviceAlgorithm {
-      // two step API
+      // two-phase API
       template <typename ..., typename Env = cuda::std::execution::env<>>
       static cudaError_t Algorithm(void *d_temp_storage, size_t &temp_storage_bytes, ..., const Env& env = {}) {
         // optional: minimal argument checking or setup to call dispatch layer
@@ -38,15 +38,15 @@ Here is a generic example:
       }
     };
 
-Device-scope APIs come in two flavors, two step APIs and single-phase APIs,
+Device-scope APIs come in two flavors, two-phase APIs and single-phase APIs,
 both return ``cudaError_t``, take algorithm specific arguments,
 and take an environment as the last parameter (empty environment by default).
-The first two parameters of the two step API are always ``void *d_temp_storage, size_t &temp_storage_bytes``.
-Since the caller provides the temporary storage, the two step API ignores any memory resource in the environment.
+The first two parameters of the two-phase API are always ``void *d_temp_storage, size_t &temp_storage_bytes``.
+Since the caller provides the temporary storage, the two-phase API ignores any memory resource in the environment.
 The implementation may consist of some minimal argument checking, but should forward as soon as possible to the dispatch layer.
 Device-scope algorithms are implemented in files located in `cub/device/device_***.cuh`.
 
-The two step API is called in two phases:
+The two-phase API is called in two phases:
 
   1. Temporary storage size is calculated and returned in ``size_t &temp_storage_bytes``.
   2. ``temp_storage_bytes`` of memory is expected to be allocated and ``d_temp_storage`` is expected to be the pointer to this memory.
@@ -95,7 +95,7 @@ The device layer handles the extraction of the:
 
 from the environment argument, or provide default values in case the environment does not contain them.
 They typically use helper functions like ``dispatch_with_env`` and ``dispatch_with_env_and_tuning``.
-Both have an overload taking ``d_temp_storage`` and ``temp_storage_bytes`` for the two step API,
+Both have an overload taking ``d_temp_storage`` and ``temp_storage_bytes`` for the two-phase API,
 which skips the memory resource and invokes the algorithm only once with the user-provided temporary storage.
 The corresponding ``dispatch_with_env_validation`` and
 ``dispatch_with_env_validation_and_tuning`` helpers additionally validate advertised query

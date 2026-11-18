@@ -36,7 +36,8 @@ They follow a two-phase usage pattern that requires three steps:
 Like the single-phase API, two-phase APIs take an optional execution environment as their last argument.
 It can provide a stream, a tuning policy selector, or execution requirements.
 Since the caller provides the temporary storage, a memory resource in the environment is ignored.
-A ``cudaStream_t`` can still be passed directly, as before environments were introduced.
+A ``cudaStream_t`` can still be passed directly, as before environments were introduced,
+since it is treated as an environment providing a stream.
 
 In principle, the query phase and execution phase must call the same CUB API.
 This means in detail:
@@ -104,8 +105,8 @@ allowing their start and stop to be visualized in profilers
 like `NVIDIA Nsight Systems <https://developer.nvidia.com/nsight-systems>`_.
 Only the public APIs available in the ``<cub/device/device_xxx.cuh>`` headers are annotated,
 excluding direct calls to the dispatch layer.
-For two phase APIs, the NVTX range is not emitted when querying the temporary storage size, only during algorithm execution.
-For single phase APIs, the NVTX range is emitted for the entire duration of the algorithm call.
+For two-phase APIs, the NVTX range is not emitted when querying the temporary storage size, only during algorithm execution.
+For single-phase APIs, the NVTX range is emitted for the entire duration of the algorithm call.
 CCCL's NVTX annotations can be disabled by defining ``CCCL_NVTX_DISABLE`` during compilation.
 To disable NVTX annotations in general, define ``NVTX_DISABLE`` during compilation.
 When CUB device algorithms are called on a stream during
