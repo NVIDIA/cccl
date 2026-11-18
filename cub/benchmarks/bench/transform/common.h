@@ -96,3 +96,26 @@ _CCCL_HOST_API void bench_transform(
       });
   });
 }
+
+template <typename... RandomAccessIteratorsIn, typename... RandomAccessIteratorsOut, typename TransformOp>
+_CCCL_HOST_API void bench_transform(
+  nvbench::state& state,
+  cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
+  cuda::std::tuple<RandomAccessIteratorsOut...> outputs,
+  ::cuda::std::int64_t num_items,
+  TransformOp transform_op)
+{
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](const nvbench::launch& launch) {
+    cub::DeviceTransform::Transform(
+      inputs,
+      outputs,
+      num_items,
+      transform_op,
+      cuda::std::execution::env{::cuda::stream_ref{launch.get_stream().get_stream()}
+#if !TUNE_BASE
+                                ,
+                                cuda::execution::tune(policy_selector{})
+#endif // !TUNE_BASE
+      });
+  });
+}

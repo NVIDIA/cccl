@@ -22,11 +22,11 @@
 
 #include <cub/block/block_load.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
-#include <cub/detail/log2.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
 
+#include <cuda/__cmath/ilog.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__utility/static_for.h>
 #include <cuda/std/__algorithm/max.h>
@@ -149,10 +149,10 @@ struct AgentRadixSortUpsweep
   static constexpr int TILE_ITEMS = BLOCK_THREADS * KEYS_PER_THREAD;
 
   static constexpr int BYTES_PER_COUNTER    = sizeof(DigitCounter);
-  static constexpr int OG_BYTES_PER_COUNTER = Log2<BYTES_PER_COUNTER>::VALUE;
+  static constexpr int OG_BYTES_PER_COUNTER = ::cuda::ilog2(BYTES_PER_COUNTER);
 
   static constexpr int PACKING_RATIO     = sizeof(PackedCounter) / sizeof(DigitCounter);
-  static constexpr int LOG_PACKING_RATIO = Log2<PACKING_RATIO>::VALUE;
+  static constexpr int LOG_PACKING_RATIO = ::cuda::ilog2(PACKING_RATIO);
 
   static constexpr int LOG_COUNTER_LANES = ::cuda::std::max(0, int(RADIX_BITS) - int(LOG_PACKING_RATIO));
   static constexpr int COUNTER_LANES     = 1 << LOG_COUNTER_LANES;
