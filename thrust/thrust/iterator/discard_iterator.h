@@ -17,11 +17,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/use_default.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/detail/any_assign.h>
 #include <thrust/iterator/iterator_adaptor.h>
+#include <thrust/iterator/iterator_facade.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h>
 
 THRUST_NAMESPACE_BEGIN
 
