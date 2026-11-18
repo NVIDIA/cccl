@@ -80,6 +80,30 @@ Python filters are regex patterns matched against relative paths under `python/c
 - `compute/reduce/sum\.py` — single benchmark
 - `compute/transform/.*\.py` — all transform benchmarks
 
+## Standalone cuda.coop.cutlass benchmarks
+
+Select the standalone package explicitly:
+
+```bash
+./ci/bench/compare_paths.sh /path/to/base/cccl /path/to/test/cccl \
+  --python-project cuda_coop_cutlass --python-filter '^run\.py$' \
+  --nvbench-args '--provider cutlass --axis Blocks=1 --axis Launches=1'
+```
+
+The selector changes the benchmark directory to
+`python/cuda_coop_cutlass/benchmarks/` and installs each tree's
+`cuda-coop-cutlass[bench]` into its own environment. CUDA 13 and the package's
+compatible CuTe dependency are required. Benchmark scripts must exist in both
+comparison trees; this command does not add a new suite to an older baseline.
+Files beginning with `_` are support modules and are not benchmark entry points.
+The default project remains `cuda_cccl`.
+
+The existing workflow's `raw_args` input accepts this selector without a new
+workflow or automatic performance job. Benchmark collection remains opt-in;
+these comparisons do not establish a universal slowdown threshold. See the
+[standalone benchmark instructions](../../python/cuda_coop_cutlass/benchmarks/README.md)
+for provider comparisons, correctness checks and timing semantics.
+
 ## Artifacts
 
 `compare_paths.sh` writes a run directory under `${CCCL_BENCH_ARTIFACT_ROOT:-$(pwd)/bench-artifacts}` containing:
