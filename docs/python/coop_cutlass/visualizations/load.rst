@@ -6,20 +6,15 @@
 Load
 ====
 
-:func:`cuda.coop.cutlass.load` fills each thread's ``ThreadData`` from a contiguous
-tile in memory. The algorithm determines which thread reads each value and
-whether a shared-memory exchange rearranges it afterward.
+:func:`cuda.coop.cutlass.load` reads a group's :term:`tile` from memory and
+returns each thread's items as a payload. The algorithm decides which thread
+reads which element, and whether the threads then exchange their items
+through shared scratch.
 
-Prefer returning Load for a fresh payload. Its source may be global or
-shared memory; the result remains per-thread values in either case. The
-shared scratch used by transpose algorithms is distinct from a shared
-source tile. To write a tile into shared memory, use Store; see the
-:ref:`shared-memory staging example <coop-shared-load-store>`.
-
-The explorer shows eight illustrative threads. For the warp-transpose
-algorithms, it groups them into two four-lane teaching warps. **CUDA warps
-have 32 lanes**; executable blocks using these algorithms must contain a
-multiple of 32 threads. All illustrated loads read a full tile.
+The explorer shows eight teaching threads that load a full tile. For the
+two warp-transpose algorithms it draws them as two warps of four lanes.
+**CUDA warps have 32 lanes**, and in a kernel these two algorithms need a
+block size that is a multiple of 32.
 
 .. coop-visualization:: load
 
@@ -43,30 +38,32 @@ multiple of 32 threads. All illustrated loads read a full tile.
 Reading the stages
 ------------------
 
-See :ref:`blocked versus striped <coop-glossary-layouts>` for a compact
-ownership table and the index formulas used here.
+The memory row numbers the elements by their position in the tile. The next
+row shows which thread reads each element, and the last row shows which
+thread ends up with it. For an algorithm with an exchange, a scratch row
+lies between the two. Select a value to see which thread reads it and
+which thread and item receive it.
 
-The memory row numbers values by their position in the tile. The next row
-shows the threads that read them. For algorithms with an exchange, shared
-scratch connects those readers to the final owners. Select a value to
-inspect its source index and destination thread slot.
+``direct`` and ``vectorize`` give a :term:`blocked` payload: thread ``t``
+reads ``K`` consecutive elements starting at ``t * K``, where ``K`` is the
+number of items per thread. For ``vectorize`` with more than one item per
+thread, the explorer outlines each thread's elements in the memory row as
+candidates for one vector access.
 
-``direct`` and ``vectorize`` produce blocked ownership: thread ``t`` receives
-``K`` consecutive values starting at ``t * K``, where ``K`` is the number of
-items per thread. Vectorization can combine a thread's adjacent values into
-a wider access when the pointer, alignment, type, and item count permit it.
-The diagram does not guarantee a vector instruction.
+``striped`` gives thread ``t`` the elements ``t + i * G`` for item ``i``,
+where ``G`` is the group's size. Neighboring threads read neighboring
+addresses, and the payload stays :term:`striped`. ``transpose`` makes the
+same reads and then exchanges the items into a blocked payload.
 
-``striped`` gives thread ``t`` the values at ``t + j * T`` for item slot
-``j`` and group size ``T``. Neighboring threads read neighboring addresses
-at each slot, and the output stays striped. ``transpose`` starts with those
-same reads and exchanges the values into blocked ownership.
+``warp_transpose`` reads in striped order inside each warp's part of the
+tile and exchanges the items within that warp into a blocked payload.
+``warp_transpose_timesliced`` makes the same reads, and the warps then take
+turns with scratch sized for one warp. The explorer shows one exchange round
+for each warp. Every warp has read its elements before the first round.
 
-``warp_transpose`` reads a separate striped tile within each physical warp
-and exchanges it into blocked ownership. ``warp_transpose_timesliced`` uses
-the same memory reads, then lets warps take turns through a shared scratch
-region sized for one warp. The animation separates those exchange rounds;
-it does not serialize the global-memory loads.
+The :ref:`glossary <coop-glossary-layouts>` has a table of both layouts.
+:ref:`Load & Store <memory-operations>` in the API reference has the rules
+for each algorithm and control.
 
 Using Load in a kernel
 ----------------------
@@ -83,8 +80,8 @@ least ``128 * items_per_thread`` source elements for each block.
        block, source, items_per_thread=items_per_thread,
        algorithm="transpose", offset=offset,
    )
-   # Each thread owns items_per_thread consecutive values in the result.
+   # Each thread holds items_per_thread consecutive elements of the tile.
 
-For a partial final tile, supply ``valid_items`` and, when needed,
-``oob_default``. See :func:`cuda.coop.cutlass.load` for the full parameter contract
-:doc:`Programming Guide <../programming_guide>` for complete examples.
+:ref:`Load & Store <memory-operations>` in the API reference covers partial
+tiles, offsets, and loads on warps and groups of lanes, with tested
+examples.

@@ -41,8 +41,9 @@ argument declared ``cutlass.Constexpr`` on both kernel and launcher. Use
 
 Inside ``@cute.kernel``, obtain ``block_index`` from
 ``cute.arch.block_idx()[0]`` and ``thread_rank`` from
-``cute.arch.thread_idx()[0]``. Pass a supported CuTe tensor or pointer-backed
-view to Load/Store. For scalar indexing, construct a tensor with the required
+``cute.arch.thread_idx()[0]``. Pass Load and Store a CuTe pointer or tensor in
+one of the forms listed for ``source`` of :func:`cuda.coop.cutlass.load`.
+For scalar indexing, construct a tensor with the required
 layout. The :doc:`Programming Guide <../programming_guide>` and
 :doc:`examples <../examples>` provide complete launch and memory examples.
 
