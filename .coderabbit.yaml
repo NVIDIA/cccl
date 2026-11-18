@@ -80,6 +80,9 @@ reviews:
       instructions: |
         Focus on algorithm correctness, temporary-storage protocol, dispatch/policy selection, stream behavior,
         CUDA error handling, synchronization, memory access safety, performance regressions, and test coverage.
+        When a pull request changes or adds a block or warp primitive under cub/cub/block or cub/cub/warp,
+        check that it also updates python/cuda_coop_cutlass, its tests and docs/python/coop_cutlass where the
+        change affects them, following python/cuda_coop_cutlass/AGENTS.md.
 
     - path: "thrust/**/*"
       instructions: |
