@@ -9,14 +9,23 @@ import os
 import subprocess
 import sys
 
+import cutlass
 import pytest
 
+from cuda.coop.cutlass._compiler import _nvrtc
 from tests.support.paths import PACKAGE_ROOT
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
 def test_relocated_pack_launches_without_provider_compilation(tmp_path):
+    major, minor = _nvrtc.resolve_compile_context(()).nvrtc_version
+    consumer = cutlass.CUDA_VERSION
+    if consumer.major != major or consumer.minor < minor:
+        pytest.skip(
+            f"Provider NVRTC {major}.{minor} is incompatible with "
+            f"the CuTe {consumer.major}.{consumer.minor} device linker"
+        )
     example = PACKAGE_ROOT / "examples" / "block_storage.py"
     workload = ["--", sys.executable, str(example)]
 

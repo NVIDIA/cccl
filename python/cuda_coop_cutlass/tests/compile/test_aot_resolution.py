@@ -6,6 +6,7 @@
 
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import cutlass
 import pytest
@@ -59,7 +60,15 @@ def test_capture_cached_provider_and_handle_changed_specialization(
         pytest.fail("Required pack consulted the provider JIT")
 
     monkeypatch.setattr(_nvrtc, "resolve_compile_context", forbid_jit)
-    with aot.use(pack, mode="required"):
+    with aot.use(pack, mode="required") as info:
+        # This resolver test compares bytes without linking. Model a CuTe
+        # consumer matching the compiler that produced the captured artifact.
+        assert info is not None
+        (entry,) = info.entries
+        major, minor = entry.producer_version
+        monkeypatch.setattr(
+            cutlass, "CUDA_VERSION", SimpleNamespace(major=major, minor=minor)
+        )
         assert compile_provider(1).read_bytes() == original
         # Even though the JIT cache now contains value(2), the pack does not.
         dump_dir = tmp_path / "sources"

@@ -6,6 +6,8 @@
 
 import multiprocessing
 import os
+import subprocess
+import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
@@ -29,7 +31,6 @@ from cuda.coop.cutlass._lowering._load_store import (
     _scratch_layout_probe,
 )
 from cuda.coop.cutlass._planning import this_block
-from tests._group_planning import _load_store, _plan
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 
@@ -106,6 +107,8 @@ def test_header_reuse_and_edit_preserve_compiled_layouts(tmp_path, monkeypatch):
 
 
 def _prepared_provider(kind, items):
+    from tests._group_planning import _load_store, _plan
+
     operation = _load_store(
         kind, dtype=Int32, items_per_thread=items, algorithm="transpose"
     )
@@ -243,8 +246,23 @@ def test_exhausted_pch_heap_keeps_ltoir_and_retires_directory(monkeypatch):
     "fork" not in multiprocessing.get_all_start_methods(),
     reason="fork-specific PCH directory ownership",
 )
-def test_fork_worker_releases_only_its_pch_directory(tmp_path, monkeypatch):
-    monkeypatch.setenv(_nvrtc._PCH_ENV, "auto")
+def test_fork_worker_releases_only_its_pch_directory(tmp_path):
+    # The pytest process may have compiler or BLAS worker threads. Fork
+    # from a fresh interpreter with NumPy's worker pool limited to one.
+    subprocess.run(
+        [sys.executable, __file__, str(tmp_path)],
+        env={
+            **os.environ,
+            "PYTHONPATH": os.pathsep.join(sys.path),
+            "OPENBLAS_NUM_THREADS": "1",
+            _nvrtc._PCH_ENV: "auto",
+        },
+        timeout=30,
+        check=True,
+    )
+
+
+def _check_fork_cleanup(tmp_path):
     context = SimpleNamespace(
         nvrtc_version=(13, 3), header_identity=str(tmp_path)
     )
@@ -262,9 +280,16 @@ def test_fork_worker_releases_only_its_pch_directory(tmp_path, monkeypatch):
 
     process = multiprocessing.get_context("fork").Process(target=worker)
     process.start()
-    process.join()
+    process.join(timeout=10)
+    if process.is_alive():
+        process.kill()
+        process.join(timeout=5)
     assert process.exitcode == 0
     child = Path(record.read_text())
     assert child != parent
     assert parent.is_dir()
     assert not child.exists()
+
+
+if __name__ == "__main__":
+    _check_fork_cleanup(Path(sys.argv[1]))
