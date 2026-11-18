@@ -145,7 +145,7 @@ CUB_TEST("Device UpperBoundSortedValues uses environment", "[find][device][binar
 #if TEST_LAUNCH == 0
 
 template <class EnvT, class TwoPhaseFn>
-void run_two_phase(const EnvT& env, TwoPhaseFn two_phase)
+size_t run_two_phase(const EnvT& env, TwoPhaseFn two_phase)
 {
   const stream_scope scope{cuda::__call_or(cuda::get_stream, cuda::stream_ref{cudaStream_t{}}, env).get()};
 
@@ -155,6 +155,7 @@ void run_two_phase(const EnvT& env, TwoPhaseFn two_phase)
   c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
   REQUIRE(cudaSuccess == two_phase(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes));
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  return temp_storage_bytes;
 }
 
 // The launch wrappers copy their arguments, which the non-copyable streams of test_with_custom_streams do not allow
@@ -167,8 +168,21 @@ CUB_TEST_CASE("Device LowerBoundSortedValues two-phase works with custom streams
   c2h::device_vector<int> d_output(4, thrust::no_init);
   const c2h::device_vector<int> expected{0, 2, 2, 4};
 
+  size_t expected_bytes{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceFind::LowerBoundSortedValues(
+      nullptr,
+      expected_bytes,
+      d_range.begin(),
+      static_cast<int>(d_range.size()),
+      d_values.begin(),
+      static_cast<int>(d_values.size()),
+      d_output.begin(),
+      cuda::std::less{}));
+
   test_with_custom_streams([&](const auto& env) {
-    run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+    const size_t bytes = run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
       return cub::DeviceFind::LowerBoundSortedValues(
         d_temp_storage,
         temp_storage_bytes,
@@ -180,6 +194,7 @@ CUB_TEST_CASE("Device LowerBoundSortedValues two-phase works with custom streams
         cuda::std::less{},
         env);
     });
+    REQUIRE(bytes == expected_bytes);
     REQUIRE(d_output == expected);
   });
 }
@@ -193,8 +208,21 @@ CUB_TEST_CASE("Device UpperBoundSortedValues two-phase works with custom streams
   c2h::device_vector<int> d_output(4, thrust::no_init);
   const c2h::device_vector<int> expected{1, 2, 3, 4};
 
+  size_t expected_bytes{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceFind::UpperBoundSortedValues(
+      nullptr,
+      expected_bytes,
+      d_range.begin(),
+      static_cast<int>(d_range.size()),
+      d_values.begin(),
+      static_cast<int>(d_values.size()),
+      d_output.begin(),
+      cuda::std::less{}));
+
   test_with_custom_streams([&](const auto& env) {
-    run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+    const size_t bytes = run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
       return cub::DeviceFind::UpperBoundSortedValues(
         d_temp_storage,
         temp_storage_bytes,
@@ -206,6 +234,7 @@ CUB_TEST_CASE("Device UpperBoundSortedValues two-phase works with custom streams
         cuda::std::less{},
         env);
     });
+    REQUIRE(bytes == expected_bytes);
     REQUIRE(d_output == expected);
   });
 }
