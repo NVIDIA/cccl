@@ -30,10 +30,12 @@
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/policy_selector.cuh>
 #include <cub/device/dispatch/dispatch_segmented_sort.cuh>
+#include <cub/device/dispatch/dispatch_segmented_sort_lrb.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -150,7 +152,8 @@ private:
             typename ValueT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename TuningEnvT = ::cuda::std::execution::env<>>
+            typename TuningEnvT            = ::cuda::std::execution::env<>,
+            typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
   CUB_RUNTIME_FUNCTION static auto select_tuning_and_dispatch(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -162,25 +165,92 @@ private:
     EndOffsetIteratorT d_end_offsets,
     bool is_overwrite_okay,
     cudaStream_t stream,
-    TuningEnvT = {}) -> cudaError_t
+    TuningEnvT                             = {},
+    KernelLauncherFactory launcher_factory = {}) -> cudaError_t
   {
     using offset_t =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using default_policy_selector_t = detail::segmented_sort::policy_selector_from_types<KeyT, ValueT>;
     using policy_selector_t =
       detail::policy_selector_from_tuning_env_t<TuningEnvT, SegmentedSortPolicy, default_policy_selector_t>;
-    return _CUB::detail::segmented_sort::dispatch<Order, offset_t>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      is_overwrite_okay,
-      stream,
-      policy_selector_t{});
+    if constexpr (detail::segmented_sort_lrb::can_use_lrb<KeyT, ValueT, policy_selector_t>(
+                    ::cuda::compute_capability{9, 0}))
+    {
+      ::cuda::compute_capability cc{};
+      if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+      {
+        return error;
+      }
+      return detail::dispatch_compute_cap(
+        detail::segmented_sort_lrb::backend_selector<KeyT, ValueT, policy_selector_t>{},
+        cc,
+        [&](auto use_lrb) -> cudaError_t {
+          if constexpr (decltype(use_lrb){}())
+          {
+            if (num_items < 0 || num_segments < 0)
+            {
+              return cudaErrorInvalidValue;
+            }
+            // TODO: Support wide segment counts in LRB before completing public integration.
+            // Reject unsupported counts before narrowing; do not instantiate the old backend as a fallback.
+            if (static_cast<unsigned long long>(num_segments) >= ::cuda::std::numeric_limits<unsigned>::max())
+            {
+              return cudaErrorNotSupported;
+            }
+            // TODO: Make LRB overflow handling capturable by removing its host count readback.
+            // Capture state does not select a different backend.
+            return detail::segmented_sort_lrb::dispatch<Order, offset_t>(
+              d_temp_storage,
+              temp_storage_bytes,
+              d_keys,
+              num_items,
+              static_cast<unsigned>(num_segments),
+              d_begin_offsets,
+              d_end_offsets,
+              is_overwrite_okay,
+              stream,
+              launcher_factory);
+          }
+          else
+          {
+            return _CUB::detail::segmented_sort::dispatch<Order, offset_t>(
+              d_temp_storage,
+              temp_storage_bytes,
+              d_keys,
+              d_values,
+              num_items,
+              num_segments,
+              d_begin_offsets,
+              d_end_offsets,
+              is_overwrite_okay,
+              stream,
+              policy_selector_t{},
+              {},
+              {},
+              {},
+              launcher_factory);
+          }
+        });
+    }
+    else
+    {
+      return _CUB::detail::segmented_sort::dispatch<Order, offset_t>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_keys,
+        d_values,
+        num_items,
+        num_segments,
+        d_begin_offsets,
+        d_end_offsets,
+        is_overwrite_okay,
+        stream,
+        policy_selector_t{},
+        {},
+        {},
+        {},
+        launcher_factory);
+    }
   }
 
   template <SortOrder Order,
