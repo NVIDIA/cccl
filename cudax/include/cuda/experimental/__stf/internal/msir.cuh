@@ -33,7 +33,13 @@
  *   R : msir_state_id::reduction
  */
 
+#include <cuda/std/__cstddef/types.h>
+
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/hash.cuh>
+
+#include <string>
 
 namespace cuda::experimental::stf
 {

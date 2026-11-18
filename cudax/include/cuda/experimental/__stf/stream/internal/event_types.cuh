@@ -20,15 +20,29 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cassert>
+
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
 #include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/experimental/__stf/internal/dot.cuh>
+#include <cuda/experimental/__stf/internal/exec_affinity.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
+#include <cuda/experimental/__stf/utility/handle.cuh>
 #include <cuda/experimental/__stf/utility/memory.cuh>
 #include <cuda/experimental/__utility/unstable_unique.cuh>
 
-#include <mutex>
+#include <algorithm>
+#include <cstdlib>
+#include <string>
 #include <tuple>
+#include <vector>
+
+#include <cuda.h>
 
 namespace cuda::experimental::stf
 {

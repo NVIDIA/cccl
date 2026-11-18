@@ -27,16 +27,20 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__utility/exception_guard.h>
 #include <cuda/std/__utility/typeid.h>
+#include <cuda/std/array>
 #include <cuda/std/mdspan>
 
 #include <cuda/experimental/__stf/utility/core.cuh>
 
 #include <array>
 #include <cassert>
+#include <ostream>
 #include <string_view>
 #include <tuple>
+#include <type_traits>
 
 namespace cuda::experimental::stf
 {

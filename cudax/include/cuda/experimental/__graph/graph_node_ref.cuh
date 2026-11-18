@@ -21,11 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/__algorithm/fill.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__utility/swap.h>
+#include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
 

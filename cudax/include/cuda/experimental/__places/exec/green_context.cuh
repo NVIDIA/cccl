@@ -25,12 +25,25 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/cassert>
+
 #include <cuda/experimental/__places/data_place_interface.cuh>
 #include <cuda/experimental/__places/exec/cuda_context.cuh>
 #include <cuda/experimental/__places/exec/green_ctx_view.cuh>
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
+
+#include <memory>
+#include <string>
+#include <vector>
+
+#include <cuda.h>
+
+#ifdef UNITTESTED_FILE
+#  include <unordered_map>
+#endif // UNITTESTED_FILE
 
 // Used only for unit tests, not in the actual implementation
 #ifdef UNITTESTED_FILE

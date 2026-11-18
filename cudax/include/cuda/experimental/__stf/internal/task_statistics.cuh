@@ -32,6 +32,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cassert>
 #include <cuda/std/source_location>
 
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
@@ -44,8 +45,10 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 namespace cuda::experimental::stf::reserved
 {

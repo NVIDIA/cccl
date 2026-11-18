@@ -26,11 +26,26 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/cassert>
+
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 #include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/pretty_print.cuh>
+
+#include <algorithm>
+#include <cstdio>
+#include <unordered_map>
+#include <vector>
+
+#ifdef UNITTESTED_FILE
+#  include <cuda/std/__type_traits/is_move_assignable.h>
+#  include <cuda/std/__type_traits/is_move_constructible.h>
+#endif // UNITTESTED_FILE
 
 namespace cuda::experimental::stf
 {

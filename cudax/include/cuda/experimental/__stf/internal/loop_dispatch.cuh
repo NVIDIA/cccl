@@ -28,11 +28,20 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/cassert>
+
 #include <cuda/experimental/__places/place_partition.cuh>
+#include <cuda/experimental/__stf/internal/exec_affinity.cuh>
 #include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 #include <cuda/experimental/__stf/internal/stf_places_partition_into_stf.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
 
+#include <cstdlib>
+#include <functional>
+#include <memory>
 #include <thread>
+#include <vector>
 
 namespace cuda::experimental::stf
 {

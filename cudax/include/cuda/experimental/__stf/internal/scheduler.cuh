@@ -33,20 +33,29 @@
 #endif // no system header
 
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/cassert>
 
+#include <cuda/experimental/__stf/internal/constants.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
 #include <cuda/experimental/__stf/internal/task.cuh> // scheduler uses task
+#include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh> // heft_scheduler uses statistics_t
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/unique_id.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <cstdlib> // rand()
 #include <filesystem> // ::std::filesystem::exists
 #include <fstream> // ::std::ifstream
 #include <iostream>
-#include <limits> // ::cuda::std::numeric_limits<double>::max()
+#include <memory>
 #include <random> // random_scheduler uses rng
 #include <sstream> // ::std::stringstream
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace cuda::experimental::stf::reserved

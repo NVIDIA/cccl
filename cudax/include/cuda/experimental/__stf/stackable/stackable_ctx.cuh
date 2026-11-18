@@ -27,27 +27,52 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/source_location>
+
+#include <cuda/experimental/__places/places.cuh>
+#include <cuda/experimental/__stf/internal/async_prereq.cuh>
+#include <cuda/experimental/__stf/internal/constants.cuh>
+#include <cuda/experimental/__stf/internal/cuda_kernel_scope.cuh>
+#include <cuda/experimental/__stf/internal/frozen_logical_data.cuh>
+#include <cuda/experimental/__stf/internal/logical_data.cuh>
+#include <cuda/experimental/__stf/internal/scalar_interface.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
+#include <cuda/experimental/__stf/internal/task_dep.cuh>
+#include <cuda/experimental/__stf/internal/void_interface.cuh>
+#include <cuda/experimental/__stf/stackable/stackable_node_hierarchy.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/dimensions.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
+#include <cuda/experimental/__stf/utility/nvtx.cuh>
 
 #include <algorithm>
 #include <atomic>
-#include <iostream>
+#include <cstdio>
 #include <memory>
+#include <mutex>
 #include <shared_mutex>
 #include <stack>
 #include <stdexcept>
 #include <string>
-#include <thread>
 #include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
-#include "cuda/experimental/__stf/allocators/adapters.cuh"
-#include "cuda/experimental/__stf/internal/task.cuh"
+#ifdef UNITTESTED_FILE
+#  include <cuda/std/__exception/terminate.h>
+
+#  include <cuda/experimental/__stf/internal/slice.cuh>
+#  include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#endif // UNITTESTED_FILE
+
 #include "cuda/experimental/__stf/stackable/conditional_nodes.cuh"
 #include "cuda/experimental/__stf/stackable/stackable_ctx_impl.cuh"
 #include "cuda/experimental/__stf/stackable/stackable_task_dep.cuh"
-#include "cuda/experimental/__stf/utility/hash.cuh"
 #include "cuda/experimental/__stf/utility/source_location.cuh"
-#include "cuda/experimental/stf.cuh"
 
 //! \brief Stackable Context Design Overview
 //!

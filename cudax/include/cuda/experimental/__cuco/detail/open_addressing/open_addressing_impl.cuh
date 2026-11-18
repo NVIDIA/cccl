@@ -25,6 +25,7 @@
 #include <cub/device/device_reduce.cuh>
 #include <cub/device/device_select.cuh>
 #include <cub/device/device_transform.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__cmath/pow2.h>
@@ -38,7 +39,11 @@
 #include <cuda/__launch/launch.h>
 #include <cuda/__memory_resource/allocation_alignment.h>
 #include <cuda/__runtime/api_wrapper.h>
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
+#include <cuda/__utility/no_init.h>
+#include <cuda/std/__atomic/scopes.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/identity.h>
@@ -53,8 +58,11 @@
 #include <cuda/experimental/__cuco/detail/open_addressing/functors.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/kernels.cuh>
 #include <cuda/experimental/__cuco/detail/open_addressing/slot_storage_ref.cuh>
+#include <cuda/experimental/__cuco/detail/probing_scheme_base.cuh>
 #include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
+
+#include <stdexcept>
 
 #include <cuda/std/__cccl/prologue.h>
 

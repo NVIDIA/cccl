@@ -28,7 +28,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+
 #include <cuda/experimental/__stf/utility/unittest.cuh>
+
+#include <functional>
+#include <tuple>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
 
 namespace cuda::experimental::stf
 {

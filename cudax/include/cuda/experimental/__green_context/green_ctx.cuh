@@ -21,9 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__device/all_devices.h>
+#include <cuda/__device/device_ref.h>
 #include <cuda/__driver/driver_api.h>
 #include <cuda/std/utility>
+
+#include <cuda.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

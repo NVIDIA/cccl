@@ -28,6 +28,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__cstdlib/abs.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -39,6 +41,7 @@
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
+#include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/stop_token.cuh>
 
 // include this last:

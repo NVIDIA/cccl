@@ -30,19 +30,42 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/cassert>
 
+#include <cuda/experimental/__stf/allocators/block_allocator.cuh>
+#include <cuda/experimental/__stf/internal/async_prereq.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh> // logical_data_untyped_impl has a backend_ctx_untyped
 #include <cuda/experimental/__stf/internal/constants.cuh>
 #include <cuda/experimental/__stf/internal/data_interface.cuh>
+#include <cuda/experimental/__stf/internal/exec_affinity.cuh>
+#include <cuda/experimental/__stf/internal/instance_id.cuh>
+#include <cuda/experimental/__stf/internal/msir.cuh>
+#include <cuda/experimental/__stf/internal/reduction_base.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
+#include <cuda/experimental/__stf/internal/task.cuh>
+#include <cuda/experimental/__stf/internal/task_dep.cuh>
+#include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
+#include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/pretty_print.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
 
+#include <algorithm>
+#include <atomic>
+#include <cstdio>
+#include <cstdlib>
 #include <map>
+#include <memory>
 #include <mutex>
-#include <optional>
 #include <stdexcept>
 #include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace cuda::experimental::stf
 {

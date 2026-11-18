@@ -26,6 +26,7 @@
     "Experimental Cooperative APIs require the _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX macro to be defined before any CCCL header inclusion."
 #endif // !_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
 
+// IWYU pragma: begin_exports
 #include <cuda/experimental/coop/__algorithm/any_of.cuh>
 #include <cuda/experimental/coop/__algorithm/invoke_one.cuh>
 #include <cuda/experimental/coop/__algorithm/reduce.cuh>
@@ -33,5 +34,6 @@
 #include <cuda/experimental/coop/__algorithm/shuffle.cuh>
 #include <cuda/experimental/coop/__algorithm/shuffle_down.cuh>
 #include <cuda/experimental/coop/__algorithm/shuffle_up.cuh>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_EXPERIMENTAL_COOP_ALGORITHM

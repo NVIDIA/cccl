@@ -23,7 +23,11 @@
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+#include <cuda/std/__cstddef/byte.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__memory/allocator.h>
+#include <cuda/std/__tuple_dir/ignore.h>
+#include <cuda/std/__utility/undefined.h>
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 #include <cuda/__launch/configuration.h>
@@ -31,17 +35,14 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/exchange.h>
-#include <cuda/std/__utility/unreachable.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/completion_behavior.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
-#include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/stop_token.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>

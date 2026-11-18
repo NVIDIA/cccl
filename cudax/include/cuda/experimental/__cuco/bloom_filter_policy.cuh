@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/__functional/hash.h>
-#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/__cuco/bloom_filter_modes.cuh>

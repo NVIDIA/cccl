@@ -29,14 +29,31 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/cassert>
+
 #include <cuda/experimental/__stf/graph/internal/event_types.cuh>
+#include <cuda/experimental/__stf/internal/async_prereq.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh> // graph_task<> has-a backend_ctx_untyped
+#include <cuda/experimental/__stf/internal/exec_affinity.cuh>
 #include <cuda/experimental/__stf/internal/frozen_logical_data.cuh>
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
+#include <cuda/experimental/__stf/internal/task.cuh>
+#include <cuda/experimental/__stf/internal/task_dep.cuh>
+#include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/dimensions.cuh>
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
+#include <cuda/experimental/__stf/utility/handle.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
 
+#include <functional>
 #include <mutex>
+#include <tuple>
+#include <vector>
 
 namespace cuda::experimental::stf
 {

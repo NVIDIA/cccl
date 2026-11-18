@@ -16,7 +16,6 @@
 #pragma once
 
 #include <cuda/__cccl_config>
-#include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/optional>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
@@ -27,22 +26,54 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/cassert>
+
 #include <cuda/experimental/__places/partitions/blocked_partition.cuh> // for unit test!
+#include <cuda/experimental/__stf/allocators/block_allocator.cuh>
 #include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
-#include <cuda/experimental/__stf/internal/acquire_release.cuh>
+#include <cuda/experimental/__stf/internal/acquire_release.cuh> // IWYU pragma: keep
+#include <cuda/experimental/__stf/internal/async_prereq.cuh>
 #include <cuda/experimental/__stf/internal/backend_allocator_setup.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/experimental/__stf/internal/constants.cuh>
 #include <cuda/experimental/__stf/internal/cuda_kernel_scope.cuh>
+#include <cuda/experimental/__stf/internal/exec_affinity.cuh>
 #include <cuda/experimental/__stf/internal/host_launch_scope.cuh>
 #include <cuda/experimental/__stf/internal/launch.cuh>
+#include <cuda/experimental/__stf/internal/logical_data.cuh>
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
+#include <cuda/experimental/__stf/internal/reduction_base.cuh>
 #include <cuda/experimental/__stf/internal/reorderer.cuh>
 #include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
+#include <cuda/experimental/__stf/internal/task_dep.cuh>
+#include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/interfaces/slice.cuh> // For implicit logical_data_untyped constructors
 #include <cuda/experimental/__stf/stream/interfaces/void_interface.cuh>
+#include <cuda/experimental/__stf/stream/internal/event_types.cuh>
 #include <cuda/experimental/__stf/stream/stream_task.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
-#include <cuda/experimental/__stf/utility/threads.cuh> // for reserved::counter
+#include <cuda/experimental/__stf/utility/unittest.cuh>
+
+#include <deque>
+#include <functional>
+#include <memory>
+#include <unordered_map>
+#include <vector>
+
+#ifdef UNITTESTED_FILE
+#  include <cuda/std/__memory/unique_ptr.h>
+
+#  include <cuda/experimental/__stf/internal/data_interface.cuh>
+#  include <cuda/experimental/__stf/internal/slice.cuh>
+
+#  include <nv/target>
+
+#  include <tuple>
+#endif // UNITTESTED_FILE
 
 namespace cuda::experimental::stf
 {

@@ -27,14 +27,30 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/cassert>
 #include <cuda/std/source_location>
 
+#include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdio>
+#include <initializer_list>
+#include <iterator>
 #include <memory>
+#include <tuple>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+#ifdef UNITTESTED_FILE
+#  include <string>
+#endif // UNITTESTED_FILE
 
 namespace cuda::experimental::stf
 {

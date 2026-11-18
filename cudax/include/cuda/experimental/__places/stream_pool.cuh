@@ -19,6 +19,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__cstddef/types.h>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -35,7 +36,7 @@
 #include <vector>
 
 #include <cuda.h>
-#include <cuda_runtime.h>
+#include <cuda_runtime.h> // IWYU pragma: keep
 
 namespace cuda::experimental::places
 {

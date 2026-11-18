@@ -27,6 +27,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+
+#include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/experimental/__stf/internal/data_interface.cuh>
+#include <cuda/experimental/__stf/internal/instance_id.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/stream_data_interface.cuh>
 

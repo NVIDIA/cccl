@@ -27,15 +27,40 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/source_location>
+
+#include <cuda/experimental/__stf/graph/internal/event_types.cuh>
+#include <cuda/experimental/__stf/internal/async_prereq.cuh>
+#include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
+#include <cuda/experimental/__stf/internal/constants.cuh>
+#include <cuda/experimental/__stf/internal/data_interface.cuh>
+#include <cuda/experimental/__stf/internal/exec_affinity.cuh>
+#include <cuda/experimental/__stf/internal/task_dep.cuh>
+#include <cuda/experimental/__stf/internal/void_interface.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 #include <algorithm>
 #include <atomic>
+#include <cstdio>
+#include <cstdlib>
+#include <exception>
+#include <functional>
 #include <iostream>
+#include <map>
+#include <memory>
+#include <mutex>
 #include <shared_mutex>
 #include <stack>
 #include <stdexcept>
+#include <string>
 #include <thread>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include "cuda/experimental/__stf/allocators/adapters.cuh"
 #include "cuda/experimental/__stf/internal/context.cuh"

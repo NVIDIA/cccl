@@ -27,11 +27,22 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/array>
+#include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 
+#include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
+
+#include <array>
+#include <cstdio>
+#include <initializer_list>
+#include <string>
+#include <utility>
+
+#include <sys/types.h>
 
 namespace cuda::experimental::stf
 {

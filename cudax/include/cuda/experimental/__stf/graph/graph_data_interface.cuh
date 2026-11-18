@@ -26,9 +26,18 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/cassert>
+
 #include <cuda/experimental/__stf/graph/internal/event_types.cuh>
+#include <cuda/experimental/__stf/internal/async_prereq.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 #include <cuda/experimental/__stf/internal/data_interface.cuh>
+#include <cuda/experimental/__stf/internal/instance_id.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
+
+#include <tuple>
+#include <vector>
 
 namespace cuda::experimental::stf
 {

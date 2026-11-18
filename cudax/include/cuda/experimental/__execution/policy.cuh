@@ -24,8 +24,10 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__execution/policy.h>
+#include <cuda/std/__fwd/execution_policy.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_execution_policy.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 

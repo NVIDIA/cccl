@@ -26,10 +26,12 @@
 #  include <cuda/__functional/hash.h>
 #  include <cuda/__iterator/zip_iterator.h>
 #  include <cuda/__memory_pool/device_memory_pool.h>
+#  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/__atomic/scopes.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__functional/operations.h>
-#  include <cuda/std/__fwd/extents.h>
+#  include <cuda/std/__fwd/span.h>
 #  include <cuda/std/__memory/unique_ptr.h>
 #  include <cuda/std/__utility/pair.h>
 

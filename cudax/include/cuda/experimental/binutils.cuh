@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/experimental/__binutils/demangle.cuh>
+// IWYU pragma: end_exports
 
 #endif // _CUDAX_BINUTILS

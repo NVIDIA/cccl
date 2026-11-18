@@ -27,20 +27,25 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/cassert>
+
 #include <cuda/experimental/__places/exec/green_context.cuh>
 #include <cuda/experimental/__places/exec_place_resources.cuh>
+#include <cuda/experimental/__places/stream_pool.cuh>
 #include <cuda/experimental/__stf/internal/exec_affinity.cuh>
 #include <cuda/experimental/__stf/internal/executable_graph_cache.cuh>
 #include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
-#include <atomic>
+#include <memory>
 #include <mutex>
 #include <unordered_map>
-
-#include <cuda.h>
+#include <utility>
+#include <vector>
 
 namespace cuda::experimental::stf
 {

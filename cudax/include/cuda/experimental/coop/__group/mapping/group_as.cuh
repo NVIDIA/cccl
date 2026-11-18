@@ -23,6 +23,8 @@
 
 #include <cuda/__numeric/narrow.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__iterator/next.h>
 #include <cuda/std/__numeric/accumulate.h>
 #include <cuda/std/__ranges/access.h>

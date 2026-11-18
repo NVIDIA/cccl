@@ -38,7 +38,6 @@
 #include <cuda/experimental/coop/__group/fwd.cuh>
 #include <cuda/experimental/coop/__group/mapping/common.cuh>
 #include <cuda/experimental/coop/__group/mapping/mapping_result.cuh>
-#include <cuda/experimental/coop/__group/queries.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 

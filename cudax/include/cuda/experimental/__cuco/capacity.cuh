@@ -33,6 +33,8 @@
 #include <cuda/experimental/__cuco/detail/prime.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
 
+#include <stdexcept>
+
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental::cuco

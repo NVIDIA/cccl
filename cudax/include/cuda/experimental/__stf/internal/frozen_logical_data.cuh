@@ -26,7 +26,18 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cassert>
+
+#include <cuda/experimental/__stf/internal/async_prereq.cuh>
+#include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/experimental/__stf/internal/constants.cuh>
+#include <cuda/experimental/__stf/internal/dot.cuh>
 #include <cuda/experimental/__stf/internal/logical_data.cuh> // logical_data_untyped
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
+
+#include <memory>
+#include <utility>
 
 namespace cuda::experimental::stf
 {

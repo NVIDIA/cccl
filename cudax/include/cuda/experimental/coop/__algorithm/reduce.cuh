@@ -35,7 +35,6 @@
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -44,10 +43,8 @@
 
 #include <cuda/experimental/__utility/result_policy.cuh>
 #include <cuda/experimental/coop/__algorithm/shuffle_down.cuh>
-#include <cuda/experimental/coop/__group/concepts.cuh>
 #include <cuda/experimental/coop/__group/fwd.cuh>
 #include <cuda/experimental/coop/__group/group_view.cuh>
-#include <cuda/experimental/coop/__group/queries.cuh>
 #include <cuda/experimental/coop/__group/this_group.cuh>
 
 #include <nv/target>

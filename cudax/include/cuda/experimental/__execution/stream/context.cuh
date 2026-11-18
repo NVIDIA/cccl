@@ -26,7 +26,7 @@
 #include <cuda/__utility/immovable.h>
 
 #include <cuda/experimental/__execution/stream/scheduler.cuh>
-#include <cuda/experimental/stream.cuh>
+#include <cuda/experimental/__stream/stream_ref.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 

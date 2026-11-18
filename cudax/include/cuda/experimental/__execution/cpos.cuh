@@ -21,10 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__concepts/concept_macros.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
-#include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/transform_sender.cuh>
 

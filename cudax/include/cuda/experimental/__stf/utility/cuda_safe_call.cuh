@@ -40,6 +40,7 @@
 #include <cuda/experimental/__stf/utility/source_location.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <exception>
@@ -47,13 +48,13 @@
 
 #include <cuda.h>
 #include <cuda_occupancy.h>
-#include <cuda_runtime.h>
+#include <cuda_runtime.h> // IWYU pragma: keep
 
 #if __has_include(<cublas_v2.h>)
 #  include <cublas_v2.h>
 #endif
 #if __has_include(<cusolverDn.h>)
-#  include <cusolverDn.h>
+#  include <cusolverDn.h> // IWYU pragma: keep
 #endif
 
 namespace cuda::experimental::stf

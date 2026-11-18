@@ -24,20 +24,24 @@
 #if _CCCL_CTK_AT_LEAST(12, 2)
 
 #  include <cuda/__algorithm/common.h>
+#  include <cuda/__stream/invalid_stream.h>
 #  include <cuda/__stream/launch_transform.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__mdspan/mdspan.h>
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/span>
 
 #  include <cuda/experimental/__driver/driver_api.cuh>
-#  include <cuda/experimental/__graph/concepts.cuh>
 #  include <cuda/experimental/__graph/graph_node_ref.cuh>
 #  include <cuda/experimental/__graph/path_builder.cuh>
+
+#  include <cuda.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 

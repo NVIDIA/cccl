@@ -22,8 +22,10 @@
 #endif // no system header
 
 #include <cub/block/block_reduce.cuh>
+#include <cub/util_namespace.cuh>
 
 #include <cuda/__memory/uninitialized_array.h>
+#include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/construct_at.h>
@@ -36,7 +38,6 @@
 
 #include <cooperative_groups.h>
 
-#include <cooperative_groups/reduce.h>
 #include <cuda/std/__cccl/prologue.h>
 
 #if _CCCL_CUDA_COMPILATION()
