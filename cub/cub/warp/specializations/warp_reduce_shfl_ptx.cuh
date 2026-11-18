@@ -15,6 +15,7 @@
 
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -29,64 +30,68 @@ inline constexpr bool is_shfl_down_op_supported_v =
       || ::cuda::std::is_same_v<T, double>);
 
 // Use the predicate set by SHFL to guard against invalid peers.
-#define _CUB_SHFL_DOWN_OP_32BIT(OP, TYPE, PTX_TYPE, CONSTRAINT)                            \
-  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE TYPE shfl_down_##OP(                    \
-    const TYPE input, const int offset, const int shfl_c, const unsigned member_mask)      \
-  {                                                                                        \
-    TYPE output;                                                                           \
-    asm volatile(                                                                          \
-      "{"                                                                                  \
-      "  .reg ." PTX_TYPE " r0;"                                                           \
-      "  .reg .pred p;"                                                                    \
-      "  shfl.sync.down.b32 r0|p, %1, %2, %3, %5;"                                         \
-      "  @p " #OP "." PTX_TYPE " r0, r0, %4;"                                              \
-      "  mov." PTX_TYPE " %0, r0;"                                                         \
-      "}"                                                                                  \
-      : "=" CONSTRAINT(output)                                                             \
-      : CONSTRAINT(input), "r"(offset), "r"(shfl_c), CONSTRAINT(input), "r"(member_mask)); \
-    return output;                                                                         \
+#define _CUB_SHFL_DOWN_OP_32BIT(TYPE, PTX_TYPE, CONSTRAINT)                                                  \
+  template <typename ReductionOp>                                                                            \
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE TYPE shfl_down_op(                                        \
+    const TYPE input,                                                                                        \
+    const ReductionOp /*reduction_op*/,                                                                      \
+    const int offset,                                                                                        \
+    const int shfl_c,                                                                                        \
+    const ::cuda::std::uint32_t member_mask)                                                                 \
+  {                                                                                                          \
+    static_assert(is_shfl_down_op_supported_v<ReductionOp, TYPE>, "Unsupported shuffle reduction operator"); \
+    TYPE output;                                                                                             \
+    asm volatile(                                                                                            \
+      "{"                                                                                                    \
+      "  .reg ." PTX_TYPE " r0;"                                                                             \
+      "  .reg .pred p;"                                                                                      \
+      "  shfl.sync.down.b32 r0|p, %1, %2, %3, %5;"                                                           \
+      "  @p add." PTX_TYPE " r0, r0, %4;"                                                                    \
+      "  mov." PTX_TYPE " %0, r0;"                                                                           \
+      "}"                                                                                                    \
+      : "=" CONSTRAINT(output)                                                                               \
+      : CONSTRAINT(input), "r"(offset), "r"(shfl_c), CONSTRAINT(input), "r"(member_mask));                   \
+    return output;                                                                                           \
   }
 
-_CUB_SHFL_DOWN_OP_32BIT(add, unsigned, "u32", "r")
-_CUB_SHFL_DOWN_OP_32BIT(add, float, "f32", "f")
+_CUB_SHFL_DOWN_OP_32BIT(unsigned, "u32", "r")
+_CUB_SHFL_DOWN_OP_32BIT(float, "f32", "f")
 
 #undef _CUB_SHFL_DOWN_OP_32BIT
 
-#define _CUB_SHFL_DOWN_OP_64BIT(OP, TYPE, PTX_TYPE, CONSTRAINT)                       \
-  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE TYPE shfl_down_##OP(               \
-    const TYPE input, const int offset, const int shfl_c, const unsigned member_mask) \
-  {                                                                                   \
-    TYPE output;                                                                      \
-    asm volatile(                                                                     \
-      "{"                                                                             \
-      "  .reg .u32 lo;"                                                               \
-      "  .reg .u32 hi;"                                                               \
-      "  .reg .pred p;"                                                               \
-      "  .reg ." PTX_TYPE " r0;"                                                      \
-      "  mov.b64 %0, %1;"                                                             \
-      "  mov.b64 {lo, hi}, %1;"                                                       \
-      "  shfl.sync.down.b32 lo|p, lo, %2, %3, %4;"                                    \
-      "  shfl.sync.down.b32 hi|p, hi, %2, %3, %4;"                                    \
-      "  mov.b64 r0, {lo, hi};"                                                       \
-      "  @p " #OP "." PTX_TYPE " %0, %0, r0;"                                         \
-      "}"                                                                             \
-      : "=" CONSTRAINT(output)                                                        \
-      : CONSTRAINT(input), "r"(offset), "r"(shfl_c), "r"(member_mask));               \
-    return output;                                                                    \
+#define _CUB_SHFL_DOWN_OP_64BIT(TYPE, PTX_TYPE, CONSTRAINT)                                                  \
+  template <typename ReductionOp>                                                                            \
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE TYPE shfl_down_op(                                        \
+    const TYPE input,                                                                                        \
+    const ReductionOp /*reduction_op*/,                                                                      \
+    const int offset,                                                                                        \
+    const int shfl_c,                                                                                        \
+    const ::cuda::std::uint32_t member_mask)                                                                 \
+  {                                                                                                          \
+    static_assert(is_shfl_down_op_supported_v<ReductionOp, TYPE>, "Unsupported shuffle reduction operator"); \
+    TYPE output;                                                                                             \
+    asm volatile(                                                                                            \
+      "{"                                                                                                    \
+      "  .reg .u32 lo;"                                                                                      \
+      "  .reg .u32 hi;"                                                                                      \
+      "  .reg .pred p;"                                                                                      \
+      "  .reg ." PTX_TYPE " r0;"                                                                             \
+      "  mov.b64 %0, %1;"                                                                                    \
+      "  mov.b64 {lo, hi}, %1;"                                                                              \
+      "  shfl.sync.down.b32 lo|p, lo, %2, %3, %4;"                                                           \
+      "  shfl.sync.down.b32 hi|p, hi, %2, %3, %4;"                                                           \
+      "  mov.b64 r0, {lo, hi};"                                                                              \
+      "  @p add." PTX_TYPE " %0, %0, r0;"                                                                    \
+      "}"                                                                                                    \
+      : "=" CONSTRAINT(output)                                                                               \
+      : CONSTRAINT(input), "r"(offset), "r"(shfl_c), "r"(member_mask));                                      \
+    return output;                                                                                           \
   }
 
-_CUB_SHFL_DOWN_OP_64BIT(add, unsigned long long, "u64", "l")
-_CUB_SHFL_DOWN_OP_64BIT(add, long long, "s64", "l")
-_CUB_SHFL_DOWN_OP_64BIT(add, double, "f64", "d")
+_CUB_SHFL_DOWN_OP_64BIT(unsigned long long, "u64", "l")
+_CUB_SHFL_DOWN_OP_64BIT(long long, "s64", "l")
+_CUB_SHFL_DOWN_OP_64BIT(double, "f64", "d")
 
 #undef _CUB_SHFL_DOWN_OP_64BIT
-
-template <typename T, typename ReductionOp>
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T shfl_down_op(
-  const T input, const ReductionOp /*reduction_op*/, const int offset, const int shfl_c, const unsigned member_mask)
-{
-  static_assert(is_shfl_down_op_supported_v<ReductionOp, T>, "Unsupported shuffle reduction operator");
-  return _CUB::detail::shfl_down_add(input, offset, shfl_c, member_mask);
-}
 } // namespace detail
 CUB_NAMESPACE_END
