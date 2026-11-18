@@ -1626,8 +1626,10 @@ struct policy_selector_from_types
     using InputValueT  = it_value_t<InputIteratorT>;
     using OutputValueT = non_void_value_t<OutputIteratorT, AccumT>;
 
+    // output iterators without a value type (e.g. transform_output_iterator) never match the tuning benchmarks
+    constexpr bool output_has_value_type = ::cuda::std::is_same_v<OutputValueT, it_value_t<OutputIteratorT>>;
     constexpr bool benchmark_match =
-      benchmark_match_for_policy_selector<ScanOpT, InputValueT, OutputValueT, AccumT>::value;
+      output_has_value_type && benchmark_match_for_policy_selector<ScanOpT, InputValueT, OutputValueT, AccumT>::value;
 
     constexpr bool accum_is_primitive_or_trivially_copy_constructible =
       is_primitive<AccumT>::value || ::cuda::std::is_trivially_copy_constructible_v<AccumT>;
