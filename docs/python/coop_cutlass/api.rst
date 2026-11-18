@@ -122,12 +122,31 @@ Load & Store
 .. autofunction:: load
 .. autofunction:: store
 
+.. _coop-cutlass-reduce:
+
 Reduction
 ---------
 
+.. automodule:: cuda.coop.cutlass._group_reduce
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
+
 .. autofunction:: reduce
-.. autofunction:: reduce_batched
 .. autofunction:: sum
+
+.. _coop-cutlass-reduce-batched:
+
+.. automodule:: cuda.coop.cutlass._group_reduce_batched
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
+
+.. autofunction:: reduce_batched
 
 .. _coop-cutlass-scan:
 

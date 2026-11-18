@@ -30,7 +30,10 @@ Block prefix sums with scratch reuse and a nonzero initial value.
 reduce.py
 ---------
 
-Block and logical-warp reductions with defined leader results.
+The sum of every item in a block, the largest ``payload[0]`` in each group
+of eight lanes, and the sum of ``payload[0]`` over the first 23 threads.
+:ref:`Reduction <coop-cutlass-reduce>` in the API reference explains each
+call.
 
 `View reduce.py on GitHub
 <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/reduce.py>`_
@@ -85,7 +88,9 @@ Minimum keys and maximum pairs without assumptions about ties or order.
 reduce_batched.py
 -----------------
 
-Independent per-feature warp reductions and output placement.
+One sum for each feature across each warp.
+:ref:`Batched reduction <coop-cutlass-reduce-batched>` in the API reference
+explains which lane holds each sum.
 
 `View reduce_batched.py on GitHub
 <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/reduce_batched.py>`_

@@ -2,14 +2,60 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Adapt readable or register payloads for batched warp reduction.
+"""A batched reduction gives one result for each item of a lane's payload.
 
-Input slot i in every lane belongs to batch i. Check the group, normalize
-the built-in operator and output layout, and copy the input. Then require
-the enclosing block to hold only complete 32-thread warps and pass the call
-to the CUB lowering. Batch totals are spread across lanes, and some lanes
-may get none.
+Item ``b`` of every lane belongs to batch ``b``, and
+:func:`~cuda.coop.cutlass.reduce_batched` reduces each batch across the
+lanes of a warp or of a group of lanes. A payload of three items gives three
+results, where :func:`~cuda.coop.cutlass.reduce` gives one.
+
+.. figure:: visualizations/reduce-batched.svg
+   :alt: Four lanes hold three items each: 1, 2, 3 in lane 0, then 3, 4, 5,
+         then 5, 6, 7, then 7, 8, 9. The three batches sum to 16, 20 and
+         24. Lane 0 returns 16, lane 1 returns 20, lane 2 returns 24 and
+         lane 3 returns a question mark.
+   :width: 100%
+
+   Three batches over a group of four lanes. The sums are 16, 20 and 24.
+   Lanes 0, 1 and 2 each hold one of them, and lane 3 holds no result. The
+   picture calls the group a logical warp and an item a slot.
+
+Each result is in one lane. With ``B`` batches and ``W`` lanes, every lane
+gets a payload of ``ceil(B / W)`` items back, and ``output_layout`` sets
+which batches a lane holds. Ten batches over four lanes give three items
+per lane:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 28 18 18 18 18
+
+   * - ``output_layout``
+     - Lane 0
+     - Lane 1
+     - Lane 2
+     - Lane 3
+   * - ``"striped"`` (default)
+     - 0, 4, 8
+     - 1, 5, 9
+     - 2, 6, none
+     - 3, 7, none
+   * - ``"blocked"``
+     - 0, 1, 2
+     - 3, 4, 5
+     - 6, 7, 8
+     - 9, none, none
+
+An item marked "none" has no batch, and its value is undefined.
 """
+
+# Implementation notes.
+#
+# Adapt readable or register payloads for batched warp reduction. Input
+# slot i in every lane belongs to batch i. Check the group, normalize the
+# built-in operator and output layout, and copy the input. Then require the
+# enclosing block to hold only complete 32-thread warps and pass the call to
+# the CUB lowering. Batch totals are spread across lanes, and some lanes may
+# get none.
 
 from __future__ import annotations
 
@@ -49,63 +95,65 @@ def reduce_batched(
     | None = None,
     output_layout: Literal["striped", "blocked"] = "striped",
 ) -> ThreadData:
-    """Reduce each payload slot independently across a warp.
+    """Reduce each batch across the lanes of a warp or a group of lanes.
 
-    Each slot is an independent batch: slot ``b`` in every lane contributes
-    to batch ``b``. The input is preserved. Readable ``ThreadData``, CuTe
-    register tensors, and ``TensorSSA`` values are accepted through
-    ``ThreadData.from_payload``.
-
-    ``binary_op`` accepts the built-in strings and aliases documented by
-    :func:`cuda.coop.cutlass.reduce`. Custom callbacks are not supported.
-    ``output_layout`` is ``"striped"`` or ``"blocked"``. For ``B`` batches and
-    ``W`` lanes, the returned ``ThreadData`` contains ``ceil(B / W)`` slots per
-    lane. Only slots corresponding to a batch are defined. Guard reads using
-    the batch index.
-
-    The CUB provider exchanges register values within the participating warp.
-    It requires no shared scratch allocation or storage-reuse barrier. Logical
-    warps may call it independently, including from different branches.
+    Item ``b`` of every lane's payload is batch ``b``. Each batch is reduced
+    with ``binary_op``, and its result goes to one lane.
 
     Parameters
     ----------
     group : ThreadGroup
-        Complete physical warp or logical warp of 1, 2, 4, 8, 16, or 32 lanes.
-        All members of the selected group participate.
-    value : ThreadData or CuTe register payload
-        One input per independent batch in each lane. All lanes use the same
-        positive batch count and dtype: signed or unsigned 8-, 16-, 32-, or
-        64-bit integers, ``Float32``, or ``Float64``. The input is preserved.
-    binary_op : str or recognized built-in alias, optional
-        Reduction operator, default addition. Bitwise operators require
-        integer inputs. The operator must be associative and commutative.
-        Custom callbacks are not supported.
+        ``this_warp()``, or ``this_warp().group_by(n)`` with ``n`` of 1, 2,
+        4, 8, 16 or 32. Every lane of the group makes the call, including a
+        lane that receives no result. The other groups of lanes of the warp
+        can skip the call. The block's size must be a multiple of 32.
+    value : ThreadData, CuTe register tensor or TensorSSA
+        A payload of ``B`` items, one for each batch. A register tensor or
+        ``TensorSSA`` is read as a payload. An item has one of the ten
+        element types listed under :ref:`ThreadData <coop-thread-data>`.
+    binary_op : str or function, optional
+        The operator, sum by default. A Python value: a name or a function
+        from the table of operators under
+        :ref:`Reduction <coop-cutlass-reduce>`. The rules that
+        :func:`~cuda.coop.cutlass.reduce` gives for bitwise operators and
+        for NaN hold here too. The seven built-in operators are the only
+        ones this call takes, and a ``DeviceOperator`` is rejected when the
+        kernel is compiled.
     output_layout : {"striped", "blocked"}, optional
-        Result ownership, default striped. Striped slot ``i`` in lane ``t``
-        holds batch ``t + i * W``; blocked slot ``i`` holds batch
-        ``t * ceil(B / W) + i``. Read only indices below ``B``.
+        A Python string that sets which batch each item of the result
+        holds. ``W`` is the number of lanes in the group, and ``r`` is this
+        lane's rank in it. With ``"striped"``, the default, item ``i``
+        holds batch ``r + i * W``. With ``"blocked"``, item ``i`` holds
+        batch ``r * ceil(B / W) + i``. When ``B`` is at most ``W`` the two
+        are the same: lane ``r`` holds batch ``r``.
 
     Returns
     -------
-    ThreadData
-        Fresh payload with the input dtype and ``ceil(B / W)`` slots per lane.
-        Accumulation uses the input dtype without promotion.
-        Slots beyond the batch count are undefined.
+    cuda.coop.cutlass.ThreadData
+        A new payload of ``ceil(B / W)`` items, with the element type and
+        alignment of ``value``. An item whose batch number is below ``B``
+        holds that batch's result. Every other item is undefined, so test
+        the batch number before reading an item. The input keeps its
+        values.
 
     Notes
     -----
-    See the :doc:`Batched Warp Reduction visualization
-    </python/coop_cutlass/visualizations/reduce-batched>` for lane and result
-    ownership.
+    The lanes combine their values in registers. The call uses no scratch
+    and adds no barrier, so it takes no ``temp_storage``.
+
+    Integer results are computed in the element type.
+
+    See Also
+    --------
+    :cpp:struct:`cub::WarpReduceBatched`
+        The CUB class behind the call.
 
     Examples
     --------
-    Sum each per-thread slot independently within two physical warps.
-    Guard result reads by the batch index: lanes without a batch have no
-    defined result.
-
-    The launcher accepts device pointers and a compile-time
-    ``items_per_thread`` value.
+    Sum each batch over each of the two warps of a 64-thread block. The
+    layout is striped, so ``totals[item]`` in the lane with rank
+    ``warp.rank()`` is the sum of batch ``batch``. A lane stores it only
+    when ``batch`` is below ``items_per_thread``, the number of batches.
 
     `Full example and test on GitHub
     <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_reduce_batched_documentation.py>`__

@@ -58,11 +58,12 @@ Terms
       iteration. Comments refer to these alternatives as *phi inputs*.
 
    batch
-      One independent reduction in :func:`cuda.coop.cutlass.reduce_batched`. Each lane
-      contributes the value in the same local payload slot: slot ``j``
-      contributes to batch ``j``. A batch spans the selected warp, and its
-      result belongs to the lane and slot selected by the output layout. See
-      :doc:`batched reduction <visualizations/reduce-batched>`.
+      One of the reductions that :func:`cuda.coop.cutlass.reduce_batched`
+      makes in one call. Item ``b`` of every lane's payload belongs to batch
+      ``b``. A batch covers the lanes of the group, and ``output_layout`` sets
+      which lane holds its result. See
+      :ref:`Batched reduction <coop-cutlass-reduce-batched>` in the API
+      reference and the :doc:`explorer <visualizations/reduce-batched>`.
 
    bin
       A counter indexed by an input sample in :func:`cuda.coop.cutlass.histogram`.

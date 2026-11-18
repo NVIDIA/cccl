@@ -962,8 +962,11 @@ barriers for physical and logical Warp operations. They forbid shared memory
 and warp synchronization for storage-free algorithms. Transpose must use
 shared memory, except that the width-one test leaves allocation unconstrained.
 
-The final-cubin check in ``runtime/test_reduce.py`` confirms that the CUB Reduce routes leave no provider calls. It does not check shared
-memory, registers, or barriers.
+The final-cubin check in ``runtime/test_reduce.py`` covers a block sum with
+the default algorithm and with ``raking``. It rejects leftover provider
+symbols, ``CALL`` instructions and generic ``LD`` and ``ST`` accesses, and it
+requires shared-memory ``LDS`` and ``STS``. It does not check warp
+reductions, registers, or barriers.
 
 The final-cubin check in ``runtime/test_scan.py`` rejects provider calls for
 block and logical-Warp Scan, and block barriers for the logical-Warp path.
