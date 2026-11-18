@@ -6,33 +6,31 @@
 Histogram
 =========
 
-:func:`cuda.coop.cutlass.histogram` counts how many samples fall in each bin. Each
-sample is already an integer bin index; the operation does not divide a
-numeric range into intervals. It returns fresh counter payloads and
-preserves the input samples for both the atomic and sort algorithms.
+A histogram counts how many of a block's samples fall in each bin. Each
+sample is itself a bin index: a sample with value ``b`` adds one to bin
+``b``.
 
-The explorer uses eight teaching threads in one complete one-dimensional
-block. Change the sample distribution to see contention on a single bin,
-or change the bin count to see counters distributed across thread-local
-output slots. All input samples are valid bin indices.
+The explorer runs :func:`cuda.coop.cutlass.histogram` on one block of eight
+teaching threads. Change the samples to send most of them to one bin, or
+change the bin count to see which thread receives which counter. Every
+sample in the explorer is a valid bin index.
 
 .. coop-visualization:: histogram
 
    .. only:: html
 
       .. figure:: histogram.svg
-         :alt: Eight threads each contribute two samples to thirteen bins.
-               Counts in bin order are 2, 1, 1, 2, 1, 1, 2, 0, 1, 2, 1, 1, 1.
-               Each thread receives two striped counters; projected bins
-               thirteen through fifteen are padding with defined zero counts.
+         :alt: Eight threads hold two samples each. The counts of bins 0 to
+               12 are 2, 1, 1, 2, 1, 1, 2, 0, 1, 2, 1, 1, 1. Each thread
+               receives two counters in striped order, and the counters
+               that stand for bins 13 to 15 are zero.
          :width: 100%
 
          Thirteen bins, two samples and two counters per thread.
 
-   Input samples stay unchanged. The sum of all thirteen bin counts is
-   sixteen, the number of input samples. Each thread receives counters
-   for bins ``thread_rank`` and ``thread_rank + 8``. A dash below means
-   the projected bin is outside the requested range; its count is zero.
+   The thirteen counts add up to sixteen, the number of samples. Thread
+   ``t`` receives the counts of bins ``t`` and ``t + 8``. A dash marks a
+   bin index past the last bin, and the counter there is zero.
 
    .. code-block:: text
 
@@ -46,42 +44,32 @@ output slots. All input samples are valid bin indices.
 Reading the stages
 ------------------
 
-Each call first initializes its intermediate counters to zero. The atomic
-algorithm increments the counter indexed by each sample. If several
-threads target the same bin, atomic updates preserve all contributions.
-The explorer groups updates into rounds of one local slot per thread;
-actual GPU scheduling need not follow that order.
+Each call first sets its counters to zero. With ``atomic``, every thread
+then adds one to the counter that each of its samples names. The additions
+are atomic, so every sample is counted when several threads add to one bin.
+The explorer shows one round for each item, with one sample from every
+thread. On a GPU the additions can happen in any order.
 
-The sort algorithm groups equal sample indices, then computes bin counts
-from the lengths of their consecutive runs. The input-preserving wrapper
-makes a private copy before calling CUB because CUB's sort path changes its
-working samples. The original input row remains visible and unchanged.
-The illustration shows the sort-and-run-count idea, not the exact CUB
-instruction sequence or a performance comparison with atomics.
+With ``sort``, equal samples are sorted next to each other, and the length
+of each run of equal samples is that bin's count. The call copies the
+samples before it hands them to CUB, with either algorithm. The explorer
+draws the copy for ``sort``, where CUB reorders it, and the input row stays
+as it was.
 
-The result uses **striped bin ownership**: thread ``t`` receives bin
-``t + i * block_size`` in local slot ``i``. The output is displayed grouped
-by thread, so adjacent displayed counts need not refer to adjacent bins.
-Use ``coop.store(..., algorithm="striped")`` to write counters in bin order.
-The compile-time product ``block_size * bins_per_thread`` must cover all
-``bins``; slots projecting beyond ``bins`` contain defined zeros.
+The last stage shows the counters grouped by thread, the way the call
+returns them: thread ``t`` holds the counts of bins ``t``, ``t + 8`` and so
+on. :ref:`Histogram <coop-cutlass-histogram>` in the API reference has the
+rules for each argument and for the result.
 
-These extra output slots differ from input padding. Every input slot
-contributes a sample, so padding an incomplete input tile with zero would
-add unwanted counts to bin zero. Histogram has no ``valid_items`` argument.
-The examples and explorer use complete input tiles.
+Using Histogram in a kernel
+---------------------------
 
-Accumulating several tiles
---------------------------
+This tested kernel counts one tile on a block of 64 threads into 65 bins,
+with two ``int64`` counters per thread. The striped store writes 128
+counters: the 65 counts in bin order, then 63 zeros.
 
-The operation returns a fresh histogram on every call. To accumulate tiles,
-add corresponding returned counters in each thread. No parent object is
-needed: the accumulated state is the counter payload that the kernel owns.
-Choose a counter dtype wide enough for the total across all tiles.
-
-This example launches 64 threads with two striped counters per thread for
-65 bins. The first 65 output positions contain counts and the remaining
-counter slots are zero.
+`Full example and test on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_histogram.py>`__
 
 .. literalinclude:: ../../../../python/cuda_coop_cutlass/tests/runtime/test_histogram.py
    :language: python
@@ -89,8 +77,5 @@ counter slots are zero.
    :end-before: docs: end cutlass-histogram
    :dedent: 4
 
-Each call returns fresh counters and preserves its samples. For repeated
-tiles, accumulate returned counters into a separate payload using the same
-striped ownership. Choose a counter width that can represent the accumulated
-count. Padding samples contribute to bins, so a zero-padded input is not an
-ignored tail. See :ref:`the Programming Guide <coop-cutlass-histogram>`.
+:ref:`Histogram <coop-cutlass-histogram>` in the API reference covers both
+algorithms, counting several tiles and counting a partial tile.

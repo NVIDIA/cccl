@@ -254,8 +254,17 @@ Neighbor comparisons
 .. autofunction:: adjacent_difference
 .. autofunction:: discontinuity
 
+.. _coop-cutlass-histogram:
+
 Histogram
 ---------
+
+.. automodule:: cuda.coop.cutlass._group_histogram
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. autofunction:: histogram
 
