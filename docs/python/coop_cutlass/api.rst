@@ -166,10 +166,29 @@ Scan
 .. autofunction:: exclusive_scan
 .. autofunction:: inclusive_scan
 
+.. _coop-cutlass-exchange:
+
 Data rearrangement
 ------------------
 
+.. automodule:: cuda.coop.cutlass._group_exchange
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
+
 .. autofunction:: exchange
+
+.. _coop-cutlass-shuffle:
+
+.. automodule:: cuda.coop.cutlass._group_shuffle
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
+
 .. autofunction:: shuffle
 
 Comparison sorting

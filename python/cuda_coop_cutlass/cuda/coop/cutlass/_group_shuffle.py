@@ -2,12 +2,61 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Validate block Shuffle calls and adapt register payloads.
+"""``shuffle`` shifts a block's values along the order of its threads.
 
-Payload up/down shifts and scalar offset/rotate calls have different result
-ABIs. Planning checks the selected form and distance before the
-provider emits a call; register inputs are converted to ThreadData.
+Given a payload, it shifts the block's items by one position, across thread
+boundaries. Given one scalar per thread, it gives each thread the scalar of
+the thread ``distance`` ranks ahead of it.
+
+.. figure:: visualizations/shuffle-up.svg
+   :alt: Eight threads hold the values 0 to 15, two each. A line leads from
+         each of the values 0 to 14 to the next position in the row below.
+         That row holds a question mark and 0 in thread 0, 1 and 2 in
+         thread 1, and so on up to 13 and 14 in thread 7.
+   :width: 100%
+
+   ``shuffle`` with ``mode="up"`` on a block of eight threads with two
+   items each. Thread 1 holds 2 and 3 before the call and 1 and 2 after it.
+   The first item of thread 0 has no source and is undefined.
+
+In this table a block has ``G`` threads with ``K`` items each. Position
+``t * K + i`` is item ``i`` of the thread with rank ``t``:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 24 16 60
+
+   * - ``mode``
+     - ``value``
+     - What it does
+   * - ``"down"`` (default)
+     - Payload
+     - Position ``j`` receives the item from position ``j + 1``.
+   * - ``"up"``
+     - Payload
+     - Position ``j`` receives the item from position ``j - 1``.
+   * - ``"offset"``
+     - Scalar
+     - Rank ``t`` receives the scalar from rank ``t + distance``.
+   * - ``"rotate"``
+     - Scalar
+     - Rank ``t`` receives the scalar from rank ``(t + distance) % G``.
+
+``"rotate"`` wraps around the block. The other three modes stop at its
+ends, and a result with no source is undefined.
+
+``"down"`` and ``"up"`` follow the order in which the threads hold the
+items, whichever layout the payload has. On a :term:`blocked` payload they
+shift the :term:`tile` by one element.
 """
+
+# Implementation notes.
+#
+# Validate block Shuffle calls and adapt register payloads.
+#
+# Payload up/down shifts and scalar offset/rotate calls have different result
+# ABIs. Planning checks the selected form and distance before the
+# provider emits a call; register inputs are converted to ThreadData.
 
 from __future__ import annotations
 
@@ -45,66 +94,98 @@ def shuffle(
     mode: ArrayShuffleMode | ScalarShuffleMode = "down",
     distance: Literal[1] | IntegerValue = 1,
 ) -> ThreadData | _ItemT:
-    """Shift register payloads or select another block member's scalar.
+    """Shift a block's items one position, or pass scalars between threads.
 
-    Payload shifts follow flattened blocked order: each thread's items are
-    consecutive, and a shift crosses thread boundaries as needed. Scalar
-    offset and rotate calls select one other member's value.
+    The :ref:`table of modes <coop-cutlass-shuffle>` says what each mode
+    does.
 
     Parameters
     ----------
     group : ThreadGroup
-        Complete block whose members all call the primitive. Warp, mapped
-        groups, clusters, and grids are unsupported.
-    value : numeric scalar, ThreadData, CuTe register tensor, or TensorSSA
-        Fixed-size payloads may be ``ThreadData``, CuTe register tensors, or
-        ``TensorSSA`` values. The latter two are converted with
-        :meth:`cuda.coop.cutlass.ThreadData.from_payload`. For scalar offset or
-        rotate modes, each thread supplies one numeric scalar. All members
-        use the same dtype and extent. Supported dtypes are signed and
-        unsigned 8-, 16-, 32-, and 64-bit integers, ``Float32``, and
-        ``Float64``.
-    mode : str, optional
-        Compile-time mode, default ``"down"``. Payloads support only ``"up"``
-        and ``"down"``; the first or last item of the block tile, respectively,
-        is undefined. Up moves input ``i - 1`` to output ``i``; down moves
-        input ``i + 1`` to output ``i``. Scalars require ``"offset"`` or
-        ``"rotate"``: rank ``r``
-        receives the value from rank ``r + distance``. Offset results are
-        undefined when that source is outside the block; rotate wraps the
-        source rank modulo the block size.
-    distance : int or CuTe integer scalar, optional
-        Default ``1``. Payload shifts require a compile-time unit distance.
-        Scalar modes accept compile-time or runtime distances, which may
-        differ between threads. Offset distances must fit a signed 32-bit
-        integer and may be zero or negative. Rotate requires at least two
-        threads and ``1 <= distance < block_size``. A runtime distance may
-        have a signed integer dtype up to 64 bits or an unsigned integer dtype
-        up to 32 bits, but its value must remain in the mode's allowed range.
+        ``this_block()``. Any other group is rejected when the kernel is
+        compiled. Every thread of the block makes the call, on every trip
+        of a loop that contains it, including a thread that does not use
+        its result.
+    value : scalar, ThreadData, CuTe register tensor or TensorSSA
+        A payload for ``"down"`` and ``"up"``, or one scalar per thread for
+        ``"offset"`` and ``"rotate"``. A register tensor or ``TensorSSA``
+        is read as a payload, and so is a ``ThreadData`` of one item. A
+        scalar or an item has one of the ten element types listed under
+        :ref:`ThreadData <coop-thread-data>`.
+    mode : {"down", "up", "offset", "rotate"}, optional
+        A Python string. The default is ``"down"``, so a call that passes a
+        scalar names ``"offset"`` or ``"rotate"``. A scalar with ``"down"``
+        or ``"up"`` is rejected when the kernel is compiled, and so is a
+        payload with ``"offset"`` or ``"rotate"``.
+    distance : int or CuTe integer, optional
+        For ``"offset"`` and ``"rotate"``, how many ranks ahead of a thread
+        its source is. The default is 1. With a payload, leave ``distance``
+        at 1. Any other value, or a CuTe integer, is then rejected when the
+        kernel is compiled.
+
+        A Python or NumPy integer is fixed when the kernel is compiled. A
+        CuTe integer is read while the kernel runs, and each thread can
+        pass a different one. Its type is ``Int8`` to ``Int64`` or
+        ``Uint8`` to ``Uint32``, and another type is rejected when the
+        kernel is compiled.
+
+        ``"offset"`` takes any distance that fits a signed 32-bit integer,
+        zero and negative distances included. ``"rotate"`` takes 1 to
+        ``G - 1`` on a block of ``G`` threads, so it needs a block of at
+        least two threads. A Python distance outside the range is rejected
+        when the kernel is compiled, and a runtime distance outside it
+        traps on the device.
 
     Returns
     -------
-    CuTe numeric scalar or cuda.coop.cutlass.ThreadData
-        Scalar input produces a CuTe scalar with the input dtype. Payload
-        input produces a new writable ``ThreadData`` with the input dtype,
-        extent, and requested alignment. The input remains unchanged.
-        Observe the chosen mode's boundary rules before reading the result.
+    CuTe scalar or cuda.coop.cutlass.ThreadData
+        A payload gives a new payload with the same item count, element
+        type and alignment. A scalar gives a CuTe scalar of the same type.
+        The input keeps its values.
+
+        ``"rotate"`` gives every thread a defined result. ``"down"`` leaves
+        the last item of the thread with the highest rank undefined, and
+        ``"up"`` leaves item 0 of the thread with rank 0 undefined.
+        ``"offset"`` leaves the result undefined in a thread whose rank
+        plus ``distance`` lies outside the block. Assign an undefined item
+        of a payload before reading it, as the first example below does.
 
     Notes
     -----
-    Scratch allocation and trailing synchronization are automatic. Every
-    block member must call, including threads with out-of-range offset
-    sources. Warp and logical-warp groups are not supported.
+    Every mode uses scratch, one item for each thread of the block, and
+    ``shuffle`` takes no ``temp_storage``. The compiler provides the scratch
+    and a block barrier after the call.
+
+    CUB's ``Up`` can also give every thread the block's last item, and its
+    ``Down`` the block's first item. Those overloads have no counterpart
+    here.
 
     See Also
     --------
     :cpp:struct:`cub::BlockShuffle`
-        C++ shift, offset, and rotate primitive.
+        The CUB class behind the call.
 
     Examples
     --------
-    Rotate one scalar per thread by seven positions in a 64-thread block,
-    including wraparound.
+    Shift a payload down by one position. ``_BLOCK`` is ``(8, 4, 2)``, a
+    block of 64 threads, and ``_THREADS`` is 64. With three items per
+    thread and a ``source`` that counts from 0 to 191, thread 0 holds 0,
+    64, 128 in ``striped`` and 64, 128, 1 in ``shifted``. The last item of
+    thread 63 has no source, and the kernel assigns it before ``store``.
+
+    `Full example on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/exchange_shuffle.py>`__
+
+    .. literalinclude::
+        ../../../python/cuda_coop_cutlass/examples/exchange_shuffle.py
+        :language: python
+        :start-after: docs: start cutlass-exchange-shuffle
+        :end-before: docs: end cutlass-exchange-shuffle
+        :dedent: 4
+
+    Give each thread of a block of 64 the scalar of the thread seven ranks
+    ahead, wrapping around the block. Thread 0 receives the scalar of
+    thread 7, and thread 57 receives that of thread 0.
 
     `Full example and test on GitHub
     <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_collective_documentation.py>`__
