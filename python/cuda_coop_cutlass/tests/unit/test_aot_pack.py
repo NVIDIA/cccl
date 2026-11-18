@@ -4,9 +4,12 @@
 
 """Exercise pack publication, integrity checks, and exact lookup."""
 
+import errno
 import json
 import shutil
+from types import SimpleNamespace
 
+import cutlass
 import pytest
 
 from cuda.bindings import nvjitlink
@@ -28,7 +31,10 @@ def record(blob=_BLOB):
 
 @pytest.fixture
 def pack(tmp_path, monkeypatch):
-    monkeypatch.setattr(nvjitlink, "version", lambda: (13, 3))
+    monkeypatch.setattr(nvjitlink, "version", lambda: (13, 1))
+    monkeypatch.setattr(
+        cutlass, "CUDA_VERSION", SimpleNamespace(major=13, minor=3)
+    )
     path = tmp_path / "pack"
     with aot.capture(path, name="reductions"):
         record()
@@ -57,9 +63,12 @@ def test_relocated_pack_snapshots_bytes_and_layouts(pack, tmp_path):
     assert not _aot_pack.active()
 
 
-@pytest.mark.parametrize("consumer", [(13, 1), (14, 0)])
-def test_incompatible_nvjitlink_is_a_miss(monkeypatch, pack, consumer):
-    monkeypatch.setattr(nvjitlink, "version", lambda: consumer)
+@pytest.mark.parametrize("major, minor", [(13, 1), (14, 0)])
+def test_incompatible_cute_toolchain_is_a_miss(monkeypatch, pack, major, minor):
+    monkeypatch.setattr(nvjitlink, "version", lambda: _VERSION)
+    monkeypatch.setattr(
+        cutlass, "CUDA_VERSION", SimpleNamespace(major=major, minor=minor)
+    )
     with aot.use(pack, mode="auto"):
         assert _aot_pack.lookup(_KEY, _ARCH, tuple(_LAYOUTS)) is None
     with (
@@ -92,24 +101,55 @@ def test_failed_conflicting_and_empty_captures_leave_no_pack(tmp_path):
     assert not _aot_pack.active()
 
 
-def test_capture_preserves_directory_created_at_publication(
-    tmp_path, monkeypatch
-):
+def test_capture_preserves_directory_created_at_publication(tmp_path):
     destination = tmp_path / "new-pack"
-    publish = _aot_pack._publish
-
-    def race(staging, path):
-        path.mkdir()
-        publish(staging, path)
-
-    monkeypatch.setattr(_aot_pack, "_publish", race)
     with (
         pytest.raises(aot.CaptureError, match="already exists"),
         aot.capture(destination),
     ):
+        destination.mkdir()
         record()
     assert destination.is_dir()
     assert list(destination.iterdir()) == []
+
+
+@pytest.mark.parametrize("rename", ["unsupported", "overwrites"])
+def test_capture_checks_destination_filesystem_before_workload(
+    tmp_path, monkeypatch, rename
+):
+    def unsupported(source, target):
+        raise OSError(errno.EINVAL, "unsupported rename flag")
+
+    def overwrites(source, target):
+        if target.exists():
+            target.rmdir()
+        source.rename(target)
+
+    monkeypatch.setattr(
+        _aot_pack,
+        "_publish",
+        unsupported if rename == "unsupported" else overwrites,
+    )
+    destination = tmp_path / "new-parent" / "pack"
+    with (
+        pytest.raises(aot.CaptureError, match="atomic no-replace"),
+        aot.capture(destination),
+    ):
+        pytest.fail("capture ran the workload before checking publication")
+    assert list(destination.parent.iterdir()) == []
+
+
+def test_capture_use_and_inspect_accept_home_relative_paths(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    with aot.capture("~/pack"):
+        record()
+    with aot.use("~/pack") as selected:
+        assert (
+            selected == aot.inspect(tmp_path / "pack") == aot.inspect("~/pack")
+        )
 
 
 @pytest.mark.parametrize("corruption", ["artifact", "layout", "key", "digest"])
@@ -133,6 +173,9 @@ def test_pack_corruption_fails_closed_in_auto_mode(pack, corruption):
 
 def test_environment_selection_and_explicit_override(monkeypatch, pack):
     monkeypatch.setenv(_aot_pack.PACK_PATH_ENV, str(pack))
+    monkeypatch.setenv(_aot_pack.PACK_MODE_ENV, "  ")
+    assert _aot_pack.lookup(_KEY, _ARCH, tuple(_LAYOUTS))[0] == _BLOB
+    assert _aot_pack.lookup("b" * 64, _ARCH, ()) is None
     monkeypatch.setenv(_aot_pack.PACK_MODE_ENV, "required")
     assert _aot_pack.lookup(_KEY, _ARCH, tuple(_LAYOUTS))[0] == _BLOB
     with aot.use(pack, mode="off"):
@@ -149,15 +192,12 @@ def test_environment_selection_and_explicit_override(monkeypatch, pack):
         _aot_pack.active()
 
 
-def test_binding_error_is_a_pack_miss(monkeypatch, pack):
-    def unavailable():
-        raise nvjitlink.nvJitLinkError(1)
-
-    monkeypatch.setattr(nvjitlink, "version", unavailable)
+def test_missing_cute_toolchain_version_is_a_pack_miss(monkeypatch, pack):
+    monkeypatch.delattr(cutlass, "CUDA_VERSION")
     with aot.use(pack):
         assert _aot_pack.lookup(_KEY, _ARCH, tuple(_LAYOUTS)) is None
     with (
         aot.use(pack, mode="required"),
-        pytest.raises(aot.PackMissError, match="cannot query"),
+        pytest.raises(aot.PackMissError, match="cannot determine"),
     ):
         _aot_pack.lookup(_KEY, _ARCH, tuple(_LAYOUTS))

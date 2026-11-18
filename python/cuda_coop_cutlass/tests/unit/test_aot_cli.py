@@ -17,17 +17,24 @@ pytestmark = [pytest.mark.unit, pytest.mark.backend_cutlass]
 
 def test_run_module_receives_argv_and_can_import_sibling(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
+    if getattr(sys.flags, "safe_path", sys.flags.isolated):
+        monkeypatch.syspath_prepend(str(tmp_path))
+    extra = tmp_path / "extra"
+    extra.mkdir()
+    (extra / "aot_dependency.py").write_text("value = 'dependency'\n")
+    monkeypatch.syspath_prepend(str(extra))
     (tmp_path / "aot_sibling.py").write_text("value = 'sibling'\n")
     (tmp_path / "aot_workload.py").write_text(
         "from pathlib import Path\n"
-        "import sys, aot_sibling\n"
-        "Path(sys.argv[1]).write_text(aot_sibling.value)\n"
+        "import sys, aot_sibling, aot_dependency\n"
+        "value = aot_sibling.value + aot_dependency.value\n"
+        "Path(sys.argv[1]).write_text(value)\n"
         "raise SystemExit(0)\n"
     )
     result = tmp_path / "result"
     args = ["--", sys.executable, "-m", "aot_workload", str(result)]
     assert main(["run", "--mode", "off", "--pack", "unused", *args]) == 0
-    assert result.read_text() == "sibling"
+    assert result.read_text() == "siblingdependency"
 
 
 def test_failed_script_does_not_publish_pack(tmp_path):
@@ -85,3 +92,39 @@ def test_required_pack_reaches_child_and_restores_environment(
     assert error.value.code == 9
     assert os.environ[_aot_pack.PACK_PATH_ENV] == "previous"
     assert _aot_pack.PACK_MODE_ENV not in os.environ
+
+
+@pytest.mark.parametrize("isolated", [True, False])
+def test_launcher_import_path(tmp_path, isolated):
+    import subprocess
+
+    script = tmp_path / "workload.py"
+    script.write_text("import sys\nassert sys.path == sys.expected_path\n")
+    expected_path = sys.path.copy()
+    if not isolated:
+        expected_path[:1] = [str(tmp_path)]
+    setup = (
+        f"import sys; sys.path[:] = {sys.path!r}\n"
+        "from cuda.coop.cutlass._aot_cli import main\n"
+        f"sys.expected_path = {expected_path!r}\n"
+        "sys.exit(main())"
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            *(["-I"] if isolated else []),
+            "-c",
+            setup,
+            "run",
+            "--pack",
+            "unused",
+            "--mode",
+            "off",
+            "--",
+            sys.executable,
+            str(script),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr

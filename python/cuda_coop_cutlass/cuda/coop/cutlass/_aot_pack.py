@@ -10,6 +10,7 @@ import ctypes
 import errno
 import hashlib
 import json
+import logging
 import os
 import re
 import tempfile
@@ -82,6 +83,7 @@ _CAPTURE: ContextVar[tuple[int, _Entries] | None] = ContextVar(
 )
 _SCHEMA = 1
 _DIGEST = re.compile(r"[0-9a-f]{64}")
+_LOGGER = logging.getLogger(__name__)
 
 
 def _checksum(manifest: dict) -> str:
@@ -139,7 +141,7 @@ def _decode_entry(data: dict) -> EntryInfo:
 
 
 def _load(path: str | os.PathLike[str]) -> tuple[PackInfo, _Entries]:
-    root = Path(path)
+    root = Path(path).expanduser()
     try:
         manifest = json.loads(
             _read_file(root / "manifest.json"), object_pairs_hook=_unique_fields
@@ -196,7 +198,8 @@ def use(
 
     An exact hit supplies validated LTO-IR and layouts from an in-memory
     snapshot. On a miss, auto mode uses normal compilation and required mode
-    raises PackMissError. Off mode suspends any outer pack selection.
+    raises PackMissError. During trace finalization, CuTe raises DSLRuntimeError
+    with the pack error as its __cause__. Off mode suspends outer selection.
     """
     _validate_mode(mode)
     info = None
@@ -220,7 +223,7 @@ def _publish(source: Path, destination: Path) -> None:
     try:
         rename = ctypes.CDLL(None, use_errno=True).renameat2
     except AttributeError as exc:
-        raise CaptureError("AOT capture requires renameat2 on Linux") from exc
+        raise OSError(errno.ENOSYS, "renameat2 is unavailable") from exc
     rename.argtypes = (
         ctypes.c_int,
         ctypes.c_char_p,
@@ -233,6 +236,31 @@ def _publish(source: Path, destination: Path) -> None:
     if rename(-100, os.fsencode(source), -100, os.fsencode(destination), 1):
         error = ctypes.get_errno()
         raise OSError(error, os.strerror(error), destination)
+
+
+def _check_capture_output(path: Path) -> None:
+    if os.path.lexists(path):
+        raise CaptureError(f"AOT pack output already exists: {path}")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=path.parent) as temp:
+            source = Path(temp) / "source"
+            target = Path(temp) / "target"
+            source.mkdir()
+            _publish(source, target)
+            source.mkdir()
+            try:
+                _publish(source, target)
+            except FileExistsError:
+                return
+    except OSError as exc:
+        raise CaptureError(
+            f"Cannot publish a new AOT pack under {path.parent} "
+            f"with an atomic no-replace rename: {exc}"
+        ) from exc
+    raise CaptureError(
+        f"AOT capture requires atomic no-replace renames under {path.parent}"
+    )
 
 
 @contextmanager
@@ -249,8 +277,7 @@ def capture(
     if name is not None and not isinstance(name, str):
         raise TypeError("AOT pack name must be a string")
     path = Path(output).expanduser().absolute()
-    if os.path.lexists(path):
-        raise CaptureError(f"AOT pack output already exists: {path}")
+    _check_capture_output(path)
     entries: _Entries = {}
     owner = os.getpid()
     token = _CAPTURE.set((owner, entries))
@@ -267,7 +294,6 @@ def capture(
     manifest = asdict(info)
     manifest["sha256"] = _checksum(manifest)
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(dir=path.parent) as temp:
             staging = Path(temp) / "pack"
             staging.mkdir()
@@ -300,7 +326,7 @@ def _selection() -> tuple[str, _Entries] | None:
     selected = _SELECTION.get()
     if selected is not None:
         return None if selected[0] == "off" else selected
-    mode = os.environ.get(PACK_MODE_ENV, "auto").strip().lower()
+    mode = os.environ.get(PACK_MODE_ENV, "").strip().lower() or "auto"
     _validate_mode(mode)
     if mode == "off":
         return None
@@ -372,20 +398,25 @@ def lookup(
         if info.arch != arch or set(expressions) != layouts.keys():
             raise PackIntegrityError(f"Inconsistent metadata for bundle {key}")
         try:
-            from cuda.bindings import nvjitlink  # type: ignore[import-untyped]
+            from cutlass import CUDA_VERSION
 
-            major, minor = nvjitlink.version()
-        except Exception as exc:
-            # Import and library calls can fail with binding-specific errors.
-            reason = f"cannot query consumer nvJitLink: {exc}"
+            major, minor = CUDA_VERSION.major, CUDA_VERSION.minor
+        except (ImportError, AttributeError) as exc:
+            reason = f"cannot determine the CuTe toolchain version: {exc}"
         else:
             producer_major, producer_minor = info.producer_version
             if major == producer_major and minor >= producer_minor:
                 return blob, layouts, info.producer_version
             reason = (
                 f"producer NVRTC {producer_major}.{producer_minor} and "
-                f"consumer nvJitLink {major}.{minor} are incompatible"
+                f"consumer CuTe toolchain {major}.{minor} are incompatible"
             )
     if mode == "required":
         raise PackMissError(f"Required AOT bundle {key} ({arch}): {reason}")
+    _LOGGER.debug(
+        "AOT bundle %s (%s) missed (%s), using the provider cache or JIT",
+        key,
+        arch,
+        reason,
+    )
     return None

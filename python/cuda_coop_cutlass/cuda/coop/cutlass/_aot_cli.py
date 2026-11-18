@@ -18,10 +18,17 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Literal
 
+from cutlass.base_dsl.common import DSLRuntimeError
+
 from . import _aot_pack, aot
 
 
-def _run_workload(command: list[str], parser: argparse.ArgumentParser) -> None:
+def _run_workload(
+    command: list[str],
+    parser: argparse.ArgumentParser,
+    *,
+    from_command_line: bool,
+) -> None:
     if command[:1] == ["--"]:
         command = command[1:]
     if len(command) < 2:
@@ -48,8 +55,12 @@ def _run_workload(command: list[str], parser: argparse.ArgumentParser) -> None:
     previous_argv, previous_path = sys.argv, sys.path
     try:
         sys.argv = [target, *args[1:]]
-        entry_dir = Path.cwd() if is_module else Path(target).parent
-        sys.path = [str(entry_dir), *previous_path[1:]]
+        sys.path = previous_path.copy()
+        if not getattr(sys.flags, "safe_path", sys.flags.isolated):
+            if from_command_line:
+                del sys.path[:1]  # Replace the launcher's import directory.
+            entry_dir = Path.cwd() if is_module else Path(target).parent
+            sys.path.insert(0, str(entry_dir))
         if is_module:
             runpy.run_module(target, run_name="__main__", alter_sys=True)
         else:
@@ -123,12 +134,25 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         elif args.action == "capture":
             with aot.capture(args.output, name=args.name):
-                _run_workload(args.command, parser)
+                _run_workload(
+                    args.command, parser, from_command_line=argv is None
+                )
         else:
             with _use_pack(args.pack, args.mode):
-                _run_workload(args.command, parser)
-    except aot.PackError as error:
-        parser.error(str(error))
+                _run_workload(
+                    args.command, parser, from_command_line=argv is None
+                )
+    except (aot.PackError, DSLRuntimeError) as error:
+        # CuTe wraps errors from its trace-finalize hooks.
+        cause: BaseException | None = error
+        seen: set[int] = set()
+        while cause is not None and id(cause) not in seen:
+            if isinstance(cause, aot.PackError):
+                print(f"{parser.prog}: {cause}", file=sys.stderr)
+                return 1
+            seen.add(id(cause))
+            cause = cause.__cause__
+        raise
     return 0
 
 
