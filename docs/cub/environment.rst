@@ -240,6 +240,9 @@ execution and released on the same stream afterwards. When no memory resource is
 in the environment, CUB falls back to a stream-ordered ``cudaMallocAsync``/``cudaFreeAsync``
 allocator (see :ref:`Default behavior <cub-environment-fallback>`).
 
+The two-phase APIs ignore any memory resource in the environment, since the caller provides the
+temporary storage.
+
 .. TODO: Add Guarantees sub-section after #9278 is merged.
 
 .. _cub-env-memory-resource-precondition:
