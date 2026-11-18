@@ -2,14 +2,63 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Expose CUTLASS Merge Sort entry points for keys and key/value pairs.
+"""A merge sort puts the keys held by a group's threads in order.
 
-``cuda.coop.cutlass.merge_sort_keys`` and ``merge_sort_pairs`` accept readable
-ThreadData payloads and CuTe register tensors or TensorSSA values. Snapshot
-readable ThreadData or adapt register inputs before lowering. Both sorts
-return fresh ThreadData without changing the inputs, so read-only inputs
-work. Key/value pairs keep independent dtypes and matching extents.
+``merge_sort_keys`` sorts the keys. ``merge_sort_pairs`` also carries a
+value with each key, such as the position the key came from. Both return
+new payloads and leave their inputs unchanged. The sorted keys go back to
+the threads in :term:`blocked` order: with two items per thread, the thread
+with rank 0 gets the first two keys, the thread with rank 1 the next two,
+and so on.
+
+.. figure:: visualizations/merge-sort.svg
+   :alt: Eight threads hold two keys each, from 7 and 12 in thread 0 to 13
+         and 2 in thread 7, and a letter from A to P marks each key. One
+         row sorts each thread's two keys, and two rows merge the runs of
+         two and of four threads. In the last row the keys run from 0 and
+         1 in thread 0 to 14 and 15 in thread 7, each with its letter.
+   :width: 100%
+
+   ``merge_sort_pairs`` over one block of eight threads with two items
+   each. The value of each key is its position in the tile, drawn as a
+   letter from A for 0 to P for 15. Key 0 starts in thread 2 at position 5
+   and ends in thread 0, still with F.
+
+Each group sorts its own :term:`tile`. ``this_block()`` sorts the items of
+the whole block, ``this_warp()`` those of one warp, and
+``this_warp().group_by(n)`` those of ``n`` neighboring lanes. The package
+has no primitive that merges sorted tiles, so a kernel that sorts every
+block of a grid leaves the array as a whole unsorted.
+
+Both functions take these controls:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 20 50
+
+   * - Control
+     - Groups
+     - What it does
+   * - ``descending``
+     - All
+     - Sorts from the largest key to the smallest.
+   * - ``valid_items`` with ``oob_default``
+     - All
+     - Sorts only the first ``valid_items`` items of the tile.
+   * - ``temp_storage``
+     - Blocks
+     - Puts the call's scratch in a :ref:`TempStorage <coop-temp-storage>`.
 """
+
+# Implementation notes.
+#
+# Expose CUTLASS Merge Sort entry points for keys and key/value pairs.
+#
+# ``cuda.coop.cutlass.merge_sort_keys`` and ``merge_sort_pairs`` accept
+# readable ThreadData payloads and CuTe register tensors or TensorSSA values.
+# Snapshot readable ThreadData or adapt register inputs before lowering. Both
+# sorts return fresh ThreadData without changing the inputs, so read-only
+# inputs work. Key/value pairs keep independent dtypes and matching extents.
 
 from __future__ import annotations
 
@@ -127,68 +176,132 @@ def merge_sort_keys(
     oob_default: NumericScalar | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadData:
-    """Sort keys across a block or warp without changing the input.
-
-    Accepts readable ThreadData and CuTe register payloads. Each thread
-    contributes the same fixed number of
-    items in blocked order, and all members of the group must participate.
+    """Sort a group's keys into ascending or descending order.
 
     Parameters
     ----------
     group : ThreadGroup
-        ``this_block()``, ``this_warp()``, or
-        ``this_warp().group_by(width)``. Blocks require a power-of-two total
-        thread count and may be multidimensional. Logical warp widths are
-        1, 2, 4, 8, 16, and 32; their enclosing physical warps must be complete.
-    keys : ThreadData or CuTe register payload
-        Per-thread keys in blocked order, with a positive, compile-time extent.
-        Read-only payloads are accepted. CuTe register-memory tensors and
-        ``TensorSSA`` values are converted through
-        :meth:`ThreadData.from_payload
-        <cuda.coop.cutlass.ThreadData.from_payload>`. Supported element types
-        are signed and unsigned 8-, 16-, 32-, and 64-bit integers, ``Float32``,
-        and ``Float64``.
+        ``this_block()``, ``this_warp()``, or ``this_warp().group_by(n)``
+        with ``n`` of 1, 2, 4, 8, 16 or 32. ``group_by(1)`` sorts each
+        thread's own items. ``this_block()`` needs a block size that is a
+        power of two, such as ``block=64`` or ``block=(8, 4, 2)``. A warp
+        or a group of lanes needs a block size that is a multiple of 32.
+
+        Every thread of the group makes the call, including a thread whose
+        items are all at or past ``valid_items``. A whole warp or group of
+        lanes can skip the call while the others make it.
+    keys : ThreadData, CuTe register tensor or TensorSSA
+        This thread's keys, with the same item count in every thread. A key
+        has one of the ten element types listed under
+        :ref:`ThreadData <coop-thread-data>`.
+
+        A register tensor or ``TensorSSA`` is read as a payload, and the
+        result is a ``ThreadData`` that ``to_register_tensor`` or
+        ``to_tensor_ssa`` converts back. An object of your own that has
+        ``items_per_thread``, ``dtype``, ``len()`` and integer indexing is
+        read as a payload too. With one key per thread, pass a payload of
+        one item, such as the one ``load`` returns with
+        ``items_per_thread=1``. A scalar such as ``keys[0]`` is rejected
+        when the kernel is compiled, and so is a tensor in global or shared
+        memory.
     descending : bool, optional
-        Compile-time order selector. The default is ascending order.
-        Custom comparison predicates are not supported.
-    valid_items : integer, optional
-        Group-uniform count in ``[0, group_size * items_per_thread]``.
-        Only this blocked input prefix participates in the sort. Supply
-        ``oob_default`` together with this argument for a partial tile.
-        Runtime counts accept signed integer types up to 64 bits or unsigned
-        integer types up to 32 bits. Invalid static counts fail compilation;
-        invalid runtime counts trap before conversion to CUB's count type.
+        A Python ``bool``. ``False``, the default, sorts from the smallest
+        key to the largest. ``True`` sorts from the largest to the smallest.
+    valid_items : int or CuTe integer, optional
+        The number of items that take part in the sort: those at the first
+        ``valid_items`` positions of the group's tile. Positions are in
+        :term:`blocked` order, so with four items per thread
+        ``valid_items=6`` covers the thread with rank 0 and the first two
+        items of the thread with rank 1. The count ranges from 0 to the
+        size of the tile, which is the group's size times the item count.
+        The default, ``None``, sorts the whole tile. Pass ``valid_items``
+        and ``oob_default`` together, or leave both out.
+
+        The items at or past the count are left out of the sort. They still
+        need a value, as every item of a payload does.
+
+        A Python or NumPy integer is fixed when the kernel is compiled, and
+        one out of range is rejected then. A CuTe integer, such as a kernel
+        argument declared ``cutlass.Int64``, is read while the kernel runs,
+        and one out of range traps on the device. Its type is ``Int8`` to
+        ``Int64`` or ``Uint8`` to ``Uint32``. Every thread of the group
+        passes the same count.
     oob_default : scalar, optional
-        Group-uniform sentinel that sorts after valid keys: an upper bound
-        for ascending order or a lower bound for descending order. A runtime
-        CuTe scalar must match the key type exactly. Representable Python
-        numeric literals are converted to the key type.
+        A bound on the keys that take part: an upper bound for an ascending
+        sort, a lower bound for a descending sort. A key that takes part
+        can be equal to it. Every thread of the group passes the same
+        value.
+
+        A Python integer or float must be within the range of the key
+        type. A Python float needs a ``Float32`` or ``Float64`` key type,
+        and it can also be an infinity. A NumPy or CuTe scalar must have
+        the key type, and a CuTe scalar can be computed while the kernel
+        runs. NaN is rejected when it is a Python or NumPy value. A CuTe
+        value is used as it is, so keep NaN out of it.
     temp_storage : TempStorage, optional
-        Explicit block scratch. Omit it for automatic allocation. Warp groups
-        always use automatic storage with independent slices per group.
-        If the descriptor has ``auto_sync=False``, synchronize the block
-        before reusing its storage.
+        For blocks. Every call reserves scratch in shared memory. Leave
+        this out and the compiler provides the scratch and a barrier after
+        the call. Pass a :ref:`TempStorage <coop-temp-storage>` to share
+        the bytes with other calls. A barrier then follows the call only if
+        the ``TempStorage`` was created with ``auto_sync=True``.
+
+        Warps and groups of lanes take ``None``. Each of those groups has
+        scratch of its own, and a warp barrier for its lanes follows the
+        call.
 
     Returns
     -------
-    ThreadData
-        Fresh sorted keys with the input element type and per-thread extent,
-        including when the input is a CuTe register payload. Output is blocked:
-        thread ``t`` owns sorted positions ``t * items_per_thread + i``.
-        Only the first ``valid_items`` positions are defined for a partial
-        tile. Equal keys have no stability guarantee.
+    cuda.coop.cutlass.ThreadData
+        This thread's part of the sorted tile, as a new payload with the
+        element type, item count and alignment of ``keys``. ``keys`` keeps
+        its values. With ``K`` items per thread, the thread whose
+        ``group.rank()`` is ``r`` holds sorted positions ``r * K`` to
+        ``r * K + K - 1``, so rank 0 holds the first keys.
+
+        With ``valid_items``, the sorted keys fill the first
+        ``valid_items`` positions. The positions after them hold
+        unspecified values, which can differ from ``oob_default``. Pass
+        the same count as ``valid_items`` to
+        :func:`~cuda.coop.cutlass.store` on the same group, so that it
+        writes the sorted keys only.
+
+    Notes
+    -----
+    Keys are compared with the element type's own less-than or
+    greater-than. Keys that compare equal come out in an unspecified order.
+    With ``Float32`` or ``Float64`` keys, a NaN among the keys that take
+    part leaves the whole result unspecified, the other keys included.
+
+    CUB's comparison functor and ``StableSort`` have no counterpart here.
+    ``descending`` is the only choice of order.
 
     See Also
     --------
-    cuda.coop.cutlass.merge_sort_pairs
+    :cpp:struct:`cub::BlockMergeSort`, :cpp:struct:`cub::WarpMergeSort`
+        The CUB classes behind the call.
 
     Examples
     --------
-    Sort a partial tile in ascending order and its key/index pairs in
-    descending order. Stores write only the valid output prefix.
+    ``sort_groups`` sorts each group of eight lanes by itself. A group
+    holds 16 keys, two in each lane. Each run of 16 keys in ``destination``
+    is then in ascending order, and the next run starts again from its own
+    smallest key.
 
-    The launcher accepts device pointers and a compile-time
-    ``items_per_thread`` value.
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_merge_sort_documentation.py>`__
+
+    .. literalinclude::
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_merge_sort_documentation.py
+        :language: python
+        :start-after: # cutlass-merge-sort-groups-example-begin
+        :end-before: # cutlass-merge-sort-groups-example-end
+        :dedent: 4
+
+    ``sort_prefix`` leaves the last three positions of a block's tile out
+    of the sort. ``ordered`` holds the other keys in ascending order in its
+    first ``valid_items`` positions, and ``store`` writes those positions
+    only. The test's keys lie between -15 and 15, so ``oob_default=1000``
+    sorts after all of them.
 
     `Full example and test on GitHub
     <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_merge_sort_documentation.py>`__
@@ -226,58 +339,47 @@ def merge_sort_pairs(
     oob_default: NumericScalar | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> tuple[ThreadData, ThreadData]:
-    """Sort keys and their associated values without changing either input.
+    """Sort a group's keys and move each key's value with it.
 
-    Accepts readable ThreadData and CuTe register payloads for either operand.
-    Group participation and ordering
-    follow :func:`cuda.coop.cutlass.merge_sort_keys`.
+    The same as :func:`~cuda.coop.cutlass.merge_sort_keys` with a second
+    payload, ``values``. The other parameters are described there.
 
     Parameters
     ----------
-    group : ThreadGroup
-        Complete block, physical warp, or supported logical warp. Block
-        thread counts must be powers of two; enclosing physical warps must
-        be complete for warp operations.
-    keys, values : ThreadData or CuTe register payload
-        Fixed-size per-thread payloads with equal extents, in blocked order.
-        Either operand may be read-only or use a CuTe register representation.
-        Key and value types are independent: signed and unsigned 8-, 16-,
-        32-, and 64-bit integers, ``Float32``, and ``Float64`` are supported.
-    descending : bool, optional
-        Compile-time order selector. The default is ascending key order.
-        Custom comparison predicates are not supported.
-    valid_items : integer, optional
-        Group-uniform length of the valid blocked input prefix, from zero
-        through the group tile size. Supply it together with ``oob_default``.
-        Count types and runtime checks match ``merge_sort_keys``.
-    oob_default : scalar, optional
-        Key sentinel that sorts after valid keys. Runtime CuTe scalars must
-        have the key type; representable Python literals are converted to it.
-    temp_storage : TempStorage, optional
-        Explicit scratch for block groups only. Warp storage is automatic.
-        Retain automatic synchronization or synchronize before scratch reuse.
+    values : ThreadData, CuTe register tensor or TensorSSA
+        This thread's values, one for each key: item ``i`` of ``values``
+        belongs to item ``i`` of ``keys``, and the two have the same item
+        count. A value has one of the ten element types listed under
+        :ref:`ThreadData <coop-thread-data>`, and its type can differ from
+        the key type. ``values`` takes every form that ``keys`` takes, and
+        the two can have different forms, such as a ``ThreadData`` and a
+        register tensor.
 
     Returns
     -------
-    tuple[ThreadData, ThreadData]
-        Fresh sorted keys and corresponding values, each retaining its own
-        input element type and extent. CuTe register inputs also return
-        ``ThreadData``. Only the valid blocked prefix is defined for a partial
-        tile. Key/value associations are preserved; equal keys have no
-        stability guarantee.
+    tuple of cuda.coop.cutlass.ThreadData
+        ``(sorted_keys, sorted_values)``, two new payloads. The keys are
+        placed as ``merge_sort_keys`` places them, and each value is at the
+        position of its key. Each payload has the element type, item count
+        and alignment of its input. ``keys`` and ``values`` stay unchanged.
+
+        When keys compare equal, their values can come out in any order.
+        With ``valid_items``, the positions after the first ``valid_items``
+        hold unspecified values in both payloads.
 
     See Also
     --------
-    cuda.coop.cutlass.merge_sort_keys
+    :cpp:struct:`cub::BlockMergeSort`, :cpp:struct:`cub::WarpMergeSort`
+        The CUB classes behind the call.
 
     Examples
     --------
-    Carry original indices through a descending partial-tile sort.
-    The ascending keys-only call uses the same automatically synchronized
-    scratch descriptor.
-
-    The launcher accepts device pointers and a compile-time
-    ``items_per_thread`` value.
+    ``sort_prefix`` gives each key its position in the tile as its value.
+    ``pair_keys`` holds the first ``valid_items`` keys of the tile in
+    descending order, and ``pair_indices`` holds the position each of them
+    came from. The sort is descending, so ``oob_default=-1000`` lies below
+    the test's keys, which run from -15 to 15. Both sorts share
+    ``scratch``.
 
     `Full example and test on GitHub
     <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_merge_sort_documentation.py>`__

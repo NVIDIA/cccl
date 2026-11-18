@@ -154,62 +154,6 @@ and the enclosing kernel are linked together. Existing group, scratch, and
 synchronization rules still apply. Runtime captures, Scan prefix callbacks,
 and operators returning tuples or structures are unsupported.
 
-.. _coop-cutlass-merge-sort:
-
-Built-in Merge Sort
--------------------
-
-``merge_sort_keys(group, keys, ...)`` sorts a group's tile in ascending
-order; ``descending=True`` reverses the order. ``merge_sort_pairs(group,
-keys, values, ...)`` carries each value with its key. Both inputs and
-results use blocked layout. These primitives preserve their inputs and
-return fresh ``ThreadData`` payloads with the same dtypes and item counts;
-the pairs spelling returns ``(sorted_keys, sorted_values)``. Equal keys have
-no stability guarantee.
-
-Keys and values use fixed, equal per-thread extents and may have different
-numeric dtypes: signed or unsigned 8-, 16-, 32-, or 64-bit integers, or
-32- or 64-bit floats. Readable payloads do not need mutable item access.
-Floating keys must obey a strict weak ordering; NaN ordering is not defined.
-The API additionally accepts CuTe register tensors and immutable
-register values, including mixed ``ThreadData`` and register-tensor pairs.
-Results remain ``ThreadData``. Custom comparison callbacks are unsupported.
-
-Block Merge Sort requires a power-of-two total thread count; multidimensional
-blocks are supported. Physical warps and logical widths 1, 2, 4, 8, 16, and
-32 require complete enclosing physical warps. Every member of a participating
-group must call the primitive with uniform controls. The sort applies to each
-group independently, rather than to the entire array.
-
-For a partial tile, provide both ``valid_items`` and ``oob_default``.
-The valid prefix contains between zero and the tile capacity, counting items
-in blocked order. The sentinel must sort after valid keys: use an upper bound
-for ascending order or a lower bound for descending order. Only the first
-``valid_items`` output positions are defined. All group members participate,
-including those with no valid items.
-
-The count may be a runtime signed integer up to 64 bits or unsigned integer
-up to 32 bits. Counts outside the tile range are rejected before narrowing.
-A typed sentinel must match the key dtype exactly. For ordinary Python
-literals, integer keys require integers within the key dtype's range.
-Floating keys accept integer or floating literals within range, and allow
-infinite bounds. A Python or NumPy NaN sentinel is rejected. CuTe values are
-not checked for NaN; callers must supply a valid bound. ``descending`` is a
-compile-time Boolean. Counts and sentinels must be uniform within each group.
-
-Block sorts accept a :ref:`TempStorage <coop-temp-storage>`. Warp sorts
-manage independent scratch per group and reject explicit storage. The example below reuses one descriptor for an
-ascending key sort and a descending pair sort, then stores the original
-payloads to verify that they remain unchanged. It checks key order and
-key/value association against independent CPU references.
-`View the Merge Sort example on GitHub
-<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/merge_sort.py>`_:
-
-.. literalinclude:: ../../../python/cuda_coop_cutlass/examples/merge_sort.py
-   :language: python
-   :start-after: docs: start cutlass-merge-sort
-   :end-before: docs: end cutlass-merge-sort
-
 .. _coop-cutlass-radix:
 
 Radix Sort and Rank
