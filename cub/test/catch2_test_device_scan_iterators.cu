@@ -9,6 +9,7 @@
 #include <cuda/iterator>
 #include <cuda/std/limits>
 
+#include <algorithm>
 #include <cstdint>
 
 #include "catch2_test_device_reduce.cuh"
@@ -191,6 +192,51 @@ CUB_TEST("Device scan works with iterators", "[scan][device]", CUB_SMALL, iterat
       REQUIRE(expected_result == out_result);
     }
   }
+}
+
+// cuda::transform_output_iterator has a void value type
+struct times_two_op
+{
+  __host__ __device__ int operator()(int x) const
+  {
+    return x * 2;
+  }
+};
+
+CUB_TEST("Device scan works with transform_output_iterator", "[scan][device]", CUB_SMALL)
+{
+  constexpr int num_items = 20000;
+
+  auto in_it = cuda::constant_iterator(1);
+
+  c2h::device_vector<int> out_result(num_items, thrust::no_init);
+  auto out_it = cuda::make_transform_output_iterator(thrust::raw_pointer_cast(out_result.data()), times_two_op{});
+
+  c2h::host_vector<int> expected_result(num_items, thrust::no_init);
+
+  SECTION("inclusive sum")
+  {
+    compute_inclusive_scan_reference(in_it, in_it + num_items, expected_result.begin(), cuda::std::plus<>{}, 0);
+    device_inclusive_sum(in_it, out_it, num_items);
+  }
+
+  SECTION("exclusive sum")
+  {
+    compute_exclusive_scan_reference(in_it, in_it + num_items, expected_result.begin(), 0, cuda::std::plus<>{});
+    device_exclusive_sum(in_it, out_it, num_items);
+  }
+
+  SECTION("exclusive scan")
+  {
+    constexpr int init = 5;
+    compute_exclusive_scan_reference(in_it, in_it + num_items, expected_result.begin(), init, cuda::std::plus<>{});
+    device_exclusive_scan(in_it, out_it, cuda::std::plus<>{}, init, num_items);
+  }
+
+  // the output iterator doubles every result
+  std::transform(expected_result.begin(), expected_result.end(), expected_result.begin(), times_two_op{});
+
+  REQUIRE(expected_result == out_result);
 }
 
 class custom_input_t
