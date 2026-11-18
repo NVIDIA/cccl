@@ -13,9 +13,9 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/binary_search.h>
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/function.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/detail/type_traits.h>
 #include <thrust/for_each.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
@@ -24,6 +24,7 @@
 
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail

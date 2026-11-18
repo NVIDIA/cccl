@@ -21,6 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+#if _CCCL_HAS_BUILTIN(__is_complete_type)
+#  define _CCCL_BUILTIN_IS_COMPLETE_TYPE(...) __is_complete_type(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__is_complete_type)
+
 #ifndef _CCCL_BUILTIN_IS_COMPLETE_TYPE
 #  include <cuda/std/__type_traits/void_t.h>
 #endif // _CCCL_BUILTIN_IS_COMPLETE_TYPE

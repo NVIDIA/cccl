@@ -15,7 +15,6 @@
 
 #include <thrust/count.h>
 #include <thrust/detail/execution_policy.h>
-#include <thrust/detail/internal_functional.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/count.h>
