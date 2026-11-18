@@ -9,11 +9,11 @@
 Programming Guide
 =================
 
-This guide starts with a complete program and explains its parts. The later
-sections cover families of primitives. :ref:`Reduction <coop-cutlass-reduce>`
-and :ref:`Scan <coop-cutlass-scan>` in the API reference cover reductions and
-scans. :doc:`concepts` introduces the ideas the
-families share, and the :doc:`API reference <api>` has every signature.
+This guide starts with a complete program and explains its parts. It then
+runs that program on more than one block, shows how primitives reach the
+values of CuTe tensors, lists the operations, and ends with how to check and
+tune a kernel. :doc:`concepts` introduces the ideas the primitives share,
+and the :doc:`API reference <api>` documents every primitive.
 
 .. _coop-cutlass-load-store:
 
@@ -60,149 +60,191 @@ The first call to ``launch`` compiles the kernel.
 :ref:`Checking and tuning a kernel <coop-cutlass-checking>` shows how to
 compile once and launch many times.
 
-.. _coop-cutlass-storage:
+.. _coop-cutlass-blocks:
 
-Block scratch and reuse
------------------------
+More than one block
+-------------------
 
-Primitives that need scratch space in shared memory get it from the compiler,
-or from a ``TempStorage`` that you pass. :ref:`TempStorage <coop-temp-storage>` in
-the API reference covers layouts, barriers, ``reserve`` and ``release``.
+This kernel runs the scan of the first program on a grid of blocks, where
+each block computes the running sum of its own :term:`tile`:
 
-The following example transforms eight tiles in a loop with one
-``TempStorage``. Each trip around the loop reuses the same bytes. Its
-``run_example`` function also accepts ``sharing="exclusive"``, and
-``manual_sync=True`` replaces the automatic barriers with ``storage.sync()``
-calls.
-`View the storage example on GitHub
-<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/block_storage.py>`_:
+`Full example and test on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py>`__
 
-.. literalinclude:: ../../../python/cuda_coop_cutlass/examples/block_storage.py
+.. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_concepts_documentation.py
    :language: python
-   :start-after: docs: start cutlass-block-storage
-   :end-before: docs: end cutlass-block-storage
+   :start-after: # cutlass-concept-blocks-begin
+   :end-before: # cutlass-concept-blocks-end
 
-Typed workspaces for native CuTe code
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Each block is a group of its own. Its :term:`ranks <rank>` start at 0, and
+its scan starts again with its first item. ``load`` and ``store`` never add
+the block index, so blocks that pass the same ``offset`` work on the same
+tile. This kernel passes an ``offset`` computed from
+``cute.arch.block_idx()``: the block's index along x, times the
+``128 * items_per_thread`` elements of one tile.
 
-:meth:`TempStorage.reserve <cuda.coop.cutlass.TempStorage.reserve>` returns
-an ordinary one-dimensional CuTe shared tensor from a ``TempStorage`` region,
-so native CuTe code and cooperative primitives can take turns with the same
-bytes. Its API entry has the rules.
+The test launches the kernel with ``grid=3``, ``block=128`` and four items
+per thread. The three blocks work on elements 0 to 511, 512 to 1,023 and
+1,024 to 1,535. :ref:`Thread groups <coop-thread-groups>` in the API
+reference has the rules that hold for every group.
 
-A reserved tensor with a supported Load/Store dtype can also serve as the
-shared source or Store destination in the
-:ref:`staging example <coop-shared-load-store>`. Keep live
-staging data separate from scratch that an operation may overwrite. Direct
-and striped Load/Store need no scratch. A transpose Load or Store needs
-scratch of its own while it reads or writes that live tensor.
+.. _coop-cutlass-cute-tensors:
 
-The following example passes a reserved tensor to native CuTe code, reuses its
-bytes for a cooperative reduction, and checks that a separate native shared
-array retains its values. `View the workspace example on GitHub
-<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/shared_workspace.py>`_:
+Working with CuTe tensors
+-------------------------
 
-.. literalinclude:: ../../../python/cuda_coop_cutlass/examples/shared_workspace.py
-   :language: python
-   :start-after: docs: start cutlass-shared-workspace
-   :end-before: docs: end cutlass-shared-workspace
+Where a tensor keeps its values decides how a primitive reaches them:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 45 55
+
+   * - The values are in
+     - A primitive reaches them through
+   * - Global or shared memory, behind a CuTe pointer or tensor
+     - :func:`~cuda.coop.cutlass.load` and
+       :func:`~cuda.coop.cutlass.store`
+   * - A CuTe register tensor, made with ``cute.make_rmem_tensor``
+     - :meth:`~cuda.coop.cutlass.ThreadData.from_register_tensor` and
+       :meth:`~cuda.coop.cutlass.ThreadData.to_register_tensor`
+   * - A ``TensorSSA``, such as the result of ``tensor.load()``
+     - :meth:`~cuda.coop.cutlass.ThreadData.from_vector` and
+       :meth:`~cuda.coop.cutlass.ThreadData.to_tensor_ssa`
+
+``load`` takes its source, and ``store`` its destination, as a CuTe pointer
+or as a tensor whose shape and strides are Python values and form a compact
+layout. ``cute.make_tensor(pointer, cute.make_layout(n))`` is such a tensor.
+So are a shared tensor from CuTe's ``SmemAllocator`` and a tensor from
+:meth:`TempStorage.reserve <cuda.coop.cutlass.TempStorage.reserve>`. A
+register tensor is rejected there when the kernel is compiled. The entry
+for :func:`~cuda.coop.cutlass.load` lists every form and says when the size
+of the memory is checked.
+
+Values that are already in registers become a payload through the
+conversions of :ref:`ThreadData <coop-thread-data>`. Each conversion copies.
+
+:doc:`Advanced topics <advanced>` covers kernels that run native CuTe code
+next to the primitives:
+:ref:`staging a tile in shared memory <coop-shared-load-store>` with a
+native CuTe copy,
+:ref:`typed workspaces <coop-cutlass-typed-workspaces>` that native code and
+primitives use in turn, and
+:ref:`register loads that another object owns <coop-cutlass-producer-interop>`.
+
+.. _coop-cutlass-operations:
+
+Operations
+----------
+
+The API reference has one section for each family of primitives, and the
+visualization pages draw what the primitives do:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 30 32 18
+
+   * - Family
+     - Functions
+     - What it does
+     - Visualization
+   * - :ref:`Load & Store <memory-operations>`
+     - :func:`~cuda.coop.cutlass.load`,
+       :func:`~cuda.coop.cutlass.store`
+     - Moves a group's tile between memory and registers.
+     - :doc:`Load <visualizations/load>`,
+       :doc:`Store <visualizations/store>`
+   * - :ref:`Reduction <coop-cutlass-reduce>`
+     - :func:`~cuda.coop.cutlass.reduce`,
+       :func:`~cuda.coop.cutlass.sum`,
+       :func:`~cuda.coop.cutlass.reduce_batched`
+     - Combines the values of a group's threads into one result.
+       ``reduce_batched`` gives one result for each item of a lane's
+       payload.
+     - :doc:`Reduce <visualizations/reduce>`,
+       :doc:`Batched Warp Reduction <visualizations/reduce-batched>`
+   * - :ref:`Scan <coop-cutlass-scan>`
+     - :func:`~cuda.coop.cutlass.scan`,
+       :func:`~cuda.coop.cutlass.exclusive_sum`,
+       :func:`~cuda.coop.cutlass.inclusive_sum`,
+       :func:`~cuda.coop.cutlass.exclusive_scan`,
+       :func:`~cuda.coop.cutlass.inclusive_scan`
+     - Gives each item the running result of the items before it.
+     - :doc:`Scan <visualizations/scan>`
+   * - :ref:`Data rearrangement <coop-cutlass-exchange>`
+     - :func:`~cuda.coop.cutlass.exchange`,
+       :func:`~cuda.coop.cutlass.shuffle`
+     - Moves values between the threads of a group.
+     - :doc:`Exchange <visualizations/exchange>`,
+       :doc:`Shuffle <visualizations/shuffle>`
+   * - :ref:`Comparison sorting <coop-cutlass-merge-sort>`
+     - :func:`~cuda.coop.cutlass.merge_sort_keys`,
+       :func:`~cuda.coop.cutlass.merge_sort_pairs`
+     - Puts the keys held by a group's threads in order.
+     - :doc:`Merge Sort <visualizations/merge-sort>`
+   * - :ref:`Radix sorting and ranking <coop-cutlass-radix>`
+     - :func:`~cuda.coop.cutlass.radix_sort_keys`,
+       :func:`~cuda.coop.cutlass.radix_sort_pairs`,
+       :func:`~cuda.coop.cutlass.radix_rank_keys`
+     - Orders a block's keys by their bits, one digit at a time, or ranks
+       them by one digit.
+     - :doc:`Radix Sort and Rank <visualizations/radix>`
+   * - :ref:`Top-k selection <coop-cutlass-topk>`
+     - :func:`~cuda.coop.cutlass.topk_min_keys`,
+       :func:`~cuda.coop.cutlass.topk_max_keys`,
+       :func:`~cuda.coop.cutlass.topk_min_pairs`,
+       :func:`~cuda.coop.cutlass.topk_max_pairs`
+     - Selects the smallest or largest keys of a block's tile.
+     - :doc:`TopK <visualizations/topk>`
+   * - :ref:`Neighbor comparisons <coop-cutlass-neighbors>`
+     - :func:`~cuda.coop.cutlass.adjacent_difference`,
+       :func:`~cuda.coop.cutlass.discontinuity`
+     - Compares each item of a block's tile with its neighbor.
+     - :doc:`Adjacent Difference <visualizations/adjacent-difference>`,
+       :doc:`Discontinuity <visualizations/discontinuity>`
+   * - :ref:`Histogram <coop-cutlass-histogram>`
+     - :func:`~cuda.coop.cutlass.histogram`
+     - Counts how many of a block's samples fall in each bin.
+     - :doc:`Histogram <visualizations/histogram>`
+   * - :ref:`Run Length Decode <coop-cutlass-run-length>`
+     - :func:`~cuda.coop.cutlass.run_length_decode`,
+       :func:`~cuda.coop.cutlass.run_length_decode_into`
+     - Repeats each run's value as many times as its length.
+     - :doc:`Run Length Decode <visualizations/run-length-decode>`
+   * - :ref:`Compiled device operators <coop-cutlass-device-operators>`
+     - :func:`~cuda.coop.cutlass.compile_operator`
+     - Lets ``reduce`` and the scans combine values with a function you
+       write.
+     -
 
 .. _coop-cutlass-checking:
 
 Checking and tuning a kernel
 ----------------------------
 
-Check values and ownership against a CPU reference before timing a kernel.
-Include partial tiles, nonzero offsets, multiple warp groups, and repeated
-scratch reuse when those cases occur in the application. For operations with
-undefined tails or nonleader results, compare only the defined outputs.
+Check a kernel's results against a reference computed on the host before you
+time it. Check which thread holds each value as well as the values. Cover
+the cases your application uses: a partial tile, an offset other than zero,
+more than one warp or group of lanes, and scratch that is reused. Compare
+only the results that a primitive defines. Each entry in the API reference
+says which threads and which items those are.
 
-Compile before timing and synchronize the measured work. ``cute.compile``
-returns a callable you can retain for repeated launches; the
-:ref:`debugger walkthrough <cuda.coop.cutlass.debugger_walkthrough>` shows
-compilation followed by two executions. The first compilation includes
-provider generation, NVRTC, and device linking.
+Keep compilation out of the time you measure. ``cute.compile`` takes the
+``@cute.jit`` function that launches the kernel and returns a callable that
+you keep and call for each launch. The
+:ref:`debugger walkthrough <cuda.coop.cutlass.debugger_walkthrough>`
+compiles once and launches twice. The first compilation generates the C++
+behind the kernel's primitives, compiles it with NVRTC and links it into the
+kernel. Synchronize after the launches you measure and before you read the
+clock, as the examples do with ``driver.cuCtxSynchronize()``.
 
-To inspect generated C++, set ``CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR`` before compilation.
-Use the final linked cubin to assess inlining, barriers, shared memory, and
-register use. A provider's source or intermediate PTX does not establish what
-remains in the kernel. Use Compute Sanitizer race checking when changing
-scratch reuse or synchronization.
+To read the generated C++, set ``CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR`` before
+the kernel is compiled. :doc:`configuration` describes the variable. Judge
+inlining, barriers, shared memory and register use from the final linked
+cubin. The link can still inline the code of a primitive into the kernel, so
+the generated source and the PTX from before the link show an earlier stage.
+Run Compute Sanitizer's race check after you change how a kernel reuses
+scratch or where it synchronizes.
 
-More items per thread can increase register use, and more scratch can reduce
-the number of blocks resident on a multiprocessor. Check the compiled kernel's
-resource usage as well as its run time.
-
-.. _coop-shared-load-store:
-
-Shared-memory staging
----------------------
-
-Load accepts compact global- or shared-memory sources, including native CuTe
-shared tensors and typed tensors from ``TempStorage.reserve``. Store accepts
-the corresponding memory destinations. Load infers its dtype from a shared
-tensor just as it does from a global-memory source.
-
-Use native CuTe copies when staging a global tile in shared memory. Partition
-the source and destination with the same thread/value mapping, issue the
-copy, and synchronize before another thread consumes the shared tile.
-Then ``coop.load(block, shared, items_per_thread=N)`` returns a fresh
-payload. Select its algorithm according to the ownership required by the
-next operation; a striped reload changes which thread owns each item.
-
-A predicated native copy leaves masked-out destinations unchanged. Initialize
-invalid slots when the application needs a default value. Without a default,
-do not read values outside the valid prefix. Source and destination must have
-compatible element types, sufficient capacity, and nonoverlapping storage.
-The copy atom and view alignment must satisfy the selected native operation.
-Asynchronous copies also require their own completion protocol before the
-consumer's synchronization.
-
-.. literalinclude:: ../../../python/cuda_coop_cutlass/examples/shared_staging.py
-   :language: python
-   :start-after: docs: start cutlass-native-shared-staging
-   :end-before: docs: end cutlass-native-shared-staging
-
-Store-to-shared is also supported: Load into ``ThreadData``, Store into a
-native shared tensor or reserved workspace, then synchronize before another
-thread reads those writes. Application shared storage must remain disjoint
-from scratch that a concurrent primitive can overwrite.
-
-.. _coop-cutlass-producer-interop:
-
-Producer-owned register loads
------------------------------
-
-``ThreadData.load(source)`` adapts a producer that explicitly provides the
-``__cuda_coop_thread_data_load__`` tracing hook. The producer chooses the
-copy atom and thread partition, ensures that its source is ready, and owns
-its lifetime. A producer can use that hook for a tensor-memory-to-register
-copy when its application supplies the required mapping and synchronization.
-
-Each call invokes the hook exactly once during tracing and propagates the
-producer's exception. A single-use producer must reject subsequent calls
-itself. Capability detection requires a declared hook; a dynamic
-``__getattr__`` fallback does not establish that capability. The hook must
-return ``ThreadData`` or a statically sized per-thread register payload
-accepted by ``from_payload``. Optional ``items_per_thread`` and ``dtype``
-constrain the adapted result; a supplied item count is validated before the
-hook runs. Invalid result diagnostics identify the source and result types.
-
-``ThreadDataLoadSource`` describes the producer hook.
-``ThreadDataTensorMetadata`` describes static ``shape`` and ``dtype``
-properties. ``ThreadDataSource`` combines the two protocols. These protocols
-make the boundary explicit; they do not select a device copy or wait for
-asynchronous work on the producer's behalf.
-
-``values.to_tensor_ssa(like=source)`` supplies omitted shape and dtype from
-that metadata. Explicit arguments take precedence. Shapes must be positive,
-fully static, and contain exactly the payload's item count. Conversion
-preserves flat per-thread item order, and the default shape is
-``(items_per_thread,)``. It does not recover an input fragment's original
-shape or reconstruct distributed MMA ownership from that shape.
-
-A bare TMEM tensor does not carry the copy atom, partition, readiness, and
-lifetime contract needed for this adaptation. Supply an explicit producer
-capability and qualify its copy and synchronization on suitable hardware.
-Register conversions do not promise zero-copy behavior or the absence of
-local-memory spills; inspect the final kernel for those properties.
+More items per thread can raise register use, and more scratch can lower the
+number of blocks that fit on a multiprocessor at the same time. Look at the
+compiled kernel's resource use as well as its run time.

@@ -86,17 +86,15 @@ draws them for the digits that occur.
 In the Radix Sort view, each pass ranks a working copy of the keys by one
 digit and moves the keys to those ranks. In a pair sort, each value moves
 with its key. The passes start at ``begin_bit`` and move up four bits at a
-time. The last pass is narrower when the range is not a multiple of four
-bits. Keys with equal digits keep their order in every pass, so a later
-pass keeps the order of the earlier passes among the keys that are equal in
-its own digit. In descending order, each pass puts the largest digit first
-and still keeps tied keys in their order.
-
-The four bits per pass are fixed. The stages follow the keys from thread to
-thread and leave out CUB's instructions and scratch.
+time. The sort functions have no argument for that width. The last pass is
+narrower when the range is not a multiple of four bits. Keys with equal
+digits keep their order in every pass, so a later pass keeps the order of
+the earlier passes among the keys that are equal in its own digit. In
+descending order, each pass puts the largest digit first and still keeps
+tied keys in their order.
 
 With striped output, the last pass returns sorted position ``p`` to thread
-``p % T``, item ``p // T``, on a block of ``T`` threads. The passes before
+``p % G``, item ``p // G``, on a block of ``G`` threads. The passes before
 it use blocked order.
 
 Bit ranges

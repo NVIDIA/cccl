@@ -28,8 +28,9 @@ three:
 
    The three groups of the kernel above, on its block of 128 threads.
 
-The group selects the CUB class that runs. Five families work on a block or
-a warp, one on warps only, and the rest on blocks only:
+The group selects the CUB class that runs. The primitives in the first five
+rows take a block or a warp, ``reduce_batched`` takes a warp only, and the
+rest take a block only:
 
 .. list-table::
    :header-rows: 1

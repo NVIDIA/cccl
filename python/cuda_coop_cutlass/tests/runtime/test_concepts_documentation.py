@@ -274,6 +274,28 @@ def sum_of_squares_from_fn(
         output[0] = total
 
 
+# More than one block. Each block is a group of its own and works on its
+# own tile, so the kernel gives Load and Store a per-block offset.
+
+
+# cutlass-concept-blocks-begin
+@cute.kernel
+def prefix_sum_per_block(
+    source: cute.Pointer,
+    destination: cute.Pointer,
+    items_per_thread: cutlass.Constexpr,
+):
+    block = coop.this_block()
+    # A block of 128 threads owns 128 * items_per_thread elements.
+    offset = cute.arch.block_idx()[0] * 128 * items_per_thread
+    values = coop.load(
+        block, source, items_per_thread=items_per_thread, offset=offset
+    )
+    sums = coop.inclusive_sum(block, values)
+    coop.store(block, destination, sums, offset=offset)
+    # cutlass-concept-blocks-end
+
+
 def _check_prefix_sum(kernel):
     """Launch ``kernel`` on one block of 128 threads and check its sums.
 
@@ -417,3 +439,23 @@ def test_thread_data_concept(kernel):
     with device_array(values) as src, device_array(observed) as dst:
         launch(src, dst, 4)
     assert observed[0] == (values * values).sum(dtype=np.int32)
+
+
+def test_blocks_concept():
+    """Check that each of three blocks scans its own tile and no other."""
+
+    @cute.jit
+    def launch(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel = prefix_sum_per_block(source, destination, items_per_thread)
+        kernel.launch(grid=3, block=128)
+
+    values = (np.arange(3 * 128 * 4, dtype=np.int32) * 13) % 31 - 15
+    observed = np.full_like(values, -101)
+    with device_array(values) as src, device_array(observed) as dst:
+        launch(src, dst, 4)
+    expected = values.reshape(3, 512).cumsum(axis=1, dtype=np.int32)
+    np.testing.assert_array_equal(observed, expected.reshape(-1))

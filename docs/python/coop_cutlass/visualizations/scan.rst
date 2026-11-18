@@ -16,7 +16,7 @@ The explorer covers :func:`cuda.coop.cutlass.exclusive_sum`,
 :func:`cuda.coop.cutlass.inclusive_scan`. :func:`cuda.coop.cutlass.scan` also exposes these
 semantics through its ``mode`` and ``scan_op`` arguments. The eight teaching
 threads represent one block, two four-lane physical warps, or four two-lane
-logical warps. **Physical CUDA warps have 32 lanes.**
+logical warps.
 
 .. coop-visualization:: scan
 

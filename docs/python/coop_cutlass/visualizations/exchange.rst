@@ -41,10 +41,9 @@ input and in the result.
 
 ``blocked_to_warp_striped`` stripes the items inside each warp, and
 ``warp_striped_to_blocked`` turns that layout back into a blocked one. The
-explorer draws warps of four lanes so that two fit on screen. **A CUDA warp
-has 32 lanes.** With two warps and two or four items per thread, the
-warp-striped layout differs from the striped layout, which is striped across
-the whole block.
+explorer draws warps of four lanes so that two fit on screen. With two
+warps and two or four items per thread, the warp-striped layout differs from
+the striped layout, which is striped across the whole block.
 
 For the scatter modes the explorer starts from a blocked input and uses
 ``rank[p] = (5 * p) % N`` on a tile of ``N`` items, which sends every item
