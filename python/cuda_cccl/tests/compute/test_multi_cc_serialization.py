@@ -159,7 +159,7 @@ def test_clone_returns_independent_wrappers_sharing_loaded_code():
         assert bound.d_out_cccl is not portable.d_out_cccl
         assert bound.op_cccl is not portable.op_cccl
     assert first.d_in_cccl is not second.d_in_cccl
-    first.d_in_cccl.bind_pointer_state(0x2000, None)
+    first.d_in_cccl.bind_pointer_state(0x2000)
     assert second.d_in_cccl.state == 0
     assert source.load_count == 1
     assert source.serialize_count == 0
@@ -175,7 +175,7 @@ def test_clone_none_is_unbound_without_device_access(monkeypatch, bound):
     if bound:
         original = original._clone(device_id=0, cc=80)
     original_binding = original._bound_build_result
-    original.d_in_cccl.bind_pointer_state(0x2000, None)
+    original.d_in_cccl.bind_pointer_state(0x2000)
     load_count = source.load_count
 
     def unexpected_device_access(*args, **kwargs):
