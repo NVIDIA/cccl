@@ -59,59 +59,6 @@ The first call to ``launch`` compiles the kernel.
 :ref:`Checking and tuning a kernel <coop-cutlass-checking>` shows how to
 compile once and launch many times.
 
-Block algorithms
-----------------
-
-Block Load and Store support one-, two-, and three-dimensional blocks.
-``offset`` selects the beginning of the block's tile and ``valid_items``
-specifies the number of valid items in that tile. Load may fill its
-out-of-bounds items with ``oob_default``. Without that default, items beyond
-``valid_items`` have unspecified values after Load, even if you initialized
-them before the call. Supply ``oob_default`` or write those items after Load
-before you read them. All threads in the block must call the primitive with
-uniform controls.
-
-The six block algorithms use these register layouts. For linear thread rank
-``t``, item index ``i``, block size ``B``, and ``I`` items per thread, blocked
-layout accesses tile index ``t * I + i``; striped layout accesses
-``t + i * B``.
-
-.. list-table:: Block Load and Store algorithms
-   :header-rows: 1
-
-   * - ``algorithm``
-     - Register layout
-     - Shared scratch
-   * - ``direct``
-     - Blocked
-     - None
-   * - ``striped``
-     - Striped
-     - None
-   * - ``vectorize``
-     - Blocked
-     - None
-   * - ``transpose``
-     - Blocked
-     - Required
-   * - ``warp_transpose``
-     - Blocked
-     - Required
-   * - ``warp_transpose_timesliced``
-     - Blocked
-     - Required
-
-The two warp-transpose block algorithms require a block size divisible by 32.
-``vectorize`` uses vector accesses when the type, item count, and address
-alignment permit them, with direct accesses as a fallback.
-
-Direct, striped, and vectorized Load/Store use no shared scratch and need no
-scratch-reuse barrier, even when passed a ``TempStorage`` descriptor.
-Returning Load's ``alignment=...`` and
-``ThreadData(items_per_thread, alignment=...)`` request a minimum payload
-alignment; neither changes the logical item layout or guarantees vectorized
-memory accesses.
-
 .. _coop-cutlass-storage:
 
 Block scratch and reuse
@@ -158,78 +105,6 @@ array retains its values. `View the workspace example on GitHub
    :language: python
    :start-after: docs: start cutlass-shared-workspace
    :end-before: docs: end cutlass-shared-workspace
-
-Physical Warp Load and Store
-----------------------------
-
-``this_warp()`` selects the calling thread's complete 32-lane warp. The block
-size must be divisible by 32, and all lanes in each participating warp must
-call the primitive with uniform controls. Different warps may use different
-``valid_items``, ``oob_default``, and ``offset`` values.
-
-The four warp algorithms use the same layouts as their block counterparts:
-``direct`` and ``vectorize`` use blocked layout without scratch, ``striped``
-uses striped layout without scratch, and ``transpose`` uses blocked layout
-with independent scratch for each warp. Transpose scratch is allocated
-implicitly, with automatic warp synchronization for reuse. Explicit
-``temp_storage`` is rejected for every warp algorithm.
-
-Each warp addresses a consecutive tile within the block. For ``I`` items per
-thread and linear thread rank ``t``, the compiler adds
-``(t // 32) * 32 * I`` to the user-provided ``offset``. The linear rank flattens
-the exact block dimensions in CUDA order: ``x + block_x * (y + block_y * z)``.
-Do not add the within-block warp origin yourself. An offset for a different
-block or a later loop iteration remains the caller's responsibility.
-
-``valid_items`` counts the valid prefix of each warp's tile, from zero through
-``32 * I``. As with Block Load, payload items outside that prefix are
-unspecified unless ``oob_default`` is supplied, even if initialized before
-Load. Store writes only the valid prefix and may rearrange its input payload
-when using a transpose algorithm.
-
-This example uses two physical warps in an ``(8, 4, 2)`` block and checks the
-independent partial tiles against a CPU reference.
-`View the Warp example on GitHub
-<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/warp_load_store.py>`_:
-
-.. literalinclude:: ../../../python/cuda_coop_cutlass/examples/warp_load_store.py
-   :language: python
-   :start-after: docs: start cutlass-warp-load-store
-   :end-before: docs: end cutlass-warp-load-store
-
-Logical Warp Load and Store
----------------------------
-
-``this_warp().group_by(width)`` partitions each physical warp into consecutive
-groups of 1, 2, 4, 8, 16, or 32 threads. The width and ``exhaustive`` flag must
-be compile-time constants; the default exhaustive partition covers the whole
-physical warp. The enclosing block must still contain complete 32-lane warps.
-All four Warp Load and Store algorithms support these logical groups.
-
-Each logical group receives its own tile and, for ``transpose``, independent
-implicit scratch. With group width ``W``, linear block rank ``t``, and ``I``
-items per thread, the compiler adds ``(t // W) * W * I`` to ``offset``.
-Blocked layout uses tile index ``(t % W) * I + i``; striped layout uses
-``(t % W) + i * W``. ``valid_items`` describes a prefix of at most ``W * I``
-items. Default filling and unspecified invalid items follow the same rules
-as physical Warp Load.
-
-Every member of a participating logical group must call the primitive with
-uniform controls. Complete sibling groups may take different control-flow
-paths or use different offsets and valid counts. Transpose reuse
-synchronization is masked to the participating logical group. Explicit
-``temp_storage`` remains unsupported, and nested partitions or groups of
-physical warps cannot be used for Load and Store.
-
-This example partitions the two physical warps in an ``(8, 4, 2)`` block into
-eight groups of eight threads, each loading its own partial tile.
-`View the logical Warp example on GitHub
-<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/logical_warp_load_store.py>`_:
-
-.. literalinclude:: ../../../python/cuda_coop_cutlass/examples/logical_warp_load_store.py
-   :language: python
-   :start-after: docs: start cutlass-logical-warp-load-store
-   :end-before: docs: end cutlass-logical-warp-load-store
 
 .. _coop-cutlass-device-operators:
 

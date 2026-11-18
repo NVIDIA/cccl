@@ -453,8 +453,8 @@ sharing modes, so the kernel must call ``storage.sync()`` before reuse. Set
 ``auto_sync=True`` to insert automatic trailing synchronization.
 Compiler-managed scratch synchronizes automatically. Physical and logical
 warp primitives use independent per-group storage and the appropriate warp
-mask rather than a block barrier. See the programming guide for each family's
-explicit-storage support and participation rules.
+mask rather than a block barrier. See the :doc:`API reference <api>` for
+each family's explicit-storage support and participation rules.
 
 Finding the implementation
 ---------------------------

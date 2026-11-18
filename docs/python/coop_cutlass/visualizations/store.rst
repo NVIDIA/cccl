@@ -6,14 +6,15 @@
 Store
 =====
 
-:func:`cuda.coop.cutlass.store` writes each thread's values into a contiguous memory
-tile. The algorithm determines which input ownership it expects and whether
-a shared-memory exchange rearranges the values before the writes.
+:func:`cuda.coop.cutlass.store` writes each thread's payload to a group's
+:term:`tile` in memory. The algorithm names the layout of the payload, and
+decides whether the threads exchange their items through shared scratch
+before they write.
 
-The explorer shows eight illustrative threads and full-tile stores. The
-warp-transpose variants use two four-lane teaching warps; **CUDA warps have
-32 lanes**. Executable blocks using those variants must contain a multiple
-of 32 threads.
+The explorer shows eight teaching threads that store a full tile. For the
+two warp-transpose algorithms it draws them as two warps of four lanes.
+**CUDA warps have 32 lanes**, and in a kernel these two algorithms need a
+block size that is a multiple of 32.
 
 .. coop-visualization:: store
 
@@ -38,31 +39,31 @@ of 32 threads.
 Reading the stages
 ------------------
 
-See :ref:`blocked versus striped <coop-glossary-layouts>` for a compact
-ownership table and the index formulas used here.
+The first row shows the payload each thread passes. The writer row shows
+which thread writes each element, and the last row shows the tile in
+memory. For an algorithm with an exchange, a scratch row lies between the
+payload and the writers. Select a value to follow it from the thread that
+passes it to the thread that writes it and to its place in the tile.
 
-The first row shows the input payload. Transpose Store algorithms may
-rearrange that payload in place, as in CUB; copy values before Store if they
-are needed later. For algorithms with an exchange, values pass through shared
-scratch before reaching the writer-register row. The final row shows memory
-positions. Select a value to follow its input thread, writer thread, and
-destination address.
+``direct`` and ``vectorize`` take a :term:`blocked` payload: thread ``t``
+holds ``K`` consecutive elements starting at tile position ``t * K``, where
+``K`` is the number of items per thread, and writes them itself.
 
-``direct`` and ``vectorize`` consume blocked input: thread ``t`` provides
-``K`` consecutive values beginning at logical position ``t * K``.
-Vectorization can combine adjacent values into wider stores when the
-pointer, alignment, type, and item count allow it. The illustration does
-not guarantee a particular instruction or memory-transaction count.
+``striped`` takes a :term:`striped` payload: thread ``t`` writes item ``i``
+to tile position ``t + i * G``, where ``G`` is the group's size.
+``transpose`` takes a blocked payload, exchanges the items into striped
+order and then makes the same writes.
 
-``striped`` consumes striped input: thread ``t`` writes slot ``j`` to
-``t + j * T``, where ``T`` is the group size. The input must already have
-that ownership. ``transpose`` instead accepts blocked input and exchanges
-it into striped writer registers before performing the same writes.
+``warp_transpose`` makes that exchange within each warp, and each warp
+writes its own part of the tile in striped order. With
+``warp_transpose_timesliced`` the warps take turns with scratch sized for
+one warp. The explorer shows one exchange round for each warp. All warps
+write to memory after the last round.
 
-``warp_transpose`` performs the corresponding exchange within each physical
-warp. ``warp_transpose_timesliced`` reuses one warp's shared scratch across
-serialized exchange rounds. The writer registers then feed warp-striped
-stores; the diagram does not impose a serial global-memory store schedule.
+The :ref:`glossary <coop-glossary-layouts>` has a table of both layouts.
+:ref:`Load & Store <memory-operations>` in the API reference has the rules
+for each algorithm and control, and says what a kernel may expect of the
+payload after the call.
 
 Using Store in a kernel
 -----------------------
@@ -80,10 +81,8 @@ at least ``128 * items_per_thread`` source and destination elements.
        algorithm="direct", offset=offset,
    )
    coop.store(block, destination, items, algorithm="transpose", offset=offset)
-   # The block's values are written in their original logical order.
-   # Store writes memory and returns None; items may now be rearranged.
+   # destination holds the block's tile in the order source had it.
 
-For a partial final tile, pass ``valid_items`` to limit the stored prefix;
-memory beyond that prefix remains untouched. Supply a matching valid count
-when loading the input tile. See :func:`cuda.coop.cutlass.store` for the parameter
-:doc:`Programming Guide <../programming_guide>` for complete examples.
+:ref:`Load & Store <memory-operations>` in the API reference covers partial
+tiles, offsets, and stores on warps and groups of lanes, with tested
+examples.

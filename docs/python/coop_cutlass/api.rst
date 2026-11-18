@@ -112,6 +112,13 @@ TempStorage: temporary storage
 Load & Store
 ------------
 
+.. automodule:: cuda.coop.cutlass._group_load_store
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
+
 .. autofunction:: load
 .. autofunction:: store
 

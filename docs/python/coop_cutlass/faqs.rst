@@ -69,7 +69,7 @@ How do I stage a tile in shared memory?
 
 Use native CuTe copies with deliberately matched source and destination
 partitions. Synchronize before another thread consumes the shared tile,
-then use returning Load to form per-thread payloads. Store can also write
+then use ``load`` to form per-thread payloads. Store can also write
 ``ThreadData`` to a shared tensor. Both native shared allocations and typed
 ``TempStorage.reserve`` views are supported. See
 :ref:`shared-memory staging <coop-shared-load-store>`.

@@ -8,8 +8,9 @@ Executable examples
 Read these programs on GitHub, then run them from a compatible installed
 environment. Each example allocates device inputs, compiles and launches a
 CuTe kernel, and checks its defined results against a CPU reference. The
-:doc:`Programming Guide
-<programming_guide>` explains their layout and synchronization requirements.
+:doc:`Programming Guide <programming_guide>` and the
+:doc:`API reference <api>` explain their layout and synchronization
+requirements.
 
 .. contents:: Programs
    :local:
@@ -95,7 +96,7 @@ Independent per-feature warp reductions and output placement.
 shared_staging.py
 -----------------
 
-Native CuTe staging, explicit synchronization, and returning Load from shared memory.
+Native CuTe staging, explicit synchronization, and Load from shared memory.
 
 `View shared_staging.py on GitHub
 <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/shared_staging.py>`_
