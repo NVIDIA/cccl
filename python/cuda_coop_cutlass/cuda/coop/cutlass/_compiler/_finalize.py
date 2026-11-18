@@ -69,7 +69,8 @@ def _trace_finalize_hook(dsl, module, function_name):
 
     The matching session supplies deduplicated wrapper requests and every
     recorded scratch use. Compile first to learn exact C++ layouts, then plan
-    and insert allocations before attaching the LTO-IR file for CuTe linking.
+    and insert allocations. Mark the provider calls convergent, then attach
+    the bundle's LTO-IR file and each device operator's for CuTe linking.
     Other trace sessions remain separate, including nested compilations.
 
     Parameters

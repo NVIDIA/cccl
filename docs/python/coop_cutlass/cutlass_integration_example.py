@@ -26,7 +26,7 @@ The numbered comments mark the integration points:
 Run it on Linux from a CCCL checkout with a compatible CUTLASS 4.9 CuTe DSL,
 CUDA 13 driver and toolkit, ``cuda-bindings``, and NumPy. The example uses
 the launch-facts and trace-finalization interfaces validated with the 4.9
-candidate; see the accompanying documentation for setup details::
+candidate. See the accompanying documentation for setup details::
 
    python docs/python/coop_cutlass/cutlass_integration_example.py
 
@@ -77,7 +77,7 @@ extern "C" __device__ int {symbol}(int value, unsigned int smem_addr,
       (smem_addr & (alignof(storage_t) - 1)) != 0) {{
     asm volatile("trap;");
   }}
-  // CuTe passes a 32-bit shared-window address; CUB wants a generic pointer.
+  // CuTe passes a 32-bit shared-window address. CUB wants a generic pointer.
   auto* const generic_addr = __cvta_shared_to_generic(smem_addr);
   auto& storage = *reinterpret_cast<storage_t*>(generic_addr);
   int result = reduce_t(storage).Sum(value);
@@ -177,7 +177,7 @@ def block_sum(value: cutlass.Int32) -> cutlass.Int32:
     )
 
     # 3. Declare a private prototype in the gpu.module and emit func.call.
-    #    No definition exists yet; the device linker resolves it later.
+    #    No definition exists yet. The device linker resolves it later.
     result = cute.ffi(
         name=request.symbol,
         params_types=[cutlass.Int32, cutlass.Uint32, cutlass.Int32],
@@ -291,7 +291,7 @@ def _compile_ltoir(
         layouts = {}
         for probe in probes:
             lowered = _check(nvrtc.nvrtcGetLoweredName(program, probe.encode()))
-            # For example _Z20example_layout_probeILy32ELy4EE -> (32, 4).
+            # For example _Z20example_layout_probeILy24ELy4EE -> (24, 4).
             match = re.search(r"ILy(\d+)ELy(\d+)EE", str(lowered))
             layouts[probe] = (int(match.group(1)), int(match.group(2)))
         blob = bytearray(_check(nvrtc.nvrtcGetLTOIRSize(program)))
