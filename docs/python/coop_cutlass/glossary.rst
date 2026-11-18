@@ -157,9 +157,11 @@ Terms
       sequence. It counts tile elements, not elements per thread.
 
    top-k
-      Selection of up to ``k`` smallest or largest keys, optionally with
-      associated values. ``cuda.coop.cutlass`` TopK returns an unordered selection;
-      only its selected prefix is defined. See :doc:`TopK <visualizations/topk>`.
+      Selection of up to ``k`` smallest or largest keys, optionally with a
+      value for each key. The selected keys fill the first positions of the
+      result in no defined order. See
+      :ref:`Top-k selection <coop-cutlass-topk>` in the API reference and
+      the :doc:`TopK visualization <visualizations/topk>`.
 
 .. _coop-glossary-layouts:
 

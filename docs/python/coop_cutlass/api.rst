@@ -222,8 +222,17 @@ Radix sorting and ranking
 .. autofunction:: radix_sort_pairs
 .. autofunction:: radix_rank_keys
 
+.. _coop-cutlass-topk:
+
 Top-k selection
 ---------------
+
+.. automodule:: cuda.coop.cutlass._group_topk
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. autofunction:: topk_min_keys
 .. autofunction:: topk_max_keys

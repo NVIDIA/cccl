@@ -168,12 +168,15 @@ and need fewer barriers.
 Does TopK return sorted results?
 --------------------------------
 
-No. It selects the smallest or largest keys and places them in a blocked
-output prefix without promising their order. Only the first
-``min(k, valid_items)`` positions are defined. When keys tie at the selection
-boundary, any of the tied keys may fill the remaining positions. Pair variants
-keep each selected key attached to its value. Use a sorting primitive when
-you need ordered output. See the :ref:`TopK examples <coop-cutlass-topk>`.
+No. The selected keys fill the first positions of the result in no defined
+order. To get them in order, pass the result of ``topk_min_keys`` or
+``topk_max_keys`` to :func:`~cuda.coop.cutlass.merge_sort_keys` with
+``valid_items`` set to the number of keys selected and an ``oob_default``
+that sorts after them. The first kernel in
+:ref:`Top-k selection <coop-cutlass-topk>` in the API reference does this
+with ``topk_min_keys``. After ``topk_min_pairs`` or ``topk_max_pairs``, pass
+both payloads to :func:`~cuda.coop.cutlass.merge_sort_pairs` in the same
+way, and each value moves with its key.
 
 .. _coop-faq-global-sort:
 

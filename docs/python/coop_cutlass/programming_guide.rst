@@ -154,57 +154,6 @@ and the enclosing kernel are linked together. Existing group, scratch, and
 synchronization rules still apply. Runtime captures, Scan prefix callbacks,
 and operators returning tuples or structures are unsupported.
 
-.. _coop-cutlass-topk:
-
-TopK selection
---------------
-
-``topk_min_keys`` and ``topk_max_keys`` select a tile's smallest or largest
-keys. ``topk_min_pairs`` and ``topk_max_pairs`` also carry each selected value
-with its key. Controls follow the :func:`TopK contract
-<cuda.coop.cutlass.topk_min_keys>`: provide ``k``, optionally limit the input with
-``valid_items``, and optionally supply ``temp_storage``.
-
-TopK requires a complete one-dimensional block and fixed per-thread payloads
-in blocked order. All threads participate with uniform counts and extents.
-For tile capacity ``N = block_threads * items_per_thread``, both counts lie in
-``[0, N]``; omitted ``valid_items`` means ``N``. Runtime counts may be signed
-integers up to 64 bits or unsigned integers up to 32 bits. Invalid runtime
-counts trap before narrowing.
-
-Only the first ``min(k, valid_items)`` blocked output positions are defined.
-Results are unsorted, and selection and ordering among equal keys are
-unspecified. If either count is zero, no result positions are defined.
-Restrict Store to the defined prefix; do not read or store the remaining
-positions.
-
-Keys and values may use signed or unsigned 8-, 16-, 32-, or 64-bit integers,
-or 32- or 64-bit floats. Pair extents must match; their dtypes may differ.
-Readable inputs need not support mutation. TopK preserves both inputs and
-returns fresh ``ThreadData`` with the original dtypes and extents. Signed
-floating-point zeros compare equally while retaining their original bits;
-NaNs have no guaranteed numeric ordering.
-
-The API additionally accepts CuTe register tensors and immutable
-register values, including mixed register-tensor and ``ThreadData`` pairs.
-Its results remain ``ThreadData``, and its controls match the API.
-Scalar inputs are unsupported. TopK accepts a
-:ref:`TempStorage <coop-temp-storage>`.
-
-The :doc:`TopK visualization <visualizations/topk>` shows the selected
-prefix. This example selects the smallest keys and largest pairs from a
-partial tile, reusing scratch and preserving both original payloads. Its CPU
-checks compare selected multisets and pair identities without assuming
-output order or stable ties. The example also demonstrates register
-payload conversion.
-`View the TopK example on GitHub
-<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/topk.py>`_:
-
-.. literalinclude:: ../../../python/cuda_coop_cutlass/examples/topk.py
-   :language: python
-   :start-after: docs: start cutlass-topk
-   :end-before: docs: end cutlass-topk
-
 .. _coop-cutlass-neighbors:
 
 Comparing neighboring values
