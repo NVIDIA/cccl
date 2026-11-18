@@ -107,53 +107,6 @@ array retains its values. `View the workspace example on GitHub
    :start-after: docs: start cutlass-shared-workspace
    :end-before: docs: end cutlass-shared-workspace
 
-.. _coop-cutlass-device-operators:
-
-Compiled scalar device operators
---------------------------------
-
-``compile_operator(function, dtype, arch=...)`` prepares a CuTe ``@cute.jit``
-binary function for ``reduce`` and ``scan``. Call it on the host before
-tracing the enclosing kernel. It returns an immutable ``DeviceOperator``
-specialized for one scalar dtype and GPU target. Both inputs and the result
-must have that dtype, and the function must declare that dtype as its return
-annotation. The operator must be pure and associative; it must not synchronize
-threads, access mutable shared state, or invoke a cooperative primitive.
-
-For example, the associative operation ``a + b + 1`` can be written as:
-
-.. code-block:: python
-
-   import cutlass
-   from cutlass import cute
-   import cuda.coop.cutlass as coop
-
-   @cute.jit
-   def combine(a: cutlass.Int32, b: cutlass.Int32) -> cutlass.Int32:
-       return a + b + 1
-
-   combine_op = coop.compile_operator(combine, cutlass.Int32, arch="sm_80")
-
-Inside a kernel compiled for the same target, use
-``coop.reduce(block, value, binary_op=combine_op)`` or
-``coop.inclusive_scan(block, value, scan_op=combine_op)``. Exclusive Scan
-requires an explicit initial value, for example
-``coop.exclusive_scan(block, value, scan_op=combine_op, initial_value=-1)``.
-The dtype must match the input values exactly. Block Reduce's
-``raking_commutative_only`` algorithm rejects custom operators because the
-compiler does not prove their commutativity.
-
-An operator is a scalar function and cannot call a primitive. Call
-primitives from the kernel, or from a ``@cute.jit`` function that the kernel
-calls.
-
-This requires CUTLASS DSL 4.9 device-function export support through
-``cute.compile_to`` and ``cutlass.compiler.ArtifactType.LtoIr``, including
-typed declaration metadata. The callback's LTO-IR, the generated CUB wrapper,
-and the enclosing kernel are linked together. Existing group, scratch, and
-synchronization rules still apply. Runtime captures, Scan prefix callbacks,
-and operators returning tuples or structures are unsupported.
-
 .. _coop-cutlass-checking:
 
 Checking and tuning a kernel
