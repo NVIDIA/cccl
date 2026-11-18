@@ -296,7 +296,7 @@ struct rvalue_only
 TEST_HOST_DEVICE_FUNC constexpr void test_broadcast_forwarding()
 {
   using Vec = simd::vec<int, 4>;
-  lvalue_only lvalue;
+  lvalue_only lvalue{};
   const Vec from_lvalue(lvalue);
   const Vec from_rvalue(rvalue_only{});
   for (int i = 0; i < Vec::size(); ++i)
