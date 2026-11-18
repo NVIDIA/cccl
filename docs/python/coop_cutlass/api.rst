@@ -239,8 +239,17 @@ Top-k selection
 .. autofunction:: topk_min_pairs
 .. autofunction:: topk_max_pairs
 
+.. _coop-cutlass-neighbors:
+
 Neighbor comparisons
 --------------------
+
+.. automodule:: cuda.coop.cutlass._group_neighbors
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. autofunction:: adjacent_difference
 .. autofunction:: discontinuity

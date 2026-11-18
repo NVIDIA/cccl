@@ -154,44 +154,6 @@ and the enclosing kernel are linked together. Existing group, scratch, and
 synchronization rules still apply. Runtime captures, Scan prefix callbacks,
 and operators returning tuples or structures are unsupported.
 
-.. _coop-cutlass-neighbors:
-
-Comparing neighboring values
-----------------------------
-
-``adjacent_difference`` subtracts the previous or next item from each item
-in a block's flattened, blocked sequence. ``discontinuity`` returns int32
-head flags, tail flags, or both. Both operations preserve their input and
-support the ten numeric payload dtypes. Every thread in the complete block
-participates, including in multidimensional blocks.
-
-Pass ``tile_predecessor_item`` or ``tile_successor_item`` to compare across
-tile boundaries. Adjacent Difference also accepts a block-uniform
-``valid_items`` count; its invalid suffix retains the original input.
-Right partial tiles cannot take a successor, and Discontinuity requires a
-full tile. Without an external neighbor, Adjacent Difference preserves the
-boundary input, while Discontinuity marks the boundary as a head or tail.
-These defaults let a tile act as a separate sequence; provide a neighbor
-when it continues a sequence in another tile. See
-:doc:`Adjacent Difference <visualizations/adjacent-difference>` and
-:doc:`Discontinuity <visualizations/discontinuity>` for the shared rules.
-
-Both functions accept explicit block ``TempStorage``. The example below
-reuses one descriptor between the operations; automatic trailing
-synchronization makes that reuse safe. The functions also accept
-CuTe register tensors and immutable register vectors. They snapshot the
-input and return fresh ``ThreadData``; flags contain CuTe ``Int32`` values.
-Custom arithmetic and flag callbacks are not supported.
-
-`View test_neighbors.py on GitHub
-<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_neighbors.py>`_
-
-.. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_neighbors.py
-   :language: python
-   :start-after: docs: start cutlass-neighbors
-   :end-before: docs: end cutlass-neighbors
-   :dedent: 4
-
 .. _coop-cutlass-histogram:
 
 Counting samples into bins
