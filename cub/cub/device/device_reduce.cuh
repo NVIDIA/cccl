@@ -1525,6 +1525,8 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
+  //!
+  //! Deprecated [Since 2.8]
   template <typename InputIteratorT, typename OutputIteratorT>
   CCCL_DEPRECATED_BECAUSE("CUB has superseded this interface in favor of the ArgMin interface that takes two separate "
                           "iterators: one iterator to which the extremum is written and another iterator to which the "
@@ -1991,6 +1993,8 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
+  //!
+  //! Deprecated [Since 2.8]
   template <typename InputIteratorT, typename OutputIteratorT>
   CCCL_DEPRECATED_BECAUSE("CUB has superseded this interface in favor of the ArgMax interface that takes two separate "
                           "iterators: one iterator to which the extremum is written and another iterator to which the "
