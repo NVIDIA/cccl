@@ -472,8 +472,6 @@ Every CUB device-wide algorithm must expose two overloads of each API, as descri
 single-phase API that obtains temporary storage from the execution environment.
 
 Both overloads must take an execution environment as their last parameter.
-This is not yet the case for every existing API, but new APIs must follow this convention,
-and existing ones will be converted eventually.
 
 This split maps directly onto how tests are organized:
 
@@ -481,9 +479,9 @@ This split maps directly onto how tests are organized:
   cases, non-determinism, etc.) belong in ``test/catch2_test_device_xxx.cu`` and must only use
   the two-phase API, invoked implicitly via `Launch wrappers`_.
 - **Environment-interaction tests** belong in ``test/catch2_test_device_xxx_env.cu`` and must
-  only cover how the single-phase API interacts with its environment argument (streams, tuning,
-  determinism requirements, memory resources, etc.). These files should not contain functional
-  or correctness tests of the algorithm itself.
+  only cover how the single-phase and two-phase APIs interact with their environment argument
+  (streams, tuning, determinism requirements, memory resources, etc.). These files should not
+  contain functional or correctness tests of the algorithm itself.
 
 Recommended minimum tests cases to be added for each new single-phase API overload in an ``_env.cu`` file:
 
@@ -519,3 +517,21 @@ Recommended minimum tests cases to be added for each new single-phase API overlo
 All of the above should be applied to every variant of the API (e.g. pointer vs.
 ``DoubleBuffer``, in-place vs. out-of-place, alternate segment/offset layouts, with/without a
 decomposer) rather than only to the "primary" variant.
+
+Recommended minimum tests cases to be added for each two-phase API overload in the same ``_env.cu`` file:
+
+1. ``"<algorithm> two-phase works with custom streams"`` — both phases are called directly with
+   each stream kind provided by ``test_with_custom_streams`` from ``catch2_test_custom_streams.cuh``.
+   Wrap the calls in a ``stream_scope`` for the environment's stream, so ``stream_registry_factory_t``
+   verifies that every kernel is launched on it, and check that the queried temporary storage size
+   matches the one queried without an environment. Guard with ``#if TEST_LAUNCH == 0``, since the
+   launch wrappers copy their arguments, which the non-copyable stream types do not allow.
+2. ``"<algorithm> two-phase overloads accept legacy null stream arguments"`` — before the
+   environment parameter, two-phase APIs took ``cudaStream_t stream = nullptr``, so callers passing
+   ``nullptr``, a literal ``0``, or ``cudaStream_t{}`` exist. Check that all of them still compile
+   and run on the default stream, using a ``stream_scope`` for ``cudaStream_t{}``. Call the API
+   through two-phase launch wrappers (``DECLARE_LAUNCH_WRAPPER``) and guard with
+   ``#if TEST_LAUNCH != 2``, since the graph launch cannot combine its capture stream with these
+   arguments. A single test case covering all two-phase overloads of the algorithm is sufficient.
+3. Items 4 to 6 of the list above also apply to the two-phase API. Cover both overloads, e.g. as
+   sections of the same test case calling the respective launch wrappers.

@@ -52,9 +52,8 @@ CUB_NAMESPACE_BEGIN
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! All algorithms in DeviceFor that accept an environment can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::ForPolicy`, as shown in the
-//! example below:
+//! All algorithms in DeviceFor can be tuned by passing a custom :ref:`policy selector <cub-policy-selectors>` that
+//! returns a :cpp:struct:`cub::ForPolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
 //!      :language: c++

@@ -54,6 +54,16 @@ pass to many different algorithms:
       cub::DeviceReduce::Sum(d_input, d_output, num_items);
 
 
+The two-phase API accepts the same environments as its last argument. Since the caller
+provides the temporary storage there, a memory resource in the environment is ignored, while
+all other properties, like the stream, determinism requirements, or a tuning policy selector,
+are honored:
+
+.. code-block:: c++
+
+   cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, env);
+
+
 .. _cub-env-building:
 
 Building an environment
@@ -329,8 +339,8 @@ is passed at all):
      - The default CUDA stream (``cudaStream_t{}``).
    * - Memory resource
      - A stream-ordered allocator based on ``cudaMallocAsync``. Temporary storage is
-       allocated on the stream the algorithm runs on. Requires device support for
-       ``cudaMallocAsync``; see
+       allocated on the stream the algorithm runs on. Not used by the two-phase API.
+       Requires device support for ``cudaMallocAsync``; see
        :ref:`Devices without cudaMallocAsync support <cub-env-memory-resource-precondition>`.
    * - Determinism
      - Algorithm-specific. See :ref:`cub-determinism`.
