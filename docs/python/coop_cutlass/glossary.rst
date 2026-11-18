@@ -72,12 +72,13 @@ Terms
       ownership. See :doc:`Histogram <visualizations/histogram>`.
 
    tile boundary
-      The edge between one group's tile and the neighboring data.
-      Adjacent Difference and Discontinuity can consume an explicit
-      predecessor or successor value to compare across this edge.
-      Without one, their endpoint rules apply to the local tile. See
-      :doc:`Adjacent Difference <visualizations/adjacent-difference>` and
-      :doc:`Discontinuity <visualizations/discontinuity>`.
+      The edge between one group's tile and the data next to it.
+      :func:`cuda.coop.cutlass.adjacent_difference` and
+      :func:`cuda.coop.cutlass.discontinuity` take the item on the other
+      side of the edge as ``tile_predecessor_item`` or
+      ``tile_successor_item``. Without it, ``adjacent_difference`` copies
+      the item at the edge and ``discontinuity`` flags it with 1. See
+      :ref:`Neighbor comparisons <coop-cutlass-neighbors>`.
 
    run
       A consecutive sequence represented by one value and its repetition
@@ -87,17 +88,18 @@ Terms
       :doc:`Run Length Decode <visualizations/run-length-decode>`.
 
    head flag
-      An integer flag marking the start of a sequence according to
-      Discontinuity's comparison predicate. With the default inequality
-      predicate, it is one where an item differs from its predecessor.
-      Without an explicit tile predecessor, the first item is a head.
-      See :doc:`Discontinuity <visualizations/discontinuity>`.
+      An ``Int32`` flag from :func:`cuda.coop.cutlass.discontinuity` that
+      is 1 where an item differs from the item before it, which marks the
+      first item of a run of equal values. Without
+      ``tile_predecessor_item``, the tile's first head flag is 1. See
+      :ref:`Neighbor comparisons <coop-cutlass-neighbors>`.
 
    tail flag
-      An integer flag marking the end of a sequence according to
-      Discontinuity's comparison predicate. With the default inequality
-      predicate, it is one where an item differs from its successor.
-      Without an explicit tile successor, the last item is a tail.
+      An ``Int32`` flag from :func:`cuda.coop.cutlass.discontinuity` that
+      is 1 where an item differs from the item after it, which marks the
+      last item of a run of equal values. Without ``tile_successor_item``,
+      the tile's last tail flag is 1. See
+      :ref:`Neighbor comparisons <coop-cutlass-neighbors>`.
 
    decoded window
       The output interval returned by one :func:`cuda.coop.cutlass.run_length_decode`

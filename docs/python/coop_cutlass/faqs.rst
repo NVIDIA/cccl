@@ -199,19 +199,18 @@ says where the sorted keys end up across the threads. The
 When should I use Adjacent Difference or Discontinuity?
 -------------------------------------------------------
 
-Use :func:`cuda.coop.cutlass.adjacent_difference` to compute a value from each item
-and its neighbor, such as the delta between successive samples. Use
-:func:`cuda.coop.cutlass.discontinuity` to produce flags that mark boundaries, such
-as the first and last item of each equal-value run. It returns ``int32``
-flags; ``mode="heads_and_tails"`` returns both payloads.
+Use :func:`cuda.coop.cutlass.adjacent_difference` for a value computed from
+each item and its neighbor, such as the change between successive samples.
+Use :func:`cuda.coop.cutlass.discontinuity` for flags that mark where each
+run of equal values starts and ends.
+:ref:`Neighbor comparisons <coop-cutlass-neighbors>` in the API reference
+sets the two side by side.
 
-Tile boundaries matter for both operations. Supply a predecessor or
-successor when comparisons must continue across tiles. A multiblock
-kernel that reads global neighbors must preserve those source values
-until all readers finish. The
-:doc:`Adjacent Difference <visualizations/adjacent-difference>` and
-:doc:`Discontinuity <visualizations/discontinuity>` examples use separate
-input and output arrays.
+To continue a sequence across tiles, pass the last item of the previous tile
+as ``tile_predecessor_item``, or the first item of the next tile as
+``tile_successor_item``. Read that item from the input array and write
+results to a separate array, so that the input keeps its values for another
+tile or block to read.
 
 .. _coop-faq-histogram-padding:
 
