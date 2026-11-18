@@ -96,7 +96,9 @@ PY
     for route in 0 1; do
       CUTE_DSL_USE_EXTENSION_COMPILER="$route" python -I -m pytest -v -m gpu compile/ runtime/
     done
-    mapfile -t examples < <(find "$package_root/examples" -maxdepth 1 -name '*.py' ! -name '__init__.py' ! -name '_*' -print | sort)
+    # The runtime pytest suite covers TMEM on SM100/SM103 and skips it on
+    # other GPUs; its standalone CLI deliberately rejects unsupported devices.
+    mapfile -t examples < <(find "$package_root/examples" -maxdepth 1 -name '*.py' ! -name '__init__.py' ! -name '_*' ! -name 'tensor_memory_topk.py' -print | sort)
     [[ ${#examples[@]} -gt 0 ]] || { echo "No CUTLASS examples found" >&2; exit 1; }
     for example in "${examples[@]}"; do
       python -I "$example"
