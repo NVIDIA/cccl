@@ -217,32 +217,47 @@ tile or block to read.
 Can I zero-pad a partial Histogram tile?
 ----------------------------------------
 
-Every input sample contributes to a bin, including a padded zero. A
-zero-padded load therefore adds extra counts to bin zero. Histogram has
-no ``valid_items`` parameter. Process complete tiles or handle the tail
-separately with a kernel that counts only valid samples.
+No. ``histogram`` counts every item of every thread, so each padded zero
+adds one to bin 0. Pad with the index of an extra bin, and leave that bin
+out when you store the counts.
 
-Output padding is different: returned counter slots whose bin index is
-at least ``bins`` contain zero. Store the first ``bins`` counters using
-the striped layout. See the
-:doc:`Histogram explorer <visualizations/histogram>`.
+In this kernel ``load`` gives every item at or past ``count`` the value 70.
+``histogram`` counts those items in bin 70, the last of its 71 bins, and
+``store`` writes the counts of bins 0 to 69:
+
+.. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_histogram_documentation.py
+   :language: python
+   :start-after: # cutlass-histogram-partial-tile-example-begin
+   :end-before: # cutlass-histogram-partial-tile-example-end
+   :dedent: 4
+
+Without ``oob_default`` the items at or past ``count`` would hold undefined
+values, and ``histogram`` would use them as bin indices.
+:ref:`Histogram <coop-cutlass-histogram>` in the API reference has the
+rules for each argument and for the result.
 
 .. _coop-faq-histogram-accumulation:
 
 Does Histogram retain counters between calls?
 ---------------------------------------------
 
-Each call returns fresh counts and preserves its samples. For repeated
-tiles within a kernel, keep an accumulator payload and add the returned
-counts to it. Each thread retains the same striped bin ownership when
-the configuration stays fixed. The :doc:`tested accumulation example
-<visualizations/histogram>` shows this pattern.
+No. Each call counts from zero, even when it shares a ``TempStorage`` with
+earlier calls. To count several tiles, keep a payload of totals and add
+each call's counters to it. Item ``i`` of a thread's counters stands for
+the same bin in every call, so each thread adds item by item:
 
-CUB's ``BlockHistogram::Composite`` accumulates into a caller's counter
-buffer. That persistent state belongs to the buffer; it does not require
-a persistent C++ Histogram object. The Python API exposes the fresh-count
-operation, so neither a parent object nor retained counters in
-``TempStorage`` are needed.
+.. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_histogram_documentation.py
+   :language: python
+   :start-after: # cutlass-histogram-tiles-example-begin
+   :end-before: # cutlass-histogram-tiles-example-end
+   :dedent: 4
+
+Here ``totals`` and the counters are ``Int32``. For totals past the range
+of ``Int32``, call ``histogram`` with ``counter_dtype=cutlass.Int64`` and
+give ``totals`` the same element type. CUB's ``Composite`` method, which
+adds to counters the caller keeps, has no counterpart in the package.
+:ref:`Histogram <coop-cutlass-histogram>` in the API reference has the
+rules for each argument and for the result.
 
 .. _coop-faq-rld-lifecycle:
 
