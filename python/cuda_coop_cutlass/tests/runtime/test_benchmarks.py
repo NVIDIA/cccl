@@ -17,7 +17,7 @@ import cutlass
 import pytest
 
 from cuda.bindings import driver
-from tests.support.paths import PACKAGE_ROOT
+from tests.support.paths import PACKAGE_ROOT, REPO_ROOT
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
@@ -39,6 +39,12 @@ _OPERATIONS = (
     "run_length_decode",
     "run_length_decode_into",
 )
+
+
+@pytest.fixture(autouse=True)
+def source_benchmark_headers(monkeypatch):
+    """Match the native baseline's checkout headers in installed-wheel CI."""
+    monkeypatch.setenv("CUDA_COOP_CUTLASS_CCCL_ROOT", str(REPO_ROOT))
 
 
 @pytest.mark.parametrize("provider", ("cub", "cutlass"))
