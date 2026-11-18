@@ -73,10 +73,12 @@ provide at least ``128 * items_per_thread`` source elements for each block.
 .. code-block:: python
 
    block = coop.this_block()
-   items = coop.ThreadData(items_per_thread)
    offset = cuda.blockIdx.x * 128 * items_per_thread
-   coop.load(block, source, items, algorithm="transpose", offset=offset)
-   # Each thread owns items_per_thread consecutive values. Load returns None.
+   items = coop.load(
+       block, source, items_per_thread=items_per_thread,
+       algorithm="transpose", offset=offset,
+   )
+   # Each thread owns items_per_thread consecutive values in the result.
 
 For a partial final tile, supply ``valid_items`` and, when needed,
 ``oob_default``. See :func:`cuda.coop.load` for the full parameter contract

@@ -1982,6 +1982,10 @@ class _ProvenanceRewrite(Rewrite):
                 if isinstance(incoming, ir.Var)
             )
         if definition.op == "call":
+            if self._is_shared_array_ctor_call(definition):
+                return self._extract_shared_array_specification(
+                    definition
+                ).dtype
             return self._resolve_call_result_dtype(definition)
         return None
 

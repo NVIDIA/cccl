@@ -58,8 +58,10 @@ primitive supports that group.
 Payloads and temporary storage
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``ThreadData`` constructs the per-thread payload supplied to a primitive;
-thread-group descriptors describe the participating threads.
+``load(..., items_per_thread=N)`` returns a per-thread ``ThreadData`` payload.
+Both returning Load and direct construction accept ``alignment``. Construct
+``ThreadData`` directly for computed values or an existing output.
+Thread-group descriptors describe the participating threads.
 
 .. autofunction:: ThreadData
 
@@ -75,6 +77,14 @@ thread-group descriptors describe the participating threads.
 
 Memory operations
 ^^^^^^^^^^^^^^^^^
+
+Prefer ``values = load(group, source, items_per_thread=N)`` for fresh
+per-thread values. ``load(group, source, output)`` fills an existing
+per-thread payload and returns ``None``. To fill a shared array directly,
+use ``load(group, source, shared, items_per_thread=N)``. This also returns
+``None``; physical block thread ``r`` writes ``shared[r*N:(r+1)*N]``.
+Global and shared arrays can be Load sources or Store destinations.
+See :ref:`memory directions and staging <coop-shared-load-store>`.
 
 .. autofunction:: load
 .. autofunction:: store
@@ -97,6 +107,10 @@ follow the :ref:`Common API <coop-common-api>`.
 Qualified calls also accept fixed-size, one-dimensional local arrays where
 the operation accepts per-thread payloads. ``local`` and ``shared`` expose
 Numba-CUDA-MLIR's memory namespaces.
+For Load, such a local array is an existing per-thread output. Shared arrays
+instead serve as Load sources and Store destinations in both the common
+and qualified APIs. Prefer returning Load unless existing per-thread storage
+must be filled; see :ref:`choosing a Load form <coop-faq-load-forms>`.
 
 .. currentmodule:: cuda.coop.numba_mlir
 

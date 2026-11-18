@@ -58,13 +58,12 @@ def test_temp_storage_example():
     def copy_tiles(source, destination, items_per_thread):
         block = coop.this_block()
         scratch = coop.TempStorage(alignment=16, auto_sync=True)
-        items = coop.ThreadData(items_per_thread)
         for tile in range(2):
             offset = tile * cuda.blockDim.x * items_per_thread
-            coop.load(
+            items = coop.load(
                 block,
                 source,
-                items,
+                items_per_thread=items_per_thread,
                 offset=offset,
                 algorithm="transpose",
                 temp_storage=scratch,
