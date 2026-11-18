@@ -77,6 +77,7 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
     #include <cub/warp/warp_load.cuh>
     #include <cub/warp/warp_store.cuh>
     #include <cub/warp/warp_merge_sort.cuh>
+    #include <cub/warp/warp_bitonic_sort.cuh>
     #include <cub/util_arch.cuh>
     #include <cub/util_cpp_dialect.cuh>
     #include <cub/util_debug.cuh>
@@ -90,6 +91,7 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
     #include <cub/util_type.cuh>
     #include <cub/util_vsmem.cuh>
 
+    #include <thrust/detail/raw_reference_cast.h>
     #include <thrust/iterator/constant_iterator.h>
     #include <thrust/iterator/counting_iterator.h>
     #include <thrust/iterator/discard_iterator.h>
@@ -123,12 +125,16 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
       using warp_store_t = cub::WarpStore<int, items_per_thread>;
       using warp_store_storage_t = warp_store_t::TempStorage;
 
+      using warp_bitonic_sort_t = cub::detail::WarpBitonicSort<int, items_per_thread>;
+      using warp_bitonic_sort_storage_t = warp_bitonic_sort_t::TempStorage;
+
       __shared__ warp_load_storage_t warp_load_storage;
       __shared__ warp_exchange_storage_t warp_exchange_storage;
       __shared__ warp_reduce_storage_t warp_reduce_storage;
       __shared__ warp_merge_sort_storage_t warp_merge_sort_storage;
       __shared__ warp_scan_storage_t warp_scan_storage;
       __shared__ warp_store_storage_t warp_store_storage;
+      __shared__ warp_bitonic_sort_storage_t warp_bitonic_sort_storage;
 
       int items[items_per_thread];
       if (threadIdx.x < 32)
@@ -186,6 +192,36 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
           }
         }
 
+        // Test warp bitonic sort of all items, then of the first 100 items (striped arrangement)
+        int bitonic_keys[items_per_thread];
+        for (int i = 0; i < items_per_thread; i++)
+        {
+          bitonic_keys[i] = (32 * items_per_thread - 1) - (i * 32 + threadIdx.x);
+        }
+        warp_bitonic_sort_t(warp_bitonic_sort_storage).Sort(bitonic_keys, ::cuda::std::less<>{});
+        for (int i = 0; i < items_per_thread; i++)
+        {
+          if (bitonic_keys[i] != (i * 32 + threadIdx.x))
+          {
+            atomicAdd(errors, 1);
+          }
+        }
+
+        constexpr int bitonic_valid_items = 100;
+        for (int i = 0; i < items_per_thread; i++)
+        {
+          bitonic_keys[i] = (32 * items_per_thread - 1) - (i * 32 + threadIdx.x);
+        }
+        warp_bitonic_sort_t(warp_bitonic_sort_storage).Sort(bitonic_keys, ::cuda::std::less<>{}, bitonic_valid_items);
+        for (int i = 0; i < items_per_thread; i++)
+        {
+          const int idx = i * 32 + threadIdx.x;
+          if (idx < bitonic_valid_items && bitonic_keys[i] != (32 * items_per_thread - bitonic_valid_items) + idx)
+          {
+            atomicAdd(errors, 1);
+          }
+        }
+
         // Test warp store
         warp_store_t(warp_store_storage).Store(ptr, items);
       }
@@ -209,12 +245,19 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
       using block_store_t = cub::BlockStore<int, threads_per_block, items_per_thread>;
       using block_store_storage_t = block_store_t::TempStorage;
 
+      // Radix sort upsweep pass over the 4 lowest bits
+      using radix_sort_upsweep_policy_t =
+        cub::detail::agent_radix_sort_upsweep_policy<threads_per_block, items_per_thread, int, cub::LOAD_DEFAULT, 4>;
+      using radix_sort_upsweep_t = cub::detail::radix_sort::AgentRadixSortUpsweep<radix_sort_upsweep_policy_t, int, int>;
+      using radix_sort_upsweep_storage_t = radix_sort_upsweep_t::TempStorage;
+
       __shared__ block_load_storage_t block_load_storage;
       __shared__ block_exchange_storage_t block_exchange_storage;
       __shared__ block_reduce_storage_t block_reduce_storage;
       __shared__ block_scan_storage_t block_scan_storage;
       __shared__ block_radix_sort_storage_t block_radix_sort_storage;
       __shared__ block_store_storage_t block_store_storage;
+      __shared__ radix_sort_upsweep_storage_t radix_sort_upsweep_storage;
 
       // Test block load
       block_load_t(block_load_storage).Load(ptr, items);
@@ -225,6 +268,17 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
         {
           atomicAdd(errors, 1);
         }
+      }
+
+      // Test radix sort upsweep: each of the 16 digits occurs 32 times in the 4 lowest bits of 0, ..., 511
+      radix_sort_upsweep_t radix_sort_upsweep(radix_sort_upsweep_storage, ptr, 0, 4);
+      radix_sort_upsweep.ProcessRegion(0, items_per_thread * threads_per_block);
+      __syncthreads();
+      int digit_counts[1];
+      radix_sort_upsweep.ExtractCounts(digit_counts);
+      if (threadIdx.x < 16 && digit_counts[0] != items_per_thread * threads_per_block / 16)
+      {
+        atomicAdd(errors, 1);
       }
 
       // Test block exchange
@@ -261,6 +315,15 @@ CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
 
       // Test block store
       block_store_t(block_store_storage).Store(ptr, items);
+
+      // Test thrust::raw_reference_cast on a zip iterator reference, as used by CUB's transform kernel
+      const auto zip_refs =
+        thrust::raw_reference_cast(thrust::make_zip_iterator(ptr, ptr + threads_per_block)[threadIdx.x]);
+      if (&::cuda::std::get<0>(zip_refs) != ptr + threadIdx.x
+          || &::cuda::std::get<1>(zip_refs) != ptr + threads_per_block + threadIdx.x)
+      {
+        atomicAdd(errors, 1);
+      }
     }
 )asdf";
   const char* name = "test";
