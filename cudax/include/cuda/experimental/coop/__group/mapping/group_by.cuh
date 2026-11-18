@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/__bit/bit_trunc.h>
-#include <cuda/hierarchy>
+#include <cuda/__fwd/hierarchy.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__cstddef/types.h>

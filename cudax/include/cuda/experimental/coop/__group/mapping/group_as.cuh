@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/__numeric/narrow.h>
-#include <cuda/hierarchy>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__iterator/next.h>
 #include <cuda/std/__numeric/accumulate.h>

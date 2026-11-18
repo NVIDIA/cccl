@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/hierarchy.h>
 #include <cuda/__ptx/instructions/bmsk.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__warp/lane_mask.h>
