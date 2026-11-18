@@ -27,8 +27,8 @@ and so on.
 Each group sorts its own :term:`tile`. ``this_block()`` sorts the items of
 the whole block, ``this_warp()`` those of one warp, and
 ``this_warp().group_by(n)`` those of ``n`` neighboring lanes. The package
-has no primitive that merges sorted tiles, so a kernel that sorts every
-block of a grid leaves the array as a whole unsorted.
+has no primitive that merges sorted tiles, so an array that spans several
+tiles is left unsorted as a whole.
 
 Both functions take these controls:
 
@@ -255,8 +255,8 @@ def merge_sort_keys(
         This thread's part of the sorted tile, as a new payload with the
         element type, item count and alignment of ``keys``. ``keys`` keeps
         its values. With ``K`` items per thread, the thread whose
-        ``group.rank()`` is ``r`` holds sorted positions ``r * K`` to
-        ``r * K + K - 1``, so rank 0 holds the first keys.
+        ``group.rank()`` is ``t`` holds sorted positions ``t * K`` to
+        ``t * K + K - 1``, so rank 0 holds the first keys.
 
         With ``valid_items``, the sorted keys fill the first
         ``valid_items`` positions. The positions after them hold

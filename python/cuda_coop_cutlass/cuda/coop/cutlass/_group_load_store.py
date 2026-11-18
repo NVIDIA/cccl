@@ -40,7 +40,8 @@ passes the same ``offset``, so a kernel with more than one block computes
 ``offset`` from ``cute.arch.block_idx()``.
 
 ``algorithm`` chooses how the threads reach the tile. It decides the layout
-of the payload and whether the call uses scratch:
+of the payload and whether the call uses
+:ref:`scratch <coop-temp-storage>`:
 
 .. list-table::
    :header-rows: 1
@@ -225,9 +226,9 @@ def load(
         skip the call, or make it with other values of those three.
     source : CuTe pointer or tensor
         The memory to read, global or shared. It is a CuTe pointer, such as
-        a kernel argument made with ``make_ptr``, or a tensor whose shape
-        and strides are Python values and form a compact layout:
-        ``cute.make_tensor(pointer, cute.make_layout(n))``, a
+        a kernel argument made with ``cutlass.cute.runtime.make_ptr``, or a
+        tensor whose shape and strides are Python values and form a compact
+        layout: ``cute.make_tensor(pointer, cute.make_layout(n))``, a
         ``cute.recast_tensor`` view of it, a shared tensor from CuTe's
         ``SmemAllocator``, or a tensor from
         :meth:`TempStorage.reserve <cuda.coop.cutlass.TempStorage.reserve>`.
@@ -328,9 +329,9 @@ def load(
     cuda.coop.cutlass.ThreadData
         A new payload in each thread, with ``items_per_thread`` items of
         the element type of ``source``, or of ``dtype`` when it is given,
-        in the layout that ``algorithm`` gives. That holds for
-        ``items_per_thread=1`` too. ``source`` is only read, and every
-        call returns its own payload.
+        in the layout that ``algorithm`` gives. With ``items_per_thread=1``
+        the result is a payload of one item. ``source`` is only read, and
+        every call returns its own payload.
 
     See Also
     --------

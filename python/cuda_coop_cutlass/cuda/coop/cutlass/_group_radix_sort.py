@@ -69,8 +69,9 @@ ordered form. ``begin_bit`` and ``end_bit`` are bit positions in that form:
        ``Int32`` key is 0 for a negative key and 1 for every other key.
    * - ``Float32``, ``Float64``
      - The key with its sign bit flipped when that bit is clear, and with
-       every bit flipped when it is set. The two sorts take these keys,
-       and ``radix_rank_keys`` takes integer keys only.
+       every bit flipped when it is set. ``-0.0`` is compared as ``+0.0``.
+       The two sorts take these keys, and ``radix_rank_keys`` takes
+       integer keys only.
 
 A sort returns each key with the bits it had in the input.
 
@@ -328,8 +329,8 @@ def radix_sort_keys(
         A Python ``bool``. The default, ``False``, returns the result in
         blocked order: item ``i`` of the thread with rank ``t`` holds
         sorted position ``t * items_per_thread + i``. ``True`` returns it
-        in :term:`striped` order: on a block of ``T`` threads, that item
-        holds sorted position ``i * T + t``. Write a striped result with
+        in :term:`striped` order: on a block of ``G`` threads, that item
+        holds sorted position ``t + i * G``. Write a striped result with
         ``store(..., algorithm="striped")``. The input is read in blocked
         order with either setting.
 
@@ -539,8 +540,8 @@ def radix_rank_keys(
         digit when ``descending=True``. The count is the rank at which the
         keys with that digit begin.
 
-        For a digit of ``R`` bits on a block of ``T`` threads, create the
-        payload with ``P = max(1, ceil(2**R / T))`` items, as in
+        For a digit of ``R`` bits on a block of ``G`` threads, create the
+        payload with ``P = max(1, ceil(2**R / G))`` items, as in
         ``coop.ThreadData(P)``. Leave its ``dtype`` out or give ``Int32``.
         It needs no values before the call. The thread with rank ``t`` in
         the block receives the count for digit value ``t * P + i`` in item

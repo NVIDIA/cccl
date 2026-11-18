@@ -23,16 +23,17 @@ each value's bin index first.
    7 stand for bins 13, 14 and 15, which are past the last bin, and hold
    zero.
 
-Each call counts from zero, even when it shares a ``TempStorage`` with
-earlier calls. To count several :term:`tiles <tile>`, add each call's
-counters to a payload of your own. Item ``i`` of a thread's counters stands
-for the same bin in every call, so each thread adds item by item, as in the
-second example of :func:`~cuda.coop.cutlass.histogram`.
+Each call counts from zero, even when it shares a
+:ref:`TempStorage <coop-temp-storage>` with earlier calls. To count several
+:term:`tiles <tile>`, add each call's counters to a payload of your own.
+Item ``i`` of a thread's counters stands for the same bin in every call, so
+each thread adds item by item, as in the second example of
+:func:`~cuda.coop.cutlass.histogram`.
 
 ``histogram`` counts every item of every thread and takes no
-``valid_items``, so padding is counted too: zeros that fill a partial tile
-add to bin 0. To count a partial tile, give the padding a bin of its own, as
-in :ref:`this FAQ <coop-faq-histogram-padding>`.
+``valid_items``, so zeros that fill a partial tile add to bin 0. To count a
+partial tile, fill it with the index of an extra bin, as in
+:ref:`this FAQ <coop-faq-histogram-padding>`.
 """
 
 # Implementation notes.
@@ -130,11 +131,11 @@ def histogram(
         The number of bins, a positive Python integer.
     bins_per_thread : int, optional
         The number of counters each thread receives, a positive Python
-        integer. The default is 1. ``block_size * bins_per_thread`` must be
-        at least ``bins``, so the default needs a block of at least ``bins``
-        threads. A smaller product is rejected when the kernel is compiled.
-        ``bins_per_thread`` can differ from the number of samples per
-        thread.
+        integer. The default is 1. The block size times ``bins_per_thread``
+        must be at least ``bins``, so the default needs a block of at least
+        ``bins`` threads. A smaller product is rejected when the kernel is
+        compiled. ``bins_per_thread`` can differ from the number of samples
+        per thread.
     counter_dtype : type, optional
         The element type of the counters: ``Int32``, ``Uint32``, ``Int64``
         or ``Uint64``, given as a CUTLASS type, the matching NumPy type or
@@ -148,10 +149,12 @@ def histogram(
         A Python string. ``"atomic"``, the default, adds one to a bin's
         counter for each sample with an atomic addition. ``"sort"``
         radix-sorts a copy of the samples and counts each run of equal
-        values. Both give the same counts. CUB's documentation says that
-        ``"sort"`` has consistent throughput for any distribution of the
-        samples, and that ``"atomic"`` can slow down when many samples fall
-        in the same bin. CUB's own default is ``"sort"``.
+        values. Both give the same counts. With ``"sort"``, the block size
+        times the item count of ``samples`` is at most 65,535. A larger tile
+        is rejected when the kernel is compiled. CUB's documentation says
+        that ``"sort"`` has consistent throughput for any distribution of
+        the samples, and that ``"atomic"`` can slow down when many samples
+        fall in the same bin. CUB's own default is ``"sort"``.
     temp_storage : TempStorage, optional
         Both algorithms use scratch, which holds one counter for each bin.
         Leave this out and the compiler provides the scratch and a barrier
@@ -164,16 +167,16 @@ def histogram(
     cuda.coop.cutlass.ThreadData
         This thread's counters, a new payload of ``bins_per_thread`` items
         in the element type that ``counter_dtype`` selects. They are in
-        :term:`striped` order: item ``i`` of the thread with rank ``t`` in
-        the block holds the count of bin ``t + i * block_size``. Every item
-        is defined, and an item whose bin index is ``bins`` or more holds
-        zero. ``samples`` keeps its values. When ``samples`` is a
+        :term:`striped` order: on a block of ``G`` threads, item ``i`` of
+        the thread with rank ``t`` holds the count of bin ``t + i * G``.
+        Every item is defined, and an item whose bin index is ``bins`` or
+        more holds zero. ``samples`` keeps its values. When ``samples`` is a
         ``ThreadData``, the result has its alignment.
 
         :func:`~cuda.coop.cutlass.store` with ``algorithm="striped"`` writes
-        the counters to memory in bin order. It writes
-        ``block_size * bins_per_thread`` elements, the zeros included. Pass
-        it ``valid_items=bins`` to write the counts alone.
+        the counters to memory in bin order. It writes ``bins_per_thread``
+        elements for each thread of the block, the zeros included. Pass it
+        ``valid_items=bins`` to write the counts alone.
 
     Notes
     -----
