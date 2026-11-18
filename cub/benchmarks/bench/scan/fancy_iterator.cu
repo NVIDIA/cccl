@@ -10,6 +10,8 @@
 // * reset_segment_scan_fancy_iterators scans a transform_iterator over the raw symbols into a transform_output_iterator
 //   over the raw output pointer.
 
+#include <cub/device/device_scan.cuh>
+
 #include <thrust/count.h>
 #include <thrust/device_vector.h>
 #include <thrust/iterator/counting_iterator.h>
@@ -48,7 +50,7 @@ try
   const auto reset_period = static_cast<::cuda::std::size_t>(state.get_int64("ResetPeriod"));
 
   // sparse stack-op sequence: balanced '{' / '[' pushes and pops, '\n' every reset_period symbols
-  thrust::device_vector<stack_symbol_t> stack_ops(num_symbols);
+  thrust::device_vector<stack_symbol_t> stack_ops(num_symbols, thrust::no_init);
   thrust::tabulate(
     stack_ops.begin(), stack_ops.end(), [reset_period] __device__(::cuda::std::size_t i) -> stack_symbol_t {
       constexpr char pattern[] = {'{', '[', ']', '}'};
