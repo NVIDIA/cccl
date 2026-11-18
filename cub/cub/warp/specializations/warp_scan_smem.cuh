@@ -21,7 +21,6 @@
 #endif // no system header
 
 #include <cub/detail/constant.cuh>
-#include <cub/detail/log2.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/thread/thread_load.cuh>
@@ -29,6 +28,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_utils.cuh>
 
+#include <cuda/__cmath/ilog.h>
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__utility/static_for.h>
 #include <cuda/std/__algorithm/clamp.h>
@@ -57,7 +57,7 @@ struct WarpScanSmem
    ******************************************************************************/
 
   /// The number of warp scan steps
-  static constexpr int STEPS = Log2<LogicalWarpThreads>::VALUE;
+  static constexpr int STEPS = ::cuda::ceil_ilog2(LogicalWarpThreads);
 
   /// The number of threads in half a warp
   static constexpr int HALF_WARP_THREADS = 1 << (STEPS - 1);

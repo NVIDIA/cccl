@@ -17,8 +17,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/type_traits.h>
+#include <thrust/detail/use_default.h>
 #include <thrust/iterator/iterator_adaptor.h>
-#include <thrust/iterator/transform_output_iterator.h>
+#include <thrust/iterator/iterator_facade.h>
 
 THRUST_NAMESPACE_BEGIN
 

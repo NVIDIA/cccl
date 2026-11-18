@@ -20,9 +20,8 @@
 #include <thrust/detail/contiguous_storage.h>
 #include <thrust/iterator/iterator_traits.h>
 
-#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/__utility/swap.h>
 
 #include <nv/target>
 

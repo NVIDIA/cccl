@@ -22,7 +22,7 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/functional/actor.h>
-#include <thrust/functional.h>
+#include <thrust/detail/type_deduction.h>
 
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/enable_if.h>

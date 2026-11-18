@@ -22,6 +22,9 @@
 #include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
+#include <cuda/std/cassert>
+
+#include <nv/target>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -233,4 +236,4 @@ private:
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/contiguous_storage.inl>
+#include <thrust/detail/contiguous_storage.inl> // IWYU pragma: export

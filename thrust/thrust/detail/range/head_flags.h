@@ -13,9 +13,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/functional.h>
+#include <thrust/detail/raw_reference_cast.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/transform_iterator.h>
+
+#include <cuda/std/__functional/operations.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail

@@ -22,7 +22,7 @@
 //! catch2_test_launch_helper.h to verify that CUB device-scope algorithms use the stream and (optionally)
 //! only the kernels provided through their environment.
 
-struct get_allowed_kernels_t
+struct get_allowed_kernels_t : cuda::std::execution::__basic_query<get_allowed_kernels_t>
 {};
 
 [[nodiscard]] inline _CCCL_API cuda::std::execution::prop<get_allowed_kernels_t, cuda::std::span<void*>>

@@ -19,12 +19,12 @@
 
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/constant.cuh>
-#include <cub/detail/log2.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/thread/thread_scan.cuh>
 #include <cub/util_ptx.cuh>
 
+#include <cuda/__cmath/ilog.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/countl.h>
@@ -268,10 +268,10 @@ class BlockRadixRank
   static constexpr int WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS;
 
   static constexpr int BYTES_PER_COUNTER     = sizeof(DigitCounter);
-  static constexpr int LOG_BYTES_PER_COUNTER = Log2<BYTES_PER_COUNTER>::VALUE;
+  static constexpr int LOG_BYTES_PER_COUNTER = ::cuda::ilog2(BYTES_PER_COUNTER);
 
   static constexpr int PACKING_RATIO     = static_cast<int>(sizeof(PackedCounter) / sizeof(DigitCounter));
-  static constexpr int LOG_PACKING_RATIO = Log2<PACKING_RATIO>::VALUE;
+  static constexpr int LOG_PACKING_RATIO = ::cuda::ilog2(PACKING_RATIO);
 
   // Always at least one lane
   static constexpr int LOG_COUNTER_LANES = ::cuda::std::max(RadixBits - LOG_PACKING_RATIO, 0);
