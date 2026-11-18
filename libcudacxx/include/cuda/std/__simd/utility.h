@@ -27,14 +27,13 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__ranges/concepts.h>
+#include <cuda/std/__ranges/size.h>
 #include <cuda/std/__simd/abi.h>
 #include <cuda/std/__simd/concepts.h>
 #include <cuda/std/__simd/flag.h>
 #include <cuda/std/__simd/type_traits.h>
-#include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cv.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/integer_sequence.h>
@@ -74,50 +73,13 @@ inline constexpr bool __can_generate_v =
 //----------------------------------------------------------------------------------------------------------------------
 // __is_compatible_range_v
 
-template <typename _Range, typename = void>
-inline constexpr bool __has_tuple_size_v = false;
+template <typename _Range>
+inline constexpr auto __static_range_size_v = ::cuda::std::ranges::__static_size_impl_v<remove_reference_t<_Range>>;
 
 template <typename _Range>
-// Accessing the member directly keeps an incomplete tuple_size in the immediate context for SFINAE.
-// NOLINTNEXTLINE(cccl-modernize-type-traits)
-inline constexpr bool __has_tuple_size_v<_Range, void_t<decltype(tuple_size<remove_cvref_t<_Range>>::value)>> = true;
+_CCCL_CONCEPT __has_static_size = __static_range_size_v<_Range> != dynamic_extent;
 
-template <typename _Range, typename = void>
-inline constexpr bool __has_static_extent_v = false;
-
-template <typename _Range>
-inline constexpr bool __has_static_extent_v<_Range, void_t<decltype(remove_cvref_t<_Range>::extent)>> =
-  remove_cvref_t<_Range>::extent != dynamic_extent;
-
-// Proxy for ranges::size(r) is a constant expression.
-template <typename _Range>
-_CCCL_CONCEPT __has_static_size = __has_tuple_size_v<_Range> || __has_static_extent_v<_Range>;
-
-template <typename _Range>
-[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL __simd_size_type __get_static_range_size() noexcept
-{
-  using __range_t = remove_cvref_t<_Range>;
-  if constexpr (__has_tuple_size_v<_Range>)
-  {
-    return __simd_size_type{tuple_size_v<__range_t>};
-  }
-  else if constexpr (__has_static_extent_v<_Range>)
-  {
-    return __simd_size_type{__range_t::extent};
-  }
-  else
-  {
-    return 0;
-  }
-}
-
-template <typename _Range>
-inline constexpr __simd_size_type __static_range_size_v = __get_static_range_size<_Range>();
-
-// This trait is defined at namespace scope (not as a static member of basic_vec) because GCC 13 rejects partial
-// specialization of static member variable templates. The static-size detection intentionally avoids directly using
-// tuple_size_v<T> in the guard because that causes a hard error (instead of SFINAE) on NVCC with
-// clang-19/clang-14/nvc++ when T is an incomplete specialization of tuple_size.
+// GCC 13 rejects partial specializations of member variable templates
 template <typename _Range>
 inline constexpr bool __is_compatible_range_guard_v =
   __has_static_size<_Range> && ::cuda::std::ranges::contiguous_range<_Range>
