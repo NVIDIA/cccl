@@ -329,7 +329,7 @@ struct __mapping_result<__static_unit_counts<_StaticUnitCounts...>, _IsAlwaysExh
 };
 
 // Return the low-bit prefix ending at the set bit with the given rank.
-[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t
 __lane_mask_prefix(::cuda::std::uint32_t __mask, ::cuda::std::uint32_t __rank)
 {
   auto __prefix = ~::cuda::std::uint32_t{0};
