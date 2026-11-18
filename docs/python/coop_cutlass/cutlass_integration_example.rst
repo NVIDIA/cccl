@@ -18,13 +18,14 @@ interfaces, NVRTC, and the CCCL headers. It imports nothing from
 
 The intended readers are CUTLASS developers reviewing whether this is how
 the DSL is meant to be extended, and ``cuda.coop.cutlass`` developers who
-want the mechanisms without the abstractions. The closing section lists the
-questions we would like CUTLASS reviewers to answer. :doc:`cutlass_primer`
-explains the DSL's tracing model that the script builds on.
+want the mechanisms without the abstractions. The section "Questions for
+CUTLASS reviewers" lists the questions we would like them to answer.
+:doc:`cutlass_primer` explains the DSL's tracing model that the script
+builds on.
 
 Run it on Linux from a CCCL checkout with a compatible CUTLASS 4.9 CuTe DSL,
 CUDA 13 driver and toolkit, ``cuda-bindings``, and NumPy. The DSL must expose
-launch facts and trace-finalization hooks; see :doc:`index` for installation
+launch facts and trace-finalization hooks. See :doc:`index` for installation
 and :ref:`coop-cutlass-compiler-requirements` for the required interfaces.
 
 With those prerequisites available:
@@ -39,9 +40,9 @@ With those prerequisites available:
 The second command prints the finalized MLIR module from inside the hook.
 ``CUDA_COOP_CUTLASS_CCCL_ROOT`` selects another CCCL checkout for the headers.
 ``CUDA_COOP_CUTLASS_EXAMPLE_ARTIFACT_DIR`` selects an existing parent directory
-for the example's temporary LTO-IR files; they are removed when the process
+for the example's temporary LTO-IR files. They are removed when the process
 exits. The package's persistent cache is configured separately with
-``CUDA_COOP_CUTLASS_PROVIDER_CACHE_DIR``; see :doc:`configuration`.
+``CUDA_COOP_CUTLASS_PROVIDER_CACHE_DIR``. See :doc:`configuration`.
 
 Compilation and execution
 -------------------------
@@ -71,13 +72,13 @@ the GPU kernel.
      }
    }
    </style>
-   <div class="coop-cutlass-example-scroll" role="region" aria-label="Minimal CuTe DSL integration flowchart; scroll horizontally to follow all four columns" tabindex="0">
+   <div class="coop-cutlass-example-scroll" role="region" aria-label="Minimal CuTe DSL integration flowchart. Scroll horizontally to follow all four columns" tabindex="0">
 
 .. figure:: visualizations/cutlass-integration-example.svg
    :alt: Four columns show CuTe tracing the kernel, the example collecting the CUB call and finalizing scratch, NVRTC returning wrapper LTO-IR and scratch layout, and nvJitLink combining kernel and wrapper LTO-IR. Labeled arrows show each handoff, followed by GPU execution below the host lanes.
    :width: 100%
 
-   Columns show ownership; arrows show the data passed between components.
+   Columns show ownership. Arrows show the data passed between components.
    On narrow screens, scroll horizontally to follow all four columns.
 
 .. raw:: html
@@ -123,7 +124,7 @@ The kernel
 ----------
 
 The kernel sums one ``int`` per thread across a ``(32, 4, 1)`` block and
-thread zero stores the total. ``block_sum`` is the integration; everything
+thread zero stores the total. ``block_sum`` is the integration. Everything
 else is ordinary CuTe.
 
 .. literalinclude:: cutlass_integration_example.py
@@ -148,15 +149,16 @@ Three details matter here.
 
 **The block shape is exact.** ``KernelLauncher.launch`` attaches a
 ``cutlass_launch_facts`` attribute to the kernel operation before it traces
-the body, so ``_get_launch_facts()`` returns ``(32, 4, 1)`` as Python
-integers. CUB's ``BlockReduce`` is a template on those dimensions, and a
-mismatch between the template and the launch would be silent corruption.
-The DSL also derives ``nvvm.reqntid`` from the same configuration.
+the body, so ``_get_launch_facts().exact_block_dim`` is ``(32, 4, 1)`` as
+Python integers. CUB's ``BlockReduce`` is a template on those dimensions,
+and a mismatch between the template and the launch would be silent
+corruption. The DSL also derives ``nvvm.reqntid`` from the same
+configuration.
 
 **The call is a plain ``func.call``.** ``cute.ffi`` declares a private
 ``func.func`` prototype in the enclosing ``gpu.module`` on first use and
 emits the call. The symbol is used verbatim, so the C++ definition is
-``extern "C"``. DSL numerics wrap MLIR values; ``cutlass.Int32(result)``
+``extern "C"``. DSL numerics wrap MLIR values. ``cutlass.Int32(result)``
 wraps the call's result for the caller.
 
 **The scratch operands are placeholders.** Nothing in Python knows
@@ -169,8 +171,11 @@ Step 4: the trace-finalize hook
 
 After the kernel body and the host function have returned, CuTe calls each
 registered hook with the DSL, the finished module, and the function name.
-The module hash, the compile-cache lookup, and the device link all come
-later, so the hook can still complete the module:
+A ``@cute.jit`` call that uses CuTe's compile cache computes the module
+hash and looks it up after the hooks. ``cute.compile``, which the script
+uses, turns that cache off. When CuTe compiles the module, the device
+link comes after the hooks in both cases, so the hook can still complete
+the module:
 
 .. literalinclude:: cutlass_integration_example.py
    :language: python
@@ -181,7 +186,7 @@ The hook renders the C++ for every distinct block shape it saw, compiles it,
 allocates scratch, and names the LTO-IR file on the ``gpu.module``. CuTe
 merges that attribute into its ``link-libraries`` compile option and passes
 the file to nvJitLink together with the kernel's own LTO-IR. The DSL
-documents the attribute in terms of LLVM bitcode; its compiler accepts the
+documents the attribute in terms of LLVM bitcode. Its compiler accepts the
 NVRTC LTO-IR container as a link input, and the link inlines the wrapper.
 
 The generated C++ contains a wrapper function and a layout-probe template.
@@ -224,12 +229,15 @@ block and rewrites the traced placeholders:
    :end-before: docs: end cute-cub-scratch
 
 ``SmemAllocator`` keeps no state. ``allocate`` emits a ``cute.memref.alloca``
-tagged with ``smem.partition_id``; the compiler lays out all such allocations
-in the kernel, including the user's own, and the host code reads the total
-through ``cute.kernel_smem_size`` when it builds the launch configuration.
-That is why the allocation can be inserted after tracing without touching
-the launch. ``llvm.ptrtoint`` produces the 32-bit shared-window address the
-wrapper expects.
+tagged with ``smem.partition_id``. The compiler lays out all such allocations
+in the kernel, including the user's own. The script's launch passes no
+``smem=``, so the host code reads the total through
+``cute.kernel_smem_size`` when it builds the launch configuration. That is
+why the script can insert the allocation after tracing without touching the
+launch. CuTe leaves a launch that passes ``smem=`` at the size it was
+given. In its hook, ``cuda.coop.cutlass`` raises that operand to at least
+the ``cute.kernel_smem_size`` total. ``llvm.ptrtoint`` produces the 32-bit
+shared-window address the wrapper expects.
 
 The alternative, which ``cuda.coop.cutlass`` also uses for wrapper-owned
 storage, is to declare ``__shared__`` storage inside the C++ wrapper and let
@@ -240,9 +248,10 @@ when its size must be visible to CuTe's own accounting.
 The finalized module
 --------------------
 
-This excerpt is the module printed by ``CUDA_COOP_CUTLASS_EXAMPLE_PRINT_IR=1`` on the
-CUTLASS 4.9 candidate for ``sm_120a``, trimmed to the lines the integration
-produced or depends on. Names and attributes vary between DSL versions.
+This excerpt is the module printed by
+``CUDA_COOP_CUTLASS_EXAMPLE_PRINT_IR=1`` on the CUTLASS 4.9 candidate for
+``sm_120a``, trimmed to the lines the integration produced or depends on.
+Names and attributes vary between DSL versions.
 
 .. code-block:: text
 
@@ -281,12 +290,12 @@ The linked cubin
 
 Running the script with ``CUTE_DSL_KEEP=cubin`` and ``CUTE_DSL_DUMP_DIR``
 set keeps the final cubin. On the same machine, ``cuobjdump --dump-sass``
-shows that the device link inlined the wrapper: the listing contains no
-``CALL`` and no ``example_block_sum`` symbol, one ``REDUX.SUM`` for the warp
-reductions, and two ``BAR.SYNC``, one inside CUB and one from the wrapper's
-trailing ``__syncthreads()``. Scratch accesses use ``LDS``/``STS`` and global
-input/output accesses use ``LDG``/``STG``; there are no generic ``LD``/``ST``
-instructions. The ELF symbol table still contains
+shows that the device link inlined the wrapper. The listing contains no
+``CALL`` and no ``example_block_sum`` symbol. It has one ``REDUX.SUM`` for
+the warp reductions and two ``BAR.SYNC``: one inside CUB and one from the
+wrapper's trailing ``__syncthreads()``. Scratch accesses use ``LDS``/``STS``
+and global input/output accesses use ``LDG``/``STG``. There are no generic
+``LD``/``ST`` instructions. The ELF symbol table still contains
 ``_Z20example_layout_probeILy24ELy4EE`` as a weak one-byte device object:
 the probe instantiation survives the link. ``cuda.coop.cutlass``'s runtime
 tests make the same no-call check with ``cuobjdump`` for each primitive
@@ -300,58 +309,76 @@ call. ``cuda.coop.cutlass`` keeps the same five mechanisms and adds the
 bookkeeping a library needs:
 
 * **Sessions per trace.** ``BundleSession`` is keyed by the DSL's compile
-  options object and the MLIR module, so nested ``@cute.jit`` calls,
-  several kernels in one module, and repeated compilations stay separate.
-  A snapshot restores the queued requests if a lowering fails part way.
+  options object and the MLIR module, so each trace that builds its own
+  module has its own session, including nested and repeated compilations.
+  Kernels and nested ``@cute.jit`` calls traced into one module share one
+  session, and scratch is planned and allocated for each kernel. A
+  snapshot restores the queued requests if a lowering fails part way.
 * **Planning.** A planner selects the CUB specialization, participation
   rules, result ownership, and scratch requirements from the group, dtype,
-  controls, and launch facts, and derives a deterministic symbol name from
-  that plan. Equivalent requests share one wrapper.
+  controls, and launch facts. The lowering derives a deterministic symbol
+  name from that plan. Equivalent requests share one wrapper.
 * **Scratch policy.** ``TempStorage`` descriptors let several calls share
   one allocation or receive exclusive slices, with explicit or automatic
   reuse barriers, typed reservations, and a lifetime check across branches
   and loops. Warp primitives size one storage instance per logical warp.
+  When a launch passes ``smem=``, the package's hook raises that operand
+  to at least ``cute.kernel_smem_size`` after it inserts the deferred
+  scratch.
 * **Array results.** Load returns several values per thread through a
-  ``cute.make_rmem_tensor`` buffer whose pointer is an extra argument;
+  ``cute.make_rmem_tensor`` buffer whose pointer is an extra argument.
   Store passes each item as a scalar argument.
 * **Artifacts.** The LTO-IR is cached on disk under a key that includes the
-  rendered source, header identity, compiler options, and architecture; a
+  rendered source, header identity, compiler options, and architecture. A
   cache hit skips NVRTC and still supplies the recorded layouts.
 * **Toolkit binding.** The NVRTC and nvJitLink libraries are preloaded from
-  the toolkit that owns the selected headers, and the NVRTC version is
-  checked before compilation.
+  the toolkit that owns the selected headers, and both versions are checked
+  before compilation.
+* **Convergent calls.** The script leaves each call as the ``func.call``
+  that ``cute.ffi`` emits. The package's hook replaces each wrapper's
+  ``func.func`` prototype and ``func.call`` with ``llvm.func`` and
+  ``llvm.call`` operations marked ``convergent``. Optimization then keeps
+  one call for all participating threads when the kernel branches on the
+  same condition before and after it.
 
 Questions for CUTLASS reviewers
 -------------------------------
 
 1. Is ``register_trace_finalize_hook`` together with the ``gpu.module``
    ``link-libraries`` attribute the intended extension point for externally
-   compiled device code? Is an NVRTC LTO-IR container, rather than LLVM
-   bitcode from ``cute.ffi(source=BitCode(...))``, a supported link input
-   going forward?
+   compiled device code? The DSL documents
+   ``cute.ffi(source=BitCode(...))`` as taking LLVM bitcode. Is an NVRTC
+   LTO-IR container also a supported link input, and will it remain one?
 2. ``cute._get_launch_facts()`` is private. Is reading exact block, grid,
    and cluster shapes from the ``cutlass_launch_facts`` attribute the right
    contract, and will its schema remain versioned?
 3. The hook mutates the finished module: it inserts ``SmemAllocator``
    allocations at the kernel entry block and calls
-   ``replace_all_uses_with`` on traced placeholders. Is this acceptable, or
-   is there a preferred way to request shared memory whose size is only
-   known after an external compilation?
-4. ``SmemAllocator`` is a ``dsl_user_op`` constructed inside the hook rather
-   than inside the user's trace. Does that interact badly with the user's
-   own allocations, partitions, or the ``smem.hint_smem_base_uniform``
-   attribute?
+   ``replace_all_uses_with`` on traced placeholders. The package's hook
+   also raises the shared-memory operand of a launch that passed ``smem=``.
+   Is this acceptable, or is there a preferred way to request shared memory
+   whose size is only known after an external compilation?
+4. The hook constructs ``SmemAllocator`` and calls ``allocate`` after the
+   user's trace has finished. Both are ``dsl_user_op`` methods. Does that
+   interact badly with the user's own allocations, partitions, or the
+   ``smem.hint_smem_base_uniform`` attribute?
 5. The wrappers contain ``__syncthreads()`` and are inlined by the device
-   link. Should the ``func.func`` prototype or call carry attributes such as
-   ``convergent`` or ``noinline``, and does ``cute.ffi(inline=...)`` express
-   that?
+   link. ``cute.ffi`` emits an ordinary ``func.func`` prototype and
+   ``func.call``. The package's hook replaces both with ``llvm.func`` and
+   ``llvm.call`` operations marked ``convergent``, so that optimization
+   keeps the participating threads at the same barrier. Should ``cute.ffi``
+   mark the prototype and the call ``convergent`` itself? Should they carry
+   other attributes as well, such as ``noinline``? Is
+   ``cute.ffi(inline=False)`` the way to ask for ``noinline``?
 6. The probe template leaves a weak one-byte ``__device__`` symbol in the
    cubin. Is there a cleaner way to obtain ``sizeof`` and ``alignof`` from
    an NVRTC compilation that CuTe will consume?
 7. Are there constraints on the NVRTC version that produces the LTO-IR
    relative to the LLVM and nvJitLink used by the DSL? The package
-   binds NVRTC to the toolkit that supplies the CUDA runtime headers and
-   checks its version, but the compatibility rule itself is not documented.
+   loads NVRTC and nvJitLink from the toolkit that supplies the CUDA runtime
+   headers. It requires NVRTC to match the header version and nvJitLink to
+   have the same major version and be no older. The compatibility rule
+   itself is not documented.
 
 Testing
 -------
