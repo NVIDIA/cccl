@@ -1458,4 +1458,4 @@ _CCCL_HOST_API bool is_partitioned(InputIterator first, InputIterator last, Pred
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/partition.inl>
+#include <thrust/detail/partition.inl> // IWYU pragma: export

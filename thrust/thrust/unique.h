@@ -1154,4 +1154,4 @@ unique_count(ForwardIterator first, ForwardIterator last);
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/unique.inl>
+#include <thrust/detail/unique.inl> // IWYU pragma: export

@@ -2009,4 +2009,4 @@ _CCCL_HOST_API OutputIterator binary_search(
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/binary_search.inl>
+#include <thrust/detail/binary_search.inl> // IWYU pragma: export

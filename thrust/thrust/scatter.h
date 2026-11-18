@@ -455,4 +455,4 @@ _CCCL_HOST_API void scatter_if(
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/scatter.inl>
+#include <thrust/detail/scatter.inl> // IWYU pragma: export

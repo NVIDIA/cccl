@@ -21,8 +21,9 @@
 #include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/limits>
+#include <cuda/std/__limits/numeric_limits.h>
 
 #include <new>
 

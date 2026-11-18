@@ -19,12 +19,12 @@
 #include <thrust/detail/type_deduction.h>
 
 #include <cuda/__functional/address_stability.h>
-#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
 

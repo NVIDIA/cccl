@@ -16,12 +16,15 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/type_deduction.h>
 
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__memory/allocator_traits.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 
@@ -34,8 +37,9 @@ THRUST_NAMESPACE_BEGIN
 template <typename T, typename Allocator, bool Uninitialized = false>
 struct allocator_delete final
 {
-  using allocator_type = typename std::remove_cv_t<std::remove_reference_t<Allocator>>::template rebind<T>::other;
-  using pointer        = typename ::cuda::std::allocator_traits<allocator_type>::pointer;
+  using allocator_type =
+    typename ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<Allocator>>::template rebind<T>::other;
+  using pointer = typename ::cuda::std::allocator_traits<allocator_type>::pointer;
 
   _CCCL_HIDE_FROM_ABI allocator_delete(const allocator_delete&)     = default;
   _CCCL_HIDE_FROM_ABI allocator_delete(allocator_delete&&) noexcept = default;
@@ -110,8 +114,9 @@ using uninitialized_allocator_delete = allocator_delete<T, Allocator, true>;
 template <typename T, typename Allocator, bool Uninitialized = false>
 struct array_allocator_delete final
 {
-  using allocator_type = typename std::remove_cv_t<std::remove_reference_t<Allocator>>::template rebind<T>::other;
-  using pointer        = typename ::cuda::std::allocator_traits<allocator_type>::pointer;
+  using allocator_type =
+    typename ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<Allocator>>::template rebind<T>::other;
+  using pointer = typename ::cuda::std::allocator_traits<allocator_type>::pointer;
 
   template <typename UAllocator>
   _CCCL_HOST_API array_allocator_delete(UAllocator&& other, std::size_t n) noexcept
@@ -260,8 +265,8 @@ template <typename T, typename Allocator, typename Size, typename... Args>
 _CCCL_HOST_API std::unique_ptr<
   T[],
   array_allocator_delete<T,
-                         typename ::cuda::std::allocator_traits<std::remove_cv_t<std::remove_reference_t<Allocator>>>::
-                           template rebind_traits<T>::allocator_type>>
+                         typename ::cuda::std::allocator_traits<::cuda::std::remove_cv_t<
+                           ::cuda::std::remove_reference_t<Allocator>>>::template rebind_traits<T>::allocator_type>>
 allocate_unique_n(Allocator const& alloc, Size n, Args&&... args)
 {
   using traits =

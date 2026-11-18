@@ -21,7 +21,7 @@
 #include <thrust/device_ptr.h>
 #include <thrust/iterator/iterator_traits.h>
 
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h>
 
 THRUST_NAMESPACE_BEGIN
 

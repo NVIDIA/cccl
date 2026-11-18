@@ -742,4 +742,4 @@ _CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/merge.inl>
+#include <thrust/detail/merge.inl> // IWYU pragma: export

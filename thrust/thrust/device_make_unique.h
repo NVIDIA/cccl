@@ -20,7 +20,6 @@
 #include <thrust/detail/type_deduction.h>
 #include <thrust/device_allocator.h>
 #include <thrust/device_new.h>
-#include <thrust/device_ptr.h>
 
 THRUST_NAMESPACE_BEGIN
 

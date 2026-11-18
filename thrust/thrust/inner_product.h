@@ -265,4 +265,4 @@ _CCCL_HOST_API OutputType inner_product(
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/inner_product.inl>
+#include <thrust/detail/inner_product.inl> // IWYU pragma: export

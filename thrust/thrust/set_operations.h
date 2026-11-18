@@ -3139,4 +3139,4 @@ _CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/set_operations.inl>
+#include <thrust/detail/set_operations.inl> // IWYU pragma: export

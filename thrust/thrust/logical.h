@@ -298,4 +298,4 @@ _CCCL_HOST_API bool none_of(InputIterator first, InputIterator last, Predicate p
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/logical.inl>
+#include <thrust/detail/logical.inl> // IWYU pragma: export

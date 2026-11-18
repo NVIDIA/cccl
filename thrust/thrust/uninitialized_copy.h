@@ -300,4 +300,4 @@ _CCCL_HOST_API ForwardIterator uninitialized_copy_n(InputIterator first, Size n,
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/uninitialized_copy.inl>
+#include <thrust/detail/uninitialized_copy.inl> // IWYU pragma: export

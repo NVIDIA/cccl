@@ -248,4 +248,4 @@ count_if(InputIterator first, InputIterator last, Predicate pred); // NOLINT(rea
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/count.h>
+#include <thrust/detail/count.h> // IWYU pragma: export

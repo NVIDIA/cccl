@@ -472,4 +472,4 @@ _CCCL_HOST_API OutputIterator gather_if(
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/gather.inl>
+#include <thrust/detail/gather.inl> // IWYU pragma: export

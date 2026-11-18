@@ -859,4 +859,4 @@ _CCCL_HOST_API OutputIterator replace_copy_if(
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/replace.inl>
+#include <thrust/detail/replace.inl> // IWYU pragma: export

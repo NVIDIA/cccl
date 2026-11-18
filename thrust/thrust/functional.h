@@ -18,9 +18,11 @@
 #endif // no system header
 
 #include <thrust/detail/functional/actor.h>
+#include <thrust/detail/type_deduction.h>
 
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/not_fn.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/decay.h>
@@ -467,4 +469,4 @@ _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<9>::type _10;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/functional/operators.h>
+#include <thrust/detail/functional/operators.h> // IWYU pragma: export

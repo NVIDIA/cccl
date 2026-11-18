@@ -139,4 +139,4 @@ _CCCL_HOST_API ForwardIterator2 swap_ranges(ForwardIterator1 first1, ForwardIter
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/swap_ranges.inl>
+#include <thrust/detail/swap_ranges.inl> // IWYU pragma: export

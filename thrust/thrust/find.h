@@ -390,4 +390,4 @@ _CCCL_HOST_API InputIterator find_if_not(InputIterator first, InputIterator last
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/find.inl>
+#include <thrust/detail/find.inl> // IWYU pragma: export

@@ -16,12 +16,15 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/pointer.h>
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/raw_pointer_cast.h> // IWYU pragma: export
 #include <thrust/detail/raw_reference_cast.h>
-#include <thrust/detail/reference.h>
-#include <thrust/detail/temporary_buffer.h>
-#include <thrust/detail/type_traits/pointer_traits.h>
+#include <thrust/detail/reference.h> // IWYU pragma: export
+#include <thrust/detail/temporary_buffer.h> // IWYU pragma: export
+
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 

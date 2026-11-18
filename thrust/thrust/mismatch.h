@@ -377,4 +377,4 @@ _CCCL_HOST_API ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/mismatch.inl>
+#include <thrust/detail/mismatch.inl> // IWYU pragma: export
