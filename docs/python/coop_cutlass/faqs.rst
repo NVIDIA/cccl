@@ -264,50 +264,42 @@ rules for each argument and for the result.
 Why do windowed and bulk Run Length Decode use different calls?
 ---------------------------------------------------------------
 
-:func:`cuda.coop.cutlass.run_length_decode` returns a fixed-size payload for the
-window beginning at ``decoded_window_offset``. Use it when the kernel
-needs to work with that window's values. It prepares the run table on
-each call, even when calls share a ``TempStorage`` descriptor.
+:func:`~cuda.coop.cutlass.run_length_decode` returns one window of the
+decoded stream as a payload, for the kernel to use.
+:func:`~cuda.coop.cutlass.run_length_decode_into` writes the whole stream to
+a tensor and returns the length of the stream to every thread.
 
-:func:`cuda.coop.cutlass.run_length_decode_into` writes the entire expanded
-sequence into a destination array. It prepares the table once, loops
-over decoding windows internally, and returns the total decoded size to
-every thread. That avoids repeating length validation, the prefix scan,
-and shared-table staging for every output window. The destination must
-have enough remaining capacity; use separate source and destination storage.
+Every call checks the run lengths and finds where each run starts before it
+decodes, and nothing is kept from one call to the next. A stream of 94 items
+in windows of 32 takes three ``run_length_decode`` calls, each with that
+work. One ``run_length_decode_into`` call does the work once and writes the
+three windows itself.
 
-For example, 94 decoded values with a 32-item window require three decode
-iterations. One bulk call handles all three, writing only the 30 valid items
-in the last window. The :ref:`complete example <coop-cutlass-run-length>`
-compares this with an explicit loop over the windowed operation and checks
-both results against ``numpy.repeat``.
-
-Use the windowed operation when your kernel needs to process register values
-between windows. The bulk operation stores each window directly; it has no
-per-window callback or prepared decoder that can be carried between calls.
-
-The prepared run table persists only within the call. A window offset
-selects a position in the expanded sequence; the decoder does not advance
-a hidden cursor. A shared scratch descriptor controls allocation reuse,
-not decoder state. See :ref:`run positions and windows
-<coop-glossary-decoding>` and the
-:doc:`RLD explorer <visualizations/run-length-decode>`.
+:ref:`Run Length Decode <coop-cutlass-run-length>` in the API reference sets
+the two functions side by side, and the example under
+``run_length_decode_into`` is this comparison as a tested kernel. The
+:doc:`explorer <visualizations/run-length-decode>` steps through both calls,
+and :ref:`run positions and windows <coop-glossary-decoding>` in the
+glossary follows one stream through a window.
 
 .. _coop-faq-rld-padding:
 
 How do I pad run inputs and recognize the end of decoded output?
 ----------------------------------------------------------------
 
-Use a positive prefix of run lengths followed by zeros. An all-zero tile
-represents an empty sequence; an interior zero followed by a positive
-length is invalid. The values associated with padding runs are ignored.
+End the block's run lengths with zeros. With the runs taken thread by thread
+across the block, every positive length comes before every zero. The value
+paired with a zero length never appears in the output. A block whose lengths
+are all zero decodes to nothing.
 
-A windowed decode fills positions beyond the expanded sequence with
-zero. Zero may also be a real run value, so use the total decoded size
-to determine which positions are valid. The bulk operation returns
-the total to every block member. For a window, derive its valid prefix
-from the input run lengths. Bulk decoding leaves the unused destination
-suffix unchanged.
+:func:`~cuda.coop.cutlass.run_length_decode` puts zero in every item past
+the end of the stream. Zero can also be a run value, so compare an item's
+position with the length of the stream. ``run_length_decode`` does not
+return that length, and the kernel works it out from the run lengths.
+:func:`~cuda.coop.cutlass.run_length_decode_into` returns the length to
+every thread and leaves the elements after the stream as they were.
+:ref:`Run Length Decode <coop-cutlass-run-length>` in the API reference has
+the rules for lengths and offsets.
 
 .. _coop-faq-batched-reduce:
 

@@ -42,8 +42,9 @@ def test_run_length_example(items_per_thread):
 
         scratch = coop.TempStorage(auto_sync=True)
 
-        # Decode one 32-item window at a time. Each call prepares the CUB
-        # run table again; the caller advances the window and masks its tail.
+        # Decode one window of 32 items on each trip. Every call checks the
+        # lengths again. valid_items keeps the zeros past the end of the
+        # stream out of the store.
         for decoded_offset in cutlass.range(0, total_decoded, 32):
             window = coop.run_length_decode(
                 block,
@@ -64,8 +65,8 @@ def test_run_length_example(items_per_thread):
                 valid_items=valid_items,
             )
 
-        # Decode the same stream in one call: prepare the CUB run table once,
-        # then loop internally over 32-item windows and handle the final tail.
+        # Decode the same stream in one call. It checks the lengths once and
+        # writes one window of 32 items after another.
         destination = cute.make_tensor(
             stream_pointer, cute.make_layout(total_decoded + 16)
         )

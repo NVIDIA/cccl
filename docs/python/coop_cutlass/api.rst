@@ -268,8 +268,17 @@ Histogram
 
 .. autofunction:: histogram
 
+.. _coop-cutlass-run-length:
+
 Run Length Decode
 -----------------
+
+.. automodule:: cuda.coop.cutlass._group_run_length
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. autofunction:: run_length_decode
 .. autofunction:: run_length_decode_into

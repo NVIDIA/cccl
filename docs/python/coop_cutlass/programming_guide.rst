@@ -180,56 +180,6 @@ More items per thread can increase register use, and more scratch can reduce
 the number of blocks resident on a multiprocessor. Check the compiled kernel's
 resource usage as well as its run time.
 
-.. _coop-cutlass-run-length:
-
-Run Length Decode
------------------
-
-``run_length_decode`` expands blocked run values and lengths into a fresh
-per-thread window. ``run_length_decode_into`` writes the full decoded stream
-to a contiguous one-dimensional CuTe global-memory tensor and returns a
-``Uint32`` total to every block member. Both operations require a complete
-one-dimensional block and preserve their inputs.
-
-Positive run lengths must precede trailing zero padding. Negative lengths,
-misplaced padding, and totals exceeding uint32 trap before decoding. A window
-starting beyond the decoded stream contains zeros. Bulk decoding checks the
-destination offset and remaining capacity before writing; empty input leaves
-the destination unchanged. The internal prepared table is retained across
-all bulk windows.
-
-Both functions also accept CuTe register payloads. Decoded totals use
-``Uint32``.
-
-Use ``run_length_decode_into`` when the complete decoded result belongs in
-memory. It prepares the run table once, then decodes and stores successive
-windows while keeping that table alive. ``decoded_items_per_thread`` sets
-the size of each register window; the output can be much larger. The call
-handles the final partial window and returns the full decoded size.
-
-The example below contrasts this with an explicit loop over
-``run_length_decode``. That form lets the kernel process each window's
-register values before advancing, but each call repeats table preparation.
-Reusing ``TempStorage`` provides storage for those calls; it does not retain
-a prepared decoder between them.
-
-With ``items_per_thread=1``, 32 input runs expand to 94 items: 31 runs have
-length three and the last has length one. One decoded item per thread gives
-32-item windows at decoded offsets 0, 32, and 64. The first two windows are
-full; the last has 30 valid items. Both variants write all 94 items beginning
-at destination offset 5 and preserve the prefix and suffix sentinels. The
-host checks both outputs against ``numpy.repeat``. With four runs per
-thread, the same example expands 382 items through 12 windows.
-
-`View the complete example and CPU checks on GitHub
-<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_run_length_documentation.py>`_
-
-.. literalinclude:: ../../../python/cuda_coop_cutlass/tests/runtime/test_run_length_documentation.py
-   :language: python
-   :start-after: # cutlass-run-length-example-begin
-   :end-before: # cutlass-run-length-example-end
-   :dedent: 4
-
 .. _coop-shared-load-store:
 
 Shared-memory staging
