@@ -485,6 +485,82 @@ CUB_TEST("Segmented inclusive scan works correctly for integer types",
   }
 }
 
+CUB_TEST("Segmented inclusive scan detects equal segment sizes across chunks",
+         "[multi_segment][segmented][scan]",
+         CUB_SMALL)
+{
+  using value_t  = std::int32_t;
+  using offset_t = std::uint32_t;
+  using op_t     = cuda::std::plus<>;
+  using policy_t = policy_selector_t<128, 4, 512>;
+
+  const int num_segments = GENERATE(127, 128, 129, 256, 257);
+  const int size_pattern = GENERATE(0, 1, 2);
+  CAPTURE(num_segments, size_pattern);
+
+  constexpr offset_t segment_size = 3;
+  c2h::host_vector<offset_t> h_offsets(num_segments + 1);
+  for (int i = 0; i <= num_segments; ++i)
+  {
+    h_offsets[i] = i * segment_size;
+  }
+  if (size_pattern == 1)
+  {
+    // Only the first chunk has unequal sizes; later chunks must not reset the result.
+    ++h_offsets[2];
+  }
+  else if (size_pattern == 2)
+  {
+    // Detect unequal sizes at the end, including in a partially populated chunk.
+    ++h_offsets[num_segments - 1];
+  }
+
+  const c2h::device_vector<offset_t> offsets = h_offsets;
+  c2h::device_vector<value_t> input(h_offsets.back());
+  c2h::gen(C2H_SEED(1), input, value_t{0}, value_t{5});
+  c2h::device_vector<value_t> output(input.size(), thrust::no_init);
+
+  const c2h::host_vector<value_t> h_input = input;
+  c2h::host_vector<value_t> h_expected(input.size());
+  for (int i = 0; i < num_segments; ++i)
+  {
+    compute_inclusive_scan_reference(
+      h_input.begin() + h_offsets[i],
+      h_input.begin() + h_offsets[i + 1],
+      h_expected.begin() + h_offsets[i],
+      op_t{},
+      value_t{0});
+  }
+
+  auto inclusive_scan_dispatch = [](auto&&... args) {
+    dispatch_segmented_scan<
+      cub::ForceInclusive::No,
+      const value_t*,
+      value_t*,
+      const offset_t*,
+      const offset_t*,
+      const offset_t*,
+      op_t,
+      cub::NullType,
+      value_t,
+      offset_t,
+      policy_t>(std::forward<decltype(args)>(args)...);
+  };
+
+  run_dispatch_scan(
+    inclusive_scan_dispatch,
+    cub::detail::segmented_scan::worker::block,
+    offsets,
+    input,
+    output,
+    op_t{},
+    cub::NullType{},
+    num_segments);
+
+  const c2h::host_vector<value_t> h_output = output;
+  REQUIRE(h_expected == h_output);
+}
+
 CUB_TEST("Segmented inclusive scan with init works for integer types",
          "[multi_segment][segmented][scan]",
          CUB_SMALL,
