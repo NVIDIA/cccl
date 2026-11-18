@@ -31,10 +31,10 @@
 // mirrors cudf::io::fst::stack_op_type
 enum class stack_op_type : ::cuda::std::int32_t
 {
-  READ  = 0,
-  PUSH  = 1,
-  POP   = 2,
-  RESET = 3
+  READ,
+  PUSH,
+  POP,
+  RESET
 };
 
 // types as instantiated in cuDF
@@ -118,7 +118,7 @@ try
     thrust::counting_iterator<::cuda::std::size_t>{0},
     thrust::counting_iterator<::cuda::std::size_t>{num_symbols},
     [segments = thrust::raw_pointer_cast(key_segments.data()), reset_period] __device__(::cuda::std::size_t i) {
-      return segments[i] != static_cast<stack_segment_t>((i / reset_period + 1) % 256);
+      return segments[i] != static_cast<stack_segment_t>(((i / reset_period) + 1) % 256);
     });
   if (mismatches != 0)
   {
