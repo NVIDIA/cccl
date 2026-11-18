@@ -55,7 +55,7 @@ def run_example(items_per_thread=4):
     dst = _check(driver.cuMemAlloc(result.nbytes))
     try:
         _check(driver.cuMemcpyHtoD(src, source.ctypes.data, source.nbytes))
-        # The pointer type tells load and store that the items are Int32.
+        # The source pointer's type tells load that the items are Int32.
         launch(
             make_ptr(cutlass.Int32, int(src), cute.AddressSpace.gmem),
             make_ptr(cutlass.Int32, int(dst), cute.AddressSpace.gmem),

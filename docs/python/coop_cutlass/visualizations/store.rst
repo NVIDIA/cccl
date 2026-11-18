@@ -6,7 +6,7 @@
 Store
 =====
 
-:func:`cuda.coop.cutlass.store` writes each thread's payload to a group's
+:func:`~cuda.coop.cutlass.store` writes each thread's payload to a group's
 :term:`tile` in memory. The algorithm names the layout of the payload, and
 decides whether the threads exchange their items through shared scratch
 before they write.

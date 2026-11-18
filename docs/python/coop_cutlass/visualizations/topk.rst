@@ -6,8 +6,8 @@
 TopK
 ====
 
-A top-k call selects the smallest or largest keys of a block's tile and
-returns them in the first positions of the result, in no defined order.
+A top-k call selects the smallest or largest keys of a block's :term:`tile`
+and returns them in the first positions of the result, in no defined order.
 :func:`~cuda.coop.cutlass.topk_min_pairs` and
 :func:`~cuda.coop.cutlass.topk_max_pairs` also return the value that came
 with each selected key.
@@ -71,10 +71,8 @@ CUB's block top-k follows the same idea with eight-bit digits. It builds
 histograms from the most significant digit down to find the bucket that
 holds the last key to select, then moves the selected items through shared
 memory into the first positions of the result. The tile is never sorted.
-The explorer's digit width, its choice among equal keys and the order of
-its result are examples. When ``k`` is zero or at least ``valid_items``,
-the explorer goes from ``Inputs`` to ``Defined output`` with no counting
-stage.
+When ``k`` is zero or at least ``valid_items``, the explorer goes from
+``Inputs`` to ``Defined output`` with no counting stage.
 
 :ref:`Top-k selection <coop-cutlass-topk>` in the API reference has the
 rules for both counts, for equal keys and for the positions after the

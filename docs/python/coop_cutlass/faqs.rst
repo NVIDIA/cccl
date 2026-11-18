@@ -13,8 +13,9 @@ FAQs
 Which package and import should I use?
 --------------------------------------
 
-Install the ``cuda-coop-cutlass`` package, as :doc:`Installation <index>`
-shows, and import ``cuda.coop.cutlass``:
+Install the ``cuda-coop-cutlass`` package, as
+:ref:`Installation <coop-cutlass-installation>` shows, and import
+``cuda.coop.cutlass``:
 
 .. code-block:: python
 
@@ -36,12 +37,12 @@ A primitive is compiled for a known number of items per thread and a known
 element type. ``ThreadData`` carries both, so a call such as
 ``coop.inclusive_sum(block, values)`` needs no other arguments. The item
 count is a template argument of the CUB code behind the call, which is why
-it is a Python integer and cannot come from device data.
+it is a Python integer, fixed when the kernel is compiled.
 
 :ref:`ThreadData <coop-thread-data>` in the API reference has the rules and
 the conversions to and from CuTe register tensors. A conversion copies the
-items in flat index order. Which thread owns which element of an MMA
-fragment is for the kernel to keep track of.
+items in flat index order. The kernel keeps track of which thread owns which
+element of a matrix multiply-accumulate (MMA) fragment.
 
 .. _coop-faq-returning-load:
 
@@ -50,7 +51,7 @@ What does Load return?
 
 A new ``ThreadData`` in each thread of the group, with ``items_per_thread``
 items of the source's element type. In CUB, ``Load`` fills an array that
-the caller declares. Here every call returns a payload of its own.
+the caller declares. Here every call returns a :term:`payload` of its own.
 
 ``items_per_thread=1`` gives a payload of one item. A primitive that takes
 one scalar per thread, such as a warp scan, takes ``values[0]``.
@@ -62,8 +63,8 @@ one scalar per thread, such as a warp scan, takes ``values[0]``.
 How do I stage a tile in shared memory?
 ---------------------------------------
 
-Write the tile to a shared tensor, wait at a barrier, and read it back with
-``load``. The tensor comes from CuTe's ``SmemAllocator`` or from
+Write the :term:`tile` to a shared tensor, wait at a barrier, and read it
+back with ``load``. The tensor comes from CuTe's ``SmemAllocator`` or from
 :meth:`TempStorage.reserve <cuda.coop.cutlass.TempStorage.reserve>`. The
 kernel fills it from a payload with ``store``, or straight from global
 memory with native CuTe copies. The barrier, such as ``block.sync()``, is
@@ -78,8 +79,9 @@ rules for copies with predicates and for asynchronous copies.
 When does ``ThreadData`` need an explicit element type?
 -------------------------------------------------------
 
-When its items are raw MLIR integers, which have a width and no sign. Pass
-``dtype`` with that width, or wrap each item in a CUTLASS type such as
+When its items are raw MLIR integers, such as the result of an operation
+built with the ``cutlass._mlir`` bindings. They have a width and no sign.
+Pass ``dtype`` with that width, or wrap each item in a CUTLASS type such as
 ``cutlass.Uint32``.
 
 Otherwise leave it out. ``load`` takes the type from the memory, and a
@@ -87,18 +89,20 @@ primitive takes it from the items of a payload the kernel fills, which must
 all have the same type.
 
 ``to_tensor_ssa`` and ``to_register_tensor`` need the type as well. A
-payload from ``load``, a primitive or a conversion carries it. For one the
-kernel built with ``ThreadData(n)``, ``from_values`` or ``from_fn`` and no
-``dtype``, pass ``dtype`` to the call, or ``like`` to ``to_tensor_ssa``.
+payload from ``load``, a primitive or a conversion carries it. For a payload
+the kernel built with ``ThreadData(n)``, ``from_values`` or ``from_fn`` and
+no ``dtype``, pass ``dtype`` to ``to_tensor_ssa`` or ``to_register_tensor``,
+or call ``to_tensor_ssa(like=tensor)``, which takes the type and the shape
+from ``tensor``.
 
-Passing ``dtype`` to ``ThreadData(...)`` assigns no missing items. Python
-numbers among the items take that type if it can hold them. An integer out
-of range, or a float in an integer payload, is rejected when the kernel is
-compiled. An item that already has a CuTe type is not converted and must
-have exactly that type. ``ThreadData.from_fn`` with ``dtype`` converts, as
-in :ref:`How do I change a payload's element type?
-<coop-faq-payload-conversion>`. :ref:`ThreadData <coop-thread-data>` in the
-API reference lists the supported types.
+A payload made with ``ThreadData(n, dtype=...)`` still starts with no
+values. Python numbers among the items take that type if it can hold them.
+An integer out of range, or a float in an integer payload, is rejected when
+the kernel is compiled. An item that already has a CuTe type is not
+converted and must have exactly that type. ``ThreadData.from_fn`` with
+``dtype`` converts, as :ref:`the entry on changing a payload's element type
+<coop-faq-payload-conversion>` shows. :ref:`ThreadData <coop-thread-data>`
+in the API reference lists the supported types.
 
 .. _coop-faq-producer:
 
@@ -118,32 +122,6 @@ tensor in tensor memory included. :ref:`Producer-owned register loads
 <coop-cutlass-producer-interop>` in Advanced topics has a tested producer
 and the rules for the method and for what it returns.
 
-.. _coop-faq-release:
-
-Does releasing storage wait for its users?
-------------------------------------------
-
-No. ``release`` adds no barrier. Every thread must be past the last
-primitive that used the region before any thread writes through the returned
-tensor. See
-:meth:`TempStorage.release <cuda.coop.cutlass.TempStorage.release>`.
-
-.. _coop-faq-exclusive-storage:
-.. _why-use-sharing-exclusive-instead-of-omitting-storage:
-.. _why-use-tempstorage-sharing-exclusive:
-
-Why use ``TempStorage`` with ``sharing="exclusive"``?
------------------------------------------------------
-
-It uses more shared memory and needs fewer barriers. With
-``sharing="exclusive"`` each call site has its own slice, so two different
-calls never reuse each other's scratch and need no barrier between them when
-``auto_sync=False``. See :ref:`TempStorage <coop-temp-storage>` for the two
-layouts side by side.
-
-Leaving ``temp_storage`` out adds a barrier after each call that uses
-scratch. The compiler picks the layout, which today is one region per call.
-
 .. _coop-faq-temp-storage:
 
 Why or when would I provide my own ``TempStorage``?
@@ -161,9 +139,47 @@ region across three calls:
    :end-before: # cutlass-concept-temp-storage-end
 
 :ref:`TempStorage <coop-temp-storage>` in the API reference lists the
-primitives that accept one and shows the layouts and the barriers.
-:ref:`Exclusive slices <coop-faq-exclusive-storage>` use more shared memory
-and need fewer barriers.
+primitives that accept one and shows the layouts and the barriers. The entry
+on :ref:`exclusive slices <coop-faq-exclusive-storage>` says what
+``sharing="exclusive"`` costs and what it saves.
+
+.. _coop-faq-exclusive-storage:
+.. _why-use-sharing-exclusive-instead-of-omitting-storage:
+.. _why-use-tempstorage-sharing-exclusive:
+
+Why use ``TempStorage`` with ``sharing="exclusive"``?
+-----------------------------------------------------
+
+Compared with the default, ``sharing="shared"``, it uses more shared memory
+and needs fewer barriers. Each call site has its own slice, so two different
+call sites never reuse each other's scratch and need no barrier between them
+when ``auto_sync=False``. A call site that runs again, as in a loop, reuses
+its own slice, and that reuse still needs a barrier. See
+:ref:`TempStorage <coop-temp-storage>` for the two layouts side by side.
+
+Leaving ``temp_storage`` out adds a barrier after each call that uses
+scratch. The compiler picks the layout, which today is one region per call.
+
+.. _coop-faq-release:
+
+Does releasing storage wait for its users?
+------------------------------------------
+
+No. :meth:`TempStorage.release <cuda.coop.cutlass.TempStorage.release>`
+returns the region as an ordinary shared tensor and adds no barrier. Every
+thread must be past the last primitive that used the region before any
+thread writes through that tensor. With ``auto_sync=False``, call ``sync()``
+before ``release``.
+
+.. _coop-faq-storage-control-flow:
+
+Can I use a ``TempStorage`` inside an ``if`` or a loop?
+-------------------------------------------------------
+
+Yes, as long as every path uses the same object. Construct one
+``TempStorage`` inside the kernel before the ``if`` or loop. The Notes under
+:class:`TempStorage <cuda.coop.cutlass.TempStorage>` list what the compiler
+rejects.
 
 .. _coop-faq-topk-order:
 
@@ -201,8 +217,8 @@ says where the sorted keys end up across the threads. The
 When should I use Adjacent Difference or Discontinuity?
 -------------------------------------------------------
 
-Use :func:`~cuda.coop.cutlass.adjacent_difference` for a value computed
-from each item and its neighbor, such as the change between successive
+Use :func:`~cuda.coop.cutlass.adjacent_difference` for the difference
+between each item and its neighbor, such as the change between successive
 samples. Use :func:`~cuda.coop.cutlass.discontinuity` for flags that mark
 where each run of equal values starts and ends.
 :ref:`Neighbor comparisons <coop-cutlass-neighbors>` in the API reference
@@ -313,10 +329,13 @@ How does Batched Warp Reduction differ from ordinary Reduce?
 ``reduce(group, values)`` combines every item of every thread into one
 result, which the thread with rank 0 in the group holds.
 ``reduce_batched(warp, values)`` keeps the items apart: item ``b`` of every
-lane goes into result ``b``, so three items per lane give three results.
+lane belongs to batch ``b``, and each batch has its own result, so three
+items per lane give three results.
 
-Each result is in one lane, and a lane can end up with none, so a kernel
-tests the batch number before it reads an item of the returned payload.
+Each result is in one lane, and a lane can end up with none.
+``output_layout`` sets which batch each item of the returned payload holds,
+and a kernel reads an item only when that batch number is below the number
+of batches.
 :ref:`Batched reduction <coop-cutlass-reduce-batched>` in the API reference
 has the two output layouts and a tested kernel, and the
 :doc:`explorer <visualizations/reduce-batched>` draws both layouts.
@@ -351,7 +370,7 @@ condition is true in every lane of the group, so the whole group calls
 Write the condition as an ``if`` statement. Inside a runtime
 ``a if c else b`` expression, a block primitive that takes ``temp_storage``
 and uses scratch is rejected when the kernel is compiled. For a loop, the
-kernel under :ref:`How do I carry a scan aggregate across loop iterations?
+kernel in :ref:`the entry on carrying a scan aggregate
 <coop-faq-scan-loop-aggregate>` calls ``load``, ``exclusive_scan`` and
 ``store`` on every trip.
 
@@ -415,8 +434,8 @@ the new type as ``dtype``:
        len(values), lambda i: values[i], dtype=cutlass.Float32
    )
 
-Each item is cast as ``cutlass.Float32(values[i])`` casts it. ``dtype`` is
-a CUTLASS type, the matching NumPy type or a NumPy ``dtype`` such as
+Each item becomes ``cutlass.Float32(values[i])``. ``dtype`` is a CUTLASS
+type, the matching NumPy type or a NumPy ``dtype`` such as
 ``numpy.dtype("float32")``, or Python ``int`` or ``float``, which mean
 ``Int32`` and ``Float32``. The conversions between a payload and CuTe's
 register forms take ``dtype`` as well and cast the items they copy:
@@ -429,7 +448,7 @@ items have, and converts no item that already has a CuTe type.
 ``to_tensor_ssa`` and ``to_register_tensor`` check the items against that
 type before they cast. A payload declared ``Int32`` that holds a
 ``Float32`` item is rejected when the kernel is compiled, whatever ``dtype``
-the call names. :ref:`When does ThreadData need an explicit element type?
+the call names. :ref:`The entry on explicit element types
 <coop-faq-thread-data-dtype>` has those rules.
 
 A variable that holds a payload keeps one item count, element type and
@@ -442,16 +461,6 @@ variable a payload with the same element type and alignment before the
 loop. To choose a type by a Python value, write
 ``if cutlass.const_expr(flag):``, which is decided when the kernel is
 compiled.
-
-.. _coop-faq-storage-control-flow:
-
-Can I choose temporary storage inside a branch or loop?
--------------------------------------------------------
-
-Yes, as long as every path uses the same object. Construct one
-``TempStorage`` inside the kernel before the ``if`` or loop. The Notes under
-:class:`TempStorage <cuda.coop.cutlass.TempStorage>` list what the compiler
-rejects.
 
 .. _coop-faq-floating-prefix:
 

@@ -6,9 +6,9 @@
 Discontinuity
 =============
 
-:func:`cuda.coop.cutlass.discontinuity` flags the items of a block's tile that
-differ from their neighbor. A head flag marks the first item of a run of
-equal values, and a tail flag marks the last.
+:func:`~cuda.coop.cutlass.discontinuity` flags the items of a block's
+:term:`tile` that differ from their neighbor. A head flag marks the first
+item of a run of equal values, and a tail flag marks the last.
 
 Runs can cross thread boundaries. The explorer shows eight teaching
 threads, with separate rows for the neighbor values and the returned flags.

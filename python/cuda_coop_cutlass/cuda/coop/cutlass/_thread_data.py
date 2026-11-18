@@ -754,8 +754,8 @@ class ThreadData:
             order, while the kernel is compiled. It returns the item for
             that index and may build it from CuTe values.
         dtype : type, optional
-            Element type. A CUTLASS type casts each item to it, which makes
-            ``from_fn`` the way to change a payload's element type.
+            Element type. Each item is cast to it, which makes ``from_fn``
+            the way to change a payload's element type.
 
         Returns
         -------
@@ -815,8 +815,8 @@ class ThreadData:
             tensor shape when available. An explicit count must match the
             inferred count; it is required when inference is unavailable.
         dtype : type, optional
-            Defaults to ``fragment.element_type``. An explicit CUTLASS
-            numeric type casts each extracted item.
+            Defaults to ``fragment.element_type``. An explicit type casts
+            each extracted item.
 
         Returns
         -------
@@ -880,8 +880,8 @@ class ThreadData:
             ``numel()`` or a static one-dimensional shape. An explicit count
             must match any inferred count.
         dtype : type, optional
-            Defaults to the value's dtype metadata. An explicit CUTLASS
-            numeric type casts each extracted item.
+            Defaults to the value's dtype metadata. An explicit type casts
+            each extracted item.
 
         Returns
         -------
@@ -1028,18 +1028,19 @@ class ThreadData:
         The source must explicitly implement the private
         ``__cuda_coop_thread_data_load__`` tracing hook. The producer owns any
         required tensor-memory-to-register copy, including its copy atom,
-        thread partition, readiness, and lifetime. The hook must return either
-        ``ThreadData`` or a statically sized per-thread register payload
-        accepted by :meth:`from_payload`. The hook is invoked exactly once by
-        each call during DSL tracing; a single-use producer source is
-        responsible for rejecting a second call.
+        thread partition, readiness, and lifetime. The hook must return a
+        ``ThreadData`` or register values that :meth:`from_payload` takes. The
+        item count must be known when the kernel is compiled, from the result
+        or from ``items_per_thread``. The hook is invoked exactly once by each
+        call during DSL tracing; a single-use producer source is responsible
+        for rejecting a second call.
 
         Bare memory-backed tensors are intentionally not interpreted here:
         their address space and shape do not provide enough information to
         safely select or schedule a register load.
 
-        ``items_per_thread`` and ``dtype`` are optional static constraints on
-        the returned register payload, matching :meth:`from_payload`.
+        ``items_per_thread`` and ``dtype`` are optional and work as they do
+        for :meth:`from_payload`.
 
         :ref:`Producer-owned register loads <coop-cutlass-producer-interop>`
         in Advanced topics has a tested producer and the rules for the hook.
@@ -1118,17 +1119,20 @@ class ThreadData:
         Parameters
         ----------
         dtype : type, optional
-            Supported CUTLASS or NumPy numeric dtype. Defaults to this
-            payload's dtype; required if the payload has no dtype metadata.
+            Element type of the result, a CUTLASS or NumPy numeric type.
+            Left out, it is ``like.dtype`` when ``like`` is given and this
+            payload's ``dtype`` otherwise. Each item is converted to it. A
+            payload with no ``dtype`` needs ``dtype`` or ``like``.
         shape : int or tuple, optional
-            Defaults to ``(items_per_thread,)``. May be nested, but every
-            extent must be a positive compile-time integer and the total
-            number of elements must equal ``items_per_thread``.
-
+            Shape of the result. It is made of positive Python integers,
+            may be nested, and holds exactly ``items_per_thread`` items.
+            Left out, it is ``like.shape`` when ``like`` is given and
+            ``(items_per_thread,)`` otherwise.
         like : ThreadDataTensorMetadata, optional
-            Supplies missing shape and dtype metadata. Explicit arguments take
-            precedence. Flat item order is preserved; producer-specific lane
-            ownership is not reconstructed by this metadata.
+            An object whose ``shape`` and ``dtype`` give the shape and the
+            element type of the result. A ``shape`` or ``dtype`` argument
+            takes precedence. The items keep their flat order, and the
+            kernel keeps track of which thread owns which element.
 
         Returns
         -------

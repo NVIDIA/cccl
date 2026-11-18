@@ -61,9 +61,8 @@ The predicates
    them.
 
 The barrier
-   In a group of more than one thread, a thread that loads more than one
-   item with the default algorithm receives elements that other threads
-   copied, so every thread must finish its copy before ``load`` runs.
+   ``load`` can give a thread elements that other threads copied, so every
+   thread must finish its copy before ``load`` runs.
    ``cute.arch.sync_threads()`` is the block barrier that waits for them.
    The package adds no barrier between your writes to shared memory and a
    primitive that reads them.
@@ -149,12 +148,13 @@ rules for element types, ``sharing`` and barriers.
 A reserved tensor can also be the source of ``load`` or the destination of
 ``store``, like the shared tensor of the previous section. The exceptions
 are ``Float16`` and ``BFloat16`` tensors, which ``load`` and ``store``
-reject when the kernel is compiled. ``"direct"``, ``"striped"`` and
-``"vectorize"`` use no scratch. A transpose algorithm uses scratch while it
-reads or writes the tensor. With ``sharing="shared"`` the tensor starts
-where the scratch of every call that takes the same ``TempStorage`` starts,
-and nothing checks for the overlap. Give such a call scratch elsewhere:
-leave ``temp_storage`` out, or pass another ``TempStorage``.
+reject when the kernel is compiled. The algorithms ``"direct"``,
+``"striped"`` and ``"vectorize"`` use no scratch. A transpose algorithm uses
+scratch while it reads or writes the tensor. With ``sharing="shared"``, a
+transpose ``load`` or ``store`` that takes the tensor's own ``TempStorage``
+puts that scratch where the tensor starts, and nothing checks for the
+overlap. Give that call scratch elsewhere: leave ``temp_storage`` out, or
+pass another ``TempStorage``.
 
 .. _coop-cutlass-producer-interop:
 
@@ -241,18 +241,17 @@ memory. To see what a kernel does with them, read its linked cubin, as
 
 Three protocol classes describe a producer to a type checker. A producer
 works without them, because ``ThreadData.load`` finds the hook by its name.
-The producer still makes the copy and waits for it.
 
 .. currentmodule:: cuda.coop.cutlass
 
-.. autoclass:: ThreadDataLoadSource
+.. autoclass:: ThreadDataLoadSource()
    :no-members:
    :no-special-members:
 
-.. autoclass:: ThreadDataTensorMetadata
+.. autoclass:: ThreadDataTensorMetadata()
    :no-members:
    :no-special-members:
 
-.. autoclass:: ThreadDataSource
+.. autoclass:: ThreadDataSource()
    :no-members:
    :no-special-members:

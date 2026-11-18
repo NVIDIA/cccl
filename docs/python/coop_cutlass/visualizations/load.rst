@@ -6,7 +6,7 @@
 Load
 ====
 
-:func:`cuda.coop.cutlass.load` reads a group's :term:`tile` from memory and
+:func:`~cuda.coop.cutlass.load` reads a group's :term:`tile` from memory and
 returns each thread's items as a payload. The algorithm decides which thread
 reads which element, and whether the threads then exchange their items
 through shared scratch.

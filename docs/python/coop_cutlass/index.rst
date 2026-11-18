@@ -21,6 +21,8 @@ This kernel computes a running sum across a block of 128 threads:
 The :doc:`Programming Guide <programming_guide>` shows the whole program and
 explains each line.
 
+.. _coop-cutlass-installation:
+
 Installation
 ------------
 

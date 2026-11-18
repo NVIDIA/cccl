@@ -6,7 +6,7 @@
 Batched Warp Reduction
 ======================
 
-:func:`cuda.coop.cutlass.reduce_batched` reduces several batches in one
+:func:`~cuda.coop.cutlass.reduce_batched` reduces several batches in one
 call, across the lanes of a warp or of a group of lanes. Item 0 of every
 lane belongs to batch 0, item 1 to batch 1, and so on. Each batch has its
 own result, and the results are spread over the lanes.

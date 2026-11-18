@@ -51,7 +51,7 @@ order of the :doc:`API reference <api>`:
      - :func:`~cuda.coop.cutlass.sum`
    * - `block_load_store.py
        <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/block_load_store.py>`__
-     - A partial tile on a block: ``valid_items`` and ``offset`` in both
+     - A partial :term:`tile` on a block: ``valid_items`` and ``offset`` in both
        calls, and in ``load`` an ``oob_default`` for the items at or past
        the count
      - :func:`~cuda.coop.cutlass.load`,
@@ -82,7 +82,7 @@ order of the :doc:`API reference <api>`:
        :func:`~cuda.coop.cutlass.reduce`
    * - `reduce_batched.py
        <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/reduce_batched.py>`__
-     - One sum for each item of a lane's payload
+     - One sum for each item of a lane's :term:`payload`
      - :func:`~cuda.coop.cutlass.load`,
        :func:`~cuda.coop.cutlass.reduce_batched`
    * - `scan.py
@@ -94,7 +94,8 @@ order of the :doc:`API reference <api>`:
        :func:`~cuda.coop.cutlass.store`
    * - `exchange_shuffle.py
        <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/exchange_shuffle.py>`__
-     - A blocked payload made striped, then shifted by one position
+     - A :term:`blocked` payload made :term:`striped`, then shifted by one
+       position
      - :func:`~cuda.coop.cutlass.load`,
        :func:`~cuda.coop.cutlass.exchange`,
        :func:`~cuda.coop.cutlass.shuffle`,
@@ -286,8 +287,10 @@ Integration walkthroughs
 ------------------------
 
 The :ref:`debugger walkthrough <cuda.coop.cutlass.debugger_walkthrough>`
-compares Direct and Transpose tile copies. Its script compiles a copy kernel
-once and launches it twice. The walkthrough shows excerpts and links the
+follows a tile copy through a Python debugger, once with
+``algorithm="direct"`` and once with ``algorithm="transpose"``. In each run
+its script compiles the copy kernel once and launches it twice. The
+walkthrough shows excerpts and links the
 `complete debugger_walkthrough.py script on GitHub
 <https://github.com/NVIDIA/cccl/blob/main/docs/python/coop_cutlass/debugger_walkthrough.py>`_.
 
