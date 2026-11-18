@@ -318,12 +318,12 @@ CUB_TEST("WarpReduce::Reduce, wide integers",
 CUB_TEST("WarpReduce::Sum/Max/Min, builtin types",
          "[reduce][warp][predefined_op][full]",
          CUB_SMALL,
-         builtin_type_list,
          predefined_op_list,
+         builtin_type_list,
          logical_warp_threads)
 {
-  using T                                       = c2h::get<0, TestType>;
-  using predefined_op                           = c2h::get<1, TestType>;
+  using T _CCCL_NODEBUG                         = c2h::get<1, TestType>;
+  using predefined_op _CCCL_NODEBUG             = c2h::get<0, TestType>;
   constexpr auto logical_warp_threads           = c2h::get<2, TestType>::value;
   auto [input_size, output_size, logical_warps] = get_test_config(logical_warp_threads);
   CAPTURE(c2h::type_name<T>(), c2h::type_name<predefined_op>(), logical_warp_threads);
@@ -485,12 +485,12 @@ CUB_TEST("WarpReduce::CustomSum", "[reduce][warp][generic][full]", CUB_SMALL, fu
 CUB_TEST("WarpReduce::Sum/Max/Min Partial",
          "[reduce][warp][predefined_op][partial]",
          CUB_SMALL,
-         builtin_type_list,
          predefined_op_list,
+         builtin_type_list,
          logical_warp_threads)
 {
-  using T                                       = c2h::get<0, TestType>;
-  using predefined_op                           = c2h::get<1, TestType>;
+  using T _CCCL_NODEBUG                         = c2h::get<1, TestType>;
+  using predefined_op _CCCL_NODEBUG             = c2h::get<0, TestType>;
   constexpr auto logical_warp_threads           = c2h::get<2, TestType>::value;
   auto [input_size, output_size, logical_warps] = get_test_config(logical_warp_threads);
   const int valid_items                         = GENERATE_COPY(take(2, random(1u, logical_warp_threads)));
@@ -558,12 +558,12 @@ CUB_TEST("WarpReduce::Sum", "[reduce][warp][generic][partial]", CUB_SMALL, full_
 CUB_TEST("WarpReduce::Sum/Max/Min Multiple Items Per Thread",
          "[reduce][warp][predefined_op][full]",
          CUB_SMALL,
-         builtin_type_list,
          predefined_op_list,
+         builtin_type_list,
          logical_warp_threads)
 {
-  using T                                       = c2h::get<0, TestType>;
-  using predefined_op                           = c2h::get<1, TestType>;
+  using T _CCCL_NODEBUG                         = c2h::get<1, TestType>;
+  using predefined_op _CCCL_NODEBUG             = c2h::get<0, TestType>;
   constexpr auto logical_warp_threads           = c2h::get<2, TestType>::value;
   auto [input_size, output_size, logical_warps] = get_test_config(logical_warp_threads, num_items_per_thread);
   CAPTURE(c2h::type_name<T>(), c2h::type_name<predefined_op>(), logical_warp_threads);
