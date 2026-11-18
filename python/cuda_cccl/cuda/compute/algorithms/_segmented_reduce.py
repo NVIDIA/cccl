@@ -23,7 +23,7 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..op import OpAdapter, make_op_adapter, rebind_op_state
+from ..op import UNCHANGED, OpAdapter, _Unchanged, make_op_adapter, rebind_op_state
 from ..typing import DeviceArrayLike, GpuStruct, IteratorT, Operator
 
 
@@ -103,31 +103,7 @@ class _SegmentedReduce(Serializable):
         # first time __call__ reads it.
         self._last_stateless_op = None
 
-    def update_op_state(self, op: Callable | OpAdapter) -> None:
-        """Rebind this reducer's op state in place.
-
-        ``op`` must be the same code as the one the reducer was built
-        with -- only its state may differ. ``execute()`` never re-derives
-        op state, so call this before ``execute()`` whenever it changes.
-        """
-        # Force the write (bypass identity-cache: a RawOp with state still
-        # reports is_stateful=False), then invalidate the cache -- a later
-        # __call__ on this same op object must not skip re-deriving it.
-        rebind_op_state(self.op_cccl, op, last_stateless_op=None)
-        self._last_stateless_op = None
-
-    def update_h_init_state(self, h_init) -> None:
-        """Rebind this reducer's h_init state in place.
-
-        ``h_init`` must have the same dtype as the one used at
-        construction. Mutating the same array object in place is picked
-        up automatically; passing a *different* object requires this
-        call -- ``execute()`` has no ``h_init`` parameter and never
-        re-reads it.
-        """
-        set_cccl_value_state(self.h_init_cccl, h_init)
-
-    def execute(
+    def __call__(
         self,
         *,
         temp_storage,
@@ -136,15 +112,16 @@ class _SegmentedReduce(Serializable):
         num_segments: int,
         start_offsets_in,
         end_offsets_in,
+        op: Callable | OpAdapter | _Unchanged = UNCHANGED,
+        h_init=UNCHANGED,
         max_segment_size: int | None = None,
         stream=None,
     ):
-        """Minimal per-call path: updates ``d_in``/``d_out``/offsets and launches.
-
-        Unlike ``__call__``, never re-derives op or ``h_init`` state --
-        call ``update_op_state``/``update_h_init_state`` first if either
-        changed. See ``_Reduce.execute``.
+        """``op``/``h_init`` default to ``UNCHANGED``: omit them to reuse
+        whatever was last bound (construction, or a previous call that
+        passed them), skipping their re-derivation entirely.
         """
+        # Select (and lazily load) the build result for the current device.
         self.loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
         )
@@ -175,80 +152,13 @@ class _SegmentedReduce(Serializable):
         set_cccl_iterator_state(self.start_offsets_in_cccl, start_offsets_in)
         set_cccl_iterator_state(self.end_offsets_in_cccl, end_offsets_in)
 
-        stream_handle = validate_and_get_stream(stream)
-
-        if temp_storage is None:
-            temp_storage_bytes = 0
-            d_temp_storage = 0
-        else:
-            temp_storage_bytes = temp_storage.nbytes
-            d_temp_storage = get_data_pointer(temp_storage)
-
-        temp_storage_bytes = self.loaded_build_result.compute(
-            d_temp_storage,
-            temp_storage_bytes,
-            self.d_in_cccl,
-            self.d_out_cccl,
-            num_segments,
-            self.start_offsets_in_cccl,
-            self.end_offsets_in_cccl,
-            self.op_cccl,
-            self.h_init_cccl,
-            max_segment_size,
-            stream_handle,
-        )
-        return temp_storage_bytes
-
-    def __call__(
-        self,
-        *,
-        temp_storage,
-        d_in,
-        d_out,
-        num_segments: int,
-        start_offsets_in,
-        end_offsets_in,
-        op: Callable | OpAdapter,
-        h_init,
-        max_segment_size: int | None = None,
-        stream=None,
-    ):
-        # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(
-            self.build_results, self._bound_build_result
-        )
-
-        if num_segments > np.iinfo(np.int32).max:
-            raise RuntimeError(
-                "Segmented sort does not currently support more than 2^31-1 segments."
+        if op is not UNCHANGED:
+            self._last_stateless_op = rebind_op_state(
+                self.op_cccl, op, self._last_stateless_op
             )
 
-        if max_segment_size is None:
-            max_segment_size = 0  # CCCL.c treats 0 as "not specified"
-
-        if max_segment_size > 0:
-            try:
-                from .._build_info import USING_V2  # type: ignore[import-not-found]
-            except ImportError:
-                USING_V2 = False
-            if USING_V2:
-                import warnings
-
-                warnings.warn(
-                    "max_segment_size is not used by the v2 backend and will be ignored",
-                    stacklevel=4,
-                )
-
-        set_cccl_iterator_state(self.d_in_cccl, d_in)
-        set_cccl_iterator_state(self.d_out_cccl, d_out)
-        set_cccl_iterator_state(self.start_offsets_in_cccl, start_offsets_in)
-        set_cccl_iterator_state(self.end_offsets_in_cccl, end_offsets_in)
-
-        self._last_stateless_op = rebind_op_state(
-            self.op_cccl, op, self._last_stateless_op
-        )
-
-        set_cccl_value_state(self.h_init_cccl, h_init)
+        if h_init is not UNCHANGED:
+            set_cccl_value_state(self.h_init_cccl, h_init)
 
         stream_handle = validate_and_get_stream(stream)
 

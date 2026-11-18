@@ -32,10 +32,10 @@ class HostBenchmarkCase:
     twoshot: Callable[[SimpleNamespace, Any], None]
     noop_return_kind: NoopReturnKind
     skip_reason: str | None = None
-    # Set only for algorithms with an execute() fast path; calls
-    # wrapper.execute() with construction-time op/h_init already bound,
-    # skipping the per-call re-derivation twoshot exercises.
-    execute: Callable[[SimpleNamespace, Any], None] | None = None
+    # Set only for algorithms with an op/h_init to omit; calls wrapper()
+    # with op/h_init left at their UNCHANGED default (reusing whatever was
+    # last bound), skipping their re-derivation that twoshot exercises.
+    unchanged: Callable[[SimpleNamespace, Any], None] | None = None
 
 
 class NoopBuildResult:
@@ -270,8 +270,8 @@ def _twoshot_reduce(state: SimpleNamespace, wrapper) -> None:
     )
 
 
-def _execute_reduce(state: SimpleNamespace, wrapper) -> None:
-    wrapper.execute(
+def _call_unchanged_reduce(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
         temp_storage=state.temp_storage,
         d_in=state.d_in,
         d_out=state.d_out[:1],
@@ -302,8 +302,8 @@ def _twoshot_reduce_stream(state: SimpleNamespace, wrapper) -> None:
     )
 
 
-def _execute_reduce_stream(state: SimpleNamespace, wrapper) -> None:
-    wrapper.execute(
+def _call_unchanged_reduce_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
         temp_storage=state.temp_storage,
         d_in=state.d_in,
         d_out=state.d_out[:1],
@@ -350,8 +350,8 @@ def _twoshot_scan(state: SimpleNamespace, wrapper) -> None:
     )
 
 
-def _execute_scan(state: SimpleNamespace, wrapper) -> None:
-    wrapper.execute(
+def _call_unchanged_scan(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
         temp_storage=state.temp_storage,
         d_in=state.d_in,
         d_out=state.d_out,
@@ -382,8 +382,8 @@ def _twoshot_scan_stream(state: SimpleNamespace, wrapper) -> None:
     )
 
 
-def _execute_scan_stream(state: SimpleNamespace, wrapper) -> None:
-    wrapper.execute(
+def _call_unchanged_scan_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
         temp_storage=state.temp_storage,
         d_in=state.d_in,
         d_out=state.d_out,
@@ -444,8 +444,8 @@ def _twoshot_segmented_reduce(state: SimpleNamespace, wrapper) -> None:
     )
 
 
-def _execute_segmented_reduce(state: SimpleNamespace, wrapper) -> None:
-    wrapper.execute(
+def _call_unchanged_segmented_reduce(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
         temp_storage=state.temp_storage,
         d_in=state.d_in,
         d_out=state.d_out,
@@ -482,8 +482,8 @@ def _twoshot_segmented_reduce_stream(state: SimpleNamespace, wrapper) -> None:
     )
 
 
-def _execute_segmented_reduce_stream(state: SimpleNamespace, wrapper) -> None:
-    wrapper.execute(
+def _call_unchanged_segmented_reduce_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
         temp_storage=state.temp_storage,
         d_in=state.d_in,
         d_out=state.d_out,
@@ -520,8 +520,8 @@ def _twoshot_unary_transform(state: SimpleNamespace, wrapper) -> None:
     )
 
 
-def _execute_unary_transform(state: SimpleNamespace, wrapper) -> None:
-    wrapper.execute(
+def _call_unchanged_unary_transform(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
         d_in=state.d_in,
         d_out=state.d_out,
         num_items=state.num_items,
@@ -548,8 +548,8 @@ def _twoshot_unary_transform_stream(state: SimpleNamespace, wrapper) -> None:
     )
 
 
-def _execute_unary_transform_stream(state: SimpleNamespace, wrapper) -> None:
-    wrapper.execute(
+def _call_unchanged_unary_transform_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
         d_in=state.d_in,
         d_out=state.d_out,
         num_items=state.num_items,
@@ -586,8 +586,8 @@ def _twoshot_binary_transform(state: SimpleNamespace, wrapper) -> None:
     )
 
 
-def _execute_binary_transform(state: SimpleNamespace, wrapper) -> None:
-    wrapper.execute(
+def _call_unchanged_binary_transform(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
         d_in1=state.d_in1,
         d_in2=state.d_in2,
         d_out=state.d_out,
@@ -617,8 +617,8 @@ def _twoshot_binary_transform_stream(state: SimpleNamespace, wrapper) -> None:
     )
 
 
-def _execute_binary_transform_stream(state: SimpleNamespace, wrapper) -> None:
-    wrapper.execute(
+def _call_unchanged_binary_transform_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
         d_in1=state.d_in1,
         d_in2=state.d_in2,
         d_out=state.d_out,
@@ -751,8 +751,8 @@ def _twoshot_lower_bound(state: SimpleNamespace, wrapper) -> None:
     )
 
 
-def _execute_lower_bound(state: SimpleNamespace, wrapper) -> None:
-    wrapper.execute(
+def _call_unchanged_lower_bound(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
         d_data=state.d_data,
         num_items=state.num_items,
         d_values=state.d_values,
@@ -785,8 +785,8 @@ def _twoshot_lower_bound_stream(state: SimpleNamespace, wrapper) -> None:
     )
 
 
-def _execute_lower_bound_stream(state: SimpleNamespace, wrapper) -> None:
-    wrapper.execute(
+def _call_unchanged_lower_bound_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
         d_data=state.d_data,
         num_items=state.num_items,
         d_values=state.d_values,
@@ -988,8 +988,8 @@ def _twoshot_unique_by_key(state: SimpleNamespace, wrapper) -> None:
     )
 
 
-def _execute_unique_by_key(state: SimpleNamespace, wrapper) -> None:
-    wrapper.execute(
+def _call_unchanged_unique_by_key(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
         temp_storage=state.temp_storage,
         d_in_keys=state.d_in_keys,
         d_in_items=state.d_in_items,
@@ -1027,8 +1027,8 @@ def _twoshot_unique_by_key_stream(state: SimpleNamespace, wrapper) -> None:
     )
 
 
-def _execute_unique_by_key_stream(state: SimpleNamespace, wrapper) -> None:
-    wrapper.execute(
+def _call_unchanged_unique_by_key_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
         temp_storage=state.temp_storage,
         d_in_keys=state.d_in_keys,
         d_in_items=state.d_in_items,
@@ -1081,8 +1081,8 @@ def _twoshot_merge_sort(state: SimpleNamespace, wrapper) -> None:
     )
 
 
-def _execute_merge_sort(state: SimpleNamespace, wrapper) -> None:
-    wrapper.execute(
+def _call_unchanged_merge_sort(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
         temp_storage=state.temp_storage,
         d_in_keys=state.d_in_keys,
         d_in_values=None,
@@ -1115,8 +1115,8 @@ def _twoshot_merge_sort_stream(state: SimpleNamespace, wrapper) -> None:
     )
 
 
-def _execute_merge_sort_stream(state: SimpleNamespace, wrapper) -> None:
-    wrapper.execute(
+def _call_unchanged_merge_sort_stream(state: SimpleNamespace, wrapper) -> None:
+    wrapper(
         temp_storage=state.temp_storage,
         d_in_keys=state.d_in_keys,
         d_in_values=None,
@@ -1301,7 +1301,7 @@ def _make_case(
     twoshot: Callable[[SimpleNamespace, Any], None],
     noop_return_kind: NoopReturnKind,
     skip_reason: str | None = None,
-    execute: Callable[[SimpleNamespace, Any], None] | None = None,
+    unchanged: Callable[[SimpleNamespace, Any], None] | None = None,
 ) -> HostBenchmarkCase:
     return HostBenchmarkCase(
         name,
@@ -1311,7 +1311,7 @@ def _make_case(
         twoshot,
         noop_return_kind,
         skip_reason,
-        execute,
+        unchanged,
     )
 
 
@@ -1323,7 +1323,7 @@ CASES = [
         _oneshot_reduce,
         _twoshot_reduce,
         "temp_storage_bytes",
-        execute=_execute_reduce,
+        unchanged=_call_unchanged_reduce,
     ),
     _make_case(
         "reduce.raw_cpp",
@@ -1332,7 +1332,7 @@ CASES = [
         _oneshot_reduce,
         _twoshot_reduce,
         "temp_storage_bytes",
-        execute=_execute_reduce,
+        unchanged=_call_unchanged_reduce,
     ),
     _make_case(
         "reduce.python",
@@ -1342,7 +1342,7 @@ CASES = [
         _twoshot_reduce,
         "temp_storage_bytes",
         _NUMBA_CUDA_MLIR_SKIP_REASON,
-        execute=_execute_reduce,
+        unchanged=_call_unchanged_reduce,
     ),
     _make_case(
         "exclusive_scan.plus",
@@ -1351,7 +1351,7 @@ CASES = [
         _oneshot_scan,
         _twoshot_scan,
         "temp_storage_bytes",
-        execute=_execute_scan,
+        unchanged=_call_unchanged_scan,
     ),
     _make_case(
         "exclusive_scan.raw_cpp",
@@ -1360,7 +1360,7 @@ CASES = [
         _oneshot_scan,
         _twoshot_scan,
         "temp_storage_bytes",
-        execute=_execute_scan,
+        unchanged=_call_unchanged_scan,
     ),
     _make_case(
         "exclusive_scan.python",
@@ -1370,7 +1370,7 @@ CASES = [
         _twoshot_scan,
         "temp_storage_bytes",
         _NUMBA_CUDA_MLIR_SKIP_REASON,
-        execute=_execute_scan,
+        unchanged=_call_unchanged_scan,
     ),
     _make_case(
         "segmented_reduce.plus",
@@ -1379,7 +1379,7 @@ CASES = [
         _oneshot_segmented_reduce,
         _twoshot_segmented_reduce,
         "temp_storage_bytes",
-        execute=_execute_segmented_reduce,
+        unchanged=_call_unchanged_segmented_reduce,
     ),
     _make_case(
         "segmented_reduce.raw_cpp",
@@ -1388,7 +1388,7 @@ CASES = [
         _oneshot_segmented_reduce,
         _twoshot_segmented_reduce,
         "temp_storage_bytes",
-        execute=_execute_segmented_reduce,
+        unchanged=_call_unchanged_segmented_reduce,
     ),
     _make_case(
         "segmented_reduce.python",
@@ -1398,7 +1398,7 @@ CASES = [
         _twoshot_segmented_reduce,
         "temp_storage_bytes",
         _NUMBA_CUDA_MLIR_SKIP_REASON,
-        execute=_execute_segmented_reduce,
+        unchanged=_call_unchanged_segmented_reduce,
     ),
     _make_case(
         "unary_transform.identity",
@@ -1407,7 +1407,7 @@ CASES = [
         _oneshot_unary_transform,
         _twoshot_unary_transform,
         "none",
-        execute=_execute_unary_transform,
+        unchanged=_call_unchanged_unary_transform,
     ),
     _make_case(
         "unary_transform.raw_cpp",
@@ -1416,7 +1416,7 @@ CASES = [
         _oneshot_unary_transform,
         _twoshot_unary_transform,
         "none",
-        execute=_execute_unary_transform,
+        unchanged=_call_unchanged_unary_transform,
     ),
     _make_case(
         "unary_transform.python",
@@ -1426,7 +1426,7 @@ CASES = [
         _twoshot_unary_transform,
         "none",
         _NUMBA_CUDA_MLIR_SKIP_REASON,
-        execute=_execute_unary_transform,
+        unchanged=_call_unchanged_unary_transform,
     ),
     _make_case(
         "binary_transform.plus",
@@ -1435,7 +1435,7 @@ CASES = [
         _oneshot_binary_transform,
         _twoshot_binary_transform,
         "none",
-        execute=_execute_binary_transform,
+        unchanged=_call_unchanged_binary_transform,
     ),
     _make_case(
         "binary_transform.raw_cpp",
@@ -1444,7 +1444,7 @@ CASES = [
         _oneshot_binary_transform,
         _twoshot_binary_transform,
         "none",
-        execute=_execute_binary_transform,
+        unchanged=_call_unchanged_binary_transform,
     ),
     _make_case(
         "binary_transform.python",
@@ -1454,7 +1454,7 @@ CASES = [
         _twoshot_binary_transform,
         "none",
         _NUMBA_CUDA_MLIR_SKIP_REASON,
-        execute=_execute_binary_transform,
+        unchanged=_call_unchanged_binary_transform,
     ),
     _make_case(
         "histogram_even",
@@ -1471,7 +1471,7 @@ CASES = [
         _oneshot_lower_bound,
         _twoshot_lower_bound,
         "none",
-        execute=_execute_lower_bound,
+        unchanged=_call_unchanged_lower_bound,
     ),
     _make_case(
         "lower_bound.raw_cpp",
@@ -1480,7 +1480,7 @@ CASES = [
         _oneshot_lower_bound,
         _twoshot_lower_bound,
         "none",
-        execute=_execute_lower_bound,
+        unchanged=_call_unchanged_lower_bound,
     ),
     _make_case(
         "lower_bound.python",
@@ -1490,7 +1490,7 @@ CASES = [
         _twoshot_lower_bound,
         "none",
         _NUMBA_CUDA_MLIR_SKIP_REASON,
-        execute=_execute_lower_bound,
+        unchanged=_call_unchanged_lower_bound,
     ),
     _make_case(
         "select.logical_not",
@@ -1564,7 +1564,7 @@ CASES = [
         _oneshot_unique_by_key,
         _twoshot_unique_by_key,
         "temp_storage_bytes",
-        execute=_execute_unique_by_key,
+        unchanged=_call_unchanged_unique_by_key,
     ),
     _make_case(
         "unique_by_key.raw_cpp",
@@ -1573,7 +1573,7 @@ CASES = [
         _oneshot_unique_by_key,
         _twoshot_unique_by_key,
         "temp_storage_bytes",
-        execute=_execute_unique_by_key,
+        unchanged=_call_unchanged_unique_by_key,
     ),
     _make_case(
         "unique_by_key.python",
@@ -1583,7 +1583,7 @@ CASES = [
         _twoshot_unique_by_key,
         "temp_storage_bytes",
         _NUMBA_CUDA_MLIR_SKIP_REASON,
-        execute=_execute_unique_by_key,
+        unchanged=_call_unchanged_unique_by_key,
     ),
     _make_case(
         "merge_sort.less",
@@ -1592,7 +1592,7 @@ CASES = [
         _oneshot_merge_sort,
         _twoshot_merge_sort,
         "temp_storage_bytes",
-        execute=_execute_merge_sort,
+        unchanged=_call_unchanged_merge_sort,
     ),
     _make_case(
         "merge_sort.raw_cpp",
@@ -1601,7 +1601,7 @@ CASES = [
         _oneshot_merge_sort,
         _twoshot_merge_sort,
         "temp_storage_bytes",
-        execute=_execute_merge_sort,
+        unchanged=_call_unchanged_merge_sort,
     ),
     _make_case(
         "merge_sort.python",
@@ -1611,7 +1611,7 @@ CASES = [
         _twoshot_merge_sort,
         "temp_storage_bytes",
         _NUMBA_CUDA_MLIR_SKIP_REASON,
-        execute=_execute_merge_sort,
+        unchanged=_call_unchanged_merge_sort,
     ),
     _make_case(
         "radix_sort",
@@ -1640,7 +1640,7 @@ STREAM_CASES = [
         _oneshot_reduce_stream,
         _twoshot_reduce_stream,
         "temp_storage_bytes",
-        execute=_execute_reduce_stream,
+        unchanged=_call_unchanged_reduce_stream,
     ),
     _make_case(
         "exclusive_scan.plus.stream",
@@ -1649,7 +1649,7 @@ STREAM_CASES = [
         _oneshot_scan_stream,
         _twoshot_scan_stream,
         "temp_storage_bytes",
-        execute=_execute_scan_stream,
+        unchanged=_call_unchanged_scan_stream,
     ),
     _make_case(
         "segmented_reduce.plus.stream",
@@ -1660,7 +1660,7 @@ STREAM_CASES = [
         _oneshot_segmented_reduce_stream,
         _twoshot_segmented_reduce_stream,
         "temp_storage_bytes",
-        execute=_execute_segmented_reduce_stream,
+        unchanged=_call_unchanged_segmented_reduce_stream,
     ),
     _make_case(
         "unary_transform.identity.stream",
@@ -1671,7 +1671,7 @@ STREAM_CASES = [
         _oneshot_unary_transform_stream,
         _twoshot_unary_transform_stream,
         "none",
-        execute=_execute_unary_transform_stream,
+        unchanged=_call_unchanged_unary_transform_stream,
     ),
     _make_case(
         "binary_transform.plus.stream",
@@ -1682,7 +1682,7 @@ STREAM_CASES = [
         _oneshot_binary_transform_stream,
         _twoshot_binary_transform_stream,
         "none",
-        execute=_execute_binary_transform_stream,
+        unchanged=_call_unchanged_binary_transform_stream,
     ),
     _make_case(
         "histogram_even.stream",
@@ -1701,7 +1701,7 @@ STREAM_CASES = [
         _oneshot_lower_bound_stream,
         _twoshot_lower_bound_stream,
         "none",
-        execute=_execute_lower_bound_stream,
+        unchanged=_call_unchanged_lower_bound_stream,
     ),
     _make_case(
         "select.logical_not.stream",
@@ -1736,7 +1736,7 @@ STREAM_CASES = [
         _oneshot_unique_by_key_stream,
         _twoshot_unique_by_key_stream,
         "temp_storage_bytes",
-        execute=_execute_unique_by_key_stream,
+        unchanged=_call_unchanged_unique_by_key_stream,
     ),
     _make_case(
         "merge_sort.less.stream",
@@ -1745,7 +1745,7 @@ STREAM_CASES = [
         _oneshot_merge_sort_stream,
         _twoshot_merge_sort_stream,
         "temp_storage_bytes",
-        execute=_execute_merge_sort_stream,
+        unchanged=_call_unchanged_merge_sort_stream,
     ),
     _make_case(
         "radix_sort.stream",
@@ -1766,4 +1766,4 @@ STREAM_CASES = [
 ]
 
 CALL_CASES = CASES + STREAM_CASES
-EXECUTE_CASES = [case for case in CALL_CASES if case.execute is not None]
+UNCHANGED_CASES = [case for case in CALL_CASES if case.unchanged is not None]

@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import enum
 import sys
 import sysconfig
 import warnings
@@ -305,6 +306,19 @@ def make_op_adapter(op) -> OpAdapter:
 
     # It's a Python callable
     return _get_jit_op_adapter()(op)
+
+
+class _Unchanged(enum.Enum):
+    """Sentinel default for a ``__call__`` arg meaning "reuse the currently
+    bound value" -- distinct from ``None``, which some args (``h_init``,
+    binary_search's ``comp``) give their own meaning. An ``Enum`` (rather
+    than a plain object) so mypy narrows ``is not UNCHANGED`` checks.
+    """
+
+    UNCHANGED = enum.auto()
+
+
+UNCHANGED = _Unchanged.UNCHANGED
 
 
 _OpT = TypeVar("_OpT", bound="Callable | OpKind | RawOp | OpAdapter")

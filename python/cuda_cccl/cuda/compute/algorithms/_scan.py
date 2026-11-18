@@ -33,7 +33,7 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..op import OpAdapter, make_op_adapter, rebind_op_state
+from ..op import UNCHANGED, OpAdapter, _Unchanged, make_op_adapter, rebind_op_state
 from ..typing import DeviceArrayLike, GpuStruct, IteratorT, Operator
 
 
@@ -175,96 +175,23 @@ class _Scan(Serializable):
                 raise ValueError("Exclusive scan with No init value is not supported")
         self._last_loaded_build_result = self.loaded_build_result
 
-    def update_op_state(self, op: Callable | OpAdapter) -> None:
-        """Rebind this scanner's op state in place.
-
-        ``op`` must be the same code as the one the scanner was built
-        with -- only its state may differ. ``execute()`` never re-derives
-        op state, so call this before ``execute()`` whenever it changes.
-        """
-        # Force the write (bypass identity-cache: a RawOp with state still
-        # reports is_stateful=False), then invalidate the cache -- a later
-        # __call__ on this same op object must not skip re-deriving it.
-        rebind_op_state(self.op_cccl, op, last_stateless_op=None)
-        self._last_stateless_op = None
-
-    def update_h_init_state(
-        self, init_value: np.ndarray | DeviceArrayLike | GpuStruct
-    ) -> None:
-        """Rebind this scanner's initial-value state in place.
-
-        ``init_value`` must have the same dtype as the one used at
-        construction. For ``VALUE_INIT``, mutating the same array object
-        in place is picked up automatically; passing a *different* object
-        requires this call -- ``execute()`` never re-reads ``init_value``.
-        No effect when built with ``NO_INIT``.
-        """
-        match self.init_kind:
-            case _bindings.InitKind.FUTURE_VALUE_INIT:
-                self.init_value_cccl = cast(_bindings.Iterator, self.init_value_cccl)
-                set_cccl_iterator_state(self.init_value_cccl, init_value)
-
-            case _bindings.InitKind.VALUE_INIT:
-                self.init_value_cccl = cast(_bindings.Value, self.init_value_cccl)
-                set_cccl_value_state(
-                    self.init_value_cccl, cast("np.ndarray | GpuStruct", init_value)
-                )
-
-    def execute(
-        self,
-        *,
-        temp_storage,
-        d_in,
-        d_out,
-        num_items: int,
-        stream=None,
-    ):
-        """Minimal per-call path: updates ``d_in``/``d_out`` and launches.
-
-        Unlike ``__call__``, never re-derives op or init-value state --
-        call ``update_op_state``/``update_h_init_state`` first if either
-        changed. See ``_Reduce.execute``.
-        """
-        self.loaded_build_result = cccl.resolve_build_result(
-            self.build_results, self._bound_build_result
-        )
-        self._bind_device_scan_fn()
-
-        set_cccl_iterator_state(self.d_in_cccl, d_in)
-        set_cccl_iterator_state(self.d_out_cccl, d_out)
-
-        stream_handle = validate_and_get_stream(stream)
-
-        if temp_storage is None:
-            temp_storage_bytes = 0
-            d_temp_storage = 0
-        else:
-            temp_storage_bytes = temp_storage.nbytes
-            d_temp_storage = get_data_pointer(temp_storage)
-
-        temp_storage_bytes = self.device_scan_fn(
-            d_temp_storage,
-            temp_storage_bytes,
-            self.d_in_cccl,
-            self.d_out_cccl,
-            num_items,
-            self.op_cccl,
-            self.init_value_cccl,
-            stream_handle,
-        )
-        return temp_storage_bytes
-
     def __call__(
         self,
         *,
         temp_storage,
         d_in,
         d_out,
-        op: Callable | OpAdapter,
-        init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
+        op: Callable | OpAdapter | _Unchanged = UNCHANGED,
+        init_value: np.ndarray | DeviceArrayLike | GpuStruct | None | _Unchanged = (
+            UNCHANGED
+        ),
         num_items: int,
         stream=None,
     ):
+        """``op``/``init_value`` default to ``UNCHANGED``: omit them to
+        reuse whatever was last bound (construction, or a previous call
+        that passed them), skipping their re-derivation entirely.
+        """
         # Select (and lazily load) the current device's build result, then bind the
         # derived compute fn from it.
         self.loaded_build_result = cccl.resolve_build_result(
@@ -275,25 +202,30 @@ class _Scan(Serializable):
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
-        self._last_stateless_op = rebind_op_state(
-            self.op_cccl, op, self._last_stateless_op
-        )
+        if op is not UNCHANGED:
+            self._last_stateless_op = rebind_op_state(
+                self.op_cccl, op, self._last_stateless_op
+            )
 
-        match self.init_kind:
-            case _bindings.InitKind.FUTURE_VALUE_INIT:
-                # We know that the init_value_cccl is an Iterator, so this cast
-                # tells MyPy what the actual type is. cast() is a no-op at runtime,
-                # which makes it better than isinstance() since this is a hot path
-                # and we have to minimize the work we do prior to calling the
-                # kernel.
-                self.init_value_cccl = cast(_bindings.Iterator, self.init_value_cccl)
-                set_cccl_iterator_state(self.init_value_cccl, init_value)
+        if init_value is not UNCHANGED:
+            match self.init_kind:
+                case _bindings.InitKind.FUTURE_VALUE_INIT:
+                    # We know that the init_value_cccl is an Iterator, so this cast
+                    # tells MyPy what the actual type is. cast() is a no-op at runtime,
+                    # which makes it better than isinstance() since this is a hot path
+                    # and we have to minimize the work we do prior to calling the
+                    # kernel.
+                    self.init_value_cccl = cast(
+                        _bindings.Iterator, self.init_value_cccl
+                    )
+                    set_cccl_iterator_state(self.init_value_cccl, init_value)
 
-            case _bindings.InitKind.VALUE_INIT:
-                self.init_value_cccl = cast(_bindings.Value, self.init_value_cccl)
-                set_cccl_value_state(
-                    self.init_value_cccl, cast("np.ndarray | GpuStruct", init_value)
-                )
+                case _bindings.InitKind.VALUE_INIT:
+                    self.init_value_cccl = cast(_bindings.Value, self.init_value_cccl)
+                    set_cccl_value_state(
+                        self.init_value_cccl,
+                        cast("np.ndarray | GpuStruct", init_value),
+                    )
 
         stream_handle = validate_and_get_stream(stream)
 

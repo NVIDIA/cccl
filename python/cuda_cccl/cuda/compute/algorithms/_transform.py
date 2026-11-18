@@ -13,7 +13,7 @@ from .._caching import cache_build_results, cache_with_registered_key_functions
 from .._cccl_interop import set_cccl_iterator_state
 from .._serialization import BUILD_RESULTS, ITER, OP, Serializable
 from .._utils import protocols
-from ..op import OpAdapter, make_op_adapter, rebind_op_state
+from ..op import UNCHANGED, OpAdapter, _Unchanged, make_op_adapter, rebind_op_state
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
@@ -73,55 +73,19 @@ class _UnaryTransform(Serializable):
         # where this cache is otherwise initialized.
         self._last_stateless_op = None
 
-    def update_op_state(self, op: Callable | OpAdapter) -> None:
-        """Rebind this object's op state in place.
-
-        ``op`` must be the same code as the one it was built with -- only
-        its state may differ. ``execute()`` never re-derives op state, so
-        call this before ``execute()`` whenever it changes.
-        """
-        rebind_op_state(self.op_cccl, op, last_stateless_op=None)
-        self._last_stateless_op = None
-
-    def execute(
-        self,
-        *,
-        d_in,
-        d_out,
-        num_items: int,
-        stream=None,
-    ):
-        """Minimal per-call path: updates the iterators and launches.
-
-        Unlike ``__call__``, never re-derives op state -- call
-        ``update_op_state`` first if it changed.
-        """
-        self.loaded_build_result = cccl.resolve_build_result(
-            self.build_results, self._bound_build_result
-        )
-
-        set_cccl_iterator_state(self.d_in_cccl, d_in)
-        set_cccl_iterator_state(self.d_out_cccl, d_out)
-
-        stream_handle = protocols.validate_and_get_stream(stream)
-        self.loaded_build_result.compute(
-            self.d_in_cccl,
-            self.d_out_cccl,
-            num_items,
-            self.op_cccl,
-            stream_handle,
-        )
-        return None
-
     def __call__(
         self,
         *,
         d_in,
         d_out,
-        op: Callable | OpAdapter,
+        op: Callable | OpAdapter | _Unchanged = UNCHANGED,
         num_items: int,
         stream=None,
     ):
+        """``op`` defaults to ``UNCHANGED``: omit it to reuse whatever was
+        last bound (construction, or a previous call that passed it),
+        skipping its re-derivation entirely.
+        """
         # Select (and lazily load) the build result for the current device.
         self.loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
@@ -129,9 +93,10 @@ class _UnaryTransform(Serializable):
 
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
-        self._last_stateless_op = rebind_op_state(
-            self.op_cccl, op, self._last_stateless_op
-        )
+        if op is not UNCHANGED:
+            self._last_stateless_op = rebind_op_state(
+                self.op_cccl, op, self._last_stateless_op
+            )
 
         stream_handle = protocols.validate_and_get_stream(stream)
         self.loaded_build_result.compute(
@@ -207,59 +172,20 @@ class _BinaryTransform(Serializable):
         # where this cache is otherwise initialized.
         self._last_stateless_op = None
 
-    def update_op_state(self, op: Callable | OpAdapter) -> None:
-        """Rebind this object's op state in place.
-
-        ``op`` must be the same code as the one it was built with -- only
-        its state may differ. ``execute()`` never re-derives op state, so
-        call this before ``execute()`` whenever it changes.
-        """
-        rebind_op_state(self.op_cccl, op, last_stateless_op=None)
-        self._last_stateless_op = None
-
-    def execute(
-        self,
-        *,
-        d_in1,
-        d_in2,
-        d_out,
-        num_items: int,
-        stream=None,
-    ):
-        """Minimal per-call path: updates the iterators and launches.
-
-        Unlike ``__call__``, never re-derives op state -- call
-        ``update_op_state`` first if it changed.
-        """
-        self.loaded_build_result = cccl.resolve_build_result(
-            self.build_results, self._bound_build_result
-        )
-
-        set_cccl_iterator_state(self.d_in1_cccl, d_in1)
-        set_cccl_iterator_state(self.d_in2_cccl, d_in2)
-        set_cccl_iterator_state(self.d_out_cccl, d_out)
-
-        stream_handle = protocols.validate_and_get_stream(stream)
-        self.loaded_build_result.compute(
-            self.d_in1_cccl,
-            self.d_in2_cccl,
-            self.d_out_cccl,
-            num_items,
-            self.op_cccl,
-            stream_handle,
-        )
-        return None
-
     def __call__(
         self,
         *,
         d_in1,
         d_in2,
         d_out,
-        op: Callable | OpAdapter,
+        op: Callable | OpAdapter | _Unchanged = UNCHANGED,
         num_items: int,
         stream=None,
     ):
+        """``op`` defaults to ``UNCHANGED``: omit it to reuse whatever was
+        last bound (construction, or a previous call that passed it),
+        skipping its re-derivation entirely.
+        """
         # Select (and lazily load) the build result for the current device.
         self.loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
@@ -269,9 +195,10 @@ class _BinaryTransform(Serializable):
         set_cccl_iterator_state(self.d_in2_cccl, d_in2)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
-        self._last_stateless_op = rebind_op_state(
-            self.op_cccl, op, self._last_stateless_op
-        )
+        if op is not UNCHANGED:
+            self._last_stateless_op = rebind_op_state(
+                self.op_cccl, op, self._last_stateless_op
+            )
 
         stream_handle = protocols.validate_and_get_stream(stream)
         self.loaded_build_result.compute(

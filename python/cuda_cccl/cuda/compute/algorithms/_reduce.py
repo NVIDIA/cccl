@@ -30,7 +30,7 @@ from .._utils import get_init_kind
 from .._utils.protocols import get_data_pointer, get_dtype, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..determinism import Determinism
-from ..op import OpAdapter, make_op_adapter, rebind_op_state
+from ..op import UNCHANGED, OpAdapter, _Unchanged, make_op_adapter, rebind_op_state
 from ..typing import (
     DeviceArrayLike,
     GpuStruct,
@@ -170,76 +170,6 @@ class _Reduce(Serializable):
             self.device_reduce_fn = self.loaded_build_result.compute
         self._last_loaded_build_result = self.loaded_build_result
 
-    def update_op_state(self, op: Callable | OpAdapter) -> None:
-        """Rebind this reducer's op state in place.
-
-        ``op`` must be the same code as the one the reducer was built
-        with -- only its state may differ. ``execute()`` never re-derives
-        op state, so call this before ``execute()`` whenever it changes.
-        """
-        # Force the write (bypass identity-cache: a RawOp with state still
-        # reports is_stateful=False), then invalidate the cache -- a later
-        # __call__ on this same op object must not skip re-deriving it.
-        rebind_op_state(self.op_cccl, op, last_stateless_op=None)
-        self._last_stateless_op = None
-
-    def update_h_init_state(self, h_init: np.ndarray | GpuStruct) -> None:
-        """Rebind this reducer's h_init state in place.
-
-        ``h_init`` must have the same dtype as the one used at
-        construction. Mutating the same array object in place is picked
-        up automatically; passing a *different* object requires this
-        call -- ``execute()`` has no ``h_init`` parameter and never
-        re-reads it.
-        """
-        if self.init_kind is _bindings.InitKind.VALUE_INIT:
-            self.h_init_cccl = cast(_bindings.Value, self.h_init_cccl)
-            set_cccl_value_state(self.h_init_cccl, h_init)
-
-    def execute(
-        self,
-        *,
-        temp_storage,
-        d_in,
-        d_out,
-        num_items: int,
-        stream=None,
-    ):
-        """Minimal per-call path: updates ``d_in``/``d_out`` and launches.
-
-        Unlike ``__call__``, never re-derives op or ``h_init`` state --
-        call ``update_op_state``/``update_h_init_state`` first if either
-        changed.
-        """
-        self.loaded_build_result = cccl.resolve_build_result(
-            self.build_results, self._bound_build_result
-        )
-        self._bind_device_reduce_fn()
-
-        set_cccl_iterator_state(self.d_in_cccl, d_in)
-        set_cccl_iterator_state(self.d_out_cccl, d_out)
-
-        stream_handle = validate_and_get_stream(stream)
-
-        if temp_storage is None:
-            temp_storage_bytes = 0
-            d_temp_storage = 0
-        else:
-            temp_storage_bytes = temp_storage.nbytes
-            d_temp_storage = get_data_pointer(temp_storage)
-
-        temp_storage_bytes = self.device_reduce_fn(
-            d_temp_storage,
-            temp_storage_bytes,
-            self.d_in_cccl,
-            self.d_out_cccl,
-            num_items,
-            self.op_cccl,
-            self.h_init_cccl,
-            stream_handle,
-        )
-        return temp_storage_bytes
-
     def __call__(
         self,
         *,
@@ -247,10 +177,14 @@ class _Reduce(Serializable):
         d_in,
         d_out,
         num_items: int,
-        op: Callable | OpAdapter,
-        h_init: np.ndarray | GpuStruct | None,
+        op: Callable | OpAdapter | _Unchanged = UNCHANGED,
+        h_init: np.ndarray | GpuStruct | None | _Unchanged = UNCHANGED,
         stream=None,
     ):
+        """``op``/``h_init`` default to ``UNCHANGED``: omit them to reuse
+        whatever was last bound (construction, or a previous call that
+        passed them), skipping their re-derivation entirely.
+        """
         # Select (and lazily load) the current device's build result, then bind the
         # derived compute fn from it.
         self.loaded_build_result = cccl.resolve_build_result(
@@ -261,11 +195,12 @@ class _Reduce(Serializable):
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
-        self._last_stateless_op = rebind_op_state(
-            self.op_cccl, op, self._last_stateless_op
-        )
+        if op is not UNCHANGED:
+            self._last_stateless_op = rebind_op_state(
+                self.op_cccl, op, self._last_stateless_op
+            )
 
-        if self.init_kind is _bindings.InitKind.VALUE_INIT:
+        if h_init is not UNCHANGED and self.init_kind is _bindings.InitKind.VALUE_INIT:
             # We know that h_init_cccl is a Value here, so this cast tells MyPy
             # what the actual type is. cast() is a no-op at runtime, which makes
             # it better than isinstance() since this is a hot path and we have

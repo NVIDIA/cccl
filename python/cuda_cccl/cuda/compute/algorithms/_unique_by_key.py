@@ -16,7 +16,7 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..op import OpAdapter, make_op_adapter, rebind_op_state
+from ..op import UNCHANGED, OpAdapter, _Unchanged, make_op_adapter, rebind_op_state
 from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
@@ -93,65 +93,6 @@ class _UniqueByKey(Serializable):
         # where this cache is otherwise initialized.
         self._last_stateless_op = None
 
-    def update_op_state(self, op: Operator) -> None:
-        """Rebind this object's op state in place.
-
-        ``op`` must be the same code as the one it was built with -- only
-        its state may differ. ``execute()`` never re-derives op state, so
-        call this before ``execute()`` whenever it changes.
-        """
-        rebind_op_state(self.op_cccl, op, last_stateless_op=None)
-        self._last_stateless_op = None
-
-    def execute(
-        self,
-        *,
-        temp_storage,
-        d_in_keys: DeviceArrayLike | IteratorT,
-        d_in_items: DeviceArrayLike | IteratorT,
-        d_out_keys: DeviceArrayLike | IteratorT,
-        d_out_items: DeviceArrayLike | IteratorT,
-        d_out_num_selected: DeviceArrayLike,
-        num_items: int,
-        stream=None,
-    ):
-        """Minimal per-call path: updates the iterators and launches.
-
-        Unlike ``__call__``, never re-derives op state -- call
-        ``update_op_state`` first if it changed.
-        """
-        self.loaded_build_result = cccl.resolve_build_result(
-            self.build_results, self._bound_build_result
-        )
-
-        set_cccl_iterator_state(self.d_in_keys_cccl, d_in_keys)
-        set_cccl_iterator_state(self.d_in_items_cccl, d_in_items)
-        set_cccl_iterator_state(self.d_out_keys_cccl, d_out_keys)
-        set_cccl_iterator_state(self.d_out_items_cccl, d_out_items)
-        set_cccl_iterator_state(self.d_out_num_selected_cccl, d_out_num_selected)
-
-        stream_handle = validate_and_get_stream(stream)
-        if temp_storage is None:
-            temp_storage_bytes = 0
-            d_temp_storage = 0
-        else:
-            temp_storage_bytes = temp_storage.nbytes
-            d_temp_storage = get_data_pointer(temp_storage)
-
-        temp_storage_bytes = self.loaded_build_result.compute(
-            d_temp_storage,
-            temp_storage_bytes,
-            self.d_in_keys_cccl,
-            self.d_in_items_cccl,
-            self.d_out_keys_cccl,
-            self.d_out_items_cccl,
-            self.d_out_num_selected_cccl,
-            self.op_cccl,
-            num_items,
-            stream_handle,
-        )
-        return temp_storage_bytes
-
     def __call__(
         self,
         *,
@@ -161,10 +102,14 @@ class _UniqueByKey(Serializable):
         d_out_keys: DeviceArrayLike | IteratorT,
         d_out_items: DeviceArrayLike | IteratorT,
         d_out_num_selected: DeviceArrayLike,
-        op: Operator,
+        op: Operator | _Unchanged = UNCHANGED,
         num_items: int,
         stream=None,
     ):
+        """``op`` defaults to ``UNCHANGED``: omit it to reuse whatever was
+        last bound (construction, or a previous call that passed it),
+        skipping its re-derivation entirely.
+        """
         # Select (and lazily load) the build result for the current device.
         self.loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
@@ -176,9 +121,10 @@ class _UniqueByKey(Serializable):
         set_cccl_iterator_state(self.d_out_items_cccl, d_out_items)
         set_cccl_iterator_state(self.d_out_num_selected_cccl, d_out_num_selected)
 
-        self._last_stateless_op = rebind_op_state(
-            self.op_cccl, op, self._last_stateless_op
-        )
+        if op is not UNCHANGED:
+            self._last_stateless_op = rebind_op_state(
+                self.op_cccl, op, self._last_stateless_op
+            )
 
         stream_handle = validate_and_get_stream(stream)
         if temp_storage is None:
