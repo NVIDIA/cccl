@@ -34,7 +34,10 @@ Runtime environment variables
 ``CUDA_COOP_CUTLASS_PROVIDER_PCH``
    Defaults to ``auto``. On a provider cache miss, NVRTC can reuse precompiled
    headers for another specialization with a compatible header prefix in the
-   same process. Set this to ``off`` to compile each miss without PCH.
+   same process. NVRTC stores the PCH files in a temporary directory that
+   is removed on normal process exit. If PCH creation exhausts the NVRTC
+   heap, subsequent misses for that set of headers use ordinary compilation.
+   Set this to ``off`` to compile each miss without PCH.
 
 ``CUDA_COOP_CUTLASS_AOT_PACK_PATH``, ``CUDA_COOP_CUTLASS_AOT_MODE``
    Select an :ref:`ahead-of-time pack <coop-cutlass-aot-packs>` by absolute
