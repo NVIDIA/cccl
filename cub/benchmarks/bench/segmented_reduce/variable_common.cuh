@@ -35,41 +35,43 @@ struct variable_problem
   thrust::device_vector<OutputT> out;
   std::size_t num_segments;
 
-  explicit variable_problem(nvbench::state& state)
-  {
-    const auto elements         = static_cast<std::size_t>(state.get_int64("Elements{io}"));
-    const auto max_segment_size = static_cast<std::size_t>(state.get_int64("MaxSegmentSize"));
+  _CCCL_HOST_API explicit variable_problem(nvbench::state& state)
+      : variable_problem(state,
+                         static_cast<std::size_t>(state.get_int64("Elements{io}")),
+                         static_cast<std::size_t>(state.get_int64("MaxSegmentSize")))
+  {}
 
-    const auto min_segment_size = 1;
-    segment_offsets             = generate.uniform.segment_offsets(elements, min_segment_size, max_segment_size);
-    num_segments                = segment_offsets.size() - 1;
-    in                          = generate(elements);
-    out                         = thrust::device_vector<OutputT>(num_segments, thrust::default_init);
-
-    state.add_element_count(elements);
-    state.add_global_memory_reads<T>(elements, "Size");
-    state.add_global_memory_writes<OutputT>(num_segments);
-    state.add_global_memory_reads<OffsetT>(num_segments + 1);
-  }
-
-  const T* d_in() const
+  _CCCL_HOST_API const T* d_in() const
   {
     return thrust::raw_pointer_cast(in.data());
   }
 
-  OutputT* d_out()
+  _CCCL_HOST_API OutputT* d_out()
   {
     return thrust::raw_pointer_cast(out.data());
   }
 
-  const OffsetT* d_begin_offsets() const
+  _CCCL_HOST_API const OffsetT* d_begin_offsets() const
   {
     return thrust::raw_pointer_cast(segment_offsets.data());
   }
 
-  const OffsetT* d_end_offsets() const
+  _CCCL_HOST_API const OffsetT* d_end_offsets() const
   {
     return d_begin_offsets() + 1;
+  }
+
+private:
+  _CCCL_HOST_API variable_problem(nvbench::state& state, std::size_t elements, std::size_t max_segment_size)
+      : segment_offsets(generate.uniform.segment_offsets(elements, 1, max_segment_size))
+      , in(generate(elements))
+      , out(segment_offsets.size() - 1, thrust::default_init)
+      , num_segments(segment_offsets.size() - 1)
+  {
+    state.add_element_count(elements);
+    state.add_global_memory_reads<T>(elements, "Size");
+    state.add_global_memory_writes<OutputT>(num_segments);
+    state.add_global_memory_reads<OffsetT>(num_segments + 1);
   }
 };
 
