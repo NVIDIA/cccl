@@ -19,18 +19,19 @@
 #endif // no system header
 
 #include <thrust/detail/reference_forward_declaration.h>
-#include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
+#include <thrust/detail/use_default.h>
 #include <thrust/iterator/iterator_adaptor.h>
+#include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traversal_tags.h>
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__iterator/iterator_traits.h> // IWYU pragma: keep
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
@@ -38,7 +39,7 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/type_identity.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/__type_traits/void_t.h>
 
 THRUST_NAMESPACE_BEGIN
 template <typename Element, typename Tag, typename Reference = use_default, typename Derived = use_default>

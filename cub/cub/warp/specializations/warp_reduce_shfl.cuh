@@ -32,7 +32,9 @@
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/cstdint>
 
 #include <nv/target>
@@ -120,7 +122,8 @@ struct WarpReduceShfl
 
   /**
    * @brief Reduction (specialized for swizzled ReduceBySegmentOp<cuda::std::plus<>> across
-   *        KeyValuePair<OffsetT, ValueT> types)
+   *        KeyValuePair<OffsetT, ValueT> types, and for ReduceBySegmentOp<cuda::std::plus<ValueT>> when the value
+   *        can be reduced with a shuffle-add)
    *
    * @param[in] input
    *   Calling thread's input item.
@@ -134,10 +137,15 @@ struct WarpReduceShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  template <typename ValueT, typename OffsetT>
+  template <typename ValueT,
+            typename OffsetT,
+            typename PlusT,
+            ::cuda::std::enable_if_t<
+              ::cuda::std::is_void_v<PlusT> || is_shfl_down_op_supported_v<::cuda::std::plus<PlusT>, ValueT>,
+              int> = 0>
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE KeyValuePair<OffsetT, ValueT> ReduceStep(
     const KeyValuePair<OffsetT, ValueT> input,
-    const SwizzleScanOp<ReduceBySegmentOp<::cuda::std::plus<>>> /*reduction_op*/,
+    const SwizzleScanOp<ReduceBySegmentOp<::cuda::std::plus<PlusT>>> /*reduction_op*/,
     const int last_lane,
     const int offset)
   {
@@ -145,7 +153,7 @@ struct WarpReduceShfl
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     KeyValuePair<OffsetT, ValueT> output;
 
-    output.value = ReduceStep(input.value, ::cuda::std::plus<>{}, last_lane, offset);
+    output.value = ReduceStep(input.value, ::cuda::std::plus<PlusT>{}, last_lane, offset);
     output.key   = ReduceStep(input.key, ::cuda::std::plus<>{}, last_lane, offset);
 
     if (input.key > 0)

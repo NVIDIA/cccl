@@ -50,4 +50,4 @@ copy_if(InputIterator1 first, InputIterator1 last, InputIterator2 stencil, Outpu
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/copy_if.inl>
+#include <thrust/detail/copy_if.inl> // IWYU pragma: export

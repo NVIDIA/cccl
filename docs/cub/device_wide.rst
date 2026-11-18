@@ -62,10 +62,12 @@ The environment supports further properties like passing a stream or an executio
 Key properties of the environment argument:
 
 - It is a defaulted parameter and appears as the last argument.
-- Streams like `cudaStream_t` or `cuda::stream_ref` can be passed as environments directly, or added to the environment.
+- Stream-providing objects like ``cudaStream_t`` can be passed directly. ``cuda::stream_ref`` additionally advertises
+  itself as an environment containing the stream property.
 - You can select the memory resource (CCCL-provided or custom) used for internal allocations.
 - Supported algorithms accept determinism requirements (for example, ``cuda::execution::determinism::gpu_to_gpu``).
-- Multiple properties compose into a single centralized argument by wrapping them into a ``cuda::execution::env`` object.
+- Multiple properties compose into a single centralized argument by wrapping them into a
+  ``cuda::std::execution::env`` object.
 
 Example pattern:
 
