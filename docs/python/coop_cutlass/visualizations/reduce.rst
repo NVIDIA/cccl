@@ -8,8 +8,8 @@ Reduce
 
 A reduction combines the values of a group's threads into one result, and
 the thread with rank 0 in the group receives it.
-:func:`cuda.coop.cutlass.sum` adds the values, and
-:func:`cuda.coop.cutlass.reduce` takes the operator as an argument.
+:func:`~cuda.coop.cutlass.sum` adds the values, and
+:func:`~cuda.coop.cutlass.reduce` takes the operator as an argument.
 
 The explorer draws eight threads as one block, as two warps of four lanes,
 or as four groups of two lanes.
@@ -75,15 +75,15 @@ least ``128 * items_per_thread`` input elements for each block.
    if thread_rank == 0:
        output[block_index] = total
 
-This fragment writes one sum for each group of eight lanes. The first lane
-of each group holds its group's sum:
+This fragment writes one sum for each group of eight lanes, sixteen for each
+block. The first lane of each group holds its group's sum:
 
 .. code-block:: python
 
    group = coop.this_warp().group_by(8)
-   total = coop.sum(group, source[thread_rank])
+   total = coop.sum(group, source[block_index * 128 + thread_rank])
    if group.rank() == 0:
-       output[thread_rank // 8] = total
+       output[block_index * 16 + thread_rank // 8] = total
 
 :ref:`Reduction <coop-cutlass-reduce>` in the API reference covers the
 operators, ``valid_items``, groups of 17 to 31 lanes and ``temp_storage``.

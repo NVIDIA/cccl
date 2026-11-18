@@ -6,13 +6,14 @@
 Adjacent Difference
 ===================
 
-:func:`cuda.coop.cutlass.adjacent_difference` subtracts a neighboring item from
-each item of a block's tile. The neighbor may belong to another thread.
+:func:`~cuda.coop.cutlass.adjacent_difference` subtracts a neighboring item
+from each item of a block's :term:`tile`. The neighbor may belong to another
+thread.
 
-In the explorer, choose left or right to follow that dependency, then change
-``valid_items`` or supply the item on the other side of the tile's edge. The
-explorer uses eight teaching threads and small ``Int32`` values, so every
-subtraction fits in the element type.
+In the explorer, choose left or right to see which neighbor each item reads,
+then change ``valid_items`` or supply the item on the other side of the
+tile's edge. The explorer uses eight teaching threads and small ``Int32``
+values, so every subtraction fits in the element type.
 
 .. coop-visualization:: adjacent-difference
 
@@ -85,4 +86,5 @@ To continue a sequence across tiles, pass the last item of the previous tile
 as ``tile_predecessor_item``. Read that item from the input array, and write
 the differences to a separate array, so that the input keeps its values for
 a later tile or another block to read. The second example of
-:func:`cuda.coop.cutlass.adjacent_difference` does this in a loop over tiles.
+:func:`~cuda.coop.cutlass.adjacent_difference` does this in a loop over
+tiles.

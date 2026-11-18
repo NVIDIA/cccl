@@ -10,8 +10,8 @@ Run-length decoding repeats each run's value as many times as its length.
 Values ``[7, 9]`` with lengths ``[3, 2]`` decode to the stream
 ``7, 7, 7, 9, 9``.
 
-The explorer follows :func:`cuda.coop.cutlass.run_length_decode` and
-:func:`cuda.coop.cutlass.run_length_decode_into` on one block of four
+The explorer follows :func:`~cuda.coop.cutlass.run_length_decode` and
+:func:`~cuda.coop.cutlass.run_length_decode_into` on one block of four
 teaching threads. Choose the run lengths, the number of runs per thread and
 the number of decoded items per thread, then compare one window with the
 whole stream.

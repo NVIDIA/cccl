@@ -52,8 +52,10 @@ kernel calls. When CuTe finishes tracing, the package compiles the CUB code
 for every call it traced in one NVRTC compilation, and CuTe links the
 result into the kernel. The compiled code is kept in a cache on disk,
 described in :doc:`configuration`. To launch a kernel more than once, pass
-the ``@cute.jit`` function that launches it to ``cute.compile`` and keep the
-callable it returns.
+the ``@cute.jit`` function that launches it, followed by that function's
+arguments, to ``cute.compile`` and keep the callable it returns.
+:ref:`Checking and tuning a kernel <coop-cutlass-checking>` says how to
+call it.
 
 The package includes ``.pyi`` stubs for type checkers.
 """

@@ -10,7 +10,7 @@ A histogram counts how many of a block's samples fall in each bin. Each
 sample is itself a bin index: a sample with value ``b`` adds one to bin
 ``b``.
 
-The explorer runs :func:`cuda.coop.cutlass.histogram` on one block of eight
+The explorer runs :func:`~cuda.coop.cutlass.histogram` on one block of eight
 teaching threads. Change the samples to send most of them to one bin, or
 change the bin count to see which thread receives which counter. Every
 sample in the explorer is a valid bin index.

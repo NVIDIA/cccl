@@ -93,9 +93,9 @@ Item ``i`` of the thread with rank ``t`` in its group is tile element
 ``t * K + i`` in a :term:`blocked` payload and ``t + i * G`` in a
 :term:`striped` one. On a warp or a group of lanes, ``t`` is ``b % G``. A
 payload keeps no record of its layout, and ``store`` reads it in the layout
-of its own ``algorithm``. With more than one item per thread, a tile loaded
-with ``"striped"`` and stored with ``"direct"`` is therefore written in
-another order.
+of its own ``algorithm``. In a group of more than one thread with more than
+one item each, a tile loaded with ``"striped"`` and stored with ``"direct"``
+is therefore written in another order.
 
 .. figure:: visualizations/load-transpose.svg
    :alt: Two rows of eight threads with two elements each, and a bar named

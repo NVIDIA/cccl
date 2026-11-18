@@ -54,11 +54,11 @@ Terms
 
    payload
       One thread's items, held in a ``ThreadData``. ``load`` returns a
-      payload in each thread, and ``ThreadData(K)`` makes one of ``K`` items
-      for the kernel to fill. Primitives other than ``load`` and ``store``
-      also read a CuTe register tensor or a ``TensorSSA`` as a payload. A
-      warp scan takes one scalar per thread in place of a payload. See
-      :ref:`ThreadData <coop-thread-data>`.
+      payload in each thread, and ``ThreadData(K)`` makes a payload of ``K``
+      items for the kernel to fill. Primitives other than ``load`` and
+      ``store`` also read a CuTe register tensor or a ``TensorSSA`` as a
+      payload. A warp scan takes one scalar per thread in place of a
+      payload. See :ref:`ThreadData <coop-thread-data>`.
 
    phi
       An operation in a compiler's intermediate representation (IR) that
@@ -68,7 +68,7 @@ Terms
       the initial value or the value from the previous trip.
 
    batch
-      One of the reductions that :func:`cuda.coop.cutlass.reduce_batched`
+      One of the reductions that :func:`~cuda.coop.cutlass.reduce_batched`
       makes in one call. Item ``b`` of every lane's payload belongs to batch
       ``b``. A batch covers the lanes of the group, and ``output_layout`` sets
       which lane holds its result. See
@@ -76,7 +76,7 @@ Terms
       reference and the :doc:`explorer <visualizations/reduce-batched>`.
 
    bin
-      One counter of :func:`cuda.coop.cutlass.histogram`. A sample with
+      One counter of :func:`~cuda.coop.cutlass.histogram`. A sample with
       value ``b`` adds one to bin ``b``, so every sample must be at least 0
       and less than ``bins``. The counters come back in :term:`striped`
       order: on a block of ``G`` threads, item ``i`` of the thread with rank
@@ -86,8 +86,8 @@ Terms
 
    tile boundary
       The edge between one group's tile and the data next to it.
-      :func:`cuda.coop.cutlass.adjacent_difference` and
-      :func:`cuda.coop.cutlass.discontinuity` take the item on the other
+      :func:`~cuda.coop.cutlass.adjacent_difference` and
+      :func:`~cuda.coop.cutlass.discontinuity` take the item on the other
       side of the edge as ``tile_predecessor_item`` or
       ``tile_successor_item``. Without it, ``adjacent_difference`` copies
       the item at the edge and ``discontinuity`` flags it with 1. See
@@ -96,8 +96,8 @@ Terms
    run
       A value and the number of times it repeats. The value 7 with the
       length 3 stands for ``7, 7, 7``.
-      :func:`cuda.coop.cutlass.run_length_decode` and
-      :func:`cuda.coop.cutlass.run_length_decode_into` turn a block's runs
+      :func:`~cuda.coop.cutlass.run_length_decode` and
+      :func:`~cuda.coop.cutlass.run_length_decode_into` turn a block's runs
       back into the repeated values. In the run lengths of a block, taken
       thread by thread, every positive length comes before every zero, and
       a zero is padding. See
@@ -105,14 +105,14 @@ Terms
       reference and the :doc:`explorer <visualizations/run-length-decode>`.
 
    head flag
-      An ``Int32`` flag from :func:`cuda.coop.cutlass.discontinuity` that
+      An ``Int32`` flag from :func:`~cuda.coop.cutlass.discontinuity` that
       is 1 where an item differs from the item before it, which marks the
       first item of a run of equal values. Without
       ``tile_predecessor_item``, the tile's first head flag is 1. See
       :ref:`Neighbor comparisons <coop-cutlass-neighbors>`.
 
    tail flag
-      An ``Int32`` flag from :func:`cuda.coop.cutlass.discontinuity` that
+      An ``Int32`` flag from :func:`~cuda.coop.cutlass.discontinuity` that
       is 1 where an item differs from the item after it, which marks the
       last item of a run of equal values. Without ``tile_successor_item``,
       the tile's last tail flag is 1. See
@@ -120,11 +120,11 @@ Terms
 
    decoded window
       The part of the decoded stream that one
-      :func:`cuda.coop.cutlass.run_length_decode` call returns. It starts at
+      :func:`~cuda.coop.cutlass.run_length_decode` call returns. It starts at
       position ``decoded_window_offset`` of the stream and has
       ``decoded_items_per_thread`` items for each thread of the block. An
       item of the result past the end of the stream is zero.
-      :func:`cuda.coop.cutlass.run_length_decode_into` writes the stream
+      :func:`~cuda.coop.cutlass.run_length_decode_into` writes the stream
       one window at a time. See
       :ref:`run positions, windows, and scratch <coop-glossary-decoding>`.
 
@@ -224,7 +224,7 @@ Terms
       value for each key. The selected keys fill the first positions of the
       result in no defined order. See
       :ref:`Top-k selection <coop-cutlass-topk>` in the API reference and
-      the :doc:`TopK visualization <visualizations/topk>`.
+      the :doc:`explorer <visualizations/topk>`.
 
 .. _coop-glossary-layouts:
 
@@ -281,9 +281,9 @@ the items between the threads, so it returns a blocked payload.
 ``algorithm="striped"`` returns the striped payload.
 
 A payload keeps no record of its layout, and ``store`` reads it in the
-layout of its own ``algorithm``. With more than one item per thread, a tile
-loaded with ``"striped"`` and stored with ``"direct"`` is written in another
-order.
+layout of its own ``algorithm``. In a group of more than one thread with
+more than one item each, a tile loaded with ``"striped"`` and stored with
+``"direct"`` is written in another order.
 
 The :doc:`Load <visualizations/load>` and :doc:`Store
 <visualizations/store>` explorers follow every element.
@@ -324,7 +324,7 @@ Run Length Decode keeps the value and the starting position of each run in
 a table in :term:`scratch`, and reads a window from that table. Each
 ``run_length_decode`` call makes its own table, even when the calls share a
 ``TempStorage``: they reuse its bytes and nothing else. One
-:func:`cuda.coop.cutlass.run_length_decode_into` call makes one table and
+:func:`~cuda.coop.cutlass.run_length_decode_into` call makes one table and
 reads all its windows from it. The table lasts until the call returns. A
 call with nothing to decode makes no table. Neither function returns a
 decoder or keeps a position for a later call to use. See

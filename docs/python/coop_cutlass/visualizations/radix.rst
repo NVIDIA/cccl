@@ -8,9 +8,9 @@ Radix Sort and Rank
 
 A radix sort orders a block's keys by their bits, one digit at a time. A
 digit is a run of neighboring bits of a key.
-:func:`cuda.coop.cutlass.radix_sort_keys` returns the keys in sorted order,
-and :func:`cuda.coop.cutlass.radix_sort_pairs` moves a value with each key.
-:func:`cuda.coop.cutlass.radix_rank_keys` looks at one digit and returns
+:func:`~cuda.coop.cutlass.radix_sort_keys` returns the keys in sorted order,
+and :func:`~cuda.coop.cutlass.radix_sort_pairs` moves a value with each key.
+:func:`~cuda.coop.cutlass.radix_rank_keys` looks at one digit and returns
 the position each key would take in a sort by that digit.
 
 The explorer shows one block of eight teaching threads with unsigned keys
@@ -40,9 +40,9 @@ of this page runs on a block of 64 threads.
 
       Original keys       35  18  33   2  35  17   1  18
       Original values      0   1   2   3   4   5   6   7
-      After bits [0, 4)    33  17   1  18   2  18  35  35
+      After bits [0, 4)   33  17   1  18   2  18  35  35
       Associated values    2   5   6   1   3   7   0   4
-      After bits [4, 8)     1   2  17  18  18  33  35  35
+      After bits [4, 8)    1   2  17  18  18  33  35  35
       Associated values    6   3   5   1   7   2   0   4
 
    .. only:: html
@@ -114,14 +114,14 @@ has the rules for signed and floating-point keys and for each control.
 Using Radix Sort and Rank in a kernel
 -------------------------------------
 
-This kernel runs on one block of 64 threads, launched with
-``block=(8, 4, 2)``, and the full example passes it ``Int32`` keys. It sorts
-the keys by all their bits. It then sorts the keys by their top four bits,
-largest first, with striped output. Each key's value is its position in the
-tile. Last, it ranks the keys by the same digit in the same direction and
-stores the sixteen bin starts that ``exclusive_digit_prefix`` receives. The
-two sorts share one ``TempStorage``. ``_BLOCK`` is ``(8, 4, 2)`` and
-``_BINS`` is 16. The full example checks all six outputs on the host.
+This kernel runs on one block of 64 threads, and the full example passes it
+``Int32`` keys. It sorts the keys by all their bits. It then sorts the keys
+by their top four bits, largest first, with striped output. Each key's value
+is its position in the tile. Last, it ranks the keys by the same digit in the
+same direction and stores the sixteen bin starts that
+``exclusive_digit_prefix`` receives. The two sorts share one ``TempStorage``.
+``_BLOCK`` is ``(8, 4, 2)`` and ``_BINS`` is 16. The full example checks all
+six outputs on the host.
 
 `View the full example on GitHub
 <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/radix.py>`__

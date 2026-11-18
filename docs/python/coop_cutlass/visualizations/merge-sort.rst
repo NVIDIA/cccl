@@ -54,10 +54,10 @@ Reading the stages
 The input row stays in view while copies of the items move through the
 local sorts and the merges. A color marks the thread an item came from. In
 pairs mode each key carries a letter, which the figure and the explorer
-call a badge. The letter stands for the key's value, which is the key's
-position in the input: ``A`` is 0, ``B`` is 1, and so on. Select an item to
-see its value and where it is now. A value stays beside its key through
-every stage.
+call a badge. The letter stands for the value that travels with the key,
+which is the key's position in the input: ``A`` is 0, ``B`` is 1, and so on.
+Select an item to see its value and where it is now. A value stays beside
+its key through every stage.
 
 In a kernel, :cpp:class:`cub::BlockMergeSort` sorts a block and
 :cpp:class:`cub::WarpMergeSort` sorts a warp or a group of lanes. Choose

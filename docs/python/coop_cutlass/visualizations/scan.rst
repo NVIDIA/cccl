@@ -11,12 +11,13 @@ group. An inclusive scan includes the item itself, and an exclusive scan
 stops before it. Items are ordered thread by thread: all of thread 0's
 items, then thread 1's, and so on.
 
-The explorer covers :func:`cuda.coop.cutlass.exclusive_sum`,
-:func:`cuda.coop.cutlass.inclusive_sum`, :func:`cuda.coop.cutlass.exclusive_scan`, and
-:func:`cuda.coop.cutlass.inclusive_scan`. :func:`cuda.coop.cutlass.scan` also exposes these
-semantics through its ``mode`` and ``scan_op`` arguments. The eight teaching
-threads represent one block, two four-lane physical warps, or four two-lane
-logical warps.
+The explorer covers :func:`~cuda.coop.cutlass.exclusive_sum`,
+:func:`~cuda.coop.cutlass.inclusive_sum`,
+:func:`~cuda.coop.cutlass.exclusive_scan` and
+:func:`~cuda.coop.cutlass.inclusive_scan`. :func:`~cuda.coop.cutlass.scan`
+computes the same scans with its ``mode`` and ``scan_op`` arguments. The
+eight teaching threads represent one block, two warps of four lanes, or four
+groups of two lanes.
 
 .. coop-visualization:: scan
 

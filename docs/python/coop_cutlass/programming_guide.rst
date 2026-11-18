@@ -51,7 +51,8 @@ The kernel has four lines. Each one shows something that
 On the host side:
 
 * ``make_ptr(cutlass.Int32, ...)`` gives each pointer its element type. That
-  is how ``load`` and ``store`` know the items are ``Int32``.
+  is how ``load`` knows the items are ``Int32``. ``store`` takes the type
+  from the ``ThreadData`` it writes, so its pointer must have the same type.
 * ``items_per_thread`` is declared ``cutlass.Constexpr`` in the kernel and
   in the launcher, so its value is known when the kernel is compiled.
 * ``kernel.launch(grid=1, block=128)`` sets the block size.
@@ -120,7 +121,7 @@ register tensor is rejected there when the kernel is compiled. The entry
 for :func:`~cuda.coop.cutlass.load` lists every form and says when the size
 of the memory is checked.
 
-Values that are already in registers become a payload through the
+Values that are already in registers become a :term:`payload` through the
 conversions of :ref:`ThreadData <coop-thread-data>`. Each conversion copies.
 
 :doc:`Advanced topics <advanced>` covers kernels that run native CuTe code
@@ -158,8 +159,8 @@ visualization pages draw what the primitives do:
        :func:`~cuda.coop.cutlass.sum`,
        :func:`~cuda.coop.cutlass.reduce_batched`
      - Combines the values of a group's threads into one result.
-       ``reduce_batched`` gives one result for each item of a lane's
-       payload.
+       ``reduce_batched`` gives one result for each item of a
+       :term:`lane`'s payload.
      - :doc:`Reduce <visualizations/reduce>`,
        :doc:`Batched Warp Reduction <visualizations/reduce-batched>`
    * - :ref:`Scan <coop-cutlass-scan>`
@@ -229,8 +230,9 @@ only the results that a primitive defines. Each entry in the API reference
 says which threads and which items those are.
 
 Keep compilation out of the time you measure. ``cute.compile`` takes the
-``@cute.jit`` function that launches the kernel and returns a callable that
-you keep and call for each launch. The
+``@cute.jit`` function that launches the kernel, followed by that function's
+arguments, and returns a callable that you keep. Call it for each launch
+with the arguments that are not declared ``cutlass.Constexpr``. The
 :ref:`debugger walkthrough <cuda.coop.cutlass.debugger_walkthrough>`
 compiles once and launches twice. The first compilation generates the C++
 behind the kernel's primitives, compiles it with NVRTC and links it into the
@@ -240,10 +242,11 @@ clock, as the examples do with ``driver.cuCtxSynchronize()``.
 To read the generated C++, set ``CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR`` before
 the kernel is compiled. :doc:`configuration` describes the variable. Judge
 inlining, barriers, shared memory and register use from the final linked
-cubin. The link can still inline the code of a primitive into the kernel, so
-the generated source and the PTX from before the link show an earlier stage.
-Run Compute Sanitizer's race check after you change how a kernel reuses
-scratch or where it synchronizes.
+cubin, which CuTe keeps when ``CUTE_DSL_KEEP=cubin`` is set. The link can
+still inline the code of a primitive into the kernel, so the generated
+source and the PTX from before the link show an earlier stage. Run Compute
+Sanitizer's race check after you change how a kernel reuses scratch or where
+it synchronizes.
 
 More items per thread can raise register use, and more scratch can lower the
 number of blocks that fit on a multiprocessor at the same time. Look at the
