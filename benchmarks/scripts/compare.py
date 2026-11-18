@@ -3,10 +3,12 @@
 import argparse
 import os
 
+# mypy targets Python 3.10 (for cuda.compute), which lacks StrEnum
+from enum import StrEnum  # type: ignore[attr-defined]
+
 import cccl
 import numpy as np
 import pandas as pd
-from colorama import Fore
 
 
 def get_filenames_map(arr):
@@ -100,6 +102,12 @@ faster_count = 0
 slower_count = 0
 
 
+class Emoji(StrEnum):
+    BLUE = "\U0001f535"
+    GREEN = "\U0001f7e2"
+    RED = "\U0001f534"
+
+
 def status(frac_diff, noise_ref, noise_cmp):
     global config_count
     global pass_count
@@ -109,13 +117,13 @@ def status(frac_diff, noise_ref, noise_cmp):
     min_noise = min(noise_ref, noise_cmp)
     if abs(frac_diff) <= min_noise:
         pass_count += 1
-        return Fore.BLUE + "SAME" + Fore.RESET
+        return f"{Emoji.BLUE} SAME"
     if frac_diff < 0:
         faster_count += 1
-        return Fore.GREEN + "FAST" + Fore.RESET
+        return f"{Emoji.GREEN} FAST"
     if frac_diff > 0:
         slower_count += 1
-        return Fore.RED + "SLOW" + Fore.RESET
+        return f"{Emoji.RED} SLOW"
 
 
 def compare():
