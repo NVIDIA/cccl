@@ -422,8 +422,10 @@ The CUTLASS 4.9 candidate copies compile options for each invocation, so
 adding a module's link libraries does not mutate the reusable option
 template. The ``DeviceTarget`` compile mode, which compiles a
 ``@cute.jit`` function as a device function for export, rejects
-``link-libraries``; ``cuda.coop.cutlass`` targets the default host-plus-kernel
-compilation.
+``link-libraries``. Kernels that call ``cuda.coop.cutlass`` primitives use
+the default host-plus-kernel compilation. ``compile_operator`` compiles its
+function as a device function, through ``cute.compile_to`` with
+``TargetKind.Device``.
 
 Shared memory
 ^^^^^^^^^^^^^

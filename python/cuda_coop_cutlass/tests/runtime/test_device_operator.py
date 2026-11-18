@@ -116,6 +116,62 @@ def _run(launch, source, *, options=()):
     return observed
 
 
+def test_compile_operator_example():
+    """Reduce and scan one block with a compiled ``a + b + 1`` operator."""
+
+    # cutlass-compile-operator-example-begin
+    import cutlass
+    from cutlass import cute
+
+    import cuda.coop.cutlass as coop
+
+    @cute.jit
+    def combine(a, b) -> cutlass.Int32:
+        return a + b + 1
+
+    combine_op = coop.compile_operator(combine, cutlass.Int32)
+
+    @cute.kernel
+    def kernel(
+        source: cute.Pointer, reduced: cute.Pointer, scanned: cute.Pointer
+    ):
+        block = coop.this_block()
+        thread = block.rank()
+        values = cute.make_tensor(source, cute.make_layout(64))
+        total = cute.make_tensor(reduced, cute.make_layout(1))
+        scans = cute.make_tensor(scanned, cute.make_layout(64))
+        value = values[thread]
+        combined = coop.reduce(block, value, binary_op=combine_op)
+        before = coop.exclusive_scan(
+            block, value, scan_op=combine_op, initial_value=100
+        )
+        if thread == 0:
+            total[0] = combined
+        scans[thread] = before
+
+    @cute.jit
+    def launch(
+        source: cute.Pointer, reduced: cute.Pointer, scanned: cute.Pointer
+    ):
+        kernel(source, reduced, scanned).launch(grid=1, block=64)
+
+    # cutlass-compile-operator-example-end
+    values = values_for(np.int32, 64, shift=29)
+    reduced = np.full(1, -101, dtype=np.int32)
+    scanned = np.full_like(values, -101)
+    with (
+        device_array(values) as src,
+        device_array(reduced) as total,
+        device_array(scanned) as scans,
+    ):
+        compiled = cute.compile(launch, src, total, scans)
+        compiled(src, total, scans)
+    np.testing.assert_array_equal(reduced, values.sum(dtype=np.int32) + 63)
+    expected = 100 + np.arange(64, dtype=np.int32)
+    expected[1:] += values[:-1].cumsum(dtype=np.int32)
+    np.testing.assert_array_equal(scanned, expected)
+
+
 @pytest.mark.parametrize("dtype", (np.int32, np.float32))
 @pytest.mark.parametrize("warp", (False, True), ids=("block", "logical-warp"))
 @pytest.mark.parametrize("operation", ("reduce", "inclusive", "exclusive"))

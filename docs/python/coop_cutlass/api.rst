@@ -283,8 +283,17 @@ Run Length Decode
 .. autofunction:: run_length_decode
 .. autofunction:: run_length_decode_into
 
+.. _coop-cutlass-device-operators:
+
 Compiled device operators
 -------------------------
+
+.. automodule:: cuda.coop.cutlass._device_operator
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. autofunction:: compile_operator
 

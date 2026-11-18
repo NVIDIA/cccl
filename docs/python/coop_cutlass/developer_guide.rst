@@ -110,7 +110,10 @@ trace-finalization hooks that run after tracing and before module hashing.
 It must provide access to the active compiler environment, exact block, grid,
 and cluster dimensions, and launch flags.
 ``_compiler/_runtime.py`` checks for the required Python interfaces
-during compiler initialization. Compilation and execution tests check that the
+during compiler initialization. ``compile_operator`` also needs
+``cute.compile_to`` and the ``cutlass.compiler`` names ``CuteCompiler``,
+``ArtifactType``, ``TargetKind``, ``Var`` and ``DType``, and checks for them
+when it is called. Compilation and execution tests check that the
 interfaces work together with NVRTC and the final linker.
 
 .. _cuda.coop.cutlass.compiler_flow:
