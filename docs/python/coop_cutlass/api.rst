@@ -300,21 +300,3 @@ Compiled device operators
 .. autoclass:: DeviceOperator
    :no-members:
    :no-special-members:
-
-Producer protocols
-------------------
-
-.. autoclass:: ThreadDataLoadSource
-   :no-members:
-   :no-special-members:
-
-.. autoclass:: ThreadDataTensorMetadata
-   :no-members:
-   :no-special-members:
-
-.. autoclass:: ThreadDataSource
-   :no-members:
-   :no-special-members:
-
-See :ref:`producer interoperability <coop-cutlass-producer-interop>` for
-capability detection, copy ownership, and lifetime requirements.

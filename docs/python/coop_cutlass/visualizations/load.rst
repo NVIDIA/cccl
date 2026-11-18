@@ -12,9 +12,8 @@ reads which element, and whether the threads then exchange their items
 through shared scratch.
 
 The explorer shows eight teaching threads that load a full tile. For the
-two warp-transpose algorithms it draws them as two warps of four lanes.
-**CUDA warps have 32 lanes**, and in a kernel these two algorithms need a
-block size that is a multiple of 32.
+two warp-transpose algorithms it draws them as two warps of four lanes. In
+a kernel these two algorithms need a block size that is a multiple of 32.
 
 .. coop-visualization:: load
 

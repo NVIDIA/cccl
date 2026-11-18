@@ -12,7 +12,7 @@ the thread with rank 0 in the group receives it.
 :func:`cuda.coop.cutlass.reduce` takes the operator as an argument.
 
 The explorer draws eight threads as one block, as two warps of four lanes,
-or as four groups of two lanes. **Physical CUDA warps have 32 lanes.**
+or as four groups of two lanes.
 
 .. coop-visualization:: reduce
 
@@ -48,9 +48,8 @@ For a block, the combine row changes with the algorithm. On a block of more
 than 32 threads, ``raking`` has every thread place its value in shared
 memory, where one warp combines them. ``raking_commutative_only`` is a form
 of ``raking`` for commutative operators. ``warp_reductions`` reduces inside
-each warp and then combines the warps' results. The row is an illustration
-drawn for eight threads. It shows one valid grouping for each algorithm and
-leaves out the order of the instructions.
+each warp and then combines the warps' results. The row is drawn for eight
+threads and shows one valid grouping for each algorithm.
 
 With one item per thread, the explorer can limit each group to its first
 half with ``valid_items``. The other threads stay in the picture because

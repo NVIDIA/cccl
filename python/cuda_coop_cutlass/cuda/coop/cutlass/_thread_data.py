@@ -44,7 +44,8 @@ This kernel squares the items it loaded and sums the squares over the block:
   ``cutlass.Int32(x)``, to give an item that type.
 * A primitive that returns a payload returns a new one and leaves its input
   unchanged. Two arguments are written in place: ``aggregate_output`` of a
-  scan and ``exclusive_digit_prefix`` of ``radix_rank_keys``.
+  scan and ``exclusive_digit_prefix`` of ``radix_rank_keys``. ``store`` with
+  a transpose algorithm leaves the items of its payload undefined.
 
 Items can be ``Int8`` to ``Int64``, ``Uint8`` to ``Uint64``, ``Float32`` or
 ``Float64``. Some primitives accept fewer types, and their entries say
@@ -151,10 +152,9 @@ _ProducerT = TypeVar("_ProducerT")
 
 
 class ThreadDataLoadSource(Protocol[_ProducerT]):
-    """Producer capability that loads one payload into per-thread registers.
+    """An object with the ``__cuda_coop_thread_data_load__`` hook.
 
-    Implementations own the storage-specific copy policy and expose it through
-    this trace-time hook.
+    ``ThreadData.load`` calls the hook while the kernel is compiled.
     """
 
     def __cuda_coop_thread_data_load__(self) -> Any:
@@ -163,7 +163,10 @@ class ThreadDataLoadSource(Protocol[_ProducerT]):
 
 
 class ThreadDataTensorMetadata(Protocol):
-    """Static shape and dtype used to reconstruct a CuTe ``TensorSSA``."""
+    """An object with the ``shape`` and ``dtype`` that ``to_tensor_ssa`` reads.
+
+    Pass it as ``like``.
+    """
 
     @property
     def shape(self) -> Any:
@@ -181,7 +184,7 @@ class ThreadDataSource(
     ThreadDataTensorMetadata,
     Protocol[_ProducerT],
 ):
-    """Producer source that supports loading and TensorSSA reconstruction."""
+    """An object with the hook and with ``shape`` and ``dtype``."""
 
 
 _ROOT_SCOPE = "cuda.coop.cutlass"
@@ -1037,6 +1040,9 @@ class ThreadData:
 
         ``items_per_thread`` and ``dtype`` are optional static constraints on
         the returned register payload, matching :meth:`from_payload`.
+
+        :ref:`Producer-owned register loads <coop-cutlass-producer-interop>`
+        in Advanced topics has a tested producer and the rules for the hook.
         """
 
         if items_per_thread is not None:
@@ -1524,8 +1530,8 @@ def _make_rmem_tensor(
 __all__ = [
     "ThreadData",
     "ThreadDataLoadSource",
-    "ThreadDataTensorMetadata",
     "ThreadDataSource",
+    "ThreadDataTensorMetadata",
     "_coerce_thread_payload",
     "_make_rmem_tensor",
     "_snapshot_readable_payload",

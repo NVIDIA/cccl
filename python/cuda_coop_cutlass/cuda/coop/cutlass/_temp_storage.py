@@ -77,9 +77,24 @@ hand:
 With ``sharing="exclusive"`` this kernel needs neither ``sync``, because no
 call reuses another call's bytes. The barriers above are placed for the
 scratch. If your threads also pass data to each other through shared memory,
-add the barriers that needs. The
-:ref:`block storage example <coop-cutlass-storage>` reuses one region on
-every trip around a runtime loop.
+add the barriers that needs.
+
+The kernel below reuses one region on every trip around a runtime loop. Trip
+``tile`` loads one tile, adds ``tile + 1`` to each of its items and stores
+it, and both calls pass ``storage``. ``sharing`` and ``manual_sync`` are
+arguments of the example's ``run_example`` function, and ``manual_sync=True``
+compiles the kernel with ``auto_sync=False`` and a ``storage.sync()`` after
+each of the two calls. ``_BLOCK`` is ``(8, 4, 2)``, which is 64 threads.
+
+`Full example on GitHub
+<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/block_storage.py>`__
+
+.. literalinclude::
+    ../../../python/cuda_coop_cutlass/examples/block_storage.py
+    :language: python
+    :start-after: docs: start cutlass-block-storage
+    :end-before: docs: end cutlass-block-storage
+    :dedent: 4
 
 These block primitives take a ``temp_storage`` argument: transpose Load and
 Store, Reduce, Scan, Merge Sort, Radix Sort, TopK, Adjacent Difference,
@@ -163,7 +178,8 @@ class TempStorage:
       one branch or one loop iteration is fine.
     * To make a call that uses scratch conditional, use an ``if`` statement
       whose condition is the same for every thread in the group. Inside a
-      runtime ``a if c else b`` expression such a call is a compile error.
+      runtime ``a if c else b`` expression, a block call that takes
+      ``temp_storage`` and uses scratch is a compile error.
     * Error messages call a ``TempStorage`` object a descriptor.
 
     The Developer Guide describes :ref:`how the compiler sizes and places

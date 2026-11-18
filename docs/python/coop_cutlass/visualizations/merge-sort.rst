@@ -16,7 +16,7 @@ The explorer covers both functions. Choose the group, the number of items
 per thread, the key order, distinct or repeated keys, and the number of
 valid items. The eight teaching threads represent one block, two warps of
 four lanes, or four groups of two lanes, which the explorer labels logical
-warps. **Physical CUDA warps have 32 lanes.**
+warps.
 
 .. coop-visualization:: merge-sort
 
@@ -59,12 +59,11 @@ position in the input: ``A`` is 0, ``B`` is 1, and so on. Select an item to
 see its value and where it is now. A value stays beside its key through
 every stage.
 
-The stages are a teaching model of a merge sort. In a kernel,
-:cpp:class:`cub::BlockMergeSort` sorts a block and
-:cpp:class:`cub::WarpMergeSort` sorts a warp or a group of lanes. Their
-steps can differ from the stages drawn here. Choose ``Repeated keys`` to
-see equal keys meet. The explorer then takes the key from the right-hand
-run first, which is one of the orders the sort may return.
+In a kernel, :cpp:class:`cub::BlockMergeSort` sorts a block and
+:cpp:class:`cub::WarpMergeSort` sorts a warp or a group of lanes. Choose
+``Repeated keys`` to see equal keys meet. The explorer then takes the key
+from the right-hand run first, which is one of the orders the sort may
+return.
 
 With ``Physical warp`` or ``Logical warp`` selected, the working row holds
 one sorted run for each group, and every key stays inside its group.
