@@ -191,8 +191,17 @@ Data rearrangement
 
 .. autofunction:: shuffle
 
+.. _coop-cutlass-merge-sort:
+
 Comparison sorting
 ------------------
+
+.. automodule:: cuda.coop.cutlass._group_merge_sort
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. autofunction:: merge_sort_keys
 .. autofunction:: merge_sort_pairs

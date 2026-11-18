@@ -180,13 +180,16 @@ you need ordered output. See the :ref:`TopK examples <coop-cutlass-topk>`.
 Does sorting each block sort the whole array?
 ---------------------------------------------
 
-Each call sorts only the selected group's tile. Several blocks therefore
-produce independently sorted tiles. A globally sorted array requires an
-algorithm that combines those tiles. Warp and logical-warp Merge Sort
-likewise sort each participating group's tile independently. The
+No. A merge sort or a radix sort orders the :term:`tile` of the group that
+makes the call. A kernel that sorts every block leaves each block's tile in
+order and the array as a whole unsorted. The package has no primitive that
+merges sorted tiles. A merge sort also runs on a warp or a group of lanes,
+and a radix sort runs on a block only.
+
+:ref:`Comparison sorting <coop-cutlass-merge-sort>` in the API reference
+says where the sorted keys end up across the threads. The
 :doc:`Merge Sort <visualizations/merge-sort>` and
-:doc:`radix sorting <visualizations/radix>` visualizations illustrate these
-operations.
+:doc:`radix sorting <visualizations/radix>` pages draw both sorts.
 
 .. _coop-faq-neighbor-operations:
 
