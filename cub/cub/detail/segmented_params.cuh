@@ -214,30 +214,27 @@ get_param(const ::cuda::args::immediate<Arg, StaticBounds>& __arg, [[maybe_unuse
   return ::cuda::args::__unwrap(__arg);
 }
 
-template <typename Arg, typename StaticBounds, bool HasRuntimeBounds, typename SegmentIndexT>
+template <typename Arg, typename Bounds, typename SegmentIndexT>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
-get_param(const ::cuda::args::deferred<Arg, StaticBounds, HasRuntimeBounds>& __arg,
-          [[maybe_unused]] SegmentIndexT __index) noexcept
+get_param(const ::cuda::args::deferred<Arg, Bounds>& __arg, [[maybe_unused]] SegmentIndexT __index) noexcept
 {
   // A single `deferred` wraps a handle to a device-side value (a pointer or input iterator), not the value itself;
   // the value is read on the device by dereferencing the handle. Materialize into the scalar element type: `*handle`
   // may yield a proxy reference that must not leak into the deduced return type (downstream `max`/comparisons would
   // otherwise bind to the proxy).
-  using __element_t =
-    typename ::cuda::args::__traits<::cuda::args::deferred<Arg, StaticBounds, HasRuntimeBounds>>::element_type;
+  using __element_t         = typename ::cuda::args::__traits<::cuda::args::deferred<Arg, Bounds>>::element_type;
   const __element_t __value = *::cuda::args::__unwrap(__arg);
   _CUB::detail::params::__assert_param_in_bounds(__arg, __value);
   return __value;
 }
 
-template <typename Arg, typename StaticBounds, bool HasRuntimeBounds, typename SegmentIndexT>
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_param(
-  const ::cuda::args::deferred_sequence<Arg, StaticBounds, HasRuntimeBounds>& __arg, SegmentIndexT __index) noexcept
+template <typename Arg, typename Bounds, typename SegmentIndexT>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+get_param(const ::cuda::args::deferred_sequence<Arg, Bounds>& __arg, SegmentIndexT __index) noexcept
 {
   // Materialize into the scalar element type: `handle[index]` may yield a proxy reference that must not leak into the
   // deduced return type.
-  using __element_t =
-    typename ::cuda::args::__traits<::cuda::args::deferred_sequence<Arg, StaticBounds, HasRuntimeBounds>>::element_type;
+  using __element_t = typename ::cuda::args::__traits<::cuda::args::deferred_sequence<Arg, Bounds>>::element_type;
   const __element_t __value = ::cuda::args::__unwrap(__arg)[__index];
   _CUB::detail::params::__assert_param_in_bounds(__arg, __value);
   return __value;
@@ -306,7 +303,7 @@ using __static_value_type_t _CCCL_NODEBUG = ::cuda::std::conditional_t<
 template <class ElementT, class StaticBounds>
 struct __retype_static_bounds
 {
-  using type _CCCL_NODEBUG = StaticBounds; // no_bounds
+  using type _CCCL_NODEBUG = StaticBounds; // no_bounds or runtime_bounds
 };
 
 template <class ElementT, auto Lowest, auto Highest>
@@ -367,36 +364,21 @@ normalize_param(const ::cuda::args::__immediate_sequence<Arg, StaticBounds>& __a
     ::cuda::args::__access::__arg(__arg), ::cuda::args::__access::__runtime_bounds(__arg)};
 }
 
-template <class Arg, class StaticBounds, bool HasRuntimeBounds>
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
-normalize_param(const ::cuda::args::deferred<Arg, StaticBounds, HasRuntimeBounds>& __arg) noexcept
+template <class Arg, class Bounds>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto normalize_param(const ::cuda::args::deferred<Arg, Bounds>& __arg) noexcept
 {
-  using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<Arg>, StaticBounds>;
-  if constexpr (HasRuntimeBounds)
-  {
-    return ::cuda::args::deferred<Arg, __bounds_t, true>{
-      ::cuda::args::__access::__arg(__arg), ::cuda::args::__access::__runtime_bounds(__arg)};
-  }
-  else
-  {
-    return ::cuda::args::deferred<Arg, __bounds_t>{::cuda::args::__access::__arg(__arg)};
-  }
+  using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<Arg>, Bounds>;
+  return ::cuda::args::deferred<Arg, __bounds_t>{
+    ::cuda::args::__access::__arg(__arg), ::cuda::args::__access::__runtime_bounds(__arg)};
 }
 
-template <class Arg, class StaticBounds, bool HasRuntimeBounds>
+template <class Arg, class Bounds>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
-normalize_param(const ::cuda::args::deferred_sequence<Arg, StaticBounds, HasRuntimeBounds>& __arg) noexcept
+normalize_param(const ::cuda::args::deferred_sequence<Arg, Bounds>& __arg) noexcept
 {
-  using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<Arg>, StaticBounds>;
-  if constexpr (HasRuntimeBounds)
-  {
-    return ::cuda::args::deferred_sequence<Arg, __bounds_t, true>{
-      ::cuda::args::__access::__arg(__arg), ::cuda::args::__access::__runtime_bounds(__arg)};
-  }
-  else
-  {
-    return ::cuda::args::deferred_sequence<Arg, __bounds_t>{::cuda::args::__access::__arg(__arg)};
-  }
+  using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<Arg>, Bounds>;
+  return ::cuda::args::deferred_sequence<Arg, __bounds_t>{
+    ::cuda::args::__access::__arg(__arg), ::cuda::args::__access::__runtime_bounds(__arg)};
 }
 
 // =====================================================================

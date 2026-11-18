@@ -2515,7 +2515,7 @@ public:
   //!  **[inferred]** Random-access iterator type used to access the initial value on device
   //!
   //! @tparam InitValueBoundsT
-  //!  **[inferred]** Static bounds on `init_value`
+  //!  **[inferred]** Bounds type for `init_value`
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
@@ -2552,13 +2552,12 @@ public:
             typename InitValueBoundsT,
             typename NumItemsT,
             typename EnvT                                                    = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0,
-            bool InitValueHasRuntimeBounds                                   = false>
+            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ScanOpT scan_op,
-    const ::cuda::args::deferred<InitValueIterT, InitValueBoundsT, InitValueHasRuntimeBounds>& init_value,
+    const ::cuda::args::deferred<InitValueIterT, InitValueBoundsT>& init_value,
     NumItemsT num_items,
     const EnvT& env = {})
   {
@@ -2618,7 +2617,7 @@ public:
   //!  **[inferred]** Random-access iterator type used to access the initial value on device
   //!
   //! @tparam InitValueBoundsT
-  //!  **[inferred]** Static bounds on `init_value`
+  //!  **[inferred]** Bounds type for `init_value`
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
@@ -2659,15 +2658,14 @@ public:
             typename InitValueIterT,
             typename InitValueBoundsT,
             typename NumItemsT,
-            typename EnvT                  = ::cuda::std::execution::env<>,
-            bool InitValueHasRuntimeBounds = false>
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ScanOpT scan_op,
-    const ::cuda::args::deferred<InitValueIterT, InitValueBoundsT, InitValueHasRuntimeBounds>& init_value,
+    const ::cuda::args::deferred<InitValueIterT, InitValueBoundsT>& init_value,
     NumItemsT num_items,
     const EnvT& env = {})
   {
