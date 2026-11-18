@@ -26,13 +26,14 @@ def _check(result):
 
 
 def run_example(items_per_thread=2):
-    """Check full-key Sort, stable signed-digit pairs, ranks, and prefixes.
+    """Check full-key Sort, stable signed-digit pairs, ranks, and counts.
 
     The host flips the sign bit before extracting the high digit, then uses a
     stable descending order to track ties by their original positions. Rank
     must return that permutation's inverse at the original input positions.
-    Striped pair-sort results use a striped Store. Bin prefixes count
-    greater digits, and a separate output checks that input keys are unchanged.
+    Striped pair-sort results use a striped Store. Each bin count is the
+    number of keys with a greater digit, and a separate output checks that
+    input keys are unchanged.
     """
     tile_size = 64 * items_per_thread
     import cuda.coop.cutlass as coop

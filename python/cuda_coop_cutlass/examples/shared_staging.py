@@ -5,8 +5,8 @@
 """Stage a masked global tile with CuTe, then load shared values cooperatively.
 
 The example uses separate Int32 source, shared, and output storage. Every
-logical group has its own contiguous tile. Native copy uses striped thread
-ownership; Load can then select blocked or striped ownership.
+group has its own tile. The native copy reads in striped order, and Load
+then returns a blocked or a striped payload.
 """
 
 import cutlass
