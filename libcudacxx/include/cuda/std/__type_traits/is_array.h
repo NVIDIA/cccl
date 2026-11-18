@@ -25,6 +25,15 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(is_array)
+#  define _CCCL_BUILTIN_IS_ARRAY(...) __is_array(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_array)
+
+// clang prior to clang-19 gives wrong results for __is_array of _Tp[0]
+#if _CCCL_COMPILER(CLANG, <, 19)
+#  undef _CCCL_BUILTIN_IS_ARRAY
+#endif // clang < 19
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // TODO: Clang incorrectly reports that __is_array is true for T[0].

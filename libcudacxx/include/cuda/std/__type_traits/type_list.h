@@ -47,6 +47,15 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_HAS_BUILTIN(__type_pack_element)
+#  define _CCCL_BUILTIN_TYPE_PACK_ELEMENT(...) __type_pack_element<__VA_ARGS__>
+#endif // _CCCL_HAS_BUILTIN(__type_pack_element)
+
+// NVCC prior to 12.2 have trouble with pack expansion into __type_pack_element in an alias template
+#if _CCCL_CUDACC_BELOW(12, 2)
+#  undef _CCCL_BUILTIN_TYPE_PACK_ELEMENT
+#endif // _CCCL_CUDACC_BELOW(12, 2)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
