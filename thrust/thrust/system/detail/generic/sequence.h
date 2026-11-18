@@ -13,8 +13,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/tabulate.h>
+
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__utility/move.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic

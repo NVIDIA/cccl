@@ -13,15 +13,20 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/merge.h>
 #include <thrust/system/detail/generic/select_system.h>
 
+#include <cuda/std/__utility/pair.h>
+
 // Include all active backend system implementations (generic, sequential, host and device)
+// IWYU pragma: begin_keep
 #include <thrust/system/detail/generic/merge.h>
 #include <thrust/system/detail/sequential/merge.h>
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(merge.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(merge.h)
+// IWYU pragma: end_keep
 
 // Some build systems need a hint to know which files we could include
 #if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)

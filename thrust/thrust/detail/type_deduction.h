@@ -15,9 +15,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/preprocessor.h>
-
-#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/forward.h> // IWYU pragma: keep
 
 ///////////////////////////////////////////////////////////////////////////////
 

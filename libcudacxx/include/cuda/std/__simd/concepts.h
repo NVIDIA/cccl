@@ -66,12 +66,27 @@ _CCCL_CONCEPT __simd_vec_type = _CCCL_REQUIRES_EXPR(
 
 // [simd.expos], constexpr-wrapper-like concept
 
+template <typename _Tp, typename = void>
+inline constexpr bool __has_nonstatic_value_v = false;
+
 template <typename _Tp>
-_CCCL_CONCEPT __constexpr_wrapper_like = _CCCL_REQUIRES_EXPR((_Tp))(
-  requires(convertible_to<_Tp, decltype(_Tp::value)>),
-  requires(equality_comparable_with<_Tp, decltype(_Tp::value)>),
-  declval<char (&)[(_Tp() == _Tp::value) ? 1 : -1]>(),
-  declval<char (&)[(static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value) ? 1 : -1]>());
+inline constexpr bool __has_nonstatic_value_v<_Tp, void_t<decltype(&_Tp::value)>> =
+  is_member_pointer_v<decltype(&_Tp::value)>;
+
+template <typename _Tp, bool = __has_nonstatic_value_v<_Tp>, typename = void>
+inline constexpr bool __constexpr_wrapper_like_v = false;
+
+// Reject non-static members and invalid constant expressions before checking conversions.
+template <typename _Tp>
+inline constexpr bool __constexpr_wrapper_like_v<
+  _Tp,
+  false,
+  void_t<decltype(::cuda::std::declval<char (&)[(_Tp() == _Tp::value) ? 1 : -1]>()),
+         decltype(::cuda::std::declval<char (&)[(static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value) ? 1 : -1]>())>> =
+  convertible_to<_Tp, decltype(_Tp::value)> && equality_comparable_with<_Tp, decltype(_Tp::value)>;
+
+template <typename _Tp>
+_CCCL_CONCEPT __constexpr_wrapper_like = __constexpr_wrapper_like_v<_Tp>;
 
 // Covers all integral types including character types (char16_t, char32_t, wchar_t, char8_t),
 // which are excluded by __cccl_is_integer_v
@@ -228,10 +243,19 @@ inline constexpr bool __is_constexpr_wrapper_value_preserving_v<
 // - From is an arithmetic type and the conversion from From to value_type is value-preserving
 // - From satisfies constexpr-wrapper-like, remove_cvref_t<decltype(From::value)> is an arithmetic type, and
 //   From::value is representable by value_type.
+
+// __is_arithmetic_value_preserving_v is a variable template instead of two conditions in __is_value_ctor_implicit to
+// avoid __is_value_preserving_v instantiation with raw arrays, e.g. numeric_limits<int[N]>
+template <typename _From, typename _To, bool = is_arithmetic_v<_From>>
+inline constexpr bool __is_arithmetic_value_preserving_v = false;
+
+template <typename _From, typename _To>
+inline constexpr bool __is_arithmetic_value_preserving_v<_From, _To, true> = __is_value_preserving_v<_From, _To>;
+
 template <typename _Up, typename _ValueType, typename _From = remove_cvref_t<_Up>>
 _CCCL_CONCEPT __is_value_ctor_implicit =
   (convertible_to<_Up, _ValueType> && !is_arithmetic_v<_From> && !__constexpr_wrapper_like<_From>)
-  || (is_arithmetic_v<_From> && __is_value_preserving_v<_From, _ValueType>)
+  || __is_arithmetic_value_preserving_v<_From, _ValueType>
   || (__constexpr_wrapper_like<_From> && __is_constexpr_wrapper_value_preserving_v<_From, _ValueType>);
 
 // [simd.ctor] p7: explicit(see below) for basic_vec(const basic_vec<U, UAbi>&)

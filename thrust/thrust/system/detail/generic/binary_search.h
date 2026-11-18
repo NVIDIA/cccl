@@ -16,7 +16,9 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/detail/generic/tag.h>
+#include <thrust/detail/execution_policy.h>
+
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
@@ -143,4 +145,4 @@ _CCCL_HOST_DEVICE_API ::cuda::std::pair<ForwardIterator, ForwardIterator> equal_
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
-#include <thrust/system/detail/generic/binary_search.inl>
+#include <thrust/system/detail/generic/binary_search.inl> // IWYU pragma: export

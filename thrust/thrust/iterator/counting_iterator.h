@@ -28,16 +28,20 @@
 #endif // no system header
 
 #include <thrust/detail/type_traits.h>
-#include <thrust/iterator/counting_iterator.h>
+#include <thrust/detail/use_default.h>
+#include <thrust/iterator/detail/any_system_tag.h>
+#include <thrust/iterator/detail/iterator_adaptor_base.h>
 #include <thrust/iterator/iterator_adaptor.h>
+#include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 
 #include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
-#include <cuda/std/cstddef>
 
 THRUST_NAMESPACE_BEGIN
 

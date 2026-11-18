@@ -18,7 +18,10 @@
 #endif // no system header
 
 #include <thrust/detail/type_traits.h>
+#include <thrust/detail/use_default.h>
 #include <thrust/iterator/iterator_adaptor.h>
+#include <thrust/iterator/iterator_facade.h>
+#include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/std/__functional/invoke.h>
 

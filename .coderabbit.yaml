@@ -114,6 +114,22 @@ reviews:
         handling, environment setup, GPU availability assumptions, clear failures, and avoiding unnecessary
         expensive jobs.
 
+    - path: "ci/bench.yaml"
+      instructions: |
+        Treat benchmark requests as intentional temporary PR configuration. Accept
+        template differences in filters, GPUs, and optional fields. CI branch protections
+        enforce resets before merge. Do not request resets or repeat reset requirements
+        in comments or summaries, even when headers require them. Report errors that
+        disrupt the requested benchmarks.
+
+    - path: "ci/matrix.yaml"
+      instructions: |
+        Treat non-empty workflows.override entries as intentional temporary CI
+        configuration. Do not request resets or flag reduced coverage or merge blocks.
+        CI branch protections enforce resets; omit reminders from comments and summaries.
+        Report errors that prevent requested jobs. Review permanent changes for
+        correctness and coverage.
+
     - path: ".github/**/*"
       instructions: |
         For GitHub workflows and repository automation, focus on permissions, event triggers, matrix generation,

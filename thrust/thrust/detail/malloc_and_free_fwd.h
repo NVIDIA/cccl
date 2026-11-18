@@ -16,6 +16,8 @@
 #include <thrust/detail/execution_policy.h>
 #include <thrust/detail/pointer.h>
 
+#include <cuda/std/__cstddef/types.h>
+
 THRUST_NAMESPACE_BEGIN
 
 template <typename DerivedPolicy>
