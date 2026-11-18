@@ -41,7 +41,10 @@ _OPTION = re.compile(r":([\w-]+):\s*(.*)")
 _MARKER_OPTIONS = ("start-after", "start-at", "end-before", "end-at")
 _UNIQUE_MARKER_OPTIONS = ("start-after", "end-before")
 _GITHUB_URL = re.compile(r"https://github\.com/[^\s>]+")
-_AUTODOC = re.compile(r"^\s*\.\. auto(module|class|function|method)::")
+# Every directive that documents an object: the autodoc family and
+# hand-written ``py:`` entries.
+_AUTODOC = re.compile(r"^\s*\.\. (auto\w+|py:\w+)::")
+_NOT_AN_ENTRY = ("py:module", "py:currentmodule")
 _PUBLIC_MODULE = ".. currentmodule:: cuda.coop.cutlass"
 _DOCUMENTED = (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
 
@@ -180,8 +183,8 @@ def _automodules_without_reset(text: str) -> list[str]:
     """List the ``automodule`` directives that leave their module current.
 
     ``.. currentmodule:: cuda.coop.cutlass`` must follow each one before the
-    next autodoc directive. Entries below it otherwise document the private
-    module path.
+    next directive that documents an object, autodoc or hand-written.
+    Entries below it otherwise document the private module path.
     """
     missing = []
     pending = None
@@ -189,10 +192,12 @@ def _automodules_without_reset(text: str) -> list[str]:
         if line.strip() == _PUBLIC_MODULE:
             pending = None
         elif directive := _AUTODOC.match(line):
+            if directive[1] in _NOT_AN_ENTRY:
+                continue
             if pending:
                 missing.append(pending)
             pending = None
-            if directive[1] == "module":
+            if directive[1] == "automodule":
                 pending = f"line {number}: {line.strip()}"
     if pending:
         missing.append(pending)

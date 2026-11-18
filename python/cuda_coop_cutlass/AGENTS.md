@@ -28,7 +28,9 @@ for the maintenance workflow.
 - Every complete kernel shown in a user page or docstring comes from a
   tested file under `python/cuda_coop_cutlass/examples/` or
   `python/cuda_coop_cutlass/tests/runtime/` through `literalinclude`, with
-  markers when it shows part of the file. Preserve the markers. The Sphinx
+  markers when it shows part of the file. The kernel and launcher in
+  `docs/python/coop_cutlass/visualizations/index.rst` hold no primitive
+  call and are written in the page. Preserve the markers. The Sphinx
   build drops an include whose file or marker is missing and still passes,
   so after changing a marker, an include or `api.rst`, run
   `python -m pytest python/cuda_coop_cutlass/tests/test_docs_sources.py`. It

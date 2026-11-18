@@ -573,7 +573,9 @@ that diagram.
   ``python/cuda_coop_cutlass/tests/runtime/`` consistent with those rules.
   Preserve the markers used by ``literalinclude``.
 * Every complete kernel shown in a user page or docstring comes from a
-  tested file through ``literalinclude``. An include of part of a file
+  tested file through ``literalinclude``. The kernel and launcher in
+  ``visualizations/index.rst`` hold no primitive call and are written in
+  the page. An include of part of a file
   names ``:start-after:`` and ``:end-before:`` markers, and each marker
   occurs once in that file. Mark a new region in an example under
   ``python/cuda_coop_cutlass/examples/`` with ``# docs: start <name>`` and
@@ -607,7 +609,9 @@ that diagram.
   ``test_cutlass_integration_example.py`` in
   ``python/cuda_coop_cutlass/tests/runtime/`` run
   ``debugger_walkthrough.py`` and ``cutlass_integration_example.py`` from
-  ``docs/python/coop_cutlass/``. ``cutlass-integration-example.svg`` names
+  ``docs/python/coop_cutlass/``. Both tests need a GPU. CI skips them for a
+  pull request that changes only files under ``docs/``, so run them by hand
+  after changing either script. ``cutlass-integration-example.svg`` names
   the functions and handoffs of the second script, so update it when they
   change.
 * For operation visualizations, update the RST explanation, static SVG, and
@@ -649,8 +653,8 @@ that diagram.
   ``_group_run_length`` and ``_device_operator``. ``api.rst`` renders each
   under its section heading with the options ``:no-members:``,
   ``:no-special-members:`` and ``:no-index:``, followed by
-  ``.. currentmodule:: cuda.coop.cutlass``. Notes for maintainers go in the
-  comment block below the docstring.
+  ``.. currentmodule:: cuda.coop.cutlass``. Notes for maintainers go in an
+  ``# Implementation notes.`` comment below the docstring.
 * When a CUB block or warp primitive under ``cub/cub/block`` or
   ``cub/cub/warp`` changes, or a new one is added, update this package, its
   tests and its documentation in the same pull request.
@@ -787,9 +791,8 @@ before continuing through the package import. Step over the
 ``missing_capabilities`` assignment and inspect it. It is empty when the
 installed CuTe has the ``CuTeDSL`` accessor and trace-finalization hooks,
 the compiler-environment and launch-facts queries, and the link-library and
-architecture options that this package uses. The function checks that the
-interfaces the package needs exist. Compilation and device execution come
-later.
+architecture options that this package uses. The function checks that
+these interfaces exist. Compilation and device execution come later.
 
 Disable the import breakpoints and stop on
 ``compiled = cute.compile(...)`` in the example. Evaluate:
