@@ -44,6 +44,7 @@
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/__type_traits/make_signed.h>
+#include <cuda/std/__type_traits/num_bits.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -249,6 +250,11 @@ struct __simd_bit_repeat_generator
     else
     {
       _CCCL_ASSERT(__count > 0, "bit_repeat: count must be positive");
+    }
+    constexpr auto __width = static_cast<typename _Vp1::value_type>(__num_bits_v<typename _Vp0::value_type>);
+    if (__count >= __width)
+    {
+      return __v0_[_Idx::value];
     }
     return ::cuda::std::bit_repeat(__v0_[_Idx::value], static_cast<int>(__count));
   }
