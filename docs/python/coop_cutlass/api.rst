@@ -37,6 +37,17 @@ with :func:`compile_operator` before tracing. See
 :ref:`coop-cutlass-device-operators` for the scalar signature and compiler
 requirements. Scan prefix callbacks and runtime callback state are unsupported.
 
+Ahead-of-time provider packs
+----------------------------
+
+See :ref:`coop-cutlass-aot-packs` for a capture and deployment example.
+
+.. autofunction:: cuda.coop.cutlass.aot.capture
+
+.. autofunction:: cuda.coop.cutlass.aot.use
+
+.. autofunction:: cuda.coop.cutlass.aot.inspect
+
 Compiled device operators
 -------------------------
 

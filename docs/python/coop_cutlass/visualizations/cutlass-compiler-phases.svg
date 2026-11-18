@@ -42,12 +42,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   <text x="154" y="506" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Tracing complete · finalize providers before kernel compilation</text>
   <text x="4" y="547" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">4. Finalize the</text>
   <text x="4" y="575.8" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">provider bundle</text>
-  <g data-node="Compile or reuse the completed bundle" role="group" aria-label="cuda.coop.cutlass. Compile or reuse the completed bundle. After tracing, render one C++ unit for the session.. On a cache miss, NVRTC returns provider LTO-IR.. The same program supplies any scratch layouts.">
+  <g data-node="Compile or reuse the completed bundle" role="group" aria-label="cuda.coop.cutlass. Compile or reuse the completed bundle. After tracing, render one C++ unit for the session.. An AOT pack, cache entry or NVRTC supplies LTO-IR.. Scratch layouts come from that provider compilation.">
     <rect x="154" y="525" width="862" height="137.2" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
     <text x="166" y="561.8" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">Compile or reuse the completed bundle</text>
     <text x="166" y="590.5999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">After tracing, render one C++ unit for the session.</text>
-    <text x="166" y="619.3999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">On a cache miss, NVRTC returns provider LTO-IR.</text>
-    <text x="166" y="648.1999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">The same program supplies any scratch layouts.</text>
+    <text x="166" y="619.3999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">An AOT pack, cache entry or NVRTC supplies LTO-IR.</text>
+    <text x="166" y="648.1999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Scratch layouts come from that provider compilation.</text>
   </g>
   <path d="M585 665.2V690.2" marker-end="url(#cutlass-phases-overview-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
   <text x="4" y="726.2" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">5. Resolve</text>

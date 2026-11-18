@@ -90,12 +90,8 @@ def resolve_compile_context(
     )
 
 
-def compiler_options(context: CompileContext, arch: str) -> tuple[bytes, ...]:
-    """Build device-only C++17 options that emit relocatable LTO-IR.
-
-    The architecture and ordered include roots are part of bundle identity.
-    These options request external device code for the later kernel link.
-    """
+def bundle_options(arch: str) -> tuple[bytes, ...]:
+    """Code-generation options shared by JIT compilation and AOT lookup."""
 
     return (
         b"--std=c++17",
@@ -104,10 +100,18 @@ def compiler_options(context: CompileContext, arch: str) -> tuple[bytes, ...]:
         b"-dlto",
         b"-DCCCL_DISABLE_BF16_SUPPORT",
         f"--gpu-architecture={arch}".encode("ascii"),
-        *(
-            os.fsencode(f"--include-path={path}")
-            for path in context.include_dirs
-        ),
+    )
+
+
+def compiler_options(context: CompileContext, arch: str) -> tuple[bytes, ...]:
+    """Build device-only C++17 options that emit relocatable LTO-IR.
+
+    The architecture and ordered include roots are part of bundle identity.
+    These options request external device code for the later kernel link.
+    """
+
+    return bundle_options(arch) + tuple(
+        os.fsencode(f"--include-path={path}") for path in context.include_dirs
     )
 
 
