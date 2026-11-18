@@ -36,11 +36,64 @@ Runtime environment variables
    headers for another specialization with a compatible header prefix in the
    same process. Set this to ``off`` to compile each miss without PCH.
 
+``CUDA_COOP_CUTLASS_AOT_PACK_PATH``, ``CUDA_COOP_CUTLASS_AOT_MODE``
+   Select an :ref:`ahead-of-time pack <coop-cutlass-aot-packs>` by absolute
+   path. The mode can be ``auto`` (default), ``required``, or ``off``.
+   ``cuda-coop-aot run`` sets both for the workload and its child processes.
+   Each process reads the pack at first use. Give replacement packs a new
+   path. An explicit ``aot.use`` overrides these settings for its context.
+
 ``CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR``
    Writes generated CUDA source to this directory for compiler diagnostics.
    Files use ``cuda_coop_cutlass_<hash>.cu`` names. Set it before compiling; it also writes
    the source when the provider compilation cache is hit. Unset or empty
    disables dumping.
+
+.. _coop-cutlass-aot-packs:
+
+Ahead-of-time provider packs
+----------------------------
+
+To move provider compilation off the deployment path, run a representative
+workload once and capture its providers. Start with a new pack directory name.
+The capture must reach CuTe tracing for each specialization you want to ship.
+For example, run these commands from a checkout with the package installed:
+
+.. code-block:: bash
+
+   example=python/cuda_coop_cutlass/examples/block_storage.py
+   CUTE_DSL_NO_CACHE=1 cuda-coop-aot capture --output providers -- python "$example"
+   cuda-coop-aot inspect providers
+   cuda-coop-aot run --pack providers --mode required -- python "$example"
+
+You can copy the entire directory to another location before running the last
+command. It contains a manifest, provider LTO-IR, and the scratch sizes and
+alignments from the same compilation. Select a pack from a trusted producer.
+An exact hit uses the compiled CUB implementation from that pack. The GPU
+target, host operating system, generated source, layout queries, provider
+ABI and code-generation options must match. Pack selection checks that the
+nvJitLink library visible to CUDA Python has the same major version as the
+producing NVRTC and at least its minor version. CuTe's final device linker
+must also support that LTO-IR version.
+
+In Python, wrap the call that traces the kernel:
+
+.. code-block:: python
+
+   from cuda.coop.cutlass import aot
+
+   with aot.capture("providers"):
+       compile_my_kernel()
+
+   with aot.use("providers", mode="required"):
+       compile_my_kernel()
+
+An exact hit writes verified bytes to the local provider cache for the final
+link. CuTe still compiles and links the enclosing kernel. In ``required``
+mode a missing or incompatible provider raises ``aot.PackMissError``. In
+``auto`` mode it uses the ordinary provider cache and JIT compiler. Use
+``off`` to suspend pack selection inside an enclosing ``aot.use`` context.
+A corrupt pack raises ``aot.PackIntegrityError`` when selected.
 
 Walkthrough and test settings
 -----------------------------
