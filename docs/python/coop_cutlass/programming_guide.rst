@@ -57,7 +57,9 @@ On the host side:
   in the launcher, so its value is known when the kernel is compiled.
 * ``kernel.launch(grid=1, block=128)`` sets the block size.
 
-The first call to ``launch`` compiles the kernel.
+The first call to ``launch`` compiles the kernel. Each later call runs the
+Python code of the launcher and the kernel again, even when CuTe then reuses
+the compiled kernel.
 :ref:`Checking and tuning a kernel <coop-cutlass-checking>` shows how to
 compile once and launch many times.
 
@@ -236,17 +238,23 @@ with the arguments that are not declared ``cutlass.Constexpr``. The
 :ref:`debugger walkthrough <cuda.coop.cutlass.debugger_walkthrough>`
 compiles once and launches twice. The first compilation generates the C++
 behind the kernel's primitives, compiles it with NVRTC and links it into the
-kernel. Synchronize after the launches you measure and before you read the
-clock, as the examples do with ``driver.cuCtxSynchronize()``.
+kernel. Another ``cute.compile`` of the same kernel takes the compiled C++
+from the package's cache on disk, then compiles and links the kernel again.
+Synchronize after the launches you measure and before you read the clock, as
+the examples do with ``driver.cuCtxSynchronize()``.
 
 To read the generated C++, set ``CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR`` before
 the kernel is compiled. :doc:`configuration` describes the variable. Judge
 inlining, barriers, shared memory and register use from the final linked
-cubin, which CuTe keeps when ``CUTE_DSL_KEEP=cubin`` is set. The link can
-still inline the code of a primitive into the kernel, so the generated
-source and the PTX from before the link show an earlier stage. Run Compute
-Sanitizer's race check after you change how a kernel reuses scratch or where
-it synchronizes.
+cubin, which CuTe keeps when ``CUTE_DSL_KEEP=cubin`` is set. CuTe writes the
+cubin to the current directory, or to the one that ``CUTE_DSL_DUMP_DIR``
+names. Set the two CuTe variables before the program starts.
+``cuobjdump --dump-sass`` lists the cubin's instructions and
+``cuobjdump --dump-resource-usage`` its shared memory and registers. The
+link can still inline the code of a primitive into the kernel, so the
+generated source and the PTX from before the link show an earlier stage. Run
+Compute Sanitizer's race check after you change how a kernel reuses scratch
+or where it synchronizes.
 
 More items per thread can raise register use, and more scratch can lower the
 number of blocks that fit on a multiprocessor at the same time. Look at the

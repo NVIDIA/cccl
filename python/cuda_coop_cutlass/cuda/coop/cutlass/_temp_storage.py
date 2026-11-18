@@ -107,6 +107,13 @@ inside it. :meth:`~cuda.coop.cutlass.TempStorage.release` hands the whole
 region back as ordinary shared memory once the primitives are finished with
 it. The launch's shared-memory size includes the region, along with any
 tensors from CuTe's ``SmemAllocator``.
+
+To measure what a call needs in your own kernel, give that call a
+``TempStorage()`` of its own and call ``release()`` after it. The tensor it
+returns holds bytes, so ``cute.size`` of it is the call's scratch size.
+``cute.arch.dynamic_smem_size()`` returns the launch's shared-memory size.
+Both are CuTe values, so write them to global memory and read them on the
+host.
 """
 
 # Implementation notes. The descriptor holds compile-time policy and identity
@@ -341,16 +348,22 @@ class TempStorage:
         tensor holds bytes (``Uint8``). The tensor covers the whole region:
         all of an explicit ``size_in_bytes``, or every slice and any padding
         of an inferred one. The region's size must be a multiple of the
-        element size and its alignment at least the element's. An inferred
-        region that nothing uses is empty and is rejected. The object must
-        have been constructed inside the kernel.
+        element size and its alignment at least the element's. The region
+        is aligned for the calls and reservations that use it. To release
+        it as a type with larger elements, or when nothing else uses it,
+        pass ``alignment`` of at least the element size to
+        ``TempStorage(...)``. An inferred region that nothing uses is empty
+        and is rejected. The object must have been constructed inside the
+        kernel.
 
         After ``release`` the object is spent, under every name that refers
         to it. Using it again in a primitive, ``reserve``, ``sync`` or
         ``release`` is a compile error. That includes code after an ``if``
         that released it in one branch, and the next iteration of a loop
         that contains the ``release``. An object constructed inside the loop
-        body is a new one each iteration.
+        body is a new one each iteration. Releasing an object in the ``if``
+        branch and in the ``else`` branch is accepted, because only one of
+        the two runs.
 
         ``release`` adds no barrier. Every thread must be past the last
         primitive that used the region before any thread writes through the

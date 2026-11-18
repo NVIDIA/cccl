@@ -44,16 +44,19 @@ Controls that describe data can also be CuTe values, read while the kernel
 runs: ``valid_items``, ``offset``, ``oob_default`` and a scan's
 ``initial_value`` are examples. Each entry says what its controls accept.
 
-A runtime loop can repeat one call. A ``cutlass.range_constexpr`` loop is
-unrolled, so each trip can make a different call.
+A ``for`` loop over ``range(...)`` is a runtime loop, even when its bounds
+are Python integers. A runtime loop can repeat one call. A
+``cutlass.range_constexpr`` loop is unrolled, so each trip can make a
+different call.
 
 Primitives work in a kernel and in any ``@cute.jit`` function that the
 kernel calls. When CuTe finishes tracing, the package compiles the CUB code
 for every call it traced in one NVRTC compilation, and CuTe links the
-result into the kernel. The compiled code is kept in a cache on disk,
-described in :doc:`configuration`. To launch a kernel more than once, pass
-the ``@cute.jit`` function that launches it, followed by that function's
-arguments, to ``cute.compile`` and keep the callable it returns.
+result into the kernel, where it can be inlined. The compiled code is kept
+in a cache on disk, described in :doc:`configuration`. To launch a kernel
+more than once, pass the ``@cute.jit`` function that launches it, followed
+by that function's arguments, to ``cute.compile`` and keep the callable it
+returns.
 :ref:`Checking and tuning a kernel <coop-cutlass-checking>` says how to
 call it.
 

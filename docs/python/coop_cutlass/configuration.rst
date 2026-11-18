@@ -28,6 +28,10 @@ Runtime environment variables
    hits. Changing it selects a separate cache; existing compiled kernels keep
    their artifacts. Set it before ``cute.compile``; a CuTe cache hit that skips
    provider compilation will not populate a new provider directory.
+   The compiled CUB code is reused only for the same generated code, header
+   contents, compiler options, target and toolkit, so the directory needs
+   no clearing after an upgrade. Processes can share it. Each file is
+   written under a lock, and its size and hash are checked before reuse.
    See the :doc:`Developer Guide <developer_guide>` for artifact lifetime and
    cache validation.
 
@@ -98,6 +102,9 @@ Compilation and headers
 source checkout during in-tree development, or its installed header bundle,
 in that order. It never substitutes the CUDA Toolkit's copy of CUB. CUDA
 headers and compiler/linker libraries must resolve to a compatible toolkit.
+NVRTC and nvJitLink are loaded from the CUDA installation that holds the
+selected CUDA headers. NVRTC must report the same version as those headers.
+A mismatch is an error before any CUB code is compiled.
 Plans describe the primitive; the lowering adapts CuTe values and lifecycle
 to those decisions.
 
