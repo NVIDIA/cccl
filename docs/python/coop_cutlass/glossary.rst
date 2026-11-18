@@ -113,6 +113,8 @@ Terms
       ``[7, 9]`` with lengths ``[3, 2]``, the full sequence has relative
       offsets ``[0, 1, 2, 0, 1]``. This differs from its absolute decoded
       position or its position within a requested window.
+      CUB can report it with every decoded item. ``run_length_decode`` and
+      ``run_length_decode_into`` have no such result.
 
    key-value pair
       A key used for ordering or selection and an associated value, such as
