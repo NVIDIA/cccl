@@ -222,7 +222,7 @@ struct find_bound_sorted_values_tuning
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 
-CUB_TEST("Device LowerBoundSortedValues two-phase can be tuned", "[find][device][binary-search]", CUB_SMALL, block_sizes)
+CUB_TEST("Device LowerBoundSortedValues can be tuned", "[find][device][binary-search]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   const c2h::device_vector<int> d_range{0, 2, 4, 6, 8};
@@ -232,21 +232,37 @@ CUB_TEST("Device LowerBoundSortedValues two-phase can be tuned", "[find][device]
   const block_size_extracting_op<cuda::std::less<>> comp{thrust::raw_pointer_cast(d_block_size.data())};
   const auto env = cuda::execution::tune(find_bound_sorted_values_tuning<target_block_size>{});
 
-  device_lower_bound_sorted_values_two_phase(
-    d_range.begin(),
-    static_cast<int>(d_range.size()),
-    d_values.begin(),
-    static_cast<int>(d_values.size()),
-    d_output.begin(),
-    comp,
-    env);
+  SECTION("single-phase")
+  {
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceFind::LowerBoundSortedValues(
+        d_range.begin(),
+        static_cast<int>(d_range.size()),
+        d_values.begin(),
+        static_cast<int>(d_values.size()),
+        d_output.begin(),
+        comp,
+        env));
+  }
+  SECTION("two-phase")
+  {
+    device_lower_bound_sorted_values_two_phase(
+      d_range.begin(),
+      static_cast<int>(d_range.size()),
+      d_values.begin(),
+      static_cast<int>(d_values.size()),
+      d_output.begin(),
+      comp,
+      env);
+  }
 
   const c2h::device_vector<int> expected{0, 2, 2, 4};
   REQUIRE(d_output == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-CUB_TEST("Device UpperBoundSortedValues two-phase can be tuned", "[find][device][binary-search]", CUB_SMALL, block_sizes)
+CUB_TEST("Device UpperBoundSortedValues can be tuned", "[find][device][binary-search]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   const c2h::device_vector<int> d_range{0, 2, 4, 6, 8};
@@ -256,14 +272,30 @@ CUB_TEST("Device UpperBoundSortedValues two-phase can be tuned", "[find][device]
   const block_size_extracting_op<cuda::std::less<>> comp{thrust::raw_pointer_cast(d_block_size.data())};
   const auto env = cuda::execution::tune(find_bound_sorted_values_tuning<target_block_size>{});
 
-  device_upper_bound_sorted_values_two_phase(
-    d_range.begin(),
-    static_cast<int>(d_range.size()),
-    d_values.begin(),
-    static_cast<int>(d_values.size()),
-    d_output.begin(),
-    comp,
-    env);
+  SECTION("single-phase")
+  {
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceFind::UpperBoundSortedValues(
+        d_range.begin(),
+        static_cast<int>(d_range.size()),
+        d_values.begin(),
+        static_cast<int>(d_values.size()),
+        d_output.begin(),
+        comp,
+        env));
+  }
+  SECTION("two-phase")
+  {
+    device_upper_bound_sorted_values_two_phase(
+      d_range.begin(),
+      static_cast<int>(d_range.size()),
+      d_values.begin(),
+      static_cast<int>(d_values.size()),
+      d_output.begin(),
+      comp,
+      env);
+  }
 
   const c2h::device_vector<int> expected{1, 2, 3, 4};
   REQUIRE(d_output == expected);
