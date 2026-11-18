@@ -30,8 +30,10 @@
 
 #include <thrust/detail/functional/actor.h>
 #include <thrust/detail/type_traits.h>
-#include <thrust/functional.h>
+#include <thrust/detail/use_default.h>
+#include <thrust/iterator/detail/iterator_adaptor_base.h>
 #include <thrust/iterator/iterator_adaptor.h>
+#include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/__iterator/contiguous_iterator_adaptor.h>

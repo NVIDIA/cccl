@@ -13,9 +13,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/execution_policy.h>
+#include <thrust/detail/execution_policy.h>
+#include <thrust/execution_policy.h> // IWYU pragma: keep
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/generic/memory.h> // for get_value()
+#include <thrust/system/detail/generic/memory.h> // IWYU pragma: keep
 
 #include <cuda/std/__memory/pointer_traits.h>
 

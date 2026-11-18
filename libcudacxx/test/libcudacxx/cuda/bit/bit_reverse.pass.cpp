@@ -7,6 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
+
 #include <cuda/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>

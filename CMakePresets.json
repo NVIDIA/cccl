@@ -980,7 +980,8 @@
       "inherits": "thrust",
       "filter": {
         "exclude": {
-          "name": "^thrust.*\\.cuda\\..*$"
+          "name": "^thrust.*\\.cuda\\..*$",
+          "label": "^cuda_smoke$"
         }
       }
     },

@@ -14,7 +14,13 @@
 #endif // no system header
 
 #include <thrust/iterator/iterator_adaptor.h>
+#include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
+
+#include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 THRUST_NAMESPACE_BEGIN
 
