@@ -490,7 +490,7 @@ file:
    launch wrapper) without an environment argument at all, using a minimal example, and checked
    for a correct output. Guard with ``#if TEST_LAUNCH == 0``, since it bypasses the launch
    wrapper and is therefore identical under all three launch ids.
-2. ``"<algorithm> uses environment"`` — an environment carrying only
+2. ``"<algorithm> uses environment"`` — for single-phase overloads, an environment carrying only
    ``expected_allocation_size(...)`` is honored: the algorithm neither over- nor under-allocates
    temporary storage compared to the two-phase API. Don't repeat this check in other test cases
    exercising the same overload for a different checklist item. Runs for all 3 test launches.
