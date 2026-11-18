@@ -35,7 +35,7 @@ namespace system::cpp
  *  \see cpp::free
  *  \see std::malloc
  */
-inline pointer<void> malloc(std::size_t n);
+_CCCL_HOST_API inline pointer<void> malloc(std::size_t n);
 
 /*! Allocates a typed area of memory available to Thrust's <tt>cpp</tt> system.
  *  \param n Number of elements to allocate.
@@ -48,7 +48,7 @@ inline pointer<void> malloc(std::size_t n);
  *  \see std::malloc
  */
 template <typename T>
-inline pointer<T> malloc(std::size_t n);
+_CCCL_HOST_API pointer<T> malloc(std::size_t n);
 
 /*! Deallocates an area of memory previously allocated by <tt>cpp::malloc</tt>.
  *  \param ptr A <tt>cpp::pointer<void></tt> pointing to the beginning of an area
@@ -56,7 +56,7 @@ inline pointer<T> malloc(std::size_t n);
  *  \see cpp::malloc
  *  \see std::free
  */
-inline void free(pointer<void> ptr);
+_CCCL_HOST_API inline void free(pointer<void> ptr);
 
 /*! \p cpp::allocator is the default allocator used by the \p cpp system's
  *  containers such as <tt>cpp::vector</tt> if no user-specified allocator is

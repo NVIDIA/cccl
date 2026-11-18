@@ -11,7 +11,7 @@
 #include <cuda/utility>
 
 template <typename T>
-__device__ __forceinline__ T generate_random_data()
+_CCCL_DEVICE_API __forceinline__ T generate_random_data()
 {
   constexpr auto size = static_cast<int>(cuda::ceil_div(sizeof(T), sizeof(uint32_t)));
   uint32_t data[size];
@@ -27,7 +27,7 @@ __device__ __forceinline__ T generate_random_data()
 // When benchmarking algorithms sensitive to data distribution, each thread should use a different seed to get different
 // data.
 template <typename T>
-__device__ __forceinline__ T generate_random_data(uint32_t& seed)
+_CCCL_DEVICE_API __forceinline__ T generate_random_data(uint32_t& seed)
 {
   constexpr auto size = static_cast<int>(cuda::ceil_div(sizeof(T), sizeof(uint32_t)));
   uint32_t data[size];
@@ -45,7 +45,7 @@ __device__ __forceinline__ T generate_random_data(uint32_t& seed)
 __device__ static int device_var[16];
 
 template <typename T>
-__device__ __forceinline__ void sink(T value)
+_CCCL_DEVICE_API __forceinline__ void sink(T value)
 {
   if (cuda::ptx::get_sreg_smid() == static_cast<uint32_t>(-1))
   {
@@ -54,7 +54,7 @@ __device__ __forceinline__ void sink(T value)
 }
 
 template <typename T, int Size>
-__device__ __forceinline__ void sink(T (&values)[Size])
+_CCCL_DEVICE_API __forceinline__ void sink(T (&values)[Size])
 {
   if (cuda::ptx::get_sreg_smid() == static_cast<uint32_t>(-1))
   {
@@ -70,7 +70,7 @@ __device__ __forceinline__ void sink(T (&values)[Size])
 }
 
 template <int ThreadsPerBlock, int UnrollFactor, typename ActionT, typename T, bool Unroll = true>
-__launch_bounds__(ThreadsPerBlock) __global__ static void benchmark_kernel(const ActionT action)
+__launch_bounds__(ThreadsPerBlock) _CCCL_KERNEL_ATTRIBUTES static void benchmark_kernel(const ActionT action)
 {
   auto data = generate_random_data<T>();
   if constexpr (Unroll)
@@ -93,7 +93,7 @@ __launch_bounds__(ThreadsPerBlock) __global__ static void benchmark_kernel(const
 // benchmark results.
 // For keys-only benchmarks, set ValueT to void.
 template <int ItemsPerThread, typename KeyT, typename ValueT, typename ActionT, typename... Args>
-__global__ static void benchmark_kernel(int num_iterations, const ActionT action, Args... args)
+_CCCL_KERNEL_ATTRIBUTES static void benchmark_kernel(int num_iterations, const ActionT action, Args... args)
 {
   constexpr int warp_threads = 32;
   constexpr bool has_values  = !cuda::std::is_void_v<ValueT>;

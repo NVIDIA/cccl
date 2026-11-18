@@ -65,7 +65,7 @@ public:
    *        from the context (via cuCtxGetDevice).
    * @param pool_size Number of streams in the place's stream pool.
    */
-  exec_place_cuda_ctx_impl(CUcontext ctx, int devid = -1, size_t pool_size = exec_place::impl::pool_size)
+  _CCCL_HOST_API exec_place_cuda_ctx_impl(CUcontext ctx, int devid = -1, size_t pool_size = exec_place::impl::pool_size)
       : exec_place_cuda_ctx_impl(ctx, resolve_devid(ctx, devid), stream_pool(pool_size))
   {}
 
@@ -77,7 +77,7 @@ public:
    * @param pool A stream pool to use for this place (shared handle)
    * @param affine The affine data place for this place
    */
-  exec_place_cuda_ctx_impl(CUcontext ctx, int devid, stream_pool pool, data_place affine)
+  _CCCL_HOST_API exec_place_cuda_ctx_impl(CUcontext ctx, int devid, stream_pool pool, data_place affine)
       : exec_place::impl(mv(affine))
       , devid_(devid)
       , driver_context_(ctx)
@@ -87,13 +87,13 @@ public:
     _CCCL_ASSERT(devid_ >= 0, "cuda_ctx exec_place requires a valid device ordinal");
   }
 
-  ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
+  _CCCL_HOST_API ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for cuda_ctx exec_place");
     return shared_from_this();
   }
 
-  exec_place activate(size_t idx) const override
+  _CCCL_HOST_API exec_place activate(size_t idx) const override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for cuda_ctx exec_place");
 
@@ -106,7 +106,7 @@ public:
     return result;
   }
 
-  void deactivate(const exec_place& prev, size_t idx) const override
+  _CCCL_HOST_API void deactivate(const exec_place& prev, size_t idx) const override
   {
     _CCCL_ASSERT(idx == 0, "Index out of bounds for cuda_ctx exec_place");
 
@@ -116,18 +116,18 @@ public:
     cuda_try<cuCtxSetCurrent>(saved_ctx);
   }
 
-  bool is_device() const override
+  _CCCL_HOST_API bool is_device() const override
   {
     return true;
   }
 
-  ::std::string to_string() const override
+  _CCCL_HOST_API ::std::string to_string() const override
   {
     return "cuda_ctx(ctx=" + ::std::to_string(reinterpret_cast<::std::uintptr_t>(driver_context_))
          + " dev=" + ::std::to_string(devid_) + ")";
   }
 
-  stream_pool& get_stream_pool(bool, exec_place_resources&, const exec_place&) const override
+  _CCCL_HOST_API stream_pool& get_stream_pool(bool, exec_place_resources&, const exec_place&) const override
   {
     // This place carries its own pool and bypasses the registry. The user is
     // responsible for keeping the underlying CUcontext alive while the pool
@@ -135,7 +135,7 @@ public:
     return pool_;
   }
 
-  int cmp(const exec_place::impl& rhs) const override
+  _CCCL_HOST_API int cmp(const exec_place::impl& rhs) const override
   {
     if (typeid(*this) != typeid(rhs))
     {
@@ -147,7 +147,7 @@ public:
          - ::std::less<CUcontext>{}(driver_context_, other.driver_context_);
   }
 
-  size_t hash() const override
+  _CCCL_HOST_API size_t hash() const override
   {
     return ::std::hash<CUcontext>()(driver_context_);
   }
@@ -162,16 +162,16 @@ protected:
 public:
   // Wrap an existing context with no pool: only used to carry the saved
   // context through the activate/deactivate round trip.
-  exec_place_cuda_ctx_impl(saved_tag, CUcontext saved_context)
+  _CCCL_HOST_API exec_place_cuda_ctx_impl(saved_tag, CUcontext saved_context)
       : driver_context_(saved_context)
   {}
 
 protected:
-  exec_place_cuda_ctx_impl(CUcontext ctx, int devid, stream_pool pool)
+  _CCCL_HOST_API exec_place_cuda_ctx_impl(CUcontext ctx, int devid, stream_pool pool)
       : exec_place_cuda_ctx_impl(ctx, devid, mv(pool), data_place::device(devid))
   {}
 
-  static int resolve_devid(CUcontext ctx, int devid)
+  _CCCL_HOST_API static int resolve_devid(CUcontext ctx, int devid)
   {
     const ::cuda::__ensure_current_context guard{ctx};
     const int context_devid = static_cast<int>(cuda_try<cuCtxGetDevice>());
@@ -188,7 +188,7 @@ private:
   mutable stream_pool pool_;
 };
 
-inline exec_place exec_place::cuda_context(CUcontext ctx, int devid, size_t pool_size)
+_CCCL_HOST_API inline exec_place exec_place::cuda_context(CUcontext ctx, int devid, size_t pool_size)
 {
   if (ctx == nullptr)
   {
@@ -204,7 +204,7 @@ inline exec_place exec_place::cuda_context(CUcontext ctx, int devid, size_t pool
 //! RAII holder for the primary context of device 0, used by the unittests below.
 struct primary_ctx_guard
 {
-  primary_ctx_guard()
+  _CCCL_HOST_API primary_ctx_guard()
       : dev([] {
         cuda_try<cuInit>(0);
         return cuda_try<cuDeviceGet>(0);
@@ -212,7 +212,7 @@ struct primary_ctx_guard
       , ctx(cuda_try<cuDevicePrimaryCtxRetain>(dev))
   {}
 
-  ~primary_ctx_guard()
+  _CCCL_HOST_API ~primary_ctx_guard()
   {
     cuda_try(cuDevicePrimaryCtxRelease(dev));
   }

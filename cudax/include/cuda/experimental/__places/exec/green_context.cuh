@@ -42,13 +42,13 @@
 namespace cuda::experimental::places
 {
 /* Get the unique ID associated with a context (overloaded) */
-inline unsigned long long get_cuda_context_id(CUcontext ctx)
+_CCCL_HOST_API inline unsigned long long get_cuda_context_id(CUcontext ctx)
 {
   return cuda_try<cuCtxGetId>(ctx);
 }
 
 /* Get the unique ID associated with a green context (overloaded) */
-inline unsigned long long get_cuda_context_id(CUgreenCtx gctx)
+_CCCL_HOST_API inline unsigned long long get_cuda_context_id(CUgreenCtx gctx)
 {
   return get_cuda_context_id(cuda_try<cuCtxFromGreenCtx>(gctx));
 }
@@ -63,32 +63,32 @@ inline unsigned long long get_cuda_context_id(CUgreenCtx gctx)
 class green_ctx_data_place_impl : public data_place_interface
 {
 public:
-  explicit green_ctx_data_place_impl(green_ctx_view view)
+  _CCCL_HOST_API explicit green_ctx_data_place_impl(green_ctx_view view)
       : view_(mv(view))
   {}
 
-  bool is_resolved() const override
+  _CCCL_HOST_API bool is_resolved() const override
   {
     return true;
   }
 
-  int get_device_ordinal() const override
+  _CCCL_HOST_API int get_device_ordinal() const override
   {
     return view_.devid;
   }
 
-  ::std::string to_string() const override
+  _CCCL_HOST_API ::std::string to_string() const override
   {
     return "green_ctx(dev=" + ::std::to_string(view_.devid)
          + ", ctx=" + ::std::to_string(get_cuda_context_id(view_.g_ctx)) + ")";
   }
 
-  size_t hash() const override
+  _CCCL_HOST_API size_t hash() const override
   {
     return hash_all(view_.g_ctx, view_.devid);
   }
 
-  int cmp(const data_place_interface& other) const override
+  _CCCL_HOST_API int cmp(const data_place_interface& other) const override
   {
     if (typeid(*this) != typeid(other))
     {
@@ -99,12 +99,12 @@ public:
     return (o.view_ < view_) - (view_ < o.view_);
   }
 
-  const green_ctx_view& get_view() const
+  _CCCL_HOST_API const green_ctx_view& get_view() const
   {
     return view_;
   }
 
-  void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
+  _CCCL_HOST_API void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
   {
     void* result       = nullptr;
     const int prev_dev = cuda_try<cudaGetDevice>();
@@ -126,7 +126,7 @@ public:
     return result;
   }
 
-  void deallocate(void* ptr, size_t /*size*/, cudaStream_t stream) const override
+  _CCCL_HOST_API void deallocate(void* ptr, size_t /*size*/, cudaStream_t stream) const override
   {
     const int prev_dev = cuda_try<cudaGetDevice>();
 
@@ -146,12 +146,12 @@ public:
     cuda_try(cudaFreeAsync(ptr, stream));
   }
 
-  bool allocation_is_stream_ordered() const override
+  _CCCL_HOST_API bool allocation_is_stream_ordered() const override
   {
     return true;
   }
 
-  CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const override
+  _CCCL_HOST_API CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const override
   {
     CUmemAllocationProp prop = {};
     prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
@@ -172,7 +172,7 @@ private:
  * @param gc_view The green context view
  * @return data_place for the green context
  */
-inline data_place make_green_ctx_data_place(const green_ctx_view& gc_view)
+_CCCL_HOST_API inline data_place make_green_ctx_data_place(const green_ctx_view& gc_view)
 {
   return data_place(::std::make_shared<green_ctx_data_place_impl>(gc_view));
 }
@@ -184,7 +184,7 @@ class green_context_helper
 {
 public:
   /* Create green contexts with sm_count SMs per context on a specific device (current device by default) */
-  green_context_helper(int sm_count, int devid = cuda_try<cudaGetDevice>())
+  _CCCL_HOST_API green_context_helper(int sm_count, int devid = cuda_try<cudaGetDevice>())
       : devid(devid)
       , numsm(sm_count)
   {
@@ -243,30 +243,30 @@ public:
     }
   }
 
-  green_context_helper()  = default;
-  ~green_context_helper() = default;
+  _CCCL_HIDE_FROM_ABI green_context_helper()  = default;
+  _CCCL_HIDE_FROM_ABI ~green_context_helper() = default;
 
-  size_t get_device_id() const
+  _CCCL_HOST_API size_t get_device_id() const
   {
     return devid;
   }
-  CUgreenCtx partition(size_t partition = 0)
+  _CCCL_HOST_API CUgreenCtx partition(size_t partition = 0)
   {
     return ctxs[partition];
   }
 
-  green_ctx_view get_view(size_t id)
+  _CCCL_HOST_API green_ctx_view get_view(size_t id)
   {
     return green_ctx_view(ctxs[id], pools[id], devid);
   }
 
-  stream_pool& get_pool(size_t gc_id)
+  _CCCL_HOST_API stream_pool& get_pool(size_t gc_id)
   {
     assert(gc_id < pools.size());
     return pools[gc_id];
   }
 
-  size_t get_count() const
+  _CCCL_HOST_API size_t get_count() const
   {
     return ctxs.size();
   }
@@ -301,19 +301,19 @@ private:
  * The user is responsible for keeping the underlying CUgreenCtx alive while
  * the place (and its stream pool) is in use.
  */
-inline exec_place exec_place::green_ctx(const green_ctx_view& gc_view, bool use_green_ctx_data_place)
+_CCCL_HOST_API inline exec_place exec_place::green_ctx(const green_ctx_view& gc_view, bool use_green_ctx_data_place)
 {
   CUcontext ctx     = cuda_try<cuCtxFromGreenCtx>(gc_view.g_ctx);
   data_place affine = use_green_ctx_data_place ? make_green_ctx_data_place(gc_view) : data_place::device(gc_view.devid);
   return exec_place(::std::make_shared<exec_place_cuda_ctx_impl>(ctx, gc_view.devid, gc_view.pool, mv(affine)));
 }
 
-inline ::std::shared_ptr<void> green_ctx_data_place_impl::get_affine_exec_impl() const
+_CCCL_HOST_API inline ::std::shared_ptr<void> green_ctx_data_place_impl::get_affine_exec_impl() const
 {
   return exec_place::green_ctx(view_).get_impl();
 }
 
-inline data_place data_place::green_ctx(const green_ctx_view& gc_view)
+_CCCL_HOST_API inline data_place data_place::green_ctx(const green_ctx_view& gc_view)
 {
   return make_green_ctx_data_place(gc_view);
 }

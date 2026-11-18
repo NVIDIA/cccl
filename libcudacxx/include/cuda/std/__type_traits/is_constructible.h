@@ -31,6 +31,10 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(is_constructible) || _CCCL_COMPILER(GCC, >=, 8) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_IS_CONSTRUCTIBLE(...) __is_constructible(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_constructible) && gcc >= 8.0
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __is_construct

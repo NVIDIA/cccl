@@ -59,7 +59,7 @@ using thrust::complex;
 // is 0/0, which produces a NaN and raises the invalid flag. C99 Annex G specifies the
 // complex functions in these terms.
 // NOLINTBEGIN(misc-redundant-expression)
-_CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> csqrtf(const complex<float>& z)
 {
   float a = z.real();
   float b = z.imag();
@@ -156,7 +156,7 @@ _CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
 } // namespace detail::complex
 
 template <>
-_CCCL_HOST_DEVICE inline complex<float> sqrt(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> sqrt(const complex<float>& z)
 {
   return detail::complex::csqrtf(z);
 }

@@ -41,7 +41,7 @@ template <sort_algorithm Algorithm, int ItemsPerThread>
 struct benchmark_op_t
 {
   template <typename KeyT>
-  __device__ __forceinline__ void operator()(KeyT (&keys)[ItemsPerThread]) const
+  _CCCL_DEVICE_API __forceinline__ void operator()(KeyT (&keys)[ItemsPerThread]) const
   {
     cub::NullType values[ItemsPerThread];
     sort(keys, values);
@@ -49,7 +49,7 @@ struct benchmark_op_t
   }
 
   template <typename KeyT, typename ValueT>
-  __device__ __forceinline__ void operator()(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread]) const
+  _CCCL_DEVICE_API __forceinline__ void operator()(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread]) const
   {
     sort(keys, values);
     avoid_code_elimitation(keys);
@@ -58,7 +58,7 @@ struct benchmark_op_t
 
 private:
   template <typename T>
-  __device__ __forceinline__ static void avoid_code_elimitation(T (&values)[ItemsPerThread])
+  _CCCL_DEVICE_API __forceinline__ static void avoid_code_elimitation(T (&values)[ItemsPerThread])
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
@@ -68,7 +68,7 @@ private:
   }
 
   template <typename KeyT, typename ValueT>
-  __device__ __forceinline__ static void sort(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread])
+  _CCCL_DEVICE_API __forceinline__ static void sort(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread])
   {
     if constexpr (Algorithm == sort_algorithm::stable)
     {
@@ -82,7 +82,7 @@ private:
 };
 
 template <sort_algorithm Algorithm, typename KeyT, typename ValueT, int ItemsPerThread>
-void run_benchmark(nvbench::state& state)
+_CCCL_HOST_API void run_benchmark(nvbench::state& state)
 {
   constexpr int block_size     = 256;
   constexpr int num_iterations = 128;
@@ -114,16 +114,17 @@ using item_counts = nvbench::enum_type_list<3, 4, 7, 8, 15, 16 /*, 31, 32, 63, 6
 
 // key-only sorting benchmarks
 template <sort_algorithm Algorithm, typename KeyT, int ItemsPerThread>
-void keys(nvbench::state& state,
-          nvbench::type_list<nvbench::enum_type<Algorithm>, KeyT, nvbench::enum_type<ItemsPerThread>>)
+_CCCL_HOST_API void keys(nvbench::state& state,
+                         nvbench::type_list<nvbench::enum_type<Algorithm>, KeyT, nvbench::enum_type<ItemsPerThread>>)
 {
   run_benchmark<Algorithm, KeyT, void, ItemsPerThread>(state);
 }
 
 // key-value sorting benchmarks
 template <sort_algorithm Algorithm, typename KeyT, typename ValueT, int ItemsPerThread>
-void pairs(nvbench::state& state,
-           nvbench::type_list<nvbench::enum_type<Algorithm>, KeyT, ValueT, nvbench::enum_type<ItemsPerThread>>)
+_CCCL_HOST_API void
+pairs(nvbench::state& state,
+      nvbench::type_list<nvbench::enum_type<Algorithm>, KeyT, ValueT, nvbench::enum_type<ItemsPerThread>>)
 {
   run_benchmark<Algorithm, KeyT, ValueT, ItemsPerThread>(state);
 }

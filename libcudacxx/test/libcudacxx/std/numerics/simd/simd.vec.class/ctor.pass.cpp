@@ -15,8 +15,7 @@
 
 // [simd.ctor], basic_vec constructors
 //
-// constexpr explicit basic_vec(Up&&) noexcept;                                     // broadcast (explicit)
-// constexpr basic_vec(Up&&) noexcept;                                              // broadcast (implicit)
+// constexpr basic_vec(Up&&) noexcept;                                              // broadcast
 // constexpr explicit basic_vec(const basic_vec<U,UAbi>&) noexcept;                 // converting (explicit)
 // constexpr basic_vec(const basic_vec<U,UAbi>&) noexcept;                          // converting (implicit)
 // constexpr explicit basic_vec(Generator&&);                                       // generator
@@ -99,6 +98,27 @@ TEST_HOST_DEVICE_FUNC constexpr void test_broadcast()
   {
     assert(vec[i] == T{42});
   }
+}
+
+struct explicit_reference_conversion
+{
+  simd::vec<int, 4>& value;
+
+  TEST_HOST_DEVICE_FUNC explicit constexpr operator simd::vec<int, 4>() const
+  {
+    return value;
+  }
+};
+
+TEST_HOST_DEVICE_FUNC constexpr bool test_explicit_reference_conversion()
+{
+  simd::vec<int, 4> original(42);
+  const auto converted = static_cast<simd::vec<int, 4>>(explicit_reference_conversion{original});
+  for (int i = 0; i < 4; ++i)
+  {
+    assert(converted[i] == 42);
+  }
+  return true;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -276,11 +296,11 @@ TEST_HOST_DEVICE_FUNC constexpr void test_broadcast_constexpr_wrapper()
     }
   }
 
-  // integral_constant from a wider type with a value that does NOT fit: explicit
+  // integral_constant from a wider type with a value that does NOT fit: rejected
   if constexpr (cuda::std::is_same_v<T, int8_t>)
   {
     using IC = cuda::std::integral_constant<int64_t, 200>;
-    static_assert(cuda::std::is_constructible_v<Vec, IC>);
+    static_assert(!cuda::std::is_constructible_v<Vec, IC>);
     static_assert(!cuda::std::is_convertible_v<IC, Vec>);
   }
 
@@ -291,18 +311,18 @@ TEST_HOST_DEVICE_FUNC constexpr void test_broadcast_constexpr_wrapper()
     static_assert(cuda::std::is_convertible_v<IC, Vec>);
   }
 
-  // negative value in an unsigned target: explicit
+  // negative value in an unsigned target: rejected
   if constexpr (cuda::std::is_same_v<T, uint32_t>)
   {
     using IC_neg = cuda::std::integral_constant<int64_t, -1>;
-    static_assert(cuda::std::is_constructible_v<Vec, IC_neg>);
+    static_assert(!cuda::std::is_constructible_v<Vec, IC_neg>);
     static_assert(!cuda::std::is_convertible_v<IC_neg, Vec>);
   }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-// broadcast constructor explicit/implicit boundary for arithmetic types
-// [simd.ctor] p4: implicit iff convertible_to and value-preserving
+// broadcast constructor participation for arithmetic types
+// [simd.ctor]: arithmetic conversions must be value-preserving
 
 // NVRTC C++17 cuda::std::is_convertible_v<T, Vec> fails for half/bfloat16
 template <typename T>
@@ -340,15 +360,15 @@ TEST_HOST_DEVICE_FUNC constexpr void test_broadcast_explicit_implicit()
     static_assert(cuda::std::is_convertible_v<float, Vec>);
   }
 
-  // (3) narrow conversion is explicit
+  // (3) narrowing conversions are rejected
   else if constexpr (cuda::std::is_same_v<T, int16_t>)
   {
-    static_assert(cuda::std::is_constructible_v<Vec, int>);
+    static_assert(!cuda::std::is_constructible_v<Vec, int>);
     static_assert(!cuda::std::is_convertible_v<int, Vec>);
   }
   else if constexpr (cuda::std::is_same_v<T, float>)
   {
-    static_assert(cuda::std::is_constructible_v<Vec, double>);
+    static_assert(!cuda::std::is_constructible_v<Vec, double>);
     static_assert(!cuda::std::is_convertible_v<double, Vec>);
   }
 }
@@ -443,6 +463,8 @@ DEFINE_BASIC_VEC_TEST_RUNTIME()
 int main(int, char**)
 {
   test_enable_abi_boundary();
+  assert(test_explicit_reference_conversion());
+  static_assert(test_explicit_reference_conversion());
   assert(test());
   static_assert(test());
   assert(test_runtime());

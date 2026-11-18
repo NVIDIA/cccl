@@ -32,12 +32,12 @@ namespace detail::segmented_reduce
 {
 /// Normalize input iterator to segment offset
 template <typename T, typename OffsetT, typename IteratorT>
-_CCCL_DEVICE _CCCL_FORCEINLINE void NormalizeReductionOutput(T& /*val*/, OffsetT /*base_offset*/, IteratorT /*itr*/)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void NormalizeReductionOutput(T& /*val*/, OffsetT /*base_offset*/, IteratorT /*itr*/)
 {}
 
 /// Normalize input iterator to segment offset (specialized for arg-index)
 template <typename KeyValuePairT, typename OffsetT, typename WrappedIteratorT, typename OutputValueT>
-_CCCL_DEVICE _CCCL_FORCEINLINE void NormalizeReductionOutput(
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void NormalizeReductionOutput(
   KeyValuePairT& val, OffsetT base_offset, ArgIndexInputIterator<WrappedIteratorT, OffsetT, OutputValueT> /*itr*/)
 {
   val.key -= base_offset;

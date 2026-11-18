@@ -34,7 +34,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator partition(
+_CCCL_HOST_DEVICE_API ForwardIterator partition(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -47,7 +47,7 @@ _CCCL_HOST_DEVICE ForwardIterator partition(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator partition(
+_CCCL_HOST_DEVICE_API ForwardIterator partition(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -65,7 +65,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -86,7 +86,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -103,7 +103,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> partition_
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator stable_partition(
+_CCCL_HOST_DEVICE_API ForwardIterator stable_partition(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -116,7 +116,7 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator stable_partition(
+_CCCL_HOST_DEVICE_API ForwardIterator stable_partition(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -134,7 +134,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -155,7 +155,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -172,7 +172,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_par
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator partition_point(
+_CCCL_HOST_DEVICE_API ForwardIterator partition_point(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -185,7 +185,7 @@ _CCCL_HOST_DEVICE ForwardIterator partition_point(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE bool is_partitioned(
+_CCCL_HOST_DEVICE_API bool is_partitioned(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -197,7 +197,7 @@ _CCCL_HOST_DEVICE bool is_partitioned(
 } // end is_partitioned()
 
 template <typename ForwardIterator, typename Predicate>
-ForwardIterator partition(ForwardIterator first, ForwardIterator last, Predicate pred)
+_CCCL_HOST_API ForwardIterator partition(ForwardIterator first, ForwardIterator last, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::partition");
   using thrust::system::detail::generic::select_system;
@@ -210,7 +210,8 @@ ForwardIterator partition(ForwardIterator first, ForwardIterator last, Predicate
 } // end partition()
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
-ForwardIterator partition(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred)
+_CCCL_HOST_API ForwardIterator
+partition(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::partition");
   using thrust::system::detail::generic::select_system;
@@ -225,7 +226,7 @@ ForwardIterator partition(ForwardIterator first, ForwardIterator last, InputIter
 } // end partition()
 
 template <typename ForwardIterator, typename Predicate>
-ForwardIterator stable_partition(ForwardIterator first, ForwardIterator last, Predicate pred)
+_CCCL_HOST_API ForwardIterator stable_partition(ForwardIterator first, ForwardIterator last, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::stable_partition");
   using thrust::system::detail::generic::select_system;
@@ -238,7 +239,8 @@ ForwardIterator stable_partition(ForwardIterator first, ForwardIterator last, Pr
 } // end stable_partition()
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
-ForwardIterator stable_partition(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred)
+_CCCL_HOST_API ForwardIterator
+stable_partition(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::stable_partition");
   using thrust::system::detail::generic::select_system;
@@ -253,7 +255,7 @@ ForwardIterator stable_partition(ForwardIterator first, ForwardIterator last, In
 } // end stable_partition()
 
 template <typename InputIterator, typename OutputIterator1, typename OutputIterator2, typename Predicate>
-::cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
   InputIterator first, InputIterator last, OutputIterator1 out_true, OutputIterator2 out_false, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::partition_copy");
@@ -275,7 +277,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-::cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
   InputIterator1 first,
   InputIterator1 last,
   InputIterator2 stencil,
@@ -301,7 +303,7 @@ template <typename InputIterator1,
 } // end partition_copy()
 
 template <typename InputIterator, typename OutputIterator1, typename OutputIterator2, typename Predicate>
-::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   InputIterator first, InputIterator last, OutputIterator1 out_true, OutputIterator2 out_false, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::stable_partition_copy");
@@ -323,7 +325,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   InputIterator1 first,
   InputIterator1 last,
   InputIterator2 stencil,
@@ -349,7 +351,7 @@ template <typename InputIterator1,
 } // end stable_partition_copy()
 
 template <typename ForwardIterator, typename Predicate>
-ForwardIterator partition_point(ForwardIterator first, ForwardIterator last, Predicate pred)
+_CCCL_HOST_API ForwardIterator partition_point(ForwardIterator first, ForwardIterator last, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::partition_point");
   using thrust::system::detail::generic::select_system;
@@ -362,7 +364,7 @@ ForwardIterator partition_point(ForwardIterator first, ForwardIterator last, Pre
 } // end partition_point()
 
 template <typename InputIterator, typename Predicate>
-bool is_partitioned(InputIterator first, InputIterator last, Predicate pred)
+_CCCL_HOST_API bool is_partitioned(InputIterator first, InputIterator last, Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::is_partitioned");
   using thrust::system::detail::generic::select_system;

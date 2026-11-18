@@ -149,6 +149,21 @@ public:
     _CCCL_ASSERT(__mapping_result_.is_valid(), "virtual_group requires all units to be part of the group");
   }
 
+  _CCCL_TEMPLATE(class _ParentUnit, class _ParentMappingResult, class _Mapping)
+  _CCCL_REQUIRES(::cuda::std::is_same_v<
+                 _MappingResult,
+                 __group_mapping_result_t<_Unit, group_view<_ParentUnit, _ParentGroup, _ParentMappingResult>, _Mapping>>)
+  _CCCL_DEVICE_API explicit virtual_group(const _Unit& __unit,
+                                          const group_view<_ParentUnit, _ParentGroup, _ParentMappingResult>& __parent,
+                                          _Mapping&& __mapping)
+      : __hier_{__parent.hierarchy()}
+      , __mapping_result_{::cuda::experimental::coop::__do_group_mapping(
+          __unit, __parent, ::cuda::std::forward<_Mapping>(__mapping))}
+      , __synchronizer_instance_{__parent.__synchronizer_instance()}
+  {
+    _CCCL_ASSERT(__mapping_result_.is_valid(), "virtual_group requires all units to be part of the group");
+  }
+
   // Groups can't be copied, moved nor assigned.
   virtual_group(const virtual_group&)            = delete;
   virtual_group(virtual_group&&)                 = delete;
@@ -274,6 +289,18 @@ _CCCL_TEMPLATE(class _Unit,
 _CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND group<_ParentGroup> _CCCL_AND
                  __unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>)
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES virtual_group(const _Unit&, const _ParentGroup&, _Mapping&&)
+  -> virtual_group<_Unit, _ParentGroup, _MappingResult>;
+
+_CCCL_TEMPLATE(class _Unit,
+               class _ParentUnit,
+               class _ParentGroup,
+               class _ParentMappingResult,
+               class _Mapping,
+               class _MappingResult =
+                 __group_mapping_result_t<_Unit, group_view<_ParentUnit, _ParentGroup, _ParentMappingResult>, _Mapping>)
+_CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND __unit_same_as_or_below_v<_Unit, _ParentUnit>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES
+virtual_group(const _Unit&, const group_view<_ParentUnit, _ParentGroup, _ParentMappingResult>&, _Mapping&&)
   -> virtual_group<_Unit, _ParentGroup, _MappingResult>;
 } // namespace cuda::experimental::coop
 

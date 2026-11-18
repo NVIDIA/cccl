@@ -55,7 +55,7 @@ struct with_location
   with_location(const with_location&) = delete;
 
   // Required so a converting temporary can initialize a by-value parameter.
-  with_location(with_location&&) = default;
+  _CCCL_HIDE_FROM_ABI with_location(with_location&&) = default;
 
   // No assignment: when `T` is a reference, assigning would write THROUGH the referent
   // rather than rebind it, silently modifying the caller's object. A location-carrying
@@ -72,7 +72,8 @@ struct with_location
                                      int> = 0>
   // Constrained above; the check only recognizes std::enable_if, not cuda::std::enable_if_t.
   // NOLINTNEXTLINE(bugprone-forwarding-reference-overload)
-  constexpr with_location(U&& payload, ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+  _CCCL_HOST_API constexpr with_location(U&& payload,
+                                         ::cuda::std::source_location loc = ::cuda::std::source_location::current())
       : payload(::cuda::std::forward<U>(payload))
       , loc(loc)
   {}
@@ -106,7 +107,7 @@ struct source_location_hash
    * function name into account because the same callsite could be used in
    * different instantiation of the same templated class, the name will reflect
    * the template parameters. */
-  ::std::size_t operator()(const ::cuda::std::source_location& loc) const noexcept
+  _CCCL_HOST_API ::std::size_t operator()(const ::cuda::std::source_location& loc) const noexcept
   {
     return ::std::hash<const char*>{}(loc.file_name()) ^ (::std::hash<uint_least32_t>{}(loc.line()) << 1)
          ^ (::std::hash<uint_least32_t>{}(loc.column()) << 2) ^ (::std::hash<const char*>{}(loc.function_name()) << 3);
@@ -115,7 +116,8 @@ struct source_location_hash
 
 struct source_location_equal
 {
-  bool operator()(const ::cuda::std::source_location& lhs, const ::cuda::std::source_location& rhs) const noexcept
+  _CCCL_HOST_API bool operator()(const ::cuda::std::source_location& lhs,
+                                 const ::cuda::std::source_location& rhs) const noexcept
   {
     // Comparing const char * is legit here because these are string literal constants
     return lhs.file_name() == rhs.file_name() && lhs.line() == rhs.line() && lhs.column() == rhs.column()

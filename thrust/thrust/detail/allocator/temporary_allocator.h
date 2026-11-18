@@ -50,17 +50,17 @@ public:
   using pointer   = typename super_t::pointer;
   using size_type = typename super_t::size_type;
 
-  _CCCL_HOST_DEVICE temporary_allocator(const temporary_allocator& other)
+  _CCCL_HOST_DEVICE_API temporary_allocator(const temporary_allocator& other)
       : super_t()
       , m_system(other.m_system)
   {}
 
-  _CCCL_HOST_DEVICE explicit temporary_allocator(thrust::execution_policy<System>& system)
+  _CCCL_HOST_DEVICE_API explicit temporary_allocator(thrust::execution_policy<System>& system)
       : super_t()
       , m_system(thrust::detail::derived_cast(system))
   {}
 
-  _CCCL_HOST_DEVICE pointer allocate(size_type cnt)
+  _CCCL_HOST_DEVICE_API pointer allocate(size_type cnt)
   {
     const pointer_and_size result = thrust::get_temporary_buffer<T>(system(), cnt);
 
@@ -86,7 +86,7 @@ public:
     return result.first;
   }
 
-  _CCCL_HOST_DEVICE void deallocate(pointer p, size_type n) noexcept // NOLINT(bugprone-exception-escape)
+  _CCCL_HOST_DEVICE_API void deallocate(pointer p, size_type n) noexcept // NOLINT(bugprone-exception-escape)
   {
     _CCCL_TRY
     {
@@ -116,7 +116,7 @@ public:
     }
   }
 
-  _CCCL_HOST_DEVICE System& system()
+  _CCCL_HOST_DEVICE_API System& system()
   {
     return m_system;
   } // end system()

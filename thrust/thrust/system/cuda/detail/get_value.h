@@ -28,7 +28,7 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE thrust::detail::it_value_t<Pointer> get_value(execution_policy<DerivedPolicy>& exec, Pointer ptr)
+_CCCL_HOST_DEVICE_API thrust::detail::it_value_t<Pointer> get_value(execution_policy<DerivedPolicy>& exec, Pointer ptr)
 {
   // Because of https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#cuda-arch
   // point 2., if a call from a __host__

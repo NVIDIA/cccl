@@ -36,7 +36,7 @@ inline constexpr int cub_rfa_max_jump = 5;
 static_assert(cub_rfa_max_jump <= 5, "cub_rfa_max_jump must be less than or equal to 5");
 
 template <typename FType, int Len>
-_CCCL_DEVICE FType* get_shared_bin_array()
+_CCCL_DEVICE_API FType* get_shared_bin_array()
 {
   static __shared__ FType bin_computed_array[Len];
   return bin_computed_array;
@@ -68,7 +68,7 @@ public:
   // The maximum floating-point fold supported by the library
   static constexpr auto max_fold = max_index + 1;
 
-  _CCCL_DEVICE static ftype initialize_bin(int index) noexcept
+  _CCCL_DEVICE_API static ftype initialize_bin(int index) noexcept
   {
     if (index == 0)
     {
@@ -101,34 +101,34 @@ private:
   static constexpr auto exp_bias  = max_exp - 2;
 
   /// Return a binned floating-point bin
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static ftype binned_bins(int index)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE static ftype binned_bins(int index)
   {
     const ftype* bins = _CUB::detail::rfa::get_shared_bin_array<ftype, max_index + max_fold>();
     return bins[index];
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static uint32_t& get_bit_representation(float& x) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE static uint32_t& get_bit_representation(float& x) noexcept
   {
     return *reinterpret_cast<uint32_t*>(&x);
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static uint64_t& get_bit_representation(double& x) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE static uint64_t& get_bit_representation(double& x) noexcept
   {
     return *reinterpret_cast<uint64_t*>(&x);
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static uint32_t get_bit_representation(const float& x) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE static uint32_t get_bit_representation(const float& x) noexcept
   {
     return ::cuda::std::bit_cast<uint32_t>(x);
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static uint64_t get_bit_representation(const double& x) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE static uint64_t get_bit_representation(const double& x) noexcept
   {
     return ::cuda::std::bit_cast<uint64_t>(x);
   }
 
   /// Return primary vector value const ref
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE const ftype& primary(int i) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE const ftype& primary(int i) const noexcept
   {
     if constexpr (Fold <= cub_rfa_max_jump)
     {
@@ -175,7 +175,7 @@ private:
   }
 
   /// Return carry vector value const ref
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE const ftype& carry(int i) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE const ftype& carry(int i) const noexcept
   {
     if (Fold <= cub_rfa_max_jump)
     {
@@ -222,20 +222,20 @@ private:
   }
 
   /// Return primary vector value ref
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ftype& primary(int i) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ftype& primary(int i) noexcept
   {
     const auto& c = *this;
     return const_cast<ftype&>(c.primary(i));
   }
 
   /// Return carry vector value ref
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ftype& carry(int i) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ftype& carry(int i) noexcept
   {
     const auto& c = *this;
     return const_cast<ftype&>(c.carry(i));
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static int exp_val(const ftype x) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE static int exp_val(const ftype x) noexcept
   {
     const auto bits = get_bit_representation(x);
     return (bits >> (mant_dig - 1)) & ((2 * max_exp) - 1);
@@ -245,7 +245,7 @@ private:
   /// The index of a non-binned type is the smallest index a binned type would
   /// need to have to sum it reproducibly. Higher indices correspond to smaller
   /// bins.
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static int binned_dindex(const ftype x)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE static int binned_dindex(const ftype x)
   {
     int exp = exp_val(x);
 
@@ -264,14 +264,14 @@ private:
   /// Get index of manually specified binned double precision
   /// The index of a binned type is the bin that it corresponds to. Higher
   /// indices correspond to smaller bins.
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int binned_index() const
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE int binned_index() const
   {
     return ((max_exp + mant_dig - bin_width + 1 + exp_bias) - exp_val(primary(0))) / bin_width;
   }
 
   /// Check if index of manually specified binned floating-point is 0
   /// A quick check to determine if the index is 0
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE bool is_binned_index_zero() const
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool is_binned_index_zero() const
   {
     return exp_val(primary(0)) == max_exp + exp_bias;
   }
@@ -280,7 +280,7 @@ private:
   //!
   //! This method updates the binned fp to an index suitable for adding numbers
   //! with absolute value less than @p max_abs_val
-  _CCCL_DEVICE void binned_update(const ftype max_abs_val)
+  _CCCL_DEVICE_API void binned_update(const ftype max_abs_val)
   {
     const int X_index = binned_dindex(max_abs_val);
     const int shift   = binned_index() - X_index;
@@ -313,7 +313,7 @@ private:
   //!
   //! Performs the operation Y += X on an binned type Y where the index of Y is
   //! larger than the index of @p X
-  _CCCL_DEVICE void binned_deposit(const ftype X)
+  _CCCL_DEVICE_API void binned_deposit(const ftype X)
   {
     ftype M;
     ftype x = X;
@@ -370,7 +370,7 @@ private:
   //!
   //! Renormalization keeps the primary vector within the necessary bins by
   //! shifting over to the carry vector
-  _CCCL_DEVICE _CCCL_FORCEINLINE void binned_renorm()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void binned_renorm()
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < Fold; i++)
@@ -389,7 +389,7 @@ private:
   //! Add scalar to manually specified binned fp (Y += X)
   //!
   //! Performs the operation Y += X on an binned type Y
-  _CCCL_DEVICE _CCCL_FORCEINLINE void binned_add(const ftype x)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void binned_add(const ftype x)
   {
     binned_update(x);
     binned_deposit(x);
@@ -400,7 +400,7 @@ private:
   //! Performs the operation Y += X
   //!
   //! @param x   Another binned fp of the same type
-  _CCCL_DEVICE void binned_add(const ReproducibleFloatingAccumulator& x)
+  _CCCL_DEVICE_API void binned_add(const ReproducibleFloatingAccumulator& x)
   {
     const auto X_index = x.binned_index();
     const auto Y_index = this->binned_index();
@@ -457,7 +457,7 @@ private:
     binned_renorm();
   }
 
-  [[nodiscard]] _CCCL_DEVICE double conv_binned_to_double() const
+  [[nodiscard]] _CCCL_DEVICE_API double conv_binned_to_double() const
   {
     int i              = 0;
     double Y           = 0.0;
@@ -514,7 +514,7 @@ private:
     return Y;
   }
 
-  [[nodiscard]] _CCCL_DEVICE float conv_binned_to_float() const
+  [[nodiscard]] _CCCL_DEVICE_API float conv_binned_to_float() const
   {
     int i    = 0;
     double Y = 0.0;
@@ -546,15 +546,15 @@ private:
   }
 
 public:
-  ReproducibleFloatingAccumulator() = default;
+  _CCCL_HIDE_FROM_ABI ReproducibleFloatingAccumulator() = default;
 
   /// Set the binned fp to zero
-  _CCCL_DEVICE void zero() noexcept
+  _CCCL_DEVICE_API void zero() noexcept
   {
     data = {};
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE constexpr int endurance() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr int endurance() const noexcept
   {
     return 1 << (mant_dig - bin_width - 2);
   }
@@ -563,7 +563,7 @@ public:
   //! NOTE: Casts @p x to the type of the binned fp
   _CCCL_TEMPLATE(typename U)
   _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<U>)
-  _CCCL_DEVICE ReproducibleFloatingAccumulator& operator+=(const U x)
+  _CCCL_DEVICE_API ReproducibleFloatingAccumulator& operator+=(const U x)
   {
     binned_add(static_cast<ftype>(x));
     return *this;
@@ -573,14 +573,14 @@ public:
   //! NOTE: Casts @p x to the type of the binned fp
   _CCCL_TEMPLATE(typename U)
   _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<U>)
-  _CCCL_DEVICE ReproducibleFloatingAccumulator& operator-=(const U x)
+  _CCCL_DEVICE_API ReproducibleFloatingAccumulator& operator-=(const U x)
   {
     binned_add(-static_cast<ftype>(x));
     return *this;
   }
 
   /// Accumulate a binned fp @p x into the binned fp.
-  _CCCL_DEVICE ReproducibleFloatingAccumulator& operator+=(const ReproducibleFloatingAccumulator& other)
+  _CCCL_DEVICE_API ReproducibleFloatingAccumulator& operator+=(const ReproducibleFloatingAccumulator& other)
   {
     binned_add(other);
     return *this;
@@ -588,18 +588,20 @@ public:
 
   //! Accumulate-subtract a binned fp @p other into the binned fp.
   //! NOTE: Makes a copy and performs arithmetic; slow.
-  _CCCL_DEVICE ReproducibleFloatingAccumulator& operator-=(const ReproducibleFloatingAccumulator& other)
+  _CCCL_DEVICE_API ReproducibleFloatingAccumulator& operator-=(const ReproducibleFloatingAccumulator& other)
   {
     const auto temp = -other;
     binned_add(temp);
   }
 
-  _CCCL_DEVICE friend bool operator==(const ReproducibleFloatingAccumulator& a, const ReproducibleFloatingAccumulator& b)
+  _CCCL_DEVICE_API friend bool
+  operator==(const ReproducibleFloatingAccumulator& a, const ReproducibleFloatingAccumulator& b)
   {
     return a.data == b.data;
   }
 
-  _CCCL_DEVICE friend bool operator!=(const ReproducibleFloatingAccumulator& a, const ReproducibleFloatingAccumulator& b)
+  _CCCL_DEVICE_API friend bool
+  operator!=(const ReproducibleFloatingAccumulator& a, const ReproducibleFloatingAccumulator& b)
   {
     return !(a == b);
   }
@@ -608,7 +610,7 @@ public:
   //! NOTE: Casts @p x to the type of the binned fp
   _CCCL_TEMPLATE(typename U)
   _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<U>)
-  _CCCL_DEVICE ReproducibleFloatingAccumulator& operator=(const U x)
+  _CCCL_DEVICE_API ReproducibleFloatingAccumulator& operator=(const U x)
   {
     zero();
     binned_add(static_cast<ftype>(x));
@@ -617,7 +619,7 @@ public:
 
   //! Returns the negative of this binned fp
   //! NOTE: Makes a copy and performs arithmetic; slow.
-  [[nodiscard]] _CCCL_DEVICE ReproducibleFloatingAccumulator operator-() const
+  [[nodiscard]] _CCCL_DEVICE_API ReproducibleFloatingAccumulator operator-() const
   {
     ReproducibleFloatingAccumulator temp = *this;
     if (primary(0) != 0.0)
@@ -633,7 +635,7 @@ public:
   }
 
   /// Convert this binned fp into its native floating-point representation
-  [[nodiscard]] _CCCL_DEVICE ftype conv_to_fp() const
+  [[nodiscard]] _CCCL_DEVICE_API ftype conv_to_fp() const
   {
     if (::cuda::std::is_same_v<ftype, float>)
     {
@@ -643,7 +645,7 @@ public:
   }
 
   /// Add @p x to the binned fp
-  _CCCL_DEVICE void add(const ftype x)
+  _CCCL_DEVICE_API void add(const ftype x)
   {
     binned_add(x);
   }
@@ -657,7 +659,7 @@ public:
   //! Once rebinned, `endurance` values <= @p mav can be added to the accumulator
   //! with `unsafe_add` after which `renorm()` must be called. See the source of
   //!`add()` for an example
-  _CCCL_DEVICE void set_max_val(const ftype mav)
+  _CCCL_DEVICE_API void set_max_val(const ftype mav)
   {
     binned_update(mav);
   }
@@ -665,7 +667,7 @@ public:
   //! Add @p x to the binned fp
   //!
   //! This is intended to be used after a call to `set_max_abs_val()`
-  _CCCL_DEVICE void unsafe_add(const ftype x)
+  _CCCL_DEVICE_API void unsafe_add(const ftype x)
   {
     binned_deposit(x);
   }
@@ -674,7 +676,7 @@ public:
   //!
   //! This is intended to be used after a call to `set_max_abs_val()` and one or
   //! more calls to `unsafe_add()`
-  _CCCL_DEVICE void renorm()
+  _CCCL_DEVICE_API void renorm()
   {
     binned_renorm();
   }
