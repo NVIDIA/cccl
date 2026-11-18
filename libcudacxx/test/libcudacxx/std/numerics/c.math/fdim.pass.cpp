@@ -47,6 +47,10 @@ TEST_HOST_DEVICE_FUNC void test(T val)
     assert(eq(cuda::std::fdim(cuda::std::numeric_limits<T>::max(), cuda::std::numeric_limits<T>::min()),
               cuda::std::numeric_limits<T>::max()));
 
+    // x <= y returns +0, not -0
+    assert(!cuda::std::signbit(cuda::std::fdim(T(), val)));
+    assert(!cuda::std::signbit(cuda::std::fdim(val, val)));
+
     // Fast device math flushes float subnormals, including bfloat16 values promoted to float, to zero.
     T expected = cuda::std::numeric_limits<T>::denorm_min();
     if constexpr (TEST_HAS_CUDA_FAST_MATH
