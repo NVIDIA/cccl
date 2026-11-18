@@ -90,25 +90,24 @@ CUB_NAMESPACE_BEGIN
 //! Warp Shuffle
 //! ~~~~~~~~~~~~
 //!
-//! The implementation performs an reduction using ``ceil(log2(LogicalWarpThreads))`` warp shuffle steps
-//! without of warp shuffle instructions. This path is used when hardware reduction or vote optimizations do not apply,
-//! and the number of items is known at compile time and a power-of-two.
+//! The implementation performs a reduction using ``ceil(log2(LogicalWarpThreads))`` warp shuffle steps.
+//! This path is used when hardware reduction or vote optimizations do not apply, and the number of items is known
+//! at compile time and is a power of two.
 //!
 //! PTX Shuffle + Predicate Optimizations
 //! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //!
-//! For segmented reduction, run-time value for the number of items, and non-power-of-two logical-warp, ``WarpReduce``
-//! uses the predicate output of ``shfl.sync.down.b32`` to guard the operation. This path is used for the following
-//! types and reduction operators:
+//! For segmented reductions, run-time item counts, and non-power-of-two logical warps, ``WarpReduce`` uses the
+//! predicate output of ``shfl.sync.down.b32`` to guard ``cuda::std::plus`` for ``unsigned``, ``long long``,
+//! ``unsigned long long``, ``float``, and ``double``.
 //!
-//! - ``cuda::std::plus``:
+//! Clamped Shuffle Min/Max Optimization
+//! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //!
-//!   - ``unsigned``, ``long long``, ``unsigned long long``, ``float``, and ``double``.
-//!
-//! - ``cuda::minimum`` and ``cuda::maximum``:
-//!
-//!   - 8-, 16-, 32-, and 64-bit signed and unsigned integers.
-//!   - ``float`` and ``double``.
+//! ``cuda::minimum`` and ``cuda::maximum`` use a clamped shuffle operation followed by a reduction operation without
+//! branches or predicates for all integers and extended floating-point types.
+//! The 8- and 16-bit integers are promoted to 32 bits. On targets with slow FP64 operations, ``double`` is mapped to
+//! ordered integers.
 //!
 //! Warp Vote Optimizations
 //! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

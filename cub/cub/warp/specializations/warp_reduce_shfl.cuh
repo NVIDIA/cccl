@@ -14,6 +14,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/integer_utility.cuh>
 #include <cub/detail/key_value_pair.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/thread/thread_operators.cuh>
@@ -31,11 +32,14 @@
 #include <cuda/__utility/static_for.h>
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__bit/countr.h>
+#include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/is_extended_arithmetic.h>
+#include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/cstdint>
-
-#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -156,6 +160,38 @@ struct WarpReduceShfl
     return output;
   }
 
+  // A shuffle reduction for minimum/maximum is special. If a shuffle operation is out-of-range, it returns the input
+  // value. This implies min(x, x) = x, or max(x, x) = x (the identity). Knowing that, we can avoid branches/predicates
+  // that select when the operator should be applied.
+  // This optimization cannot be applied to every type because a generic comparison could have side effects.
+  template <typename Tp, typename ReductionOp>
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE Tp
+  ReduceStepMinMax(const Tp& input, ReductionOp& reduction_op, const int last_lane, const int offset)
+  {
+    // promote small integers
+    if constexpr (::cuda::std::__cccl_is_integer_v<Tp> && sizeof(Tp) < sizeof(::cuda::std::uint32_t))
+    {
+      using promoted_t _CCCL_NODEBUG = ::cuda::std::__make_nbit_int_t<32, ::cuda::std::is_signed_v<Tp>>;
+      const auto op                  = _CUB::detail::generalize_operator(reduction_op);
+      const auto value               = static_cast<promoted_t>(input);
+      const auto peer                = _CUB::ShuffleDown<shuffle_threads>(value, offset, last_lane, member_mask);
+      return static_cast<Tp>(op(peer, value));
+    }
+    else
+    {
+      if constexpr (::cuda::std::is_same_v<Tp, double>)
+      {
+        _CCCL_DISPATCH_SLOW_FP64_TARGET(
+          const auto op    = _CUB::detail::generalize_operator(reduction_op);
+          const auto value = _CUB::detail::floating_point_min_max_conversion(input, op);
+          const auto peer  = _CUB::ShuffleDown<shuffle_threads>(value, offset, last_lane, member_mask);
+          return _CUB::detail::comparable_int_to_floating_point<Tp>(op(peer, value));)
+      }
+      const auto peer = _CUB::ShuffleDown<shuffle_threads>(input, offset, last_lane, member_mask);
+      return reduction_op(peer, input);
+    }
+  }
+
   // Single step of a warp reduction
   // last_lane: Index of last lane in segment
   // offset: Up-offset to pull from
@@ -163,7 +199,11 @@ struct WarpReduceShfl
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE Tp
   ReduceStep(const Tp input, ReductionOp reduction_op, const int last_lane, const int offset)
   {
-    if constexpr (is_shfl_down_op_supported_v<ReductionOp, Tp>)
+    if constexpr (is_cuda_minimum_maximum_v<ReductionOp, Tp> && ::cuda::std::__is_extended_arithmetic_v<Tp>)
+    {
+      return ReduceStepMinMax(input, reduction_op, last_lane, offset);
+    }
+    else if constexpr (is_shfl_down_op_supported_v<ReductionOp, Tp>)
     {
       constexpr unsigned shfl_c_base = (warp_threads - shuffle_threads) << 8;
       const int shfl_c               = last_lane | shfl_c_base;
