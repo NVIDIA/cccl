@@ -206,8 +206,17 @@ Comparison sorting
 .. autofunction:: merge_sort_keys
 .. autofunction:: merge_sort_pairs
 
+.. _coop-cutlass-radix:
+
 Radix sorting and ranking
 -------------------------
+
+.. automodule:: cuda.coop.cutlass._group_radix_sort
+   :no-members:
+   :no-special-members:
+   :no-index:
+
+.. currentmodule:: cuda.coop.cutlass
 
 .. autofunction:: radix_sort_keys
 .. autofunction:: radix_sort_pairs
