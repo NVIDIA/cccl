@@ -275,7 +275,9 @@ def reserve_temp_storage_tensor(
         cute.AddressSpace.smem,
         assumed_align=alignment,
     )
-    return cute.make_tensor(pointer, cute.make_layout(count))
+    tensor = cute.make_tensor(pointer, cute.make_layout(count))
+    # Preserve signedness when the pointer's MLIR element type is signless.
+    return cute.recast_tensor(tensor, value_type)
 
 
 def _align_up(value: int, alignment: int) -> int:

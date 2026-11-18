@@ -11,7 +11,7 @@ from cutlass import cute
 from cutlass.memory import SmemAllocator
 
 import cuda.coop.cutlass as coop
-from tests.runtime_support import device_array
+from tests.runtime_support import cutlass_dtype, device_array, values_for
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
@@ -119,6 +119,52 @@ def test_exclusive_reservations_preserve_values_and_account_for_launch(count):
     assert output[-2] % 128 == 0
     assert output[-2] - output[-3] >= count * 4
     assert output[-1] >= count * 4 + 256
+
+
+@pytest.mark.parametrize("dtype", (np.uint8, np.uint16, np.uint32, np.uint64))
+def test_unsigned_reservation_keeps_its_element_type(dtype):
+    """Read high-bit values natively and through ``load`` and ``store``.
+
+    A signed read sign-extends the first block of results at 8, 16 and 32
+    bits, and shifts the sign bit into the second at every width.
+    """
+
+    value_type = cutlass_dtype(dtype)
+
+    @cute.kernel
+    def kernel(source: cute.Pointer, destination: cute.Pointer):
+        group = coop.this_block()
+        thread = group.rank()
+        scratch = coop.TempStorage()
+        staged = scratch.reserve(64, value_type)
+        assert staged.element_type is value_type
+        # CuTe's signless tensor construction needs an explicit unsigned view.
+        inputs = cute.recast_tensor(
+            cute.make_tensor(source, cute.make_layout(64)), value_type
+        )
+        output = cute.make_tensor(destination, cute.make_layout(192))
+        payload = coop.load(group, inputs, items_per_thread=1)
+        coop.store(group, staged, payload)
+        scratch.sync()
+        output[thread] = cutlass.Int64(staged[63 - thread])
+        output[64 + thread] = cutlass.Int64(staged[63 - thread] >> 1)
+        reloaded = coop.load(group, staged, items_per_thread=1)
+        assert reloaded.dtype is value_type
+        output[128 + thread] = cutlass.Int64(reloaded[0])
+
+    @cute.jit
+    def launch(source: cute.Pointer, destination: cute.Pointer):
+        kernel(source, destination).launch(grid=1, block=64)
+
+    source = values_for(dtype, 64, shift=13)
+    output = np.zeros(192, dtype=np.int64)
+    with device_array(source) as src, device_array(output) as dst:
+        launch(src, dst)
+    np.testing.assert_array_equal(output[:64], source[::-1].astype(np.int64))
+    np.testing.assert_array_equal(
+        output[64:128], (source[::-1] >> 1).astype(np.int64)
+    )
+    np.testing.assert_array_equal(output[128:], source.astype(np.int64))
 
 
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))

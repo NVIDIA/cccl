@@ -25,13 +25,23 @@ def _compile(launch, *args):
 
 
 @pytest.mark.parametrize(
-    "dtype",
-    (*ALL_PROVIDER_TYPES, cutlass.Float16, cutlass.BFloat16, np.float16),
+    "dtype,element_type",
+    (
+        *((value_type, value_type) for value_type in ALL_PROVIDER_TYPES),
+        (cutlass.Float16, cutlass.Float16),
+        (cutlass.BFloat16, cutlass.BFloat16),
+        (np.float16, cutlass.Float16),
+        (np.uint16, cutlass.Uint16),
+        (np.dtype(np.uint64), cutlass.Uint64),
+    ),
 )
-def test_supported_scalar_views(dtype):
+def test_supported_scalar_views(dtype, element_type):
     @cute.kernel
     def kernel(memory: cute.Pointer):
         values = coop.TempStorage().reserve(64, dtype, alignment=32)
+        # Unsigned integers share CuTe's signless MLIR types with signed ones.
+        assert values.element_type is element_type
+        assert cute.size(values) == 64
         values[0] = values.element_type(7)
         output = cute.make_tensor(memory, cute.make_layout(1))
         output[0] = cutlass.Int32(values[0])
@@ -41,6 +51,35 @@ def test_supported_scalar_views(dtype):
         kernel(memory).launch(grid=1, block=64)
 
     assert _compile(launch) is not None
+
+
+@pytest.mark.parametrize(
+    "value_type,diagnostic",
+    (
+        (cutlass.Uint32, None),
+        (cutlass.Int32, "destination dtype does not match"),
+    ),
+)
+def test_unsigned_view_is_typed_for_load_and_store(value_type, diagnostic):
+    """Load unsigned payloads from the view and reject a signed store."""
+
+    @cute.kernel
+    def kernel(memory: cute.Pointer):
+        group = coop.this_block()
+        staged = coop.TempStorage().reserve(64, cutlass.Uint32)
+        loaded = coop.load(group, staged, items_per_thread=1)
+        assert loaded.dtype is cutlass.Uint32
+        coop.store(group, staged, value_type(7))
+
+    @cute.jit
+    def launch(memory: cute.Pointer):
+        kernel(memory).launch(grid=1, block=64)
+
+    if diagnostic is None:
+        assert _compile(launch) is not None
+    else:
+        with pytest.raises(Exception, match=diagnostic):
+            _compile(launch)
 
 
 @pytest.mark.parametrize(
