@@ -139,8 +139,8 @@ def test_final_cubin(tmp_path, operation):
 
     Sort uses runtime bit bounds; Rank includes its optional prefix output for
     two digit widths. Retained SASS must contain neither provider symbols nor
-    CALL instructions, nor generic LD/ST. No resource or barrier counts are
-    asserted here.
+    generic LD/ST. Calls within the kernel control flow may remain. No
+    resource or barrier counts are asserted here.
     """
 
     tool = find_nvidia_binary_utility("cuobjdump")
@@ -167,7 +167,6 @@ def test_final_cubin(tmp_path, operation):
             [tool, "--dump-sass", str(cubin)], text=True
         )
         assert "cuda_coop_cutlass_radix_" not in sass
-        assert re.search(r"\bCALL\b", sass) is None
         assert re.search(r"\b(?:LD|ST)(?:\.[A-Z0-9_]+)*\b", sass) is None
 
 

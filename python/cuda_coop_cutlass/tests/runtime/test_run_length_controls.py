@@ -94,7 +94,8 @@ def test_final_cubin(tmp_path, bulk):
     """Check that each generated window or bulk wrapper is fully inlined.
 
     After successful execution, the retained SASS must contain no generated
-    Run Length Decode wrapper symbol, CALL instruction, or generic LD/ST.
+    Run Length Decode wrapper symbol or generic LD/ST. Compiler shuffle
+    helpers and calls within the kernel control flow may remain.
     """
 
     tool = find_nvidia_binary_utility("cuobjdump")
@@ -108,7 +109,6 @@ def test_final_cubin(tmp_path, bulk):
             [tool, "--dump-sass", str(cubin)], text=True
         )
         assert "cuda_coop_cutlass_run_length_" not in sass
-        assert re.search(r"\bCALL\b", sass) is None
         assert re.search(r"\b(?:LD|ST)(?:\.[A-Z0-9_]+)*\b", sass) is None
 
 

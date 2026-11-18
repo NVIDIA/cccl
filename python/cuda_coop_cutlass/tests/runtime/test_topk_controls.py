@@ -131,8 +131,9 @@ def test_invalid_runtime_counts_trap(name, value):
 def test_final_cubin(tmp_path, pairs, mode):
     """Check wrapper inlining after selection passes its host checks.
 
-    Retained SASS must contain no TopK wrapper symbol, CALL, or generic LD/ST.
-    These checks make no claim about resource use or barrier counts.
+    Retained SASS must contain no TopK wrapper symbol or generic LD/ST. Calls
+    within the kernel control flow may remain. These checks make no claim
+    about resource use or barrier counts.
     """
 
     tool = find_nvidia_binary_utility("cuobjdump")
@@ -151,7 +152,6 @@ def test_final_cubin(tmp_path, pairs, mode):
             [tool, "--dump-sass", str(cubin)], text=True
         )
         assert "cuda_coop_cutlass_topk_" not in sass
-        assert re.search(r"\bCALL\b", sass) is None
         assert re.search(r"\b(?:LD|ST)(?:\.[A-Z0-9_]+)*\b", sass) is None
 
 

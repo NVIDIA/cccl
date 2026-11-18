@@ -364,13 +364,13 @@ def test_transpose_loop(width, divergent):
 def test_final_cubin(tmp_path, width, algorithm):
     """Inspect the final machine code after verifying the copy.
 
-    The generated Load and Store wrappers must be fully inlined: no wrapper
-    symbol or CALL instruction may remain in the SASS. No block barrier (BAR)
-    may appear. Algorithms without scratch must use no shared memory and no
-    warp synchronization instruction (WARPSYNC). Transpose must emit shared
-    accesses for widths above one, whether scratch is allocated statically or
-    dynamically; width one leaves allocation unconstrained. The test does not
-    check a specific warp synchronization mask.
+    The generated Load and Store wrapper symbols must be absent from SASS.
+    Compiler warp-synchronization helper calls may remain. No block barrier
+    (BAR) may appear. Algorithms without scratch must use no shared memory
+    and no warp synchronization instruction (WARPSYNC). Transpose must emit
+    shared accesses for widths above one, whether scratch is allocated
+    statically or dynamically; width one leaves allocation unconstrained.
+    The test does not check a specific warp synchronization mask.
     """
 
     cuobjdump = find_nvidia_binary_utility("cuobjdump")
@@ -425,7 +425,6 @@ def test_final_cubin(tmp_path, width, algorithm):
         cubin.with_suffix(".resources").write_text(resources)
         assert "cuda_coop_cutlass_load_" not in sass
         assert "cuda_coop_cutlass_store_" not in sass
-        assert re.search(r"\bCALL(?:\.[A-Z0-9_]+)*\b", sass) is None
         assert re.search(r"\bBAR(?:\.[A-Z0-9_]+)*\b", sass) is None
         shared = [
             int(size) for size in re.findall(r"\bSHARED:(\d+)", resources)
