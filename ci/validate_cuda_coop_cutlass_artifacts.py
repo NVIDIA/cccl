@@ -66,7 +66,7 @@ def _metadata(content: bytes) -> None:
         raise SystemExit("Unexpected standalone distribution name")
     if metadata.get("Requires-Python") != ">=3.10":
         raise SystemExit("The standalone package requires Python >=3.10")
-    if set(metadata.get_all("Provides-Extra", [])) != {"test"}:
+    if set(metadata.get_all("Provides-Extra", [])) != {"bench", "test"}:
         raise SystemExit("Unexpected standalone package extras")
     requirements = [Requirement(r) for r in metadata.get_all("Requires-Dist", [])]
     names = {canonicalize_name(r.name) for r in requirements}
