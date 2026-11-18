@@ -11,16 +11,20 @@ struct stream_registry_factory_t;
 
 #include <thrust/device_vector.h>
 
-#include <cuda/devices>
-#include <cuda/std/execution>
+#include <cuda/__functional/call_or.h>
+#include <cuda/std/cstdint>
 
 #include <sstream>
 
 #include "block_size_extracting_helpers.h"
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceFind::LowerBoundSortedValues, device_lower_bound_sorted_values);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceFind::UpperBoundSortedValues, device_upper_bound_sorted_values);
+
+DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::LowerBoundSortedValues, device_lower_bound_sorted_values_two_phase);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::UpperBoundSortedValues, device_upper_bound_sorted_values_two_phase);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -140,202 +144,70 @@ CUB_TEST("Device UpperBoundSortedValues uses environment", "[find][device][binar
 
 #if TEST_LAUNCH == 0
 
-CUB_TEST("Device LowerBoundSortedValues works with user provided memory and environment",
-         "[find][device][binary-search]",
-         CUB_SMALL)
+template <class EnvT, class TwoPhaseFn>
+void run_two_phase(const EnvT& env, TwoPhaseFn two_phase)
 {
-  auto d_range                     = c2h::device_vector<int>{0, 2, 4, 6, 8};
-  auto d_values                    = c2h::device_vector<int>{0, 3, 4, 7};
-  auto d_output                    = c2h::device_vector<int>(4);
-  c2h::device_vector<int> expected = {0, 2, 2, 4};
+  const stream_scope scope{cuda::__call_or(cuda::get_stream, cuda::stream_ref{cudaStream_t{}}, env).get()};
 
-  size_t expected_bytes_allocated{};
-  auto error = cub::DeviceFind::LowerBoundSortedValues(
-    nullptr,
-    expected_bytes_allocated,
-    d_range.begin(),
-    static_cast<int>(d_range.size()),
-    d_values.begin(),
-    static_cast<int>(d_values.size()),
-    d_output.begin(),
-    cuda::std::less{});
-  REQUIRE(error == cudaSuccess);
-  auto temp          = c2h::device_vector<uint8_t>(expected_bytes_allocated, thrust::no_init);
-  void* temp_storage = thrust::raw_pointer_cast(temp.data());
+  size_t temp_storage_bytes = 0;
+  REQUIRE(cudaSuccess == two_phase(nullptr, temp_storage_bytes));
 
-  auto test_lower_bound_sorted_values = [&](const auto& env) {
-    size_t num_bytes = 0;
-    error            = cub::DeviceFind::LowerBoundSortedValues(
-      nullptr,
-      num_bytes,
-      d_range.begin(),
-      static_cast<int>(d_range.size()),
-      d_values.begin(),
-      static_cast<int>(d_values.size()),
-      d_output.begin(),
-      cuda::std::less{},
-      env);
-    REQUIRE(error == cudaSuccess);
-    REQUIRE(cudaSuccess == cudaPeekAtLastError());
-    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-    REQUIRE(num_bytes == expected_bytes_allocated);
-
-    error = cub::DeviceFind::LowerBoundSortedValues(
-      temp_storage,
-      num_bytes,
-      d_range.begin(),
-      static_cast<int>(d_range.size()),
-      d_values.begin(),
-      static_cast<int>(d_values.size()),
-      d_output.begin(),
-      cuda::std::less{},
-      env);
-    REQUIRE(error == cudaSuccess);
-    REQUIRE(cudaSuccess == cudaPeekAtLastError());
-    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-    REQUIRE(d_output == expected);
-  };
-
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
-  SECTION("lower_bound_sorted_values works with cudaStream_t")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_lower_bound_sorted_values(stream.get());
-  }
-
-  SECTION("lower_bound_sorted_values works with cuda::stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_lower_bound_sorted_values(stream);
-  }
-
-  SECTION("lower_bound_sorted_values works with cuda::stream_ref")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
-    test_lower_bound_sorted_values(stream_ref);
-  }
-
-  SECTION("lower_bound_sorted_values works with cuda::std::execution::env")
-  {
-    cuda::std::execution::env env{};
-    test_lower_bound_sorted_values(env);
-  }
-
-  SECTION("lower_bound_sorted_values works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_lower_bound_sorted_values(policy);
-  }
-
-  SECTION("lower_bound_sorted_values works with cuda::execution::gpu with stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_lower_bound_sorted_values(policy);
-  }
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  REQUIRE(cudaSuccess == two_phase(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes));
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 }
 
-CUB_TEST("Device UpperBoundSortedValues works with user provided memory and environment",
-         "[find][device][binary-search]",
-         CUB_SMALL)
+// The launch wrappers copy their arguments, which the non-copyable streams of test_with_custom_streams do not allow
+CUB_TEST_CASE("Device LowerBoundSortedValues two-phase works with custom streams",
+              "[find][device][binary-search]",
+              CUB_SMALL)
 {
-  auto d_range                     = c2h::device_vector<int>{0, 2, 4, 6, 8};
-  auto d_values                    = c2h::device_vector<int>{0, 3, 4, 7};
-  auto d_output                    = c2h::device_vector<int>(4);
-  c2h::device_vector<int> expected = {1, 2, 3, 4};
+  const c2h::device_vector<int> d_range{0, 2, 4, 6, 8};
+  const c2h::device_vector<int> d_values{0, 3, 4, 7};
+  c2h::device_vector<int> d_output(4, thrust::no_init);
+  const c2h::device_vector<int> expected{0, 2, 2, 4};
 
-  size_t expected_bytes_allocated{};
-  auto error = cub::DeviceFind::UpperBoundSortedValues(
-    nullptr,
-    expected_bytes_allocated,
-    d_range.begin(),
-    static_cast<int>(d_range.size()),
-    d_values.begin(),
-    static_cast<int>(d_values.size()),
-    d_output.begin(),
-    cuda::std::less{});
-  REQUIRE(error == cudaSuccess);
-  auto temp          = c2h::device_vector<uint8_t>(expected_bytes_allocated, thrust::no_init);
-  void* temp_storage = thrust::raw_pointer_cast(temp.data());
-
-  auto test_upper_bound_sorted_values = [&](const auto& env) {
-    size_t num_bytes = 0;
-    error            = cub::DeviceFind::UpperBoundSortedValues(
-      nullptr,
-      num_bytes,
-      d_range.begin(),
-      static_cast<int>(d_range.size()),
-      d_values.begin(),
-      static_cast<int>(d_values.size()),
-      d_output.begin(),
-      cuda::std::less{},
-      env);
-    REQUIRE(error == cudaSuccess);
-    REQUIRE(cudaSuccess == cudaPeekAtLastError());
-    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-    REQUIRE(num_bytes == expected_bytes_allocated);
-
-    error = cub::DeviceFind::UpperBoundSortedValues(
-      temp_storage,
-      num_bytes,
-      d_range.begin(),
-      static_cast<int>(d_range.size()),
-      d_values.begin(),
-      static_cast<int>(d_values.size()),
-      d_output.begin(),
-      cuda::std::less{},
-      env);
-    REQUIRE(error == cudaSuccess);
-    REQUIRE(cudaSuccess == cudaPeekAtLastError());
-    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  test_with_custom_streams([&](const auto& env) {
+    run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+      return cub::DeviceFind::LowerBoundSortedValues(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_range.begin(),
+        static_cast<int>(d_range.size()),
+        d_values.begin(),
+        static_cast<int>(d_values.size()),
+        d_output.begin(),
+        cuda::std::less{},
+        env);
+    });
     REQUIRE(d_output == expected);
-  };
+  });
+}
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
+CUB_TEST_CASE("Device UpperBoundSortedValues two-phase works with custom streams",
+              "[find][device][binary-search]",
+              CUB_SMALL)
+{
+  const c2h::device_vector<int> d_range{0, 2, 4, 6, 8};
+  const c2h::device_vector<int> d_values{0, 3, 4, 7};
+  c2h::device_vector<int> d_output(4, thrust::no_init);
+  const c2h::device_vector<int> expected{1, 2, 3, 4};
 
-  SECTION("upper_bound_sorted_values works with cudaStream_t")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_upper_bound_sorted_values(stream.get());
-  }
-
-  SECTION("upper_bound_sorted_values works with cuda::stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_upper_bound_sorted_values(stream);
-  }
-
-  SECTION("upper_bound_sorted_values works with cuda::stream_ref")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
-    test_upper_bound_sorted_values(stream_ref);
-  }
-
-  SECTION("upper_bound_sorted_values works with cuda::std::execution::env")
-  {
-    cuda::std::execution::env env{};
-    test_upper_bound_sorted_values(env);
-  }
-
-  SECTION("upper_bound_sorted_values works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_upper_bound_sorted_values(policy);
-  }
-
-  SECTION("upper_bound_sorted_values works with cuda::execution::gpu with stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_upper_bound_sorted_values(policy);
-  }
+  test_with_custom_streams([&](const auto& env) {
+    run_two_phase(env, [&](void* d_temp_storage, size_t& temp_storage_bytes) {
+      return cub::DeviceFind::UpperBoundSortedValues(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_range.begin(),
+        static_cast<int>(d_range.size()),
+        d_values.begin(),
+        static_cast<int>(d_values.size()),
+        d_output.begin(),
+        cuda::std::less{},
+        env);
+    });
+    REQUIRE(d_output == expected);
+  });
 }
 
 template <int ThreadsPerBlock>
@@ -347,164 +219,102 @@ struct find_bound_sorted_values_tuning
   }
 };
 
-using block_size_extracting_predicate_t = block_size_extracting_op<::cuda::always_false>;
-
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 
-CUB_TEST("LowerBoundSortedValues can be tuned", "[find][device][binary-search]", CUB_SMALL, block_sizes)
+CUB_TEST("Device LowerBoundSortedValues two-phase can be tuned", "[find][device][binary-search]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  const c2h::device_vector<int> d_range{0, 2, 4, 6, 8};
+  const c2h::device_vector<int> d_values{0, 3, 4, 7};
+  c2h::device_vector<int> d_output(4, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
+  const block_size_extracting_op<cuda::std::less<>> comp{thrust::raw_pointer_cast(d_block_size.data())};
+  const auto env = cuda::execution::tune(find_bound_sorted_values_tuning<target_block_size>{});
 
-  auto d_range                                   = c2h::device_vector<int>{0, 2, 4, 6, 8};
-  auto d_values                                  = c2h::device_vector<int>{0, 3, 4, 7};
-  auto d_output                                  = c2h::device_vector<int>(4, thrust::no_init);
-  auto d_block_size                              = c2h::device_vector<unsigned int>(1, 0);
-  const c2h::device_vector<int> d_expected_lower = {0, 0, 0, 0};
+  device_lower_bound_sorted_values_two_phase(
+    d_range.begin(),
+    static_cast<int>(d_range.size()),
+    d_values.begin(),
+    static_cast<int>(d_values.size()),
+    d_output.begin(),
+    comp,
+    env);
 
-  block_size_extracting_predicate_t predicate{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env = cuda::execution::tune(find_bound_sorted_values_tuning<target_block_size>{});
-
-  SECTION("lower_bound_sorted_values can be tuned")
-  {
-    auto error = cub::DeviceFind::LowerBoundSortedValues(
-      d_range.begin(),
-      static_cast<int>(d_range.size()),
-      d_values.begin(),
-      static_cast<int>(d_values.size()),
-      d_output.begin(),
-      predicate,
-      env);
-
-    REQUIRE(error == cudaSuccess);
-    REQUIRE(cudaSuccess == cudaPeekAtLastError());
-    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-
-    REQUIRE(d_output == d_expected_lower); // predicate never matches
-    REQUIRE(d_block_size[0] == target_block_size);
-  }
-
-  SECTION("lower_bound_sorted_values can be tuned with user provided memory")
-  {
-    size_t num_bytes = 0;
-
-    auto error = cub::DeviceFind::LowerBoundSortedValues(
-      nullptr,
-      num_bytes,
-      d_range.begin(),
-      static_cast<int>(d_range.size()),
-      d_values.begin(),
-      static_cast<int>(d_values.size()),
-      d_output.begin(),
-      predicate,
-      env);
-
-    REQUIRE(error == cudaSuccess);
-    REQUIRE(cudaSuccess == cudaPeekAtLastError());
-    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-
-    d_block_size[0] = 0; // reset to 0 for phase 2
-
-    auto temp          = c2h::device_vector<uint8_t>(num_bytes, thrust::no_init);
-    void* temp_storage = thrust::raw_pointer_cast(temp.data());
-
-    error = cub::DeviceFind::LowerBoundSortedValues(
-      temp_storage,
-      num_bytes,
-      d_range.begin(),
-      static_cast<int>(d_range.size()),
-      d_values.begin(),
-      static_cast<int>(d_values.size()),
-      d_output.begin(),
-      predicate,
-      env);
-
-    REQUIRE(error == cudaSuccess);
-    REQUIRE(cudaSuccess == cudaPeekAtLastError());
-    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-
-    REQUIRE(d_output == d_expected_lower); // predicate never matches
-    REQUIRE(d_block_size[0] == target_block_size);
-  }
+  const c2h::device_vector<int> expected{0, 2, 2, 4};
+  REQUIRE(d_output == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
 }
 
-CUB_TEST("UpperBoundSortedValues can be tuned", "[find][device][binary-search]", CUB_SMALL, block_sizes)
+CUB_TEST("Device UpperBoundSortedValues two-phase can be tuned", "[find][device][binary-search]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  const c2h::device_vector<int> d_range{0, 2, 4, 6, 8};
+  const c2h::device_vector<int> d_values{0, 3, 4, 7};
+  c2h::device_vector<int> d_output(4, thrust::no_init);
+  c2h::device_vector<unsigned int> d_block_size(1, 0u);
+  const block_size_extracting_op<cuda::std::less<>> comp{thrust::raw_pointer_cast(d_block_size.data())};
+  const auto env = cuda::execution::tune(find_bound_sorted_values_tuning<target_block_size>{});
 
-  auto d_range                                   = c2h::device_vector<int>{0, 2, 4, 6, 8};
-  auto d_values                                  = c2h::device_vector<int>{0, 3, 4, 7};
-  auto d_output                                  = c2h::device_vector<int>(4, thrust::no_init);
-  auto d_block_size                              = c2h::device_vector<unsigned int>(1, 0);
-  const c2h::device_vector<int> d_expected_upper = {5, 5, 5, 5};
+  device_upper_bound_sorted_values_two_phase(
+    d_range.begin(),
+    static_cast<int>(d_range.size()),
+    d_values.begin(),
+    static_cast<int>(d_values.size()),
+    d_output.begin(),
+    comp,
+    env);
 
-  block_size_extracting_predicate_t predicate{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env = cuda::execution::tune(find_bound_sorted_values_tuning<target_block_size>{});
-
-  SECTION("upper_bound_sorted_values can be tuned")
-  {
-    auto error = cub::DeviceFind::UpperBoundSortedValues(
-      d_range.begin(),
-      static_cast<int>(d_range.size()),
-      d_values.begin(),
-      static_cast<int>(d_values.size()),
-      d_output.begin(),
-      predicate,
-      env);
-
-    REQUIRE(error == cudaSuccess);
-    REQUIRE(cudaSuccess == cudaPeekAtLastError());
-    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-
-    REQUIRE(d_output == d_expected_upper); // predicate never matches
-    REQUIRE(d_block_size[0] == target_block_size);
-  }
-
-  SECTION("upper_bound_sorted_values can be tuned with user provided memory")
-  {
-    size_t num_bytes = 0;
-
-    auto error = cub::DeviceFind::UpperBoundSortedValues(
-      nullptr,
-      num_bytes,
-      d_range.begin(),
-      static_cast<int>(d_range.size()),
-      d_values.begin(),
-      static_cast<int>(d_values.size()),
-      d_output.begin(),
-      predicate,
-      env);
-
-    REQUIRE(error == cudaSuccess);
-    REQUIRE(cudaSuccess == cudaPeekAtLastError());
-    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-
-    d_block_size[0] = 0; // reset to 0 for phase 2
-
-    auto temp          = c2h::device_vector<uint8_t>(num_bytes, thrust::no_init);
-    void* temp_storage = thrust::raw_pointer_cast(temp.data());
-
-    error = cub::DeviceFind::UpperBoundSortedValues(
-      temp_storage,
-      num_bytes,
-      d_range.begin(),
-      static_cast<int>(d_range.size()),
-      d_values.begin(),
-      static_cast<int>(d_values.size()),
-      d_output.begin(),
-      predicate,
-      env);
-
-    REQUIRE(error == cudaSuccess);
-    REQUIRE(cudaSuccess == cudaPeekAtLastError());
-    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-
-    REQUIRE(d_output == d_expected_upper); // predicate never matches
-    REQUIRE(d_block_size[0] == target_block_size);
-  }
+  const c2h::device_vector<int> expected{1, 2, 3, 4};
+  REQUIRE(d_output == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
 }
 
 #endif // TEST_LAUNCH == 0
+
+// The graph launch appends its own stream argument, which cannot be combined with an environment
+#if TEST_LAUNCH != 2
+
+// Before the environment parameter, the two-phase overloads took `cudaStream_t stream = nullptr`, so callers passing
+// nullptr, a literal 0 or cudaStream_t{} for the stream exist. All must keep compiling and keep running on the default
+// stream.
+CUB_TEST_CASE("DeviceFind bound sorted values two-phase overloads accept legacy null stream arguments",
+              "[find][device][binary-search]",
+              CUB_SMALL)
+{
+  const c2h::device_vector<int> d_range{0, 2, 4, 6, 8};
+  const c2h::device_vector<int> d_values{0, 3, 4, 7};
+  c2h::device_vector<int> d_lower(4, thrust::no_init);
+  c2h::device_vector<int> d_upper(4, thrust::no_init);
+  const stream_scope scope{cudaStream_t{}};
+
+  SECTION("nullptr")
+  {
+    device_lower_bound_sorted_values_two_phase(
+      d_range.begin(), 5, d_values.begin(), 4, d_lower.begin(), cuda::std::less{}, nullptr);
+    device_upper_bound_sorted_values_two_phase(
+      d_range.begin(), 5, d_values.begin(), 4, d_upper.begin(), cuda::std::less{}, nullptr);
+  }
+  SECTION("literal 0")
+  {
+    device_lower_bound_sorted_values_two_phase(
+      d_range.begin(), 5, d_values.begin(), 4, d_lower.begin(), cuda::std::less{}, 0);
+    device_upper_bound_sorted_values_two_phase(
+      d_range.begin(), 5, d_values.begin(), 4, d_upper.begin(), cuda::std::less{}, 0);
+  }
+  SECTION("cudaStream_t{}")
+  {
+    device_lower_bound_sorted_values_two_phase(
+      d_range.begin(), 5, d_values.begin(), 4, d_lower.begin(), cuda::std::less{}, cudaStream_t{});
+    device_upper_bound_sorted_values_two_phase(
+      d_range.begin(), 5, d_values.begin(), 4, d_upper.begin(), cuda::std::less{}, cudaStream_t{});
+  }
+
+  REQUIRE(d_lower == c2h::device_vector<int>{0, 2, 2, 4});
+  REQUIRE(d_upper == c2h::device_vector<int>{1, 2, 3, 4});
+}
+
+#endif // TEST_LAUNCH != 2
 
 #if TEST_LAUNCH != 1
 struct find_bound_tuning_transformer
