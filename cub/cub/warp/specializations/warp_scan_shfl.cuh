@@ -22,12 +22,12 @@
 
 #include <cub/detail/constant.cuh>
 #include <cub/detail/key_value_pair.cuh>
-#include <cub/detail/log2.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_utils.cuh>
 
+#include <cuda/__cmath/ilog.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
@@ -60,7 +60,7 @@ struct WarpScanShfl
   //---------------------------------------------------------------------
 
   /// The number of warp scan steps
-  static constexpr int STEPS = Log2<LogicalWarpThreads>::VALUE;
+  static constexpr int STEPS = ::cuda::ilog2(LogicalWarpThreads);
 
   /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
   static constexpr int SHFL_C = (warp_threads - LogicalWarpThreads) << 8;
