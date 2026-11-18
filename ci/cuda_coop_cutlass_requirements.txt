@@ -4,6 +4,6 @@
 
 # The GPU-hidden compiler producer must pass external LTO-IR linking before
 # runtime qualification. A successful import is insufficient.
-nvidia-cutlass-dsl>=4.9,<5
+nvidia-cutlass-dsl[cu13]>=4.9.0.dev1,<5
 cuda-bindings>=13.1,<14
 cuda-toolkit[nvrtc,nvjitlink]>=13.1,<14

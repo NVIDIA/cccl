@@ -89,8 +89,15 @@ def _metadata(content: bytes) -> None:
     if not required <= base.keys():
         raise SystemExit(f"Missing standalone dependencies: {required - base.keys()}")
     compiler = base["nvidia-cutlass-dsl"].specifier
-    if "4.9" not in compiler or "4.8.1" in compiler or "5.0" in compiler:
-        raise SystemExit("CUTLASS dependency must select the 4.9 integration")
+    if (
+        "cu13" not in base["nvidia-cutlass-dsl"].extras
+        or "4.9.0.dev1" not in compiler
+        or "4.9" not in compiler
+        or "4.9.0.dev0" in compiler
+        or "4.8.1" in compiler
+        or "5.0" in compiler
+    ):
+        raise SystemExit("CUTLASS dependency must select the CUDA 13 4.9 integration")
 
 
 def _provenance(content: bytes) -> None:

@@ -27,7 +27,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-  "nvidia-cutlass-dsl>=4.9,<5",
+  "nvidia-cutlass-dsl[cu13]>=4.9.0.dev1,<5",
   "cuda-bindings>=13.1,<14",
   "cuda-core>=0.5.1,<2",
   "cuda-pathfinder>=1.2.3",
