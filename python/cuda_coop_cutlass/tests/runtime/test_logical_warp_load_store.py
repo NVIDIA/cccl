@@ -367,9 +367,10 @@ def test_final_cubin(tmp_path, width, algorithm):
     The generated Load and Store wrappers must be fully inlined: no wrapper
     symbol or CALL instruction may remain in the SASS. No block barrier (BAR)
     may appear. Algorithms without scratch must use no shared memory and no
-    warp synchronization instruction (WARPSYNC). Transpose must use shared
-    memory for widths above one; width one leaves the size unconstrained. The
-    test does not check a specific warp synchronization mask.
+    warp synchronization instruction (WARPSYNC). Transpose must emit shared
+    accesses for widths above one, whether scratch is allocated statically or
+    dynamically; width one leaves allocation unconstrained. The test does not
+    check a specific warp synchronization mask.
     """
 
     cuobjdump = find_nvidia_binary_utility("cuobjdump")
@@ -432,9 +433,11 @@ def test_final_cubin(tmp_path, width, algorithm):
         assert shared
         if algorithm != "transpose":
             assert not any(shared)
+            assert re.search(r"\b(?:LDS|STS)(?:\.[A-Z0-9_]+)*\b", sass) is None
             assert "WARPSYNC" not in sass
         elif width > 1:
-            assert any(shared)
+            assert re.search(r"\bLDS(?:\.[A-Z0-9_]+)*\b", sass) is not None
+            assert re.search(r"\bSTS(?:\.[A-Z0-9_]+)*\b", sass) is not None
 
 
 @pytest.mark.parametrize("items_per_thread", (1, 4))

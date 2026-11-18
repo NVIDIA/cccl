@@ -551,7 +551,8 @@ def test_final_cubin_storage_contract(tmp_path, algorithm):
     First verify the copy result. Then check that provider calls have been
     inlined and that only transpose has shared-memory allocation and barriers.
     Transpose scratch must use LDS/STS, and no generic LD/ST may remain.
-    Resource metadata checks allocation presence without fixing its size.
+    Resource metadata covers static allocation; shared accesses also detect
+    dynamically allocated scratch.
     """
 
     cuobjdump = find_nvidia_binary_utility("cuobjdump")
@@ -624,7 +625,8 @@ def test_final_cubin_storage_contract(tmp_path, algorithm):
             int(size) for size in re.findall(r"\bSHARED:(\d+)", resources)
         ]
         assert shared_sizes
-        has_shared = any(shared_sizes)
         has_barrier = re.search(r"\bBAR(?:\.[A-Z0-9_]+)*\b", sass) is not None
-        assert has_shared is (algorithm == "transpose")
+        if algorithm != "transpose":
+            assert not any(shared_sizes)
+            assert re.search(r"\b(?:LDS|STS)(?:\.[A-Z0-9_]+)*\b", sass) is None
         assert has_barrier is (algorithm == "transpose")

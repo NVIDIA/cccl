@@ -406,10 +406,11 @@ def test_final_warp_cubin_has_no_block_barrier(tmp_path, algorithm):
 
     The SASS must contain no Load or Store wrapper symbol and no CALL
     instruction, so the wrappers are fully inlined. It must contain no block
-    barrier (BAR), which would require other warps to participate. Resource
-    metadata must show shared memory only for transpose. Storage-free paths
-    must omit the warp synchronization instruction WARPSYNC. Transpose permits
-    warp synchronization without requiring a particular instruction or mask.
+    barrier (BAR), which would require other warps to participate. Transpose
+    must emit shared accesses for static or dynamic scratch. Storage-free
+    paths must have no static shared allocation, shared accesses, or warp
+    synchronization instruction WARPSYNC. Transpose permits warp
+    synchronization without requiring a particular instruction or mask.
     """
 
     cuobjdump = find_nvidia_binary_utility("cuobjdump")
@@ -469,8 +470,12 @@ def test_final_warp_cubin_has_no_block_barrier(tmp_path, algorithm):
             int(size) for size in re.findall(r"\bSHARED:(\d+)", resources)
         ]
         assert shared
-        assert any(shared) is (algorithm == "transpose")
-        if algorithm != "transpose":
+        if algorithm == "transpose":
+            assert re.search(r"\bLDS(?:\.[A-Z0-9_]+)*\b", sass) is not None
+            assert re.search(r"\bSTS(?:\.[A-Z0-9_]+)*\b", sass) is not None
+        else:
+            assert not any(shared)
+            assert re.search(r"\b(?:LDS|STS)(?:\.[A-Z0-9_]+)*\b", sass) is None
             assert "WARPSYNC" not in sass
 
 
