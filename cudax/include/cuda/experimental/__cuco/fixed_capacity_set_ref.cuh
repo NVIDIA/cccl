@@ -181,7 +181,8 @@ public:
 
   //! @brief Returns a copy of this ref that compares keys with `__predicate`.
   //!
-  //! The copy references the same slot storage.
+  //! The copy references the same slot storage and does not rehash stored keys, so `__predicate` must be compatible
+  //! with the predicate used to insert them.
   //! @tparam _NewKeyEqual Key equality predicate type
   //! @param[in] __predicate Key equality predicate
   //! @return A ref over the same storage using `__predicate`
@@ -195,7 +196,8 @@ public:
 
   //! @brief Returns a copy of this ref that hashes keys with `__hash`.
   //!
-  //! The copy references the same slot storage and keeps the probing scheme kind and CG size.
+  //! The copy references the same slot storage and keeps the probing scheme kind and CG size. Stored keys are not
+  //! rehashed, so `__hash` (both hashes for double hashing) must be compatible with the hash used to insert them.
   //! @tparam _NewHash Hash function type, or a tuple-like of two hash functions for double hashing
   //! @param[in] __hash Hash function
   //! @return A ref over the same storage using `__hash`
