@@ -11,6 +11,8 @@
 
 #include <nvbench_helper.cuh>
 
+#include "policy_selector.cuh"
+
 #if TUNE_T
 using value_types = nvbench::type_list<TUNE_T>;
 #else
@@ -83,7 +85,14 @@ _CCCL_HOST_API void variable_segmented_reduce(nvbench::state& state, nvbench::ty
 
   caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    auto env = cub_bench_env(alloc, launch);
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(policy_selector<output_t>{})
+#endif
+    );
     if constexpr (is_argmax)
     {
       _CCCL_TRY_RUNTIME_API(
