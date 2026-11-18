@@ -217,8 +217,11 @@ def compile_operator(
         Its return annotation is the CUTLASS type of ``dtype``, as in
         ``-> cutlass.Int32``, so one function serves one element type.
         Leave the two parameters unannotated: both receive values of that
-        type. A function of one argument, a return annotation of another
-        type and a result of another type are rejected.
+        type. A function of one argument and a return annotation of another
+        type are rejected. A result is rejected when its width differs from
+        the annotation's, or when one is an integer type and the other a
+        floating type, as with a ``Float32`` result under
+        ``-> cutlass.Int32``.
 
         The function must be associative: ``f(f(a, b), c)`` equals
         ``f(a, f(b, c))``. It need not be commutative. It must compute its
@@ -256,8 +259,10 @@ def compile_operator(
         target. The operator then gets that target too: the one the
         ``CUTE_DSL_ARCH`` environment variable names or, when it is unset,
         the one CuTe detects from the GPU. When the kernel is compiled with
-        a ``GPUArch`` option, pass the same target here. Passing ``arch``
-        also avoids the query of the GPU. A malformed name is rejected.
+        a ``cute.GPUArch`` option, as in
+        ``cute.compile[cute.GPUArch("sm_80")]``, pass the same target here.
+        Passing ``arch`` also avoids the query of the GPU. A malformed name
+        is rejected.
 
     Returns
     -------

@@ -209,7 +209,8 @@ def reduce(
         into the result. A register tensor or ``TensorSSA`` is read as a
         payload. A scalar or an item has one of the ten element types
         listed under :ref:`ThreadData <coop-thread-data>`. A Python integer
-        is taken as ``Int32`` and a Python float as ``Float32``.
+        passed as the scalar is taken as ``Int32`` and a Python float as
+        ``Float32``.
     binary_op : str, function or DeviceOperator, optional
         The operator, sum by default. A Python value: a name or a function
         from the table of operators under

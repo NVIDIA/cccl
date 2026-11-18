@@ -392,9 +392,10 @@ def topk_min_pairs(
     --------
     ``select_pairs`` gives each key its position in the tile as its value
     and leaves the last three positions out with ``valid_items``.
-    ``low_indices`` then says where each of the seven smallest keys came
-    from, and ``high_indices`` does the same for the seven largest. Each of
-    the four ``store`` calls writes the seven selected positions.
+    ``low_indices`` then says where each of the seven smallest of the other
+    keys came from, and ``high_indices`` does the same for the seven
+    largest. Each of the four ``store`` calls writes the seven selected
+    positions.
 
     `Full example and test on GitHub
     <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py>`__
@@ -452,8 +453,9 @@ def topk_max_pairs(
 
     Examples
     --------
-    ``high`` and ``high_indices`` below hold the seven largest keys and the
-    position each one came from.
+    ``select_pairs`` below leaves the last three positions of the tile out
+    with ``valid_items``. ``high`` and ``high_indices`` hold the seven
+    largest of the other keys and the position each one came from.
 
     `Full example and test on GitHub
     <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_topk_documentation.py>`__

@@ -110,7 +110,10 @@ def shuffle(
         A payload for ``"down"`` and ``"up"``, or one scalar per thread for
         ``"offset"`` and ``"rotate"``. A register tensor or ``TensorSSA``
         is read as a payload, and so is a ``ThreadData`` of one item. A
-        scalar or an item has one of the ten element types listed under
+        tensor in global or shared memory is rejected when the kernel is
+        compiled: read a payload with :func:`~cuda.coop.cutlass.load`, or
+        index the tensor to get one scalar. A scalar or an item has one of
+        the ten element types listed under
         :ref:`ThreadData <coop-thread-data>`.
     mode : {"down", "up", "offset", "rotate"}, optional
         A Python string. The default is ``"down"``, so a call that passes a

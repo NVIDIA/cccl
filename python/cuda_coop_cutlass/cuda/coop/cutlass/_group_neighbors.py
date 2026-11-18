@@ -372,8 +372,8 @@ def discontinuity(
     Examples
     --------
     ``heads`` and ``tails`` below come from one call with
-    ``mode="heads_and_tails"``, on the payload that the differences were
-    computed from.
+    ``mode="heads_and_tails"``. It reads ``values``, the same payload as the
+    ``adjacent_difference`` call.
 
     `Full example and test on GitHub
     <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_neighbors_documentation.py>`__

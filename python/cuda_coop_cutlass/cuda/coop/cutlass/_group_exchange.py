@@ -5,10 +5,7 @@
 """``exchange`` and ``shuffle`` move values between the threads of a group.
 
 Both work on values the threads already hold in registers, such as a payload
-from :func:`~cuda.coop.cutlass.load`, and the results stay in registers. To
-rearrange values that are in memory, read them into registers first: a
-payload with ``load``, or one scalar for ``shuffle`` by indexing a tensor. A
-tensor in global or shared memory is rejected when the kernel is compiled.
+from :func:`~cuda.coop.cutlass.load`, and the results stay in registers.
 
 ``exchange`` changes which thread holds each item of a :term:`tile`. In a
 :term:`blocked` layout each thread holds neighboring elements of the tile,
@@ -48,8 +45,8 @@ lanes has a tile of its own, with ``G`` the group's size and ``t`` the
 thread's rank in its group.
 
 The four layout modes convert a payload from one layout to another. The four
-scatter modes send each item to the tile position that ``ranks`` gives for
-it:
+scatter modes send items to the tile positions that ``ranks`` gives for
+them:
 
 .. list-table::
    :header-rows: 1
@@ -223,8 +220,10 @@ def exchange(
         A payload. A register tensor or ``TensorSSA`` is read as a payload,
         and the result is a ``ThreadData`` that ``to_register_tensor`` or
         ``to_tensor_ssa`` converts back. One scalar per thread is rejected
-        when the kernel is compiled: pass a payload of one item. An item
-        has one of the ten element types listed under
+        when the kernel is compiled: pass a payload of one item. A tensor
+        in global or shared memory is rejected when the kernel is compiled,
+        so read it with :func:`~cuda.coop.cutlass.load` first. An item has
+        one of the ten element types listed under
         :ref:`ThreadData <coop-thread-data>`.
     mode : str, optional
         A Python string. The default is ``"striped_to_blocked"``. A block

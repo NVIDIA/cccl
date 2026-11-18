@@ -151,9 +151,10 @@ def reduce_batched(
     Examples
     --------
     Sum each batch over each of the two warps of a 64-thread block. The
-    layout is striped, so ``totals[item]`` in the lane with rank
-    ``warp.rank()`` is the sum of batch ``batch``. A lane stores it only
-    when ``batch`` is below ``items_per_thread``, the number of batches.
+    layout is striped, so ``totals[item]`` holds the sum of batch
+    ``warp.rank() + item * 32``. The kernel names that number ``batch``. A
+    lane stores the sum only when ``batch`` is below ``items_per_thread``,
+    the number of batches.
 
     `Full example and test on GitHub
     <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_reduce_batched_documentation.py>`__

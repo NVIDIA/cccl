@@ -48,10 +48,10 @@ The two functions decode the same runs and differ in where the items go:
 
 Every call starts from the runs: it checks the lengths and finds where each
 run starts before it decodes. Nothing is kept from one call to the next,
-even when the calls share a ``TempStorage``. A loop of ``run_length_decode``
-calls does that work on every trip, and the kernel can use the items of each
-window. One ``run_length_decode_into`` call does the work once and stores
-the items itself.
+even when the calls share a :ref:`TempStorage <coop-temp-storage>`. A loop
+of ``run_length_decode`` calls does that work on every trip, and the kernel
+can use the items of each window. One ``run_length_decode_into`` call does
+the work once and stores the items itself.
 """
 
 # Implementation notes.
@@ -265,10 +265,11 @@ def run_length_decode(
     second run, and thread 0 receives 11 and 12. The last three positions
     of the window are past the end of the stream: thread 30 receives 41 and
     0, and thread 31 receives 0 and 0. With ``items_per_thread=4`` the
-    stream has 256 items and the whole window is inside it. The second call
-    writes the whole stream to ``destination`` from element 5 on. The
-    example under :func:`~cuda.coop.cutlass.run_length_decode_into` decodes
-    a whole stream with a loop of window calls.
+    stream has 256 items and the whole window is inside it.
+    ``run_length_decode_into`` then writes the whole stream to
+    ``destination`` from element 5 on. The example under
+    :func:`~cuda.coop.cutlass.run_length_decode_into` decodes a whole stream
+    with a loop of window calls.
 
     `Full example and test on GitHub
     <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_run_length_examples.py>`__
@@ -323,8 +324,9 @@ def run_length_decode_into(
         :func:`~cuda.coop.cutlass.run_length_decode`.
     run_lengths : ThreadData, CuTe register tensor or TensorSSA
         The lengths of this thread's runs, with the rules of
-        :func:`~cuda.coop.cutlass.run_length_decode`. Lengths that break
-        them trap on the device before anything is written.
+        :func:`~cuda.coop.cutlass.run_length_decode`. The lengths that trap
+        on the device in that function trap in this one before anything is
+        written.
     destination : cute.Tensor
         The memory that receives the stream: a tensor in global memory with
         one dimension, stride 1 and the element type of ``run_values``,
