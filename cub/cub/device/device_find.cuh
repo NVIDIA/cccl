@@ -157,7 +157,7 @@ public:
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
@@ -255,7 +255,7 @@ public:
   //!   and ``ValuesIteratorT``.
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
@@ -384,7 +384,7 @@ public:
   //!   and ``ValuesIteratorT``.
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
@@ -512,7 +512,7 @@ public:
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -599,7 +599,7 @@ public:
   //!   and ``ValuesIteratorT``.
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_range
   //!   Iterator to the beginning of the ordered range to be searched.
@@ -720,7 +720,7 @@ public:
   //!   and ``ValuesIteratorT``.
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_range
   //!   Iterator to the beginning of the ordered range to be searched.
@@ -841,7 +841,7 @@ public:
   //!   iterator types.
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
@@ -957,7 +957,7 @@ public:
   //!   and ``ValuesIteratorT``.
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_range
   //!   Iterator to the beginning of the ordered haystack range.
@@ -1061,7 +1061,7 @@ public:
   //!   iterator types.
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
@@ -1177,7 +1177,7 @@ public:
   //!   and ``ValuesIteratorT``.
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_range
   //!   Iterator to the beginning of the ordered haystack range.
