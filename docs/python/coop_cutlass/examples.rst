@@ -44,7 +44,7 @@ call.
 exchange_shuffle.py
 -------------------
 
-Blocked/striped movement, scatter, and scalar/array Shuffle.
+A blocked-to-striped ``exchange``, then a ``shuffle`` down by one position.
 
 `View exchange_shuffle.py on GitHub
 <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/exchange_shuffle.py>`_
