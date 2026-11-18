@@ -213,7 +213,7 @@ struct negate
 
 TEST_CASE("TestTransformInclusiveScanDifferentTypes", "[transform_scan]")
 {
-  typename thrust::host_vector<int>::iterator h_iter;
+  thrust::host_vector<int>::iterator h_iter;
 
   thrust::host_vector<Record> h_input{{1}, {3}, {-2}, {4}, {-5}};
   thrust::host_vector<int> h_output(5);
@@ -227,7 +227,7 @@ TEST_CASE("TestTransformInclusiveScanDifferentTypes", "[transform_scan]")
   REQUIRE(h_input == input_copy);
   REQUIRE(h_output == result);
 
-  typename thrust::device_vector<int>::iterator d_iter;
+  thrust::device_vector<int>::iterator d_iter;
 
   thrust::device_vector<Record> d_input = h_input;
   thrust::device_vector<int> d_output(5);

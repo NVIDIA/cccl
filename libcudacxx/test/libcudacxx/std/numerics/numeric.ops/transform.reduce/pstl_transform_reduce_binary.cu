@@ -48,10 +48,10 @@ void test_transform_reduce(const Policy policy, const thrust::device_vector<int>
   // N * (N + 1) / 2 for the first N integrals
   // 0 for multiplying by 1
   // 42 for init
-  constexpr int expected = size * (size + 1) / 2 + 42;
+  constexpr int expected = (size * (size + 1) / 2) + 42;
 
   { // Defaulted operations
-    auto res = cuda::std::transform_reduce(policy, Input1.begin(), Input1.end(), input2, int{42});
+    auto res = cuda::std::transform_reduce(policy, Input1.begin(), Input1.end(), input2, 42);
     static_assert(cuda::std::is_same_v<decltype(res), int>);
     CHECK(res == expected);
   }
@@ -64,20 +64,14 @@ void test_transform_reduce(const Policy policy, const thrust::device_vector<int>
 
   { // With matching operators
     auto res = cuda::std::transform_reduce(
-      policy, Input1.begin(), Input1.end(), input2, int{42}, cuda::std::plus<>{}, cuda::std::multiplies<>{});
+      policy, Input1.begin(), Input1.end(), input2, 42, cuda::std::plus<>{}, cuda::std::multiplies<>{});
     static_assert(cuda::std::is_same_v<decltype(res), int>);
     CHECK(res == expected);
   }
 
   { // With converting operators
     auto res = cuda::std::transform_reduce(
-      policy,
-      Input1.begin(),
-      Input1.end(),
-      input2,
-      int{42},
-      cuda::std::plus<int64_t>{},
-      cuda::std::multiplies<int64_t>{});
+      policy, Input1.begin(), Input1.end(), input2, 42, cuda::std::plus<int64_t>{}, cuda::std::multiplies<int64_t>{});
     static_assert(cuda::std::is_same_v<decltype(res), int>);
     CHECK(res == expected);
   }

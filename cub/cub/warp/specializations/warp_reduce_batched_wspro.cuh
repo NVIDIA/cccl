@@ -68,11 +68,11 @@ struct warp_reduce_batched_wspro
 
   // Keep warp-ID division signed to preserve mask and shuffle code generation (affect SM90 only).
   const int physical_lane_id = static_cast<int>(::cuda::ptx::get_sreg_laneid());
-  const int logical_lane_id  = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
+  const int logical_lane_id  = _CUB::detail::logical_lane_id<LogicalWarpThreads>();
   const int logical_warp_id  = is_arch_warp ? 0 : physical_lane_id / LogicalWarpThreads;
 
   ::cuda::std::uint32_t member_mask =
-    SyncPhysicalWarp ? 0xFFFFFFFFu : CUB_NS_QUALIFIER::WarpMask<LogicalWarpThreads>(logical_warp_id);
+    SyncPhysicalWarp ? 0xFFFFFFFFu : _CUB::WarpMask<LogicalWarpThreads>(logical_warp_id);
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE warp_reduce_batched_wspro(TempStorage& /*temp_storage*/) {}
 
@@ -119,11 +119,11 @@ struct warp_reduce_batched_wspro
       ::cuda::std::array<T, max_out_per_thread> intermediate_outputs; // NOLINT(cppcoreguidelines-pro-type-member-init)
 
       // Can't use the full member mask given SyncPhysicalWarp==true because it affects the result of the reduction.
-      const auto reduce_mask = CUB_NS_QUALIFIER::WarpMask<LogicalWarpThreads>(logical_warp_id);
+      const auto reduce_mask = _CUB::WarpMask<LogicalWarpThreads>(logical_warp_id);
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < Batches; ++i)
       {
-        const auto result = cub::detail::warp_redux(inputs[i], reduce_mask, reduction_op);
+        const auto result = _CUB::detail::warp_redux(inputs[i], reduce_mask, reduction_op);
         if (!result)
         {
           return false;
@@ -150,7 +150,7 @@ struct warp_reduce_batched_wspro
   {
     // "Transpose" index
     constexpr auto base_idx_blocked =
-      BaseIdxStriped / LogicalWarpThreads + (BaseIdxStriped % LogicalWarpThreads) * max_out_per_thread;
+      (BaseIdxStriped / LogicalWarpThreads) + ((BaseIdxStriped % LogicalWarpThreads) * max_out_per_thread);
     constexpr auto base_idx = ToBlocked ? base_idx_blocked : BaseIdxStriped;
     // Important: By catching out-of-range indices at all levels instead of just at the base level we avoid unnecessary
     // shuffles.

@@ -27,10 +27,10 @@
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/climits>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/ratio>
@@ -64,8 +64,11 @@ template <class _Rep1, class _Period1, class _Rep2, class _Period2>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
 common_type<::cuda::std::chrono::duration<_Rep1, _Period1>, ::cuda::std::chrono::duration<_Rep2, _Period2>>
 {
+  // The common period is the greatest common divisor of both periods
   using type _CCCL_NODEBUG =
-    ::cuda::std::chrono::duration<common_type_t<_Rep1, _Rep2>, typename __ratio_gcd<_Period1, _Period2>::type>;
+    ::cuda::std::chrono::duration<common_type_t<_Rep1, _Rep2>,
+                                  ratio<::cuda::std::__ratio_gcd(_Period1::num, _Period2::num),
+                                        ::cuda::std::__ratio_lcm(_Period1::den, _Period2::den)>>;
 };
 
 namespace chrono
@@ -112,7 +115,6 @@ inline constexpr bool treat_as_floating_point_v = is_floating_point_v<_Rep>;
 template <class _Rep>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT duration_values
 {
-public:
   [[nodiscard]] _CCCL_API static constexpr _Rep zero() noexcept
   {
     return _Rep{0};
@@ -177,6 +179,15 @@ _CCCL_REQUIRES(numeric_limits<_Rep>::is_signed)
   return __d >= __d.zero() ? +__d : -__d;
 }
 
+// Clang 17 and 18 reject consteval calls with type-dependent arguments in variable template initializers, so the
+// condition is evaluated in a template argument (https://github.com/llvm/llvm-project/issues/94935)
+template <class _Rep, class _Period, class _Rep2, class _Period2>
+inline constexpr bool __is_valid_duration_conversion_v = bool_constant<(
+  ::cuda::std::__ratio_divide(_Period2::num, _Period2::den, _Period::num, _Period::den).__num_ != INTMAX_MIN
+  && (treat_as_floating_point_v<_Rep>
+      || (::cuda::std::__ratio_divide(_Period2::num, _Period2::den, _Period::num, _Period::den).__den_ == 1
+          && !treat_as_floating_point_v<_Rep2>) ))>::value;
+
 // duration
 
 template <class _Rep, class _Period>
@@ -185,35 +196,6 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT duration
   static_assert(!__is_cuda_std_duration_v<_Rep>, "A duration representation can not be a duration");
   static_assert(__is_cuda_std_ratio_v<_Period>, "Second template parameter of duration must be a std::ratio");
   static_assert(_Period::num > 0, "duration period must be positive");
-
-  template <class _R1, class _R2>
-  struct __no_overflow
-  {
-  private:
-    static constexpr intmax_t __gcd_n1_n2 = __static_gcd<_R1::num, _R2::num>::value;
-    static constexpr intmax_t __gcd_d1_d2 = __static_gcd<_R1::den, _R2::den>::value;
-    static constexpr intmax_t __n1        = _R1::num / __gcd_n1_n2;
-    static constexpr intmax_t __d1        = _R1::den / __gcd_d1_d2;
-    static constexpr intmax_t __n2        = _R2::num / __gcd_n1_n2;
-    static constexpr intmax_t __d2        = _R2::den / __gcd_d1_d2;
-    static constexpr intmax_t max         = -((intmax_t(1) << (sizeof(intmax_t) * CHAR_BIT - 1)) + 1);
-
-    template <intmax_t _Xp, intmax_t _Yp, bool _Overflow>
-    struct __mul // _Overflow == false
-    {
-      static constexpr intmax_t value = _Xp * _Yp;
-    };
-
-    template <intmax_t _Xp, intmax_t _Yp>
-    struct __mul<_Xp, _Yp, true>
-    {
-      static constexpr intmax_t value = 1;
-    };
-
-  public:
-    static constexpr bool value = (__n1 <= max / __d2) && (__n2 <= max / __d1);
-    using type                  = ratio<__mul<__n1, __d2, !value>::value, __mul<__n2, __d1, !value>::value>;
-  };
 
 public:
   using rep    = _Rep;
@@ -232,11 +214,9 @@ public:
       : __rep_(static_cast<rep>(__r))
   {}
 
-  // conversions
+  // conversions are constrained on ratio_divide not overflowing
   _CCCL_TEMPLATE(class _Rep2, class _Period2)
-  _CCCL_REQUIRES(__no_overflow<_Period2, period>::value _CCCL_AND(
-    treat_as_floating_point_v<rep>
-    || (__no_overflow<_Period2, period>::type::den == 1 && !treat_as_floating_point_v<_Rep2>) ))
+  _CCCL_REQUIRES(__is_valid_duration_conversion_v<rep, period, _Rep2, _Period2>)
   _CCCL_API constexpr duration(const duration<_Rep2, _Period2>& __d)
       : __rep_(::cuda::std::chrono::duration_cast<duration>(__d).count())
   {}

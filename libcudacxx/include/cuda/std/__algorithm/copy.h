@@ -24,6 +24,7 @@
 #include <cuda/std/__algorithm/iterator_operations.h>
 #include <cuda/std/__algorithm/unwrap_iter.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__string/constexpr_c_functions.h> // _CCCL_BUILTIN_MEMMOVE
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -94,16 +95,13 @@ _CCCL_API constexpr bool __constexpr_tail_overlap(_Tp* __first, _Up* __needle, [
   {
     return __first < __needle;
   }
-  else
-  {
 #if defined(_CCCL_BUILTIN_CONSTANT_P)
-    NV_IF_ELSE_TARGET(NV_IS_HOST,
-                      (return _CCCL_BUILTIN_CONSTANT_P(__first < __needle) && __first < __needle;),
-                      (return __constexpr_tail_overlap_fallback(__first, __needle, __last);))
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    (return _CCCL_BUILTIN_CONSTANT_P(__first < __needle) && __first < __needle;),
+                    (return __constexpr_tail_overlap_fallback(__first, __needle, __last);))
 #else // ^^^ _CCCL_BUILTIN_CONSTANT_P ^^^ / vvv !_CCCL_BUILTIN_CONSTANT_P vvv
-    return __constexpr_tail_overlap_fallback(__first, __needle, __last);
+  return __constexpr_tail_overlap_fallback(__first, __needle, __last);
 #endif // !_CCCL_BUILTIN_CONSTANT_P
-  }
 }
 
 _CCCL_EXEC_CHECK_DISABLE

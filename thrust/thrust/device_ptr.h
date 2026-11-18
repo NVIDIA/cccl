@@ -88,7 +88,6 @@ template <typename T>
 class device_ptr
     : public thrust::pointer<T, thrust::device_system_tag, thrust::device_reference<T>, thrust::device_ptr<T>>
 {
-private:
   using super_t = thrust::pointer<T, thrust::device_system_tag, thrust::device_reference<T>, thrust::device_ptr<T>>;
 
 public:
@@ -104,7 +103,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE device_ptr(std::nullptr_t)
+  _CCCL_HOST_DEVICE_API device_ptr(std::nullptr_t)
       : super_t(nullptr)
   {}
 
@@ -125,7 +124,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE explicit device_ptr(U* ptr)
+  _CCCL_HOST_DEVICE_API explicit device_ptr(U* ptr)
       : super_t(ptr)
   {}
 
@@ -144,7 +143,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE device_ptr(device_ptr<U> const& other)
+  _CCCL_HOST_DEVICE_API device_ptr(device_ptr<U> const& other)
       : super_t(other)
   {}
 
@@ -165,7 +164,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE device_ptr& operator=(device_ptr<U> const& other)
+  _CCCL_HOST_DEVICE_API device_ptr& operator=(device_ptr<U> const& other)
   {
     super_t::operator=(other);
     return *this;
@@ -183,7 +182,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE device_ptr& operator=(std::nullptr_t)
+  _CCCL_HOST_DEVICE_API device_ptr& operator=(std::nullptr_t)
   {
     super_t::operator=(nullptr);
     return *this;
@@ -203,7 +202,8 @@ public:
  *  \endverbatim
  */
 template <typename T, typename CharT, typename Traits>
-_CCCL_HOST std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, device_ptr<T> const& dp);
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
+operator<<(std::basic_ostream<CharT, Traits>& os, device_ptr<T> const& dp);
 #endif
 
 /*! \brief Create a \c device_ptr from a raw pointer.
@@ -220,7 +220,7 @@ _CCCL_HOST std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<Char
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE device_ptr<T> device_pointer_cast(T* ptr);
+_CCCL_HOST_DEVICE_API device_ptr<T> device_pointer_cast(T* ptr);
 
 /*! \brief Create a \c device_ptr from another \c device_ptr.
  *
@@ -232,7 +232,7 @@ _CCCL_HOST_DEVICE device_ptr<T> device_pointer_cast(T* ptr);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE device_ptr<T> device_pointer_cast(device_ptr<T> const& dptr);
+_CCCL_HOST_DEVICE_API device_ptr<T> device_pointer_cast(device_ptr<T> const& dptr);
 
 /*! \} // memory_management
  */

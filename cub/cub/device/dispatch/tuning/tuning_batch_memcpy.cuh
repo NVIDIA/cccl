@@ -60,7 +60,7 @@ struct BatchedCopySmallBufferPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const BatchedCopySmallBufferPolicy& policy)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const BatchedCopySmallBufferPolicy& policy)
   {
     return os
         << "BatchedCopySmallBufferPolicy { .threads_per_block = " << policy.threads_per_block
@@ -93,7 +93,7 @@ struct BatchedCopyLargeBufferPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const BatchedCopyLargeBufferPolicy& policy)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const BatchedCopyLargeBufferPolicy& policy)
   {
     return os << "BatchedCopyLargeBufferPolicy { .threads_per_block = " << policy.threads_per_block
               << ", .bytes_per_thread = " << policy.bytes_per_thread << " }";
@@ -120,7 +120,7 @@ struct BatchedCopyLookbackPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const BatchedCopyLookbackPolicy& policy)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const BatchedCopyLookbackPolicy& policy)
   {
     return os << "BatchedCopyLookbackPolicy { .small_buffer = " << policy.small_buffer
               << ", .large_buffer = " << policy.large_buffer << " }";
@@ -148,9 +148,9 @@ namespace detail
 }
 } // namespace detail
 
-inline ::std::ostream& operator<<(::std::ostream& os, BatchedCopyAlgorithm algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, BatchedCopyAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED()
 
@@ -174,7 +174,7 @@ struct BatchedCopyPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const BatchedCopyPolicy& policy)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const BatchedCopyPolicy& policy)
   {
     return os << "BatchedCopyPolicy { .algorithm = " << policy.algorithm << ", .lookback = " << policy.lookback << " }";
   }
@@ -208,8 +208,8 @@ private:
         /* .warp_level_threshold = */ 128,
         /* .block_level_threshold = */ 8 * 1024,
         // BufferOffsetT and BlockOffsetT are primitive/trivially copyable
-        /* .buffer_lookback_delay = */ default_delay_constructor_policy(true),
-        /* .block_lookback_delay = */ default_delay_constructor_policy(true)},
+        /* .buffer_lookback_delay = */ _CUB::detail::default_delay_constructor_policy(true),
+        /* .block_lookback_delay = */ _CUB::detail::default_delay_constructor_policy(true)},
       large,
     };
   }

@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/copy.h>
+#include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/swap.h>
 #include <thrust/system/detail/generic/reverse.h>
@@ -25,7 +26,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename ExecutionPolicy, typename BidirectionalIterator>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 reverse(thrust::execution_policy<ExecutionPolicy>& exec, BidirectionalIterator first, BidirectionalIterator last)
 {
   using difference_type = thrust::detail::it_difference_t<BidirectionalIterator>;
@@ -40,7 +41,7 @@ reverse(thrust::execution_policy<ExecutionPolicy>& exec, BidirectionalIterator f
 } // end reverse()
 
 template <typename ExecutionPolicy, typename BidirectionalIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator reverse_copy(
+_CCCL_HOST_DEVICE_API OutputIterator reverse_copy(
   thrust::execution_policy<ExecutionPolicy>& exec,
   BidirectionalIterator first,
   BidirectionalIterator last,

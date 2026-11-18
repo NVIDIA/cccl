@@ -79,7 +79,7 @@ struct three_way_partition_build
 
   static constexpr bool should_check_sass(int cc_major)
   {
-    return !DisableSassCheck && !(DisableSassCheckOnSm120 && cc_major >= 12);
+    return !DisableSassCheck && (!DisableSassCheckOnSm120 || cc_major < 12);
   }
 };
 
@@ -535,8 +535,8 @@ C2H_TEST("ThreeWayPartition works with iterators", "[three_way_partition]")
   num_selected_output_it.state.data = num_selected_output_ptr.ptr;
 
   auto [less_op_src, greater_or_equal_op_src] = get_three_way_partition_ops(get_type_info<key_t>().type, 21);
-  operation_t less_op                         = make_operation("less_op", less_op_src);
-  operation_t greater_or_equal_op             = make_operation("greater_op", greater_or_equal_op_src);
+  const operation_t less_op                   = make_operation("less_op", less_op_src);
+  const operation_t greater_or_equal_op       = make_operation("greater_op", greater_or_equal_op_src);
 
   auto& build_cache    = get_cache<ThreeWayPartition_Iterators_Fixture_Tag>();
   const auto& test_key = make_key<key_t, num_selected_t>();
@@ -577,8 +577,8 @@ C2H_TEST("ThreeWayPartition build result has serialization metadata populated", 
   const auto& build_info  = BuildInformation<device_id>::init();
 
   auto [first_src, second_src] = get_three_way_partition_ops(get_type_info<T>().type, 21);
-  operation_t first_op         = make_operation("less_op", first_src);
-  operation_t second_op        = make_operation("greater_op", second_src);
+  const operation_t first_op   = make_operation("less_op", first_src);
+  const operation_t second_op  = make_operation("greater_op", second_src);
 
   pointer_t<T> in(1);
   pointer_t<T> first_out(1);
@@ -605,7 +605,7 @@ C2H_TEST("ThreeWayPartition build result has serialization metadata populated", 
       build_info.get_libcudacxx_path(),
       build_info.get_ctk_path()));
 
-  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK(build.cc == (build_info.get_cc_major() * 10) + build_info.get_cc_minor());
   CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
   CHECK(build.payload_size > 0);
   CHECK(build.runtime_policy != nullptr);
@@ -627,8 +627,8 @@ C2H_TEST("ThreeWayPartition compile/load round-trip", "[three_way_partition][ser
   constexpr T split_value = 21;
 
   auto [first_src, second_src] = get_three_way_partition_ops(get_type_info<T>().type, split_value);
-  operation_t first_op         = make_operation("less_op", first_src);
-  operation_t second_op        = make_operation("greater_op", second_src);
+  const operation_t first_op   = make_operation("less_op", first_src);
+  const operation_t second_op  = make_operation("greater_op", second_src);
 
   pointer_t<T> dummy_in(1);
   pointer_t<T> dummy_first_out(1);
@@ -729,7 +729,7 @@ C2H_TEST("ThreeWayPartition compile rejects mismatched custom ops", "[three_way_
   constexpr T split_value = 21;
 
   const auto [first_src, second_src] = get_three_way_partition_ops(get_type_info<T>().type, split_value);
-  operation_t regular_op             = make_operation("less_op", first_src);
+  const operation_t regular_op       = make_operation("less_op", first_src);
   (void) second_src;
 
   // Kernel-only op: code_size == 0 with a non-empty name.

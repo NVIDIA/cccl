@@ -12,13 +12,13 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/detail/generic/tag.h>
+#include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2>
-_CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
+_CCCL_HOST_DEVICE_API ForwardIterator2 swap_ranges(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator1 first1,
   ForwardIterator1 last1,
@@ -26,4 +26,4 @@ _CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
 }
 THRUST_NAMESPACE_END
 
-#include <thrust/system/detail/generic/swap_ranges.inl>
+#include <thrust/system/detail/generic/swap_ranges.inl> // IWYU pragma: export

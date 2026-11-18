@@ -28,9 +28,12 @@
 #include <cuda/std/__fwd/simd.h>
 #include <cuda/std/__iterator/default_sentinel.h>
 #include <cuda/std/__simd/abi.h>
+#include <cuda/std/__simd/concepts.h>
 #include <cuda/std/__simd/exposition.h>
 #include <cuda/std/__simd/iterator.h>
+#include <cuda/std/__simd/permute_dynamic.h>
 #include <cuda/std/__simd/specializations/fixed_size_mask.h> // IWYU pragma: keep
+#include <cuda/std/__simd/type_traits.h>
 #include <cuda/std/__simd/utility.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -42,14 +45,6 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
-
-template <size_t _Bytes>
-inline constexpr bool __is_vectorizable_byte_size_v =
-  (_Bytes == 1 || _Bytes == 2 || _Bytes == 4 || _Bytes == 8
-#if _CCCL_HAS_INT128()
-   || _Bytes == 16
-#endif // _CCCL_HAS_INT128()
-  );
 
 // If basic_mask<Bytes, Abi> is disabled, the specialization has a deleted default constructor, deleted destructor,
 // deleted copy constructor, and deleted copy assignment. In addition only the value_type and abi_type members are
@@ -70,14 +65,13 @@ public:
 // basic_mask<Bytes, Abi> is enabled when there exists a vectorizable type T with sizeof(T) == Bytes and N in [1, 64]
 // derived from deduce-abi-t<T, N>
 template <size_t _Bytes, typename _Abi>
-class basic_mask<_Bytes, _Abi, enable_if_t<__is_vectorizable_byte_size_v<_Bytes> && __is_enabled_abi_v<_Abi>>>
-    : public __mask_operations<_Bytes, _Abi>
+class basic_mask<_Bytes, _Abi, enable_if_t<__is_enabled_mask_v<_Bytes, _Abi>>> : public __mask_operations<_Bytes, _Abi>
 {
   template <typename, typename, typename>
   friend class basic_vec;
 
-  using _Impl    = __mask_operations<_Bytes, _Abi>;
-  using _Storage = typename _Impl::_MaskStorage;
+  using _Impl _CCCL_NODEBUG    = __mask_operations<_Bytes, _Abi>;
+  using _Storage _CCCL_NODEBUG = typename _Impl::_MaskStorage;
 
   _Storage __s_;
 
@@ -121,7 +115,7 @@ public:
     return {};
   }
 
-  static constexpr __simd_size_constant<__simd_size_v<__integer_from<_Bytes>, _Abi>> size{};
+  static constexpr __simd_size_constant<__mask_size_v<_Bytes, _Abi>> size{};
 
   static constexpr auto __usize = size_t{size};
   static constexpr auto __size  = __simd_size_type{size};
@@ -137,7 +131,7 @@ public:
   {}
 
   _CCCL_TEMPLATE(size_t _UBytes, typename _UAbi)
-  _CCCL_REQUIRES((__simd_size_v<__integer_from<_UBytes>, _UAbi> == __size))
+  _CCCL_REQUIRES((__mask_size_v<_UBytes, _UAbi> == __size))
   _CCCL_HOST_DEVICE_API constexpr explicit basic_mask(const basic_mask<_UBytes, _UAbi>& __x) noexcept
   {
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -190,9 +184,13 @@ public:
     return static_cast<bool>(__s_.__get(__i));
   }
 
-  // TODO(fbusato): subscript with integral indices, requires permute()
-  // template<simd-integral I>
-  // constexpr resize_t<I::size(), basic_mask> operator[](const I& indices) const;
+  _CCCL_TEMPLATE(typename _Indices)
+  _CCCL_REQUIRES(__simd_vec_type<_Indices> _CCCL_AND is_integral_v<typename _Indices::value_type>)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr resize_t<_Indices::size(), basic_mask>
+  operator[](const _Indices& __indices) const
+  {
+    return ::cuda::std::simd::permute(*this, __indices);
+  }
 
   // [simd.mask.unary], basic_mask unary operators
 
@@ -201,7 +199,7 @@ public:
     return {_Impl::__bitwise_not(__s_), __storage_tag};
   }
 
-  using __unary_return_t = basic_vec<__integer_from<_Bytes>, _Abi>;
+  using __unary_return_t _CCCL_NODEBUG = basic_vec<__integer_from<_Bytes>, _Abi>;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __unary_return_t operator+() const noexcept
   {

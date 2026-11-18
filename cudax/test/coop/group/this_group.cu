@@ -12,6 +12,7 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
@@ -29,6 +30,10 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
 {
   // Assert that Group satisfies the group concept.
   static_assert(cudax::coop::group<Group>);
+  using LevelType = typename Group::level_type;
+  static_assert(Group::static_rank(LevelType{}) == 0);
+  static_assert(
+    Group::static_rank(cuda::grid) == (Group::static_count(cuda::grid) == 1 ? 0 : cuda::std::dynamic_extent));
 
   // Test types
   static_assert(cuda::std::is_same_v<Level, typename Group::unit_type>);

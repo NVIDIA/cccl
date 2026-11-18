@@ -81,7 +81,7 @@ template <class Ref, class Iterator>
 _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(block_size) void device_insert_or_assign(Ref ref, Iterator first, int n)
 {
   const auto group = cooperative_groups::tiled_partition<Ref::cg_size>(cooperative_groups::this_thread_block());
-  const auto i     = (cuda::std::int64_t{blockIdx.x} * blockDim.x + threadIdx.x) / Ref::cg_size;
+  const auto i     = ((cuda::std::int64_t{blockIdx.x} * blockDim.x) + threadIdx.x) / Ref::cg_size;
   if (i < n)
   {
     // Exercise the cooperative overload even for cg_size == 1.
@@ -155,7 +155,7 @@ C2H_TEST(
   {
     const auto run = [&](int offset) {
       const auto config = ::cuda::make_config(
-        ::cuda::grid_dims(static_cast<unsigned>((num_keys * cg_size + block_size - 1) / block_size)),
+        ::cuda::grid_dims(static_cast<unsigned>(((num_keys * cg_size) + block_size - 1) / block_size)),
         ::cuda::block_dims<block_size>());
       ::cuda::launch(
         stream,

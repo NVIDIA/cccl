@@ -76,7 +76,7 @@ void test_shift_right(const Policy& policy, c2h::device_vector<T>& input)
 
   thrust::sequence(input.begin(), input.end(), 0);
   { // shift smaller than half size but large enough for two step
-    const int num_shifted = size / 2 - 10;
+    const int num_shifted = (size / 2) - 10;
     const auto mid        = cuda::std::next(input.begin(), num_shifted);
     auto res              = cuda::std::shift_right(policy, input.begin(), input.end(), num_shifted);
     CHECK(cuda::std::equal(policy, mid, input.end(), expected));
@@ -84,7 +84,7 @@ void test_shift_right(const Policy& policy, c2h::device_vector<T>& input)
   }
   thrust::sequence(input.begin(), input.end(), 0);
   { // shift smaller than half size but large enough for two step, random_access
-    const int num_shifted = size / 2 - 10;
+    const int num_shifted = (size / 2) - 10;
     const auto mid        = cuda::std::next(input.begin(), num_shifted);
     auto res              = cuda::std::shift_right(
       policy, random_access_iterator{raw_pointer}, random_access_iterator{raw_pointer + size}, num_shifted);
@@ -94,7 +94,7 @@ void test_shift_right(const Policy& policy, c2h::device_vector<T>& input)
 
   thrust::sequence(input.begin(), input.end(), 0);
   { // shift larger than half size
-    const int num_shifted = size / 2 + 10;
+    const int num_shifted = (size / 2) + 10;
     const auto mid        = cuda::std::next(input.begin(), num_shifted);
     auto res              = cuda::std::shift_right(policy, input.begin(), input.end(), num_shifted);
     CHECK(cuda::std::equal(policy, mid, input.end(), expected));
@@ -103,7 +103,7 @@ void test_shift_right(const Policy& policy, c2h::device_vector<T>& input)
 
   thrust::sequence(input.begin(), input.end(), 0);
   { // shift larger than half size, random_access
-    const int num_shifted = size / 2 + 10;
+    const int num_shifted = (size / 2) + 10;
     const auto mid        = cuda::std::next(input.begin(), num_shifted);
     auto res              = cuda::std::shift_right(
       policy, random_access_iterator{raw_pointer}, random_access_iterator{raw_pointer + size}, num_shifted);

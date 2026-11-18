@@ -12,6 +12,7 @@ _site/
 .devcontainer/local*
 compile_commands.json
 CMakeUserPresets.json
+/temp.build.yml
 /ci/rapids/.conda
 /ci/rapids/.log
 /ci/rapids/.repos

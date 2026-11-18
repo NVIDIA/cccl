@@ -14,4 +14,4 @@
 #endif // no system header
 
 // this system inherits unique
-#include <thrust/system/detail/sequential/unique.h>
+#include <thrust/system/detail/sequential/unique.h> // IWYU pragma: export

@@ -48,7 +48,7 @@ _CCCL_HOST_DEVICE_API constexpr int calc_bits_per_pass(int key_size)
 template <class KeyT>
 _CCCL_HOST_DEVICE_API constexpr int calc_bits_per_pass()
 {
-  return calc_bits_per_pass(int{sizeof(KeyT)});
+  return _CUB::detail::topk::calc_bits_per_pass(int{sizeof(KeyT)});
 }
 
 struct topk_policy
@@ -72,7 +72,7 @@ struct topk_policy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const topk_policy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const topk_policy& p)
   {
     return os << "topk_policy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
@@ -97,7 +97,7 @@ struct policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
   {
     constexpr int nominal_4b_items_per_thread = 4;
-    const int bits_per_pass                   = calc_bits_per_pass(key_size);
+    const int bits_per_pass                   = _CUB::detail::topk::calc_bits_per_pass(key_size);
 
     // tunings from cub/benchmarks/bench/topk/keys.cu. These are raw measured values; items_per_thread already
     // accounts for the key size. Only configurations that won for their exact key type and offset width during

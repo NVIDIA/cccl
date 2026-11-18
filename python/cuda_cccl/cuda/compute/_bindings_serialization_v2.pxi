@@ -17,6 +17,37 @@ cdef bytes _cudart_path():
 
 cdef extern from "cccl/c/serialization.h":
     cdef void cccl_serialization_v2_buffer_free(void*) nogil
+    cdef const char* cccl_serialization_v2_last_error() nogil
+    cdef CUresult cccl_serialization_v2_validate_blob(const void*, size_t) nogil
+
+# CUDA_ERROR_NO_BINARY_FOR_GPU: the code validate_blob returns for a
+# compute-capability mismatch (vs CUDA_ERROR_INVALID_VALUE for a bad header).
+cdef int _CUDA_ERROR_NO_BINARY_FOR_GPU = 209
+
+cdef str _last_error():
+    return (<bytes> cccl_serialization_v2_last_error()).decode("utf-8", "replace")
+
+cdef _raise_failed(str what, CUresult status):
+    # `what` names the step that failed. The C layer's description of the
+    # failure that just happened is appended when it set one.
+    detail = _last_error()
+    message = f"Failed {what}, error code: {status}"
+    raise RuntimeError(f"{message}: {detail}" if detail else message)
+
+cdef _check_loadable(const void* buf, size_t size, bint check_cc):
+    # Validate the blob header and raise the C layer's descriptive message on
+    # any problem. The compute-capability check is only enforced when check_cc
+    # is True (a single-target blob that must match this device); a multi-arch
+    # artifact defers it, since the matching build result is chosen later and
+    # its compute capability is settled when it loads.
+    cdef CUresult st
+    with nogil:
+        st = cccl_serialization_v2_validate_blob(buf, size)
+    if st == 0:
+        return
+    if st == _CUDA_ERROR_NO_BINARY_FOR_GPU and not check_cc:
+        return
+    raise RuntimeError(_last_error())
 
 cdef extern from "cccl/c/reduce.h":
     cdef CUresult cccl_device_reduce_compile(
@@ -74,21 +105,17 @@ def _reduce_deserialize(blob, load=True, check_cc=True):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
-    # NOTE: unlike v1, v2 has no cccl_serialization_validate_blob equivalent
-    # yet (no separate pre-flight header check) -- deserialize() itself
-    # validates magic/algo/os-arch and raises a descriptive RuntimeError.
-    # check_cc is accepted for API-shape parity with v1 but is a no-op here:
-    # v2 checks compute capability against the current device in _load.
+    _check_loadable(buf_ptr, buf_size, check_cc)
     with nogil:
         status = cccl_device_reduce_deserialize(
             &self.build_data, buf_ptr, buf_size)
     if status != 0:
-        raise RuntimeError(f"Failed deserializing reduce, error code: {status}")
+        _raise_failed("deserializing reduce", status)
     if load:
         with nogil:
             status = cccl_device_reduce_load(&self.build_data, cudart_path)
         if status != 0:
-            raise RuntimeError(f"Failed loading reduce after deserialize, error code: {status}")
+            _raise_failed("loading reduce after deserialize", status)
         self._loaded = True
     return self
 
@@ -139,7 +166,7 @@ def _reduce_load(DeviceReduceBuildResult self):
     with nogil:
         status = cccl_device_reduce_load(&self.build_data, cudart_path)
     if status != 0:
-        raise RuntimeError(f"Failed loading reduce, error code: {status}")
+        _raise_failed("loading reduce", status)
 
 cdef extern from "cccl/c/scan.h":
     cdef CUresult cccl_device_scan_compile(
@@ -195,16 +222,17 @@ def _scan_deserialize(blob, load=True, check_cc=True):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _check_loadable(buf_ptr, buf_size, check_cc)
     with nogil:
         status = cccl_device_scan_deserialize(
             &self.build_data, buf_ptr, buf_size)
     if status != 0:
-        raise RuntimeError(f"Failed deserializing scan, error code: {status}")
+        _raise_failed("deserializing scan", status)
     if load:
         with nogil:
             status = cccl_device_scan_load(&self.build_data, cudart_path)
         if status != 0:
-            raise RuntimeError(f"Failed loading scan after deserialize, error code: {status}")
+            _raise_failed("loading scan after deserialize", status)
         self._loaded = True
     return self
 
@@ -255,7 +283,7 @@ def _scan_load(DeviceScanBuildResult self):
     with nogil:
         status = cccl_device_scan_load(&self.build_data, cudart_path)
     if status != 0:
-        raise RuntimeError(f"Failed loading scan, error code: {status}")
+        _raise_failed("loading scan", status)
 
 cdef extern from "cccl/c/segmented_reduce.h":
     cdef CUresult cccl_device_segmented_reduce_compile(
@@ -311,16 +339,17 @@ def _segmented_reduce_deserialize(blob, load=True, check_cc=True):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _check_loadable(buf_ptr, buf_size, check_cc)
     with nogil:
         status = cccl_device_segmented_reduce_deserialize(
             &self.build_data, buf_ptr, buf_size)
     if status != 0:
-        raise RuntimeError(f"Failed deserializing segmented_reduce, error code: {status}")
+        _raise_failed("deserializing segmented_reduce", status)
     if load:
         with nogil:
             status = cccl_device_segmented_reduce_load(&self.build_data, cudart_path)
         if status != 0:
-            raise RuntimeError(f"Failed loading segmented_reduce after deserialize, error code: {status}")
+            _raise_failed("loading segmented_reduce after deserialize", status)
         self._loaded = True
     return self
 
@@ -371,7 +400,7 @@ def _segmented_reduce_load(DeviceSegmentedReduceBuildResult self):
     with nogil:
         status = cccl_device_segmented_reduce_load(&self.build_data, cudart_path)
     if status != 0:
-        raise RuntimeError(f"Failed loading segmented_reduce, error code: {status}")
+        _raise_failed("loading segmented_reduce", status)
 
 cdef extern from "cccl/c/unique_by_key.h":
     cdef CUresult cccl_device_unique_by_key_compile(
@@ -427,16 +456,17 @@ def _unique_by_key_deserialize(blob, load=True, check_cc=True):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _check_loadable(buf_ptr, buf_size, check_cc)
     with nogil:
         status = cccl_device_unique_by_key_deserialize(
             &self.build_data, buf_ptr, buf_size)
     if status != 0:
-        raise RuntimeError(f"Failed deserializing unique_by_key, error code: {status}")
+        _raise_failed("deserializing unique_by_key", status)
     if load:
         with nogil:
             status = cccl_device_unique_by_key_load(&self.build_data, cudart_path)
         if status != 0:
-            raise RuntimeError(f"Failed loading unique_by_key after deserialize, error code: {status}")
+            _raise_failed("loading unique_by_key after deserialize", status)
         self._loaded = True
     return self
 
@@ -487,7 +517,7 @@ def _unique_by_key_load(DeviceUniqueByKeyBuildResult self):
     with nogil:
         status = cccl_device_unique_by_key_load(&self.build_data, cudart_path)
     if status != 0:
-        raise RuntimeError(f"Failed loading unique_by_key, error code: {status}")
+        _raise_failed("loading unique_by_key", status)
 
 cdef extern from "cccl/c/merge_sort.h":
     cdef CUresult cccl_device_merge_sort_compile(
@@ -542,16 +572,17 @@ def _merge_sort_deserialize(blob, load=True, check_cc=True):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _check_loadable(buf_ptr, buf_size, check_cc)
     with nogil:
         status = cccl_device_merge_sort_deserialize(
             &self.build_data, buf_ptr, buf_size)
     if status != 0:
-        raise RuntimeError(f"Failed deserializing merge_sort, error code: {status}")
+        _raise_failed("deserializing merge_sort", status)
     if load:
         with nogil:
             status = cccl_device_merge_sort_load(&self.build_data, cudart_path)
         if status != 0:
-            raise RuntimeError(f"Failed loading merge_sort after deserialize, error code: {status}")
+            _raise_failed("loading merge_sort after deserialize", status)
         self._loaded = True
     return self
 
@@ -600,7 +631,7 @@ def _merge_sort_load(DeviceMergeSortBuildResult self):
     with nogil:
         status = cccl_device_merge_sort_load(&self.build_data, cudart_path)
     if status != 0:
-        raise RuntimeError(f"Failed loading merge_sort, error code: {status}")
+        _raise_failed("loading merge_sort", status)
 
 cdef extern from "cccl/c/radix_sort.h":
     cdef CUresult cccl_device_radix_sort_compile(
@@ -655,16 +686,17 @@ def _radix_sort_deserialize(blob, load=True, check_cc=True):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _check_loadable(buf_ptr, buf_size, check_cc)
     with nogil:
         status = cccl_device_radix_sort_deserialize(
             &self.build_data, buf_ptr, buf_size)
     if status != 0:
-        raise RuntimeError(f"Failed deserializing radix_sort, error code: {status}")
+        _raise_failed("deserializing radix_sort", status)
     if load:
         with nogil:
             status = cccl_device_radix_sort_load(&self.build_data, cudart_path)
         if status != 0:
-            raise RuntimeError(f"Failed loading radix_sort after deserialize, error code: {status}")
+            _raise_failed("loading radix_sort after deserialize", status)
         self._loaded = True
     return self
 
@@ -713,7 +745,7 @@ def _radix_sort_load(DeviceRadixSortBuildResult self):
     with nogil:
         status = cccl_device_radix_sort_load(&self.build_data, cudart_path)
     if status != 0:
-        raise RuntimeError(f"Failed loading radix_sort, error code: {status}")
+        _raise_failed("loading radix_sort", status)
 
 cdef extern from "cccl/c/transform.h":
     cdef CUresult cccl_device_unary_transform_compile(
@@ -766,16 +798,17 @@ def _unary_transform_deserialize(blob, load=True, check_cc=True):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _check_loadable(buf_ptr, buf_size, check_cc)
     with nogil:
         status = cccl_device_unary_transform_deserialize(
             &self.build_data, buf_ptr, buf_size)
     if status != 0:
-        raise RuntimeError(f"Failed deserializing unary_transform, error code: {status}")
+        _raise_failed("deserializing unary_transform", status)
     if load:
         with nogil:
             status = cccl_device_unary_transform_load(&self.build_data, cudart_path)
         if status != 0:
-            raise RuntimeError(f"Failed loading unary_transform after deserialize, error code: {status}")
+            _raise_failed("loading unary_transform after deserialize", status)
         self._loaded = True
     return self
 
@@ -820,7 +853,7 @@ def _unary_transform_load(DeviceUnaryTransform self):
     with nogil:
         status = cccl_device_unary_transform_load(&self.build_data, cudart_path)
     if status != 0:
-        raise RuntimeError(f"Failed loading unary_transform, error code: {status}")
+        _raise_failed("loading unary_transform", status)
 
 cdef extern from "cccl/c/transform.h":
     cdef CUresult cccl_device_binary_transform_compile(
@@ -874,16 +907,17 @@ def _binary_transform_deserialize(blob, load=True, check_cc=True):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _check_loadable(buf_ptr, buf_size, check_cc)
     with nogil:
         status = cccl_device_binary_transform_deserialize(
             &self.build_data, buf_ptr, buf_size)
     if status != 0:
-        raise RuntimeError(f"Failed deserializing binary_transform, error code: {status}")
+        _raise_failed("deserializing binary_transform", status)
     if load:
         with nogil:
             status = cccl_device_binary_transform_load(&self.build_data, cudart_path)
         if status != 0:
-            raise RuntimeError(f"Failed loading binary_transform after deserialize, error code: {status}")
+            _raise_failed("loading binary_transform after deserialize", status)
         self._loaded = True
     return self
 
@@ -930,7 +964,7 @@ def _binary_transform_load(DeviceBinaryTransform self):
     with nogil:
         status = cccl_device_binary_transform_load(&self.build_data, cudart_path)
     if status != 0:
-        raise RuntimeError(f"Failed loading binary_transform, error code: {status}")
+        _raise_failed("loading binary_transform", status)
 
 cdef extern from "cccl/c/histogram.h":
     cdef CUresult cccl_device_histogram_compile(
@@ -989,16 +1023,17 @@ def _histogram_deserialize(blob, load=True, check_cc=True):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _check_loadable(buf_ptr, buf_size, check_cc)
     with nogil:
         status = cccl_device_histogram_deserialize(
             &self.build_data, buf_ptr, buf_size)
     if status != 0:
-        raise RuntimeError(f"Failed deserializing histogram, error code: {status}")
+        _raise_failed("deserializing histogram", status)
     if load:
         with nogil:
             status = cccl_device_histogram_load(&self.build_data, cudart_path)
         if status != 0:
-            raise RuntimeError(f"Failed loading histogram after deserialize, error code: {status}")
+            _raise_failed("loading histogram after deserialize", status)
         self._loaded = True
     return self
 
@@ -1055,7 +1090,7 @@ def _histogram_load(DeviceHistogramBuildResult self):
     with nogil:
         status = cccl_device_histogram_load(&self.build_data, cudart_path)
     if status != 0:
-        raise RuntimeError(f"Failed loading histogram, error code: {status}")
+        _raise_failed("loading histogram", status)
 
 cdef extern from "cccl/c/binary_search.h":
     cdef CUresult cccl_device_binary_search_compile(
@@ -1110,16 +1145,17 @@ def _binary_search_deserialize(blob, load=True, check_cc=True):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _check_loadable(buf_ptr, buf_size, check_cc)
     with nogil:
         status = cccl_device_binary_search_deserialize(
             &self.build_data, buf_ptr, buf_size)
     if status != 0:
-        raise RuntimeError(f"Failed deserializing binary_search, error code: {status}")
+        _raise_failed("deserializing binary_search", status)
     if load:
         with nogil:
             status = cccl_device_binary_search_load(&self.build_data, cudart_path)
         if status != 0:
-            raise RuntimeError(f"Failed loading binary_search after deserialize, error code: {status}")
+            _raise_failed("loading binary_search after deserialize", status)
         self._loaded = True
     return self
 
@@ -1168,7 +1204,7 @@ def _binary_search_load(DeviceBinarySearchBuildResult self):
     with nogil:
         status = cccl_device_binary_search_load(&self.build_data, cudart_path)
     if status != 0:
-        raise RuntimeError(f"Failed loading binary_search, error code: {status}")
+        _raise_failed("loading binary_search", status)
 
 cdef extern from "cccl/c/three_way_partition.h":
     cdef CUresult cccl_device_three_way_partition_compile(
@@ -1225,16 +1261,17 @@ def _three_way_partition_deserialize(blob, load=True, check_cc=True):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _check_loadable(buf_ptr, buf_size, check_cc)
     with nogil:
         status = cccl_device_three_way_partition_deserialize(
             &self.build_data, buf_ptr, buf_size)
     if status != 0:
-        raise RuntimeError(f"Failed deserializing three_way_partition, error code: {status}")
+        _raise_failed("deserializing three_way_partition", status)
     if load:
         with nogil:
             status = cccl_device_three_way_partition_load(&self.build_data, cudart_path)
         if status != 0:
-            raise RuntimeError(f"Failed loading three_way_partition after deserialize, error code: {status}")
+            _raise_failed("loading three_way_partition after deserialize", status)
         self._loaded = True
     return self
 
@@ -1287,7 +1324,7 @@ def _three_way_partition_load(DeviceThreeWayPartitionBuildResult self):
     with nogil:
         status = cccl_device_three_way_partition_load(&self.build_data, cudart_path)
     if status != 0:
-        raise RuntimeError(f"Failed loading three_way_partition, error code: {status}")
+        _raise_failed("loading three_way_partition", status)
 
 cdef extern from "cccl/c/segmented_sort.h":
     cdef CUresult cccl_device_segmented_sort_compile(
@@ -1342,16 +1379,17 @@ def _segmented_sort_deserialize(blob, load=True, check_cc=True):
     if buf_size == 0:
         raise RuntimeError("Cannot deserialize empty blob")
     cdef const void* buf_ptr = <const void*>&view[0]
+    _check_loadable(buf_ptr, buf_size, check_cc)
     with nogil:
         status = cccl_device_segmented_sort_deserialize(
             &self.build_data, buf_ptr, buf_size)
     if status != 0:
-        raise RuntimeError(f"Failed deserializing segmented_sort, error code: {status}")
+        _raise_failed("deserializing segmented_sort", status)
     if load:
         with nogil:
             status = cccl_device_segmented_sort_load(&self.build_data, cudart_path)
         if status != 0:
-            raise RuntimeError(f"Failed loading segmented_sort after deserialize, error code: {status}")
+            _raise_failed("loading segmented_sort after deserialize", status)
         self._loaded = True
     return self
 
@@ -1400,4 +1438,4 @@ def _segmented_sort_load(DeviceSegmentedSortBuildResult self):
     with nogil:
         status = cccl_device_segmented_sort_load(&self.build_data, cudart_path)
     if status != 0:
-        raise RuntimeError(f"Failed loading segmented_sort, error code: {status}")
+        _raise_failed("loading segmented_sort", status)

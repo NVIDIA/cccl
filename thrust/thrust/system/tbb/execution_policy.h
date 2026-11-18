@@ -19,7 +19,7 @@
 #include <thrust/system/tbb/detail/execution_policy.h> // IWYU pragma: export
 
 // now get all the algorithm definitions
-// IWYU pragma: begin_keep
+// IWYU pragma: begin_exports
 #include <thrust/system/tbb/detail/adjacent_difference.h>
 #include <thrust/system/tbb/detail/assign_value.h>
 #include <thrust/system/tbb/detail/binary_search.h>
@@ -61,4 +61,4 @@
 #include <thrust/system/tbb/detail/uninitialized_fill.h>
 #include <thrust/system/tbb/detail/unique.h>
 #include <thrust/system/tbb/detail/unique_by_key.h>
-// IWYU pragma: end_keep
+// IWYU pragma: end_exports

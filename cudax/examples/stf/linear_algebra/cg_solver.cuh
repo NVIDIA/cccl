@@ -99,7 +99,7 @@ void cg_solver(ctx_t& ctx, csr_matrix<T>& A, vector_t<T>& X, vector_t<T>& B, dou
     // p = r + (rsnew / rsold) * p;
     ctx.parallel_for(P.shape(), P.rw(), R.read(), rsnew.read(), rsold.read()).set_symbol("P=r+(rsnew/rsold)*P")
         ->*[] _CCCL_DEVICE(size_t i, auto dP, auto dR, auto drsnew, auto drsold) {
-              dP(i) = dR(i) + (*drsnew / *drsold) * dP(i);
+              dP(i) = dR(i) + ((*drsnew / *drsold) * dP(i));
             };
 
     // update old residual
@@ -176,7 +176,7 @@ void cg_solver_no_while(
     // p = r + (rsnew / rsold) * p;
     ctx.parallel_for(P.shape(), P.rw(), R.read(), rsnew.read(), rsold.read()).set_symbol("P=r+(rsnew/rsold)*P")
         ->*[] _CCCL_DEVICE(size_t i, auto dP, auto dR, auto drsnew, auto drsold) {
-              dP(i) = dR(i) + (*drsnew / *drsold) * dP(i);
+              dP(i) = dR(i) + ((*drsnew / *drsold) * dP(i));
             };
 
     // update old residual

@@ -32,6 +32,7 @@
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/movable_box.h>
 #include <cuda/std/__ranges/range_adaptor.h>
+#include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
@@ -218,6 +219,15 @@ public:
 template <class _Range, class _Pred>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES take_while_view(_Range&&, _Pred)
   -> take_while_view<::cuda::std::ranges::views::all_t<_Range>, _Pred>;
+
+// Predicates cannot retain any elements from a statically empty base.
+template <class _View, class _Pred>
+inline constexpr size_t __static_size_v<take_while_view<_View, _Pred>> =
+  (__static_size_v<_View> == 0) ? 0 : dynamic_extent;
+
+template <class _View, class _Pred>
+inline constexpr size_t __static_size_v<const take_while_view<_View, _Pred>> =
+  (range<const take_while_view<_View, _Pred>> && __static_size_v<const _View> == 0) ? 0 : dynamic_extent;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 

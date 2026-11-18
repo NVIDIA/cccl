@@ -38,6 +38,7 @@
 #include <cuda/experimental/coop/__group/mapping/group_as.cuh>
 #include <cuda/experimental/coop/__group/mapping/group_by.cuh>
 #include <cuda/experimental/coop/__group/mapping/identity_mapping.cuh>
+#include <cuda/experimental/coop/__group/mapping/labeled_partition.cuh>
 #include <cuda/experimental/coop/__group/mapping/take.cuh>
 #include <cuda/experimental/coop/__group/queries.cuh>
 #include <cuda/experimental/coop/__group/synchronizer/arrival_token.cuh>

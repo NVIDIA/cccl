@@ -13,10 +13,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/static_assert.h>
 #include <thrust/system/omp/detail/execution_policy.h>
 
 // don't attempt to #include this file without omp support
 #if (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)
+#  include <thrust/sort.h>
+#  include <thrust/system/detail/internal/decompose.h>
+#  include <thrust/system/omp/detail/pragma_omp.h>
+
 #  include <omp.h>
 #endif // omp support
 
@@ -24,9 +29,7 @@
 #include <thrust/detail/temporary_array.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/merge.h>
-#include <thrust/sort.h>
-#include <thrust/system/detail/generic/select_system.h>
-#include <thrust/system/omp/detail/default_decomposition.h>
+#include <thrust/system/detail/generic/select_system.h> // IWYU pragma: keep
 
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail

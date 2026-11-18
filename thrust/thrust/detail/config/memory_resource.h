@@ -13,8 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cstddef/types.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h> // IWYU pragma: keep
 
 #define THRUST_MR_DEFAULT_ALIGNMENT alignof(::cuda::std::max_align_t)
 

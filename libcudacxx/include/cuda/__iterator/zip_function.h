@@ -43,7 +43,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _Fn>
 class zip_function
 {
-private:
   _Fn __fun_;
 
 public:

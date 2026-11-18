@@ -92,7 +92,7 @@ template <typename T = void>
 struct square
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr T operator()(const T& x) const
+  _CCCL_HOST_DEVICE_API constexpr T operator()(const T& x) const
   {
     return x * x;
   }
@@ -105,7 +105,7 @@ struct square<void>
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T>
-  _CCCL_HOST_DEVICE constexpr T operator()(const T& x) const noexcept(noexcept(x * x))
+  _CCCL_HOST_DEVICE_API constexpr T operator()(const T& x) const noexcept(noexcept(x * x))
   {
     return x * x;
   }
@@ -235,7 +235,7 @@ struct project1st
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE constexpr const T1& operator()(const T1& lhs _CCCL_LIFETIMEBOUND, const T2& /*rhs*/) const
+  _CCCL_HOST_DEVICE_API constexpr const T1& operator()(const T1& lhs _CCCL_LIFETIMEBOUND, const T2& /*rhs*/) const
   {
     return lhs;
   }
@@ -247,7 +247,7 @@ struct project1st<void, void>
   using is_transparent = void;
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&&) const noexcept(noexcept(THRUST_FWD(t1)))
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&& t1, T2&&) const noexcept(noexcept(THRUST_FWD(t1)))
     -> decltype(THRUST_FWD(t1))
   {
     return THRUST_FWD(t1);
@@ -284,7 +284,7 @@ struct project2nd
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE constexpr const T2& operator()(const T1& /*lhs*/, const T2& rhs _CCCL_LIFETIMEBOUND) const
+  _CCCL_HOST_DEVICE_API constexpr const T2& operator()(const T1& /*lhs*/, const T2& rhs _CCCL_LIFETIMEBOUND) const
   {
     return rhs;
   }
@@ -296,7 +296,7 @@ struct project2nd<void, void>
   using is_transparent = void;
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&&, T2&& t2) const noexcept(noexcept(THRUST_FWD(t2)))
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(T1&&, T2&& t2) const noexcept(noexcept(THRUST_FWD(t2)))
     -> decltype(THRUST_FWD(t2))
   {
     return THRUST_FWD(t2);

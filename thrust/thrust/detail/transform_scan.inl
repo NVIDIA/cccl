@@ -13,18 +13,20 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/scan.h>
 #include <thrust/system/detail/generic/select_system.h>
 
 // Include all active backend system implementations (generic, sequential, host and device)
+// IWYU pragma: begin_keep
 #include <thrust/system/detail/generic/transform_scan.h>
 #include <thrust/system/detail/sequential/transform_scan.h>
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(transform_scan.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(transform_scan.h)
+// IWYU pragma: end_keep
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/transform_scan.h>
 #  include <thrust/system/cuda/detail/transform_scan.h>
 #  include <thrust/system/omp/detail/transform_scan.h>
@@ -39,7 +41,7 @@ template <typename DerivedPolicy,
           typename OutputIterator,
           typename UnaryFunction,
           typename AssociativeOperator>
-_CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator transform_inclusive_scan(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -60,7 +62,7 @@ template <typename DerivedPolicy,
           typename UnaryFunction,
           typename T,
           typename AssociativeOperator>
-_CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator transform_inclusive_scan(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -82,7 +84,7 @@ template <typename DerivedPolicy,
           typename UnaryFunction,
           typename T,
           typename AssociativeOperator>
-_CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator transform_exclusive_scan(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -98,7 +100,7 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
 } // end transform_exclusive_scan()
 
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename BinaryFunction>
-OutputIterator transform_inclusive_scan(
+_CCCL_HOST_API OutputIterator transform_inclusive_scan(
   InputIterator first, InputIterator last, OutputIterator result, UnaryFunction unary_op, BinaryFunction binary_op)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::transform_inclusive_scan");
@@ -114,7 +116,7 @@ OutputIterator transform_inclusive_scan(
 } // end transform_inclusive_scan()
 
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>
-OutputIterator transform_inclusive_scan(
+_CCCL_HOST_API OutputIterator transform_inclusive_scan(
   InputIterator first,
   InputIterator last,
   OutputIterator result,
@@ -136,7 +138,7 @@ OutputIterator transform_inclusive_scan(
 } // end transform_inclusive_scan()
 
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>
-OutputIterator transform_exclusive_scan(
+_CCCL_HOST_API OutputIterator transform_exclusive_scan(
   InputIterator first,
   InputIterator last,
   OutputIterator result,

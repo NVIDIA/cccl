@@ -82,7 +82,7 @@ private:
 
 public:
   // constructor and reset functions
-  constexpr negative_binomial_distribution() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr negative_binomial_distribution() noexcept = default;
 
   _CCCL_HOST_DEVICE_API constexpr explicit negative_binomial_distribution(result_type __k, double __p = 0.5) noexcept
       : __p_{__k, __p}
@@ -170,7 +170,7 @@ public:
 
 #if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
-  friend ::std::basic_ostream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const negative_binomial_distribution& __x)
   {
     using _Ostream = ::std::basic_ostream<_CharT, _Traits>;
@@ -187,7 +187,7 @@ public:
   }
 
   template <class _CharT, class _Traits>
-  friend ::std::basic_istream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is, negative_binomial_distribution& __x)
   {
     using _Istream = ::std::basic_istream<_CharT, _Traits>;

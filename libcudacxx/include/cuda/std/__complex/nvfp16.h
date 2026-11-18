@@ -113,17 +113,17 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__half2)) complex<__ha
   friend struct __get_complex_impl;
 
   template <class _Tp>
-  [[nodiscard]] _CCCL_API inline static __half __convert_to_half(const _Tp& __value) noexcept
+  [[nodiscard]] _CCCL_API static __half __convert_to_half(const _Tp& __value) noexcept
   {
     return __value;
   }
 
-  [[nodiscard]] _CCCL_API inline static __half __convert_to_half(const float& __value) noexcept
+  [[nodiscard]] _CCCL_API static __half __convert_to_half(const float& __value) noexcept
   {
     return ::__float2half(__value);
   }
 
-  [[nodiscard]] _CCCL_API inline static __half __convert_to_half(const double& __value) noexcept
+  [[nodiscard]] _CCCL_API static __half __convert_to_half(const double& __value) noexcept
   {
     return ::__double2half(__value);
   }
@@ -194,11 +194,11 @@ public:
   }
 #  endif // _CCCL_HOSTED()
 
-  [[nodiscard]] _CCCL_API inline value_type real() const
+  [[nodiscard]] _CCCL_API value_type real() const
   {
     return __repr_.x;
   }
-  [[nodiscard]] _CCCL_API inline value_type imag() const
+  [[nodiscard]] _CCCL_API value_type imag() const
   {
     return __repr_.y;
   }
@@ -213,11 +213,11 @@ public:
   }
 
   // Those additional volatile overloads are meant to help with reductions in thrust
-  [[nodiscard]] _CCCL_API inline value_type real() const volatile
+  [[nodiscard]] _CCCL_API value_type real() const volatile
   {
     return __repr_.x;
   }
-  [[nodiscard]] _CCCL_API inline value_type imag() const volatile
+  [[nodiscard]] _CCCL_API value_type imag() const volatile
   {
     return __repr_.y;
   }
@@ -268,7 +268,7 @@ public:
     return __lhs;
   }
 
-  [[nodiscard]] _CCCL_API inline friend bool operator==(const complex& __lhs, const complex& __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend bool operator==(const complex& __lhs, const complex& __rhs) noexcept
   {
 #  if _CCCL_TILE_COMPILATION()
     return ::__heq(__lhs.__repr_.x, __rhs.__repr_.x) && ::__heq(__lhs.__repr_.y, __rhs.__repr_.y);
@@ -340,7 +340,8 @@ struct __get_complex_impl<__half>
 
 #  if _CCCL_HOSTED()
 template <class _CharT, class _Traits>
-::std::basic_istream<_CharT, _Traits>& operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<__half>& __x)
+_CCCL_HOST_API ::std::basic_istream<_CharT, _Traits>&
+operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<__half>& __x)
 {
   ::std::complex<float> __temp;
   __is >> __temp;
@@ -349,7 +350,7 @@ template <class _CharT, class _Traits>
 }
 
 template <class _CharT, class _Traits>
-::std::basic_ostream<_CharT, _Traits>&
+_CCCL_HOST_API ::std::basic_ostream<_CharT, _Traits>&
 operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<__half>& __x)
 {
   return __os << complex<float>{__x};

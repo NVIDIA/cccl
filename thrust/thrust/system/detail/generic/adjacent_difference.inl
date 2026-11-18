@@ -13,17 +13,19 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/adjacent_difference.h>
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/adjacent_difference.h>
 #include <thrust/transform.h>
+
+#include <cuda/std/__functional/operations.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator adjacent_difference(
+_CCCL_HOST_DEVICE_API OutputIterator adjacent_difference(
   thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
 {
   using InputType = thrust::detail::it_value_t<InputIterator>;
@@ -33,7 +35,7 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
 } // end adjacent_difference()
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator adjacent_difference(
+_CCCL_HOST_DEVICE_API OutputIterator adjacent_difference(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -47,7 +49,7 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
     // empty range, nothing to do
     return result;
   }
-  else
+
   {
     // an in-place operation is requested, copy the input and call the entry point
     // XXX a special-purpose kernel would be faster here since

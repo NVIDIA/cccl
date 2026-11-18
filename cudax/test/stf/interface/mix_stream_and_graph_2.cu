@@ -23,7 +23,7 @@ using namespace cuda::experimental::stf;
 template <typename T>
 __global__ void setup(slice<T> s)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (size_t ind = tid; ind < s.size(); ind += nthreads)
@@ -35,7 +35,7 @@ __global__ void setup(slice<T> s)
 template <typename T>
 __global__ void add(slice<T> s, T val)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (size_t ind = tid; ind < s.size(); ind += nthreads)
@@ -46,7 +46,7 @@ __global__ void add(slice<T> s, T val)
 
 __global__ void slice_add(slice<const int> s_from, slice<int> s_to)
 {
-  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int tid      = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (size_t ind = tid; ind < s_from.size(); ind += nthreads)

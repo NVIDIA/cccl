@@ -16,6 +16,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/static_assert.h>
 #include <thrust/system/detail/internal/decompose.h>
 
 // don't attempt to #include this file without omp support
