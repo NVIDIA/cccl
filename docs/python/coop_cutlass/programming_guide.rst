@@ -10,8 +10,9 @@ Programming Guide
 =================
 
 This guide starts with a complete program and explains its parts. The later
-sections cover families of primitives, and :ref:`Scan <coop-cutlass-scan>`
-in the API reference covers scans. :doc:`concepts` introduces the ideas the
+sections cover families of primitives. :ref:`Reduction <coop-cutlass-reduce>`
+and :ref:`Scan <coop-cutlass-scan>` in the API reference cover reductions and
+scans. :doc:`concepts` introduces the ideas the
 families share, and the :doc:`API reference <api>` has every signature.
 
 .. _coop-cutlass-load-store:
@@ -152,70 +153,6 @@ typed declaration metadata. The callback's LTO-IR, the generated CUB wrapper,
 and the enclosing kernel are linked together. Existing group, scratch, and
 synchronization rules still apply. Runtime captures, Scan prefix callbacks,
 and operators returning tuples or structures are unsupported.
-
-.. _coop-cutlass-reduce:
-
-Reduce and Sum
---------------
-
-``reduce(group, value, ...)`` and ``sum(group, value, ...)`` use CUB for block,
-physical-warp, and logical-warp reductions. Each member supplies a scalar or
-a fixed per-thread ``ThreadData`` payload; every payload item contributes to
-the group's result. Logical warp widths are 1, 2, 4, 8, 16, or 17 through
-32, and the enclosing block must contain complete physical warps. For widths
-17 through 31, construct the group with ``exhaustive=False`` and guard the
-call with ``group.is_member()`` to exclude trailing lanes. CUB requires a
-non-power-of-two group to be the only logical group in its physical warp.
-All members of a participating group must call the primitive.
-
-The built-in operators are sum, product, minimum, maximum, bitwise AND,
-bitwise OR, and bitwise XOR. For example, ``binary_op="max"`` selects maximum,
-and ``binary_op="bit_or"`` selects bitwise OR. An omitted operator selects
-sum. Bitwise operators require integer values. The API also accepts
-known ``operator`` and NumPy callable aliases. For a custom binary operator,
-pass a :ref:`DeviceOperator <coop-cutlass-device-operators>` through
-``binary_op``. Undecorated or uncompiled Python callables are not accepted.
-
-Only group rank zero may use the scalar result; the other members must still
-call the primitive. The input payload remains unchanged.
-
-Block calls can select a CUB algorithm. A scalar call can limit its input to
-a valid prefix:
-
-.. list-table:: Reduction controls
-   :header-rows: 1
-
-   * - Group and input
-     - Supported controls
-   * - Block scalar
-     - ``valid_items``, a block algorithm, and ``temp_storage``
-   * - Block multi-item payload
-     - A block algorithm and ``temp_storage``, without ``valid_items``
-   * - Physical or logical warp scalar
-     - ``valid_items``, without an algorithm selector
-   * - Physical or logical warp multi-item payload
-     - No ``valid_items``, algorithm selector, or explicit ``temp_storage``
-
-Block algorithm names are ``raking_commutative_only``, ``raking``, and
-``warp_reductions`` (the default). A valid prefix contains from one through
-the group size contributing members, counting threads rather than payload
-elements. The count must be uniform within the group. Zero and out-of-range
-counts are invalid; all members still participate even when their values fall
-outside the prefix.
-
-Block Reduce accepts a :ref:`TempStorage <coop-temp-storage>`. Warp Reduce
-always uses compiler-managed scratch with
-synchronization scoped to its participating lanes.
-
-This example uses block rank queries, a full block sum, logical-warp maxima,
-and a scalar valid-prefix sum whose result is read only at block rank zero.
-`View the reduction example on GitHub
-<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/reduce.py>`_:
-
-.. literalinclude:: ../../../python/cuda_coop_cutlass/examples/reduce.py
-   :language: python
-   :start-after: docs: start cutlass-reduce
-   :end-before: docs: end cutlass-reduce
 
 .. _coop-cutlass-exchange:
 
@@ -504,40 +441,6 @@ payload conversion.
    :language: python
    :start-after: docs: start cutlass-topk
    :end-before: docs: end cutlass-topk
-
-.. _coop-cutlass-reduce-batched:
-
-Batched Warp Reduction
------------------------
-
-``reduce_batched(warp, values)`` reduces each per-thread payload slot across
-the warp independently. A payload with three features produces three
-aggregates, rather than combining all features into one sum. Physical warps
-and logical widths of 1, 2, 4, 8, 16, and 32 are supported. Every member of the
-selected warp participates; other logical warps may take another branch.
-
-The batch count ``B`` is the positive compile-time extent of each lane's input
-payload. For ``B`` batches and ``W`` lanes, each returned ``ThreadData`` has
-``ceil(B / W)`` slots. With ``output_layout="striped"``, slot ``i`` in lane
-``r`` holds batch ``r + i * W``. With ``"blocked"``, it holds batch
-``r * ceil(B / W) + i``. Guard reads and stores when the batch index reaches
-``B``. Inputs remain unchanged, and the result retains their element type.
-
-The operation accepts readable ``ThreadData``, CuTe register payloads,
-built-in operator strings, and the built-in aliases supported by Reduce. There is
-no ``temp_storage`` argument: the CUB provider uses register exchanges and
-needs no shared scratch or trailing storage-reuse barrier.
-
-`View the feature-sum example on GitHub
-<https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/examples/reduce_batched.py>`_:
-
-.. literalinclude:: ../../../python/cuda_coop_cutlass/examples/reduce_batched.py
-   :language: python
-   :start-after: docs: start cutlass-reduce-batched
-   :end-before: docs: end cutlass-reduce-batched
-
-See the :doc:`Batched Warp Reduction visualization
-<visualizations/reduce-batched>` for the batch-to-lane mapping.
 
 .. _coop-cutlass-neighbors:
 

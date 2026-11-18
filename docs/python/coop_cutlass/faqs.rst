@@ -294,19 +294,16 @@ suffix unchanged.
 How does Batched Warp Reduction differ from ordinary Reduce?
 ------------------------------------------------------------
 
-Ordinary ``reduce(group, values)`` combines all participating threads'
-payload items into one aggregate. Both block and Warp reductions accept
-one scalar or a fixed-size payload per thread and define the result only
-at group rank zero.
-``reduce_batched(warp, values)`` reduces each local slot independently across
-the warp. Three slots per lane mean three independent results, one for each
-slot.
+``reduce(group, values)`` combines every item of every thread into one
+result, which the thread with rank 0 in the group holds.
+``reduce_batched(warp, values)`` keeps the items apart: item ``b`` of every
+lane goes into result ``b``, so three items per lane give three results.
 
-The results are distributed among lanes in blocked or striped order;
-they are not broadcast to every lane. Each returned payload has
-``ceil(batches / warp_width)`` slots, and slots without a corresponding
-batch are unspecified. The :doc:`feature-sum example
-<visualizations/reduce-batched>` guards its stores by batch index.
+Each result is in one lane, and a lane can end up with none, so a kernel
+tests the batch number before it reads an item of the returned payload.
+:ref:`Batched reduction <coop-cutlass-reduce-batched>` in the API reference
+has the two output layouts and a tested kernel, and the
+:doc:`explorer <visualizations/reduce-batched>` draws both layouts.
 
 .. _coop-faq-collective-control-flow:
 
@@ -402,17 +399,18 @@ rejects.
 How do floating min/max and scan seeds handle NaN and infinity?
 ---------------------------------------------------------------
 
-``min`` and ``max`` reductions use ``fmin``/``fmax`` semantics: a numeric
-operand wins over NaN, and an all-NaN contributing prefix produces NaN.
-``valid_items`` excludes later members' values while those members still
-participate. The ``np.minimum`` and ``np.maximum`` operator aliases select
-these same reduction semantics.
+On ``Float32`` and ``Float64`` values, ``"min"`` and ``"max"`` follow
+``fmin`` and ``fmax`` in reductions and in scans: a number wins over NaN.
+A reduction returns NaN only when every value that goes into it is NaN.
+``numpy.minimum`` and ``numpy.maximum`` select the same two operators.
 
-For an exclusive floating scan, use a typed identity with the input dtype,
-for example ``np.float32(np.inf)`` for ``min`` or
-``cutlass.Float32(-math.inf)`` for ``max``. Matching typed NaN and infinity
-seeds are accepted. Plain Python numeric seeds must be finite and
-representable in the input dtype. The seed must be uniform within the group.
+An exclusive scan with ``"min"`` or ``"max"`` starts from its
+``initial_value``. A plain Python float must be finite there, so pass a
+typed infinity: ``numpy.float32(numpy.inf)`` for ``"min"`` and
+``numpy.float32(-numpy.inf)`` for ``"max"`` on ``Float32`` values. A typed
+NaN is accepted as well. :ref:`Reduction <coop-cutlass-reduce>` and
+:ref:`Scan <coop-cutlass-scan>` in the API reference have the rules for
+operators and initial values.
 
 .. _coop-faq-compiler-setup:
 
