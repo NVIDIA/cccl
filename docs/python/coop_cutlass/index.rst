@@ -42,6 +42,8 @@ Requirements
 * CUTLASS CuTe DSL 4.9.0.dev1 or later in the 4.x series. The package depends
   on ``nvidia-cutlass-dsl[cu13]``, which brings CuTe's CUDA 13 libraries.
 
+The package is tested with CuTe in its default mode, which leaves PyIR off.
+
 The wheel includes the CCCL headers it needs. The CUB code behind each
 primitive is compiled with NVRTC when a kernel is compiled, and linked into
 that kernel. :ref:`Compiler requirements <coop-cutlass-compiler-requirements>`

@@ -83,7 +83,11 @@ These rules hold for every primitive:
   of the block can skip it.
 * The launch states the block size with constants, as in
   ``kernel.launch(grid=1, block=128)``. Each call is compiled for that size,
-  and a kernel whose block size is known only at run time is rejected.
+  and a kernel whose block size is known only at run time is rejected. A
+  launcher that receives the block size as an argument declares that
+  argument ``cutlass.Constexpr``. A plain integer argument reaches the
+  launch as a CuTe value, and the block size is then known only at run
+  time.
 * A block can have one, two or three dimensions, and its threads are ranked
   x first, then y, then z. ``histogram``, the four ``topk`` functions and
   the two ``run_length_decode`` functions take one-dimensional blocks only.
