@@ -41,13 +41,14 @@ the only part of CUTLASS that ``cuda.coop.cutlass`` depends on. When this
 documentation says CuTe, CuTe DSL, or the CUTLASS compiler, it means this
 Python-plus-MLIR toolchain.
 
-Kernel code imports one package from the wheel, ``cutlass``, with these parts:
+Kernel code imports one package from the wheel, ``cutlass``. The parts of the
+wheel that matter here are:
 
 .. list-table::
    :header-rows: 1
    :widths: 30 70
 
-   * - Package
+   * - Part
      - Role
    * - ``cutlass`` and ``cutlass.cute``
      - Public API: ``cute.jit``, ``cute.kernel``, ``cute.compile``, numeric
@@ -492,9 +493,10 @@ What we deliberately avoid
 ``cuda.coop.cutlass`` defines no MLIR dialect, adds no passes to the compile
 pipeline, and does not generate CuTe IR for the CUB algorithms themselves.
 The integration surface is the trace-time Python call, the launch facts,
-the FFI, the finalize hook, the link attribute, and the shared-memory
-allocator. Keeping to those means a CUTLASS release can change its internal
-lowering without affecting the generated CUB code. Inside the hook the
+the FFI, the finalize hook, the link attribute, the shared-memory
+allocator, and the target architecture setting. Keeping to those means a
+CUTLASS release can change its internal lowering without affecting the
+generated CUB code. Inside the hook the
 package also rewrites two things CuTe traced. Wrapper calls become
 ``llvm.call`` operations marked ``convergent``. Each launch of a kernel with
 deferred scratch requests at least the size that ``cute.kernel_smem_size``

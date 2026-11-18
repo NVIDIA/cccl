@@ -103,7 +103,8 @@ source checkout during in-tree development, or its installed header bundle,
 in that order. It never substitutes the CUDA Toolkit's copy of CUB. CUDA
 headers and compiler/linker libraries must resolve to a compatible toolkit.
 NVRTC and nvJitLink are loaded from the CUDA installation that holds the
-selected CUDA headers. NVRTC must report the same version as those headers.
+selected CUDA headers. NVRTC must report the same version as those headers,
+and nvJitLink the same major version and a minor version at least as new.
 A mismatch is an error before any CUB code is compiled.
 Plans describe the primitive; the lowering adapts CuTe values and lifecycle
 to those decisions.

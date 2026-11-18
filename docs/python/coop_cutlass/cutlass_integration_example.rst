@@ -155,7 +155,7 @@ and a mismatch between the template and the launch would be silent
 corruption. The DSL also derives ``nvvm.reqntid`` from the same
 configuration.
 
-**The call is a plain ``func.call``.** ``cute.ffi`` declares a private
+**The call is a plain func.call.** ``cute.ffi`` declares a private
 ``func.func`` prototype in the enclosing ``gpu.module`` on first use and
 emits the call. The symbol is used verbatim, so the C++ definition is
 ``extern "C"``. DSL numerics wrap MLIR values. ``cutlass.Int32(result)``

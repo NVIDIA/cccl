@@ -464,7 +464,7 @@ def active_bundle_session() -> BundleSession:
 
 
 def snapshot_active_session_state_for(*, get_cute_dsl: Callable[[], Any]):
-    """Save active options, the module, requests, and scratch events.
+    """Save active options, the module, requests, and recorded events.
 
     Lowerings take this snapshot before recording a wrapper request.
     If emission fails, ``restore_active_session_state_for`` removes those
