@@ -387,7 +387,7 @@ template <class _Unit, class _Level, bool _IsAlwaysContiguous>
         const auto __before = (__rank < __lane) ? __rank : __lane;
         const auto __start  = __lane - __before;
         const auto __count  = __n - (__rank - __before);
-        return lane_mask{::cuda::ptx::bmsk_clamp(__start, __count)};
+        return lane_mask{__prev_lane_mask.value() & ::cuda::ptx::bmsk_clamp(__start, __count)};
       }
       else
       {
