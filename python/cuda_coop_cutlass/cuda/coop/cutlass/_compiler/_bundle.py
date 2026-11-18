@@ -133,6 +133,7 @@ def _compile_bundle_source(
                 _cache.load_bundle(path, key)
             )
             if cached is None:
+                options += _nvrtc.pch_options(context)
                 if prepared.expressions:
                     blob, layouts = _nvrtc.compile_ltoir_with_layouts(
                         prepared, options

@@ -31,6 +31,11 @@ Runtime environment variables
    See the :doc:`Developer Guide <developer_guide>` for artifact lifetime and
    cache validation.
 
+``CUDA_COOP_CUTLASS_PROVIDER_PCH``
+   Defaults to ``auto``. On a provider cache miss, NVRTC can reuse precompiled
+   headers for another specialization with a compatible header prefix in the
+   same process. Set this to ``off`` to compile each miss without PCH.
+
 ``CUDA_COOP_CUTLASS_SOURCE_DUMP_DIR``
    Writes generated CUDA source to this directory for compiler diagnostics.
    Files use ``cuda_coop_cutlass_<hash>.cu`` names. Set it before compiling; it also writes
