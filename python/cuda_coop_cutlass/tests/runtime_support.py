@@ -13,6 +13,7 @@ from contextlib import contextmanager
 
 import cutlass
 import numpy as np
+import pytest
 from cutlass import cute
 from cutlass.cute.runtime import make_ptr
 
@@ -47,6 +48,22 @@ _CUTLASS_DTYPES = dict(
         ),
     )
 )
+
+
+def parametrize_sweep(names, cases, *, pr_cases):
+    """Mark the extra parameter combinations for weekly CI."""
+    cases = list(cases)
+    if missing := pr_cases.difference(cases):
+        raise ValueError(f"Unknown pull-request test parameters: {missing}")
+    return pytest.mark.parametrize(
+        names,
+        [
+            pytest.param(
+                *case, marks=() if case in pr_cases else pytest.mark.weekly
+            )
+            for case in cases
+        ],
+    )
 
 
 def check_cuda(result):

@@ -13,6 +13,7 @@ that skip the sort, invalid counts, and inlining in the final machine code.
 import re
 import subprocess
 import sys
+from itertools import product
 
 import cutlass
 import numpy as np
@@ -27,6 +28,7 @@ from tests.runtime_support import (
     NUMPY_DTYPES,
     cutlass_dtype,
     device_array,
+    parametrize_sweep,
     values_for,
 )
 from tests.support.paths import TESTS_ROOT
@@ -309,16 +311,43 @@ def _run(
             assert actual == original
 
 
-@pytest.mark.parametrize("dtype", NUMPY_DTYPES)
-@pytest.mark.parametrize("pairs", (False, True))
-@pytest.mark.parametrize("items_per_thread", (1, 4))
+@parametrize_sweep(
+    "items_per_thread, pairs, dtype",
+    product((1, 4), (False, True), NUMPY_DTYPES),
+    pr_cases={
+        (1, False, np.int8),
+        (4, True, np.uint8),
+        (1, True, np.int16),
+        (4, False, np.uint16),
+        (1, False, np.int32),
+        (4, True, np.uint32),
+        (1, False, np.int64),
+        (4, True, np.uint64),
+        (1, False, np.float32),
+        (4, True, np.float64),
+    },
+)
 def test_numeric_keys(dtype, pairs, items_per_thread):
     _run(dtype=dtype, pairs=pairs, items_per_thread=items_per_thread)
 
 
-@pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32, 64))
-@pytest.mark.parametrize("descending", (False, True))
-@pytest.mark.parametrize("prefix", ("zero", "one", "interior", "full"))
+@parametrize_sweep(
+    "prefix, descending, width",
+    product(
+        ("zero", "one", "interior", "full"),
+        (False, True),
+        (1, 2, 4, 8, 16, 32, 64),
+    ),
+    pr_cases={
+        ("zero", False, 1),
+        ("one", True, 2),
+        ("interior", False, 4),
+        ("full", True, 8),
+        ("zero", True, 16),
+        ("one", False, 32),
+        ("interior", True, 64),
+    },
+)
 def test_group_prefix(width, descending, prefix):
     count = {"zero": 0, "one": 1, "interior": width * 3 - 1, "full": width * 3}[
         prefix

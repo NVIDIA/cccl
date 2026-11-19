@@ -11,6 +11,7 @@ equality cannot distinguish. Blocks must produce independent tile results.
 """
 
 from contextlib import ExitStack
+from itertools import product
 
 import cutlass
 import numpy as np
@@ -22,6 +23,7 @@ from tests.runtime_support import (
     NUMPY_DTYPES,
     cutlass_dtype,
     device_array,
+    parametrize_sweep,
     values_for,
 )
 
@@ -634,10 +636,16 @@ def _run_rank(
     return observed, prefixes
 
 
-@pytest.mark.parametrize("dtype", _INTEGER_KEYS)
-@pytest.mark.parametrize("descending", (False, True))
-@pytest.mark.parametrize("pairs", (False, True))
-@pytest.mark.parametrize("items_per_thread", (1, 4))
+@parametrize_sweep(
+    "items_per_thread, pairs, descending, dtype",
+    product((1, 4), (False, True), (False, True), _INTEGER_KEYS),
+    pr_cases={
+        (1, False, False, np.int32),
+        (4, True, True, np.uint32),
+        (1, False, True, np.int64),
+        (4, True, False, np.uint64),
+    },
+)
 def test_integral_sort(dtype, descending, pairs, items_per_thread):
     _run_sort(
         dtype=dtype,
@@ -717,10 +725,16 @@ def test_scalar_sort(dtype, pairs, descending):
     )
 
 
-@pytest.mark.parametrize("dtype", _INTEGER_KEYS)
-@pytest.mark.parametrize("descending", (False, True))
-@pytest.mark.parametrize("sign_window", (False, True))
-@pytest.mark.parametrize("items_per_thread", (1, 4))
+@parametrize_sweep(
+    "items_per_thread, sign_window, descending, dtype",
+    product((1, 4), (False, True), (False, True), _INTEGER_KEYS),
+    pr_cases={
+        (1, False, False, np.int32),
+        (4, True, True, np.uint32),
+        (1, False, True, np.int64),
+        (4, True, False, np.uint64),
+    },
+)
 def test_rank_stability_and_sign_window(
     dtype, descending, sign_window, items_per_thread
 ):

@@ -166,6 +166,7 @@ markers = [
   "unit: backend-local unit test without GPU execution",
   "runtime: representative backend runtime test",
   "gpu: test that launches work on an NVIDIA GPU",
+  "weekly: additional GPU parameter combinations covered by the full suite",
 ]
 
 [tool.coverage.run]

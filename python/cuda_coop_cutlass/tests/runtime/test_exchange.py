@@ -13,6 +13,7 @@ inlines provider calls and that logical warps use no block barrier.
 
 import re
 import subprocess
+from itertools import product
 
 import cutlass
 import numpy as np
@@ -26,6 +27,7 @@ from tests.runtime_support import (
     NUMPY_DTYPES,
     cutlass_dtype,
     device_array,
+    parametrize_sweep,
     values_for,
 )
 
@@ -167,10 +169,22 @@ def _run_layout(
     np.testing.assert_array_equal(preserved, source)
 
 
-@pytest.mark.parametrize("dtype", NUMPY_DTYPES)
-@pytest.mark.parametrize("mode", _LAYOUTS)
-@pytest.mark.parametrize("scope", ("block", "warp", "logical"))
-@pytest.mark.parametrize("items_per_thread", (1, 4))
+@parametrize_sweep(
+    "items_per_thread, scope, mode, dtype",
+    product((1, 4), ("block", "warp", "logical"), _LAYOUTS, NUMPY_DTYPES),
+    pr_cases={
+        (1, "block", "striped_to_blocked", np.int8),
+        (4, "warp", "blocked_to_striped", np.uint8),
+        (1, "logical", "blocked_to_striped", np.int16),
+        (4, "logical", "striped_to_blocked", np.uint16),
+        (1, "warp", "striped_to_blocked", np.int32),
+        (4, "block", "blocked_to_striped", np.uint32),
+        (1, "block", "striped_to_blocked", np.int64),
+        (4, "warp", "blocked_to_striped", np.uint64),
+        (1, "logical", "striped_to_blocked", np.float32),
+        (4, "block", "blocked_to_striped", np.float64),
+    },
+)
 def test_layout_types(dtype, mode, scope, items_per_thread):
     _run_layout(dtype, mode, scope, items_per_thread=items_per_thread)
 
@@ -348,8 +362,22 @@ def _run_scatter(
     np.testing.assert_array_equal(flags_out, flags)
 
 
-@pytest.mark.parametrize("dtype", NUMPY_DTYPES)
-@pytest.mark.parametrize("mode", _SCATTERS)
+@parametrize_sweep(
+    "mode, dtype",
+    product(_SCATTERS, NUMPY_DTYPES),
+    pr_cases={
+        ("scatter_to_blocked", np.int8),
+        ("scatter_to_striped", np.uint8),
+        ("scatter_to_striped_guarded", np.int16),
+        ("scatter_to_striped_flagged", np.uint16),
+        ("scatter_to_blocked", np.int32),
+        ("scatter_to_striped", np.uint32),
+        ("scatter_to_striped_guarded", np.int64),
+        ("scatter_to_striped_flagged", np.uint64),
+        ("scatter_to_blocked", np.float32),
+        ("scatter_to_striped", np.float64),
+    },
+)
 def test_scatter_types(dtype, mode):
     _run_scatter(mode, dtype=dtype)
 

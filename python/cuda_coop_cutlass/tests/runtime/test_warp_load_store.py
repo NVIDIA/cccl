@@ -13,6 +13,7 @@ divergence, and the instructions in the final linked kernel.
 import importlib.util
 import re
 import subprocess
+from itertools import product
 
 import cutlass
 import numpy as np
@@ -26,6 +27,7 @@ from tests.runtime_support import (
     NUMPY_DTYPES,
     cutlass_dtype,
     device_array,
+    parametrize_sweep,
     values_for,
 )
 from tests.support.paths import PACKAGE_ROOT
@@ -188,10 +190,22 @@ def test_group_local_store_counts_and_offsets(algorithm, base_valid):
     np.testing.assert_array_equal(destination, expected)
 
 
-@pytest.mark.parametrize("dtype", NUMPY_DTYPES)
-@pytest.mark.parametrize("operation", ("load", "store"))
-@pytest.mark.parametrize("algorithm", ("direct", "transpose"))
-@pytest.mark.parametrize("items_per_thread", (1, 4))
+@parametrize_sweep(
+    "items_per_thread, algorithm, operation, dtype",
+    product((1, 4), ("direct", "transpose"), ("load", "store"), NUMPY_DTYPES),
+    pr_cases={
+        (1, "direct", "load", np.int8),
+        (4, "transpose", "store", np.uint8),
+        (1, "direct", "store", np.int16),
+        (4, "transpose", "load", np.uint16),
+        (1, "transpose", "load", np.int32),
+        (4, "direct", "store", np.uint32),
+        (1, "direct", "load", np.int64),
+        (4, "transpose", "store", np.uint64),
+        (1, "direct", "load", np.float32),
+        (4, "transpose", "store", np.float64),
+    },
+)
 def test_warp_layout_for_every_dtype(
     dtype, operation, algorithm, items_per_thread
 ):

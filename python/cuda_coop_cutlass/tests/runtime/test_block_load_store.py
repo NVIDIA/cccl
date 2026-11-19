@@ -15,6 +15,7 @@ import importlib.util
 import math
 import re
 import subprocess
+from itertools import product
 
 import cutlass
 import numpy as np
@@ -28,6 +29,7 @@ from tests.runtime_support import (
     NUMPY_DTYPES,
     cutlass_dtype,
     device_array,
+    parametrize_sweep,
     values_for,
 )
 from tests.support.paths import PACKAGE_ROOT
@@ -143,9 +145,22 @@ def test_returned_payload_helpers_aliases_and_register_exports(
     np.testing.assert_array_equal(destination, expected)
 
 
-@pytest.mark.parametrize("dtype", NUMPY_DTYPES)
-@pytest.mark.parametrize("operation", ("load", "store"))
-@pytest.mark.parametrize("items_per_thread", (1, 4))
+@parametrize_sweep(
+    "items_per_thread, operation, dtype",
+    product((1, 4), ("load", "store"), NUMPY_DTYPES),
+    pr_cases={
+        (1, "load", np.int8),
+        (4, "store", np.uint8),
+        (1, "store", np.int16),
+        (4, "load", np.uint16),
+        (1, "load", np.int32),
+        (4, "store", np.uint32),
+        (1, "load", np.int64),
+        (4, "store", np.uint64),
+        (1, "load", np.float32),
+        (4, "store", np.float64),
+    },
+)
 def test_direct_layout_matches_independent_oracle(
     dtype, operation, items_per_thread
 ):

@@ -13,6 +13,7 @@ groups inactive to exercise scratch reuse and synchronization scope.
 import importlib.util
 import re
 import subprocess
+from itertools import product
 
 import cutlass
 import numpy as np
@@ -22,7 +23,7 @@ from cutlass import cute
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
 import cuda.coop.cutlass as coop
-from tests.runtime_support import device_array, values_for
+from tests.runtime_support import device_array, parametrize_sweep, values_for
 from tests.support.paths import PACKAGE_ROOT
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
@@ -35,10 +36,18 @@ _ITEMS = 4
 _BLOCK_TILE = _THREADS * _ITEMS
 
 
-@pytest.mark.parametrize("width", _WIDTHS)
-@pytest.mark.parametrize("algorithm", ("direct", "transpose"))
-@pytest.mark.parametrize("operation", ("load", "store"))
-@pytest.mark.parametrize("items_per_thread", (1, 4))
+@parametrize_sweep(
+    "items_per_thread, operation, algorithm, width",
+    product((1, 4), ("load", "store"), ("direct", "transpose"), _WIDTHS),
+    pr_cases={
+        (1, "load", "direct", 1),
+        (4, "store", "transpose", 2),
+        (1, "load", "transpose", 4),
+        (4, "store", "direct", 8),
+        (1, "store", "direct", 16),
+        (4, "load", "transpose", 32),
+    },
+)
 def test_width_layout(width, algorithm, operation, items_per_thread):
     """Check each width with one collective direction at a time.
 

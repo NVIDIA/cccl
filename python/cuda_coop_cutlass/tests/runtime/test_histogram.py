@@ -11,6 +11,7 @@ original samples, including Sort, which uses a private mutable copy.
 
 import re
 import subprocess
+from itertools import product
 
 import cutlass
 import numpy as np
@@ -21,7 +22,7 @@ from cutlass.base_dsl.common import DSLRuntimeError
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
 import cuda.coop.cutlass as coop
-from tests.runtime_support import cutlass_dtype, device_array
+from tests.runtime_support import cutlass_dtype, device_array, parametrize_sweep
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
@@ -206,14 +207,22 @@ def _run(
         )
 
 
-@pytest.mark.parametrize(
-    "dtype", (np.uint8, np.int32, np.uint32, np.int64, np.uint64)
+@parametrize_sweep(
+    "items_per_thread, algorithm, counter_dtype, dtype",
+    product(
+        (1, 4),
+        ("atomic", "sort"),
+        (np.int32, np.uint32, np.int64, np.uint64),
+        (np.uint8, np.int32, np.uint32, np.int64, np.uint64),
+    ),
+    pr_cases={
+        (1, "atomic", np.int32, np.uint8),
+        (4, "sort", np.uint32, np.int32),
+        (1, "sort", np.int64, np.uint32),
+        (4, "atomic", np.uint64, np.int64),
+        (1, "atomic", np.uint32, np.uint64),
+    },
 )
-@pytest.mark.parametrize(
-    "counter_dtype", (np.int32, np.uint32, np.int64, np.uint64)
-)
-@pytest.mark.parametrize("algorithm", ("atomic", "sort"))
-@pytest.mark.parametrize("items_per_thread", (1, 4))
 def test_counts_types_and_preservation(
     dtype, counter_dtype, algorithm, items_per_thread
 ):

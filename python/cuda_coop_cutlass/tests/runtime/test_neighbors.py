@@ -28,6 +28,7 @@ from tests.runtime_support import (
     NUMPY_DTYPES,
     cutlass_dtype,
     device_array,
+    parametrize_sweep,
     values_for,
 )
 from tests.support.paths import TESTS_ROOT
@@ -288,18 +289,33 @@ def _run(
                 )
 
 
-@pytest.mark.parametrize("dtype", NUMPY_DTYPES)
-@pytest.mark.parametrize(
-    "operation,mode",
-    [
-        ("adjacent_difference", "left"),
-        ("adjacent_difference", "right"),
-        ("discontinuity", "heads"),
-        ("discontinuity", "tails"),
-        ("discontinuity", "heads_and_tails"),
-    ],
+@parametrize_sweep(
+    "items_per_thread, operation, mode, dtype",
+    (
+        (items, operation, mode, dtype)
+        for items in (1, 4)
+        for operation, mode in (
+            ("adjacent_difference", "left"),
+            ("adjacent_difference", "right"),
+            ("discontinuity", "heads"),
+            ("discontinuity", "tails"),
+            ("discontinuity", "heads_and_tails"),
+        )
+        for dtype in NUMPY_DTYPES
+    ),
+    pr_cases={
+        (1, "adjacent_difference", "left", np.int8),
+        (4, "discontinuity", "heads", np.uint8),
+        (1, "discontinuity", "tails", np.int16),
+        (4, "adjacent_difference", "right", np.uint16),
+        (1, "discontinuity", "heads_and_tails", np.int32),
+        (4, "adjacent_difference", "left", np.uint32),
+        (1, "adjacent_difference", "right", np.int64),
+        (4, "discontinuity", "tails", np.uint64),
+        (1, "discontinuity", "heads", np.float32),
+        (4, "discontinuity", "heads_and_tails", np.float64),
+    },
 )
-@pytest.mark.parametrize("items_per_thread", (1, 4))
 def test_numeric_results(dtype, operation, mode, items_per_thread):
     _run(
         dtype=dtype,

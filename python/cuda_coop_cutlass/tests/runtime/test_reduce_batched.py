@@ -11,6 +11,7 @@ unchanged across repeated calls and launches.
 """
 
 from contextlib import ExitStack
+from itertools import product
 
 import cutlass
 import numpy as np
@@ -22,6 +23,7 @@ from tests.runtime_support import (
     NUMPY_DTYPES,
     cutlass_dtype,
     device_array,
+    parametrize_sweep,
 )
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
@@ -156,9 +158,18 @@ def _run(
     return compiled
 
 
-@pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32))
-@pytest.mark.parametrize("items_per_thread", (1, 4, 33))
-@pytest.mark.parametrize("layout", ("striped", "blocked"))
+@parametrize_sweep(
+    "layout, items_per_thread, width",
+    product(("striped", "blocked"), (1, 4, 33), (1, 2, 4, 8, 16, 32)),
+    pr_cases={
+        ("striped", 1, 1),
+        ("blocked", 4, 2),
+        ("striped", 33, 4),
+        ("blocked", 1, 8),
+        ("striped", 4, 16),
+        ("blocked", 33, 32),
+    },
+)
 def test_batch_layouts(width, items_per_thread, layout):
     _run(width=width, items_per_thread=items_per_thread, layout=layout)
 
