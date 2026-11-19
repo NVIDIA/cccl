@@ -46,6 +46,7 @@ test = [
   "packaging",
   "pytest",
   "pytest-cov",
+  "pytest-xdist",
   "tomli>=2.0; python_version < '3.11'",
   "typing_extensions>=4.12.0",
 ]
