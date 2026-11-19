@@ -20,6 +20,7 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 #include <cuda/std/mdspan>
 
 #include "test_macros.h"
@@ -50,6 +51,9 @@ TEST_FUNC constexpr bool test()
     cuda::std::extents<int64_t, 1, 8, D, D>(9, 10), cuda::std::array<int, 4>{1, 7, 7 * 8, 7 * 8 * 9}, 5034);
   test_required_span_size(
     cuda::std::extents<int64_t, 1, 0, D, D>(9, 10), cuda::std::array<int, 4>{1, 7, 7 * 8, 7 * 8 * 9}, 0);
+  test_required_span_size(
+    cuda::std::extents<int, D, D>(3, 0), cuda::std::array<int, 2>{cuda::std::numeric_limits<int>::max(), 1}, 0);
+  test_required_span_size(cuda::std::extents<signed char, 20, 20, 0>(), cuda::std::array<int, 3>{1, 1, 1}, 0);
   return true;
 }
 

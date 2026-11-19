@@ -10,11 +10,14 @@
 // <mdspan>
 
 // template<class OtherIndexType>
-//  constexpr mapping(const extents_type& e, array<OtherIndexType, rank_> s) noexcept;
+//  constexpr mapping(const extents_type& e, array<OtherIndexType, rank_> s) noexcept(see below);
 //
 // Constraints:
-//    - is_convertible_v<const OtherIndexType&, index_type> is true, and
-//    - is_nothrow_constructible_v<index_type, const OtherIndexType&> is true.
+//    - is_constructible_v<index_type, const OtherIndexType&> is true, and
+//    - is_convertible_v<const OtherIndexType&, index_type> is true.
+//
+// Remarks: The expression inside noexcept is equivalent to
+//    is_nothrow_constructible_v<index_type, const OtherIndexType&>.
 //
 // Preconditions:
 //    - s[i] > 0 is true for all i in the range [0, rank_).
@@ -47,14 +50,25 @@ TEST_FUNC constexpr void test_construction(E e, S s)
 
   // check required_span_size()
   typename E::index_type expected_size = 1;
+  bool is_empty                        = false;
   for (typename E::rank_type r = 0; r < E::rank(); r++)
   {
     if (e.extent(r) == 0)
     {
-      expected_size = 0;
+      is_empty = true;
       break;
     }
-    expected_size += (e.extent(r) - 1) * static_cast<typename E::index_type>(s[r]);
+  }
+  if (is_empty)
+  {
+    expected_size = 0;
+  }
+  else
+  {
+    for (typename E::rank_type r = 0; r < E::rank(); r++)
+    {
+      expected_size += (e.extent(r) - 1) * static_cast<typename E::index_type>(s[r]);
+    }
   }
   assert(m.required_span_size() == expected_size);
 
@@ -149,7 +163,11 @@ TEST_FUNC constexpr bool test()
   {
     // not no-throw constructible index_type from stride
     using mapping_t = cuda::std::layout_stride::mapping<cuda::std::dextents<unsigned char, 2>>;
+    using extents_t = cuda::std::dextents<unsigned char, 2>;
     static_assert(cuda::std::is_convertible<IntType, unsigned char>::value);
+    static_assert(!cuda::std::is_nothrow_constructible<unsigned char, IntType>::value);
+    static_assert(cuda::std::is_constructible<mapping_t, extents_t, cuda::std::array<IntType, 2>>::value);
+    static_assert(!cuda::std::is_nothrow_constructible<mapping_t, extents_t, cuda::std::array<IntType, 2>>::value);
     static_assert(
       !cuda::std::is_constructible<mapping_t, cuda::std::dextents<int, 2>, cuda::std::array<IntType, 2>>::value);
   }
