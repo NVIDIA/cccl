@@ -34,6 +34,13 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `noalias` as a macro, which breaks _CCCL_CONST.
+#ifdef noalias
+#  pragma push_macro("noalias")
+#  undef noalias
+#  define _CUDAX_POP_MACRO_noalias
+#endif // defined(noalias)
+
 #if !defined(_CCCL_DOXYGEN_INVOKED)
 
 namespace cuda::experimental::coop
@@ -344,6 +351,11 @@ struct level_synchronizer::__synchronizer_instance<grid_level>
 } // namespace cuda::experimental::coop
 
 #endif // !_CCCL_DOXYGEN_INVOKED
+
+#ifdef _CUDAX_POP_MACRO_noalias
+#  pragma pop_macro("noalias")
+#  undef _CUDAX_POP_MACRO_noalias
+#endif // defined(_CUDAX_POP_MACRO_noalias)
 
 #include <cuda/std/__cccl/epilogue.h>
 

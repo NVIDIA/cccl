@@ -161,6 +161,8 @@
 
 // _CCCL_PURE
 
+// Some code bases define `noalias` as a macro. Push and pop `noalias` around every use of _CCCL_PURE and
+// _CCCL_CONST, like <cuda/__bit/bitmask.h> does.
 #if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 5)
 #  define _CCCL_PURE __nv_pure__
 #elif _CCCL_HAS_CPP_ATTRIBUTE(__gnu__::__pure__)

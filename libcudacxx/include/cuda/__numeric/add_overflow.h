@@ -45,6 +45,13 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `noalias` as a macro, which breaks _CCCL_CONST.
+#ifdef noalias
+#  pragma push_macro("noalias")
+#  undef noalias
+#  define _LIBCUDACXX_POP_MACRO_noalias
+#endif // defined(noalias)
+
 #if _CCCL_CHECK_BUILTIN(builtin_add_overflow) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_ADD_OVERFLOW(...) __builtin_add_overflow(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_add_overflow)
@@ -388,6 +395,11 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Result> _CCCL_AND ::cuda::std::
 }
 
 _CCCL_END_NAMESPACE_CUDA
+
+#ifdef _LIBCUDACXX_POP_MACRO_noalias
+#  pragma pop_macro("noalias")
+#  undef _LIBCUDACXX_POP_MACRO_noalias
+#endif // defined(_LIBCUDACXX_POP_MACRO_noalias)
 
 #include <cuda/std/__cccl/epilogue.h>
 

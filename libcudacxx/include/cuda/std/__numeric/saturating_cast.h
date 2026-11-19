@@ -31,6 +31,13 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `noalias` as a macro, which breaks _CCCL_CONST.
+#ifdef noalias
+#  pragma push_macro("noalias")
+#  undef noalias
+#  define _LIBCUDACXX_POP_MACRO_noalias
+#endif // defined(noalias)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // clang-tidy thinks that branches in __saturating_cast_impl_device are all the same.
@@ -390,6 +397,11 @@ _CCCL_REQUIRES(__cccl_is_integer_v<_To> _CCCL_AND __cccl_is_integer_v<_From>)
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _LIBCUDACXX_POP_MACRO_noalias
+#  pragma pop_macro("noalias")
+#  undef _LIBCUDACXX_POP_MACRO_noalias
+#endif // defined(_LIBCUDACXX_POP_MACRO_noalias)
 
 #include <cuda/std/__cccl/epilogue.h>
 
