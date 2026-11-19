@@ -900,7 +900,7 @@ _CCCL_API inline long double nextafterl(long double __x, long double __y) noexce
   constexpr __storage_t __sign = __fp_sign_mask_of_v<__float128>;
   constexpr __storage_t __exp  = __fp_exp_mask_of_v<__float128>;
 
-  // NaN is checked on the bits, so that fast math options can not remove the check
+  // A sign-masked encoding greater than infinity represents a NaN.
   const __storage_t __x_abs = static_cast<__storage_t>(::cuda::std::__fp_get_storage(__x) & ~__sign);
   const __storage_t __y_abs = static_cast<__storage_t>(::cuda::std::__fp_get_storage(__y) & ~__sign);
   if (__x_abs > __exp || __y_abs > __exp)
@@ -953,7 +953,7 @@ _CCCL_API inline long double nextafterl(long double __x, long double __y) noexce
 // A template, so that only __float128 arguments match it exactly. A plain overload would also be reachable through
 // implicit conversions and make calls like nextafter(__half, __nv_bfloat16) ambiguous
 template <class _Tp, enable_if_t<is_same_v<_Tp, __float128>, int> = 0>
-[[nodiscard]] _CCCL_API inline __float128 nextafter(_Tp __x, _Tp __y) noexcept
+[[nodiscard]] _CCCL_API __float128 nextafter(_Tp __x, _Tp __y) noexcept
 {
 #  if defined(_CCCL_BUILTIN_NEXTAFTERF128)
   return _CCCL_BUILTIN_NEXTAFTERF128(__x, __y);
