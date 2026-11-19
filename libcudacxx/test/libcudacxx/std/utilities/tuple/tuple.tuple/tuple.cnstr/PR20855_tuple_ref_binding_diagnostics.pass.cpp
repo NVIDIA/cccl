@@ -18,7 +18,7 @@
 
 #include "test_macros.h"
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 #  define ASSERT_REFERENCE_BINDS_TEMPORARY(...) \
     static_assert(cuda::std::reference_constructs_from_temporary_v<__VA_ARGS__>)
 #  define ASSERT_NOT_REFERENCE_BINDS_TEMPORARY(...) \

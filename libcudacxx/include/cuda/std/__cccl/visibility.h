@@ -110,7 +110,7 @@
 
 // Note: we will allow the user to redefine _CCCL_KERNEL_ATTRIBUTES until CCCL 4.0, since they may have
 // redefined CUB_DETAIL_KERNEL_ATTRIBUTES or THRUST_DETAIL_KERNEL_ATTRIBUTES.
-#if !defined(_CCCL_KERNEL_ATTRIBUTES)
+#ifndef _CCCL_KERNEL_ATTRIBUTES
 #  define _CCCL_KERNEL_ATTRIBUTES __global__ _CCCL_VISIBILITY_HIDDEN
 #endif // !_CCCL_KERNEL_ATTRIBUTES
 

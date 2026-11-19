@@ -85,7 +85,7 @@ TEST_FUNC void test_constraints()
                                cuda::std::tuple<int>,
                                cuda::std::tuple<int>>();
 
-#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+#ifdef _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   // A conversion materializes a temporary, so the reference member would dangle.
   test_piecewise_constructible<false, cuda::std::pair<const int&, int>, cuda::std::tuple<long>, cuda::std::tuple<int>>();
   test_piecewise_constructible<false, cuda::std::pair<int, const int&>, cuda::std::tuple<int>, cuda::std::tuple<long>>();

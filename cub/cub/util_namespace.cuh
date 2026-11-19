@@ -118,7 +118,7 @@
 
 #if defined(CUB_DISABLE_NAMESPACE_MAGIC) || defined(CUB_WRAPPED_NAMESPACE)
 #  ifndef CUB_WRAPPED_NAMESPACE
-#    if !defined(CUB_IGNORE_NAMESPACE_MAGIC_ERROR)
+#    ifndef CUB_IGNORE_NAMESPACE_MAGIC_ERROR
 #      error "Disabling namespace magic is unsafe without wrapping namespace"
 #    endif // !defined(CUB_IGNORE_NAMESPACE_MAGIC_ERROR)
 #  endif // !defined(CUB_WRAPPED_NAMESPACE)

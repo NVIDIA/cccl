@@ -26,7 +26,7 @@
 
 // Check for deprecation opt outs
 #ifdef LIBCUDACXX_IGNORE_DEPRECATED_CPP_DIALECT
-#  if !defined(CCCL_IGNORE_DEPRECATED_CPP_DIALECT)
+#  ifndef CCCL_IGNORE_DEPRECATED_CPP_DIALECT
 #    define CCCL_IGNORE_DEPRECATED_CPP_DIALECT
 #  endif
 #endif // suppress all dialect deprecation warnings
@@ -50,7 +50,7 @@
 #endif // suppress all compiler deprecation warnings
 #if defined(LIBCUDACXX_IGNORE_DEPRECATED_API) || defined(THRUST_IGNORE_DEPRECATED_API) \
   || defined(CUB_IGNORE_DEPRECATED_API)
-#  if !defined(CCCL_IGNORE_DEPRECATED_API)
+#  ifndef CCCL_IGNORE_DEPRECATED_API
 #    define CCCL_IGNORE_DEPRECATED_API
 #  endif
 #endif // suppress all API deprecation warnings

@@ -130,7 +130,7 @@
 #if _CCCL_COMPILER(NVRTC)
 
 // missing SM_88
-#  if !defined(NV_PROVIDES_SM_88)
+#  ifndef NV_PROVIDES_SM_88
 #    define _NV_TARGET_VAL_SM_88 880
 #    define NV_PROVIDES_SM_88    __NV_PROVIDES_SM_88
 #    define NV_IS_EXACTLY_SM_88  __NV_IS_EXACTLY_SM_88
@@ -316,7 +316,7 @@
 #  endif // _CCCL_COMPILER(NVRTC)
 
 // missing SM_121
-#  if !defined(NV_PROVIDES_SM_121)
+#  ifndef NV_PROVIDES_SM_121
 #    define _NV_TARGET_VAL_SM_121 1210
 #    define NV_PROVIDES_SM_121    __NV_PROVIDES_SM_121
 #    define NV_IS_EXACTLY_SM_121  __NV_IS_EXACTLY_SM_121

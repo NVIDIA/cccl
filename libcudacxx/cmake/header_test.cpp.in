@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // ignore deprecation warnings
-#if defined(__clang__)
+#ifdef __clang__
 #  pragma clang diagnostic ignored "-Wdeprecated"
 #  pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #elif defined(_MSC_VER)

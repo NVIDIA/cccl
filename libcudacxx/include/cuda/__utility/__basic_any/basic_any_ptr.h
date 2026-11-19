@@ -237,7 +237,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
     return __ref_.__vptr_ != nullptr;
   }
 
-#if !defined(_CCCL_DOXYGEN_INVOKED) // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   [[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API static constexpr auto __in_situ() noexcept -> bool
   {
     return true;

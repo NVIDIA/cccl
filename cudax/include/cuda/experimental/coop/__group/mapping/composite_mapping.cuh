@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_DOXYGEN_INVOKED)
+#ifndef _CCCL_DOXYGEN_INVOKED
 
 // todo(dabayer): do we want to always use uint32_t for all counts/ranks?
 
