@@ -466,7 +466,7 @@ private:
     {
       const double scale_down = ::cuda::std::ldexpf(0.5f, 1 - ((2 * mant_dig) - bin_width));
       const double scale_up   = ::cuda::std::ldexpf(0.5f, 1 - ((2 * mant_dig) - bin_width));
-      const int scaled        = ::cuda::std::max(::cuda::std::min(Fold, ((3 * mant_dig) / bin_width) - X_index), 0);
+      const int scaled = (::cuda::std::max) ((::cuda::std::min) (Fold, ((3 * mant_dig) / bin_width) - X_index), 0);
       if (X_index == 0)
       {
         Y += carry(0) * ((binned_bins(0 + X_index) / 6.0) * scale_down * expansion);

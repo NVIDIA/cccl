@@ -111,8 +111,8 @@ __launch_bounds__(int(AltDigitBits ? _CUB::detail::current_policy<PolicySelector
                 "equal alt_downsweep.radix_bits");
 
   static constexpr int TILE_ITEMS =
-    ::cuda::std::max(active_upsweep_policy.threads_per_block * active_upsweep_policy.items_per_thread,
-                     active_downsweep_policy.threads_per_block * active_downsweep_policy.items_per_thread);
+    (::cuda::std::max) (active_upsweep_policy.threads_per_block * active_upsweep_policy.items_per_thread,
+                        active_downsweep_policy.threads_per_block * active_downsweep_policy.items_per_thread);
 
   using ActiveUpsweepPolicyT = detail::agent_radix_sort_upsweep_policy<
     active_upsweep_policy.threads_per_block,
@@ -280,8 +280,8 @@ __launch_bounds__(int(AltDigitBits ? _CUB::detail::current_policy<PolicySelector
                 "RadixSortPolicy: alt_downsweep.radix_bits must equal downsweep.radix_bits or be one less");
 
   static constexpr int TILE_ITEMS =
-    ::cuda::std::max(active_upsweep_policy.threads_per_block * active_upsweep_policy.items_per_thread,
-                     active_downsweep_policy.threads_per_block * active_downsweep_policy.items_per_thread);
+    (::cuda::std::max) (active_upsweep_policy.threads_per_block * active_upsweep_policy.items_per_thread,
+                        active_downsweep_policy.threads_per_block * active_downsweep_policy.items_per_thread);
 
   using ActiveDownsweepPolicyT = detail::agent_radix_sort_downsweep_policy<
     active_downsweep_policy.threads_per_block,
@@ -506,7 +506,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortInitKernel(
 
   const size_t stride = static_cast<size_t>(blockDim.x) * gridDim.x;
   for (size_t idx = (static_cast<size_t>(blockIdx.x) * blockDim.x) + threadIdx.x;
-       idx < ::cuda::std::max(num_items0, num_items1);
+       idx < (::cuda::std::max) (num_items0, num_items1);
        idx += stride)
   {
     if (idx < num_items0)

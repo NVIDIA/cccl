@@ -669,7 +669,7 @@ template <typename T, ::cuda::std::size_t GmemAlign = alignof(T)>
 _CCCL_HOST_DEVICE_API constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t num_items)
 {
   static_assert(::cuda::__is_valid_alignment<T>(GmemAlign));
-  _CCCL_ASSERT(num_items <= ::cuda::std::size_t{::cuda::std::numeric_limits<int>::max()},
+  _CCCL_ASSERT(num_items <= ::cuda::std::size_t{(::cuda::std::numeric_limits<int>::max)()},
                "num_items must fit into an int");
   const int num_bytes = static_cast<int>(num_items) * int{sizeof(T)};
   if constexpr (GmemAlign >= static_cast<::cuda::std::size_t>(detail::bulk_copy_min_align))

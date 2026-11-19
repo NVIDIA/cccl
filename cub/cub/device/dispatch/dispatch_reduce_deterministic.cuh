@@ -202,7 +202,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   const int reduce_device_occupancy = reduce_config.sm_occupancy * sm_count;
   const int max_blocks              = reduce_device_occupancy * detail::subscription_factor;
 
-  const int num_items_per_chunk = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
+  const int num_items_per_chunk = (::cuda::std::numeric_limits<::cuda::std::int32_t>::max)();
 
   // A deferred problem size cannot be read on the host, so these defaults stand: the kernel consumes the whole
   // problem in a single launch with the worst-case grid, whose surplus blocks exit early.
@@ -216,13 +216,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     num_chunks = static_cast<int>(::cuda::ceil_div(num_items, num_items_per_chunk));
 
     const int chunk_tile_grid_size = ::cuda::ceil_div(num_items_per_chunk, reduce_config.tile_size);
-    chunk_grid_size                = ::cuda::std::min(max_blocks, chunk_tile_grid_size);
+    chunk_grid_size                = (::cuda::std::min) (max_blocks, chunk_tile_grid_size);
 
     partial_chunk_size                  = num_items % num_items_per_chunk;
     has_partial_chunk                   = partial_chunk_size != 0;
     const int last_chunk_tile_grid_size = ::cuda::ceil_div(partial_chunk_size, reduce_config.tile_size);
 
-    last_chunk_grid_size = ::cuda::std::min(max_blocks, last_chunk_tile_grid_size);
+    last_chunk_grid_size = (::cuda::std::min) (max_blocks, last_chunk_tile_grid_size);
   }
 
   const int reduce_grid_size = (chunk_grid_size * (num_chunks - 1)) + last_chunk_grid_size;

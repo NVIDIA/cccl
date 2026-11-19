@@ -154,7 +154,7 @@ struct AgentRadixSortUpsweep
   static constexpr int PACKING_RATIO     = sizeof(PackedCounter) / sizeof(DigitCounter);
   static constexpr int LOG_PACKING_RATIO = ::cuda::ilog2(PACKING_RATIO);
 
-  static constexpr int LOG_COUNTER_LANES = ::cuda::std::max(0, int(RADIX_BITS) - int(LOG_PACKING_RATIO));
+  static constexpr int LOG_COUNTER_LANES = (::cuda::std::max) (0, int(RADIX_BITS) - int(LOG_PACKING_RATIO));
   static constexpr int COUNTER_LANES     = 1 << LOG_COUNTER_LANES;
 
   // ExtractCounts() writes PACKING_RATIO digit counts per counter lane into block_counters[][RADIX_DIGITS]
@@ -171,10 +171,10 @@ struct AgentRadixSortUpsweep
   // digit counters back into registers.  Each counter lane is assigned to a
   // warp for aggregation.
 
-  static constexpr int LANES_PER_WARP = ::cuda::std::max(1, (COUNTER_LANES + WARPS - 1) / WARPS);
+  static constexpr int LANES_PER_WARP = (::cuda::std::max) (1, (COUNTER_LANES + WARPS - 1) / WARPS);
 
   // Unroll tiles in batches without risk of counter overflow
-  static constexpr int UNROLL_COUNT = ::cuda::std::min(64, 255 / KEYS_PER_THREAD);
+  static constexpr int UNROLL_COUNT = (::cuda::std::min) (64, 255 / KEYS_PER_THREAD);
   static_assert(UNROLL_COUNT > 0);
   static constexpr int UNROLLED_ELEMENTS = UNROLL_COUNT * TILE_ITEMS;
 

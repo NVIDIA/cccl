@@ -385,7 +385,7 @@ template <int ThreadsPerBlock,
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 load_direct_striped_vectorized_aligned(int linear_tid, const InputT* block_src_ptr, T (&dst_items)[ItemsPerThread])
 {
-  constexpr int vec_size = ::cuda::std::min(ItemsPerThread, static_cast<int>(VecSize));
+  constexpr int vec_size = (::cuda::std::min) (ItemsPerThread, static_cast<int>(VecSize));
   static_assert(ItemsPerThread % vec_size == 0, "The vector size must evenly divide ItemsPerThread");
 
   using vector_t                   = typename CubVector<InputT, vec_size>::Type;

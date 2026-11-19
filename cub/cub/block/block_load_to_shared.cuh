@@ -355,7 +355,7 @@ public:
       const int align_diff         = static_cast<int>(src_ptr_aligned - src_ptr);
       const int head_padding_bytes = (detail::bulk_copy_min_align - align_diff) % detail::bulk_copy_min_align;
       const auto actual_dst_ptr    = dst_ptr + head_padding_bytes;
-      const int head_peeling_bytes = ::cuda::std::min(align_diff, num_bytes);
+      const int head_peeling_bytes = (::cuda::std::min) (align_diff, num_bytes);
       const int num_bytes_bulk     = ::cuda::round_down(num_bytes - head_peeling_bytes, detail::bulk_copy_min_align);
       __copy_aligned(actual_dst_ptr + head_peeling_bytes, src_ptr_aligned, num_bytes_bulk);
 

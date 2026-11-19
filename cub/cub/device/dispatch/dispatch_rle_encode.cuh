@@ -282,7 +282,7 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
   if constexpr (sizeof(OffsetT) > sizeof(int))
   {
     // one CTA per tile: the x-grid limit caps the supported input size (>= 16 TiB of keys at the smallest tile)
-    if (num_tiles_wide > static_cast<OffsetT>(::cuda::std::numeric_limits<int>::max()))
+    if (num_tiles_wide > static_cast<OffsetT>((::cuda::std::numeric_limits<int>::max)()))
     {
       return CubDebug(cudaErrorInvalidValue);
     }

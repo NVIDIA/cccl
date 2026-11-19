@@ -560,7 +560,7 @@ class AgentBatchMemcpy
 
   // Buffers of up to WARP_LEVEL_THRESHOLD bytes are copied at thread level and their sizes are stored as
   // TLevBufferSizeT
-  static_assert(WARP_LEVEL_THRESHOLD <= ::cuda::std::numeric_limits<TLevBufferSizeT>::max(),
+  static_assert(WARP_LEVEL_THRESHOLD <= (::cuda::std::numeric_limits<TLevBufferSizeT>::max)(),
                 "BatchedCopyPolicy: lookback.small_buffer.warp_level_threshold must be at most 65535");
 
   /**

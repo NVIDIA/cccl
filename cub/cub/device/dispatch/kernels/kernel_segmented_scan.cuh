@@ -210,7 +210,7 @@ public:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   scan_one_segment(OffsetT input_begin_idx, OffsetT input_end_idx, OffsetT output_begin_idx)
   {
-    const OffsetT segment_items = ::cuda::std::max(input_end_idx, input_begin_idx) - input_begin_idx;
+    const OffsetT segment_items = (::cuda::std::max) (input_end_idx, input_begin_idx) - input_begin_idx;
     const OffsetT n_chunks      = ::cuda::ceil_div(segment_items, tile_items);
 
     AccumT exclusive_prefix{};
@@ -309,7 +309,7 @@ public:
         temp_storage.fixed_size_mask = 1u;
       }
 
-      n_segments               = ::cuda::std::min(n_segments, static_cast<int>(NumSegments));
+      n_segments               = (::cuda::std::min) (n_segments, static_cast<int>(NumSegments));
       const unsigned n_chunks  = ::cuda::ceil_div(n_segments, threads_per_block);
       OffsetT exclusive_prefix = 0;
       using plus_t             = ::cuda::std::plus<>;
@@ -323,7 +323,7 @@ public:
         // TODO: use BlockLoad to load
         const OffsetT input_segment_begin = (work_id < n_segments) ? input_begin_idx_it[work_id] : 0;
         const OffsetT input_segment_end   = (work_id < n_segments) ? input_end_idx_it[work_id] : 0;
-        const OffsetT segment_size = ::cuda::std::max(input_segment_end, input_segment_begin) - input_segment_begin;
+        const OffsetT segment_size = (::cuda::std::max) (input_segment_end, input_segment_begin) - input_segment_begin;
 
         block_offset_scan_t offset_scanner(temp_storage.reused.offset_scan);
 

@@ -78,7 +78,7 @@ struct policy_selector
   // Dominant-sized key/value type
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int __dominant_size() const
   {
-    return ::cuda::std::max(value_size, key_size);
+    return (::cuda::std::max) (value_size, key_size);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const

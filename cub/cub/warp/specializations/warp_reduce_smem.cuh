@@ -212,7 +212,7 @@ struct WarpReduceSmem
     // Clip the next segment at the warp boundary if necessary
     if (LogicalWarpThreads != 32)
     {
-      next_flag = ::cuda::std::min(next_flag, LogicalWarpThreads);
+      next_flag = (::cuda::std::min) (next_flag, LogicalWarpThreads);
     }
 
     _CCCL_PRAGMA_UNROLL_FULL()

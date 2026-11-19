@@ -186,7 +186,7 @@ struct BaseTraits<FLOATING_POINT, true, UnsignedBitsT, T>
   CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()") _CCCL_HOST_DEVICE_API static _CCCL_FORCEINLINE T
   Max()
   {
-    return ::cuda::std::numeric_limits<T>::max();
+    return (::cuda::std::numeric_limits<T>::max)();
   }
 
   //! deprecated [Since 3.0]

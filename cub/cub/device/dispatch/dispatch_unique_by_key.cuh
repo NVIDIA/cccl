@@ -280,7 +280,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
     }
 
     // Log init_kernel configuration
-    num_tiles                = ::cuda::std::max(1, num_tiles);
+    num_tiles                = (::cuda::std::max) (1, num_tiles);
     const int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
 
     _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
@@ -317,7 +317,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
     dim3 scan_grid_size;
     scan_grid_size.z = 1;
     scan_grid_size.y = ::cuda::ceil_div(num_tiles, max_dim_x);
-    scan_grid_size.x = ::cuda::std::min(num_tiles, max_dim_x);
+    scan_grid_size.x = (::cuda::std::min) (num_tiles, max_dim_x);
 
     // Log select_if_kernel configuration
 #ifdef CUB_DEBUG_LOG
@@ -580,7 +580,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
     // Log init_kernel configuration
     static constexpr int init_kernel_threads = 128;
-    num_tiles                                = ::cuda::std::max(1, num_tiles);
+    num_tiles                                = (::cuda::std::max) (1, num_tiles);
     const int init_grid_size                 = ::cuda::ceil_div(num_tiles, init_kernel_threads);
 
     _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
@@ -615,7 +615,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     dim3 scan_grid_size;
     scan_grid_size.z = 1;
     scan_grid_size.y = ::cuda::ceil_div(num_tiles, max_dim_x);
-    scan_grid_size.x = ::cuda::std::min(num_tiles, max_dim_x);
+    scan_grid_size.x = (::cuda::std::min) (num_tiles, max_dim_x);
 
 #ifdef CUB_DEBUG_LOG
     constexpr bool cub_debug_log_unique_by_key_kernel = true;

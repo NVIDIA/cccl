@@ -1016,7 +1016,7 @@ public:
 #endif // CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
 
     return __minmax_reduce(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, ::cuda::minimum<>{}, limits_t::max(), env);
+      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, ::cuda::minimum<>{}, (limits_t::max) (), env);
   }
 
   //! @rst
@@ -1090,7 +1090,7 @@ public:
                   "CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX to suppress this check.");
 #endif // CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
     return _CUB::detail::dispatch_with_env_validation(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
-      return __minmax_reduce(storage, bytes, d_in, d_out, num_items, ::cuda::minimum<>{}, limits_t::max(), env);
+      return __minmax_reduce(storage, bytes, d_in, d_out, num_items, ::cuda::minimum<>{}, (limits_t::max) (), env);
     });
   }
 
@@ -1561,7 +1561,7 @@ public:
     const ArgIndexInputIteratorT d_indexed_in(d_in);
 
     // Initial value
-    const init_value_t initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
+    const init_value_t initial_value{AccumT(1, (::cuda::std::numeric_limits<InputValueT>::max)())};
 
     return _CUB::detail::reduce::dispatch<AccumT>(
       d_temp_storage,
