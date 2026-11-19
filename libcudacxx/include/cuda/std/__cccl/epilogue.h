@@ -185,14 +185,6 @@ _CCCL_DIAG_POP
 #  undef _CCCL_POP_MACRO_spectre
 #endif
 
-#ifdef thread
-#  error \
-    "cccl internal error: macro `thread` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
-#elif defined(_CCCL_POP_MACRO_thread)
-#  pragma pop_macro("thread")
-#  undef _CCCL_POP_MACRO_thread
-#endif
-
 #ifdef uuid
 #  error \
     "cccl internal error: macro `uuid` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"

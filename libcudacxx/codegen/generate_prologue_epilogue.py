@@ -52,8 +52,9 @@ FOOTER = """\
 """
 
 # Standard attribute-tokens like `deprecated` and names declared by the standard library
-# like `allocator` are not listed, because a program must not define them as macros
-# ([macro.names]). `min` and `max` are the exception, because <windows.h> defines them.
+# like `allocator` or `thread` are not listed, because a program must not define them as
+# macros ([macro.names]). `min` and `max` are the exception, because <windows.h> defines
+# them.
 PUSH_POP_MACROS = {
     "__declspec modifiers": [
         "appdomain",
@@ -76,7 +77,6 @@ PUSH_POP_MACROS = {
         "safebuffers",
         "selectany",
         "spectre",
-        "thread",
         "uuid",
     ],
     "[[msvc::attribute]] attributes": [
