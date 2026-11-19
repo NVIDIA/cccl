@@ -788,44 +788,33 @@ struct as_expected_t : basic_sink<as_expected_t>
   template <class _Fn, class _Raw = decltype(::cuda::std::declval<_Fn&>()())>
   auto on_thrown(const ::std::exception* __exception, const ::cuda::std::source_location, _Fn&) const -> _Raw
   {
-    // nvcc instantiates this body when forming the callable-independent presence probe
-    // (`void (&)()`). Keep that archetype admissible; the assert still fires at a real
-    // composition site (a user void-lambda is a distinct type, not `void()`).
-    if constexpr (::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Fn>, void()>)
-    {
-      _CCCL_UNREACHABLE();
-    }
-    else
-    {
-      using _Expected = ::cuda::std::remove_cvref_t<_Raw>;
-      static_assert(::cuda::__is_specialization_of_v<_Expected, ::cuda::std::expected>,
-                    "as_expected requires the callable to return a cuda::std::expected instantiation");
+    using _Expected = ::cuda::std::remove_cvref_t<_Raw>;
+    static_assert(::cuda::__is_specialization_of_v<_Expected, ::cuda::std::expected>,
+                  "as_expected requires the callable to return a cuda::std::expected instantiation");
 
-      if constexpr (::cuda::__is_specialization_of_v<_Expected, ::cuda::std::expected>)
+    if constexpr (::cuda::__is_specialization_of_v<_Expected, ::cuda::std::expected>)
+    {
+      using _E = typename _Expected::error_type;
+      if constexpr (::cuda::std::is_constructible_v<_E, ::std::exception_ptr>)
       {
-        using _E = typename _Expected::error_type;
-        if constexpr (::cuda::std::is_constructible_v<_E, ::std::exception_ptr>)
-        {
-          return _Raw{::cuda::std::unexpect, _E(::std::current_exception())};
-        }
-        else if constexpr (::cuda::std::is_constructible_v<_E, const ::std::exception&>)
-        {
-          if (__exception)
-          {
-            return _Raw{::cuda::std::unexpect, _E(*__exception)};
-          }
-          _CCCL_RETHROW; // nonstandard exception, no lossless construction rung: decline
-        }
-        else
-        {
-          static_assert(
-            ::cuda::std::is_constructible_v<_E, ::std::exception_ptr>
-              || ::cuda::std::is_constructible_v<_E, const ::std::exception&>,
-            "as_expected requires the error type constructible from exception_ptr or const std::exception&");
-        }
+        return _Raw{::cuda::std::unexpect, _E(::std::current_exception())};
       }
-      _CCCL_UNREACHABLE();
+      else if constexpr (::cuda::std::is_constructible_v<_E, const ::std::exception&>)
+      {
+        if (__exception)
+        {
+          return _Raw{::cuda::std::unexpect, _E(*__exception)};
+        }
+        _CCCL_RETHROW; // nonstandard exception, no lossless construction rung: decline
+      }
+      else
+      {
+        static_assert(::cuda::std::is_constructible_v<_E, ::std::exception_ptr>
+                        || ::cuda::std::is_constructible_v<_E, const ::std::exception&>,
+                      "as_expected requires the error type constructible from exception_ptr or const std::exception&");
+      }
     }
+    _CCCL_UNREACHABLE();
   }
 };
 inline constexpr as_expected_t as_expected{};
