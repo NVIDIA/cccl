@@ -18,7 +18,6 @@
 #endif // no system header
 
 #include <cub/block/block_load.cuh>
-#include <cub/block/block_reduce.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/detail/it_traits.cuh>
@@ -30,7 +29,6 @@
 #include <cub/util_macro.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/__functional/minimum.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cstddef/types.h>
@@ -149,7 +147,6 @@ private:
   using block_store_aug_t   = BlockStore<augmented_accum_t, threads_per_block, items_per_thread, store_algorithm>;
   using block_scan_aug_t    = BlockScan<augmented_accum_t, threads_per_block, scan_algorithm>;
   using block_offset_scan_t = BlockScan<OffsetT, threads_per_block, scan_algorithm>;
-  using block_reduce_t      = BlockReduce<unsigned int, threads_per_block>;
 
   union _multiple_segment_algorithms_storage_t
   {
@@ -160,13 +157,11 @@ private:
     typename block_store_aug_t::TempStorage store_aug;
     typename block_scan_aug_t::TempStorage scan_aug;
     typename block_offset_scan_t::TempStorage offset_scan;
-    typename block_reduce_t::TempStorage min_reduce;
   };
 
   struct _multi_segment_temp_storage_t
   {
     OffsetT logical_segment_offsets[max_segments];
-    unsigned int fixed_size_mask;
     _multiple_segment_algorithms_storage_t reused;
   };
 
@@ -299,15 +294,12 @@ public:
     _CCCL_ASSERT(n_segments > 0, "Number of segments per worker should be positive");
     _CCCL_ASSERT(n_segments <= NumSegments, "Number of segments per worker exceeds statically provisioned storage");
 
+    // Accumulate each thread's size checks before combining them across the block.
+    bool local_is_fixed_size = true;
+
     // cooperatively compute inclusive scan of sizes of segments to be processed by this block
     {
       const auto tid = threadIdx.x;
-
-      // assume all segments have the same size
-      if (tid == 0)
-      {
-        temp_storage.fixed_size_mask = 1u;
-      }
 
       n_segments               = ::cuda::std::min(n_segments, static_cast<int>(NumSegments));
       const unsigned n_chunks  = ::cuda::ceil_div(n_segments, threads_per_block);
@@ -336,28 +328,25 @@ public:
         }
         __syncthreads();
 
-        block_reduce_t min_reducer(temp_storage.reused.min_reduce);
-        ::cuda::minimum<unsigned int> min_op;
-
-        const unsigned int fixed_size_check =
-          ((work_id >= n_segments) || (prefix == (work_id + 1) * temp_storage.logical_segment_offsets[0])) ? 1u : 0u;
-        const unsigned int block_fixed_size_check = min_reducer.Reduce(fixed_size_check, min_op);
-        if (tid == 0)
-        {
-          temp_storage.fixed_size_mask = min_op(temp_storage.fixed_size_mask, block_fixed_size_check);
-        }
-        __syncthreads();
+        const bool fixed_size_check =
+          (work_id >= n_segments) || (segment_size == temp_storage.logical_segment_offsets[0]);
+        local_is_fixed_size = local_is_fixed_size && fixed_size_check;
       }
     }
+
+    bool is_fixed_size = __syncthreads_and(local_is_fixed_size);
+
+    // The compiler doesn't place The result of __syncthreads_and(...) into warp uniform registers. Broadcast the value
+    is_fixed_size = __shfl_sync(~0u, is_fixed_size, 0);
 
     const ::cuda::std::span<OffsetT> cum_sizes{
       temp_storage.logical_segment_offsets, static_cast<::cuda::std::size_t>(n_segments)};
 
     const OffsetT items_per_block = cum_sizes[n_segments - 1];
 
-    if (temp_storage.fixed_size_mask && (items_per_block > 0))
+    if (is_fixed_size && (items_per_block > 0))
     {
-      // fast path: assumes all segments have identical size (checked via fixed_size_mask)
+      // fast path: assumes all segments have identical size (checked via is_fixed_size)
       // fixed-size searcher can cheaply identify which segment an element belongs to
       // using segment_id = elem_id / segment_size;
       const auto segment_size = cum_sizes[0];
