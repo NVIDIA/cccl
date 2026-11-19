@@ -108,7 +108,7 @@ Always prefer targeted builds and tests, as full builds are time-consuming. If r
 
 ### Target Names
 
-Target names do not encode the C++ dialect. The preset selects it, except for the C Parallel targets, which fix C++20 in their CMake files. Every dotted prefix of a target is also a Ninja metatarget, so `ninja cub.test.device` builds all CUB device tests; targets created with `NO_METATARGETS`, such as the C Parallel tests, are the exception. `--ctest-targets` takes CTest `-R` regexes, which match substrings: append `$` when a test name is a prefix of others.
+Every dotted prefix of a target is also a Ninja metatarget, so `ninja cub.test.device` builds all CUB device tests; targets created with `NO_METATARGETS`, such as the C Parallel tests, are the exception. `--ctest-targets` takes CTest `-R` regexes, which match substrings: append `$` when a test name is a prefix of others.
 
 * CUB: `cub.test.<name>[.<variant>]`. `<name>` is the source file name without `catch2_test_` or `test_`, with a leading `device_`, `block_`, `warp_`, `thread_`, or `util_` turned into `device.` and so on. Variants come from `// %PARAM%` lines and launcher ids (`lid_0`, `lid_1`, `lid_2`). CMake reads `%PARAM%` lines at configure time, so re-run CMake after changing them (see `docs/cccl/development/testing.rst`).
 * Thrust: `thrust.<host>.<device>.test.<name>`, e.g. `thrust.cpp.cuda.test.reduce`.
@@ -364,7 +364,7 @@ Besides the formatters and linters, two repository-local hooks enforce conventio
 
 ### Style Guidance
 
-When editing or reviewing CCCL code for style, read `.agent/skills/cccl-style/SKILL.md`. It routes to the common CCCL style reference and any path-specific style reference that applies to the files being changed.
+When editing or reviewing CCCL code for style, read `.agent/skills/cccl-style/SKILL.md`. It routes to the common CCCL style reference, `docs/cccl/development/coding_conventions.rst`, and any path-specific style reference that applies to the files being changed.
 
 ### Test Guidance
 
@@ -402,7 +402,7 @@ cccl/
 ├── c2h/                # Catch2 test harness shared by CUB, cudax, libcudacxx, and the C library
 ├── nvbench_helper/     # NVBench glue for benchmarks
 ├── benchmarks/         # Shared benchmark CMake and scripts
-├── python/             # Python packages: cuda_cccl, cuda_coop, cuda_stf
+├── python/             # Python packages: cuda_cccl, cuda_stf
 ├── ci/                 # Build/test scripts
 ├── docs/               # Sphinx documentation sources
 ├── examples/           # Usage examples
@@ -424,41 +424,7 @@ python/cuda_cccl/
 └── pyproject.toml
 ```
 
-`python/cuda_coop/` (`cuda.coop`) and `python/cuda_stf/` (`cuda.stf`) are separate packages with their own `pyproject.toml` and `tests/`.
-
----
-
-## Architecture
-
-### Library Layering
-
-* **libcudacxx** is the base. `libcudacxx/include/cuda/std/` implements `cuda::std::`, and `libcudacxx/include/cuda/` adds `cuda::` extensions. `cuda/std/__cccl/` defines the `_CCCL_*` compiler, dialect, and visibility macros that every other library uses.
-* **CUB** (`cub/cub/`) builds on libcudacxx. **Thrust** (`thrust/thrust/`) builds on both: its CUDA backend in `thrust/system/cuda/` calls CUB, and `cpp/`, `omp/`, and `tbb/` are host backends.
-* **cudax** (`cudax/include/cuda/experimental/`, namespace `cuda::experimental`) builds on all three and includes CUDASTF (`__stf/`).
-
-### Header Conventions
-
-libcudacxx headers include `<cuda/std/detail/__config>`, then the system-header pragma block, then `<cuda/std/__cccl/prologue.h>` (closed by `epilogue.h`), and open their namespace with a macro such as `_CCCL_BEGIN_NAMESPACE_CUDA_STD`. CUB and Thrust use `CUB_NAMESPACE_BEGIN` and `THRUST_NAMESPACE_BEGIN`. Start a new header from a neighboring one. The macros are documented in `docs/cccl/development/macro.rst`.
-
-### CUB Device Algorithms
-
-A device-wide algorithm is layered across `cub/cub/`:
-
-1. `device/device_<algo>.cuh`: public entry points.
-2. `device/dispatch/dispatch_<algo>.cuh`: temporary storage, policy selection, and kernel launch.
-3. `device/dispatch/tuning/tuning_<algo>.cuh`: per-architecture tuning policies.
-4. `agent/`: per-thread-block tile processing.
-5. `block/`, `warp/`, `thread/`: the cooperative primitives the agents are built from.
-
-### Test Frameworks
-
-* libcudacxx: lit tests under `libcudacxx/test/libcudacxx/{std,cuda}/`.
-* CUB, cudax, and the C library: Catch2, through the shared `c2h/` harness (runner and data generators). CUB tests run under three launchers: `lid_0` launches from the host, `lid_1` from the device (CDP, built with RDC), and `lid_2` through a CUDA graph. The `cub-lid0`, `cub-lid1`, and `cub-lid2` presets each build one launcher.
-* Thrust: its own framework in `thrust/testing/unittest/`.
-
-### C Library and Python
-
-`c/parallel` (v1) JIT-compiles CUB kernels at runtime with NVRTC and nvJitLink; `c/parallel.v2` uses HostJIT instead. `python/cuda_cccl` (`cuda.compute`) builds against v1 by default and against v2 when `CCCL_PYTHON_USE_V2=ON`. v2 has its own preset (`cccl-c-parallel-v2`) and CI scripts (`ci/*_v2.sh`).
+`python/cuda_stf/` (`cuda.stf`) is a separate package with its own `pyproject.toml` and `tests/`.
 
 ---
 
