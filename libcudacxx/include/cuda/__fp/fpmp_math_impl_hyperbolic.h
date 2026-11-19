@@ -130,8 +130,8 @@ __internal_fpmp2_sinh_kernel(const float __a_hi, const float __a_lo, float* __re
   const int __kbm                    = 64 - __k;
   const int __n                      = __kb >> 7; // floor divisions
   const int __ds                     = (__kbm >> 7) - __n; // n' - n <= 0
-  const __fpmp2_exp_table_entry __ta = __fpmp2_expm1_table[__kb & 127];
-  const __fpmp2_exp_table_entry __tb = __fpmp2_expm1_table[__kbm & 127];
+  const __fpmp2_exp_table_entry __ta = ::cuda::__fpmp2_expm1_table(__kb & 127);
+  const __fpmp2_exp_table_entry __tb = ::cuda::__fpmp2_expm1_table(__kbm & 127);
   const float __s                    = ::cuda::__internal_fpmp2_exp2i(__ds < -64 ? -64 : __ds);
   const float __sb_hi                = __s * __tb.__hi;
   const float __sb_lo                = __s * __tb.__lo;
