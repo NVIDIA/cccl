@@ -5,13 +5,15 @@
 
 #include <cub/device/device_scan.cuh>
 
+#include <thrust/detail/vector_base.h>
+
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 #include <cuda/std/functional>
 
 #include "catch2_test_device_scan.cuh"
 #include "cub_test_macros.h"
-#include <c2h/generators.h>
+#include <c2h/catch2_test_helper.h>
 
 using float_type_list = c2h::type_list<float, double>;
 

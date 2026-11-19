@@ -4,12 +4,24 @@
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_segmented_reduce.cuh>
+#include <cub/device/dispatch/tuning/tuning_segmented_reduce.cuh>
+#include <cub/util_device.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/cstdint>
+
+#include <cstddef>
+#include <cstdint>
+
 #include "catch2_test_device_reduce.cuh"
-#include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 // only lid 0 is enabled, as this test only tests max_segment_size functionality through dispatch directly
 

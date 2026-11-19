@@ -7,7 +7,11 @@
 
 #pragma once
 
+#include <cub/device/dispatch/dispatch_common.cuh>
+
 #include <thrust/random.h>
+#include <thrust/random/uniform_int_distribution.h>
+#include <thrust/random/uniform_real_distribution.h>
 #include <thrust/shuffle.h>
 
 #include <cuda/std/__algorithm/max.h>

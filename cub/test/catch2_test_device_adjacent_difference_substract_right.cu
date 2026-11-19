@@ -5,19 +5,28 @@
 
 #include <cub/device/device_adjacent_difference.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/iterator/zip_iterator.h>
 
 #include <cuda/iterator>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/execution>
 #include <cuda/std/tuple>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <numeric>
 
 #include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
+#include <c2h/vector_generators.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractRight, adjacent_difference_subtract_right);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractRightCopy, adjacent_difference_subtract_right_copy);

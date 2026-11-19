@@ -5,15 +5,26 @@
 
 #include <cub/device/device_run_length_encode.cuh>
 
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 
-#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/stream>
 
 #include <iostream>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+
+#if _CCCL_STD_VER >= 2020
+#  include <cub/block/block_load.cuh>
+#  include <cub/block/block_scan.cuh>
+#  include <cub/device/dispatch/tuning/common.cuh>
+#  include <cub/device/dispatch/tuning/tuning_rle_non_trivial_runs.cuh>
+#  include <cub/thread/thread_load.cuh>
+
+#  include <cuda/__execution/tune.h>
+#endif // _CCCL_STD_VER >= 2020
 
 CUB_TEST("cub::DeviceRunLengthEncode::Encode accepts env with stream", "[run_length_encode][env]", CUB_SMALL)
 {

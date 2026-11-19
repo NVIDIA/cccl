@@ -1,8 +1,11 @@
 #pragma once
+// IWYU pragma: always_keep
 
 // Include this file at the top of a unit test for CUB device algorithms to check whether any inserted NVTX ranges nest.
 
-#include <cuda/std/optional>
+#include <cuda/std/optional> // IWYU pragma: keep
+
+#include <nv/target>
 
 #include <cstdio>
 #include <cstdlib>

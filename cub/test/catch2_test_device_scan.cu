@@ -3,7 +3,16 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/config.cuh>
+
+#include <cub/detail/future_value.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/device/device_scan.cuh>
+
+#include <cuda/__functional/minimum.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__limits/numeric_limits.h>
 
 #include <cstdint>
 
@@ -11,6 +20,7 @@
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan_with_init);

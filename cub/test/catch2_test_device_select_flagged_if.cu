@@ -5,21 +5,30 @@
 
 #include <cub/detail/prefetch.cuh>
 #include <cub/device/device_select.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_select_if.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/logical.h>
 
+#include <cuda/__device/compute_capability.h>
 #include <cuda/functional>
 #include <cuda/iterator>
+#include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/execution>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 
 #include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 template <typename PredOpT>
 struct predicate_op_wrapper_t

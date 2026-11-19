@@ -6,6 +6,8 @@
 #include <cub/device/device_partition.cuh>
 
 #include <thrust/count.h>
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
@@ -15,6 +17,9 @@
 #include <cuda/std/iterator>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <ostream>
 
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_custom_streams.cuh"
@@ -22,6 +27,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/catch2_allocation_failure.h>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 template <class T, class FlagT>
 static c2h::host_vector<T> get_reference(const c2h::device_vector<T>& in, const c2h::device_vector<FlagT>& flags)

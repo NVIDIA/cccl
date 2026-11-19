@@ -8,6 +8,7 @@
 #include <cuda/__memory_resource/memory_resource_base.h>
 #include <cuda/__memory_resource/resource.h>
 #include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__cccl/diagnostic.h>
 #include <cuda/std/__exception/terminate.h>
 
 #include <cstddef>

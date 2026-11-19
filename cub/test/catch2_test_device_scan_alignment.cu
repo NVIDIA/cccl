@@ -5,21 +5,18 @@
 
 #include <cub/device/device_scan.cuh>
 
+#include <thrust/detail/vector_base.h>
+
+#include <cuda/std/cstdint>
 #include <cuda/std/functional>
 
-#include <algorithm>
-#include <cmath>
 #include <cstdint>
-#include <iomanip>
-#include <iostream>
-#include <optional>
-#include <vector>
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
-#include <c2h/custom_type.h>
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0
 

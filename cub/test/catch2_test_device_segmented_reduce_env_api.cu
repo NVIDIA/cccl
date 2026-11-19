@@ -3,18 +3,36 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/detail/key_value_pair.cuh>
 #include <cub/device/device_segmented_reduce.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
-#include <cuda/__execution/tune.h>
 #include <cuda/devices>
+#include <cuda/std/__execution/env.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__utility/pair.h>
 #include <cuda/stream>
 
+#include <iostream>
+#include <limits>
+
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+
+#if _CCCL_STD_VER >= 2020
+#  include <cub/block/block_reduce.cuh>
+#  include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#  include <cub/device/dispatch/tuning/tuning_segmented_reduce.cuh>
+#  include <cub/thread/thread_load.cuh>
+
+#  include <cuda/__execution/tune.h>
+#endif // _CCCL_STD_VER >= 2020
 
 CUB_TEST("cub::DeviceSegmentedReduce::Sum accepts env with stream and determinism requirements",
          "[segmented_reduce][env]",

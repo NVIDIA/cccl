@@ -5,13 +5,18 @@
 #include <cub/device/device_segmented_radix_sort.cuh>
 #include <cub/util_type.cuh>
 
+#include <thrust/copy.h>
+#include <thrust/equal.h>
 #include <thrust/memory.h>
 #include <thrust/scatter.h>
 
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/iterator>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/cstdint>
 
-#include <algorithm>
-#include <limits>
+#include <cstddef>
+#include <cstdint>
 
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
@@ -19,6 +24,8 @@
 #include "cub_test_macros.h"
 #include "thrust/detail/raw_pointer_cast.h"
 #include <c2h/catch2_allocation_failure.h>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

@@ -3,16 +3,26 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/block/block_reduce.cuh>
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/deferred_parameter.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/device/device_reduce.cuh>
 #include <cub/device/device_select.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_reduce_deterministic.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/functional.h>
 
+#include <cuda/__argument/argument_bounds.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 #include <cuda/argument>
@@ -26,13 +36,12 @@
 #include <cstddef>
 #include <cstdint>
 
-#include <cuda_runtime_api.h>
-
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/device_and_stream.h>
-#include <c2h/generators.h>
+#include <c2h/vector_generators.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);

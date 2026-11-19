@@ -3,14 +3,28 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/block/block_store.cuh>
+#include <cub/detail/input_value.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_segmented_scan.cuh>
+#include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
+#include <cub/thread/thread_load.cuh>
 
+#include <thrust/detail/vector_base.h>
 #include <thrust/generate.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/__functional/minimum.h>
 #include <cuda/iterator>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/type_traits> // std::integral_constant
 
+#include <cstddef>
 #include <cstdint>
 #include <tuple>
 #include <utility>
@@ -18,7 +32,9 @@
 
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
+#include "catch2_test_scan_reference.cuh"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

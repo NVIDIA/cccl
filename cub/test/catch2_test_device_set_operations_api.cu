@@ -5,6 +5,7 @@
 
 #include <cub/device/device_set_operations.cuh>
 
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 
 #include <cuda/devices>
@@ -14,6 +15,7 @@
 #include <iostream>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 // All examples below operate on the same two sorted key sequences, so that the different set operations can be compared
 // side by side purely by their results:

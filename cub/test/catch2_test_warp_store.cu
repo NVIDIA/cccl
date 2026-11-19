@@ -2,11 +2,17 @@
 // SPDX-License-Identifier: BSD-3
 
 #include <cub/iterator/cache_modified_output_iterator.cuh>
+#include <cub/thread/thread_store.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_ptx.cuh>
 #include <cub/warp/warp_store.cuh>
 
+#include <cstdint>
+
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/fill_striped.h>
+#include <c2h/generator_common.h>
 
 template <cub::WarpStoreAlgorithm StoreAlgorithm,
           int LogicalWarpThreads,

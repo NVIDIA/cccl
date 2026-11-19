@@ -5,6 +5,7 @@
 
 #include <cub/device/device_reduce.cuh>
 
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/fill.h>
 
@@ -12,16 +13,21 @@
 #include <cuda/devices>
 #include <cuda/std/__algorithm/max_element.h>
 #include <cuda/std/__algorithm/min_element.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/execution>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
-#include <cuda/stream>
+
+#include <cstdint>
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
+#include "catch2_test_numeric_helpers.cuh"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
+#include <c2h/half.cuh>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinMax, device_arg_minmax);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinLastMax, device_arg_minlastmax);

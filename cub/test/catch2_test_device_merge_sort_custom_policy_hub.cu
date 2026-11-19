@@ -8,14 +8,27 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_store.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/device_merge_sort.cuh>
+#include <cub/device/dispatch/dispatch_merge_sort.cuh>
+#include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/util_device.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 
 #include "catch2_test_device_merge_sort_common.cuh"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 using namespace cub;
 

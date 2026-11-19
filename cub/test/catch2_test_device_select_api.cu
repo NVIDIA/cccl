@@ -5,16 +5,19 @@
 
 #include <cub/device/device_select.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
-#include <thrust/equal.h>
 #include <thrust/memory.h>
 
 #include <cuda/functional>
+#include <cuda/std/cstdint>
 
 #include <cstddef>
 #include <iostream>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 CUB_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][device]", CUB_SMALL)
 {

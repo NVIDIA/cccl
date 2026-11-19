@@ -3,20 +3,23 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/detail/key_value_pair.cuh>
 #include <cub/device/device_segmented_reduce.cuh>
 
 #include <thrust/device_vector.h>
 #include <thrust/equal.h>
 
-#include <cuda/std/functional>
+#include <cuda/std/cstdint>
 #include <cuda/std/utility>
 
 #include <climits>
 #include <cstddef>
+#include <cstdint>
 #include <iostream>
 
 #include "cub_test_macros.h"
 #include "thrust/detail/raw_pointer_cast.h"
+#include <c2h/catch2_test_helper.h>
 
 // example-begin segmented-reduce-custommin
 struct CustomMin

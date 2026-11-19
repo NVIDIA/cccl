@@ -3,9 +3,10 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#include <cub/device/device_for.cuh>
+#include <cub/device/dispatch/kernels/kernel_for_each.cuh>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 template <class T>
 struct value_t

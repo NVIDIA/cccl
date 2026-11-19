@@ -5,11 +5,17 @@
 
 #include <cub/device/device_find.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 
+#include <cuda/std/__functional/operations.h>
+
+#include <cstddef>
 #include <iostream>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 // example-begin find-if-predicate
 struct is_greater_than_t

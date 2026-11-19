@@ -3,12 +3,17 @@
 
 #include <cub/util_type.cuh>
 
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/iterator>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/cstring>
 #include <cuda/std/type_traits>
 
+#include <cstdint>
+
 #include "cub_test_macros.h"
-#include <c2h/extended_types.h>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/half.cuh>
 
 CUB_TEST("Tests non_void_value_t", "[util][type]", CUB_SMALL)
 {

@@ -6,14 +6,20 @@
 #include <cub/device/device_for.cuh>
 
 #include <thrust/count.h>
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
-#include <thrust/sequence.h>
 
+#include <cuda/std/__fwd/extents.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 #include <cuda/std/mdspan>
 #include <cuda/std/span>
 
+#include <cstddef>
+#include <cstdint>
+
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/utility.h>
 #include <catch2_test_launch_helper.h>
 

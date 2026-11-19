@@ -6,6 +6,14 @@
 
 #include <cub/config.cuh>
 
+#include <cub/detail/mdspan_utils.cuh>
+
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
+
+#include <cuda/std/__fwd/mdspan.h>
+#include <cuda/std/__mdspan/extents.h>
+
 // MSVC doesn't support __device__ lambdas
 #if !_CCCL_COMPILER(MSVC)
 

@@ -3,6 +3,9 @@
 
 #include <cub/device/device_radix_sort.cuh>
 
+#include <cstddef>
+#include <cstdint>
+
 struct custom_t
 {
   std::uint16_t i;

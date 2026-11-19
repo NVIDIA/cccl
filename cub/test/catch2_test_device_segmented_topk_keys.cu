@@ -10,17 +10,21 @@
 
 #include <cub/device/device_batched_topk.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk.cuh> // topk_policy / make_{baseline,cluster}_policy (cluster-cap tuning test)
-#include <cub/util_type.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
+#include <cub/util_device.cuh>
 
 #include <thrust/copy.h>
 #include <thrust/count.h>
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/__argument/argument.h>
+#include <cuda/__argument/argument_bounds.h>
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/require.h>
@@ -29,6 +33,7 @@
 #include <cuda/iterator>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cmath/signbit.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
@@ -36,7 +41,10 @@
 #include "catch2_test_device_topk_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
+#include <c2h/half.cuh>
+#include <c2h/vector_generators.h>
 #include <catch2/generators/catch_generators.hpp>
 
 struct is_minus_zero

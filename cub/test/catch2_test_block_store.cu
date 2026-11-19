@@ -2,13 +2,27 @@
 // SPDX-License-Identifier: BSD-3
 
 #include <cub/block/block_store.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/iterator/cache_modified_output_iterator.cuh>
-#include <cub/util_allocator.cuh>
+#include <cub/thread/thread_store.cuh>
 #include <cub/util_arch.cuh>
 
+#include <thrust/copy.h>
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
+#include <thrust/fill.h>
+
+#include <cuda/std/__cccl/compiler.h>
+#include <cuda/std/__cccl/dialect.h>
 #include <cuda/std/span>
 
+#include <cstdint>
+#include <ostream>
+#include <type_traits>
+
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 template <int ItemsPerThread, int ThreadsInBlock, cub::BlockStoreAlgorithm /* StoreAlgorithm */>
 struct output_idx

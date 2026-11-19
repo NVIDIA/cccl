@@ -5,12 +5,15 @@
 
 #include <cuda/cmath>
 #include <cuda/functional>
+#include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/numeric>
 #include <cuda/std/type_traits>
+
+#include <nv/target>
 
 #include <ostream>
 

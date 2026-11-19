@@ -5,6 +5,11 @@
 
 #include <cub/device/device_run_length_encode.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
+
+#include <cstdint>
+#include <tuple>
+
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/catch2_test_helper.h>

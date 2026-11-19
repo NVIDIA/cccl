@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cuda/__algorithm/fill.h>
+#include <cuda/__container/resizable_buffer.h>
+#include <cuda/__utility/no_init.h>
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/memory_resource>
@@ -28,8 +30,11 @@
 #include <c2h/catch2_test_helper.h>
 #include <c2h/checked_memory_resource.cuh>
 #include <c2h/custom_type.h>
+#include <c2h/detail/checked_memory.cuh>
 #include <c2h/detail/env.cuh>
 #include <c2h/device_and_stream.h>
+#include <c2h/generator_common.h>
+#include <c2h/vector_generators.h>
 
 namespace
 {

@@ -3,11 +3,24 @@
 
 // Focused checks for capacity mapping, ID partitioning, and the internal bounded GroupMerge sorting path.
 
+#include <cub/config.cuh>
+
+#include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/segmented_sort_lrb.cuh>
 #include <cub/device/dispatch/dispatch_segmented_sort_lrb.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
+#include <cub/util_device.cuh>
+
+#include <thrust/detail/raw_pointer_cast.h>
+
+#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <limits>
 #include <random>
 #include <vector>

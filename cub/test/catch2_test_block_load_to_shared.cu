@@ -2,15 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cub/block/block_load_to_shared.cuh>
-#include <cub/util_allocator.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <thrust/copy.h>
+#include <thrust/detail/raw_pointer_cast.h>
+
+#include <cuda/__ptx/instructions/generated/get_sreg.h>
 #include <cuda/cmath>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 enum struct test_mode
 {

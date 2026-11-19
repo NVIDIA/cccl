@@ -5,19 +5,23 @@
 
 #include <cub/device/device_set_operations.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__functional/operations.h>
 
 #include <algorithm>
 #include <cstddef>
-
-#include <test_util.h>
+#include <cstdint>
+#include <iterator>
 
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
+#include <c2h/vector_generators.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

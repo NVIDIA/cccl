@@ -1,14 +1,23 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
+#include <cub/detail/future_value.cuh>
 #include <cub/device/device_scan.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <cuda/__argument/argument.h>
+#include <cuda/__functional/maximum.h>
+#include <cuda/std/__functional/operations.h>
+
+#include <cstddef>
+#include <cstdint>
 #include <iostream>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 CUB_TEST("Device inclusive scan works", "[scan][device]", CUB_SMALL)
 {

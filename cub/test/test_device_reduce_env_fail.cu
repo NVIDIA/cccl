@@ -4,7 +4,8 @@
 #include <cub/device/device_reduce.cuh>
 
 #include <cuda/__execution/determinism.h>
-#include <cuda/__execution/require.h>
+#include <cuda/std/__execution/env.h>
+#include <cuda/std/__functional/operations.h>
 
 #include <iostream>
 

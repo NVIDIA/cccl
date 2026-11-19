@@ -8,16 +8,26 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/config.cuh>
+
+#include <cub/block/block_store.cuh>
 #include <cub/device/device_merge.cuh>
+#include <cub/device/dispatch/dispatch_merge.cuh>
+#include <cub/device/dispatch/tuning/tuning_merge.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/util_arch.cuh>
 
 #include <thrust/sort.h>
 
-#include <algorithm>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/__execution/tune.h>
+#include <cuda/std/__functional/operations.h>
 
-#include <test_util.h>
+#include <algorithm>
 
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
