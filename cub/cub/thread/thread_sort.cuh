@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -26,7 +26,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 // RAPIDS cuDF needs to avoid unrolling some loops in sort to prevent compile time issues
-#if defined(CCCL_AVOID_SORT_UNROLL)
+#ifdef CCCL_AVOID_SORT_UNROLL
 inline constexpr bool sort_unroll_default = false;
 #else // ^^^ CCCL_AVOID_SORT_UNROLL ^^^ / vvv !CCCL_AVOID_SORT_UNROLL vvv
 inline constexpr bool sort_unroll_default = true;

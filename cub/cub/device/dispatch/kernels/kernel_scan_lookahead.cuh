@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -49,7 +49,7 @@
 
 #include <nv/target>
 
-#if defined(_CCCL_ENABLE_IKET)
+#ifdef _CCCL_ENABLE_IKET
 #  include <cub/agent/agent_scan.cuh>
 #endif // defined(_CCCL_ENABLE_IKET)
 

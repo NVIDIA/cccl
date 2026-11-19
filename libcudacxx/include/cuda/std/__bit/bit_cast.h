@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -37,7 +37,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_BIT_CAST)
+#ifdef _CCCL_BUILTIN_BIT_CAST
 #  define _CCCL_CONSTEXPR_BIT_CAST       constexpr
 #  define _CCCL_HAS_CONSTEXPR_BIT_CAST() 1
 #else // ^^^ _CCCL_BUILTIN_BIT_CAST ^^^ / vvv !_CCCL_BUILTIN_BIT_CAST vvv
@@ -69,7 +69,7 @@ _CCCL_REQUIRES((sizeof(_To) == sizeof(_From)) _CCCL_AND(::cuda::is_trivially_cop
                  _CCCL_AND(::cuda::is_trivially_copyable_v<_From>))
 [[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_BIT_CAST _To bit_cast(const _From& __from) noexcept
 {
-#if defined(_CCCL_BUILTIN_BIT_CAST)
+#ifdef _CCCL_BUILTIN_BIT_CAST
   // Compilers unfortunately require the types to be trivially copyable per the letter of the
   // C++ law, and will emit errors if the builtin is called on types that aren't
   // NOLINTNEXTLINE(cccl-prefer-cuda-traits)

@@ -9,7 +9,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -680,7 +680,7 @@ _CCCL_HOST_DEVICE_API constexpr int LoadToSharedBufferSizeBytes(::cuda::std::siz
   return ::cuda::round_up(num_bytes, detail::bulk_copy_min_align) + extra_space;
 }
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES)
+#ifdef CUB_DEFINE_RUNTIME_POLICIES
 // TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 #  if !_CCCL_HAS_CONCEPTS()
 #    error Generation of runtime policy wrappers requires C++20 concepts.

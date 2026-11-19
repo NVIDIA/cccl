@@ -164,7 +164,7 @@ using namespace cuda::std;
 
 // Math functions: use fast or accurate variants based on compiler flag.
 #  pragma push_macro("__USE_FAST_MATH__")
-#  if defined(__CLANG_GPU_APPROX_TRANSCENDENTALS__)
+#  ifdef __CLANG_GPU_APPROX_TRANSCENDENTALS__
 #    define __USE_FAST_MATH__ 1
 #  endif
 #  include "crt/math_functions.hpp"
@@ -375,7 +375,7 @@ __device__ inline __cuda_builtin_gridDim_t::operator uint3() const
 // __clang_cuda_intrinsics.h provides `long` overloads for __ldcs/__ldcg/__ldcv
 // but omits `unsigned long` (= uint64_t on 64-bit Linux). Add them here so
 // iterators using uint64_t pointers (e.g. CacheModifiedInputIterator) compile.
-#  if defined(__LP64__)
+#  ifdef __LP64__
 inline __device__ unsigned long __ldcs(const unsigned long* __ptr)
 {
   unsigned long __ret;
@@ -423,7 +423,7 @@ extern "C" unsigned __cudaPushCallConfiguration(dim3 gridDim, dim3 blockDim, siz
 // to register a cleanup function.  Provide a no-op stub — the JIT library is
 // short-lived and unloaded explicitly.
 #  if !defined(__HOSTJIT_DEVICE_COMPILATION__)
-#    if defined(_MSC_VER)
+#    ifdef _MSC_VER
 extern "C" int atexit(void(__cdecl*)(void))
 {
   return 0;

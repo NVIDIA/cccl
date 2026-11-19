@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -419,7 +419,7 @@
 
 #define THRUST_PP_IIF(bit, t, f) THRUST_PP_IIF_IMPL0(bit, t, f)
 
-#if defined(_MSC_VER)
+#ifdef _MSC_VER
 #  define THRUST_PP_IIF_IMPL0(bit, t, f)                                   \
     THRUST_PP_IIF_IMPL1(THRUST_PP_CAT2(THRUST_PP_IIF_IMPL_TAG, bit(t, f))) \
     /**/
@@ -432,7 +432,7 @@
 #define THRUST_PP_IIF_IMPL_TAG0(t, f) f
 #define THRUST_PP_IIF_IMPL_TAG1(t, f) t
 
-#if defined(__EDG__)
+#ifdef __EDG__
 #  define THRUST_PP_IF(cond, t, f) THRUST_PP_IF_IMPL0(cond, t, f)
 #  define THRUST_PP_IF_IMPL0(cond, t, f)      \
     THRUST_PP_IIF(THRUST_PP_BOOL(cond), t, f) \
@@ -470,7 +470,7 @@
 /// }
 /// \endcode
 ///
-#if defined(__EDG__)
+#ifdef __EDG__
 #  define THRUST_PP_COMMA_IF(cond)       THRUST_PP_COMMA_IF_IMPL0(cond)
 #  define THRUST_PP_COMMA_IF_IMPL0(cond) THRUST_PP_IF(cond, THRUST_PP_COMMA, THRUST_PP_EMPTY)() /**/
 #else
