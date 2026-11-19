@@ -73,17 +73,15 @@ _CCCL_REQUIRES((sizeof(_To) == sizeof(_From)) _CCCL_AND(::cuda::is_trivially_cop
   // Compilers unfortunately require the types to be trivially copyable per the letter of the
   // C++ law, and will emit errors if the builtin is called on types that aren't
   // NOLINTNEXTLINE(cccl-prefer-cuda-traits)
-  if constexpr (::cuda::std::is_trivially_copyable_v<_To> && ::cuda::std::is_trivially_copyable_v<_From>)
+  else if constexpr (::cuda::std::is_trivially_copyable_v<_To> && ::cuda::std::is_trivially_copyable_v<_From>)
   {
     return _CCCL_BUILTIN_BIT_CAST(_To, __from);
   }
+#endif // _CCCL_BUILTIN_BIT_CAST
   else
   {
     return ::cuda::std::__bit_cast_memcpy<_To>(__from);
   }
-#else // ^^^ _CCCL_BUILTIN_BIT_CAST ^^^ / vvv !_CCCL_BUILTIN_BIT_CAST vvv
-  return ::cuda::std::__bit_cast_memcpy<_To>(__from);
-#endif // _CCCL_BUILTIN_BIT_CAST
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
