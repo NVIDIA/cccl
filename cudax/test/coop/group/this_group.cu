@@ -56,7 +56,7 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
 
   // Test that the group can be synchronized using .sync() method.
   {
-    static_assert(cuda::std::is_same_v<void, decltype(group.sync())>);
+    static_assert(cuda::std::is_same_v<void, decltype(group.sync())>); // NOLINT(cccl-simplify-type-traits)
 
     // .sync() method must support calls from different branches. Add some dummy work to make sure the branches are not
     // collided.
@@ -78,6 +78,7 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
   // Test that the group can be synchronized using .arrive() + .wait() methods.
   {
     static_assert(cuda::std::is_same_v<ArrivalToken, decltype(group.arrive())>);
+    // NOLINTNEXTLINE(cccl-simplify-type-traits)
     static_assert(cuda::std::is_same_v<void, decltype(group.wait(cuda::std::declval<ArrivalToken&&>()))>);
 
     // Unaligned variants method must support calls from different branches. Add some dummy work to make sure the
@@ -101,7 +102,7 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
 
   // Test that the group can be synchronized using .sync_aligned() method.
   {
-    static_assert(cuda::std::is_same_v<void, decltype(group.sync_aligned())>);
+    static_assert(cuda::std::is_same_v<void, decltype(group.sync_aligned())>); // NOLINT(cccl-simplify-type-traits)
 
     // .sync_aligned() method must be called by all threads in the group uniformly in one place.
     group.sync_aligned();
@@ -110,6 +111,7 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
   // Test that the group can be synchronized using .arrive_aligned() + .wait_aligned() methods.
   {
     static_assert(cuda::std::is_same_v<ArrivalToken, decltype(group.arrive_aligned())>);
+    // NOLINTNEXTLINE(cccl-simplify-type-traits)
     static_assert(cuda::std::is_same_v<void, decltype(group.wait_aligned(cuda::std::declval<ArrivalToken&&>()))>);
 
     group.wait_aligned(group.arrive_aligned());

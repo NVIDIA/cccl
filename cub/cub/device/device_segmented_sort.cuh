@@ -33,6 +33,7 @@
 #include <cub/util_namespace.cuh>
 
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -2647,8 +2648,8 @@ public:
             typename ValueT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename EnvT                                                      = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+            typename EnvT                                                = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_void_v<KeyT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
@@ -2946,8 +2947,8 @@ public:
             typename ValueT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename EnvT                                                      = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+            typename EnvT                                                = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_void_v<KeyT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
@@ -3258,8 +3259,8 @@ public:
             typename ValueT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename EnvT                                                      = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+            typename EnvT                                                = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_void_v<KeyT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
@@ -3566,8 +3567,8 @@ public:
             typename ValueT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename EnvT                                                      = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+            typename EnvT                                                = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_void_v<KeyT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
@@ -3863,8 +3864,8 @@ public:
             typename ValueT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename EnvT                                                      = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+            typename EnvT                                                = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_void_v<KeyT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairs(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
@@ -4162,8 +4163,8 @@ public:
             typename ValueT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename EnvT                                                      = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+            typename EnvT                                                = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_void_v<KeyT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairsDescending(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
@@ -4475,8 +4476,8 @@ public:
             typename ValueT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename EnvT                                                      = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+            typename EnvT                                                = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_void_v<KeyT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairs(
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
@@ -4784,8 +4785,8 @@ public:
             typename ValueT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename EnvT                                                      = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+            typename EnvT                                                = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_void_v<KeyT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairsDescending(
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,

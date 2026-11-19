@@ -64,6 +64,46 @@ template <bool _IsMax>
   return ::cuda::std::__fp_from_storage<double>((__x_nan && __y_nan) ? __quiet_bits : __result);
 }
 
+// The functions of <cuda_fp16.h> and <cuda_bf16.h> are called unqualified, so that they are found by ADL on
+// instantiation and this header does not need to include them.
+
+#if _CCCL_HAS_NVBF16() && _CCCL_CUDA_COMPILATION()
+// Before SM80, __hmax and __hmin for __nv_bfloat16 are emulated with many instructions. max.f32 and min.f32 return one
+// of the inputs or the canonical NaN, so the upper 16 bits of their result are the exact __nv_bfloat16 result. The PTX
+// is written inline so that -ftz=true does not flush subnormals.
+template <class _Tp>
+[[nodiscard]] _CCCL_TRIVIAL_DEVICE_API _Tp __fmax_bf16_pre_sm80(_Tp __x, _Tp __y) noexcept
+{
+  float __result;
+  asm("max.f32 %0, %1, %2;" : "=f"(__result) : "f"(__bfloat162float(__x)), "f"(__bfloat162float(__y)));
+  return ::cuda::std::__fp_from_storage<_Tp>(static_cast<uint16_t>(::__float_as_uint(__result) >> 16));
+}
+
+template <class _Tp>
+[[nodiscard]] _CCCL_TRIVIAL_DEVICE_API _Tp __fmin_bf16_pre_sm80(_Tp __x, _Tp __y) noexcept
+{
+  float __result;
+  asm("min.f32 %0, %1, %2;" : "=f"(__result) : "f"(__bfloat162float(__x)), "f"(__bfloat162float(__y)));
+  return ::cuda::std::__fp_from_storage<_Tp>(static_cast<uint16_t>(::__float_as_uint(__result) >> 16));
+}
+#endif // _CCCL_HAS_NVBF16() && _CCCL_CUDA_COMPILATION()
+
+#if _CCCL_HAS_NVFP16() && !_CCCL_CTK_AT_LEAST(12, 2)
+// Before CTK 12.2, __hmax and __hmin are only available on device. On host, we compare as float and select one of the
+// inputs, because the conversion back from float has no extended floating point argument and is not found by ADL.
+template <class _Tp>
+[[nodiscard]] _CCCL_API _Tp __fmax_select_by_float(_Tp __x, float __xf, _Tp __y, float __yf) noexcept
+{
+  return (::cuda::std::isnan(__xf) || __xf < __yf) ? __y : __x;
+}
+
+template <class _Tp>
+[[nodiscard]] _CCCL_API _Tp __fmin_select_by_float(_Tp __x, float __xf, _Tp __y, float __yf) noexcept
+{
+  return (::cuda::std::isnan(__xf) || __yf < __xf) ? __y : __x;
+}
+#endif // _CCCL_HAS_NVFP16() && !_CCCL_CTK_AT_LEAST(12, 2)
+
 /***********************************************************************************************************************
  * fmax
  **********************************************************************************************************************/
@@ -117,11 +157,11 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
   if constexpr (is_same_v<_Tp, ::__half>)
   {
 #  if _CCCL_CTK_AT_LEAST(12, 2)
-    return ::__hmax(__x, __y);
+    return __hmax(__x, __y);
 #  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                      (return ::__hmax(__x, __y);),
-                      (return ::__float2half(::cuda::std::fmax(::__half2float(__x), ::__half2float(__y)));))
+                      (return __hmax(__x, __y);),
+                      (return ::cuda::std::__fmax_select_by_float(__x, __half2float(__x), __y, __half2float(__y));))
 #  endif // !_CCCL_CTK_AT_LEAST(12, 2)
   }
   // NOLINTEND(bugprone-branch-clone)
@@ -131,11 +171,21 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
     if constexpr (is_same_v<_Tp, ::__nv_bfloat16>)
   {
 #  if _CCCL_CTK_AT_LEAST(12, 2)
-    return ::__hmax(__x, __y);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_80,
+      (return __hmax(__x, __y);),
+      NV_IS_DEVICE,
+      (return ::cuda::std::__fmax_bf16_pre_sm80(__x, __y);),
+      NV_IS_HOST,
+      (return __hmax(__x, __y);))
 #  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
-                      (return ::__hmax(__x, __y);),
-                      (return ::__float2bfloat16(::cuda::std::fmax(::__bfloat162float(__x), ::__bfloat162float(__y)));))
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_80,
+      (return __hmax(__x, __y);),
+      NV_IS_DEVICE,
+      (return ::cuda::std::__fmax_bf16_pre_sm80(__x, __y);),
+      NV_IS_HOST,
+      (return ::cuda::std::__fmax_select_by_float(__x, __bfloat162float(__x), __y, __bfloat162float(__y));))
 #  endif // !_CCCL_CTK_AT_LEAST(12, 2)
   }
   else
@@ -256,11 +306,11 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
   if constexpr (is_same_v<_Tp, ::__half>)
   {
 #  if _CCCL_CTK_AT_LEAST(12, 2)
-    return ::__hmin(__x, __y);
+    return __hmin(__x, __y);
 #  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                      (return ::__hmin(__x, __y);),
-                      (return ::__float2half(::cuda::std::fmin(::__half2float(__x), ::__half2float(__y)));))
+                      (return __hmin(__x, __y);),
+                      (return ::cuda::std::__fmin_select_by_float(__x, __half2float(__x), __y, __half2float(__y));))
 #  endif // !_CCCL_CTK_AT_LEAST(12, 2)
   }
   // NOLINTEND(bugprone-branch-clone)
@@ -270,11 +320,21 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
     if constexpr (is_same_v<_Tp, ::__nv_bfloat16>)
   {
 #  if _CCCL_CTK_AT_LEAST(12, 2)
-    return ::__hmin(__x, __y);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_80,
+      (return __hmin(__x, __y);),
+      NV_IS_DEVICE,
+      (return ::cuda::std::__fmin_bf16_pre_sm80(__x, __y);),
+      NV_IS_HOST,
+      (return __hmin(__x, __y);))
 #  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
-                      (return ::__hmin(__x, __y);),
-                      (return ::__float2bfloat16(::cuda::std::fmin(::__bfloat162float(__x), ::__bfloat162float(__y)));))
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_80,
+      (return __hmin(__x, __y);),
+      NV_IS_DEVICE,
+      (return ::cuda::std::__fmin_bf16_pre_sm80(__x, __y);),
+      NV_IS_HOST,
+      (return ::cuda::std::__fmin_select_by_float(__x, __bfloat162float(__x), __y, __bfloat162float(__y));))
 #  endif // !_CCCL_CTK_AT_LEAST(12, 2)
   }
   else
