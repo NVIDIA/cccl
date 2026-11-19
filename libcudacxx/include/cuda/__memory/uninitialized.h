@@ -24,6 +24,7 @@
 #include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/extent.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/remove_extent.h>
@@ -69,7 +70,7 @@ struct __uninitialized
   [[nodiscard]] _CCCL_API auto operator[](const ::cuda::std::size_t __idx) noexcept -> value_type&
   {
     _CCCL_ASSERT(__idx < ::cuda::std::extent_v<_Tp>, "out of bounds access in uninitialized::operator[]");
-    return data()[__idx];
+    return *::cuda::std::launder(data() + __idx);
   }
 
   _CCCL_TEMPLATE(class _Up = _Tp)
@@ -77,7 +78,7 @@ struct __uninitialized
   [[nodiscard]] _CCCL_API auto operator[](const ::cuda::std::size_t __idx) const noexcept -> const value_type&
   {
     _CCCL_ASSERT(__idx < ::cuda::std::extent_v<_Tp>, "out of bounds access in uninitialized::operator[]");
-    return data()[__idx];
+    return *::cuda::std::launder(data() + __idx);
   }
 };
 
