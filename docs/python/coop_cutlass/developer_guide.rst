@@ -1104,12 +1104,14 @@ For generated-code claims, inspect the final linked cubin with ``cuobjdump``.
 ``runtime/test_block_load_store.py`` checks that direct Load/Store leave no
 provider calls, shared accesses, or barriers. The final-cubin check in
 ``runtime/test_block_algorithms.py`` tests striped, vectorize, and transpose.
-It requires shared memory and barriers only for transpose. The final-cubin
+It requires shared-memory accesses (``LDS`` and ``STS``) and barriers only
+for transpose. The final-cubin
 checks in ``runtime/test_warp_load_store.py`` and
 ``runtime/test_logical_warp_load_store.py`` reject provider calls and block
 barriers for physical and logical Warp operations. They forbid shared memory
-and warp synchronization for storage-free algorithms. Transpose must use
-shared memory, except that the width-one test leaves allocation unconstrained.
+and warp synchronization for storage-free algorithms. Transpose must read
+and write shared memory. For the width-one logical-Warp case, shared memory
+is not checked.
 
 The final-cubin check in ``runtime/test_reduce.py`` covers a block sum with
 the default algorithm and with ``raking``. It rejects leftover provider
@@ -1119,7 +1121,9 @@ reductions, shared-memory size, registers, or barriers.
 
 The final-cubin check in ``runtime/test_scan.py`` rejects provider calls for
 block and logical-Warp Scan, and block barriers for the logical-Warp path.
-It saves resource reports but does not check them.
+It also rejects generic ``LD`` and ``ST`` accesses and requires ``LDS`` and
+``STS`` on the block path. It saves resource reports but does not check
+them.
 
 The final-cubin checks in ``runtime/test_exchange.py`` and
 ``runtime/test_shuffle.py`` reject provider calls for block and logical-Warp

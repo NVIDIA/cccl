@@ -298,8 +298,11 @@ and global input/output accesses use ``LDG``/``STG``. There are no generic
 ``LD``/``ST`` instructions. The ELF symbol table still contains
 ``_Z20example_layout_probeILy24ELy4EE`` as a weak one-byte device object:
 the probe instantiation survives the link. ``cuda.coop.cutlass``'s runtime
-tests make the same no-call check with ``cuobjdump`` for each primitive
-family.
+tests run ``cuobjdump`` on the cubin of each primitive family and fail if a
+wrapper symbol remains. Some also reject ``CALL``. The others allow it,
+because a kernel can keep calls within its own control flow and to the
+compiler's synchronization and shuffle helpers after the wrappers are
+inlined.
 
 What the package adds beyond this
 ---------------------------------
