@@ -10,7 +10,7 @@
 // https://github.com/NVIDIA-dev/cccl_private/issues/639
 // ============================================================================
 
-// %RANGE% TUNE_BIF_BIAS bif -16:16:4
+// %RANGE% TUNE_KBIF_BIAS kbif -32:64:4
 // %RANGE% TUNE_ALGORITHM alg 0:4:1
 // %RANGE% TUNE_THREADS tpb 128:1024:128
 

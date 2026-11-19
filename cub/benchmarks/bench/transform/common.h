@@ -31,7 +31,8 @@ struct policy_selector
 {
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability cc) const -> cub::TransformPolicy
   {
-    const int min_bytes_in_flight = cub::detail::transform::cc_to_min_bytes_in_flight(cc) + TUNE_BIF_BIAS;
+    const int min_bytes_in_flight = cub::detail::transform::cc_to_min_bytes_in_flight(cc) + TUNE_KBIF_BIAS * 1024;
+    _CCCL_VERIFY(min_bytes_in_flight > 0, "TUNE_KBIF_BIAS makes min_bytes_in_flight non-positive for this GPU");
 #  if TUNE_ALGORITHM == 0 || TUNE_ALGORITHM == 1
     // setup prefetch, since it's either used directly or the fallback to vectorized
     auto algorithm                = cub::TransformAlgorithm::prefetch;
