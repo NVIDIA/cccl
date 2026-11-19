@@ -144,12 +144,6 @@
 #  define _CCCL_POP_MACRO_spectre
 #endif // defined(spectre)
 
-#if defined(thread)
-#  pragma push_macro("thread")
-#  undef thread
-#  define _CCCL_POP_MACRO_thread
-#endif // defined(thread)
-
 #if defined(uuid)
 #  pragma push_macro("uuid")
 #  undef uuid

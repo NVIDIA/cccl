@@ -79,9 +79,6 @@
 #undef spectre
 #define spectre 1
 
-#undef thread
-#define thread 1
-
 #undef uuid
 #define uuid 1
 
@@ -223,10 +220,6 @@
 
 #if defined(spectre)
 #  error "<cuda/std/__cccl/prologue.h> must undefine macro `spectre`"
-#endif
-
-#if defined(thread)
-#  error "<cuda/std/__cccl/prologue.h> must undefine macro `thread`"
 #endif
 
 #if defined(uuid)
@@ -377,10 +370,6 @@
 
 #if spectre != 1
 #  error "<cuda/std/__cccl/epilogue.h> must restore macro `spectre`"
-#endif
-
-#if thread != 1
-#  error "<cuda/std/__cccl/epilogue.h> must restore macro `thread`"
 #endif
 
 #if uuid != 1
