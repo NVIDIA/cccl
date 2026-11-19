@@ -283,14 +283,6 @@ _CCCL_DIAG_POP
 #  undef _CCCL_POP_MACRO_intrinsic
 #endif
 
-#ifdef noinline
-#  error \
-    "cccl internal error: macro `noinline` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
-#elif defined(_CCCL_POP_MACRO_noinline)
-#  pragma pop_macro("noinline")
-#  undef _CCCL_POP_MACRO_noinline
-#endif
-
 #ifdef noinline_calls
 #  error \
     "cccl internal error: macro `noinline_calls` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"

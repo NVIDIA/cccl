@@ -77,7 +77,6 @@ PUSH_POP_MACROS = {
         "forceinline",
         "forceinline_calls",
         "intrinsic",
-        "noinline",
         "noinline_calls",
         "no_tls_guard",
     ],
