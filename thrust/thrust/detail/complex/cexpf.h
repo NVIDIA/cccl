@@ -47,7 +47,7 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
 {
-_CCCL_HOST_DEVICE inline float frexp_expf(float x, int* expt)
+_CCCL_HOST_DEVICE_API inline float frexp_expf(float x, int* expt)
 {
   const uint32_t k = 235; /* constant for reduction */
   const float kln2 = 162.88958740F; /* k * ln2 */
@@ -63,7 +63,7 @@ _CCCL_HOST_DEVICE inline float frexp_expf(float x, int* expt)
   return exp_x;
 }
 
-_CCCL_HOST_DEVICE inline complex<float> ldexp_cexpf(complex<float> z, int expt)
+_CCCL_HOST_DEVICE_API inline complex<float> ldexp_cexpf(complex<float> z, int expt)
 {
   float x;
   float y;
@@ -90,7 +90,7 @@ _CCCL_HOST_DEVICE inline complex<float> ldexp_cexpf(complex<float> z, int expt)
 // finite y and propagates a NaN or raises invalid for an infinite y. C99 Annex G specifies
 // the complex functions in these terms.
 // NOLINTBEGIN(misc-redundant-expression)
-_CCCL_HOST_DEVICE inline complex<float> cexpf(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> cexpf(const complex<float>& z)
 {
   float x;
   float y;
@@ -158,7 +158,7 @@ _CCCL_HOST_DEVICE inline complex<float> cexpf(const complex<float>& z)
 } // namespace detail::complex
 
 template <>
-_CCCL_HOST_DEVICE inline complex<float> exp(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> exp(const complex<float>& z)
 {
   return detail::complex::cexpf(z);
 }

@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -123,7 +123,7 @@ union tile_state_kernel_arg_t
   // ScanTileState<AccumT> is not trivially [default|copy]-constructible, so because of
   // https://eel.is/c++draft/class.union#general-note-3, tile_state_kernel_arg_t's special members are deleted. We work
   // around it by explicitly defining the ones we need.
-  _CCCL_HOST_DEVICE tile_state_kernel_arg_t() noexcept {}
+  _CCCL_HOST_DEVICE_API tile_state_kernel_arg_t() noexcept {}
 };
 
 /******************************************************************************
@@ -435,7 +435,7 @@ struct batch_completion_op
   // Called by all threads; only thread 0 reads tile_inclusive.
   _CCCL_DEVICE_API void operator()(const AccumT& tile_inclusive)
   {
-    static_assert(tiles_per_batch <= ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max());
+    static_assert(tiles_per_batch <= (::cuda::std::numeric_limits<::cuda::std::uint32_t>::max)());
     // The final batch never reuses the tile state, so it needs no retirement tracking.
     if (((tile_idx / tiles_per_batch) + 1) * tiles_per_batch >= num_tiles)
     {

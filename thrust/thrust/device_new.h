@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -49,7 +49,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename T>
-device_ptr<T> device_new(device_ptr<void> p, const size_t n = 1)
+_CCCL_HOST_API device_ptr<T> device_new(device_ptr<void> p, const size_t n = 1)
 {
   auto* dev_ptr = static_cast<T*>(p.get());
   // TODO(bgruber): ideally, we would have an thrust::uninitialized_default_construct. Until then, use vector's
@@ -78,7 +78,7 @@ device_ptr<T> device_new(device_ptr<void> p, const size_t n = 1)
  *  \endverbatim
  */
 template <typename T>
-device_ptr<T> device_new(device_ptr<void> p, const T& exemplar, const size_t n = 1)
+_CCCL_HOST_API device_ptr<T> device_new(device_ptr<void> p, const T& exemplar, const size_t n = 1)
 {
   device_ptr<T> result(static_cast<T*>(p.get()));
 
@@ -99,7 +99,7 @@ device_ptr<T> device_new(device_ptr<void> p, const T& exemplar, const size_t n =
  *  \endverbatim
  */
 template <typename T>
-device_ptr<T> device_new(const size_t n = 1)
+_CCCL_HOST_API device_ptr<T> device_new(const size_t n = 1)
 {
   // call placement new version of device_new
   return device_new<T>(thrust::device_malloc<T>(n));

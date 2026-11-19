@@ -15,7 +15,7 @@
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
 #endif // !CCCL_C_EXPERIMENTAL
 
-#if defined(_WIN32)
+#ifdef _WIN32
 #  define CCCL_C_API __declspec(dllexport)
 #else // ^^^ _WIN32 ^^^ / vvv !_WIN32 vvv
 #  define CCCL_C_API __attribute__((__visibility__("default")))

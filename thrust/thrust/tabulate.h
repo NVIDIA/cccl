@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -67,7 +67,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename UnaryOperation>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 tabulate(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
          ForwardIterator first,
          ForwardIterator last,
@@ -110,7 +110,7 @@ tabulate(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endverbatim
  */
 template <typename ForwardIterator, typename UnaryOperation>
-void tabulate(ForwardIterator first, ForwardIterator last, UnaryOperation unary_op);
+_CCCL_HOST_API void tabulate(ForwardIterator first, ForwardIterator last, UnaryOperation unary_op);
 
 /*! \} // end transformations
  */

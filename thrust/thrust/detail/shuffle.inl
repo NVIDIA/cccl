@@ -5,13 +5,14 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/shuffle.h>
 #include <thrust/system/detail/generic/select_system.h>
@@ -23,7 +24,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename RandomIterator, typename URBG>
-_CCCL_HOST_DEVICE void shuffle(
+_CCCL_HOST_DEVICE_API void shuffle(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, RandomIterator first, RandomIterator last, URBG&& g)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::shuffle");
@@ -33,7 +34,7 @@ _CCCL_HOST_DEVICE void shuffle(
 }
 
 template <typename RandomIterator, typename URBG>
-_CCCL_HOST_DEVICE void shuffle(RandomIterator first, RandomIterator last, URBG&& g)
+_CCCL_HOST_DEVICE_API void shuffle(RandomIterator first, RandomIterator last, URBG&& g)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::shuffle");
   using thrust::system::detail::generic::select_system;
@@ -46,7 +47,7 @@ _CCCL_HOST_DEVICE void shuffle(RandomIterator first, RandomIterator last, URBG&&
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename RandomIterator, typename OutputIterator, typename URBG>
-_CCCL_HOST_DEVICE void shuffle_copy(
+_CCCL_HOST_DEVICE_API void shuffle_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   RandomIterator first,
   RandomIterator last,
@@ -60,7 +61,7 @@ _CCCL_HOST_DEVICE void shuffle_copy(
 }
 
 template <typename RandomIterator, typename OutputIterator, typename URBG>
-_CCCL_HOST_DEVICE void shuffle_copy(RandomIterator first, RandomIterator last, OutputIterator result, URBG&& g)
+_CCCL_HOST_DEVICE_API void shuffle_copy(RandomIterator first, RandomIterator last, OutputIterator result, URBG&& g)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::shuffle_copy");
   using thrust::system::detail::generic::select_system;

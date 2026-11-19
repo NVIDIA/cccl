@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -403,7 +403,7 @@ static_assert(sizeof(__fpmp_fp128) == 16, "__fpmp_fp128 must be a 128-bit floati
 // decoration is unchanged, preserving CCCL styling and inline-mode codegen (adding
 // static in inline mode caps registers and hurts performance).
 */
-#if defined(_CCCL_FPMP_BUILD_LIB)
+#ifdef _CCCL_FPMP_BUILD_LIB
 #  define _CCCL_FPMP_CORE_API        static _CCCL_TRIVIAL_HOST_DEVICE_API
 #  define _CCCL_FPMP_CORE_DEVICE_API static _CCCL_DEVICE_API
 #else
@@ -427,7 +427,7 @@ static_assert(sizeof(__fpmp_fp128) == 16, "__fpmp_fp128 must be a 128-bit floati
 #  define _CCCL_FPMP_FP128_BUILTIN_DECL _CCCL_FPMP_BUILTIN_DECL
 #else
 #  define _CCCL_FPMP_FP128_API _CCCL_HOST_API
-#  if defined(_CCCL_FPMP_BUILD_LIB)
+#  ifdef _CCCL_FPMP_BUILD_LIB
 #    define _CCCL_FPMP_FP128_CORE_API static _CCCL_TRIVIAL_HOST_API
 #  else
 #    define _CCCL_FPMP_FP128_CORE_API _CCCL_TRIVIAL_HOST_API
@@ -534,6 +534,44 @@ inline constexpr bool __fpmp2_is_limb_v = __fpmp2_is_lossless_fp_v<_Tp, _Fp> || 
 template <typename _Tp, typename _Fp>
 inline constexpr bool __fpmp2_is_lossless_int_v =
   __fpmp2_int_value_bits_v<_Tp> >= 0 && __fpmp2_int_value_bits_v<_Tp> <= 2 * __fpmp2_mantissa_bits_v<_Fp>;
+
+// Scalar types wider than one limb whose values often fit it, such as the constants in
+// `y * 2.0` and `y + 2`: double next to a float limb, and integers wider than one
+// significand. Disjoint from __fpmp2_is_limb_v. 128-bit integers stay out: the pair
+// deletes its conversion from them.
+template <typename _Tp, typename _Fp>
+inline constexpr bool __fpmp2_is_wide_scalar_v =
+  (::cuda::std::is_same_v<_Tp, double> && __fpmp2_is_fp32_v<_Fp>)
+  || (__fpmp2_int_value_bits_v<_Tp> > __fpmp2_mantissa_bits_v<_Fp> && __fpmp2_int_value_bits_v<_Tp> <= 64);
+
+// Whether one limb holds the wide scalar __c exactly: an integer of magnitude at most 2^24
+// (2^53 for a double limb), or a double that is zero or a normal float. Callers ask only
+// about a __c the compiler knows (_CCCL_IS_CONSTANT_P), so the test is never executed and
+// a run-time scalar keeps the conversion to a pair.
+template <typename _Fp, typename _Tp>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool __fpmp2_value_fits_limb(const _Tp __c) noexcept
+{
+  if constexpr (::cuda::std::is_same_v<_Tp, double>)
+  {
+    const uint64_t __bits = ::cuda::std::bit_cast<uint64_t>(__c);
+    // The low 52 - 23 = 29 significand bits are zero, and biased exponents 897 to 1150 are the
+    // normal float range, 2^-126 to 2^127.
+    const uint32_t __exp = static_cast<uint32_t>(__bits >> 52) & 0x7FFU;
+    return (static_cast<uint32_t>(__bits) & 0x1FFFFFFFU) == 0 && (__exp - 897U <= 253U || (__bits << 1) == 0);
+  }
+  else
+  {
+    constexpr _Tp __max = _Tp{1} << __fpmp2_mantissa_bits_v<_Fp>;
+    if constexpr (::cuda::std::is_signed_v<_Tp>)
+    {
+      return __c >= -__max && __c <= __max;
+    }
+    else
+    {
+      return __c <= __max;
+    }
+  }
+}
 
 /*
 // Internal basic arith operations
@@ -647,9 +685,11 @@ _CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rz(float __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2int_rz(__x);), (return static_cast<int32_t>(__x);))
 }
+/* Round to nearest, ties to even, as the device intrinsic does: the host uses rint, not round
+ * (ties away from zero), so a half-integer rounds the same way on both sides. */
 _CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rn(float __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2int_rn(__x);), (return static_cast<int32_t>(::roundf(__x));))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2int_rn(__x);), (return static_cast<int32_t>(::rintf(__x));))
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API uint32_t __fpmp_fp2uint_rz(float __x) noexcept
 {
@@ -825,7 +865,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rz(double __x) noexcept
 _CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rn(double __x) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (return ::__double2int_rn(__x);), (return static_cast<int32_t>(::cuda::std::round(__x));))
+    NV_IS_DEVICE, (return ::__double2int_rn(__x);), (return static_cast<int32_t>(::cuda::std::rint(__x));))
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API uint32_t __fpmp_fp2uint_rz(double __x) noexcept
 {
@@ -900,16 +940,9 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_trunc(const _FpType __x) n
     {
       return __x;
     }
-    NV_IF_ELSE_TARGET(
-      NV_IS_DEVICE,
-      ({
-        const int32_t __xi = ::__float2int_rz(__x);
-        return ::__int2float_rz(__xi);
-      }),
-      ({
-        const int32_t __xi = ::cuda::__fpmp_fp2int_rz(__x);
-        return ::cuda::__fpmp_int2fp_rz<_FpType>(__xi);
-      }))
+    /* The builtin: one FRND on the device, and it keeps the sign of a zero result on both
+     * targets, where the int round trip returned +0 for every |x| < 1. */
+    return ::cuda::std::trunc(__x);
   }
   else
   {
@@ -927,12 +960,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_floor(const _FpType __x) n
     {
       return __x;
     }
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                      ({
-                        const int32_t __xi = ::__float2int_rd(__x);
-                        return ::__int2float_rn(__xi);
-                      }),
-                      (return ::floorf(__x);))
+    return ::cuda::std::floor(__x); /* one FRND on the device; keeps the sign of a zero */
   }
   else
   {
@@ -950,12 +978,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_ceil(const _FpType __x) no
     {
       return __x;
     }
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                      ({
-                        const int32_t __xi = ::__float2int_ru(__x);
-                        return ::__int2float_rn(__xi);
-                      }),
-                      (return ::ceilf(__x);))
+    return ::cuda::std::ceil(__x); /* one FRND on the device; keeps the sign of a zero */
   }
   else
   {

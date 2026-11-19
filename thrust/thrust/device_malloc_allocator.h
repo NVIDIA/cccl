@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -103,20 +103,20 @@ public:
   }; // end rebind
 
   /*! No-argument constructor has no effect. */
-  device_malloc_allocator() = default;
+  _CCCL_HIDE_FROM_ABI device_malloc_allocator() = default;
 
   /*! No-argument destructor has no effect. */
-  ~device_malloc_allocator() = default;
+  _CCCL_HIDE_FROM_ABI ~device_malloc_allocator() = default;
 
   /*! Copy constructor has no effect. */
-  device_malloc_allocator(device_malloc_allocator const&) = default;
+  _CCCL_HIDE_FROM_ABI device_malloc_allocator(device_malloc_allocator const&) = default;
 
   /*! Constructor from other \p device_malloc_allocator has no effect. */
   template <typename U>
-  _CCCL_HOST_DEVICE device_malloc_allocator(device_malloc_allocator<U> const&)
+  _CCCL_HOST_DEVICE_API device_malloc_allocator(device_malloc_allocator<U> const&)
   {}
 
-  device_malloc_allocator& operator=(const device_malloc_allocator&) = default;
+  _CCCL_HIDE_FROM_ABI device_malloc_allocator& operator=(const device_malloc_allocator&) = default;
 
   /*! Returns the address of an allocated object.
    *  \return <tt>&r</tt>.
@@ -125,7 +125,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE pointer address(reference r)
+  _CCCL_HOST_DEVICE_API pointer address(reference r)
   {
     return &r;
   }
@@ -137,7 +137,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE const_pointer address(const_reference r)
+  _CCCL_HOST_DEVICE_API const_pointer address(const_reference r)
   {
     return &r;
   }
@@ -151,7 +151,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST pointer allocate(size_type cnt, const_pointer = const_pointer(static_cast<T*>(nullptr)))
+  _CCCL_HOST_API pointer allocate(size_type cnt, const_pointer = const_pointer(static_cast<T*>(nullptr)))
   {
     if (cnt > this->max_size())
     {
@@ -171,7 +171,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST void deallocate(pointer p, [[maybe_unused]] size_type cnt) noexcept
+  _CCCL_HOST_API void deallocate(pointer p, [[maybe_unused]] size_type cnt) noexcept
   {
     device_free(p);
   } // end deallocate()
@@ -179,9 +179,9 @@ public:
   /*! Returns the largest value \c n for which <tt>allocate(n)</tt> might succeed.
    *  \return The largest value \c n for which <tt>allocate(n)</tt> might succeed.
    */
-  size_type max_size() const
+  _CCCL_HOST_API size_type max_size() const
   {
-    return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T); // NOLINT(readability-redundant-parentheses)
+    return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T);
   } // end max_size()
 
   /*! Compares against another \p device_malloc_allocator for equality.
@@ -191,7 +191,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE bool operator==(device_malloc_allocator const&) const
+  _CCCL_HOST_DEVICE_API bool operator==(device_malloc_allocator const&) const
   {
     return true;
   }
@@ -203,7 +203,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE bool operator!=(device_malloc_allocator const& a) const
+  _CCCL_HOST_DEVICE_API bool operator!=(device_malloc_allocator const& a) const
   {
     return !operator==(a);
   }

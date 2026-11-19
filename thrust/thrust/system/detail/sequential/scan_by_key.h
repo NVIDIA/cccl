@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -30,7 +30,7 @@ template <typename DerivedPolicy,
           typename OutputIterator,
           typename BinaryPredicate,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
+_CCCL_HOST_DEVICE_API OutputIterator inclusive_scan_by_key(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -80,7 +80,7 @@ template <typename DerivedPolicy,
           typename T,
           typename BinaryPredicate,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
+_CCCL_HOST_DEVICE_API OutputIterator exclusive_scan_by_key(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator1 first1,
   InputIterator1 last1,

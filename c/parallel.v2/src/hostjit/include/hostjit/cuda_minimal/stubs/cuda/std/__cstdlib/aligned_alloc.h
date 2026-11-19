@@ -31,7 +31,7 @@
 #ifndef _CUDA_STD___CSTDLIB_ALIGNED_ALLOC_H
 #define _CUDA_STD___CSTDLIB_ALIGNED_ALLOC_H
 
-#if defined(__CUDA_ARCH__)
+#ifdef __CUDA_ARCH__
 
 // ── Device compilation ────────────────────────────────────────────────────
 // Provide cuda::std::aligned_alloc via the CUDA device syscall.

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -149,7 +149,7 @@ private:
   friend struct __basic_any;
   friend struct __basic_any_access;
 
-  __basic_any() = default;
+  _CCCL_HIDE_FROM_ABI __basic_any() = default;
 
   //! \brief Constructs a \c __basic_any<__ireference<_Interface>> from an lvalue
   //! reference to a \c __basic_any<_Interface>.
@@ -317,7 +317,7 @@ private:
   friend struct __basic_any;
   friend struct __basic_any_access;
 
-  __basic_any() = default;
+  _CCCL_HIDE_FROM_ABI __basic_any() = default;
 };
 
 _CCCL_END_NAMESPACE_CUDA

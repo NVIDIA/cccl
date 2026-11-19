@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -24,6 +24,7 @@
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstring/memcpy.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 
@@ -36,7 +37,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_BIT_CAST)
+#ifdef _CCCL_BUILTIN_BIT_CAST
 #  define _CCCL_CONSTEXPR_BIT_CAST       constexpr
 #  define _CCCL_HAS_CONSTEXPR_BIT_CAST() 1
 #else // ^^^ _CCCL_BUILTIN_BIT_CAST ^^^ / vvv !_CCCL_BUILTIN_BIT_CAST vvv
@@ -55,7 +56,7 @@ template <class _To, class _From>
   static_assert(::cuda::std::is_default_constructible_v<_To>,
                 "bit_cast memcpy fallback requires the destination type to be default constructible");
   _To __temp;
-  ::cuda::std::memcpy(&__temp, &__from, sizeof(_To));
+  ::cuda::std::memcpy(::cuda::std::addressof(__temp), ::cuda::std::addressof(__from), sizeof(_To));
   return __temp;
 }
 
@@ -68,7 +69,7 @@ _CCCL_REQUIRES((sizeof(_To) == sizeof(_From)) _CCCL_AND(::cuda::is_trivially_cop
                  _CCCL_AND(::cuda::is_trivially_copyable_v<_From>))
 [[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_BIT_CAST _To bit_cast(const _From& __from) noexcept
 {
-#if defined(_CCCL_BUILTIN_BIT_CAST)
+#ifdef _CCCL_BUILTIN_BIT_CAST
   // Compilers unfortunately require the types to be trivially copyable per the letter of the
   // C++ law, and will emit errors if the builtin is called on types that aren't
   // NOLINTNEXTLINE(cccl-prefer-cuda-traits)

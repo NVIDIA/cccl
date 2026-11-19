@@ -8,7 +8,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -111,7 +111,7 @@ class zip_function
 
 public:
   //! Default constructs the contained function object.
-  zip_function() = default;
+  _CCCL_HIDE_FROM_ABI zip_function() = default;
 
   _CCCL_API zip_function(Function func)
       : func(::cuda::std::move(func))
