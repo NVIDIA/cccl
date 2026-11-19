@@ -458,7 +458,7 @@ int main(int argc, char** argv)
   }
   r_iter.end();
 
-  iter = cuda::min(iter, numiter);
+  iter = (cuda::min) (iter, numiter);
 
   const double tstop = gettime();
 

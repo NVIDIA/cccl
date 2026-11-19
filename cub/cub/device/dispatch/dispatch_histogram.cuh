@@ -506,7 +506,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
       return cudaErrorInvalidValue;
     }
 
-    max_levels = ::cuda::max(max_levels, num_levels);
+    max_levels = (::cuda::max) (max_levels, num_levels);
   }
   int max_num_output_bins = max_levels - 1;
 
@@ -678,7 +678,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
       return cudaErrorInvalidValue;
     }
 
-    max_levels = ::cuda::max(max_levels, num_levels);
+    max_levels = (::cuda::max) (max_levels, num_levels);
   }
   int max_num_output_bins = max_levels - 1;
 
@@ -1029,7 +1029,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
 
       output_decode_op[channel].Init(num_levels, upper_level[channel], lower_level[channel]);
 
-      max_levels = ::cuda::max(max_levels, num_levels);
+      max_levels = (::cuda::max) (max_levels, num_levels);
     }
     const int max_num_output_bins = max_levels - 1;
 
@@ -1092,7 +1092,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
 
       privatized_decode_op[channel].Init(num_levels, upper_level[channel], lower_level[channel]);
 
-      max_levels = ::cuda::max(max_levels, num_levels);
+      max_levels = (::cuda::max) (max_levels, num_levels);
     }
     const int max_num_output_bins = max_levels - 1;
 

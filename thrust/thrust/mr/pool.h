@@ -381,13 +381,13 @@ public:
       if (n == 0)
       {
         n = m_options.min_blocks_per_chunk;
-        n = ::cuda::max(n, m_options.min_bytes_per_chunk >> bytes_log2);
+        n = (::cuda::max) (n, m_options.min_bytes_per_chunk >> bytes_log2);
       }
       else
       {
         n = n * 3 / 2;
-        n = ::cuda::min(n, m_options.max_bytes_per_chunk >> bytes_log2);
-        n = ::cuda::min(n, m_options.max_blocks_per_chunk);
+        n = (::cuda::min) (n, m_options.max_bytes_per_chunk >> bytes_log2);
+        n = (::cuda::min) (n, m_options.max_blocks_per_chunk);
       }
 
       const std::size_t descriptor_size = (std::max) (sizeof(block_descriptor), m_options.alignment);

@@ -180,7 +180,7 @@ do_hard_work(double x, double y, double* rx, int* B_is_usable, double* B, double
    * be so because of rounding errors.  So we will make certain it is
    * so.
    */
-  A = ::cuda::max(A, 1.0);
+  A = (::cuda::max) (A, 1.0);
 
   if (A < A_crossover)
   {

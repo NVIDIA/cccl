@@ -117,7 +117,7 @@ do_hard_work(float x, float y, float* rx, int* B_is_usable, float* B, float* sqr
   S                       = ::cuda::std::hypotf(x, y - 1);
 
   A = (R + S) / 2;
-  A = ::cuda::max(A, 1.0f);
+  A = (::cuda::max) (A, 1.0f);
 
   if (A < A_crossover)
   {
