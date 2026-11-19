@@ -2,7 +2,44 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from pathlib import Path
+
 import pytest
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--fixed-installed-headers",
+        action="store_true",
+        help=(
+            "Fingerprint wheel and CUDA toolkit headers once per worker. "
+            "Use when those headers stay fixed for the test run."
+        ),
+    )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def reuse_installed_header_fingerprint(request):
+    if not request.config.getoption("--fixed-installed-headers"):
+        return
+
+    from cuda.coop.cutlass._compiler import _nvrtc
+    from cuda.coop.cutlass._headers import resolve_include_paths
+
+    paths = resolve_include_paths(start=Path(_nvrtc.__file__))
+    assert paths.origin == "cuda-coop-cutlass wheel header bundle"
+    fixed_roots = tuple(map(str, paths.as_tuple()))
+    fingerprint = _nvrtc.include_dirs_identity
+    fixed_identity = fingerprint(fixed_roots)
+
+    def identify(include_dirs):
+        if include_dirs == fixed_roots:
+            return fixed_identity
+        return fingerprint(include_dirs)
+
+    patch = pytest.MonkeyPatch()
+    patch.setattr(_nvrtc, "include_dirs_identity", identify)
+    request.addfinalizer(patch.undo)
 
 
 @pytest.fixture(scope="session", autouse=True)

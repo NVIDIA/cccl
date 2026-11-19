@@ -135,7 +135,8 @@ PY
       *) gpu_tests=(-m gpu compile/ runtime/) ;;
     esac
     for route in 0 1; do
-      CUTE_DSL_USE_EXTENSION_COMPILER="$route" python -I -m pytest -v -n 4 --max-worker-restart=0 "${gpu_tests[@]}"
+      CUTE_DSL_USE_EXTENSION_COMPILER="$route" python -I -m pytest -v -n 4 --max-worker-restart=0 \
+        --fixed-installed-headers "${gpu_tests[@]}"
     done
     # The runtime pytest suite covers TMEM on SM100/SM103 and skips it on
     # other GPUs; its standalone CLI deliberately rejects unsupported devices.
