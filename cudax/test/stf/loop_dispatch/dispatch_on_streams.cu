@@ -26,7 +26,7 @@ int main()
   auto lX = ctx.logical_data<int>(size_t(32 * 1024 * 1024));
 
   ctx.parallel_for(lX.shape(), lX.write())->*[] __device__(size_t i, auto x) {
-    x(i) = 3 * i - 7;
+    x(i) = (3 * i) - 7;
   };
 
   for (auto& sub_place :

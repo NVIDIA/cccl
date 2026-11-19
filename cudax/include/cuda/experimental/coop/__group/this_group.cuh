@@ -60,6 +60,11 @@ struct __this_mapping_result
     return 1;
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_rank()
+  {
+    return 0;
+  }
+
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_rank() const
   {
     return 0;
@@ -251,6 +256,14 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _InLevel& __in_level) const
   {
     return __count_as_impl<typename _InLevel::__product_type>(__mapping_result_, __hier_, __in_level);
+  }
+
+  //! @brief Returns the group rank within the level known at compile time, or @c cuda::std::dynamic_extent.
+  _CCCL_TEMPLATE(class _InLevel)
+  _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_rank(const _InLevel&)
+  {
+    return static_count(_InLevel{}) == 1 ? 0 : ::cuda::std::dynamic_extent;
   }
 
   template <class _Tp, class _MappingResult, class _InLevel>

@@ -136,14 +136,11 @@ private:
   {
     return hours{12};
   }
-  else if (__hours_ <= hours{12})
+  if (__hours_ <= hours{12})
   {
     return __hours_;
   }
-  else
-  {
-    return __hours_ - hours{12};
-  }
+  return __hours_ - hours{12};
 }
 
 [[nodiscard]] _CCCL_API constexpr hours make24(const hours& __hours_, bool __is_pm) noexcept
@@ -152,10 +149,7 @@ private:
   {
     return __hours_ == hours{12} ? __hours_ : __hours_ + hours{12};
   }
-  else
-  {
-    return __hours_ == hours{12} ? hours{0} : __hours_;
-  }
+  return __hours_ == hours{12} ? hours{0} : __hours_;
 }
 } // namespace chrono
 

@@ -73,7 +73,7 @@ template <__fp_format _Fmt>
   {
     return _Storage(0x7fu);
   }
-  else if constexpr (_Fmt == __fp_format::__fp8_nv_e8m0)
+  else if constexpr (_Fmt == __fp_format::__fp8_nv_ue5m3 || _Fmt == __fp_format::__fp8_nv_e8m0)
   {
     return _Storage(0xffu);
   }
@@ -136,12 +136,12 @@ template <class _Tp>
     return static_cast<_Tp>(_CCCL_BUILTIN_NANSL());
   }
 #  endif // _CCCL_HAS_LONG_DOUBLE
-#  if defined(_CCCL_BUILTIN_NANFS128)
+#  if defined(_CCCL_BUILTIN_NANSF128)
   else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary128)
   {
-    return static_cast<_Tp>(_CCCL_BUILTIN_NANFS128());
+    return static_cast<_Tp>(_CCCL_BUILTIN_NANSF128());
   }
-#  endif // _CCCL_BUILTIN_NANFS128
+#  endif // _CCCL_BUILTIN_NANSF128
   else
 #endif // _CCCL_BUILTIN_NANS
   {
@@ -159,6 +159,10 @@ template <__fp_format _Fmt>
   if constexpr (_Fmt == __fp_format::__fp8_nv_e4m3)
   {
     return _Storage(0x7eu);
+  }
+  else if constexpr (_Fmt == __fp_format::__fp8_nv_ue5m3)
+  {
+    return _Storage(0xfeu);
   }
   else
   {
@@ -298,6 +302,10 @@ template <__fp_format _Fmt>
   if constexpr (_Fmt == __fp_format::__fp8_nv_e8m0)
   {
     return ::cuda::std::__fp_min<_Fmt>();
+  }
+  else if constexpr (_Fmt == __fp_format::__fp8_nv_ue5m3)
+  {
+    return __fp_storage_t<_Fmt>(0);
   }
   else
   {

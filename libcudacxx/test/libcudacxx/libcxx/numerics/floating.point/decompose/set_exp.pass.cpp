@@ -121,8 +121,8 @@ TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST void test_fp_set_exp(T val)
       assert(cuda::std::fpclassify(res) == FP_INFINITE);
     }
 
-    if constexpr (fmt != cuda::std::__fp_format::__fp8_nv_e4m3)
-    { // __fp8_nv_e4m3 has special NaN values
+    if constexpr (fmt != cuda::std::__fp_format::__fp8_nv_e4m3 && fmt != cuda::std::__fp_format::__fp8_nv_ue5m3)
+    { // e4m3 and ue5m3 have special NaN values
       if constexpr (cuda::std::__fp_has_nan_v<fmt>)
       { // 3 has no mantissa bit set, so it will be a NaN
         const T res = cuda::std::__fp_set_exp(T{3}, cuda::std::__fp_exp_max_v<fmt> + 1);
@@ -169,22 +169,25 @@ TEST_FUNC bool test(float val)
 
 #if _CCCL_HAS_NVFP8_E4M3()
   test<__nv_fp8_e4m3>();
-#endif // _CCCL_HAS_NVFP8_E4M3
+#endif // _CCCL_HAS_NVFP8_E4M3()
 #if _CCCL_HAS_NVFP8_E5M2()
   test<__nv_fp8_e5m2>();
-#endif // _CCCL_HAS_NVFP8_E5M2
+#endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_UE5M3()
+  test<__nv_fp8_ue5m3>();
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E8M0()
   test<__nv_fp8_e8m0>();
-#endif // _CCCL_HAS_NVFP8_E8M0
+#endif // _CCCL_HAS_NVFP8_E8M0()
 #if _CCCL_HAS_NVFP6_E2M3()
   test<__nv_fp6_e2m3>();
-#endif // _CCCL_HAS_NVFP6_E2M3
+#endif // _CCCL_HAS_NVFP6_E2M3()
 #if _CCCL_HAS_NVFP6_E3M2()
   test<__nv_fp6_e3m2>();
-#endif // _CCCL_HAS_NVFP6_E3M2
+#endif // _CCCL_HAS_NVFP6_E3M2()
 #if _CCCL_HAS_NVFP4_E2M1()
   test<__nv_fp4_e2m1>();
-#endif // _CCCL_HAS_NVFP4_E2M1
+#endif // _CCCL_HAS_NVFP4_E2M1()
 
   return true;
 }

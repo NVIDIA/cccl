@@ -72,7 +72,7 @@ struct agent_t
   OffsetT num_items;
 
   template <typename Iterator = InputIteratorT, bool CanVectorize = attempt_vectorization>
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool is_aligned_and_full_tile(OffsetT tile_offset)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool is_aligned_and_full_tile(OffsetT tile_offset)
   {
     if constexpr (CanVectorize)
     {
@@ -93,14 +93,14 @@ struct agent_t
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool ConsumeTile(OffsetT tile_offset, ::cuda::std::true_type /*CAN_VECTORIZE*/)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool ConsumeTile(OffsetT tile_offset, ::cuda::std::true_type /*CAN_VECTORIZE*/)
   {
     using InputT = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
 
     alignas(InputT) unsigned char input_bytes[ItemsPerThread * sizeof(InputT)];
     auto& input_items = *reinterpret_cast<InputT(*)[ItemsPerThread]>(input_bytes);
     // is_aligned_and_full_tile checked that the tile is aligned to VectorT
-    detail::load_direct_striped_vectorized_aligned<ThreadsPerBlock, VecSize, LoadModifier>(
+    _CUB::detail::load_direct_striped_vectorized_aligned<ThreadsPerBlock, VecSize, LoadModifier>(
       static_cast<int>(threadIdx.x), d_in + tile_offset, input_items);
 
     for (int i = 0; i < ItemsPerThread; ++i)
@@ -123,7 +123,7 @@ struct agent_t
     return false;
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool ConsumeTile(OffsetT tile_offset, ::cuda::std::false_type /*CAN_VECTORIZE*/)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool ConsumeTile(OffsetT tile_offset, ::cuda::std::false_type /*CAN_VECTORIZE*/)
   {
     for (int i = 0; i < ItemsPerThread; ++i)
     {
@@ -143,7 +143,7 @@ struct agent_t
     return false;
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Process()
   {
     if (threadIdx.x == 0)
     {

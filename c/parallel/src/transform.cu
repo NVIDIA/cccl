@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -29,6 +29,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include <nvrtc.h>
 #include <stdio.h> // printf
 
 #include "jit_templates/templates/input_iterator.h"
@@ -68,6 +69,24 @@ struct input2_storage_t;
 
 namespace transform
 {
+// The prefetch stride depends on the compiler's PTX ISA, so the library's build compiler and NVRTC can select
+// different values. Only device code uses this field; it does not affect the host's launch configuration. Match
+// NVRTC's stride in the expected policy while retaining the full policy comparison for the other fields.
+template <int NumInputs>
+cub::TransformPolicy
+expected_jit_policy(const cub::detail::transform::policy_selector<NumInputs>& selector, cuda::compute_capability cc)
+{
+  auto policy = selector(cc);
+  if (cc >= cuda::compute_capability{9, 0})
+  {
+    int major = 0;
+    int minor = 0;
+    check(nvrtcVersion(&major, &minor));
+    policy.prefetch.prefetch_byte_stride = major * 100 + minor >= 1304 ? 32 : 128;
+  }
+  return policy;
+}
+
 std::string
 get_kernel_name(std::string_view input_iterator_t, std::string_view output_iterator_t, std::string_view transform_op_t)
 {
@@ -251,7 +270,7 @@ try
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream policy_sel_str;
-  policy_sel_str << policy_sel(cuda::compute_capability{cc_major, cc_minor});
+  policy_sel_str << transform::expected_jit_policy(policy_sel, cuda::compute_capability{cc_major, cc_minor});
 
   const auto policy_hub_expr = std::format(
     "cub::detail::transform::policy_selector_from_types<false, true, ::cuda::std::tuple<{}>, {}>",
@@ -540,7 +559,7 @@ try
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream policy_sel_str;
-  policy_sel_str << policy_sel(cuda::compute_capability{cc_major, cc_minor});
+  policy_sel_str << transform::expected_jit_policy(policy_sel, cuda::compute_capability{cc_major, cc_minor});
 
   const auto policy_hub_expr = std::format(
     "cub::detail::transform::policy_selector_from_types<false, true, ::cuda::std::tuple<{0}, {1}>, {2}>",

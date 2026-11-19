@@ -23,7 +23,7 @@ __global__ void block_scan_kernel(T* in, T* out, ActionT action)
 
   T thread_data[ItemsPerThread];
 
-  const int tid           = static_cast<int>(cub::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ));
+  const int tid           = cub::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ);
   const int thread_offset = tid * ItemsPerThread;
 
   for (int item = 0; item < ItemsPerThread; item++)
@@ -52,7 +52,7 @@ __global__ void block_scan_single_kernel(T* in, T* out, ActionT action)
 
   __shared__ storage_t storage;
 
-  const int tid = static_cast<int>(cub::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ));
+  const int tid = cub::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ);
 
   T thread_data = in[tid];
 
@@ -219,8 +219,8 @@ struct sum_aggregate_op_t
       scan.InclusiveSum(thread_data, thread_data, block_aggregate);
     }
 
-    const int tid = static_cast<int>(
-      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z)));
+    const int tid =
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
     if (tid == m_target_thread_id)
     {
@@ -255,8 +255,8 @@ struct sum_prefix_op_t
   template <int ItemsPerThread, class BlockScanT>
   __device__ void operator()(BlockScanT& scan, T (&thread_data)[ItemsPerThread]) const
   {
-    const int tid = static_cast<int>(
-      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z)));
+    const int tid =
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
     block_prefix_op_t prefix_op{tid, m_prefix};
 
     if constexpr (Mode == scan_mode::exclusive)
@@ -297,8 +297,8 @@ struct min_prefix_op_t
   template <int ItemsPerThread, class BlockScanT>
   __device__ void operator()(BlockScanT& scan, T (&thread_data)[ItemsPerThread]) const
   {
-    const int tid = static_cast<int>(
-      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z)));
+    const int tid =
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
     block_prefix_op_t prefix_op{tid, m_prefix};
 
     if constexpr (Mode == scan_mode::exclusive)

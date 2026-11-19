@@ -11,6 +11,7 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/array>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
@@ -103,10 +104,11 @@ struct UniformKernel
     test_hardware_group(config, cuda::grid);
 
     const cudax::coop::this_block parent{config};
+    const cudax::coop::group_as static_mapping{cuda::std::integer_sequence<int, 2, 2>{}};
 
     // Virtual groups reuse the parent block synchronizer.
     {
-      const cudax::coop::virtual_group group{cuda::warp, parent, cudax::coop::group_by{cuda::std::cw<2>}};
+      const cudax::coop::virtual_group group{cuda::warp, parent, static_mapping};
       test_uniform(group);
 
       // Changing to thread units must preserve any available static count.
@@ -125,7 +127,7 @@ struct UniformKernel
 
     {
       const cudax::coop::generic_group group{
-        cuda::warp, parent, cudax::coop::group_by{cuda::std::cw<2>}, cudax::coop::barrier_synchronizer{barriers}};
+        cuda::warp, parent, static_mapping, cudax::coop::barrier_synchronizer{barriers}};
       test_uniform(group);
 
       // Changing to thread units must preserve any available static count.
@@ -171,21 +173,6 @@ C2H_TEST("Static unit count dispatch for uniform groups", "[with_static_unit_cou
 
   stream.sync();
 }
-
-// Split four warps into groups of one, two, and one warp, exercising all dispatch
-// positions and two groups that share the same static unit count.
-template <bool Exhaustive, bool Contiguous>
-struct UnequalStaticCounts
-{
-  template <class Unit, class Parent, class Prev>
-  __device__ auto map(const Unit&, const Parent&, const Prev& prev) const
-  {
-    using Mapping   = cudax::coop::__mapping_result<cudax::coop::__static_unit_counts<1, 2, 1>, Exhaustive, Contiguous>;
-    const auto rank = prev.unit_rank();
-
-    return Mapping{rank == 0 ? 0u : (rank == 3 ? 2u : 1u), rank == 2 ? 1u : 0u, prev.lane_mask()};
-  }
-};
 
 template <class Group>
 __device__ void test_nonuniform(const Group& group, unsigned units_per_warp)
@@ -236,13 +223,16 @@ __device__ void test_nonuniform(const Group& group, unsigned units_per_warp)
   CHECK(calls == 1);
 }
 
-template <bool Exhaustive, bool Contiguous, class Config>
-__device__ void test_nonuniform_groups(Config config)
+// Split four warps into groups of one, two, and one warp, exercising all dispatch
+// positions and two groups that share the same static unit count.
+template <class Config, class Counts>
+__device__ void test_nonuniform_groups(Config config, Counts counts)
 {
   const cudax::coop::this_block parent{config};
+  const cudax::coop::group_as mapping{counts};
 
   // Check nonuniform mappings while retaining the parent block synchronizer.
-  const cudax::coop::virtual_group virtual_group{cuda::warp, parent, UnequalStaticCounts<Exhaustive, Contiguous>{}};
+  const cudax::coop::virtual_group virtual_group{cuda::warp, parent, mapping};
   test_nonuniform(virtual_group, 1);
   CHECK(virtual_group.count(parent) == 3);
 
@@ -251,8 +241,7 @@ __device__ void test_nonuniform_groups(Config config)
 
   // Repeat with independent barriers for the three groups.
   auto& barriers = get_barriers<3>(cuda::warp);
-  const cudax::coop::generic_group group{
-    cuda::warp, parent, UnequalStaticCounts<Exhaustive, Contiguous>{}, cudax::coop::barrier_synchronizer{barriers}};
+  const cudax::coop::generic_group group{cuda::warp, parent, mapping, cudax::coop::barrier_synchronizer{barriers}};
   test_nonuniform(group, 1);
   CHECK(group.count(parent) == 3);
 
@@ -272,13 +261,16 @@ struct NonuniformKernel
   template <class Config>
   __device__ void operator()(Config config) const
   {
-    // Preserve both strong and conservative mapping guarantees.
-    test_nonuniform_groups<true, true>(config);
+    // Integer sequences retain per-group static counts in C++17 and newer.
+    test_nonuniform_groups(config, cuda::std::integer_sequence<int, 1, 2, 1>{});
 
+#if _CCCL_STD_VER >= 2020
     // All groups must finish before the next case reuses their barrier storage.
     cudax::coop::this_block{config}.sync();
 
-    test_nonuniform_groups<false, false>(config);
+    // Compile-time ranges must provide the same dispatch through cw.
+    test_nonuniform_groups(config, cuda::std::cw<cuda::std::array{1, 2, 1}>);
+#endif // _CCCL_STD_VER >= 2020
   }
 };
 

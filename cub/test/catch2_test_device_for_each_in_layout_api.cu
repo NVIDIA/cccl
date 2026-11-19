@@ -31,7 +31,7 @@ struct layout_store_3D
 
   cuda::std::span<data_t> d_output_raw;
 
-  __device__ void operator()(int idx, int x, int y, int z)
+  __device__ void operator()(int idx, int x, int y, int z) const
   {
     d_output_raw[idx] = {x, y, z};
   }

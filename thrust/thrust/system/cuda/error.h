@@ -108,7 +108,7 @@ enum errc_t // NOLINT(cppcoreguidelines-use-enum-class)
  *        shall return <tt>error_condition(ev,cuda_category())</tt>.
  *        Otherwise, the function shall return <tt>system_category.default_error_condition(ev)</tt>.
  */
-inline const error_category& cuda_category();
+_CCCL_PUBLIC_HOST_API inline const error_category& cuda_category();
 
 // XXX N3000 prefers is_error_code_enum<cuda::errc>
 

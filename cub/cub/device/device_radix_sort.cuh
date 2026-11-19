@@ -160,9 +160,8 @@ inline constexpr bool __can_use_radix_sort =
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! All algorithms in DeviceRadixSort that accept an environment can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::RadixSortPolicy`, as shown in the
-//! example below:
+//! All algorithms in DeviceRadixSort can be tuned by passing a custom :ref:`policy selector <cub-policy-selectors>`
+//! that returns a :cpp:struct:`cub::RadixSortPolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
 //!      :language: c++
@@ -206,7 +205,7 @@ private:
     using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, ValueT, OffsetT>;
     using policy_selector_t =
       detail::policy_selector_from_tuning_env_t<TuningEnvT, RadixSortPolicy, default_policy_selector_t>;
-    return detail::radix_sort::dispatch<Order>(
+    return _CUB::detail::radix_sort::dispatch<Order>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -310,7 +309,7 @@ private:
   }
 
   // Name reported for NVTX ranges
-  _CCCL_HOST_DEVICE static constexpr auto GetName() -> const char*
+  _CCCL_HOST_DEVICE_API static constexpr auto GetName() -> const char*
   {
     return "cub::DeviceRadixSort";
   }
@@ -456,7 +455,7 @@ public:
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -577,7 +576,7 @@ public:
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return select_tuning_and_dispatch<SortOrder::Ascending>(
           storage,
@@ -721,7 +720,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -833,7 +832,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return radix_sort_with_decomposer<SortOrder::Ascending>(
           storage,
@@ -968,7 +967,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -1068,7 +1067,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return radix_sort_with_decomposer<SortOrder::Ascending>(
           storage,
@@ -1219,7 +1218,7 @@ public:
 
     constexpr bool is_overwrite_okay = true;
 
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -1326,7 +1325,7 @@ public:
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return select_tuning_and_dispatch<SortOrder::Ascending>(
           storage,
@@ -1461,7 +1460,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -1545,7 +1544,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return radix_sort_with_decomposer<SortOrder::Ascending>(
           storage, bytes, d_keys, d_values, num_items, decomposer, stream, runs_on, tuning_env);
@@ -1682,7 +1681,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -1775,7 +1774,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return radix_sort_with_decomposer<SortOrder::Ascending>(
           storage, bytes, d_keys, d_values, num_items, decomposer, stream, runs_on, tuning_env, begin_bit, end_bit);
@@ -1920,7 +1919,7 @@ public:
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -2041,7 +2040,7 @@ public:
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return select_tuning_and_dispatch<SortOrder::Descending>(
           storage,
@@ -2185,7 +2184,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -2323,7 +2322,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -2476,7 +2475,7 @@ public:
 
     constexpr bool is_overwrite_okay = true;
 
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -2583,7 +2582,7 @@ public:
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return select_tuning_and_dispatch<SortOrder::Descending>(
           storage,
@@ -2718,7 +2717,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -2858,7 +2857,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -2931,7 +2930,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return radix_sort_with_decomposer<SortOrder::Descending>(
           storage,
@@ -3008,7 +3007,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return radix_sort_with_decomposer<SortOrder::Descending>(
           storage,
@@ -3079,7 +3078,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return radix_sort_with_decomposer<SortOrder::Descending>(
           storage, bytes, d_keys, d_values, num_items, decomposer, stream, runs_on, tuning_env);
@@ -3145,7 +3144,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return radix_sort_with_decomposer<SortOrder::Descending>(
           storage, bytes, d_keys, d_values, num_items, decomposer, stream, runs_on, tuning_env, begin_bit, end_bit);
@@ -3278,7 +3277,7 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -3383,7 +3382,7 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return select_tuning_and_dispatch<SortOrder::Ascending>(
           storage,
@@ -3515,7 +3514,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -3599,7 +3598,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return radix_sort_with_decomposer<SortOrder::Ascending>(
           storage,
@@ -3722,7 +3721,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -3795,7 +3794,7 @@ public:
   SortKeys(const KeyT* d_keys_in, KeyT* d_keys_out, NumItemsT num_items, DecomposerT decomposer, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return radix_sort_with_decomposer<SortOrder::Ascending>(
           storage,
@@ -3931,7 +3930,7 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -4037,7 +4036,7 @@ public:
 
     DoubleBuffer<NullType> d_values;
 
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return select_tuning_and_dispatch<SortOrder::Ascending>(
           storage,
@@ -4159,7 +4158,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     DoubleBuffer<NullType> d_values;
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -4221,7 +4220,7 @@ public:
   SortKeys(DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         DoubleBuffer<NullType> d_values;
         return radix_sort_with_decomposer<SortOrder::Ascending>(
@@ -4346,7 +4345,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     DoubleBuffer<NullType> d_values;
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -4417,7 +4416,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         DoubleBuffer<NullType> d_values;
         return radix_sort_with_decomposer<SortOrder::Ascending>(
@@ -4545,7 +4544,7 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -4650,7 +4649,7 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return select_tuning_and_dispatch<SortOrder::Descending>(
           storage,
@@ -4782,7 +4781,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -4905,7 +4904,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -5043,7 +5042,7 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -5149,7 +5148,7 @@ public:
 
     DoubleBuffer<NullType> d_values;
 
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return select_tuning_and_dispatch<SortOrder::Descending>(
           storage,
@@ -5271,7 +5270,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     DoubleBuffer<NullType> d_values;
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -5398,7 +5397,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     DoubleBuffer<NullType> d_values;
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -5465,7 +5464,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return radix_sort_with_decomposer<SortOrder::Descending>(
           storage,
@@ -5531,7 +5530,7 @@ public:
     const KeyT* d_keys_in, KeyT* d_keys_out, NumItemsT num_items, DecomposerT decomposer, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         return radix_sort_with_decomposer<SortOrder::Descending>(
           storage,
@@ -5594,7 +5593,7 @@ public:
   SortKeysDescending(DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         DoubleBuffer<NullType> d_values;
         return radix_sort_with_decomposer<SortOrder::Descending>(
@@ -5657,7 +5656,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    return detail::dispatch_with_env_and_runs_on(
+    return _CUB::detail::dispatch_with_env_and_runs_on(
       env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream, const experimental::RunsOn& runs_on) {
         DoubleBuffer<NullType> d_values;
         return radix_sort_with_decomposer<SortOrder::Descending>(

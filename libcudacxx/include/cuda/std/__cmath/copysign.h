@@ -60,10 +60,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
       {
         return (__x < 0) ? __x_dbl : -__x_dbl;
       }
-      else
-      {
-        return (__x < 0) ? -__x_dbl : __x_dbl;
-      }
+      return (__x < 0) ? -__x_dbl : __x_dbl;
     }
   }
   else // ^^^ integral ^^^ / vvv floating_point vvv

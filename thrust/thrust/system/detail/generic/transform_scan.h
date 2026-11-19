@@ -12,7 +12,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/detail/generic/tag.h>
+#include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
@@ -22,7 +22,7 @@ template <typename ExecutionPolicy,
           typename OutputIterator,
           typename UnaryFunction,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator transform_inclusive_scan(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -36,7 +36,7 @@ template <typename ExecutionPolicy,
           typename UnaryFunction,
           typename T,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator transform_inclusive_scan(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -51,7 +51,7 @@ template <typename ExecutionPolicy,
           typename UnaryFunction,
           typename T,
           typename AssociativeOperator>
-_CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
+_CCCL_HOST_DEVICE_API OutputIterator transform_exclusive_scan(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -62,4 +62,4 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
-#include <thrust/system/detail/generic/transform_scan.inl>
+#include <thrust/system/detail/generic/transform_scan.inl> // IWYU pragma: export

@@ -77,7 +77,7 @@ private:
 
 public:
   // constructor and reset functions
-  constexpr student_t_distribution() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr student_t_distribution() noexcept = default;
 
   _CCCL_HOST_DEVICE_API constexpr explicit student_t_distribution(result_type __n) noexcept
       : __p_{param_type{__n}}
@@ -143,7 +143,7 @@ public:
 
 #if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
-  friend ::std::basic_ostream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const student_t_distribution& __x)
   {
     using _Ostream = ::std::basic_ostream<_CharT, _Traits>;
@@ -160,7 +160,7 @@ public:
   }
 
   template <class _CharT, class _Traits>
-  friend ::std::basic_istream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is, student_t_distribution& __x)
   {
     using _Istream = ::std::basic_istream<_CharT, _Traits>;

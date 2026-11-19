@@ -6,6 +6,7 @@
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/sort.h>
 
+#include <cuda/std/__type_traits/type_list_operations.h>
 #include <cuda/std/iterator>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>

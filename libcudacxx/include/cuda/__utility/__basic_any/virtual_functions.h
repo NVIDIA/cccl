@@ -25,7 +25,7 @@
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_member_function_pointer.h>
 #include <cuda/std/__type_traits/is_pointer.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/type_identity.h>
@@ -73,7 +73,7 @@ template <class _Tp, class _FnType, class _Ret, bool _IsConst, bool _IsNothrow, 
 {
   using __value_type _CCCL_NODEBUG = ::cuda::std::__maybe_const<_IsConst, _Tp>;
 
-  if constexpr (::cuda::std::is_same_v<_Tp, void>)
+  if constexpr (::cuda::std::is_void_v<_Tp>)
   {
     // This instantiation is created only during the computation of the vtable
     // type. It is never actually called.

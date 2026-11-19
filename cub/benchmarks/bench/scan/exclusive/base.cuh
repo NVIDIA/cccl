@@ -12,7 +12,7 @@
 #include "../policy_selector.h"
 
 template <typename T, typename OffsetT>
-void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+_CCCL_HOST_API void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 try
 {
   using init_value_t             = T;

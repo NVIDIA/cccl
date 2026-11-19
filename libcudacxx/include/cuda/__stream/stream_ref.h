@@ -30,6 +30,7 @@
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/invalid_stream.h>
 #  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__execution/env.h>
 #  include <cuda/std/__utility/to_underlying.h>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -50,6 +51,9 @@ protected:
 
 public:
   using value_type = ::cudaStream_t;
+
+  //! @brief Advertises that @c stream_ref supports the @c cuda::get_stream query.
+  using property_keys = ::cuda::execution::property_key_list<::cuda::get_stream_t>;
 
   //! @brief Constructs a `stream_ref` of the "default" CUDA stream.
   //!
@@ -383,7 +387,7 @@ _CCCL_HOST_API inline event::event(stream_ref __stream, unsigned __flags)
     : event_ref(::cudaEvent_t{})
 {
   [[maybe_unused]] const __ensure_current_context __ctx_setter(__stream);
-  __event_ = ::cuda::__driver::__eventCreate(static_cast<unsigned>(__flags));
+  __event_ = ::cuda::__driver::__eventCreate(__flags);
 }
 
 _CCCL_HOST_API inline timed_event::timed_event(stream_ref __stream, event_flags __flags)

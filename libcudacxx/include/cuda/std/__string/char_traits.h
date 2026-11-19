@@ -35,6 +35,7 @@ struct __cccl_char_traits_impl
 {
   using char_type = _CharT;
   using int_type  = _IntT;
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0 // todo: add stream support
   using off_type            = streamoff;
   using pos_type            = fpos<mbstate_t>;
@@ -144,6 +145,7 @@ struct __cccl_char_traits_impl
     return __lhs == __rhs;
   }
 
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0 // todo: add EOF support
   [[nodiscard]] _CCCL_API static constexpr int_type eof() noexcept
   {

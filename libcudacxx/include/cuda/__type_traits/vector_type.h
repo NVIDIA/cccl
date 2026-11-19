@@ -25,7 +25,7 @@
 
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
-#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__type_traits/is_void.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -353,6 +353,19 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT vector_type<::__nv_fp8_e5m2, 4>
 };
 #  endif // _CCCL_HAS_NVFP8_E5M2()
 
+#  if _CCCL_HAS_NVFP8_UE5M3()
+template <>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT vector_type<::__nv_fp8_ue5m3, 2>
+{
+  using type _CCCL_NODEBUG = ::__nv_fp8x2_ue5m3;
+};
+template <>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT vector_type<::__nv_fp8_ue5m3, 4>
+{
+  using type _CCCL_NODEBUG = ::__nv_fp8x4_ue5m3;
+};
+#  endif // _CCCL_HAS_NVFP8_UE5M3()
+
 #  if _CCCL_HAS_NVFP8_E8M0()
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT vector_type<::__nv_fp8_e8m0, 2>
@@ -411,7 +424,7 @@ using vector_type_t = typename vector_type<_Tp, _Size>::type;
 // has_vector_type
 
 template <class _Tp, ::cuda::std::size_t _Size>
-inline constexpr bool has_vector_type_v = !::cuda::std::is_same_v<vector_type_t<_Tp, _Size>, void>;
+inline constexpr bool has_vector_type_v = !::cuda::std::is_void_v<vector_type_t<_Tp, _Size>>;
 
 template <class _Tp, ::cuda::std::size_t _Size>
 using has_vector_type = ::cuda::std::bool_constant<has_vector_type_v<_Tp, _Size>>;

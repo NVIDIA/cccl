@@ -29,6 +29,12 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// Disabled due to libstdc++ conflict
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
+#if 0 // _CCCL_HAS_BUILTIN(__is_scalar)
+#  define _CCCL_BUILTIN_IS_SCALAR(...) __is_scalar(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__is_scalar)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_SCALAR) && !defined(_LIBCUDACXX_USE_IS_SCALAR_FALLBACK)

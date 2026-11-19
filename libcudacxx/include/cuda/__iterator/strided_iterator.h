@@ -255,7 +255,7 @@ public:
   _CCCL_API friend constexpr strided_iterator
   operator+(const strided_iterator& __iter, difference_type __n) noexcept(__nothrow_plus<_Iter>)
   {
-    return strided_iterator{__iter.__iter() + __iter.stride() * __n, __iter.__stride()};
+    return strided_iterator{__iter.__iter() + (__iter.stride() * __n), __iter.__stride()};
   }
 
   //! @brief Returns a copy of a @c strided_iterator incremented by a given number of steps
@@ -267,7 +267,7 @@ public:
   _CCCL_API friend constexpr strided_iterator
   operator+(difference_type __n, const strided_iterator& __iter) noexcept(__nothrow_plus<_Iter>)
   {
-    return strided_iterator{__iter.__iter() + __iter.stride() * __n, __iter.__stride()};
+    return strided_iterator{__iter.__iter() + (__iter.stride() * __n), __iter.__stride()};
   }
 
   //! @brief Decrements a @c strided_iterator by a given number of steps
@@ -295,7 +295,7 @@ public:
   _CCCL_API friend constexpr strided_iterator
   operator-(const strided_iterator& __iter, difference_type __n) noexcept(__nothrow_minus<_Iter>)
   {
-    return strided_iterator{__iter.__iter() - __iter.stride() * __n, __iter.__stride()};
+    return strided_iterator{__iter.__iter() - (__iter.stride() * __n), __iter.__stride()};
   }
 
   template <class _Iter2, class _OtherIter>

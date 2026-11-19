@@ -12,14 +12,18 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/internal_functional.h>
+#include <thrust/detail/execution_policy.h>
 #include <thrust/find.h>
+#include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/reduce.h>
 
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__functional/not_fn.h>
+#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/tuple>
 
 // Contributed by Erich Elsen
@@ -28,7 +32,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename InputIterator, typename T>
-_CCCL_HOST_DEVICE InputIterator
+_CCCL_HOST_DEVICE_API InputIterator
 find(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, const T& value)
 {
   using thrust::placeholders::_1;
@@ -39,26 +43,23 @@ find(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIt
 template <typename TupleType>
 struct find_if_functor
 {
-  _CCCL_HOST_DEVICE TupleType operator()(const TupleType& lhs, const TupleType& rhs) const
+  _CCCL_HOST_DEVICE_API TupleType operator()(const TupleType& lhs, const TupleType& rhs) const
   {
     // select the smallest index among true results
     if (::cuda::std::get<0>(lhs) && ::cuda::std::get<0>(rhs))
     {
       return TupleType(true, (::cuda::std::min) (::cuda::std::get<1>(lhs), ::cuda::std::get<1>(rhs)));
     }
-    else if (::cuda::std::get<0>(lhs))
+    if (::cuda::std::get<0>(lhs))
     {
       return lhs;
     }
-    else
-    {
-      return rhs;
-    }
+    return rhs;
   }
 };
 
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE InputIterator
+_CCCL_HOST_DEVICE_API InputIterator
 find_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
 {
   using difference_type = thrust::detail::it_difference_t<InputIterator>;
@@ -113,7 +114,7 @@ find_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Inpu
 }
 
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE InputIterator
+_CCCL_HOST_DEVICE_API InputIterator
 find_if_not(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
 {
   return thrust::find_if(exec, first, last, ::cuda::std::not_fn(pred));

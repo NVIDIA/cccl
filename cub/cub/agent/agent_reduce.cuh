@@ -36,7 +36,7 @@
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_void.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -115,7 +115,7 @@ struct agent_warp_reduce_policy
   /// Number of items per thread. When `ComputeT` is `void`, the nominal value is used as-is (no scaling),
   /// allowing to pass actual items_per_thread to opt out of the legacy 4B scaling.
   static constexpr int ITEMS_PER_THREAD =
-    ::cuda::std::conditional_t<::cuda::std::is_same_v<ComputeT, void>,
+    ::cuda::std::conditional_t<::cuda::std::is_void_v<ComputeT>,
                                NoScaling<0, NominalItemsPerThread4B>,
                                MemBoundScaling<0, NominalItemsPerThread4B, ComputeT>>::ITEMS_PER_THREAD;
 
@@ -275,10 +275,10 @@ struct AgentReduceImpl
    * @param d_in Input data to reduce
    * @param reduction_op Binary reduction operator
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduceImpl(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentReduceImpl(
     TempStorage& temp_storage, InputIteratorT d_in, ReductionOp reduction_op, TransformOp transform_op, int lane_id)
       : temp_storage(temp_storage.Alias())
-      , d_in(try_make_cache_modified_iterator<AgentReducePolicy::LOAD_MODIFIER>(d_in))
+      , d_in(_CUB::detail::try_make_cache_modified_iterator<AgentReducePolicy::LOAD_MODIFIER>(d_in))
       , reduction_op(reduction_op)
       , transform_op(transform_op)
       , lane_id(lane_id)
@@ -295,7 +295,7 @@ struct AgentReduceImpl
    * @param input_is_vector_aligned Whether we can vectorize loads
    */
   template <int IsFirstTile, bool CanVectorize>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeFullTile(AccumT& thread_aggregate, OffsetT block_offset)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ConsumeFullTile(AccumT& thread_aggregate, OffsetT block_offset)
   {
     // load items in striped fashion and reduce items within each thread stripe
     AccumT items[ITEMS_PER_THREAD];
@@ -304,7 +304,7 @@ struct AgentReduceImpl
       InputT input_items[ITEMS_PER_THREAD];
       // IsAligned checked that the range starts aligned to VectorT, and full tiles are whole tiles further
       // lane_id is the warp lane for a warp agent and the block thread id otherwise.
-      detail::load_direct_striped_vectorized_aligned<NumThreads, vec_size, LOAD_MODIFIER>(
+      _CUB::detail::load_direct_striped_vectorized_aligned<NumThreads, vec_size, LOAD_MODIFIER>(
         static_cast<int>(lane_id), d_in.ptr + block_offset, input_items);
 
       // Convert from input type to output type
@@ -316,7 +316,7 @@ struct AgentReduceImpl
     }
     else
     {
-      load_transform_direct_striped<NumThreads>(lane_id, d_in + block_offset, items, transform_op);
+      _CUB::detail::load_transform_direct_striped<NumThreads>(lane_id, d_in + block_offset, items, transform_op);
     }
     // Reduce items within each thread stripe
     thread_aggregate =
@@ -330,7 +330,8 @@ struct AgentReduceImpl
    * @param valid_items The number of valid items in the tile
    */
   template <int IsFirstTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumePartialTile(AccumT& thread_aggregate, OffsetT block_offset, int valid_items)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ConsumePartialTile(AccumT& thread_aggregate, OffsetT block_offset, int valid_items)
   {
     // Partial tile
     int thread_offset = lane_id;
@@ -361,7 +362,7 @@ struct AgentReduceImpl
    * @param even_share GridEvenShare descriptor
    */
   template <bool CanVectorize>
-  _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ConsumeRange(GridEvenShare<OffsetT>& even_share)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT ConsumeRange(GridEvenShare<OffsetT>& even_share)
   {
     AccumT thread_aggregate{};
 
@@ -393,7 +394,7 @@ struct AgentReduceImpl
    * @param[in] block_offset Threadblock begin offset (inclusive)
    * @param[in] block_end Threadblock end offset (exclusive)
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ConsumeRange(OffsetT block_offset, OffsetT block_end)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT ConsumeRange(OffsetT block_offset, OffsetT block_end)
   {
     GridEvenShare<OffsetT> even_share;
     even_share.template BlockInit<TILE_ITEMS>(block_offset, block_end);
@@ -407,7 +408,7 @@ struct AgentReduceImpl
    * Reduce a contiguous segment of input tiles
    * @param[in] even_share GridEvenShare descriptor
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ConsumeTiles(GridEvenShare<OffsetT>& even_share)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT ConsumeTiles(GridEvenShare<OffsetT>& even_share)
   {
     // Initialize GRID_MAPPING_STRIP_MINE even-share descriptor for this thread block
     even_share.template BlockInit<TILE_ITEMS, GRID_MAPPING_STRIP_MINE>();
@@ -422,7 +423,8 @@ private:
    * @param input_is_vector_aligned Whether we can vectorize loads
    */
   template <bool CanVectorize>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeFullTileRange(AccumT& thread_aggregate, GridEvenShare<OffsetT>& even_share)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ConsumeFullTileRange(AccumT& thread_aggregate, GridEvenShare<OffsetT>& even_share)
   {
     // At least one full block
     ConsumeFullTile<true, CanVectorize>(thread_aggregate, even_share.block_offset);
@@ -512,7 +514,7 @@ struct AgentReduce
                     BlockReduce<AccumT, AgentReducePolicy::BLOCK_THREADS, AgentReducePolicy::BLOCK_ALGORITHM>,
                     AgentReducePolicy::BLOCK_THREADS>;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduce(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentReduce(
     typename base_t::TempStorage& temp_storage,
     InputIteratorT d_in,
     ReductionOp reduction_op,
@@ -576,7 +578,7 @@ struct AgentWarpReduce
                     AgentReducePolicy::WARP_THREADS,
                     true>;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentWarpReduce(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentWarpReduce(
     typename base_t::TempStorage& temp_storage,
     InputIteratorT d_in,
     ReductionOp reduction_op,

@@ -38,6 +38,7 @@
 #include <thrust/detail/config.h>
 
 #include <thrust/complex.h>
+#include <thrust/detail/complex/catrig.h>
 #include <thrust/detail/complex/math_private.h>
 
 #include <cuda/std/__cmath/abs.h>
@@ -50,7 +51,9 @@
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/signbit.h>
-#include <cuda/std/limits>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/cfloat>
+#include <cuda/std/cstdint>
 #include <cuda/std/numbers>
 
 THRUST_NAMESPACE_BEGIN
@@ -58,7 +61,7 @@ namespace detail::complex
 {
 using thrust::complex;
 
-_CCCL_HOST_DEVICE inline complex<float> clog_for_large_values(complex<float> z);
+_CCCL_HOST_DEVICE_API inline complex<float> clog_for_large_values(complex<float> z);
 
 /*
  * The algorithm is very close to that in "Implementing the complex arcsine
@@ -74,7 +77,7 @@ _CCCL_HOST_DEVICE inline complex<float> clog_for_large_values(complex<float> z);
  * a few comments on the right of declarations remain.
  */
 
-_CCCL_HOST_DEVICE inline float f(float a, float b, float hypot_a_b)
+_CCCL_HOST_DEVICE_API inline float f(float a, float b, float hypot_a_b)
 {
   if (b < 0.0f)
   {
@@ -97,7 +100,7 @@ _CCCL_HOST_DEVICE inline float f(float a, float b, float hypot_a_b)
  * If returning sqrt_A2my2 has potential to result in an underflow, it is
  * rescaled, and new_y is similarly rescaled.
  */
-_CCCL_HOST_DEVICE inline void
+_CCCL_HOST_DEVICE_API inline void
 do_hard_work(float x, float y, float* rx, int* B_is_usable, float* B, float* sqrt_A2my2, float* new_y)
 {
   float R;
@@ -140,7 +143,7 @@ do_hard_work(float x, float y, float* rx, int* B_is_usable, float* B, float* sqr
   }
   else
   {
-    *rx = ::cuda::std::logf(A + ::cuda::std::sqrtf(A * A - 1));
+    *rx = ::cuda::std::logf(A + ::cuda::std::sqrtf((A * A) - 1));
   }
 
   *new_y = y;
@@ -180,7 +183,7 @@ do_hard_work(float x, float y, float* rx, int* B_is_usable, float* B, float* sqr
   }
 }
 
-_CCCL_HOST_DEVICE inline complex<float> casinhf(complex<float> z)
+_CCCL_HOST_DEVICE_API inline complex<float> casinhf(complex<float> z)
 {
   float x;
   float y;
@@ -254,14 +257,14 @@ _CCCL_HOST_DEVICE inline complex<float> casinhf(complex<float> z)
   return (complex<float>(::cuda::std::copysignf(rx, x), ::cuda::std::copysignf(ry, y)));
 }
 
-_CCCL_HOST_DEVICE inline complex<float> casinf(complex<float> z)
+_CCCL_HOST_DEVICE_API inline complex<float> casinf(complex<float> z)
 {
   const complex<float> w = casinhf(complex<float>(z.imag(), z.real()));
 
   return (complex<float>(w.imag(), w.real()));
 }
 
-_CCCL_HOST_DEVICE inline complex<float> cacosf(complex<float> z)
+_CCCL_HOST_DEVICE_API inline complex<float> cacosf(complex<float> z)
 {
   float x;
   float y;
@@ -359,7 +362,7 @@ _CCCL_HOST_DEVICE inline complex<float> cacosf(complex<float> z)
   return (complex<float>(rx, ry));
 }
 
-_CCCL_HOST_DEVICE inline complex<float> cacoshf(complex<float> z)
+_CCCL_HOST_DEVICE_API inline complex<float> cacoshf(complex<float> z)
 {
   const complex<float> w = cacosf(z);
   float rx;
@@ -388,7 +391,7 @@ _CCCL_HOST_DEVICE inline complex<float> cacoshf(complex<float> z)
 /*
  * Optimized version of clog() for |z| finite and larger than ~RECIP_EPSILON.
  */
-_CCCL_HOST_DEVICE inline complex<float> clog_for_large_values(complex<float> z)
+_CCCL_HOST_DEVICE_API inline complex<float> clog_for_large_values(complex<float> z)
 {
   float x;
   float y;
@@ -420,7 +423,7 @@ _CCCL_HOST_DEVICE inline complex<float> clog_for_large_values(complex<float> z)
     return (complex<float>(::cuda::std::logf(::cuda::std::hypotf(x, y)), ::cuda::std::atan2f(y, x)));
   }
 
-  return (complex<float>(::cuda::std::logf(ax * ax + ay * ay) / 2, ::cuda::std::atan2f(y, x)));
+  return (complex<float>(::cuda::std::logf((ax * ax) + (ay * ay)) / 2, ::cuda::std::atan2f(y, x)));
 }
 
 /*
@@ -436,7 +439,7 @@ _CCCL_HOST_DEVICE inline complex<float> clog_for_large_values(complex<float> z)
  * Assumes y is non-negative.
  * Assumes fabsf(x) >= FLT_EPSILON.
  */
-_CCCL_HOST_DEVICE inline float sum_squares(float x, float y)
+_CCCL_HOST_DEVICE_API inline float sum_squares(float x, float y)
 {
   const float SQRT_MIN = 1.084202172485504434007453e-19f; /* 0x1p-63; >= sqrt(FLT_MIN) */
   /* Avoid underflow when y is small. */
@@ -445,10 +448,10 @@ _CCCL_HOST_DEVICE inline float sum_squares(float x, float y)
     return (x * x);
   }
 
-  return (x * x + y * y);
+  return ((x * x) + (y * y));
 }
 
-_CCCL_HOST_DEVICE inline float real_part_reciprocal(float x, float y)
+_CCCL_HOST_DEVICE_API inline float real_part_reciprocal(float x, float y)
 {
   float scale;
   uint32_t hx;
@@ -474,15 +477,15 @@ _CCCL_HOST_DEVICE inline float real_part_reciprocal(float x, float y)
   }
   if (ix <= (BIAS + FLT_MAX_EXP / 2 - CUTOFF) << 23)
   {
-    return (x / (x * x + y * y));
+    return (x / ((x * x) + (y * y)));
   }
   set_float_word(scale, 0x7f800000 - ix);
   x *= scale;
   y *= scale;
-  return (x / (x * x + y * y) * scale);
+  return (x / ((x * x) + (y * y)) * scale);
 }
 
-_CCCL_HOST_DEVICE inline complex<float> catanhf(complex<float> z)
+_CCCL_HOST_DEVICE_API inline complex<float> catanhf(complex<float> z)
 {
   float x;
   float y;
@@ -553,13 +556,13 @@ _CCCL_HOST_DEVICE inline complex<float> catanhf(complex<float> z)
   }
   else
   {
-    ry = ::cuda::std::atan2f(2 * ay, (1 - ax) * (1 + ax) - ay * ay) / 2;
+    ry = ::cuda::std::atan2f(2 * ay, ((1 - ax) * (1 + ax)) - (ay * ay)) / 2;
   }
 
   return (complex<float>(::cuda::std::copysignf(rx, x), ::cuda::std::copysignf(ry, y)));
 }
 
-_CCCL_HOST_DEVICE inline complex<float> catanf(complex<float> z)
+_CCCL_HOST_DEVICE_API inline complex<float> catanf(complex<float> z)
 {
   const complex<float> w = catanhf(complex<float>(z.imag(), z.real()));
   return (complex<float>(w.imag(), w.real()));
@@ -567,37 +570,37 @@ _CCCL_HOST_DEVICE inline complex<float> catanf(complex<float> z)
 } // namespace detail::complex
 
 template <>
-_CCCL_HOST_DEVICE inline complex<float> acos(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> acos(const complex<float>& z)
 {
   return detail::complex::cacosf(z);
 }
 
 template <>
-_CCCL_HOST_DEVICE inline complex<float> asin(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> asin(const complex<float>& z)
 {
   return detail::complex::casinf(z);
 }
 
 template <>
-_CCCL_HOST_DEVICE inline complex<float> atan(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> atan(const complex<float>& z)
 {
   return detail::complex::catanf(z);
 }
 
 template <>
-_CCCL_HOST_DEVICE inline complex<float> acosh(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> acosh(const complex<float>& z)
 {
   return detail::complex::cacoshf(z);
 }
 
 template <>
-_CCCL_HOST_DEVICE inline complex<float> asinh(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> asinh(const complex<float>& z)
 {
   return detail::complex::casinhf(z);
 }
 
 template <>
-_CCCL_HOST_DEVICE inline complex<float> atanh(const complex<float>& z)
+_CCCL_HOST_DEVICE_API inline complex<float> atanh(const complex<float>& z)
 {
   return detail::complex::catanhf(z);
 }

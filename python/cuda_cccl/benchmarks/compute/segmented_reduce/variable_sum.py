@@ -5,7 +5,8 @@
 """
 Python benchmark for segmented_reduce (sum) with variable-size segments.
 
-C++ equivalent: cub/benchmarks/bench/segmented_reduce/variable_sum.cu (uses variable_base.cuh)
+C++ equivalents: cub/benchmarks/bench/segmented_reduce/variable_sum.cu (public API, no guarantee) and
+variable_with_guarantee_sum.cu (the variable_default and *_dynamic sub-benchmarks)
 
 Notes:
 - Implements four sub-benchmarks: variable_default, variable_small_dynamic,

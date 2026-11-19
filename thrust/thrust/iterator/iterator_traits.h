@@ -26,12 +26,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/type_traits/minimum_type.h>
 #include <thrust/iterator/detail/any_system_tag.h>
-#include <thrust/iterator/detail/device_system_tag.h>
+#include <thrust/iterator/detail/device_system_tag.h> // IWYU pragma: export
 #include <thrust/iterator/detail/iterator_category_to_system.h>
 #include <thrust/iterator/detail/iterator_category_to_traversal.h>
 #include <thrust/iterator/detail/minimum_system.h>
-#include <thrust/iterator/iterator_categories.h>
+#include <thrust/iterator/iterator_categories.h> // IWYU pragma: export
 
 #include <cuda/__fwd/iterator.h>
 #include <cuda/std/__fwd/common_iterator.h>

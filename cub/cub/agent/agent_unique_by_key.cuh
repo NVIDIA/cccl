@@ -219,7 +219,7 @@ struct AgentUniqueByKey
   //---------------------------------------------------------------------
 
   // Constructor
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentUniqueByKey(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentUniqueByKey(
     TempStorage& temp_storage_,
     WrappedKeyInputIteratorT d_keys_in_,
     WrappedValueInputIteratorT d_values_in_,
@@ -245,11 +245,11 @@ struct AgentUniqueByKey
   struct ValueTagT
   {};
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE KeyExchangeT& GetShared(KeyTagT)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE KeyExchangeT& GetShared(KeyTagT)
   {
     return temp_storage.shared_keys.Alias();
   }
-  _CCCL_DEVICE _CCCL_FORCEINLINE ValueExchangeT& GetShared(ValueTagT)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE ValueExchangeT& GetShared(ValueTagT)
   {
     return temp_storage.shared_values.Alias();
   }
@@ -258,7 +258,7 @@ struct AgentUniqueByKey
   // Scatter utility methods
   //---------------------------------------------------------------------
   template <typename Tag, typename OutputIt, typename T>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Scatter(
     Tag tag,
     OutputIt items_out,
     T (&items)[ITEMS_PER_THREAD],
@@ -311,7 +311,7 @@ struct AgentUniqueByKey
    * @return The running count of selections (including this tile)
    */
   template <bool IsLastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE OffsetT
   ConsumeFirstTile(int num_tile_items, OffsetT tile_offset, ScanTileStateT& tile_state)
   {
     KeyT keys[ITEMS_PER_THREAD];
@@ -429,7 +429,7 @@ struct AgentUniqueByKey
    * @return Returns the running count of selections (including this tile)
    */
   template <bool IsLastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE OffsetT
   ConsumeSubsequentTile(int num_tile_items, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state)
   {
     KeyT keys[ITEMS_PER_THREAD];
@@ -542,7 +542,7 @@ struct AgentUniqueByKey
    *   Global tile state descriptor
    */
   template <bool IsLastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE OffsetT
   ConsumeTile(int num_tile_items, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state)
   {
     OffsetT num_selections;
@@ -575,7 +575,7 @@ struct AgentUniqueByKey
    *
    */
   template <typename NumSelectedIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ConsumeRange(int num_tiles, ScanTileStateT& tile_state, NumSelectedIteratorT d_num_selected_out)
   {
     // Blocks are launched in increasing order, so just assign one tile per block
