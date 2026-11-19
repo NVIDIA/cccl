@@ -21,8 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__atomic/functions/backend.h>
 #include <cuda/std/__atomic/functions/common.h>
 #include <cuda/std/__atomic/functions/generic_rmw.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/cstdint>

@@ -13,5 +13,5 @@
 #  pragma system_header
 #endif // no system header
 
-// this system inherits reverse
-#include <thrust/system/cpp/detail/reverse.h>
+// omp system inherits reverse
+#include <thrust/system/cpp/detail/reverse.h> // IWYU pragma: export

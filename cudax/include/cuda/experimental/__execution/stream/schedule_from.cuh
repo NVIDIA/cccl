@@ -37,8 +37,6 @@
 #include <cuda/experimental/__launch/launch.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/experimental/__execution/prologue.cuh>
 
 namespace cuda::experimental::execution

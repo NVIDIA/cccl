@@ -183,11 +183,11 @@ CUB_TEST("cub::DeviceBatchedTopK::MaxPairs temp-storage API example", "[batched_
   {
     for (int j = 0; j < k; ++j)
     {
-      const int idx = s * k + j;
+      const int idx = (s * k) + j;
       const int v   = h_values_out[idx];
       REQUIRE(v >= 0);
       REQUIRE(v < segment_size);
-      REQUIRE(h_keys_in[s * segment_size + v] == h_keys_out[idx]);
+      REQUIRE(h_keys_in[(s * segment_size) + v] == h_keys_out[idx]);
     }
   }
 
@@ -255,11 +255,11 @@ CUB_TEST("cub::DeviceBatchedTopK::MinPairs temp-storage API example", "[batched_
   {
     for (int j = 0; j < k; ++j)
     {
-      const int idx = s * k + j;
+      const int idx = (s * k) + j;
       const int v   = h_values_out[idx];
       REQUIRE(v >= 0);
       REQUIRE(v < segment_size);
-      REQUIRE(h_keys_in[s * segment_size + v] == h_keys_out[idx]);
+      REQUIRE(h_keys_in[(s * segment_size) + v] == h_keys_out[idx]);
     }
   }
 

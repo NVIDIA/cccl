@@ -20,8 +20,6 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 #define C0 (1.0)
 #define C1 (1.0 / 2.0)
 #define C2 (1.0 / 6.0)
@@ -42,65 +40,65 @@ TEST_HOST_DEVICE_FUNC void test(double dx, double dy, double dz, double dw)
   };
 
   // Packed cores on __fpbits64.
-  cudax::__fpbits64 ex = cudax::__fp64emu_from_double(dx);
-  cudax::__fpbits64 ey = cudax::__fp64emu_from_double(dy);
-  cudax::__fpbits64 ez = cudax::__fp64emu_from_double(dz);
-  cudax::__fpbits64 ew = cudax::__fp64emu_from_double(dw);
+  cuda::__fpbits64 ex = cuda::__fp64emu_from_double(dx);
+  cuda::__fpbits64 ey = cuda::__fp64emu_from_double(dy);
+  cuda::__fpbits64 ez = cuda::__fp64emu_from_double(dz);
+  cuda::__fpbits64 ew = cuda::__fp64emu_from_double(dw);
 
-  cudax::__fpbits64 pmul =
-    cudax::__fp64emu_mid_dmul_rn(cudax::__fp64emu_mid_dmul_rn(cudax::__fp64emu_mid_dmul_rn(ex, ey), ez), ew);
-  cudax::__fpbits64 padd =
-    cudax::__fp64emu_mid_dadd_rn(cudax::__fp64emu_mid_dadd_rn(cudax::__fp64emu_mid_dadd_rn(ex, ey), ez), ew);
-  cudax::__fpbits64 pmad  = cudax::__fp64emu_mid_mad_rn(ex, ey, ez);
-  cudax::__fpbits64 pdot  = cudax::__fp64emu_mid_dot_rn(ex, ez, ey, ew);
-  cudax::__fpbits64 ppoly = cudax::__fp64emu_dmul_rn(ex, cudax::__fp64emu_from_double(C7));
-  ppoly = cudax::__fp64emu_dmul_rn(cudax::__fp64emu_dadd_rn(ppoly, cudax::__fp64emu_from_double(C6)), ex);
-  ppoly = cudax::__fp64emu_dmul_rn(cudax::__fp64emu_dadd_rn(ppoly, cudax::__fp64emu_from_double(C5)), ex);
-  ppoly = cudax::__fp64emu_dmul_rn(cudax::__fp64emu_dadd_rn(ppoly, cudax::__fp64emu_from_double(C4)), ex);
-  ppoly = cudax::__fp64emu_dmul_rn(cudax::__fp64emu_dadd_rn(ppoly, cudax::__fp64emu_from_double(C3)), ex);
-  ppoly = cudax::__fp64emu_dmul_rn(cudax::__fp64emu_dadd_rn(ppoly, cudax::__fp64emu_from_double(C2)), ex);
-  ppoly = cudax::__fp64emu_dmul_rn(cudax::__fp64emu_dadd_rn(ppoly, cudax::__fp64emu_from_double(C1)), ex);
-  ppoly = cudax::__fp64emu_dadd_rn(ppoly, cudax::__fp64emu_from_double(C0));
+  cuda::__fpbits64 pmul =
+    cuda::__fp64emu_mid_dmul_rn(cuda::__fp64emu_mid_dmul_rn(cuda::__fp64emu_mid_dmul_rn(ex, ey), ez), ew);
+  cuda::__fpbits64 padd =
+    cuda::__fp64emu_mid_dadd_rn(cuda::__fp64emu_mid_dadd_rn(cuda::__fp64emu_mid_dadd_rn(ex, ey), ez), ew);
+  cuda::__fpbits64 pmad  = cuda::__fp64emu_mid_mad_rn(ex, ey, ez);
+  cuda::__fpbits64 pdot  = cuda::__fp64emu_mid_dot_rn(ex, ez, ey, ew);
+  cuda::__fpbits64 ppoly = cuda::__fp64emu_dmul_rn(ex, cuda::__fp64emu_from_double(C7));
+  ppoly                  = cuda::__fp64emu_dmul_rn(cuda::__fp64emu_dadd_rn(ppoly, cuda::__fp64emu_from_double(C6)), ex);
+  ppoly                  = cuda::__fp64emu_dmul_rn(cuda::__fp64emu_dadd_rn(ppoly, cuda::__fp64emu_from_double(C5)), ex);
+  ppoly                  = cuda::__fp64emu_dmul_rn(cuda::__fp64emu_dadd_rn(ppoly, cuda::__fp64emu_from_double(C4)), ex);
+  ppoly                  = cuda::__fp64emu_dmul_rn(cuda::__fp64emu_dadd_rn(ppoly, cuda::__fp64emu_from_double(C3)), ex);
+  ppoly                  = cuda::__fp64emu_dmul_rn(cuda::__fp64emu_dadd_rn(ppoly, cuda::__fp64emu_from_double(C2)), ex);
+  ppoly                  = cuda::__fp64emu_dmul_rn(cuda::__fp64emu_dadd_rn(ppoly, cuda::__fp64emu_from_double(C1)), ex);
+  ppoly                  = cuda::__fp64emu_dadd_rn(ppoly, cuda::__fp64emu_from_double(C0));
   const double packed[5] = {
-    cudax::__fp64emu_to_double(pmul),
-    cudax::__fp64emu_to_double(padd),
-    cudax::__fp64emu_to_double(pmad),
-    cudax::__fp64emu_to_double(pdot),
-    cudax::__fp64emu_to_double(ppoly),
+    cuda::__fp64emu_to_double(pmul),
+    cuda::__fp64emu_to_double(padd),
+    cuda::__fp64emu_to_double(pmad),
+    cuda::__fp64emu_to_double(pdot),
+    cuda::__fp64emu_to_double(ppoly),
   };
 
   // Unpacked cores on __fpbits64_unpacked.
-  cudax::__fpbits64_unpacked ux = cudax::__fp64emu_unpacked_from_double(dx);
-  cudax::__fpbits64_unpacked uy = cudax::__fp64emu_unpacked_from_double(dy);
-  cudax::__fpbits64_unpacked uz = cudax::__fp64emu_unpacked_from_double(dz);
-  cudax::__fpbits64_unpacked uw = cudax::__fp64emu_unpacked_from_double(dw);
+  cuda::__fpbits64_unpacked ux = cuda::__fp64emu_unpacked_from_double(dx);
+  cuda::__fpbits64_unpacked uy = cuda::__fp64emu_unpacked_from_double(dy);
+  cuda::__fpbits64_unpacked uz = cuda::__fp64emu_unpacked_from_double(dz);
+  cuda::__fpbits64_unpacked uw = cuda::__fp64emu_unpacked_from_double(dw);
 
-  cudax::__fpbits64_unpacked umul = cudax::__fp64emu_unpacked_mid_dmul(
-    cudax::__fp64emu_unpacked_mid_dmul(cudax::__fp64emu_unpacked_mid_dmul(ux, uy), uz), uw);
-  cudax::__fpbits64_unpacked uadd = cudax::__fp64emu_unpacked_mid_dadd(
-    cudax::__fp64emu_unpacked_mid_dadd(cudax::__fp64emu_unpacked_mid_dadd(ux, uy), uz), uw);
-  cudax::__fpbits64_unpacked umad  = __fp64emu_unpacked_mid_mad(ux, uy, uz);
-  cudax::__fpbits64_unpacked udot  = __fp64emu_unpacked_mid_dot(ux, uz, uy, uw);
-  cudax::__fpbits64_unpacked upoly = cudax::__fp64emu_unpacked_mid_dmul(ux, cudax::__fp64emu_unpacked_from_double(C7));
-  upoly                            = cudax::__fp64emu_unpacked_mid_dmul(
-    cudax::__fp64emu_unpacked_mid_dadd(upoly, cudax::__fp64emu_unpacked_from_double(C6)), ux);
-  upoly = cudax::__fp64emu_unpacked_mid_dmul(
-    cudax::__fp64emu_unpacked_mid_dadd(upoly, cudax::__fp64emu_unpacked_from_double(C5)), ux);
-  upoly = cudax::__fp64emu_unpacked_mid_dmul(
-    cudax::__fp64emu_unpacked_mid_dadd(upoly, cudax::__fp64emu_unpacked_from_double(C4)), ux);
-  upoly = cudax::__fp64emu_unpacked_mid_dmul(
-    cudax::__fp64emu_unpacked_mid_dadd(upoly, cudax::__fp64emu_unpacked_from_double(C3)), ux);
-  upoly = cudax::__fp64emu_unpacked_mid_dmul(
-    cudax::__fp64emu_unpacked_mid_dadd(upoly, cudax::__fp64emu_unpacked_from_double(C2)), ux);
-  upoly = cudax::__fp64emu_unpacked_mid_dmul(
-    cudax::__fp64emu_unpacked_mid_dadd(upoly, cudax::__fp64emu_unpacked_from_double(C1)), ux);
-  upoly                    = cudax::__fp64emu_unpacked_mid_dadd(upoly, cudax::__fp64emu_unpacked_from_double(C0));
+  cuda::__fpbits64_unpacked umul = cuda::__fp64emu_unpacked_mid_dmul(
+    cuda::__fp64emu_unpacked_mid_dmul(cuda::__fp64emu_unpacked_mid_dmul(ux, uy), uz), uw);
+  cuda::__fpbits64_unpacked uadd = cuda::__fp64emu_unpacked_mid_dadd(
+    cuda::__fp64emu_unpacked_mid_dadd(cuda::__fp64emu_unpacked_mid_dadd(ux, uy), uz), uw);
+  cuda::__fpbits64_unpacked umad  = __fp64emu_unpacked_mid_mad(ux, uy, uz);
+  cuda::__fpbits64_unpacked udot  = __fp64emu_unpacked_mid_dot(ux, uz, uy, uw);
+  cuda::__fpbits64_unpacked upoly = cuda::__fp64emu_unpacked_mid_dmul(ux, cuda::__fp64emu_unpacked_from_double(C7));
+  upoly                           = cuda::__fp64emu_unpacked_mid_dmul(
+    cuda::__fp64emu_unpacked_mid_dadd(upoly, cuda::__fp64emu_unpacked_from_double(C6)), ux);
+  upoly = cuda::__fp64emu_unpacked_mid_dmul(
+    cuda::__fp64emu_unpacked_mid_dadd(upoly, cuda::__fp64emu_unpacked_from_double(C5)), ux);
+  upoly = cuda::__fp64emu_unpacked_mid_dmul(
+    cuda::__fp64emu_unpacked_mid_dadd(upoly, cuda::__fp64emu_unpacked_from_double(C4)), ux);
+  upoly = cuda::__fp64emu_unpacked_mid_dmul(
+    cuda::__fp64emu_unpacked_mid_dadd(upoly, cuda::__fp64emu_unpacked_from_double(C3)), ux);
+  upoly = cuda::__fp64emu_unpacked_mid_dmul(
+    cuda::__fp64emu_unpacked_mid_dadd(upoly, cuda::__fp64emu_unpacked_from_double(C2)), ux);
+  upoly = cuda::__fp64emu_unpacked_mid_dmul(
+    cuda::__fp64emu_unpacked_mid_dadd(upoly, cuda::__fp64emu_unpacked_from_double(C1)), ux);
+  upoly                    = cuda::__fp64emu_unpacked_mid_dadd(upoly, cuda::__fp64emu_unpacked_from_double(C0));
   const double unpacked[5] = {
-    cudax::__fp64emu_unpacked_to_double(umul),
-    cudax::__fp64emu_unpacked_to_double(uadd),
-    cudax::__fp64emu_unpacked_to_double(umad),
-    cudax::__fp64emu_unpacked_to_double(udot),
-    cudax::__fp64emu_unpacked_to_double(upoly),
+    cuda::__fp64emu_unpacked_to_double(umul),
+    cuda::__fp64emu_unpacked_to_double(uadd),
+    cuda::__fp64emu_unpacked_to_double(umad),
+    cuda::__fp64emu_unpacked_to_double(udot),
+    cuda::__fp64emu_unpacked_to_double(upoly),
   };
 
   const double tol = 1e-10;

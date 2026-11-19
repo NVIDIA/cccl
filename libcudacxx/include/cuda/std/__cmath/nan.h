@@ -21,8 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/limits>
+#include <cuda/std/__limits/numeric_limits.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

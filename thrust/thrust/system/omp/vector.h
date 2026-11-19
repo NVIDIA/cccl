@@ -21,8 +21,6 @@
 #include <thrust/detail/vector_base.h>
 #include <thrust/system/omp/memory.h>
 
-#include <vector>
-
 THRUST_NAMESPACE_BEGIN
 namespace system::omp
 {

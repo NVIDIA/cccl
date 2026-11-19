@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/mul_hi.h>
+#include <cuda/__cmath/mul_hi.h> // IWYU pragma: keep
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__cstring/memset.h>
 

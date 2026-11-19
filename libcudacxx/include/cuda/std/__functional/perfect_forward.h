@@ -22,11 +22,10 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
@@ -119,7 +118,7 @@ public:
 
 // __perfect_forward implements a perfect-forwarding call wrapper as explained in [func.require].
 template <class _Op, class... _Args>
-using __perfect_forward = __perfect_forward_impl<_Op, index_sequence_for<_Args...>, _Args...>;
+using __perfect_forward _CCCL_NODEBUG = __perfect_forward_impl<_Op, index_sequence_for<_Args...>, _Args...>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

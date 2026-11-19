@@ -19,7 +19,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::tbb::detail
 {
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-ForwardIterator
+_CCCL_HOST_API ForwardIterator
 unique(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate binary_pred)
 {
   // tbb prefers generic::unique to cpp::unique
@@ -27,7 +27,7 @@ unique(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIter
 } // end unique()
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryPredicate>
-OutputIterator unique_copy(
+_CCCL_HOST_API OutputIterator unique_copy(
   execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -39,7 +39,7 @@ OutputIterator unique_copy(
 } // end unique_copy()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-thrust::detail::it_difference_t<ForwardIterator> unique_count(
+_CCCL_HOST_API thrust::detail::it_difference_t<ForwardIterator> unique_count(
   execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate binary_pred)
 {
   // tbb prefers generic::unique_count to cpp::unique_count

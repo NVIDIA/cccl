@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <cub/detail/it_traits.cuh>
+
 #include <cuda/std/type_traits>
 
 template <typename VectorT, typename = void>
@@ -63,7 +65,7 @@ void fill_striped(IteratorT it)
 
       for (int item = 0; item < ItemsPerThread; item++)
       {
-        *(it++) = convert(lane_offset + item * LogicalWarpThreads);
+        *(it++) = convert(lane_offset + (item * LogicalWarpThreads));
       }
     }
   }

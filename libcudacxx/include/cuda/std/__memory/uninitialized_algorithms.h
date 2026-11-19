@@ -27,13 +27,18 @@
 #include <cuda/std/__algorithm/move.h>
 #include <cuda/std/__algorithm/unwrap_iter.h>
 #include <cuda/std/__algorithm/unwrap_range.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/allocator.h>
+#include <cuda/std/__fwd/iterator.h>
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__memory/voidify.h>
-#include <cuda/std/__new/device_new.h>
+#include <cuda/std/__new/device_new.h> // IWYU pragma: keep
 #include <cuda/std/__new_>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/extent.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
@@ -41,7 +46,6 @@
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
 #include <cuda/std/__type_traits/is_trivially_move_constructible.h>
 #include <cuda/std/__type_traits/is_unbounded_array.h>
-#include <cuda/std/__type_traits/negation.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_extent.h>
 #include <cuda/std/__utility/exception_guard.h>
@@ -593,7 +597,7 @@ __uninitialized_allocator_copy_impl(_Alloc&, _In* __first1, _In* __last1, _Out* 
     }
     return __first2;
   }
-  else
+  else // NOLINT(readability-else-after-return)
   {
     return ::cuda::std::copy(__first1, __last1, __first2);
   }
@@ -664,7 +668,7 @@ _Iter2 __uninitialized_allocator_move_if_noexcept(_Alloc&, _Iter1 __first1, _Ite
     }
     return __first2;
   }
-  else
+  else // NOLINT(readability-else-after-return)
   {
     return ::cuda::std::move(__first1, __last1, __first2);
   }

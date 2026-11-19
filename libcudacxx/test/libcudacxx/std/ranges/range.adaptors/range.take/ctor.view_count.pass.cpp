@@ -7,15 +7,21 @@
 //
 //===----------------------------------------------------------------------===//
 
-// constexpr take_view(V base, range_difference_t<V> count);
+// constexpr explicit take_view(V base, range_difference_t<V> count); // explicit since C++23
 
 #include <cuda/std/cassert>
 #include <cuda/std/ranges>
 
+#include "test_convertible.h"
 #include "test_iterators.h"
 #include "test_macros.h"
 #include "test_range.h"
 #include "types.h"
+
+static_assert(!test_convertible<cuda::std::ranges::take_view<CopyableView>,
+                                CopyableView,
+                                cuda::std::ranges::range_difference_t<CopyableView>>(),
+              "This constructor must be explicit");
 
 TEST_FUNC constexpr bool test()
 {

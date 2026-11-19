@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -39,29 +39,15 @@
 #include <cuda/__fp/fpemu_impl.h>
 #include <cuda/__fp/fpemu_impl_unpack.h>
 #include <cuda/std/__bit/countl.h>
+// The ::sqrt and ::sqrtf host seeds from the platform's <math.h>, which no hand-written
+// declaration can portably match, plus the cuda::std::sqrt the end of this file extends.
+#include <cuda/std/__cmath/roots.h>
 
 #include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
-#if _CCCL_HOST_COMPILATION()
-// Host seeds: the libm symbols. On glibc these are declared noexcept to match
-// the standard <math.h> prototypes (marked __THROW); otherwise the extern-"C"
-// redeclarations conflict with ::sqrt/::sqrtf when <cmath> is also in the TU
-// (-Werror). On MSVC the CRT/CUDA prototypes carry no exception specification,
-// so a noexcept redeclaration is a mismatched extern-"C" overload (C2382/C2733
-// under C++20); declare them without noexcept to match.
-#  if _CCCL_COMPILER(MSVC)
-extern "C" double sqrt(double __x);
-extern "C" float sqrtf(float __x); // host seed for the reciprocal-sqrt builtin
-#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-extern "C" double sqrt(double __x) noexcept;
-extern "C" float sqrtf(float __x) noexcept; // host seed for the reciprocal-sqrt builtin
-#  endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
-#endif // _CCCL_HOST_COMPILATION()
-
+_CCCL_BEGIN_NAMESPACE_CUDA
 // ========================================================================
 // Native fp64 square root.
 //
@@ -84,10 +70,11 @@ _CCCL_TRIVIAL_HOST_DEVICE_API uint32_t __internal_fp64emu_sqrt_recip_sqrt32(uint
   // odd-exponent case folds the sqrt(2) factor into the same 2^47 scale.
   float __af = __odd_exp ? (float) __a * 0.5f : (float) __a;
   float __rf{};
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, ({ asm("rsqrt.approx.ftz.f32 %0, %1;"
-                         : "=f"(__rf)
-                         : "f"(__af)); }), ({ __rf = 1.0f / sqrtf(__af); }))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, ({ asm("rsqrt.approx.ftz.f32 %0, %1;"
+                                         : "=f"(__rf)
+                                         : "f"(__af)); }), ({
+                      __rf = 1.0f / ::sqrtf(__af);
+                    }))
   uint64_t __r = (uint64_t) (__rf * 140737488355328.0f); // * 2^47
 
   if (__r < 0x80000000ULL)
@@ -163,9 +150,9 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_dsqrt(__fpbits64 __x
   // universal unpack/pack are the shared prologue/epilogue. Rounding is
   // applied only at pack, preserving the packed builtins' per-mode behavior.
   {
-    __fpbits64_unpacked __a = __internal_fp64emu_unpack(__x);
-    __fpbits64_unpacked __r = __internal_fp64emu_dsqrt_unpacked<_Acc>(__a);
-    return __internal_fp64emu_pack<_Rm>(__r);
+    __fpbits64_unpacked __a = ::cuda::__internal_fp64emu_unpack(__x);
+    __fpbits64_unpacked __r = ::cuda::__internal_fp64emu_dsqrt_unpacked<_Acc>(__a);
+    return ::cuda::__internal_fp64emu_pack<_Rm>(__r);
   }
 #else
 
@@ -215,7 +202,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_dsqrt(__fpbits64 __x
   __mant_x |= _CCCL_FPEMU_HIDDEN_64;
 
   uint32_t __mant32_x = (uint32_t) (__mant_x >> 21);
-  uint32_t __rcp32    = __internal_fp64emu_sqrt_recip_sqrt32((uint32_t) __exp_x, __mant32_x);
+  uint32_t __rcp32    = ::cuda::__internal_fp64emu_sqrt_recip_sqrt32((uint32_t) __exp_x, __mant32_x);
   uint32_t __mant32_z = (uint32_t) (((uint64_t) __mant32_x * __rcp32) >> 32);
 
   if (__exp_x)
@@ -253,7 +240,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_dsqrt(__fpbits64 __x
     }
   }
 
-  return __internal_fp64emu_round_pack<_Rm>(false, __exp_z, __mant64_z);
+  return ::cuda::__internal_fp64emu_round_pack<_Rm>(false, __exp_z, __mant64_z);
 #endif // _CCCL_FPEMU_PACKED_VIA_UNPACKED
 } // __internal_fp64emu_dsqrt
 
@@ -278,36 +265,36 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64_unpacked __internal_fp64emu_dsqrt_unpac
   // Special operands (canonical packed result, then unpack -- rare path).
   if (__exp_x == __nan_exp)
   {
-    return __internal_fp64emu_unpack((__fpbits64) _CCCL_FPEMU_DEFNAN_64);
+    return ::cuda::__internal_fp64emu_unpack((__fpbits64) _CCCL_FPEMU_DEFNAN_64);
   }
   if (__exp_x == __inf_exp)
   {
     if (!__sign_x)
     {
-      return __internal_fp64emu_unpack((__fpbits64) _CCCL_FPEMU_INF_64); // +inf -> +inf
+      return ::cuda::__internal_fp64emu_unpack((__fpbits64) _CCCL_FPEMU_INF_64); // +inf -> +inf
     }
-    return __internal_fp64emu_unpack((__fpbits64) _CCCL_FPEMU_DEFNAN_64); // sqrt(-inf) -> NaN
+    return ::cuda::__internal_fp64emu_unpack((__fpbits64) _CCCL_FPEMU_DEFNAN_64); // sqrt(-inf) -> NaN
   }
   if (__sign_x)
   {
     if (__zero_x)
     {
-      return __internal_fp64emu_unpack((__fpbits64) _CCCL_FPEMU_SIGN_64); // -0 -> -0
+      return ::cuda::__internal_fp64emu_unpack((__fpbits64) _CCCL_FPEMU_SIGN_64); // -0 -> -0
     }
-    return __internal_fp64emu_unpack((__fpbits64) _CCCL_FPEMU_DEFNAN_64); // sqrt(negative) -> NaN
+    return ::cuda::__internal_fp64emu_unpack((__fpbits64) _CCCL_FPEMU_DEFNAN_64); // sqrt(negative) -> NaN
   }
   if (__zero_x)
   {
-    return __internal_fp64emu_unpack((__fpbits64) 0); // +0 -> +0
+    return ::cuda::__internal_fp64emu_unpack((__fpbits64) 0); // +0 -> +0
   }
 
   // ---- finite positive : fixed-point reciprocal-sqrt root -------------
   int32_t __exp_z   = ((__exp_x - 0x3FF) >> 1) + 0x3FE;
   int32_t __odd     = __exp_x & 1; // exponent parity
-  uint64_t __mant_x = __x.mantissa >> EXTRA_BITS; // 53-bit significand, implicit bit at 52
+  uint64_t __mant_x = __x.mantissa >> _CCCL_FPEMU_EXTRA_BITS; // 53-bit significand, implicit bit at 52
 
   uint32_t __mant32_x = (uint32_t) (__mant_x >> 21);
-  uint32_t __rcp32    = __internal_fp64emu_sqrt_recip_sqrt32((uint32_t) __odd, __mant32_x);
+  uint32_t __rcp32    = ::cuda::__internal_fp64emu_sqrt_recip_sqrt32((uint32_t) __odd, __mant32_x);
   uint32_t __mant32_z = (uint32_t) (((uint64_t) __mant32_x * __rcp32) >> 32);
 
   if (__odd)
@@ -358,47 +345,47 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64_unpacked __internal_fp64emu_dsqrt_unpac
 #if defined(_CCCL_FPEMU_INLINE)
 _CCCL_FPEMU_BUILTIN_DECL __fpbits64 __fp64emu_dsqrt_rn(__fpbits64 __x) noexcept
 {
-  return __internal_fp64emu_dsqrt<__fpemu_rounding::rn, fpemu_accuracy::high>(__x);
+  return ::cuda::__internal_fp64emu_dsqrt<__fpemu_rounding::rn, fpemu_accuracy::high>(__x);
 }
 _CCCL_FPEMU_BUILTIN_DECL __fpbits64 __fp64emu_dsqrt_rz(__fpbits64 __x) noexcept
 {
-  return __internal_fp64emu_dsqrt<__fpemu_rounding::rz, fpemu_accuracy::high>(__x);
+  return ::cuda::__internal_fp64emu_dsqrt<__fpemu_rounding::rz, fpemu_accuracy::high>(__x);
 }
 _CCCL_FPEMU_BUILTIN_DECL __fpbits64 __fp64emu_dsqrt_ru(__fpbits64 __x) noexcept
 {
-  return __internal_fp64emu_dsqrt<__fpemu_rounding::ru, fpemu_accuracy::high>(__x);
+  return ::cuda::__internal_fp64emu_dsqrt<__fpemu_rounding::ru, fpemu_accuracy::high>(__x);
 }
 _CCCL_FPEMU_BUILTIN_DECL __fpbits64 __fp64emu_dsqrt_rd(__fpbits64 __x) noexcept
 {
-  return __internal_fp64emu_dsqrt<__fpemu_rounding::rd, fpemu_accuracy::high>(__x);
+  return ::cuda::__internal_fp64emu_dsqrt<__fpemu_rounding::rd, fpemu_accuracy::high>(__x);
 }
 _CCCL_FPEMU_BUILTIN_DECL __fpbits64 __fp64emu_high_dsqrt_rn(__fpbits64 __x) noexcept
 {
-  return __internal_fp64emu_dsqrt<__fpemu_rounding::rn, fpemu_accuracy::high>(__x);
+  return ::cuda::__internal_fp64emu_dsqrt<__fpemu_rounding::rn, fpemu_accuracy::high>(__x);
 }
 _CCCL_FPEMU_BUILTIN_DECL __fpbits64 __fp64emu_mid_dsqrt_rn(__fpbits64 __x) noexcept
 {
-  return __internal_fp64emu_dsqrt<__fpemu_rounding::rn, fpemu_accuracy::mid>(__x);
+  return ::cuda::__internal_fp64emu_dsqrt<__fpemu_rounding::rn, fpemu_accuracy::mid>(__x);
 }
 _CCCL_FPEMU_BUILTIN_DECL __fpbits64 __fp64emu_low_dsqrt_rn(__fpbits64 __x) noexcept
 {
-  return __internal_fp64emu_dsqrt<__fpemu_rounding::rn, fpemu_accuracy::low>(__x);
+  return ::cuda::__internal_fp64emu_dsqrt<__fpemu_rounding::rn, fpemu_accuracy::low>(__x);
 }
 _CCCL_FPEMU_BUILTIN_DECL __fpbits64_unpacked __fp64emu_unpacked_dsqrt(__fpbits64_unpacked __x) noexcept
 {
-  return __internal_fp64emu_dsqrt_unpacked<fpemu_accuracy::high>(__x);
+  return ::cuda::__internal_fp64emu_dsqrt_unpacked<fpemu_accuracy::high>(__x);
 }
 _CCCL_FPEMU_BUILTIN_DECL __fpbits64_unpacked __fp64emu_unpacked_high_dsqrt(__fpbits64_unpacked __x) noexcept
 {
-  return __internal_fp64emu_dsqrt_unpacked<fpemu_accuracy::high>(__x);
+  return ::cuda::__internal_fp64emu_dsqrt_unpacked<fpemu_accuracy::high>(__x);
 }
 _CCCL_FPEMU_BUILTIN_DECL __fpbits64_unpacked __fp64emu_unpacked_mid_dsqrt(__fpbits64_unpacked __x) noexcept
 {
-  return __internal_fp64emu_dsqrt_unpacked<fpemu_accuracy::mid>(__x);
+  return ::cuda::__internal_fp64emu_dsqrt_unpacked<fpemu_accuracy::mid>(__x);
 }
 _CCCL_FPEMU_BUILTIN_DECL __fpbits64_unpacked __fp64emu_unpacked_low_dsqrt(__fpbits64_unpacked __x) noexcept
 {
-  return __internal_fp64emu_dsqrt_unpacked<fpemu_accuracy::low>(__x);
+  return ::cuda::__internal_fp64emu_dsqrt_unpacked<fpemu_accuracy::low>(__x);
 }
 #else
 _CCCL_FPEMU_BUILTIN_DECL __fpbits64 __fp64emu_dsqrt_rn(__fpbits64 x) noexcept;
@@ -413,7 +400,7 @@ _CCCL_FPEMU_BUILTIN_DECL __fpbits64_unpacked __fp64emu_unpacked_high_dsqrt(__fpb
 _CCCL_FPEMU_BUILTIN_DECL __fpbits64_unpacked __fp64emu_unpacked_mid_dsqrt(__fpbits64_unpacked x) noexcept;
 _CCCL_FPEMU_BUILTIN_DECL __fpbits64_unpacked __fp64emu_unpacked_low_dsqrt(__fpbits64_unpacked x) noexcept;
 #endif // _CCCL_FPEMU_INLINE
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 #endif // _CUDA___FP_FPEMU_IMPL_SQRT_H (builtins)
@@ -422,8 +409,7 @@ _CCCL_FPEMU_BUILTIN_DECL __fpbits64_unpacked __fp64emu_unpacked_low_dsqrt(__fpbi
 #define _CCCL_FPEMU_DSQRT_API_MERGED
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 // ============================================================================
 // API (merged from fp64emu_dsqrt_api.hpp)
 // ============================================================================
@@ -433,15 +419,18 @@ _CCCL_HOST_DEVICE_API fpemu<double, _Acc> sqrt(const fpemu<double, _Acc>& __x) n
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(__fp64emu_high_dsqrt_rn(::cuda::std::bit_cast<__fpbits64>(__x)));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
+      ::cuda::__fp64emu_high_dsqrt_rn(::cuda::std::bit_cast<__fpbits64>(__x)));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(__fp64emu_low_dsqrt_rn(::cuda::std::bit_cast<__fpbits64>(__x)));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
+      ::cuda::__fp64emu_low_dsqrt_rn(::cuda::std::bit_cast<__fpbits64>(__x)));
   }
   else
   {
-    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(__fp64emu_mid_dsqrt_rn(::cuda::std::bit_cast<__fpbits64>(__x)));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
+      ::cuda::__fp64emu_mid_dsqrt_rn(::cuda::std::bit_cast<__fpbits64>(__x)));
   }
 }
 template <fpemu_accuracy _Acc>
@@ -449,31 +438,34 @@ _CCCL_HOST_DEVICE_API fpemu<double, _Acc> __dsqrt_rn(const fpemu<double, _Acc>& 
 {
   if constexpr (_Acc == fpemu_accuracy::high)
   {
-    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(__fp64emu_high_dsqrt_rn(::cuda::std::bit_cast<__fpbits64>(__x)));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
+      ::cuda::__fp64emu_high_dsqrt_rn(::cuda::std::bit_cast<__fpbits64>(__x)));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
-    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(__fp64emu_low_dsqrt_rn(::cuda::std::bit_cast<__fpbits64>(__x)));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
+      ::cuda::__fp64emu_low_dsqrt_rn(::cuda::std::bit_cast<__fpbits64>(__x)));
   }
   else
   {
-    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(__fp64emu_mid_dsqrt_rn(::cuda::std::bit_cast<__fpbits64>(__x)));
+    return ::cuda::std::bit_cast<fpemu<double, _Acc>>(
+      ::cuda::__fp64emu_mid_dsqrt_rn(::cuda::std::bit_cast<__fpbits64>(__x)));
   }
 }
 template <fpemu_accuracy _Acc>
 _CCCL_HOST_DEVICE_API fpemu<double, _Acc> __dsqrt_rz(const fpemu<double, _Acc>& __x) noexcept
 {
-  return ::cuda::std::bit_cast<fpemu<double, _Acc>>(__fp64emu_dsqrt_rz(::cuda::std::bit_cast<__fpbits64>(__x)));
+  return ::cuda::std::bit_cast<fpemu<double, _Acc>>(::cuda::__fp64emu_dsqrt_rz(::cuda::std::bit_cast<__fpbits64>(__x)));
 }
 template <fpemu_accuracy _Acc>
 _CCCL_HOST_DEVICE_API fpemu<double, _Acc> __dsqrt_ru(const fpemu<double, _Acc>& __x) noexcept
 {
-  return ::cuda::std::bit_cast<fpemu<double, _Acc>>(__fp64emu_dsqrt_ru(::cuda::std::bit_cast<__fpbits64>(__x)));
+  return ::cuda::std::bit_cast<fpemu<double, _Acc>>(::cuda::__fp64emu_dsqrt_ru(::cuda::std::bit_cast<__fpbits64>(__x)));
 }
 template <fpemu_accuracy _Acc>
 _CCCL_HOST_DEVICE_API fpemu<double, _Acc> __dsqrt_rd(const fpemu<double, _Acc>& __x) noexcept
 {
-  return ::cuda::std::bit_cast<fpemu<double, _Acc>>(__fp64emu_dsqrt_rd(::cuda::std::bit_cast<__fpbits64>(__x)));
+  return ::cuda::std::bit_cast<fpemu<double, _Acc>>(::cuda::__fp64emu_dsqrt_rd(::cuda::std::bit_cast<__fpbits64>(__x)));
 }
 
 template <fpemu_accuracy _Acc>
@@ -482,17 +474,17 @@ _CCCL_HOST_DEVICE_API fpemu_unpacked<double, _Acc> sqrt(const fpemu_unpacked<dou
   if constexpr (_Acc == fpemu_accuracy::high)
   {
     return ::cuda::std::bit_cast<fpemu_unpacked<double, _Acc>>(
-      __fp64emu_unpacked_high_dsqrt(::cuda::std::bit_cast<__fpbits64_unpacked>(__x)));
+      ::cuda::__fp64emu_unpacked_high_dsqrt(::cuda::std::bit_cast<__fpbits64_unpacked>(__x)));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
     return ::cuda::std::bit_cast<fpemu_unpacked<double, _Acc>>(
-      __fp64emu_unpacked_low_dsqrt(::cuda::std::bit_cast<__fpbits64_unpacked>(__x)));
+      ::cuda::__fp64emu_unpacked_low_dsqrt(::cuda::std::bit_cast<__fpbits64_unpacked>(__x)));
   }
   else
   {
     return ::cuda::std::bit_cast<fpemu_unpacked<double, _Acc>>(
-      __fp64emu_unpacked_mid_dsqrt(::cuda::std::bit_cast<__fpbits64_unpacked>(__x)));
+      ::cuda::__fp64emu_unpacked_mid_dsqrt(::cuda::std::bit_cast<__fpbits64_unpacked>(__x)));
   }
 }
 template <fpemu_accuracy _Acc>
@@ -501,38 +493,37 @@ _CCCL_HOST_DEVICE_API fpemu_unpacked<double, _Acc> __dsqrt_rn(const fpemu_unpack
   if constexpr (_Acc == fpemu_accuracy::high)
   {
     return ::cuda::std::bit_cast<fpemu_unpacked<double, _Acc>>(
-      __fp64emu_unpacked_high_dsqrt(::cuda::std::bit_cast<__fpbits64_unpacked>(__x)));
+      ::cuda::__fp64emu_unpacked_high_dsqrt(::cuda::std::bit_cast<__fpbits64_unpacked>(__x)));
   }
   else if constexpr (_Acc == fpemu_accuracy::low)
   {
     return ::cuda::std::bit_cast<fpemu_unpacked<double, _Acc>>(
-      __fp64emu_unpacked_low_dsqrt(::cuda::std::bit_cast<__fpbits64_unpacked>(__x)));
+      ::cuda::__fp64emu_unpacked_low_dsqrt(::cuda::std::bit_cast<__fpbits64_unpacked>(__x)));
   }
   else
   {
     return ::cuda::std::bit_cast<fpemu_unpacked<double, _Acc>>(
-      __fp64emu_unpacked_mid_dsqrt(::cuda::std::bit_cast<__fpbits64_unpacked>(__x)));
+      ::cuda::__fp64emu_unpacked_mid_dsqrt(::cuda::std::bit_cast<__fpbits64_unpacked>(__x)));
   }
 }
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Overloads of sqrt for the emulated double types so the standard spelling
 // cuda::std::sqrt selects the emulated implementation instead of silently
 // narrowing fpemu -> double (a qualified call suppresses ADL). These forward to
-// cuda::experimental::sqrt, which unqualified/ADL calls already resolve to.
-template <::cuda::experimental::fpemu_accuracy _Acc>
-[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::experimental::fpemu<double, _Acc>
-sqrt(const ::cuda::experimental::fpemu<double, _Acc>& __x) noexcept
+// cuda::sqrt, which unqualified/ADL calls already resolve to.
+template <::cuda::fpemu_accuracy _Acc>
+[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::fpemu<double, _Acc> sqrt(const ::cuda::fpemu<double, _Acc>& __x) noexcept
 {
-  return ::cuda::experimental::sqrt(__x);
+  return ::cuda::sqrt(__x);
 }
-template <::cuda::experimental::fpemu_accuracy _Acc>
-[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::experimental::fpemu_unpacked<double, _Acc>
-sqrt(const ::cuda::experimental::fpemu_unpacked<double, _Acc>& __x) noexcept
+template <::cuda::fpemu_accuracy _Acc>
+[[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::fpemu_unpacked<double, _Acc>
+sqrt(const ::cuda::fpemu_unpacked<double, _Acc>& __x) noexcept
 {
-  return ::cuda::experimental::sqrt(__x);
+  return ::cuda::sqrt(__x);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

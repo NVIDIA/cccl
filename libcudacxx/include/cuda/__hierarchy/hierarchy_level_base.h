@@ -66,9 +66,9 @@ struct hierarchy_level_base
   using level_type = _Level;
 
   template <class _InLevel>
-  using __default_md_query_type = ::cuda::std::uint32_t;
+  using __default_md_query_type _CCCL_NODEBUG = ::cuda::std::uint32_t;
   template <class _InLevel>
-  using __default_1d_query_type = typename _InLevel::__product_type;
+  using __default_1d_query_type _CCCL_NODEBUG = typename _InLevel::__product_type;
 
   _CCCL_TEMPLATE(class _InLevel, class _Hierarchy)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND __is_or_has_hierarchy_member_v<_Hierarchy>)
@@ -97,7 +97,7 @@ struct hierarchy_level_base
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND __is_or_has_hierarchy_member_v<_Hierarchy>)
   [[nodiscard]] _CCCL_API static constexpr auto static_count(const _InLevel& __level, const _Hierarchy& __hier) noexcept
   {
-    return __static_count_impl(__level, ::cuda::__unpack_hierarchy_if_needed(__hier));
+    return ::cuda::__static_count_query<_Level, _InLevel, decltype(::cuda::__unpack_hierarchy_if_needed(__hier))>();
   }
 
   _CCCL_TEMPLATE(class _InLevel, class _Hierarchy)
@@ -208,17 +208,9 @@ struct hierarchy_level_base
 
   _CCCL_TEMPLATE(class _Group)
   _CCCL_REQUIRES(::cuda::experimental::coop::group<_Group>)
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_root_rank(const _Group& __group) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static bool is_root_rank(const _Group& __group) noexcept
   {
     return _Level::rank(__group) == 0;
-  }
-
-  _CCCL_TEMPLATE(class _Group)
-  _CCCL_REQUIRES(::cuda::experimental::coop::group<_Group>)
-  [[nodiscard]] _CCCL_API static constexpr bool is_part_of(const _Group& __group) noexcept
-  {
-    // todo: static_assert that the _Level <= _Group::unit_type
-    return ::cuda::experimental::coop::__is_part_of_group<_Level>(__group);
   }
 #    endif // _CCCL_CUDA_COMPILATION()
 #  endif // _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
@@ -253,26 +245,6 @@ private:
       __ret[__i] = _Exts::static_extent(__i);
     }
     return __ret;
-  }
-
-  template <class... _Args>
-  [[nodiscard]] _CCCL_API static constexpr auto __static_count_impl(const _Args&... __args) noexcept
-  {
-    using _Exts = decltype(_Level::extents(__args...));
-
-    if constexpr (_Exts::rank_dynamic() == 0)
-    {
-      ::cuda::std::size_t __ret{1};
-      for (::cuda::std::size_t __i = 0; __i < _Exts::rank(); ++__i)
-      {
-        __ret *= _Exts::static_extent(__i);
-      }
-      return __ret;
-    }
-    else
-    {
-      return ::cuda::std::dynamic_extent;
-    }
   }
 };
 

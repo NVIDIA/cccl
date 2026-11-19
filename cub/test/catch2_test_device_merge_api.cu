@@ -8,6 +8,8 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <iostream>
+
 #include "cub_test_macros.h"
 
 CUB_TEST("DeviceMerge::MergeKeys API example", "[merge][device]", CUB_SMALL)
@@ -19,7 +21,7 @@ CUB_TEST("DeviceMerge::MergeKeys API example", "[merge][device]", CUB_SMALL)
 
   // 1) Get temp storage size
   std::size_t temp_storage_bytes = 0;
-  cub::DeviceMerge::MergeKeys(
+  const auto query_error         = cub::DeviceMerge::MergeKeys(
     nullptr,
     temp_storage_bytes,
     keys1.begin(),
@@ -27,12 +29,16 @@ CUB_TEST("DeviceMerge::MergeKeys API example", "[merge][device]", CUB_SMALL)
     keys2.begin(),
     static_cast<int>(keys2.size()),
     result.begin());
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceMerge::MergeKeys failed with status: " << query_error << '\n';
+  }
 
   // 2) Allocate temp storage
   c2h::device_vector<char> temp_storage(temp_storage_bytes);
 
   // 3) Perform merge operation
-  cub::DeviceMerge::MergeKeys(
+  const auto error = cub::DeviceMerge::MergeKeys(
     thrust::raw_pointer_cast(temp_storage.data()),
     temp_storage_bytes,
     keys1.begin(),
@@ -40,9 +46,15 @@ CUB_TEST("DeviceMerge::MergeKeys API example", "[merge][device]", CUB_SMALL)
     keys2.begin(),
     static_cast<int>(keys2.size()),
     result.begin());
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceMerge::MergeKeys failed with status: " << error << '\n';
+  }
 
   const c2h::host_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
   // example-end merge-keys
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
   CHECK(result == expected);
 }
 
@@ -58,7 +70,7 @@ CUB_TEST("DeviceMerge::MergePairs API example", "[merge][device]", CUB_SMALL)
 
   // 1) Get temp storage size
   std::size_t temp_storage_bytes = 0;
-  cub::DeviceMerge::MergePairs(
+  const auto query_error         = cub::DeviceMerge::MergePairs(
     nullptr,
     temp_storage_bytes,
     keys1.begin(),
@@ -69,12 +81,16 @@ CUB_TEST("DeviceMerge::MergePairs API example", "[merge][device]", CUB_SMALL)
     static_cast<int>(keys2.size()),
     result_keys.begin(),
     result_values.begin());
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceMerge::MergePairs failed with status: " << query_error << '\n';
+  }
 
   // 2) Allocate temp storage
   c2h::device_vector<char> temp_storage(temp_storage_bytes);
 
   // 3) Perform merge operation
-  cub::DeviceMerge::MergePairs(
+  const auto error = cub::DeviceMerge::MergePairs(
     thrust::raw_pointer_cast(temp_storage.data()),
     temp_storage_bytes,
     keys1.begin(),
@@ -85,10 +101,16 @@ CUB_TEST("DeviceMerge::MergePairs API example", "[merge][device]", CUB_SMALL)
     static_cast<int>(keys2.size()),
     result_keys.begin(),
     result_values.begin());
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceMerge::MergePairs failed with status: " << error << '\n';
+  }
 
   const c2h::host_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
   const c2h::host_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
   // example-end merge-pairs
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
   CHECK(result_keys == expected_keys);
   CHECK(result_values == expected_values);
 }

@@ -24,7 +24,7 @@
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

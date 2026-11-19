@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/in_fun_result.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/concepts.h>

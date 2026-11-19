@@ -17,7 +17,7 @@
 #include <cuda/std/functional>
 #include <cuda/std/span>
 
-#include <cuda/experimental/__multi_gpu/algorithm/transform/transform.h>
+#include <cuda/experimental/mgmn/transform>
 
 #include <string>
 #include <vector>
@@ -130,6 +130,7 @@ MULTI_GPU_TEST("transform single-comm documentation example", c2h::type_list<int
     if (const auto& err_str = failed[i]; !err_str.empty())
     {
       INFO("rank: " << i);
+      // NOLINTNEXTLINE(readability-container-size-empty)
       REQUIRE(err_str == ""); // Should print the full error string
     }
   }
@@ -185,7 +186,7 @@ MULTI_GPU_TEST("transform single-comm, uneven rank sizes", value_types, transfor
   std::vector<std::vector<T>> inputs_by_rank(static_cast<cuda::std::size_t>(comms.front().size()));
   for (int r = 0; r < comms.front().size(); ++r)
   {
-    const auto count = static_cast<cuda::std::size_t>(r) * 100 + 1;
+    const auto count = (static_cast<cuda::std::size_t>(r) * 100) + 1;
 
     inputs_by_rank[static_cast<cuda::std::size_t>(r)] = std::vector<T>(count, make_value<T>(r));
   }

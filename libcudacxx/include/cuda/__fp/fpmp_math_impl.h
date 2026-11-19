@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -86,13 +86,79 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 #if !(defined _CCCL_FPMP_USE_LIB)
 
 /*
  * Polynomial evaluation helpers
  */
+
+/*********************************************************************
+ * Refined double-word division  q = a / b
+ * (internal building block -- namespace `fpmp`)
+ *
+ * The generic low-accuracy division derives its correction term from a
+ * quotient of the high words only, so that term is up to 3 * 2^-24 |q|
+ * in size; its single float rounding and the 1-ulp error of the device
+ * reciprocal (rcp.approx) multiply into 10-25 u^2 (44 bits) -- the
+ * floor the log family and atan showed near x = 1.  Here a first pass
+ * corrects the quotient with the FULL numerator and denominator, so it
+ * becomes the rounding of the whole quotient, and only then the exact
+ * remainder is taken: the correction is below one ulp of q, and with
+ * the once-refined reciprocal the result is accurate to < 5 u^2 (host
+ * model against binary128: 4.8 u^2 max, 0.35 u^2 mean, against 26 u^2
+ * / 2.2 u^2 for the generic division).  12 flops plus the reciprocal.
+ *
+ * With `ExactRemainder`, the second pass keeps the remainder exact
+ * (error-free sums for its three terms) and corrects the low product
+ * for the reciprocal's residual error: 3.5 u^2 max in the same model,
+ * for 15 more flops.  atan and atan2 use it, since the fold
+ * atan(a) = pi/4 + atan((a - 1)/(a + 1)) passes the quotient's error
+ * on to the result scaled by up to 0.5.
+ *
+ * Preconditions: a and b are normalized pairs, b != 0, and |b_hi| lies
+ * where the approximate reciprocal is a normal number (callers scale a
+ * huge or tiny denominator by a power of two).  The returned pair is
+ * not renormalized: |q_lo| is at most about one ulp of q_hi.
+ *********************************************************************/
+template <bool _ExactRemainder = false, typename _FpType>
+_CCCL_HOST_DEVICE_API inline void __fpmp_math_div_refined(
+  const _FpType __a_hi,
+  const _FpType __a_lo,
+  const _FpType __b_hi,
+  const _FpType __b_lo,
+  _FpType* __q_hi,
+  _FpType* __q_lo) noexcept
+{
+  const _FpType __r0 = ::cuda::__fpmp_rcp_rn(__b_hi);
+  const _FpType __q0 = ::cuda::__fpmp_mul_rn(__a_hi, __r0);
+  const _FpType __e0 = ::cuda::__fpmp_fma_rn(-__q0, __b_hi, __a_hi); /* exact */
+  _FpType __n0       = ::cuda::__fpmp_add_rn(__e0, __a_lo);
+  __n0               = ::cuda::__fpmp_fma_rn(-__q0, __b_lo, __n0);
+  const _FpType __q1 = ::cuda::__fpmp_fma_rn(__n0, __r0, __q0);
+  const _FpType __e1 = ::cuda::__fpmp_fma_rn(-__q1, __b_hi, __a_hi); /* exact */
+  const _FpType __r1 = ::cuda::__fpmp_fma_rn(__r0, ::cuda::__fpmp_fma_rn(-__b_hi, __r0, _FpType(1)), __r0);
+  *__q_hi            = __q1;
+  if constexpr (_ExactRemainder)
+  {
+    _FpType __t1, __t2, __pl;
+    const _FpType __s  = ::cuda::__fpmp_two_sum(__e1, __a_lo, &__t1);
+    const _FpType __ph = ::cuda::__fpmp_two_mult_fma(__q1, __b_lo, &__pl);
+    const _FpType __s2 = ::cuda::__fpmp_two_sum(__s, -__ph, &__t2);
+    const _FpType __n1 = __s2 + ((__t1 + __t2) - __pl);
+    /* nocontract: GCC would fuse the product into the caller's add of q_lo */
+    const _FpType __lh = ::cuda::__fpmp_mul_rn_nocontract(__n1, __r1);
+    const _FpType __er = ::cuda::__fpmp_fma_rn(__n1, __r1, -__lh); /* exact product residual */
+    const _FpType __tt = ::cuda::__fpmp_fma_rn(-__b_hi, __r1, _FpType(1)); /* 1 - b r1 */
+    *__q_lo            = __lh + ::cuda::__fpmp_fma_rn(__lh, __tt, __er);
+  }
+  else
+  {
+    _FpType __n1 = ::cuda::__fpmp_add_rn(__e1, __a_lo);
+    __n1         = ::cuda::__fpmp_fma_rn(-__q1, __b_lo, __n1);
+    *__q_lo      = ::cuda::__fpmp_mul_rn_nocontract(__n1, __r1); /* see above */
+  }
+} // __fpmp_math_div_refined
 
 /*********************************************************************
  * Mixed-precision (split-M) Horner polynomial evaluation
@@ -114,11 +180,12 @@ namespace cuda::experimental
  *     implicit `fpmp2(FpType)` ctor; using a __ffloat literal
  *     whose `.lo()` happens to be zero -- e.g. for layout
  *     consistency -- works just as well, the `.lo()` is simply
- *     ignored in this phase). The leading M iterations run in
+ *     ignored in this phase). The leading M - 1 steps run in
  *     pure FpType arithmetic:
- *         v_f = v_f * x.hi() + c[k].hi()
- *     using the "op" form r = a*b + c (no fma/mad), matching the
- *     pattern used by the hand-written math kernels (e.g. erfc).
+ *         v_f = fma(v_f, x.hi(), c[k].hi())
+ *     with an explicit fma: nvcc contracts a*b + c by default and a
+ *     host compiler may or may not, so the plain form could round
+ *     differently on the host and the device.
  *
  *   - The remaining N - M LOWER-degree coefficients
  *         c[N-M-1], c[N-M-2], ..., c[0]
@@ -126,8 +193,11 @@ namespace cuda::experimental
  *     transition step
  *         v = v_f * x.hi() + c[N-M-1]
  *     mirrors the float*float + ff layout used in `__fpmp2_erfc`
- *     (the float product gets promoted to ff via the mixed-arithmetic
- *     operator, then the remaining iterations are plain ff Horner).
+ *     (the mixed-arithmetic operator adds the float product to the
+ *     pair with the single-limb kernel, then the remaining iterations
+ *     are plain ff Horner). The product is formed by
+ *     `__fpmp_mul_rn_nocontract`, since GCC would otherwise fuse it
+ *     into that kernel's TwoSum.
  *
  * Special cases:
  *   - M == 0     : pure ff Horner (no FpType phase).
@@ -140,17 +210,46 @@ namespace cuda::experimental
  *     __ffloat v = __fpmp_poly_horner_comp    (x, c);  // compensated
  * or dispatch via `__fpmp_poly_eval<strategy, M>(x, c)` below.
  *
+ * Fast variant (`Fast = true`, strategy `horner_mixed_fast`):
+ *   every ff Horner step v*x + c[k] adds its two operands with a
+ *   Fast2Sum instead of the branch-free 2Sum, which saves three
+ *   operations per step. This is exact -- bit-identical to the
+ *   standard variant -- whenever |v*x| <= |c[k]| at every step, i.e.
+ *   for the Taylor-like series the math kernels evaluate (the ratio
+ *   of consecutive terms is |x|/k or smaller). The caller is
+ *   responsible for that precondition; the result is not
+ *   renormalized, as with the standard variant.
+ *
  * Template params:
  *   M      : number of high-degree coefficients to evaluate in
  *            plain FpType arithmetic (0 <= M <= N). Must be
  *            supplied explicitly at the call site.
+ *   Fast   : use the Fast2Sum step in the ff phase (default false).
  *   N      : number of coefficients (= array length, deduced).
  *            Polynomial degree is N - 1.
  *   FpType : float or double (deduced from arguments).
  *   met    : fpmp arithmetic accuracy level (deduced from arguments).
  *********************************************************************/
-template <int _Mp, int _Np, typename _FpType, fpmp2_accuracy _TypeAcc>
-_CCCL_HOST_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
+/* ff step helpers of the fast variant: c + t with |t| <= |c| (see above). */
+template <typename _FpType, fpmp2_accuracy _TypeAcc>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
+__fpmp_poly_fast_add(const _FpType __t, const fpmp2<_FpType, _TypeAcc>& __c) noexcept
+{
+  _FpType __lo;
+  const _FpType __hi = ::cuda::__fpmp_fast_two_sum(__c.hi(), __t, &__lo);
+  return fpmp2<_FpType, _TypeAcc>(__hi, __lo + __c.lo());
+}
+template <typename _FpType, fpmp2_accuracy _TypeAcc>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc> __fpmp_poly_fast_step(
+  const fpmp2<_FpType, _TypeAcc>& __v, const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc>& __c) noexcept
+{
+  const fpmp2<_FpType, _TypeAcc> __t = __v * __x;
+  _FpType __lo;
+  const _FpType __hi = ::cuda::__fpmp_fast_two_sum(__c.hi(), __t.hi(), &__lo);
+  return fpmp2<_FpType, _TypeAcc>(__hi, __lo + (__c.lo() + __t.lo()));
+}
+template <int _Mp, bool _Fast = false, int _Np, typename _FpType, fpmp2_accuracy _TypeAcc>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 __fpmp_poly_horner_mixed(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc> (&__c)[_Np]) noexcept
 {
   static_assert(_Np >= 2, "poly_horner_mixed requires at least 2 coefficients (degree >= 1)");
@@ -166,19 +265,26 @@ __fpmp_poly_horner_mixed(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpTyp
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __k = _Np - 2; __k >= 0; --__k)
     {
-      __v = __v * __x + __c[__k];
+      if constexpr (_Fast)
+      {
+        __v = ::cuda::__fpmp_poly_fast_step(__v, __x, __c[__k]);
+      }
+      else
+      {
+        __v = __v * __x + __c[__k];
+      }
     }
     return __v;
   }
   else
   {
-    // FpType phase: M iterations consuming c[N-1] ... c[N-M].
+    // FpType phase: M - 1 steps consuming c[N-1] ... c[N-M].
     const _FpType __xh = __x.hi();
     _FpType __v_f      = __c[_Np - 1].hi();
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __k = _Np - 2; __k >= _Np - _Mp; --__k)
     {
-      __v_f = __v_f * __xh + __c[__k].hi();
+      __v_f = ::cuda::__fpmp_fma_rn(__v_f, __xh, __c[__k].hi());
     }
 
     if constexpr (_Mp == _Np)
@@ -189,13 +295,28 @@ __fpmp_poly_horner_mixed(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpTyp
     else
     {
       // Transition step: (float * float) + ff -> ff
-      // (the mixed-type operator+ promotes the FpType product
-      // to __ff_t with .lo() == 0 before adding c[N-M-1].)
-      __ff_t __v = __v_f * __xh + __c[_Np - _Mp - 1];
+      // (the mixed-type operator+ adds the FpType product to
+      // c[N-M-1] with the single-limb kernel.)
+      __ff_t __v = __c[_Np - _Mp - 1];
+      if constexpr (_Fast)
+      {
+        __v = ::cuda::__fpmp_poly_fast_add(::cuda::__fpmp_mul_rn_nocontract(__v_f, __xh), __v);
+      }
+      else
+      {
+        __v = ::cuda::__fpmp_mul_rn_nocontract(__v_f, __xh) + __v;
+      }
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int __k = _Np - _Mp - 2; __k >= 0; --__k)
       {
-        __v = __v * __x + __c[__k];
+        if constexpr (_Fast)
+        {
+          __v = ::cuda::__fpmp_poly_fast_step(__v, __x, __c[__k]);
+        }
+        else
+        {
+          __v = __v * __x + __c[__k];
+        }
       }
       return __v;
     }
@@ -263,7 +384,7 @@ __fpmp_poly_horner_mixed(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpTyp
  *   met    : fpmp arithmetic accuracy level (deduced from arguments)
  *********************************************************************/
 template <int _Mp = 0, int _Np, typename _FpType, fpmp2_accuracy _TypeAcc>
-_CCCL_HOST_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 __fpmp_poly_horner_comp(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc> (&__c)[_Np]) noexcept
 {
   static_assert(_Np >= 2, "poly_horner_comp requires at least 2 coefficients (degree >= 1)");
@@ -280,7 +401,7 @@ __fpmp_poly_horner_comp(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __k = _Np - 2; __k >= _Np - _Mp; --__k)
     {
-      __acc = __acc * __xh + __c[__k].hi();
+      __acc = ::cuda::__fpmp_fma_rn(__acc, __xh, __c[__k].hi());
     }
   }
 
@@ -298,18 +419,18 @@ __fpmp_poly_horner_comp(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType
       const _FpType __ckh = __c[__k].hi();
 
       // two_mult_fma: P + pi == xh * acc  (exact)
-      _FpType __pval = __fpmp_mul_rn(__xh, __acc);
-      _FpType __pi   = __fpmp_fma_rn(__xh, __acc, -__pval);
+      _FpType __pval = ::cuda::__fpmp_mul_rn(__xh, __acc);
+      _FpType __pi   = ::cuda::__fpmp_fma_rn(__xh, __acc, -__pval);
 
       // two_sum: S + sg == P + ckh  (exact, no magnitude assumption)
-      _FpType __s  = __fpmp_add_rn(__pval, __ckh);
-      _FpType __bb = __fpmp_sub_rn(__s, __pval);
-      _FpType __t  = __fpmp_sub_rn(__s, __bb);
-      _FpType __u  = __fpmp_sub_rn(__pval, __t);
-      _FpType __v  = __fpmp_sub_rn(__ckh, __bb);
-      _FpType __sg = __fpmp_add_rn(__u, __v);
+      _FpType __s  = ::cuda::__fpmp_add_rn(__pval, __ckh);
+      _FpType __bb = ::cuda::__fpmp_sub_rn(__s, __pval);
+      _FpType __t  = ::cuda::__fpmp_sub_rn(__s, __bb);
+      _FpType __u  = ::cuda::__fpmp_sub_rn(__pval, __t);
+      _FpType __v  = ::cuda::__fpmp_sub_rn(__ckh, __bb);
+      _FpType __sg = ::cuda::__fpmp_add_rn(__u, __v);
 
-      __err = __fpmp_fma_rn(__xh, __err, __fpmp_add_rn(__pi, __sg));
+      __err = ::cuda::__fpmp_fma_rn(__xh, __err, ::cuda::__fpmp_add_rn(__pi, __sg));
       __acc = __s;
     }
   }
@@ -324,7 +445,7 @@ __fpmp_poly_horner_comp(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __k = __lo_start; __k >= 0; --__k)
     {
-      __corr = __fpmp_fma_rn(__xh, __corr, __c[__k].lo());
+      __corr = ::cuda::__fpmp_fma_rn(__xh, __corr, __c[__k].lo());
     }
   }
 
@@ -333,14 +454,14 @@ __fpmp_poly_horner_comp(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int __k = _Np - 1; __k >= 1; --__k)
   {
-    __dp = __fpmp_fma_rn(__xh, __dp, __fpmp_mul_rn(static_cast<_FpType>(__k), __c[__k].hi()));
+    __dp = ::cuda::__fpmp_fma_rn(__xh, __dp, ::cuda::__fpmp_mul_rn(static_cast<_FpType>(__k), __c[__k].hi()));
   }
-  __corr = __fpmp_fma_rn(__xl, __dp, __corr);
+  __corr = ::cuda::__fpmp_fma_rn(__xl, __dp, __corr);
 
   // === Phase 3: combine into normalized ff ===
-  _FpType __lo  = __fpmp_add_rn(__err, __corr);
-  _FpType __rhi = __fpmp_add_rn(__acc, __lo);
-  _FpType __rlo = __fpmp_sub_rn(__lo, __fpmp_sub_rn(__rhi, __acc));
+  _FpType __lo  = ::cuda::__fpmp_add_rn(__err, __corr);
+  _FpType __rhi = ::cuda::__fpmp_add_rn(__acc, __lo);
+  _FpType __rlo = ::cuda::__fpmp_sub_rn(__lo, ::cuda::__fpmp_sub_rn(__rhi, __acc));
   return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
 } // poly_horner_comp
 
@@ -354,8 +475,9 @@ __fpmp_poly_horner_comp(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType
  *********************************************************************/
 enum class __fpmp_poly_method
 {
-  horner_mixed = 0, // mixed-precision Horner (`poly_horner_mixed<M>`)
-  horner_comp  = 1, // compensated  Horner    (`poly_horner_comp`)
+  horner_mixed      = 0, // mixed-precision Horner (`poly_horner_mixed<M>`)
+  horner_comp       = 1, // compensated  Horner    (`poly_horner_comp`)
+  horner_mixed_fast = 2, // mixed-precision Horner with Fast2Sum ff steps (`poly_horner_mixed<M, true>`)
 };
 
 /*********************************************************************
@@ -369,6 +491,10 @@ enum class __fpmp_poly_method
  *
  *     __fpmp_poly_eval<__fpmp_poly_method::horner_comp,  M>(x, c)
  *         -> __fpmp_poly_horner_comp <M>(x, c)
+ *
+ *     __fpmp_poly_eval<__fpmp_poly_method::horner_mixed_fast, M>(x, c)
+ *         -> __fpmp_poly_horner_mixed<M, true>(x, c)   (Fast2Sum ff steps;
+ *            requires |v*x| <= |c[k]| at every ff step, see above)
  *
  * Both backends share the same M-split semantics: the M HIGHEST-degree
  * coefficients are evaluated in plain FpType arithmetic (with the
@@ -389,16 +515,20 @@ enum class __fpmp_poly_method
  *   met      : fpmp arithmetic accuracy level (deduced).
  *********************************************************************/
 template <__fpmp_poly_method _Strategy, int _Mp = 0, int _Np, typename _FpType, fpmp2_accuracy _TypeAcc>
-_CCCL_HOST_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE fpmp2<_FpType, _TypeAcc>
 __fpmp_poly_eval(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _TypeAcc> (&__c)[_Np]) noexcept
 {
   if constexpr (_Strategy == __fpmp_poly_method::horner_mixed)
   {
-    return __fpmp_poly_horner_mixed<_Mp>(__x, __c);
+    return ::cuda::__fpmp_poly_horner_mixed<_Mp>(__x, __c);
+  }
+  else if constexpr (_Strategy == __fpmp_poly_method::horner_mixed_fast)
+  {
+    return ::cuda::__fpmp_poly_horner_mixed<_Mp, true>(__x, __c);
   }
   else /* poly_method::horner_comp */
   {
-    return __fpmp_poly_horner_comp<_Mp>(__x, __c);
+    return ::cuda::__fpmp_poly_horner_comp<_Mp>(__x, __c);
   }
 } // poly_eval
 
@@ -611,7 +741,7 @@ __fpmp_poly_eval(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _Type
     {                                                                                                \
       if constexpr (__fpmp2_is_supported_fp_v<_FpType>)                                              \
       {                                                                                              \
-        return __internal_fpmp2_##name(__x_hi, __x_lo);                                              \
+        return ::cuda::__internal_fpmp2_##name(__x_hi, __x_lo);                                      \
       }                                                                                              \
       else                                                                                           \
       {                                                                                              \
@@ -626,7 +756,7 @@ __fpmp_poly_eval(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _Type
     {                                                                                                     \
       if constexpr (__fpmp2_is_supported_fp_v<_FpType>)                                                   \
       {                                                                                                   \
-        return __internal_fpmp2_##name(__x_hi, __x_lo);                                                   \
+        return ::cuda::__internal_fpmp2_##name(__x_hi, __x_lo);                                           \
       }                                                                                                   \
       else                                                                                                \
       {                                                                                                   \
@@ -641,7 +771,7 @@ __fpmp_poly_eval(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _Type
     {                                                                                                \
       if constexpr (__fpmp2_is_supported_fp_v<_FpType>)                                              \
       {                                                                                              \
-        return __internal_fpmp2_##name(__x_hi, __x_lo);                                              \
+        return ::cuda::__internal_fpmp2_##name(__x_hi, __x_lo);                                      \
       }                                                                                              \
       else                                                                                           \
       {                                                                                              \
@@ -742,19 +872,18 @@ __fpmp_poly_eval(const fpmp2<_FpType, _TypeAcc>& __x, const fpmp2<_FpType, _Type
       && !defined(_CCCL_FLOAT128_CPP_SPELLING_ENABLED)
 #      define _CCCL_FLOAT128_CPP_SPELLING_ENABLED
 #    endif
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 #    if _CCCL_DEVICE_COMPILATION()
-  // CUDA device
+// CUDA device
 #      include <crt/device_fp128_functions.h>
 #    elif (_CCCL_FPMP_HOST_SUPPORTS_LIBQUADMATH == 1)
-  // x86 host: libquadmath
+// x86 host: libquadmath
 #      include <quadmath.h>
 #    elif (_CCCL_FPMP_HOST_SUPPORTS_LDOUBLE128 == 1)
-  // ARM64/s390x host: long double is 128-bit IEEE
+// ARM64/s390x host: long double is 128-bit IEEE
 #      include <cmath>
 #    endif
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 // ----------------------------------------------------------------------
 // Branch 1 -- CUDA DEVICE with the *extended* NVVM fp128 intrinsics
 //             (the primary GPU path).
@@ -920,41 +1049,41 @@ namespace cuda::experimental
 // reference is effectively fp64-accurate on this target).
 // ----------------------------------------------------------------------
 #    elif _CCCL_DEVICE_COMPILATION()
-#      define _CCCL_FPMP_EXPQ(x)          ((__fpmp_fp128) exp((double) (x)))
-#      define _CCCL_FPMP_EXP2Q(x)         ((__fpmp_fp128) exp2((double) (x)))
-#      define _CCCL_FPMP_EXP10Q(x)        ((__fpmp_fp128) exp10((double) (x)))
-#      define _CCCL_FPMP_EXPM1Q(x)        ((__fpmp_fp128) expm1((double) (x)))
-#      define _CCCL_FPMP_LOGQ(x)          ((__fpmp_fp128) log((double) (x)))
-#      define _CCCL_FPMP_LOG2Q(x)         ((__fpmp_fp128) log2((double) (x)))
-#      define _CCCL_FPMP_LOG10Q(x)        ((__fpmp_fp128) log10((double) (x)))
-#      define _CCCL_FPMP_LOG1PQ(x)        ((__fpmp_fp128) log1p((double) (x)))
-#      define _CCCL_FPMP_SINQ(x)          ((__fpmp_fp128) sin((double) (x)))
-#      define _CCCL_FPMP_COSQ(x)          ((__fpmp_fp128) cos((double) (x)))
-#      define _CCCL_FPMP_TANQ(x)          ((__fpmp_fp128) tan((double) (x)))
-#      define _CCCL_FPMP_ASINQ(x)         ((__fpmp_fp128) asin((double) (x)))
-#      define _CCCL_FPMP_ACOSQ(x)         ((__fpmp_fp128) acos((double) (x)))
-#      define _CCCL_FPMP_ATANQ(x)         ((__fpmp_fp128) atan((double) (x)))
-#      define _CCCL_FPMP_SINHQ(x)         ((__fpmp_fp128) sinh((double) (x)))
-#      define _CCCL_FPMP_COSHQ(x)         ((__fpmp_fp128) cosh((double) (x)))
-#      define _CCCL_FPMP_TANHQ(x)         ((__fpmp_fp128) tanh((double) (x)))
-#      define _CCCL_FPMP_ASINHQ(x)        ((__fpmp_fp128) asinh((double) (x)))
-#      define _CCCL_FPMP_ACOSHQ(x)        ((__fpmp_fp128) acosh((double) (x)))
-#      define _CCCL_FPMP_ATANHQ(x)        ((__fpmp_fp128) atanh((double) (x)))
-#      define _CCCL_FPMP_SQRTQ(x)         ((__fpmp_fp128) sqrt((double) (x)))
-#      define _CCCL_FPMP_FABSQ(x)         ((__fpmp_fp128) fabs((double) (x)))
-#      define _CCCL_FPMP_POWQ(x, y)       ((__fpmp_fp128) pow((double) (x), (double) (y)))
-#      define _CCCL_FPMP_CBRTQ(x)         ((__fpmp_fp128) cbrt((double) (x)))
-#      define _CCCL_FPMP_ATAN2Q(y, x)     ((__fpmp_fp128) atan2((double) (y), (double) (x)))
-#      define _CCCL_FPMP_FMODQ(x, y)      ((__fpmp_fp128) fmod((double) (x), (double) (y)))
-#      define _CCCL_FPMP_REMAINDERQ(x, y) ((__fpmp_fp128) remainder((double) (x), (double) (y)))
-#      define _CCCL_FPMP_ERFQ(x)          ((__fpmp_fp128) erf((double) (x)))
-#      define _CCCL_FPMP_ERFCQ(x)         ((__fpmp_fp128) erfc((double) (x)))
-#      define _CCCL_FPMP_FLOORQ(x)        ((__fpmp_fp128) floor((double) (x)))
-#      define _CCCL_FPMP_CEILQ(x)         ((__fpmp_fp128) ceil((double) (x)))
-#      define _CCCL_FPMP_TRUNCQ(x)        ((__fpmp_fp128) trunc((double) (x)))
-#      define _CCCL_FPMP_ROUNDQ(x)        ((__fpmp_fp128) round((double) (x)))
-#      define _CCCL_FPMP_RINTQ(x)         ((__fpmp_fp128) rint((double) (x)))
-#      define _CCCL_FPMP_NEARBYINTQ(x)    ((__fpmp_fp128) nearbyint((double) (x)))
+#      define _CCCL_FPMP_EXPQ(x)          ((__fpmp_fp128)::exp((double) (x)))
+#      define _CCCL_FPMP_EXP2Q(x)         ((__fpmp_fp128)::exp2((double) (x)))
+#      define _CCCL_FPMP_EXP10Q(x)        ((__fpmp_fp128)::exp10((double) (x)))
+#      define _CCCL_FPMP_EXPM1Q(x)        ((__fpmp_fp128)::expm1((double) (x)))
+#      define _CCCL_FPMP_LOGQ(x)          ((__fpmp_fp128)::log((double) (x)))
+#      define _CCCL_FPMP_LOG2Q(x)         ((__fpmp_fp128)::log2((double) (x)))
+#      define _CCCL_FPMP_LOG10Q(x)        ((__fpmp_fp128)::log10((double) (x)))
+#      define _CCCL_FPMP_LOG1PQ(x)        ((__fpmp_fp128)::log1p((double) (x)))
+#      define _CCCL_FPMP_SINQ(x)          ((__fpmp_fp128)::sin((double) (x)))
+#      define _CCCL_FPMP_COSQ(x)          ((__fpmp_fp128)::cos((double) (x)))
+#      define _CCCL_FPMP_TANQ(x)          ((__fpmp_fp128)::tan((double) (x)))
+#      define _CCCL_FPMP_ASINQ(x)         ((__fpmp_fp128)::asin((double) (x)))
+#      define _CCCL_FPMP_ACOSQ(x)         ((__fpmp_fp128)::acos((double) (x)))
+#      define _CCCL_FPMP_ATANQ(x)         ((__fpmp_fp128)::atan((double) (x)))
+#      define _CCCL_FPMP_SINHQ(x)         ((__fpmp_fp128)::sinh((double) (x)))
+#      define _CCCL_FPMP_COSHQ(x)         ((__fpmp_fp128)::cosh((double) (x)))
+#      define _CCCL_FPMP_TANHQ(x)         ((__fpmp_fp128)::tanh((double) (x)))
+#      define _CCCL_FPMP_ASINHQ(x)        ((__fpmp_fp128)::asinh((double) (x)))
+#      define _CCCL_FPMP_ACOSHQ(x)        ((__fpmp_fp128)::acosh((double) (x)))
+#      define _CCCL_FPMP_ATANHQ(x)        ((__fpmp_fp128)::atanh((double) (x)))
+#      define _CCCL_FPMP_SQRTQ(x)         ((__fpmp_fp128)::sqrt((double) (x)))
+#      define _CCCL_FPMP_FABSQ(x)         ((__fpmp_fp128)::fabs((double) (x)))
+#      define _CCCL_FPMP_POWQ(x, y)       ((__fpmp_fp128)::pow((double) (x), (double) (y)))
+#      define _CCCL_FPMP_CBRTQ(x)         ((__fpmp_fp128)::cbrt((double) (x)))
+#      define _CCCL_FPMP_ATAN2Q(y, x)     ((__fpmp_fp128)::atan2((double) (y), (double) (x)))
+#      define _CCCL_FPMP_FMODQ(x, y)      ((__fpmp_fp128)::fmod((double) (x), (double) (y)))
+#      define _CCCL_FPMP_REMAINDERQ(x, y) ((__fpmp_fp128)::remainder((double) (x), (double) (y)))
+#      define _CCCL_FPMP_ERFQ(x)          ((__fpmp_fp128)::erf((double) (x)))
+#      define _CCCL_FPMP_ERFCQ(x)         ((__fpmp_fp128)::erfc((double) (x)))
+#      define _CCCL_FPMP_FLOORQ(x)        ((__fpmp_fp128)::floor((double) (x)))
+#      define _CCCL_FPMP_CEILQ(x)         ((__fpmp_fp128)::ceil((double) (x)))
+#      define _CCCL_FPMP_TRUNCQ(x)        ((__fpmp_fp128)::trunc((double) (x)))
+#      define _CCCL_FPMP_ROUNDQ(x)        ((__fpmp_fp128)::round((double) (x)))
+#      define _CCCL_FPMP_RINTQ(x)         ((__fpmp_fp128)::rint((double) (x)))
+#      define _CCCL_FPMP_NEARBYINTQ(x)    ((__fpmp_fp128)::nearbyint((double) (x)))
 #    endif // _CCCL_FPMP_FP128_MATH_FALLBACK == 1
 
 // None of the four branches matched, so the bodies below would expand to undefined
@@ -970,18 +1099,19 @@ namespace cuda::experimental
  * handle CUDA/libquadmath/long double dispatching internally.
  */
 #    define _CCCL_FPMP_CALL_FP64MP2_MATH(dfunc, qfunc, xhi, xlo, reshi, reslo) \
-      __fpmp2_from_quad(qfunc(__fpmp2_to_quad(xhi, xlo)), reshi, reslo)
+      __fpmp2_from_quad(qfunc(::cuda::__fpmp2_to_quad(xhi, xlo)), reshi, reslo)
 #    define _CCCL_FPMP_CALL_FP64MP2_MATH_2A(dfunc, qfunc, xhi, xlo, yhi, ylo, reshi, reslo) \
-      __fpmp2_from_quad(qfunc(__fpmp2_to_quad(xhi, xlo), __fpmp2_to_quad(yhi, ylo)), reshi, reslo)
+      __fpmp2_from_quad(qfunc(::cuda::__fpmp2_to_quad(xhi, xlo), ::cuda::__fpmp2_to_quad(yhi, ylo)), reshi, reslo)
 #  else
 #    define _CCCL_FPMP_CALL_FP64MP2_MATH(dfunc, qfunc, xhi, xlo, reshi, reslo) \
-      __fpmp2_from_double(::dfunc(__fpmp2_to_double(xhi, xlo)), reshi, reslo)
+      __fpmp2_from_double(::dfunc(::cuda::__fpmp2_to_double(xhi, xlo)), reshi, reslo)
 #    define _CCCL_FPMP_CALL_FP64MP2_MATH_2A(dfunc, qfunc, xhi, xlo, yhi, ylo, reshi, reslo) \
-      __fpmp2_from_double(::dfunc(__fpmp2_to_double(xhi, xlo), __fpmp2_to_double(yhi, ylo)), reshi, reslo)
+      __fpmp2_from_double(                                                                  \
+        ::dfunc(::cuda::__fpmp2_to_double(xhi, xlo), ::cuda::__fpmp2_to_double(yhi, ylo)), reshi, reslo)
 #  endif // _CCCL_FPMP_FP128_MATH_FALLBACK == 1
 
 #endif // _CCCL_FPMP_USE_LIB
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Enable constant_wrapper for msvc.
-// UNSUPPORTED: msvc
-
 // todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
 //   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
 //   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
@@ -38,7 +35,7 @@ TEST_FUNC constexpr bool test()
 {
   {
     // int conversion
-    cuda::std::__constant_wrapper<6> cw6{};
+    cuda::std::constant_wrapper<6> cw6{};
     int result = cw6;
     assert(result == 6);
 
@@ -49,7 +46,7 @@ TEST_FUNC constexpr bool test()
   {
     // struct conversion
     constexpr S s{42};
-    cuda::std::__constant_wrapper<s> cws;
+    cuda::std::constant_wrapper<s> cws;
     const S& result = cws;
     assert(result.value == 42);
     assert(&result == &cws.__get());
@@ -68,7 +65,7 @@ TEST_FUNC constexpr bool test()
     constexpr int (*fptr)(int) = [](int x) constexpr {
       return x * 2;
     };
-    cuda::std::__constant_wrapper<fptr> cwFptr;
+    cuda::std::constant_wrapper<fptr> cwFptr;
     int (*result)(int) = cwFptr;
     assert(result(5) == 10);
 
@@ -87,7 +84,7 @@ TEST_FUNC constexpr bool test()
 #  if !(TEST_CUDA_COMPILER(NVCC, <, 13, 3) && _CCCL_HOST_COMPILATION())
   {
     // conversion is implicit
-    cuda::std::__constant_wrapper<S{42}> cws;
+    cuda::std::constant_wrapper<S{42}> cws;
     f1(cws);
   }
 #  endif // !(TEST_CUDA_COMPILER(NVCC, <, 13, 3) && _CCCL_HOST_COMPILATION())

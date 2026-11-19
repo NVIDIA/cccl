@@ -25,15 +25,16 @@
 #include <cuda/std/__cmath/copysign.h>
 #include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__cmath/isnan.h>
-#include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/__complex/complex.h>
-#include <cuda/std/__complex/exponential_functions.h>
-#include <cuda/std/__complex/logarithms.h>
 #include <cuda/std/__complex/nvbf16.h>
 #include <cuda/std/__complex/nvfp16.h>
 #include <cuda/std/__complex/roots.h>
+#include <cuda/std/__floating_point/storage.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/numbers>
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -545,8 +546,8 @@ template <class _Tp>
   // real = (1.0 - eps) and imag ~ 0.0 but it's nowhere near as bad as in asinh.
   // We need a much smaller interval check than asinh in this case.
   // Bounds found experimentally.
-  constexpr _Tp __realx_close_bound = (is_same_v<_Tp, float>) ? _Tp{0.99f} : _Tp{0.99999};
-  constexpr _Tp __imagx_small_bound = (is_same_v<_Tp, float>) ? _Tp{1.0e-6f} : _Tp{1.0e-8};
+  constexpr _Tp __realx_close_bound = is_same_v<_Tp, float> ? _Tp{0.99f} : _Tp{0.99999};
+  constexpr _Tp __imagx_small_bound = is_same_v<_Tp, float> ? _Tp{1.0e-6f} : _Tp{1.0e-8};
 
   // Calculate the same thing, but in a more stable way on this interval.
   if ((__imagx < __imagx_small_bound) && (__realx_close_bound < __realx) && (__realx <= _Tp{1}))

@@ -25,7 +25,7 @@
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/is_extended_arithmetic.h>
 #include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_same.h> // IWYU pragma: keep
 #include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -60,10 +60,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
       {
         return (__x < 0) ? __x_dbl : -__x_dbl;
       }
-      else
-      {
-        return (__x < 0) ? -__x_dbl : __x_dbl;
-      }
+      return (__x < 0) ? -__x_dbl : __x_dbl;
     }
   }
   else // ^^^ integral ^^^ / vvv floating_point vvv

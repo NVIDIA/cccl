@@ -15,6 +15,12 @@ by passing a policy selector, wrapped into :code:`cuda::execution::tune(...)`,
 as part of the environment of a CUB device-scope API.
 In the following, we describe this process in more detail.
 
+.. warning::
+
+   CUB's built-in tunings may change in every CCCL release, and so may the performance of algorithms using a custom tuning.
+   In some cases, compilation may fail as well.
+   See :ref:`cub-tuning-stability` for what this means for custom tunings.
+
 
 Policy selectors
 --------------------------------------------------------------------------------
@@ -29,7 +35,8 @@ e.g. :code:`cub::ReducePolicy`, which must be returned by a policy selector pass
 CUB employs internal default policy selectors providing tunings for known compute capabilities and workloads,
 which are not publicly accessible to users.
 Users can override CUB's policy selector for a given algorithm
-by passing a custom policy selector through the algorithm's environment parameter.
+by passing a custom policy selector through the algorithm's environment parameter,
+or build upon CUB's default tuning by passing a :ref:`policy transformer <cub-policy-transformers>`.
 
 For a description of how policy selectors are used internally in CUB's dispatch layer and kernels
 see the corresponding :ref:`developer documentation <cub-developer-guide-device-scope>`.
@@ -49,7 +56,7 @@ taking a ``cuda::compute_capability`` and returning the algorithm's policy struc
         if (cc >= cuda::compute_capability(9, 0)) {
           const auto pass = cub::ReducePassPolicy{
             .threads_per_block = 512,
-            .items_per_thread = std::max(64 / sizeof(T), 1), // 8 double, 16 float, 32 half_t, ...
+            .items_per_thread = std::max<int>(64 / sizeof(T), 1), // 8 double, 16 float, 32 half_t, ...
             .vec_size = 2,
             .reduce_algorithm = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
             .load_modifier = cub::LOAD_DEFAULT
@@ -98,6 +105,35 @@ They may occasionally contain member functions that compute derived values from 
 All policy structs are public types and will evolve in a non-breaking way, at least during minor releases,
 by only adding new data members at the end of the struct.
 
+.. _cub-policy-transformers:
+
+Policy transformers
+--------------------------------------------------------------------------------
+
+Often, only a few values of CUB's default tuning need to change.
+For example, CUB's tuning for your GPU and workload is good,
+except you want to choose a different block-level algorithm which suits your operator better.
+Instead of a policy selector, a *policy transformer* can be passed to :code:`cuda::execution::tune(...)`.
+A policy transformer is a stateless callable taking a :code:`cuda::compute_capability` and
+the policy returned by CUB's default policy selector for that compute capability and workload.
+It returns the (possibly modified) policy, which is then used to tune the algorithm:
+
+.. literalinclude:: ../../cub/test/catch2_test_device_adjacent_difference_env_api.cu
+   :language: c++
+   :dedent:
+   :start-after: example-begin subtract-left-copy-policy-transformer
+   :end-before: example-end subtract-left-copy-policy-transformer
+
+.. literalinclude:: ../../cub/test/catch2_test_device_adjacent_difference_env_api.cu
+   :language: c++
+   :dedent:
+   :start-after: example-begin subtract-left-copy-transformer-tuning
+   :end-before: example-end subtract-left-copy-transformer-tuning
+
+The same requirements as for policy selectors apply:
+a policy transformer must be stateless and semiregular.
+It must return the algorithm's policy struct by value, and accept it as its second parameter.
+A callable passed to :code:`cuda::execution::tune(...)` must be either a policy selector or a policy transformer.
 
 Passing a policy selector to CUB device-scope algorithms
 --------------------------------------------------------------------------------
@@ -144,3 +180,38 @@ Policy selectors can simply be added to those:
 
 CUB's benchmarks also make heavy use of policy selectors for tuning.
 For more details on authoring benchmarks and their policy selectors for automatic tuning, see :ref:`cub-tuning-infra`.
+
+.. _cub-tuning-stability:
+
+Stability of tunings
+--------------------------------------------------------------------------------
+
+CCCL reserves the right to change CUB's built-in tunings in every release, including minor and patch releases.
+Such changes are validated using CUB's benchmarks,
+but may still regress workloads outside our benchmark coverage.
+
+Algorithmic changes in CUB also sometimes require tunings to change to retain performance.
+For example, restructuring an algorithm to allow for higher load vectorization,
+may require different items processed per thread to be effective.
+A user-tuned value for the items per thread may now select a slower fallback path after updating CCCL,
+without any diagnostic.
+
+In extreme cases CUB may change tunings in a way where a custom override could lead to a compilation failure.
+Suppose that changes to CUB's tunings lead to a higher use of GPU resources like shared memory.
+A user-tuned value for the block size may now exceed the available shared memory and fail to compile.
+
+Therefore, a specific tuning overriding CUB's internal one may work for a given CCCL version,
+but may no longer be adequate or even fail to compile in a future CCCL version.
+We strongly advise users to regularly benchmark and reevaluate their custom tunings when upgrading.
+
+The two ways of customizing a tuning are affected differently by such changes:
+
+* A policy selector specifies all tuning values, so changes to CUB's tuning values do not affect it.
+  But it locks you out of any improvements CUB makes to its tunings in newer CCCL versions,
+  and it is still affected by changes to the algorithms themselves.
+* A policy transformer only modifies CUB's current tuning and thus picks up such improvements.
+  But the values it does not override can change underneath it, and CUB does not validate your modification
+  in combination with future tunings. The result may perform worse or no longer compile.
+
+Use a policy transformer for a small and targeted modification of CUB's tuning.
+Use a policy selector to freeze a good tuning you found over time.

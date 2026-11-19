@@ -68,25 +68,25 @@ TEST_CASE("TestTabulateCudaStreams", "[tabulate]")
   Vector v(5);
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::tabulate(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{});
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   Vector ref{0, 1, 2, 3, 4};
   REQUIRE(v == ref);
 
   thrust::tabulate(thrust::cuda::par.on(s), v.begin(), v.end(), -_1);
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   ref = {0, -1, -2, -3, -4};
   REQUIRE(v == ref);
 
   thrust::tabulate(thrust::cuda::par.on(s), v.begin(), v.end(), _1 * _1 * _1);
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   ref = {0, 1, 8, 27, 64};
   REQUIRE(v == ref);
 
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 }

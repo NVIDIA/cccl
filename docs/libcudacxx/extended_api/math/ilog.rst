@@ -48,12 +48,15 @@ The functions compute the logarithm to the base 2 and 10 of an integer value.
 
 **Performance considerations**
 
-The functions perform the following operations in device code:
+The functions perform the following operations in SIMT device code:
 
 - ``ilog2``: ``FLO``
 - ``ceil_ilog2``: ``FLO``, ``POPC``, ``ADD``, comparison
-- ``ilog10``: ``FLO``, ``FMUL``, ``F2I``, constant memory lookup, ``SEL`` + ``IADD`` only if ``T == uint32_t`` or ``T == __uint128_t``
+- ``ilog10``: multiple integer arithmetic and comparison operations
 - ``ceil_ilog10``: ``ilog10`` with an additional comparison, subtraction, and ``IADD``
+
+On the host, in tile code, and during constant evaluation, ``ilog10`` uses a floating-point estimate
+and a power-of-ten table for types wider than 16 bits.
 
 Example
 -------

@@ -38,8 +38,6 @@
 #    include <cuda/std/cstdint>
 #    include <cuda/std/span>
 
-#    include <driver_types.h>
-
 #    include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
@@ -382,10 +380,10 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
 #    endif // _CCCL_CTK_AT_LEAST(12, 8)
   for (int __i = 0; __i < __rank; ++__i)
   {
-    constexpr auto __max_allowed_size = int64_t{1} << 32; // 2^32
+    constexpr auto __max_allowed_size = int64_t{1} << 31; // 2^31
     if (__tensor_sizes[__i] <= 0 || __tensor_sizes[__i] > __max_allowed_size)
     {
-      _CCCL_THROW(::std::invalid_argument, "tensor.shape[i] must be greater than 0 and less than or equal to 2^32");
+      _CCCL_THROW(::std::invalid_argument, "tensor.shape[i] must be greater than 0 and less than or equal to 2^31");
     }
     __tensor_sizes_array[__rank - 1 - __i] = __tensor_sizes[__i];
   }

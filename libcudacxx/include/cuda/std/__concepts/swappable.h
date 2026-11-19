@@ -21,15 +21,16 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/assignable.h>
-#include <cuda/std/__concepts/class_or_enum.h>
+#include <cuda/std/__concepts/class_or_enum.h> // IWYU pragma: keep
 #include <cuda/std/__concepts/common_reference_with.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/extent.h>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/integral_constant.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/remove_cvref.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>

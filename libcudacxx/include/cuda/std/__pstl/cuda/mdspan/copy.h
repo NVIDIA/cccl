@@ -30,6 +30,7 @@
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__fwd/execution_policy.h>
 #  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/is_assignable.h>

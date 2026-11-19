@@ -14,17 +14,18 @@
 #endif // no system header
 
 #include <cub/config.cuh>
+#include <thrust/system/cuda/config.h>
 
 #include <cub/util_device.cuh>
 
+#include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__host_stdlib/cstdio>
 
 #include <nv/target>
 
 #if _CCCL_HOSTED()
 #  include <thrust/system/cuda/error.h>
-#  include <thrust/system_error.h>
-
+#  include <thrust/system/system_error.h> // IWYU pragma: keep
 #endif // _CCCL_HOSTED()
 
 THRUST_NAMESPACE_BEGIN
@@ -34,7 +35,7 @@ namespace cuda_cub
 template <class>
 struct execution_policy;
 
-inline _CCCL_HOST_DEVICE cudaStream_t default_stream()
+_CCCL_HOST_DEVICE_API inline cudaStream_t default_stream()
 {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
   return cudaStreamPerThread;
@@ -45,28 +46,28 @@ inline _CCCL_HOST_DEVICE cudaStream_t default_stream()
 
 // Fallback implementation of the customization point.
 template <class Derived>
-_CCCL_HOST_DEVICE cudaStream_t get_stream(execution_policy<Derived>&)
+_CCCL_HOST_DEVICE_API cudaStream_t get_stream(execution_policy<Derived>&)
 {
   return default_stream();
 }
 
 // Entry point/interface.
 template <class Derived>
-_CCCL_HOST_DEVICE cudaStream_t stream(execution_policy<Derived>& policy)
+_CCCL_HOST_DEVICE_API cudaStream_t stream(execution_policy<Derived>& policy)
 {
   return get_stream(derived_cast(policy));
 }
 
 // Fallback implementation of the customization point.
 template <class Derived>
-_CCCL_HOST_DEVICE bool must_perform_optional_stream_synchronization(execution_policy<Derived>&)
+_CCCL_HOST_DEVICE_API bool must_perform_optional_stream_synchronization(execution_policy<Derived>&)
 {
   return true;
 }
 
 // Entry point/interface.
 template <class Derived>
-_CCCL_HOST_DEVICE bool must_perform_optional_synchronization(execution_policy<Derived>& policy)
+_CCCL_HOST_DEVICE_API bool must_perform_optional_synchronization(execution_policy<Derived>& policy)
 {
   return must_perform_optional_stream_synchronization(derived_cast(policy));
 }
@@ -74,14 +75,14 @@ _CCCL_HOST_DEVICE bool must_perform_optional_synchronization(execution_policy<De
 // Fallback implementation of the customization point.
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived>
-_CCCL_HOST_DEVICE cudaError_t synchronize_stream(execution_policy<Derived>& policy)
+_CCCL_HOST_DEVICE_API cudaError_t synchronize_stream(execution_policy<Derived>& policy)
 {
   return cub::SyncStream(stream(policy));
 }
 
 // Entry point/interface.
 template <class Policy>
-_CCCL_HOST_DEVICE cudaError_t synchronize(Policy& policy)
+_CCCL_HOST_DEVICE_API cudaError_t synchronize(Policy& policy)
 {
   return synchronize_stream(derived_cast(policy));
 }
@@ -89,7 +90,7 @@ _CCCL_HOST_DEVICE cudaError_t synchronize(Policy& policy)
 // Fallback implementation of the customization point.
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived>
-_CCCL_HOST_DEVICE cudaError_t synchronize_stream_optional(execution_policy<Derived>& policy)
+_CCCL_HOST_DEVICE_API cudaError_t synchronize_stream_optional(execution_policy<Derived>& policy)
 {
   cudaError_t result;
 
@@ -107,7 +108,7 @@ _CCCL_HOST_DEVICE cudaError_t synchronize_stream_optional(execution_policy<Deriv
 
 // Entry point/interface.
 template <class Policy>
-_CCCL_HOST_DEVICE cudaError_t synchronize_optional(Policy& policy)
+_CCCL_HOST_DEVICE_API cudaError_t synchronize_optional(Policy& policy)
 {
   return synchronize_stream_optional(derived_cast(policy));
 }
@@ -124,7 +125,7 @@ _CCCL_FORCEINLINE cudaError_t trivial_copy_from_device(Type* dst, Type const* sr
   }
 
   status = ::cudaMemcpyAsync(dst, src, sizeof(Type) * count, cudaMemcpyDefault, stream);
-  cudaStreamSynchronize(stream);
+  static_cast<void>(cudaStreamSynchronize(stream));
   return status;
 }
 
@@ -139,7 +140,7 @@ trivial_copy_to_device(Type* dst, Type const* src, size_t count, cudaStream_t st
   }
 
   status = ::cudaMemcpyAsync(dst, src, sizeof(Type) * count, cudaMemcpyDefault, stream);
-  cudaStreamSynchronize(stream);
+  static_cast<void>(cudaStreamSynchronize(stream));
   return status;
 }
 
@@ -161,14 +162,14 @@ trivial_copy_device_to_device(Policy& policy, Type* dst, Type const* src, size_t
 }
 #endif // _CCCL_HOSTED()
 
-_CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status)
+_CCCL_HOST_DEVICE_API inline void throw_on_error(cudaError_t status)
 {
   // Clear the global CUDA error state which may have been set by the last
   // call. Otherwise, errors may "leak" to unrelated kernel launches.
 #ifdef THRUST_RDC_ENABLED
-  cudaGetLastError();
+  static_cast<void>(cudaGetLastError());
 #else
-  NV_IF_TARGET(NV_IS_HOST, (cudaGetLastError();));
+  NV_IF_TARGET(NV_IS_HOST, (static_cast<void>(cudaGetLastError());));
 #endif
 
   if (cudaSuccess != status)
@@ -199,14 +200,14 @@ _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status)
   }
 }
 
-_CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status, char const* msg)
+_CCCL_HOST_DEVICE_API inline void throw_on_error(cudaError_t status, char const* msg)
 {
   // Clear the global CUDA error state which may have been set by the last
   // call. Otherwise, errors may "leak" to unrelated kernel launches.
 #ifdef THRUST_RDC_ENABLED
-  cudaGetLastError();
+  static_cast<void>(cudaGetLastError());
 #else
-  NV_IF_TARGET(NV_IS_HOST, (cudaGetLastError();));
+  NV_IF_TARGET(NV_IS_HOST, (static_cast<void>(cudaGetLastError());));
 #endif
 
   if (cudaSuccess != status)

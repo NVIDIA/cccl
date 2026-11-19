@@ -32,29 +32,12 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-//! @brief Aligned storage type for vectorized memory access of a given byte width.
-template <::cuda::std::size_t _VectorBytes>
-struct alignas(_VectorBytes) __vector_access
-{
-  char __data[_VectorBytes];
-};
-
-// 32-byte accesses are supported since CTK 13.0
-#if _CCCL_CTK_AT_LEAST(13, 0)
-inline constexpr auto __max_vector_access = 32;
-#else
-inline constexpr auto __max_vector_access = 16;
-#endif // _CCCL_CTK_AT_LEAST(13, 0)
-
 #if !_CCCL_COMPILER(NVRTC)
-
-template <::cuda::std::size_t _VectorBytes>
-using __vector_access_t _CCCL_NODEBUG = __vector_access<_VectorBytes>;
 
 //! @brief Query the maximum vector access width supported by the current GPU architecture.
 //!
 //! @return Maximum vector width in bytes (32 for SM >= 10.0, 16 otherwise)
-[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t __max_gpu_arch_vector_size() noexcept
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t __max_gpu_arch_vector_size()
 {
 #  if _CCCL_CTK_AT_LEAST(13, 0)
   const auto __dev_id = ::cuda::__driver::__cudevice_to_ordinal(::cuda::__driver::__ctxGetDevice());

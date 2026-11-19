@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/get.h>
 #include <cuda/std/__fwd/variant.h>
 #include <cuda/std/__memory/addressof.h>
@@ -31,7 +32,6 @@
 #include <cuda/std/__variant/bad_variant_access.h>
 #include <cuda/std/__variant/variant.h>
 #include <cuda/std/__variant/variant_access.h>
-#include <cuda/std/__variant/variant_match.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

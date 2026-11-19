@@ -58,8 +58,8 @@ public:
     const exec_place& /*unused*/,
     cudaStream_t s) override
   {
-    auto& in_instance    = d.instance<typename scalar_t::element_type>(in_instance_id);
-    auto& inout_instance = d.instance<typename scalar_t::element_type>(inout_instance_id);
+    auto& in_instance    = d.instance<scalar_t::element_type>(in_instance_id);
+    auto& inout_instance = d.instance<scalar_t::element_type>(inout_instance_id);
     // fprintf(stderr, "REDUX OP d %p inout (node %d id %d addr %p) in (node %d id %d addr %p)\n", d,
     //        inout_memory_node, inout_instance_id, *inout_instance, in_memory_node, in_instance_id, *in_instance);
     add<<<1, 1, 0, s>>>(in_instance.data_handle(), inout_instance.data_handle());
@@ -71,7 +71,7 @@ public:
                       const exec_place& /*unused*/,
                       cudaStream_t s) override
   {
-    auto& out_instance = d.instance<typename scalar_t::element_type>(out_instance_id);
+    auto& out_instance = d.instance<scalar_t::element_type>(out_instance_id);
     // fprintf(stderr, "REDUX INIT d %p memory node %d instance id %d => addr %p\n", d, out_memory_node,
     //        out_instance_id, *out_instance);
     set_value<<<1, 1, 0, s>>>(out_instance.data_handle(), 0);

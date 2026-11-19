@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -14,7 +14,6 @@
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_temporary_storage.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/cstdint>
@@ -30,6 +29,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include <nvrtc.h>
 #include <stdio.h> // printf
 
 #include "jit_templates/templates/input_iterator.h"
@@ -69,6 +69,24 @@ struct input2_storage_t;
 
 namespace transform
 {
+// The prefetch stride depends on the compiler's PTX ISA, so the library's build compiler and NVRTC can select
+// different values. Only device code uses this field; it does not affect the host's launch configuration. Match
+// NVRTC's stride in the expected policy while retaining the full policy comparison for the other fields.
+template <int NumInputs>
+cub::TransformPolicy
+expected_jit_policy(const cub::detail::transform::policy_selector<NumInputs>& selector, cuda::compute_capability cc)
+{
+  auto policy = selector(cc);
+  if (cc >= cuda::compute_capability{9, 0})
+  {
+    int major = 0;
+    int minor = 0;
+    check(nvrtcVersion(&major, &minor));
+    policy.prefetch.prefetch_byte_stride = major * 100 + minor >= 1304 ? 32 : 128;
+  }
+  return policy;
+}
+
 std::string
 get_kernel_name(std::string_view input_iterator_t, std::string_view output_iterator_t, std::string_view transform_op_t)
 {
@@ -227,7 +245,7 @@ CUresult cccl_device_unary_transform_compile(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 try
 {
   const char* name = "test";
@@ -252,7 +270,7 @@ try
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream policy_sel_str;
-  policy_sel_str << policy_sel(cuda::compute_capability{cc_major, cc_minor});
+  policy_sel_str << transform::expected_jit_policy(policy_sel, cuda::compute_capability{cc_major, cc_minor});
 
   const auto policy_hub_expr = std::format(
     "cub::detail::transform::policy_selector_from_types<false, true, ::cuda::std::tuple<{}>, {}>",
@@ -441,7 +459,7 @@ CUresult cccl_device_unary_transform_build_ex(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 {
   CUresult r = cccl_device_unary_transform_compile(
     build_ptr, input_it, output_it, op, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path, config);
@@ -511,7 +529,7 @@ CUresult cccl_device_binary_transform_compile(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 try
 {
   const char* name = "test";
@@ -541,7 +559,7 @@ try
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream policy_sel_str;
-  policy_sel_str << policy_sel(cuda::compute_capability{cc_major, cc_minor});
+  policy_sel_str << transform::expected_jit_policy(policy_sel, cuda::compute_capability{cc_major, cc_minor});
 
   const auto policy_hub_expr = std::format(
     "cub::detail::transform::policy_selector_from_types<false, true, ::cuda::std::tuple<{0}, {1}>, {2}>",
@@ -702,7 +720,7 @@ CUresult cccl_device_binary_transform_build_ex(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 {
   CUresult r = cccl_device_binary_transform_compile(
     build_ptr,

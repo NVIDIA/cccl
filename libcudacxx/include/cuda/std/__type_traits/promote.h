@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -52,7 +52,7 @@ struct __numeric_type
 #endif // _CCCL_HAS_FLOAT128()
 
   using type              = decltype(__test(declval<_Tp>()));
-  static const bool value = !is_same_v<type, void>;
+  static const bool value = !is_void_v<type>;
 };
 
 template <>
@@ -119,10 +119,9 @@ public:
 template <class _A1, class _A2, class _A3>
 class __promote_imp<_A1, _A2, _A3, true>
 {
-private:
-  using __type1 = typename __promote_imp<_A1>::type;
-  using __type2 = typename __promote_imp<_A2>::type;
-  using __type3 = typename __promote_imp<_A3>::type;
+  using __type1 _CCCL_NODEBUG = typename __promote_imp<_A1>::type;
+  using __type2 _CCCL_NODEBUG = typename __promote_imp<_A2>::type;
+  using __type3 _CCCL_NODEBUG = typename __promote_imp<_A3>::type;
 
 public:
   using type              = decltype(__type1() + __type2() + __type3());
@@ -132,9 +131,8 @@ public:
 template <class _A1, class _A2>
 class __promote_imp<_A1, _A2, void, true>
 {
-private:
-  using __type1 = typename __promote_imp<_A1>::type;
-  using __type2 = typename __promote_imp<_A2>::type;
+  using __type1 _CCCL_NODEBUG = typename __promote_imp<_A1>::type;
+  using __type2 _CCCL_NODEBUG = typename __promote_imp<_A2>::type;
 
 public:
   using type              = decltype(__type1() + __type2());

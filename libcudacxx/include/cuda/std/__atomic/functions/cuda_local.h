@@ -20,12 +20,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory/address_space.h>
-#include <cuda/std/__atomic/functions/common.h>
-#include <cuda/std/__atomic/types/common.h>
-#include <cuda/std/__utility/forward.h>
+#include <cuda/__memory/address_space.h> // IWYU pragma: keep
+#include <cuda/std/__atomic/functions/common.h> // IWYU pragma: keep
+#include <cuda/std/__atomic/types/common.h> // IWYU pragma: keep
+#include <cuda/std/__utility/forward.h> // IWYU pragma: keep
 #include <cuda/std/cstdint>
-#include <cuda/std/cstring>
+#include <cuda/std/cstring> // IWYU pragma: keep
+
+#include <nv/target>
 
 // This file works around a bug in CUDA in which the compiler miscompiles
 // atomics to automatic storage (local memory). This bug is not fixed on any
@@ -71,12 +73,12 @@ template <class _Type>
 template <class _Type>
 [[nodiscard]] _CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_add(_Type __atom, _Type const& __v)
 {
-  return __atom + __v;
+  return ::cuda::std::__cuda_atomic_add(__atom, __v);
 }
 template <class _Type>
 [[nodiscard]] _CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_sub(_Type __atom, _Type const& __v)
 {
-  return __atom - __v;
+  return ::cuda::std::__cuda_atomic_sub(__atom, __v);
 }
 template <class _Type>
 [[nodiscard]] _CCCL_DEVICE_API _Type __cuda_atomic_fetch_local_bop_max(_Type __atom, _Type const& __v)

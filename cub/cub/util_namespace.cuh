@@ -23,7 +23,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/detect_cuda_runtime.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh> // IWYU pragma: export
+
+#include <cuda/std/__cccl/preprocessor.h>
 
 // Prior to 1.13.1, only the PREFIX/POSTFIX macros were used. Notify users
 // that they must now define the qualifier macro, too.
@@ -111,6 +113,8 @@
 #ifndef CUB_NS_QUALIFIER
 #  define CUB_NS_QUALIFIER ::cub
 #endif
+
+#define _CUB CUB_NS_QUALIFIER
 
 #if defined(CUB_DISABLE_NAMESPACE_MAGIC) || defined(CUB_WRAPPED_NAMESPACE)
 #  if !defined(CUB_WRAPPED_NAMESPACE)

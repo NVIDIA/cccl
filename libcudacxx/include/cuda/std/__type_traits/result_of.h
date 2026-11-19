@@ -20,15 +20,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__functional/invoke.h>
+#if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_TYPE_TRAITS)
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__functional/invoke.h>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // result_of
 
-#if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_TYPE_TRAITS)
 template <class _Callable>
 class result_of;
 
@@ -38,10 +39,11 @@ class CCCL_DEPRECATED _CCCL_TYPE_VISIBILITY_DEFAULT result_of<_Fp(_Args...)> : p
 
 template <class _Tp>
 using result_of_t CCCL_DEPRECATED = typename result_of<_Tp>::type;
-#endif // _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_TYPE_TRAITS)
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_TYPE_TRAITS)
 
 #endif // _CUDA_STD___TYPE_TRAITS_RESULT_OF_H

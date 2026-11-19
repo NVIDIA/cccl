@@ -21,13 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -128,8 +128,31 @@ template <class _Tp>
 #endif // !_CCCL_BUILTIN_FPCLASSIFY
 }
 
+[[nodiscard]] _CCCL_API constexpr int __fpclassify_storage(double __x) noexcept
+{
+  const auto __storage = ::cuda::std::__fp_get_storage(__x);
+  // The exponent is in the upper 32 bits, so check it there
+  constexpr auto __exp_mask_hi = static_cast<uint32_t>(__fp_exp_mask_of_v<double> >> 32);
+  const auto __exp             = static_cast<uint32_t>(__storage >> 32) & __exp_mask_hi;
+  const bool __mant            = (__storage & __fp_mant_mask_of_v<double>) != 0;
+  if (__exp == __exp_mask_hi)
+  {
+    return __mant ? FP_NAN : FP_INFINITE;
+  }
+  if (__exp == 0)
+  {
+    return __mant ? FP_SUBNORMAL : FP_ZERO;
+  }
+  return FP_NORMAL;
+}
+
 [[nodiscard]] _CCCL_API constexpr int fpclassify(double __x) noexcept
 {
+  // See isnan(double): use integer comparisons on GPUs with slow FP64
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__fpclassify_storage(__x);)
+  }
 #if defined(_CCCL_BUILTIN_FPCLASSIFY)
   return _CCCL_BUILTIN_FPCLASSIFY(FP_NAN, FP_INFINITE, FP_NORMAL, FP_SUBNORMAL, FP_ZERO, __x);
 #else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
@@ -183,6 +206,13 @@ template <class _Tp>
   return ::cuda::std::__fpclassify_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
+
+#if _CCCL_HAS_NVFP8_UE5M3()
+[[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_fp8_ue5m3 __x) noexcept
+{
+  return ::cuda::std::__fpclassify_impl(__x);
+}
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 
 #if _CCCL_HAS_NVFP8_E8M0()
 [[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_fp8_e8m0 __x) noexcept

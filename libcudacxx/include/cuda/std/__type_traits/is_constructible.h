@@ -20,19 +20,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/conjunction.h>
-#include <cuda/std/__type_traits/disjunction.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_base_of.h>
-#include <cuda/std/__type_traits/is_destructible.h>
-#include <cuda/std/__type_traits/is_reference.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/__type_traits/negation.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__type_traits/is_base_of.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_destructible.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_reference.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_same.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_void.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/remove_cvref.h> // IWYU pragma: keep
+#include <cuda/std/__utility/declval.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
+
+#if _CCCL_CHECK_BUILTIN(is_constructible) || _CCCL_COMPILER(GCC, >=, 8) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_IS_CONSTRUCTIBLE(...) __is_constructible(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_constructible) && gcc >= 8.0
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -151,7 +152,7 @@ struct __cccl_is_constructible<_Tp&&, _A0> : public decltype(__is_constructible_
 #if defined(_CCCL_BUILTIN_IS_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_CONSTRUCTIBLE_FALLBACK)
 template <class _Tp, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_constructible : public integral_constant<bool, _CCCL_BUILTIN_IS_CONSTRUCTIBLE(_Tp, _Args...)>
+is_constructible : public bool_constant<_CCCL_BUILTIN_IS_CONSTRUCTIBLE(_Tp, _Args...)>
 {};
 
 template <class _Tp, class... _Args>

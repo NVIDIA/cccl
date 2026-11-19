@@ -13,10 +13,9 @@
 
 // UNSUPPORTED: libcpp-has-no-threads
 
-// <cuda/ptx>
+// <cuda/ptxs/getctarank.h>
 
-#include <cuda/ptx>
-#include <cuda/std/utility>
+#include <cuda/ptxs/getctarank.h>
 
 #include "generated/getctarank.h"
 

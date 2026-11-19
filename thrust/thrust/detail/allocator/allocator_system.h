@@ -17,14 +17,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/type_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 
-#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
@@ -46,13 +44,14 @@ inline constexpr bool has_system_type<T, ::cuda::std::void_t<typename T::system_
 template <class T>
 struct nested_system_type
 {
-  using type = typename T::system_type;
+  using type _CCCL_NODEBUG = typename T::system_type;
 };
 
 template <class T, class = void>
 inline constexpr bool has_member_system = false;
 template <class T>
 inline constexpr bool has_member_system<T, ::cuda::std::void_t<decltype(::cuda::std::declval<T>().system())>> =
+  // NOLINTNEXTLINE(readability-redundant-typename): Clang 22 misidentifies required dependent types.
   ::cuda::std::is_same_v<decltype(::cuda::std::declval<T>().system()), typename allocator_system<T>::type&>;
 
 template <typename Alloc>
@@ -74,17 +73,18 @@ template <typename Alloc>
 struct allocator_system
 {
   // the type of the allocator's system
-  using type = typename eval_if<allocator_traits_detail::has_system_type<Alloc>,
-                                allocator_traits_detail::nested_system_type<Alloc>,
-                                thrust::iterator_system<typename ::cuda::std::allocator_traits<Alloc>::pointer>>::type;
+  using type = typename ::cuda::std::conditional_t<
+    allocator_traits_detail::has_system_type<Alloc>,
+    allocator_traits_detail::nested_system_type<Alloc>,
+    thrust::iterator_system<typename ::cuda::std::allocator_traits<Alloc>::pointer>>::type;
 
   // the type that get returns
   using get_result_type =
-    typename eval_if<allocator_traits_detail::has_member_system<Alloc>,
-                     ::cuda::std::add_lvalue_reference<type>,
-                     ::cuda::std::type_identity<type>>::type;
+    typename ::cuda::std::conditional_t<allocator_traits_detail::has_member_system<Alloc>,
+                                        ::cuda::std::add_lvalue_reference<type>,
+                                        ::cuda::std::type_identity<type>>::type;
 
-  _CCCL_HOST_DEVICE inline static get_result_type get(Alloc& a)
+  _CCCL_HOST_DEVICE_API static get_result_type get(Alloc& a)
   {
     return allocator_traits_detail::system(a);
   }

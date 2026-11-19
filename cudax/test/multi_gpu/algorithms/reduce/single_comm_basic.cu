@@ -16,7 +16,7 @@
 #include <cuda/std/execution>
 #include <cuda/std/functional>
 
-#include <cuda/experimental/__multi_gpu/algorithm/reduce/reduce.h>
+#include <cuda/experimental/mgmn/reduce>
 
 #include <exception>
 #include <future>
@@ -119,6 +119,7 @@ MULTI_GPU_TEST("reduce single-comm documentation example", c2h::type_list<int>)
     if (const auto& err_str = failed[i]; !err_str.empty())
     {
       INFO("rank: " << i);
+      // NOLINTNEXTLINE(readability-container-size-empty)
       REQUIRE(err_str == ""); // Should print the full error string
     }
   }

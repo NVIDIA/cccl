@@ -41,14 +41,12 @@ class _Scan(Serializable):
     __slots__ = [
         "_bound_build_result",
         "build_results",
-        "loaded_build_result",
         "d_in_cccl",
         "d_out_cccl",
         "init_value_cccl",
         "op_cccl",
         "init_kind",
         "force_inclusive",
-        "device_scan_fn",
     ]
 
     __serialization_schema__ = (
@@ -102,7 +100,7 @@ class _Scan(Serializable):
                 init_value_type_info = self.init_value_cccl.value_type
 
             case _bindings.InitKind.VALUE_INIT:
-                init_value_typed = cast(np.ndarray | GpuStruct, init_value)
+                init_value_typed = cast("np.ndarray | GpuStruct", init_value)
                 self.init_value_cccl = cccl.to_cccl_value(init_value_typed)
                 value_type = get_value_type(init_value_typed)
                 init_value_type_info = self.init_value_cccl.type
@@ -112,8 +110,6 @@ class _Scan(Serializable):
         # Compile the op with value types
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
-        # loaded_build_result / device_scan_fn are bound lazily on the first
-        # __call__ (see _bind_device_scan_fn).
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceScanBuildResult,
             d_in,
@@ -135,28 +131,6 @@ class _Scan(Serializable):
             ),
         )
 
-    def _bind_device_scan_fn(self) -> None:
-        # Derived from force_inclusive + init_kind, from the loaded build result (not
-        # serialized as a function); bound at __call__ once resolve_build_result picks
-        # + loads the current device's build result.
-        match (self.force_inclusive, self.init_kind):
-            case (True, _bindings.InitKind.FUTURE_VALUE_INIT):
-                self.device_scan_fn = (
-                    self.loaded_build_result.compute_inclusive_future_value
-                )
-            case (True, _bindings.InitKind.VALUE_INIT):
-                self.device_scan_fn = self.loaded_build_result.compute_inclusive
-            case (True, _bindings.InitKind.NO_INIT):
-                self.device_scan_fn = self.loaded_build_result.compute_inclusive_no_init
-            case (False, _bindings.InitKind.FUTURE_VALUE_INIT):
-                self.device_scan_fn = (
-                    self.loaded_build_result.compute_exclusive_future_value
-                )
-            case (False, _bindings.InitKind.VALUE_INIT):
-                self.device_scan_fn = self.loaded_build_result.compute_exclusive
-            case (False, _bindings.InitKind.NO_INIT):
-                raise ValueError("Exclusive scan with No init value is not supported")
-
     def __call__(
         self,
         *,
@@ -168,12 +142,23 @@ class _Scan(Serializable):
         num_items: int,
         stream=None,
     ):
-        # Select (and lazily load) the current device's build result, then bind the
-        # derived compute fn from it.
-        self.loaded_build_result = cccl.resolve_build_result(
+        # Select (and lazily load) the build result for the current device.
+        loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
         )
-        self._bind_device_scan_fn()
+        match (self.force_inclusive, self.init_kind):
+            case (True, _bindings.InitKind.FUTURE_VALUE_INIT):
+                device_scan_fn = loaded_build_result.compute_inclusive_future_value
+            case (True, _bindings.InitKind.VALUE_INIT):
+                device_scan_fn = loaded_build_result.compute_inclusive
+            case (True, _bindings.InitKind.NO_INIT):
+                device_scan_fn = loaded_build_result.compute_inclusive_no_init
+            case (False, _bindings.InitKind.FUTURE_VALUE_INIT):
+                device_scan_fn = loaded_build_result.compute_exclusive_future_value
+            case (False, _bindings.InitKind.VALUE_INIT):
+                device_scan_fn = loaded_build_result.compute_exclusive
+            case (False, _bindings.InitKind.NO_INIT):
+                raise ValueError("Exclusive scan with No init value is not supported")
 
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
@@ -195,7 +180,7 @@ class _Scan(Serializable):
             case _bindings.InitKind.VALUE_INIT:
                 self.init_value_cccl = cast(_bindings.Value, self.init_value_cccl)
                 self.init_value_cccl.state = to_cccl_value_state(
-                    cast(np.ndarray | GpuStruct, init_value)
+                    cast("np.ndarray | GpuStruct", init_value)
                 )
 
         stream_handle = validate_and_get_stream(stream)
@@ -207,7 +192,7 @@ class _Scan(Serializable):
             temp_storage_bytes = temp_storage.nbytes
             d_temp_storage = get_data_pointer(temp_storage)
 
-        temp_storage_bytes = self.device_scan_fn(
+        temp_storage_bytes = device_scan_fn(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_cccl,

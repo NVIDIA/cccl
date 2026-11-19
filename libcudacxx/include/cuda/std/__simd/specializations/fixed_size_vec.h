@@ -26,7 +26,7 @@
 #include <cuda/std/__cmath/fma.h>
 #include <cuda/std/__fwd/simd.h>
 #include <cuda/std/__simd/abi.h>
-#include <cuda/std/__simd/specializations/fixed_size_mask.h>
+#include <cuda/std/__simd/specializations/fixed_size_mask.h> // IWYU pragma: keep
 #include <cuda/std/__simd/specializations/fixed_size_storage.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__utility/integer_sequence.h>
@@ -60,10 +60,10 @@ struct __fixed_size_operations
   {
 #if _CCCL_STD_VER >= 2020
     _SimdStorage __result;
-    ((__result.__data[_Is] = __g(integral_constant<__simd_size_type, _Is>())), ...);
+    ((__result.__data[_Is] = static_cast<_Tp>(__g(integral_constant<__simd_size_type, _Is>()))), ...);
     return __result;
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
-    return _SimdStorage{{__g(integral_constant<__simd_size_type, _Is>())...}};
+    return _SimdStorage{{static_cast<_Tp>(__g(integral_constant<__simd_size_type, _Is>()))...}};
 #endif // _CCCL_STD_VER < 2020
   }
 

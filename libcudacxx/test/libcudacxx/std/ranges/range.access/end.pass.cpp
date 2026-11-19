@@ -253,7 +253,7 @@ static_assert(!cuda::std::is_invocable_v<RangeEndT, EndFunction&&>);
 
 static_assert(cuda::std::is_invocable_v<RangeEndT, EndFunction const&>);
 static_assert(!cuda::std::is_invocable_v<RangeEndT, EndFunction&&>);
-static_assert(!cuda::std::is_invocable_v<RangeEndT, EndFunction&>);
+static_assert(cuda::std::is_invocable_v<RangeEndT, EndFunction&>);
 static_assert(cuda::std::is_invocable_v<RangeCEndT, EndFunction const&>);
 static_assert(cuda::std::is_invocable_v<RangeCEndT, EndFunction&>);
 
@@ -384,7 +384,7 @@ TEST_FUNC constexpr bool testEndFunction()
   assert(cuda::std::ranges::end(a) == &a.x);
   assert(cuda::std::ranges::cend(a) == &a.x);
   EndFunction aa{};
-  static_assert(!cuda::std::is_invocable_v<RangeEndT, decltype((aa))>);
+  assert(cuda::std::ranges::end(aa) == &aa.x);
   assert(cuda::std::ranges::cend(aa) == &aa.x);
 
   EndFunctionByValue b{};
@@ -399,28 +399,28 @@ TEST_FUNC constexpr bool testEndFunction()
   assert(cuda::std::ranges::end(d) == &d.x);
   assert(cuda::std::ranges::cend(d) == &d.x);
   EndFunctionReturnsEmptyPtr dd{};
-  static_assert(!cuda::std::is_invocable_v<RangeEndT, decltype((dd))>);
+  assert(cuda::std::ranges::end(dd) == &dd.x);
   assert(cuda::std::ranges::cend(dd) == &dd.x);
 
   const EndFunctionWithDataMember e{};
   assert(cuda::std::ranges::end(e) == &e.x);
   assert(cuda::std::ranges::cend(e) == &e.x);
   EndFunctionWithDataMember ee{};
-  static_assert(!cuda::std::is_invocable_v<RangeEndT, decltype((ee))>);
+  assert(cuda::std::ranges::end(ee) == &ee.x);
   assert(cuda::std::ranges::cend(ee) == &ee.x);
 
   const EndFunctionWithPrivateEndMember f{};
   assert(cuda::std::ranges::end(f) == &f.y);
   assert(cuda::std::ranges::cend(f) == &f.y);
   EndFunctionWithPrivateEndMember ff{};
-  static_assert(!cuda::std::is_invocable_v<RangeEndT, decltype((ff))>);
+  assert(cuda::std::ranges::end(ff) == &ff.y);
   assert(cuda::std::ranges::cend(ff) == &ff.y);
 
   const BeginMemberEndFunction g{};
   assert(cuda::std::ranges::end(g) == &g.x);
   assert(cuda::std::ranges::cend(g) == &g.x);
   BeginMemberEndFunction gg{};
-  static_assert(!cuda::std::is_invocable_v<RangeEndT, decltype((gg))>);
+  assert(cuda::std::ranges::end(gg) == &gg.x);
   assert(cuda::std::ranges::cend(gg) == &gg.x);
 
   return true;

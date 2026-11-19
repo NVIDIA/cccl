@@ -20,7 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/iter_swap.h>
 #include <cuda/std/__algorithm/iterator_operations.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/move.h>

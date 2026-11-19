@@ -112,7 +112,10 @@ public:
       // Free the buffer if the initialization below throws.
       SCOPE(fail)
       {
-        cuda_safe_call(cudaFreeAsync(base_ptr, stream));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaFreeAsync>(base_ptr, stream);
+        };
       };
 
       // We also need to initialize the hashtable

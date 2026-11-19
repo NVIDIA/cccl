@@ -21,7 +21,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system::tbb::detail
 {
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
-ForwardIterator
+_CCCL_HOST_API ForwardIterator
 stable_partition(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Predicate pred)
 {
   // tbb prefers generic::stable_partition to cpp::stable_partition
@@ -29,7 +29,7 @@ stable_partition(execution_policy<DerivedPolicy>& exec, ForwardIterator first, F
 } // end stable_partition()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate>
-ForwardIterator stable_partition(
+_CCCL_HOST_API ForwardIterator stable_partition(
   execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -45,7 +45,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -63,7 +63,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+_CCCL_HOST_API ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   execution_policy<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,

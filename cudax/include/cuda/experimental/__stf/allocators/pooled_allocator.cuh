@@ -32,6 +32,7 @@
 #include <cuda/experimental/__stf/utility/pretty_print.cuh>
 
 #include <optional>
+#include <string>
 
 namespace cuda::experimental::stf
 {
@@ -301,7 +302,8 @@ public:
       }
     }
 
-    // Should not be reached
+    // Only STF's own bookkeeping releases pointers here, so this is an internal invariant. Kept as a
+    // report and abort rather than _CCCL_VERIFY so the offending pointer stays in the message.
     fprintf(stderr, "Error: pointer %p was released, but does not belong to a known pool.\n", ptr);
     abort();
   }

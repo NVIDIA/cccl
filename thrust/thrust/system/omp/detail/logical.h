@@ -13,5 +13,5 @@
 #  pragma system_header
 #endif // no system header
 
-// this system inherits logical
-#include <thrust/system/cpp/detail/logical.h>
+// omp system inherits logical
+#include <thrust/system/cpp/detail/logical.h> // IWYU pragma: export

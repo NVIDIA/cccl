@@ -28,8 +28,6 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 enum
 {
   M_RN = 0,
@@ -112,18 +110,18 @@ TEST_HOST_DEVICE_FUNC uint64_t ref_one(double a, double b, int mode){NV_IF_ELSE_
 // target.
 TEST_HOST_DEVICE_FUNC void check_pair(double x, double y)
 {
-  cudax::__fpbits64 a = cudax::__fp64emu_from_double(x);
-  cudax::__fpbits64 b = cudax::__fp64emu_from_double(y);
+  cuda::__fpbits64 a = cuda::__fp64emu_from_double(x);
+  cuda::__fpbits64 b = cuda::__fp64emu_from_double(y);
 
-  assert(match((uint64_t) cudax::__fp64emu_ddiv_rn(a, b), ref_one(x, y, M_RN)));
-  assert(match((uint64_t) cudax::__fp64emu_ddiv_rz(a, b), ref_one(x, y, M_RZ)));
-  assert(match((uint64_t) cudax::__fp64emu_ddiv_ru(a, b), ref_one(x, y, M_RU)));
-  assert(match((uint64_t) cudax::__fp64emu_ddiv_rd(a, b), ref_one(x, y, M_RD)));
+  assert(match((uint64_t) cuda::__fp64emu_ddiv_rn(a, b), ref_one(x, y, M_RN)));
+  assert(match((uint64_t) cuda::__fp64emu_ddiv_rz(a, b), ref_one(x, y, M_RZ)));
+  assert(match((uint64_t) cuda::__fp64emu_ddiv_ru(a, b), ref_one(x, y, M_RU)));
+  assert(match((uint64_t) cuda::__fp64emu_ddiv_rd(a, b), ref_one(x, y, M_RD)));
 
-  cudax::fp64emu pa = x, pb = y;
+  cuda::fp64emu pa = x, pb = y;
   assert(match(d_bits((double) (pa / pb)), ref_one(x, y, M_RN)));
 
-  cudax::fp64emu_unpacked ua = (cudax::fp64emu_unpacked) x, ub = (cudax::fp64emu_unpacked) y;
+  cuda::fp64emu_unpacked ua = (cuda::fp64emu_unpacked) x, ub = (cuda::fp64emu_unpacked) y;
   assert(match(d_bits((double) (ua / ub)), ref_one(x, y, M_RN)));
 }
 

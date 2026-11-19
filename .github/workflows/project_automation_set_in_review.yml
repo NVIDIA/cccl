@@ -84,7 +84,7 @@ jobs:
             pr_id=$(jq -r '.data.organization.repository.issueOrPullRequest.projectItems.edges[] |
                            select(.node.project.id == "${{ env.PROJECT_ID }}") |
                            .node.id' project_data.json)
-            echo "PR_ID=$pr_id" >> $GITHUB_ENV
+            echo "PR_ID=$pr_id" >> "$GITHUB_ENV"
         continue-on-error: true
 
       - name: Set PR to In Review

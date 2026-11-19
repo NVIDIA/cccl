@@ -11,8 +11,8 @@
 #include <cuda/functional>
 #include <cuda/std/functional>
 
-#include <cuda/experimental/__multi_gpu/concepts.h>
-#include <cuda/experimental/__multi_gpu/nccl_communicator_ref.h>
+#include <cuda/experimental/mgmn/concepts>
+#include <cuda/experimental/mgmn/nccl_communicators>
 
 #include <functional>
 

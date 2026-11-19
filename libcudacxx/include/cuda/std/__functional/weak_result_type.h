@@ -22,11 +22,8 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/binary_function.h>
-#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/unary_function.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

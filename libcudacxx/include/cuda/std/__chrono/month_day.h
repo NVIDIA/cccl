@@ -36,7 +36,6 @@ namespace chrono
 {
 class month_day
 {
-private:
   chrono::month __month_;
   chrono::day __day_;
 
@@ -157,7 +156,6 @@ public:
 
 class month_day_last
 {
-private:
   chrono::month __month_;
 
 public:

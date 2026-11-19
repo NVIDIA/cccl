@@ -110,7 +110,7 @@ _CCCL_HOST_API void __copy_dst_contiguous(
   _ExtentT __tensor_size,
   ::cuda::stream_ref __stream,
   const _SrcAccessor& __src_accessor = {},
-  const _DstAccessor& __dst_accessor = {}) noexcept
+  const _DstAccessor& __dst_accessor = {})
 {
   // Block size = 128 is a heuristic based on benchmark results.
   constexpr int __block_size = 128;

@@ -241,7 +241,7 @@ TEST_CASE("TestTransformScanCudaStreams", "[transform_scan]")
   const Vector input_copy(input);
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   // inclusive scan
   iter = thrust::transform_inclusive_scan(
@@ -251,7 +251,7 @@ TEST_CASE("TestTransformScanCudaStreams", "[transform_scan]")
     output.begin(),
     ::cuda::std::negate<T>(),
     ::cuda::std::plus<T>());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   REQUIRE(std::size_t(iter - output.begin()) == input.size());
   REQUIRE(input == input_copy);
@@ -266,7 +266,7 @@ TEST_CASE("TestTransformScanCudaStreams", "[transform_scan]")
     ::cuda::std::negate<T>(),
     3,
     ::cuda::std::plus<T>());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   result = {2, -1, 1, -3, 2};
   REQUIRE(std::size_t(iter - output.begin()) == input.size());
@@ -282,7 +282,7 @@ TEST_CASE("TestTransformScanCudaStreams", "[transform_scan]")
     ::cuda::std::negate<T>(),
     0,
     ::cuda::std::plus<T>());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   result = {0, -1, -4, -2, -6};
   REQUIRE(std::size_t(iter - output.begin()) == input.size());
@@ -298,7 +298,7 @@ TEST_CASE("TestTransformScanCudaStreams", "[transform_scan]")
     ::cuda::std::negate<T>(),
     3,
     ::cuda::std::plus<T>());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   result = {3, 2, -1, 1, -3};
   REQUIRE(std::size_t(iter - output.begin()) == input.size());
@@ -314,7 +314,7 @@ TEST_CASE("TestTransformScanCudaStreams", "[transform_scan]")
     input.begin(),
     ::cuda::std::negate<T>(),
     ::cuda::std::plus<T>());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   result = {-1, -4, -2, -6, -1};
   REQUIRE(std::size_t(iter - input.begin()) == input.size());
@@ -330,7 +330,7 @@ TEST_CASE("TestTransformScanCudaStreams", "[transform_scan]")
     ::cuda::std::negate<T>(),
     3,
     ::cuda::std::plus<T>());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   result = {2, -1, 1, -3, 2};
   REQUIRE(std::size_t(iter - input.begin()) == input.size());
@@ -346,13 +346,13 @@ TEST_CASE("TestTransformScanCudaStreams", "[transform_scan]")
     ::cuda::std::negate<T>(),
     3,
     ::cuda::std::plus<T>());
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   result = {3, 2, -1, 1, -3};
   REQUIRE(std::size_t(iter - input.begin()) == input.size());
   REQUIRE(input == result);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestTransformScanConstAccumulator", "[transform_scan]")

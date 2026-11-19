@@ -36,7 +36,7 @@ void Initialize(int* h_in, int num_items)
   }
 }
 
-void Solve(int* h_in, int& h_reference, int num_items)
+void Solve(const int* h_in, int& h_reference, int num_items)
 {
   for (int i = 0; i < num_items; ++i)
   {
@@ -112,7 +112,7 @@ int main(int argc, char** argv)
   // Check for correctness (and display results, if specified)
   stream.sync();
   const int compare =
-    CompareDeviceResults(&h_reference, thrust::raw_pointer_cast(d_out.data()), 1, g_verbose, g_verbose);
+    CompareDeviceResults(&h_reference, thrust::raw_pointer_cast(d_out.data()), 1, g_verbose, g_verbose, stream);
   printf("\t%s", compare ? "FAIL" : "PASS");
   printf("\n\n");
 

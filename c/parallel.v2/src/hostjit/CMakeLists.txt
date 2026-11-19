@@ -57,6 +57,7 @@ add_library(
 target_include_directories(
   cccl.c.parallel.v2.hostjit_lib
   PUBLIC ${_hostjit_include_dir} ${_c_parallel_dir}/include
+  PRIVATE ${_src_dir}
 )
 
 target_compile_definitions(
@@ -89,7 +90,10 @@ endif()
 target_link_libraries(cccl.c.parallel.v2.hostjit_lib PUBLIC libnvcc)
 
 if (CUDAToolkit_FOUND)
-  target_link_libraries(cccl.c.parallel.v2.hostjit_lib PUBLIC CUDA::cudart)
+  target_link_libraries(
+    cccl.c.parallel.v2.hostjit_lib
+    PRIVATE CUDA::cuda_driver
+  )
 endif()
 
 if (NOT MSVC)

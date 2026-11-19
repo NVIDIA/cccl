@@ -21,20 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/derived_from.h>
-#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/conjunction.h>
-#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_class.h>
 #include <cuda/std/__type_traits/is_function.h>
-#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/void_t.h>
-#include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -107,7 +100,7 @@ struct __pointer_traits_rebind<_Sp<_Tp, _Args...>, _Up, true>
 template <template <class, class...> class _Sp, class _Tp, class... _Args, class _Up>
 struct __pointer_traits_rebind<_Sp<_Tp, _Args...>, _Up, false>
 {
-  using type = _Sp<_Up, _Args...>;
+  using type _CCCL_NODEBUG = _Sp<_Up, _Args...>;
 };
 
 template <class _Ptr, class = void>

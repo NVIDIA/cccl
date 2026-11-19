@@ -19,8 +19,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/terminate.h>
-#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__exception/terminate.h> // IWYU pragma: keep
+#include <cuda/std/__utility/forward.h> // IWYU pragma: keep
 #include <cuda/std/__utility/move.h>
 
 #include <nv/target>
@@ -29,7 +29,7 @@
 #  if __cpp_lib_expected >= 202202L
 #    include <expected>
 #  else // ^^^ __cpp_lib_expected >= 202202L ^^^ / vvv __cpp_lib_expected < 202202L vvv
-#    include <exception>
+#    include <cuda/std/__host_stdlib/exception>
 #  endif // ^^^ __cpp_lib_expected < 202202L ^^^
 #endif // !_CCCL_HAS_EXCEPTIONS()
 
@@ -56,7 +56,7 @@ public:
   // have a profusion of these vtables in TUs, and the dynamic linker will already have a bunch
   // of work to do. So it is not worth hiding the <void> specialization in the dylib, given that
   // it adds deployment target restrictions.
-  const char* what() const noexcept override
+  _CCCL_HOST_API const char* what() const noexcept override
   {
     return "bad access to cuda::std::expected";
   }

@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Enable constant_wrapper for msvc.
-// UNSUPPORTED: msvc
-
 // todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
 //   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
 //   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
@@ -179,123 +176,107 @@ inline constexpr bool
   HasSpaceship<L, R, cuda::std::void_t<decltype(cuda::std::declval<L&>() <=> cuda::std::declval<R&>())>> = true;
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasEqual<L, R>>
 inline constexpr bool HasNoexceptEqual = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptEqual<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() == cuda::std::declval<R&>())>> = true;
+inline constexpr bool HasNoexceptEqual<L, R, true> = noexcept(cuda::std::declval<L&>() == cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasNotEqual<L, R>>
 inline constexpr bool HasNoexceptNotEqual = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptNotEqual<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() != cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptNotEqual<L, R, true> = noexcept(cuda::std::declval<L&>() != cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasLess<L, R>>
 inline constexpr bool HasNoexceptLess = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptLess<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() < cuda::std::declval<R&>())>> = true;
+inline constexpr bool HasNoexceptLess<L, R, true> = noexcept(cuda::std::declval<L&>() < cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasLessEqual<L, R>>
 inline constexpr bool HasNoexceptLessEqual = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptLessEqual<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() <= cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptLessEqual<L, R, true> = noexcept(cuda::std::declval<L&>() <= cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasGreater<L, R>>
 inline constexpr bool HasNoexceptGreater = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptGreater<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() > cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptGreater<L, R, true> = noexcept(cuda::std::declval<L&>() > cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasGreaterEqual<L, R>>
 inline constexpr bool HasNoexceptGreaterEqual = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptGreaterEqual<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() >= cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptGreaterEqual<L, R, true> =
+  noexcept(cuda::std::declval<L&>() >= cuda::std::declval<R&>());
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-template <class L, class R, class = void>
+template <class L, class R, bool = HasSpaceship<L, R>>
 inline constexpr bool HasNoexceptSpaceship = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptSpaceship<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() <=> cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptSpaceship<L, R, true> =
+  noexcept(cuda::std::declval<L&>() <=> cuda::std::declval<R&>());
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 // Concept checks for int comparisons
-static_assert(HasEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasNotEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasLess<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasLessEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasGreater<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasGreaterEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
+static_assert(HasEqual<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasNotEqual<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasLess<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasLessEqual<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasGreater<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasGreaterEqual<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-static_assert(HasSpaceship<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
+static_assert(HasSpaceship<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-// Old msvc doesn't evaluate noexcept properly.
-#if !TEST_COMPILER(MSVC, <, 19, 30)
-static_assert(HasNoexceptEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasNoexceptNotEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasNoexceptLess<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasNoexceptLessEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasNoexceptGreater<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasNoexceptGreaterEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-#  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-static_assert(HasNoexceptSpaceship<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-#  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-#endif // !TEST_COMPILER(MSVC, <, 19, 30)
+static_assert(HasNoexceptEqual<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasNoexceptNotEqual<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasNoexceptLess<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasNoexceptLessEqual<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasNoexceptGreater<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+static_assert(HasNoexceptGreaterEqual<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+static_assert(HasNoexceptSpaceship<cuda::std::constant_wrapper<6>, cuda::std::constant_wrapper<3>>);
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 #if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 // NoOps
-static_assert(!HasEqual<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
-static_assert(!HasNotEqual<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
-static_assert(!HasLess<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
-static_assert(!HasLessEqual<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
-static_assert(!HasGreater<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
-static_assert(!HasGreaterEqual<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
+static_assert(!HasEqual<cuda::std::constant_wrapper<NoOps{}>, cuda::std::constant_wrapper<NoOps{}>>);
+static_assert(!HasNotEqual<cuda::std::constant_wrapper<NoOps{}>, cuda::std::constant_wrapper<NoOps{}>>);
+static_assert(!HasLess<cuda::std::constant_wrapper<NoOps{}>, cuda::std::constant_wrapper<NoOps{}>>);
+static_assert(!HasLessEqual<cuda::std::constant_wrapper<NoOps{}>, cuda::std::constant_wrapper<NoOps{}>>);
+static_assert(!HasGreater<cuda::std::constant_wrapper<NoOps{}>, cuda::std::constant_wrapper<NoOps{}>>);
+static_assert(!HasGreaterEqual<cuda::std::constant_wrapper<NoOps{}>, cuda::std::constant_wrapper<NoOps{}>>);
 #  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-static_assert(!HasSpaceship<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
+static_assert(!HasSpaceship<cuda::std::constant_wrapper<NoOps{}>, cuda::std::constant_wrapper<NoOps{}>>);
 #  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 // Concept checks for WithOps comparisons
-static_assert(HasNoexceptEqual<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
-static_assert(HasNoexceptNotEqual<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
-static_assert(HasNoexceptLess<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
-static_assert(
-  HasNoexceptLessEqual<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
-static_assert(HasNoexceptGreater<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
-static_assert(
-  HasNoexceptGreaterEqual<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
+static_assert(HasNoexceptEqual<cuda::std::constant_wrapper<WithOps{6}>, cuda::std::constant_wrapper<WithOps{3}>>);
+static_assert(HasNoexceptNotEqual<cuda::std::constant_wrapper<WithOps{6}>, cuda::std::constant_wrapper<WithOps{3}>>);
+static_assert(HasNoexceptLess<cuda::std::constant_wrapper<WithOps{6}>, cuda::std::constant_wrapper<WithOps{3}>>);
+static_assert(HasNoexceptLessEqual<cuda::std::constant_wrapper<WithOps{6}>, cuda::std::constant_wrapper<WithOps{3}>>);
+static_assert(HasNoexceptGreater<cuda::std::constant_wrapper<WithOps{6}>, cuda::std::constant_wrapper<WithOps{3}>>);
+static_assert(HasNoexceptGreaterEqual<cuda::std::constant_wrapper<WithOps{6}>, cuda::std::constant_wrapper<WithOps{3}>>);
 #  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-static_assert(
-  !HasNoexceptSpaceship<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>,
-  "strong_ordering is not a structural type, so the call falls back to runtime implicit conversion and "
-  "operator<=>, which is noexcept(false)");
+static_assert(!HasNoexceptSpaceship<cuda::std::constant_wrapper<WithOps{6}>, cuda::std::constant_wrapper<WithOps{3}>>,
+              "strong_ordering is not a structural type, so the call falls back to runtime implicit conversion and "
+              "operator<=>, which is noexcept(false)");
 #  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 // clang-format off
 // Non-structural types use implicit conversion to underlying type
-static_assert(HasEqual<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(HasNotEqual<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(HasLess<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(HasLessEqual<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(HasGreater<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(HasGreaterEqual<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(HasEqual<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(HasNotEqual<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(HasLess<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(HasLessEqual<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(HasGreater<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(HasGreaterEqual<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
 
-static_assert(!HasNoexceptEqual<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(!HasNoexceptNotEqual<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(!HasNoexceptLess<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(!HasNoexceptLessEqual<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(!HasNoexceptGreater<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
-static_assert(!HasNoexceptGreaterEqual<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(!HasNoexceptEqual<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(!HasNoexceptNotEqual<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(!HasNoexceptLess<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(!HasNoexceptLessEqual<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(!HasNoexceptGreater<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
+static_assert(!HasNoexceptGreaterEqual<cuda::std::constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::constant_wrapper<OpsReturnNonStructural{3}>>);
 // clang-format on
 
 #endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
@@ -304,11 +285,11 @@ TEST_FUNC constexpr bool test()
 {
   {
     // int comparisons: 6 vs 3 - returns constant_wrapper<bool_value>
-    cuda::std::__constant_wrapper<6> cw6{};
-    cuda::std::__constant_wrapper<3> cw3{};
+    cuda::std::constant_wrapper<6> cw6{};
+    cuda::std::constant_wrapper<3> cw3{};
 
     [[maybe_unused]] decltype(auto) equal = cw6 == cw3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<false>, decltype(equal)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<false>, decltype(equal)>);
 // nvcc 13.3 fails to produce correct input file for host compiler. See nvbug 6249821.
 #if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) || _CCCL_TILE_COMPILATION()
     static_assert(!decltype(equal)::value);
@@ -317,7 +298,7 @@ TEST_FUNC constexpr bool test()
 #endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
 
     [[maybe_unused]] decltype(auto) not_equal = cw6 != cw3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<true>, decltype(not_equal)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<true>, decltype(not_equal)>);
 // nvcc 13.3 fails to produce correct input file for host compiler. See nvbug 6249821.
 #if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) || _CCCL_TILE_COMPILATION()
     static_assert(decltype(not_equal)::value);
@@ -326,7 +307,7 @@ TEST_FUNC constexpr bool test()
 #endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
 
     [[maybe_unused]] decltype(auto) less = cw6 < cw3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<false>, decltype(less)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<false>, decltype(less)>);
 // nvcc 13.3 fails to produce correct input file for host compiler. See nvbug 6249821.
 #if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) || _CCCL_TILE_COMPILATION()
     static_assert(!decltype(less)::value);
@@ -335,7 +316,7 @@ TEST_FUNC constexpr bool test()
 #endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
 
     [[maybe_unused]] decltype(auto) less_equal = cw6 <= cw3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<false>, decltype(less_equal)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<false>, decltype(less_equal)>);
 // nvcc 13.3 fails to produce correct input file for host compiler. See nvbug 6249821.
 #if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) || _CCCL_TILE_COMPILATION()
     static_assert(!decltype(less_equal)::value);
@@ -344,7 +325,7 @@ TEST_FUNC constexpr bool test()
 #endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
 
     [[maybe_unused]] decltype(auto) greater = cw6 > cw3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<true>, decltype(greater)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<true>, decltype(greater)>);
 // nvcc 13.3 fails to produce correct input file for host compiler. See nvbug 6249821.
 #if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) || _CCCL_TILE_COMPILATION()
     static_assert(decltype(greater)::value);
@@ -353,7 +334,7 @@ TEST_FUNC constexpr bool test()
 #endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) ^^^
 
     [[maybe_unused]] decltype(auto) greater_equal = cw6 >= cw3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<true>, decltype(greater_equal)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<true>, decltype(greater_equal)>);
 // nvcc 13.3 fails to produce correct input file for host compiler. See nvbug 6249821.
 #if _CCCL_CUDA_COMPILER(NVCC, ==, 13, 3) || _CCCL_TILE_COMPILATION()
     static_assert(decltype(greater_equal)::value);
@@ -370,31 +351,31 @@ TEST_FUNC constexpr bool test()
 
   {
     // int comparisons: equal values
-    cuda::std::__constant_wrapper<3> cw3a{};
-    cuda::std::__constant_wrapper<3> cw3b{};
+    cuda::std::constant_wrapper<3> cw3a{};
+    cuda::std::constant_wrapper<3> cw3b{};
 
     decltype(auto) equal = cw3a == cw3b;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<true>, decltype(equal)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<true>, decltype(equal)>);
     static_assert(static_cast<bool>(equal));
 
     decltype(auto) not_equal = cw3a != cw3b;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<false>, decltype(not_equal)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<false>, decltype(not_equal)>);
     static_assert(!static_cast<bool>(not_equal));
 
     decltype(auto) less = cw3a < cw3b;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<false>, decltype(less)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<false>, decltype(less)>);
     static_assert(!static_cast<bool>(less));
 
     decltype(auto) less_equal = cw3a <= cw3b;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<true>, decltype(less_equal)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<true>, decltype(less_equal)>);
     static_assert(static_cast<bool>(less_equal));
 
     decltype(auto) greater = cw3a >= cw3b;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<true>, decltype(greater)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<true>, decltype(greater)>);
     static_assert(static_cast<bool>(greater));
 
     decltype(auto) greater_cmp = cw3a > cw3b;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<false>, decltype(greater_cmp)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<false>, decltype(greater_cmp)>);
     static_assert(!static_cast<bool>(greater_cmp));
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
@@ -407,25 +388,25 @@ TEST_FUNC constexpr bool test()
 
   {
     // WithOps comparisons - returns constant_wrapper<bool_value>
-    cuda::std::__constant_wrapper<WithOps{6}> cwWithOps6;
-    cuda::std::__constant_wrapper<WithOps{3}> cwWithOps3;
+    cuda::std::constant_wrapper<WithOps{6}> cwWithOps6;
+    cuda::std::constant_wrapper<WithOps{3}> cwWithOps3;
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<false>> decltype(auto) equal = cwWithOps6 == cwWithOps3;
+    cuda::std::same_as<cuda::std::constant_wrapper<false>> decltype(auto) equal = cwWithOps6 == cwWithOps3;
     static_assert(!static_cast<bool>(equal));
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<true>> decltype(auto) not_equal = cwWithOps6 != cwWithOps3;
+    cuda::std::same_as<cuda::std::constant_wrapper<true>> decltype(auto) not_equal = cwWithOps6 != cwWithOps3;
     static_assert(static_cast<bool>(not_equal));
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<false>> decltype(auto) less = cwWithOps6 < cwWithOps3;
+    cuda::std::same_as<cuda::std::constant_wrapper<false>> decltype(auto) less = cwWithOps6 < cwWithOps3;
     static_assert(!static_cast<bool>(less));
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<false>> decltype(auto) less_equal = cwWithOps6 <= cwWithOps3;
+    cuda::std::same_as<cuda::std::constant_wrapper<false>> decltype(auto) less_equal = cwWithOps6 <= cwWithOps3;
     static_assert(!static_cast<bool>(less_equal));
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<true>> decltype(auto) greater = cwWithOps6 > cwWithOps3;
+    cuda::std::same_as<cuda::std::constant_wrapper<true>> decltype(auto) greater = cwWithOps6 > cwWithOps3;
     static_assert(static_cast<bool>(greater));
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<true>> decltype(auto) greater_equal = cwWithOps6 >= cwWithOps3;
+    cuda::std::same_as<cuda::std::constant_wrapper<true>> decltype(auto) greater_equal = cwWithOps6 >= cwWithOps3;
     static_assert(static_cast<bool>(greater_equal));
 
 #  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
@@ -436,25 +417,25 @@ TEST_FUNC constexpr bool test()
 
   {
     // WithOps comparisons: equal values
-    cuda::std::__constant_wrapper<WithOps{3}> cwWithOps3a;
-    cuda::std::__constant_wrapper<WithOps{3}> cwWithOps3b;
+    cuda::std::constant_wrapper<WithOps{3}> cwWithOps3a;
+    cuda::std::constant_wrapper<WithOps{3}> cwWithOps3b;
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<true>> decltype(auto) equal = cwWithOps3a == cwWithOps3b;
+    cuda::std::same_as<cuda::std::constant_wrapper<true>> decltype(auto) equal = cwWithOps3a == cwWithOps3b;
     static_assert(static_cast<bool>(equal));
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<false>> decltype(auto) not_equal = cwWithOps3a != cwWithOps3b;
+    cuda::std::same_as<cuda::std::constant_wrapper<false>> decltype(auto) not_equal = cwWithOps3a != cwWithOps3b;
     static_assert(!static_cast<bool>(not_equal));
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<false>> decltype(auto) less = cwWithOps3a < cwWithOps3b;
+    cuda::std::same_as<cuda::std::constant_wrapper<false>> decltype(auto) less = cwWithOps3a < cwWithOps3b;
     static_assert(!static_cast<bool>(less));
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<true>> decltype(auto) less_equal = cwWithOps3a <= cwWithOps3b;
+    cuda::std::same_as<cuda::std::constant_wrapper<true>> decltype(auto) less_equal = cwWithOps3a <= cwWithOps3b;
     static_assert(static_cast<bool>(less_equal));
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<true>> decltype(auto) greater_equal = cwWithOps3a >= cwWithOps3b;
+    cuda::std::same_as<cuda::std::constant_wrapper<true>> decltype(auto) greater_equal = cwWithOps3a >= cwWithOps3b;
     static_assert(static_cast<bool>(greater_equal));
 
-    cuda::std::same_as<cuda::std::__constant_wrapper<false>> decltype(auto) greater = cwWithOps3a > cwWithOps3b;
+    cuda::std::same_as<cuda::std::constant_wrapper<false>> decltype(auto) greater = cwWithOps3a > cwWithOps3b;
     static_assert(!static_cast<bool>(greater));
 
 #  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
@@ -465,8 +446,8 @@ TEST_FUNC constexpr bool test()
 
   {
     // Non-structural return types use implicit conversion
-    cuda::std::__constant_wrapper<OpsReturnNonStructural{6}> cwOpt6;
-    cuda::std::__constant_wrapper<OpsReturnNonStructural{3}> cwOpt3;
+    cuda::std::constant_wrapper<OpsReturnNonStructural{6}> cwOpt6;
+    cuda::std::constant_wrapper<OpsReturnNonStructural{3}> cwOpt3;
 
     cuda::std::same_as<NonStructural> decltype(auto) equal = cwOpt6 == cwOpt3;
     assert(equal.get() == 0);
@@ -496,7 +477,7 @@ TEST_FUNC constexpr bool test()
 
   {
     // Mix with runtime param: these operators are not used (built-in operators)
-    cuda::std::__constant_wrapper<6> cw6{};
+    cuda::std::constant_wrapper<6> cw6{};
     int i = 3;
 
     decltype(auto) equal = cw6 == i;
@@ -531,31 +512,31 @@ TEST_FUNC constexpr bool test()
 
   {
     // with integral_constant
-    cuda::std::__constant_wrapper<6> cw6{};
+    cuda::std::constant_wrapper<6> cw6{};
     cuda::std::integral_constant<int, 3> ic3{};
 
     decltype(auto) equal = cw6 == ic3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<false>, decltype(equal)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<false>, decltype(equal)>);
     static_assert(!static_cast<bool>(equal));
 
     decltype(auto) not_equal = cw6 != ic3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<true>, decltype(not_equal)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<true>, decltype(not_equal)>);
     static_assert(static_cast<bool>(not_equal));
 
     decltype(auto) less = cw6 < ic3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<false>, decltype(less)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<false>, decltype(less)>);
     static_assert(!static_cast<bool>(less));
 
     decltype(auto) less_equal = cw6 <= ic3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<false>, decltype(less_equal)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<false>, decltype(less_equal)>);
     static_assert(!static_cast<bool>(less_equal));
 
     decltype(auto) greater = cw6 > ic3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<true>, decltype(greater)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<true>, decltype(greater)>);
     static_assert(static_cast<bool>(greater));
 
     decltype(auto) greater_equal = cw6 >= ic3;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<true>, decltype(greater_equal)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<true>, decltype(greater_equal)>);
     static_assert(static_cast<bool>(greater_equal));
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()

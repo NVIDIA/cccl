@@ -10,10 +10,9 @@
 
 // UNSUPPORTED: libcpp-has-no-threads
 
-// <cuda/ptx>
+// <cuda/ptxs/bfind.h>
 
-#include <cuda/ptx>
-#include <cuda/std/utility>
+#include <cuda/ptxs/bfind.h>
 
 #include "generated/bfind.h"
 

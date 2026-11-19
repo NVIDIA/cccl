@@ -25,6 +25,54 @@ TEST_FUNC constexpr void test_ipow(In1 base, In2 exp, Ref ref)
 }
 
 template <class B, class E>
+TEST_FUNC constexpr void test_boundaries()
+{
+  using U             = cuda::std::make_unsigned_t<B>;
+  constexpr int width = cuda::std::numeric_limits<U>::digits;
+  constexpr U top_bit = U{1} << (width - 1);
+
+  assert(cuda::ipow(static_cast<B>(top_bit), E{1}) == static_cast<B>(top_bit));
+  if (cuda::std::in_range<E>(width - 1))
+  {
+    assert(cuda::ipow(B{2}, static_cast<E>(width - 1)) == static_cast<B>(top_bit));
+    if constexpr (cuda::std::is_signed_v<B>)
+    {
+      assert(cuda::ipow(B{-2}, static_cast<E>(width - 1)) == cuda::std::numeric_limits<B>::min());
+    }
+  }
+  test_ipow<B, E>(2, width, 0);
+  test_ipow<B, E>(2, width + 1, 0);
+  test_ipow<B, E>(4, (width - 1) / 2, U{1} << (2 * ((width - 1) / 2)));
+  test_ipow<B, E>(4, (width - 1) / 2 + 1, 0);
+
+  constexpr E max_exp = cuda::std::numeric_limits<E>::max();
+  if constexpr (cuda::std::cmp_less(max_exp, width))
+  {
+    assert(cuda::ipow(B{2}, max_exp) == static_cast<B>(U{1} << static_cast<int>(max_exp)));
+  }
+  else
+  {
+    assert(cuda::ipow(B{2}, max_exp) == B{0});
+  }
+  assert(cuda::ipow(B{1}, max_exp) == B{1});
+  if constexpr (cuda::std::is_signed_v<B>)
+  {
+    assert(cuda::ipow(B{-1}, max_exp) == B{-1});
+    assert(cuda::ipow(B{-1}, static_cast<E>(max_exp - 1)) == B{1});
+  }
+
+  test_ipow<B, E>(2, 1ull << 32, 0);
+  test_ipow<B, E>(2, (1ull << 32) + 5, 0);
+  test_ipow<B, E>(1ull << 62, (1u << 30) + 1, 0);
+
+  // These products must wrap without overflowing a signed promoted type.
+  constexpr B max_base = cuda::std::numeric_limits<B>::max();
+  assert(cuda::ipow(max_base, E{2}) == B{1});
+  assert(cuda::ipow(max_base, E{3}) == max_base);
+  assert(cuda::ipow(max_base, E{4}) == B{1});
+}
+
+template <class B, class E>
 TEST_FUNC constexpr void test_type()
 {
   static_assert(cuda::std::is_same_v<decltype(cuda::ipow(B{}, E{})), B>);
@@ -32,15 +80,19 @@ TEST_FUNC constexpr void test_type()
 
   test_ipow<B, E>(0, 0, 1);
   test_ipow<B, E>(1, 0, 1);
+  test_ipow<B, E>(-1, 0, 1);
   test_ipow<B, E>(127, 0, 1);
   test_ipow<B, E>(-127, 0, 1);
 
   test_ipow<B, E>(1, 1, 1);
   test_ipow<B, E>(1, 2, 1);
   test_ipow<B, E>(1, -1, 1);
+  test_ipow<B, E>(1, -2, 1);
   test_ipow<B, E>(-1, 1, -1);
   test_ipow<B, E>(-1, 2, 1);
   test_ipow<B, E>(-1, 3, -1);
+  test_ipow<B, E>(-1, -1, 0);
+  test_ipow<B, E>(-1, -2, 0);
 
   test_ipow<B, E>(2, 2, 4);
   test_ipow<B, E>(2, 12, 4'096);
@@ -58,6 +110,8 @@ TEST_FUNC constexpr void test_type()
   test_ipow<B, E>(57, -127, 0);
   test_ipow<B, E>(101, 3, 1'030'301);
   test_ipow<B, E>(7891, 2, 62'267'881);
+
+  test_boundaries<B, E>();
 }
 
 template <class B>

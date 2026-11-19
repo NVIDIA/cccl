@@ -21,7 +21,7 @@ TEST_CASE("TestConstantIteratorTraits", "[constant_iterator]")
 
   static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
   static_assert(cuda::std::is_same_v<traits::value_type, int>);
-  static_assert(cuda::std::is_same_v<traits::pointer, void>);
+  static_assert(cuda::std::is_same_v<traits::pointer, void>); // NOLINT(cccl-simplify-type-traits)
   static_assert(cuda::std::is_same_v<traits::reference, signed int>);
   static_assert(cuda::std::is_same_v<traits::iterator_category, category>);
 
@@ -72,8 +72,8 @@ TEST_CASE("TestConstantIteratorIncrement", "[constant_iterator]")
 
   REQUIRE(-2 == lhs - rhs);
 }
-static_assert(cuda::std::is_trivially_copy_constructible<thrust::constant_iterator<int>>::value);
-static_assert(cuda::std::is_trivially_copyable<thrust::constant_iterator<int>>::value);
+static_assert(cuda::std::is_trivially_copy_constructible_v<thrust::constant_iterator<int>>);
+static_assert(cuda::std::is_trivially_copyable_v<thrust::constant_iterator<int>>);
 
 TEST_CASE("TestConstantIteratorIncrementBig", "[constant_iterator]")
 {

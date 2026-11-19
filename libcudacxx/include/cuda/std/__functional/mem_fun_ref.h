@@ -21,14 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__functional/binary_function.h>
-#include <cuda/std/__functional/unary_function.h>
+#if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__functional/binary_function.h>
+#  include <cuda/std/__functional/unary_function.h>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-#if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
@@ -203,10 +203,10 @@ CCCL_DEPRECATED _CCCL_API inline const_mem_fun1_ref_t<_Sp, _Tp, _Ap> mem_fun_ref
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 
-#endif // defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
-
 _CCCL_END_NAMESPACE_CUDA_STD
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 
 #endif // _CUDA_STD___FUNCTIONAL_MEM_FUN_REF_H

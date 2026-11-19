@@ -24,6 +24,7 @@ Example flow:
 
 from __future__ import annotations
 
+import ctypes
 import itertools
 import threading
 
@@ -207,21 +208,32 @@ def create_stateful_op_void_ptr_wrapper(op, sig, state_dtypes, state_shapes):
     A stateful operator captures one or more device arrays as state.  The
     transformed ``op`` takes those state arrays first, followed by the regular
     inputs (see ``_jit._compile_stateful_op``).  On the C++ side the state is a
-    single ``void*`` pointing to a packed array of the state data pointers.
+    single ``void*`` pointing to a packed buffer holding, for each state array,
+    its data pointer followed by one ``int64`` word per dimension of its shape
+    (see ``_jit._pack_state_bytes``).
 
     The wrapper takes ``2 + K`` ``void*`` arguments:
-    - ``states``: pointer to the packed array of state data pointers,
+    - ``states``: pointer to the packed state buffer,
     - ``K`` regular inputs (one per non-state argument of ``op``),
     - ``result``: pointer to the result storage.
 
-    Each packed pointer is a raw ``T*``.  The wrapper rebuilds it into a real
-    device ``Array`` with ``cuda.carray(ptr, shape)`` before handing it to the
-    operator, so the operator can use array operations on its captured state --
-    indexing (``state[i]``), ``len``, ``.shape`` and ``cuda.atomic.*`` all
-    require a shaped ``Array`` and do not work on a bare pointer.  ``state_shapes``
-    gives the (compile-time constant) shape of each state array; a distinct shape
-    produces a distinct wrapper, so the state shape must be part of the op cache
-    key (see ``_jit._JitOpState.get_cache_key``).
+    For each state array, the wrapper reads its data pointer and shape back out
+    of the buffer at call time and rebuilds it into a real device ``Array`` with
+    ``cuda.carray(ptr, shape)`` before handing it to the operator, so the
+    operator can use array operations on its captured state -- indexing
+    (``state[i]``), ``len``, ``.shape`` and ``cuda.atomic.*`` all require a
+    shaped ``Array`` and do not work on a bare pointer. A shape word is packed
+    like a pointer (so it can share the ``CPointer(voidptr)`` view used to read
+    real pointers) but must not be dereferenced like one; ``ctypes.cast(word,
+    ctypes.c_int64)`` instead reinterprets its bits as the integer it encodes
+    (numba-cuda-mlir lowers this to a pointer-to-integer cast, not a memory
+    load). Reading pointer and shape from the buffer, rather than baking the
+    shape into the compiled code, means the same compiled op can be reused as a
+    state array's pointer and/or shape change across calls -- only
+    ``state_dtypes`` and each shape's *rank* (``len(state_shapes[j])``, needed
+    to size the generated ``carray`` call) affect the compiled code, so only
+    those need to be part of the op cache key (see
+    ``_jit._JitOpState.get_cache_key``).
 
     ``state_dtypes`` is the list of numba-cuda-mlir scalar types of the state
     arrays.  They need not agree: the packed pointers are read through a
@@ -239,10 +251,11 @@ def create_stateful_op_void_ptr_wrapper(op, sig, state_dtypes, state_shapes):
     if len(state_shapes) != num_states:
         raise ValueError("state_shapes and state_dtypes must have the same length")
 
-    # The shapes are interpolated into the generated source, so they must repr
-    # as plain literals; a numpy integer would render as ``np.int64(8)`` and
-    # reference a name the wrapper's namespace does not define.
-    state_shapes = [tuple(int(dim) for dim in shape) for shape in state_shapes]
+    # Only the rank (number of dimensions) of each state array's shape affects
+    # the generated code -- how many words to read per array, and the arity of
+    # its carray() call. The actual per-dimension sizes are read from the
+    # packed buffer at call time, not baked in here.
+    ndims = [len(shape) for shape in state_shapes]
 
     op_device = cuda.jit(device=True)(op)
 
@@ -253,22 +266,33 @@ def create_stateful_op_void_ptr_wrapper(op, sig, state_dtypes, state_shapes):
     wrapper_name = _make_wrapper_name(op.__name__)
     input_names = [f"arg_{i}" for i in range(len(input_types))]
 
-    # Rebuild the j-th packed pointer into a shaped device Array via carray so the
-    # operator can use array operations on it.  The pointer is an untyped address,
-    # so carray is told the element type explicitly; ``_state_dt{j}`` is injected
-    # into the wrapper namespace below.
-    state_args = ", ".join(
-        f"cuda.carray(states[{j}], {tuple(state_shapes[j])!r}, _state_dt{j})"
-        for j in range(num_states)
-    )
+    # Rebuild the j-th state array from the packed buffer: word `offset` is its
+    # data pointer, and the following `ndim` words are its shape, one int64 per
+    # dimension. `states[k]` reads a `voidptr`; that's used directly for the
+    # data pointer (carray dereferences it), and reinterpreted with
+    # ctypes.cast(..., ctypes.c_int64) for each shape word (which must not be
+    # dereferenced -- see the docstring above).
+    state_exprs = []
+    offset = 0
+    for j, ndim in enumerate(ndims):
+        ptr_expr = f"states[{offset}]"
+        offset += 1
+        dims = "".join(
+            f"_ctypes.cast(states[{offset + d}], _ctypes.c_int64), "
+            for d in range(ndim)
+        )
+        offset += ndim
+        state_exprs.append(f"cuda.carray({ptr_expr}, ({dims}), _state_dt{j})")
+    state_args = ", ".join(state_exprs)
     input_args = ", ".join(f"{name}[0]" for name in input_names)
     call_args = ", ".join(a for a in (state_args, input_args) if a)
     body, extra_namespace = _result_store_body(call_args, return_type)
-    # carray is called through ``cuda`` inside the generated device function,
-    # and each state's element type is passed to it explicitly.
+    # carray and ctypes.cast are called from the generated device function,
+    # and each state's element type is passed to carray explicitly.
     extra_namespace = {
         **extra_namespace,
         "cuda": cuda,
+        "_ctypes": ctypes,
         **{f"_state_dt{j}": as_numpy_dtype(state_dtypes[j]) for j in range(num_states)},
     }
 

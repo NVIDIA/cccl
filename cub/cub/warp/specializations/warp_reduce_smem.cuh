@@ -20,12 +20,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/thread/thread_operators.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
+#include <cub/warp/warp_utils.cuh>
 
+#include <cuda/__cmath/ilog.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 
@@ -57,7 +60,7 @@ struct WarpReduceSmem
   static constexpr bool IS_POW_OF_TWO = ::cuda::is_power_of_two(LogicalWarpThreads);
 
   /// The number of warp reduction steps
-  static constexpr int STEPS = Log2<LogicalWarpThreads>::VALUE;
+  static constexpr int STEPS = ::cuda::ceil_ilog2(LogicalWarpThreads);
 
   /// The number of threads in half a warp
   static constexpr int HALF_WARP_THREADS = 1 << (STEPS - 1);
@@ -88,18 +91,16 @@ struct WarpReduceSmem
    ******************************************************************************/
 
   _TempStorage& temp_storage;
-  unsigned int lane_id;
-  unsigned int member_mask;
+  unsigned int lane_id     = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
+  unsigned int member_mask = CUB_NS_QUALIFIER::detail::warp_mask<LogicalWarpThreads>();
 
   /******************************************************************************
    * Construction
    ******************************************************************************/
 
   /// Constructor
-  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduceSmem(TempStorage& temp_storage)
+  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpReduceSmem(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads)
-      , member_mask(WarpMask<LogicalWarpThreads>(::cuda::ptx::get_sreg_laneid() / LogicalWarpThreads))
   {}
 
   /******************************************************************************
@@ -126,7 +127,7 @@ struct WarpReduceSmem
    *   Reduction operator
    */
   template <bool AllLanesValid, typename ReductionOp, int STEP>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T
   ReduceStep(T input, int valid_items, ReductionOp reduction_op, constant_t<STEP> /*step*/)
   {
     constexpr int OFFSET = 1 << STEP;
@@ -159,7 +160,7 @@ struct WarpReduceSmem
    *   Reduction operator
    */
   template <bool AllLanesValid, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T
   ReduceStep(T input, int valid_items, ReductionOp /*reduction_op*/, constant_t<STEPS> /*step*/)
   {
     return input;
@@ -188,7 +189,7 @@ struct WarpReduceSmem
    *   Marker type for whether the target arch has ballot functionality
    */
   template <bool HeadSegmented, typename FlagT, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T
   SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, ::cuda::std::true_type /*has_ballot*/)
   {
     // Get the start flags for each thread in the warp.
@@ -203,10 +204,7 @@ struct WarpReduceSmem
     warp_flags &= ::cuda::ptx::get_sreg_lanemask_gt();
 
     // Accommodate packing of multiple logical warps in a single physical warp
-    if (!IS_ARCH_WARP)
-    {
-      warp_flags >>= (::cuda::ptx::get_sreg_laneid() / LogicalWarpThreads) * LogicalWarpThreads;
-    }
+    warp_flags >>= CUB_NS_QUALIFIER::detail::logical_warp_base_id<LogicalWarpThreads>();
 
     // Find next flag
     int next_flag = ::cuda::std::countr_zero(warp_flags);
@@ -259,7 +257,7 @@ struct WarpReduceSmem
    *   Marker type for whether the target arch has ballot functionality
    */
   template <bool HeadSegmented, typename FlagT, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T
   SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, ::cuda::std::false_type /*has_ballot*/)
   {
     // Alias flags onto shared data storage
@@ -346,7 +344,7 @@ struct WarpReduceSmem
    *   Reduction operator
    */
   template <bool AllLanesValid, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int valid_items, ReductionOp reduction_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(T input, int valid_items, ReductionOp reduction_op)
   {
     return ReduceStep<AllLanesValid>(input, valid_items, reduction_op, constant_v<0>);
   }
@@ -367,7 +365,7 @@ struct WarpReduceSmem
    *   Reduction operator
    */
   template <bool HeadSegmented, typename FlagT, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op)
   {
     return SegmentedReduce<HeadSegmented>(input, flag, reduction_op, ::cuda::std::true_type());
   }

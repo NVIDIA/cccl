@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -40,8 +40,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 #if (defined _CCCL_FPMP_USE_LIB)
 /*
  * ============================================================================
@@ -219,13 +218,16 @@ _CCCL_FPMP_LIB_2A(fmin)
 _CCCL_FPMP_LIB_2A(max)
 _CCCL_FPMP_LIB_2A(min)
 _CCCL_FPMP_LIB_2A(fmod)
+_CCCL_FPMP_LIB_2A(high_fmod)
 _CCCL_FPMP_LIB_2A(remainder)
+_CCCL_FPMP_LIB_2A(high_remainder)
 _CCCL_FPMP_LIB_2A(hypot)
 _CCCL_FPMP_LIB_2A(copysign)
 _CCCL_FPMP_LIB_2A(fdim)
 _CCCL_FPMP_LIB_2A(nextafter)
 _CCCL_FPMP_LIB_2A(rhypot)
 _CCCL_FPMP_LIB_2A_QUO(remquo)
+_CCCL_FPMP_LIB_2A_QUO(high_remquo)
 _CCCL_FPMP_LIB_1A_RETINT(ilogb)
 _CCCL_FPMP_LIB_1A_RETLL(llrint)
 _CCCL_FPMP_LIB_1A_RETLL(llround)
@@ -293,7 +295,7 @@ _CCCL_FPMP_LIB_UINT_FP(icdf, 64)
 #  undef _CCCL_FPMP_LIB_1A_RETLL
 #  undef _CCCL_FPMP_LIB_1A_RETL
 #endif // _CCCL_FPMP_USE_LIB
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

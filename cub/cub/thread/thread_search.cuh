@@ -19,8 +19,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/it_traits.cuh>
 #include <cub/util_namespace.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
@@ -37,7 +37,7 @@ CUB_NAMESPACE_BEGIN
  * Deprecated [Since 3.0]
  */
 template <typename AIteratorT, typename BIteratorT, typename OffsetT, typename CoordinateT>
-CCCL_DEPRECATED _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void MergePathSearch(
+CCCL_DEPRECATED _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void MergePathSearch(
   OffsetT diagonal, AIteratorT a, BIteratorT b, OffsetT a_len, OffsetT b_len, CoordinateT& path_coordinate)
 {
   /// The value type of the input iterator
@@ -80,7 +80,7 @@ CCCL_DEPRECATED _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void MergePathSearch(
  */
 // TODO(bgruber): deprecate once ::cuda::std::lower_bound is made public
 template <typename InputIteratorT, typename OffsetT, typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE OffsetT LowerBound(InputIteratorT input, OffsetT num_items, T val)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE OffsetT LowerBound(InputIteratorT input, OffsetT num_items, T val)
 {
   OffsetT retval = 0;
   while (num_items > 0)
@@ -115,7 +115,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT LowerBound(InputIteratorT input, OffsetT 
  */
 // TODO(bgruber): deprecate once ::cuda::std::upper_bound is made public
 template <typename InputIteratorT, typename OffsetT, typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT num_items, T val)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT num_items, T val)
 {
   OffsetT retval = 0;
   while (num_items > 0)

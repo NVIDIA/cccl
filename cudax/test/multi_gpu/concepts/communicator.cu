@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/experimental/__multi_gpu/concepts.h>
+#include <cuda/experimental/mgmn/concepts>
 
 #include <testing.cuh>
 

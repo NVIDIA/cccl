@@ -19,44 +19,33 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/invocable.h>
 #include <cuda/std/__expected/bad_expected_access.h>
 #include <cuda/std/__expected/expected_base.h>
 #include <cuda/std/__expected/unexpect.h>
 #include <cuda/std/__expected/unexpected.h>
+#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__fwd/expected.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
-#include <cuda/std/__type_traits/conjunction.h>
-#include <cuda/std/__type_traits/disjunction.h>
 #include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
-#include <cuda/std/__type_traits/is_copy_assignable.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_function.h>
-#include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_copy_assignable.h>
-#include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_swappable.h>
-#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
-#include <cuda/std/__type_traits/is_trivially_destructible.h>
-#include <cuda/std/__type_traits/is_trivially_move_constructible.h>
 #include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/__type_traits/lazy.h>
-#include <cuda/std/__type_traits/negation.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/as_const.h>
-#include <cuda/std/__utility/exception_guard.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
@@ -87,7 +76,7 @@ inline constexpr bool __can_swap<void, _Err> = is_swappable_v<_Err> && is_move_c
 template <class _Tp, class _Err>
 class expected : private __expected_move_assign<_Tp, _Err>
 {
-  using __base = __expected_move_assign<_Tp, _Err>;
+  using __base _CCCL_NODEBUG = __expected_move_assign<_Tp, _Err>;
 
   static_assert(__expected::__valid_expected<_Tp, _Err>,
                 "[expected.object.general] A program that instantiates the definition of template expected<T, E> for a "
@@ -408,7 +397,6 @@ public:
       ::cuda::std::addressof(this->__union_.__val_), __il, ::cuda::std::forward<_Args>(__args)...);
   }
 
-public:
   // [expected.object.swap], swap
   _CCCL_TEMPLATE(class _Tp2 = _Tp, class _Err2 = _Err)
   _CCCL_REQUIRES(__expected::__can_swap<_Tp2, _Err2>)
@@ -625,10 +613,7 @@ public:
     {
       return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__val_);
     }
-    else
-    {
-      return _Res{unexpect, this->__union_.__unex_};
-    }
+    return _Res{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -646,10 +631,7 @@ public:
     {
       return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__val_);
     }
-    else
-    {
-      return _Res{unexpect, this->__union_.__unex_};
-    }
+    return _Res{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -667,10 +649,7 @@ public:
     {
       return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__val_));
     }
-    else
-    {
-      return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -688,10 +667,7 @@ public:
     {
       return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__val_));
     }
-    else
-    {
-      return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -710,10 +686,7 @@ public:
     {
       return _Res{in_place_t{}, this->__union_.__val_};
     }
-    else
-    {
-      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
-    }
+    return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -732,10 +705,7 @@ public:
     {
       return _Res{in_place_t{}, this->__union_.__val_};
     }
-    else
-    {
-      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
-    }
+    return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -754,10 +724,7 @@ public:
     {
       return _Res{in_place_t{}, ::cuda::std::move(this->__union_.__val_)};
     }
-    else
-    {
-      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
-    }
+    return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -776,15 +743,12 @@ public:
     {
       return _Res{in_place_t{}, ::cuda::std::move(this->__union_.__val_)};
     }
-    else
-    {
-      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
-    }
+    return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
-  _CCCL_REQUIRES(is_constructible_v<_Err2, _Err2&> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun, _Tp2&>>, void>)
+  _CCCL_REQUIRES(is_constructible_v<_Err2, _Err2&> _CCCL_AND is_void_v<invoke_result_t<_Fun, _Tp2&>>)
   _CCCL_API constexpr auto transform(_Fun&& __fun) &
   {
     static_assert(invocable<_Fun, _Tp&>, "std::expected::transform requires that F must be invocable with T.");
@@ -795,16 +759,12 @@ public:
       ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__val_);
       return expected<void, _Err>{};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
-    }
+    return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
-  _CCCL_REQUIRES(
-    is_constructible_v<_Err2, _Err2&> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun, _Tp2&>>, void>))
+  _CCCL_REQUIRES(is_constructible_v<_Err2, _Err2&> _CCCL_AND(!is_void_v<invoke_result_t<_Fun, _Tp2&>>))
   _CCCL_API constexpr auto transform(_Fun&& __fun) &
   {
     static_assert(invocable<_Fun, _Tp&>, "std::expected::transform requires that F must be invocable with T.");
@@ -822,16 +782,12 @@ public:
       return expected<_Res, _Err>{
         __expected_construct_from_invoke_tag{}, in_place_t{}, ::cuda::std::forward<_Fun>(__fun), this->__union_.__val_};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
-    }
+    return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
-  _CCCL_REQUIRES(
-    is_copy_constructible_v<_Err2> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun, const _Tp2&>>, void>)
+  _CCCL_REQUIRES(is_copy_constructible_v<_Err2> _CCCL_AND is_void_v<invoke_result_t<_Fun, const _Tp2&>>)
   _CCCL_API constexpr auto transform(_Fun&& __fun) const&
   {
     static_assert(invocable<_Fun, const _Tp&>, "std::expected::transform requires that F must be invocable with T.");
@@ -842,16 +798,12 @@ public:
       ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__val_);
       return expected<_Res, _Err>{};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
-    }
+    return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
-  _CCCL_REQUIRES(
-    is_copy_constructible_v<_Err2> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun, const _Tp2&>>, void>))
+  _CCCL_REQUIRES(is_copy_constructible_v<_Err2> _CCCL_AND(!is_void_v<invoke_result_t<_Fun, const _Tp2&>>))
   _CCCL_API constexpr auto transform(_Fun&& __fun) const&
   {
     static_assert(invocable<_Fun, const _Tp&>, "std::expected::transform requires that F must be invocable with T");
@@ -869,15 +821,12 @@ public:
       return expected<_Res, _Err>{
         __expected_construct_from_invoke_tag{}, in_place_t{}, ::cuda::std::forward<_Fun>(__fun), this->__union_.__val_};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
-    }
+    return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
-  _CCCL_REQUIRES(is_move_constructible_v<_Err2> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun, _Tp2>>, void>)
+  _CCCL_REQUIRES(is_move_constructible_v<_Err2> _CCCL_AND is_void_v<invoke_result_t<_Fun, _Tp2>>)
   _CCCL_API constexpr auto transform(_Fun&& __fun) &&
   {
     static_assert(invocable<_Fun, _Tp>, "std::expected::transform requires that F must be invocable with T.");
@@ -888,15 +837,12 @@ public:
       ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__val_));
       return expected<_Res, _Err>{};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
-  _CCCL_REQUIRES(is_move_constructible_v<_Err2> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun, _Tp2>>, void>))
+  _CCCL_REQUIRES(is_move_constructible_v<_Err2> _CCCL_AND(!is_void_v<invoke_result_t<_Fun, _Tp2>>))
   _CCCL_API constexpr auto transform(_Fun&& __fun) &&
   {
     static_assert(invocable<_Fun, _Tp>, "std::expected::transform requires that F must be invocable with T");
@@ -917,16 +863,12 @@ public:
         ::cuda::std::forward<_Fun>(__fun),
         ::cuda::std::move(this->__union_.__val_)};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
-  _CCCL_REQUIRES(
-    is_constructible_v<_Err2, const _Err2> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun, const _Tp2>>, void>)
+  _CCCL_REQUIRES(is_constructible_v<_Err2, const _Err2> _CCCL_AND is_void_v<invoke_result_t<_Fun, const _Tp2>>)
   _CCCL_API constexpr auto transform(_Fun&& __fun) const&&
   {
     static_assert(invocable<_Fun, const _Tp>, "std::expected::transform requires that F must be invocable with T.");
@@ -937,16 +879,12 @@ public:
       ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__val_));
       return expected<_Res, _Err>{};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
-  _CCCL_REQUIRES(
-    is_constructible_v<_Err2, const _Err2> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun, const _Tp2>>, void>))
+  _CCCL_REQUIRES(is_constructible_v<_Err2, const _Err2> _CCCL_AND(!is_void_v<invoke_result_t<_Fun, const _Tp2>>))
   _CCCL_API constexpr auto transform(_Fun&& __fun) const&&
   {
     static_assert(invocable<_Fun, const _Tp>, "std::expected::transform requires that F must be invocable with T");
@@ -967,10 +905,7 @@ public:
         ::cuda::std::forward<_Fun>(__fun),
         ::cuda::std::move(this->__union_.__val_)};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -992,11 +927,8 @@ public:
     {
       return expected<_Tp, _Res>{in_place_t{}, this->__union_.__val_};
     }
-    else
-    {
-      return expected<_Tp, _Res>{
-        __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
-    }
+    return expected<_Tp, _Res>{
+      __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1019,11 +951,8 @@ public:
     {
       return expected<_Tp, _Res>{in_place_t{}, this->__union_.__val_};
     }
-    else
-    {
-      return expected<_Tp, _Res>{
-        __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
-    }
+    return expected<_Tp, _Res>{
+      __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1045,14 +974,11 @@ public:
     {
       return expected<_Tp, _Res>{in_place_t{}, ::cuda::std::move(this->__union_.__val_)};
     }
-    else
-    {
-      return expected<_Tp, _Res>{
-        __expected_construct_from_invoke_tag{},
-        unexpect,
-        ::cuda::std::forward<_Fun>(__fun),
-        ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<_Tp, _Res>{
+      __expected_construct_from_invoke_tag{},
+      unexpect,
+      ::cuda::std::forward<_Fun>(__fun),
+      ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1075,14 +1001,11 @@ public:
     {
       return expected<_Tp, _Res>{in_place_t{}, ::cuda::std::move(this->__union_.__val_)};
     }
-    else
-    {
-      return expected<_Tp, _Res>{
-        __expected_construct_from_invoke_tag{},
-        unexpect,
-        ::cuda::std::forward<_Fun>(__fun),
-        ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<_Tp, _Res>{
+      __expected_construct_from_invoke_tag{},
+      unexpect,
+      ::cuda::std::forward<_Fun>(__fun),
+      ::cuda::std::move(this->__union_.__unex_)};
   }
 
   // [expected.object.eq], equality operators
@@ -1093,17 +1016,11 @@ public:
     {
       return false;
     }
-    else
+    if (__x.__has_val_)
     {
-      if (__x.__has_val_)
-      {
-        return __x.__union_.__val_ == __y.value();
-      }
-      else
-      {
-        return __x.__union_.__unex_ == __y.error();
-      }
+      return __x.__union_.__val_ == __y.value();
     }
+    return __x.__union_.__unex_ == __y.error();
   }
 
 #if _CCCL_STD_VER < 2020
@@ -1123,17 +1040,11 @@ public:
     {
       return false;
     }
-    else
+    if (__x.__has_val_)
     {
-      if (__x.__has_val_)
-      {
-        return __x.__union_.__val_ == __y.value();
-      }
-      else
-      {
-        return __x.__union_.__unex_ == __y.error();
-      }
+      return __x.__union_.__val_ == __y.value();
     }
+    return __x.__union_.__unex_ == __y.error();
   }
 
 #if _CCCL_STD_VER < 2020
@@ -1208,7 +1119,7 @@ public:
 template <class _Err>
 class expected<void, _Err> : private __expected_move_assign<void, _Err>
 {
-  using __base = __expected_move_assign<void, _Err>;
+  using __base _CCCL_NODEBUG = __expected_move_assign<void, _Err>;
   static_assert(__unexpected::__valid_unexpected<_Err>,
                 "[expected.void.general] A program that instantiates expected<T, E> with a E that is not a "
                 "valid argument for unexpected<E> is ill-formed");
@@ -1532,10 +1443,7 @@ public:
     {
       return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
     }
-    else
-    {
-      return _Res{unexpect, this->__union_.__unex_};
-    }
+    return _Res{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1553,10 +1461,7 @@ public:
     {
       return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
     }
-    else
-    {
-      return _Res{unexpect, this->__union_.__unex_};
-    }
+    return _Res{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1574,10 +1479,7 @@ public:
     {
       return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
     }
-    else
-    {
-      return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1595,10 +1497,7 @@ public:
     {
       return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
     }
-    else
-    {
-      return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1609,17 +1508,14 @@ public:
 
     static_assert(__is_cuda_std_expected_v<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
-    static_assert(is_same_v<typename _Res::value_type, void>,
+    static_assert(is_void_v<typename _Res::value_type>,
                   "The value type of the result of std::expected::or_else must be the same as that of std::expected");
 
     if (this->__has_val_)
     {
       return _Res{};
     }
-    else
-    {
-      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
-    }
+    return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1630,17 +1526,14 @@ public:
 
     static_assert(__is_cuda_std_expected_v<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
-    static_assert(is_same_v<typename _Res::value_type, void>,
+    static_assert(is_void_v<typename _Res::value_type>,
                   "The value type of the result of std::expected::or_else must be the same as that of std::expected");
 
     if (this->__has_val_)
     {
       return _Res{};
     }
-    else
-    {
-      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
-    }
+    return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1651,17 +1544,14 @@ public:
 
     static_assert(__is_cuda_std_expected_v<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
-    static_assert(is_same_v<typename _Res::value_type, void>,
+    static_assert(is_void_v<typename _Res::value_type>,
                   "The value type of the result of std::expected::or_else must be the same as that of std::expected");
 
     if (this->__has_val_)
     {
       return _Res{};
     }
-    else
-    {
-      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
-    }
+    return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1672,22 +1562,19 @@ public:
 
     static_assert(__is_cuda_std_expected_v<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
-    static_assert(is_same_v<typename _Res::value_type, void>,
+    static_assert(is_void_v<typename _Res::value_type>,
                   "The value type of the result of std::expected::or_else must be the same as that of std::expected");
 
     if (this->__has_val_)
     {
       return _Res{};
     }
-    else
-    {
-      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
-    }
+    return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(is_constructible_v<_Err2, _Err2&> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>)
+  _CCCL_REQUIRES(is_constructible_v<_Err2, _Err2&> _CCCL_AND is_void_v<invoke_result_t<_Fun>>)
   _CCCL_API constexpr auto transform(_Fun&& __fun) &
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T.");
@@ -1696,15 +1583,12 @@ public:
       ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
       return expected<void, _Err>{};
     }
-    else
-    {
-      return expected<void, _Err>{unexpect, this->__union_.__unex_};
-    }
+    return expected<void, _Err>{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(is_constructible_v<_Err2, _Err2&> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>))
+  _CCCL_REQUIRES(is_constructible_v<_Err2, _Err2&> _CCCL_AND(!is_void_v<invoke_result_t<_Fun>>))
   _CCCL_API constexpr auto transform(_Fun&& __fun) &
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T.");
@@ -1722,15 +1606,12 @@ public:
       return expected<_Res, _Err>{
         __expected_construct_from_invoke_tag{}, in_place_t{}, ::cuda::std::forward<_Fun>(__fun)};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
-    }
+    return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(is_copy_constructible_v<_Err2> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>)
+  _CCCL_REQUIRES(is_copy_constructible_v<_Err2> _CCCL_AND is_void_v<invoke_result_t<_Fun>>)
   _CCCL_API constexpr auto transform(_Fun&& __fun) const&
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T.");
@@ -1739,15 +1620,12 @@ public:
       ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
       return expected<void, _Err>{};
     }
-    else
-    {
-      return expected<void, _Err>{unexpect, this->__union_.__unex_};
-    }
+    return expected<void, _Err>{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(is_copy_constructible_v<_Err2> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>))
+  _CCCL_REQUIRES(is_copy_constructible_v<_Err2> _CCCL_AND(!is_void_v<invoke_result_t<_Fun>>))
   _CCCL_API constexpr auto transform(_Fun&& __fun) const&
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T");
@@ -1765,15 +1643,12 @@ public:
       return expected<_Res, _Err>{
         __expected_construct_from_invoke_tag{}, in_place_t{}, ::cuda::std::forward<_Fun>(__fun)};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
-    }
+    return expected<_Res, _Err>{unexpect, this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(is_move_constructible_v<_Err2> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>)
+  _CCCL_REQUIRES(is_move_constructible_v<_Err2> _CCCL_AND is_void_v<invoke_result_t<_Fun>>)
   _CCCL_API constexpr auto transform(_Fun&& __fun) &&
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T.");
@@ -1782,15 +1657,12 @@ public:
       ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
       return expected<void, _Err>{};
     }
-    else
-    {
-      return expected<void, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<void, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(is_move_constructible_v<_Err2> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>))
+  _CCCL_REQUIRES(is_move_constructible_v<_Err2> _CCCL_AND(!is_void_v<invoke_result_t<_Fun>>))
   _CCCL_API constexpr auto transform(_Fun&& __fun) &&
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T");
@@ -1808,15 +1680,12 @@ public:
       return expected<_Res, _Err>{
         __expected_construct_from_invoke_tag{}, in_place_t{}, ::cuda::std::forward<_Fun>(__fun)};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(is_constructible_v<_Err2, const _Err2> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>)
+  _CCCL_REQUIRES(is_constructible_v<_Err2, const _Err2> _CCCL_AND is_void_v<invoke_result_t<_Fun>>)
   _CCCL_API constexpr auto transform(_Fun&& __fun) const&&
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T.");
@@ -1825,15 +1694,12 @@ public:
       ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
       return expected<void, _Err>{};
     }
-    else
-    {
-      return expected<void, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<void, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(is_constructible_v<_Err2, const _Err2> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>))
+  _CCCL_REQUIRES(is_constructible_v<_Err2, const _Err2> _CCCL_AND(!is_void_v<invoke_result_t<_Fun>>))
   _CCCL_API constexpr auto transform(_Fun&& __fun) const&&
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T");
@@ -1851,10 +1717,7 @@ public:
       return expected<_Res, _Err>{
         __expected_construct_from_invoke_tag{}, in_place_t{}, ::cuda::std::forward<_Fun>(__fun)};
     }
-    else
-    {
-      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1875,11 +1738,8 @@ public:
     {
       return expected<void, _Res>{};
     }
-    else
-    {
-      return expected<void, _Res>{
-        __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
-    }
+    return expected<void, _Res>{
+      __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1901,11 +1761,8 @@ public:
     {
       return expected<void, _Res>{};
     }
-    else
-    {
-      return expected<void, _Res>{
-        __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
-    }
+    return expected<void, _Res>{
+      __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1926,14 +1783,11 @@ public:
     {
       return expected<void, _Res>{};
     }
-    else
-    {
-      return expected<void, _Res>{
-        __expected_construct_from_invoke_tag{},
-        unexpect,
-        ::cuda::std::forward<_Fun>(__fun),
-        ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<void, _Res>{
+      __expected_construct_from_invoke_tag{},
+      unexpect,
+      ::cuda::std::forward<_Fun>(__fun),
+      ::cuda::std::move(this->__union_.__unex_)};
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1955,14 +1809,11 @@ public:
     {
       return expected<void, _Res>{};
     }
-    else
-    {
-      return expected<void, _Res>{
-        __expected_construct_from_invoke_tag{},
-        unexpect,
-        ::cuda::std::forward<_Fun>(__fun),
-        ::cuda::std::move(this->__union_.__unex_)};
-    }
+    return expected<void, _Res>{
+      __expected_construct_from_invoke_tag{},
+      unexpect,
+      ::cuda::std::forward<_Fun>(__fun),
+      ::cuda::std::move(this->__union_.__unex_)};
   }
 
   // [expected.void.eq], equality operators
@@ -1973,10 +1824,7 @@ public:
     {
       return false;
     }
-    else
-    {
-      return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ == __y.error());
-    }
+    return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ == __y.error());
   }
 #if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
@@ -1994,10 +1842,7 @@ public:
     {
       return false;
     }
-    else
-    {
-      return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ == __y.error());
-    }
+    return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ == __y.error());
   }
 #if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE

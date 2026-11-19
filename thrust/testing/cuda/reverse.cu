@@ -78,17 +78,17 @@ TEST_CASE("TestReverseCudaStreams", "[reverse]")
   Vector data{1, 2, 3, 4, 5};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::reverse(thrust::cuda::par.on(s), data.begin(), data.end());
 
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   const Vector ref{5, 4, 3, 2, 1};
 
   REQUIRE(ref == data);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestReverseCopyCudaStreams", "[reverse]")
@@ -99,15 +99,15 @@ TEST_CASE("TestReverseCopyCudaStreams", "[reverse]")
   Vector result(5);
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::reverse_copy(thrust::cuda::par.on(s), data.begin(), data.end(), result.begin());
 
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   const Vector ref{5, 4, 3, 2, 1};
 
   REQUIRE(ref == result);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }

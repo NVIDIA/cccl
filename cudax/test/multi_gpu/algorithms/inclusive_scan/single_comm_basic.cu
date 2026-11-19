@@ -20,7 +20,7 @@
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 
-#include <cuda/experimental/__multi_gpu/algorithm/scan/scan.h>
+#include <cuda/experimental/mgmn/scan>
 
 #include <numeric>
 #include <vector>
@@ -136,6 +136,7 @@ MULTI_GPU_TEST("inclusive_scan single-comm documentation example", c2h::type_lis
     if (const auto& err_str = failed[i]; !err_str.empty())
     {
       INFO("rank: " << i);
+      // NOLINTNEXTLINE(readability-container-size-empty)
       REQUIRE(err_str == ""); // Should print the full error string
     }
   }

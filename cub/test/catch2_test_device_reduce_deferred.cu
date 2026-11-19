@@ -40,9 +40,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Min, device_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Max, device_max);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::TransformReduce, device_transform_reduce);
 
-static_assert(cuda::std::is_same_v<cub::detail::reduce::num_items_offset_t<int32_t>, int32_t>);
 using deferred_count_t = decltype(cuda::args::deferred{static_cast<int32_t*>(nullptr)});
-static_assert(cuda::std::is_same_v<cub::detail::reduce::num_items_offset_t<deferred_count_t>, uint32_t>);
+static_assert(cuda::std::is_same_v<cub::detail::num_items_offset_t<deferred_count_t>, uint32_t>);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -294,9 +293,9 @@ CUB_TEST("DeviceReduce::Reduce with a deferred size handles grid boundaries", "[
     tile_size - 1,
     tile_size,
     tile_size + 1,
-    max_blocks * tile_size - 1,
+    (max_blocks * tile_size) - 1,
     max_blocks * tile_size,
-    max_blocks * tile_size + 1);
+    (max_blocks * tile_size) + 1);
 
   const c2h::device_vector<count_t> device_num_items(1, num_items);
   c2h::device_vector<value_t> output(1, value_t{-1});
@@ -327,9 +326,9 @@ CUB_TEST("DeviceReduce atomic dispatch with a deferred size handles grid boundar
     tile_size - 1,
     tile_size,
     tile_size + 1,
-    max_blocks * tile_size - 1,
+    (max_blocks * tile_size) - 1,
     max_blocks * tile_size,
-    max_blocks * tile_size + 1);
+    (max_blocks * tile_size) + 1);
   constexpr value_t init = 7.0f;
 
   const c2h::device_vector<count_t> device_num_items(1, num_items);
@@ -586,7 +585,7 @@ CUB_TEST("DeviceReduce environment entry points accept deferred num_items", "[de
   const auto reduce_error =
     cub::DeviceReduce::Reduce(input.begin(), output.begin(), count, cuda::std::plus<>{}, value_t{7});
   REQUIRE(cudaSuccess == reduce_error);
-  REQUIRE(output[0] == value_t{7} + value_t{2} * num_items);
+  REQUIRE(output[0] == value_t{7} + (value_t{2} * num_items));
 
   output[0]            = value_t{-2};
   const auto sum_error = cub::DeviceReduce::Sum(input.begin(), output.begin(), count);

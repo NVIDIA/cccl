@@ -82,6 +82,7 @@ runs:
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
         allow_override: ${{ inputs.allow_override == 'true' && '--allow-override' || ''}}
+        exclude_gpu_jobs: ${{ !contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) && '--exclude-gpu-jobs' || '' }}
         full_build_projects_flag: ${{ inputs.inspect_changes_script != '' && '--full-build-projects' || ''}}
         full_build_projects: ${{ inputs.inspect_changes_script != '' && steps.inspect-changes.outputs.FULL_BUILD || ''}}
         lite_build_projects_flag: ${{ inputs.inspect_changes_script != '' && '--lite-build-projects' || ''}}
@@ -94,6 +95,7 @@ runs:
         ${{ env.matrix_parser }} ${{ inputs.matrix_file }}                     \
             --workflows ${{ inputs.workflows }}                                \
             ${{ env.allow_override }}                                          \
+            ${{ env.exclude_gpu_jobs }}                                        \
             ${{ env.full_build_projects_flag }} ${{ env.full_build_projects }} \
             ${{ env.lite_build_projects_flag }} ${{ env.lite_build_projects }}
         echo "::endgroup::"

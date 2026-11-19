@@ -91,7 +91,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
+_CCCL_HOST_DEVICE_API ForwardIterator uninitialized_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -158,7 +158,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
  *  \endverbatim
  */
 template <typename InputIterator, typename ForwardIterator>
-ForwardIterator uninitialized_copy(InputIterator first, InputIterator last, ForwardIterator result);
+_CCCL_HOST_API ForwardIterator uninitialized_copy(InputIterator first, InputIterator last, ForwardIterator result);
 
 /*! In \c thrust, the function \c thrust::device_new allocates memory for
  *  an object and then creates an object at that location by calling a constructor.
@@ -228,7 +228,7 @@ ForwardIterator uninitialized_copy(InputIterator first, InputIterator last, Forw
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
+_CCCL_HOST_DEVICE_API ForwardIterator uninitialized_copy_n(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, Size n, ForwardIterator result);
 
 /*! In \c thrust, the function \c thrust::device_new allocates memory for
@@ -293,7 +293,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
  *  \endverbatim
  */
 template <typename InputIterator, typename Size, typename ForwardIterator>
-ForwardIterator uninitialized_copy_n(InputIterator first, Size n, ForwardIterator result);
+_CCCL_HOST_API ForwardIterator uninitialized_copy_n(InputIterator first, Size n, ForwardIterator result);
 
 /*! \} // copying
  */

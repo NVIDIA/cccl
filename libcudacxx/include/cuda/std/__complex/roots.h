@@ -23,11 +23,13 @@
 
 #include <cuda/std/__cmath/copysign.h>
 #include <cuda/std/__cmath/isinf.h>
-#include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__complex/complex.h>
-#include <cuda/std/__complex/math.h>
 #include <cuda/std/__floating_point/mask.h>
+#include <cuda/std/__floating_point/storage.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -183,7 +185,7 @@ template <class _Tp>
 
   // (__im_scaled) can have under/overflowed when scaled so we go back to using (__im) briefly.
   // Multiply by (__im) last to avoid over/underflow:
-  const _Tp __hard_part = (__im) * (__ldexp_combined * __sqrt_easy_part);
+  const _Tp __hard_part = __im * (__ldexp_combined * __sqrt_easy_part);
 
   __easy_part = __ldexp_factor_2 * ::cuda::std::sqrt(__easy_part);
 

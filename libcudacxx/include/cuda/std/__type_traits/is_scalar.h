@@ -26,9 +26,14 @@
 #include <cuda/std/__type_traits/is_member_pointer.h>
 #include <cuda/std/__type_traits/is_null_pointer.h>
 #include <cuda/std/__type_traits/is_pointer.h>
-#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
+
+// Disabled due to libstdc++ conflict
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
+#if 0 // _CCCL_HAS_BUILTIN(__is_scalar)
+#  define _CCCL_BUILTIN_IS_SCALAR(...) __is_scalar(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__is_scalar)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 

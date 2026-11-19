@@ -41,10 +41,12 @@
 #  include <cuda/std/__type_traits/is_convertible.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__type_traits/is_void.h>
+#  include <cuda/std/__type_traits/nat.h>
 #  include <cuda/std/__type_traits/remove_cv.h>
 #  include <cuda/std/__type_traits/remove_cvref.h>
 #  include <cuda/std/__type_traits/remove_reference.h>
 #  include <cuda/std/__utility/forward.h>
+#  include <cuda/std/__utility/integer_sequence.h>
 #  include <cuda/std/cstddef>
 #  include <cuda/std/tuple>
 

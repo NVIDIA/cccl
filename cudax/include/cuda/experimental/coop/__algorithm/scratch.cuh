@@ -40,15 +40,14 @@ namespace cuda::experimental::coop
 struct __empty_smem_scratch
 {};
 
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::reference_wrapper<__empty_smem_scratch>
-__make_empty_smem_scratch() noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::reference_wrapper<__empty_smem_scratch> __make_empty_smem_scratch()
 {
   __shared__ __empty_smem_scratch __smem_scratch;
   return {__smem_scratch};
 }
 
 template <class _Tp, class... _Args>
-[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::reference_wrapper<_Tp> __make_smem_scratch(const _Args&...) noexcept
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::reference_wrapper<_Tp> __make_smem_scratch(const _Args&...)
 {
   if constexpr (::cuda::std::is_same_v<_Tp, __empty_smem_scratch>)
   {
@@ -83,8 +82,7 @@ struct __scratch_reqs
 };
 
 template <class _Alg, class... _Args>
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_CONSTEVAL auto
-get_scratch_requirements(const _Alg& __alg, _Args&&... __args) noexcept
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_CONSTEVAL auto get_scratch_requirements(const _Alg& __alg, _Args&&... __args)
   -> decltype(_Alg::__get_scratch_requirements(::cuda::std::forward<_Args>(__args)...))
 {
   static_assert(::cuda::std::is_invocable_v<_Alg, _Args...>, "_Alg must be invocable with _Args");

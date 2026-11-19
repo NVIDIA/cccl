@@ -15,7 +15,7 @@
 #include <cuda/std/functional>
 #include <cuda/std/span>
 
-#include <cuda/experimental/__multi_gpu/algorithm/sort/sort.h>
+#include <cuda/experimental/mgmn/sort>
 
 #include <algorithm>
 #include <string>
@@ -131,6 +131,7 @@ MULTI_GPU_TEST("sort single-comm documentation example", c2h::type_list<int>)
     if (const auto& err_str = failed[i]; !err_str.empty())
     {
       INFO("rank: " << i);
+      // NOLINTNEXTLINE(readability-container-size-empty)
       REQUIRE(err_str == ""); // Should print the full error string
     }
   }

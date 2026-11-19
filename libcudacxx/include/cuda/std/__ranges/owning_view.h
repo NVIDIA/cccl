@@ -20,7 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
+#include <cuda/std/__concepts/invocable.h>
 #include <cuda/std/__concepts/movable.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/concepts.h>
@@ -29,8 +31,8 @@
 #include <cuda/std/__ranges/enable_borrowed_range.h>
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/view_interface.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/move.h>
@@ -155,6 +157,14 @@ _CCCL_CTAD_SUPPORTED_FOR_TYPE(owning_view);
 
 template <class _Rp>
 inline constexpr bool enable_borrowed_range<owning_view<_Rp>> = enable_borrowed_range<_Rp>;
+
+// This view preserves the size of its underlying range.
+template <class _Range>
+inline constexpr size_t __static_size_v<owning_view<_Range>> = __static_size_v<_Range>;
+
+template <class _Range>
+inline constexpr size_t __static_size_v<const owning_view<_Range>> =
+  range<const owning_view<_Range>> ? __static_size_v<const _Range> : dynamic_extent;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 

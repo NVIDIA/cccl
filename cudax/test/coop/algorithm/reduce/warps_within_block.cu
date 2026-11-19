@@ -9,11 +9,16 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/atomic>
+#include <cuda/barrier>
 #include <cuda/devices>
 #include <cuda/functional>
 #include <cuda/hierarchy>
 #include <cuda/launch>
-#include <cuda/std/algorithm>
+#include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
+#include <cuda/std/functional>
+#include <cuda/std/limits>
+#include <cuda/std/numeric>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 
@@ -30,7 +35,7 @@
 inline constexpr int nwarps_in_group     = 3;
 inline constexpr int warp_size           = 32;
 inline constexpr int multi_group_count   = 2;
-inline constexpr int multi_group_nwarps  = multi_group_count * nwarps_in_group + 1;
+inline constexpr int multi_group_nwarps  = (multi_group_count * nwarps_in_group) + 1;
 inline constexpr int multi_group_size    = multi_group_nwarps * warp_size;
 inline constexpr int multi_group_repeats = 16;
 inline constexpr int threads_in_group    = nwarps_in_group * warp_size;
@@ -56,11 +61,15 @@ struct ReduceKernel
     __shared__ cuda::std::aligned_storage_t<sizeof(Barriers), alignof(Barriers)> barriers_storage;
     auto& barriers = reinterpret_cast<Barriers&>(barriers_storage);
 
-    const cudax::coop::generic_group group{
-      cuda::warp, block, cudax::coop::group_by<nwarps_in_group, false>{}, cudax::coop::barrier_synchronizer{barriers}};
+    const auto group = cudax::coop::make_group<cudax::coop::generic_group>(
+      cudax::coop::non_exhaustive,
+      cuda::warp,
+      block,
+      cudax::coop::group_by{cuda::std::integral_constant<cuda::std::size_t, nwarps_in_group>{}},
+      cudax::coop::barrier_synchronizer{barriers});
 
     // All threads that are not part of the groups should exit early.
-    if (!cuda::gpu_thread.is_part_of(group))
+    if (!group.has_value())
     {
       return;
     }
@@ -68,21 +77,21 @@ struct ReduceKernel
     T thread_data[NumItems];
     for (int i = 0; i < NumItems; ++i)
     {
-      thread_data[i] = d_in[cuda::gpu_thread.rank_as<int>(group) + i * cuda::gpu_thread.count_as<int>(group)];
+      thread_data[i] = d_in[cuda::gpu_thread.rank_as<int>(*group) + i * cuda::gpu_thread.count_as<int>(*group)];
     }
 
     if constexpr (Broadcasted)
     {
-      const auto result = cudax::coop::reduce(cudax::broadcasted, group, thread_data, red_op);
+      const auto result = cudax::coop::reduce(cudax::broadcasted, *group, thread_data, red_op);
 
-      d_out[cuda::gpu_thread.rank(group)] = result;
+      d_out[cuda::gpu_thread.rank(*group)] = result;
     }
     else
     {
-      const auto result = cudax::coop::reduce(group, thread_data, red_op);
+      const auto result = cudax::coop::reduce(*group, thread_data, red_op);
 
-      REQUIRE(result.has_value() == cuda::gpu_thread.is_root_rank(group));
-      if (cuda::gpu_thread.is_root_rank(group))
+      REQUIRE(result.has_value() == cuda::gpu_thread.is_root_rank(*group));
+      if (cuda::gpu_thread.is_root_rank(*group))
       {
         *d_out = result.value();
       }
@@ -105,7 +114,7 @@ __device__ void run_multi_group_reductions(const Group& group, const Block& bloc
     if constexpr (Broadcasted)
     {
       const auto result = cudax::coop::reduce(cudax::broadcasted, group, thread_data, cuda::std::plus<>{});
-      d_out[repeat * stride + thread_rank] = result;
+      d_out[(repeat * stride) + thread_rank] = result;
     }
     else
     {
@@ -113,7 +122,7 @@ __device__ void run_multi_group_reductions(const Group& group, const Block& bloc
       REQUIRE(result.has_value() == cuda::gpu_thread.is_root_rank(group));
       if (result.has_value())
       {
-        d_out[repeat * stride + group_rank] = *result;
+        d_out[(repeat * stride) + group_rank] = *result;
       }
     }
   }
@@ -133,18 +142,22 @@ struct MultiGroupReduceKernel
     __shared__ cuda::std::aligned_storage_t<sizeof(Barriers), alignof(Barriers)> barriers_storage;
     auto& barriers = reinterpret_cast<Barriers&>(barriers_storage);
 
-    const cudax::coop::generic_group parent{
-      cuda::warp, block, cudax::coop::group_by<nwarps_in_group, false>{}, cudax::coop::barrier_synchronizer{barriers}};
+    const auto parent = cudax::coop::make_group<cudax::coop::generic_group>(
+      cudax::coop::non_exhaustive,
+      cuda::warp,
+      block,
+      cudax::coop::group_by{cuda::std::integral_constant<cuda::std::size_t, nwarps_in_group>{}},
+      cudax::coop::barrier_synchronizer{barriers});
 
-    if (!cuda::gpu_thread.is_part_of(parent))
+    if (!parent.has_value())
     {
       return;
     }
 
-    const int group_rank = parent.template rank_as<int>(block);
+    const int group_rank = parent->template rank_as<int>(block);
     if constexpr (Nested)
     {
-      const cudax::coop::virtual_group group{cuda::warp, parent, cudax::coop::identity_mapping{}};
+      const cudax::coop::virtual_group group{cuda::warp, *parent, cudax::coop::identity_mapping{}};
       if constexpr (Viewed)
       {
         const cudax::coop::group_view view{group};
@@ -157,7 +170,7 @@ struct MultiGroupReduceKernel
     }
     else
     {
-      run_multi_group_reductions<Broadcasted>(parent, block, group_rank, d_out);
+      run_multi_group_reductions<Broadcasted>(*parent, block, group_rank, d_out);
     }
   }
 };
@@ -263,12 +276,12 @@ void run_multi_group_reduce_kernel(cuda::stream_ref stream)
       {
         for (int rank = 0; rank < threads_in_group; ++rank)
         {
-          REQUIRE(h_out[repeat * stride + group_rank * threads_in_group + rank] == expected);
+          REQUIRE(h_out[(repeat * stride) + (group_rank * threads_in_group) + rank] == expected);
         }
       }
       else
       {
-        REQUIRE(h_out[repeat * stride + group_rank] == expected);
+        REQUIRE(h_out[(repeat * stride) + group_rank] == expected);
       }
     }
 
@@ -276,7 +289,7 @@ void run_multi_group_reduce_kernel(cuda::stream_ref stream)
     {
       for (int rank = multi_group_count * threads_in_group; rank < multi_group_size; ++rank)
       {
-        REQUIRE(h_out[repeat * stride + rank] == -1);
+        REQUIRE(h_out[(repeat * stride) + rank] == -1);
       }
     }
   }

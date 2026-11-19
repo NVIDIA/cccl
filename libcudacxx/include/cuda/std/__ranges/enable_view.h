@@ -21,12 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_class.h>
 #include <cuda/std/__type_traits/remove_cv.h>
-#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__type_traits/void_t.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

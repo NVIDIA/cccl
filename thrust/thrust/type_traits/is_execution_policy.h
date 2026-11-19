@@ -18,7 +18,8 @@
 #endif // no system header
 
 #include <thrust/detail/execution_policy.h>
-#include <thrust/detail/type_traits.h>
+
+#include <cuda/std/__type_traits/is_base_of.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -41,7 +42,7 @@ using is_execution_policy = ::cuda::std::is_base_of<detail::execution_policy_mar
  *  \a ExecutionPolicy and \c false otherwise.
  */
 template <typename T>
-constexpr bool is_execution_policy_v = is_execution_policy<T>::value;
+inline constexpr bool is_execution_policy_v = ::cuda::std::is_base_of_v<detail::execution_policy_marker, T>;
 
 /*! \} // type traits
  */

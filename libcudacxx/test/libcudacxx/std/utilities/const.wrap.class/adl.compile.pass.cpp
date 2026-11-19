@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Enable constant_wrapper for msvc.
-// UNSUPPORTED: msvc
-
 // todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
 //   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
 //   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
@@ -39,7 +36,7 @@ TEST_FUNC void adl_function(MyType) {}
 
 TEST_FUNC void test()
 {
-  cuda::std::__constant_wrapper<MyNamespace::MyType{}> cw_mt;
+  cuda::std::constant_wrapper<MyNamespace::MyType{}> cw_mt;
   adl_function(cw_mt);
 }
 

@@ -19,6 +19,7 @@
 #include <cuda/std/string_view>
 #include <cuda/std/utility>
 
+#include "../../range.factories/range.iota.view/types.h"
 #include "test_iterators.h"
 
 template <class View, class T>
@@ -69,6 +70,48 @@ struct Pred
 // GCC really hates aliases defined inside of functions
 using result_subrange       = cuda::std::ranges::subrange<int*>;
 using result_subrange_sized = cuda::std::ranges::subrange<int*, int*, cuda::std::ranges::subrange_kind::sized>;
+
+struct CopyOnlyCount
+{
+  int value_;
+
+  TEST_FUNC constexpr CopyOnlyCount(int value)
+      : value_(value)
+  {}
+  constexpr CopyOnlyCount(const CopyOnlyCount&) = default;
+  CopyOnlyCount(CopyOnlyCount&&)                = delete;
+
+  TEST_FUNC constexpr operator int() const
+  {
+    return value_;
+  }
+};
+
+struct ThrowingMoveCount
+{
+  int value_;
+
+  TEST_FUNC constexpr ThrowingMoveCount(int value)
+      : value_(value)
+  {}
+  constexpr ThrowingMoveCount(const ThrowingMoveCount&) = default;
+  TEST_FUNC ThrowingMoveCount(ThrowingMoveCount&& other)
+      : value_(other.value_)
+  {}
+
+  TEST_FUNC constexpr operator int() const
+  {
+    return value_;
+  }
+};
+
+struct RvalueOnlyCount
+{
+  TEST_FUNC constexpr operator cuda::std::ptrdiff_t() &&
+  {
+    return 4;
+  }
+};
 
 TEST_FUNC constexpr bool test()
 {
@@ -209,12 +252,49 @@ TEST_FUNC constexpr bool test()
   // `views::take(iota_view, n)` returns an `iota_view`.
   {
     auto iota = cuda::std::views::iota(1, 8);
-    // The second template argument of the resulting `iota_view` is different because it has to be able to hold
-    // the `range_difference_t` of the input `iota_view`.
-    using Result          = cuda::std::ranges::iota_view<int, cuda::std::ranges::range_difference_t<decltype(iota)>>;
+    // The second template argument of the resulting `iota_view` is same as the first.
+    using Result          = cuda::std::ranges::iota_view<int, int>;
     decltype(auto) result = iota | cuda::std::views::take(3);
     static_assert(cuda::std::same_as<decltype(result), Result>);
     assert(result.size() == 3);
+    assert(*result.begin() == 1);
+  }
+
+  // `views::take` on an unsigned `iota_view` keeps that unsigned type as the bound.
+  {
+    auto iota             = cuda::std::views::iota(cuda::std::size_t{0}, cuda::std::size_t{8});
+    using Result          = cuda::std::ranges::iota_view<cuda::std::size_t, cuda::std::size_t>;
+    decltype(auto) result = iota | cuda::std::views::take(3);
+    static_assert(cuda::std::same_as<decltype(result), Result>);
+    assert(result.size() == 3);
+    assert(*result.begin() == 0);
+    assert(*(result.begin() + 2) == 2);
+
+    decltype(auto) capped = iota | cuda::std::views::take(100);
+    static_assert(cuda::std::same_as<decltype(capped), Result>);
+    assert(capped.size() == 8);
+  }
+
+  // `views::take` on a class-type `iota_view` keeps that class type as the bound.
+  {
+    auto iota             = cuda::std::views::iota(SomeInt{1}, SomeInt{8});
+    using Result          = cuda::std::ranges::iota_view<SomeInt, SomeInt>;
+    decltype(auto) result = iota | cuda::std::views::take(3);
+    static_assert(cuda::std::same_as<decltype(result), Result>);
+    assert(result.size() == 3);
+    assert(*result.begin() == SomeInt{1});
+    assert(*(result.begin() + 2) == SomeInt{3});
+  }
+
+  // `views::take` on `iota_view<short, int>` returns `iota_view<short, short>`.
+  {
+    auto iota             = cuda::std::views::iota(short{2}, 9);
+    using Result          = cuda::std::ranges::iota_view<short, short>;
+    decltype(auto) result = iota | cuda::std::views::take(3);
+    static_assert(cuda::std::same_as<decltype(result), Result>);
+    assert(*result.begin() == 2);
+    assert(*(result.begin() + 2) == 4);
+    assert(result.begin() + 3 == result.end());
   }
 
   // `views::take(repeat_view, n)` returns a `repeat_view` when `repeat_view` models `sized_range`.
@@ -236,6 +316,45 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::std::same_as<decltype(result), Result>);
     assert(result.size() == 3);
     assert(*result.begin() == 1);
+  }
+
+  // `views::take` on a sized `repeat_view` with an unsigned bound uses the difference type of `min`.
+  {
+    auto repeat  = cuda::std::views::repeat(1, cuda::std::size_t{8});
+    using Result = cuda::std::ranges::repeat_view<int, cuda::std::ranges::range_difference_t<decltype(repeat)>>;
+    decltype(auto) result = repeat | cuda::std::views::take(3);
+    static_assert(cuda::std::same_as<decltype(result), Result>);
+    static_assert(!cuda::std::same_as<decltype(result), decltype(repeat)>);
+    assert(result.size() == 3);
+    assert(*result.begin() == 1);
+  }
+
+  // An rvalue-only conversion of the count is used for an unbounded `repeat_view`.
+  {
+    auto repeat  = cuda::std::views::repeat(7);
+    using Result = cuda::std::ranges::repeat_view<int, cuda::std::ranges::range_difference_t<decltype(repeat)>>;
+    decltype(auto) result = repeat | cuda::std::views::take(RvalueOnlyCount{});
+    static_assert(cuda::std::same_as<decltype(result), Result>);
+    assert(result.size() == 4);
+    assert(*result.begin() == 7);
+  }
+
+  // A copy-only count, and a count whose move may throw, can form a partial `views::take`.
+  {
+    [[maybe_unused]] int count_value = 3;
+    static_assert(noexcept(cuda::std::views::take(count_value)));
+
+    CopyOnlyCount copy_only{2};
+    static_assert(noexcept(cuda::std::views::take(copy_only)));
+    auto copy_only_partial    = cuda::std::views::take(copy_only);
+    decltype(auto) copy_taken = buf | copy_only_partial;
+    assert(copy_taken.size() == 2);
+
+    ThrowingMoveCount throwing_move{5};
+    static_assert(noexcept(cuda::std::views::take(throwing_move)));
+    auto throwing_partial         = cuda::std::views::take(throwing_move);
+    decltype(auto) throwing_taken = buf | throwing_partial;
+    assert(throwing_taken.size() == 5);
   }
 
   // When the size of the input range `s` is shorter than `n`, only `s` elements are taken.

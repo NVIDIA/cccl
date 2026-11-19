@@ -46,7 +46,7 @@ CUB_TEST("DispatchScanByKey::Dispatch: custom policy hub", "[scan_by_key][device
   using eq_op_t   = cuda::std::equal_to<>;
   using accum_t   = cuda::std::__accumulator_t<scan_op_t, value_t, value_t>;
 
-  c2h::device_vector<key_t> d_keys{1, 1, 23, 2, 2, 1, 35, 2, 4, 67, 8, 2, 6, 8, 434, 6, 8};
+  c2h::device_vector<key_t> d_keys{1, 1, 23, 2, 2, 1, 35, 2, 4, 67, 8, 2, 6, 8, 434, 6, 8, 8};
   c2h::device_vector<value_t> d_values{3, 4, 1, 2, 3, 5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
   c2h::device_vector<value_t> d_out(d_values.size());
 
@@ -58,29 +58,33 @@ CUB_TEST("DispatchScanByKey::Dispatch: custom policy hub", "[scan_by_key][device
     DispatchScanByKey<key_t*, value_t*, value_t*, eq_op_t, scan_op_t, NullType, offset_t, accum_t, policy_hub_t>;
 
   size_t temp_size = 0;
-  dispatch_t::Dispatch(
-    nullptr,
-    temp_size,
-    thrust::raw_pointer_cast(d_keys.data()),
-    thrust::raw_pointer_cast(d_values.data()),
-    thrust::raw_pointer_cast(d_out.data()),
-    eq_op_t{},
-    scan_op_t{},
-    NullType{},
-    static_cast<offset_t>(d_values.size()),
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      nullptr,
+      temp_size,
+      thrust::raw_pointer_cast(d_keys.data()),
+      thrust::raw_pointer_cast(d_values.data()),
+      thrust::raw_pointer_cast(d_out.data()),
+      eq_op_t{},
+      scan_op_t{},
+      NullType{},
+      static_cast<offset_t>(d_values.size()),
+      /* stream */ nullptr));
   c2h::device_vector<unsigned char> temp_storage(temp_size, thrust::no_init);
-  dispatch_t::Dispatch(
-    thrust::raw_pointer_cast(temp_storage.data()),
-    temp_size,
-    thrust::raw_pointer_cast(d_keys.data()),
-    thrust::raw_pointer_cast(d_values.data()),
-    thrust::raw_pointer_cast(d_out.data()),
-    eq_op_t{},
-    scan_op_t{},
-    NullType{},
-    static_cast<offset_t>(d_values.size()),
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      thrust::raw_pointer_cast(temp_storage.data()),
+      temp_size,
+      thrust::raw_pointer_cast(d_keys.data()),
+      thrust::raw_pointer_cast(d_values.data()),
+      thrust::raw_pointer_cast(d_out.data()),
+      eq_op_t{},
+      scan_op_t{},
+      NullType{},
+      static_cast<offset_t>(d_values.size()),
+      /* stream */ nullptr));
 
   REQUIRE(d_out == expected);
 }

@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/convertible_to.h>
-#include <cuda/std/__functional/bind_back.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/addressof.h>
@@ -32,8 +32,10 @@
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/movable_box.h>
 #include <cuda/std/__ranges/range_adaptor.h>
+#include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_object.h>
 #include <cuda/std/__type_traits/maybe_const.h>
@@ -70,9 +72,9 @@ public:
   template <bool _Const>
   class __sentinel
   {
-    using _Base = __maybe_const<_Const, _View>;
+    using _Base _CCCL_NODEBUG = __maybe_const<_Const, _View>;
     template <bool _OtherConst>
-    using _Base2 = __maybe_const<_OtherConst, _View>;
+    using _Base2 _CCCL_NODEBUG = __maybe_const<_OtherConst, _View>;
 
     sentinel_t<_Base> __end_ = sentinel_t<_Base>();
     const _Pred* __pred_     = nullptr;
@@ -218,6 +220,15 @@ template <class _Range, class _Pred>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES take_while_view(_Range&&, _Pred)
   -> take_while_view<::cuda::std::ranges::views::all_t<_Range>, _Pred>;
 
+// Predicates cannot retain any elements from a statically empty base.
+template <class _View, class _Pred>
+inline constexpr size_t __static_size_v<take_while_view<_View, _Pred>> =
+  (__static_size_v<_View> == 0) ? 0 : dynamic_extent;
+
+template <class _View, class _Pred>
+inline constexpr size_t __static_size_v<const take_while_view<_View, _Pred>> =
+  (range<const take_while_view<_View, _Pred>> && __static_size_v<const _View> == 0) ? 0 : dynamic_extent;
+
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
@@ -238,7 +249,7 @@ struct __fn
   [[nodiscard]] _CCCL_API constexpr auto
   _CCCL_STATIC_CALL_OPERATOR(_Pred&& __pred) noexcept(is_nothrow_constructible_v<decay_t<_Pred>, _Pred>)
   {
-    return __pipeable(::cuda::std::__bind_back(__fn{}, ::cuda::std::forward<_Pred>(__pred)));
+    return ::cuda::std::ranges::__pipeable_bind_back(__fn{}, ::cuda::std::forward<_Pred>(__pred));
   }
 };
 _CCCL_END_NAMESPACE_CPO

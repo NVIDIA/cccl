@@ -22,9 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__fwd/ios.h>
-#include <cuda/std/__iterator/iterator.h>
 #include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/cstddef> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

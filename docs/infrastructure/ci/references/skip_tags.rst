@@ -29,28 +29,16 @@ Tag reference
    * - ``[skip-docs]``
      - The documentation verification build.
      - Yes
-   * - ``[skip-tpt]`` / ``[skip-third-party-testing]``
-     - All third-party canary builds (MatX, PyTorch, RAPIDS).
-     - Yes
-   * - ``[skip-rapids]``
-     - RAPIDS canary builds only.
-     - Yes
-   * - ``[skip-matx]``
-     - MatX canary builds only.
-     - Yes
-   * - ``[skip-pytorch]``
-     - PyTorch canary builds only.
-     - Yes
    * - ``[bench-only]``
-     - Equivalent to ``[skip-matrix][skip-vdc][skip-docs][skip-tpt]``.
+     - Equivalent to ``[skip-matrix][skip-vdc][skip-docs]``.
      - Yes
 
-``[skip-tpt]`` and ``[skip-third-party-testing]`` are aliases for the same tag.
+Third-party canary builds (MatX, PyTorch, RAPIDS) run in nightly CI only and do not use PR skip tags.
 
 ``[bench-only]`` shorthand
 --------------------------
 
-``[bench-only]`` expands to ``[skip-matrix][skip-vdc][skip-docs][skip-tpt]``. It skips all
+``[bench-only]`` expands to ``[skip-matrix][skip-vdc][skip-docs]``. It skips all
 non-benchmark job groups. Benchmarks are triggered separately by modifying ``ci/bench.yaml``
 relative to ``ci/bench.template.yaml``.
 
@@ -60,7 +48,7 @@ Usage
 Place one or more tags in the last commit message before pushing::
 
     git commit -m "Run PR benchmarks [bench-only]"
-    git commit -m "README tidy-up [skip-matrix][skip-vdc][skip-docs][skip-third-party-testing]"
+    git commit -m "README tidy-up [skip-matrix][skip-vdc][skip-docs]"
 
 Tags act on the last commit message of the branch. To change which tags apply, amend the last
 commit and re-push.

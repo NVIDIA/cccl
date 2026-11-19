@@ -30,7 +30,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 #if _CCCL_HOSTED()
 
-using __once_flag = ::std::once_flag;
+using __once_flag _CCCL_NODEBUG = ::std::once_flag;
 
 template <class _Fn, class... _Args>
 _CCCL_HOST_API void __call_once(__once_flag& __flag, _Fn&& __fn, _Args&&... __args)

@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Enable constant_wrapper for msvc.
-// UNSUPPORTED: msvc
-
 // This test requires kernel launch from host.
 // UNSUPPORTED: nvrtc
 
@@ -32,7 +29,7 @@ __global__ void test_kernel(Lhs lhs, Rhs rhs)
 
 void test_host()
 {
-  test_kernel<<<1, 1>>>(cuda::std::__cw<1>, cuda::std::__cw<8>);
+  test_kernel<<<1, 1>>>(cuda::std::cw<1>, cuda::std::cw<8>);
   assert(cudaDeviceSynchronize() == cudaSuccess);
 }
 

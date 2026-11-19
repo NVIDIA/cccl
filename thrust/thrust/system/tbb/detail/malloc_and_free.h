@@ -13,5 +13,5 @@
 #  pragma system_header
 #endif // no system header
 
-// this system inherits malloc and free
+// tbb system inherits malloc and free
 #include <thrust/system/cpp/detail/malloc_and_free.h>

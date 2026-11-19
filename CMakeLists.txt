@@ -88,21 +88,12 @@ else()
   set(CCCL_ENABLE_CUDAX OFF)
 endif()
 
-option(CCCL_ENABLE_CLANG_TIDY "Enable clang-tidy" OFF)
-mark_as_advanced(CCCL_ENABLE_CLANG_TIDY)
-
-if (CCCL_TOPLEVEL_PROJECT)
-  include(cmake/CCCLAddTidyTarget.cmake)
-
-  if (CCCL_ENABLE_CLANG_TIDY)
-    cccl_tidy_init()
-  endif()
-endif()
-
 include(CTest)
 enable_testing()
 
 option(CCCL_USE_LIBCXX "Use libc++ when compiling and linking" OFF)
+option(CCCL_ENABLE_CLANG_TIDY "Enable clang-tidy" OFF)
+mark_as_advanced(CCCL_ENABLE_CLANG_TIDY)
 
 if (CCCL_TOPLEVEL_PROJECT)
   include(cmake/AppendOptionIfAvailable.cmake)
@@ -116,8 +107,12 @@ if (CCCL_TOPLEVEL_PROJECT)
   include(cmake/CCCLGenerateHeaderTests.cmake)
   include(cmake/CCCLGetDependencies.cmake)
   include(cmake/CCCLTestParams.cmake)
+  include(cmake/CCCLAddTidyTarget.cmake)
 
   cccl_build_compiler_targets()
+  if (CCCL_ENABLE_CLANG_TIDY)
+    cccl_tidy_init()
+  endif()
 endif()
 
 option(

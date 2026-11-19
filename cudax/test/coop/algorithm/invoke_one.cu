@@ -13,6 +13,7 @@
 #include <cuda/hierarchy>
 #include <cuda/launch>
 #include <cuda/std/cstddef>
+#include <cuda/std/optional>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
@@ -27,7 +28,7 @@ namespace
 __device__ cuda::std::size_t invoke_count;
 __device__ int global_value = 1;
 
-__device__ void update_invoke_count() noexcept
+__device__ void update_invoke_count()
 {
   cuda::atomic_ref<cuda::std::size_t, cuda::thread_scope_device>
   {
@@ -62,22 +63,8 @@ __device__ void test_invoke_one(const Group& group)
       update_invoke_count();
     };
 
+    // NOLINTNEXTLINE(cccl-simplify-type-traits)
     static_assert(cuda::std::is_same_v<void, decltype(cudax::coop::invoke_one(group, callable))>);
-    static_assert(!noexcept(cudax::coop::invoke_one(group, callable)));
-
-    cudax::coop::invoke_one(group, callable);
-
-    check_and_reset_invoke_count(group);
-  }
-
-  // invoke_one nothrow callable with void return type
-  {
-    auto callable = []() noexcept {
-      update_invoke_count();
-    };
-
-    static_assert(cuda::std::is_same_v<void, decltype(cudax::coop::invoke_one(group, callable))>);
-    static_assert(noexcept(cudax::coop::invoke_one(group, callable)));
 
     cudax::coop::invoke_one(group, callable);
 
@@ -92,27 +79,6 @@ __device__ void test_invoke_one(const Group& group)
     };
 
     static_assert(cuda::std::is_same_v<cuda::std::optional<int>, decltype(cudax::coop::invoke_one(group, callable))>);
-    static_assert(!noexcept(cudax::coop::invoke_one(group, callable)));
-
-    const auto ret = cudax::coop::invoke_one(group, callable);
-    REQUIRE(ret.has_value() == cudax::coop::__elect_one(group));
-    if (ret.has_value())
-    {
-      REQUIRE(ret == 1);
-    }
-
-    check_and_reset_invoke_count(group);
-  }
-
-  // invoke_one nothrow callable with value return type
-  {
-    auto callable = []() noexcept -> int {
-      update_invoke_count();
-      return 1;
-    };
-
-    static_assert(cuda::std::is_same_v<cuda::std::optional<int>, decltype(cudax::coop::invoke_one(group, callable))>);
-    static_assert(noexcept(cudax::coop::invoke_one(group, callable)));
 
     const auto ret = cudax::coop::invoke_one(group, callable);
     REQUIRE(ret.has_value() == cudax::coop::__elect_one(group));
@@ -132,28 +98,6 @@ __device__ void test_invoke_one(const Group& group)
     };
 
     static_assert(cuda::std::is_same_v<cuda::std::optional<int&>, decltype(cudax::coop::invoke_one(group, callable))>);
-    static_assert(!noexcept(cudax::coop::invoke_one(group, callable)));
-
-    const auto ret = cudax::coop::invoke_one(group, callable);
-    REQUIRE(ret.has_value() == cudax::coop::__elect_one(group));
-    if (ret.has_value())
-    {
-      REQUIRE(ret == 1);
-      REQUIRE(&ret.value() == &global_value);
-    }
-
-    check_and_reset_invoke_count(group);
-  }
-
-  // invoke_one callable with l-value reference return type
-  {
-    auto callable = []() noexcept -> int& {
-      update_invoke_count();
-      return global_value;
-    };
-
-    static_assert(cuda::std::is_same_v<cuda::std::optional<int&>, decltype(cudax::coop::invoke_one(group, callable))>);
-    static_assert(noexcept(cudax::coop::invoke_one(group, callable)));
 
     const auto ret = cudax::coop::invoke_one(group, callable);
     REQUIRE(ret.has_value() == cudax::coop::__elect_one(group));
@@ -174,27 +118,6 @@ __device__ void test_invoke_one(const Group& group)
     };
 
     static_assert(cuda::std::is_same_v<cuda::std::optional<int>, decltype(cudax::coop::invoke_one(group, callable))>);
-    static_assert(!noexcept(cudax::coop::invoke_one(group, callable)));
-
-    const auto ret = cudax::coop::invoke_one(group, callable);
-    REQUIRE(ret.has_value() == cudax::coop::__elect_one(group));
-    if (ret.has_value())
-    {
-      REQUIRE(ret == 1);
-    }
-
-    check_and_reset_invoke_count(group);
-  }
-
-  // invoke_one nothrow callable with r-value reference return type
-  {
-    auto callable = []() noexcept -> int&& {
-      update_invoke_count();
-      return cuda::std::move(global_value);
-    };
-
-    static_assert(cuda::std::is_same_v<cuda::std::optional<int>, decltype(cudax::coop::invoke_one(group, callable))>);
-    static_assert(noexcept(cudax::coop::invoke_one(group, callable)));
 
     const auto ret = cudax::coop::invoke_one(group, callable);
     REQUIRE(ret.has_value() == cudax::coop::__elect_one(group));
@@ -276,7 +199,7 @@ struct TestKernel
     {
       const cudax::coop::this_warp warp{config};
       const cudax::coop::generic_group group{
-        cuda::gpu_thread, warp, cudax::coop::group_by<4>{}, cudax::coop::lane_synchronizer{}};
+        cuda::gpu_thread, warp, cudax::coop::group_by{cuda::std::cw<4>}, cudax::coop::lane_synchronizer{}};
 
       if (group.rank(warp) == 0)
       {

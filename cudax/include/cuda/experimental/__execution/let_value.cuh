@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/is_callable.h>
+#include <cuda/std/__type_traits/type_list_operations.h>
 #include <cuda/std/__utility/auto_cast.h>
 #include <cuda/std/__utility/pod_tuple.h>
 

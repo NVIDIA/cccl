@@ -13,5 +13,5 @@
 #  pragma system_header
 #endif // no system header
 
-// this system inherits this algorithm
-#include <thrust/system/cpp/detail/scatter.h>
+// omp system inherits replace
+#include <thrust/system/cpp/detail/scatter.h> // IWYU pragma: export

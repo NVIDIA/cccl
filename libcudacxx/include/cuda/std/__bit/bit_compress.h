@@ -25,13 +25,15 @@
 #include <cuda/__ptx/instructions/bfind.h>
 #include <cuda/std/__bit/bit_reverse.h>
 #include <cuda/std/__bit/countl.h>
-#include <cuda/std/__bit/popcount.h>
+#include <cuda/std/__bit/popcount.h> // IWYU pragma: keep
 #include <cuda/std/__bit/shl.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/cstdint>
+
+#include <nv/target>
 
 // clang-23 implements __builtin_elementwise_pext which is portable.
 // On x86_64, the __builtin_ia32_pext_Xi/_pext_uXX builtins can be used for targets that support BMI2.

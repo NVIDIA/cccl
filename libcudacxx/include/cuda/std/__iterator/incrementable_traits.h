@@ -24,12 +24,10 @@
 #include <cuda/std/__concepts/arithmetic.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/iterator.h>
-#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_const.h>
+#include <cuda/std/__type_traits/is_const.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_object.h>
-#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/is_pointer.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_primary_template.h>
 #include <cuda/std/__type_traits/make_signed.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
@@ -41,8 +39,8 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Tp>
-_CCCL_CONCEPT __has_member_difference_type = _CCCL_REQUIRES_EXPR((_Tp))(typename(typename _Tp::difference_type));
+template <class _Ty>
+_CCCL_CONCEPT __has_member_difference_type = _CCCL_REQUIRES_EXPR((_Ty))(typename(typename _Ty::difference_type));
 
 template <class _Tp, class = void, class = void>
 inline constexpr bool __has_integral_minus_impl = false;

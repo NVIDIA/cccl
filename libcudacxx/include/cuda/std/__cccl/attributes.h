@@ -67,12 +67,20 @@
 #  define _CCCL_ARTIFICIAL
 #endif // !_CCCL_HAS_ATTRIBUTE(__artificial__)
 
-// The nodebug attribute flattens aliases down to the actual type rather typename meow<T>::type
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_NODEBUG_ALIAS _CCCL_NODEBUG
-#else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG) vvv
-#  define _CCCL_NODEBUG_ALIAS
-#endif // !_CCCL_CUDA_COMPILER(CLANG)
+#if _CCCL_CHECK_BUILTIN(builtin_assume) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
+#  define _CCCL_BUILTIN_ASSUME(...) __builtin_assume(__VA_ARGS__)
+#elif _CCCL_COMPILER(GCC, >=, 13)
+#  define _CCCL_BUILTIN_ASSUME(...) __attribute__((__assume__(__VA_ARGS__)))
+#elif _CCCL_COMPILER(MSVC)
+#  define _CCCL_BUILTIN_ASSUME(...) __assume(__VA_ARGS__)
+#else
+#  define _CCCL_BUILTIN_ASSUME(...)
+#endif // _CCCL_CHECK_BUILTIN(builtin_assume)
+
+#if _CCCL_TILE_COMPILATION() // nvbug6100910: __builtin_assume is not supported in tile mode
+#  undef _CCCL_BUILTIN_ASSUME
+#  define _CCCL_BUILTIN_ASSUME(...)
+#endif // _CCCL_TILE_COMPILATION()
 
 // _CCCL_ASSUME
 // NVCC does not properly respect [[assume()]], so use __builtin_assume, see nvbug5458663

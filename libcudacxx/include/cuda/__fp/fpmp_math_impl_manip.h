@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -30,11 +30,12 @@
 #include <cuda/__fp/fpmp_math_impl.h>
 // modf splits the pair with trunc.
 #include <cuda/__fp/fpmp_math_impl_nearint.h>
+#include <cuda/std/climits>
+#include <cuda/std/cmath>
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 #if !(defined _CCCL_FPMP_USE_LIB)
 
 /*
@@ -153,7 +154,7 @@ __fpmp2_ldexp(const _FpType __x_hi, const _FpType __x_lo, int __n, _FpType* __re
    * about 2^-53 of hi) makes hi + lo NaN instead of the infinity this is
    * documented to return.  Collapse to (+-inf, 0), which is what a conversion
    * from an overflowing scalar produces. */
-  if (::cuda::std::isinf(static_cast<double>(*__res_hi)))
+  if (::cuda::std::isinf(*__res_hi))
   {
     *__res_lo = _FpType(0);
   }
@@ -180,7 +181,7 @@ template <typename _FpType>
 _CCCL_FPMP_CORE_API void
 __fpmp2_scalbn(const _FpType __x_hi, const _FpType __x_lo, int __n, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
-  __fpmp2_ldexp<_FpType>(__x_hi, __x_lo, __n, __res_hi, __res_lo);
+  ::cuda::__fpmp2_ldexp<_FpType>(__x_hi, __x_lo, __n, __res_hi, __res_lo);
 }
 
 /*
@@ -234,10 +235,9 @@ _CCCL_FPMP_CORE_API void __fpmp2_copysign(
   _FpType* __res_hi,
   _FpType* __res_lo) noexcept
 {
-  const bool __flip =
-    (::cuda::std::signbit(static_cast<double>(__x_hi)) != ::cuda::std::signbit(static_cast<double>(__y_hi)));
-  *__res_hi = __flip ? -__x_hi : __x_hi;
-  *__res_lo = __flip ? -__x_lo : __x_lo;
+  const bool __flip = (::cuda::std::signbit(__x_hi) != ::cuda::std::signbit(__y_hi));
+  *__res_hi         = __flip ? -__x_hi : __x_hi;
+  *__res_lo         = __flip ? -__x_lo : __x_lo;
 }
 
 /* nextafter has no dedicated fp32mp2 kernel: the fallback macro composes it over
@@ -268,8 +268,10 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_nextafter(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  __fpmp2_from_double(
-    ::cuda::std::nextafter(__fpmp2_to_double(__x_hi, __x_lo), __fpmp2_to_double(__y_hi, __y_lo)), __res_hi, __res_lo);
+  ::cuda::__fpmp2_from_double(
+    ::cuda::std::nextafter(::cuda::__fpmp2_to_double(__x_hi, __x_lo), ::cuda::__fpmp2_to_double(__y_hi, __y_lo)),
+    __res_hi,
+    __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_2A(nextafter)
@@ -290,23 +292,26 @@ _CCCL_FPMP_MATH_DISPATCH_2A(nextafter)
  * further down. A widened double cannot see that case, and rounds the mirror one the
  * wrong way as well, reporting the power of two that the pair sits just short of.
  *
- * hi alone settles zero, infinity and NaN, so ::ilogb keeps whatever the platform
- * reports for them, FP_ILOGB0 and its siblings included. It is asked through a double,
- * which is exact for either element type and saves this from depending on a float
- * overload of ilogb being declared in device code.
+ * For a finite nonzero hi the exponent is frexp's minus one, computed on the limb's
+ * own type.  hi alone settles zero, infinity and NaN, where ::ilogb keeps whatever the
+ * platform reports (FP_ILOGB0 and its siblings); only that path asks through a double,
+ * which is exact for either element type.
  */
 template <typename _FpType>
 _CCCL_FPMP_CORE_API int __fpmp2_ilogb(const _FpType __x_hi, const _FpType __x_lo) noexcept
 {
-  const int __e = ::cuda::std::ilogb(static_cast<double>(__x_hi));
-
   int __hi_exp      = 0;
   const _FpType __m = ::cuda::std::frexp(__x_hi, &__hi_exp);
-  const bool __below_power_of_two =
-    (__fpmp_internal_fabs(__m) == _FpType(0.5)) && (__x_lo != _FpType(0))
-    && (::cuda::std::signbit(static_cast<double>(__x_hi)) != ::cuda::std::signbit(static_cast<double>(__x_lo)));
+  if ((__m == _FpType(0)) || !::cuda::std::isfinite(__x_hi))
+  {
+    /* The C99 sentinels directly (FP_ILOGB0 for a zero, FP_ILOGBNAN for a NaN, INT_MAX for an
+     * infinity), without the detour through a double. */
+    return (__m == _FpType(0)) ? FP_ILOGB0 : ((__x_hi != __x_hi) ? FP_ILOGBNAN : INT_MAX);
+  }
+  const bool __below_power_of_two = (::cuda::__fpmp_internal_fabs(__m) == _FpType(0.5)) && (__x_lo != _FpType(0))
+                                 && (::cuda::std::signbit(__x_hi) != ::cuda::std::signbit(__x_lo));
 
-  return __below_power_of_two ? __e - 1 : __e;
+  return __below_power_of_two ? __hi_exp - 2 : __hi_exp - 1;
 }
 
 /*
@@ -326,11 +331,17 @@ __fpmp2_logb(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _FpT
 {
   // The branch earns its keep: ilogb reports zero and the non-finite cases with ordinary
   // integer sentinels, so widening one of those would hand back a plausible finite
-  // exponent where an infinity or a NaN belongs. ::logb has the right answers for them.
-  // Either way the result is an integer, so the low limb stays zero.
-  *__res_hi = (::cuda::std::isfinite(static_cast<double>(__x_hi)) && __x_hi != _FpType(0))
-              ? static_cast<_FpType>(__fpmp2_ilogb<_FpType>(__x_hi, __x_lo))
-              : static_cast<_FpType>(::cuda::std::logb(static_cast<double>(__x_hi)));
+  // exponent where an infinity or a NaN belongs: logb(+-0) = -inf, logb(+-inf) = +inf,
+  // logb(NaN) = NaN.  Either way the result is an integer, so the low limb stays zero.
+  if (::cuda::std::isfinite(__x_hi) && __x_hi != _FpType(0))
+  {
+    *__res_hi = static_cast<_FpType>(::cuda::__fpmp2_ilogb<_FpType>(__x_hi, __x_lo));
+  }
+  else
+  {
+    *__res_hi = (__x_hi == _FpType(0)) ? -::cuda::std::__fp_inf<_FpType>()
+                                       : ((__x_hi != __x_hi) ? __x_hi : ::cuda::std::__fp_inf<_FpType>());
+  }
   *__res_lo = _FpType(0);
 }
 /*
@@ -352,7 +363,7 @@ _CCCL_FPMP_CORE_API void
 __fpmp2_scalbln(const _FpType __x_hi, const _FpType __x_lo, long int __n, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
   const int __ni = (__n > 100000L) ? 100000 : ((__n < -100000L) ? -100000 : static_cast<int>(__n));
-  __fpmp2_ldexp<_FpType>(__x_hi, __x_lo, __ni, __res_hi, __res_lo);
+  ::cuda::__fpmp2_ldexp<_FpType>(__x_hi, __x_lo, __ni, __res_hi, __res_lo);
 }
 
 /*
@@ -385,8 +396,8 @@ __fpmp2_frexp(const _FpType __x_hi, const _FpType __x_lo, _FpType* __res_hi, _Fp
   _FpType __m_hi = ::cuda::std::frexp(__x_hi, __nptr);
   _FpType __m_lo = ::cuda::std::ldexp(__x_lo, -*__nptr);
 
-  if (__fpmp_internal_fabs(__m_hi) == _FpType(0.5) && __m_lo != _FpType(0)
-      && (::cuda::std::signbit(static_cast<double>(__m_hi)) != ::cuda::std::signbit(static_cast<double>(__m_lo))))
+  if (::cuda::__fpmp_internal_fabs(__m_hi) == _FpType(0.5) && __m_lo != _FpType(0)
+      && (::cuda::std::signbit(__m_hi) != ::cuda::std::signbit(__m_lo)))
   {
     __m_hi += __m_hi;
     __m_lo += __m_lo;
@@ -430,18 +441,28 @@ _CCCL_FPMP_CORE_API void __fpmp2_modf(
   _FpType* __iptr_hi,
   _FpType* __iptr_lo) noexcept
 {
-  __fpmp2_trunc<_FpType>(__x_hi, __x_lo, __iptr_hi, __iptr_lo);
-  __fpmp2_high_sub<_FpType>(__x_hi, __x_lo, *__iptr_hi, *__iptr_lo, __res_hi, __res_lo);
+  if (!(::cuda::__fpmp_internal_fabs(__x_hi) < ::cuda::std::__fp_inf<_FpType>()))
+  {
+    /* modf(+-inf) = (+-0, +-inf); a NaN is a NaN in both parts (C99 F.10.3.12). */
+    const _FpType __nan = __x_hi + __x_lo;
+    *__iptr_hi          = __x_hi;
+    *__iptr_lo          = _FpType(0);
+    *__res_hi           = (__x_hi == __x_hi) ? ::cuda::std::copysign(_FpType(0), __x_hi) : __nan;
+    *__res_lo           = (__x_hi == __x_hi) ? _FpType(0) : __nan;
+    return;
+  }
+  ::cuda::__fpmp2_trunc<_FpType>(__x_hi, __x_lo, __iptr_hi, __iptr_lo);
+  ::cuda::__fpmp2_high_sub<_FpType>(__x_hi, __x_lo, *__iptr_hi, *__iptr_lo, __res_hi, __res_lo);
 
   if (*__res_hi == _FpType(0))
   {
-    *__res_hi = ::cuda::std::signbit(static_cast<double>(__x_hi)) ? -_FpType(0) : _FpType(0);
+    *__res_hi = ::cuda::std::signbit(__x_hi) ? -_FpType(0) : _FpType(0);
     *__res_lo = _FpType(0);
   }
 }
 
 #endif // _CCCL_FPMP_USE_LIB
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

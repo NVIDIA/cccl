@@ -13,5 +13,5 @@
 #  pragma system_header
 #endif // no system header
 
-// this system inherits tabulate
+// tbb system inherits tabulate
 #include <thrust/system/cpp/detail/tabulate.h>

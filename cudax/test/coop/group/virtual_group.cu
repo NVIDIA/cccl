@@ -8,12 +8,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/atomic>
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
-#include <cuda/std/utility>
 #include <cuda/stream>
 
 #include <cuda/experimental/coop/group>
@@ -29,20 +28,20 @@ __device__ void test_virtual_group(Config config, Level level)
   {
     const cudax::coop::virtual_group vg{cuda::gpu_thread, g, cudax::coop::identity_mapping{}};
 
-    REQUIRE(cuda::gpu_thread.is_part_of(vg));
-
     REQUIRE(cuda::gpu_thread.count(vg) == cuda::gpu_thread.count(g));
     REQUIRE(cuda::gpu_thread.rank(vg) == cuda::gpu_thread.rank(g));
 
     static_assert(vg.static_count(g) == 1);
+    static_assert(vg.static_rank(g) == 0);
     REQUIRE(vg.count(g) == 1);
     REQUIRE(vg.rank(g) == 0);
 
-    static_assert(vg.is_always_exhaustive());
     static_assert(vg.is_always_contiguous());
 
     vg.sync();
+    vg.wait(vg.arrive());
     vg.sync_aligned();
+    vg.wait_aligned(vg.arrive_aligned());
   }
 
   // Test virtual group with group_by mapping.
@@ -50,21 +49,21 @@ __device__ void test_virtual_group(Config config, Level level)
   {
     constexpr auto n = 4;
 
-    const cudax::coop::virtual_group vg{cuda::gpu_thread, g, cudax::coop::group_by<n>{}};
-
-    REQUIRE(cuda::gpu_thread.is_part_of(vg));
+    const cudax::coop::virtual_group vg{cuda::gpu_thread, g, cudax::coop::group_by{cuda::std::cw<n>}};
 
     REQUIRE(cuda::gpu_thread.count(vg) == n);
     REQUIRE(cuda::gpu_thread.rank(vg) == cuda::gpu_thread.rank(g) % n);
 
+    static_assert(vg.static_rank(g) == cuda::std::dynamic_extent);
     REQUIRE(vg.count(g) == cuda::gpu_thread.count(g) / n);
     REQUIRE(vg.rank(g) == cuda::gpu_thread.rank(g) / n);
 
-    static_assert(vg.is_always_exhaustive());
     static_assert(vg.is_always_contiguous());
 
     vg.sync();
+    vg.wait(vg.arrive());
     vg.sync_aligned();
+    vg.wait_aligned(vg.arrive_aligned());
   }
 }
 

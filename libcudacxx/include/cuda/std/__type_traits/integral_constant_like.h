@@ -24,6 +24,8 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/equality_comparable.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -33,16 +35,22 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Tp>
-_CCCL_CONCEPT __integral_constant_like = _CCCL_REQUIRES_EXPR((_Tp)) //
+template <class _Ty>
+_CCCL_CONCEPT __integral_constant_like = _CCCL_REQUIRES_EXPR((_Ty)) //
   ( //
-    requires(is_integral_v<remove_cvref_t<decltype(_Tp::value)>>), //
-    requires(!is_same_v<bool, remove_cvref_t<decltype(_Tp::value)>>), //
-    requires(convertible_to<_Tp, decltype(_Tp::value)>), //
-    requires(equality_comparable_with<_Tp, decltype(_Tp::value)>), //
-    requires(bool_constant<(_Tp() == _Tp::value)>::value), //
-    requires(bool_constant<(static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value)>::value) //
+    requires(is_integral_v<remove_cvref_t<decltype(_Ty::value)>>), //
+    requires(!is_same_v<bool, remove_cvref_t<decltype(_Ty::value)>>), //
+    requires(convertible_to<_Ty, decltype(_Ty::value)>), //
+    requires(equality_comparable_with<_Ty, decltype(_Ty::value)>), //
+    requires(bool_constant<(_Ty() == _Ty::value)>::value), //
+    requires(bool_constant<(static_cast<decltype(_Ty::value)>(_Ty()) == _Ty::value)>::value) //
   );
+
+template <class _Tp, bool = __integral_constant_like<_Tp>>
+inline constexpr size_t __maybe_static_ext = dynamic_extent;
+
+template <class _Tp>
+inline constexpr size_t __maybe_static_ext<_Tp, true> = {_Tp::value};
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

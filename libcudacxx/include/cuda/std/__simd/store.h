@@ -36,10 +36,13 @@
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/data.h>
 #include <cuda/std/__ranges/size.h>
+#include <cuda/std/__simd/abi.h>
 #include <cuda/std/__simd/basic_vec.h>
 #include <cuda/std/__simd/concepts.h>
 #include <cuda/std/__simd/flag.h>
 #include <cuda/std/__simd/utility.h>
+#include <cuda/std/__type_traits/is_volatile.h>
+#include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/forward.h>
 
@@ -51,12 +54,14 @@ template <typename _Tp, typename _Abi, typename _Up, typename... _Flags>
 _CCCL_HOST_DEVICE_API constexpr void
 __check_store_preconditions(_Up* const __ptr, flags<_Flags...>, const __simd_size_type __count = 1) noexcept
 {
-  static_assert(__is_vectorizable_v<_Up>, "cuda::std::simd::store: range_value_t<R> must be a vectorizable type");
+  using __range_value_t = remove_cv_t<_Up>;
+  static_assert(__is_vectorizable_v<__range_value_t>,
+                "cuda::std::simd::store: range_value_t<R> must be a vectorizable type");
 
-  static_assert(__explicitly_convertible_to<_Tp, _Up>,
+  static_assert(__explicitly_convertible_to<_Tp, __range_value_t>,
                 "cuda::std::simd::store: value_type must satisfy explicitly-convertible-to<range_value_t<R>>");
 
-  static_assert(__has_convert_flag_v<_Flags...> || __is_value_preserving_v<_Tp, _Up>,
+  static_assert(__has_convert_flag_v<_Flags...> || __is_value_preserving_v<_Tp, __range_value_t>,
                 "cuda::std::simd::store: Conversion from value_type to range_value_t<R> is not value-preserving; use "
                 "flag_convert");
 
@@ -81,7 +86,7 @@ _CCCL_HOST_DEVICE_API constexpr void __partial_store_to_ptr(
   {
     if (__mask[__i] && __i < __count)
     {
-      __ptr[__i] = static_cast<_Up>(__v[__i]);
+      __ptr[__i] = static_cast<remove_cv_t<_Up>>(__v[__i]);
     }
   }
 }
@@ -95,12 +100,13 @@ __full_store_to_ptr(const basic_vec<_Tp, _Abi>& __v, _Up* const __ptr, flags<_Fl
   constexpr auto __simd_size        = __vec_t::__size;
   constexpr bool __has_aligned_flag = __has_aligned_flag_v<_Flags...>;
 
-  if constexpr (__has_aligned_flag || __has_overaligned_flag_v<_Flags...>)
+  // Aggregate copies do not preserve volatile element accesses.
+  if constexpr (!is_volatile_v<_Up> && (__has_aligned_flag || __has_overaligned_flag_v<_Flags...>) )
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
       constexpr auto __base_alignment = __has_aligned_flag ? alignment_v<__vec_t, _Up> : alignof(_Up);
-      constexpr auto __ptr_alignment  = ::cuda::std::max(__base_alignment, __overaligned_value_v<_Flags...>);
+      constexpr auto __ptr_alignment  = ::cuda::std::max(__base_alignment, __overaligned_alignment_v<_Flags...>);
       constexpr auto __data_size      = __simd_size * sizeof(_Up);
 
       _Up __tmp[__simd_size]{};

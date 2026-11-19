@@ -22,9 +22,7 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
-using ffloat = cudax::fp32mp2;
+using ffloat = cuda::fp32mp2;
 
 // Same list builds both an fp32mp2 array (F = LUT_FF) and a double reference
 // array (F = LUT_ID).

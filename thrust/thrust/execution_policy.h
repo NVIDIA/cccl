@@ -25,7 +25,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(execution_policy.h)
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/execution_policy.h>
 #  include <thrust/system/cuda/execution_policy.h>
 #  include <thrust/system/omp/execution_policy.h>

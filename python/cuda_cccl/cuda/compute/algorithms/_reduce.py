@@ -50,8 +50,6 @@ class _Reduce(Serializable):
         "op_cccl",
         "init_kind",
         "build_results",
-        "loaded_build_result",
-        "device_reduce_fn",
     ]
 
     __serialization_schema__ = (
@@ -107,7 +105,7 @@ class _Reduce(Serializable):
                 )
 
             case _bindings.InitKind.VALUE_INIT:
-                h_init_typed = cast(np.ndarray | GpuStruct, h_init)
+                h_init_typed = cast("np.ndarray | GpuStruct", h_init)
                 self.h_init_cccl = cccl.to_cccl_value(h_init_typed)
                 value_type = get_value_type(h_init_typed)
                 init_value_type_info = self.h_init_cccl.type
@@ -115,8 +113,6 @@ class _Reduce(Serializable):
         # Compile the op with value types
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
-        # loaded_build_result / device_reduce_fn are bound lazily on the first
-        # __call__ (see _bind_device_reduce_fn).
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceReduceBuildResult,
             d_in,
@@ -138,18 +134,6 @@ class _Reduce(Serializable):
             ),
         )
 
-    def _bind_device_reduce_fn(self) -> None:
-        # Derived from the loaded build result (not serialized); bound at __call__
-        # once resolve_build_result picks + loads the current device's build result.
-        # compute() handles both init kinds: it ignores h_init for NO_INIT builds.
-        if (
-            Determinism(self.loaded_build_result.determinism)
-            is Determinism.NOT_GUARANTEED
-        ):
-            self.device_reduce_fn = self.loaded_build_result.compute_nondeterministic
-        else:
-            self.device_reduce_fn = self.loaded_build_result.compute
-
     def __call__(
         self,
         *,
@@ -161,12 +145,14 @@ class _Reduce(Serializable):
         h_init: np.ndarray | GpuStruct | None,
         stream=None,
     ):
-        # Select (and lazily load) the current device's build result, then bind the
-        # derived compute fn from it.
-        self.loaded_build_result = cccl.resolve_build_result(
+        # Select (and lazily load) the build result for the current device.
+        loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
         )
-        self._bind_device_reduce_fn()
+        if Determinism(loaded_build_result.determinism) is Determinism.NOT_GUARANTEED:
+            device_reduce_fn = loaded_build_result.compute_nondeterministic
+        else:
+            device_reduce_fn = loaded_build_result.compute
 
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
@@ -182,7 +168,7 @@ class _Reduce(Serializable):
             # to minimize the work we do prior to calling the kernel.
             self.h_init_cccl = cast(_bindings.Value, self.h_init_cccl)
             self.h_init_cccl.state = to_cccl_value_state(
-                cast(np.ndarray | GpuStruct, h_init)
+                cast("np.ndarray | GpuStruct", h_init)
             )
 
         stream_handle = validate_and_get_stream(stream)
@@ -194,7 +180,7 @@ class _Reduce(Serializable):
             temp_storage_bytes = temp_storage.nbytes
             d_temp_storage = get_data_pointer(temp_storage)
 
-        temp_storage_bytes = self.device_reduce_fn(
+        temp_storage_bytes = device_reduce_fn(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_cccl,

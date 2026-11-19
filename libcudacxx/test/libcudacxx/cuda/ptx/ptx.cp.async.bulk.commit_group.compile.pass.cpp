@@ -10,10 +10,9 @@
 
 // UNSUPPORTED: libcpp-has-no-threads
 
-// <cuda/ptx>
+// <cuda/ptxs/cp_async_bulk_commit_group.h>
 
-#include <cuda/ptx>
-#include <cuda/std/utility>
+#include <cuda/ptxs/cp_async_bulk_commit_group.h>
 
 #include "generated/cp_async_bulk_commit_group.h"
 

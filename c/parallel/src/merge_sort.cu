@@ -206,7 +206,7 @@ CUresult cccl_device_merge_sort_compile(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 try
 {
   const char* name = "test";
@@ -256,7 +256,7 @@ try
     R"XXX(
 #include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
 #include <cub/device/dispatch/kernels/kernel_merge_sort.cuh>
-#include <cub/util_type.cuh> // needed for cub::NullType
+#include <cub/detail/null_type.cuh>
 struct __align__({1}) storage_t {{
   char data[{0}];
 }};
@@ -457,7 +457,7 @@ CUresult cccl_device_merge_sort_build_ex(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 {
   CUresult r = cccl_device_merge_sort_compile(
     build_ptr,
