@@ -21,11 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/min_max.h>
 #include <cuda/__functional/minimum_maximum_common.h>
-#include <cuda/std/__cmath/min_max.h>
 #include <cuda/std/__type_traits/common_type.h>
-#include <cuda/std/__type_traits/is_extended_floating_point.h>
-#include <cuda/std/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/is_extended_arithmetic.h>
 #include <cuda/std/__utility/ctad_support.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -39,9 +38,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum
   [[nodiscard]] _CCCL_API constexpr _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __lhs, const _Tp& __rhs) noexcept(
     __is_maximum_minimum_noexcept_v<_Tp, _Tp, _Tp>)
   {
-    if constexpr (::cuda::std::is_floating_point_v<_Tp> || ::cuda::std::__is_extended_floating_point_v<_Tp>)
+    if constexpr (::cuda::std::__is_extended_arithmetic_v<_Tp>)
     {
-      return ::cuda::std::fmin(__lhs, __rhs);
+      return ::cuda::min(__lhs, __rhs);
     }
     else
     {
@@ -59,9 +58,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum<void>
   [[nodiscard]] _CCCL_API constexpr _Common _CCCL_STATIC_CALL_OPERATOR(const _Tp& __lhs, const _Up& __rhs) noexcept(
     __is_maximum_minimum_noexcept_v<_Tp, _Up, _Common>)
   {
-    if constexpr (::cuda::std::is_floating_point_v<_Common> || ::cuda::std::__is_extended_floating_point_v<_Common>)
+    if constexpr (::cuda::std::__is_extended_arithmetic_v<_Common>)
     {
-      return ::cuda::std::fmin(static_cast<_Common>(__lhs), static_cast<_Common>(__rhs));
+      return ::cuda::min(static_cast<_Common>(__lhs), static_cast<_Common>(__rhs));
     }
     else
     {

@@ -580,6 +580,7 @@
       "targets": [
         "libcudacxx.test.atomics.ptx",
         "libcudacxx.test.atomics.sass",
+        "libcudacxx.test.cmath.ptx",
         "libcudacxx.test.simd.ptx",
         "libcudacxx.test.warp.sass",
         "libcudacxx.test.simd.sass"
