@@ -534,5 +534,5 @@ _CCCL_HOST_API OutputIterator copy_if( // NOLINT(readability-redundant-declarati
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/copy.h>
-#include <thrust/detail/copy_if.h>
+#include <thrust/detail/copy.h> // IWYU pragma: export
+#include <thrust/detail/copy_if.h> // IWYU pragma: export

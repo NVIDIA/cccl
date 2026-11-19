@@ -1395,4 +1395,4 @@ _CCCL_HOST_API ForwardIterator is_sorted_until(ForwardIterator first, ForwardIte
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/sort.inl>
+#include <thrust/detail/sort.inl> // IWYU pragma: export

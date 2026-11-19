@@ -1729,4 +1729,4 @@ _CCCL_HOST_API OutputIterator exclusive_scan_by_key(
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/scan.inl>
+#include <thrust/detail/scan.inl> // IWYU pragma: export
