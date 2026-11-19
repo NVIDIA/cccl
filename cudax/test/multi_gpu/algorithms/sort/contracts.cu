@@ -22,10 +22,11 @@
 
 namespace sort_contract_test
 {
-// Exercise the public communicator concept without requiring optional collectives.
+// Exercise the complete foreign-communicator host path without optional
+// collectives, even when NCCL device support is compiled into the test.
 struct point_to_point_comm
 {
-  using native_handle_type = cudax::mgmn::nccl_communicator_ref::native_handle_type;
+  using native_handle_type = void*;
   using group_guard_type   = cudax::mgmn::nccl_communicator_ref::group_guard_type;
   cudax::mgmn::nccl_communicator_ref comm;
   native_handle_type native_handle() const noexcept
@@ -133,19 +134,31 @@ MULTI_GPU_TEST("sort, rejects invalid fixed ranges collectively", )
   auto comms         = this->communicators();
   auto streams_owned = nccl_test_util::make_streams();
   auto streams       = std::vector<cuda::stream_ref>{streams_owned.begin(), streams_owned.end()};
-  std::vector<int*> inputs(comms.size(), nullptr);
+  // Give valid peers real guarded input. In particular, overflow must be
+  // rejected for the count itself, independently of null-pointer checking.
+  const std::vector<std::vector<int>> original(comms.size(), {123456789, 7, -3, 123456789});
+  auto buffers = sort_test_util::make_device_inputs(comms, streams, original);
+  std::vector<int*> inputs;
+  for (auto& buffer : buffers)
+  {
+    inputs.push_back(buffer.data() + 1);
+  }
   std::vector<cuda::std::int64_t> counts(comms.size(), 0);
+  std::vector<int*> empty_inputs(comms.size(), nullptr);
+  REQUIRE_NOTHROW(cudax::mgmn::sort(cudax::distributed, comms, streams, empty_inputs, counts));
   REQUIRE_NOTHROW(cudax::mgmn::sort(cudax::distributed, comms, streams, inputs, counts));
   if (comms.empty())
   {
     return;
   }
+  std::fill(counts.begin(), counts.end(), 2);
   SECTION("negative count on one rank")
   {
     counts.back() = -1;
   }
   SECTION("nonempty null input on one rank")
   {
+    inputs.back() = nullptr;
     counts.back() = 1;
   }
   SECTION("byte count overflow on one rank")
@@ -153,6 +166,11 @@ MULTI_GPU_TEST("sort, rejects invalid fixed ranges collectively", )
     counts.back() = std::numeric_limits<cuda::std::int64_t>::max();
   }
   REQUIRE_THROWS_AS(cudax::mgmn::sort(cudax::distributed, comms, streams, inputs, counts), std::invalid_argument);
+  const auto unchanged = sort_test_util::gather_outputs(comms, buffers);
+  for (cuda::std::size_t rank = 0; rank < comms.size(); ++rank)
+  {
+    REQUIRE(std::equal(original[rank].begin(), original[rank].end(), unchanged.begin() + 4 * rank));
+  }
 }
 
 TEST_CASE("sort, empty communicator range is a no-op")

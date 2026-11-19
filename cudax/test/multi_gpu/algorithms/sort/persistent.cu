@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <algorithm_common.h>
+#include <cuda_runtime_api.h>
 #include <nccl_test_common.h>
 #include <testing.cuh>
 
@@ -115,6 +116,16 @@ MULTI_GPU_TEST("sort, persistent context growth, reuse, and rank association", p
       offset += count + 2;
       expected_offset += count;
     }
+    for (cuda::std::size_t rank = 0; rank < comms.size(); ++rank)
+    {
+      // Pinned metadata must belong to this rank's device, rather than silently
+      // initializing GPU 0 or disappearing when an unrelated GPU is reset.
+      REQUIRE(bool(contexts[rank]->__window()));
+      cudaPointerAttributes attributes{};
+      REQUIRE(cudaPointerGetAttributes(&attributes, contexts[rank]->__window()->__host_buffer(1, 1)) == cudaSuccess);
+      REQUIRE(attributes.type == cudaMemoryTypeHost);
+      REQUIRE(attributes.device == streams[rank].device().get());
+    }
     if (iteration == 10)
     {
       // Swap two rank contexts; every rank must reject before
@@ -126,5 +137,10 @@ MULTI_GPU_TEST("sort, persistent context growth, reuse, and rank association", p
       REQUIRE_THROWS_AS(cudax::mgmn::sort(cudax::distributed, comms, envs, inputs, counts), std::invalid_argument);
     }
   }
+}
+#else
+TEST_CASE("sort, persistent context requires the NCCL device SDK")
+{
+  SKIP("Persistent device communication requires NCCL device headers");
 }
 #endif // _CUDAX_SORT_HAS_NCCL_DEVICE

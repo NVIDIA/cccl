@@ -106,11 +106,12 @@ _CCCL_HOST_API void __sort_one(_Comm& __comm, const _Env& __env, _Key* __keys, _
       static_cast<long long*>(__persistent->__window()->__host_buffer(0, __metadata_count * sizeof(long long)));
   }
 #endif
-  ::cuda::host_buffer<long long> __counts_storage{__stream, ::cuda::mr::legacy_pinned_memory_resource{}};
+  ::cuda::host_buffer<long long> __counts_storage{
+    __stream, ::cuda::mr::legacy_pinned_memory_resource{__stream.device()}};
   if (!__cached_counts)
   {
     __counts_storage = ::cuda::host_buffer<long long>{
-      __stream, ::cuda::mr::legacy_pinned_memory_resource{}, __metadata_count, ::cuda::no_init};
+      __stream, ::cuda::mr::legacy_pinned_memory_resource{__stream.device()}, __metadata_count, ::cuda::no_init};
   }
   ::cuda::std::span<long long> __counts{__cached_counts ? __cached_counts : __counts_storage.data(), __metadata_count};
   auto* __local_metadata = __counts.data() + __metadata_width * __ranks;
@@ -121,11 +122,13 @@ _CCCL_HOST_API void __sort_one(_Comm& __comm, const _Env& __env, _Key* __keys, _
     if (__ranks > 1)
     {
       ::ncclCommProperties __properties = NCCL_COMM_PROPERTIES_INITIALIZER;
-      const auto __property_status      = ::ncclCommQueryProperties(__comm.native_handle(), &__properties);
-      const bool __device_available     = __property_status == ::ncclSuccess && __properties.deviceApiSupport;
+      const auto& __api                 = ::cuda::experimental::__nccl::__get_device_api();
+      const auto __property_status =
+        __api.__supports_lsa() ? __api.__query(__comm.native_handle(), &__properties) : ::ncclInvalidUsage;
+      const bool __device_available = __property_status == ::ncclSuccess && __properties.deviceApiSupport;
       if (__device_available)
       {
-        __gin = ::ncclTeamLsa(__comm.native_handle()).nRanks != __ranks;
+        __gin = __api.__lsa(__comm.native_handle()).nRanks != __ranks;
       }
       const auto __ordinal = ::cuda::__driver::__ctxGetDevice();
       // Cross-rank CTA barriers require a grid that can reside on every GPU.
@@ -170,7 +173,8 @@ _CCCL_HOST_API void __sort_one(_Comm& __comm, const _Env& __env, _Key* __keys, _
       // Send failures as flags so every rank first participates in the count
       // agreement. Empty inputs still return without creating a device context.
       __local_metadata[1] =
-        (__resident && __device_available && (!__gin || __properties.ginType != NCCL_GIN_TYPE_NONE)
+        (__resident && __device_available
+             && (!__gin || (__api.__supports_gin() && __properties.ginType != NCCL_GIN_TYPE_NONE))
            ? __device_supported
            : 0)
         | (__owner

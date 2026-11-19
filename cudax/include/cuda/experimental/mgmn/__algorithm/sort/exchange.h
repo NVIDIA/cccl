@@ -324,10 +324,11 @@ _CCCL_HOST_API void __sort_host(
   auto __states                     = __allocate.template operator()<__selection_state<_Key>>(__ranks + 1);
   auto __device_targets             = __allocate.template operator()<::cuda::std::int64_t>(__ranks + 1);
   auto __unfinished                 = __allocate.template operator()<int>(1);
-  ::cuda::host_buffer<int> __host_unfinished{__stream, ::cuda::mr::legacy_pinned_memory_resource{}, 1, ::cuda::no_init};
+  ::cuda::host_buffer<int> __host_unfinished{
+    __stream, ::cuda::mr::legacy_pinned_memory_resource{__stream.device()}, 1, ::cuda::no_init};
   ::cuda::host_buffer<::cuda::std::int64_t> __cuts{
     __stream,
-    ::cuda::mr::legacy_pinned_memory_resource{},
+    ::cuda::mr::legacy_pinned_memory_resource{__stream.device()},
     static_cast<::cuda::std::size_t>(__ranks + 1) * __ranks,
     ::cuda::no_init};
   ::cuda::__driver::__memcpyAsync(

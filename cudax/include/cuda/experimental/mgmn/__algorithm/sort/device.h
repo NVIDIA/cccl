@@ -15,27 +15,26 @@
 #endif
 
 // Generic communicators remain usable without an installed NCCL SDK.
-#if defined(__CUDACC__) && __has_include(<nccl_device.h>)
-#  include <nccl_device.h>
-#  if NCCL_VERSION_CODE >= NCCL_VERSION(2, 29, 2)
-#    define _CUDAX_SORT_HAS_NCCL_DEVICE 1
+#include <cuda/experimental/mgmn/__nccl/device_api.h>
+#if defined(_CUDAX_HAS_NCCL_DEVICE_API)
+#  define _CUDAX_SORT_HAS_NCCL_DEVICE 1
 
-#    include <cuda/__container/buffer.h>
-#    include <cuda/__driver/driver_api.h>
-#    include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
-#    include <cuda/__runtime/ensure_current_context.h>
-#    include <cuda/std/__exception/exception_macros.h>
-#    include <cuda/std/__host_stdlib/stdexcept>
-#    include <cuda/std/__memory/assume_aligned.h>
-#    include <cuda/std/cstdint>
-#    include <cuda/std/cstring>
-#    include <cuda/std/limits>
+#  include <cuda/__container/buffer.h>
+#  include <cuda/__driver/driver_api.h>
+#  include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
+#  include <cuda/__runtime/ensure_current_context.h>
+#  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__memory/assume_aligned.h>
+#  include <cuda/std/cstdint>
+#  include <cuda/std/cstring>
+#  include <cuda/std/limits>
 
-#    include <cuda/experimental/mgmn/__algorithm/sort/select.h>
+#  include <cuda/experimental/mgmn/__algorithm/sort/select.h>
 
-#    include <memory>
+#  include <memory>
 
-#    include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__cccl/prologue.h>
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 _CCCL_BEGIN_NAMESPACE_CUDA_MGMN
@@ -54,7 +53,9 @@ _CCCL_HOST_API inline void __check_nccl_device(::ncclResult_t __status)
 {
   if (__status != ::ncclSuccess)
   {
-    _CCCL_THROW(::std::runtime_error, ::ncclGetErrorString(__status));
+    _CCCL_THROW(::cuda::experimental::__nccl::nccl_error,
+                static_cast<::cuda::experimental::__nccl::__ncclResult_t>(__status),
+                "Error in NCCL device sort");
   }
 }
 
@@ -104,15 +105,15 @@ class __device_window
     _CCCL_ASSERT_DRIVER_API(::cuda::__driver::__streamSynchronizeNoThrow, "waiting for sort resources", __stream_);
     if (__created_)
     {
-      (void) ::ncclDevCommDestroy(__comm_, &__device_);
+      (void) ::cuda::experimental::__nccl::__get_device_api().__destroy(__comm_, &__device_);
     }
     if (__window_)
     {
-      (void) ::ncclCommWindowDeregister(__comm_, __window_);
+      (void) ::cuda::experimental::__nccl::__get_device_api().__deregister_window(__comm_, __window_);
     }
     if (__storage_)
     {
-      (void) ::ncclMemFree(__storage_);
+      (void) ::cuda::experimental::__nccl::__get_device_api().__free(__storage_);
     }
     for (auto& __buffer : __host_metadata_)
     {
@@ -154,7 +155,10 @@ public:
     if (!__buffer || __buffer->size() < __bytes)
     {
       __buffer = ::std::make_unique<::cuda::host_buffer<char>>(
-        ::cuda::stream_ref{__stream_}, ::cuda::mr::legacy_pinned_memory_resource{}, __bytes, ::cuda::no_init);
+        ::cuda::stream_ref{__stream_},
+        ::cuda::mr::legacy_pinned_memory_resource{::cuda::stream_ref{__stream_}.device()},
+        __bytes,
+        ::cuda::no_init);
     }
     return __buffer->data();
   }
@@ -166,21 +170,22 @@ public:
     char* __storage         = nullptr;
     ::ncclWindow_t __window = nullptr;
     ::cuda::experimental::mgmn::__detail::__sort::__check_nccl_device(
-      ::ncclMemAlloc(reinterpret_cast<void**>(&__storage), __bytes));
+      ::cuda::experimental::__nccl::__get_device_api().__allocate(reinterpret_cast<void**>(&__storage), __bytes));
     _CCCL_TRY
     {
       ::cuda::experimental::mgmn::__detail::__sort::__check_nccl_device(
-        ::ncclCommWindowRegister(__comm_, __storage, __bytes, &__window, NCCL_WIN_COLL_SYMMETRIC));
+        ::cuda::experimental::__nccl::__get_device_api().__register_window(
+          __comm_, __storage, __bytes, &__window, NCCL_WIN_COLL_SYMMETRIC));
     }
     _CCCL_CATCH_ALL
     {
-      (void) ::ncclMemFree(__storage);
+      (void) ::cuda::experimental::__nccl::__get_device_api().__free(__storage);
       _CCCL_RETHROW;
     }
     if (__window_)
     {
-      (void) ::ncclCommWindowDeregister(__comm_, __window_);
-      (void) ::ncclMemFree(__storage_);
+      (void) ::cuda::experimental::__nccl::__get_device_api().__deregister_window(__comm_, __window_);
+      (void) ::cuda::experimental::__nccl::__get_device_api().__free(__storage_);
     }
     __storage_  = __storage;
     __window_   = __window;
@@ -203,8 +208,13 @@ public:
       {
         // Use an explicitly world-scoped GIN barrier. A rail barrier alone is
         // insufficient when more than one GPU belongs to each LSA team.
-        ::cuda::experimental::mgmn::__detail::__sort::__check_nccl_device(::ncclGinBarrierCreateRequirement(
-          __comm_, ::ncclTeamWorld(__comm_), __transfer_blocks, &__world_barrier_, &__barrier_requirements));
+        ::cuda::experimental::mgmn::__detail::__sort::__check_nccl_device(
+          ::cuda::experimental::__nccl::__get_device_api().__gin_barrier(
+            __comm_,
+            ::cuda::experimental::__nccl::__get_device_api().__world(__comm_),
+            __transfer_blocks,
+            &__world_barrier_,
+            &__barrier_requirements));
         // NCCL 2.29.2 drops custom resource signal fields when copying the
         // requirements. Reserve the barrier signals explicitly after the data
         // signals, while retaining the barrier's resource buffer requirement.
@@ -221,7 +231,7 @@ public:
         __requirements.lsaBarrierCount = __lsa_transfer_blocks;
       }
       ::cuda::experimental::mgmn::__detail::__sort::__check_nccl_device(
-        ::ncclDevCommCreate(__comm_, &__requirements, &__device_));
+        ::cuda::experimental::__nccl::__get_device_api().__create(__comm_, &__requirements, &__device_));
       __created_ = true;
       if (__gin_ && __device_.ginContextCount == 0)
       {
@@ -612,7 +622,6 @@ _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 } // namespace __detail::__sort
 _CCCL_END_NAMESPACE_CUDA_MGMN
 // NOLINTEND(bugprone-reserved-identifier)
-#    include <cuda/std/__cccl/epilogue.h>
-#  endif
-#endif
+#  include <cuda/std/__cccl/epilogue.h>
+#endif // _CUDAX_HAS_NCCL_DEVICE_API
 #endif // _CUDA_EXPERIMENTAL_MGMN___ALGORITHM_SORT_DEVICE_H

@@ -69,4 +69,9 @@ TEST_CASE("sort copy, all alignments and guarded tails", "[sort]")
   REQUIRE(cudaFree(device_destination) == cudaSuccess);
   REQUIRE(cudaFree(device_source) == cudaSuccess);
 }
+#else
+TEST_CASE("sort copy requires the NCCL device SDK")
+{
+  SKIP("The internal device transfer kernel requires NCCL device headers");
+}
 #endif // _CUDAX_SORT_HAS_NCCL_DEVICE
