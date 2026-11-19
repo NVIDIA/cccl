@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,6 +21,7 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__cccl/ptx_isa.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/is_void.h>
@@ -274,10 +275,10 @@ _CCCL_HOST_DEVICE_API constexpr auto memcpy_async_dyn_smem_for_tile_size(
   for (const auto& input : inputs)
   {
     smem_size =
-      static_cast<int>(::cuda::round_up(smem_size, ::cuda::std::max(input.value_type_alignment, copy_alignment)));
+      static_cast<int>(::cuda::round_up(smem_size, (::cuda::std::max) (input.value_type_alignment, copy_alignment)));
     // max head/tail padding is copy_alignment - sizeof(T) each
     const int max_bytes_to_copy =
-      (input.value_type_size * tile_size) + (::cuda::std::max(copy_alignment - input.value_type_size, 0) * 2);
+      (input.value_type_size * tile_size) + ((::cuda::std::max) (copy_alignment - input.value_type_size, 0) * 2);
     smem_size += max_bytes_to_copy;
   };
   return smem_size;
@@ -301,7 +302,7 @@ _CCCL_HOST_DEVICE_API constexpr auto bulk_copy_dyn_smem_for_tile_size(
   int tile_padding = bulk_copy_align;
   for (const auto& input : inputs)
   {
-    tile_padding = ::cuda::std::max(tile_padding, input.value_type_alignment);
+    tile_padding = (::cuda::std::max) (tile_padding, input.value_type_alignment);
   }
 
   int smem_size = tile_padding; // for the barrier and padding
@@ -352,12 +353,12 @@ tuned_vectorized_policy(::cuda::compute_capability cc, int store_size, bool fill
     if (cc >= ::cuda::compute_capability{9, 0})
     {
       return TransformVectorizedPolicy{
-        store_size > 4 ? 128 : 256, 16, ::cuda::std::max(8 / store_size, 1) /* 64-bit instructions */};
+        store_size > 4 ? 128 : 256, 16, (::cuda::std::max) (8 / store_size, 1) /* 64-bit instructions */};
     }
     // manually tuned fill on A100
     if (cc >= ::cuda::compute_capability{8, 0})
     {
-      return TransformVectorizedPolicy{256, 8, ::cuda::std::max(8 / store_size, 1) /* 64-bit instructions */};
+      return TransformVectorizedPolicy{256, 8, (::cuda::std::max) (8 / store_size, 1) /* 64-bit instructions */};
     }
   }
   else
@@ -412,9 +413,13 @@ struct policy_selector
       const int async_block_size = (cc < ::cuda::compute_capability{10, 0}) ? 256 : 128;
       const int alignment        = _CUB::detail::transform::bulk_copy_alignment(cc);
 
-      const auto prefetch   = TransformPrefetchPolicy{256};
+      auto prefetch = TransformPrefetchPolicy{256};
+#if __cccl_ptx_isa >= 940
+      // on SM90+ we prefetch to L1 using 32 bytes
+      prefetch.prefetch_byte_stride = 32;
+#endif // __cccl_ptx_isa >= 940
       const auto vectorized = _CUB::detail::transform::tuned_vectorized_policy(
-        cc, ::cuda::std::max(1, output.value_type_size), no_input_streams);
+        cc, (::cuda::std::max) (1, output.value_type_size), no_input_streams);
       auto async           = TransformAsyncCopyPolicy{async_block_size};
       async.store_vec_size = _CUB::detail::transform::auto_ublkcp_store_vec_size(output.value_type_size);
 
@@ -446,7 +451,7 @@ struct policy_selector
       int max_alignment = alignment;
       for (const auto& input : inputs)
       {
-        max_alignment = ::cuda::std::max({max_alignment, input.value_type_alignment});
+        max_alignment = (::cuda::std::max) ({max_alignment, input.value_type_alignment});
       }
 
       bool tile_sizes_retain_alignment = true;
@@ -486,7 +491,7 @@ struct policy_selector
       const int threads_per_block = 256;
       const auto prefetch         = TransformPrefetchPolicy{threads_per_block};
       const auto vectorized       = _CUB::detail::transform::tuned_vectorized_policy(
-        cc, ::cuda::std::max(1, output.value_type_size), no_input_streams);
+        cc, (::cuda::std::max) (1, output.value_type_size), no_input_streams);
       const auto async = TransformAsyncCopyPolicy{threads_per_block};
 
       // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
@@ -529,7 +534,7 @@ struct policy_selector
         : TransformAlgorithm::vectorized,
       TransformPrefetchPolicy{256},
       _CUB::detail::transform::tuned_vectorized_policy(
-        ::cuda::compute_capability{6, 0}, ::cuda::std::max(1, output.value_type_size), no_input_streams),
+        ::cuda::compute_capability{6, 0}, (::cuda::std::max) (1, output.value_type_size), no_input_streams),
       TransformAsyncCopyPolicy{}, // never used
     };
   }

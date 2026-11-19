@@ -11,7 +11,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,7 +21,6 @@
 
 #include <cub/detail/iket_support.cuh>
 #include <cub/detail/key_value_pair.cuh>
-#include <cub/detail/log2.cuh>
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/strong_load.cuh>
 #include <cub/detail/strong_store.cuh>
@@ -34,6 +33,7 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/__cmath/ilog.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__cstddef/types.h>
@@ -1034,7 +1034,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
 
   // Constants
   static constexpr int PAIR_SIZE        = static_cast<int>(sizeof(ValueT) + sizeof(KeyT));
-  static constexpr int TXN_WORD_SIZE    = 1 << Log2<PAIR_SIZE + 1>::VALUE;
+  static constexpr int TXN_WORD_SIZE    = 1 << ::cuda::ceil_ilog2(PAIR_SIZE + 1);
   static constexpr int STATUS_WORD_SIZE = TXN_WORD_SIZE - PAIR_SIZE;
 
   static constexpr int TILE_STATUS_PADDING = detail::warp_threads;

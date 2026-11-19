@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -13,10 +13,9 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/copy_if.h>
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/internal_functional.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/detail/type_traits.h>
-#include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/scan.h>
 #include <thrust/scatter.h>
@@ -117,7 +116,7 @@ _CCCL_HOST_DEVICE_API OutputIterator copy_if(
   ::cuda::std::make_unsigned_t<difference_type> unsigned_n(n);
 
   // use 32-bit indices when possible (almost always)
-  if (sizeof(difference_type) > sizeof(unsigned int) && unsigned_n > ::cuda::std::numeric_limits<unsigned int>::max())
+  if (sizeof(difference_type) > sizeof(unsigned int) && unsigned_n > (::cuda::std::numeric_limits<unsigned int>::max)())
   {
     result = detail::copy_if<difference_type>(exec, first, last, stencil, result, pred);
   } // end if

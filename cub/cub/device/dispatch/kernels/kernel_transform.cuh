@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -34,9 +34,11 @@
 #include <cuda/__ptx/instructions/mbarrier_expect_tx.h>
 #include <cuda/__ptx/instructions/mbarrier_init.h>
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
+#include <cuda/__ptx/instructions/prefetch.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cccl/ptx_isa.h>
 #include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__memory/construct_at.h>
@@ -77,7 +79,9 @@ _CCCL_IKET_CREATE_PUSH_POP_RANGE(ProcessAndStore);
 template <typename T>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void prefetch(const T* addr)
 {
-  // TODO(bgruber): prefetch to L1 may be even better
+#if __cccl_ptx_isa >= 940
+  NV_IF_TARGET(NV_PROVIDES_SM_90, (::cuda::ptx::prefetch_L1_32B(addr); return;))
+#endif // __cccl_ptx_isa >= 940
   asm volatile("prefetch.global.L2 [%0];" : : "l"(__cvta_generic_to_global(addr)) : "memory");
 }
 
@@ -609,7 +613,7 @@ _CCCL_DEVICE_API void transform_kernel_ldgsts(
   // constexpr int ThreadsPerBlock = Policy.async_copy.ThreadsPerBlock;
   const int tile_size   = ThreadsPerBlock * num_elem_per_thread;
   const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int valid_items = static_cast<int>(::cuda::std::min(num_items - offset, static_cast<Offset>(tile_size)));
+  const int valid_items = static_cast<int>((::cuda::std::min) (num_items - offset, static_cast<Offset>(tile_size)));
 
   [[maybe_unused]] int smem_offset = 0;
   // TODO(bgruber): drop checking first block, since gmem buffers are always sufficiently aligned. But this would not
@@ -753,8 +757,8 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
   constexpr int bulk_copy_alignment = _CUB::detail::transform::bulk_copy_alignment(_CUB::detail::current_tuning_cc());
 
   // add padding after a tile in shared memory to make space for the next tile's head padding, and retain alignment
-  constexpr int max_alignment = ::cuda::std::max({int{alignof(InTs)}...});
-  constexpr int tile_padding  = ::cuda::std::max(bulk_copy_alignment, max_alignment);
+  constexpr int max_alignment = (::cuda::std::max) ({int{alignof(InTs)}...});
+  constexpr int tile_padding  = (::cuda::std::max) (bulk_copy_alignment, max_alignment);
 
   // We could use an attribute to align the shared memory. This is unfortunately not respected by nvcc in all cases and
   // fails for example when compiling with -G or -rdc=true. See also NVBug 5093902, NVBug 5329745, and discussion in PR

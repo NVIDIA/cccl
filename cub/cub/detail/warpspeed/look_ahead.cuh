@@ -4,7 +4,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -315,7 +315,7 @@ template <int NumTileStatesPerThread, typename AccumT, typename ScanOpT>
 
       // Only reduce once 32 contiguous tile aggregates are available, so the reduction order is fixed.
       const ::cuda::std::uint32_t expected_count =
-        static_cast<::cuda::std::uint32_t>(::cuda::std::min(32, idxTileNext - idxTileCur));
+        static_cast<::cuda::std::uint32_t>((::cuda::std::min) (32, idxTileNext - idxTileCur));
       if (warp_right_aggregates_count < expected_count)
       {
         break;
