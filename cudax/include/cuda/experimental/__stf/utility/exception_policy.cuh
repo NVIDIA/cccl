@@ -3105,31 +3105,37 @@ struct __guarded_action
   }
 };
 
+// A hook that never forwards can still throw while the runner makes `_Expr` from its answer:
+// nothing to convert for a void expression or a nullval answer, a default `_Expr` for Nothing
+// (a void answer), a cast for a value (copying a referred-to string can throw). Two-step, as
+// `__answers_nothing_impl`: the answer is named only for a policy with a hook (GCC 9 rejects a
+// defaulted `_Answer` parameter computed through `conditional_t` on the runner trait itself).
+template <bool _HasHook, class _P, class _Fn, class _Expr>
+inline constexpr bool __answer_conversion_nothrow_v = true;
+
+template <class _P, class _Fn, class _Expr>
+inline constexpr bool __answer_conversion_nothrow_v<true, _P, _Fn, _Expr> =
+  ::cuda::std::is_void_v<_Expr>
+  || ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<__hook_answer_t<_P, _Fn>>, nullval>
+  || ::cuda::std::is_nothrow_constructible_v<_Expr, __hook_answer_t<_P, _Fn>>
+  || (::cuda::std::is_void_v<__hook_answer_t<_P, _Fn>> && ::cuda::std::is_nothrow_default_constructible_v<_Expr>);
+
 // Nothrow-ness of the callable runner: the exception path matters only for a callable that can
 // throw, the code path only when `<<` feeds a returned status (`_Feed`).
 template <class _Reaction,
           class _Fn,
           bool _Feed  = false,
           class _Expr = decltype(::cuda::std::declval<_Fn&>()()),
-          bool        = _Feed && __is_status_v<_Expr>,
-          class _Answer =
-            typename ::cuda::std::conditional_t<__has_exception_hook<_Reaction, _Fn>,
-                                                __exception_hook_impl<::cuda::std::remove_reference_t<_Reaction>, _Fn>,
-                                                ::cuda::std::type_identity<nullval>>::type>
+          bool        = _Feed && __is_status_v<_Expr>>
 inline constexpr bool __callable_runner_nothrow_v =
   (noexcept(::cuda::std::declval<_Fn&>()())
-   // A hook that never forwards can still throw while the runner makes `_Expr` from its answer:
-   // nothing to convert for a void expression or a nullval answer, a default `_Expr` for Nothing
-   // (a void answer), a cast for a value (copying a referred-to string can throw).
    || (__never_passes_through_v<_Reaction, _Fn>
-       && (::cuda::std::is_void_v<_Expr> || ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Answer>, nullval>
-           || ::cuda::std::is_nothrow_constructible_v<_Expr, _Answer>
-           || (::cuda::std::is_void_v<_Answer> && ::cuda::std::is_nothrow_default_constructible_v<_Expr>) )))
+       && __answer_conversion_nothrow_v<__has_exception_hook<_Reaction, _Fn>, _Reaction, _Fn, _Expr>) )
   && __on_enter_nothrow_v<_Reaction>;
 
-template <class _Reaction, class _Fn, bool _Feed, class _Expr, class _Answer>
-inline constexpr bool __callable_runner_nothrow_v<_Reaction, _Fn, _Feed, _Expr, true, _Answer> =
-  __callable_runner_nothrow_v<_Reaction, _Fn, _Feed, _Expr, false, _Answer>
+template <class _Reaction, class _Fn, bool _Feed, class _Expr>
+inline constexpr bool __callable_runner_nothrow_v<_Reaction, _Fn, _Feed, _Expr, true> =
+  __callable_runner_nothrow_v<_Reaction, _Fn, _Feed, _Expr, false>
   && __status_path_nothrow_v<
     _Reaction,
     _Expr,
