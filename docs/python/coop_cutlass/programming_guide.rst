@@ -252,12 +252,15 @@ inlining, barriers, shared memory and register use from the final linked
 cubin, which CuTe keeps when ``CUTE_DSL_KEEP=cubin`` is set. CuTe writes the
 cubin to the current directory, or to the one that ``CUTE_DSL_DUMP_DIR``
 names. Set the two CuTe variables before the program starts.
-``cuobjdump --dump-sass`` lists the cubin's instructions and
-``cuobjdump --dump-resource-usage`` its shared memory and registers. The
-link can still inline the code of a primitive into the kernel, so the
-generated source and the PTX from before the link show an earlier stage. Run
-Compute Sanitizer's race check after you change how a kernel reuses scratch
-or where it synchronizes.
+``cuobjdump --dump-sass`` lists the cubin's instructions, where ``LDS`` and
+``STS`` are the shared-memory accesses.
+``cuobjdump --dump-resource-usage`` lists its registers and static shared
+memory. That report can leave out a primitive's scratch, and
+:ref:`TempStorage <coop-temp-storage>` shows how to measure it in the
+kernel. The link can still inline the code of a primitive into the kernel,
+so the generated source and the PTX from before the link show an earlier
+stage. Run Compute Sanitizer's race check after you change how a kernel
+reuses scratch or where it synchronizes.
 
 More items per thread can raise register use, and more scratch can lower the
 number of blocks that fit on a multiprocessor at the same time. Look at the

@@ -450,7 +450,7 @@ documents its ``link-libraries`` mechanism in terms of LLVM bitcode, but its
 compiler recognizes LTO-IR containers as nvJitLink inputs and links them
 with the kernel's own LTO-IR. The link can inline the wrapper into the
 kernel. The runtime tests run ``cuobjdump`` on the final cubin and fail if
-a call or a provider symbol remains.
+a provider symbol remains.
 
 The CUTLASS 4.9 candidate copies compile options for each invocation, so
 adding a module's link libraries does not mutate the reusable option
