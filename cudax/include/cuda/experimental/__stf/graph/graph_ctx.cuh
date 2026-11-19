@@ -129,6 +129,12 @@ public:
     reserved::fork_from_graph_node(ctx, out, graph, graph_stage, prereqs, "dealloc");
   }
 
+  // Allocations are graph nodes: only work ordered after the node may use them.
+  _CCCL_HOST_API bool allocation_is_stream_ordered(backend_ctx_untyped&) const override
+  {
+    return false;
+  }
+
   _CCCL_HOST_API ::std::string to_string() const override
   {
     return "uncached graph allocator";
