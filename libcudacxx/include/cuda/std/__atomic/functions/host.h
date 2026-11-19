@@ -27,6 +27,7 @@
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/platform.h> // IWYU pragma: keep
 #include <cuda/std/__atomic/scopes.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/remove_cv.h>
@@ -101,8 +102,9 @@ _CCCL_HOST_API void __cuda_atomic_load(
   _Mmio)
 {
   _LIBCUDACXX_INT128_WARN(_Type)
-  __atomic_load(
-    &::cuda::std::__atomic_force_align_host(__ptr)->__atom, &__dst, ::cuda::std::__atomic_order_to_int(__order));
+  __atomic_load(::cuda::std::addressof(::cuda::std::__atomic_force_align_host(__ptr)->__atom),
+                ::cuda::std::addressof(__dst),
+                ::cuda::std::__atomic_order_to_int(__order));
 }
 
 template <class _Type, class _Operand, class _Mmio>
@@ -116,8 +118,9 @@ _CCCL_HOST_API void __cuda_atomic_store(
   _Mmio)
 {
   _LIBCUDACXX_INT128_WARN(_Type)
-  __atomic_store(
-    &::cuda::std::__atomic_force_align_host(__ptr)->__atom, &__val, ::cuda::std::__atomic_order_to_int(__order));
+  __atomic_store(::cuda::std::addressof(::cuda::std::__atomic_force_align_host(__ptr)->__atom),
+                 ::cuda::std::addressof(__val),
+                 ::cuda::std::__atomic_order_to_int(__order));
 }
 
 template <class _Type, class _Cas, class _Operand>
@@ -135,10 +138,10 @@ _CCCL_HOST_API bool __cuda_atomic_compare_exchange(
   _LIBCUDACXX_INT128_WARN(_Type)
   __dst = __cmp;
   return __atomic_compare_exchange(
-    &::cuda::std::__atomic_force_align_host(__ptr)->__atom,
+    ::cuda::std::addressof(::cuda::std::__atomic_force_align_host(__ptr)->__atom),
     // This is only alignment wrapped in order to prevent GCC-6 from triggering an unused warning.
-    &::cuda::std::__atomic_force_align_host(&__dst)->__atom,
-    &__op,
+    ::cuda::std::addressof(::cuda::std::__atomic_force_align_host(::cuda::std::addressof(__dst))->__atom),
+    ::cuda::std::addressof(__op),
     ::cuda::std::__cuda_atomic_cas_is_weak(__cas),
     ::cuda::std::__atomic_order_to_int(__order.__success),
     ::cuda::std::__atomic_failure_order_to_int(__order.__failure));
@@ -179,8 +182,10 @@ _CCCL_HOST_API void __cuda_atomic_exchange(
   __thread_scope_tag)
 {
   _LIBCUDACXX_INT128_WARN(_Type)
-  __atomic_exchange(
-    &::cuda::std::__atomic_force_align_host(__ptr)->__atom, &__op, &__dst, ::cuda::std::__atomic_order_to_int(__order));
+  __atomic_exchange(::cuda::std::addressof(::cuda::std::__atomic_force_align_host(__ptr)->__atom),
+                    ::cuda::std::addressof(__op),
+                    ::cuda::std::addressof(__dst),
+                    ::cuda::std::__atomic_order_to_int(__order));
 }
 
 template <class _Type,

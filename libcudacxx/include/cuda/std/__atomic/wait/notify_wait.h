@@ -24,6 +24,7 @@
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/types/common.h>
 #include <cuda/std/__atomic/wait/polling.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__thread/poll.h>
 #include <cuda/std/__thread/yield.h>
 #include <cuda/std/cstring> // IWYU pragma: keep
@@ -63,7 +64,7 @@ _CCCL_HOST_DEVICE_API inline bool __nonatomic_compare_equal(_Tp const& __lhs, _T
 #if _CCCL_CUDA_COMPILATION()
   return __lhs == __rhs;
 #else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
-  return ::cuda::std::memcmp(&__lhs, &__rhs, sizeof(_Tp)) == 0;
+  return ::cuda::std::memcmp(::cuda::std::addressof(__lhs), ::cuda::std::addressof(__rhs), sizeof(_Tp)) == 0;
 #endif // ^^^ !_CCCL_CUDA_COMPILATION() ^^^
 }
 
