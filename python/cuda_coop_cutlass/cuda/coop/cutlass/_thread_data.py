@@ -49,10 +49,10 @@ This kernel squares the items it loaded and sums the squares over the block:
 
 Items can be ``Int8`` to ``Int64``, ``Uint8`` to ``Uint64``, ``Float32`` or
 ``Float64``. Some primitives accept fewer types, and their entries say
-which. If the values in memory have another type than the memory's element
-type, such as unsigned values behind an ``Int32`` pointer, make a tensor
-from the pointer with ``cute.make_tensor``, view it with
-``cute.recast_tensor``, and pass that view to ``load`` or ``store``.
+which. CuTe reports unsigned integers behind a ``cute.Pointer`` argument as
+signed. For those integers, pass ``dtype`` to
+:func:`~cuda.coop.cutlass.load` and :func:`~cuda.coop.cutlass.store`, or
+pass a ``cute.recast_tensor`` view of the memory.
 
 :meth:`~cuda.coop.cutlass.ThreadData.from_fn` fills a payload from a Python
 function of the index. It replaces the loop in the kernel above:

@@ -111,7 +111,9 @@ is therefore written in another order.
    ``algorithm="striped"`` returns the top row.
 
 ``load`` takes the element type from the memory and the item count from
-``items_per_thread``. ``store`` takes both from the payload.
+``items_per_thread``. ``store`` takes both from the payload. CuTe reports
+unsigned integers behind a ``cute.Pointer`` argument as signed, and
+``dtype`` on both calls declares them unsigned.
 """
 
 # Implementation notes.
@@ -235,8 +237,8 @@ def load(
         Its element type is one of the ten listed under
         :ref:`ThreadData <coop-thread-data>`. A register tensor, a tensor
         with a runtime shape and any other element type are rejected when
-        the kernel is compiled. Integers behind a pointer argument are read
-        as signed unless ``dtype`` declares them unsigned.
+        the kernel is compiled. For unsigned integers behind a
+        ``cute.Pointer`` argument, pass ``dtype``.
 
         ``source`` must hold every element the call reads. A tensor that
         is too small is rejected when the kernel is compiled, as long as
@@ -251,11 +253,11 @@ def load(
         The number of items each thread receives, a positive Python
         integer or a kernel argument declared ``cutlass.Constexpr``. A
         CuTe value is rejected when the kernel is compiled.
-    dtype : CuTe or NumPy scalar type, optional
+    dtype : CUTLASS or NumPy type, optional
         Declares the integers in ``source`` unsigned. CuTe reports integer
         memory behind a ``cute.Pointer`` argument as signed, including when
         the host made the pointer with an unsigned type, and a
-        ``cute.make_tensor`` view of that pointer is signed too. ``Uint32``
+        ``cute.make_tensor`` view of any pointer is signed too. ``Uint32``
         data then loads as ``Int32`` with no error, and a maximum, a sort
         or a conversion to a wider type gives the signed answer.
 
@@ -263,10 +265,14 @@ def load(
         ``dtype=cutlass.Uint32`` for memory that CuTe reports as ``Int32``.
         The payload has that element type, and ``oob_default`` is checked
         against it. ``dtype`` can also repeat the type CuTe reports. Any
-        other type is rejected when the kernel is compiled. Two forms of
-        ``source`` already report the unsigned type and need no ``dtype``:
-        a ``cute.recast_tensor`` view, and a pointer the kernel made itself
-        with ``cute.make_ptr`` and passes unchanged.
+        other type is rejected when the kernel is compiled, so ``dtype``
+        cannot change the width or turn integers into floats.
+
+        ``dtype`` is not needed for a ``source`` that already reports the
+        unsigned type, such as a ``cute.recast_tensor`` view, a tensor from
+        :meth:`TempStorage.reserve <cuda.coop.cutlass.TempStorage.reserve>`,
+        or a pointer the kernel made itself with ``cute.make_ptr`` and
+        passes unchanged.
     alignment : int, optional
         The smallest byte alignment, a power of two, of register storage
         made from the returned payload, as for ``alignment`` of
@@ -388,6 +394,21 @@ def load(
         :start-after: docs: start cutlass-logical-warp-load-store
         :end-before: docs: end cutlass-logical-warp-load-store
         :dedent: 4
+
+    Sort ``Uint32`` keys from one pointer argument into another. CuTe
+    reports both pointers as ``Int32``, so the kernel passes
+    ``dtype=cutlass.Uint32`` to ``load`` and ``store``. Without ``dtype``
+    the keys with the top bit set would sort first, as negative numbers.
+
+    `Full example and test on GitHub
+    <https://github.com/NVIDIA/cccl/blob/main/python/cuda_coop_cutlass/tests/runtime/test_load_store_documentation.py>`__
+
+    .. literalinclude::
+        ../../../python/cuda_coop_cutlass/tests/runtime/test_load_store_documentation.py
+        :language: python
+        :start-after: # cutlass-load-store-unsigned-example-begin
+        :end-before: # cutlass-load-store-unsigned-example-end
+        :dedent: 4
     """
 
     output = ThreadData(items_per_thread, alignment=alignment)
@@ -457,12 +478,11 @@ def store(
         as it was. After ``"transpose"``, ``"warp_transpose"`` or
         ``"warp_transpose_timesliced"`` its items are undefined, so copy
         the ones the kernel still needs before the call.
-    dtype : CuTe or NumPy scalar type, optional
+    dtype : CUTLASS or NumPy type, optional
         Declares the integers in ``destination`` unsigned, under the rules
         of ``dtype`` of ``load``. To store an unsigned payload through a
         ``cute.Pointer`` argument, pass the payload's element type, such as
-        ``dtype=cutlass.Uint32``. The declared type must be the element
-        type of ``value``.
+        ``dtype=cutlass.Uint32``.
     algorithm : str, optional
         A Python string, a name from the ``algorithm`` table of
         :ref:`Load & Store <memory-operations>`. It states the layout of

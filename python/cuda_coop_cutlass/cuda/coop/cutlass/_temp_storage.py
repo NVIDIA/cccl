@@ -300,6 +300,7 @@ class TempStorage:
     def reserve(self, num_elems, dtype, *, alignment=None):
         """Return a one-dimensional shared tensor in this region for your data.
 
+        The tensor has ``num_elems`` elements of type ``dtype``.
         ``num_elems``, ``dtype`` and the optional byte ``alignment`` are
         compile-time constants. Supported element types are the 8-, 16-,
         32- and 64-bit signed and unsigned integers, ``Float16``,

@@ -360,9 +360,9 @@ Planning the CUB call
 For Load, ``_group_load_store.py`` first creates the result payload and
 checks the group, algorithm, and controls. It classifies a control as
 omitted, a compile-time constant, or a runtime value. The lowering then
-reads the CuTe memory operand's element type, or takes the ``dtype`` the
-caller declared for it, and checks that its layout exposes the contiguous
-pointer required by CUB.
+reads the CuTe memory operand's element type, checks a ``dtype`` the caller
+declared against it, and checks that the operand's layout exposes the
+contiguous pointer required by CUB.
 
 The planner uses those arguments and the kernel's launch dimensions to
 choose a CUB specialization. It also determines which threads must participate
