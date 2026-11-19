@@ -548,14 +548,30 @@ struct ViewedParentKernel
   }
 };
 
-C2H_TEST("Groups constructed from views use the viewed parent", "[group_view]")
+void test_viewed_parent_types()
 {
   using Config = decltype(cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<128>()));
-  using Parent = cudax::coop::this_block<typename Config::hierarchy_type>;
+  using Parent = cudax::coop::this_block<Config::hierarchy_type>;
   using View   = decltype(cudax::coop::group_view{cuda::std::declval<Parent>()});
   static_assert(cuda::std::is_same_v<cudax::coop::__viewed_group_t<View>, Parent>);
   static_assert(cudax::coop::__is_parent_group_query_v<Parent, Parent>);
   static_assert(cudax::coop::__is_parent_group_query_v<View, Parent>);
+
+  // Return-type queries must also be well-formed outside device functions.
+  static_assert(can_rank_parent<View, cuda::block_level>);
+  using Result      = Parent::__mapping_result_type;
+  using Sync        = Parent::__synchronizer_instance_type;
+  using Virtual     = cudax::coop::virtual_group<cuda::thread_level, Parent, Result>;
+  using Generic     = cudax::coop::generic_group<cuda::thread_level, Parent, Result, Sync>;
+  using VirtualView = decltype(cudax::coop::group_view{cuda::std::declval<Virtual>()});
+  using GenericView = decltype(cudax::coop::group_view{cuda::std::declval<Generic>()});
+  static_assert(can_rank_parent<VirtualView, Parent>);
+  static_assert(can_rank_parent<GenericView, Parent>);
+}
+
+C2H_TEST("Groups constructed from views use the viewed parent", "[group_view]")
+{
+  test_viewed_parent_types();
 
   const cuda::stream stream{cuda::devices[0]};
 
