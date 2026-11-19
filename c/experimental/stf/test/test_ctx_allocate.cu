@@ -25,7 +25,7 @@ namespace
 {
 __global__ void fill_kernel(int n, float* out, float v)
 {
-  const int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int i = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   if (i < n)
   {
     out[i] = v;
@@ -34,7 +34,7 @@ __global__ void fill_kernel(int n, float* out, float v)
 
 __global__ void add_kernel(int n, const float* in, double* inout)
 {
-  const int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int i = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
   if (i < n)
   {
     inout[i] += in[i];
