@@ -11,7 +11,7 @@
 // ============================================================================
 
 // %RANGE% TUNE_KBIF_BIAS kbif -32:64:4
-// %RANGE% TUNE_ALGORITHM alg 0:4:1
+// %RANGE% TUNE_ALGORITHM alg 0:3:1
 // %RANGE% TUNE_THREADS tpb 128:1024:128
 
 // for TUNE_ALGORITHM == 1 (vectorized), this is the number of vectors per thread, which is similar in spirit
