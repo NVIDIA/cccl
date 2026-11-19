@@ -28,6 +28,10 @@
 #  pragma system_header
 #endif
 
+#include <cuda/__driver/driver_api.h>
+#include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/__stream/stream_ref.h>
+
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 #include <memory>
@@ -58,11 +62,26 @@ class exec_place;
 /**
  * @brief Computes the CUDA device in which the stream was created
  *
- * Capture-safe on CTK >= 12.8: `cudaStreamGetDevice` succeeds during
- * thread-local, relaxed and global capture, on device and green-context
- * streams alike, without invalidating the capture.
- * Answering from a guess instead of the query is what put transient events
- * in the wrong device's context on multi-GPU systems
+ * The device is read from the stream's context through the driver API: the
+ * context is looked up with `cuStreamGetCtx`, made current, and asked for its
+ * device with `cuCtxGetDevice`. This is the path
+ * `stream_and_event::insert_dependency` has always run on captured streams,
+ * and it is accepted during thread-local, relaxed and global capture without
+ * invalidating it (verified on drivers 580 and 595).
+ *
+ * `cudaStreamGetDevice` / `cuStreamGetDevice` are deliberately not used:
+ * whether they are permitted during capture depends on the driver, not on the
+ * toolkit (rejected with `cudaErrorStreamCaptureUnsupported` by cudart 12.9 on
+ * driver 595 and by cudart 13.0 on driver 580, accepted on driver 615), and a
+ * rejection invalidates the capture, so there is no way to try them first.
+ *
+ * The context lookup is `cuda::stream_ref`'s: `cuStreamGetCtx_v2` on drivers
+ * 12.5 and newer, since the original `cuStreamGetCtx` returns
+ * `CUDA_ERROR_NOT_SUPPORTED` for green-context streams on CUDA 12 drivers,
+ * and the original query on older drivers, which have no such streams.
+ *
+ * Answering from a guess (the current device) instead of a query is what put
+ * transient events in the wrong device's context on multi-GPU systems
  * (`cudaErrorInvalidResourceHandle` at event-record time).
  */
 inline int get_device_from_stream(cudaStream_t stream)
@@ -72,27 +91,11 @@ inline int get_device_from_stream(cudaStream_t stream)
     return cuda_try<cudaGetDevice>();
   }
 
-#if _CCCL_CTK_AT_LEAST(12, 8)
-  return cuda_try<cudaStreamGetDevice>(stream);
-#else
-  // cuStreamGetCtx during capture is unverified on pre-12.8 toolkits: keep
-  // the conservative current-device fallback there. Only correct on
-  // single-device systems.
-  if (is_stream_capturing(stream))
-  {
-    return cuda_try<cudaGetDevice>();
-  }
-
-  auto stream_driver = CUstream(stream);
-
-  CUcontext ctx = cuda_try<cuStreamGetCtx>(stream_driver);
-
-  cuda_try(cuCtxPushCurrent(ctx));
-  CUdevice stream_dev = cuda_try<cuCtxGetDevice>();
-  static_cast<void>(cuda_try<cuCtxPopCurrent>());
-
-  return static_cast<int>(stream_dev);
-#endif
+  // cuda::__ensure_current_context(stream_ref) makes the stream's context current and restores the
+  // previous one on scope exit. Its context lookup is the green-context aware one (cuStreamGetCtx_v2
+  // on 12.5+ drivers, cuStreamGetCtx before).
+  const ::cuda::__ensure_current_context guard{::cuda::stream_ref{stream}};
+  return ::cuda::__driver::__cudevice_to_ordinal(::cuda::__driver::__ctxGetDevice());
 }
 
 /** Sentinel for "no stream" / empty slot. Distinct from any value returned by cuStreamGetId. */
