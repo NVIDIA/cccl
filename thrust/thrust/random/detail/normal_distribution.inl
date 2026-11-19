@@ -82,7 +82,7 @@ template <typename RealType>
 _CCCL_HOST_DEVICE_API typename normal_distribution<RealType>::result_type normal_distribution<RealType>::max
 THRUST_PREVENT_MACRO_SUBSTITUTION() const
 {
-  return ::cuda::std::numeric_limits<RealType>::max();
+  return (::cuda::std::numeric_limits<RealType>::max)();
 } // end normal_distribution::max()
 
 template <typename RealType>

@@ -181,7 +181,7 @@ public:
    */
   _CCCL_HOST_API size_type max_size() const
   {
-    return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T); // NOLINT(readability-redundant-parentheses)
+    return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T);
   } // end max_size()
 
   /*! Compares against another \p device_malloc_allocator for equality.
