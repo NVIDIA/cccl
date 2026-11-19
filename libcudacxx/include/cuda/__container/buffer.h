@@ -38,6 +38,7 @@
 #  include <cuda/__memory_resource/synchronous_resource_adapter.h>
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/get_stream.h>
+#  include <cuda/__type_traits/is_specialization_of.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__cstddef/byte.h>
 #  include <cuda/std/__exception/cuda_error.h>
@@ -161,7 +162,9 @@ private:
   template <class _Range>
   [[nodiscard]] _CCCL_HOST_API static constexpr bool __compatible_range() noexcept
   {
-    return ::cuda::std::ranges::__container_compatible_range<_Range, _Tp>;
+    // Initializer lists must use the overloads that account for the source lifetime.
+    return ::cuda::std::ranges::__container_compatible_range<_Range, _Tp>
+        && !::cuda::__is_specialization_of_v<::cuda::std::decay_t<_Range>, ::cuda::std::initializer_list>;
   }
 
   //! @brief Helper to check whether a different buffer still satisfies all
@@ -193,11 +196,12 @@ private:
   //! @param __last Pointer to the end of the input segment.
   //! @param __dest Pointer to the start of the output segment.
   //! @param __count The number of elements to be copied.
-  //! @note This function is inherently asynchronous. We need to ensure that the
-  //! memory pointed to by \p __first and
-  //! \p __last lives long enough
+  //! @param __ephemeral Whether source accesses must complete before returning.
+  //! @note Unless the source is ephemeral, this function is asynchronous. The source memory must
+  //! remain valid until the copy completes on the stream.
   template <class _Iter>
-  _CCCL_HOST_API void __copy_cross(_Iter __first, [[maybe_unused]] _Iter __last, pointer __dest, size_type __count)
+  _CCCL_HOST_API void __copy_cross(
+    _Iter __first, [[maybe_unused]] _Iter __last, pointer __dest, size_type __count, bool __ephemeral = false)
   {
     if (__count == 0)
     {
@@ -205,11 +209,24 @@ private:
     }
 
     static_assert(::cuda::std::contiguous_iterator<_Iter>, "Non contiguous iterators are not supported");
-    // TODO use batched memcpy for non-contiguous iterators, it allows to
-    // specify stream ordered access
     const ::cuda::__ensure_current_context __guard(__buf_.stream());
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+    // Batched copies do not support the legacy default stream.
+    if (__ephemeral && __buf_.stream().get() != nullptr && __buf_.stream().get() != cudaStreamLegacy)
+    {
+      ::CUmemcpyAttributes __attributes{};
+      __attributes.srcAccessOrder = ::CU_MEMCPY_SRC_ACCESS_ORDER_DURING_API_CALL;
+      ::cuda::__driver::__memcpyAsyncWithAttributes(
+        __dest, ::cuda::std::to_address(__first), sizeof(_Tp) * __count, __buf_.stream().get(), __attributes);
+      return;
+    }
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
     ::cuda::__driver::__memcpyAsync(
       __dest, ::cuda::std::to_address(__first), sizeof(_Tp) * __count, __buf_.stream().get());
+    if (__ephemeral)
+    {
+      __buf_.stream().sync();
+    }
   }
 
   //! @brief Converts a buffer of \p _Tp into a buffer of \p _Up that owns the
@@ -366,13 +383,14 @@ public:
   //! @param __resource The memory resource used for allocations.
   //! @param __env The environment used to query the memory resource.
   //! @param __ilist The initializer_list being copied into the buffer.
+  //! @note The source must remain valid until the copy completes on the stream.
   //! @note If `__ilist.size() == 0` then no memory is allocated
   _CCCL_TEMPLATE(class _Resource, class _Env = ::cuda::std::execution::env<>)
   _CCCL_REQUIRES(
     ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND __buffer_compatible_env<_Env>)
   _CCCL_HOST_API buffer(::cuda::stream_ref __stream,
                         _Resource&& __resource,
-                        ::cuda::std::initializer_list<_Tp> __ilist,
+                        const ::cuda::std::initializer_list<_Tp>& __ilist,
                         [[maybe_unused]] const _Env& __env = {})
       : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
                __stream,
@@ -383,6 +401,33 @@ public:
                   "Buffer owns a copy of the memory resource, which means it must be copy constructible. "
                   "cuda::mr::shared_resource can be used to attach shared ownership to a resource type.");
     this->__copy_cross(__ilist.begin(), __ilist.end(), __unwrapped_begin(), __buf_.size());
+  }
+
+  //! @brief Constructs a buffer using a memory resource and copy-constructs all
+  //! elements from \p __ilist
+  //! @param __stream The stream used for allocations.
+  //! @param __resource The memory resource used for allocations.
+  //! @param __env The environment used to query the memory resource.
+  //! @param __ilist The initializer_list being copied into the buffer.
+  //! @note Source accesses complete before this constructor returns.
+  //! On CUDA 12 or a legacy default stream, this synchronizes the stream for non-empty lists.
+  //! @note If `__ilist.size() == 0` then no memory is allocated
+  _CCCL_TEMPLATE(class _Resource, class _Env = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES(
+    ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND __buffer_compatible_env<_Env>)
+  _CCCL_HOST_API buffer(::cuda::stream_ref __stream,
+                        _Resource&& __resource,
+                        const ::cuda::std::initializer_list<_Tp>&& __ilist,
+                        [[maybe_unused]] const _Env& __env = {})
+      : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
+               __stream,
+               __ilist.size(),
+               __alignment_from_env(__env))
+  {
+    static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
+                  "Buffer owns a copy of the memory resource, which means it must be copy constructible. "
+                  "cuda::mr::shared_resource can be used to attach shared ownership to a resource type.");
+    this->__copy_cross(__ilist.begin(), __ilist.end(), __unwrapped_begin(), __buf_.size(), true);
   }
 
   //! @brief Constructs a buffer using a memory resource and an input range
@@ -1056,7 +1101,7 @@ _CCCL_TEMPLATE(class _Tp,
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
     __buffer_compatible_env<_Env>)
-_CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
+[[nodiscard]] _CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
   stream_ref __stream,
   _Resource&& __mr,
   const buffer<_Tp, _FirstSourceProperty, _RestSourceProperties...>& __source,
@@ -1082,7 +1127,7 @@ template <class _Tp,
           class _FirstSourceProperty,
           class... _RestSourceProperties,
           class _Env = ::cuda::std::execution::env<>>
-_CCCL_HOST_API auto make_buffer(
+[[nodiscard]] _CCCL_HOST_API auto make_buffer(
   stream_ref __stream,
   _Resource&& __mr,
   const buffer<_Tp, _FirstSourceProperty, _RestSourceProperties...>& __source,
@@ -1095,7 +1140,7 @@ _CCCL_TEMPLATE(class _Tp,
                class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
                  _CCCL_AND ::cuda::mr::__has_default_queries<::cuda::std::decay_t<_Resource>>)
-_CCCL_HOST_API auto make_buffer(
+[[nodiscard]] _CCCL_HOST_API auto make_buffer(
   stream_ref __stream,
   _Resource&& __mr,
   const buffer<_Tp, _FirstSourceProperty, _RestSourceProperties...>& __source,
@@ -1117,7 +1162,7 @@ _CCCL_TEMPLATE(
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
     __buffer_compatible_env<_Env>)
-_CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...>
+[[nodiscard]] _CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...>
 make_buffer(stream_ref __stream, _Resource&& __mr, const _Env& __env = {})
 {
   return buffer<_Tp, _FirstProperty, _RestProperties...>{__stream, ::cuda::std::forward<_Resource>(__mr), __env};
@@ -1130,13 +1175,13 @@ make_buffer(stream_ref __stream, _Resource&& __mr, const _Env& __env = {})
 //! @param __env The environment providing additional configuration.
 #  ifdef _CCCL_DOXYGEN_INVOKED
 template <class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>>
-_CCCL_HOST_API auto make_buffer(stream_ref __stream, _Resource&& __mr, const _Env& __env = {});
+[[nodiscard]] _CCCL_HOST_API auto make_buffer(stream_ref __stream, _Resource&& __mr, const _Env& __env = {});
 #  else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
                  _CCCL_AND ::cuda::mr::__has_default_queries<::cuda::std::decay_t<_Resource>> _CCCL_AND
                    __buffer_compatible_env<_Env>)
-_CCCL_HOST_API auto make_buffer(stream_ref __stream, _Resource&& __mr, const _Env& __env = {})
+[[nodiscard]] _CCCL_HOST_API auto make_buffer(stream_ref __stream, _Resource&& __mr, const _Env& __env = {})
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   return __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __env};
@@ -1152,7 +1197,7 @@ _CCCL_TEMPLATE(
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
     __buffer_compatible_env<_Env>)
-_CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
+[[nodiscard]] _CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
   stream_ref __stream, _Resource&& __mr, size_t __size, const _Tp& __value, [[maybe_unused]] const _Env& __env = {})
 {
   auto __res =
@@ -1171,13 +1216,13 @@ _CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
 //! @param __env The environment providing additional configuration.
 #  ifdef _CCCL_DOXYGEN_INVOKED
 template <class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>>
-_CCCL_HOST_API auto
+[[nodiscard]] _CCCL_HOST_API auto
 make_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, const _Tp& __value, const _Env& __env = {});
 #  else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
                  _CCCL_AND ::cuda::mr::__has_default_queries<::cuda::std::decay_t<_Resource>>)
-_CCCL_HOST_API auto make_buffer(
+[[nodiscard]] _CCCL_HOST_API auto make_buffer(
   stream_ref __stream, _Resource&& __mr, size_t __size, const _Tp& __value, [[maybe_unused]] const _Env& __env = {})
 {
   using __default_queries = typename ::cuda::std::decay_t<_Resource>::default_queries;
@@ -1198,7 +1243,7 @@ _CCCL_TEMPLATE(
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
     __buffer_compatible_env<_Env>)
-_CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...>
+[[nodiscard]] _CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...>
 make_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::no_init_t, const _Env& __env = {})
 {
   return buffer<_Tp, _FirstProperty, _RestProperties...>{
@@ -1213,13 +1258,13 @@ make_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::no_ini
 //! @param __env The environment providing additional configuration.
 #  ifdef _CCCL_DOXYGEN_INVOKED
 template <class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>>
-_CCCL_HOST_API auto
+[[nodiscard]] _CCCL_HOST_API auto
 make_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::no_init_t, const _Env& __env = {});
 #  else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
                  _CCCL_AND ::cuda::mr::__has_default_queries<_Resource>)
-_CCCL_HOST_API auto
+[[nodiscard]] _CCCL_HOST_API auto
 make_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::no_init_t, const _Env& __env = {})
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
@@ -1238,7 +1283,7 @@ _CCCL_TEMPLATE(class _Tp,
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
     __buffer_compatible_env<_Env> _CCCL_AND ::cuda::std::__has_forward_traversal<_Iter>)
-_CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...>
+[[nodiscard]] _CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...>
 make_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _Iter __last, const _Env& __env = {})
 {
   return buffer<_Tp, _FirstProperty, _RestProperties...>{
@@ -1254,14 +1299,14 @@ make_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _Iter __last, 
 //! @param __env The environment providing additional configuration.
 #  ifdef _CCCL_DOXYGEN_INVOKED
 template <class _Tp, class _Resource, class _Iter, class _Env = ::cuda::std::execution::env<>>
-_CCCL_HOST_API auto
+[[nodiscard]] _CCCL_HOST_API auto
 make_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _Iter __last, const _Env& __env = {});
 #  else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Iter, class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
     _CCCL_AND ::cuda::mr::__has_default_queries<_Resource> _CCCL_AND ::cuda::std::__has_forward_traversal<_Iter>)
-_CCCL_HOST_API auto
+[[nodiscard]] _CCCL_HOST_API auto
 make_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _Iter __last, const _Env& __env = {})
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
@@ -1276,32 +1321,57 @@ _CCCL_TEMPLATE(
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
     __buffer_compatible_env<_Env>)
-_CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...>
-make_buffer(stream_ref __stream, _Resource&& __mr, ::cuda::std::initializer_list<_Tp> __ilist, const _Env& __env = {})
+[[nodiscard]] _CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
+  stream_ref __stream, _Resource&& __mr, const ::cuda::std::initializer_list<_Tp>& __ilist, const _Env& __env = {})
 {
   return buffer<_Tp, _FirstProperty, _RestProperties...>{
     __stream, ::cuda::std::forward<_Resource>(__mr), __ilist, __env};
 }
+
+_CCCL_TEMPLATE(
+  class _Tp, class _FirstProperty, class... _RestProperties, class _Resource, class _Env = ::cuda::std::execution::env<>)
+_CCCL_REQUIRES(
+  ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
+    __buffer_compatible_env<_Env>)
+[[nodiscard]] _CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
+  stream_ref __stream, _Resource&& __mr, const ::cuda::std::initializer_list<_Tp>&& __ilist, const _Env& __env = {})
+{
+  return buffer<_Tp, _FirstProperty, _RestProperties...>{
+    __stream, ::cuda::std::forward<_Resource>(__mr), ::cuda::std::move(__ilist), __env};
+}
 #  endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a buffer from \p __ilist, using the default properties of \p __mr
+//! @note Rvalue initializer-list source accesses complete before returning. Lvalue sources must
+//! remain valid until the stream-ordered copy completes. CUDA 12 and legacy default streams synchronize
+//! non-empty rvalue copies.
 //! @param __stream The stream used for allocation and copy.
 //! @param __mr The memory resource used for allocation.
 //! @param __ilist The initializer_list being copied into the buffer.
 //! @param __env The environment providing additional configuration.
 #  ifdef _CCCL_DOXYGEN_INVOKED
 template <class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>>
-_CCCL_HOST_API auto
+[[nodiscard]] _CCCL_HOST_API auto
 make_buffer(stream_ref __stream, _Resource&& __mr, ::cuda::std::initializer_list<_Tp> __ilist, const _Env& __env = {});
 #  else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
                  _CCCL_AND ::cuda::mr::__has_default_queries<::cuda::std::decay_t<_Resource>>)
-_CCCL_HOST_API auto
-make_buffer(stream_ref __stream, _Resource&& __mr, ::cuda::std::initializer_list<_Tp> __ilist, const _Env& __env = {})
+[[nodiscard]] _CCCL_HOST_API auto make_buffer(
+  stream_ref __stream, _Resource&& __mr, const ::cuda::std::initializer_list<_Tp>& __ilist, const _Env& __env = {})
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   return __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __ilist, __env};
+}
+
+_CCCL_TEMPLATE(class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>)
+_CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
+                 _CCCL_AND ::cuda::mr::__has_default_queries<::cuda::std::decay_t<_Resource>>)
+[[nodiscard]] _CCCL_HOST_API auto make_buffer(
+  stream_ref __stream, _Resource&& __mr, const ::cuda::std::initializer_list<_Tp>&& __ilist, const _Env& __env = {})
+{
+  using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
+  return __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), ::cuda::std::move(__ilist), __env};
 }
 #  endif // _CCCL_DOXYGEN_INVOKED
 
@@ -1315,8 +1385,9 @@ _CCCL_TEMPLATE(class _Tp,
                class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
-    __buffer_compatible_env<_Env> _CCCL_AND ::cuda::std::ranges::forward_range<_Range>)
-_CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...>
+    __buffer_compatible_env<_Env> _CCCL_AND ::cuda::std::ranges::forward_range<_Range> _CCCL_AND(
+      !::cuda::__is_specialization_of_v<::cuda::std::decay_t<_Range>, ::cuda::std::initializer_list>))
+[[nodiscard]] _CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...>
 make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range, const _Env& __env = {})
 {
   return buffer<_Tp, _FirstProperty, _RestProperties...>{
@@ -1331,13 +1402,16 @@ make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range, const _Env&
 //! @param __env The environment providing additional configuration.
 #  ifdef _CCCL_DOXYGEN_INVOKED
 template <class _Tp, class _Resource, class _Range, class _Env = ::cuda::std::execution::env<>>
+[[nodiscard]]
 _CCCL_HOST_API auto make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range, const _Env& __env = {});
 #  else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Range, class _Env = ::cuda::std::execution::env<>)
-_CCCL_REQUIRES(
-  ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND ::cuda::mr::__has_default_queries<
-    ::cuda::std::decay_t<_Resource>> _CCCL_AND ::cuda::std::ranges::forward_range<_Range>)
-_CCCL_HOST_API auto make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range, const _Env& __env = {})
+_CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
+                 _CCCL_AND ::cuda::mr::__has_default_queries<::cuda::std::decay_t<_Resource>>
+                   _CCCL_AND ::cuda::std::ranges::forward_range<_Range> _CCCL_AND(
+                     !::cuda::__is_specialization_of_v<::cuda::std::decay_t<_Range>, ::cuda::std::initializer_list>))
+[[nodiscard]] _CCCL_HOST_API auto
+make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range, const _Env& __env = {})
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   return __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), ::cuda::std::forward<_Range>(__range), __env};

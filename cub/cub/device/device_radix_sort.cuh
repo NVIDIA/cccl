@@ -160,9 +160,8 @@ inline constexpr bool __can_use_radix_sort =
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! All algorithms in DeviceRadixSort that accept an environment can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::RadixSortPolicy`, as shown in the
-//! example below:
+//! All algorithms in DeviceRadixSort can be tuned by passing a custom :ref:`policy selector <cub-policy-selectors>`
+//! that returns a :cpp:struct:`cub::RadixSortPolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
 //!      :language: c++

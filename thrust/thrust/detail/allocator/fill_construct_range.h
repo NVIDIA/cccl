@@ -14,7 +14,6 @@
 #endif // no system header
 
 #include <thrust/detail/allocator/allocator_system.h>
-#include <thrust/detail/type_traits.h>
 #include <thrust/for_each.h>
 #include <thrust/uninitialized_fill.h>
 

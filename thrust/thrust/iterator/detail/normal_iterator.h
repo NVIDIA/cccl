@@ -23,6 +23,7 @@
 
 #include <cuda/__iterator/contiguous_iterator_adaptor.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>
 

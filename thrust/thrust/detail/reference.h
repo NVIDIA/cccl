@@ -17,19 +17,24 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/pointer.h>
 #include <thrust/detail/reference_forward_declaration.h>
+#include <thrust/detail/use_default.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/memory.h>
 #include <thrust/system/detail/generic/select_system.h>
 
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
 
 // Include all active backend system implementations (sequential, host and device) (there is no generic implementation)
+// IWYU pragma: begin_keep
 #include <thrust/system/detail/sequential/assign_value.h>
 #include <thrust/system/detail/sequential/get_value.h>
 #include <thrust/system/detail/sequential/iter_swap.h>
@@ -39,6 +44,7 @@
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(assign_value.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(get_value.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(iter_swap.h)
+// IWYU pragma: end_keep
 
 // Some build systems need a hint to know which files we could include
 #if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
@@ -70,7 +76,7 @@ struct is_wrapped_reference;
 template <typename Element, typename Pointer, typename Derived>
 class reference
 {
-  using derived_type = std::conditional_t<std::is_same_v<Derived, use_default>, reference, Derived>;
+  using derived_type = ::cuda::std::conditional_t<::cuda::std::is_same_v<Derived, use_default>, reference, Derived>;
 
 public:
   using pointer    = Pointer;
@@ -95,8 +101,9 @@ public:
     /*! \cond
      */
     ,
-    std::enable_if_t<
-      std::is_convertible_v<typename reference<OtherElement, OtherPointer, OtherDerived>::pointer, pointer>>* = nullptr
+    ::cuda::std::enable_if_t<
+      ::cuda::std::is_convertible_v<typename reference<OtherElement, OtherPointer, OtherDerived>::pointer, pointer>>* =
+      nullptr
     /*! \endcond
      */
     )
