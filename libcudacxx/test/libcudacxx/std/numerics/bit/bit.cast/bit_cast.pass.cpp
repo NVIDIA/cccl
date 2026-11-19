@@ -13,16 +13,23 @@
 // template<class To, class From>
 //   constexpr To bit_cast(const From& from) noexcept;
 
-#include <cuda/std/array>
+#include "test_macros.h"
+
+// GCC emits -Wdeprecated-copy in bit_cast when it copies NoDefaultAggregate below.
+_CCCL_DIAG_PUSH
+#if TEST_COMPILER(GCC, >=, 9)
+_CCCL_DIAG_SUPPRESS_GCC("-Wdeprecated-copy")
+#endif // TEST_COMPILER(GCC, >=, 9)
 #include <cuda/std/bit>
+_CCCL_DIAG_POP
+
+#include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
 #include <cuda/std/cstring>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
-
-#include "test_macros.h"
 
 // cuda::std::bit_cast does not preserve padding bits, so if T has padding bits,
 // the results might not memcmp cleanly.
@@ -344,9 +351,6 @@ TEST_FUNC bool tests()
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated-copy")
-#if TEST_COMPILER(GCC, >=, 9)
-_CCCL_DIAG_SUPPRESS_GCC("-Wdeprecated-copy")
-#endif // TEST_COMPILER(GCC, >=, 9)
 
 // NOLINTBEGIN(misc-static-assert)
 TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST bool test_same_type()
@@ -388,7 +392,7 @@ TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST bool test_same_type()
   struct NoDefaultAggregate
   {
     const int data;
-    TEST_FUNC NoDefaultAggregate& operator=(const NoDefaultAggregate&); // implicitly delete copy ctr
+    TEST_FUNC NoDefaultAggregate& operator=(const NoDefaultAggregate&); // implicitly deleted copy ctr
   };
   // NOLINTNEXTLINE(cccl-prefer-cuda-traits)
   static_assert(!cuda::std::is_trivially_copyable_v<NoDefaultAggregate>);
