@@ -52,8 +52,8 @@ _CCCL_DEVICE_API inline __index __atomic_add(__index* __target, __index __value)
 template <class _Tp>
 struct __record
 {
-  __index __hash;
-  _Tp __value;
+  __index __hash_;
+  _Tp __value_;
 };
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __index __mix64(__index __value) noexcept
@@ -66,17 +66,17 @@ struct __record
 
 struct __owner
 {
-  const __index* __splits;
-  __index __ranks;
+  const __index* __splits_;
+  __index __ranks_;
 
   [[nodiscard]] _CCCL_DEVICE_API __index operator()(__index __hash) const noexcept
   {
     __index __first = 0;
-    auto __last     = __ranks;
+    auto __last     = __ranks_;
     while (__first < __last)
     {
       const auto __mid = __first + (__last - __first) / 2;
-      if (__splits[__mid + 1] <= __hash)
+      if (__splits_[__mid + 1] <= __hash)
       {
         __first = __mid + 1;
       }
@@ -91,11 +91,11 @@ struct __owner
 
 struct __local_bin
 {
-  __index __start;
-  __index __width;
+  __index __start_;
+  __index __width_;
   [[nodiscard]] _CCCL_DEVICE_API __index operator()(__index __hash) const noexcept
   {
-    return (__hash - __start) / __width;
+    return (__hash - __start_) / __width_;
   }
 };
 
@@ -118,7 +118,8 @@ _CCCL_KERNEL_ATTRIBUTES void __generate(
         ::cuda::experimental::mgmn::__detail::__hashgraph_shuffle::__mix64(__first + __i + __seed))
       % __buckets;
     __records[__i] = {__hash, __input[__i]};
-    __atomic_add(__coarse_counts + __hash / __coarse_width, 1ULL);
+    ::cuda::experimental::mgmn::__detail::__hashgraph_shuffle::__atomic_add(
+      __coarse_counts + __hash / __coarse_width, 1ULL);
   }
 }
 
@@ -143,16 +144,18 @@ _CCCL_KERNEL_ATTRIBUTES void __count(
   }
   for (__index __i = __index{blockIdx.x} * blockDim.x + threadIdx.x; __i < __count; __i += __stride)
   {
-    const auto __dest   = __bin(__records[__i].__hash);
+    const auto __dest   = __bin(__records[__i].__hash_);
     __destinations[__i] = __dest;
-    __atomic_add((__bins <= 256 ? __local_counts : __counts) + __dest, 1ULL);
+    ::cuda::experimental::mgmn::__detail::__hashgraph_shuffle::__atomic_add(
+      (__bins <= 256 ? __local_counts : __counts) + __dest, 1ULL);
   }
   if (__bins <= 256)
   {
     __syncthreads();
     if (threadIdx.x < __bins && __local_counts[threadIdx.x] != 0)
     {
-      __atomic_add(__counts + threadIdx.x, __local_counts[threadIdx.x]);
+      ::cuda::experimental::mgmn::__detail::__hashgraph_shuffle::__atomic_add(
+        __counts + threadIdx.x, __local_counts[threadIdx.x]);
     }
   }
 }
@@ -180,19 +183,21 @@ _CCCL_KERNEL_ATTRIBUTES void __pack(
     __syncthreads();
     for (auto __i = __first; __i < __count; __i += __stride)
     {
-      __atomic_add(__counts + __destinations[__i], 1ULL);
+      ::cuda::experimental::mgmn::__detail::__hashgraph_shuffle::__atomic_add(__counts + __destinations[__i], 1ULL);
     }
     __syncthreads();
     if (threadIdx.x < __bins && __counts[threadIdx.x] != 0)
     {
-      __positions[threadIdx.x] = __atomic_add(__cursors + threadIdx.x, __counts[threadIdx.x]);
+      __positions[threadIdx.x] = ::cuda::experimental::mgmn::__detail::__hashgraph_shuffle::__atomic_add(
+        __cursors + threadIdx.x, __counts[threadIdx.x]);
     }
     __syncthreads();
   }
   for (auto __i = __first; __i < __count; __i += __stride)
   {
-    const auto __dest                   = __destinations[__i];
-    const auto __pos                    = __atomic_add((__bins <= 256 ? __positions : __cursors) + __dest, 1ULL);
+    const auto __dest = __destinations[__i];
+    const auto __pos  = ::cuda::experimental::mgmn::__detail::__hashgraph_shuffle::__atomic_add(
+      (__bins <= 256 ? __positions : __cursors) + __dest, 1ULL);
     __output[__offsets[__dest] + __pos] = __records[__i];
   }
 }
@@ -203,7 +208,7 @@ _CCCL_KERNEL_ATTRIBUTES void __extract(const __record<_Tp>* __records, _OutputIt
   const auto __stride = __index{blockDim.x} * gridDim.x;
   for (__index __i = __index{blockIdx.x} * blockDim.x + threadIdx.x; __i < __count; __i += __stride)
   {
-    __output[__i] = __records[__i].__value;
+    __output[__i] = __records[__i].__value_;
   }
 }
 } // namespace __detail::__hashgraph_shuffle

@@ -55,6 +55,15 @@ The communicator must provide grouped all-gather, sum all-reduce, fixed all-to-a
 and variable all-to-all. MGMN's NCCL fixed all-to-all requires NCCL 2.28 or newer.
 No communicator initialization or destruction happens inside the algorithm.
 
+Permutation generation
+----------------------
+
+For an output permutation of global indices, pass a
+``cuda::counting_iterator<uint64_t>{global_first}`` as the input iterator to
+``shuffle_copy``. ``global_first`` is the sum of the preceding ranks' input
+sizes. This avoids allocating a materialized input index array. The output still
+has the original local size on each rank.
+
 Seed consumption
 ----------------
 

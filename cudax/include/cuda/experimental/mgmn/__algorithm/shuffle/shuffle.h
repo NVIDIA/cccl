@@ -49,47 +49,12 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 _CCCL_BEGIN_NAMESPACE_CUDA_MGMN
+namespace __detail::__hashgraph_shuffle
+{
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
-//! @brief Copy a HashGraph permutation of a distributed sequence to distributed output.
-//!
-//! Communicators, execution environments, input iterators, sizes and output iterators
-//! describe the local ranks in lockstep. Every communicator rank participates, even
-//! when empty. Each output receives exactly its corresponding input's number of
-//! elements. Inputs and outputs must be device-accessible, random-access ranges of
-//! the same trivially copyable value type. Output ranges must not overlap each other
-//! or input ranges. The single-rank overload can be called concurrently for separate
-//! local ranks; use this range overload when one host thread owns multiple GPUs.
-//!
-//! Each environment supplies a stream and optional memory resource. Communicators
-//! must support grouped all-gather, sum all-reduce, all-to-all and variable all-to-all.
-//! Work is ordered on the supplied streams; host metadata processing synchronizes
-//! intermediate phases. The caller synchronizes its streams before reading outputs.
-//!
-//! This experimental port preserves the existing HashGraph permutation generator:
-//! seed-dependent keys, hash partitioning, exchange and CSR ordering. Atomic insertion
-//! order can vary between runs. It does not guarantee uniform sampling of all
-//! permutations, fixed-seed repeatability, or the same ordering as thrust::shuffle.
-//!
-//! The generator is consumed once through a uniform uint64 distribution per call
-//! with local communicators, including globally empty inputs. Separate participants
-//! must supply generators that produce the same seed. This agrees with one range call
-//! per process or concurrently issued single-communicator calls with separate engines.
-//! An empty communicator range consumes no generator state.
-//!
-//! @param __policy Must be @c cudax::distributed.
-//! @param __comms Range of local communicators from one communicator world.
-//! @param __envs Range of environments, each containing a stream for its rank.
-//! @param __inputs Range of input iterators.
-//! @param __sizes Range of nonnegative integral local sizes.
-//! @param __outputs Range of output iterators, each with its matching local size.
-//! @param __generator Uniform random bit generator used to select the common seed.
-_CCCL_TEMPLATE(class _Policy, class _Comms, class _Envs, class _Inputs, class _Sizes, class _Outputs, class _URBG)
-_CCCL_REQUIRES(
-  __range_of_communicators<_Comms> _CCCL_AND ::cuda::std::ranges::forward_range<_Envs> _CCCL_AND
-    __detail::__range_of_random_access_iterators<_Inputs> _CCCL_AND ::cuda::std::ranges::forward_range<_Sizes> _CCCL_AND
-      __detail::__range_of_random_access_iterators<_Outputs>)
-_CCCL_HOST_API void shuffle_copy(
+template <class _Policy, class _Comms, class _Envs, class _Inputs, class _Sizes, class _Outputs, class _URBG>
+_CCCL_HOST_API void __dispatch(
   const ::cuda::experimental::__result_policy_base<_Policy>&,
   _Comms&& __comms,
   _Envs&& __envs,
@@ -131,6 +96,62 @@ _CCCL_HOST_API void shuffle_copy(
     __comms, __envs, __inputs, __sizes, __outputs, __seed);
 }
 
+_CCCL_END_NAMESPACE_ARCH_DEPENDENT
+} // namespace __detail::__hashgraph_shuffle
+
+_CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
+
+//! @brief Copy a HashGraph permutation of a distributed sequence to distributed output.
+//!
+//! Communicators, execution environments, input iterators, sizes and output iterators
+//! describe the local ranks in lockstep. Every communicator rank participates, even
+//! when empty. Each output receives exactly its corresponding input's number of
+//! elements. Inputs and outputs must be device-accessible, random-access ranges of
+//! the same trivially copyable value type. Output ranges must not overlap each other
+//! or input ranges. The single-rank overload can be called concurrently for separate
+//! local ranks; use this range overload when one host thread owns multiple GPUs.
+//!
+//! Each environment supplies a stream and optional memory resource. Communicators
+//! must support grouped all-gather, sum all-reduce, all-to-all and variable all-to-all.
+//! Work is ordered on the supplied streams; host metadata processing synchronizes
+//! intermediate phases. The caller synchronizes its streams before reading outputs.
+//!
+//! This experimental port preserves the existing HashGraph permutation generator:
+//! seed-dependent keys, hash partitioning, exchange and CSR ordering. Atomic insertion
+//! order can vary between runs. It does not guarantee uniform sampling of all
+//! permutations, fixed-seed repeatability, or the same ordering as thrust::shuffle.
+//!
+//! The generator is consumed once through a uniform uint64 distribution per call
+//! with local communicators, including globally empty inputs. Separate participants
+//! must supply generators that produce the same seed. This agrees with one range call
+//! per process or concurrently issued single-communicator calls with separate engines.
+//! An empty communicator range consumes no generator state.
+//!
+//! @param __policy Must be @c cudax::distributed.
+//! @param __comms Range of local communicators from one communicator world.
+//! @param __envs Range of environments, each containing a stream for its rank.
+//! @param __inputs Range of input iterators.
+//! @param __sizes Range of nonnegative integral local sizes.
+//! @param __outputs Range of output iterators, each with its matching local size.
+//! @param __generator Uniform random bit generator used to select the common seed.
+_CCCL_TEMPLATE(class _Policy, class _Comms, class _Envs, class _Inputs, class _Sizes, class _Outputs, class _URBG)
+_CCCL_REQUIRES(
+  __range_of_communicators<_Comms> _CCCL_AND ::cuda::std::ranges::forward_range<_Envs> _CCCL_AND
+    __detail::__range_of_random_access_iterators<_Inputs> _CCCL_AND ::cuda::std::ranges::forward_range<_Sizes> _CCCL_AND
+      __detail::__range_of_random_access_iterators<_Outputs>)
+_CCCL_HOST_API void shuffle_copy(
+  const ::cuda::experimental::__result_policy_base<_Policy>& __policy,
+  _Comms&& __comms,
+  _Envs&& __envs,
+  _Inputs&& __inputs,
+  _Sizes&& __sizes,
+  _Outputs&& __outputs,
+  _URBG&& __generator)
+{
+  ::cuda::experimental::mgmn::__detail::__hashgraph_shuffle::__dispatch(
+    __policy, __comms, __envs, __inputs, __sizes, __outputs, ::cuda::std::forward<_URBG>(__generator));
+}
+
 //! @brief Shuffle a distributed sequence in place using HashGraph.
 //!
 //! The range and generator contracts are those of @c shuffle_copy. Input values
@@ -150,7 +171,7 @@ _CCCL_HOST_API void shuffle(
   _URBG&& __generator)
 {
   // The engine stages all inputs before its first write to caller-owned storage.
-  ::cuda::experimental::mgmn::shuffle_copy(
+  ::cuda::experimental::mgmn::__detail::__hashgraph_shuffle::__dispatch(
     __policy, __comms, __envs, __inputs, __sizes, __inputs, ::cuda::std::forward<_URBG>(__generator));
 }
 
@@ -196,13 +217,12 @@ _CCCL_HOST_API void shuffle(
   _Size __size,
   _URBG&& __generator)
 {
-  ::cuda::experimental::mgmn::shuffle_copy(
+  ::cuda::experimental::mgmn::shuffle(
     __policy,
-    ::cuda::std::forward<_Comm>(__comm),
-    ::cuda::std::forward<_Env>(__env),
-    __input,
-    __size,
-    __input,
+    ::cuda::std::span<::cuda::std::remove_reference_t<_Comm>, 1>{::cuda::std::addressof(__comm), 1},
+    ::cuda::std::span<::cuda::std::remove_reference_t<_Env>, 1>{::cuda::std::addressof(__env), 1},
+    ::cuda::std::span<_InputIt, 1>{::cuda::std::addressof(__input), 1},
+    ::cuda::std::span<_Size, 1>{::cuda::std::addressof(__size), 1},
     ::cuda::std::forward<_URBG>(__generator));
 }
 
