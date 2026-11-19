@@ -27,14 +27,14 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/cstdio>
+#include <cuda/std/__host_stdlib/memory>
 
 #include <cuda/experimental/__places/places.cuh> // IWYU pragma: keep
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
 #include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 
-#include <cstdio>
-#include <memory>
 #include <string>
 
 namespace cuda::experimental::stf

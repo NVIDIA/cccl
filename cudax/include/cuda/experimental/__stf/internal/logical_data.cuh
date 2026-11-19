@@ -32,6 +32,9 @@
 
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/algorithm>
+#include <cuda/std/__host_stdlib/cstdio>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/cassert>
 
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
@@ -54,12 +57,9 @@
 #include <cuda/experimental/__stf/utility/pretty_print.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
-#include <algorithm>
 #include <atomic>
-#include <cstdio>
 #include <cstdlib>
 #include <map>
-#include <memory>
 #include <mutex>
 #include <stdexcept>
 #include <string>

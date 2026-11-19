@@ -29,6 +29,10 @@
 
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/cstdio>
+#include <cuda/std/__host_stdlib/exception>
+#include <cuda/std/__host_stdlib/memory>
+#include <cuda/std/__host_stdlib/mutex>
 #include <cuda/std/source_location>
 
 #include <cuda/experimental/__stf/graph/internal/event_types.cuh>
@@ -44,14 +48,10 @@
 
 #include <algorithm>
 #include <atomic>
-#include <cstdio>
 #include <cstdlib>
-#include <exception>
 #include <functional>
 #include <iostream>
 #include <map>
-#include <memory>
-#include <mutex>
 #include <shared_mutex>
 #include <stack>
 #include <stdexcept>

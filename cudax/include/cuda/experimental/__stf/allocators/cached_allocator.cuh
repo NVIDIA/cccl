@@ -26,6 +26,7 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/cstdio>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
@@ -35,7 +36,6 @@
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
-#include <cstdio>
 #include <cstdlib>
 #include <mutex>
 #include <queue>

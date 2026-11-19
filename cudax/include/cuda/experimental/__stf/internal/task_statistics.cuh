@@ -32,6 +32,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/cassert>
 #include <cuda/std/source_location>
 
@@ -45,7 +46,6 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
-#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <utility>

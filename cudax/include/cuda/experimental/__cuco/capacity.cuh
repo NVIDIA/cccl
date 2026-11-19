@@ -27,13 +27,12 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/__cuco/detail/prime.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
-
-#include <stdexcept>
 
 #include <cuda/std/__cccl/prologue.h>
 

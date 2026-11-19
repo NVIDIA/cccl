@@ -23,6 +23,8 @@
 
 #include <cuda/std/__cstddef/types.h>
 
+#include <iterator>
+
 #ifdef UNITTESTED_FILE
 #  include <cuda/std/cassert>
 
@@ -31,8 +33,6 @@
 
 #ifdef UNITTESTED_FILE
 #  include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
-
-#  include <iterator>
 #endif
 
 #include <cuda/experimental/__stf/utility/unittest.cuh>

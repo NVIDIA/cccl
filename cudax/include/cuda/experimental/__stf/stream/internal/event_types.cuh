@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__host_stdlib/algorithm>
 #include <cuda/std/cassert>
 
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
@@ -36,7 +37,6 @@
 #include <cuda/experimental/__stf/utility/memory.cuh>
 #include <cuda/experimental/__utility/unstable_unique.cuh>
 
-#include <algorithm>
 #include <cstdlib>
 #include <string>
 #include <tuple>

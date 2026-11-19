@@ -24,6 +24,7 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/cassert>
 
 #include <cuda/experimental/__stf/internal/constants.cuh>
@@ -34,7 +35,6 @@
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
-#include <memory>
 #include <string>
 #include <tuple>
 #include <type_traits>

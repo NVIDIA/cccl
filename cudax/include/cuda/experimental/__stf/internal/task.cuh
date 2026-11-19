@@ -35,6 +35,8 @@
 
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/memory>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/cassert>
 
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
@@ -53,8 +55,6 @@
 
 #include <functional>
 #include <iterator>
-#include <memory>
-#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <utility>

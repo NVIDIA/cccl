@@ -29,6 +29,9 @@
 
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/exception>
+#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/source_location>
 
 #include <cuda/experimental/__stf/utility/core.cuh>
@@ -36,14 +39,12 @@
 
 #include <array>
 #include <cstdlib>
-#include <exception>
-#include <sstream>
-#include <stdexcept>
 #include <string>
 #include <tuple>
 
 #ifdef UNITTESTED_FILE
-#  include <cstdio>
+#  include <cuda/std/__host_stdlib/cstdio>
+
 #  include <filesystem>
 #endif // UNITTESTED_FILE
 

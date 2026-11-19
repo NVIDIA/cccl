@@ -28,6 +28,7 @@
 
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/new>
 #include <cuda/std/cassert>
 
 #include <cuda/experimental/__places/places.cuh>
@@ -47,7 +48,6 @@
 
 #include <algorithm>
 #include <iterator>
-#include <new>
 #include <stdexcept>
 #include <string>
 #include <utility>

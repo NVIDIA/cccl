@@ -81,8 +81,9 @@
 #include <utility>
 
 #ifdef UNITTESTED_FILE
-#  include <new>
-#  include <sstream>
+#  include <cuda/std/__host_stdlib/new>
+#  include <cuda/std/__host_stdlib/sstream>
+
 #  include <type_traits>
 
 #  include <cuda.h>

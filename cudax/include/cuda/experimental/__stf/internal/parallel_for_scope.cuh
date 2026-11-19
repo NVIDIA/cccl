@@ -27,6 +27,7 @@
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/cstdio>
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -54,7 +55,6 @@
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
-#include <cstdio>
 #include <memory>
 #include <stdexcept>
 #include <string>

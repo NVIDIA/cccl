@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/memory>
 
 #include <cuda/experimental/__stf/allocators/adapters.cuh> // IWYU pragma: keep
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
@@ -32,7 +33,6 @@
 
 #include <cstdlib>
 #include <map>
-#include <memory>
 #include <string>
 #include <tuple>
 #include <unordered_map>

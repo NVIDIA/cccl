@@ -31,6 +31,8 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/cstdio>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/cassert>
 
 #include <cuda/experimental/__places/machine.cuh>
@@ -60,10 +62,8 @@
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <atomic>
-#include <cstdio>
 #include <cstdlib>
 #include <functional>
-#include <memory>
 #include <mutex>
 #include <string>
 #include <unordered_map>

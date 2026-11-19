@@ -26,13 +26,13 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/memory>
 
 #include <cuda/experimental/__places/exec_place_resources.cuh>
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__places/stream_pool.cuh>
 
 #include <functional>
-#include <memory>
 #include <string>
 
 namespace cuda::experimental::places

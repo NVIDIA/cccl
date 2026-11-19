@@ -28,6 +28,7 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/cstdio>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
@@ -37,7 +38,6 @@
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <array>
-#include <cstdio>
 #include <initializer_list>
 #include <string>
 #include <utility>

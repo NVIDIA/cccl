@@ -31,6 +31,7 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/cassert>
 
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
@@ -43,8 +44,6 @@
 #include <cuda/experimental/__stf/localization/composite_slice.cuh>
 #include <cuda/experimental/__stf/stream/stream_data_interface.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
-
-#include <memory>
 
 namespace cuda::experimental::stf
 {

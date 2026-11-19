@@ -27,6 +27,8 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/algorithm>
+#include <cuda/std/__host_stdlib/cstdio>
 #include <cuda/std/cassert>
 
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
@@ -37,8 +39,6 @@
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/pretty_print.cuh>
 
-#include <algorithm>
-#include <cstdio>
 #include <unordered_map>
 #include <vector>
 

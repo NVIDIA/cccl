@@ -33,6 +33,8 @@
 
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/variant.h>
+#include <cuda/std/__host_stdlib/cstdio>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/cassert>
 
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
@@ -43,9 +45,7 @@
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
-#include <cstdio>
 #include <cstdlib>
-#include <memory>
 #include <string>
 #include <tuple>
 #include <vector>

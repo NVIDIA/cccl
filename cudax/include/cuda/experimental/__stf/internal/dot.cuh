@@ -42,6 +42,9 @@
 
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/cstdio>
+#include <cuda/std/__host_stdlib/exception>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/cassert>
 #include <cuda/std/source_location>
 
@@ -56,12 +59,9 @@
 #include <cuda/experimental/__utility/meyers_singleton.cuh>
 
 #include <algorithm>
-#include <cstdio>
 #include <cstdlib>
-#include <exception>
 #include <fstream>
 #include <iostream>
-#include <memory>
 #include <mutex>
 #include <queue>
 #include <sstream>

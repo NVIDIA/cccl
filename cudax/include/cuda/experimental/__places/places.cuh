@@ -35,6 +35,8 @@
 
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/memory>
+#include <cuda/std/__host_stdlib/mutex>
 
 #include <cuda/experimental/__places/data_place_impl.cuh>
 #include <cuda/experimental/__places/data_place_interface.cuh>
@@ -45,8 +47,6 @@
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
-#include <memory>
-#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <tuple>

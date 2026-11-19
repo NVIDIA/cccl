@@ -28,6 +28,7 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/cstdio>
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
@@ -35,7 +36,6 @@
 
 #include <nv/target>
 
-#include <cstdio>
 #include <cstring>
 #include <functional>
 

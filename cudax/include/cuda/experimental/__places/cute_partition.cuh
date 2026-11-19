@@ -57,6 +57,7 @@
 #include <cuda/std/__algorithm/copy.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -76,7 +77,6 @@
 
 #include <algorithm>
 #include <functional>
-#include <memory>
 #include <stdexcept>
 #include <string>
 #include <utility>

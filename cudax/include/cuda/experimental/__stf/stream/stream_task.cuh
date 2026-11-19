@@ -30,6 +30,7 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/cassert>
 
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
@@ -53,7 +54,6 @@
 
 #include <cstdlib>
 #include <functional>
-#include <memory>
 #include <tuple>
 #include <unordered_set>
 #include <vector>

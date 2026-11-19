@@ -18,6 +18,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__fwd/variant.h>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/std/variant>
@@ -55,7 +56,6 @@
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <functional>
-#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>

@@ -26,12 +26,12 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/cstdio>
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
-#include <cstdio>
 #include <iomanip>
 #include <ios>
 #include <sstream>

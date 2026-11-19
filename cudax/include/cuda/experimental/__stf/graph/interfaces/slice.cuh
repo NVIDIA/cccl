@@ -27,6 +27,7 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/cassert>
 
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
@@ -42,8 +43,6 @@
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
-
-#include <memory>
 
 namespace cuda::experimental::stf
 {

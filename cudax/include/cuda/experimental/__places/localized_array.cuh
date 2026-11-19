@@ -31,6 +31,9 @@
 
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/cstdio>
+#include <cuda/std/__host_stdlib/memory>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/cassert>
@@ -41,12 +44,9 @@
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
-#include <cstdio>
 #include <cstdlib>
 #include <functional>
-#include <memory>
 #include <random>
-#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <vector>

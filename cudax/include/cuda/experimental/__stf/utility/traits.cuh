@@ -28,6 +28,7 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__utility/exception_guard.h>
 #include <cuda/std/__utility/typeid.h>
 #include <cuda/std/array>
@@ -37,7 +38,6 @@
 
 #include <array>
 #include <cassert>
-#include <ostream>
 #include <string_view>
 #include <tuple>
 #include <type_traits>

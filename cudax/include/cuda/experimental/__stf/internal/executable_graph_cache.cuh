@@ -26,6 +26,7 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__utility/pair.h>
 
 #include <cuda/experimental/__stf/utility/core.cuh>
@@ -36,7 +37,6 @@
 #include <cuda/experimental/__stf/utility/source_location.cuh>
 
 #include <cstdlib>
-#include <memory>
 #include <queue> // for ::std::priority_queue
 #include <unordered_map>
 #include <utility>

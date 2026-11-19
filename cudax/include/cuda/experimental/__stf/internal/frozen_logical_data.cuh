@@ -26,6 +26,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/cassert>
 
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
@@ -36,7 +37,6 @@
 #include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 
-#include <memory>
 #include <utility>
 
 namespace cuda::experimental::stf

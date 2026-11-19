@@ -29,6 +29,7 @@
 
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/cassert>
 
 #include <cuda/experimental/__stf/internal/task_dep.cuh> // reorderer_payload uses task_dep_vector_untyped
@@ -44,7 +45,6 @@
 #include <memory> // ::std::unique_ptr
 #include <queue>
 #include <random>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>

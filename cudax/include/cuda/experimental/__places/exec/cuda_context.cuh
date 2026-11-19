@@ -34,6 +34,8 @@
 #include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/memory>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/__places/exec_place_resources.cuh>
@@ -42,8 +44,6 @@
 #include <cuda/experimental/__stf/utility/hash.cuh>
 
 #include <functional>
-#include <memory>
-#include <stdexcept>
 #include <string>
 
 #include <cuda.h>

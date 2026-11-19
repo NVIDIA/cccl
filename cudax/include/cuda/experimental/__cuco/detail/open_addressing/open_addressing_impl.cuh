@@ -48,6 +48,7 @@
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -61,8 +62,6 @@
 #include <cuda/experimental/__cuco/detail/probing_scheme_base.cuh>
 #include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
-
-#include <stdexcept>
 
 #include <cuda/std/__cccl/prologue.h>
 

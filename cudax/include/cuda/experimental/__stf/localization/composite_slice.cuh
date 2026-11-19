@@ -28,6 +28,7 @@
 
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -45,7 +46,6 @@
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <iterator>
-#include <memory>
 #include <stdexcept>
 #include <utility>
 #include <vector>

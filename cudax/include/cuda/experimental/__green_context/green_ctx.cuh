@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__device/device_ref.h>
+#include <cuda/__device/physical_device.h> // IWYU pragma: keep
 #include <cuda/__driver/driver_api.h>
 #include <cuda/std/utility>
 

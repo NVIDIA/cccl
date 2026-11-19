@@ -19,7 +19,6 @@
 #pragma once
 
 #include <cuda/__cccl_config>
-#include <cuda/std/__cstddef/types.h>
 
 #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
@@ -28,6 +27,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif
+
+#include <cuda/std/__cstddef/types.h>
 
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 

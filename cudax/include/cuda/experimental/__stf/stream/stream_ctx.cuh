@@ -27,6 +27,7 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/cassert>
 
 #include <cuda/experimental/__places/partitions/blocked_partition.cuh> // for unit test!
@@ -60,7 +61,6 @@
 
 #include <deque>
 #include <functional>
-#include <memory>
 #include <unordered_map>
 #include <vector>
 

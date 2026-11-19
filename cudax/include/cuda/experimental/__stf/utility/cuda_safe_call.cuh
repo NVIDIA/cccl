@@ -33,6 +33,7 @@
 #endif // no system header
 
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/cstdio>
 #include <cuda/std/source_location>
 #include <cuda/std/variant>
 
@@ -40,7 +41,6 @@
 #include <cuda/experimental/__stf/utility/source_location.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <exception>

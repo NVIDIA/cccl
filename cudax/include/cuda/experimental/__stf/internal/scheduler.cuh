@@ -33,6 +33,7 @@
 #endif // no system header
 
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/cassert>
 
 #include <cuda/experimental/__stf/internal/constants.cuh>
@@ -49,7 +50,6 @@
 #include <filesystem> // ::std::filesystem::exists
 #include <fstream> // ::std::ifstream
 #include <iostream>
-#include <memory>
 #include <random> // random_scheduler uses rng
 #include <sstream> // ::std::stringstream
 #include <stdexcept>

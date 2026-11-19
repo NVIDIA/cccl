@@ -28,6 +28,7 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/cassert>
 
 #include <cuda/experimental/__places/exec/green_context.cuh>
@@ -41,7 +42,6 @@
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
-#include <memory>
 #include <mutex>
 #include <unordered_map>
 #include <utility>
