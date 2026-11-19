@@ -30,6 +30,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
@@ -771,15 +772,6 @@ struct retry_t : basic_sink<retry_t>
 };
 inline constexpr retry_t retry{};
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-#endif // _CCCL_DOXYGEN_INVOKED
-
-template <class>
-inline constexpr bool __is_expected = false;
-
-template <class _T, class _E>
-inline constexpr bool __is_expected<::cuda::std::expected<_T, _E>> = true;
-
 template <class>
 struct __expected_error;
 
@@ -815,10 +807,10 @@ struct as_expected_t : basic_sink<as_expected_t>
     else
     {
       using _Expected = ::cuda::std::remove_cvref_t<_Raw>;
-      static_assert(__is_expected<_Expected>,
+      static_assert(::cuda::__is_specialization_of_v<_Expected, ::cuda::std::expected>,
                     "as_expected requires the callable to return a cuda::std::expected instantiation");
 
-      if constexpr (__is_expected<_Expected>)
+      if constexpr (::cuda::__is_specialization_of_v<_Expected, ::cuda::std::expected>)
       {
         using _E = typename __expected_error<_Expected>::type;
         if constexpr (::cuda::std::is_constructible_v<_E, ::std::exception_ptr>)
@@ -1869,11 +1861,6 @@ struct __past_result
   }
 };
 
-template <class _Fn>
-inline constexpr bool __is_past_result_v = false;
-template <class _Status>
-inline constexpr bool __is_past_result_v<__past_result<_Status>> = true;
-
 template <class _P, class _Status, class _Fn>
 using __status_hook_of _CCCL_NODEBUG = decltype(::cuda::std::declval<_P&>().on_returned(
   ::cuda::std::declval<_Status>(), ::cuda::std::declval<::cuda::std::source_location>(), ::cuda::std::declval<_Fn&>()));
@@ -2914,8 +2901,9 @@ __status_answer<_Status> __offer_status(
   [[maybe_unused]] const ::cuda::std::source_location __loc,
   [[maybe_unused]] _Fn& __fn) noexcept(__status_path_nothrow_v<_P, _Status, _Fn>)
 {
-  static_assert(!(_P::__needs_future && __is_past_result_v<::cuda::std::remove_cvref_t<_Fn>>),
-                "retry needs an action to repeat; pass a lambda");
+  static_assert(
+    !(_P::__needs_future && ::cuda::__is_specialization_of_v<::cuda::std::remove_cvref_t<_Fn>, __past_result>),
+    "retry needs an action to repeat; pass a lambda");
   static_assert(!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_P>, defer_t>,
                 "defer answers an exception_ptr, which no status expression can take; store(&eptr) keeps a "
                 "status's exception");
@@ -6194,9 +6182,9 @@ UNITTEST("as_expected and defer")
 #  if _CCCL_HAS_EXCEPTIONS()
   using _PtrResult _CCCL_NODEBUG = ::cuda::std::expected<int, ::std::exception_ptr>;
   using _RefResult _CCCL_NODEBUG = ::cuda::std::expected<int, __ut_error_from_exception>;
-  static_assert(__is_expected<_PtrResult>);
-  static_assert(__is_expected<_RefResult>);
-  static_assert(!__is_expected<int>);
+  static_assert(::cuda::__is_specialization_of_v<_PtrResult, ::cuda::std::expected>);
+  static_assert(::cuda::__is_specialization_of_v<_RefResult, ::cuda::std::expected>);
+  static_assert(!::cuda::__is_specialization_of_v<int, ::cuda::std::expected>);
 
   // The callable declares the boundary type; expected's converting constructor keeps a bare
   // success return natural.
