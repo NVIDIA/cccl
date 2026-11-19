@@ -766,7 +766,7 @@ struct retry_t : basic_sink<retry_t>
   //! @brief The code-channel hook: one re-run of a status-returning action; its status decides.
   template <class _Status, class _Fn>
   __status_answer<_Status> on_returned(const _Status, const ::cuda::std::source_location, _Fn& __fn) const
-    noexcept(noexcept(__fn()))
+    noexcept(::cuda::std::is_nothrow_invocable_v<_Fn&>)
   {
     static_assert(::cuda::std::is_same_v<::cuda::std::remove_cvref_t<decltype(__fn())>, _Status>,
                   "re-running on the code channel needs an action that returns the same status type");
