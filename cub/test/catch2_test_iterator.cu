@@ -2,13 +2,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2024, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-#include <cub/thread/thread_store.cuh>
-#include <cub/util_debug.cuh>
-
 #include <cuda/__cccl_config>
-#include <cuda/std/__type_traits/is_void.h>
-
-#include <c2h/catch2_test_helper.h>
 
 // We start suppressing deprecation warnings but do not stop at the end of the file. This suppresses warnings in the
 // compiler-generated `catch2_test_iterator.compute_120.cudafe1.stub.c`
@@ -17,13 +11,17 @@ _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 
 #include <cub/iterator/cache_modified_output_iterator.cuh>
 #include <cub/iterator/tex_obj_input_iterator.cuh>
+#include <cub/thread/thread_store.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/iterator>
+#include <cuda/std/__type_traits/is_void.h>
 
 #include <cstdint>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_VEC_SIZE types 1:2:3:4
 
