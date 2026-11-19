@@ -30,7 +30,7 @@
 // Some toolkit headers use <nv/target> in true C contexts
 #if !defined(__CUDACC_RTC__) && defined(__cplusplus)
 
-#  if defined(_NV_COMPILER_NVCXX)
+#  ifdef _NV_COMPILER_NVCXX
 #    define _NV_BITSET_ATTRIBUTE [[nv::__target_bitset]]
 #  else
 #    define _NV_BITSET_ATTRIBUTE

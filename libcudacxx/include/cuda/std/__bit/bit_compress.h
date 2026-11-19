@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -94,7 +94,7 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_HOST_API _Tp __bit_compress_impl_host(const _Tp __v, const _Tp __mask) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ELEMENTWISE_PEXT)
+#  ifdef _CCCL_BUILTIN_ELEMENTWISE_PEXT
   return _CCCL_BUILTIN_ELEMENTWISE_PEXT(__v, __mask);
 #  elif defined(_CCCL_BUILTIN_IA32_PEXT_SI) && defined(_CCCL_BUILTIN_IA32_PEXT_DI)
   if constexpr (sizeof(_Tp) <= sizeof(uint32_t))

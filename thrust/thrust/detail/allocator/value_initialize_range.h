@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -14,10 +14,10 @@
 #endif // no system header
 
 #include <thrust/detail/allocator/allocator_system.h>
-#include <thrust/detail/type_traits.h>
 #include <thrust/for_each.h>
 #include <thrust/uninitialized_fill.h>
 
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/is_trivially_default_constructible.h>

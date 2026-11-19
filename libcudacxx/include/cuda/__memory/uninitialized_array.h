@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -42,6 +42,16 @@ struct __uninitialized_array
   [[nodiscard]] _CCCL_API const _Tp* data() const noexcept
   {
     return ::cuda::std::launder(reinterpret_cast<const _Tp*>(__data));
+  }
+
+  [[nodiscard]] _CCCL_API auto alias() noexcept -> _Tp (&)[_Size]
+  {
+    return *::cuda::std::launder(reinterpret_cast<_Tp(*)[_Size]>(__data));
+  }
+
+  [[nodiscard]] _CCCL_API auto alias() const noexcept -> const _Tp (&)[_Size]
+  {
+    return *::cuda::std::launder(reinterpret_cast<const _Tp(*)[_Size]>(__data));
   }
 
   [[nodiscard]] _CCCL_API _Tp& operator[](const size_t __idx) noexcept

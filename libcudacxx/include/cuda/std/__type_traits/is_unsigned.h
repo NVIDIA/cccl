@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -31,14 +31,14 @@
 #endif // _CCCL_CHECK_BUILTIN(is_unsigned)
 
 // if we put this trait to cuda::std::, it colides with libstdc++, putting it to to global namespace seems to work fine
-#if defined(_CCCL_BUILTIN_IS_UNSIGNED)
+#ifdef _CCCL_BUILTIN_IS_UNSIGNED
 template <class _Tp>
 inline constexpr bool __cccl_is_unsigned_v = _CCCL_BUILTIN_IS_UNSIGNED(_Tp);
 #endif // _CCCL_BUILTIN_IS_UNSIGNED
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_UNSIGNED)
+#ifdef _CCCL_BUILTIN_IS_UNSIGNED
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unsigned : bool_constant<::__cccl_is_unsigned_v<_Tp>>

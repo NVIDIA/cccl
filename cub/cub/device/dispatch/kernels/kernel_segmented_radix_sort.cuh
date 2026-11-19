@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -187,7 +187,7 @@ __launch_bounds__(
 
   // Ensure the size of the current segment does not overflow SegmentSizeT
   _CCCL_ASSERT(static_cast<decltype(d_end_offsets[segment_id] - d_begin_offsets[segment_id])>(
-                 ::cuda::std::numeric_limits<SegmentSizeT>::max())
+                 (::cuda::std::numeric_limits<SegmentSizeT>::max)())
                  > (d_end_offsets[segment_id] - d_begin_offsets[segment_id]),
                "A single segment size is limited to the maximum value representable by SegmentSizeT");
   const auto num_items = static_cast<SegmentSizeT>(d_end_offsets[segment_id] - d_begin_offsets[segment_id]);

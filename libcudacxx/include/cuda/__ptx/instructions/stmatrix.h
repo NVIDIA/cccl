@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -34,7 +34,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_PTX
 
-#if defined(__input)
+#ifdef __input
 #  pragma push_macro("__input")
 #  undef __input
 #  define _CUDA_PTX_STMATRIX_POP_MACRO___INPUT
@@ -42,7 +42,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_PTX
 
 #include <cuda/__ptx/instructions/generated/stmatrix.h>
 
-#if defined(_CUDA_PTX_STMATRIX_POP_MACRO___INPUT)
+#ifdef _CUDA_PTX_STMATRIX_POP_MACRO___INPUT
 #  pragma pop_macro("__input")
 #  undef _CUDA_PTX_STMATRIX_POP_MACRO___INPUT
 #endif // defined(_CUDA_PTX_STMATRIX_POP_MACRO___INPUT)

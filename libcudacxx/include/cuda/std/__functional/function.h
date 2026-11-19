@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -903,7 +903,7 @@ public:
 #  endif // _CCCL_NO_RTTI
 };
 
-#  if defined(_LIBCUDACXX_HAS_BLOCKS_RUNTIME)
+#  ifdef _LIBCUDACXX_HAS_BLOCKS_RUNTIME
 
 extern "C" void* _Block_copy(const void*);
 extern "C" void _Block_release(const void*);

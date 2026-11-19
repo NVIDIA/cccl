@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,7 +25,7 @@
 
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
-#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__type_traits/is_void.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -424,7 +424,7 @@ using vector_type_t = typename vector_type<_Tp, _Size>::type;
 // has_vector_type
 
 template <class _Tp, ::cuda::std::size_t _Size>
-inline constexpr bool has_vector_type_v = !::cuda::std::is_same_v<vector_type_t<_Tp, _Size>, void>;
+inline constexpr bool has_vector_type_v = !::cuda::std::is_void_v<vector_type_t<_Tp, _Size>>;
 
 template <class _Tp, ::cuda::std::size_t _Size>
 using has_vector_type = ::cuda::std::bool_constant<has_vector_type_v<_Tp, _Size>>;

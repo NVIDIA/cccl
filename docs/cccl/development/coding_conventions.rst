@@ -132,6 +132,9 @@ Macros
 #. Macros for function attributes, like ``_CCCL_HOST_DEVICE``, should be ordered before declaration
    specifiers like ``constexpr`` or ``static``
 #. Do not mark kernels with ``__global__`` but with ``_CCCL_KERNEL_ATTRIBUTES``
+#. Use ``#ifdef MACRO`` instead of ``#if defined(MACRO)`` when a preprocessor condition only checks whether a
+   single macro is defined, since it is cheaper for the preprocessor to evaluate.
+   Keep ``#elif defined(MACRO)``, since ``#elifdef`` requires C++23.
 
 Comments
 ~~~~~~~~
@@ -193,7 +196,7 @@ These rules also include cudax.
 
        #include <cuda/std/detail/__config>
 
-       #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+       #ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
        #  pragma GCC system_header
        #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
        #  pragma clang system_header

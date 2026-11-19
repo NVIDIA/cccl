@@ -605,7 +605,7 @@
 /* Avoid duplicating #if defined(NVTX3_INLINE_THIS_VERSION) for namespaces
  * in each minor version by making a macro to use unconditionally, which
  * resolves to "inline" or nothing as appropriate. */
-#if defined(NVTX3_INLINE_THIS_VERSION)
+#ifdef NVTX3_INLINE_THIS_VERSION
 #  define NVTX3_INLINE_IF_REQUESTED inline
 #else
 #  define NVTX3_INLINE_IF_REQUESTED
@@ -2913,7 +2913,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
 
 /* When inlining this version, versioned macros must have unversioned aliases.
  * For each NVTX3_Vx_ #define, make an NVTX3_ alias of it here.*/
-#  if defined(NVTX3_INLINE_THIS_VERSION)
+#  ifdef NVTX3_INLINE_THIS_VERSION
 /* clang format off */
 #    define NVTX3_FUNC_RANGE       NVTX3_V1_FUNC_RANGE
 #    define NVTX3_FUNC_RANGE_IF    NVTX3_V1_FUNC_RANGE_IF
@@ -2965,16 +2965,16 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
 #undef NVTX3_MAYBE_UNUSED
 #undef NVTX3_NO_DISCARD
 
-#if defined(NVTX3_INLINE_THIS_VERSION)
+#ifdef NVTX3_INLINE_THIS_VERSION
 #  undef NVTX3_INLINE_THIS_VERSION
 #endif
 
-#if defined(NVTX3_USE_CHECKED_OVERLOADS_FOR_GET_DEFINED_HERE)
+#ifdef NVTX3_USE_CHECKED_OVERLOADS_FOR_GET_DEFINED_HERE
 #  undef NVTX3_USE_CHECKED_OVERLOADS_FOR_GET_DEFINED_HERE
 #  undef NVTX3_USE_CHECKED_OVERLOADS_FOR_GET
 #endif
 
-#if defined(NVTX3_STATIC_ASSERT_DEFINED_HERE)
+#ifdef NVTX3_STATIC_ASSERT_DEFINED_HERE
 #  undef NVTX3_STATIC_ASSERT_DEFINED_HERE
 #  undef NVTX3_STATIC_ASSERT
 #endif
