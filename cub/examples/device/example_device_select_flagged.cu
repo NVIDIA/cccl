@@ -17,15 +17,18 @@
 #define CUB_STDERR
 
 #include <cub/device/device_select.cuh>
+#include <cub/util_debug.cuh>
 
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/memory_pool>
+#include <cuda/std/algorithm>
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
 #include <cuda/stream>
 
 #include <cstdio>
+#include <cstdlib>
 
 #include "../../test/test_util.h"
 

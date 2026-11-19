@@ -18,8 +18,12 @@
 #include <cub/block/block_store.cuh>
 #include <cub/util_debug.cuh>
 
+#include <cuda/functional>
+
+#include <climits>
 #include <cstdio>
-#include <iostream>
+#include <cstdlib>
+#include <ctime>
 
 #include "../../test/test_util.h"
 

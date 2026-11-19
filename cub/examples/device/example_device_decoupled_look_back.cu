@@ -1,12 +1,17 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-#include <cub/device/device_scan.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/util_debug.cuh>
 
 #include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
-#include <iostream>
+#include <cuda/cmath>
+#include <cuda/std/functional>
+
+#include <cstddef>
+#include <cstdint>
 
 template <class ScanTileStateT>
 __global__ void init_kernel(ScanTileStateT tile_state, int blocks_in_grid)
