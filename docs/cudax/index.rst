@@ -13,6 +13,7 @@ CUDA Experimental
    places
    stf
    coop/index
+   mgmn_shuffle
    API reference <api/index>
 
 ``CUDA Experimental`` (``cudax``) provides experimental new features that are still in development and subject to change.
