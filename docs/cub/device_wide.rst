@@ -15,6 +15,8 @@ Almost all of CUB's device-wide APIs come in two flavors:
 * the traditional two-phase style that requires calling the API twice and managing temporary storage explicitly,
 * and the newer single-phase style where temporary storage is obtained from a memory resource in the execution environment.
 
+Both flavors take an optional :ref:`execution environment <cub-environment>` as their last argument.
+
 Some APIs that do not require any temporary storage may also have a traditional single-phase form in addition to the newer environment-based one.
 
 .. _device-temp-storage:
@@ -30,6 +32,12 @@ They follow a two-phase usage pattern that requires three steps:
 2. **Temporary storage allocation**: The user is responsible for allocating device-accessible memory of at least ``temp_storage_bytes`` bytes.
    No special alignment is required.
 3. **Execution Phase**: The algorithm is called the second time with ``d_temp_storage`` pointing to the allocated device memory, performing the actual operation.
+
+Like the single-phase API, two-phase APIs take an optional execution environment as their last argument.
+It can provide a stream, a tuning policy selector, or execution requirements.
+Since the caller provides the temporary storage, a memory resource in the environment is ignored.
+A ``cudaStream_t`` can still be passed directly, as before environments were introduced,
+since it is treated as an environment providing a stream.
 
 In principle, the query phase and execution phase must call the same CUB API.
 This means in detail:
@@ -51,11 +59,11 @@ Example pattern:
    :end-before: example-end temp-storage-query
 
 
-Environment API (single phase)
-++++++++++++++++++++++++++++++
+Single-Phase API (automatic temporary storage management)
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-The environment-based API is available for all CUB device-wide algorithms.
-They remove the split of query/execute phase and manually obtaining the temporary storage.
+The single-phase API is available for all CUB device-wide algorithms.
+It removes the split of query/execute phase and manually obtaining the temporary storage.
 Instead, the temporary storage is automatically requested from a memory resource queried from the execution environment argument.
 The environment supports further properties like passing a stream or an execution requirement in addition to a memory resource.
 
@@ -97,8 +105,8 @@ allowing their start and stop to be visualized in profilers
 like `NVIDIA Nsight Systems <https://developer.nvidia.com/nsight-systems>`_.
 Only the public APIs available in the ``<cub/device/device_xxx.cuh>`` headers are annotated,
 excluding direct calls to the dispatch layer.
-For two phase APIs, the NVTX range is not emitted when querying the temporary storage size, only during algorithm execution.
-For single phase APIs, the NVTX range is emitted for the entire duration of the algorithm call.
+For two-phase APIs, the NVTX range is not emitted when querying the temporary storage size, only during algorithm execution.
+For single-phase APIs, the NVTX range is emitted for the entire duration of the algorithm call.
 CCCL's NVTX annotations can be disabled by defining ``CCCL_NVTX_DISABLE`` during compilation.
 To disable NVTX annotations in general, define ``NVTX_DISABLE`` during compilation.
 When CUB device algorithms are called on a stream during

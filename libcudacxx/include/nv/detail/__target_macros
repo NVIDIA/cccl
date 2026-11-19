@@ -13,7 +13,7 @@
 
 #include <nv/detail/__preprocessor>
 
-#if defined(__GNUC__)
+#ifdef __GNUC__
 #  pragma GCC system_header
 #endif
 
@@ -98,7 +98,7 @@
 #  define _NV_TARGET___NV_ANY_TARGET (nv::target::any_target)
 #  define _NV_TARGET___NV_NO_TARGET  (nv::target::no_target)
 
-#  if defined(NV_TARGET_SM_INTEGER_LIST)
+#  ifdef NV_TARGET_SM_INTEGER_LIST
 #    define NV_TARGET_MINIMUM_SM_SELECTOR _NV_FIRST_ARG(NV_TARGET_SM_SELECTOR_LIST)
 #    define NV_TARGET_MINIMUM_SM_INTEGER  _NV_FIRST_ARG(NV_TARGET_SM_INTEGER_LIST)
 #    define __CUDA_MINIMUM_ARCH__         _NV_CONCAT_EVAL(_NV_FIRST_ARG(NV_TARGET_SM_INTEGER_LIST), 0)
@@ -133,14 +133,14 @@
 #  define _NV_TARGET_VAL_SM_120 1200
 #  define _NV_TARGET_VAL_SM_121 1210
 
-#  if defined(__CUDA_ARCH__)
+#  ifdef __CUDA_ARCH__
 #    define _NV_TARGET_VAL                __CUDA_ARCH__
 #    define NV_TARGET_MINIMUM_SM_SELECTOR _NV_CONCAT_EVAL(_NV_TARGET_ARCH_TO_SELECTOR_, __CUDA_ARCH__)
 #    define NV_TARGET_MINIMUM_SM_INTEGER  _NV_CONCAT_EVAL(_NV_TARGET_ARCH_TO_SM_, __CUDA_ARCH__)
 #    define __CUDA_MINIMUM_ARCH__         __CUDA_ARCH__
 #  endif
 
-#  if defined(__CUDA_ARCH__)
+#  ifdef __CUDA_ARCH__
 #    define _NV_TARGET_IS_HOST   0
 #    define _NV_TARGET_IS_DEVICE 1
 #  else
@@ -148,7 +148,7 @@
 #    define _NV_TARGET_IS_DEVICE 0
 #  endif
 
-#  if defined(_NV_TARGET_VAL)
+#  ifdef _NV_TARGET_VAL
 #    define _NV_DEVICE_CHECK(q) (q)
 #  else
 #    define _NV_DEVICE_CHECK(q) (0)
@@ -470,7 +470,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 // architecture-specific SM versions
 
-#  if defined(__CUDA_ARCH_SPECIFIC__)
+#  ifdef __CUDA_ARCH_SPECIFIC__
 #    define _NV_TARGET_CHECK_ARCH_SPECIFIC(_MAJOR, _MINOR) (__CUDA_ARCH_SPECIFIC__ == (_MAJOR * 100 + _MINOR * 10))
 #  else
 #    define _NV_TARGET_CHECK_ARCH_SPECIFIC(_MAJOR, _MINOR) (0)
@@ -542,7 +542,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 // family-specific SM versions
 
-#  if defined(__CUDA_ARCH_FAMILY_SPECIFIC__)
+#  ifdef __CUDA_ARCH_FAMILY_SPECIFIC__
 #    define _NV_TARGET_CHECK_FAMILY_SPECIFIC(_MAJOR, _MINOR)         \
       (__CUDA_ARCH_FAMILY_SPECIFIC__ >= (_MAJOR * 100 + _MINOR * 10) \
        && __CUDA_ARCH_FAMILY_SPECIFIC__ < (_MAJOR + 1) * 100)

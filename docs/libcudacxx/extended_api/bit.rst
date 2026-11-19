@@ -45,9 +45,9 @@ Bit
      - CCCL 3.6.0
      - CUDA 13.6
 
-   * - :ref:`bit_reverse <libcudacxx-extended-api-bit-bit_reverse>`
+   * - :ref:`bit_reverse <libcudacxx-extended-api-bit-bit_reverse>` (deprecated)
      - Reverse the order of bits
-     - CCCL 3.0.0
+     - CCCL 3.0.0, deprecated since CCCL 3.7.0
      - CUDA 13.0
 
    * - :ref:`bit_trunc <libcudacxx-extended-api-bit-bit_trunc>`

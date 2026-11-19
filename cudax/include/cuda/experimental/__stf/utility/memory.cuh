@@ -19,7 +19,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -1133,7 +1133,7 @@ private:
       for (auto i : each(0, small_cap))
       {
         using result_t = decltype(f(::std::integral_constant<size_t, 0>()));
-        if constexpr (::cuda::std::is_same_v<result_t, void>)
+        if constexpr (::cuda::std::is_void_v<result_t>)
         {
           f(i);
         }

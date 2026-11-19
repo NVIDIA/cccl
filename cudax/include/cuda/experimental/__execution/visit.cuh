@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -46,7 +46,7 @@
 
 namespace cuda::experimental::execution
 {
-#if defined(_CCCL_BUILTIN_STRUCTURED_BINDING_SIZE)
+#ifdef _CCCL_BUILTIN_STRUCTURED_BINDING_SIZE
 
 #  if _CCCL_HAS_CONCEPTS()
 

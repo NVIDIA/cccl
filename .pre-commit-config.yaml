@@ -9,6 +9,10 @@ ci:
     skip: [secret-scan-trufflehog, guardwords-scan-code-scanning]
     submodules: false
 
+# Generated and signed by NVSkills CI. Any change to these files invalidates
+# the skill signature, so no hook may rewrite them.
+exclude: ^skills/[^/]+/(skill\.oms\.sig|skill-card\.md|BENCHMARK\.md)$
+
 repos:
   # Runs first so a leaked credential blocks the commit before any formatter runs.
   # Self-installing: the hook downloads a pinned, checksum-verified trufflehog on
@@ -81,21 +85,7 @@ repos:
     rev: v0.15.20
     hooks:
     - id: ruff  # linter
-      exclude: ^python/cuda_coop/
     - id: ruff-format  # formatter
-      exclude: ^python/cuda_coop/
-
-  # Use the newer Ruff rules for `cuda.coop`.
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.9
-    hooks:
-    - id: ruff-check
-      name: ruff check (cuda.coop)
-      files: ^python/cuda_coop/
-    - id: ruff-format
-      name: ruff format (cuda.coop)
-      files: ^python/cuda_coop/
-      types_or: [python, pyi, jupyter]
 
   # CMake formatting
   - repo: https://github.com/BlankSpruce/gersemi

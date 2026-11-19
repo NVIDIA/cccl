@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -33,7 +33,7 @@
 #include <cuda/std/__simd/flag.h>
 #include <cuda/std/__simd/type_traits.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/integer_sequence.h>
@@ -98,7 +98,7 @@ inline constexpr bool __is_compatible_range_v<_Tp, _Size, _Range, true> =
 // [simd.flags] alignment assertion for load/store pointers
 
 template <typename _Vec, typename _Up, typename... _Flags>
-_CCCL_HOST_DEVICE_API constexpr void __assert_load_store_alignment([[maybe_unused]] const _Up* __data) noexcept
+_CCCL_HOST_DEVICE_API constexpr void __assert_load_store_alignment([[maybe_unused]] const volatile _Up* __data) noexcept
 {
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
@@ -109,7 +109,7 @@ _CCCL_HOST_DEVICE_API constexpr void __assert_load_store_alignment([[maybe_unuse
     }
     if constexpr (__has_aligned_flag_v<_Flags...>)
     {
-      _CCCL_ASSERT(::cuda::is_aligned(__data, alignment_v<_Vec, _Up>),
+      _CCCL_ASSERT(::cuda::is_aligned(__data, alignment_v<_Vec, remove_cv_t<_Up>>),
                    "flag_aligned requires data to be aligned to alignment_v<V, range_value_t<R>>");
     }
     _CCCL_ASSERT(::cuda::is_aligned(__data, alignof(_Up)), "data is not aligned to alignof(_Up)");
