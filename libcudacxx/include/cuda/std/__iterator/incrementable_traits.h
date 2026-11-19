@@ -23,7 +23,6 @@
 
 #include <cuda/std/__concepts/arithmetic.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/iterator.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -33,6 +32,8 @@
 #include <cuda/std/__type_traits/is_primary_template.h>
 #include <cuda/std/__type_traits/make_signed.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/remove_pointer.h>
+#include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
@@ -47,11 +48,13 @@ _CCCL_CONCEPT __has_member_difference_type = _CCCL_REQUIRES_EXPR((_Tp))(typename
 template <class _Tp, class = void, class = void>
 inline constexpr bool __has_integral_minus_impl = false;
 
-// In C++17 we get issues trying to bind void* to a const& so special case it here
+// Only form the subtraction when stripping a reference and one pointer leaves an object type.
+// Pointers to void or functions have no valid subtraction, but nvcc 13.6 accepts that arithmetic
+// inside SFINAE and would select this specialization. This also covers the C++17 `void*` case.
 template <class _Tp>
 inline constexpr bool
   __has_integral_minus_impl<_Tp,
-                            enable_if_t<!same_as<_Tp, void*>>,
+                            enable_if_t<is_object_v<remove_pointer_t<remove_reference_t<_Tp>>>>,
                             void_t<decltype(::cuda::std::declval<const _Tp&>() - ::cuda::std::declval<const _Tp&>())>> =
     integral<decltype(::cuda::std::declval<const _Tp&>() - ::cuda::std::declval<const _Tp&>())>;
 
