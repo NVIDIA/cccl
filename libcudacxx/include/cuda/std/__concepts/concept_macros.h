@@ -66,10 +66,11 @@ using __cccl_requires_t _CCCL_NODEBUG = typename __cccl_select<_Bp>::template ty
 #  define _CCCL_TRAILING_REQUIRES(...)       ->__VA_ARGS__ _CCCL_TRAILING_REQUIRES_IMPL_
 #  define _CCCL_CONCEPT                      concept
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
+// Leave __cccl_select unqualified: NVCC 13.4 otherwise drops leading "::"
+// from qualified names in its template arguments when generating host code.
 #  define _CCCL_TEMPLATE(...) template <__VA_ARGS__
-#  define _CCCL_REQUIRES(...) \
-    , bool _CcclTrue = true, typename ::__cccl_select < __VA_ARGS__ && _CcclTrue > ::__int = 0 >
-#  define _CCCL_AND                          &&_CcclTrue > ::__int = 0, typename ::__cccl_select <
+#  define _CCCL_REQUIRES(...) , bool _CcclTrue = true, typename __cccl_select < __VA_ARGS__ && _CcclTrue > ::__int = 0 >
+#  define _CCCL_AND           &&_CcclTrue > ::__int = 0, typename __cccl_select <
 #  define _CCCL_TRAILING_REQUIRES(...)       ->__cccl_requires_t < __VA_ARGS__ _CCCL_TRAILING_REQUIRES_IMPL_
 #  define _CCCL_TRAILING_REQUIRES_IMPL_(...) , __VA_ARGS__ >
 #  define _CCCL_CONCEPT                      inline constexpr bool
