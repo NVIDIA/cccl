@@ -25,8 +25,8 @@ The numbered comments mark the integration points:
 
 Run it on Linux from a CCCL checkout with a compatible CUTLASS 4.9 CuTe DSL,
 CUDA 13 driver and toolkit, ``cuda-bindings``, and NumPy. The example uses
-the launch-facts and trace-finalization interfaces validated with the 4.9
-candidate. See the accompanying documentation for setup details::
+CuTe's launch-facts and trace-finalization interfaces. See the accompanying
+documentation for setup details::
 
    python docs/python/coop_cutlass/cutlass_integration_example.py
 
