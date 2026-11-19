@@ -5,6 +5,7 @@
 """Exercise standalone artifact routing through the actual CI generator."""
 
 import json
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -35,32 +36,51 @@ def _generate(tmp_path, full=(), lite=(), workflow="pull_request"):
     return json.loads((tmp_path / "workflow/workflow.json").read_text())
 
 
-@pytest.mark.parametrize("lite", [False, True])
-def test_runtime_uses_the_cpu_qualified_artifact(tmp_path, lite):
+@pytest.mark.parametrize(
+    "schedule,lite,suite_args,test_name,gpus",
+    [
+        ("pull_request", False, "-suite pr", "Test cuda.coop.cutlass", ["l4"]),
+        ("pull_request", True, "-suite smoke", "Test cuda.coop.cutlass smoke", ["l4"]),
+        ("weekly", False, "", "Test cuda.coop.cutlass full", ["h100", "l4"]),
+    ],
+)
+def test_runtime_uses_the_cpu_qualified_artifact(
+    tmp_path, schedule, lite, suite_args, test_name, gpus
+):
     projects = ["cuda_coop_cutlass"]
-    workflow = _generate(tmp_path, () if lite else projects, projects if lite else ())
+    workflow = _generate(
+        tmp_path, () if lite else projects, projects if lite else (), workflow=schedule
+    )
     pairs = [p for g in workflow.values() for p in g.get("two_stage", [])]
     assert len(pairs) == 1
     (producer,) = pairs[0]["producers"]
-    (consumer,) = pairs[0]["consumers"]
-    assert "-stage compile" in producer["command"]
+    consumers = pairs[0]["consumers"]
+    python_args = ["-py-version", "3.12"]
+    assert shlex.split(producer["command"])[1:] == ["-stage", "compile", *python_args]
     assert producer["gpu_count"] == 0
-    assert "-stage runtime" in consumer["command"]
-    assert consumer["runner"] == "linux-amd64-gpu-l4-latest-1"
-    assert producer["cuda"] == consumer["cuda"]
-    for field in ("py_version", "cpu", "project"):
-        assert (
-            producer["origin"]["matrix_job"][field]
-            == consumer["origin"]["matrix_job"][field]
-        )
-    jobs = [producer, consumer] + [
+    assert sorted(job["runner"] for job in consumers) == [
+        f"linux-amd64-gpu-{gpu}-latest-1" for gpu in gpus
+    ]
+    runtime_args = ["-stage", "runtime", *suite_args.split(), *python_args]
+    for consumer in consumers:
+        assert shlex.split(consumer["command"])[1:] == runtime_args
+        assert f"] {test_name}(" in consumer["name"]
+        assert producer["cuda"] == consumer["cuda"]
+        for field in ("py_version", "cpu", "project"):
+            assert (
+                producer["origin"]["matrix_job"][field]
+                == consumer["origin"]["matrix_job"][field]
+            )
+    jobs = [producer, *consumers] + [
         j for g in workflow.values() for j in g.get("standalone", [])
     ]
     for job in jobs:
         assert (ROOT / job["command"].split('"')[1]).is_file()
         assert "numba" not in job["command"]
         assert "coexistence" not in job["command"]
-    assert sum(job["gpu_count"] for job in jobs) == 1
+        if not job["gpu_count"]:
+            assert "] Build cuda.coop.cutlass(" in job["name"]
+    assert sum(job["gpu_count"] for job in jobs) == len(gpus)
 
 
 @pytest.mark.parametrize(
