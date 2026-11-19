@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024-26 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -56,7 +56,7 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wclass-memaccess")
 #endif // _CCCL_COMPILER(GCC, >=, 8)
 
 template <class _To, class _From>
-[[nodiscard]] _CCCL_API inline _To __bit_cast_memcpy(const _From& __from) noexcept
+[[nodiscard]] _CCCL_API _To __bit_cast_memcpy(const _From& __from) noexcept
 {
   static_assert(::cuda::std::is_default_constructible_v<_To>,
                 "bit_cast memcpy fallback requires the destination type to be default constructible");
@@ -79,7 +79,7 @@ inline constexpr bool __can_be_directly_returned =
 
 #else // !(_CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(MSVC) && _CCCL_STD_VER == 2017)
 
-// conjunction_v is used for lazy is_trivially_constructible evaluation
+// conjunction_v is used for the lazy evaluation of is_trivially_constructible
 template <class _To, class _From>
 inline constexpr bool __can_be_directly_returned =
   ::cuda::std::conjunction_v<::cuda::std::is_same<::cuda::std::remove_cvref_t<_To>, ::cuda::std::remove_cvref_t<_From>>,
@@ -95,7 +95,7 @@ _CCCL_API _CCCL_CONSTEXPR_BIT_CAST _To bit_cast(const _From& __from) noexcept
 {
   if constexpr (__can_be_directly_returned<_To, _From>)
   {
-    return _To(__from);
+    return _To(__from); // this also allows explicit _To(const _To&) = default
   }
 #if defined(_CCCL_BUILTIN_BIT_CAST)
   // Compilers unfortunately require the types to be trivially copyable per the letter of the
