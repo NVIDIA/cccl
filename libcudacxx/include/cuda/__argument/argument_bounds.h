@@ -125,7 +125,7 @@ class runtime_bounds
   _Tp __upper_ = __type_highest<_Tp>();
 
 public:
-  constexpr runtime_bounds() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr runtime_bounds() noexcept = default;
 
   _CCCL_API constexpr runtime_bounds(_Tp __lower, _Tp __upper) noexcept
       : __lower_(__lower)

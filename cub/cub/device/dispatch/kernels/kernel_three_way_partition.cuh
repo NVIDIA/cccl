@@ -49,14 +49,14 @@ class streaming_context_t
   TotalNumItemsT* d_num_selected_out = nullptr;
 
 public:
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE
   streaming_context_t(TotalNumItemsT* d_num_selected_in, TotalNumItemsT* d_num_selected_out, bool is_last_partition)
       : last_partition(is_last_partition)
       , d_num_selected_in(d_num_selected_in)
       , d_num_selected_out(d_num_selected_out)
   {}
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void advance(TotalNumItemsT num_items, bool next_partition_is_the_last)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE void advance(TotalNumItemsT num_items, bool next_partition_is_the_last)
   {
     ::cuda::std::swap(d_num_selected_in, d_num_selected_out);
     first_partition = false;
@@ -64,29 +64,29 @@ public:
     total_previous_num_items += num_items;
   };
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT input_offset() const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE TotalNumItemsT input_offset() const
   {
     return first_partition ? TotalNumItemsT{0} : total_previous_num_items;
   };
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected_first() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected_first() const
   {
     return first_partition ? TotalNumItemsT{0} : d_num_selected_in[0];
   };
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected_second() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected_second() const
   {
     return first_partition ? TotalNumItemsT{0} : d_num_selected_in[1];
   };
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_rejected() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE TotalNumItemsT num_previously_rejected() const
   {
     return first_partition ? TotalNumItemsT{0} : d_num_selected_in[2];
     ;
   };
 
   template <typename NumSelectedIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void update_num_selected(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void update_num_selected(
     NumSelectedIteratorT user_num_selected_out_it,
     TotalNumItemsT num_selected_first,
     TotalNumItemsT num_selected_second,

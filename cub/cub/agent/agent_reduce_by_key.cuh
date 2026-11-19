@@ -165,14 +165,14 @@ struct AgentReduceByKey
     int num_remaining;
 
     /// Constructor
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GuardedInequalityWrapper(EqualityOpT op, int num_remaining)
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE GuardedInequalityWrapper(EqualityOpT op, int num_remaining)
         : op(op)
         , num_remaining(num_remaining)
     {}
 
     /// Boolean inequality operator, returns <tt>(a != b)</tt>
     template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(const T& a, const T& b, int idx) const
+    _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE bool operator()(const T& a, const T& b, int idx) const
     {
       if (idx < num_remaining)
       {
@@ -348,7 +348,7 @@ struct AgentReduceByKey
    *   Streaming context providing context about this partition for streaming invocations
    */
   template <typename StreamingContext>
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduceByKey(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentReduceByKey(
     TempStorage& temp_storage,
     KeysInputIteratorT d_keys_in,
     UniqueOutputIteratorT d_unique_out,
@@ -370,7 +370,7 @@ struct AgentReduceByKey
       , streaming_context(streaming_context)
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduceByKey(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentReduceByKey(
     TempStorage& temp_storage,
     KeysInputIteratorT d_keys_in,
     UniqueOutputIteratorT d_unique_out,
@@ -399,7 +399,7 @@ struct AgentReduceByKey
   /**
    * Directly scatter flagged items to output offsets
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterDirect(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterDirect(
     KeyValuePairT (&scatter_items)[ITEMS_PER_THREAD],
     OffsetT (&segment_flags)[ITEMS_PER_THREAD],
     OffsetT (&segment_indices)[ITEMS_PER_THREAD])
@@ -423,7 +423,7 @@ struct AgentReduceByKey
    * value aggregate: the scatter offsets must be decremented for value
    * aggregates
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterTwoPhase(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterTwoPhase(
     KeyValuePairT (&scatter_items)[ITEMS_PER_THREAD],
     OffsetT (&segment_flags)[ITEMS_PER_THREAD],
     OffsetT (&segment_indices)[ITEMS_PER_THREAD],
@@ -455,7 +455,7 @@ struct AgentReduceByKey
   /**
    * Scatter flagged items
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Scatter(
     KeyValuePairT (&scatter_items)[ITEMS_PER_THREAD],
     OffsetT (&segment_flags)[ITEMS_PER_THREAD],
     OffsetT (&segment_indices)[ITEMS_PER_THREAD],
@@ -497,7 +497,7 @@ struct AgentReduceByKey
    *   Global tile state descriptor
    */
   template <bool IsLastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ConsumeTile(OffsetT num_remaining, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state)
   {
     // Tile keys
@@ -741,7 +741,7 @@ struct AgentReduceByKey
    * @param start_tile
    *   The starting tile for the current grid
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT num_items, ScanTileStateT& tile_state, int start_tile)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ConsumeRange(OffsetT num_items, ScanTileStateT& tile_state, int start_tile)
   {
     // Blocks are launched in increasing order, so just assign one tile per
     // block

@@ -19,7 +19,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 
@@ -33,7 +33,7 @@ namespace detail
  **********************************************************************************************************************/
 
 template <typename CastType, typename Input, ::cuda::std::size_t... Idx>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::array<CastType, static_size_v<Input>>
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::array<CastType, static_size_v<Input>>
 to_array_impl(const Input& input, ::cuda::std::index_sequence<Idx...>)
 {
   using ArrayType = ::cuda::std::array<CastType, static_size_v<Input>>;
@@ -41,11 +41,11 @@ to_array_impl(const Input& input, ::cuda::std::index_sequence<Idx...>)
 }
 
 template <typename CastType = void, typename Input>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::array<CastType, static_size_v<Input>>
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::array<CastType, static_size_v<Input>>
 to_array(const Input& input)
 {
   using InputType = ::cuda::std::iter_value_t<Input>;
-  using CastType1 = ::cuda::std::_If<::cuda::std::is_same_v<CastType, void>, InputType, CastType>;
+  using CastType1 = ::cuda::std::_If<::cuda::std::is_void_v<CastType>, InputType, CastType>;
   return _CUB::detail::to_array_impl<CastType1>(input, ::cuda::std::make_index_sequence<static_size_v<Input>>{});
 }
 

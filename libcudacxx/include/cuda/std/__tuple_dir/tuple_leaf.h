@@ -241,9 +241,9 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  __tuple_leaf(const __tuple_leaf& __t) = default;
+  _CCCL_HIDE_FROM_ABI __tuple_leaf(const __tuple_leaf& __t) = default;
   _CCCL_EXEC_CHECK_DISABLE
-  __tuple_leaf(__tuple_leaf&& __t) = default;
+  _CCCL_HIDE_FROM_ABI __tuple_leaf(__tuple_leaf&& __t) = default;
 
   // Do not use = default here. The value type may be a reference, in which case the defaulted
   // assignment constructor is implicitly deleted (a quirk in the C++ spec meant).

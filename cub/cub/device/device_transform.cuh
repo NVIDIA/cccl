@@ -61,7 +61,7 @@ struct __return_constant
   T value;
 
   template <typename... Args>
-  _CCCL_HOST_DEVICE auto operator()(Args&&...) const -> T
+  _CCCL_HOST_DEVICE_API auto operator()(Args&&...) const -> T
   {
     return value;
   }
@@ -100,8 +100,8 @@ CUB_NAMESPACE_BEGIN
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! All algorithms in DeviceTransform that accept an environment can be tuned by passing a custom :ref:`policy selector
-//! <cub-policy-selectors>` that returns a :cpp:struct:`cub::TransformPolicy`, as shown in the example below:
+//! All algorithms in DeviceTransform can be tuned by passing a custom :ref:`policy selector <cub-policy-selectors>`
+//! that returns a :cpp:struct:`cub::TransformPolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_transform_env_api.cu
 //!      :language: c++

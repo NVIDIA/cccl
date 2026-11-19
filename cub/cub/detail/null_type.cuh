@@ -23,24 +23,24 @@ struct NullType
 {
   using value_type = NullType;
 
-  NullType() = default;
+  _CCCL_HIDE_FROM_ABI NullType() = default;
 
   template <typename T>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE explicit NullType(const T&)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE explicit NullType(const T&)
   {}
 
   template <typename T>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE NullType& operator=(const T&)
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE NullType& operator=(const T&)
   {
     return *this;
   }
 
-  friend _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const NullType&, const NullType&)
+  _CCCL_HOST_DEVICE_API friend _CCCL_FORCEINLINE bool operator==(const NullType&, const NullType&)
   {
     return true;
   }
 
-  friend _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const NullType&, const NullType&)
+  _CCCL_HOST_DEVICE_API friend _CCCL_FORCEINLINE bool operator!=(const NullType&, const NullType&)
   {
     return false;
   }

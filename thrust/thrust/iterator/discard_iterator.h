@@ -17,11 +17,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/use_default.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/detail/any_assign.h>
 #include <thrust/iterator/iterator_adaptor.h>
+#include <thrust/iterator/iterator_facade.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -117,14 +121,14 @@ public:
   //!
   //! \p i The index of this \p discard_iterator in a range. Defaults to the value returned by \c Incrementable's null
   //! constructor. For example, when <tt>Incrementable == int</tt>, \c 0.
-  _CCCL_HOST_DEVICE discard_iterator(incrementable const& i = incrementable())
+  _CCCL_HOST_DEVICE_API discard_iterator(incrementable const& i = incrementable())
       : super_t(base_iterator(i))
   {}
 
   //! \cond
 
 private: // Core iterator interface
-  _CCCL_HOST_DEVICE reference dereference() const
+  _CCCL_HOST_DEVICE_API reference dereference() const
   {
     return m_element;
   }
@@ -141,7 +145,7 @@ private: // Core iterator interface
 //! \return A new \p discard_iterator with index as given by \p i.
 //! \see constant_iterator
 template <typename System = use_default>
-inline _CCCL_HOST_DEVICE discard_iterator<System> make_discard_iterator(::cuda::std::ptrdiff_t i = 0)
+inline _CCCL_HOST_DEVICE_API discard_iterator<System> make_discard_iterator(::cuda::std::ptrdiff_t i = 0)
 {
   return discard_iterator<System>{i};
 }

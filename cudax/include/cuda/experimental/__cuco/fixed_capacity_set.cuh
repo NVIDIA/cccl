@@ -200,6 +200,64 @@ public:
     __impl_->clear_async(__stream);
   }
 
+  //! @brief Reinserts every stored key into new storage of the same capacity.
+  //!
+  //! @note Synchronizes the supplied stream. For asynchronous execution use `rehash_async`.
+  //! @note Requires exclusive access. Refs and storage pointers obtained earlier are invalidated.
+  //! @throws cuda_error if allocation, the operation, or stream synchronization fails
+  //! @param[in] __stream Stream used for rehashing
+  _CCCL_HOST_API void rehash(::cuda::stream_ref __stream)
+  {
+    rehash_async(__stream);
+    __stream.sync();
+  }
+
+  //! @brief Reinserts every stored key into new storage of at least `__capacity` slots.
+  //!
+  //! The new capacity is the smallest valid slot count not less than `__capacity`.
+  //! @pre `__capacity` is large enough to hold every stored key.
+  //! @note Synchronizes the supplied stream. For asynchronous execution use `rehash_async`.
+  //! @note Requires exclusive access. Refs and storage pointers obtained earlier are invalidated.
+  //! @note Only available for sets with dynamic capacity.
+  //! @throws cuda_error if allocation, the operation, or stream synchronization fails
+  //! @throws std::logic_error if a valid capacity cannot be represented
+  //! @param[in] __stream Stream used for rehashing
+  //! @param[in] __capacity Requested minimum number of slots
+  _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
+  _CCCL_REQUIRES((_C == _Capacity) _CCCL_AND(_C == ::cuda::std::dynamic_extent))
+  _CCCL_HOST_API void rehash(::cuda::stream_ref __stream, size_type __capacity)
+  {
+    rehash_async(__stream, __capacity);
+    __stream.sync();
+  }
+
+  //! @brief Asynchronously reinserts every stored key into new storage of the same capacity.
+  //!
+  //! @note Requires exclusive access. Refs and storage pointers obtained earlier are invalidated.
+  //! @throws cuda_error if allocation or the operation fails to launch
+  //! @param[in] __stream Stream used for rehashing
+  _CCCL_HOST_API void rehash_async(::cuda::stream_ref __stream)
+  {
+    __impl_->rehash_async(__stream, *this);
+  }
+
+  //! @brief Asynchronously reinserts every stored key into new storage of at least `__capacity` slots.
+  //!
+  //! The new capacity is the smallest valid slot count not less than `__capacity`.
+  //! @pre `__capacity` is large enough to hold every stored key.
+  //! @note Requires exclusive access. Refs and storage pointers obtained earlier are invalidated.
+  //! @note Only available for sets with dynamic capacity.
+  //! @throws cuda_error if allocation or the operation fails to launch
+  //! @throws std::logic_error if a valid capacity cannot be represented
+  //! @param[in] __stream Stream used for rehashing
+  //! @param[in] __capacity Requested minimum number of slots
+  _CCCL_TEMPLATE(::cuda::std::size_t _C = _Capacity)
+  _CCCL_REQUIRES((_C == _Capacity) _CCCL_AND(_C == ::cuda::std::dynamic_extent))
+  _CCCL_HOST_API void rehash_async(::cuda::stream_ref __stream, size_type __capacity)
+  {
+    __impl_->rehash_async(__stream, __capacity, *this);
+  }
+
   //! @brief Inserts keys and returns the number of new keys inserted.
   //!
   //! Duplicate keys and keys that cannot fit in the set do not contribute to the count.

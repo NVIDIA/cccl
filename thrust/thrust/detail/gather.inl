@@ -13,15 +13,18 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/execution_policy.h>
 #include <thrust/gather.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/select_system.h>
 
 // Include all active backend system implementations (generic, sequential, host and device)
+// IWYU pragma: begin_keep
 #include <thrust/system/detail/generic/gather.h>
 #include <thrust/system/detail/sequential/gather.h>
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(gather.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(gather.h)
+// IWYU pragma: end_keep
 
 // Some build systems need a hint to know which files we could include
 #if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
@@ -35,7 +38,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename RandomAccessIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator gather(
+_CCCL_HOST_DEVICE_API OutputIterator gather(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator map_first,
   InputIterator map_last,
@@ -54,7 +57,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename RandomAccessIterator,
           typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator gather_if(
+_CCCL_HOST_DEVICE_API OutputIterator gather_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 map_first,
   InputIterator1 map_last,
@@ -75,7 +78,7 @@ template <typename DerivedPolicy,
           typename RandomAccessIterator,
           typename OutputIterator,
           typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator gather_if(
+_CCCL_HOST_DEVICE_API OutputIterator gather_if(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 map_first,
   InputIterator1 map_last,
@@ -97,7 +100,7 @@ _CCCL_HOST_DEVICE OutputIterator gather_if(
 } // end gather_if()
 
 template <typename InputIterator, typename RandomAccessIterator, typename OutputIterator>
-OutputIterator
+_CCCL_HOST_API OutputIterator
 gather(InputIterator map_first, InputIterator map_last, RandomAccessIterator input_first, OutputIterator result)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::gather");
@@ -115,7 +118,7 @@ gather(InputIterator map_first, InputIterator map_last, RandomAccessIterator inp
 } // end gather()
 
 template <typename InputIterator1, typename InputIterator2, typename RandomAccessIterator, typename OutputIterator>
-OutputIterator gather_if(
+_CCCL_HOST_API OutputIterator gather_if(
   InputIterator1 map_first,
   InputIterator1 map_last,
   InputIterator2 stencil,
@@ -144,7 +147,7 @@ template <typename InputIterator1,
           typename RandomAccessIterator,
           typename OutputIterator,
           typename Predicate>
-OutputIterator gather_if(
+_CCCL_HOST_API OutputIterator gather_if(
   InputIterator1 map_first,
   InputIterator1 map_last,
   InputIterator2 stencil,

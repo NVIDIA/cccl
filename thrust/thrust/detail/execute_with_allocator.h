@@ -17,8 +17,10 @@
 #include <thrust/detail/raw_pointer_cast.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -26,7 +28,7 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 template <typename T, typename Allocator, template <typename> class BaseSystem>
-_CCCL_HOST ::cuda::std::pair<T*, std::ptrdiff_t>
+_CCCL_HOST_API ::cuda::std::pair<T*, std::ptrdiff_t>
 get_temporary_buffer(thrust::detail::execute_with_allocator<Allocator, BaseSystem>& system, std::ptrdiff_t n)
 {
   using naked_allocator = ::cuda::std::remove_reference_t<Allocator>;
@@ -46,7 +48,7 @@ get_temporary_buffer(thrust::detail::execute_with_allocator<Allocator, BaseSyste
 }
 
 template <typename Pointer, typename Allocator, template <typename> class BaseSystem>
-_CCCL_HOST void return_temporary_buffer(
+_CCCL_HOST_API void return_temporary_buffer(
   thrust::detail::execute_with_allocator<Allocator, BaseSystem>& system, Pointer p, std::ptrdiff_t n)
 {
   using naked_allocator = ::cuda::std::remove_reference_t<Allocator>;

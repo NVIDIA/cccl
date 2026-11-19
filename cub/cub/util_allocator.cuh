@@ -131,7 +131,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
 
     // Constructor (suitable for searching maps for a specific block, given its pointer and
     // device)
-    BlockDescriptor(void* d_ptr, int device)
+    _CCCL_HOST_API BlockDescriptor(void* d_ptr, int device)
         : d_ptr(d_ptr)
         , bytes(0)
         , bin(INVALID_BIN)
@@ -141,7 +141,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
     {}
 
     // Constructor (suitable for searching maps for a range of suitable blocks, given a device)
-    BlockDescriptor(int device)
+    _CCCL_HOST_API BlockDescriptor(int device)
         : d_ptr(nullptr)
         , bytes(0)
         , bin(INVALID_BIN)
@@ -151,7 +151,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
     {}
 
     // Comparison functor for comparing device pointers
-    static bool PtrCompare(const BlockDescriptor& a, const BlockDescriptor& b)
+    _CCCL_HOST_API static bool PtrCompare(const BlockDescriptor& a, const BlockDescriptor& b)
     {
       if (a.device == b.device)
       {
@@ -162,7 +162,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
     }
 
     // Comparison functor for comparing allocation sizes
-    static bool SizeCompare(const BlockDescriptor& a, const BlockDescriptor& b)
+    _CCCL_HOST_API static bool SizeCompare(const BlockDescriptor& a, const BlockDescriptor& b)
     {
       if (a.device == b.device)
       {
@@ -181,7 +181,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
   public:
     size_t free;
     size_t live;
-    TotalBytes()
+    _CCCL_HOST_API TotalBytes()
     {
       free = live = 0;
     }
@@ -203,7 +203,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
   /**
    * Integer pow function for unsigned base and exponent
    */
-  static unsigned int IntPow(unsigned int base, unsigned int exp)
+  _CCCL_HOST_API static unsigned int IntPow(unsigned int base, unsigned int exp)
   {
     unsigned int retval = 1;
     while (exp > 0)
@@ -221,7 +221,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
   /**
    * Round up to the nearest power-of
    */
-  void NearestPowerOf(unsigned int& power, size_t& rounded_bytes, unsigned int base, size_t value)
+  _CCCL_HOST_API void NearestPowerOf(unsigned int& power, size_t& rounded_bytes, unsigned int base, size_t value)
   {
     power         = 0;
     rounded_bytes = 1;
@@ -307,7 +307,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
    *   Whether or not to skip a call to @p FreeAllCached() when the destructor is called (default
    *   is to deallocate)
    */
-  CachingDeviceAllocator(
+  _CCCL_HOST_API CachingDeviceAllocator(
     unsigned int bin_growth,
     unsigned int min_bin    = 1,
     unsigned int max_bin    = INVALID_BIN,
@@ -338,7 +338,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
    * which delineates five bin-sizes: 512B, 4KB, 32KB, 256KB, and 2MB and
    * sets a maximum of 6,291,455 cached bytes per device
    */
-  CachingDeviceAllocator(bool skip_cleanup = false, bool debug = false)
+  _CCCL_HOST_API CachingDeviceAllocator(bool skip_cleanup = false, bool debug = false)
       : bin_growth(8)
       , min_bin(3)
       , max_bin(7)
@@ -357,7 +357,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
    * Changing the ceiling of cached bytes does not cause any allocations (in-use or
    * cached-in-reserve) to be freed.  See \p FreeAllCached().
    */
-  cudaError_t SetMaxCachedBytes(size_t max_cached_bytes_)
+  _CCCL_HOST_API cudaError_t SetMaxCachedBytes(size_t max_cached_bytes_)
   {
     // Lock
     mutex.lock();
@@ -396,7 +396,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
    * @param[in] active_stream
    *   The stream to be associated with this allocation
    */
-  cudaError_t DeviceAllocate(int device, void** d_ptr, size_t bytes, cudaStream_t active_stream = nullptr)
+  _CCCL_HOST_API cudaError_t DeviceAllocate(int device, void** d_ptr, size_t bytes, cudaStream_t active_stream = nullptr)
   {
     *d_ptr                = nullptr;
     int entrypoint_device = INVALID_DEVICE_ORDINAL;
@@ -657,7 +657,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
    * @param[in] active_stream
    *   The stream to be associated with this allocation
    */
-  cudaError_t DeviceAllocate(void** d_ptr, size_t bytes, cudaStream_t active_stream = nullptr)
+  _CCCL_HOST_API cudaError_t DeviceAllocate(void** d_ptr, size_t bytes, cudaStream_t active_stream = nullptr)
   {
     return DeviceAllocate(INVALID_DEVICE_ORDINAL, d_ptr, bytes, active_stream);
   }
@@ -671,7 +671,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
    * available for reuse within other streams when all prior work submitted to @p active_stream
    * has completed.
    */
-  cudaError_t DeviceFree(int device, void* d_ptr)
+  _CCCL_HOST_API cudaError_t DeviceFree(int device, void* d_ptr)
   {
     int entrypoint_device = INVALID_DEVICE_ORDINAL;
     cudaError_t error     = cudaSuccess;
@@ -809,7 +809,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
    * for reuse within other streams when all prior work submitted to @p active_stream has
    * completed.
    */
-  cudaError_t DeviceFree(void* d_ptr)
+  _CCCL_HOST_API cudaError_t DeviceFree(void* d_ptr)
   {
     return DeviceFree(INVALID_DEVICE_ORDINAL, d_ptr);
   }
@@ -817,7 +817,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
   /**
    * @brief Frees all cached device allocations on all devices
    */
-  cudaError_t FreeAllCached()
+  _CCCL_HOST_API cudaError_t FreeAllCached()
   {
     cudaError_t error     = cudaSuccess;
     int entrypoint_device = INVALID_DEVICE_ORDINAL;
@@ -899,7 +899,7 @@ struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use c
   /**
    * @brief Destructor
    */
-  virtual ~CachingDeviceAllocator()
+  _CCCL_HOST_API virtual ~CachingDeviceAllocator()
   {
     if (!skip_cleanup)
     {

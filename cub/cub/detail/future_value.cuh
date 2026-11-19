@@ -49,11 +49,11 @@ struct FutureValue
   using value_type    = T;
   using iterator_type = IterT;
 
-  explicit _CCCL_HOST_DEVICE _CCCL_FORCEINLINE FutureValue(IterT iter)
+  explicit _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE FutureValue(IterT iter)
       : m_iter(iter)
   {}
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T() const noexcept
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE operator T() const noexcept
   {
     return *m_iter;
   }
