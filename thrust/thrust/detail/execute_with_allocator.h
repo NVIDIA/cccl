@@ -48,16 +48,36 @@ template <template <typename, typename...> class Allocator, typename U, typename
 inline constexpr bool is_rebindable_allocator_v<Allocator<U, Args...>, T> =
   has_rebind_other_v<Allocator<U, Args...>, T> || ::cuda::std::is_same_v<U, typename Allocator<U, Args...>::value_type>;
 
-template <typename Allocator, typename T, bool = is_rebindable_allocator_v<Allocator, T>>
+// Rebinding must not lower the alignment of the allocations: callers cast byte buffers to other types. So the
+// allocator is rebound to T or kept at its own value_type, whichever is more aligned. value_type void has no
+// alignment of its own and uses the default memory resource alignment.
+template <typename ValueType, typename T>
+struct temporary_buffer_value
+{
+  using type = ::cuda::std::conditional_t<(alignof(T) >= alignof(ValueType)), T, ValueType>;
+};
+
+template <typename T>
+struct temporary_buffer_value<void, T> : temporary_buffer_value<::cuda::std::max_align_t, T>
+{};
+
+template <typename Allocator, typename T>
+using temporary_buffer_value_t =
+  typename temporary_buffer_value<typename ::cuda::std::allocator_traits<Allocator>::value_type, T>::type;
+
+template <typename Allocator,
+          typename T,
+          typename U = temporary_buffer_value_t<Allocator, T>,
+          bool       = is_rebindable_allocator_v<Allocator, U>>
 struct temporary_buffer_allocator_impl
 {
   using type = Allocator;
 };
 
-template <typename Allocator, typename T>
-struct temporary_buffer_allocator_impl<Allocator, T, true>
+template <typename Allocator, typename T, typename U>
+struct temporary_buffer_allocator_impl<Allocator, T, U, true>
 {
-  using rebound = typename ::cuda::std::allocator_traits<Allocator>::template rebind_alloc<T>;
+  using rebound = typename ::cuda::std::allocator_traits<Allocator>::template rebind_alloc<U>;
   using type    = ::cuda::std::conditional_t<::cuda::std::is_constructible_v<rebound, Allocator&>, rebound, Allocator>;
 };
 
