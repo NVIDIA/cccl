@@ -249,13 +249,13 @@ The finalized module
 --------------------
 
 This excerpt is the module printed by
-``CUDA_COOP_CUTLASS_EXAMPLE_PRINT_IR=1`` on the CUTLASS 4.9 candidate for
+``CUDA_COOP_CUTLASS_EXAMPLE_PRINT_IR=1`` with CuTe DSL 4.9.0.dev1 for
 ``sm_120a``, trimmed to the lines the integration produced or depends on.
 Names and attributes vary between DSL versions.
 
 .. code-block:: text
 
-   gpu.module @kernels attributes {"link-libraries" = [".../92e8e7ee6bc67574.ltoir"]} {
+   gpu.module @kernels attributes {"link-libraries" = [".../9925411900700bac.ltoir"]} {
      lir.func public @kernel_cutlass_sum_block_...(%arg0: !cute.ptr<i32, gmem, align<16>>, ...)
          attributes {cutlass_launch_facts = {exact_block_dim = array<i64: 32, 4, 1>,
                                              exact_grid_dim = array<i64: 1, 1, 1>, ...},

@@ -614,6 +614,12 @@ that diagram.
   after changing either script. ``cutlass-integration-example.svg`` names
   the functions and handoffs of the second script, so update it when they
   change.
+* ``python/cuda_coop_cutlass/examples/tensor_memory_topk.py`` runs only on
+  an SM100 or SM103 GPU. Its test, ``test_tensor_memory_topk.py`` in
+  ``python/cuda_coop_cutlass/tests/runtime/``, skips on other GPUs, CI's
+  example loop leaves the file out, and CI runs this package on L4 and H100
+  GPUs. Run the test by hand on an SM100 or SM103 GPU after changing the
+  example or its page, :doc:`tensor_memory_topk`.
 * For operation visualizations, update the RST explanation, static SVG, and
   corresponding ``docs/_static/coop-*.js`` explorer together. A family's
   module docstring can show the same SVG. Its ``:alt:`` text and caption

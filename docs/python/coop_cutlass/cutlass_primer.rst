@@ -34,15 +34,15 @@ does not use the C++ library. CUB, the library that ``cuda.coop.cutlass``
 wraps, is a separate CCCL library.
 
 Since CUTLASS 4, the same project ships a Python front end, the **CUTLASS
-DSL** or **CuTe DSL**, in the ``nvidia-cutlass-dsl`` wheel. You write GPU
+DSL** or **CuTe DSL**, installed as ``nvidia-cutlass-dsl``. You write GPU
 kernels as decorated Python functions, and the DSL compiles them through its
 own MLIR distribution to a cubin that it also launches. This Python layer is
 the only part of CUTLASS that ``cuda.coop.cutlass`` depends on. When this
 documentation says CuTe, CuTe DSL, or the CUTLASS compiler, it means this
 Python-plus-MLIR toolchain.
 
-Kernel code imports one package from the wheel, ``cutlass``. The parts of the
-wheel that matter here are:
+Kernel code imports one package, ``cutlass``. The parts that matter here
+are:
 
 .. list-table::
    :header-rows: 1
@@ -66,8 +66,10 @@ wheel that matter here are:
        ``llvm``, ``scf``, ``arith``, ``func``, and ``gpu`` dialects.
    * - ``cutlass.memory``
      - ``SmemAllocator``, the shared-memory allocation helper.
-   * - ``libCutlassCompiler``
-     - The native compiler and runtime libraries behind the Python bindings.
+   * - ``_cutlass_ir`` and ``libcute_dsl_runtime``
+     - The native code: the extension module behind ``cutlass._mlir`` and
+       the runtime library. The ``[cu13]`` extra installs their CUDA 13
+       builds.
 
 ``cuda.coop.cutlass`` adds one thing to this toolchain: CUB device code
 reachable from a CuTe kernel, with the kernel's launch shape, scratch, and
@@ -285,7 +287,7 @@ called during tracing.
 PyIR, an optional second preprocessing mode
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The CUTLASS 4.9 candidate adds **PyIR**, off by default. It is enabled with
+CuTe DSL 4.9 has **PyIR**, off by default. It is enabled with
 ``CUTE_DSL_ENABLE_PYIR=1``, inside a ``with CuTeDSL.enable_pyir():`` block,
 or for one compilation with ``cute.compile[cute.FrontendNext](...)``.
 ``PyIRDSLPreprocessor`` extends the AST rewrite to put the function into SSA
@@ -371,8 +373,9 @@ the user's kernel is being traced. Nothing is registered with the DSL before
 the first call. To find the trace they belong to, they walk from
 ``ir.InsertionPoint.current.block.owner`` through parent operations to the
 enclosing ``builtin.module``. To find the kernel that owns their scratch,
-they stop at the kernel operation, which in the 4.9 candidate is an
-``lir.func`` carrying the ``gpu.kernel`` attribute. ``BundleSession`` in
+they stop at the kernel operation, which in CuTe DSL 4.9 is an
+``lir.func`` carrying the ``gpu.kernel`` attribute, or a ``cuda.kernel``
+when ``CUTE_DSL_USE_EXTENSION_COMPILER=0``. ``BundleSession`` in
 ``_compiler/_state.py`` keeps per-trace state keyed by the DSL's compile
 options object and that module, so a second trace on the same options
 object gets its own session. A nested ``@cute.jit`` call is traced into
@@ -452,7 +455,7 @@ with the kernel's own LTO-IR. The link can inline the wrapper into the
 kernel. The runtime tests run ``cuobjdump`` on the final cubin and fail if
 a provider symbol remains.
 
-The CUTLASS 4.9 candidate copies compile options for each invocation, so
+CuTe DSL 4.9 copies compile options for each invocation, so
 adding a module's link libraries does not mutate the reusable option
 template. The ``DeviceTarget`` compile mode, which compiles a
 ``@cute.jit`` function as a device function for export, rejects
@@ -508,14 +511,14 @@ when the CUTLASS dependency changes. ``compile_operator`` adds
 Private interfaces we depend on
 -------------------------------
 
-Several of these facilities are private or new in the 4.9 candidate. Their
-names begin with an underscore or appear only in the candidate's sources.
+Several of these facilities are private or new in CuTe DSL 4.9. Their names
+begin with an underscore or appear only in its sources. The installed
+package is tested against CuTe DSL 4.9.0.dev1.
 ``_compiler/_runtime.py`` checks at import that the functions and classes in
 the first four items of the list below exist, and reports which are missing.
 Each time ``_compiler/_storage.py`` allocates deferred scratch, it checks
 the fifth item's bindings except ``ir.Operation.walk``, ``llvm.LLVMFuncOp``,
-and ``llvm.CallOp``. No capability check covers those three. The installed
-package is tested against the candidate:
+and ``llvm.CallOp``. No capability check covers those three:
 
 * ``cutlass.cutlass_dsl.CuTeDSL._get_dsl``,
   ``register_trace_finalize_hook``, and ``trace_finalize_hooks``.
