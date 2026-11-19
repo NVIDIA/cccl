@@ -86,7 +86,9 @@ Pass ``dtype`` with that width, or wrap each item in a CUTLASS type such as
 
 Otherwise leave it out. ``load`` takes the type from the memory, and a
 primitive takes it from the items of a payload the kernel fills, which must
-all have the same type.
+all have the same type. ``dtype`` of :func:`~cuda.coop.cutlass.load` is for
+unsigned integers behind a ``cute.Pointer`` argument, which CuTe reports as
+signed.
 
 ``to_tensor_ssa`` and ``to_register_tensor`` need the type as well. A
 payload from ``load``, a primitive or a conversion carries it. For a payload

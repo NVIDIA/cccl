@@ -330,12 +330,14 @@ def run_length_decode_into(
     destination : cute.Tensor
         The memory that receives the stream: a tensor in global memory with
         one dimension, stride 1 and the element type of ``run_values``,
-        such as ``cute.make_tensor(pointer, cute.make_layout(n))``. Its
-        number of elements, ``n`` here, is a Python integer or a CuTe
-        integer. A pointer has no size and is rejected when the kernel is
-        compiled. So are a tensor in shared memory or in registers, a
-        tensor with two dimensions or another stride, and a tensor of
-        another element type.
+        such as ``cute.make_tensor(pointer, cute.make_layout(n))``. For
+        unsigned ``run_values``, pass a ``cute.recast_tensor`` view of that
+        tensor with the unsigned type, because a ``cute.make_tensor`` view
+        is signed. The number of elements, ``n`` here, is a Python integer
+        or a CuTe integer. A pointer has no size and is rejected when the
+        kernel is compiled. So are a tensor in shared memory or in
+        registers, a tensor with two dimensions or another stride, and a
+        tensor of another element type.
 
         Every thread of the block passes the same tensor. In a kernel with
         more than one block, each block writes its own stream. Give each

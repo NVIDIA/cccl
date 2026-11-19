@@ -53,6 +53,9 @@ On the host side:
 * ``make_ptr(cutlass.Int32, ...)`` gives each pointer its element type. That
   is how ``load`` knows the items are ``Int32``. ``store`` takes the type
   from the ``ThreadData`` it writes, so its pointer must have the same type.
+  A pointer to unsigned integers reaches the kernel as the signed type, so
+  for ``Uint32`` data pass ``dtype=cutlass.Uint32`` to
+  :func:`~cuda.coop.cutlass.load` and :func:`~cuda.coop.cutlass.store`.
 * ``items_per_thread`` is declared ``cutlass.Constexpr`` in the kernel and
   in the launcher, so its value is known when the kernel is compiled.
 * ``kernel.launch(grid=1, block=128)`` sets the block size.
