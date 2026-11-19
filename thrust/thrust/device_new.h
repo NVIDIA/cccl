@@ -20,10 +20,11 @@
 #include <thrust/detail/allocator/value_initialize_range.h>
 #include <thrust/device_allocator.h>
 #include <thrust/device_malloc.h>
-#include <thrust/device_new.h>
 #include <thrust/device_ptr.h>
 #include <thrust/execution_policy.h>
 #include <thrust/uninitialized_fill.h>
+
+#include <cuda/std/__cstddef/types.h>
 
 THRUST_NAMESPACE_BEGIN
 

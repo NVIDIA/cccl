@@ -182,4 +182,4 @@ _CCCL_HOST_API OutputType transform_reduce(
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/transform_reduce.inl>
+#include <thrust/detail/transform_reduce.inl> // IWYU pragma: export
