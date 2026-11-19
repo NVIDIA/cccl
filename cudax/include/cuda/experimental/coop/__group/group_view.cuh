@@ -143,7 +143,7 @@ _CCCL_DEVICE_API decltype(auto) __with_static_unit_count_range(const _Group& __g
       _MappingResult::is_always_exhaustive(),
       _MappingResult::is_always_contiguous()>;
 
-    return ::cuda::std::forward<_Fn>(__fn)(group_view<_Unit, _Group, _PerGroupMappingResult>{
+    return ::cuda::std::forward<_Fn>(__fn)(group_view<_Unit, __viewed_group_t<_Group>, _PerGroupMappingResult>{
       __group, _PerGroupMappingResult{__mapping_result.unit_rank(), __mapping_result.lane_mask()}});
   }
 }
@@ -168,6 +168,8 @@ class group_view
 {
   static_assert(__is_hierarchy_level_v<_Unit>);
   static_assert(group<_Group>);
+  static_assert(::cuda::std::is_same_v<_Group, __viewed_group_t<_Group>>,
+                "a group_view must not view another group_view");
   static_assert(__unit_same_as_or_below_v<_Unit, typename _Group::unit_type>,
                 "unit_type must be same as or below the _Group's unit_type");
 
@@ -223,6 +225,15 @@ public:
 
   // Internal constructor for a view with a specialized mapping result.
   _CCCL_DEVICE_API explicit group_view(const _Group& __group, const _MappingResult& __mapping_result)
+      : __hier_{__group.hierarchy()}
+      , __mapping_result_{__mapping_result}
+      , __synchronizer_instance_{__group.__synchronizer_instance()}
+  {}
+
+  _CCCL_TEMPLATE(class _OtherUnit, class _OtherMappingResult)
+  _CCCL_REQUIRES(::cuda::std::is_same_v<_Unit, _OtherUnit>)
+  _CCCL_DEVICE_API explicit group_view(const group_view<_OtherUnit, _Group, _OtherMappingResult>& __group,
+                                       const _MappingResult& __mapping_result)
       : __hier_{__group.hierarchy()}
       , __mapping_result_{__mapping_result}
       , __synchronizer_instance_{__group.__synchronizer_instance()}

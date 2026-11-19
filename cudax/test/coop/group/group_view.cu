@@ -79,8 +79,9 @@ __device__ void test_group_view(Config config, Level level)
   view  = cuda::std::move(other);
   check(view);
 
-  const cudax::coop::group_view<typename View::unit_type, View, typename View::__mapping_result_type> nested{view};
-  check(nested);
+  const cudax::coop::group_view copy{view};
+  static_assert(cuda::std::is_same_v<cuda::std::remove_cv_t<decltype(copy)>, View>);
+  check(copy);
 
   const cudax::coop::group_view threads{cuda::gpu_thread, g};
   check(threads);
@@ -208,27 +209,11 @@ __device__ void check_parent_view_queries(const Group& group, const Parent& pare
   check(parent);
   check(cudax::coop::group_view{parent});
   const cudax::coop::group_view parent_view{parent};
-  using View = cuda::std::remove_cv_t<decltype(parent_view)>;
-  const cudax::coop::group_view<typename View::unit_type, View, typename View::__mapping_result_type> nested{
-    parent_view};
-  if constexpr (cuda::std::is_same_v<View, Parent>)
-  {
-    check(nested);
-  }
-  else
-  {
-    using Nested = decltype(nested);
-    check_invalid_parent_queries<Group, Nested>();
-  }
-
-  // Parent views must preserve the parent's unit, including through nested views.
+  // Parent views must preserve the parent's unit.
   if constexpr (!cuda::std::is_same_v<typename Parent::unit_type, cuda::thread_level>)
   {
     using ChangedUnit = decltype(cudax::coop::group_view{cuda::gpu_thread, parent_view});
-    using NestedChangedUnit =
-      cudax::coop::group_view<cuda::thread_level, ChangedUnit, typename ChangedUnit::__mapping_result_type>;
     check_invalid_parent_queries<Group, ChangedUnit>();
-    check_invalid_parent_queries<Group, NestedChangedUnit>();
   }
 
   // A child group and its view are not the parent, even when they share a hierarchy.
@@ -416,6 +401,19 @@ __device__ void test_nonuniform_group_view(Config config)
 
   check(warps, cuda::warp, 4);
 
+  // Specializing a view must retain the original group, including on repeated dispatch.
+  warps.with_static_unit_count([&](const auto& specialized) {
+    using Specialized = cuda::std::remove_cvref_t<decltype(specialized)>;
+    using Result      = typename Specialized::__mapping_result_type;
+    using Group       = cuda::std::remove_cv_t<decltype(group)>;
+    static_assert(cuda::std::is_same_v<Specialized, cudax::coop::group_view<cuda::warp_level, Group, Result>>);
+    check(specialized, cuda::warp, 4);
+    specialized.with_static_unit_count([&](const auto& again) {
+      static_assert(cuda::std::is_same_v<cuda::std::remove_cvref_t<decltype(again)>, Specialized>);
+      check(again, cuda::warp, 4);
+    });
+  });
+
   // Direct conversion to threads scales each original block count by 128.
   const cudax::coop::group_view threads{cuda::gpu_thread, group};
   using Threads = typename decltype(threads)::__mapping_result_type;
@@ -428,11 +426,11 @@ __device__ void test_nonuniform_group_view(Config config)
 
   // Converting blocks to warps to threads must match direct conversion, including
   // the result type and the fallback when block dimensions are dynamic.
-  const cudax::coop::group_view nested_threads{cuda::gpu_thread, warps};
+  const cudax::coop::group_view converted_threads{cuda::gpu_thread, warps};
 
-  static_assert(cuda::std::is_same_v<typename decltype(nested_threads)::__mapping_result_type, Threads>);
+  static_assert(cuda::std::is_same_v<typename decltype(converted_threads)::__mapping_result_type, Threads>);
 
-  check(nested_threads, cuda::gpu_thread, 128);
+  check(converted_threads, cuda::gpu_thread, 128);
 
   // Exercise the conversion from a view while retaining the original group type.
   const cudax::coop::group_view<cuda::thread_level, cuda::std::remove_cv_t<decltype(group)>, Threads> converted{
@@ -534,17 +532,17 @@ struct ViewedParentKernel
     const cudax::coop::group_view threads{cuda::gpu_thread, parent};
     test_viewed_parent(parent, threads);
 
-    using View = cuda::std::remove_cv_t<decltype(threads)>;
-    const cudax::coop::group_view<cuda::thread_level, View, typename View::__mapping_result_type> nested{threads};
-    test_viewed_parent(threads, nested);
+    const cudax::coop::group_view copied_threads{threads};
+    static_assert(cuda::std::is_same_v<decltype(threads), decltype(copied_threads)>);
+    test_viewed_parent(parent, copied_threads);
 
     // Specialized views must retain their static counts when the parent has unequal counts.
     const cudax::coop::virtual_group unequal{
       cuda::gpu_thread, block, cudax::coop::group_as{cuda::std::integer_sequence<int, 32, 96>{}}};
     unequal.with_static_unit_count([&](const auto& view) {
       test_viewed_parent(unequal, view);
-      view.with_static_unit_count([&](const auto& nested_view) {
-        test_viewed_parent(unequal, nested_view);
+      view.with_static_unit_count([&](const auto& specialized_view) {
+        test_viewed_parent(unequal, specialized_view);
       });
     });
   }
@@ -552,6 +550,13 @@ struct ViewedParentKernel
 
 C2H_TEST("Groups constructed from views use the viewed parent", "[group_view]")
 {
+  using Config = decltype(cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<128>()));
+  using Parent = cudax::coop::this_block<typename Config::hierarchy_type>;
+  using View   = decltype(cudax::coop::group_view{cuda::std::declval<Parent>()});
+  static_assert(cuda::std::is_same_v<cudax::coop::__viewed_group_t<View>, Parent>);
+  static_assert(cudax::coop::__is_parent_group_query_v<Parent, Parent>);
+  static_assert(cudax::coop::__is_parent_group_query_v<View, Parent>);
+
   const cuda::stream stream{cuda::devices[0]};
 
   cuda::launch(stream, cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<128>()), ViewedParentKernel{});

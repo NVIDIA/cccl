@@ -119,6 +119,8 @@ class virtual_group
 {
   static_assert(__is_hierarchy_level_v<_Unit>);
   static_assert(group<_ParentGroup>);
+  static_assert(::cuda::std::is_same_v<_ParentGroup, __viewed_group_t<_ParentGroup>>,
+                "the parent group must not be a group_view");
   static_assert(__unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>,
                 "unit_type must be same as or below _ParentGroup's unit_type");
 
