@@ -96,6 +96,18 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `msvc` or `intrinsic` as a macro, which would break _CCCL_INTRINSIC.
+#ifdef msvc
+#  pragma push_macro("msvc")
+#  undef msvc
+#  define _LIBCUDACXX_POP_MACRO_msvc
+#endif // defined(msvc)
+#ifdef intrinsic
+#  pragma push_macro("intrinsic")
+#  undef intrinsic
+#  define _LIBCUDACXX_POP_MACRO_intrinsic
+#endif // defined(intrinsic)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // We cannot simply use ::std::move here because it would drag in the move algorithm. This can work only if either/
@@ -147,6 +159,15 @@ move_if_noexcept(_Tp& __x) noexcept
 #endif // ^^^ !_CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() ^^^
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _LIBCUDACXX_POP_MACRO_intrinsic
+#  pragma pop_macro("intrinsic")
+#  undef _LIBCUDACXX_POP_MACRO_intrinsic
+#endif // defined(_LIBCUDACXX_POP_MACRO_intrinsic)
+#ifdef _LIBCUDACXX_POP_MACRO_msvc
+#  pragma pop_macro("msvc")
+#  undef _LIBCUDACXX_POP_MACRO_msvc
+#endif // defined(_LIBCUDACXX_POP_MACRO_msvc)
 
 #include <cuda/std/__cccl/epilogue.h>
 

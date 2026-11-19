@@ -124,14 +124,31 @@
 
 // MSVC provides a way to mark functions as intrinsic provided the function's body consists of a single
 // return statement of a cast expression (e.g., move(x) or forward<T>(u)).
-// The attribute is optional, so skip it if users define its names as macros, which would break it and its check.
-#if defined(msvc) || defined(intrinsic)
-#  define _CCCL_INTRINSIC
-#elif _CCCL_COMPILER(MSVC) && _CCCL_HAS_CPP_ATTRIBUTE(msvc::intrinsic)
+// Some code bases define `msvc` or `intrinsic` as a macro, which must break neither this check nor _CCCL_INTRINSIC. So
+// push and pop them around this check and in every header that uses _CCCL_INTRINSIC, like <cuda/std/__utility/move.h>.
+#ifdef msvc
+#  pragma push_macro("msvc")
+#  undef msvc
+#  define _LIBCUDACXX_POP_MACRO_msvc
+#endif // defined(msvc)
+#ifdef intrinsic
+#  pragma push_macro("intrinsic")
+#  undef intrinsic
+#  define _LIBCUDACXX_POP_MACRO_intrinsic
+#endif // defined(intrinsic)
+#if _CCCL_COMPILER(MSVC) && _CCCL_HAS_CPP_ATTRIBUTE(msvc::intrinsic)
 #  define _CCCL_INTRINSIC [[msvc::intrinsic]]
 #else
 #  define _CCCL_INTRINSIC
 #endif
+#ifdef _LIBCUDACXX_POP_MACRO_intrinsic
+#  pragma pop_macro("intrinsic")
+#  undef _LIBCUDACXX_POP_MACRO_intrinsic
+#endif // defined(_LIBCUDACXX_POP_MACRO_intrinsic)
+#ifdef _LIBCUDACXX_POP_MACRO_msvc
+#  pragma pop_macro("msvc")
+#  undef _LIBCUDACXX_POP_MACRO_msvc
+#endif // defined(_LIBCUDACXX_POP_MACRO_msvc)
 
 // _CCCL_PURE
 
@@ -163,11 +180,25 @@
 
 // _CCCL_NO_SPECIALIZATIONS
 
-// The attribute is optional, so skip it if users define its names as macros, which would break it and its check.
-#if defined(clang) || defined(msvc) || defined(no_specializations)
-#  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)
-#  define _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS() 0
-#elif _CCCL_HAS_CPP_ATTRIBUTE(clang::__no_specializations__)
+// Some code bases define `clang`, `msvc` or `no_specializations` as a macro, which must break neither this check nor
+// _CCCL_NO_SPECIALIZATIONS. So push and pop them around this check and in every header that uses
+// _CCCL_NO_SPECIALIZATIONS, like <cuda/std/__type_traits/is_implicit_lifetime.h>.
+#ifdef clang
+#  pragma push_macro("clang")
+#  undef clang
+#  define _LIBCUDACXX_POP_MACRO_clang
+#endif // defined(clang)
+#ifdef msvc
+#  pragma push_macro("msvc")
+#  undef msvc
+#  define _LIBCUDACXX_POP_MACRO_msvc
+#endif // defined(msvc)
+#ifdef no_specializations
+#  pragma push_macro("no_specializations")
+#  undef no_specializations
+#  define _LIBCUDACXX_POP_MACRO_no_specializations
+#endif // defined(no_specializations)
+#if _CCCL_HAS_CPP_ATTRIBUTE(clang::__no_specializations__)
 #  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)   [[clang::__no_specializations__(_MSG)]]
 #  define _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS() 1
 #elif _CCCL_HAS_CPP_ATTRIBUTE(msvc::no_specializations)
@@ -177,6 +208,18 @@
 #  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)
 #  define _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS() 0
 #endif // ^^^ hasn't attribute no_specializations ^^^
+#ifdef _LIBCUDACXX_POP_MACRO_no_specializations
+#  pragma pop_macro("no_specializations")
+#  undef _LIBCUDACXX_POP_MACRO_no_specializations
+#endif // defined(_LIBCUDACXX_POP_MACRO_no_specializations)
+#ifdef _LIBCUDACXX_POP_MACRO_msvc
+#  pragma pop_macro("msvc")
+#  undef _LIBCUDACXX_POP_MACRO_msvc
+#endif // defined(_LIBCUDACXX_POP_MACRO_msvc)
+#ifdef _LIBCUDACXX_POP_MACRO_clang
+#  pragma pop_macro("clang")
+#  undef _LIBCUDACXX_POP_MACRO_clang
+#endif // defined(_LIBCUDACXX_POP_MACRO_clang)
 
 #define _CCCL_NO_SPECIALIZATIONS \
   _CCCL_NO_SPECIALIZATIONS_BECAUSE("Users are not allowed to specialize this cccl entity")

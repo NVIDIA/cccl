@@ -8,36 +8,51 @@
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/std/__cccl/attributes.h> must not use optional vendor attributes whose names users define as macros.
+// NVRTC does not support #pragma push_macro and #pragma pop_macro.
+// UNSUPPORTED: nvrtc
 
-// The MSVC STL evaluates some of these names in its own feature checks.
+// Users may define the names of vendor attributes as macros before or after including CCCL headers.
+
+// Host standard libraries do not all protect themselves against these macros, so include the host headers that the
+// CCCL headers below use first.
 #if __has_include(<version>)
 #  include <version>
 #endif // __has_include(<version>)
+#if __has_include(<utility>)
+#  include <cfloat>
+#  include <climits>
+#  include <cstddef>
+#  include <cstdint>
+#  include <cstring>
+#  include <iterator>
+#  include <memory>
+#  include <type_traits>
+#  include <utility>
+#endif // __has_include(<utility>)
 
-#define clang
-#define intrinsic
 #define lifetimebound
-#define msvc
-#define no_specializations
 
 #include <cuda/std/__cccl/attributes.h>
 
-static_assert(!_CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS());
-
-template <class T>
-struct _CCCL_NO_SPECIALIZATIONS no_specializations_test
-{};
-
-_CCCL_INTRINSIC constexpr int&& intrinsic_test(int& x) noexcept
-{
-  return static_cast<int&&>(x);
-}
-
+// `[[clang::lifetimebound]]` and `[[msvc::lifetimebound]]` are optional, so they are not used if users define
+// `clang`, `msvc` or `lifetimebound` as macros before including CCCL headers.
 constexpr const int& lifetimebound_test(const int& x _CCCL_LIFETIMEBOUND) noexcept
 {
   return x;
 }
+
+// The headers that use _CCCL_INTRINSIC and _CCCL_NO_SPECIALIZATIONS push and pop the names of their attributes.
+#define clang
+#define intrinsic
+#define msvc
+#define no_specializations
+
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
+
+#if !defined(clang) || !defined(intrinsic) || !defined(lifetimebound) || !defined(msvc) || !defined(no_specializations)
+#  error "CCCL headers must restore the macros"
+#endif
 
 int main(int, char**)
 {
