@@ -57,7 +57,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-// Some code bases define `msvc` or `intrinsic` as a macro, which would break _CCCL_INTRINSIC.
+// Some code bases define `msvc` or `intrinsic` as macros, which break _CCCL_INTRINSIC.
 #ifdef msvc
 #  pragma push_macro("msvc")
 #  undef msvc

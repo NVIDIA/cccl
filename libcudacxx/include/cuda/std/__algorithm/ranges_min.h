@@ -33,6 +33,23 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `clang`, `msvc` or `lifetimebound` as macros, which break _CCCL_LIFETIMEBOUND.
+#ifdef clang
+#  pragma push_macro("clang")
+#  undef clang
+#  define _LIBCUDACXX_POP_MACRO_clang
+#endif // defined(clang)
+#ifdef msvc
+#  pragma push_macro("msvc")
+#  undef msvc
+#  define _LIBCUDACXX_POP_MACRO_msvc
+#endif // defined(msvc)
+#ifdef lifetimebound
+#  pragma push_macro("lifetimebound")
+#  undef lifetimebound
+#  define _LIBCUDACXX_POP_MACRO_lifetimebound
+#endif // defined(lifetimebound)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CPO(__min)
@@ -93,6 +110,19 @@ _CCCL_GLOBAL_CONSTANT auto min = __min::__fn{};
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
+
+#ifdef _LIBCUDACXX_POP_MACRO_lifetimebound
+#  pragma pop_macro("lifetimebound")
+#  undef _LIBCUDACXX_POP_MACRO_lifetimebound
+#endif // defined(_LIBCUDACXX_POP_MACRO_lifetimebound)
+#ifdef _LIBCUDACXX_POP_MACRO_msvc
+#  pragma pop_macro("msvc")
+#  undef _LIBCUDACXX_POP_MACRO_msvc
+#endif // defined(_LIBCUDACXX_POP_MACRO_msvc)
+#ifdef _LIBCUDACXX_POP_MACRO_clang
+#  pragma pop_macro("clang")
+#  undef _LIBCUDACXX_POP_MACRO_clang
+#endif // defined(_LIBCUDACXX_POP_MACRO_clang)
 
 #include <cuda/std/__cccl/epilogue.h>
 

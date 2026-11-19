@@ -28,6 +28,23 @@
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__utility/forward.h>
 
+// Some code bases define `clang`, `msvc` or `lifetimebound` as macros, which break _CCCL_LIFETIMEBOUND.
+#ifdef clang
+#  pragma push_macro("clang")
+#  undef clang
+#  define _THRUST_POP_MACRO_clang
+#endif // defined(clang)
+#ifdef msvc
+#  pragma push_macro("msvc")
+#  undef msvc
+#  define _THRUST_POP_MACRO_msvc
+#endif // defined(msvc)
+#ifdef lifetimebound
+#  pragma push_macro("lifetimebound")
+#  undef lifetimebound
+#  define _THRUST_POP_MACRO_lifetimebound
+#endif // defined(lifetimebound)
+
 THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup predefined_function_objects Predefined Function Objects
@@ -466,5 +483,18 @@ _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<9>::type _10;
  */
 
 THRUST_NAMESPACE_END
+
+#ifdef _THRUST_POP_MACRO_lifetimebound
+#  pragma pop_macro("lifetimebound")
+#  undef _THRUST_POP_MACRO_lifetimebound
+#endif // defined(_THRUST_POP_MACRO_lifetimebound)
+#ifdef _THRUST_POP_MACRO_msvc
+#  pragma pop_macro("msvc")
+#  undef _THRUST_POP_MACRO_msvc
+#endif // defined(_THRUST_POP_MACRO_msvc)
+#ifdef _THRUST_POP_MACRO_clang
+#  pragma pop_macro("clang")
+#  undef _THRUST_POP_MACRO_clang
+#endif // defined(_THRUST_POP_MACRO_clang)
 
 #include <thrust/detail/functional/operators.h>
