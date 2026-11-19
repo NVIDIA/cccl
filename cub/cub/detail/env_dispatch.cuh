@@ -184,32 +184,6 @@ dispatch_with_env_and_tuning(const EnvT& env, AlgorithmCallable&& algorithm_call
     });
 }
 
-//! @brief Validates an environment or object, dispatches with automatic storage, and selects a tuning policy.
-//!
-//! This interface applies the advertised-query validation and lookup rules of
-//! @c dispatch_with_env_validation before selecting the tuning policy.
-//!
-//! @tparam DefaultPolicySelector The policy selector used when the tuning environment does not provide one.
-//! @tparam EnvT The execution environment or query-providing object type.
-//! @tparam AlgorithmCallable The algorithm implementation callable type.
-//! @param[in] env The execution environment or query-providing object.
-//! @param[in] algorithm_callable The algorithm implementation callable that receives the selected policy.
-//! @return The temporary-storage sizing or allocation error, if any; otherwise the execution error, if any;
-//! otherwise the deallocation status.
-template <typename DefaultPolicySelector, typename EnvT, typename AlgorithmCallable>
-[[nodiscard]] CUB_RUNTIME_FUNCTION cudaError_t
-dispatch_with_env_validation_and_tuning(const EnvT& env, AlgorithmCallable&& algorithm_callable)
-{
-  return _CUB::detail::dispatch_with_env_validation(
-    env,
-    [&algorithm_callable](
-      [[maybe_unused]] auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-      using policy_t        = decltype(DefaultPolicySelector{}(::cuda::compute_capability{}));
-      using policy_selector = policy_selector_from_tuning_env_t<decltype(tuning_env), policy_t, DefaultPolicySelector>;
-      return algorithm_callable(policy_selector{}, d_temp_storage, temp_storage_bytes, stream);
-    });
-}
-
 //! @brief Dispatches an algorithm with user-provided temporary storage.
 //!
 //! This function resolves the stream and tuning environment and invokes the algorithm once with
