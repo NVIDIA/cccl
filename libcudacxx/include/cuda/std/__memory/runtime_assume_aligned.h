@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -32,7 +32,7 @@ template <typename _Tp>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _Tp*
 __runtime_assume_aligned(_Tp* __ptr, [[maybe_unused]] ::cuda::std::size_t __alignment) noexcept
 {
-#if defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
+#ifdef _CCCL_BUILTIN_ASSUME_ALIGNED
   using _Up = remove_volatile_t<_Tp>;
   if (__alignment == 1)
   {

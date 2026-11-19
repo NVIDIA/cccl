@@ -14,7 +14,7 @@
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/system_header.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -62,7 +62,7 @@
 
 // Enable us to selectively silence cuda compiler warnings
 #if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC)
-#  if defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
+#  ifdef __NVCC_DIAG_PRAGMA_SUPPORT__
 #    define _CCCL_NV_DIAG_PUSH()               _CCCL_PRAGMA(nv_diagnostic push)
 #    define _CCCL_NV_DIAG_POP()                _CCCL_PRAGMA(nv_diagnostic pop)
 #    define _CCCL_DIAG_SUPPRESS_NVCC(_WARNING) _CCCL_PRAGMA(nv_diag_suppress _WARNING)

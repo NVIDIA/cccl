@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -338,8 +338,8 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _Arg& __arg) const
     -> decltype(::cuda::std::declval<const _Group&>().count(__arg))
   {
-    using _Level = typename _Arg::level_type;
-    return _Group::template __count_as_impl<typename _Level::__product_type>(__mapping_result_, __hier_, __arg);
+    using _Result = decltype(::cuda::std::declval<const _Group&>().count(__arg));
+    return _Group::template __count_as_impl<_Result>(__mapping_result_, __hier_, __arg);
   }
 
   _CCCL_TEMPLATE(class _Tp, class _Arg)
@@ -354,8 +354,8 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto rank(const _Arg& __arg) const
     -> decltype(::cuda::std::declval<const _Group&>().rank(__arg))
   {
-    using _Level = typename _Arg::level_type;
-    return _Group::template __rank_as_impl<typename _Level::__product_type>(__mapping_result_, __hier_, __arg);
+    using _Result = decltype(::cuda::std::declval<const _Group&>().rank(__arg));
+    return _Group::template __rank_as_impl<_Result>(__mapping_result_, __hier_, __arg);
   }
 };
 

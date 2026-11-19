@@ -310,7 +310,7 @@ Furthermore, you can plot the results, which requires additional python packages
 
 .. code-block:: bash
 
-    pip install fpzip pandas matplotlib seaborn tabulate PyQt5 colorama
+    pip install fpzip pandas matplotlib seaborn tabulate PyQt5
 
 You can plot one or more tuning databases as a bar chart or a box plot (add `--box`):
 

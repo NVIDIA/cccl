@@ -9,7 +9,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -256,7 +256,7 @@ class BlockRadixRank
   using PackedCounter =
     ::cuda::std::_If<SMemConfig == cudaSharedMemBankSizeEightByte, unsigned long long, unsigned int>;
 
-  static constexpr DigitCounter max_tile_size = ::cuda::std::numeric_limits<DigitCounter>::max();
+  static constexpr DigitCounter max_tile_size = (::cuda::std::numeric_limits<DigitCounter>::max)();
 
   // The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
@@ -274,7 +274,7 @@ class BlockRadixRank
   static constexpr int LOG_PACKING_RATIO = ::cuda::ilog2(PACKING_RATIO);
 
   // Always at least one lane
-  static constexpr int LOG_COUNTER_LANES = ::cuda::std::max(RadixBits - LOG_PACKING_RATIO, 0);
+  static constexpr int LOG_COUNTER_LANES = (::cuda::std::max) (RadixBits - LOG_PACKING_RATIO, 0);
   static constexpr int COUNTER_LANES     = 1 << LOG_COUNTER_LANES;
 
   // The number of packed counters per thread (plus one for padding)
@@ -284,7 +284,7 @@ class BlockRadixRank
 public:
   /// Number of bin-starting offsets tracked per thread
   static constexpr int BINS_TRACKED_PER_THREAD =
-    ::cuda::std::max(1, (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS);
+    (::cuda::std::max) (1, (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS);
 
 private:
   /// BlockScan type
@@ -607,7 +607,7 @@ class BlockRadixRankMatch
 public:
   /// Number of bin-starting offsets tracked per thread
   static constexpr int BINS_TRACKED_PER_THREAD =
-    ::cuda::std::max(1, (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS);
+    (::cuda::std::max) (1, (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS);
 
 private:
   /// BlockScan type

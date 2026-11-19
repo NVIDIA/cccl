@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -94,7 +94,6 @@ public:
   {
     // Workaround for cudafe++ < 13.1 + gcc < 13 replacing `numeric_limits<size_t>` with
     // `numeric_limits<conditional<is_void_v<void>, __common_type2_imp<uint64_t, uint64_t>::type, void>::type>`
-    // NOLINTNEXTLINE(readability-redundant-parentheses): Prevent max macro expansion.
     return (::cuda::std::numeric_limits<SizeType>::max)() / sizeof(T);
   }
 
