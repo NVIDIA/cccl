@@ -308,8 +308,8 @@ __get_driver_entry_point(const char* __name, int __major = 12, int __minor = 0) 
 #  define _CCCLRT_GET_DRIVER_FUNCTION(function_name) \
     _CCCLRT_GET_DRIVER_FUNCTION_TYPED(decltype(&::function_name), #function_name)
 
-#  define _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(function_name, versioned_fn_name, major, minor) \
-    _CCCLRT_GET_DRIVER_FUNCTION_TYPED(decltype(&::versioned_fn_name), #function_name, major, minor)
+#  define _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(function_name, versioned_fn_name, major_version, minor_version) \
+    _CCCLRT_GET_DRIVER_FUNCTION_TYPED(decltype(&::versioned_fn_name), #function_name, major_version, minor_version)
 
 #  undef _CCCLRT_GET_DRIVER_FUNCTION_NO_INIT
 

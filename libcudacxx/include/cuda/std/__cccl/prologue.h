@@ -278,26 +278,6 @@
 #  define _CCCL_POP_MACRO_clang
 #endif // defined(clang)
 
-// sys/sysmacros.h on linux
-
-#if defined(major)
-#  pragma push_macro("major")
-#  undef major
-#  define _CCCL_POP_MACRO_major
-#endif // defined(major)
-
-#if defined(minor)
-#  pragma push_macro("minor")
-#  undef minor
-#  define _CCCL_POP_MACRO_minor
-#endif // defined(minor)
-
-#if defined(makedev)
-#  pragma push_macro("makedev")
-#  undef makedev
-#  define _CCCL_POP_MACRO_makedev
-#endif // defined(makedev)
-
 _CCCL_DIAG_PUSH
 _CCCL_NV_DIAG_PUSH()
 
