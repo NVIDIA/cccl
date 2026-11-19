@@ -716,10 +716,14 @@ struct subst_t : basic_sink<subst_t<_V>>
   }
 
   // The exception channel's failure is the exception pointer, answered as on the code channel.
+  // The specifier repeats on_returned's rather than calling it: GCC 9 evaluates a
+  // noexcept-specifier at the point of declaration, where a call to a decltype(auto) member
+  // needs that member's body.
   template <class _Fn>
-  decltype(auto) on_thrown(const ::std::exception* __exception,
-                           const ::cuda::std::source_location __loc,
-                           _Fn& __fn) noexcept(noexcept(on_returned(__exception, __loc, __fn)))
+  decltype(auto)
+  on_thrown(const ::std::exception* __exception,
+            const ::cuda::std::source_location __loc,
+            _Fn& __fn) noexcept(!::cuda::std::is_invocable_v<_V&> || ::cuda::std::is_nothrow_invocable_v<_V&>)
   {
     return on_returned(__exception, __loc, __fn);
   }
