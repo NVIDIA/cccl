@@ -782,7 +782,7 @@ struct DevicePartition
   //!    int      *d_large_and_unselected_out; // e.g., [ ,  ,  ,  ,  ,  ,  ,  ]
   //!    int      *d_small_out;                // e.g., [ ,  ,  ,  ,  ,  ,  ,  ]
   //!    int      *d_num_selected_out;         // e.g., [ , ]
-  //!    cuda::std::reverse_iterator<T> unselected_out(d_large_and_unselected_out + num_items);
+  //!    cuda::std::reverse_iterator<int*> unselected_out(d_large_and_unselected_out + num_items);
   //!    LessThan small_items_selector(7);
   //!    GreaterThan large_items_selector(50);
   //!    ...

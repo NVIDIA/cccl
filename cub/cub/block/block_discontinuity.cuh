@@ -448,7 +448,7 @@ public:
   //!        ...
   //!
   //!        // Have thread0 obtain the predecessor item for the entire tile
-  //!        int tile_predecessor_item;
+  //!        int tile_predecessor_item = 0;
   //!        if (threadIdx.x == 0) tile_predecessor_item = ...
   //!
   //!        // Collectively compute head flags for discontinuities in the segment
@@ -633,7 +633,7 @@ public:
   //!        ...
   //!
   //!        // Have thread127 obtain the successor item for the entire tile
-  //!        int tile_successor_item;
+  //!        int tile_successor_item = 0;
   //!        if (threadIdx.x == 127) tile_successor_item = ...
   //!
   //!        // Collectively compute tail flags for discontinuities in the segment
@@ -861,7 +861,7 @@ public:
   //!        ...
   //!
   //!        // Have thread127 obtain the successor item for the entire tile
-  //!        int tile_successor_item;
+  //!        int tile_successor_item = 0;
   //!        if (threadIdx.x == 127) tile_successor_item = ...
   //!
   //!        // Collectively compute head and flags for discontinuities in the segment
@@ -995,11 +995,11 @@ public:
   //!        ...
   //!
   //!        // Have thread0 obtain the predecessor item for the entire tile
-  //!        int tile_predecessor_item;
+  //!        int tile_predecessor_item = 0;
   //!        if (threadIdx.x == 0) tile_predecessor_item = ...
   //!
   //!        // Have thread127 obtain the successor item for the entire tile
-  //!        int tile_successor_item;
+  //!        int tile_successor_item = 0;
   //!        if (threadIdx.x == 127) tile_successor_item = ...
   //!
   //!        // Collectively compute head and flags for discontinuities in the segment
@@ -1128,11 +1128,11 @@ public:
   //!        ...
   //!
   //!        // Have thread0 obtain the predecessor item for the entire tile
-  //!        int tile_predecessor_item;
+  //!        int tile_predecessor_item = 0;
   //!        if (threadIdx.x == 0) tile_predecessor_item = ...
   //!
   //!        // Have thread127 obtain the successor item for the entire tile
-  //!        int tile_successor_item;
+  //!        int tile_successor_item = 0;
   //!        if (threadIdx.x == 127) tile_successor_item = ...
   //!
   //!        // Collectively compute head and flags for discontinuities in the segment

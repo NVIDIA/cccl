@@ -103,7 +103,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph
   }
 
   //! \brief Resets the `graph` object, destroying the underlying CUDA graph execution object.
-  //! \throws None
   //! \post `get() == nullptr`
   _CCCL_HOST_API constexpr void reset() noexcept
   {
