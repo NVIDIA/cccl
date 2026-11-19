@@ -81,3 +81,13 @@ def test_stackable_scope_allocate():
                 (err,) = rt.cudaMemsetAsync(p, 7, NBYTES, int(t.stream_ptr()))
                 assert err == rt.cudaError_t.cudaSuccess
             ctx.deallocate(p, NBYTES)
+
+
+@pytest.mark.parametrize("make", [stf.context, stf.stackable_context])
+def test_allocate_after_finalize_raises(make):
+    ctx = make()
+    ctx.finalize()
+    with pytest.raises(stf.STFError):
+        ctx.allocate(NBYTES)
+    with pytest.raises(stf.STFError):
+        ctx.deallocate(1, NBYTES)

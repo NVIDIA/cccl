@@ -1249,7 +1249,18 @@ void* ctx_allocate(backend_ctx_untyped& bctx, size_t size, bool cached)
   {
     throw ::std::runtime_error("allocation of " + ::std::to_string(size) + " bytes failed");
   }
-  ctx_register_dangling(bctx, prereqs);
+  try
+  {
+    ctx_register_dangling(bctx, prereqs);
+  }
+  catch (...)
+  {
+    // The caller never sees the pointer: give the block back before reporting.
+    // Its allocation events are not registered, so it is released without them.
+    event_list none;
+    alloc.deallocate(bctx, data_place::current_device(), none, p, size);
+    throw;
+  }
   return p;
 }
 

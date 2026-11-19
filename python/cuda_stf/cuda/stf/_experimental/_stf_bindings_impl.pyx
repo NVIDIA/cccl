@@ -3842,6 +3842,8 @@ cdef class context:
         context: complete on the stream :meth:`fence` returns. The allocator
         decides whether it can serve a raw allocation (stream-ordered ones
         can; the graph backend's node allocator cannot and the call raises)."""
+        if self._ctx == NULL:
+            raise STFError("context handle is NULL")
         cdef void* p = stf_ctx_allocate(self._ctx, size, 1 if cached else 0)
         if p == NULL:
             _raise_last_error("stf_ctx_allocate")
@@ -3850,6 +3852,8 @@ cdef class context:
     def deallocate(self, size_t ptr, size_t size, *, bint cached=False):
         """Return memory from :meth:`allocate` (same ``cached`` value). The
         memory must no longer be in use."""
+        if self._ctx == NULL:
+            raise STFError("context handle is NULL")
         _check(stf_ctx_deallocate(self._ctx, <void*> ptr, size, 1 if cached else 0), "stf_ctx_deallocate")
 
     def token(self):
@@ -5201,6 +5205,8 @@ cdef class stackable_context:
         freed while the scope records: the scope's uncached allocator defers
         the release to the pop, a recycling allocator would hand the block to
         the next request at once."""
+        if self._ctx == NULL:
+            raise STFError("stackable_context handle is NULL")
         cdef void* p = stf_stackable_allocate(self._ctx, size, 1 if cached else 0)
         if p == NULL:
             _raise_last_error("stf_stackable_allocate")
@@ -5211,6 +5217,8 @@ cdef class stackable_context:
         allocator (same ``cached`` value). With the scope's uncached allocator
         the release is deferred to the pop, so this is safe while the graph is
         still being recorded; otherwise the memory must no longer be in use."""
+        if self._ctx == NULL:
+            raise STFError("stackable_context handle is NULL")
         _check(stf_stackable_deallocate(self._ctx, <void*> ptr, size, 1 if cached else 0), "stf_stackable_deallocate")
 
     def token(self):
