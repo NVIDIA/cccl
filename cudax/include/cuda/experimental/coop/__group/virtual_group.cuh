@@ -289,7 +289,7 @@ public:
 
   _CCCL_TEMPLATE(class _Arg)
   _CCCL_REQUIRES(__is_parent_group_query_v<_Arg, _ParentGroup>)
-  [[nodiscard]] _CCCL_DEVICE_API auto rank(const _Arg& __parent) const
+  [[nodiscard]] _CCCL_DEVICE_API typename level_type::__product_type rank(const _Arg& __parent) const
   {
     return __rank_as_impl<typename level_type::__product_type>(__mapping_result_, __hier_, __parent);
   }
