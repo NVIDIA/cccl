@@ -231,7 +231,7 @@ question.
    * - ``*``, ``*=`` with a one-limb scalar
      - 3
      - 6
-     - 10
+     - 6
 
    * - ``mad``
      - 13
@@ -273,7 +273,8 @@ Three things follow from the table before any type-specific advice:
 1. Multiplication costs one instruction more at ``high`` than at ``mid``, so ``high`` is paid for
    mostly on additions and divisions. A scalar that one limb holds exactly - ``float`` for
    ``fp32mp2``, ``float`` or ``double`` for ``fp64mp2`` - is cheaper as it is than converted to
-   a pair.
+   a pair. A constant of a wider type whose value fits one limb, such as those in ``y * 2.0``
+   and ``y + 2``, takes the same path.
 
 2. Division is the expensive basic operation, and the one ``high`` makes most expensive.
 

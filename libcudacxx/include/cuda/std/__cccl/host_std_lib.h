@@ -15,7 +15,7 @@
 #include <cuda/std/__cccl/preprocessor.h>
 #include <cuda/std/__cccl/system_header.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -38,7 +38,7 @@
 #define _CCCL_HOST_STD_LIB(...) _CCCL_VERSION_COMPARE(_CCCL_HOST_STD_LIB_, _CCCL_HOST_STD_LIB_##__VA_ARGS__)
 
 #if _CCCL_HOSTED()
-#  if defined(_MSVC_STL_VERSION)
+#  ifdef _MSVC_STL_VERSION
 #    undef _CCCL_HOST_STD_LIB_STL
 #    define _CCCL_HOST_STD_LIB_STL() (_MSVC_STL_VERSION, 0)
 #  elif defined(__GLIBCXX__)

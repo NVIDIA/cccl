@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -30,13 +30,12 @@ THRUST_NAMESPACE_END
 #include <thrust/detail/allocator/no_throw_allocator.h>
 #include <thrust/detail/allocator/temporary_allocator.h>
 #include <thrust/detail/contiguous_storage.h>
+#include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/detail/tagged_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
 
-#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_convertible.h>
-#include <cuda/std/__type_traits/type_identity.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -135,4 +134,4 @@ public:
 } // namespace detail
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/temporary_array.inl>
+#include <thrust/detail/temporary_array.inl> // IWYU pragma: export

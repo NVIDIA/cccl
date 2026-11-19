@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -41,7 +41,7 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-#if (defined _CCCL_FPMP_USE_LIB)
+#ifdef _CCCL_FPMP_USE_LIB
 /*
  * ============================================================================
  * Forwarding factory macros
@@ -218,13 +218,16 @@ _CCCL_FPMP_LIB_2A(fmin)
 _CCCL_FPMP_LIB_2A(max)
 _CCCL_FPMP_LIB_2A(min)
 _CCCL_FPMP_LIB_2A(fmod)
+_CCCL_FPMP_LIB_2A(high_fmod)
 _CCCL_FPMP_LIB_2A(remainder)
+_CCCL_FPMP_LIB_2A(high_remainder)
 _CCCL_FPMP_LIB_2A(hypot)
 _CCCL_FPMP_LIB_2A(copysign)
 _CCCL_FPMP_LIB_2A(fdim)
 _CCCL_FPMP_LIB_2A(nextafter)
 _CCCL_FPMP_LIB_2A(rhypot)
 _CCCL_FPMP_LIB_2A_QUO(remquo)
+_CCCL_FPMP_LIB_2A_QUO(high_remquo)
 _CCCL_FPMP_LIB_1A_RETINT(ilogb)
 _CCCL_FPMP_LIB_1A_RETLL(llrint)
 _CCCL_FPMP_LIB_1A_RETLL(llround)

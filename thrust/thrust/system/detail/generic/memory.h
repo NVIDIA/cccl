@@ -10,7 +10,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -19,8 +19,9 @@
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
 #include <thrust/detail/pointer.h>
-#include <thrust/detail/type_traits.h>
 #include <thrust/system/detail/generic/tag.h>
+
+#include <cuda/std/__cstddef/types.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
@@ -46,4 +47,4 @@ _CCCL_HOST_DEVICE_API void iter_swap(thrust::execution_policy<DerivedPolicy>&, P
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
-#include <thrust/system/detail/generic/memory.inl>
+#include <thrust/system/detail/generic/memory.inl> // IWYU pragma: export

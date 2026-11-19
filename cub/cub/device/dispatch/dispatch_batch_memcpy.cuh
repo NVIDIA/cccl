@@ -9,7 +9,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -350,8 +350,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                        * static_cast<uint32_t>(active_policy.lookback.small_buffer.buffers_per_thread);
 
   constexpr auto max_num_buffers_per_invocation = ::cuda::std::int64_t{512 * 1024 * 1024};
-  static_assert(max_num_buffers_per_invocation <= ::cuda::std::numeric_limits<per_invocation_buffer_offset_t>::max());
-  const auto max_num_buffers = ::cuda::std::min(max_num_buffers_per_invocation, num_buffers);
+  static_assert(max_num_buffers_per_invocation <= (::cuda::std::numeric_limits<per_invocation_buffer_offset_t>::max)());
+  const auto max_num_buffers = (::cuda::std::min) (max_num_buffers_per_invocation, num_buffers);
   const auto max_num_tiles   = static_cast<BlockOffsetT>(::cuda::ceil_div(max_num_buffers, tile_size));
 
   using BlevBufferSrcsOutT =
@@ -480,7 +480,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   {
     const auto current_buffer_offset = invocation_index * max_num_buffers_per_invocation;
     const auto num_current_buffers =
-      ::cuda::std::min(max_num_buffers_per_invocation, num_buffers - current_buffer_offset);
+      (::cuda::std::min) (max_num_buffers_per_invocation, num_buffers - current_buffer_offset);
     const auto num_current_tiles = static_cast<BlockOffsetT>(::cuda::ceil_div(num_current_buffers, tile_size));
     const auto init_grid_size    = static_cast<BlockOffsetT>(::cuda::ceil_div(num_current_tiles, init_kernel_threads));
     const auto batch_memcpy_grid_size = num_current_tiles;

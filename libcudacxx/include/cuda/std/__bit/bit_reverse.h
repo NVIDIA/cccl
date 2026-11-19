@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -115,7 +115,7 @@ template <class _Tp>
 {
   if constexpr (sizeof(_Tp) == sizeof(uint8_t))
   {
-#  if defined(_CCCL_BUILTIN_BITREVERSE8)
+#  ifdef _CCCL_BUILTIN_BITREVERSE8
     return _CCCL_BUILTIN_BITREVERSE8(__v);
 #  else // ^^^ _CCCL_BUILTIN_BITREVERSE8 ^^^ / vvv !_CCCL_BUILTIN_BITREVERSE8 vvv
     return ::cuda::std::__bit_reverse_impl_generic(__v);
@@ -123,7 +123,7 @@ template <class _Tp>
   }
   else if constexpr (sizeof(_Tp) == sizeof(uint16_t))
   {
-#  if defined(_CCCL_BUILTIN_BITREVERSE16)
+#  ifdef _CCCL_BUILTIN_BITREVERSE16
     return _CCCL_BUILTIN_BITREVERSE16(__v);
 #  else // ^^^ _CCCL_BUILTIN_BITREVERSE16 ^^^ / vvv !_CCCL_BUILTIN_BITREVERSE16 vvv
     return ::cuda::std::__bit_reverse_impl_generic(__v);
@@ -131,7 +131,7 @@ template <class _Tp>
   }
   else if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
-#  if defined(_CCCL_BUILTIN_BITREVERSE32)
+#  ifdef _CCCL_BUILTIN_BITREVERSE32
     return _CCCL_BUILTIN_BITREVERSE32(__v);
 #  else // ^^^ _CCCL_BUILTIN_BITREVERSE32 ^^^ / vvv !_CCCL_BUILTIN_BITREVERSE32 vvv
     return ::cuda::std::__bit_reverse_impl_generic(__v);
@@ -139,7 +139,7 @@ template <class _Tp>
   }
   else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
   {
-#  if defined(_CCCL_BUILTIN_BITREVERSE64)
+#  ifdef _CCCL_BUILTIN_BITREVERSE64
     return _CCCL_BUILTIN_BITREVERSE64(__v);
 #  else // ^^^ _CCCL_BUILTIN_BITREVERSE64 ^^^ / vvv !_CCCL_BUILTIN_BITREVERSE64 vvv
     return ::cuda::std::__bit_reverse_impl_generic(__v);
@@ -148,7 +148,7 @@ template <class _Tp>
 #  if _CCCL_HAS_INT128()
   else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
   {
-#    if defined(_CCCL_BUILTIN_BITREVERSE128)
+#    ifdef _CCCL_BUILTIN_BITREVERSE128
     return _CCCL_BUILTIN_BITREVERSE128(__v);
 #    elif defined(_CCCL_BUILTIN_BITREVERSE64)
     return (__uint128_t{_CCCL_BUILTIN_BITREVERSE64(static_cast<uint64_t>(__v))} << 64)

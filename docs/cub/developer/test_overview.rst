@@ -40,7 +40,7 @@ Device-wide algorithm tests are often split into multiple files, covering differ
 In general, the main ``[catch2_]test_device_FACILITY.cu`` file contains functional tests covering the algorithm.
 There may be further files for additional edge cases, like covering floating point corner cases,
 different iterator types, large offsets, [non-]determinism, deferred problem sizes, etc.
-A common convention are tests for the single phase environment API overloads,
+A common convention are tests for the single-phase environment API overloads,
 which are placed in a file with suffix ``_env.cu``.
 Similarly, ``_api.cu`` files contain tests for API examples in the documentation.
 Tests with a ``_fail.cu`` suffix usually test for an expected (compilation) failure.
@@ -393,7 +393,7 @@ Use the ``ESCAPE_LIST`` macro to protect commas inside each list from the prepro
                                 ESCAPE_LIST(int Channels, int ActiveChannels),
                                 ESCAPE_LIST(Channels, ActiveChannels));
 
-For testing single phase environment-based APIs use the ``DECLARE_LAUNCH_WRAPPER_ENV`` and
+For testing single-phase environment-based APIs use the ``DECLARE_LAUNCH_WRAPPER_ENV`` and
 ``DECLARE_TMPL_LAUNCH_WRAPPER_ENV`` macros from the same header instead.
 They expect the wrapped API's last argument to be an execution environment.
 The helper injects a memory resource into that env automatically.
@@ -472,8 +472,6 @@ Every CUB device-wide algorithm must expose two overloads of each API, as descri
 single-phase API that obtains temporary storage from the execution environment.
 
 Both overloads must take an execution environment as their last parameter.
-This is not yet the case for every existing API, but new APIs must follow this convention,
-and existing ones will be converted eventually.
 
 This split maps directly onto how tests are organized:
 
@@ -481,25 +479,27 @@ This split maps directly onto how tests are organized:
   cases, non-determinism, etc.) belong in ``test/catch2_test_device_xxx.cu`` and must only use
   the two-phase API, invoked implicitly via `Launch wrappers`_.
 - **Environment-interaction tests** belong in ``test/catch2_test_device_xxx_env.cu`` and must
-  only cover how the single-phase API interacts with its environment argument (streams, tuning,
-  determinism requirements, memory resources, etc.). These files should not contain functional
-  or correctness tests of the algorithm itself.
+  only cover how the single-phase and two-phase APIs interact with their environment argument
+  (streams, tuning, determinism requirements, memory resources, etc.). These files should not
+  contain functional or correctness tests of the algorithm itself.
 
-Recommended minimum tests cases to be added for each new single-phase API overload in an ``_env.cu`` file:
+Recommended minimum tests cases to be added for each new single-phase and two-phase API overload in an ``_env.cu``
+file:
 
 1. ``"<algorithm> works with default environment"`` — the algorithm is called directly (no
    launch wrapper) without an environment argument at all, using a minimal example, and checked
    for a correct output. Guard with ``#if TEST_LAUNCH == 0``, since it bypasses the launch
    wrapper and is therefore identical under all three launch ids.
-2. ``"<algorithm> uses environment"`` — an environment carrying only
+2. ``"<algorithm> uses environment"`` — for single-phase overloads, an environment carrying only
    ``expected_allocation_size(...)`` is honored: the algorithm neither over- nor under-allocates
    temporary storage compared to the two-phase API. Don't repeat this check in other test cases
    exercising the same overload for a different checklist item. Runs for all 3 test launches.
-3. ``"<algorithm> uses custom stream"`` — passing a ``cuda::stream_ref`` (e.g. obtained from
-   ``c2h::make_current_device_stream()``) as custom environment is honored: the algorithm's work
-   actually runs on that stream (verified by explicitly synchronizing it, not the default
-   stream). The test case should be guarded by ``#if TEST_LAUNCH != 1``, since host streams are
-   unusable when launching from device code.
+3. ``"<algorithm> uses custom stream"`` — a stream passed in the environment is honored: the
+   algorithm's work actually runs on that stream. Use ``test_with_custom_streams`` to cover all
+   supported kinds of streams and environments carrying them, and place the calls inside a
+   ``stream_scope`` for verification. Since the launch wrappers copy their arguments, which the
+   non-copyable stream types do not allow, call the API directly and guard the test case with
+   ``#if TEST_LAUNCH == 0``.
 4. ``"<algorithm> can be tuned"`` — an environment carrying ``cuda::execution::tune(...)`` is
    honored: test with two distinct tunings that each modify the block size used by the kernel,
    and verify the applied block size on the device using ``block_size_extracting_op`` or

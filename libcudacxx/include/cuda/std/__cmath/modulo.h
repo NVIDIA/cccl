@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -51,7 +51,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline float fmod(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_FMODF)
+#ifdef _CCCL_BUILTIN_FMODF
   return _CCCL_BUILTIN_FMODF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_FMODF ^^^ / vvv !_CCCL_BUILTIN_FMODF vvv
   return ::fmodf(__x, __y);
@@ -60,7 +60,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline float fmodf(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_FMODF)
+#ifdef _CCCL_BUILTIN_FMODF
   return _CCCL_BUILTIN_FMODF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_FMODF ^^^ / vvv !_CCCL_BUILTIN_FMODF vvv
   return ::fmodf(__x, __y);
@@ -69,7 +69,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline double fmod(double __x, double __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_FMOD)
+#ifdef _CCCL_BUILTIN_FMOD
   return _CCCL_BUILTIN_FMOD(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_FMOD ^^^ / vvv !_CCCL_BUILTIN_FMOD vvv
   return ::fmod(__x, __y);
@@ -79,7 +79,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double fmod(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_FMODL)
+#  ifdef _CCCL_BUILTIN_FMODL
   return _CCCL_BUILTIN_FMODL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_FMODL ^^^ / vvv !_CCCL_BUILTIN_FMODL vvv
   return ::fmodl(__x, __y);
@@ -88,7 +88,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API inline long double fmodl(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_FMODL)
+#  ifdef _CCCL_BUILTIN_FMODL
   return _CCCL_BUILTIN_FMODL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_FMODL ^^^ / vvv !_CCCL_BUILTIN_FMODL vvv
   return ::fmodl(__x, __y);
@@ -135,7 +135,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 
 [[nodiscard]] _CCCL_API inline float modf(float __x, float* __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_MODFF)
+#ifdef _CCCL_BUILTIN_MODFF
   return _CCCL_BUILTIN_MODFF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_MODFF ^^^ / vvv !_CCCL_BUILTIN_MODFF vvv
   return ::modff(__x, __y);
@@ -144,7 +144,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 
 [[nodiscard]] _CCCL_API inline float modff(float __x, float* __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_MODFF)
+#ifdef _CCCL_BUILTIN_MODFF
   return _CCCL_BUILTIN_MODFF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_MODFF ^^^ / vvv !_CCCL_BUILTIN_MODFF vvv
   return ::modff(__x, __y);
@@ -153,7 +153,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 
 [[nodiscard]] _CCCL_API inline double modf(double __x, double* __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_MODF)
+#ifdef _CCCL_BUILTIN_MODF
   return _CCCL_BUILTIN_MODF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_MODF ^^^ / vvv !_CCCL_BUILTIN_MODF vvv
   return ::modf(__x, __y);
@@ -163,7 +163,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double modf(long double __x, long double* __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_MODFL)
+#  ifdef _CCCL_BUILTIN_MODFL
   return _CCCL_BUILTIN_MODFL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_MODFL ^^^ / vvv !_CCCL_BUILTIN_MODFL vvv
   return ::modfl(__x, __y);
@@ -172,7 +172,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 
 [[nodiscard]] _CCCL_API inline long double modfl(long double __x, long double* __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_MODFL)
+#  ifdef _CCCL_BUILTIN_MODFL
   return _CCCL_BUILTIN_MODFL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_MODFL ^^^ / vvv !_CCCL_BUILTIN_MODFL vvv
   return ::modfl(__x, __y);

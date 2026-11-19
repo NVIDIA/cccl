@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -15,8 +15,11 @@
 
 #include <thrust/detail/type_traits/has_member_function.h>
 
+// IWYU pragma: begin_keep
+#include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/copy_cv.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+// IWYU pragma: end_keep
 
 // inspired by Roman Perepelitsa's presentation from comp.lang.c++.moderated
 // based on the implementation here: http://www.rsdn.ru/forum/cpp/2759773.1.aspx

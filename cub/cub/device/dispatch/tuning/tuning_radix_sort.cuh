@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -1837,7 +1837,7 @@ struct policy_hub
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int __scale_num_parts(int nominal_4b_num_parts, int compute_t_size)
 {
-  return ::cuda::std::max(1, nominal_4b_num_parts * 4 / ::cuda::std::max(compute_t_size, 4));
+  return (::cuda::std::max) (1, nominal_4b_num_parts * 4 / (::cuda::std::max) (compute_t_size, 4));
 }
 
 #if _CCCL_HAS_CONCEPTS()
@@ -1861,7 +1861,7 @@ struct policy_selector
   // Dominant-sized key/value type
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int __dominant_size() const
   {
-    return ::cuda::std::max(value_size, key_size);
+    return (::cuda::std::max) (value_size, key_size);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
