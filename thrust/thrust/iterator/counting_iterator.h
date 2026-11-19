@@ -43,6 +43,13 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
 
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#ifdef empty_bases
+#  pragma push_macro("empty_bases")
+#  undef empty_bases
+#  define _THRUST_POP_MACRO_empty_bases
+#endif // defined(empty_bases)
+
 THRUST_NAMESPACE_BEGIN
 
 template <typename T>
@@ -343,3 +350,8 @@ _CCCL_HOST_DEVICE_API auto make_counting_iterator(Incrementable x)
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
+
+#ifdef _THRUST_POP_MACRO_empty_bases
+#  pragma pop_macro("empty_bases")
+#  undef _THRUST_POP_MACRO_empty_bases
+#endif // defined(_THRUST_POP_MACRO_empty_bases)
