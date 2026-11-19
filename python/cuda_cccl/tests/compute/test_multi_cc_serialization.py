@@ -138,6 +138,7 @@ def _make_bindable_transform(build_results):
     algorithm.op_cccl = Op()
     algorithm.build_results = build_results
     algorithm._bound_build_result = None
+    algorithm._after_deserialize()
     return algorithm
 
 
