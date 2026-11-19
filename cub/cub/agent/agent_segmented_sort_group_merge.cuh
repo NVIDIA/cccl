@@ -181,7 +181,7 @@ struct agent_group_merge
       {
         if ((thread_idx_in_segment * ItemsPerThread) + item < segment_size)
         {
-          max_key = ::cuda::std::max(max_key, keys[item], compare_op);
+          max_key = (::cuda::std::max) (max_key, keys[item], compare_op);
         }
         else
         {
