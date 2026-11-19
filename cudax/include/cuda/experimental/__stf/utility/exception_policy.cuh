@@ -772,15 +772,6 @@ struct retry_t : basic_sink<retry_t>
 };
 inline constexpr retry_t retry{};
 
-template <class>
-struct __expected_error;
-
-template <class _T, class _E>
-struct __expected_error<::cuda::std::expected<_T, _E>>
-{
-  using type _CCCL_NODEBUG = _E;
-};
-
 /**
  * @brief Converts an exception into the error channel of the callable's `cuda::std::expected`
  * result.
@@ -812,7 +803,7 @@ struct as_expected_t : basic_sink<as_expected_t>
 
       if constexpr (::cuda::__is_specialization_of_v<_Expected, ::cuda::std::expected>)
       {
-        using _E = typename __expected_error<_Expected>::type;
+        using _E = typename _Expected::error_type;
         if constexpr (::cuda::std::is_constructible_v<_E, ::std::exception_ptr>)
         {
           return _Raw{::cuda::std::unexpect, _E(::std::current_exception())};
