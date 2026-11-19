@@ -42,7 +42,7 @@
 #  undef _CCCL_BUILTIN_MAKE_UNSIGNED
 #endif // _CCCL_COMPILER(NVRTC, <, 13, 3)
 
-#if !defined(_CCCL_BUILTIN_MAKE_UNSIGNED)
+#ifndef _CCCL_BUILTIN_MAKE_UNSIGNED
 #  include <cuda/std/__type_traits/type_list.h>
 #endif // !_CCCL_BUILTIN_MAKE_UNSIGNED
 

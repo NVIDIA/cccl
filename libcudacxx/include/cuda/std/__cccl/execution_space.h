@@ -64,7 +64,7 @@
 #  define _CCCL_GRID_CONSTANT
 #endif // ^^^ no __grid_constant__ ^^^
 
-#if !defined(_CCCL_EXEC_CHECK_DISABLE)
+#ifndef _CCCL_EXEC_CHECK_DISABLE
 #  if _CCCL_CUDA_COMPILER(NVCC)
 #    define _CCCL_EXEC_CHECK_DISABLE _CCCL_PRAGMA(nv_exec_check_disable)
 #  else

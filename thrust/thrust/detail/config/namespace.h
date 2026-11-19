@@ -85,7 +85,7 @@
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 #  if defined(THRUST_DISABLE_ABI_NAMESPACE) || defined(THRUST_WRAPPED_NAMESPACE)
-#    if !defined(THRUST_WRAPPED_NAMESPACE)
+#    ifndef THRUST_WRAPPED_NAMESPACE
 #      if !defined(THRUST_IGNORE_ABI_NAMESPACE_ERROR)
 #        error "Disabling ABI namespace is unsafe without wrapping namespace"
 #      endif // !defined(THRUST_IGNORE_ABI_NAMESPACE_ERROR)

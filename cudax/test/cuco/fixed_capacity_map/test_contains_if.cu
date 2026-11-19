@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // Temporary nvcc workaround for a cuda::buffer destructor conflict
-#if defined(__CUDACC__)
+#ifdef __CUDACC__
 #  pragma nv_diag_suppress 20011
 #endif // defined(__CUDACC__)
 

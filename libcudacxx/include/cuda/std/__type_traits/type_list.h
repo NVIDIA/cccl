@@ -37,7 +37,7 @@
 //! For the purpose of this file, a "trait type" is a class type with a nested
 //! type alias named \c type.
 
-#if !defined(_CCCL_META_UNROLL_LIMIT)
+#ifndef _CCCL_META_UNROLL_LIMIT
 #  if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC)
 #    define _CCCL_META_UNROLL_LIMIT 10
 #  else

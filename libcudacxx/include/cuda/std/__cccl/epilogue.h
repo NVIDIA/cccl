@@ -15,7 +15,7 @@
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/diagnostic.h>
 
-#if !defined(_CCCL_PROLOGUE_INCLUDED)
+#ifndef _CCCL_PROLOGUE_INCLUDED
 #  error "cccl internal error: <cuda/std/__cccl/prologue.h> must be included before <cuda/std/__cccl/epilogue.h>"
 #endif
 #undef _CCCL_PROLOGUE_INCLUDED
