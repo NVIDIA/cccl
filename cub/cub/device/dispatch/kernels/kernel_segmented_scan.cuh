@@ -336,8 +336,7 @@ public:
 
     bool is_fixed_size = __syncthreads_and(local_is_fixed_size);
 
-    // The compiler doesn't place The result of __syncthreads_and(...) into wapr uniform registers. Broadcast the value
-    // to make it work.
+    // The compiler doesn't place The result of __syncthreads_and(...) into warp uniform registers. Broadcast the value
     is_fixed_size = __shfl_sync(~0u, is_fixed_size, 0);
 
     const ::cuda::std::span<OffsetT> cum_sizes{
