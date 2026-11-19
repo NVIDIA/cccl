@@ -25,8 +25,13 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_scalar.h>
+#include <cuda/std/__type_traits/is_trivially_constructible.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -64,11 +69,34 @@ template <class _To, class _From>
 _CCCL_DIAG_POP
 #endif // _CCCL_COMPILER(GCC, >=, 8)
 
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(MSVC) && _CCCL_STD_VER == 2017
+
+// NVCC + MSVC C++17 fails for guaranteed copy elision
+template <class _To, class _From>
+inline constexpr bool __can_be_directly_returned =
+  ::cuda::std::is_scalar_v<_To>
+  && ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_To>, ::cuda::std::remove_cvref_t<_From>>;
+
+#else // !(_CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(MSVC) && _CCCL_STD_VER == 2017)
+
+// conjunction_v is used for lazy is_trivially_constructible evaluation
+template <class _To, class _From>
+inline constexpr bool __can_be_directly_returned =
+  ::cuda::std::conjunction_v<::cuda::std::is_same<::cuda::std::remove_cvref_t<_To>, ::cuda::std::remove_cvref_t<_From>>,
+                             ::cuda::std::is_trivially_constructible<_To, const _From&>>;
+
+#endif // !(_CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(MSVC) && _CCCL_STD_VER == 2017)
+
 _CCCL_TEMPLATE(class _To, class _From)
 _CCCL_REQUIRES((sizeof(_To) == sizeof(_From)) _CCCL_AND(::cuda::is_trivially_copyable_v<_To>)
                  _CCCL_AND(::cuda::is_trivially_copyable_v<_From>))
-[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_BIT_CAST _To bit_cast(const _From& __from) noexcept
+[[nodiscard]]
+_CCCL_API _CCCL_CONSTEXPR_BIT_CAST _To bit_cast(const _From& __from) noexcept
 {
+  if constexpr (__can_be_directly_returned<_To, _From>)
+  {
+    return _To(__from);
+  }
 #if defined(_CCCL_BUILTIN_BIT_CAST)
   // Compilers unfortunately require the types to be trivially copyable per the letter of the
   // C++ law, and will emit errors if the builtin is called on types that aren't
