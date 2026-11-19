@@ -11,7 +11,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -560,7 +560,7 @@ class AgentBatchMemcpy
 
   // Buffers of up to WARP_LEVEL_THRESHOLD bytes are copied at thread level and their sizes are stored as
   // TLevBufferSizeT
-  static_assert(WARP_LEVEL_THRESHOLD <= ::cuda::std::numeric_limits<TLevBufferSizeT>::max(),
+  static_assert(WARP_LEVEL_THRESHOLD <= (::cuda::std::numeric_limits<TLevBufferSizeT>::max)(),
                 "BatchedCopyPolicy: lookback.small_buffer.warp_level_threshold must be at most 65535");
 
   /**

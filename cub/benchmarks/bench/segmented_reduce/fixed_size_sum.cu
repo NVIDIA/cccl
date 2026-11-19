@@ -13,4 +13,4 @@
 
 using value_types = all_types;
 using op_t        = ::cuda::std::plus<>;
-#include "base.cuh"
+#include "fixed_size_base.cuh"

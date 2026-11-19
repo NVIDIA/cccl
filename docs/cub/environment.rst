@@ -25,12 +25,12 @@ This page explains what the CUB environment APIs are, and how to use them.
 Why environments?
 -----------------
 
-The classic two-phase CUB API requires three steps: query temporary-storage size, allocate,
-then execute. That is fine for situations where precise control over the temporary storage
-allocation is required, or when the temporary storage size needs to be queried independently
-of allocating it. For example, when the temporary storage is combined with other storage, e.g.
-for an output, into a single allocation. But in many cases this is not needed and the two-step
-API is just repetitive boilerplate.
+The original motivation came from the classic two-phase CUB APIs requiring three steps: query
+temporary-storage size, allocate, then execute. That is fine for situations where precise control
+over the temporary storage allocation is required, or when the temporary storage size needs to be
+queried independently of allocating it. For example, when the temporary storage is combined with
+other storage, e.g. for an output, into a single allocation. But in many cases this is not needed
+and the two-phase API is just repetitive boilerplate.
 
 The environment-based single-phase API collapses all of that into one call. The algorithm
 queries the environment for the properties it needs — for example, the stream to run on,
@@ -52,6 +52,16 @@ pass to many different algorithms:
    .. code-block:: c++
 
       cub::DeviceReduce::Sum(d_input, d_output, num_items);
+
+
+Over time, environments accumulated more useful properties like requirements and tunings, so the
+classic two-phase APIs were also extended to accept the same environments as their last argument.
+Since the caller provides the temporary storage there, a memory resource in the environment is
+ignored, while all other properties are honored:
+
+.. code-block:: c++
+
+   cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, env);
 
 
 .. _cub-env-building:
@@ -230,6 +240,9 @@ execution and released on the same stream afterwards. When no memory resource is
 in the environment, CUB falls back to a stream-ordered ``cudaMallocAsync``/``cudaFreeAsync``
 allocator (see :ref:`Default behavior <cub-environment-fallback>`).
 
+The two-phase APIs ignore any memory resource in the environment, since the caller provides the
+temporary storage.
+
 .. TODO: Add Guarantees sub-section after #9278 is merged.
 
 .. _cub-env-memory-resource-precondition:
@@ -329,8 +342,8 @@ is passed at all):
      - The default CUDA stream (``cudaStream_t{}``).
    * - Memory resource
      - A stream-ordered allocator based on ``cudaMallocAsync``. Temporary storage is
-       allocated on the stream the algorithm runs on. Requires device support for
-       ``cudaMallocAsync``; see
+       allocated on the stream the algorithm runs on. Not used by the two-phase API.
+       Requires device support for ``cudaMallocAsync``; see
        :ref:`Devices without cudaMallocAsync support <cub-env-memory-resource-precondition>`.
    * - Determinism
      - Algorithm-specific. See :ref:`cub-determinism`.

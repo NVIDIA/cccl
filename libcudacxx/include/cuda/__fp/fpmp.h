@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -1953,7 +1953,7 @@ atomicAdd(fpmp2<_FpType, _TypeAcc>* address, const fpmp2<_FpType, _TypeAcc>& val
   // pointer to the first is not valid, however the class happens to be laid out.
   _FpType __old_hi{};
   _FpType __old_lo{};
-#  if defined(_CCCL_FPMP_USE_LIB)
+#  ifdef _CCCL_FPMP_USE_LIB
   // In library mode, call the library function directly
   if constexpr (__fpmp2_is_fp32_v<_FpType>)
   {
@@ -1978,7 +1978,7 @@ atomicSub(fpmp2<_FpType, _TypeAcc>* address, const fpmp2<_FpType, _TypeAcc>& val
   // Same shape as atomicAdd above.
   _FpType __old_hi{};
   _FpType __old_lo{};
-#  if defined(_CCCL_FPMP_USE_LIB)
+#  ifdef _CCCL_FPMP_USE_LIB
   // In library mode, call the library function directly
   if constexpr (__fpmp2_is_fp32_v<_FpType>)
   {

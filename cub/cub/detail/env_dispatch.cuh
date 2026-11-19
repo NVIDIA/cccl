@@ -4,7 +4,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -175,32 +175,6 @@ dispatch_with_env_and_tuning(const EnvT& env, AlgorithmCallable&& algorithm_call
   // A forwarding reference accepts temporary callables, but the callable is deliberately invoked as an lvalue because
   // automatic-storage dispatch invokes it twice.
   return _CUB::detail::dispatch_with_env(
-    env,
-    [&algorithm_callable](
-      [[maybe_unused]] auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-      using policy_t        = decltype(DefaultPolicySelector{}(::cuda::compute_capability{}));
-      using policy_selector = policy_selector_from_tuning_env_t<decltype(tuning_env), policy_t, DefaultPolicySelector>;
-      return algorithm_callable(policy_selector{}, d_temp_storage, temp_storage_bytes, stream);
-    });
-}
-
-//! @brief Validates an environment or object, dispatches with automatic storage, and selects a tuning policy.
-//!
-//! This interface applies the advertised-query validation and lookup rules of
-//! @c dispatch_with_env_validation before selecting the tuning policy.
-//!
-//! @tparam DefaultPolicySelector The policy selector used when the tuning environment does not provide one.
-//! @tparam EnvT The execution environment or query-providing object type.
-//! @tparam AlgorithmCallable The algorithm implementation callable type.
-//! @param[in] env The execution environment or query-providing object.
-//! @param[in] algorithm_callable The algorithm implementation callable that receives the selected policy.
-//! @return The temporary-storage sizing or allocation error, if any; otherwise the execution error, if any;
-//! otherwise the deallocation status.
-template <typename DefaultPolicySelector, typename EnvT, typename AlgorithmCallable>
-[[nodiscard]] CUB_RUNTIME_FUNCTION cudaError_t
-dispatch_with_env_validation_and_tuning(const EnvT& env, AlgorithmCallable&& algorithm_callable)
-{
-  return _CUB::detail::dispatch_with_env_validation(
     env,
     [&algorithm_callable](
       [[maybe_unused]] auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {

@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -124,7 +124,7 @@ struct dispatch_three_way_partition_if
   using per_partition_offset_t = detail::three_way_partition::per_partition_offset_t;
 
   // Type used to provide streaming information about each partition's context
-  static constexpr per_partition_offset_t partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
+  static constexpr per_partition_offset_t partition_size = (::cuda::std::numeric_limits<per_partition_offset_t>::max)();
 
   using streaming_context_t = detail::three_way_partition::streaming_context_t<OffsetT>;
 
@@ -225,7 +225,7 @@ struct dispatch_three_way_partition_if
       }
 
       // Log three_way_partition_init_kernel configuration
-      const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
+      const int init_grid_size = (::cuda::std::max) (1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
 
       _CUB_LOG_KERNEL_LAUNCH(
         "three_way_partition_init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
@@ -489,7 +489,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   _CUB::detail::log_dispatch("DevicePartition (three way)", cc, active_policy);
 
-  static constexpr per_partition_offset_t partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
+  static constexpr per_partition_offset_t partition_size = (::cuda::std::numeric_limits<per_partition_offset_t>::max)();
   static constexpr int init_kernel_threads               = 256;
 
   const int threads_per_block = active_policy.lookback.threads_per_block;
@@ -563,7 +563,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     }
 
     // Log three_way_partition_init_kernel configuration
-    const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, init_kernel_threads));
+    const int init_grid_size = (::cuda::std::max) (1, ::cuda::ceil_div(current_num_tiles, init_kernel_threads));
 
     _CUB_LOG_KERNEL_LAUNCH("three_way_partition_init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
 

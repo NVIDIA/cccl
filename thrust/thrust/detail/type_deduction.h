@@ -7,7 +7,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -41,7 +41,7 @@
 ///
 // Trailing return types seem to confuse Doxygen, and cause it to interpret
 // parts of the function's body as new function signatures.
-#if defined(_CCCL_DOXYGEN_INVOKED)
+#ifdef _CCCL_DOXYGEN_INVOKED
 #  define THRUST_DECLTYPE_RETURNS(...) \
     {                                  \
       return (__VA_ARGS__);            \

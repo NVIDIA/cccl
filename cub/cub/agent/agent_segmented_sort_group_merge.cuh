@@ -7,7 +7,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -181,7 +181,7 @@ struct agent_group_merge
       {
         if ((thread_idx_in_segment * ItemsPerThread) + item < segment_size)
         {
-          max_key = ::cuda::std::max(max_key, keys[item], compare_op);
+          max_key = (::cuda::std::max) (max_key, keys[item], compare_op);
         }
         else
         {

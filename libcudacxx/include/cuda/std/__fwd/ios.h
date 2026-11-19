@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -109,7 +109,7 @@ using u16streampos = fpos<mbstate_t>;
 using u32streampos = fpos<mbstate_t>;
 #endif // _CCCL_HAS_WCHAR_T()
 
-#if defined(_NEWLIB_VERSION)
+#ifdef _NEWLIB_VERSION
 // On newlib, off_t is 'long int'
 using streamoff = long int; // for char_traits in <string>
 #else
