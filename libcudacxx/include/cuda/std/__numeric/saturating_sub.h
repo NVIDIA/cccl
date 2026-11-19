@@ -35,6 +35,13 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `noalias` as a macro, which breaks _CCCL_CONST.
+#ifdef noalias
+#  pragma push_macro("noalias")
+#  undef noalias
+#  define _LIBCUDACXX_POP_MACRO_noalias
+#endif // defined(noalias)
+
 #if _CCCL_HAS_BUILTIN(__builtin_elementwise_sub_sat)
 #  define _CCCL_BUILTIN_ELEMENTWISE_SUB_SAT(...) __builtin_elementwise_sub_sat(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__builtin_elementwise_sub_sat)
@@ -192,6 +199,11 @@ _CCCL_REQUIRES(__cccl_is_integer_v<_Tp>)
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _LIBCUDACXX_POP_MACRO_noalias
+#  pragma pop_macro("noalias")
+#  undef _LIBCUDACXX_POP_MACRO_noalias
+#endif // defined(_LIBCUDACXX_POP_MACRO_noalias)
 
 #include <cuda/std/__cccl/epilogue.h>
 

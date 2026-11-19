@@ -30,6 +30,13 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `noalias` as a macro, which breaks _CCCL_CONST.
+#  ifdef noalias
+#    pragma push_macro("noalias")
+#    undef noalias
+#    define _LIBCUDACXX_POP_MACRO_noalias
+#  endif // defined(noalias)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 
 [[nodiscard]] _CCCL_CONST _CCCL_DEVICE_API inline ::float2
@@ -154,6 +161,11 @@ __sub_f32x2([[maybe_unused]] const ::float2 __lhs, [[maybe_unused]] const ::floa
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD_SIMD
+
+#  ifdef _LIBCUDACXX_POP_MACRO_noalias
+#    pragma pop_macro("noalias")
+#    undef _LIBCUDACXX_POP_MACRO_noalias
+#  endif // defined(_LIBCUDACXX_POP_MACRO_noalias)
 
 #  include <cuda/std/__cccl/epilogue.h>
 

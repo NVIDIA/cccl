@@ -36,6 +36,13 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `noalias` as a macro, which breaks _CCCL_CONST.
+#ifdef noalias
+#  pragma push_macro("noalias")
+#  undef noalias
+#  define _LIBCUDACXX_POP_MACRO_noalias
+#endif // defined(noalias)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 
 // Depending on the compiler and the gpu architecture, the plain C++ code (without intrinsics) can generate or not the
@@ -361,6 +368,11 @@ min_relu(const ::cuda::std::simd::basic_vec<_Tp, _Abi>& __a,
 }
 
 _CCCL_END_NAMESPACE_CUDA_SIMD
+
+#ifdef _LIBCUDACXX_POP_MACRO_noalias
+#  pragma pop_macro("noalias")
+#  undef _LIBCUDACXX_POP_MACRO_noalias
+#endif // defined(_LIBCUDACXX_POP_MACRO_noalias)
 
 #include <cuda/std/__cccl/epilogue.h>
 

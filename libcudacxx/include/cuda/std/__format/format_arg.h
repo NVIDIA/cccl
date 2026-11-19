@@ -36,6 +36,23 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `clang`, `msvc` or `no_specializations` as macros, which break _CCCL_NO_SPECIALIZATIONS.
+#ifdef clang
+#  pragma push_macro("clang")
+#  undef clang
+#  define _LIBCUDACXX_POP_MACRO_clang
+#endif // defined(clang)
+#ifdef msvc
+#  pragma push_macro("msvc")
+#  undef msvc
+#  define _LIBCUDACXX_POP_MACRO_msvc
+#endif // defined(msvc)
+#ifdef no_specializations
+#  pragma push_macro("no_specializations")
+#  undef no_specializations
+#  define _LIBCUDACXX_POP_MACRO_no_specializations
+#endif // defined(no_specializations)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 enum class __fmt_arg_t : uint8_t
@@ -275,6 +292,19 @@ _CCCL_HOST_DEVICE_API decltype(auto) visit_format_arg(_Visitor&& __vis, basic_fo
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _LIBCUDACXX_POP_MACRO_no_specializations
+#  pragma pop_macro("no_specializations")
+#  undef _LIBCUDACXX_POP_MACRO_no_specializations
+#endif // defined(_LIBCUDACXX_POP_MACRO_no_specializations)
+#ifdef _LIBCUDACXX_POP_MACRO_msvc
+#  pragma pop_macro("msvc")
+#  undef _LIBCUDACXX_POP_MACRO_msvc
+#endif // defined(_LIBCUDACXX_POP_MACRO_msvc)
+#ifdef _LIBCUDACXX_POP_MACRO_clang
+#  pragma pop_macro("clang")
+#  undef _LIBCUDACXX_POP_MACRO_clang
+#endif // defined(_LIBCUDACXX_POP_MACRO_clang)
 
 #include <cuda/std/__cccl/epilogue.h>
 

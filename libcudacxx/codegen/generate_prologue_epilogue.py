@@ -41,6 +41,8 @@ FOOTER = """\
 // NO include guards here (this file is included multiple times)
 """
 
+# Names that only spell vendor attributes, like `clang` or `intrinsic`, are not listed to keep
+# the prologue cheap.
 PUSH_POP_MACROS = {
     "__declspec modifiers": [
         "align",
@@ -49,15 +51,10 @@ PUSH_POP_MACROS = {
         "appdomain",
         "code_seg",
         "deprecated",
-        "dllimport",
         "dllexport",
-        "empty_bases",
         "hybrid_patchable",
         "jitintrinsic",
-        "lifetimebound",
         "naked",
-        "noalias",
-        "noinline",
         "noreturn",
         "nothrow",
         "novtable",
@@ -72,18 +69,14 @@ PUSH_POP_MACROS = {
         "uuid",
     ],
     "[[msvc::attribute]] attributes": [
-        "msvc",
         "flatten",
         "forceinline",
         "forceinline_calls",
-        "intrinsic",
-        "noinline",
         "noinline_calls",
         "no_tls_guard",
     ],
     "Windows nasty macros": ["min", "max", "interface"],
     "sal.h on Windows": ["__valid", "__callback"],
-    "other macros": ["clang"],
     "sys/sysmacros.h on linux": ["major", "minor", "makedev"],
 }
 

@@ -73,28 +73,12 @@ _CCCL_DIAG_POP
 #  undef _CCCL_POP_MACRO_deprecated
 #endif
 
-#if defined(dllimport)
-#  error \
-    "cccl internal error: macro `dllimport` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
-#elif defined(_CCCL_POP_MACRO_dllimport)
-#  pragma pop_macro("dllimport")
-#  undef _CCCL_POP_MACRO_dllimport
-#endif
-
 #if defined(dllexport)
 #  error \
     "cccl internal error: macro `dllexport` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_dllexport)
 #  pragma pop_macro("dllexport")
 #  undef _CCCL_POP_MACRO_dllexport
-#endif
-
-#if defined(empty_bases)
-#  error \
-    "cccl internal error: macro `empty_bases` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
-#elif defined(_CCCL_POP_MACRO_empty_bases)
-#  pragma pop_macro("empty_bases")
-#  undef _CCCL_POP_MACRO_empty_bases
 #endif
 
 #if defined(hybrid_patchable)
@@ -113,36 +97,12 @@ _CCCL_DIAG_POP
 #  undef _CCCL_POP_MACRO_jitintrinsic
 #endif
 
-#if defined(lifetimebound)
-#  error \
-    "cccl internal error: macro `lifetimebound` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
-#elif defined(_CCCL_POP_MACRO_lifetimebound)
-#  pragma pop_macro("lifetimebound")
-#  undef _CCCL_POP_MACRO_lifetimebound
-#endif
-
 #if defined(naked)
 #  error \
     "cccl internal error: macro `naked` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_naked)
 #  pragma pop_macro("naked")
 #  undef _CCCL_POP_MACRO_naked
-#endif
-
-#if defined(noalias)
-#  error \
-    "cccl internal error: macro `noalias` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
-#elif defined(_CCCL_POP_MACRO_noalias)
-#  pragma pop_macro("noalias")
-#  undef _CCCL_POP_MACRO_noalias
-#endif
-
-#if defined(noinline)
-#  error \
-    "cccl internal error: macro `noinline` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
-#elif defined(_CCCL_POP_MACRO_noinline)
-#  pragma pop_macro("noinline")
-#  undef _CCCL_POP_MACRO_noinline
 #endif
 
 #if defined(noreturn)
@@ -243,14 +203,6 @@ _CCCL_DIAG_POP
 
 // [[msvc::attribute]] attributes
 
-#if defined(msvc)
-#  error \
-    "cccl internal error: macro `msvc` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
-#elif defined(_CCCL_POP_MACRO_msvc)
-#  pragma pop_macro("msvc")
-#  undef _CCCL_POP_MACRO_msvc
-#endif
-
 #if defined(flatten)
 #  error \
     "cccl internal error: macro `flatten` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
@@ -273,22 +225,6 @@ _CCCL_DIAG_POP
 #elif defined(_CCCL_POP_MACRO_forceinline_calls)
 #  pragma pop_macro("forceinline_calls")
 #  undef _CCCL_POP_MACRO_forceinline_calls
-#endif
-
-#if defined(intrinsic)
-#  error \
-    "cccl internal error: macro `intrinsic` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
-#elif defined(_CCCL_POP_MACRO_intrinsic)
-#  pragma pop_macro("intrinsic")
-#  undef _CCCL_POP_MACRO_intrinsic
-#endif
-
-#if defined(noinline)
-#  error \
-    "cccl internal error: macro `noinline` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
-#elif defined(_CCCL_POP_MACRO_noinline)
-#  pragma pop_macro("noinline")
-#  undef _CCCL_POP_MACRO_noinline
 #endif
 
 #if defined(noinline_calls)
@@ -349,16 +285,6 @@ _CCCL_DIAG_POP
 #elif defined(_CCCL_POP_MACRO___callback)
 #  pragma pop_macro("__callback")
 #  undef _CCCL_POP_MACRO___callback
-#endif
-
-// other macros
-
-#if defined(clang)
-#  error \
-    "cccl internal error: macro `clang` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
-#elif defined(_CCCL_POP_MACRO_clang)
-#  pragma pop_macro("clang")
-#  undef _CCCL_POP_MACRO_clang
 #endif
 
 // sys/sysmacros.h on linux

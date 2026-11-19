@@ -27,6 +27,35 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `clang`, `msvc` or the names of vendor attributes as macros, which must break neither the
+// feature checks below nor _CCCL_INTRINSIC, _CCCL_LIFETIMEBOUND and _CCCL_NO_SPECIALIZATIONS. So push and pop them here
+// and in every header that uses these macros, like <cuda/std/__utility/move.h>.
+#ifdef clang
+#  pragma push_macro("clang")
+#  undef clang
+#  define _LIBCUDACXX_POP_MACRO_clang
+#endif // defined(clang)
+#ifdef msvc
+#  pragma push_macro("msvc")
+#  undef msvc
+#  define _LIBCUDACXX_POP_MACRO_msvc
+#endif // defined(msvc)
+#ifdef intrinsic
+#  pragma push_macro("intrinsic")
+#  undef intrinsic
+#  define _LIBCUDACXX_POP_MACRO_intrinsic
+#endif // defined(intrinsic)
+#ifdef lifetimebound
+#  pragma push_macro("lifetimebound")
+#  undef lifetimebound
+#  define _LIBCUDACXX_POP_MACRO_lifetimebound
+#endif // defined(lifetimebound)
+#ifdef no_specializations
+#  pragma push_macro("no_specializations")
+#  undef no_specializations
+#  define _LIBCUDACXX_POP_MACRO_no_specializations
+#endif // defined(no_specializations)
+
 #ifdef __has_attribute
 #  define _CCCL_HAS_ATTRIBUTE(__x) __has_attribute(__x)
 #else // ^^^ __has_attribute ^^^ / vvv !__has_attribute vvv
@@ -132,6 +161,8 @@
 
 // _CCCL_PURE
 
+// Some code bases define `noalias` as a macro. Push and pop `noalias` around every use of _CCCL_PURE and
+// _CCCL_CONST, like <cuda/__bit/bitmask.h> does.
 #if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 5)
 #  define _CCCL_PURE __nv_pure__
 #elif _CCCL_HAS_CPP_ATTRIBUTE(__gnu__::__pure__)
@@ -230,6 +261,27 @@
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 #  define _CCCL_RESTRICT __restrict__
 #endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
+
+#ifdef _LIBCUDACXX_POP_MACRO_no_specializations
+#  pragma pop_macro("no_specializations")
+#  undef _LIBCUDACXX_POP_MACRO_no_specializations
+#endif // defined(_LIBCUDACXX_POP_MACRO_no_specializations)
+#ifdef _LIBCUDACXX_POP_MACRO_lifetimebound
+#  pragma pop_macro("lifetimebound")
+#  undef _LIBCUDACXX_POP_MACRO_lifetimebound
+#endif // defined(_LIBCUDACXX_POP_MACRO_lifetimebound)
+#ifdef _LIBCUDACXX_POP_MACRO_intrinsic
+#  pragma pop_macro("intrinsic")
+#  undef _LIBCUDACXX_POP_MACRO_intrinsic
+#endif // defined(_LIBCUDACXX_POP_MACRO_intrinsic)
+#ifdef _LIBCUDACXX_POP_MACRO_msvc
+#  pragma pop_macro("msvc")
+#  undef _LIBCUDACXX_POP_MACRO_msvc
+#endif // defined(_LIBCUDACXX_POP_MACRO_msvc)
+#ifdef _LIBCUDACXX_POP_MACRO_clang
+#  pragma pop_macro("clang")
+#  undef _LIBCUDACXX_POP_MACRO_clang
+#endif // defined(_LIBCUDACXX_POP_MACRO_clang)
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -27,6 +27,13 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `noalias` as a macro, which breaks _CCCL_CONST.
+#ifdef noalias
+#  pragma push_macro("noalias")
+#  undef noalias
+#  define _LIBCUDACXX_POP_MACRO_noalias
+#endif // defined(noalias)
+
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 enum class __l2_evict_t : uint32_t
@@ -204,6 +211,11 @@ __createpolicy_fraction(__l2_evict_t __primary, __l2_evict_t __secondary, float 
 #endif // _CCCL_CUDA_COMPILATION()
 
 _CCCL_END_NAMESPACE_CUDA
+
+#ifdef _LIBCUDACXX_POP_MACRO_noalias
+#  pragma pop_macro("noalias")
+#  undef _LIBCUDACXX_POP_MACRO_noalias
+#endif // defined(_LIBCUDACXX_POP_MACRO_noalias)
 
 #include <cuda/std/__cccl/epilogue.h>
 
