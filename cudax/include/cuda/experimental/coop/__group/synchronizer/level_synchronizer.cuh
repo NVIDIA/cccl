@@ -106,7 +106,7 @@ struct level_synchronizer::__synchronizer_instance
   template <class _Hierarchy>
   _CCCL_DEVICE_API void do_wait(const _Hierarchy&, [[maybe_unused]] arrival_token&& __tok) const
   {
-    _CCCL_ASSERT(__tok.__valid(), "invalid arrival token passed to do_wait function");
+    _CCCL_ASSERT(__tok.__is_valid(), "invalid arrival token passed to do_wait function");
 
     if constexpr (::cuda::std::is_same_v<_Level, thread_level>)
     {
@@ -134,7 +134,7 @@ struct level_synchronizer::__synchronizer_instance
   template <class _Hierarchy>
   _CCCL_DEVICE_API void do_wait_aligned(const _Hierarchy&, [[maybe_unused]] arrival_token&& __tok) const
   {
-    _CCCL_ASSERT(__tok.__valid(), "invalid arrival token passed to do_wait_aligned function");
+    _CCCL_ASSERT(__tok.__is_valid(), "invalid arrival token passed to do_wait_aligned function");
 
     if constexpr (::cuda::std::is_same_v<_Level, thread_level>)
     {

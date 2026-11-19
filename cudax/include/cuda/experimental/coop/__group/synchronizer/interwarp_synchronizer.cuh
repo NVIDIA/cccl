@@ -94,7 +94,8 @@ public:
   _CCCL_DEVICE_API void do_wait(const _Hierarchy& __hier, [[maybe_unused]] arrival_token&& __tok) const
   {
     // Construct a temporary object, so we set __tok to moved-from state.
-    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__valid(), "invalid arrival token passed to do_wait function");
+    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__is_valid(),
+                 "invalid arrival token passed to do_wait function");
     do_sync(__hier);
   }
 
@@ -102,7 +103,7 @@ public:
   _CCCL_DEVICE_API void do_wait_aligned(const _Hierarchy& __hier, [[maybe_unused]] arrival_token&& __tok) const
   {
     // Construct a temporary object, so we set __tok to moved-from state.
-    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__valid(),
+    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__is_valid(),
                  "invalid arrival token passed to do_wait_aligned function");
     do_sync_aligned(__hier);
   }
@@ -159,7 +160,8 @@ public:
   _CCCL_DEVICE_API void do_wait(const _Hierarchy& __hier, [[maybe_unused]] arrival_token&& __tok) const
   {
     // Construct a temporary object, so we set __tok to moved-from state.
-    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__valid(), "invalid arrival token passed to do_wait function");
+    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__is_valid(),
+                 "invalid arrival token passed to do_wait function");
     do_sync(__hier);
   }
 
@@ -167,7 +169,7 @@ public:
   _CCCL_DEVICE_API void do_wait_aligned(const _Hierarchy& __hier, [[maybe_unused]] arrival_token&& __tok) const
   {
     // Construct a temporary object, so we set __tok to moved-from state.
-    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__valid(),
+    _CCCL_ASSERT(arrival_token{::cuda::std::move(__tok)}.__is_valid(),
                  "invalid arrival token passed to do_wait_aligned function");
     do_sync_aligned(__hier);
   }
