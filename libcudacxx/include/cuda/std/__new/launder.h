@@ -23,8 +23,7 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/is_function.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/is_void.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -38,7 +37,7 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp* launder(_Tp* __p) noexcept
 {
   static_assert(!is_function_v<_Tp>, "can't launder functions");
-  static_assert(!is_same_v<void, remove_cv_t<_Tp>>, "can't launder cv-void");
+  static_assert(!is_void_v<_Tp>, "can't launder cv-void");
 #if defined(_CCCL_BUILTIN_LAUNDER)
   return _CCCL_BUILTIN_LAUNDER(__p);
 #else
