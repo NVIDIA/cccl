@@ -103,7 +103,7 @@ struct AgentBlockSort
   ValueT* items_out_raw;
   CompareOpT compare_op;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentBlockSort(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentBlockSort(
     bool ping_,
     TempStorage& storage_,
     KeysLoadIt keys_in_,
@@ -126,7 +126,7 @@ struct AgentBlockSort
       , compare_op(compare_op_)
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Process()
   {
     const auto tile_idx     = static_cast<OffsetT>(blockIdx.x);
     const auto num_tiles    = static_cast<OffsetT>(gridDim.x);
@@ -144,7 +144,7 @@ struct AgentBlockSort
   }
 
   template <bool IsLastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(OffsetT tile_base, int num_remaining)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void consume_tile(OffsetT tile_base, int num_remaining)
   {
     ValueT items_local[ITEMS_PER_THREAD];
 
@@ -272,7 +272,7 @@ struct AgentPartition
   int items_per_tile;
   OffsetT num_partitions;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Process()
   {
     const OffsetT merged_tiles_number = target_merged_tiles_number / 2;
 
@@ -290,9 +290,9 @@ struct AgentPartition
     const OffsetT local_tile_idx = mask & partition_idx;
 
     const OffsetT keys1_beg = (::cuda::std::min) (keys_count, start);
-    const OffsetT keys1_end = (::cuda::std::min) (keys_count, detail::safe_add_bound_to_max(start, size));
+    const OffsetT keys1_end = (::cuda::std::min) (keys_count, _CUB::detail::safe_add_bound_to_max(start, size));
     const OffsetT keys2_beg = keys1_end;
-    const OffsetT keys2_end = (::cuda::std::min) (keys_count, detail::safe_add_bound_to_max(keys2_beg, size));
+    const OffsetT keys2_end = (::cuda::std::min) (keys_count, _CUB::detail::safe_add_bound_to_max(keys2_beg, size));
 
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
@@ -307,18 +307,20 @@ struct AgentPartition
 
       OffsetT partition_diag =
         ping
-          ? MergePath(keys_ping + keys1_beg,
-                      keys_ping + keys2_beg,
-                      keys1_end - keys1_beg,
-                      keys2_end - keys2_beg,
-                      partition_at,
-                      compare_op)
-          : MergePath(keys_pong + keys1_beg,
-                      keys_pong + keys2_beg,
-                      keys1_end - keys1_beg,
-                      keys2_end - keys2_beg,
-                      partition_at,
-                      compare_op);
+          ? _CUB::MergePath(
+              keys_ping + keys1_beg,
+              keys_ping + keys2_beg,
+              keys1_end - keys1_beg,
+              keys2_end - keys2_beg,
+              partition_at,
+              compare_op)
+          : _CUB::MergePath(
+              keys_pong + keys1_beg,
+              keys_pong + keys2_beg,
+              keys1_end - keys1_beg,
+              keys2_end - keys2_beg,
+              partition_at,
+              compare_op);
 
       merge_partitions[partition_idx] = keys1_beg + partition_diag;
     }
@@ -336,7 +338,7 @@ struct AgentPartition
  * stores the result in output[item].
  */
 template <int BlockThreads, bool IsFullTile, int ItemsPerThread, class T, class It1, class It2>
-_CCCL_DEVICE _CCCL_FORCEINLINE void
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
 gmem_to_reg(T (&output)[ItemsPerThread], It1 input1, It2 input2, int count1, int count2)
 {
   if constexpr (IsFullTile)
@@ -344,7 +346,7 @@ gmem_to_reg(T (&output)[ItemsPerThread], It1 input1, It2 input2, int count1, int
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      const int idx = BlockThreads * item + threadIdx.x;
+      const int idx = (BlockThreads * item) + threadIdx.x;
       // It1 and It2 could have different value types. Convert after load.
       output[item] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
     }
@@ -354,7 +356,7 @@ gmem_to_reg(T (&output)[ItemsPerThread], It1 input1, It2 input2, int count1, int
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      const int idx = BlockThreads * item + threadIdx.x;
+      const int idx = (BlockThreads * item) + threadIdx.x;
       if (idx < count1 + count2)
       {
         output[item] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
@@ -365,12 +367,12 @@ gmem_to_reg(T (&output)[ItemsPerThread], It1 input1, It2 input2, int count1, int
 
 /// \brief Stores data in a coalesced fashion in[item] -> out[BlockThreads * item + tid]
 template <int BlockThreads, int ItemsPerThread, class T, class It>
-_CCCL_DEVICE _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[ItemsPerThread])
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[ItemsPerThread])
 {
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int item = 0; item < ItemsPerThread; ++item)
   {
-    const int idx = BlockThreads * item + threadIdx.x;
+    const int idx = (BlockThreads * item) + threadIdx.x;
     output[idx]   = input[item];
   }
 }
@@ -465,7 +467,7 @@ struct AgentMerge
   //---------------------------------------------------------------------
 
   template <bool IsFullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(int tid, OffsetT tile_idx, OffsetT tile_base, int count)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void consume_tile(int tid, OffsetT tile_idx, OffsetT tile_base, int count)
   {
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
@@ -483,7 +485,7 @@ struct AgentMerge
     const OffsetT start = ITEMS_PER_TILE * list;
     const OffsetT size  = ITEMS_PER_TILE * merged_tiles_number;
 
-    const OffsetT diag = ITEMS_PER_TILE * tile_idx - start;
+    const OffsetT diag = (ITEMS_PER_TILE * tile_idx) - start;
 
     const OffsetT keys1_beg = partition_beg - start;
     OffsetT keys1_end       = partition_end - start;
@@ -498,7 +500,7 @@ struct AgentMerge
     const OffsetT keys2_beg = (::cuda::std::min) (max_keys2, diag - keys1_beg);
     OffsetT keys2_end =
       (::cuda::std::min) (max_keys2,
-                          detail::safe_add_bound_to_max(diag, static_cast<OffsetT>(ITEMS_PER_TILE)) - keys1_end);
+                          _CUB::detail::safe_add_bound_to_max(diag, static_cast<OffsetT>(ITEMS_PER_TILE)) - keys1_end);
 
     // Check if it's the last tile in the tile group being merged
     if (mask == (mask & tile_idx))
@@ -515,15 +517,15 @@ struct AgentMerge
     KeyT keys_local[ITEMS_PER_THREAD];
     if (ping)
     {
-      gmem_to_reg<BLOCK_THREADS, IsFullTile>(
+      _CUB::detail::merge_sort::gmem_to_reg<BLOCK_THREADS, IsFullTile>(
         keys_local, keys_in_ping + start + keys1_beg, keys_in_ping + start + size + keys2_beg, num_keys1, num_keys2);
     }
     else
     {
-      gmem_to_reg<BLOCK_THREADS, IsFullTile>(
+      _CUB::detail::merge_sort::gmem_to_reg<BLOCK_THREADS, IsFullTile>(
         keys_local, keys_in_pong + start + keys1_beg, keys_in_pong + start + size + keys2_beg, num_keys1, num_keys2);
     }
-    reg_to_shared<BLOCK_THREADS>(&storage.keys_shared[0], keys_local);
+    _CUB::detail::merge_sort::reg_to_shared<BLOCK_THREADS>(&storage.keys_shared[0], keys_local);
 
     // preload items into registers already
     //
@@ -532,7 +534,7 @@ struct AgentMerge
     {
       if (ping)
       {
-        gmem_to_reg<BLOCK_THREADS, IsFullTile>(
+        _CUB::detail::merge_sort::gmem_to_reg<BLOCK_THREADS, IsFullTile>(
           items_local,
           items_in_ping + start + keys1_beg,
           items_in_ping + start + size + keys2_beg,
@@ -541,7 +543,7 @@ struct AgentMerge
       }
       else
       {
-        gmem_to_reg<BLOCK_THREADS, IsFullTile>(
+        _CUB::detail::merge_sort::gmem_to_reg<BLOCK_THREADS, IsFullTile>(
           items_local,
           items_in_pong + start + keys1_beg,
           items_in_pong + start + size + keys2_beg,
@@ -560,7 +562,7 @@ struct AgentMerge
     //
     const int diag0_local = (::cuda::std::min) (num_keys1 + num_keys2, ITEMS_PER_THREAD * tid);
 
-    const int keys1_beg_local = MergePath(
+    const int keys1_beg_local = _CUB::MergePath(
       &storage.keys_shared[0], &storage.keys_shared[num_keys1], num_keys1, num_keys2, diag0_local, compare_op);
     const int keys1_end_local = num_keys1;
     const int keys2_beg_local = diag0_local - keys1_beg_local;
@@ -573,7 +575,7 @@ struct AgentMerge
     //
     int indices[ITEMS_PER_THREAD];
 
-    detail::serial_merge<policy.unroll>(
+    _CUB::detail::serial_merge<policy.unroll>(
       &storage.keys_shared[0],
       keys1_beg_local,
       keys2_beg_local + num_keys1,
@@ -614,7 +616,7 @@ struct AgentMerge
     {
       __syncthreads();
 
-      reg_to_shared<BLOCK_THREADS>(&storage.items_shared[0], items_local);
+      _CUB::detail::merge_sort::reg_to_shared<BLOCK_THREADS>(&storage.items_shared[0], items_local);
 
       __syncthreads();
 
@@ -655,7 +657,7 @@ struct AgentMerge
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentMerge(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentMerge(
     bool ping_,
     TempStorage& storage_,
     KeysLoadPingIt keys_in_ping_,
@@ -686,7 +688,7 @@ struct AgentMerge
       , target_merged_tiles_number(target_merged_tiles_number_)
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Process()
   {
     const int tile_idx      = static_cast<int>(blockIdx.x);
     const int num_tiles     = static_cast<int>(gridDim.x);

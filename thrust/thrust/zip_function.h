@@ -111,7 +111,7 @@ class zip_function
 
 public:
   //! Default constructs the contained function object.
-  zip_function() = default;
+  _CCCL_HIDE_FROM_ABI zip_function() = default;
 
   _CCCL_API zip_function(Function func)
       : func(::cuda::std::move(func))

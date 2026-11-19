@@ -41,6 +41,7 @@
 #include <cuda/std/__type_traits/is_trivially_destructible.h>
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
 #include <cuda/std/__type_traits/is_trivially_move_constructible.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/__utility/exception_guard.h>
 #include <cuda/std/__utility/forward.h>
@@ -505,9 +506,9 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
 
 template <class _Tp, class _Err>
 inline constexpr __smf_availability __expected_can_copy_construct =
-  (is_trivially_copy_constructible_v<_Tp> || is_same_v<_Tp, void>) && is_trivially_copy_constructible_v<_Err>
+  (is_trivially_copy_constructible_v<_Tp> || is_void_v<_Tp>) && is_trivially_copy_constructible_v<_Err>
     ? __smf_availability::__trivial
-  : (is_copy_constructible_v<_Tp> || is_same_v<_Tp, void>) && is_copy_constructible_v<_Err>
+  : (is_copy_constructible_v<_Tp> || is_void_v<_Tp>) && is_copy_constructible_v<_Err>
     ? __smf_availability::__available
     : __smf_availability::__deleted;
 
@@ -554,9 +555,9 @@ struct __expected_copy<_Tp, _Err, __smf_availability::__deleted> : __expected_st
 
 template <class _Tp, class _Err>
 inline constexpr __smf_availability __expected_can_move_construct =
-  (is_trivially_move_constructible_v<_Tp> || is_same_v<_Tp, void>) && is_trivially_move_constructible_v<_Err>
+  (is_trivially_move_constructible_v<_Tp> || is_void_v<_Tp>) && is_trivially_move_constructible_v<_Err>
     ? __smf_availability::__trivial
-  : (is_move_constructible_v<_Tp> || is_same_v<_Tp, void>) && is_move_constructible_v<_Err>
+  : (is_move_constructible_v<_Tp> || is_void_v<_Tp>) && is_move_constructible_v<_Err>
     ? __smf_availability::__available
     : __smf_availability::__deleted;
 
@@ -607,14 +608,14 @@ struct __expected_move<_Tp, _Err, __smf_availability::__deleted> : __expected_co
 // Need to also check against is_nothrow_move_constructible in the trivial case as that is stupidly in the constraints
 template <class _Tp, class _Err>
 inline constexpr __smf_availability __expected_can_copy_assign =
-  (is_trivially_destructible_v<_Tp> || is_same_v<_Tp, void>) && is_trivially_destructible_v<_Err>
-      && (is_trivially_copy_constructible_v<_Tp> || is_same_v<_Tp, void>) && is_trivially_copy_constructible_v<_Err>
-      && (is_trivially_copy_assignable_v<_Tp> || is_same_v<_Tp, void>) && is_trivially_copy_assignable_v<_Err>
-      && (is_nothrow_move_constructible_v<_Tp> || is_same_v<_Tp, void> || is_nothrow_move_constructible_v<_Err>)
+  (is_trivially_destructible_v<_Tp> || is_void_v<_Tp>) && is_trivially_destructible_v<_Err>
+      && (is_trivially_copy_constructible_v<_Tp> || is_void_v<_Tp>) && is_trivially_copy_constructible_v<_Err>
+      && (is_trivially_copy_assignable_v<_Tp> || is_void_v<_Tp>) && is_trivially_copy_assignable_v<_Err>
+      && (is_nothrow_move_constructible_v<_Tp> || is_void_v<_Tp> || is_nothrow_move_constructible_v<_Err>)
     ? __smf_availability::__trivial
-  : (is_copy_constructible_v<_Tp> || is_same_v<_Tp, void>) && is_copy_constructible_v<_Err>
-      && (is_copy_assignable_v<_Tp> || is_same_v<_Tp, void>) && is_copy_assignable_v<_Err>
-      && (is_nothrow_move_constructible_v<_Tp> || is_same_v<_Tp, void> || is_nothrow_move_constructible_v<_Err>)
+  : (is_copy_constructible_v<_Tp> || is_void_v<_Tp>)
+      && is_copy_constructible_v<_Err> && (is_copy_assignable_v<_Tp> || is_void_v<_Tp>) && is_copy_assignable_v<_Err>
+      && (is_nothrow_move_constructible_v<_Tp> || is_void_v<_Tp> || is_nothrow_move_constructible_v<_Err>)
     ? __smf_availability::__available
     : __smf_availability::__deleted;
 
@@ -675,13 +676,13 @@ struct __expected_copy_assign<_Tp, _Err, __smf_availability::__deleted> : __expe
 
 template <class _Tp, class _Err>
 inline constexpr __smf_availability __expected_can_move_assign =
-  (is_trivially_destructible_v<_Tp> || is_same_v<_Tp, void>) && is_trivially_destructible_v<_Err>
-      && (is_trivially_move_constructible_v<_Tp> || is_same_v<_Tp, void>) && is_trivially_move_constructible_v<_Err>
-      && (is_trivially_move_assignable_v<_Tp> || is_same_v<_Tp, void>) && is_trivially_move_assignable_v<_Err>
+  (is_trivially_destructible_v<_Tp> || is_void_v<_Tp>) && is_trivially_destructible_v<_Err>
+      && (is_trivially_move_constructible_v<_Tp> || is_void_v<_Tp>) && is_trivially_move_constructible_v<_Err>
+      && (is_trivially_move_assignable_v<_Tp> || is_void_v<_Tp>) && is_trivially_move_assignable_v<_Err>
     ? __smf_availability::__trivial
-  : (is_move_constructible_v<_Tp> || is_same_v<_Tp, void>) && is_move_constructible_v<_Err>
-      && (is_move_assignable_v<_Tp> || is_same_v<_Tp, void>) && is_move_assignable_v<_Err>
-      && (is_nothrow_move_constructible_v<_Tp> || is_same_v<_Tp, void> || is_nothrow_move_constructible_v<_Err>)
+  : (is_move_constructible_v<_Tp> || is_void_v<_Tp>)
+      && is_move_constructible_v<_Err> && (is_move_assignable_v<_Tp> || is_void_v<_Tp>) && is_move_assignable_v<_Err>
+      && (is_nothrow_move_constructible_v<_Tp> || is_void_v<_Tp> || is_nothrow_move_constructible_v<_Err>)
     ? __smf_availability::__available
     : __smf_availability::__deleted;
 

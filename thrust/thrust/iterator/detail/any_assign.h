@@ -19,7 +19,7 @@ namespace detail
 // a type which may be assigned any other type
 struct any_assign
 {
-  any_assign() = default;
+  _CCCL_HIDE_FROM_ABI any_assign() = default;
 
   template <typename T>
   _CCCL_API any_assign(T)

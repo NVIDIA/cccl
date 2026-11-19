@@ -80,8 +80,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
   return _CCCL_BUILTIN_RINTF128(__x);
 #  else // ^^^ _CCCL_BUILTIN_RINTF128 ^^^ / vvv !_CCCL_BUILTIN_RINTF128 vvv
   NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_rint(__x);))
-  constexpr auto __fmt       = __fp_format_of_v<__float128>;
-  constexpr int __mant_nbits = __fp_mant_nbits_v<__fmt>;
+  constexpr int __mant_nbits = __fp_mant_nbits_v<__fp_format_of_v<__float128>>;
 
   if (::cuda::std::__fp_get_exp(__x) >= __mant_nbits)
   {

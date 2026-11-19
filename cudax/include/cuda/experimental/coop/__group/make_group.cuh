@@ -37,6 +37,7 @@
 #include <cuda/experimental/coop/__group/concepts.cuh>
 #include <cuda/experimental/coop/__group/fwd.cuh>
 #include <cuda/experimental/coop/__group/generic_group.cuh>
+#include <cuda/experimental/coop/__group/group_view.cuh>
 #include <cuda/experimental/coop/__group/mapping/common.cuh>
 #include <cuda/experimental/coop/__group/mapping/group_by.cuh>
 #include <cuda/experimental/coop/__group/synchronizer/lane_synchronizer.cuh>
@@ -82,6 +83,37 @@ _CCCL_REQUIRES(__is_same_templ_v<generic_group, _GroupTempl> _CCCL_AND __is_hier
   const non_exhaustive_t& __non_exhaustive,
   const _Unit& __unit,
   const _ParentGroup& __parent,
+  _Mapping&& __mapping,
+  _Synchronizer&& __synchronizer)
+{
+  const auto __mapping_result = ::cuda::experimental::coop::__do_group_mapping(
+    __non_exhaustive, __unit, __parent, ::cuda::std::forward<_Mapping>(__mapping));
+  const auto __synchronizer_instance =
+    ::cuda::std::forward<_Synchronizer>(__synchronizer).make_instance(__unit, __parent, __mapping_result);
+  using _Ret = ::cuda::std::optional<_Group>;
+  return (__mapping_result.is_valid())
+         ? _Ret{::cuda::std::in_place, __non_exhaustive, __unit, __parent, __mapping_result, __synchronizer_instance}
+         : _Ret{};
+}
+
+_CCCL_TEMPLATE(
+  template <class...> class _GroupTempl,
+  class _Unit,
+  class _ParentUnit,
+  class _ParentGroup,
+  class _ParentMappingResult,
+  class _Mapping,
+  class _Synchronizer,
+  class _ParentView           = group_view<_ParentUnit, _ParentGroup, _ParentMappingResult>,
+  class _MappingResult        = __group_mapping_result_t<non_exhaustive_t, _Unit, _ParentView, _Mapping>,
+  class _SynchronizerInstance = __group_synchronizer_instance_t<_Unit, _ParentView, _MappingResult, _Synchronizer>,
+  class _Group                = _GroupTempl<_Unit, _ParentGroup, _MappingResult, _SynchronizerInstance>)
+_CCCL_REQUIRES(__is_same_templ_v<generic_group, _GroupTempl> _CCCL_AND __is_hierarchy_level_v<_Unit> _CCCL_AND
+                 __unit_same_as_or_below_v<_Unit, _ParentUnit>)
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::optional<_Group> make_group(
+  const non_exhaustive_t& __non_exhaustive,
+  const _Unit& __unit,
+  const group_view<_ParentUnit, _ParentGroup, _ParentMappingResult>& __parent,
   _Mapping&& __mapping,
   _Synchronizer&& __synchronizer)
 {

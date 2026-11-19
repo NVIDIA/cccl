@@ -15,8 +15,7 @@
 //  accuracy to the last bit is the accuracy suite's job, not this one's.
 //
 //  The functions divide by what their *reference* needs rather than by anything
-//  fpmp2 lacks, since fpmp2 math is host and device alike apart from erfinv,
-//  erfcinv and erfcx:
+//  fpmp2 lacks, since fpmp2 math is host and device alike:
 //
 //    - Where the reference is in ISO <cmath>, the check lives in main(), which
 //      force_include.h turns into a __host__ __device__ function that the
@@ -33,6 +32,7 @@
 #include <cuda/fpmp>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
+#include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
@@ -71,6 +71,7 @@ TEST_HOST_DEVICE_FUNC void test_host_device(double tol)
 {
   const double x_val = 1.234567890123;
   const double y_val = 2.345678901234;
+  const double p_val = 0.3; // probability argument, must be in (0,1)
   const int n_val    = 3;
 
   // assert per check rather than an accumulated flag, so a failure names the
@@ -113,6 +114,24 @@ TEST_HOST_DEVICE_FUNC void test_host_device(double tol)
   CHECK_1A(lgamma, x_val);
   CHECK_1A(tgamma, x_val);
 
+  // The scaled complementary error function, the normal CDF and the inverse
+  // error functions have no ISO reference; the definitions and the round trips
+  // through erf / erfc stand in, on both sides.  fp64mp2 erfcx, erfinv and
+  // erfcinv are still device-only double fallbacks, so those three stay with
+  // fp32mp2 here and with the CUDA references below for fp64mp2.
+  assert(check(static_cast<double>(normcdf(MP2(x_val))), 0.5 * ::erfc(-x_val * 0.70710678118654752440), tol));
+  assert(check(static_cast<double>(normcdf(MP2(-x_val))), 0.5 * ::erfc(x_val * 0.70710678118654752440), tol));
+  assert(check(0.5 * ::erfc(-static_cast<double>(normcdfinv(MP2(p_val))) * 0.70710678118654752440), p_val, tol));
+  if constexpr (::cuda::std::is_same_v<MP2, cuda::fp32mp2>)
+  {
+    assert(check(static_cast<double>(erfcx(MP2(x_val))), ::exp(x_val * x_val) * ::erfc(x_val), tol));
+    assert(check(static_cast<double>(erfcx(MP2(-x_val))), ::exp(x_val * x_val) * ::erfc(-x_val), tol));
+    assert(check(::erf(static_cast<double>(erfinv(MP2(p_val)))), p_val, tol));
+    assert(check(::erf(static_cast<double>(erfinv(MP2(-0.9)))), -0.9, tol));
+    assert(check(::erfc(static_cast<double>(erfcinv(MP2(p_val)))), p_val, tol));
+    assert(check(::erfc(static_cast<double>(erfcinv(MP2(1.7)))), 1.7, tol));
+  }
+
   // Rounding and absolute value
   CHECK_1A(ceil, x_val);
   CHECK_1A(floor, x_val);
@@ -144,6 +163,15 @@ TEST_HOST_DEVICE_FUNC void test_host_device(double tol)
   assert(check(static_cast<double>(boys_f0(MP2(x_val))),
                0.5 * ::sqrt(3.14159265358979323846 / x_val) * ::erf(::sqrt(x_val)),
                tol));
+
+  // normcdfinv at the ends of (0, 1), against CUDA's double normcdfinv. 1 - 2^-53 is
+  // (1.0f, -2^-53) as an fp32mp2 pair, so the result must come from the whole pair,
+  // not from hi == 1.
+  assert(check(static_cast<double>(normcdfinv(MP2(0x1.fffffffffffffp-1))), 8.2095361516013874, tol));
+  assert(check(static_cast<double>(normcdfinv(MP2(1.0 - 0x1p-40))), 7.0477002566644087, tol));
+  assert(check(static_cast<double>(normcdfinv(MP2(0x1p-40))), -7.0477002566644087, tol));
+  assert(fpmp_isinf(normcdfinv(MP2(1.0))) && !fpmp_signbit(normcdfinv(MP2(1.0))));
+  assert(fpmp_isinf(normcdfinv(MP2(0.0))) && fpmp_signbit(normcdfinv(MP2(0.0))));
 
   // Scaling by a power of two
   assert(check(static_cast<double>(ldexp(MP2(x_val), n_val)), ::ldexp(x_val, n_val), tol));
@@ -189,6 +217,40 @@ TEST_HOST_DEVICE_FUNC void test_host_device(double tol)
     assert(check_int(quo, ref_quo));
   }
 
+  // fmod, remainder and remquo are exact on sparse pairs (a tail far below
+  // the head, more than 53 significant bits in all) in fp32mp2_high, and
+  // compute on the pair rounded to 53 bits in the other levels, where rounding
+  // the input moves the remainder by the amount dropped.
+  //   x = 2^60 + 2^-20 (81 bits), y = 3: 2^60 = 3 k + 1 with k = 5 mod 8, so
+  //   both remainders are 1 + 2^-20 and the quotient's low bits are 5 (the
+  //   53-bit route gives 1).
+  //   x = 2^40 - (2^8 + 2^-14) (55 bits), y = 768 = 3 * 2^8: 2^40 = 768 k' +
+  //   2^8 with k' = (2^32 - 1) / 3 = 5 mod 8, so x = 768 k' - 2^-14: fmod is
+  //   768 - 2^-14, remainder -2^-14 (the 53-bit route rounds the 2^-14 away).
+  if constexpr (::cuda::std::is_same_v<MP2, cuda::fp32mp2>)
+  {
+    using HP = cuda::fp32mp2_high;
+    const MP2 xs(0x1p+60f, 0x1p-20f);
+    const MP2 ys(3.0f, 0.0f);
+    const HP xsh(0x1p+60f, 0x1p-20f);
+    const HP ysh(3.0f, 0.0f);
+    assert(static_cast<double>(fmod(xsh, ysh)) == 1.0 + 0x1p-20);
+    assert(static_cast<double>(remainder(xsh, ysh)) == 1.0 + 0x1p-20);
+    assert(static_cast<double>(fmod(xs, ys)) == 1.0); // the 53-bit route
+    assert(static_cast<double>(remainder(xs, ys)) == 1.0);
+    int qs = 0;
+    assert(static_cast<double>(remquo(xsh, ysh, &qs)) == 1.0 + 0x1p-20);
+    assert((qs & 7) == 5);
+
+    const HP xbh(0x1p+40f, -(0x1p+8f + 0x1p-14f));
+    const HP ybh(768.0f, 0.0f);
+    assert(static_cast<double>(fmod(xbh, ybh)) == 768.0 - 0x1p-14);
+    assert(static_cast<double>(remainder(xbh, ybh)) == -0x1p-14);
+    int qb = 0;
+    assert(static_cast<double>(remquo(xbh, ybh, &qb)) == -0x1p-14);
+    assert((qb & 7) == 5);
+  }
+
 #undef CHECK_1A
 #undef CHECK_2A
 }
@@ -197,8 +259,7 @@ TEST_HOST_DEVICE_FUNC void test_host_device(double tol)
 
 // ---- checks whose reference exists only in CUDA -----------------------------
 //
-// Compiled for the device only, since neither these references nor, for erfinv,
-// erfcinv and erfcx, the fpmp2 entry points themselves have a host spelling. The
+// Compiled for the device only, since these references have no host spelling. The
 // kernel that force_include.h already wraps main() in is what runs them, so the test
 // launches nothing of its own -- which is also what keeps it compilable by NVRTC,
 // whose device-only translation unit has no runtime API to launch with.

@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -44,8 +44,15 @@ _CCCL_CONCEPT __has_member_get_resource = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& 
   requires(resource<::cuda::std::remove_cvref_t<decltype(__t.get_memory_resource())>>));
 
 template <class _Env>
+_CCCL_CONCEPT __has_usable_advertised_resource_query = _CCCL_REQUIRES_EXPR((_Env))(
+  requires(::cuda::std::execution::__detail::__advertises_query_v<_Env, get_memory_resource_t>),
+  requires(::cuda::std::execution::__queryable_with<const _Env&, get_memory_resource_t>),
+  requires(
+    resource<::cuda::std::remove_cvref_t<::cuda::std::execution::__query_result_t<const _Env&, get_memory_resource_t>>>));
+
+template <class _Env>
 _CCCL_CONCEPT __has_query_get_memory_resource = _CCCL_REQUIRES_EXPR((_Env))(
-  requires(!__is_synchronous_resource_env<_Env>),
+  requires(!__is_synchronous_resource_env<_Env> || __has_usable_advertised_resource_query<_Env>),
   requires(!__has_member_get_resource<_Env>),
   requires(::cuda::std::execution::__queryable_with<const _Env&, get_memory_resource_t>));
 
@@ -82,7 +89,14 @@ struct get_memory_resource_t
   }
 };
 
+// The type was renamed from __get_memory_resource_t in CCCL 3.6, so its ABI symbols are already distinct.
+// The variable retained its name, and the Itanium ABI does not encode variable types in symbol names.
+// Only the variable therefore needs this namespace bump.
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
+
 _CCCL_GLOBAL_CONSTANT auto get_memory_resource = get_memory_resource_t{};
+
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
 _CCCL_END_NAMESPACE_CUDA_MR
 

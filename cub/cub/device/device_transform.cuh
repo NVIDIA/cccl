@@ -61,7 +61,7 @@ struct __return_constant
   T value;
 
   template <typename... Args>
-  _CCCL_HOST_DEVICE auto operator()(Args&&...) const -> T
+  _CCCL_HOST_DEVICE_API auto operator()(Args&&...) const -> T
   {
     return value;
   }
@@ -87,7 +87,7 @@ CUB_NAMESPACE_END
 namespace cuda
 {
 template <typename T>
-struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::__return_constant<T>> : ::cuda::std::true_type
+struct proclaims_copyable_arguments<_CUB::detail::__return_constant<T>> : ::cuda::std::true_type
 {};
 } // namespace cuda
 
@@ -100,8 +100,8 @@ CUB_NAMESPACE_BEGIN
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! All algorithms in DeviceTransform that accept an environment can be tuned by passing a custom :ref:`policy selector
-//! <cub-policy-selectors>` that returns a :cpp:struct:`cub::TransformPolicy`, as shown in the example below:
+//! All algorithms in DeviceTransform can be tuned by passing a custom :ref:`policy selector <cub-policy-selectors>`
+//! that returns a :cpp:struct:`cub::TransformPolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_transform_env_api.cu
 //!      :language: c++
@@ -164,7 +164,7 @@ struct DeviceTransform
       // https://github.com/NVIDIA/cccl/issues/8805 for data. We use choose_signed_offset to just check if it can
       // hold the value passed by the user, but otherwise ignore the chosen signed offset type.
       using offset_t = ::cuda::std::int64_t;
-      if (const cudaError_t error = detail::choose_signed_offset<NumItemsT>::is_exceeding_offset_type(num_items))
+      if (const cudaError_t error = _CUB::detail::choose_signed_offset<NumItemsT>::is_exceeding_offset_type(num_items))
       {
         return error;
       }
@@ -186,7 +186,7 @@ struct DeviceTransform
       static_assert(detail::transform::transform_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
-      return detail::transform::dispatch<RequiresStableAddress>(
+      return _CUB::detail::transform::dispatch<RequiresStableAddress>(
         ::cuda::std::move(inputs),
         ::cuda::std::move(output),
         static_cast<offset_t>(num_items),

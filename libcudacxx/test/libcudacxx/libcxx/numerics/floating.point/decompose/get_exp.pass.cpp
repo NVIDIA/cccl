@@ -36,24 +36,28 @@ TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST void test_fp_get_exp(T val)
   }
 
   // zero has ... all zeros
-  if constexpr (cuda::std::__fp_is_signed_v<fmt>)
+  if constexpr (fmt != cuda::std::__fp_format::__fp8_nv_e8m0)
   {
     test_fp_get_exp(T{}, cuda::std::__fp_exp_min_v<fmt> - 1);
   }
   else
-  { // Without sign 0 is equivalent to __fp_exp_min_v
+  { // e8m0 cannot represent zero.
     test_fp_get_exp(T{}, cuda::std::__fp_exp_min_v<fmt>);
   }
 
-  // min has all zeroes, max and lowest have max
+  // Signed lowest has the same exponent as max; ue5m3 lowest is zero.
   test_fp_get_exp(cuda::std::numeric_limits<T>::min(), cuda::std::__fp_exp_min_v<fmt>);
   test_fp_get_exp(cuda::std::numeric_limits<T>::max(), cuda::std::__fp_exp_max_v<fmt>);
   if constexpr (cuda::std::__fp_is_signed_v<fmt>)
   {
     test_fp_get_exp(cuda::std::numeric_limits<T>::lowest(), cuda::std::__fp_exp_max_v<fmt>);
   }
+  else if constexpr (fmt == cuda::std::__fp_format::__fp8_nv_ue5m3)
+  {
+    test_fp_get_exp(cuda::std::numeric_limits<T>::lowest(), cuda::std::__fp_exp_min_v<fmt> - 1);
+  }
   else
-  { // Without sign lowest is equivalent to min
+  {
     test_fp_get_exp(cuda::std::numeric_limits<T>::lowest(), cuda::std::__fp_exp_min_v<fmt>);
   }
 
@@ -71,7 +75,7 @@ TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST void test_fp_get_exp(T val)
   if constexpr (cuda::std::__fp_has_nan_v<fmt>)
   {
 #if _CCCL_HAS_NVFP8_E4M3()
-    if constexpr (cuda::std::is_same_v<T, __nv_fp8_e4m3>)
+    if constexpr (fmt == cuda::std::__fp_format::__fp8_nv_e4m3 || fmt == cuda::std::__fp_format::__fp8_nv_ue5m3)
     {
       // __nv_fp8_e4m3 has only 2 NaNs so more of exponent are valid
       test_fp_get_exp(cuda::std::numeric_limits<T>::quiet_NaN(), cuda::std::__fp_exp_max_v<fmt>);
@@ -111,22 +115,25 @@ TEST_FUNC bool test(float val)
 
 #if _CCCL_HAS_NVFP8_E4M3()
   test<__nv_fp8_e4m3>();
-#endif // _CCCL_HAS_NVFP8_E4M3
+#endif // _CCCL_HAS_NVFP8_E4M3()
 #if _CCCL_HAS_NVFP8_E5M2()
   test<__nv_fp8_e5m2>();
-#endif // _CCCL_HAS_NVFP8_E5M2
+#endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_UE5M3()
+  test<__nv_fp8_ue5m3>();
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 #if _CCCL_HAS_NVFP8_E8M0()
   test<__nv_fp8_e8m0>();
-#endif // _CCCL_HAS_NVFP8_E8M0
+#endif // _CCCL_HAS_NVFP8_E8M0()
 #if _CCCL_HAS_NVFP6_E2M3()
   test<__nv_fp6_e2m3>();
-#endif // _CCCL_HAS_NVFP6_E2M3
+#endif // _CCCL_HAS_NVFP6_E2M3()
 #if _CCCL_HAS_NVFP6_E3M2()
   test<__nv_fp6_e3m2>();
-#endif // _CCCL_HAS_NVFP6_E3M2
+#endif // _CCCL_HAS_NVFP6_E3M2()
 #if _CCCL_HAS_NVFP4_E2M1()
   test<__nv_fp4_e2m1>();
-#endif // _CCCL_HAS_NVFP4_E2M1
+#endif // _CCCL_HAS_NVFP4_E2M1()
 
   return true;
 }

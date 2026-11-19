@@ -39,6 +39,7 @@
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__mdspan/extents.h>
 #  include <cuda/std/__memory/assume_aligned.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -224,7 +225,7 @@ public:
       CUB_NS_QUALIFIER::DeviceTransform::Fill,
       "cuco: failed to clear the bloom filter",
       __words_,
-      static_cast<detail::__index_type>(__num_words()),
+      __num_words(),
       __word_type{0},
       __stream);
   }
@@ -321,7 +322,7 @@ public:
   //! @param __idx Index of the key owned by the calling thread
   //! @param __is_valid `true` iff the calling thread owns a valid key
   template <class _CG, class _InputIt>
-  _CCCL_DEVICE_API void __add_coop(_CG __group, _InputIt __first, detail::__index_type __idx, bool __is_valid) noexcept
+  _CCCL_DEVICE_API void __add_coop(_CG __group, _InputIt __first, __size_type __idx, bool __is_valid) noexcept
   {
     constexpr int __num_threads = detail::__tile_size_v<_CG>;
     static_assert(__num_threads == __add_horizontal_layout,
@@ -359,21 +360,21 @@ public:
   template <class _CG, class _InputIt>
   _CCCL_DEVICE_API void __add_range(_CG __group, _InputIt __first, _InputIt __last) noexcept
   {
-    const auto __num_keys = detail::__distance(__first, __last);
+    const auto __num_keys = static_cast<__size_type>(::cuda::std::distance(__first, __last));
 
     if constexpr (detail::__tile_size_v<_CG> == __add_horizontal_layout && __add_horizontal_layout > 1)
     {
-      constexpr auto __num_threads = static_cast<detail::__index_type>(detail::__tile_size_v<_CG>);
-      for (detail::__index_type __batch = 0; __batch < __num_keys; __batch += __num_threads)
+      constexpr auto __num_threads = static_cast<__size_type>(detail::__tile_size_v<_CG>);
+      for (__size_type __batch = 0; __batch < __num_keys; __batch += __num_threads)
       {
-        const auto __idx = __batch + static_cast<detail::__index_type>(__group.thread_rank());
+        const auto __idx = __batch + static_cast<__size_type>(__group.thread_rank());
         __add_coop(__group, __first, __idx, __idx < __num_keys);
       }
     }
     else
     {
-      constexpr auto __stride = static_cast<detail::__index_type>(detail::__tile_size_v<_CG>);
-      for (auto __i = static_cast<detail::__index_type>(__group.thread_rank()); __i < __num_keys; __i += __stride)
+      constexpr auto __stride = static_cast<__size_type>(detail::__tile_size_v<_CG>);
+      for (auto __i = static_cast<__size_type>(__group.thread_rank()); __i < __num_keys; __i += __stride)
       {
         __add(*(__first + __i));
       }
@@ -390,7 +391,7 @@ public:
   template <class _InputIt>
   _CCCL_HOST_API void __add_async(_InputIt __first, _InputIt __last, ::cuda::stream_ref __stream)
   {
-    const auto __num_keys = detail::__distance(__first, __last);
+    const auto __num_keys = static_cast<__size_type>(::cuda::std::distance(__first, __last));
     if (__num_keys == 0)
     {
       return;
@@ -529,7 +530,7 @@ public:
   //! @return `true` iff the calling thread's key was present in the filter
   template <class _CG, class _InputIt>
   [[nodiscard]] _CCCL_DEVICE_API bool
-  __contains_coop(_CG __group, _InputIt __first, detail::__index_type __idx, bool __is_valid) const noexcept
+  __contains_coop(_CG __group, _InputIt __first, __size_type __idx, bool __is_valid) const noexcept
   {
     constexpr int __num_threads = detail::__tile_size_v<_CG>;
     static_assert(__num_threads == __contains_horizontal_layout,
@@ -577,14 +578,14 @@ public:
   _CCCL_DEVICE_API void
   __contains_range(_CG __group, _InputIt __first, _InputIt __last, _OutputIt __output_begin) const noexcept
   {
-    const auto __num_keys = detail::__distance(__first, __last);
+    const auto __num_keys = static_cast<__size_type>(::cuda::std::distance(__first, __last));
 
     if constexpr (detail::__tile_size_v<_CG> == __contains_horizontal_layout && __contains_horizontal_layout > 1)
     {
-      constexpr auto __num_threads = static_cast<detail::__index_type>(detail::__tile_size_v<_CG>);
-      for (detail::__index_type __batch = 0; __batch < __num_keys; __batch += __num_threads)
+      constexpr auto __num_threads = static_cast<__size_type>(detail::__tile_size_v<_CG>);
+      for (__size_type __batch = 0; __batch < __num_keys; __batch += __num_threads)
       {
-        const auto __idx      = __batch + static_cast<detail::__index_type>(__group.thread_rank());
+        const auto __idx      = __batch + static_cast<__size_type>(__group.thread_rank());
         const auto __is_valid = __idx < __num_keys;
         const auto __result   = __contains_coop(__group, __first, __idx, __is_valid);
         if (__is_valid)
@@ -595,8 +596,8 @@ public:
     }
     else
     {
-      constexpr auto __stride = static_cast<detail::__index_type>(detail::__tile_size_v<_CG>);
-      for (auto __i = static_cast<detail::__index_type>(__group.thread_rank()); __i < __num_keys; __i += __stride)
+      constexpr auto __stride = static_cast<__size_type>(detail::__tile_size_v<_CG>);
+      for (auto __i = static_cast<__size_type>(__group.thread_rank()); __i < __num_keys; __i += __stride)
       {
         *(__output_begin + __i) = __contains(*(__first + __i));
       }
@@ -616,7 +617,7 @@ public:
   _CCCL_HOST_API void
   __contains_async(_InputIt __first, _InputIt __last, _OutputIt __output_begin, ::cuda::stream_ref __stream) const
   {
-    const auto __num_keys = detail::__distance(__first, __last);
+    const auto __num_keys = static_cast<__size_type>(::cuda::std::distance(__first, __last));
     if (__num_keys == 0)
     {
       return;

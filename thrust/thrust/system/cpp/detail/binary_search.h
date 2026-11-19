@@ -13,7 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/system/cpp/detail/execution_policy.h>
+#include <thrust/system/cpp/detail/execution_policy.h> // IWYU pragma: export
 
 // this system inherits the binary search algorithms
-#include <thrust/system/detail/sequential/binary_search.h>
+#include <thrust/system/detail/sequential/binary_search.h> // IWYU pragma: export

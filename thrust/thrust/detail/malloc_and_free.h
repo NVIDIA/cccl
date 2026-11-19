@@ -18,14 +18,18 @@
 #include <thrust/detail/pointer.h>
 #include <thrust/detail/raw_pointer_cast.h>
 
+#include <cuda/std/__cstddef/types.h>
+
 // Include all active backend system implementations (generic, sequential, host and device)
+// IWYU pragma: begin_keep
 #include <thrust/system/detail/generic/memory.h>
 #include <thrust/system/detail/sequential/malloc_and_free.h>
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(malloc_and_free.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(malloc_and_free.h)
+// IWYU pragma: end_keep
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/malloc_and_free.h>
 #  include <thrust/system/cuda/detail/malloc_and_free.h>
 #  include <thrust/system/omp/detail/malloc_and_free.h>
@@ -36,8 +40,8 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy>
-_CCCL_HOST_DEVICE pointer<void, DerivedPolicy>
-malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, std::size_t n)
+_CCCL_HOST_DEVICE_API pointer<void, DerivedPolicy>
+malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::size_t n)
 {
   using thrust::system::detail::generic::malloc;
 
@@ -45,33 +49,33 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, std::si
   void* raw_ptr = static_cast<void*>(
     // Allocation dispatch transfers ownership to the caller.
     // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
-    thrust::raw_pointer_cast(malloc(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), n)));
+    thrust::raw_pointer_cast(malloc(thrust::detail::derived_cast(thrust::detail::strip_const(system)), n)));
 
   return pointer<void, DerivedPolicy>(raw_ptr);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename DerivedPolicy>
-_CCCL_HOST_DEVICE pointer<T, DerivedPolicy>
-malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, std::size_t n)
+_CCCL_HOST_DEVICE_API pointer<T, DerivedPolicy>
+malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::size_t n)
 {
   using thrust::system::detail::generic::malloc;
 
   T* raw_ptr = static_cast<T*>(
-    thrust::raw_pointer_cast(malloc<T>(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), n)));
+    thrust::raw_pointer_cast(malloc<T>(thrust::detail::derived_cast(thrust::detail::strip_const(system)), n)));
 
   return pointer<T, DerivedPolicy>(raw_ptr);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Pointer ptr)
+_CCCL_HOST_DEVICE_API void free(const thrust::detail::execution_policy_base<DerivedPolicy>& system, Pointer ptr)
 {
   using thrust::system::detail::generic::free;
 
   // Release caller-owned storage through the selected backend.
   // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
-  free(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), ptr);
+  free(thrust::detail::derived_cast(thrust::detail::strip_const(system)), ptr);
 }
 
 // XXX consider another form of free which does not take a system argument and

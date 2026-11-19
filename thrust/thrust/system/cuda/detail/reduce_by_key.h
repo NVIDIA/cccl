@@ -17,24 +17,25 @@
 
 #  include <thrust/system/cuda/config.h>
 
-#  include <cub/device/device_reduce.cuh>
-#  include <cub/iterator/cache_modified_input_iterator.cuh>
-#  include <cub/util_math.cuh>
+#  include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
+#  include <cub/util_temporary_storage.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/raw_reference_cast.h>
+#  include <thrust/detail/execution_policy.h>
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/detail/type_traits.h>
 #  include <thrust/detail/type_traits/iterator/is_output_iterator.h>
-#  include <thrust/functional.h>
 #  include <thrust/iterator/iterator_traits.h>
-#  include <thrust/system/cuda/detail/core/util.h>
+#  include <thrust/system/cuda/detail/cdp_dispatch.h>
+#  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
 #  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__type_traits/conditional.h>
 #  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/cstdint>
 
@@ -46,7 +47,8 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<OutputIterator1, OutputIterator2>
+reduce_by_key( // NOLINT(readability-redundant-declaration)
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -113,10 +115,16 @@ THRUST_RUNTIME_FUNCTION cudaError_t dispatch_reduce_by_key(
     reduction_op,
     num_items,
     stream);
-  _CUDA_CUB_RET_IF_FAIL(status);
+  if (CubDebug(status))
+  {
+    return status;
+  }
 
   status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-  _CUDA_CUB_RET_IF_FAIL(status);
+  if (CubDebug(status))
+  {
+    return status;
+  }
 
   // Return if we're only querying temporary storage requirements
   if (d_temp_storage == nullptr)
@@ -149,11 +157,17 @@ THRUST_RUNTIME_FUNCTION cudaError_t dispatch_reduce_by_key(
     reduction_op,
     num_items,
     stream);
-  _CUDA_CUB_RET_IF_FAIL(status);
+  if (CubDebug(status))
+  {
+    return status;
+  }
 
   // Get number of selected items
   status = cuda_cub::synchronize(policy);
-  _CUDA_CUB_RET_IF_FAIL(status);
+  if (CubDebug(status))
+  {
+    return status;
+  }
   num_selected = static_cast<NumSelectedT>(get_value(policy, d_num_unique_keys_out));
   return status;
 }
@@ -248,7 +262,7 @@ template <class Derived,
           class ValOutputIt,
           class BinaryPred,
           class BinaryOp>
-::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
+::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE_API reduce_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt keys_first,
   KeyInputIt keys_last,
@@ -275,7 +289,7 @@ template <class Derived,
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, class ValOutputIt, class BinaryPred>
-::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
+::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE_API reduce_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt keys_first,
   KeyInputIt keys_last,
@@ -299,7 +313,7 @@ template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, 
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, class ValOutputIt>
-::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
+::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE_API reduce_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt keys_first,
   KeyInputIt keys_last,
@@ -315,7 +329,7 @@ template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, 
 
 THRUST_NAMESPACE_END
 
-#  include <thrust/memory.h>
-#  include <thrust/reduce.h>
+#  include <thrust/memory.h> // IWYU pragma: keep
+#  include <thrust/reduce.h> // IWYU pragma: keep
 
 #endif

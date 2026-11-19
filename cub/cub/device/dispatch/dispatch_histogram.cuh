@@ -207,7 +207,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 
   const HistogramPolicy active_policy = policy_selector(cc);
 
-  detail::log_dispatch("DeviceHistogram", cc, active_policy);
+  _CUB::detail::log_dispatch("DeviceHistogram", cc, active_policy);
 
   const auto init_kernel = kernel_source.template HistogramInitKernel<PolicySelector>();
   auto sweep_kernel      = [&] {
@@ -297,7 +297,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   // Alias the temporary allocations from the single storage blob (or compute the
   // necessary size of the blob)
   if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -391,7 +391,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }
 
   // Sync the stream if specified to flush runtime errors
-  if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+  if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
   {
     return error;
   }
@@ -518,12 +518,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
     constexpr int PrivatizedSmemBins = 0;
 
     if (const auto error = CubDebug(
-          (detail::histogram::dispatch<NumChannels,
-                                       NumActiveChannels,
-                                       PrivatizedSmemBins,
-                                       /* IsDeviceInit = */ true,
-                                       /* IsEven = */ true,
-                                       /* IsByteSample = */ false>(
+          (_CUB::detail::histogram::dispatch<NumChannels,
+                                             NumActiveChannels,
+                                             PrivatizedSmemBins,
+                                             /* IsDeviceInit = */ true,
+                                             /* IsEven = */ true,
+                                             /* IsByteSample = */ false>(
             d_temp_storage,
             temp_storage_bytes,
             d_samples,
@@ -550,12 +550,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
     constexpr int PrivatizedSmemBins = detail::histogram::max_privatized_smem_bins;
 
     if (const auto error = CubDebug(
-          (detail::histogram::dispatch<NumChannels,
-                                       NumActiveChannels,
-                                       PrivatizedSmemBins,
-                                       /* IsDeviceInit = */ true,
-                                       /* IsEven = */ true,
-                                       /* IsByteSample = */ false>(
+          (_CUB::detail::histogram::dispatch<NumChannels,
+                                             NumActiveChannels,
+                                             PrivatizedSmemBins,
+                                             /* IsDeviceInit = */ true,
+                                             /* IsEven = */ true,
+                                             /* IsByteSample = */ false>(
             d_temp_storage,
             temp_storage_bytes,
             d_samples,
@@ -690,12 +690,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
   constexpr int PrivatizedSmemBins = 256;
 
   if (const auto error = CubDebug(
-        (detail::histogram::dispatch<NumChannels,
-                                     NumActiveChannels,
-                                     PrivatizedSmemBins,
-                                     /* IsDeviceInit = */ true,
-                                     /* IsEven = */ true,
-                                     /* IsByteSample = */ true>(
+        (_CUB::detail::histogram::dispatch<NumChannels,
+                                           NumActiveChannels,
+                                           PrivatizedSmemBins,
+                                           /* IsDeviceInit = */ true,
+                                           /* IsEven = */ true,
+                                           /* IsByteSample = */ true>(
           d_temp_storage,
           temp_storage_bytes,
           d_samples,
@@ -748,7 +748,7 @@ _CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> HistogramPolicy
     ap::IS_RLE_COMPRESS,
     ap::MEM_PREFERENCE,
     ap::IS_WORK_STEALING,
-    convert_pdl_trigger<ActivePolicy>(0)};
+    _CUB::detail::histogram::convert_pdl_trigger<ActivePolicy>(0)};
 }
 
 // TODO(bgruber): drop in CCCL 4.0
@@ -763,7 +763,7 @@ private:
     template <typename ActivePolicyT>
     _CCCL_HOST_DEVICE_API constexpr cudaError_t Invoke()
     {
-      policy = convert_policy<ActivePolicyT>();
+      policy = _CUB::detail::histogram::convert_policy<ActivePolicyT>();
       return cudaSuccess;
     }
   };
@@ -778,7 +778,7 @@ public:
                         _CCCL_VERIFY(MaxPolicy::Invoke(cc.get() * 10, dispatch) == cudaSuccess, "");
                         return policy;
                       }),
-                      ({ return convert_policy<typename MaxPolicy::ActivePolicy>(); }));
+                      ({ return _CUB::detail::histogram::convert_policy<typename MaxPolicy::ActivePolicy>(); }));
   }
 };
 
@@ -846,12 +846,12 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
     constexpr int PrivatizedSmemBins = 256;
 
     if (const auto error = CubDebug(
-          (detail::histogram::dispatch<NumChannels,
-                                       NumActiveChannels,
-                                       PrivatizedSmemBins,
-                                       /* IsDeviceInit = */ false,
-                                       /* IsEven = (unused for host-init) */ false,
-                                       /* IsByteSample = (unused for host-init) */ false>(
+          (_CUB::detail::histogram::dispatch<NumChannels,
+                                             NumActiveChannels,
+                                             PrivatizedSmemBins,
+                                             /* IsDeviceInit = */ false,
+                                             /* IsEven = (unused for host-init) */ false,
+                                             /* IsByteSample = (unused for host-init) */ false>(
             d_temp_storage,
             temp_storage_bytes,
             d_samples,
@@ -903,12 +903,12 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
       constexpr int PrivatizedSmemBins = 0;
 
       if (const auto error = CubDebug(
-            (detail::histogram::dispatch<NumChannels,
-                                         NumActiveChannels,
-                                         PrivatizedSmemBins,
-                                         /* IsDeviceInit = */ false,
-                                         /* IsEven = (unused for host-init) */ false,
-                                         /* IsByteSample = (unused for host-init) */ false>(
+            (_CUB::detail::histogram::dispatch<NumChannels,
+                                               NumActiveChannels,
+                                               PrivatizedSmemBins,
+                                               /* IsDeviceInit = */ false,
+                                               /* IsEven = (unused for host-init) */ false,
+                                               /* IsByteSample = (unused for host-init) */ false>(
               d_temp_storage,
               temp_storage_bytes,
               d_samples,
@@ -935,12 +935,12 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
       constexpr int PrivatizedSmemBins = max_privatized_smem_bins;
 
       if (const auto error = CubDebug(
-            (detail::histogram::dispatch<NumChannels,
-                                         NumActiveChannels,
-                                         PrivatizedSmemBins,
-                                         /* IsDeviceInit = */ false,
-                                         /* IsEven = (unused for host-init) */ false,
-                                         /* IsByteSample = (unused for host-init) */ false>(
+            (_CUB::detail::histogram::dispatch<NumChannels,
+                                               NumActiveChannels,
+                                               PrivatizedSmemBins,
+                                               /* IsDeviceInit = */ false,
+                                               /* IsEven = (unused for host-init) */ false,
+                                               /* IsByteSample = (unused for host-init) */ false>(
               d_temp_storage,
               temp_storage_bytes,
               d_samples,
@@ -1044,12 +1044,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
     constexpr int PrivatizedSmemBins = 256;
 
     if (const auto error = CubDebug(
-          (detail::histogram::dispatch<NumChannels,
-                                       NumActiveChannels,
-                                       PrivatizedSmemBins,
-                                       /* IsDeviceInit = */ false,
-                                       /* IsEven = */ false,
-                                       /* IsByteSample = */ false>(
+          (_CUB::detail::histogram::dispatch<NumChannels,
+                                             NumActiveChannels,
+                                             PrivatizedSmemBins,
+                                             /* IsDeviceInit = */ false,
+                                             /* IsEven = */ false,
+                                             /* IsByteSample = */ false>(
             d_temp_storage,
             temp_storage_bytes,
             d_samples,
@@ -1112,12 +1112,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
       constexpr int PrivatizedSmemBins = 0;
 
       if (const auto error = CubDebug(
-            (detail::histogram::dispatch<NumChannels,
-                                         NumActiveChannels,
-                                         PrivatizedSmemBins,
-                                         /* IsDeviceInit = */ false,
-                                         /* IsEven = */ false,
-                                         /* IsByteSample = */ false>(
+            (_CUB::detail::histogram::dispatch<NumChannels,
+                                               NumActiveChannels,
+                                               PrivatizedSmemBins,
+                                               /* IsDeviceInit = */ false,
+                                               /* IsEven = */ false,
+                                               /* IsByteSample = */ false>(
               d_temp_storage,
               temp_storage_bytes,
               d_samples,
@@ -1143,12 +1143,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
       constexpr int PrivatizedSmemBins = max_privatized_smem_bins;
 
       if (const auto error = CubDebug(
-            (detail::histogram::dispatch<NumChannels,
-                                         NumActiveChannels,
-                                         PrivatizedSmemBins,
-                                         /* IsDeviceInit = */ false,
-                                         /* IsEven = */ false,
-                                         /* IsByteSample = */ false>(
+            (_CUB::detail::histogram::dispatch<NumChannels,
+                                               NumActiveChannels,
+                                               PrivatizedSmemBins,
+                                               /* IsDeviceInit = */ false,
+                                               /* IsEven = */ false,
+                                               /* IsByteSample = */ false>(
               d_temp_storage,
               temp_storage_bytes,
               d_samples,
@@ -1301,7 +1301,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
     KernelLauncherFactory launcher_factory = {},
     [[maybe_unused]] MaxPolicyT max_policy = {})
   {
-    return detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
+    return _CUB::detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
@@ -1388,7 +1388,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") Dispatc
     KernelLauncherFactory launcher_factory = {},
     [[maybe_unused]] MaxPolicyT max_policy = {})
   {
-    return detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
+    return _CUB::detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,

@@ -14,4 +14,4 @@
 #endif // no system header
 
 // omp system inherits uninitialized_copy
-#include <thrust/system/cpp/detail/uninitialized_copy.h>
+#include <thrust/system/cpp/detail/uninitialized_copy.h> // IWYU pragma: export

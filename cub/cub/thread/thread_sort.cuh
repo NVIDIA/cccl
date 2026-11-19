@@ -76,7 +76,7 @@ stable_odd_even_sort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThrea
     _CCCL_PRAGMA_UNROLL(unroll)
     for (int j = i % 2; j < ItemsPerThread - 1; j += 2)
     {
-      cub::detail::compare_swap(keys[j], keys[j + 1], items[j], items[j + 1], compare_op);
+      _CUB::detail::compare_swap(keys[j], keys[j + 1], items[j], items[j + 1], compare_op);
     } // inner loop
   } // outer loop
 }
@@ -98,7 +98,7 @@ unstable_pairwise_sort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThr
       for (int lhs = group_offset; lhs < ItemsPerThread - group_size; lhs += 2 * group_size)
       {
         const int rhs = lhs + group_size;
-        cub::detail::compare_swap(keys[lhs], keys[rhs], items[lhs], items[rhs], compare_op);
+        _CUB::detail::compare_swap(keys[lhs], keys[rhs], items[lhs], items[rhs], compare_op);
       }
     }
   }
@@ -122,7 +122,7 @@ unstable_pairwise_sort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThr
           const int rhs = lhs + stride;
           if (rhs < ItemsPerThread)
           {
-            cub::detail::compare_swap(keys[lhs], keys[rhs], items[lhs], items[rhs], compare_op);
+            _CUB::detail::compare_swap(keys[lhs], keys[rhs], items[lhs], items[rhs], compare_op);
           }
         }
       }
@@ -164,7 +164,7 @@ template <typename KeyT, typename ValueT, typename CompareOp, int ItemsPerThread
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 StableOddEvenSort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op)
 {
-  return cub::detail::stable_odd_even_sort(keys, items, compare_op);
+  return _CUB::detail::stable_odd_even_sort(keys, items, compare_op);
 }
 
 //! @brief Sorts data using Ian Parberry's unstable pairwise sorting network.
@@ -190,7 +190,7 @@ template <typename KeyT, typename ValueT, typename CompareOp, int ItemsPerThread
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 UnstablePairwiseSort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op)
 {
-  return cub::detail::unstable_pairwise_sort(keys, items, compare_op);
+  return _CUB::detail::unstable_pairwise_sort(keys, items, compare_op);
 }
 
 CUB_NAMESPACE_END

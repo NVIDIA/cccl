@@ -128,7 +128,7 @@ public:
    * @brief Collective constructor using the specified memory allocation as
    *        temporary storage.
    */
-  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpExchange(TempStorage& temp_storage)
+  explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpExchange(TempStorage& temp_storage)
       : InternalWarpExchange(temp_storage)
   {}
 
@@ -192,7 +192,7 @@ public:
    *   <em>blocked</em> arrangements. May be aliased to @p input_items.
    */
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   BlockedToStriped(const InputT (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
     InternalWarpExchange::BlockedToStriped(input_items, output_items);
@@ -252,7 +252,7 @@ public:
    *   Items from exchange. May be aliased to @p input_items.
    */
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   StripedToBlocked(const InputT (&input_items)[ItemsPerThread], OutputT (&output_items)[ItemsPerThread])
   {
     InternalWarpExchange::StripedToBlocked(input_items, output_items);
@@ -314,7 +314,8 @@ public:
    * @param[in] ranks Corresponding scatter ranks
    */
   template <typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStriped(InputT (&items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ScatterToStriped(InputT (&items)[ItemsPerThread], OffsetT (&ranks)[ItemsPerThread])
   {
     InternalWarpExchange::ScatterToStriped(items, ranks);
   }
@@ -382,7 +383,7 @@ public:
    *   Corresponding scatter ranks
    */
   template <typename OutputT, typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStriped(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ScatterToStriped(
     const InputT (&input_items)[ItemsPerThread],
     OutputT (&output_items)[ItemsPerThread],
     OffsetT (&ranks)[ItemsPerThread])

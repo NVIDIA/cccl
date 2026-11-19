@@ -14,4 +14,4 @@
 #endif // no system header
 
 // omp system inherits tabulate
-#include <thrust/system/cpp/detail/tabulate.h>
+#include <thrust/system/cpp/detail/tabulate.h> // IWYU pragma: export
