@@ -13,8 +13,13 @@
 #include <cuda/std/__algorithm/find_if.h>
 #include <cuda/std/array>
 
+#include <algorithm>
+#include <cstddef>
+#include <vector>
+
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 CUB_NAMESPACE_BEGIN
 

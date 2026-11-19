@@ -3,17 +3,26 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#include <cub/device/device_reduce.cuh>
-
-#include <thrust/device_vector.h>
-
-#include <cuda/__execution/tune.h>
 #include <cuda/devices>
-#include <cuda/stream>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 #if _CCCL_STD_VER >= 2020
+#  include <cub/block/block_load.cuh>
+#  include <cub/block/block_scan.cuh>
+#  include <cub/device/device_reduce.cuh>
+#  include <cub/device/dispatch/tuning/common.cuh>
+#  include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
+#  include <cub/thread/thread_load.cuh>
+
+#  include <thrust/detail/vector_base.h>
+#  include <thrust/device_vector.h>
+
+#  include <cuda/__execution/tune.h>
+#  include <cuda/__functional/minimum.h>
+
+#  include <iostream>
 
 // example-begin reduce-by-key-policy-selector
 struct ReduceByKeyPolicySelector

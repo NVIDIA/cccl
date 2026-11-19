@@ -6,17 +6,24 @@
 
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_topk.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 
 #include <thrust/count.h>
 #include <thrust/shuffle.h>
 
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/span>
 
 #include <algorithm>
 #include <cmath>
 
 #include "catch2_test_block_topk_common.cuh"
+#include "catch2_test_device_topk_common.cuh"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 namespace
 {

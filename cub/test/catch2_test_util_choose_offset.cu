@@ -8,6 +8,7 @@
 #include <cuda/std/type_traits>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 CUB_TEST("Tests choose_offset", "[util][type]", CUB_SMALL)
 {

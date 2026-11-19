@@ -9,12 +9,13 @@
 #define CUB_STDERR
 
 #include <cub/block/block_shuffle.cuh>
-
-#include <thrust/sort.h>
+#include <cub/util_ptx.cuh>
 
 #include <algorithm>
+#include <cstdint>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 template <int BlockDimX, int BlockDimY, int BlockDimZ, int ItemsPerThread, class T, class ActionT>
 __global__ void block_shuffle_kernel(T* data, ActionT action)

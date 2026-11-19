@@ -5,7 +5,17 @@
 #pragma once
 
 #ifdef _WIN32
+#  include <thrust/detail/config/namespace.h>
+
+#  include <cuda/std/__exception/terminate.h>
+#  include <cuda/std/__limits/numeric_limits.h>
+
+#  include <cstdlib>
+#  include <cstring>
+
 #  include <windows.h>
+
+#  include <bits/types/struct_rusage.h>
 #  undef small // Windows is terrible for polluting macro namespace
 #else
 #  include <sys/resource.h>

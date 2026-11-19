@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
+#include <cub/detail/null_type.cuh>
 #include <cub/thread/thread_sort.cuh>
 
 #include <thrust/memory.h>
@@ -18,7 +19,7 @@
 #include <cuda_runtime_api.h>
 
 #include "cub_test_macros.h"
-#include <c2h/generators.h>
+#include <c2h/catch2_test_helper.h>
 #include <c2h/vector.h>
 
 enum class sort_algorithm

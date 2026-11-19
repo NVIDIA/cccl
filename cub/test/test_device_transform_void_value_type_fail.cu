@@ -7,6 +7,8 @@
 
 #include <cub/device/device_transform.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>

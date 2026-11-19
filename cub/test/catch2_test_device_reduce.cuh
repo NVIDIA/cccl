@@ -10,9 +10,12 @@
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
 #include <cuda/iterator>
+#include <cuda/std/__limits/numeric_limits.h>
 
 #include <nv/target>
 
+#include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <numeric>
 #include <type_traits>

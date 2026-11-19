@@ -6,11 +6,13 @@
 #include <cub/device/device_segmented_reduce.cuh>
 
 #include <cuda/iterator>
+#include <cuda/std/__functional/operations.h>
 
-#include <cstdint>
+#include <cstddef>
 
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);

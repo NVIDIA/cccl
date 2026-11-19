@@ -1,10 +1,14 @@
 // SPDX-FileCopyrightText: Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
+#include <cub/detail/key_value_pair.cuh>
+
 #include <sstream>
+#include <string>
 
 #include "cub_test_macros.h"
 #include "test_util.h"
+#include <c2h/catch2_test_helper.h>
 
 template <typename T>
 std::string print(T val)

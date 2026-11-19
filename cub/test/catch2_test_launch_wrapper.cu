@@ -10,6 +10,8 @@ struct stream_registry_factory_t;
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__functional/call_or.h>
+#include <cuda/__hierarchy/level_dimensions.h>
+#include <cuda/__utility/no_init.h>
 #include <cuda/buffer>
 #include <cuda/launch>
 #include <cuda/memory_resource>
@@ -24,7 +26,6 @@ struct stream_registry_factory_t;
 #include <cstdint>
 
 #include <cub_test_macros.h>
-#include <cuda_runtime.h>
 
 #include <c2h/buffer_utils.cuh>
 #include <c2h/catch2_test_helper.h>

@@ -5,9 +5,9 @@
 
 #include <cub/device/device_partition.cuh>
 
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 
-#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/stream>
 
@@ -15,6 +15,18 @@
 
 #include "catch2_test_device_select_common.cuh"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+
+#if _CCCL_STD_VER >= 2020
+#  include <cub/block/block_load.cuh>
+#  include <cub/block/block_scan.cuh>
+#  include <cub/device/dispatch/tuning/common.cuh>
+#  include <cub/device/dispatch/tuning/tuning_select_if.cuh>
+#  include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
+#  include <cub/thread/thread_load.cuh>
+
+#  include <cuda/__execution/tune.h>
+#endif // _CCCL_STD_VER >= 2020
 
 template <typename T>
 struct greater_than_t

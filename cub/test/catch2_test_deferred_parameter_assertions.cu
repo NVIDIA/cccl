@@ -6,6 +6,7 @@
 
 #include <cub/detail/deferred_parameter.cuh>
 
+#include <cuda/__argument/argument_bounds.h>
 #include <cuda/argument>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>

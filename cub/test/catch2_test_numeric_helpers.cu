@@ -1,12 +1,16 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#include <cuda/__iterator/constant_iterator.h>
 #include <cuda/std/type_traits>
 
 #include <cstdint>
 
 #include "catch2_test_numeric_helpers.cuh"
 #include "cub_test_macros.h"
+#include <c2h/bfloat16.cuh>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/half.cuh>
 
 template <class WrappedT, class UnwrappedT>
 struct unwrap_test_types

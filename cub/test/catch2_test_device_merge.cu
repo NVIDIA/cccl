@@ -3,21 +3,30 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/detail/null_type.cuh>
 #include <cub/device/device_merge.cuh>
+#include <cub/device/dispatch/tuning/tuning_merge.cuh>
+#include <cub/util_device.cuh>
 
+#include <thrust/detail/vector_base.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
 
+#include <cuda/__device/compute_capability.h>
 #include <cuda/iterator>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__limits/numeric_limits.h>
 
 #include <algorithm>
+#include <cstdint>
 
 #include <test_util.h>
 
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/catch2_allocation_failure.h>
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

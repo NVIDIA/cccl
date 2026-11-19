@@ -11,6 +11,7 @@
 #include <cuda/__execution/tie_break.h>
 #include <cuda/std/execution>
 
+#include <cstddef>
 #include <iostream>
 
 // Verifies that cub::DeviceTopK rejects, at compile time, tie-break requests it cannot honor. DeviceTopK implements

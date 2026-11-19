@@ -4,6 +4,11 @@
 #pragma once
 
 #include <cub/block/block_radix_sort.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
+
+#include <cuda/std/__type_traits/integral_constant.h>
 
 #include "catch2_radix_sort_helper.cuh"
 #include <c2h/catch2_test_helper.h>

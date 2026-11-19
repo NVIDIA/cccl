@@ -10,23 +10,43 @@ struct stream_registry_factory_t;
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/choose_offset.cuh>
+#include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/future_value.cuh>
 #include <cub/device/device_scan.cuh>
+#include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/device/dispatch/tuning/tuning_scan.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/util_device.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
+#include <thrust/equal.h>
 #include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 
+#include <cuda/__argument/argument.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/__execution/tune.h>
 #include <cuda/__functional/call_or.h>
+#include <cuda/__stream/get_stream.h>
 #include <cuda/iterator>
+#include <cuda/std/__execution/env.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/cstdint>
 
+#include <cstddef>
 #include <sstream>
 
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_custom_streams.cuh"
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/generators.h>
+#include "stream_registry_factory.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::ExclusiveScan, device_scan_exclusive);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::ExclusiveSum, device_scan_exclusive_sum);

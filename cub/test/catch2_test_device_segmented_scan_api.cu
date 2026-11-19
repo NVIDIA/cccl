@@ -3,23 +3,27 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#include <cub/device/device_scan.cuh>
 #include <cub/device/device_segmented_scan.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <cuda/__functional/maximum.h>
 #include <cuda/cmath>
 #include <cuda/iterator>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
 
+#include <cstddef>
 #include <iostream> // std::cerr
 #include <string>
 #include <vector>
 
-#include "catch2_test_device_scan.cuh"
+#include "catch2_test_scan_reference.cuh" // IWYU pragma: keep
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 void check_execution_status(cudaError_t status, const std::string& algo_name)
 {

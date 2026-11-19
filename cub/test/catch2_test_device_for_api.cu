@@ -11,12 +11,16 @@
 #include <thrust/iterator/zip_iterator.h>
 
 #include <cuda/iterator>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/mdspan>
 #include <cuda/std/tuple>
 
+#include <cstddef>
+#include <cstdint>
 #include <iostream>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 // example-begin bulk-square-t
 struct square_t

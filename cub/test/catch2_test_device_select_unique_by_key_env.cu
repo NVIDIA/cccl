@@ -7,23 +7,37 @@ struct stream_registry_factory_t;
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_scan.cuh>
 #include <cub/device/device_select.cuh>
+#include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/device/dispatch/tuning/tuning_unique_by_key.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/util_device.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/tune.h>
+#include <cuda/__stream/get_stream.h>
 #include <cuda/iterator>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/execution>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <sstream>
 
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_custom_streams.cuh"
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSelect::UniqueByKey, device_select_unique_by_key);
 

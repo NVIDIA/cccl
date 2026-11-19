@@ -10,15 +10,20 @@
 
 #include <cub/block/block_merge_sort.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/sort.h>
 
 #include <cuda/std/limits>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <ostream>
+#include <utility>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 struct CustomLess
 {

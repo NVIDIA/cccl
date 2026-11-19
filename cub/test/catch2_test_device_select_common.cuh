@@ -7,6 +7,8 @@
 
 #include <cuda/std/type_traits>
 
+#include <cstdint>
+
 #include <c2h/catch2_test_helper.h>
 
 template <typename T>

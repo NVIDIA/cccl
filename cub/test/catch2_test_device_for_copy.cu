@@ -11,8 +11,11 @@
 
 #include <cuda/iterator>
 
+#include <cstdint>
+
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

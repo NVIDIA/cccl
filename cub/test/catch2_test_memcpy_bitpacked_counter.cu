@@ -1,11 +1,16 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#include <cub/agent/agent_batch_memcpy.cuh>
 #include <cub/device/device_memcpy.cuh>
 
-#include <thrust/fill.h>
+#include <thrust/detail/raw_pointer_cast.h>
+
+#include <cstdint>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 template <std::uint32_t NumItems,
           std::uint32_t MaxItemValue,

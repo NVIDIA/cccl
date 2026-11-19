@@ -3,9 +3,12 @@
 
 #include <cub/util_math.cuh>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__limits/numeric_limits.h>
+
+#include <cstdint>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 CUB_TEST("Tests safe_add_bound_to_max", "[util][math]", CUB_SMALL)
 {

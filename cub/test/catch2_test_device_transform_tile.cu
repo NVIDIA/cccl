@@ -4,8 +4,10 @@
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_transform.cuh>
+#include <cub/device/dispatch/dispatch_transform_tile_config.cuh>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 // The tile dispatch path only exists when nvcc is invoked with --enable-tile and the user opts in via
 // CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH. In any other build this file compiles to a single skipped test.

@@ -3,18 +3,30 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/config.cuh>
+
 #include <cub/device/device_segmented_scan.cuh>
 
+#include <cuda/__functional/minimum.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__cmath/isfinite.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__limits/numeric_limits.h>
+
 #include <cstdint>
-#include <iostream>
-#include <utility>
+#include <tuple>
 
 #include "catch2_test_device_reduce.cuh" // for reference_extended_fp
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/bfloat16.cuh>
+#include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
+#include <c2h/half.cuh>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::InclusiveSegmentedSum, device_inclusive_segmented_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::ExclusiveSegmentedSum, device_exclusive_segmented_sum);

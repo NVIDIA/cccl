@@ -10,10 +10,17 @@
 
 #include <cub/block/block_histogram.cuh>
 
-#include <limits>
-#include <string>
+#include <thrust/detail/raw_pointer_cast.h>
+
+#include <cuda/std/__limits/numeric_limits.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/generator_common.h>
 
 template <int BINS,
           int BlockThreads,

@@ -7,11 +7,15 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/__functional/maximum.h>
+#include <cuda/std/__cccl/assert.h>
+#include <cuda/std/__iterator/access.h>
 #include <cuda/std/array>
 #include <cuda/std/span>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 __global__ __launch_bounds__(64) void WarpReduceBatchedOverviewKernel(int* out)
 {

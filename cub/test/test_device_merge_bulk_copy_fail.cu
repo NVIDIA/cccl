@@ -1,8 +1,12 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#include <cub/block/block_store.cuh>
 #include <cub/device/device_merge.cuh>
+#include <cub/device/dispatch/tuning/tuning_merge.cuh>
+#include <cub/thread/thread_load.cuh>
 
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/tune.h>
 #include <cuda/std/array>
 #include <cuda/std/functional>

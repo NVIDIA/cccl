@@ -3,22 +3,38 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/detail/device_memory_resource.cuh>
 #include <cub/device/device_reduce.cuh>
 
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
-#include <cuda/__execution/tune.h>
+#include <cuda/__functional/call_or.h>
+#include <cuda/__functional/minimum.h>
 #include <cuda/devices>
 #include <cuda/execution>
 #include <cuda/memory_resource>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 
+#include <cstddef>
+#include <iostream>
+
 #include "catch2_test_memory_resources.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+
+#if _CCCL_STD_VER >= 2020
+#  include <cub/block/block_reduce.cuh>
+#  include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#  include <cub/thread/thread_load.cuh>
+
+#  include <cuda/__execution/tune.h>
+#endif // _CCCL_STD_VER >= 2020
 
 struct custom_stream_env
 {

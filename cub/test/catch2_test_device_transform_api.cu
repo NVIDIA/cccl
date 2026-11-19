@@ -3,14 +3,19 @@
 
 #include <cub/device/device_transform.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
 #include <cuda/iterator>
+#include <cuda/std/__tuple_dir/tuple.h>
 
+#include <cstddef>
 #include <iostream>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 
 // need a separate function because the ext. lambda needs to be enclosed by a function with external linkage on Windows
 void test_transform_many_many_api()

@@ -2,12 +2,17 @@
 // SPDX-License-Identifier: BSD-3
 
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_ptx.cuh>
 #include <cub/warp/warp_load.cuh>
 
-#include <thrust/sequence.h>
+#include <thrust/detail/raw_pointer_cast.h>
+
+#include <cstdint>
 
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
 #include <c2h/fill_striped.h>
 
 template <cub::WarpLoadAlgorithm LoadAlgorithm,

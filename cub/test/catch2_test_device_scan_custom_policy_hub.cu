@@ -8,14 +8,30 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/agent/agent_scan.cuh>
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/block/block_store.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/device_scan.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
+#include <cub/device/dispatch/dispatch_scan.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/util_device.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/vector_base.h>
 
 #include <cuda/std/functional>
 
+#include <cstddef>
+#include <cstdint>
+
 #include "catch2_test_device_scan.cuh"
+#include "catch2_test_scan_reference.cuh"
 #include "cub_test_macros.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector_generators.h>
 
 using namespace cub;
 

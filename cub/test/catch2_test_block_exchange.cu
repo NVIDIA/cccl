@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3
 
 #include <cub/block/block_exchange.cuh>
+#include <cub/util_arch.cuh>
 
 #include <thrust/memory.h>
 

@@ -5,6 +5,7 @@
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/complex>
 
 #include <iostream>
