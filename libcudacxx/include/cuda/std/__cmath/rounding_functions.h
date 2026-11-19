@@ -950,7 +950,10 @@ _CCCL_API inline long double nextafterl(long double __x, long double __y) noexce
   return __result;
 }
 
-[[nodiscard]] _CCCL_API inline __float128 nextafter(__float128 __x, __float128 __y) noexcept
+// A template, so that only __float128 arguments match it exactly. A plain overload would also be reachable through
+// implicit conversions and make calls like nextafter(__half, __nv_bfloat16) ambiguous
+template <class _Tp, enable_if_t<is_same_v<_Tp, __float128>, int> = 0>
+[[nodiscard]] _CCCL_API inline __float128 nextafter(_Tp __x, _Tp __y) noexcept
 {
 #  if defined(_CCCL_BUILTIN_NEXTAFTERF128)
   return _CCCL_BUILTIN_NEXTAFTERF128(__x, __y);
@@ -960,7 +963,19 @@ _CCCL_API inline long double nextafterl(long double __x, long double __y) noexce
 }
 #endif // _CCCL_HAS_FLOAT128()
 
-template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmetic_v<_A2>, int> = 0>
+// Admitting __float128 promotes mixed calls like nextafter(__float128, double) to __float128, rather than converting
+// the
+// __float128 argument to double. Other extended floating point types are left out, so their mixed calls resolve as
+// before
+template <class _Tp>
+inline constexpr bool __is_nextafter_promotable_v =
+  is_arithmetic_v<_Tp>
+#if _CCCL_HAS_FLOAT128()
+  || is_same_v<_Tp, __float128>
+#endif // _CCCL_HAS_FLOAT128()
+  ;
+
+template <class _A1, class _A2, enable_if_t<__is_nextafter_promotable_v<_A1> && __is_nextafter_promotable_v<_A2>, int> = 0>
 _CCCL_API inline __promote_t<_A1, _A2> nextafter(_A1 __x, _A2 __y) noexcept
 {
   using __result_type = __promote_t<_A1, _A2>;

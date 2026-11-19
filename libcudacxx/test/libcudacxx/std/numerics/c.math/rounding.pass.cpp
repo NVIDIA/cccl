@@ -653,6 +653,22 @@ TEST_FUNC void test_float128_nextafter_edge_cases(float val)
   assert(cuda::std::isnan(cuda::std::nextafter(nan, one)));
   assert(cuda::std::isnan(cuda::std::nextafter(one, nan)));
   assert(cuda::std::isnan(cuda::std::nextafter(nan, nan)));
+
+  // mixed arguments are promoted to __float128 in either order
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::nextafter(T{}, double{})), T>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::nextafter(double{}, T{})), T>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::nextafter(T{}, float{})), T>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::nextafter(int{}, T{})), T>);
+  assert(eq(cuda::std::nextafter(one, 2.0), one + eps));
+  assert(eq(cuda::std::nextafter(1, one + one), one + eps));
+  assert(eq(cuda::std::nextafter(one + one, 1.0f), one + one - eps));
+
+  // the __float128 overload does not change how the other types resolve
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::nextafter(double{}, float{})), double>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::nextafter(int{}, int{})), double>);
+#  if _LIBCUDACXX_HAS_NVFP16() && _LIBCUDACXX_HAS_NVBF16()
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::nextafter(__half{}, __nv_bfloat16{})), float>);
+#  endif // _LIBCUDACXX_HAS_NVFP16() && _LIBCUDACXX_HAS_NVBF16()
 }
 
 #  if _CCCL_HOSTED()
