@@ -42,11 +42,11 @@ struct __cccl_select
 template <>
 struct __cccl_select<true>
 {
-  using __type = void;
-  using __int  = int;
+  using __type _CCCL_NODEBUG = void;
+  using __int _CCCL_NODEBUG  = int;
 
   template <class _Tp>
-  using type = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 template <bool _Bp>
@@ -93,7 +93,7 @@ template <class...>
 using __cccl_concept_void_t _CCCL_NODEBUG = void;
 
 template <typename _Tp>
-_CCCL_API constexpr void __cccl_unused(_Tp&&) noexcept
+_CCCL_TRIVIAL_API constexpr void __cccl_unused(_Tp&&) noexcept
 {}
 
 // So that we can refer to the ::cuda::std namespace below
