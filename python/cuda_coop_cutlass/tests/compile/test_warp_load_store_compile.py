@@ -60,6 +60,39 @@ def test_exact_per_group_scratch():
     assert one.alignment == two.alignment
 
 
+@pytest.mark.parametrize("logical", (False, True))
+@pytest.mark.parametrize("algorithm", ("direct", "transpose"))
+def test_declared_memory_dtype(logical, algorithm):
+    """Declare unsigned memory behind a pointer for warp groups."""
+
+    @cute.kernel
+    def kernel(memory: cute.Pointer):
+        if cutlass.const_expr(logical):
+            group = coop.this_warp().group_by(8)
+        else:
+            group = coop.this_warp()
+        payload = coop.load(
+            group,
+            memory,
+            items_per_thread=2,
+            dtype=cutlass.Uint32,
+            algorithm=algorithm,
+        )
+        assert payload.dtype is cutlass.Uint32
+        coop.store(
+            group, memory, payload, dtype=cutlass.Uint32, algorithm=algorithm
+        )
+
+    @cute.jit
+    def launch(memory: cute.Pointer):
+        kernel(memory).launch(grid=1, block=64)
+
+    pointer = make_ptr(
+        cutlass.Uint32, 0, cute.AddressSpace.gmem, assumed_align=16
+    )
+    assert cute.compile[(GPUArch("sm_80"),)](launch, pointer) is not None
+
+
 @pytest.mark.parametrize(
     "algorithm", ("direct", "striped", "vectorize", "transpose")
 )

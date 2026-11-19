@@ -140,6 +140,16 @@ representation. Supported payload types are signed and unsigned integers of
 can accept a smaller set; for example, bitwise operators require integers.
 Boolean, half-precision, complex, and structured payloads are unsupported.
 
+CuTe reports integer memory behind a ``cute.Pointer`` as signed, including
+when the host created the pointer with an unsigned type. ``Uint32`` data then
+loads as ``Int32`` with no error, and a maximum or a sort gives the signed
+answer. Declare unsigned memory with ``dtype`` on both calls:
+
+.. code-block:: python
+
+   keys = coop.load(block, source, items_per_thread=4, dtype=cutlass.Uint32)
+   coop.store(block, destination, keys, dtype=cutlass.Uint32)
+
 NumPy types select a numeric representation; expressions inside the kernel
 are CuTe values. Store requires the payload dtype to match the destination
 element type. Cast arithmetic results explicitly when necessary, for example
@@ -230,7 +240,10 @@ the integer width.
 
 An explicit type does not initialize missing items or make conflicting typed
 values compatible. The ordinary Load and typed-assignment examples retain
-enough information to infer their payload types.
+enough information to infer their payload types. Unsigned memory behind a
+``cute.Pointer`` is the exception, and ``load`` takes a ``dtype`` for it, as
+:ref:`Payloads, dtypes, and result ownership <coop-cutlass-payload-types>`
+describes.
 
 .. _coop-cutlass-helpers:
 
@@ -1002,10 +1015,11 @@ every item in every participating thread before carrying the payload across
 a runtime control-flow boundary. Changes to dtype or alignment across that
 boundary are rejected; use an explicit conversion to keep both paths consistent.
 
-Load and Store infer the memory element type from the CuTe operand. If a
-producer or tensor adapter loses the intended unsigned element type, use
-``cute.recast_tensor`` to restore that type before passing the tensor to
-``load`` or ``store``.
+Load and Store take the memory element type from the CuTe operand. For
+unsigned values behind a ``cute.Pointer`` or a ``cute.make_tensor`` view of
+one, pass ``dtype`` to ``load`` and ``store`` as
+:ref:`Payloads, dtypes, and result ownership <coop-cutlass-payload-types>`
+shows, or pass a ``cute.recast_tensor`` view of the memory.
 
 .. code-block:: python
 

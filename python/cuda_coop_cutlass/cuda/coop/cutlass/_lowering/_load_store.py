@@ -26,6 +26,8 @@ import math
 from numbers import Integral, Real
 from typing import Any
 
+import numpy as np
+
 from cuda.coop.cutlass._planning import (
     Algorithm,
     ArgumentBinding,
@@ -436,6 +438,7 @@ def provider_load(
     offset,
     offset_binding,
     temp_storage=None,
+    dtype=None,
 ):
     """Trace a Load call and copy its per-thread result into ``output``.
 
@@ -462,7 +465,8 @@ def provider_load(
     launch : LaunchFacts
         Compiler-provided launch dimensions used for shared planning.
     source : CuTe memory operand
-        Contiguous source memory whose element type sets the Load dtype.
+        Contiguous source memory whose element type sets the Load dtype,
+        unless ``dtype`` declares it.
     output : ThreadData
         Writable per-thread payload. Its items become the generated Load
         results, and its dtype is set to the source dtype.
@@ -484,6 +488,9 @@ def provider_load(
     temp_storage : TempStorage or None
         Optional block scratch descriptor. None leaves allocation policy to
         the compiler; storage-free algorithms need no scratch operands.
+    dtype : type or None
+        Declared element type of the source memory. See
+        ``_resolve_memory_type`` for the accepted declarations.
 
     Returns
     -------
@@ -491,7 +498,9 @@ def provider_load(
         The call is emitted into the trace and output is updated in place.
     """
 
-    value_type = _resolve_memory_type(source, primitive_name="load")
+    value_type = _resolve_memory_type(
+        source, primitive_name="load", dtype=dtype
+    )
     output_type = output.dtype
     if output_type is not None and _resolve_type(output_type) is not value_type:
         raise TypeError(
@@ -564,6 +573,7 @@ def provider_store(
     offset,
     offset_binding,
     temp_storage=None,
+    dtype=None,
 ):
     """Trace a Store call with per-thread values and deferred scratch.
 
@@ -604,6 +614,9 @@ def provider_store(
     temp_storage : TempStorage or None
         Optional block scratch descriptor. None uses compiler allocation.
         Storage-free algorithms omit scratch operands.
+    dtype : type or None
+        Declared element type of the destination memory. See
+        ``_resolve_memory_type`` for the accepted declarations.
 
     Returns
     -------
@@ -624,14 +637,20 @@ def provider_store(
     else:
         value_type = _resolve_type(value, feature="store")
         values = (value,)
-    if (
-        _resolve_memory_type(destination, primitive_name="store")
-        is not value_type
-    ):
-        raise TypeError(
+    memory_type = _resolve_memory_type(
+        destination, primitive_name="store", dtype=dtype
+    )
+    if memory_type is not value_type:
+        message = (
             "cuda.coop.cutlass.store destination dtype does not match "
-            "value dtype"
+            f"value dtype ({memory_type.__name__} != {value_type.__name__})"
         )
+        if dtype is None and _is_unsigned_counterpart(value_type, memory_type):
+            message += (
+                f"; pass dtype={value_type.__name__} if the destination "
+                "holds unsigned values"
+            )
+        raise TypeError(message)
     request = _make_request(
         group=group,
         launch=launch,
@@ -992,19 +1011,68 @@ def _memory_pointer(
     )
 
 
-def _resolve_memory_type(value: Any, *, primitive_name: str) -> type:
-    """Require inspectable dtype metadata on the memory operand."""
+def _is_unsigned_counterpart(candidate: type, memory_type: type) -> bool:
+    """Match the unsigned integer type of a signed type's width."""
 
-    dtype = _memory_dtype(value)
-    if dtype is None:
+    return (
+        candidate in _types.INTEGER_VALUE_TYPES
+        and memory_type in _types.INTEGER_VALUE_TYPES
+        and candidate.width == memory_type.width
+        and memory_type.signed
+        and not candidate.signed
+    )
+
+
+def _resolve_memory_type(
+    value: Any, *, primitive_name: str, dtype: Any = None
+) -> type:
+    """Require inspectable dtype metadata on the memory operand.
+
+    The unsigned CuTe integer types share the signless MLIR types of the
+    signed ones, and CuTe builds most pointers and every ``make_tensor``
+    view from the MLIR type. Such an operand reports the signed type even
+    when its memory holds unsigned values. ``dtype`` lets the caller declare
+    the unsigned type of the same width, or repeat the reported type. Any
+    other declaration is rejected, so it cannot change the element width or
+    turn integers into floats.
+    """
+
+    reported = _memory_dtype(value)
+    if reported is None:
         raise TypeError(
             f"{_ROOT_SCOPE}.{primitive_name} memory operand must expose "
             "element_type or dtype"
         )
-    return _resolve_type(
-        dtype,
+    memory_type = _resolve_type(
+        reported,
         allowed=ALL_PROVIDER_TYPES,
         feature=primitive_name,
+    )
+    if dtype is None:
+        return memory_type
+    if not isinstance(dtype, (type, np.dtype)):
+        raise TypeError(
+            f"{_ROOT_SCOPE}.{primitive_name} dtype must be a compile-time "
+            "scalar type"
+        )
+    try:
+        declared = _types.canonical_dsl_type(dtype)
+    except TypeError:
+        declared = None
+    if declared not in ALL_PROVIDER_TYPES:
+        raise TypeError(
+            f"{_ROOT_SCOPE}.{primitive_name} dtype must be one of "
+            f"{_types.supported_names(ALL_PROVIDER_TYPES)}"
+        )
+    if declared is memory_type or _is_unsigned_counterpart(
+        declared, memory_type
+    ):
+        return declared
+    raise TypeError(
+        f"{_ROOT_SCOPE}.{primitive_name} dtype {declared.__name__} does not "
+        f"match the memory dtype {memory_type.__name__}; dtype may repeat "
+        "the memory dtype or, for signed integer memory, name the unsigned "
+        "type of the same width"
     )
 
 

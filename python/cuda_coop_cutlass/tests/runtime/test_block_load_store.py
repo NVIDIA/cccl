@@ -208,6 +208,66 @@ def test_direct_layout_matches_independent_oracle(
     np.testing.assert_array_equal(destination, source)
 
 
+@pytest.mark.parametrize("dtype", (np.uint8, np.uint16, np.uint32, np.uint64))
+@pytest.mark.parametrize(
+    "spelling", ("declared", "typed-parameter", "kernel-pointer")
+)
+def test_unsigned_memory_behind_pointer_arguments(dtype, spelling):
+    """Load and store unsigned values through pointers without a view.
+
+    CuTe hands a ``cute.Pointer`` argument to the kernel as the signed type
+    of its width. Each spelling restores the unsigned type: the ``dtype``
+    declaration, ``cutlass.Pointer`` parameters on the launcher and the
+    kernel, and a pointer made again in the kernel. The source mixes values
+    below and above the sign bit, so the block maximum is right only for an
+    unsigned payload.
+    """
+
+    value_type = cutlass_dtype(dtype)
+    declared = value_type if spelling == "declared" else None
+    parameter = (
+        cutlass.Pointer if spelling == "typed-parameter" else cute.Pointer
+    )
+
+    @cute.kernel
+    def kernel(source: parameter, destination: parameter):
+        group = coop.this_block()
+        if cutlass.const_expr(spelling == "kernel-pointer"):
+            source = cute.make_ptr(
+                value_type,
+                source.toint(),
+                source.memspace,
+                assumed_align=source.alignment,
+            )
+            destination = cute.make_ptr(
+                value_type,
+                destination.toint(),
+                destination.memspace,
+                assumed_align=destination.alignment,
+            )
+        payload = coop.load(
+            group, source, items_per_thread=_ITEMS, dtype=declared
+        )
+        assert payload.dtype is value_type
+        largest = coop.reduce(group, payload, binary_op="max")
+        coop.store(group, destination, payload, dtype=declared)
+        if group.rank() == 0:
+            output = cute.make_tensor(destination, cute.make_layout(_TILE + 1))
+            output[_TILE] = largest
+
+    @cute.jit
+    def launch(source: parameter, destination: parameter):
+        kernel(source, destination).launch(grid=1, block=_BLOCK)
+
+    source = values_for(dtype, _TILE, shift=13)
+    source[::2] &= dtype(np.iinfo(dtype).max >> 1)
+    destination = np.zeros(_TILE + 1, dtype=dtype)
+    with device_array(source) as src, device_array(destination) as dst:
+        launch(src, dst)
+    np.testing.assert_array_equal(destination[:_TILE], source)
+    assert destination[_TILE] == source.max()
+
+
 @pytest.mark.parametrize("valid", (0, 35, _TILE))
 @pytest.mark.parametrize(
     "runtime_valid", (False, True), ids=("static", "runtime")

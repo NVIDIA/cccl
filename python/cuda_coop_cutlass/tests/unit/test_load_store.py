@@ -68,6 +68,36 @@ def test_load_result_ownership(monkeypatch, items_per_thread, alignment):
     assert calls == [alias, original]
 
 
+@pytest.mark.parametrize("dtype", (None, np.uint32))
+def test_declared_dtype_reaches_the_providers(monkeypatch, dtype):
+    """Forward the memory dtype declaration unchanged to both providers."""
+
+    movement = import_module("cuda.coop.cutlass._group_load_store")
+    lowering = import_module("cuda.coop.cutlass._lowering._load_store")
+    declared = []
+    monkeypatch.setattr(
+        movement,
+        "_resolve_group",
+        lambda group, algorithm, temp_storage, operation: (
+            group,
+            None,
+            algorithm,
+        ),
+    )
+    for name in ("provider_load", "provider_store"):
+        monkeypatch.setattr(
+            lowering, name, lambda **kwargs: declared.append(kwargs["dtype"])
+        )
+    group = coop.this_block()
+    if dtype is None:
+        payload = coop.load(group, object(), items_per_thread=1)
+        coop.store(group, object(), payload)
+    else:
+        payload = coop.load(group, object(), items_per_thread=1, dtype=dtype)
+        coop.store(group, object(), payload, dtype=dtype)
+    assert declared == [dtype, dtype]
+
+
 def test_load_requires_explicit_extent_and_rejects_output():
     group = coop.this_block()
     with pytest.raises(TypeError, match="items_per_thread"):

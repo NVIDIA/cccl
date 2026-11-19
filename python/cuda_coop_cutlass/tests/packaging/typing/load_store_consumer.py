@@ -27,6 +27,9 @@ def check_cutlass_block_surface(source: object, destination: object) -> None:
     assert_type(
         coop.load(block, source, items_per_thread=1), coop.ThreadData[Any]
     )
+    unsigned = coop.load(block, source, items_per_thread=1, dtype=Uint32)
+    assert_type(unsigned, coop.ThreadData[Any])
+    assert_type(coop.store(block, destination, unsigned, dtype=np.uint32), None)
     for algorithm in (
         "direct",
         "striped",
@@ -39,6 +42,7 @@ def check_cutlass_block_surface(source: object, destination: object) -> None:
             block,
             source,
             items_per_thread=2,
+            dtype=np.int32,
             algorithm=algorithm,
             alignment=16,
             valid_items=61,
@@ -106,6 +110,10 @@ def check_cutlass_warp_surface(source: object, destination: object) -> None:
         coop.load(warp, source, items_per_thread=2), coop.ThreadData[Any]
     )
     assert_type(coop.store(warp, destination, values), None)
+    assert_type(
+        coop.load(warp, source, items_per_thread=2, dtype=Uint32),
+        coop.ThreadData[Any],
+    )
     for algorithm in ("direct", "striped", "vectorize", "transpose"):
         coop.load(
             warp,
@@ -115,9 +123,15 @@ def check_cutlass_warp_surface(source: object, destination: object) -> None:
             oob_default=-1,
             offset=4,
             items_per_thread=2,
+            dtype=np.int32,
         )
         coop.store(
-            warp, destination, values, algorithm=algorithm, valid_items=61
+            warp,
+            destination,
+            values,
+            algorithm=algorithm,
+            valid_items=61,
+            dtype=np.int32,
         )
 
 

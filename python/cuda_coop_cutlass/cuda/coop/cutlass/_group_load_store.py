@@ -91,6 +91,7 @@ def load(
     /,
     *,
     items_per_thread: int,
+    dtype: object | None = None,
     alignment: int | None = None,
     algorithm: BlockLoadStoreAlgorithm | WarpLoadStoreAlgorithm = "direct",
     valid_items: ValidItems | None = None,
@@ -104,6 +105,21 @@ def load(
     ThreadData with the source dtype. The result owns independent values,
     including when the count is one. Blocks and physical or logical warps
     are supported.
+
+    The source dtype is the element type its CuTe operand reports. CuTe
+    reports integer memory behind a ``cute.Pointer`` as signed, including
+    when the host created the pointer with an unsigned type. The exception is
+    a pointer that the kernel itself made with ``cute.make_ptr`` and passes
+    unchanged. A ``cute.make_tensor`` view of such memory is signed as well.
+    ``Uint32`` data then loads as ``Int32`` with no error, and a maximum, a
+    sort, or a widening conversion gives the signed answer.
+
+    For unsigned memory, pass ``dtype`` with the unsigned type of the same
+    width, such as ``dtype=cutlass.Uint32``. The result has that dtype, and
+    ``oob_default`` is checked against it. ``dtype`` may also repeat the
+    reported type. Any other ``dtype`` is an error, so it cannot change the
+    element width or turn integers into floats. A ``cute.recast_tensor`` view
+    states its element type and needs no ``dtype``.
 
     ``alignment`` requests a minimum power-of-two byte alignment for the
     result's materialized storage, as in ``ThreadData``. It does not describe
@@ -177,6 +193,7 @@ def load(
         launch=launch,
         source=source,
         output=output,
+        dtype=dtype,
         algorithm=algorithm,
         valid_items=valid_items,
         valid_items_binding=_classify_integer_binding(
@@ -197,6 +214,7 @@ def store(
     value: _NumericT | ReadableThreadDataLike[_NumericT],
     /,
     *,
+    dtype: object | None = None,
     algorithm: BlockLoadStoreAlgorithm | WarpLoadStoreAlgorithm = "direct",
     valid_items: ValidItems | None = None,
     offset: IntegerValue | None = None,
@@ -208,6 +226,11 @@ def store(
     supplies a scalar or an initialized CUTLASS ThreadData payload whose dtype
     matches the destination. Do not rely on the payload's contents after a
     transpose Store; copy values needed later.
+
+    ``dtype`` declares the destination's element type as it does for
+    :func:`load`. To store an unsigned payload through a ``cute.Pointer``,
+    which reports the signed type of the same width, pass the payload's
+    dtype. The declared type must equal the payload dtype.
 
     ``valid_items`` selects a prefix from zero through the group's full tile
     size. ``offset`` is a nonnegative element offset. Both must agree within
@@ -249,6 +272,7 @@ def store(
         launch=launch,
         destination=destination,
         value=value,
+        dtype=dtype,
         algorithm=algorithm,
         valid_items=valid_items,
         valid_items_binding=_classify_integer_binding(
