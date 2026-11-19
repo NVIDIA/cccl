@@ -58,29 +58,33 @@ CUB_TEST("DispatchScanByKey::Dispatch: custom policy hub", "[scan_by_key][device
     DispatchScanByKey<key_t*, value_t*, value_t*, eq_op_t, scan_op_t, NullType, offset_t, accum_t, policy_hub_t>;
 
   size_t temp_size = 0;
-  dispatch_t::Dispatch(
-    nullptr,
-    temp_size,
-    thrust::raw_pointer_cast(d_keys.data()),
-    thrust::raw_pointer_cast(d_values.data()),
-    thrust::raw_pointer_cast(d_out.data()),
-    eq_op_t{},
-    scan_op_t{},
-    NullType{},
-    static_cast<offset_t>(d_values.size()),
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      nullptr,
+      temp_size,
+      thrust::raw_pointer_cast(d_keys.data()),
+      thrust::raw_pointer_cast(d_values.data()),
+      thrust::raw_pointer_cast(d_out.data()),
+      eq_op_t{},
+      scan_op_t{},
+      NullType{},
+      static_cast<offset_t>(d_values.size()),
+      /* stream */ nullptr));
   c2h::device_vector<unsigned char> temp_storage(temp_size, thrust::no_init);
-  dispatch_t::Dispatch(
-    thrust::raw_pointer_cast(temp_storage.data()),
-    temp_size,
-    thrust::raw_pointer_cast(d_keys.data()),
-    thrust::raw_pointer_cast(d_values.data()),
-    thrust::raw_pointer_cast(d_out.data()),
-    eq_op_t{},
-    scan_op_t{},
-    NullType{},
-    static_cast<offset_t>(d_values.size()),
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      thrust::raw_pointer_cast(temp_storage.data()),
+      temp_size,
+      thrust::raw_pointer_cast(d_keys.data()),
+      thrust::raw_pointer_cast(d_values.data()),
+      thrust::raw_pointer_cast(d_out.data()),
+      eq_op_t{},
+      scan_op_t{},
+      NullType{},
+      static_cast<offset_t>(d_values.size()),
+      /* stream */ nullptr));
 
   REQUIRE(d_out == expected);
 }

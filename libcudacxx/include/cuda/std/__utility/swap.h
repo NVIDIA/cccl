@@ -21,11 +21,10 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_move_assignable.h>
-#include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_swappable.h>
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstddef>
 

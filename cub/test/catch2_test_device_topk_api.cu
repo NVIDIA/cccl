@@ -14,6 +14,8 @@
 #include <cuda/std/functional>
 #include <cuda/stream>
 
+#include <iostream>
+
 #include "cub_test_macros.h"
 
 CUB_TEST("DeviceTopK::MinKeys API example for non-deterministic, unsorted results",
@@ -30,8 +32,12 @@ CUB_TEST("DeviceTopK::MinKeys API example for non-deterministic, unsorted result
     cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
 
   // Prepare CUDA stream
-  cudaStream_t stream = nullptr;
-  cudaStreamCreate(&stream);
+  cudaStream_t stream     = nullptr;
+  const auto stream_error = cudaStreamCreate(&stream);
+  if (stream_error != cudaSuccess)
+  {
+    std::cerr << "cudaStreamCreate failed with status: " << stream_error << '\n';
+  }
   const cuda::stream_ref stream_ref{stream};
 
   // Create the environment with the stream and requirements
@@ -39,12 +45,17 @@ CUB_TEST("DeviceTopK::MinKeys API example for non-deterministic, unsorted result
 
   // Query temporary storage requirements
   size_t temp_storage_bytes{};
-  cub::DeviceTopK::MinKeys(nullptr, temp_storage_bytes, input.begin(), output.begin(), input.size(), k, env);
+  const auto query_error =
+    cub::DeviceTopK::MinKeys(nullptr, temp_storage_bytes, input.begin(), output.begin(), input.size(), k, env);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceTopK::MinKeys failed with status: " << query_error << '\n';
+  }
 
   // Allocate temporary storage
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
 
-  cub::DeviceTopK::MinKeys(
+  const auto error = cub::DeviceTopK::MinKeys(
     thrust::raw_pointer_cast(temp_storage.data()),
     temp_storage_bytes,
     input.begin(),
@@ -52,11 +63,18 @@ CUB_TEST("DeviceTopK::MinKeys API example for non-deterministic, unsorted result
     input.size(),
     k,
     env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceTopK::MinKeys failed with status: " << error << '\n';
+  }
 
   // Get the top-k results into sorted order for easy comparison
   thrust::sort(output.begin(), output.end());
   const thrust::host_vector<int> expected{-3, 1, 2, 4};
   // example-end topk-min-keys-non-deterministic-unsorted
+  REQUIRE(stream_error == cudaSuccess);
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
   REQUIRE(output == expected);
 }
@@ -75,8 +93,12 @@ CUB_TEST("DeviceTopK::MaxKeys API example for non-deterministic, unsorted result
     cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
 
   // Prepare CUDA stream
-  cudaStream_t stream = nullptr;
-  cudaStreamCreate(&stream);
+  cudaStream_t stream     = nullptr;
+  const auto stream_error = cudaStreamCreate(&stream);
+  if (stream_error != cudaSuccess)
+  {
+    std::cerr << "cudaStreamCreate failed with status: " << stream_error << '\n';
+  }
   const cuda::stream_ref stream_ref{stream};
 
   // Create the environment with the stream and requirements
@@ -84,12 +106,17 @@ CUB_TEST("DeviceTopK::MaxKeys API example for non-deterministic, unsorted result
 
   // Query temporary storage requirements
   size_t temp_storage_bytes{};
-  cub::DeviceTopK::MaxKeys(nullptr, temp_storage_bytes, input.begin(), output.begin(), input.size(), k, env);
+  const auto query_error =
+    cub::DeviceTopK::MaxKeys(nullptr, temp_storage_bytes, input.begin(), output.begin(), input.size(), k, env);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceTopK::MaxKeys failed with status: " << query_error << '\n';
+  }
 
   // Allocate temporary storage
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
 
-  cub::DeviceTopK::MaxKeys(
+  const auto error = cub::DeviceTopK::MaxKeys(
     thrust::raw_pointer_cast(temp_storage.data()),
     temp_storage_bytes,
     input.begin(),
@@ -97,11 +124,18 @@ CUB_TEST("DeviceTopK::MaxKeys API example for non-deterministic, unsorted result
     input.size(),
     k,
     env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceTopK::MaxKeys failed with status: " << error << '\n';
+  }
 
   // Get the top-k results into sorted order for easy comparison
   thrust::sort(output.begin(), output.end(), cuda::std::greater{});
   const thrust::host_vector<int> expected{8, 7, 6, 5};
   // example-end topk-max-keys-non-deterministic-unsorted
+  REQUIRE(stream_error == cudaSuccess);
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
   REQUIRE(output == expected);
 }
@@ -122,8 +156,12 @@ CUB_TEST("DeviceTopK::MinPairs API example for non-deterministic, unsorted resul
     cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
 
   // Prepare CUDA stream
-  cudaStream_t stream = nullptr;
-  cudaStreamCreate(&stream);
+  cudaStream_t stream     = nullptr;
+  const auto stream_error = cudaStreamCreate(&stream);
+  if (stream_error != cudaSuccess)
+  {
+    std::cerr << "cudaStreamCreate failed with status: " << stream_error << '\n';
+  }
   const cuda::stream_ref stream_ref{stream};
 
   // Create the environment with the stream and requirements
@@ -131,13 +169,17 @@ CUB_TEST("DeviceTopK::MinPairs API example for non-deterministic, unsorted resul
 
   // Query temporary storage requirements
   size_t temp_storage_bytes{};
-  cub::DeviceTopK::MinPairs(
+  const auto query_error = cub::DeviceTopK::MinPairs(
     nullptr, temp_storage_bytes, keys.begin(), keys_out.begin(), values, values_out.begin(), keys.size(), k, env);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceTopK::MinPairs failed with status: " << query_error << '\n';
+  }
 
   // Allocate temporary storage
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
 
-  cub::DeviceTopK::MinPairs(
+  const auto error = cub::DeviceTopK::MinPairs(
     thrust::raw_pointer_cast(temp_storage.data()),
     temp_storage_bytes,
     keys.begin(),
@@ -147,12 +189,19 @@ CUB_TEST("DeviceTopK::MinPairs API example for non-deterministic, unsorted resul
     keys.size(),
     k,
     env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceTopK::MinPairs failed with status: " << error << '\n';
+  }
 
   // Get the top-k results into sorted order for easy comparison
   thrust::sort_by_key(keys_out.begin(), keys_out.end(), values_out.begin());
   const thrust::host_vector<int> expected_keys{-3, 1, 2, 4};
   const thrust::host_vector<int> expected_values{1, 2, 5, 6};
   // example-end topk-min-pairs-non-deterministic-unsorted
+  REQUIRE(stream_error == cudaSuccess);
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
@@ -174,8 +223,12 @@ CUB_TEST("DeviceTopK::MaxPairs API example for non-deterministic, unsorted resul
     cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
 
   // Prepare CUDA stream
-  cudaStream_t stream = nullptr;
-  cudaStreamCreate(&stream);
+  cudaStream_t stream     = nullptr;
+  const auto stream_error = cudaStreamCreate(&stream);
+  if (stream_error != cudaSuccess)
+  {
+    std::cerr << "cudaStreamCreate failed with status: " << stream_error << '\n';
+  }
   const cuda::stream_ref stream_ref{stream};
 
   // Create the environment with the stream and requirements
@@ -183,13 +236,17 @@ CUB_TEST("DeviceTopK::MaxPairs API example for non-deterministic, unsorted resul
 
   // Query temporary storage requirements
   size_t temp_storage_bytes{};
-  cub::DeviceTopK::MaxPairs(
+  const auto query_error = cub::DeviceTopK::MaxPairs(
     nullptr, temp_storage_bytes, keys.begin(), keys_out.begin(), values, values_out.begin(), keys.size(), k, env);
+  if (query_error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceTopK::MaxPairs failed with status: " << query_error << '\n';
+  }
 
   // Allocate temporary storage
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
 
-  cub::DeviceTopK::MaxPairs(
+  const auto error = cub::DeviceTopK::MaxPairs(
     thrust::raw_pointer_cast(temp_storage.data()),
     temp_storage_bytes,
     keys.begin(),
@@ -199,12 +256,19 @@ CUB_TEST("DeviceTopK::MaxPairs API example for non-deterministic, unsorted resul
     keys.size(),
     k,
     env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceTopK::MaxPairs failed with status: " << error << '\n';
+  }
 
   // Get the top-k results into sorted order for easy comparison
   thrust::sort_by_key(keys_out.begin(), keys_out.end(), values_out.begin(), cuda::std::greater<>{});
   const thrust::host_vector<int> expected_keys{8, 7, 6, 5};
   const thrust::host_vector<int> expected_values{4, 3, 7, 0};
   // example-end topk-max-pairs-non-deterministic-unsorted
+  REQUIRE(stream_error == cudaSuccess);
+  REQUIRE(query_error == cudaSuccess);
+  REQUIRE(error == cudaSuccess);
 
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
@@ -283,16 +347,24 @@ CUB_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]", 
     std::uint8_t* d_temp_storage{};
     std::size_t temp_storage_bytes{};
 
-    cub::DeviceTopK::MaxKeys(
+    const auto query_error = cub::DeviceTopK::MaxKeys(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, k, decomposer_t{}, requirements);
+    if (query_error != cudaSuccess)
+    {
+      std::cerr << "cub::DeviceTopK::MaxKeys failed with status: " << query_error << '\n';
+    }
 
     // 2) Allocate temp storage
     thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     // 3) Find the top-k largest keys
-    cub::DeviceTopK::MaxKeys(
+    const auto error = cub::DeviceTopK::MaxKeys(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, k, decomposer_t{}, requirements);
+    if (error != cudaSuccess)
+    {
+      std::cerr << "cub::DeviceTopK::MaxKeys failed with status: " << error << '\n';
+    }
 
     // Sort output for comparison (output order is not guaranteed)
     thrust::sort(out.begin(), out.end(), cuda::std::greater<>{});
@@ -302,6 +374,8 @@ CUB_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]", 
       {+1.1f, 3} //
     };
     // example-end topk-max-keys-custom-type
+    REQUIRE(query_error == cudaSuccess);
+    REQUIRE(error == cudaSuccess);
 
     REQUIRE(expected == out);
   }
@@ -332,14 +406,22 @@ CUB_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]", 
     std::uint8_t* d_temp_storage{};
     std::size_t temp_storage_bytes{};
 
-    cub::DeviceTopK::MinKeys(
+    const auto query_error = cub::DeviceTopK::MinKeys(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, k, decomposer_t{}, requirements);
+    if (query_error != cudaSuccess)
+    {
+      std::cerr << "cub::DeviceTopK::MinKeys failed with status: " << query_error << '\n';
+    }
 
     thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-    cub::DeviceTopK::MinKeys(
+    const auto error = cub::DeviceTopK::MinKeys(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, k, decomposer_t{}, requirements);
+    if (error != cudaSuccess)
+    {
+      std::cerr << "cub::DeviceTopK::MinKeys failed with status: " << error << '\n';
+    }
 
     // Sort output for comparison (output order is not guaranteed)
     thrust::sort(out.begin(), out.end());
@@ -349,6 +431,8 @@ CUB_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]", 
       {-0.0f, 2} //
     };
     // example-end topk-min-keys-custom-type
+    REQUIRE(query_error == cudaSuccess);
+    REQUIRE(error == cudaSuccess);
 
     REQUIRE(expected == out);
   }
@@ -385,7 +469,7 @@ CUB_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]", 
     std::uint8_t* d_temp_storage{};
     std::size_t temp_storage_bytes{};
 
-    cub::DeviceTopK::MaxPairs(
+    const auto query_error = cub::DeviceTopK::MaxPairs(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -396,11 +480,15 @@ CUB_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]", 
       k,
       decomposer_t{},
       requirements);
+    if (query_error != cudaSuccess)
+    {
+      std::cerr << "cub::DeviceTopK::MaxPairs failed with status: " << query_error << '\n';
+    }
 
     thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-    cub::DeviceTopK::MaxPairs(
+    const auto error = cub::DeviceTopK::MaxPairs(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -411,6 +499,10 @@ CUB_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]", 
       k,
       decomposer_t{},
       requirements);
+    if (error != cudaSuccess)
+    {
+      std::cerr << "cub::DeviceTopK::MaxPairs failed with status: " << error << '\n';
+    }
 
     // Sort by key for comparison (output order is not guaranteed)
     thrust::sort_by_key(keys_out.begin(), keys_out.end(), vals_out.begin(), cuda::std::greater<>{});
@@ -423,6 +515,8 @@ CUB_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]", 
 
     const thrust::device_vector<int> expected_vals = {5, 0, 2};
     // example-end topk-max-pairs-custom-type
+    REQUIRE(query_error == cudaSuccess);
+    REQUIRE(error == cudaSuccess);
 
     REQUIRE(expected_keys == keys_out);
     REQUIRE(expected_vals == vals_out);
@@ -460,7 +554,7 @@ CUB_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]", 
     std::uint8_t* d_temp_storage{};
     std::size_t temp_storage_bytes{};
 
-    cub::DeviceTopK::MinPairs(
+    const auto query_error = cub::DeviceTopK::MinPairs(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -471,11 +565,15 @@ CUB_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]", 
       k,
       decomposer_t{},
       requirements);
+    if (query_error != cudaSuccess)
+    {
+      std::cerr << "cub::DeviceTopK::MinPairs failed with status: " << query_error << '\n';
+    }
 
     thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-    cub::DeviceTopK::MinPairs(
+    const auto error = cub::DeviceTopK::MinPairs(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -486,6 +584,10 @@ CUB_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]", 
       k,
       decomposer_t{},
       requirements);
+    if (error != cudaSuccess)
+    {
+      std::cerr << "cub::DeviceTopK::MinPairs failed with status: " << error << '\n';
+    }
 
     // Sort by key for comparison (output order is not guaranteed)
     thrust::sort_by_key(keys_out.begin(), keys_out.end(), vals_out.begin());
@@ -498,6 +600,8 @@ CUB_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]", 
 
     const thrust::device_vector<int> expected_vals = {1, 3, 4};
     // example-end topk-min-pairs-custom-type
+    REQUIRE(query_error == cudaSuccess);
+    REQUIRE(error == cudaSuccess);
 
     REQUIRE(expected_keys == keys_out);
     REQUIRE(expected_vals == vals_out);

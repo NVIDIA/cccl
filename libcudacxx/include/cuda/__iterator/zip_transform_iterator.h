@@ -148,7 +148,6 @@ template <class _Fn, class... _Iterators>
 template <class _Fn, class... _Iterators>
 class zip_transform_iterator
 {
-private:
   // Not a base because then the friend operators would be ambiguous
   ::cuda::std::__compressed_movable_box<::cuda::std::tuple<_Iterators...>, _Fn> __store_;
 
@@ -180,9 +179,9 @@ private:
   __zip_apply(const _Op& __op,
               const ::cuda::std::tuple<_Iterators...>& __tuple1,
               const ::cuda::std::tuple<_Iterators...>& __tuple2) //
-    noexcept(noexcept(__op(__tuple1, __tuple2, ::cuda::std::make_index_sequence<sizeof...(_Iterators)>())))
+    noexcept(noexcept(__op(__tuple1, __tuple2, ::cuda::std::index_sequence_for<_Iterators...>())))
   {
-    return __op(__tuple1, __tuple2, ::cuda::std::make_index_sequence<sizeof...(_Iterators)>());
+    return __op(__tuple1, __tuple2, ::cuda::std::index_sequence_for<_Iterators...>());
   }
 
 public:
@@ -242,7 +241,7 @@ public:
     [[nodiscard]] _CCCL_API constexpr reference operator()(const _Iterators&... __iters) const
       noexcept(::cuda::std::is_nothrow_invocable_v<_Fn&, ::cuda::std::iter_reference_t<const _Iterators>...>)
     {
-      return ::cuda::std::invoke(const_cast<_Fn&>(__func_), *__iters...);
+      return ::cuda::std::invoke(__func_, *__iters...);
     }
   };
 
@@ -259,11 +258,10 @@ public:
     _Fn& __func_;
 
     _CCCL_EXEC_CHECK_DISABLE
-    [[nodiscard]] _CCCL_API constexpr reference operator()(const _Iterators&... __iters) const noexcept(noexcept(
-      ::cuda::std::invoke(const_cast<_Fn&>(__func_), __iters[::cuda::std::iter_difference_t<_Iterators>(__n_)]...)))
+    [[nodiscard]] _CCCL_API constexpr reference operator()(const _Iterators&... __iters) const
+      noexcept(noexcept(::cuda::std::invoke(__func_, __iters[::cuda::std::iter_difference_t<_Iterators>(__n_)]...)))
     {
-      return ::cuda::std::invoke(
-        const_cast<_Fn&>(__func_), __iters[::cuda::std::iter_difference_t<_Iterators>(__n_)]...);
+      return ::cuda::std::invoke(__func_, __iters[::cuda::std::iter_difference_t<_Iterators>(__n_)]...);
     }
   };
 

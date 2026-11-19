@@ -86,9 +86,9 @@ public:
         double __b1       = .4166667E-1 / __mean_;
         const double __b2 = .3 * __b1 * __b1;
         __c3_             = .1428571 * __b1 * __b2;
-        __c2_             = __b2 - 15. * __c3_;
-        __c1_             = __b1 - 6. * __b2 + 45. * __c3_;
-        __c0_             = 1. - __b1 + 3. * __b2 - 15. * __c3_;
+        __c2_             = __b2 - (15. * __c3_);
+        __c1_             = __b1 - (6. * __b2) + (45. * __c3_);
+        __c0_             = 1. - __b1 + (3. * __b2) - (15. * __c3_);
         __c_              = .1069 / __mean_;
       }
     }
@@ -122,8 +122,8 @@ private:
             bool _FloatBigger = (numeric_limits<_FloatT>::digits > numeric_limits<_IntT>::digits)>
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _IntT __max_representable_int_for_float() noexcept
   {
-    static_assert(::cuda::std::is_floating_point<_FloatT>::value, "must be a floating point type");
-    static_assert(::cuda::std::is_integral<_IntT>::value, "must be an integral type");
+    static_assert(::cuda::std::is_floating_point_v<_FloatT>, "must be a floating point type");
+    static_assert(::cuda::std::is_integral_v<_IntT>, "must be an integral type");
     static_assert(numeric_limits<_FloatT>::radix == 2, "FloatT has incorrect radix");
     constexpr int _bits = ::cuda::std::max(numeric_limits<_IntT>::digits - numeric_limits<_FloatT>::digits, 0);
     return _FloatBigger ? numeric_limits<_IntT>::max() : (numeric_limits<_IntT>::max() >> _bits << _bits);
@@ -138,7 +138,7 @@ private:
     {
       return _Limits::max();
     }
-    else if (__r <= _Limits::lowest())
+    if (__r <= _Limits::lowest())
     {
       return _Limits::min();
     }
@@ -221,7 +221,7 @@ public:
         {
           const double __fac[] = {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880};
           __px                 = -__pr.__mean_;
-          __py                 = ::cuda::std::pow(__pr.__mean_, (double) __tx) / __fac[static_cast<int>(__tx)];
+          __py                 = ::cuda::std::pow(__pr.__mean_, __tx) / __fac[static_cast<int>(__tx)];
         }
         else
         {
@@ -230,18 +230,20 @@ public:
           const double __v = __difmuk / __tx;
           if (::cuda::std::abs(__v) > 0.25)
           {
-            __px = __tx * ::cuda::std::log(1 + __v) - __difmuk - __del;
+            __px = (__tx * ::cuda::std::log(1 + __v)) - __difmuk - __del;
           }
           else
           {
-            __px = __tx * __v * __v
-                   * (((((((.1250060 * __v + -.1384794) * __v + .1421878) * __v + -.1661269) * __v + .2000118) * __v
-                        + -.2500068)
-                         * __v
-                       + .3333333)
-                        * __v
-                      + -.5)
-                 - __del;
+            __px =
+              (__tx * __v * __v
+               * ((((((((((((((.1250060 * __v) + -.1384794) * __v) + .1421878) * __v) + -.1661269) * __v) + .2000118)
+                       * __v)
+                      + -.2500068)
+                     * __v)
+                    + .3333333)
+                   * __v)
+                  + -.5))
+              - __del;
           }
           __py = .3989423 / ::cuda::std::sqrt(__tx);
         }
@@ -252,14 +254,14 @@ public:
         if (__using_exp_dist)
         {
           if (__pr.__c_ * ::cuda::std::abs(__u)
-              <= __py * ::cuda::std::exp(__px + __e) - __fy * ::cuda::std::exp(__fx + __e))
+              <= (__py * ::cuda::std::exp(__px + __e)) - (__fy * ::cuda::std::exp(__fx + __e)))
           {
             break;
           }
         }
         else
         {
-          if (__fy - __u * __fy <= __py * ::cuda::std::exp(__px - __fx))
+          if (__fy - (__u * __fy) <= __py * ::cuda::std::exp(__px - __fx))
           {
             break;
           }
@@ -309,7 +311,7 @@ public:
 
 #if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
-  friend ::std::basic_ostream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const poisson_distribution& __x)
   {
     using ostream_type                        = ::std::basic_ostream<_CharT, _Traits>;
@@ -322,7 +324,7 @@ public:
   }
 
   template <class _CharT, class _Traits>
-  friend ::std::basic_istream<_CharT, _Traits>&
+  _CCCL_HOST_API friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is, poisson_distribution& __x)
   {
     using istream_type                        = ::std::basic_istream<_CharT, _Traits>;

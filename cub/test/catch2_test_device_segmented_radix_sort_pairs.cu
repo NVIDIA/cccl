@@ -18,6 +18,7 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include "thrust/detail/raw_pointer_cast.h"
+#include <c2h/catch2_allocation_failure.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -315,9 +316,9 @@ try
   // Verify values were sorted along with the keys
   REQUIRE(thrust::equal(out_keys.cbegin(), out_keys.cend(), out_values.cbegin()));
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
+  c2h::skip_if_allocation_failure();
 }
 
 // Currently, size of a single segment in DeviceRadixSort is limited to INT_MAX
@@ -372,8 +373,8 @@ try
   // Verify values were sorted along with the keys
   REQUIRE(thrust::equal(out_keys.cbegin(), out_keys.cend(), out_values.cbegin()));
 }
-catch (std::bad_alloc& e)
+catch (...)
 {
-  std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
+  c2h::skip_if_allocation_failure();
 }
 #endif // defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)

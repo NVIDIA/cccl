@@ -35,12 +35,14 @@
 #include <thrust/detail/config.h>
 
 #include <thrust/complex.h>
+#include <thrust/detail/complex/arithmetic.h>
 #include <thrust/detail/complex/math_private.h>
 
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/hypot.h>
 #include <cuda/std/__cmath/inverse_trigonometric_functions.h>
 #include <cuda/std/__cmath/logarithms.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/numbers>
 
 THRUST_NAMESPACE_BEGIN
@@ -49,7 +51,7 @@ namespace detail::complex
 using thrust::complex;
 
 /* round down to 18 = 54/3 bits */
-_CCCL_HOST_DEVICE inline double trim(double x)
+_CCCL_HOST_DEVICE_API inline double trim(double x)
 {
   uint32_t hi;
   get_high_word(hi, x);
@@ -57,14 +59,24 @@ _CCCL_HOST_DEVICE inline double trim(double x)
   return x;
 }
 
-_CCCL_HOST_DEVICE inline complex<double> clog(const complex<double>& z)
+_CCCL_HOST_DEVICE_API inline complex<double> clog(const complex<double>& z)
 {
   // Adapted from FreeBSDs msun
-  double x, y;
-  double ax, ay;
-  double x0, y0, x1, y1, x2, y2, t, hm1;
+  double x;
+  double y;
+  double ax;
+  double ay;
+  double x0;
+  double y0;
+  double x1;
+  double y1;
+  double x2;
+  double y2;
+  double t;
+  double hm1;
   double val[12];
-  int i, sorted;
+  int i;
+  int sorted;
   constexpr auto e = ::cuda::std::__numbers<double>::__e();
 
   x = z.real();
@@ -126,12 +138,12 @@ _CCCL_HOST_DEVICE inline complex<double> clog(const complex<double>& z)
 
   if (ax >= 1.0)
   {
-    return (complex<double>(::cuda::std::log1p((ax - 1) * (ax + 1) + ay * ay) * 0.5, ::cuda::std::atan2(y, x)));
+    return (complex<double>(::cuda::std::log1p(((ax - 1) * (ax + 1)) + (ay * ay)) * 0.5, ::cuda::std::atan2(y, x)));
   }
 
-  if (ax * ax + ay * ay <= 0.7)
+  if ((ax * ax) + (ay * ay) <= 0.7)
   {
-    return (complex<double>(::cuda::std::log(ax * ax + ay * ay) * 0.5, ::cuda::std::atan2(y, x)));
+    return (complex<double>(::cuda::std::log((ax * ax) + (ay * ay)) * 0.5, ::cuda::std::atan2(y, x)));
   }
 
   /*
@@ -188,19 +200,19 @@ _CCCL_HOST_DEVICE inline complex<double> clog(const complex<double>& z)
 } // namespace detail::complex
 
 template <typename ValueType>
-_CCCL_HOST_DEVICE inline complex<ValueType> log(const complex<ValueType>& z)
+_CCCL_HOST_DEVICE_API inline complex<ValueType> log(const complex<ValueType>& z)
 {
   return complex<ValueType>(::cuda::std::log(thrust::abs(z)), thrust::arg(z));
 }
 
 template <>
-_CCCL_HOST_DEVICE inline complex<double> log(const complex<double>& z)
+_CCCL_HOST_DEVICE_API inline complex<double> log(const complex<double>& z)
 {
   return detail::complex::clog(z);
 }
 
 template <typename ValueType>
-_CCCL_HOST_DEVICE inline complex<ValueType> log10(const complex<ValueType>& z)
+_CCCL_HOST_DEVICE_API inline complex<ValueType> log10(const complex<ValueType>& z)
 {
   // Using the explicit literal prevents compile time warnings in
   // devices that don't support doubles

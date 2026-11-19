@@ -1,0 +1,22 @@
+# NVIDIA self-hosted runner label families.
+# Keep the stable OS, architecture, and runner family explicit. Wildcards
+# cover instance sizes, GPU models, driver aliases, GPU counts, and optional
+# -internal suffixes. Numeric fields must begin with a digit; actionlint uses
+# glob syntax rather than regular expressions, so `*` also covers additional
+# digits and suffixes.
+self-hosted-runner:
+  labels:
+    # <os>-<arch>-cpu<size>[-internal]
+    - "linux-amd64-cpu[0-9]*"
+    - "linux-arm64-cpu[0-9]*"
+    - "windows-amd64-cpu[0-9]*"
+
+    # <os>-<arch>-gpu-<model>-<driver>-<count>[-internal]
+    - "linux-amd64-gpu-*-*-[0-9]*"
+    - "linux-arm64-gpu-*-*-[0-9]*"
+    - "windows-amd64-gpu-*-*-[0-9]*"
+    - "wsl-amd64-gpu-*-*-[0-9]*"
+
+    # Legacy group-shaped runner labels
+    - "nv-cpu-*"
+    - "nv-gpu-*-*-[0-9]gpu*"

@@ -20,8 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/cstddef>
-
 #include <cuda/std/__cccl/prologue.h>
 
 #if _CCCL_HAS_BUILTIN(__remove_reference)

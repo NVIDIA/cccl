@@ -241,9 +241,9 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  __tuple_leaf(const __tuple_leaf& __t) = default;
+  _CCCL_HIDE_FROM_ABI __tuple_leaf(const __tuple_leaf& __t) = default;
   _CCCL_EXEC_CHECK_DISABLE
-  __tuple_leaf(__tuple_leaf&& __t) = default;
+  _CCCL_HIDE_FROM_ABI __tuple_leaf(__tuple_leaf&& __t) = default;
 
   // Do not use = default here. The value type may be a reference, in which case the defaulted
   // assignment constructor is implicitly deleted (a quirk in the C++ spec meant).
@@ -469,7 +469,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   {}
 
   template <class _Tuple, size_t _Indx2>
-  using __tuple_elem_at = __copy_cvref_t<_Tuple, tuple_element_t<_Indx2, __make_tuple_types_t<_Tuple>>>;
+  using __tuple_elem_at _CCCL_NODEBUG = __copy_cvref_t<_Tuple, tuple_element_t<_Indx2, __make_tuple_types_t<_Tuple>>>;
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tuple>

@@ -15,27 +15,32 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
-#include <cub/detail/type_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
-
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_empty.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -146,7 +151,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   const SegmentedScanPolicy active_policy = policy_selector(cc);
 
-  detail::log_dispatch("DeviceSegmentedScan", cc, active_policy);
+  _CUB::detail::log_dispatch("DeviceSegmentedScan", cc, active_policy);
 
   if (d_temp_storage == nullptr)
   {
@@ -171,7 +176,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         _CCCL_ASSERT(active_policy.block.items_per_thread > 0, "Policy value for items_per_thread is not positive");
         _CCCL_ASSERT(max_segments > 0, "Policy value for max segments is not positive");
         _CCCL_ASSERT(num_segments_per_worker <= max_segments, "Number of segments per block exceeds maximum value");
-        return {workers_per_block, threads_per_block, ::cuda::std::min(num_segments_per_worker, max_segments)};
+        return {workers_per_block, threads_per_block, (::cuda::std::min) (num_segments_per_worker, max_segments)};
       }
       default:
         _CCCL_UNREACHABLE();
@@ -185,7 +190,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   const auto segments_per_block = num_segments_per_worker * workers_per_block;
   _CCCL_ASSERT(segments_per_block > 0, "Number of segments to be processed by block must be positive");
 
-  static constexpr auto int32_max                       = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
+  static constexpr auto int32_max                       = (::cuda::std::numeric_limits<::cuda::std::int32_t>::max)();
   static constexpr auto max_num_segments_per_invocation = static_cast<::cuda::std::int64_t>(int32_max);
 
   const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, max_num_segments_per_invocation);
@@ -194,7 +199,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   {
     const auto current_seg_offset          = invocation_index * max_num_segments_per_invocation;
     const auto next_seg_offset             = current_seg_offset + max_num_segments_per_invocation;
-    const auto num_segments_per_invocation = ::cuda::std::min(next_seg_offset, num_segments) - current_seg_offset;
+    const auto num_segments_per_invocation = (::cuda::std::min) (next_seg_offset, num_segments) - current_seg_offset;
 
     _CCCL_ASSERT(num_segments_per_invocation <= max_num_segments_per_invocation,
                  "data loss during narrowing: num_segments_per_invocation exceeds int32_t range");
@@ -242,7 +247,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       output_begin_offsets += num_segments_per_invocation;
     }
 
-    if (const auto error = CubDebug(DebugSyncStream(stream)); cudaSuccess != error)
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)); cudaSuccess != error)
     {
       return error;
     }

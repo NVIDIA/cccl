@@ -232,7 +232,7 @@ template <typename InputT, typename OutputT>
   using accum_t = OutputT;
   using input_t = InputT;
 
-  cudaStreamSynchronize(stream);
+  _CCCL_TRY_RUNTIME_API(cudaStreamSynchronize, "Sync failed", stream);
 
   thrust::host_vector<accum_t> h_out(output);
   thrust::host_vector<input_t> h_inp(input);

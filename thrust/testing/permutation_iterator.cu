@@ -19,7 +19,7 @@ TEST_CASE("TestPermutationIteratorTraits", "[permutation_iterator]")
 
   static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
   static_assert(cuda::std::is_same_v<traits::value_type, int>);
-  static_assert(cuda::std::is_same_v<traits::pointer, void>);
+  static_assert(cuda::std::is_same_v<traits::pointer, void>); // NOLINT(cccl-simplify-type-traits)
   static_assert(cuda::std::is_same_v<traits::reference, int&>);
   static_assert(cuda::std::is_same_v<traits::iterator_category, category>);
 
@@ -71,8 +71,8 @@ void test_permutation_iterator_simple()
   REQUIRE(source == ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(test_permutation_iterator_simple);
-static_assert(cuda::std::is_trivially_copy_constructible<thrust::permutation_iterator<int*, int*>>::value);
-static_assert(cuda::std::is_trivially_copyable<thrust::permutation_iterator<int*, int*>>::value);
+static_assert(cuda::std::is_trivially_copy_constructible_v<thrust::permutation_iterator<int*, int*>>);
+static_assert(cuda::std::is_trivially_copyable_v<thrust::permutation_iterator<int*, int*>>);
 
 template <class Vector>
 void test_permutation_iterator_gather()
@@ -245,7 +245,8 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_permutation_iterator_with_countin
   using T      = typename Vector::value_type;
   using diff_t = typename thrust::counting_iterator<T>::difference_type;
 
-  const thrust::counting_iterator<T> input(0), index(0);
+  const thrust::counting_iterator<T> input(0);
+  const thrust::counting_iterator<T> index(0);
 
   // test copy()
   {

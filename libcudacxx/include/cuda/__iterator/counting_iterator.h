@@ -121,7 +121,6 @@ template <class _Start,
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 class counting_iterator : public __counting_iterator_category<_Start>
 {
-private:
   _Start __value_ = _Start();
 
 public:
@@ -176,10 +175,10 @@ public:
       : __value_(::cuda::std::move(__value))
   {}
 
-  constexpr counting_iterator(const counting_iterator&)            = default;
-  constexpr counting_iterator(counting_iterator&&)                 = default;
-  constexpr counting_iterator& operator=(const counting_iterator&) = default;
-  constexpr counting_iterator& operator=(counting_iterator&&)      = default;
+  _CCCL_HIDE_FROM_ABI constexpr counting_iterator(const counting_iterator&)            = default;
+  _CCCL_HIDE_FROM_ABI constexpr counting_iterator(counting_iterator&&)                 = default;
+  _CCCL_HIDE_FROM_ABI constexpr counting_iterator& operator=(const counting_iterator&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr counting_iterator& operator=(counting_iterator&&)      = default;
 
   //! @brief Creates a @c counting_iterator from another @c counting_iterator of a different
   //! difference type.

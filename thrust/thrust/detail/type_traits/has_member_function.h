@@ -13,16 +13,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/type_traits.h>
-
+// IWYU pragma: begin_keep
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/declval.h>
+// IWYU pragma: end_keep
 
 #define __THRUST_DEFINE_HAS_MEMBER_FUNCTION(trait_name, member_function_name)                                          \
   template <typename T, typename Signature, typename = void>                                                           \
-  struct trait_name : thrust::false_type                                                                               \
+  struct trait_name : ::cuda::std::false_type                                                                          \
   {};                                                                                                                  \
                                                                                                                        \
   template <typename T, typename ResultT, typename... Args>                                                            \
@@ -33,5 +34,5 @@
                              || ::cuda::std::is_convertible_v<ResultT,                                                 \
                                                               decltype(::cuda::std::declval<T>().member_function_name( \
                                                                 ::cuda::std::declval<Args>()...))>>>                   \
-      : thrust::true_type                                                                                              \
+      : ::cuda::std::true_type                                                                                         \
   {};

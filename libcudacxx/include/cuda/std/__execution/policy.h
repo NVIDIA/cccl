@@ -101,7 +101,7 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
       static_assert(!is_same_v<remove_cvref_t<_Env>, ::cuda::stream> || is_lvalue_reference_v<_Env>,
                     "cuda::stream is not copyable. It must be passed as a cuda::stream_ref");
       ::cuda::stream_ref __stream{__env};
-      return __with(prop{::cuda::get_stream, __stream}, ::cuda::std::make_index_sequence<sizeof...(_Envs)>());
+      return __with(prop{::cuda::get_stream, __stream}, ::cuda::std::index_sequence_for<_Envs...>());
     }
     else if constexpr (::cuda::mr::resource<_Env>)
     {
@@ -112,7 +112,7 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
                            ::cuda::mr::any_resource<> {
                              ::cuda::std::forward<_Env>(__env)
                            }},
-                      ::cuda::std::make_index_sequence<sizeof...(_Envs)>());
+                      ::cuda::std::index_sequence_for<_Envs...>());
       }
       else
       {
@@ -120,12 +120,12 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
                            ::cuda::mr::resource_ref<> {
                              __env
                            }},
-                      ::cuda::std::make_index_sequence<sizeof...(_Envs)>());
+                      ::cuda::std::index_sequence_for<_Envs...>());
       }
     }
     else
     {
-      return __with(::cuda::std::forward<_Env>(__env), ::cuda::std::make_index_sequence<sizeof...(_Envs)>());
+      return __with(::cuda::std::forward<_Env>(__env), ::cuda::std::index_sequence_for<_Envs...>());
     }
   }
 
@@ -139,7 +139,7 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
       static_assert(!is_same_v<remove_cvref_t<_Value>, ::cuda::stream> || is_lvalue_reference_v<_Value>,
                     "cuda::stream is not copyable. It must be passed as a cuda::stream_ref");
       const ::cuda::stream_ref __stream{__value};
-      return __with(prop{__tag, __stream}, ::cuda::std::make_index_sequence<sizeof...(_Envs)>());
+      return __with(prop{__tag, __stream}, ::cuda::std::index_sequence_for<_Envs...>());
     }
     else if constexpr (is_same_v<remove_cvref_t<_Tag>, ::cuda::mr::get_memory_resource_t>)
     {
@@ -150,21 +150,16 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
                            ::cuda::mr::any_resource<> {
                              ::cuda::std::forward<_Value>(__value)
                            }},
-                      ::cuda::std::make_index_sequence<sizeof...(_Envs)>());
+                      ::cuda::std::index_sequence_for<_Envs...>());
       }
       else
       {
-        return __with(prop{__tag,
-                           ::cuda::mr::resource_ref<> {
-                             __value
-                           }},
-                      ::cuda::std::make_index_sequence<sizeof...(_Envs)>());
+        return __with(prop{__tag, ::cuda::mr::resource_ref<> { __value }}, ::cuda::std::index_sequence_for<_Envs...>());
       }
     }
     else
     {
-      return __with(prop{__tag, ::cuda::std::forward<_Value>(__value)},
-                    ::cuda::std::make_index_sequence<sizeof...(_Envs)>());
+      return __with(prop{__tag, ::cuda::std::forward<_Value>(__value)}, ::cuda::std::index_sequence_for<_Envs...>());
     }
   }
 #endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)

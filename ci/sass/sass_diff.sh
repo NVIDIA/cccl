@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Compare CUB benchmark SASS between two git refs.
+# Compare project benchmark SASS between two git refs.
 #
 # The script creates a worktree for each ref and builds the selected benchmark objects.
 # It dumps their SASS with `cuobjdump -sass` and compares the results.
@@ -14,16 +14,17 @@ set -euo pipefail
 usage()
 {
   cat <<EOF
-Usage: $0 <base-ref> <test-ref> [options]
+Usage: $0 <project> <base-ref> <test-ref> [options]
 
-Compare CUB benchmark SASS between two git refs, for example:
+Compare project benchmark SASS between two git refs, for example:
 
-  $0 origin/main HEAD -arch all-major-cccl
+  $0 cub origin/main HEAD -arch all-major-cccl
+  $0 thrust origin/main HEAD -arch all-major-cccl
 
 Options:
-  -preset <name>            CMake preset. Default: "cub-benchmark".
+  -preset <name>            CMake preset. Default: "<project>-benchmark".
   -target-filter <regex>    Regex matched against the build target names
-                            (repeatable). Default: "^cub\\\\.bench\\\\.".
+                            (repeatable). Default: "^<project>\\\\.bench\\\\.".
   -target-filters-json <j>  The same filters as a JSON array. Used by CI, which
                             reads them from ci/matrix.yaml.
   -output-dir <path>        Artifact directory. Default: "<cwd>/sass-artifacts".
@@ -32,19 +33,13 @@ Options:
                             the link in it needs the artifact URL, and that URL
                             exists only after CI uploaded the artifact.
 
-Every other option goes to ci/build_common.sh; run it with -h for the list.
--configure is not among them: both sides must be built to be compared. Note that
-the cub-benchmark preset sets the architecture to "native", so -arch must be
-given for a multi-architecture comparison.
-
-The artifact directory holds the raw dumps under base/ and test/. Under result/
-it holds the normalized text the comparison acted on (base/ and test/), the
-unified diff of every changed architecture (diff/), report.json and meta.json.
-With -render it also holds summary.md.
+Every other option goes to ci/build_common.sh; run it with -h for the list. Note that the
+cmake presets may set the architecture to "native", so -arch must be given for a
+multi-architecture comparison.
 EOF
 }
 
-if [[ "$#" -lt 2 ]]; then
+if [[ "$#" -lt 3 ]]; then
   usage
   exit 0
 fi
@@ -56,11 +51,16 @@ ci_dir="$(cd "${script_dir}/.." && pwd)"
 repo_root="$(cd "${ci_dir}/.." && pwd)"
 readonly repo_root
 
-BASE_REF="$1"
-TEST_REF="$2"
-shift 2
+readonly PROJECT="$1"
+if [[ "${PROJECT}" != 'cub' && "${PROJECT}" != 'thrust' ]]; then
+  echo "Unknown project '${PROJECT}'. Must be one of [cub, thrust]" 1>&2
+  exit 1
+fi
+readonly BASE_REF="$2"
+readonly TEST_REF="$3"
+shift 3
 
-PRESET="cub-benchmark"
+PRESET="${PROJECT}-benchmark"
 OUTPUT_DIR="${PWD}/sass-artifacts"
 RENDER=0
 TARGET_FILTERS=()
@@ -96,7 +96,7 @@ while (($#)); do
 done
 
 if [[ "${#TARGET_FILTERS[@]}" -eq 0 ]]; then
-  TARGET_FILTERS=('^cub\.bench\.')
+  TARGET_FILTERS=("^${PROJECT}\.bench\.")
 fi
 # Combine filters so each target needs one grep invocation.
 filter_regex="$(IFS='|'; echo "${TARGET_FILTERS[*]}")"
@@ -185,6 +185,8 @@ for side in base test; do
   # Copy the file because CMake resolves ${sourceDir} from its real path.
   # A symlink points to the current checkout instead of the worktree.
   cp "${repo_root}/CMakePresets.json" "${side_path[${side}]}/CMakePresets.json"
+  cp "${repo_root}/${PROJECT}/benchmarks/CMakeLists.txt" \
+     "${side_path[${side}]}/${PROJECT}/benchmarks/CMakeLists.txt"
 done
 
 # ============================================================================
@@ -224,8 +226,8 @@ done
 # Source paths provide target names without querying the configured build tree.
 matching_targets()
 {
-  find "$1/cub/benchmarks" -name '*.cu' -printf '%P\n' \
-    | sed -e 's/\.cu$/.base/' -e 's|/|.|g' -e 's/^/cub./' \
+  find "$1/${PROJECT}/benchmarks" -name '*.cu' -printf '%P\n' \
+    | sed -e 's/\.cu$/.base/' -e 's|/|.|g' -e "s/^/${PROJECT}./" \
     | grep -E -- "${filter_regex}" \
     | sort -u
 }
@@ -238,7 +240,7 @@ mapfile -t targets < <(
 # comm succeeds for an empty intersection, so check the result explicitly.
 # Passing --target without names builds all targets.
 if [[ "${#targets[@]}" -eq 0 ]]; then
-  echo "No CUB benchmark target common to both sides matched: ${filter_regex}" >&2
+  echo "No ${PROJECT} benchmark target common to both sides matched: ${filter_regex}" >&2
   exit 1
 fi
 echo "Selected ${#targets[@]} benchmark target(s)."
@@ -251,7 +253,7 @@ for side in base test; do
   # CMake writes their paths to the manifests during generation.
   # dump_side also uses these objects to exclude kernels from linked helper libraries.
   for target in "${targets[@]}"; do
-    mapfile -t objects < "${preset_dir[${side}]}/cub/benchmarks/objects/${target}.objects"
+    mapfile -t objects < "${preset_dir[${side}]}/${PROJECT}/benchmarks/objects/${target}.objects"
 
     if [[ "${#objects[@]}" -eq 0 ]]; then
       echo "No object files listed for benchmark target: ${target}" >&2
@@ -294,7 +296,7 @@ dump_side() {
     for object in "${objects[@]}"; do
       cuobjdump -sass -sort "$object"
     done | cu++filt > %q/{}.sass
-  ' "${preset_dir[${side}]}/cub/benchmarks/objects" "${artifact_dir}/${side}"
+  ' "${preset_dir[${side}]}/${PROJECT}/benchmarks/objects" "${artifact_dir}/${side}"
 
   printf '%s\n' "${targets[@]}" | xargs --verbose -P "$(nproc)" -I{} bash -c "${dump_cmd}"
 }
@@ -310,9 +312,11 @@ report_arch="$(
 )"
 
 jq -n \
+  --arg project "${PROJECT}" \
   --arg base_ref "${BASE_REF}" \
   --arg test_ref "${TEST_REF}" \
   --arg arch "${report_arch}" \
+  --arg artifacts_url "${artifact_dir}/result/diff" \
   '$ARGS.named' > "${artifact_dir}/result/meta.json"
 
 # `compare_sass.py` returns 1 when the SASS changed, and status 2 for other failures.
@@ -335,8 +339,7 @@ echo "Wrote report: ${artifact_dir}/result/report.json"
 if [[ "${RENDER}" -eq 1 ]]; then
   run_command "📝 Render report" \
     python3 "${script_dir}/render_report.py" \
-    --report "${artifact_dir}/result/report.json" \
-    --meta "${artifact_dir}/result/meta.json" \
+    --input "${artifact_dir}/result" \
     --output "${artifact_dir}/result/summary.md"
 
   echo

@@ -80,7 +80,8 @@ struct TestPairComparison
   {
     using P = thrust::pair<T, T>;
 
-    P x, y;
+    P x;
+    P y;
 
     // test operator ==
     x.first = x.second = y.first = y.second = T(0);
@@ -246,6 +247,7 @@ struct TestPairTupleSize
 {
   void operator()()
   {
+    // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the class trait API.
     REQUIRE(2 == static_cast<int>(thrust::tuple_size<Pair>::value));
   }
 };
@@ -253,22 +255,30 @@ DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestPairTupleSize, PairConstVolatileTypes);
 
 TEST_CASE("TestPairTupleElement", "[pair]")
 {
+  // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the nested type API.
   using type0 = thrust::tuple_element<0, thrust::pair<int, float>>::type;
+  // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the nested type API.
   using type1 = thrust::tuple_element<1, thrust::pair<int, float>>::type;
   static_assert(std::is_same_v<int, type0>);
   static_assert(std::is_same_v<float, type1>);
 
+  // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the nested type API.
   using c_type0 = thrust::tuple_element<0, thrust::pair<int, float> const>::type;
+  // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the nested type API.
   using c_type1 = thrust::tuple_element<1, thrust::pair<int, float> const>::type;
   static_assert(std::is_same_v<int const, c_type0>);
   static_assert(std::is_same_v<float const, c_type1>);
 
+  // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the nested type API.
   using v_type0 = thrust::tuple_element<0, thrust::pair<int, float> volatile>::type;
+  // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the nested type API.
   using v_type1 = thrust::tuple_element<1, thrust::pair<int, float> volatile>::type;
   static_assert(std::is_same_v<int volatile, v_type0>);
   static_assert(std::is_same_v<float volatile, v_type1>);
 
+  // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the nested type API.
   using cv_type0 = thrust::tuple_element<0, thrust::pair<int, float> const volatile>::type;
+  // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the nested type API.
   using cv_type1 = thrust::tuple_element<1, thrust::pair<int, float> const volatile>::type;
   static_assert(std::is_same_v<int const volatile, cv_type0>);
   static_assert(std::is_same_v<float const volatile, cv_type1>);
@@ -295,8 +305,10 @@ TEST_CASE("TestPairSwap", "[pair]")
 
   using swappable_pair = thrust::pair<user_swappable, user_swappable>;
 
-  thrust::host_vector<swappable_pair> h_v1(1), h_v2(1);
-  thrust::device_vector<swappable_pair> d_v1(1), d_v2(1);
+  thrust::host_vector<swappable_pair> h_v1(1);
+  thrust::host_vector<swappable_pair> h_v2(1);
+  thrust::device_vector<swappable_pair> d_v1(1);
+  thrust::device_vector<swappable_pair> d_v2(1);
 
   thrust::swap_ranges(h_v1.begin(), h_v1.end(), h_v2.begin());
   thrust::swap_ranges(d_v1.begin(), d_v1.end(), d_v2.begin());

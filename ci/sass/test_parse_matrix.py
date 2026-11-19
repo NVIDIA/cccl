@@ -84,7 +84,9 @@ def test_an_unknown_cxx_is_rejected(matrix) -> None:
 
 def test_the_entry_carries_the_resolved_launch_args() -> None:
     """`launch.sh` is called with these, so the spelling must be exact."""
-    row = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST)["include"][0]
+    row = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST, ["cub", "thrust"])[
+        "include"
+    ][0]
     cuda, host = row["launch_args"].split()[1::2]
     assert row["launch_args"].strip() == f"--cuda {cuda} --host {host}"
     assert cuda[0].isdigit()
@@ -106,7 +108,9 @@ def test_the_row_keys_are_the_workflow_inputs() -> None:
     inputs = workflow[True]["workflow_call"]["inputs"]
     required = {name for name, spec in inputs.items() if spec.get("required")}
 
-    row = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST)["include"][0]
+    row = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST, ["cub", "thrust"])[
+        "include"
+    ][0]
     assert set(row) == required - {"base_ref"}
 
 
@@ -114,8 +118,44 @@ def test_the_filters_reach_the_workflow_as_json() -> None:
     """A matrix value cannot hold a list, so the filters are serialized."""
     import json
 
-    row = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST)["include"][0]
+    row = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST, ["cub", "thrust"])[
+        "include"
+    ][0]
     assert isinstance(json.loads(row["target_filters_json"]), list)
+
+
+def test_each_project_has_its_own_entry() -> None:
+    """The ID names the artifacts and the build directory, so it must be unique."""
+    rows = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST, ["cub", "thrust"])[
+        "include"
+    ]
+    assert [(row["id"], row["project"]) for row in rows] == [
+        ("cub-benchmarks", "cub"),
+        ("thrust-benchmarks", "thrust"),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("projects", "expected_ids"),
+    [
+        (["cub"], ["cub-benchmarks"]),
+        (["thrust"], ["thrust-benchmarks"]),
+        (["cub", "thrust"], ["cub-benchmarks", "thrust-benchmarks"]),
+        ([], []),
+    ],
+)
+def test_projects_select_the_entries(projects, expected_ids) -> None:
+    """The PR workflow passes the projects that the change affects."""
+    rows = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST, projects)["include"]
+    assert [row["id"] for row in rows] == expected_ids
+
+
+def test_projects_without_an_entry_are_ignored() -> None:
+    """`inspect_changes.py` also reports projects that have no SASS comparison."""
+    rows = parse_matrix(MATRIX_PATH, Workflow.PULL_REQUEST, ["libcudacxx", "thrust"])[
+        "include"
+    ]
+    assert [row["id"] for row in rows] == ["thrust-benchmarks"]
 
 
 if __name__ == "__main__":

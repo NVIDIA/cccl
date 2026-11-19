@@ -91,6 +91,11 @@ int main(int, char**)
   test_is_not_arithmetic<__nv_fp8x2_e4m3>();
   test_is_not_arithmetic<__nv_fp8x4_e4m3>();
 #endif // _CCCL_HAS_NVFP8_E4M3
+#if _CCCL_HAS_NVFP8_UE5M3()
+  test_is_arithmetic<__nv_fp8_ue5m3>();
+  test_is_not_arithmetic<__nv_fp8x2_ue5m3>();
+  test_is_not_arithmetic<__nv_fp8x4_ue5m3>();
+#endif // _CCCL_HAS_NVFP8_UE5M3
 #if _CCCL_HAS_NVFP8_E5M2()
   test_is_arithmetic<__nv_fp8_e5m2>();
   test_is_not_arithmetic<__nv_fp8x2_e5m2>();

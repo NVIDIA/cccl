@@ -24,7 +24,6 @@ class _UniqueByKey(Serializable):
     __slots__ = [
         "_bound_build_result",
         "build_results",
-        "loaded_build_result",
         "d_in_keys_cccl",
         "d_in_items_cccl",
         "d_out_keys_cccl",
@@ -111,7 +110,7 @@ class _UniqueByKey(Serializable):
         skipping its re-derivation entirely.
         """
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(
+        loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
         )
 
@@ -136,7 +135,7 @@ class _UniqueByKey(Serializable):
             # TODO: switch to use gpumemoryview once it's ready
             d_temp_storage = get_data_pointer(temp_storage)
 
-        temp_storage_bytes = self.loaded_build_result.compute(
+        temp_storage_bytes = loaded_build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_keys_cccl,

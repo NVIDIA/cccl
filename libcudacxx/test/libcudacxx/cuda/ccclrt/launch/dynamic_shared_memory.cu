@@ -36,7 +36,7 @@ struct TestKernel
   TEST_DEVICE_FUNC void write_smem(T& view)
   {
     view = T{};
-    CCCLRT_REQUIRE_DEVICE(view == T{});
+    REQUIRE_DEVICE(view == T{});
   }
 
   template <cuda::std::size_t N>
@@ -45,7 +45,7 @@ struct TestKernel
     for (cuda::std::size_t i = 0; i < view.size(); ++i)
     {
       view[i] = T{};
-      CCCLRT_REQUIRE_DEVICE(view[i] == T{});
+      REQUIRE_DEVICE(view[i] == T{});
     }
   }
 };
@@ -112,7 +112,7 @@ __global__ void shared_memory_mode_kernel()
 {
   extern __shared__ int shared[];
   shared[0] = 42;
-  CCCLRT_REQUIRE_DEVICE(shared[0] == 42);
+  REQUIRE_DEVICE(shared[0] == 42);
 }
 
 C2H_TEST("Dynamic shared memory preserves the function limit", "[launch]")
@@ -124,7 +124,7 @@ C2H_TEST("Dynamic shared memory preserves the function limit", "[launch]")
 
   cuda::device_ref device = cuda::devices[0];
   cuda::stream stream{device};
-  CUDART(cudaFuncSetAttribute(shared_memory_mode_kernel, cudaFuncAttributeMaxDynamicSharedMemorySize, 0));
+  REQUIRE_CUDART(cudaFuncSetAttribute(shared_memory_mode_kernel, cudaFuncAttributeMaxDynamicSharedMemorySize, 0));
 
   auto dims = cuda::make_hierarchy(cuda::block_dims<1>(), cuda::grid_dims<1>());
   SECTION("Portable shared memory")
@@ -136,7 +136,7 @@ C2H_TEST("Dynamic shared memory preserves the function limit", "[launch]")
   {
     constexpr int num_ints = 13 * 1024;
     int max_shared_memory{};
-    CUDART(cudaDeviceGetAttribute(&max_shared_memory, cudaDevAttrMaxSharedMemoryPerBlockOptin, device.get()));
+    REQUIRE_CUDART(cudaDeviceGetAttribute(&max_shared_memory, cudaDevAttrMaxSharedMemoryPerBlockOptin, device.get()));
     if (static_cast<cuda::std::size_t>(max_shared_memory) < num_ints * sizeof(int))
     {
       SKIP("device does not support the requested non-portable shared memory size");
@@ -147,7 +147,7 @@ C2H_TEST("Dynamic shared memory preserves the function limit", "[launch]")
   stream.sync();
 
   cudaFuncAttributes attributes{};
-  CUDART(cudaFuncGetAttributes(&attributes, shared_memory_mode_kernel));
-  CCCLRT_REQUIRE(attributes.maxDynamicSharedSizeBytes == 0);
+  REQUIRE_CUDART(cudaFuncGetAttributes(&attributes, shared_memory_mode_kernel));
+  REQUIRE(attributes.maxDynamicSharedSizeBytes == 0);
 }
 #endif // _CCCL_CTK_AT_LEAST(13, 2)

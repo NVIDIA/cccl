@@ -647,12 +647,12 @@ def test_unary_transform_with_device_local_array():
     Local arrays are how the heavy transform benchmark emulates register
     pressure; they require a numpy dtype rather than a numba type object.
     """
-    cuda_lang = pytest.importorskip("numba_cuda_mlir.cuda")
+    numba_cuda = pytest.importorskip("numba_cuda_mlir.cuda")
 
     size = 4
 
     def heavy(data):
-        reg = cuda_lang.local.array(shape=size, dtype=np.uint32)
+        reg = numba_cuda.local.array(shape=size, dtype=np.uint32)
         reg[0] = data
         for i in range(1, size):
             x = reg[i - 1]

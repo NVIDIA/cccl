@@ -13,17 +13,21 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/copy.h>
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/nvtx_policy.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/select_system.h>
 
 // Include all active backend system implementations (generic, sequential, host and device)
+// IWYU pragma: begin_keep
 #include <thrust/system/detail/generic/copy.h>
 #include <thrust/system/detail/sequential/copy.h>
 #include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(copy.h)
 #include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(copy.h)
+// IWYU pragma: end_keep
 
 // Some build systems need a hint to know which files we could include
-#if 0
+#if 0 // NOLINT(readability-avoid-unconditional-preprocessor-if)
 #  include <thrust/system/cpp/detail/copy.h>
 #  include <thrust/system/cuda/detail/copy.h>
 #  include <thrust/system/omp/detail/copy.h>
@@ -34,7 +38,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator
+_CCCL_HOST_DEVICE_API OutputIterator
 copy(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
      InputIterator first,
      InputIterator last,
@@ -47,7 +51,7 @@ copy(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator copy_n(
+_CCCL_HOST_DEVICE_API OutputIterator copy_n(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, Size n, OutputIterator result)
 {
   _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<DerivedPolicy>(), "thrust::copy_n");
@@ -59,7 +63,7 @@ namespace detail
 {
 _CCCL_EXEC_CHECK_DISABLE // because we might call e.g. std::ostream_iterator's constructor
 template <typename System1, typename System2, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator two_system_copy(
+_CCCL_HOST_DEVICE_API OutputIterator two_system_copy(
   const thrust::execution_policy<System1>& system1,
   const thrust::execution_policy<System2>& system2,
   InputIterator first,
@@ -80,7 +84,7 @@ _CCCL_HOST_DEVICE OutputIterator two_system_copy(
 
 _CCCL_EXEC_CHECK_DISABLE // because we might call e.g. std::ostream_iterator's constructor
 template <typename System1, typename System2, typename InputIterator, typename Size, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator two_system_copy_n(
+_CCCL_HOST_DEVICE_API OutputIterator two_system_copy_n(
   const thrust::execution_policy<System1>& system1,
   const thrust::execution_policy<System2>& system2,
   InputIterator first,
@@ -101,7 +105,7 @@ _CCCL_HOST_DEVICE OutputIterator two_system_copy_n(
 } // namespace detail
 
 template <typename InputIterator, typename OutputIterator>
-OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result)
+_CCCL_HOST_API OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result)
 {
   using System1 = typename thrust::iterator_system<InputIterator>::type;
   using System2 = typename thrust::iterator_system<OutputIterator>::type;
@@ -117,7 +121,7 @@ OutputIterator copy(InputIterator first, InputIterator last, OutputIterator resu
 } // end copy()
 
 template <typename InputIterator, typename Size, typename OutputIterator>
-OutputIterator copy_n(InputIterator first, Size n, OutputIterator result)
+_CCCL_HOST_API OutputIterator copy_n(InputIterator first, Size n, OutputIterator result)
 {
   using System1 = typename thrust::iterator_system<InputIterator>::type;
   using System2 = typename thrust::iterator_system<OutputIterator>::type;

@@ -41,14 +41,13 @@ gh api --paginate --slurp \
               or .conclusion == "startup_failure"
               or .conclusion == "action_required"
             ))
-          | map({id, name, conclusion, check_run_url, annotations: []})
+          | map({id, name, conclusion, check_run_url, annotations: [], log_path: ""})
         end
     ' \
     > "${output_dir}/jobs.json"
 
 mapfile -t failed_jobs < <(jq -r '.[] | [.id, .check_run_url] | @tsv' "${output_dir}/jobs.json")
 
-collected_log_count=0
 for failed_job in "${failed_jobs[@]}"; do
   IFS=$'\t' read -r job_id check_run_url <<< "${failed_job}"
 
@@ -83,18 +82,15 @@ for failed_job in "${failed_jobs[@]}"; do
     echo "::warning::GitHub returned an empty log for job ${job_id}; continuing with job metadata."
     rm -f "${log_path}"
   else
-    collected_log_count=$((collected_log_count + 1))
+    jq \
+      --argjson job_id "${job_id}" \
+      --arg log_path "${log_path}" \
+      'map(if .id == $job_id then .log_path = $log_path else . end)' \
+      "${output_dir}/jobs.json" > "${output_dir}/jobs.json.tmp"
+    mv "${output_dir}/jobs.json.tmp" "${output_dir}/jobs.json"
   fi
 done
 
 jq 'map(del(.check_run_url))' \
   "${output_dir}/jobs.json" > "${output_dir}/jobs.json.tmp"
 mv "${output_dir}/jobs.json.tmp" "${output_dir}/jobs.json"
-
-collected_annotation_count="$(jq '[.[].annotations[]] | length' "${output_dir}/jobs.json")"
-if (( ${#failed_jobs[@]} > 0 \
-  && collected_log_count == 0 \
-  && collected_annotation_count == 0 )); then
-  echo "::error::Unable to collect logs or failure annotations for any failed workflow jobs."
-  exit 1
-fi

@@ -41,7 +41,8 @@ $repoRoot = Get-RepoRoot
 $wheelPath = Get-OnePathMatch -Path (Join-Path $repoRoot 'wheelhouse') -Pattern '^cuda_cccl-.*\.whl' -File
 
 # pytest-benchmark is for the host-benchmark smoke test below.
-Invoke-Checked { & $python -m pip install -U pip pytest pytest-xdist pytest-benchmark } "Failed to install pytest / pytest-xdist / pytest-benchmark"
+# pytest-benchmark < 5.3.1 fails with pytest >= 9.2 (Function._nodeid removal, ionelmc/pytest-benchmark#321)
+Invoke-Checked { & $python -m pip install -U pip pytest pytest-xdist "pytest-benchmark>=5.3.1" } "Failed to install pytest / pytest-xdist / pytest-benchmark"
 # CuPy is required by the cuda.compute examples and is not part of the test extras.
 # It resolves curand/cublas/... through cuda-pathfinder at first use and nothing
 # else installs them, so request its own `ctk` extra on the pip-toolkit lanes.

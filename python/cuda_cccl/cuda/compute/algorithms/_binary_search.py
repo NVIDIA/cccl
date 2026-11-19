@@ -47,7 +47,6 @@ class _BinarySearch:
     __slots__ = [
         "_bound_build_result",
         "build_results",
-        "loaded_build_result",
         "d_data_cccl",
         "d_values_cccl",
         "d_out_cccl",
@@ -140,7 +139,7 @@ class _BinarySearch:
         (re)set it to ``OpKind.LESS``.
         """
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(
+        loaded_build_result = cccl.resolve_build_result(
             self.build_results, self._bound_build_result
         )
 
@@ -156,7 +155,7 @@ class _BinarySearch:
             )
 
         stream_handle = protocols.validate_and_get_stream(stream)
-        self.loaded_build_result.compute(
+        loaded_build_result.compute(
             self.d_data_cccl,
             num_items,
             self.d_values_cccl,

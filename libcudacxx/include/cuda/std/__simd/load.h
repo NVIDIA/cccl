@@ -42,6 +42,8 @@
 #include <cuda/std/__simd/flag.h>
 #include <cuda/std/__simd/utility.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_volatile.h>
+#include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/forward.h>
@@ -53,23 +55,24 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 // [simd.loadstore] helper: resolves default V template parameter for load functions
 // When _Vp = void (default), resolves to basic_vec<_Up>; otherwise uses the explicit _Vp
 template <typename _Vp, typename _Up>
-using __load_vec_t = conditional_t<is_void_v<_Vp>, basic_vec<_Up>, _Vp>;
+using __load_vec_t _CCCL_NODEBUG = conditional_t<is_void_v<_Vp>, basic_vec<_Up>, _Vp>;
 
 template <typename _Result, typename _Up, typename... _Flags>
 _CCCL_HOST_DEVICE_API constexpr void
 __check_load_preconditions(const _Up* __ptr, flags<_Flags...>, const __simd_size_type __count = 1) noexcept
 {
-  using __value_t = typename _Result::value_type;
+  using __value_t       = typename _Result::value_type;
+  using __range_value_t = remove_cv_t<_Up>;
   static_assert(same_as<remove_cvref_t<_Result>, _Result>, "V must not be a reference or cv-qualified type");
 
-  static_assert(__is_vectorizable_v<__value_t> && __is_enabled_abi_v<typename _Result::abi_type>,
+  static_assert(__is_enabled_vec_v<__value_t, typename _Result::abi_type>,
                 "cuda::std::simd::load: V must be an enabled specialization of basic_vec");
-  static_assert(__is_vectorizable_v<_Up>, "range_value_t<R> must be a vectorizable type");
+  static_assert(__is_vectorizable_v<__range_value_t>, "range_value_t<R> must be a vectorizable type");
 
-  static_assert(__explicitly_convertible_to<_Up, __value_t>,
+  static_assert(__explicitly_convertible_to<__range_value_t, __value_t>,
                 "cuda::std::simd::load: range_value_t<R> must satisfy explicitly-convertible-to<value_type>");
 
-  static_assert(__has_convert_flag_v<_Flags...> || __is_value_preserving_v<_Up, __value_t>,
+  static_assert(__has_convert_flag_v<_Flags...> || __is_value_preserving_v<__range_value_t, __value_t>,
                 "cuda::std::simd::load: Conversion from range_value_t<R> to value_type is not value-preserving; use "
                 "flag_convert");
 
@@ -106,13 +109,14 @@ __full_load_from_ptr(const _Up* __ptr, const typename _Result::mask_type& __mask
   ::cuda::std::simd::__check_load_preconditions<_Result>(__ptr, __flags);
   constexpr bool __has_aligned_flag = __has_aligned_flag_v<_Flags...>;
 
-  if constexpr (__has_aligned_flag || __has_overaligned_flag_v<_Flags...>)
+  // Volatile loads must access only selected lanes, including with alignment flags.
+  if constexpr (!is_volatile_v<_Up> && (__has_aligned_flag || __has_overaligned_flag_v<_Flags...>) )
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
       // minimum condition for pointer alignment
       constexpr auto __base_alignment = __has_aligned_flag ? alignment_v<_Result, _Up> : alignof(_Up);
-      constexpr auto __ptr_alignment  = ::cuda::std::max(__base_alignment, __overaligned_value_v<_Flags...>);
+      constexpr auto __ptr_alignment  = ::cuda::std::max(__base_alignment, __overaligned_alignment_v<_Flags...>);
       constexpr auto __simd_size      = _Result::__size;
       constexpr auto __data_size      = __simd_size * sizeof(_Up);
 

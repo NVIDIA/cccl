@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/referenceable.h>
+#include <cuda/std/__concepts/referenceable.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

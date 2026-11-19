@@ -11,6 +11,7 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/optional>
 #include <cuda/stream>
 #include <cuda/type_traits>
 
@@ -114,11 +115,7 @@ __device__ void test_type(const Config& config)
 
   // Test non-exhaustive groups.
   if (auto g = cudax::coop::make_group<cudax::coop::generic_group>(
-        cudax::coop::non_exhaustive,
-        cuda::gpu_thread,
-        warp,
-        cudax::coop::group_by{cudax::coop::non_exhaustive, 3},
-        cudax::coop::lane_synchronizer{}))
+        cudax::coop::non_exhaustive, cuda::gpu_thread, warp, cudax::coop::group_by{3}, cudax::coop::lane_synchronizer{}))
   {
     test_group<T>(*g);
   }

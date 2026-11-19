@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/util_device.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
@@ -21,7 +22,7 @@
 //! catch2_test_launch_helper.h to verify that CUB device-scope algorithms use the stream and (optionally)
 //! only the kernels provided through their environment.
 
-struct get_allowed_kernels_t
+struct get_allowed_kernels_t : cuda::std::execution::__basic_query<get_allowed_kernels_t>
 {};
 
 [[nodiscard]] inline _CCCL_API cuda::std::execution::prop<get_allowed_kernels_t, cuda::std::span<void*>>
@@ -104,7 +105,7 @@ struct stream_registry_factory_t
 
   template <typename Kernel>
   CUB_RUNTIME_FUNCTION cudaError_t
-  MaxSmOccupancy(int& sm_occupancy, Kernel kernel_ptr, int block_size, int dynamic_smem_bytes = 0)
+  MaxSmOccupancy(int& sm_occupancy, Kernel kernel_ptr, int block_size, int dynamic_smem_bytes = 0) const
   {
     return cudaOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, kernel_ptr, block_size, dynamic_smem_bytes);
   }

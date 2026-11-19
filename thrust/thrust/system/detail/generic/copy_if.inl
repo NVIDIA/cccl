@@ -13,10 +13,9 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/copy_if.h>
+#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/internal_functional.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/detail/type_traits.h>
-#include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/scan.h>
 #include <thrust/scatter.h>
@@ -39,7 +38,7 @@ template <typename IndexType,
           typename InputIterator2,
           typename OutputIterator,
           typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator copy_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -75,7 +74,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
 } // end namespace detail
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator copy_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -94,7 +93,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator,
           typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if(
+_CCCL_HOST_DEVICE_API OutputIterator copy_if(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -117,7 +116,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
   ::cuda::std::make_unsigned_t<difference_type> unsigned_n(n);
 
   // use 32-bit indices when possible (almost always)
-  if (sizeof(difference_type) > sizeof(unsigned int) && unsigned_n > ::cuda::std::numeric_limits<unsigned int>::max())
+  if (sizeof(difference_type) > sizeof(unsigned int) && unsigned_n > (::cuda::std::numeric_limits<unsigned int>::max)())
   {
     result = detail::copy_if<difference_type>(exec, first, last, stencil, result, pred);
   } // end if

@@ -31,11 +31,11 @@ template <size_t _Ep, size_t _Sp = 0>
 struct __make_tuple_indices
 {
   static_assert(_Sp <= _Ep, "__make_tuple_indices input error");
-  using type = __make_indices_imp<_Ep, _Sp>;
+  using type _CCCL_NODEBUG = __make_indices_imp<_Ep, _Sp>;
 };
 
 template <size_t _Ep, size_t _Sp = 0>
-using __make_tuple_indices_t = typename __make_tuple_indices<_Ep, _Sp>::type;
+using __make_tuple_indices_t _CCCL_NODEBUG = typename __make_tuple_indices<_Ep, _Sp>::type;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

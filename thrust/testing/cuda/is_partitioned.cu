@@ -67,7 +67,7 @@ TEST_CASE("TestIsPartitionedCudaStreams", "[is_partitioned]")
   v[3] = 0;
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   // empty partition
   REQUIRE(thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.begin(), ::cuda::std::identity{}));
@@ -92,7 +92,7 @@ TEST_CASE("TestIsPartitionedCudaStreams", "[is_partitioned]")
   // not partitioned
   REQUIRE_FALSE(thrust::is_partitioned(thrust::cuda::par.on(s), v.begin(), v.end(), ::cuda::std::identity{}));
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 template <typename T>

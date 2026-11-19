@@ -22,13 +22,14 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic::scalar
 {
 template <typename RandomAccessIterator, typename Size, typename T, typename BinaryPredicate>
-_CCCL_HOST_DEVICE RandomAccessIterator
+_CCCL_HOST_DEVICE_API RandomAccessIterator
 lower_bound_n(RandomAccessIterator first, Size n, const T& val, BinaryPredicate comp)
 {
   // wrap comp
   const thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
 
-  Size start = 0, i;
+  Size start = 0;
+  Size i;
   while (start < n)
   {
     i = start + (n - start) / 2; // Overflow-safe variant of (a+b)/2
@@ -48,7 +49,7 @@ lower_bound_n(RandomAccessIterator first, Size n, const T& val, BinaryPredicate 
 // XXX generalize these upon implementation of scalar::distance & scalar::advance
 
 template <typename RandomAccessIterator, typename T, typename BinaryPredicate>
-_CCCL_HOST_DEVICE RandomAccessIterator
+_CCCL_HOST_DEVICE_API RandomAccessIterator
 lower_bound(RandomAccessIterator first, RandomAccessIterator last, const T& val, BinaryPredicate comp)
 {
   const thrust::detail::it_difference_t<RandomAccessIterator> n = last - first;
@@ -56,13 +57,14 @@ lower_bound(RandomAccessIterator first, RandomAccessIterator last, const T& val,
 }
 
 template <typename RandomAccessIterator, typename Size, typename T, typename BinaryPredicate>
-_CCCL_HOST_DEVICE RandomAccessIterator
+_CCCL_HOST_DEVICE_API RandomAccessIterator
 upper_bound_n(RandomAccessIterator first, Size n, const T& val, BinaryPredicate comp)
 {
   // wrap comp
   const thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
 
-  Size start = 0, i;
+  Size start = 0;
+  Size i;
   while (start < n)
   {
     i = start + (n - start) / 2; // Overflow-safe variant of (a+b)/2
@@ -80,7 +82,7 @@ upper_bound_n(RandomAccessIterator first, Size n, const T& val, BinaryPredicate 
 }
 
 template <typename RandomAccessIterator, typename T, typename BinaryPredicate>
-_CCCL_HOST_DEVICE RandomAccessIterator
+_CCCL_HOST_DEVICE_API RandomAccessIterator
 upper_bound(RandomAccessIterator first, RandomAccessIterator last, const T& val, BinaryPredicate comp)
 {
   const thrust::detail::it_difference_t<RandomAccessIterator> n = last - first;
@@ -88,7 +90,7 @@ upper_bound(RandomAccessIterator first, RandomAccessIterator last, const T& val,
 }
 
 template <typename RandomAccessIterator, typename T, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ::cuda::std::pair<RandomAccessIterator, RandomAccessIterator>
+_CCCL_HOST_DEVICE_API ::cuda::std::pair<RandomAccessIterator, RandomAccessIterator>
 equal_range(RandomAccessIterator first, RandomAccessIterator last, const T& val, BinaryPredicate comp)
 {
   RandomAccessIterator lb = thrust::system::detail::generic::scalar::lower_bound(first, last, val, comp);
@@ -96,7 +98,8 @@ equal_range(RandomAccessIterator first, RandomAccessIterator last, const T& val,
 }
 
 template <typename RandomAccessIterator, typename T, typename Compare>
-_CCCL_HOST_DEVICE bool binary_search(RandomAccessIterator first, RandomAccessIterator last, const T& value, Compare comp)
+_CCCL_HOST_DEVICE_API bool
+binary_search(RandomAccessIterator first, RandomAccessIterator last, const T& value, Compare comp)
 {
   RandomAccessIterator iter = thrust::system::detail::generic::scalar::lower_bound(first, last, value, comp);
 
@@ -108,5 +111,3 @@ _CCCL_HOST_DEVICE bool binary_search(RandomAccessIterator first, RandomAccessIte
 } // namespace system::detail::generic::scalar
 
 THRUST_NAMESPACE_END
-
-#include <thrust/system/detail/generic/scalar/binary_search.inl>

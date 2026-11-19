@@ -173,7 +173,7 @@ struct TestKernel
           cudax::coop::non_exhaustive,
           cuda::gpu_thread,
           warp,
-          cudax::coop::group_by{cudax::coop::non_exhaustive, 3},
+          cudax::coop::group_by{3},
           cudax::coop::lane_synchronizer{}))
     {
       test_group(*g);

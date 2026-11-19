@@ -41,13 +41,13 @@ class _Scan(Serializable):
     __slots__ = [
         "_bound_build_result",
         "build_results",
-        "loaded_build_result",
         "d_in_cccl",
         "d_out_cccl",
         "init_value_cccl",
         "op_cccl",
         "init_kind",
         "force_inclusive",
+        "loaded_build_result",
         "device_scan_fn",
         # Perf cache; see _Reduce.__slots__ for rationale. init_value isn't
         # cached this way -- same reason h_init isn't: it's mutable.

@@ -45,7 +45,7 @@ struct SyncHandler
   int mNumOwningThreads[mMaxNumResources][mMaxNumPhases]{};
   ::cuda::std::uint64_t* mPtrBar[mMaxNumResources][mMaxNumPhases]{};
 
-  constexpr SyncHandler() = default;
+  _CCCL_HIDE_FROM_ABI constexpr SyncHandler() = default;
 
   // we need constant destruction for the host side single stage SMEM amount, which is only possible in C++20
 #if _CCCL_STD_VER >= 2020

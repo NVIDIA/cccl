@@ -22,8 +22,8 @@
 
 #if _CCCL_CTK_AT_LEAST(12, 9)
 using property_test_types =
-  c2h::type_list<cuda::buffer<int, cuda::mr::host_accessible>,
-                 cuda::buffer<int, cuda::mr::device_accessible>,
+  c2h::type_list<cuda::host_buffer<int>,
+                 cuda::device_buffer<int>,
                  cuda::buffer<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
 #else // ^^^ _CCCL_CTK_AT_LEAST(12, 9) ^^^ / vvv _CCCL_CTK_BELOW(12, 9) vvv
 using property_test_types = c2h::type_list<cuda::buffer<int, cuda::mr::device_accessible>>;

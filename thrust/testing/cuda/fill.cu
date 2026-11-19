@@ -176,31 +176,31 @@ TEST_CASE("TestFillCudaStreams", "[fill]")
   thrust::device_vector<int> v{0, 1, 2, 3, 4};
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   thrust::fill(thrust::cuda::par.on(s), v.begin() + 1, v.begin() + 4, 7);
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   thrust::device_vector<int> ref{0, 7, 7, 7, 4};
   REQUIRE(v == ref);
 
   thrust::fill(thrust::cuda::par.on(s), v.begin() + 0, v.begin() + 3, 8);
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   ref = {8, 8, 8, 7, 4};
   REQUIRE(v == ref);
 
   thrust::fill(thrust::cuda::par.on(s), v.begin() + 2, v.end(), 9);
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   ref = {8, 8, 9, 9, 9};
   REQUIRE(v == ref);
 
   thrust::fill(thrust::cuda::par.on(s), v.begin(), v.end(), 1);
-  cudaStreamSynchronize(s);
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
 
   ref = {1, 1, 1, 1, 1};
   REQUIRE(v == ref);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }

@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/execution_policy.h>
 #include <thrust/for_each.h>
 
 #include <cuda/std/__utility/forward.h>
@@ -26,7 +27,7 @@ struct generate_functor
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T>
-  _CCCL_HOST_DEVICE void operator()(T&& x)
+  _CCCL_HOST_DEVICE_API void operator()(T&& x)
   {
     ::cuda::std::forward<T>(x) = gen();
   }
@@ -35,14 +36,14 @@ struct generate_functor
 };
 
 template <typename ExecutionPolicy, typename ForwardIterator, typename Generator>
-_CCCL_HOST_DEVICE void
+_CCCL_HOST_DEVICE_API void
 generate(execution_policy<ExecutionPolicy>& exec, ForwardIterator first, ForwardIterator last, Generator gen)
 {
   thrust::for_each(exec, first, last, generate_functor<Generator>{::cuda::std::move(gen)});
 }
 
 template <typename ExecutionPolicy, typename OutputIterator, typename Size, typename Generator>
-_CCCL_HOST_DEVICE OutputIterator
+_CCCL_HOST_DEVICE_API OutputIterator
 generate_n(execution_policy<ExecutionPolicy>& exec, OutputIterator first, Size n, Generator gen)
 {
   return thrust::for_each_n(exec, first, n, generate_functor<Generator>{::cuda::std::move(gen)});

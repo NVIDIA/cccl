@@ -281,7 +281,7 @@ MULTI_GPU_TEST("segmented_reduce, segment lengths differ across ranks", value_ty
   for (int r = 0; r < comms.front().size(); ++r)
   {
     const std::vector<offset_type> segment_sizes{
-      static_cast<offset_type>(r + 1), static_cast<offset_type>(2 * r + 3), static_cast<offset_type>(r + 5)};
+      static_cast<offset_type>(r + 1), static_cast<offset_type>((2 * r) + 3), static_cast<offset_type>(r + 5)};
 
     fill_random(
       values_by_rank.emplace_back(),

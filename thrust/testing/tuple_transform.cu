@@ -17,7 +17,7 @@ template <int N>
 struct GetFunctor
 {
   template <typename Tuple>
-  _CCCL_HOST_DEVICE typename cuda::std::tuple_element<N, Tuple>::type operator()(const Tuple& t)
+  _CCCL_HOST_DEVICE cuda::std::tuple_element_t<N, Tuple> operator()(const Tuple& t)
   {
     return cuda::std::get<N>(t);
   }
@@ -38,7 +38,8 @@ struct TestTupleTransform
     // copy to device
     thrust::device_vector<cuda::std::tuple<T, T>> d_tuples = h_tuples;
 
-    thrust::device_vector<T> d_t1(n), d_t2(n);
+    thrust::device_vector<T> d_t1(n);
+    thrust::device_vector<T> d_t2(n);
 
     // select 0th
     thrust::transform(d_tuples.begin(), d_tuples.end(), d_t1.begin(), GetFunctor<0>());

@@ -24,7 +24,9 @@ The function computes the integer ``base`` raised to the power of ``exp``.
 
 **Return value**
 
-- The result of raising ``base`` to the power of ``exp``. If ``exp`` is negative, the result is 0.
+- The result of raising ``base`` to the power of ``exp``.
+- If ``exp`` is 0 or ``base`` is 1, the result is 1.
+- Otherwise, if ``exp`` is negative, the result is 0.
 
 **Constraints**
 
@@ -49,6 +51,7 @@ Example
         assert(cuda::ipow(99, 1) == 99);
         assert(cuda::ipow(4, 7) == 16384);
         assert(cuda::ipow(-1, 3) == -1);
+        assert(cuda::ipow(1, -1) == 1);
         assert(cuda::ipow(23, -1) == 0);
     }
 

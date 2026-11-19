@@ -521,10 +521,9 @@ Internally, ``cuda.compute`` separates two kinds of cached state:
   for that cc, carrying the device-independent compiled payload described in
   `Build results and device state`_. They are cached by ``cache_build_results``
   and may be shared by wrapper objects in different Python threads — and, for
-  default builds, across same-cc devices (except on the v2 HostJIT backend
-  today; see `Device keying`_). Each device's loaded result is tracked
-  separately within the entry, so sharing an entry never shares device-specific
-  state.
+  default builds, across same-cc devices (see `Device keying`_). Each device's
+  loaded result is tracked separately within the entry, so sharing an entry
+  never shares device-specific state.
 
 The normal cache-hit path is intentionally cheap. A wrapper-cache hit is
 thread-local and does not consult the process-wide build-result cache. When a
@@ -535,12 +534,16 @@ when the wrapper is constructed. A default build already knows its device — th
 wrapper cache queried it to build and keys the wrapper to it — so the wrapper
 resolves that device's loaded result once at construction and stores a direct
 reference; executing it then needs no current-device query and no shared-cache
-lookup. An explicit AOT or deserialized wrapper has no such binding — an AOT
-build targets compute capabilities with no GPU queried, and a deserialized
-wrapper is reconstructed without a device binding — so its device is known only
-at call time. Each call resolves the per-device loaded result from a dictionary
-inside the per-cc build results, where a completed lookup also takes no explicit
-lock.
+lookup. An explicit AOT build or ``deserialize(..., device_id=None)`` leaves
+its wrapper unbound, so its device is known only at call time. Each call resolves
+the per-device loaded result from a dictionary inside the per-cc build results,
+where a completed lookup also takes no explicit lock.
+``clone(device_id=...)`` copies per-call descriptors recursively while
+sharing ``_PerCCBuildResults``. An integer selects the bound fast path;
+``None`` clears bindings without device queries or code loading, deferring
+device resolution to each call. The source wrapper is unchanged.
+``deserialize(..., device_id=ordinal)`` binds the newly decoded wrapper in place,
+avoiding the extra descriptor copy of deserializing and then cloning.
 
 Design requirements
 +++++++++++++++++++
@@ -625,9 +628,7 @@ the entry loads the canonical result in place; each additional same-cc device
 loads its own clone of the compiled payload through serialization (serialize,
 deserialize without loading, then load on the new device) instead of running
 a full native compilation, and the clone re-validates the payload against the
-current device. When the backend cannot serialize build results (the v2 HostJIT
-backend today), sharing is not possible, so default builds are keyed per device
-ordinal instead and each device builds its own entry.
+current device.
 
 Explicit AOT builds cannot include a device ordinal in their compilation key —
 they build with no GPU queried — so their canonical results are shared

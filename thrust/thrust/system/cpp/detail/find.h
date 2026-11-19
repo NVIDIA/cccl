@@ -14,4 +14,4 @@
 #endif // no system header
 
 // this system inherits find
-#include <thrust/system/detail/sequential/find.h>
+#include <thrust/system/detail/sequential/find.h> // IWYU pragma: export

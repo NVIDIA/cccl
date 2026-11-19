@@ -9,8 +9,6 @@
 #include <thrust/functional.h>
 #include <thrust/memory.h>
 #include <thrust/scatter.h>
-#include <thrust/system/cuda/error.h>
-#include <thrust/system_error.h>
 #include <thrust/transform.h>
 
 #include <cuda/iterator>
@@ -19,13 +17,13 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
-#include <new> // bad_alloc
 #include <string>
 
 #include "catch2_large_array_sort_helper.cuh"
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 #include <c2h/extended_types.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -481,17 +479,9 @@ void do_large_offset_test(std::size_t num_items)
 
     arrays.verify_unstable_key_sort(num_items, is_descending, sorted_keys);
   }
-  catch (const std::bad_alloc&)
+  catch (...)
   {
-    SKIP(allocation_failure_message);
-  }
-  catch (const thrust::system_error& e)
-  {
-    if (e.code() != thrust::system::error_code{cudaErrorMemoryAllocation, thrust::cuda_category()})
-    {
-      throw;
-    }
-    SKIP(allocation_failure_message);
+    c2h::skip_if_allocation_failure(allocation_failure_message);
   }
 }
 

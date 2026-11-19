@@ -9,11 +9,16 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/atomic>
+#include <cuda/barrier>
 #include <cuda/devices>
 #include <cuda/functional>
 #include <cuda/hierarchy>
 #include <cuda/launch>
-#include <cuda/std/algorithm>
+#include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
+#include <cuda/std/functional>
+#include <cuda/std/limits>
+#include <cuda/std/numeric>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 
@@ -30,7 +35,7 @@
 inline constexpr int nwarps_in_group     = 3;
 inline constexpr int warp_size           = 32;
 inline constexpr int multi_group_count   = 2;
-inline constexpr int multi_group_nwarps  = multi_group_count * nwarps_in_group + 1;
+inline constexpr int multi_group_nwarps  = (multi_group_count * nwarps_in_group) + 1;
 inline constexpr int multi_group_size    = multi_group_nwarps * warp_size;
 inline constexpr int multi_group_repeats = 16;
 inline constexpr int threads_in_group    = nwarps_in_group * warp_size;
@@ -60,8 +65,7 @@ struct ReduceKernel
       cudax::coop::non_exhaustive,
       cuda::warp,
       block,
-      cudax::coop::group_by{cudax::coop::non_exhaustive,
-                            cuda::std::integral_constant<cuda::std::size_t, nwarps_in_group>{}},
+      cudax::coop::group_by{cuda::std::integral_constant<cuda::std::size_t, nwarps_in_group>{}},
       cudax::coop::barrier_synchronizer{barriers});
 
     // All threads that are not part of the groups should exit early.
@@ -110,7 +114,7 @@ __device__ void run_multi_group_reductions(const Group& group, const Block& bloc
     if constexpr (Broadcasted)
     {
       const auto result = cudax::coop::reduce(cudax::broadcasted, group, thread_data, cuda::std::plus<>{});
-      d_out[repeat * stride + thread_rank] = result;
+      d_out[(repeat * stride) + thread_rank] = result;
     }
     else
     {
@@ -118,7 +122,7 @@ __device__ void run_multi_group_reductions(const Group& group, const Block& bloc
       REQUIRE(result.has_value() == cuda::gpu_thread.is_root_rank(group));
       if (result.has_value())
       {
-        d_out[repeat * stride + group_rank] = *result;
+        d_out[(repeat * stride) + group_rank] = *result;
       }
     }
   }
@@ -142,8 +146,7 @@ struct MultiGroupReduceKernel
       cudax::coop::non_exhaustive,
       cuda::warp,
       block,
-      cudax::coop::group_by{cudax::coop::non_exhaustive,
-                            cuda::std::integral_constant<cuda::std::size_t, nwarps_in_group>{}},
+      cudax::coop::group_by{cuda::std::integral_constant<cuda::std::size_t, nwarps_in_group>{}},
       cudax::coop::barrier_synchronizer{barriers});
 
     if (!parent.has_value())
@@ -273,12 +276,12 @@ void run_multi_group_reduce_kernel(cuda::stream_ref stream)
       {
         for (int rank = 0; rank < threads_in_group; ++rank)
         {
-          REQUIRE(h_out[repeat * stride + group_rank * threads_in_group + rank] == expected);
+          REQUIRE(h_out[(repeat * stride) + (group_rank * threads_in_group) + rank] == expected);
         }
       }
       else
       {
-        REQUIRE(h_out[repeat * stride + group_rank] == expected);
+        REQUIRE(h_out[(repeat * stride) + group_rank] == expected);
       }
     }
 
@@ -286,7 +289,7 @@ void run_multi_group_reduce_kernel(cuda::stream_ref stream)
     {
       for (int rank = multi_group_count * threads_in_group; rank < multi_group_size; ++rank)
       {
-        REQUIRE(h_out[repeat * stride + rank] == -1);
+        REQUIRE(h_out[(repeat * stride) + rank] == -1);
       }
     }
   }

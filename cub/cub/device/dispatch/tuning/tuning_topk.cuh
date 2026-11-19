@@ -15,15 +15,18 @@
 
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
-#include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/concepts>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/util_device.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 namespace detail::topk
@@ -45,7 +48,7 @@ _CCCL_HOST_DEVICE_API constexpr int calc_bits_per_pass(int key_size)
 template <class KeyT>
 _CCCL_HOST_DEVICE_API constexpr int calc_bits_per_pass()
 {
-  return calc_bits_per_pass(int{sizeof(KeyT)});
+  return _CUB::detail::topk::calc_bits_per_pass(int{sizeof(KeyT)});
 }
 
 struct topk_policy
@@ -69,7 +72,7 @@ struct topk_policy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const topk_policy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const topk_policy& p)
   {
     return os << "topk_policy { .threads_per_block = " << p.threads_per_block
               << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
@@ -94,7 +97,7 @@ struct policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
   {
     constexpr int nominal_4b_items_per_thread = 4;
-    const int bits_per_pass                   = calc_bits_per_pass(key_size);
+    const int bits_per_pass                   = _CUB::detail::topk::calc_bits_per_pass(key_size);
 
     // tunings from cub/benchmarks/bench/topk/keys.cu. These are raw measured values; items_per_thread already
     // accounts for the key size. Only configurations that won for their exact key type and offset width during
@@ -129,7 +132,7 @@ struct policy_selector
     if (cc >= ::cuda::compute_capability{9, 0})
     {
       // Try to load 16 bytes per thread: int64 -> 2, int32 -> 4, int16 -> 8.
-      const int items_per_thread = ::cuda::std::max(1, nominal_4b_items_per_thread * 4 / key_size);
+      const int items_per_thread = (::cuda::std::max) (1, nominal_4b_items_per_thread * 4 / key_size);
       return topk_policy{512, items_per_thread, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS, bits_per_pass};
     }
 

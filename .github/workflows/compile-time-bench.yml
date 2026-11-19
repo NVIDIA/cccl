@@ -67,6 +67,7 @@ on:
 jobs:
   run:
     name: "Compile-time: ${{ inputs.name }}"
+    if: ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) }}
     runs-on: linux-amd64-gpu-${{ inputs.gpu }}-latest-1
     permissions:
       id-token: write
@@ -79,6 +80,7 @@ jobs:
           persist-credentials: false
 
       - name: Get AWS credentials for sccache bucket
+        if: ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) }}
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
@@ -213,6 +215,8 @@ jobs:
           } >> "${GITHUB_OUTPUT}"
 
           rc=0
+          # These strings intentionally contain multiple launch arguments.
+          # shellcheck disable=SC2086
           .devcontainer/launch.sh \
             -d ${LAUNCH_ARGS} ${GPU_ARGS} \
             --env "AWS_ROLE_ARN=" \
@@ -338,7 +342,7 @@ jobs:
     needs: run
     # Temporarily disable posting compile-time results to pull requests.
     if: ${{ false && always() && inputs.comment == 'true' && inputs.pr_number != '' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       actions: read
       pull-requests: write

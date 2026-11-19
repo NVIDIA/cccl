@@ -60,7 +60,7 @@ inline constexpr bool __tuple_like_with_size = false;
 
 template <class _Tuple, size_t _ExpectedSize>
 inline constexpr bool __tuple_like_with_size<_Tuple, _ExpectedSize, true> =
-  _ExpectedSize == tuple_size<remove_cvref_t<_Tuple>>::value;
+  _ExpectedSize == tuple_size_v<remove_cvref_t<_Tuple>>;
 
 template <class... _Types>
 struct __tuple_constraints;
@@ -204,14 +204,10 @@ struct __tuple_constraints
         // [tuple#cnstr]-29.5: either sizeof...(Types) is not 1, or is_constructible_v<T, _UTuple> are false
         return false;
       }
-      else if constexpr (is_convertible_v<_UTuple, _T0>)
+      else
       { // [tuple#cnstr]-21.3: either sizeof...(Types) is not 1, or is_convertible_v<_UTuple, T> are false
         // [tuple#cnstr]-29.5: either sizeof...(Types) is not 1, or is_convertible_v<_UTuple, T> are false
-        return false;
-      }
-      else
-      {
-        return true;
+        return !is_convertible_v<_UTuple, _T0>;
       }
     }
     else

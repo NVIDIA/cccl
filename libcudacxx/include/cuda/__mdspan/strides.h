@@ -81,7 +81,7 @@ private:
     ::cuda::std::is_convertible_v<const _OtherIndexType&, offset_type>
     && ::cuda::std::is_nothrow_constructible_v<offset_type, const _OtherIndexType&>;
 
-  using _Values =
+  using _Values _CCCL_NODEBUG =
     ::cuda::std::__mdspan_detail::__maybe_static_array<_OffsetType, ::cuda::std::ptrdiff_t, dynamic_stride, _Strides...>;
 
 public:

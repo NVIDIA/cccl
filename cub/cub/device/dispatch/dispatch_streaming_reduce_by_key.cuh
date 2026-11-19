@@ -13,23 +13,30 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_reduce_by_key.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
-#include <cub/device/dispatch/dispatch_common.cuh>
+#include <cub/detail/non_void_value.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
+#include <cub/util_temporary_storage.cuh>
 #include <cub/util_vsmem.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
-
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__tuple_dir/tie.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -54,9 +61,7 @@ template <typename KeysInputIteratorT,
           typename OffsetT,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, it_value_t<ValuesInputIteratorT>>,
           typename PolicySelector =
-            policy_selector_from_types<ReductionOpT,
-                                       AccumT,
-                                       non_void_value_t<UniqueOutputIteratorT, it_value_t<KeysInputIteratorT>>>,
+            policy_selector_from_types<AccumT, non_void_value_t<UniqueOutputIteratorT, it_value_t<KeysInputIteratorT>>>,
           typename KernelSource = reduce_by_key_kernel_source>
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_by_key_policy_selector<PolicySelector>
@@ -77,19 +82,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
   [[maybe_unused]] KernelSource kernel_source = {})
 {
   ::cuda::compute_capability cc{};
-  if (const auto error = CubDebug(ptx_compute_cap(cc)))
+  if (const auto error = CubDebug(_CUB::detail::ptx_compute_cap(cc)))
   {
     return error;
   }
 
   const ReduceByKeyPolicy policy = policy_selector(cc);
 
-  detail::log_dispatch("DeviceReduce (by key, streaming)", cc, policy);
+  _CUB::detail::log_dispatch("DeviceReduce (by key, streaming)", cc, policy);
 
   using local_offset_t  = ::cuda::std::int32_t;
   using global_offset_t = OffsetT;
   static constexpr bool use_streaming_invocation =
-    ::cuda::std::numeric_limits<OffsetT>::max() > ::cuda::std::numeric_limits<local_offset_t>::max();
+    (::cuda::std::numeric_limits<OffsetT>::max)() > (::cuda::std::numeric_limits<local_offset_t>::max)();
   using streaming_context_t = ::cuda::std::
     conditional_t<use_streaming_invocation, streaming_context<KeysInputIteratorT, AccumT, global_offset_t>, NullType>;
   using ScanTileStateT                                      = ReduceByKeyScanTileState<AccumT, local_offset_t>;
@@ -99,21 +104,22 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
   int threads_per_block{};
   int items_per_thread{};
   size_t vsmem_per_block{};
-  if (const auto error = CubDebug(dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
-        ::cuda::std::tie(threads_per_block, items_per_thread, vsmem_per_block) = determine_threads_items_vsmem<
-          decltype(policy_getter),
-          KeysInputIteratorT,
-          UniqueOutputIteratorT,
-          ValuesInputIteratorT,
-          AggregatesOutputIteratorT,
-          NumRunsOutputIteratorT,
-          EqualityOpT,
-          ReductionOpT,
-          local_offset_t,
-          AccumT,
-          streaming_context_t>(policy_getter);
-        return cudaSuccess;
-      })))
+  if (const auto error =
+        CubDebug(_CUB::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
+          ::cuda::std::tie(threads_per_block, items_per_thread, vsmem_per_block) = determine_threads_items_vsmem<
+            decltype(policy_getter),
+            KeysInputIteratorT,
+            UniqueOutputIteratorT,
+            ValuesInputIteratorT,
+            AggregatesOutputIteratorT,
+            NumRunsOutputIteratorT,
+            EqualityOpT,
+            ReductionOpT,
+            local_offset_t,
+            AccumT,
+            streaming_context_t>(policy_getter);
+          return cudaSuccess;
+        })))
   {
     return error;
   }
@@ -123,12 +129,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
   auto capped_num_items_per_invocation = num_items;
   if constexpr (use_streaming_invocation)
   {
-    capped_num_items_per_invocation = static_cast<global_offset_t>(::cuda::std::numeric_limits<local_offset_t>::max());
+    capped_num_items_per_invocation =
+      static_cast<global_offset_t>((::cuda::std::numeric_limits<local_offset_t>::max)());
     capped_num_items_per_invocation -= (capped_num_items_per_invocation % tile_size);
   }
 
   const auto max_num_items_per_invocation =
-    use_streaming_invocation ? ::cuda::std::min(capped_num_items_per_invocation, num_items) : num_items;
+    use_streaming_invocation ? (::cuda::std::min) (capped_num_items_per_invocation, num_items) : num_items;
   auto const num_partitions =
     (num_items == 0) ? global_offset_t{1} : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
 
@@ -146,7 +153,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
 
   void* allocations[4] = {};
   if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -169,10 +176,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
       return error;
     }
 
-    const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
+    const int init_grid_size = (::cuda::std::max) (1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
     _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
+          detail::TripleChevronFactory{}(init_grid_size, init_kernel_threads, 0, stream)
             .doit(&detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
                   tile_state,
                   num_current_tiles,
@@ -181,7 +188,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -222,7 +229,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
         &tmp_num_uniques[buffer_selector],
         &tmp_num_uniques[buffer_selector ^ 0x01]};
       if (const auto error = CubDebug(
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, threads_per_block, 0, stream)
+            detail::TripleChevronFactory{}(num_current_tiles, threads_per_block, 0, stream)
               .doit(reduce_by_key_kernel,
                     d_keys_in + current_partition_offset,
                     d_unique_out,
@@ -243,7 +250,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
     else
     {
       if (const auto error = CubDebug(
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, threads_per_block, 0, stream)
+            detail::TripleChevronFactory{}(num_current_tiles, threads_per_block, 0, stream)
               .doit(reduce_by_key_kernel,
                     d_keys_in + current_partition_offset,
                     d_unique_out,
@@ -261,7 +268,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
         return error;
       }
     }
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }

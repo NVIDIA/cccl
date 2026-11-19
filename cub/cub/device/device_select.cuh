@@ -27,6 +27,8 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/env_dispatch.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 #include <cub/device/dispatch/dispatch_unique_by_key.cuh>
 
@@ -66,9 +68,8 @@ CUB_NAMESPACE_BEGIN
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! All non-ByKey algorithms in DeviceSelect that accept an environment can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::SelectPolicy`, as shown in the
-//! example below:
+//! All non-ByKey algorithms in DeviceSelect can be tuned by passing a custom :ref:`policy selector
+//! <cub-policy-selectors>` that returns a :cpp:struct:`cub::SelectPolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
 //!      :language: c++
@@ -82,17 +83,16 @@ CUB_NAMESPACE_BEGIN
 //!      :start-after: example-begin select-if-tuning
 //!      :end-before: example-end select-if-tuning
 //!
-//! All *ByKey algorithms in DeviceSelect that accept an environment can be tuned by passing a
-//! custom :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::UniqueByKeyPolicy`, as shown
-//! in the example below:
+//! All *ByKey algorithms in DeviceSelect can be tuned by passing a custom :ref:`policy selector
+//! <cub-policy-selectors>` that returns a :cpp:struct:`cub::UniqueByKeyPolicy`, as shown in the example below:
 //!
-//!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_unique_by_key_api.cu
 //!      :language: c++
 //!      :dedent:
 //!      :start-after: example-begin unique-by-key-policy-selector
 //!      :end-before: example-end unique-by-key-policy-selector
 //!
-//!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_unique_by_key_api.cu
 //!      :language: c++
 //!      :dedent:
 //!      :start-after: example-begin unique-by-key-tuning
@@ -210,9 +210,9 @@ struct DeviceSelect
 
     using default_policy_selector = detail::select::
       policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::Select>(
+        return _CUB::detail::select::dispatch<SelectImpl::Select>(
           storage,
           bytes,
           d_in,
@@ -308,9 +308,9 @@ struct DeviceSelect
 
     using default_policy_selector = detail::select::
       policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::Select>(
+        return _CUB::detail::select::dispatch<SelectImpl::Select>(
           storage,
           bytes,
           d_in,
@@ -402,9 +402,9 @@ struct DeviceSelect
       IteratorT,
       ::cuda::std::int64_t,
       SelectImpl::SelectPotentiallyInPlace>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+        return _CUB::detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
           storage,
           bytes,
           d_data,
@@ -502,9 +502,9 @@ struct DeviceSelect
 
     using default_policy_selector = detail::select::
       policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::Select>(
+        return _CUB::detail::select::dispatch<SelectImpl::Select>(
           storage,
           bytes,
           d_in,
@@ -595,9 +595,9 @@ struct DeviceSelect
       IteratorT,
       ::cuda::std::int64_t,
       SelectImpl::SelectPotentiallyInPlace>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+        return _CUB::detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
           storage,
           bytes,
           d_data,
@@ -715,9 +715,9 @@ struct DeviceSelect
       IteratorT,
       ::cuda::std::int64_t,
       SelectImpl::SelectPotentiallyInPlace>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+        return _CUB::detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
           storage,
           bytes,
           d_data,
@@ -856,9 +856,9 @@ struct DeviceSelect
 
     using default_policy_selector = detail::select::
       policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::Select>(
+        return _CUB::detail::select::dispatch<SelectImpl::Select>(
           storage,
           bytes,
           d_in,
@@ -989,9 +989,9 @@ struct DeviceSelect
       IteratorT,
       ::cuda::std::int64_t,
       SelectImpl::SelectPotentiallyInPlace>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+        return _CUB::detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
           storage,
           bytes,
           d_data,
@@ -1107,9 +1107,9 @@ struct DeviceSelect
 
     using default_policy_selector = detail::select::
       policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::Select>(
+        return _CUB::detail::select::dispatch<SelectImpl::Select>(
           storage,
           bytes,
           d_in,
@@ -1219,9 +1219,9 @@ struct DeviceSelect
       IteratorT,
       ::cuda::std::int64_t,
       SelectImpl::SelectPotentiallyInPlace>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+        return _CUB::detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
           storage,
           bytes,
           d_data,
@@ -1330,9 +1330,9 @@ struct DeviceSelect
 
     using default_policy_selector = detail::select::
       policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::Select>(
+        return _CUB::detail::select::dispatch<SelectImpl::Select>(
           storage,
           bytes,
           d_in,
@@ -1435,9 +1435,9 @@ struct DeviceSelect
       IteratorT,
       ::cuda::std::int64_t,
       SelectImpl::SelectPotentiallyInPlace>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+        return _CUB::detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
           storage,
           bytes,
           d_data,
@@ -1529,9 +1529,9 @@ struct DeviceSelect
 
     using default_policy_selector = detail::select::
       policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::Select>(
+        return _CUB::detail::select::dispatch<SelectImpl::Select>(
           storage,
           bytes,
           d_in,
@@ -1630,9 +1630,9 @@ struct DeviceSelect
 
     using default_policy_selector = detail::select::
       policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::Select>(
+        return _CUB::detail::select::dispatch<SelectImpl::Select>(
           storage,
           bytes,
           d_in,
@@ -1713,9 +1713,9 @@ struct DeviceSelect
       IteratorT,
       ::cuda::std::int64_t,
       SelectImpl::SelectPotentiallyInPlace>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+        return _CUB::detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
           storage,
           bytes,
           d_data,
@@ -1807,9 +1807,9 @@ struct DeviceSelect
       IteratorT,
       ::cuda::std::int64_t,
       SelectImpl::SelectPotentiallyInPlace>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+        return _CUB::detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
           storage,
           bytes,
           d_data,
@@ -1851,11 +1851,13 @@ struct DeviceSelect
   //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector
   //! using environment-based API:
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_unique_by_key_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin select-uniquebykey-env
   //!     :end-before: example-end select-uniquebykey-env
+  //!
+  //! @endrst
   //!
   //! @tparam KeyInputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
@@ -1933,9 +1935,9 @@ struct DeviceSelect
     using default_policy_selector =
       detail::unique_by_key::policy_selector_from_types<detail::it_value_t<KeyInputIteratorT>,
                                                         detail::it_value_t<ValueInputIteratorT>>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::unique_by_key::dispatch(
+        return _CUB::detail::unique_by_key::dispatch(
           storage,
           bytes,
           d_keys_in,
@@ -1977,7 +1979,7 @@ struct DeviceSelect
   //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector
   //! using environment-based API and default key equality:
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_unique_by_key_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin select-uniquebykey-default-eq-env
@@ -2161,9 +2163,9 @@ struct DeviceSelect
 
     using default_policy_selector = detail::select::
       policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::Select>(
+        return _CUB::detail::select::dispatch<SelectImpl::Select>(
           storage,
           bytes,
           d_in,
@@ -2281,9 +2283,9 @@ struct DeviceSelect
 
     using default_policy_selector = detail::select::
       policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::Select>(
+        return _CUB::detail::select::dispatch<SelectImpl::Select>(
           storage,
           bytes,
           d_in,
@@ -2369,9 +2371,9 @@ struct DeviceSelect
       IteratorT,
       ::cuda::std::int64_t,
       SelectImpl::SelectPotentiallyInPlace>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+        return _CUB::detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
           storage,
           bytes,
           d_data,
@@ -2471,9 +2473,9 @@ struct DeviceSelect
       IteratorT,
       ::cuda::std::int64_t,
       SelectImpl::SelectPotentiallyInPlace>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+        return _CUB::detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
           storage,
           bytes,
           d_data,
@@ -2637,9 +2639,9 @@ struct DeviceSelect
     using default_policy_selector =
       detail::unique_by_key::policy_selector_from_types<detail::it_value_t<KeyInputIteratorT>,
                                                         detail::it_value_t<ValueInputIteratorT>>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::unique_by_key::dispatch(
+        return _CUB::detail::unique_by_key::dispatch(
           storage,
           bytes,
           d_keys_in,

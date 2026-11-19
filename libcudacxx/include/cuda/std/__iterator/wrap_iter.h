@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/pointer_traits.h>
@@ -53,7 +54,7 @@ public:
   {}
   template <class _Up>
   _CCCL_API constexpr __wrap_iter(const __wrap_iter<_Up>& __u,
-                                  typename enable_if<is_convertible_v<_Up, iterator_type>>::type* = nullptr) noexcept
+                                  enable_if_t<is_convertible_v<_Up, iterator_type>>* = nullptr) noexcept
       : __i_(__u.base())
   {}
   _CCCL_API constexpr reference operator*() const noexcept
@@ -115,6 +116,13 @@ public:
   _CCCL_API constexpr iterator_type base() const noexcept
   {
     return __i_;
+  }
+
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(is_convertible_v<_Tp*, iterator_type>)
+  _CCCL_API constexpr void __rebind(_Tp* __ptr) noexcept
+  {
+    __i_ = __ptr;
   }
 
 private:

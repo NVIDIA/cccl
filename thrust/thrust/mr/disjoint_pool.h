@@ -18,21 +18,25 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/config.h>
-
 #include <thrust/binary_search.h>
+#include <thrust/detail/config/memory_resource.h>
 #include <thrust/detail/seq.h>
 #include <thrust/find.h>
 #include <thrust/host_vector.h>
 #include <thrust/mr/allocator.h>
 #include <thrust/mr/memory_resource.h>
 #include <thrust/mr/pool_options.h>
+#include <thrust/mr/validator.h>
 
 #include <cuda/__cmath/ilog.h>
-#include <cuda/__memory/is_valid_alignment.h>
+#include <cuda/__memory/is_valid_alignment.h> // IWYU pragma: keep
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/algorithm>
+#include <cuda/std/__host_stdlib/new>
+#include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
@@ -78,7 +82,7 @@ public:
    *      and as such, may be tuned in the future. This function is exposed so that creating a set of options that are
    *      just a slight departure from the defaults is easy.
    */
-  static pool_options get_default_options()
+  _CCCL_HOST_API static pool_options get_default_options()
   {
     pool_options ret{};
 
@@ -106,7 +110,7 @@ public:
    *  \param bookkeeper the upstream memory resource for bookkeeping
    *  \param options pool options to use
    */
-  disjoint_unsynchronized_pool_resource(
+  _CCCL_HOST_API disjoint_unsynchronized_pool_resource(
     Upstream* upstream, Bookkeeper* bookkeeper, pool_options options = get_default_options())
       : m_upstream(upstream)
       , m_bookkeeper(bookkeeper)
@@ -130,7 +134,7 @@ public:
    *
    *  \param options pool options to use
    */
-  disjoint_unsynchronized_pool_resource(pool_options options = get_default_options())
+  _CCCL_HOST_API disjoint_unsynchronized_pool_resource(pool_options options = get_default_options())
       : m_upstream(get_global_resource<Upstream>())
       , m_bookkeeper(get_global_resource<Bookkeeper>())
       , m_options(options)
@@ -149,7 +153,7 @@ public:
 
   /*! Destructor. Releases all held memory to upstream.
    */
-  ~disjoint_unsynchronized_pool_resource() override // NOLINT(bugprone-exception-escape)
+  _CCCL_HOST_API ~disjoint_unsynchronized_pool_resource() override // NOLINT(bugprone-exception-escape)
   {
     release();
   }
@@ -175,12 +179,12 @@ private:
     std::size_t alignment;
     void_ptr pointer;
 
-    _CCCL_HOST_DEVICE bool operator==(const oversized_block_descriptor& other) const
+    _CCCL_HOST_DEVICE_API bool operator==(const oversized_block_descriptor& other) const
     {
       return size == other.size && alignment == other.alignment && pointer == other.pointer;
     }
 
-    _CCCL_HOST_DEVICE bool operator<(const oversized_block_descriptor& other) const
+    _CCCL_HOST_DEVICE_API bool operator<(const oversized_block_descriptor& other) const
     {
       return size < other.size || (size == other.size && alignment < other.alignment);
     }
@@ -188,12 +192,11 @@ private:
 
   struct equal_pointers
   {
-  public:
-    _CCCL_HOST_DEVICE equal_pointers(void_ptr p)
+    _CCCL_HOST_DEVICE_API equal_pointers(void_ptr p)
         : p(p)
     {}
 
-    _CCCL_HOST_DEVICE bool operator()(const oversized_block_descriptor& desc) const
+    _CCCL_HOST_DEVICE_API bool operator()(const oversized_block_descriptor& desc) const
     {
       return desc.pointer == p;
     }
@@ -204,12 +207,11 @@ private:
 
   struct matching_alignment
   {
-  public:
-    _CCCL_HOST_DEVICE matching_alignment(std::size_t requested)
+    _CCCL_HOST_DEVICE_API matching_alignment(std::size_t requested)
         : requested(requested)
     {}
 
-    _CCCL_HOST_DEVICE bool operator()(const oversized_block_descriptor& desc) const
+    _CCCL_HOST_DEVICE_API bool operator()(const oversized_block_descriptor& desc) const
     {
       return desc.alignment >= requested;
     }
@@ -225,23 +227,23 @@ private:
 
   struct pool
   {
-    _CCCL_HOST pool(pointer_vector free)
+    _CCCL_HOST_API pool(pointer_vector free)
         : free_blocks(::cuda::std::move(free))
     {}
 
-    _CCCL_HOST pool(const pool& other)
+    _CCCL_HOST_API pool(const pool& other)
         : free_blocks(other.free_blocks)
         , previous_allocated_count(other.previous_allocated_count)
     {}
 
     _CCCL_EXEC_CHECK_DISABLE
-    pool& operator=(const pool&) = default;
+    _CCCL_HIDE_FROM_ABI pool& operator=(const pool&) = default;
 
-    // If we = default this (even with _CCCL_HOST annotation), then nvcc will synthesize a
+    // If we = default this (even with _CCCL_HOST_API annotation), then nvcc will synthesize a
     // different subobject destruction code for the pool vector below. I am not entirely sure
     // why, but it chooses to instantiate it as host-device instead of host, then complains we
     // cannot call host-device destructors from host-only
-    _CCCL_HOST ~pool() {} // NOLINT(modernize-use-equals-default)
+    _CCCL_HOST_API ~pool() {} // NOLINT(modernize-use-equals-default)
 
     pointer_vector free_blocks{};
     std::size_t previous_allocated_count{};
@@ -267,7 +269,7 @@ private:
 public:
   /*! Releases all held memory to upstream.
    */
-  void release()
+  _CCCL_HOST_API void release()
   {
     // reset the buckets
     for (std::size_t i = 0; i < m_pools.size(); ++i)
@@ -293,7 +295,7 @@ public:
     m_cached_oversized.clear();
   }
 
-  void squeeze()
+  _CCCL_HOST_API void squeeze()
   {
     // Find all unused chunks and deallocate them
     for (auto it = m_allocated.begin(); it != m_allocated.end();)
@@ -345,7 +347,7 @@ public:
     }
   }
 
-  [[nodiscard]] void_ptr do_allocate( // NOLINT(google-default-arguments)
+  [[nodiscard]] _CCCL_HOST_API void_ptr do_allocate( // NOLINT(google-default-arguments)
     std::size_t bytes,
     std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
@@ -361,7 +363,7 @@ public:
     return do_allocate_impl(bytes, alignment);
   }
 
-  [[nodiscard]] void_ptr do_allocate_impl(std::size_t bytes, std::size_t alignment)
+  [[nodiscard]] _CCCL_HOST_API void_ptr do_allocate_impl(std::size_t bytes, std::size_t alignment)
   {
     bytes = (std::max) (bytes, m_options.smallest_block_size);
     assert(::cuda::__is_valid_alignment(alignment));
@@ -470,9 +472,9 @@ public:
     return ret;
   }
 
-  void do_deallocate(void_ptr p, // NOLINT(google-default-arguments)
-                     std::size_t n,
-                     std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  _CCCL_HOST_API void do_deallocate(void_ptr p, // NOLINT(google-default-arguments)
+                                    std::size_t n,
+                                    std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     n = (std::max) (n, m_options.smallest_block_size);
     assert(::cuda::__is_valid_alignment(alignment));

@@ -22,19 +22,14 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/referenceable.h>
-#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__concepts/same_as.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/disjunction.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/__type_traits/nat.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
@@ -126,11 +121,11 @@ inline constexpr bool __nothrow_swappable_with<_Tp, _Up, false> = false;
 } // namespace __detail
 
 template <class _Tp>
-struct __is_swappable : public integral_constant<bool, __detail::__swappable_with<_Tp&>>
+struct __is_swappable : public bool_constant<__detail::__swappable_with<_Tp&>>
 {};
 
 template <class _Tp>
-struct __is_nothrow_swappable : public integral_constant<bool, __detail::__nothrow_swappable_with<_Tp&>>
+struct __is_nothrow_swappable : public bool_constant<__detail::__nothrow_swappable_with<_Tp&>>
 {};
 
 template <class _Tp, class _Up>

@@ -41,6 +41,7 @@
 #include <cuda/std/__type_traits/is_trivially_destructible.h>
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
 #include <cuda/std/__type_traits/is_trivially_move_constructible.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/__utility/exception_guard.h>
 #include <cuda/std/__utility/forward.h>
@@ -425,8 +426,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T1, class _T2, class... _Args)
   _CCCL_REQUIRES(is_nothrow_constructible_v<_T1, _Args...>)
-  static _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void
-  __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args) noexcept
+  static _CCCL_API _CCCL_CONSTEXPR_CXX20 void __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args) noexcept
   {
     ::cuda::std::__destroy_at(::cuda::std::addressof(__oldval));
     ::cuda::std::__construct_at(::cuda::std::addressof(__newval), ::cuda::std::forward<_Args>(__args)...);
@@ -435,7 +435,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T1, class _T2, class... _Args)
   _CCCL_REQUIRES((!is_nothrow_constructible_v<_T1, _Args...>) _CCCL_AND is_nothrow_move_constructible_v<_T1>)
-  static _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args)
+  static _CCCL_API _CCCL_CONSTEXPR_CXX20 void __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args)
   {
     _T1 __tmp(::cuda::std::forward<_Args>(__args)...);
     ::cuda::std::__destroy_at(::cuda::std::addressof(__oldval));
@@ -445,7 +445,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T1, class _T2, class... _Args)
   _CCCL_REQUIRES((!is_nothrow_constructible_v<_T1, _Args...>) _CCCL_AND(!is_nothrow_move_constructible_v<_T1>))
-  static _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args)
+  static _CCCL_API _CCCL_CONSTEXPR_CXX20 void __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args)
   {
     static_assert(
       is_nothrow_move_constructible_v<_T2>,
@@ -463,7 +463,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Err2 = _Err)
   _CCCL_REQUIRES(is_nothrow_move_constructible_v<_Err2>)
-  static _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void
+  static _CCCL_API _CCCL_CONSTEXPR_CXX20 void
   __swap_val_unex_impl(__expected_storage<_Tp, _Err2>& __with_val, __expected_storage& __with_err)
   {
     _Err __tmp(::cuda::std::move(__with_err.__union_.__unex_));
@@ -483,7 +483,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Err2 = _Err)
   _CCCL_REQUIRES((!is_nothrow_move_constructible_v<_Err2>) )
-  static _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void
+  static _CCCL_API _CCCL_CONSTEXPR_CXX20 void
   __swap_val_unex_impl(__expected_storage<_Tp, _Err2>& __with_val, __expected_storage& __with_err)
   {
     static_assert(is_nothrow_move_constructible_v<_Tp>,
@@ -506,9 +506,9 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
 
 template <class _Tp, class _Err>
 inline constexpr __smf_availability __expected_can_copy_construct =
-  (is_trivially_copy_constructible_v<_Tp> || is_same_v<_Tp, void>) && is_trivially_copy_constructible_v<_Err>
+  (is_trivially_copy_constructible_v<_Tp> || is_void_v<_Tp>) && is_trivially_copy_constructible_v<_Err>
     ? __smf_availability::__trivial
-  : (is_copy_constructible_v<_Tp> || is_same_v<_Tp, void>) && is_copy_constructible_v<_Err>
+  : (is_copy_constructible_v<_Tp> || is_void_v<_Tp>) && is_copy_constructible_v<_Err>
     ? __smf_availability::__available
     : __smf_availability::__deleted;
 
@@ -555,9 +555,9 @@ struct __expected_copy<_Tp, _Err, __smf_availability::__deleted> : __expected_st
 
 template <class _Tp, class _Err>
 inline constexpr __smf_availability __expected_can_move_construct =
-  (is_trivially_move_constructible_v<_Tp> || is_same_v<_Tp, void>) && is_trivially_move_constructible_v<_Err>
+  (is_trivially_move_constructible_v<_Tp> || is_void_v<_Tp>) && is_trivially_move_constructible_v<_Err>
     ? __smf_availability::__trivial
-  : (is_move_constructible_v<_Tp> || is_same_v<_Tp, void>) && is_move_constructible_v<_Err>
+  : (is_move_constructible_v<_Tp> || is_void_v<_Tp>) && is_move_constructible_v<_Err>
     ? __smf_availability::__available
     : __smf_availability::__deleted;
 
@@ -608,14 +608,14 @@ struct __expected_move<_Tp, _Err, __smf_availability::__deleted> : __expected_co
 // Need to also check against is_nothrow_move_constructible in the trivial case as that is stupidly in the constraints
 template <class _Tp, class _Err>
 inline constexpr __smf_availability __expected_can_copy_assign =
-  (is_trivially_destructible_v<_Tp> || is_same_v<_Tp, void>) && is_trivially_destructible_v<_Err>
-      && (is_trivially_copy_constructible_v<_Tp> || is_same_v<_Tp, void>) && is_trivially_copy_constructible_v<_Err>
-      && (is_trivially_copy_assignable_v<_Tp> || is_same_v<_Tp, void>) && is_trivially_copy_assignable_v<_Err>
-      && (is_nothrow_move_constructible_v<_Tp> || is_same_v<_Tp, void> || is_nothrow_move_constructible_v<_Err>)
+  (is_trivially_destructible_v<_Tp> || is_void_v<_Tp>) && is_trivially_destructible_v<_Err>
+      && (is_trivially_copy_constructible_v<_Tp> || is_void_v<_Tp>) && is_trivially_copy_constructible_v<_Err>
+      && (is_trivially_copy_assignable_v<_Tp> || is_void_v<_Tp>) && is_trivially_copy_assignable_v<_Err>
+      && (is_nothrow_move_constructible_v<_Tp> || is_void_v<_Tp> || is_nothrow_move_constructible_v<_Err>)
     ? __smf_availability::__trivial
-  : (is_copy_constructible_v<_Tp> || is_same_v<_Tp, void>) && is_copy_constructible_v<_Err>
-      && (is_copy_assignable_v<_Tp> || is_same_v<_Tp, void>) && is_copy_assignable_v<_Err>
-      && (is_nothrow_move_constructible_v<_Tp> || is_same_v<_Tp, void> || is_nothrow_move_constructible_v<_Err>)
+  : (is_copy_constructible_v<_Tp> || is_void_v<_Tp>)
+      && is_copy_constructible_v<_Err> && (is_copy_assignable_v<_Tp> || is_void_v<_Tp>) && is_copy_assignable_v<_Err>
+      && (is_nothrow_move_constructible_v<_Tp> || is_void_v<_Tp> || is_nothrow_move_constructible_v<_Err>)
     ? __smf_availability::__available
     : __smf_availability::__deleted;
 
@@ -676,13 +676,13 @@ struct __expected_copy_assign<_Tp, _Err, __smf_availability::__deleted> : __expe
 
 template <class _Tp, class _Err>
 inline constexpr __smf_availability __expected_can_move_assign =
-  (is_trivially_destructible_v<_Tp> || is_same_v<_Tp, void>) && is_trivially_destructible_v<_Err>
-      && (is_trivially_move_constructible_v<_Tp> || is_same_v<_Tp, void>) && is_trivially_move_constructible_v<_Err>
-      && (is_trivially_move_assignable_v<_Tp> || is_same_v<_Tp, void>) && is_trivially_move_assignable_v<_Err>
+  (is_trivially_destructible_v<_Tp> || is_void_v<_Tp>) && is_trivially_destructible_v<_Err>
+      && (is_trivially_move_constructible_v<_Tp> || is_void_v<_Tp>) && is_trivially_move_constructible_v<_Err>
+      && (is_trivially_move_assignable_v<_Tp> || is_void_v<_Tp>) && is_trivially_move_assignable_v<_Err>
     ? __smf_availability::__trivial
-  : (is_move_constructible_v<_Tp> || is_same_v<_Tp, void>) && is_move_constructible_v<_Err>
-      && (is_move_assignable_v<_Tp> || is_same_v<_Tp, void>) && is_move_assignable_v<_Err>
-      && (is_nothrow_move_constructible_v<_Tp> || is_same_v<_Tp, void> || is_nothrow_move_constructible_v<_Err>)
+  : (is_move_constructible_v<_Tp> || is_void_v<_Tp>)
+      && is_move_constructible_v<_Err> && (is_move_assignable_v<_Tp> || is_void_v<_Tp>) && is_move_assignable_v<_Err>
+      && (is_nothrow_move_constructible_v<_Tp> || is_void_v<_Tp> || is_nothrow_move_constructible_v<_Err>)
     ? __smf_availability::__available
     : __smf_availability::__deleted;
 
@@ -894,7 +894,7 @@ struct __expected_storage<void, _Err> : __expected_destruct<void, _Err>
   _CCCL_DELEGATE_CONSTRUCTORS(__expected_storage, __expected_destruct, void, _Err);
 
   _CCCL_EXEC_CHECK_DISABLE
-  static _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void __swap_val_unex_impl(
+  static _CCCL_API _CCCL_CONSTEXPR_CXX20 void __swap_val_unex_impl(
     __expected_storage& __with_val, __expected_storage& __with_err) noexcept(is_nothrow_move_constructible_v<_Err>)
   {
     ::cuda::std::__construct_at(

@@ -9,13 +9,14 @@
 //===----------------------------------------------------------------------===//
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/future_value.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__type_traits/is_trivially_copyable.h>
 
@@ -232,7 +233,7 @@ std::string get_scan_kernel_name(
 
   auto tile_state_t = std::format("cub::ScanTileState<{0}>", accum_cpp_t);
   return std::format(
-    "cub::detail::scan::DeviceScanKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, false, {9}>",
+    "cub::detail::scan::DeviceScanKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {6}, {7}, {8}, false, false, {9}>",
     policy_selector_t, // 0
     input_iterator_t, // 1
     output_iterator_t, // 2
@@ -415,6 +416,8 @@ try
 #include <cub/block/block_scan.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/detail/future_value.cuh>
+#include <cub/detail/null_type.cuh>
 struct __align__({1}) storage_t {{
   char data[{0}];
 }};

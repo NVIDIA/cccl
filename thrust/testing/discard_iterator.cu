@@ -16,7 +16,7 @@ TEST_CASE("TestDiscardIteratorTraits", "[discard_iterator]")
 
   static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
   static_assert(cuda::std::is_same_v<traits::value_type, thrust::detail::any_assign>);
-  static_assert(cuda::std::is_same_v<traits::pointer, void>);
+  static_assert(cuda::std::is_same_v<traits::pointer, void>); // NOLINT(cccl-simplify-type-traits)
   static_assert(cuda::std::is_same_v<traits::reference, thrust::detail::any_assign&>);
   static_assert(cuda::std::is_same_v<traits::iterator_category, category>);
 
@@ -56,8 +56,8 @@ TEST_CASE("TestDiscardIteratorIncrement", "[discard_iterator]")
 
   REQUIRE(-2 == lhs - rhs);
 }
-static_assert(cuda::std::is_trivially_copy_constructible<thrust::discard_iterator<>>::value);
-static_assert(cuda::std::is_trivially_copyable<thrust::discard_iterator<>>::value);
+static_assert(cuda::std::is_trivially_copy_constructible_v<thrust::discard_iterator<>>);
+static_assert(cuda::std::is_trivially_copyable_v<thrust::discard_iterator<>>);
 
 TEST_CASE("TestDiscardIteratorComparison", "[discard_iterator]")
 {

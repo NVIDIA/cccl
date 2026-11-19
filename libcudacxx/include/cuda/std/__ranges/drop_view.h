@@ -72,7 +72,7 @@ class drop_view : public view_interface<drop_view<_View>>
   // Note: drop_view<input-range>::begin() is still trivially amortized O(1) because
   // one can't call begin() on it more than once.
   static constexpr bool _UseCache = forward_range<_View> && !(random_access_range<_View> && sized_range<_View>);
-  using _Cache                    = conditional_t<_UseCache, __non_propagating_cache<iterator_t<_View>>, __empty_cache>;
+  using _Cache _CCCL_NODEBUG      = conditional_t<_UseCache, __non_propagating_cache<iterator_t<_View>>, __empty_cache>;
   _CCCL_NO_UNIQUE_ADDRESS _Cache __cached_begin_ = _Cache();
   _View __base_                                  = _View();
   range_difference_t<_View> __count_             = 0;
@@ -187,6 +187,14 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES drop_view(_Range&&, range_difference_t<_Range>)
 template <class _Tp>
 inline constexpr bool enable_borrowed_range<drop_view<_Tp>> = enable_borrowed_range<_Tp>;
 
+// A runtime count cannot change the size of an empty range.
+template <class _View>
+inline constexpr size_t __static_size_v<drop_view<_View>> = (__static_size_v<_View> == 0) ? 0 : dynamic_extent;
+
+template <class _View>
+inline constexpr size_t __static_size_v<const drop_view<_View>> =
+  (range<const drop_view<_View>> && __static_size_v<const _View> == 0) ? 0 : dynamic_extent;
+
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
@@ -227,29 +235,29 @@ struct __passthrough_type;
 template <class _Tp, size_t _Extent>
 struct __passthrough_type<span<_Tp, _Extent>>
 {
-  using type = span<_Tp>;
+  using type _CCCL_NODEBUG = span<_Tp>;
 };
 
 template <class _CharT, class _Traits>
 struct __passthrough_type<basic_string_view<_CharT, _Traits>>
 {
-  using type = basic_string_view<_CharT, _Traits>;
+  using type _CCCL_NODEBUG = basic_string_view<_CharT, _Traits>;
 };
 
 template <class _Np, class _Bound>
 struct __passthrough_type<iota_view<_Np, _Bound>>
 {
-  using type = iota_view<_Np, _Bound>;
+  using type _CCCL_NODEBUG = iota_view<_Np, _Bound>;
 };
 
 template <class _Iter, class _Sent, ::cuda::std::ranges::subrange_kind _Kind>
 struct __passthrough_type<::cuda::std::ranges::subrange<_Iter, _Sent, _Kind>>
 {
-  using type = ::cuda::std::ranges::subrange<_Iter, _Sent, _Kind>;
+  using type _CCCL_NODEBUG = ::cuda::std::ranges::subrange<_Iter, _Sent, _Kind>;
 };
 
 template <class _Tp>
-using __passthrough_type_t = typename __passthrough_type<_Tp>::type;
+using __passthrough_type_t _CCCL_NODEBUG = typename __passthrough_type<_Tp>::type;
 
 template <class _Range, class _Np>
 _CCCL_CONCEPT __use_empty = _CCCL_REQUIRES_EXPR((_Range, _Np))(

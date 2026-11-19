@@ -26,7 +26,8 @@ int main(int argc, char** argv)
 
   const size_t total_mem_ref = prop.totalGlobalMem;
 
-  size_t free_mem, total_mem;
+  size_t free_mem;
+  size_t total_mem;
   cuda_safe_call(cudaMemGetInfo(&free_mem, &total_mem));
 
   std::cout

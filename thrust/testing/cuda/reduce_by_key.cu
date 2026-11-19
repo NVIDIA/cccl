@@ -308,7 +308,7 @@ void test_reduce_by_key_cuda_streams(ExecutionPolicy policy)
   Vector output_values(values.size());
 
   cudaStream_t s;
-  cudaStreamCreate(&s);
+  REQUIRE(cudaSuccess == cudaStreamCreate(&s));
 
   auto streampolicy = policy.on(s);
 
@@ -380,7 +380,7 @@ void test_reduce_by_key_cuda_streams(ExecutionPolicy policy)
   REQUIRE(output_values[3] == 15);
   REQUIRE(output_values[4] == 15);
 
-  cudaStreamDestroy(s);
+  REQUIRE(cudaSuccess == cudaStreamDestroy(s));
 }
 
 TEST_CASE("TestReduceByKeyCudaStreamsSync", "[reduce_by_key]")
@@ -473,7 +473,7 @@ void test_reduce_by_key_with_big_indexes_helper(int magnitude)
   const std::int64_t sum = (key_size - 1) * key_size / 2;
   for (std::int64_t key_id = 0; key_id < num_unique_keys; key_id++)
   {
-    REQUIRE(result[key_id] == sum + key_id * key_size);
+    REQUIRE(result[key_id] == sum + (key_id * key_size));
   }
 }
 
