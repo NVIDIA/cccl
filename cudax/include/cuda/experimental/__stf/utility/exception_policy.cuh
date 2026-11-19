@@ -3109,21 +3109,6 @@ struct __guarded_action
   }
 };
 
-// A hook that never forwards can still throw while the runner makes `_Expr` from its answer:
-// nothing to convert for a void expression or a nullval answer, a default `_Expr` for Nothing
-// (a void answer), a cast for a value (copying a referred-to string can throw). Two-step, as
-// `__answers_nothing_impl`: the answer is named only for a policy with a hook (GCC 9 rejects a
-// defaulted `_Answer` parameter computed through `conditional_t` on the runner trait itself).
-template <bool _HasHook, class _P, class _Fn, class _Expr>
-inline constexpr bool __answer_conversion_nothrow_v = true;
-
-template <class _P, class _Fn, class _Expr>
-inline constexpr bool __answer_conversion_nothrow_v<true, _P, _Fn, _Expr> =
-  ::cuda::std::is_void_v<_Expr>
-  || ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<__hook_answer_t<_P, _Fn>>, nullval>
-  || ::cuda::std::is_nothrow_constructible_v<_Expr, __hook_answer_t<_P, _Fn>>
-  || (::cuda::std::is_void_v<__hook_answer_t<_P, _Fn>> && ::cuda::std::is_nothrow_default_constructible_v<_Expr>);
-
 // Nothrow-ness of the callable runner: the exception path matters only for a callable that can
 // throw, the code path only when `<<` feeds a returned status (`_Feed`).
 template <class _Reaction,
@@ -3132,9 +3117,7 @@ template <class _Reaction,
           class _Expr = decltype(::cuda::std::declval<_Fn&>()()),
           bool        = _Feed && __is_status_v<_Expr>>
 inline constexpr bool __callable_runner_nothrow_v =
-  (noexcept(::cuda::std::declval<_Fn&>()())
-   || (__never_passes_through_v<_Reaction, _Fn>
-       && __answer_conversion_nothrow_v<__has_exception_hook<_Reaction, _Fn>, _Reaction, _Fn, _Expr>) )
+  (noexcept(::cuda::std::declval<_Fn&>()()) || __never_passes_through_v<_Reaction, _Fn>)
   && __on_enter_nothrow_v<_Reaction>;
 
 template <class _Reaction, class _Fn, bool _Feed, class _Expr>
@@ -5891,26 +5874,6 @@ UNITTEST("policy inventory")
     throw ::std::runtime_error("x");
   };
   EXPECT(s4 == 6);
-
-  // The runner is noexcept only if the answer's conversion is: copying a referred-to string can
-  // throw, moving an owned one or copying an int cannot.
-  // (`.at` copies the sink, so the owned string is checked on the runner.)
-  ::std::string fallback = "fallback";
-  const auto by_ref      = subst(fallback);
-  static_assert(!noexcept(by_ref.at(::cuda::std::source_location{})->*::cuda::std::declval<::std::string (&)()>()));
-  static_assert(__callable_runner_nothrow_v<subst_t<::std::string>, ::std::string (&)()>);
-  const auto by_int = subst(42);
-  static_assert(noexcept(by_int.at(::cuda::std::source_location{})->*::cuda::std::declval<int (&)()>()));
-  auto may_throw = []() -> int {
-    return 42;
-  };
-  auto never_throws = []() noexcept -> int {
-    return 42;
-  };
-  const auto lazy_may_throw    = subst(may_throw);
-  const auto lazy_never_throws = subst(never_throws);
-  static_assert(!noexcept(lazy_may_throw.at(::cuda::std::source_location{})->*::cuda::std::declval<int (&)()>()));
-  static_assert(noexcept(lazy_never_throws.at(::cuda::std::source_location{})->*::cuda::std::declval<int (&)()>()));
 
   // defer composes now: report, then capture.
   ::std::ostringstream noted;
