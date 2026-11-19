@@ -600,7 +600,118 @@ TEST_FUNC void test_float128_lround_edge_cases()
   assert(cuda::std::lround(nan) == cuda::std::numeric_limits<long>::min());
 }
 
-// nextafter and nexttoward do not support __float128 yet, so the generic driver can not be used
+TEST_FUNC void test_float128_nextafter_edge_cases(float val)
+{
+  using T = __float128;
+
+  // val is only known at run time, which keeps the calls from being evaluated by the compiler
+  const T one  = T(val) / T(val);
+  const T zero = one - one;
+  const T min  = one * cuda::std::numeric_limits<T>::min(); // 2^-16382
+  const T max  = one * cuda::std::numeric_limits<T>::max(); // (2 - 2^-112) * 2^16383
+  const T dmin = one * cuda::std::numeric_limits<T>::denorm_min(); // 2^-16494
+  const T eps  = one * cuda::std::numeric_limits<T>::epsilon(); // 2^-112
+  const T inf  = one * cuda::std::numeric_limits<T>::infinity();
+  const T nan  = one * cuda::std::numeric_limits<T>::quiet_NaN();
+
+  // binary128 steps by 2^-112 above 1, far below the precision of double, and by half of that below 1
+  assert(eq(cuda::std::nextafter(one, T(2)), one + eps));
+  assert(eq(cuda::std::nextafter(one + eps, zero), one));
+  assert(eq(cuda::std::nextafter(one, zero), one - eps / T(2)));
+  assert(eq(cuda::std::nextafter(-one, T(-2)), -one - eps));
+  assert(eq(cuda::std::nextafter(-one, zero), -one + eps / T(2)));
+
+  // zero steps to the smallest subnormal with the sign of y, and a subnormal steps back to zero keeping its sign
+  assert(eq(cuda::std::nextafter(zero, one), dmin));
+  assert(eq(cuda::std::nextafter(zero, -one), -dmin));
+  assert(eq(cuda::std::nextafter(-zero, one), dmin));
+  assert(eq(cuda::std::nextafter(dmin, zero), zero));
+  assert(!cuda::std::signbit(cuda::std::nextafter(dmin, -one)));
+  assert(cuda::std::signbit(cuda::std::nextafter(-dmin, zero)));
+  assert(eq(cuda::std::nextafter(dmin, one), dmin * T(2)));
+
+  // the boundary between normal and subnormal values
+  assert(eq(cuda::std::nextafter(min, zero), min - dmin));
+  assert(eq(cuda::std::nextafter(min - dmin, one), min));
+  assert(eq(cuda::std::nextafter(-min, zero), -min + dmin));
+
+  // the largest finite value and infinity
+  assert(eq(cuda::std::nextafter(max, inf), inf));
+  assert(eq(cuda::std::nextafter(-max, -inf), -inf));
+  assert(eq(cuda::std::nextafter(inf, zero), max));
+  assert(eq(cuda::std::nextafter(-inf, zero), -max));
+  assert(eq(cuda::std::nextafter(inf, inf), inf));
+  assert(cuda::std::nextafter(max, zero) < max);
+  assert(eq(cuda::std::nextafter(cuda::std::nextafter(max, zero), inf), max));
+
+  // equal arguments return y, which gives the sign of zero
+  assert(eq(cuda::std::nextafter(one, one), one));
+  assert(cuda::std::signbit(cuda::std::nextafter(zero, -zero)));
+  assert(!cuda::std::signbit(cuda::std::nextafter(-zero, zero)));
+
+  // NaN in either argument returns NaN
+  assert(cuda::std::isnan(cuda::std::nextafter(nan, one)));
+  assert(cuda::std::isnan(cuda::std::nextafter(one, nan)));
+  assert(cuda::std::isnan(cuda::std::nextafter(nan, nan)));
+}
+
+#  if _CCCL_HOSTED()
+// The device has no floating point exceptions
+TEST_FUNC void test_float128_nextafter_fenv(float val)
+{
+  unused(val);
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 using T = __float128;
+
+                 constexpr int exceptions = FE_INEXACT | FE_INVALID | FE_OVERFLOW | FE_UNDERFLOW;
+
+                 // volatile keeps the calls from being evaluated by the compiler
+                 volatile T one  = T(val) / T(val);
+                 volatile T zero = T(0);
+                 volatile T min  = cuda::std::numeric_limits<T>::min();
+                 volatile T max  = cuda::std::numeric_limits<T>::max();
+                 volatile T dmin = cuda::std::numeric_limits<T>::denorm_min();
+                 volatile T inf  = cuda::std::numeric_limits<T>::infinity();
+                 volatile T nan  = cuda::std::numeric_limits<T>::quiet_NaN();
+                 volatile T res  = T(0);
+
+                 // steps between normal values, from infinity, and to equal or NaN arguments raise nothing
+                 feclearexcept(FE_ALL_EXCEPT);
+                 res = cuda::std::nextafter(T(one), T(2));
+                 res = cuda::std::nextafter(T(min), T(one));
+                 res = cuda::std::nextafter(T(inf), T(zero));
+                 res = cuda::std::nextafter(T(one), T(one));
+                 res = cuda::std::nextafter(T(nan), T(one));
+                 assert(!fetestexcept(exceptions));
+
+                 // stepping from the largest finite value to infinity overflows
+                 res = cuda::std::nextafter(T(max), T(inf));
+                 assert(eq(T(res), T(inf)));
+                 assert(fetestexcept(exceptions) == (FE_INEXACT | FE_OVERFLOW));
+                 feclearexcept(FE_ALL_EXCEPT);
+                 res = cuda::std::nextafter(-T(max), -T(inf));
+                 assert(eq(T(res), -T(inf)));
+                 assert(fetestexcept(exceptions) == (FE_INEXACT | FE_OVERFLOW));
+                 feclearexcept(FE_ALL_EXCEPT);
+
+                 // subnormal and zero results underflow
+                 res = cuda::std::nextafter(T(zero), T(one));
+                 assert(eq(T(res), T(dmin)));
+                 assert(fetestexcept(exceptions) == (FE_INEXACT | FE_UNDERFLOW));
+                 feclearexcept(FE_ALL_EXCEPT);
+                 res = cuda::std::nextafter(T(min), T(zero));
+                 assert(eq(T(res), T(min) - T(dmin)));
+                 assert(fetestexcept(exceptions) == (FE_INEXACT | FE_UNDERFLOW));
+                 feclearexcept(FE_ALL_EXCEPT);
+                 res = cuda::std::nextafter(T(dmin), T(zero));
+                 assert(eq(T(res), T(0)));
+                 assert(fetestexcept(exceptions) == (FE_INEXACT | FE_UNDERFLOW));
+                 feclearexcept(FE_ALL_EXCEPT);
+               }))
+}
+#  endif // _CCCL_HOSTED()
+
+// nexttoward does not support __float128 yet, so the generic driver can not be used
 TEST_FUNC void test_float128(const float val)
 {
   test_ceil<__float128>(val);
@@ -610,6 +721,7 @@ TEST_FUNC void test_float128(const float val)
   test_lrint<__float128>(val);
   test_lround<__float128>(val);
   test_nearbyint<__float128>(val);
+  test_nextafter<__float128>(val);
   test_rint<__float128>(val);
   test_round<__float128>(val);
   test_trunc<__float128>(val);
@@ -617,8 +729,10 @@ TEST_FUNC void test_float128(const float val)
   test_float128_rint_edge_cases();
 #  if _CCCL_HOSTED()
   test_float128_nearbyint_inexact(val);
+  test_float128_nextafter_fenv(val);
 #  endif // _CCCL_HOSTED()
   test_float128_lround_edge_cases();
+  test_float128_nextafter_edge_cases(val);
 }
 #endif // _CCCL_HAS_FLOAT128()
 
