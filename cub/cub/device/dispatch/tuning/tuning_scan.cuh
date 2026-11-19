@@ -20,6 +20,7 @@
 #include <cub/block/block_store.cuh>
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/non_void_value.cuh>
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/warpspeed/allocators/smem_allocator.cuh>
 #include <cub/detail/warpspeed/resource/smem_resource_raw.cuh>
@@ -1622,12 +1623,13 @@ struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanPolicy
   {
-    using InputValueT                   = it_value_t<InputIteratorT>;
-    constexpr bool output_value_is_void = ::cuda::std::is_void_v<it_value_t<OutputIteratorT>>;
-    using OutputValueT = ::cuda::std::conditional_t<output_value_is_void, AccumT, it_value_t<OutputIteratorT>>;
+    using InputValueT  = it_value_t<InputIteratorT>;
+    using OutputValueT = non_void_value_t<OutputIteratorT, AccumT>;
 
+    // output iterators without a value type (e.g. transform_output_iterator) never match the tuning benchmarks
+    constexpr bool output_has_value_type = ::cuda::std::is_same_v<OutputValueT, it_value_t<OutputIteratorT>>;
     constexpr bool benchmark_match =
-      !output_value_is_void && benchmark_match_for_policy_selector<ScanOpT, InputValueT, OutputValueT, AccumT>::value;
+      output_has_value_type && benchmark_match_for_policy_selector<ScanOpT, InputValueT, OutputValueT, AccumT>::value;
 
     constexpr bool accum_is_primitive_or_trivially_copy_constructible =
       is_primitive<AccumT>::value || ::cuda::std::is_trivially_copy_constructible_v<AccumT>;
