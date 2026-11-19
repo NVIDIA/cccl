@@ -782,118 +782,114 @@ struct alignas(8) __fpmp2_atan_entry
   float __lo;
 };
 
-// Rounded from 400-bit values (Sollya). Hidden in host code, like the functions that read
-// it, so that shared libraries built against different versions of this table do not share
-// one copy. The device pass takes no visibility: without RDC the table has internal linkage
-// there, where nvcc rejects the attribute.
-#  if _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)
-#    define _CCCL_FPMP_ATAN_TABLE _CCCL_GLOBAL_CONSTANT
-#  else // ^^^ device pass ^^^ / vvv host code vvv
-#    define _CCCL_FPMP_ATAN_TABLE _CCCL_VISIBILITY_HIDDEN _CCCL_GLOBAL_CONSTANT
-#  endif // ^^^ host code ^^^
-_CCCL_FPMP_ATAN_TABLE __fpmp2_atan_entry __fpmp2_atan_table[5][17] = {
-  // atan(i/16)
-  {
-    {0.0f, 0.0f},
-    {0x1.ff55bcp-5f, -0x1.1a6042p-30f},
-    {0x1.fd5baap-4f, -0x1.54f424p-30f},
-    {0x1.7b97b4p-3f, 0x1.79cb6p-28f},
-    {0x1.f5b76p-3f, -0x1.b4dfc8p-29f},
-    {0x1.362774p-2f, -0x1.1f0286p-27f},
-    {0x1.6f6194p-2f, 0x1.e4defp-30f},
-    {0x1.a64eecp-2f, 0x1.e611fep-29f},
-    {0x1.dac67p-2f, 0x1.586ed4p-28f},
-    {0x1.0657eap-1f, -0x1.6499e6p-26f},
-    {0x1.1e00bap-1f, 0x1.7bdfd6p-26f},
-    {0x1.345f02p-1f, -0x1.98e422p-28f},
-    {0x1.4978fap-1f, 0x1.934f7p-28f},
-    {0x1.5d5898p-1f, 0x1.c5a6c6p-27f},
-    {0x1.700a7cp-1f, 0x1.5e118cp-27f},
-    {0x1.819d0cp-1f, -0x1.1d4eb6p-26f},
-    {0x1.921fb6p-1f, -0x1.777a5cp-26f},
-  },
-  // pi/2 - atan(i/16)
-  {
-    {0x1.921fb6p0f, -0x1.777a5cp-25f},
-    {0x1.822508p0f, -0x1.2ea75ap-25f},
-    {0x1.7249fap0f, 0x1.532d44p-25f},
-    {0x1.62acbep0f, 0x1.594c38p-25f},
-    {0x1.5368cap0f, -0x1.5c2c6p-25f},
-    {0x1.4495d8p0f, 0x1.a08c8ap-26f},
-    {0x1.36475p0f, 0x1.e57aaep-27f},
-    {0x1.288bfap0f, 0x1.a8920cp-27f},
-    {0x1.1b6e1ap0f, -0x1.a28838p-25f},
-    {0x1.0ef3cp0f, 0x1.3ad296p-25f},
-    {0x1.031f58p0f, -0x1.ab5242p-28f},
-    {0x1.efe068p-1f, 0x1.77444ep-26f},
-    {0x1.dac67p-1f, 0x1.586ed4p-27f},
-    {0x1.c6e6d2p-1f, 0x1.71bf18p-29f},
-    {0x1.b434eep-1f, 0x1.8809fep-28f},
-    {0x1.a2a26p-1f, -0x1.d1a604p-26f},
-    {0x1.921fb6p-1f, -0x1.777a5cp-26f},
-  },
-  // pi/2 + atan(i/16)
-  {
-    {0x1.921fb6p0f, -0x1.777a5cp-25f},
-    {0x1.a21a64p0f, -0x1.c04d6p-25f},
-    {0x1.b1f57p0f, -0x1.0887f8p-27f},
-    {0x1.c192acp0f, -0x1.2103c4p-27f},
-    {0x1.d0d6a2p0f, -0x1.92c85ap-25f},
-    {0x1.dfa992p0f, 0x1.031406p-27f},
-    {0x1.edf81ap0f, 0x1.2f5936p-26f},
-    {0x1.fbb37p0f, 0x1.4dcd86p-26f},
-    {0x1.0468a8p1f, 0x1.59c9bep-24f},
-    {0x1.0aa5d4p1f, 0x1.eb1c58p-24f},
-    {0x1.10900ap1f, -0x1.5cc538p-24f},
-    {0x1.16279cp1f, -0x1.d54b7p-24f},
-    {0x1.1b6e1ap1f, -0x1.a28838p-24f},
-    {0x1.2066p1f, 0x1.7cf7aap-24f},
-    {0x1.25127ap1f, -0x1.1ff5fap-25f},
-    {0x1.29771ep1f, -0x1.0310dcp-24f},
-    {0x1.2d97c8p1f, -0x1.99bc5cp-28f},
-  },
-  // pi - atan(i/16)
-  {
-    {0x1.921fb6p1f, -0x1.777a5cp-24f},
-    {0x1.8a225ep1f, 0x1.59de48p-25f},
-    {0x1.8234d8p1f, -0x1.2268c6p-28f},
-    {0x1.7a663ap1f, -0x1.e2e26p-29f},
-    {0x1.72c44p1f, -0x1.69d35ep-24f},
-    {0x1.6b5ac6p1f, 0x1.ac65f4p-24f},
-    {0x1.643382p1f, 0x1.80f228p-24f},
-    {0x1.5d55d8p1f, -0x1.0d55dap-25f},
-    {0x1.56c6e8p1f, -0x1.8d014ap-24f},
-    {0x1.5089bap1f, 0x1.e1ac1cp-24f},
-    {0x1.4a9f86p1f, 0x1.298daep-24f},
-    {0x1.4507f4p1f, 0x1.a213e6p-24f},
-    {0x1.3fc176p1f, 0x1.6f50acp-24f},
-    {0x1.3ac99p1f, -0x1.b02f36p-24f},
-    {0x1.361d16p1f, 0x1.730dc6p-26f},
-    {0x1.31b872p1f, 0x1.9fb2a2p-25f},
-    {0x1.2d97c8p1f, -0x1.99bc5cp-28f},
-  },
-  // cos(atan(i/16))
-  {
-    {1.0f, 0.0f},
-    {0x1.ff00cp-1f, -0x1.3ee8fcp-26f},
-    {0x1.fc0bd8p-1f, 0x1.141e3cp-26f},
-    {0x1.f73b06p-1f, -0x1.3e058ep-30f},
-    {0x1.f0b684p-1f, 0x1.1a55e4p-26f},
-    {0x1.e8b19ap-1f, -0x1.ed38d4p-27f},
-    {0x1.df668ap-1f, -0x1.20672cp-27f},
-    {0x1.d51292p-1f, 0x1.fd94eap-26f},
-    {0x1.c9f25cp-1f, 0x1.6ffb76p-27f},
-    {0x1.be3f26p-1f, 0x1.7e31cp-29f},
-    {0x1.b22cd6p-1f, -0x1.24f05p-26f},
-    {0x1.a5e8d2p-1f, 0x1.6be074p-26f},
-    {0x1.99999ap-1f, -0x1.99999ap-27f},
-    {0x1.8d5edp-1f, 0x1.c3bcap-27f},
-    {0x1.8151bcp-1f, -0x1.e40478p-27f},
-    {0x1.7585e6p-1f, 0x1.03fcdep-26f},
-    {0x1.6a09e6p-1f, 0x1.9fcef4p-27f},
-  },
-};
-#  undef _CCCL_FPMP_ATAN_TABLE
+// Rounded from 400-bit values (Sollya). A static local of a function with internal linkage, like
+// the tables of exp and log and for the same reason.
+static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __fpmp2_atan_entry __fpmp2_atan_table(const int __row, const int __i) noexcept
+{
+  static constexpr __fpmp2_atan_entry __table[5][17] = {
+    // atan(i/16)
+    {
+      {0.0f, 0.0f},
+      {0x1.ff55bcp-5f, -0x1.1a6042p-30f},
+      {0x1.fd5baap-4f, -0x1.54f424p-30f},
+      {0x1.7b97b4p-3f, 0x1.79cb6p-28f},
+      {0x1.f5b76p-3f, -0x1.b4dfc8p-29f},
+      {0x1.362774p-2f, -0x1.1f0286p-27f},
+      {0x1.6f6194p-2f, 0x1.e4defp-30f},
+      {0x1.a64eecp-2f, 0x1.e611fep-29f},
+      {0x1.dac67p-2f, 0x1.586ed4p-28f},
+      {0x1.0657eap-1f, -0x1.6499e6p-26f},
+      {0x1.1e00bap-1f, 0x1.7bdfd6p-26f},
+      {0x1.345f02p-1f, -0x1.98e422p-28f},
+      {0x1.4978fap-1f, 0x1.934f7p-28f},
+      {0x1.5d5898p-1f, 0x1.c5a6c6p-27f},
+      {0x1.700a7cp-1f, 0x1.5e118cp-27f},
+      {0x1.819d0cp-1f, -0x1.1d4eb6p-26f},
+      {0x1.921fb6p-1f, -0x1.777a5cp-26f},
+    },
+    // pi/2 - atan(i/16)
+    {
+      {0x1.921fb6p0f, -0x1.777a5cp-25f},
+      {0x1.822508p0f, -0x1.2ea75ap-25f},
+      {0x1.7249fap0f, 0x1.532d44p-25f},
+      {0x1.62acbep0f, 0x1.594c38p-25f},
+      {0x1.5368cap0f, -0x1.5c2c6p-25f},
+      {0x1.4495d8p0f, 0x1.a08c8ap-26f},
+      {0x1.36475p0f, 0x1.e57aaep-27f},
+      {0x1.288bfap0f, 0x1.a8920cp-27f},
+      {0x1.1b6e1ap0f, -0x1.a28838p-25f},
+      {0x1.0ef3cp0f, 0x1.3ad296p-25f},
+      {0x1.031f58p0f, -0x1.ab5242p-28f},
+      {0x1.efe068p-1f, 0x1.77444ep-26f},
+      {0x1.dac67p-1f, 0x1.586ed4p-27f},
+      {0x1.c6e6d2p-1f, 0x1.71bf18p-29f},
+      {0x1.b434eep-1f, 0x1.8809fep-28f},
+      {0x1.a2a26p-1f, -0x1.d1a604p-26f},
+      {0x1.921fb6p-1f, -0x1.777a5cp-26f},
+    },
+    // pi/2 + atan(i/16)
+    {
+      {0x1.921fb6p0f, -0x1.777a5cp-25f},
+      {0x1.a21a64p0f, -0x1.c04d6p-25f},
+      {0x1.b1f57p0f, -0x1.0887f8p-27f},
+      {0x1.c192acp0f, -0x1.2103c4p-27f},
+      {0x1.d0d6a2p0f, -0x1.92c85ap-25f},
+      {0x1.dfa992p0f, 0x1.031406p-27f},
+      {0x1.edf81ap0f, 0x1.2f5936p-26f},
+      {0x1.fbb37p0f, 0x1.4dcd86p-26f},
+      {0x1.0468a8p1f, 0x1.59c9bep-24f},
+      {0x1.0aa5d4p1f, 0x1.eb1c58p-24f},
+      {0x1.10900ap1f, -0x1.5cc538p-24f},
+      {0x1.16279cp1f, -0x1.d54b7p-24f},
+      {0x1.1b6e1ap1f, -0x1.a28838p-24f},
+      {0x1.2066p1f, 0x1.7cf7aap-24f},
+      {0x1.25127ap1f, -0x1.1ff5fap-25f},
+      {0x1.29771ep1f, -0x1.0310dcp-24f},
+      {0x1.2d97c8p1f, -0x1.99bc5cp-28f},
+    },
+    // pi - atan(i/16)
+    {
+      {0x1.921fb6p1f, -0x1.777a5cp-24f},
+      {0x1.8a225ep1f, 0x1.59de48p-25f},
+      {0x1.8234d8p1f, -0x1.2268c6p-28f},
+      {0x1.7a663ap1f, -0x1.e2e26p-29f},
+      {0x1.72c44p1f, -0x1.69d35ep-24f},
+      {0x1.6b5ac6p1f, 0x1.ac65f4p-24f},
+      {0x1.643382p1f, 0x1.80f228p-24f},
+      {0x1.5d55d8p1f, -0x1.0d55dap-25f},
+      {0x1.56c6e8p1f, -0x1.8d014ap-24f},
+      {0x1.5089bap1f, 0x1.e1ac1cp-24f},
+      {0x1.4a9f86p1f, 0x1.298daep-24f},
+      {0x1.4507f4p1f, 0x1.a213e6p-24f},
+      {0x1.3fc176p1f, 0x1.6f50acp-24f},
+      {0x1.3ac99p1f, -0x1.b02f36p-24f},
+      {0x1.361d16p1f, 0x1.730dc6p-26f},
+      {0x1.31b872p1f, 0x1.9fb2a2p-25f},
+      {0x1.2d97c8p1f, -0x1.99bc5cp-28f},
+    },
+    // cos(atan(i/16))
+    {
+      {1.0f, 0.0f},
+      {0x1.ff00cp-1f, -0x1.3ee8fcp-26f},
+      {0x1.fc0bd8p-1f, 0x1.141e3cp-26f},
+      {0x1.f73b06p-1f, -0x1.3e058ep-30f},
+      {0x1.f0b684p-1f, 0x1.1a55e4p-26f},
+      {0x1.e8b19ap-1f, -0x1.ed38d4p-27f},
+      {0x1.df668ap-1f, -0x1.20672cp-27f},
+      {0x1.d51292p-1f, 0x1.fd94eap-26f},
+      {0x1.c9f25cp-1f, 0x1.6ffb76p-27f},
+      {0x1.be3f26p-1f, 0x1.7e31cp-29f},
+      {0x1.b22cd6p-1f, -0x1.24f05p-26f},
+      {0x1.a5e8d2p-1f, 0x1.6be074p-26f},
+      {0x1.99999ap-1f, -0x1.99999ap-27f},
+      {0x1.8d5edp-1f, 0x1.c3bcap-27f},
+      {0x1.8151bcp-1f, -0x1.e40478p-27f},
+      {0x1.7585e6p-1f, 0x1.03fcdep-26f},
+      {0x1.6a09e6p-1f, 0x1.9fcef4p-27f},
+    },
+  };
+  return __table[__row][__i];
+}
 
 /*
  * atan(m / M) for pairs 0 <= m <= M (to within rounding), M normal, folded into `__row` of
@@ -943,7 +939,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_atan_kernel(
   if (__unit)
   {
     // t = n cos(atan(c))
-    const __fpmp2_atan_entry __cos = __fpmp2_atan_table[4][__i];
+    const __fpmp2_atan_entry __cos = ::cuda::__fpmp2_atan_table(4, __i);
     __t_hi                         = ::cuda::__fpmp_two_mult_fma(__n_hi, __cos.__hi, &__t_lo);
     __t_lo                         = ::cuda::__fpmp_fma_rn(__n_hi, __cos.__lo, __t_lo);
     __t_lo                         = ::cuda::__fpmp_fma_rn(__n_lo, __cos.__hi, __t_lo);
@@ -992,7 +988,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_atan_kernel(
   const float __y_lo = ::cuda::__fpmp_fma_rn(__t_lo, __z_hi, __p_lo);
 
   // table entry + t + y: the entry is zero or exceeds |t|, and |y| < 2^-9 |t|
-  const __fpmp2_atan_entry __s = __fpmp2_atan_table[__row][__i];
+  const __fpmp2_atan_entry __s = ::cuda::__fpmp2_atan_table(__row, __i);
   float __e2;
   const float __h1 = ::cuda::__fpmp_fast_two_sum(__s.__hi, __t_hi, &__e);
   const float __h2 = ::cuda::__fpmp_fast_two_sum(__h1, __y_hi, &__e2);
@@ -1862,8 +1858,8 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_atan_core(
       *__res_lo = __x_hi;
       return;
     }
-    __r_hi = __fpmp2_atan_table[1][0].__hi;
-    __r_lo = __fpmp2_atan_table[1][0].__lo;
+    __r_hi = ::cuda::__fpmp2_atan_table(1, 0).__hi;
+    __r_lo = ::cuda::__fpmp2_atan_table(1, 0).__lo;
   }
   else if (__high)
   {
@@ -1998,9 +1994,10 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_atan2_core(
       return;
     }
     // Both infinite: the diagonal. Otherwise an axis: one operand infinite, or both zero.
-    const __fpmp2_atan_entry __s = __fpmp2_atan_table[__row][(__ax_bits == __ay_bits && __ax_bits != 0u) ? 16 : 0];
-    __r_hi                       = __s.__hi;
-    __r_lo                       = __s.__lo;
+    const __fpmp2_atan_entry __s =
+      ::cuda::__fpmp2_atan_table(__row, (__ax_bits == __ay_bits && __ax_bits != 0u) ? 16 : 0);
+    __r_hi = __s.__hi;
+    __r_lo = __s.__lo;
   }
   else
   {
