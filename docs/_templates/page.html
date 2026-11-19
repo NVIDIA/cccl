@@ -1,0 +1,23 @@
+{#
+Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+
+SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+#}
+{% extends "!page.html" %}
+
+{% block body %}
+{% if cccl_text_url or cccl_raw_source_url %}
+<div class="admonition note">
+  <p class="admonition-title">{{ _("Agents") }}</p>
+  <p>
+    {% if cccl_text_url %}
+    Read this page as <a href="{{ cccl_text_url | e }}">plain text</a>{% if cccl_raw_source_url %},
+    or view its <a href="{{ cccl_raw_source_url | e }}">raw source on GitHub</a>{% endif %}.
+    {% else %}
+    View this page's <a href="{{ cccl_raw_source_url | e }}">raw source on GitHub</a>.
+    {% endif %}
+  </p>
+</div>
+{% endif %}
+{{ super() }}
+{% endblock %}

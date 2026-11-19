@@ -277,7 +277,15 @@ fi
 echo "Building documentation with Sphinx..."
 mkdir -p "${VERSIONED_HTML_DIR}"
 # Use the virtual environment's Python
-python -m sphinx.cmd.build -b html -d "${BUILDDIR}/doctrees" -j auto "." "${VERSIONED_HTML_DIR}" "${SPHINXOPTS[@]}"
+python -m sphinx.cmd.build -b html -d "${BUILDDIR}/doctrees" -j auto "." "${VERSIONED_HTML_DIR}" \
+    -D cccl_text_output=1 "${SPHINXOPTS[@]}"
+
+# Export expanded documentation for agents, including Doxygen and autodoc content.
+# Reuse the parsed documents; regenerating the API stubs would invalidate the cache.
+echo "Building plain-text documentation with Sphinx..."
+CCCL_DOCS_SKIP_AUTO_API_GENERATOR=1 python -m sphinx.cmd.build -b text \
+    -d "${BUILDDIR}/doctrees" -j auto "." "${VERSIONED_HTML_DIR}/_text" \
+    -D cccl_text_output=1 "${SPHINXOPTS[@]}"
 
 # Copy objects.inv to the root to support intersphinx consumers
 if [[ -f "${VERSIONED_HTML_DIR}/objects.inv" ]]; then
