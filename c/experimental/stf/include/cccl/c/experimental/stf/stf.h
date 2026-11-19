@@ -2474,6 +2474,27 @@ stf_logical_data_handle stf_stackable_logical_data_no_export_empty(stf_ctx_handl
 //! \brief Create a stackable synchronization token (no payload).
 stf_logical_data_handle stf_stackable_token(stf_ctx_handle ctx);
 
+//! \brief Allocate \p size bytes of device memory through the allocator of the
+//! current (head) level of a stackable context.
+//!
+//! The memory is owned by that level: for a nested graph level it is allocated
+//! on the level's support stream, outside the capture (so no allocation node
+//! enters the graph), and released when the level is popped (handed to the
+//! parent until the parent's graph has launched). This is what an external
+//! runtime (e.g. Warp through its allocator hook) uses for the temporaries it
+//! creates while recording into a scope. Returns NULL on failure.
+void* stf_stackable_allocate(stf_ctx_handle ctx, size_t size);
+
+//! \brief Return memory obtained from \c stf_stackable_allocate() to the current
+//! level's allocator. The release is deferred by the level (freed at pop), so it
+//! is safe to call while a graph that uses the memory is still being recorded.
+stf_error_t stf_stackable_deallocate(stf_ctx_handle ctx, void* ptr, size_t size);
+
+//! \brief Name the current (head) level of a stackable context, for DOT output
+//! and diagnostics (the default is the source location of the push). Call it
+//! right after pushing the level.
+stf_error_t stf_stackable_set_symbol(stf_ctx_handle ctx, const char* symbol);
+
 //! \brief Set the symbolic name of stackable logical data (debug / DOT output).
 stf_error_t stf_stackable_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol);
 

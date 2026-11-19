@@ -86,7 +86,7 @@ Feature dependencies (installed separately as needed):
   extras above).
 * ``cupy`` -- some ``cuda.compute`` / interop examples.
 * ``torch`` (PyTorch) -- the PyTorch interop adapter and its examples.
-* ``warp-lang`` (NVIDIA Warp) -- the Warp interop examples.
+* ``warp-lang`` (NVIDIA Warp) -- the Warp interop adapter and its examples.
 * ``nvmath-python`` -- examples that call cuBLAS/cuSOLVER via nvmath.
 
 Install ``cuda-stf`` from source (Linux only)::
