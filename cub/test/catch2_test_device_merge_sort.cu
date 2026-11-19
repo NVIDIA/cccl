@@ -13,19 +13,23 @@
 #include <thrust/reverse.h>
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
+#include <thrust/system/cuda/detail/execution_policy.h>
 #include <thrust/tabulate.h>
 #include <thrust/transform.h>
 
+#include <cuda/__utility/no_init.h>
 #include <cuda/buffer>
 #include <cuda/iterator>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
+#include <cuda/stream>
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <ostream>
 
 #include "catch2_large_array_sort_helper.cuh"
 #include "catch2_test_device_merge_sort_common.cuh"
