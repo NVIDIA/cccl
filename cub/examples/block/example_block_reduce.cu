@@ -19,7 +19,8 @@
 #include <cub/util_debug.cuh>
 
 #include <cstdio>
-#include <iostream>
+#include <cstdlib>
+#include <ctime>
 
 #include "../../test/test_util.h"
 

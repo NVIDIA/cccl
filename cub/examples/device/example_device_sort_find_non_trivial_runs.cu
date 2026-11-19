@@ -17,6 +17,8 @@
 
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/device/device_run_length_encode.cuh>
+#include <cub/util_debug.cuh>
+#include <cub/util_type.cuh>
 
 #include <cuda/buffer>
 #include <cuda/devices>
@@ -25,7 +27,10 @@
 #include <cuda/stream>
 
 #include <algorithm>
+#include <climits>
 #include <cstdio>
+#include <cstdlib>
+#include <ostream>
 
 #include "../../test/test_util.h"
 

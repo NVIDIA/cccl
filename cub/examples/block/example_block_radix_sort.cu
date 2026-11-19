@@ -16,9 +16,12 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_radix_sort.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/util_debug.cuh>
 
 #include <algorithm>
 #include <cstdio>
+#include <cstdlib>
+#include <ctime>
 #include <iostream>
 
 #include "../../test/test_util.h"

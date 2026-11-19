@@ -16,6 +16,8 @@
 #define CUB_STDERR
 
 #include <cub/device/device_radix_sort.cuh>
+#include <cub/util_debug.cuh>
+#include <cub/util_type.cuh>
 
 #include <cuda/buffer>
 #include <cuda/devices>
@@ -25,6 +27,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <cstdlib>
 
 #include "../../test/test_util.h"
 
