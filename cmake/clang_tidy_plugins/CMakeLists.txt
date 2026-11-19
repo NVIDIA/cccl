@@ -250,11 +250,7 @@ block()
       ${LLVM_INCLUDE_DIRS}
   )
   target_compile_definitions(cccl.tidy.plugins PRIVATE ${LLVM_DEFINITIONS_LIST})
-  target_link_libraries(
-    cccl.tidy.plugins
-    PRIVATE cccl::clang-tidy ${CCCL_LLVM_LIBS} clangToolingRefactoring
-  )
-
+  target_link_libraries(cccl.tidy.plugins PRIVATE cccl::clang-tidy)
   if (NOT CCCL_CLANG_TIDY_PLUGIN_RESPECT_CMAKE_BUILD_TYPE)
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
       message(
@@ -275,3 +271,4 @@ add_subdirectory(prefer_cuda_traits)
 add_subdirectory(simplify_type_traits)
 add_subdirectory(nodebug_on_aliases)
 add_subdirectory(hide_from_abi)
+add_subdirectory(prefer_addressof)

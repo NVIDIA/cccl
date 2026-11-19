@@ -13,4 +13,4 @@
 
 using value_types = integral_types;
 using op_t        = cub::detail::arg_min;
-#include "base.cuh"
+#include "fixed_size_base.cuh"

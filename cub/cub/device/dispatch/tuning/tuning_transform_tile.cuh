@@ -13,7 +13,7 @@
 
 #include <cub/device/dispatch/dispatch_transform_tile_config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -48,7 +48,7 @@ constexpr int pick_tile_size(bool mufu_heavy = false, ::cuda::compute_capability
   constexpr int max_items_per_thread = 32;
   constexpr int max_occupancy        = 16;
 
-  constexpr auto min_elem     = ::cuda::std::min({sizeof(Out), sizeof(Ins)...});
+  constexpr auto min_elem     = (::cuda::std::min) ({sizeof(Out), sizeof(Ins)...});
   constexpr int items_for_vec = ::cuda::ceil_div(vector_bytes, min_elem);
 
   // Fill (zero inputs) keeps the same latency target by counting output bytes.
@@ -57,7 +57,7 @@ constexpr int pick_tile_size(bool mufu_heavy = false, ::cuda::compute_capability
   const int items_for_latency =
     static_cast<int>(::cuda::ceil_div(target, max_occupancy * threads_per_block * bytes_per_iter));
 
-  int items = ::cuda::std::max(items_for_vec, items_for_latency);
+  int items = (::cuda::std::max) (items_for_vec, items_for_latency);
   items     = static_cast<int>(::cuda::next_power_of_two(static_cast<unsigned>(items)));
   if (items > max_items_per_thread)
   {

@@ -9,7 +9,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -182,7 +182,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
   using vector_t = typename CubVector<device_word_t, vector_size>::Type;
 
   // The staging array is accessed as vectors and as T, so it needs the stricter of the two alignments
-  constexpr auto staging_alignment = ::cuda::std::max(alignof(vector_t), alignof(T));
+  constexpr auto staging_alignment = (::cuda::std::max) (alignof(vector_t), alignof(T));
 
   // Add the alignment check to ensure the vectorized storing can proceed.
   if (::cuda::std::is_sufficiently_aligned<staging_alignment>(block_ptr))

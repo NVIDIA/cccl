@@ -347,6 +347,9 @@ CheckOptions:
   readability-enum-initial-value.AllowExplicitZeroFirstInitialValue: 'false'
   readability-enum-initial-value.AllowExplicitSequentialInitialValues: 'false'
   readability-redundant-access-specifiers.CheckFirstDeclaration: 'true'
+  # Parenthesizing a call like `(::cuda::std::numeric_limits<T>::max)()` keeps the function-like
+  # `min` and `max` macros of <windows.h> from expanding.
+  readability-redundant-parentheses.AllowedDecls: 'max;min'
   # readability-identifier-naming.ClassCase: 'lower_case'
   # readability-identifier-naming.UnionCase: 'lower_case'
   # readability-identifier-naming.ClassConstantCase: 'UPPER_CASE'

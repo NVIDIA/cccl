@@ -85,13 +85,13 @@ static std::string get_for_kernel_user_op(cccl_op_t user_op, cccl_iterator_t ite
 #define _USER_OP {1}
 #define _USER_OP_INPUT_T {2}
 
-#if defined(_STATEFUL_USER_OP)
+#ifdef _STATEFUL_USER_OP
 extern "C" __device__ void _USER_OP(void*, _USER_OP_INPUT_T*);
 #else
 extern "C" __device__ void _USER_OP(_USER_OP_INPUT_T*);
 #endif
 
-#if defined(_STATEFUL_USER_OP)
+#ifdef _STATEFUL_USER_OP
 struct __align__({3}) user_op_t {{
   char data[{4}];
 #else
@@ -99,7 +99,7 @@ struct user_op_t {{
 #endif
 
   __device__ void operator()(_USER_OP_INPUT_T* input) {{
-#if defined(_STATEFUL_USER_OP)
+#ifdef _STATEFUL_USER_OP
     _USER_OP(&data, input);
 #else
     _USER_OP(input);
