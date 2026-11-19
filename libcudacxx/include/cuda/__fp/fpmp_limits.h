@@ -84,8 +84,9 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed = true;
-  // A non-overlapping double-word carries 2*p - 2 contiguous mantissa bits.
-  static constexpr int digits = 2 * __base::digits - 2;
+  // Any number with contiguous 2*p mantissa digits can be represented with ::cuda::fpmp2 type
+  // Given exponent is in the range where both high and low parts are not denormals
+  static constexpr int digits = 2 * __base::digits;
 
   // Both decimal-digit counts convert `digits` via log10(2), approximated by 30103/100000 (as CCCL's
   // float/double specializations do); the `l` suffix promotes to long so the product can't overflow int.
