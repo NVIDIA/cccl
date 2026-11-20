@@ -60,7 +60,7 @@ _CCCL_DEVICE_API fpmp2<_FpType, _TypeAcc>
 atomicSub(fpmp2<_FpType, _TypeAcc>* __address, const fpmp2<_FpType, _TypeAcc>& __val) noexcept;
 #endif // _CCCL_CUDA_COMPILATION()
 
-#if !(defined _CCCL_FPMP_USE_LIB)
+#ifndef _CCCL_FPMP_USE_LIB
 /*
  * --------------------------------------------------------------------
  * Atomic operations (CUDA device only)

@@ -109,7 +109,7 @@ struct i_bit_ceil
 template <typename L>
 TEST_FUNC void test_invocable()
 {
-#if defined(CPP17_PERFORM_INVOCABLE_TEST)
+#ifdef CPP17_PERFORM_INVOCABLE_TEST
   static_assert(cuda::std::is_invocable_v<L, unsigned char>);
   static_assert(cuda::std::is_invocable_v<L, unsigned int>);
   static_assert(cuda::std::is_invocable_v<L, unsigned long>);

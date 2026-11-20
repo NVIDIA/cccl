@@ -40,7 +40,7 @@
 //! The utilities are designed to work across both host and device code through
 //! appropriate decorators and provide consistent behavior across different
 //! platforms and compilers.
-#if !defined(__CUDA_LIBDEVICE__)
+#ifndef __CUDA_LIBDEVICE__
 #  include <cuda/std/cstdint>
 #endif
 

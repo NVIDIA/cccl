@@ -36,7 +36,7 @@ __DEVICE__ unsigned long long __brevll(unsigned long long __a)
 {
   return __nv_brevll(__a);
 }
-#if defined(__cplusplus)
+#ifdef __cplusplus
 __DEVICE__ void __brkpt()
 {
   __asm__ __volatile__("brkpt;");

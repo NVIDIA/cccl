@@ -15,7 +15,7 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
-#if defined(_LIBCUDACXX_HAS_MEMORY)
+#ifdef _LIBCUDACXX_HAS_MEMORY
 #  include <cuda/std/memory>
 #endif
 
@@ -53,7 +53,7 @@ int main(int, char**)
     test(random_access_iterator<char*>(s + 5), 4, '0');
     test(s + 5, 4, '0');
   }
-#if defined(_LIBCUDACXX_HAS_MEMORY)
+#ifdef _LIBCUDACXX_HAS_MEMORY
   {
     int i[5];
     using Ptr = cuda::std::unique_ptr<int, do_nothing>;

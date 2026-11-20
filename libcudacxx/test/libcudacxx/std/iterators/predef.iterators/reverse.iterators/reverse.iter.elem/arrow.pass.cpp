@@ -19,7 +19,7 @@
 //    http://www.open-std.org/jtc1/sc22/wg21/docs/lwg-defects.html#2360
 
 #include <cuda/std/iterator>
-#if defined(_LIBCUDACXX_HAS_LIST)
+#ifdef _LIBCUDACXX_HAS_LIST
 #  include <cuda/std/list>
 #endif
 #include <cuda/std/cassert>
@@ -119,7 +119,7 @@ int main(int, char**)
   A a;
   test(&a + 1, A());
 
-#if defined(_LIBCUDACXX_HAS_LIST)
+#ifdef _LIBCUDACXX_HAS_LIST
   {
     cuda::std::list<B> l;
     l.push_back(B(0));

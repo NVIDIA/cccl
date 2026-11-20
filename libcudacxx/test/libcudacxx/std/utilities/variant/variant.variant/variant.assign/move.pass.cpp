@@ -16,7 +16,7 @@
 // constexpr variant& operator=(variant&&) noexcept(see below);
 
 #include <cuda/std/cassert>
-#if defined(_LIBCUDACXX_HAS_STRING)
+#ifdef _LIBCUDACXX_HAS_STRING
 // #include <cuda/std/string>
 #endif // _LIBCUDACXX_HAS_STRING
 #include <cuda/std/type_traits>
@@ -278,7 +278,7 @@ void test_move_assignment_non_empty_empty()
     assert(v1.valueless_by_exception());
     assert(v1.index() == cuda::std::variant_npos);
   }
-#  if defined(_LIBCUDACXX_HAS_STRING)
+#  ifdef _LIBCUDACXX_HAS_STRING
   {
     using V = cuda::std::variant<int, MET, cuda::std::string>;
     V v1(cuda::std::in_place_index<2>, "hello");
@@ -305,7 +305,7 @@ void test_move_assignment_empty_non_empty()
     assert(v1.index() == 0);
     assert(cuda::std::get<0>(v1) == 42);
   }
-#  if defined(_LIBCUDACXX_HAS_STRING)
+#  ifdef _LIBCUDACXX_HAS_STRING
   {
     using V = cuda::std::variant<int, MET, cuda::std::string>;
     V v1(cuda::std::in_place_index<0>);
@@ -360,7 +360,7 @@ TEST_FUNC void test_move_assignment_same_index()
     assert(MoveAssign::move_assign() == 1);
   }
 #if TEST_HAS_EXCEPTIONS()
-#  if defined(_LIBCUDACXX_HAS_STRING)
+#  ifdef _LIBCUDACXX_HAS_STRING
   using MET = MakeEmptyT;
   {
     using V = cuda::std::variant<int, MET, cuda::std::string>;
@@ -455,7 +455,7 @@ TEST_FUNC void test_move_assignment_different_index()
     assert(MoveAssign::move_assign() == 0);
   }
 #if TEST_HAS_EXCEPTIONS()
-#  if defined(_LIBCUDACXX_HAS_STRING)
+#  ifdef _LIBCUDACXX_HAS_STRING
   using MET = MakeEmptyT;
   {
     using V = cuda::std::variant<int, MET, cuda::std::string>;

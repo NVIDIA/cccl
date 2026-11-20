@@ -411,7 +411,7 @@ public:
     return _CCCL_TYPEID(_Interface);
   }
 
-#if !defined(_CCCL_DOXYGEN_INVOKED) // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   [[nodiscard]] _CCCL_HOST_DEVICE_API auto __in_situ() const noexcept -> bool
   {
     return __vptr_.__flag();
