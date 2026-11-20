@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -19,7 +19,7 @@ namespace detail
 // a type which may be assigned any other type
 struct any_assign
 {
-  any_assign() = default;
+  _CCCL_HIDE_FROM_ABI any_assign() = default;
 
   template <typename T>
   _CCCL_API any_assign(T)

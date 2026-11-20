@@ -10,7 +10,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -18,11 +18,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/memory.h>
+#include <thrust/detail/pointer.h>
+#include <thrust/iterator/detail/device_system_tag.h>
 
-#include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__memory/addressof.h>
-#include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__iterator/iterator_traits.h> // IWYU pragma: keep
 
 THRUST_NAMESPACE_BEGIN
 template <typename T>
@@ -103,7 +103,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE device_ptr(std::nullptr_t)
+  _CCCL_HOST_DEVICE_API device_ptr(std::nullptr_t)
       : super_t(nullptr)
   {}
 
@@ -124,7 +124,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE explicit device_ptr(U* ptr)
+  _CCCL_HOST_DEVICE_API explicit device_ptr(U* ptr)
       : super_t(ptr)
   {}
 
@@ -143,7 +143,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE device_ptr(device_ptr<U> const& other)
+  _CCCL_HOST_DEVICE_API device_ptr(device_ptr<U> const& other)
       : super_t(other)
   {}
 
@@ -164,7 +164,7 @@ public:
    *  \endverbatim
    */
   template <typename U>
-  _CCCL_HOST_DEVICE device_ptr& operator=(device_ptr<U> const& other)
+  _CCCL_HOST_DEVICE_API device_ptr& operator=(device_ptr<U> const& other)
   {
     super_t::operator=(other);
     return *this;
@@ -182,7 +182,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE device_ptr& operator=(std::nullptr_t)
+  _CCCL_HOST_DEVICE_API device_ptr& operator=(std::nullptr_t)
   {
     super_t::operator=(nullptr);
     return *this;
@@ -202,7 +202,8 @@ public:
  *  \endverbatim
  */
 template <typename T, typename CharT, typename Traits>
-_CCCL_HOST std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, device_ptr<T> const& dp);
+_CCCL_HOST_API std::basic_ostream<CharT, Traits>&
+operator<<(std::basic_ostream<CharT, Traits>& os, device_ptr<T> const& dp);
 #endif
 
 /*! \brief Create a \c device_ptr from a raw pointer.
@@ -219,7 +220,7 @@ _CCCL_HOST std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<Char
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE device_ptr<T> device_pointer_cast(T* ptr);
+_CCCL_HOST_DEVICE_API device_ptr<T> device_pointer_cast(T* ptr);
 
 /*! \brief Create a \c device_ptr from another \c device_ptr.
  *
@@ -231,12 +232,12 @@ _CCCL_HOST_DEVICE device_ptr<T> device_pointer_cast(T* ptr);
  *  \endverbatim
  */
 template <typename T>
-_CCCL_HOST_DEVICE device_ptr<T> device_pointer_cast(device_ptr<T> const& dptr);
+_CCCL_HOST_DEVICE_API device_ptr<T> device_pointer_cast(device_ptr<T> const& dptr);
 
 /*! \} // memory_management
  */
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/device_ptr.inl>
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/detail/device_ptr.inl> // IWYU pragma: export
+#include <thrust/detail/raw_pointer_cast.h> // IWYU pragma: export

@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -23,6 +23,7 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_namespace.cuh>
 
+#include <cuda/__memory/uninitialized.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/is_same.h>
 
@@ -103,7 +104,7 @@ struct AgentBlockSort
   ValueT* items_out_raw;
   CompareOpT compare_op;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentBlockSort(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentBlockSort(
     bool ping_,
     TempStorage& storage_,
     KeysLoadIt keys_in_,
@@ -126,7 +127,7 @@ struct AgentBlockSort
       , compare_op(compare_op_)
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Process()
   {
     const auto tile_idx     = static_cast<OffsetT>(blockIdx.x);
     const auto num_tiles    = static_cast<OffsetT>(gridDim.x);
@@ -144,9 +145,11 @@ struct AgentBlockSort
   }
 
   template <bool IsLastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(OffsetT tile_base, int num_remaining)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void consume_tile(OffsetT tile_base, int num_remaining)
   {
-    ValueT items_local[ITEMS_PER_THREAD];
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    ::cuda::__uninitialized<ValueT[ITEMS_PER_THREAD]> items_storage;
+    auto& items_local = items_storage.alias();
 
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
@@ -165,7 +168,9 @@ struct AgentBlockSort
       __syncthreads();
     }
 
-    KeyT keys_local[ITEMS_PER_THREAD];
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    ::cuda::__uninitialized<KeyT[ITEMS_PER_THREAD]> keys_storage;
+    auto& keys_local = keys_storage.alias();
     if constexpr (IsLastTile)
     {
       BlockLoadKeys(storage.load_keys).Load(keys_in + tile_base, keys_local, num_remaining, *(keys_in + tile_base));
@@ -272,7 +277,7 @@ struct AgentPartition
   int items_per_tile;
   OffsetT num_partitions;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Process()
   {
     const OffsetT merged_tiles_number = target_merged_tiles_number / 2;
 
@@ -338,7 +343,7 @@ struct AgentPartition
  * stores the result in output[item].
  */
 template <int BlockThreads, bool IsFullTile, int ItemsPerThread, class T, class It1, class It2>
-_CCCL_DEVICE _CCCL_FORCEINLINE void
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
 gmem_to_reg(T (&output)[ItemsPerThread], It1 input1, It2 input2, int count1, int count2)
 {
   if constexpr (IsFullTile)
@@ -346,7 +351,7 @@ gmem_to_reg(T (&output)[ItemsPerThread], It1 input1, It2 input2, int count1, int
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      const int idx = BlockThreads * item + threadIdx.x;
+      const int idx = (BlockThreads * item) + threadIdx.x;
       // It1 and It2 could have different value types. Convert after load.
       output[item] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
     }
@@ -356,7 +361,7 @@ gmem_to_reg(T (&output)[ItemsPerThread], It1 input1, It2 input2, int count1, int
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ItemsPerThread; ++item)
     {
-      const int idx = BlockThreads * item + threadIdx.x;
+      const int idx = (BlockThreads * item) + threadIdx.x;
       if (idx < count1 + count2)
       {
         output[item] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
@@ -367,12 +372,12 @@ gmem_to_reg(T (&output)[ItemsPerThread], It1 input1, It2 input2, int count1, int
 
 /// \brief Stores data in a coalesced fashion in[item] -> out[BlockThreads * item + tid]
 template <int BlockThreads, int ItemsPerThread, class T, class It>
-_CCCL_DEVICE _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[ItemsPerThread])
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[ItemsPerThread])
 {
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int item = 0; item < ItemsPerThread; ++item)
   {
-    const int idx = BlockThreads * item + threadIdx.x;
+    const int idx = (BlockThreads * item) + threadIdx.x;
     output[idx]   = input[item];
   }
 }
@@ -467,7 +472,7 @@ struct AgentMerge
   //---------------------------------------------------------------------
 
   template <bool IsFullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(int tid, OffsetT tile_idx, OffsetT tile_base, int count)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void consume_tile(int tid, OffsetT tile_idx, OffsetT tile_base, int count)
   {
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
@@ -485,7 +490,7 @@ struct AgentMerge
     const OffsetT start = ITEMS_PER_TILE * list;
     const OffsetT size  = ITEMS_PER_TILE * merged_tiles_number;
 
-    const OffsetT diag = ITEMS_PER_TILE * tile_idx - start;
+    const OffsetT diag = (ITEMS_PER_TILE * tile_idx) - start;
 
     const OffsetT keys1_beg = partition_beg - start;
     OffsetT keys1_end       = partition_end - start;
@@ -514,7 +519,9 @@ struct AgentMerge
     const int num_keys2 = static_cast<int>(keys2_end - keys2_beg);
 
     // load keys1 & keys2
-    KeyT keys_local[ITEMS_PER_THREAD];
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    ::cuda::__uninitialized<KeyT[ITEMS_PER_THREAD]> keys_storage;
+    auto& keys_local = keys_storage.alias();
     if (ping)
     {
       _CUB::detail::merge_sort::gmem_to_reg<BLOCK_THREADS, IsFullTile>(
@@ -529,7 +536,9 @@ struct AgentMerge
 
     // preload items into registers already
     //
-    [[maybe_unused]] ValueT items_local[ITEMS_PER_THREAD]; // NOLINT(misc-const-correctness)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    [[maybe_unused]] ::cuda::__uninitialized<ValueT[ITEMS_PER_THREAD]> items_storage;
+    [[maybe_unused]] auto& items_local = items_storage.alias();
     if constexpr (!KEYS_ONLY)
     {
       if (ping)
@@ -657,7 +666,7 @@ struct AgentMerge
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentMerge(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE AgentMerge(
     bool ping_,
     TempStorage& storage_,
     KeysLoadPingIt keys_in_ping_,
@@ -688,7 +697,7 @@ struct AgentMerge
       , target_merged_tiles_number(target_merged_tiles_number_)
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Process()
   {
     const int tile_idx      = static_cast<int>(blockIdx.x);
     const int num_tiles     = static_cast<int>(gridDim.x);

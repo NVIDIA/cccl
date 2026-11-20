@@ -16,6 +16,7 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 #include <cuda/stream>
 #include <cuda/warp>
 
@@ -56,7 +57,7 @@ struct rank_label_fn
     }
     else
     {
-      return static_cast<Label>(static_cast<Label>(Modulus - 1 - rank % Modulus) << Shift);
+      return static_cast<Label>(static_cast<Label>(Modulus - 1 - (rank % Modulus)) << Shift);
     }
   }
 
@@ -64,6 +65,45 @@ struct rank_label_fn
   __device__ Label operator()(const MappingResult& mapping_result) const
   {
     return label(mapping_result.unit_rank());
+  }
+};
+
+struct MutableLabelFn
+{
+  unsigned* calls;
+
+  template <class MappingResult>
+  __device__ int operator()(const MappingResult& mapping_result) &
+  {
+    ++*calls;
+    return static_cast<int>(mapping_result.unit_rank() % 2);
+  }
+};
+
+struct OverloadedLabelFn : MutableLabelFn
+{
+  using MutableLabelFn::operator();
+
+  template <class MappingResult>
+  __device__ int operator()(const MappingResult& mapping_result) const&
+  {
+    ++*calls;
+    return static_cast<int>(mapping_result.unit_rank() % 3);
+  }
+};
+
+struct ConstOnlyLabelFn
+{
+  unsigned* calls;
+
+  template <class MappingResult>
+  __device__ int operator()(const MappingResult&) & = delete;
+
+  template <class MappingResult>
+  __device__ int operator()(const MappingResult& mapping_result) const&
+  {
+    ++*calls;
+    return static_cast<int>(mapping_result.unit_rank() % 2);
   }
 };
 
@@ -109,28 +149,22 @@ __device__ void check_partition(const Result& result, unsigned group_count, unsi
   }
 }
 
-template <unsigned Count = 32, class Config, class LabelFn, class... NonExhaustive>
-__device__ void test_labeled_partition(Config config, LabelFn label_fn, const NonExhaustive&... non_exhaustive)
+template <unsigned Count, class Config, class Mapping, class LabelFn, class... NonExhaustive>
+__device__ void
+check_labeled_partition(Config config, Mapping& mapping, LabelFn label_fn, const NonExhaustive&... non_exhaustive)
 {
-  using Mapping = cudax::coop::labeled_partition<LabelFn>;
-
-  // Test construction and class template argument deduction.
-  static_assert(cuda::std::is_constructible_v<Mapping, LabelFn>);
-  const cudax::coop::labeled_partition deduced_mapping{label_fn};
-  static_assert(cuda::std::is_same_v<decltype(deduced_mapping), const Mapping>);
-
   const cudax::coop::this_warp parent_group{config};
   const ThreadsInWarpMappingResult initial_mapping_result;
   const cudax::coop::take prefix{cuda::std::cw<Count>};
   const auto prev_mapping_result =
     prefix.map(cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, initial_mapping_result);
 
-  Mapping mapping{label_fn};
   const auto result = mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result);
   using Result      = decltype(result);
 
   static_assert(cudax::coop::__group_mapping_result<Result>);
   static_assert(Result::static_group_count() == cuda::std::dynamic_extent);
+  static_assert(Result::static_group_rank() == cuda::std::dynamic_extent);
   static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
   static_assert(Result::is_always_exhaustive() == (Count == 32));
   static_assert(!Result::is_always_contiguous());
@@ -166,6 +200,70 @@ __device__ void test_labeled_partition(Config config, LabelFn label_fn, const No
   }
 }
 
+template <bool ConstCallable,
+          unsigned Count,
+          class Config,
+          class LabelFn,
+          class MutableReferenceFn,
+          class ConstReferenceFn,
+          class... NonExhaustive>
+__device__ void test_label_callable(
+  Config config,
+  LabelFn label_fn,
+  MutableReferenceFn mutable_reference_fn,
+  ConstReferenceFn const_reference_fn,
+  const NonExhaustive&... non_exhaustive)
+{
+  using Mapping = cudax::coop::labeled_partition<LabelFn>;
+  cudax::coop::labeled_partition mapping{label_fn};
+  static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
+  static_assert(cuda::std::is_constructible_v<Mapping, LabelFn>);
+
+  const cudax::coop::this_warp parent_group{config};
+  const ThreadsInWarpMappingResult initial;
+  const auto prev =
+    cudax::coop::take{cuda::std::cw<Count>}.map(cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, initial);
+  using Parent   = decltype(parent_group);
+  using Previous = decltype(prev);
+  static_assert(can_map_group<Mapping, NonExhaustive..., cuda::thread_level, Parent, Previous>);
+  static_assert(can_map_group<const Mapping, NonExhaustive..., cuda::thread_level, Parent, Previous> == ConstCallable);
+  using UncallableMapping = cudax::coop::labeled_partition<int>;
+  static_assert(!can_map_group<UncallableMapping, NonExhaustive..., cuda::thread_level, Parent, Previous>);
+  static_assert(!can_map_group<const UncallableMapping, NonExhaustive..., cuda::thread_level, Parent, Previous>);
+
+  check_labeled_partition<Count>(config, mapping, mutable_reference_fn, non_exhaustive...);
+  if constexpr (ConstCallable)
+  {
+    check_labeled_partition<Count>(config, cuda::std::as_const(mapping), const_reference_fn, non_exhaustive...);
+  }
+}
+
+template <unsigned Count = 32, class Config, class LabelFn, class... NonExhaustive>
+__device__ void test_labeled_partition(Config config, LabelFn label_fn, const NonExhaustive&... non_exhaustive)
+{
+  test_label_callable<true, Count>(config, label_fn, label_fn, label_fn, non_exhaustive...);
+}
+
+template <unsigned Count, class Config, class... NonExhaustive>
+__device__ void test_callable_qualification(Config config, const NonExhaustive&... non_exhaustive)
+{
+  const rank_label_fn<int, 2> pairs;
+  const rank_label_fn<int, 3> triples;
+  const auto expected_calls = (cuda::gpu_thread.rank_as<unsigned>(cuda::warp) < Count) ? 1u : 0u;
+
+  unsigned calls = 0;
+  test_label_callable<false, Count>(config, MutableLabelFn{&calls}, pairs, pairs, non_exhaustive...);
+  REQUIRE(calls == expected_calls);
+
+  calls = 0;
+  test_label_callable<true, Count>(config, OverloadedLabelFn{{&calls}}, pairs, triples, non_exhaustive...);
+  REQUIRE(calls == 2 * expected_calls);
+
+  calls = 0;
+  test_label_callable<true, Count>(config, ConstOnlyLabelFn{&calls}, pairs, pairs, non_exhaustive...);
+  REQUIRE(calls == 2 * expected_calls);
+}
+
 template <class Label, unsigned Modulus, class Config, class... NonExhaustive>
 __device__ void test_previous_partitions(Config config, const NonExhaustive&... non_exhaustive)
 {
@@ -189,7 +287,7 @@ __device__ void test_previous_partitions(Config config, const NonExhaustive&... 
     {
       for (unsigned other_rank = lane % 8 % Modulus; other_rank < count; other_rank += Modulus)
       {
-        mask |= 1u << (lane / 8 * 8 + other_rank);
+        mask |= 1u << ((lane / 8 * 8) + other_rank);
       }
     }
     check_partition(result, 4 * Modulus, mask);
@@ -200,7 +298,7 @@ __device__ void test_previous_partitions(Config config, const NonExhaustive&... 
     auto even_rank = [](const auto& previous) {
       return previous.unit_rank() % 2 == 0;
     };
-    cudax::coop::binary_partition partition{even_rank};
+    const cudax::coop::binary_partition partition{even_rank};
     const auto prev_mapping_result = partition.map(cuda::gpu_thread, parent_group, initial_mapping_result);
     cudax::coop::labeled_partition mapping{rank_label_fn<Label, Modulus>{}};
     const auto result = mapping.map(non_exhaustive..., cuda::gpu_thread, parent_group, prev_mapping_result);
@@ -229,6 +327,8 @@ __device__ void test_labels(Config config, const NonExhaustive&... non_exhaustiv
   test_labeled_partition(config, rank_label_fn<bool_label, 2>{}, non_exhaustive...);
 
   test_labeled_partition(config, constant_label_fn<int>{-7}, non_exhaustive...);
+  const int label = -7;
+  test_labeled_partition(config, constant_label_fn<const int&>{label}, non_exhaustive...);
   test_labeled_partition(config, rank_label_fn<int, 32>{}, non_exhaustive...);
   test_labeled_partition(config, rank_label_fn<int, 3>{}, non_exhaustive...);
   test_labeled_partition(config, rank_label_fn<cuda::std::int8_t, 3>{}, non_exhaustive...);
@@ -246,6 +346,9 @@ __device__ void test_labels(Config config, const NonExhaustive&... non_exhaustiv
   test_labeled_partition(config, rank_label_fn<__int128_t, 3, 80>{}, non_exhaustive...);
   test_labeled_partition(config, rank_label_fn<__uint128_t, 3, 80>{}, non_exhaustive...);
 #endif // _CCCL_HAS_INT128()
+
+  test_callable_qualification<32>(config, non_exhaustive...);
+  test_callable_qualification<17>(config, non_exhaustive...);
 
   test_previous_partitions<bool, 2>(config, non_exhaustive...);
   test_previous_partitions<bool_label, 2>(config, non_exhaustive...);

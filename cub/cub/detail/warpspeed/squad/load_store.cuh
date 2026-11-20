@@ -4,7 +4,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -377,7 +377,7 @@ _CCCL_DEVICE_API void squadLoadSmem(Squad squad, AccumT (&outReg)[ElemPerThread]
   _CCCL_IKET_RANGE_PUSH(LoadSmem);
   for (int i = 0; i < ElemPerThread; ++i)
   {
-    const int elem_idx = squad.threadRank() * ElemPerThread + i;
+    const int elem_idx = (squad.threadRank() * ElemPerThread) + i;
     outReg[i]          = smemBuf[elem_idx];
   }
   _CCCL_IKET_RANGE_POP();
@@ -389,7 +389,7 @@ _CCCL_DEVICE_API void squadStoreSmem(Squad squad, OutputT* smemBuf, const AccumT
   _CCCL_IKET_RANGE_PUSH(StoreSmem);
   for (int i = 0; i < ElemPerThread; ++i)
   {
-    const int elem_idx = squad.threadRank() * ElemPerThread + i;
+    const int elem_idx = (squad.threadRank() * ElemPerThread) + i;
     smemBuf[elem_idx]  = inReg[i];
   }
   _CCCL_IKET_RANGE_POP();
@@ -402,7 +402,7 @@ squadStoreSmemPartial(Squad squad, OutputT* smemBuf, const AccumT (&inReg)[ElemP
   _CCCL_IKET_RANGE_PUSH(StoreSmem);
   for (int i = 0; i < ElemPerThread; ++i)
   {
-    const int elem_idx = squad.threadRank() * ElemPerThread + i;
+    const int elem_idx = (squad.threadRank() * ElemPerThread) + i;
     if (beginIndex <= elem_idx && elem_idx < endIndex)
     {
       smemBuf[elem_idx - beginIndex] = inReg[i];

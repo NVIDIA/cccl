@@ -29,7 +29,7 @@ static void blocked_mapper_1d(stf_pos4* result, stf_pos4 data_coords, stf_dim4 d
   {
     part_size = 1;
   }
-  const int64_t c = static_cast<int64_t>(data_coords.x);
+  const int64_t c = data_coords.x;
   int64_t place_x = c / static_cast<int64_t>(part_size);
   if (place_x >= static_cast<int64_t>(nplaces))
   {
@@ -741,7 +741,7 @@ C2H_TEST("data_place_allocate_invalid_returns_null", "[places][allocate]")
 {
   stf_data_place_handle inv = stf_data_place_affine();
   REQUIRE(inv != nullptr);
-  void* ptr = stf_data_place_allocate(inv, 64, nullptr);
+  const void* ptr = stf_data_place_allocate(inv, 64, nullptr);
   REQUIRE(ptr == nullptr);
   stf_data_place_destroy(inv);
 }

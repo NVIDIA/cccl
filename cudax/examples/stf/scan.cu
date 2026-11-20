@@ -191,12 +191,14 @@ int main(int argc, char** argv)
 
   if (check)
   {
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 0
     for (size_t i = 0; i < N; i++) {
         EXPECT(fabs(X[i] - expected_result[i]) < 0.00001);
     }
 #endif
 
+// NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if)
 #if 1
     fprintf(stderr, "Checking result ...\n");
     EXPECT(fabs(X[0] - X0(0)) < 0.00001);

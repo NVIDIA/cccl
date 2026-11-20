@@ -6,7 +6,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -35,23 +35,23 @@ struct DoubleBuffer
   int selector = 0;
 
   /// \brief Constructor
-  DoubleBuffer() = default;
+  _CCCL_HIDE_FROM_ABI DoubleBuffer() = default;
 
   /// \brief Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE DoubleBuffer(T* d_current, ///< The currently valid buffer
-                                                   T* d_alternate) ///< Alternate storage buffer of the same size as \p
-                                                                   ///< d_current
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE DoubleBuffer(T* d_current, ///< The currently valid buffer
+                                                       T* d_alternate) ///< Alternate storage buffer of the same size as
+                                                                       ///< \p d_current
       : d_buffers{d_current, d_alternate}
   {}
 
   /// \brief Return pointer to the currently valid buffer
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T* Current()
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE T* Current()
   {
     return d_buffers[selector];
   }
 
   /// \brief Return pointer to the currently invalid buffer
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T* Alternate()
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE T* Alternate()
   {
     return d_buffers[selector ^ 1];
   }

@@ -68,7 +68,7 @@ TEST_FUNC void test_const_lvalue_get()
     assert(cuda::std::get<1>(v) == 42);
   }
 // FIXME: Remove these once reference support is reinstated
-#if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
+#ifndef TEST_VARIANT_HAS_NO_REFERENCES
   {
     using V = cuda::std::variant<int&>;
     int x   = 42;
@@ -109,7 +109,7 @@ TEST_FUNC void test_lvalue_get()
     assert(cuda::std::get<1>(v) == 42);
   }
 // FIXME: Remove these once reference support is reinstated
-#if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
+#ifndef TEST_VARIANT_HAS_NO_REFERENCES
   {
     using V = cuda::std::variant<int&>;
     int x   = 42;
@@ -157,7 +157,7 @@ TEST_FUNC void test_rvalue_get()
     assert(cuda::std::get<1>(cuda::std::move(v)) == 42);
   }
 // FIXME: Remove these once reference support is reinstated
-#if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
+#ifndef TEST_VARIANT_HAS_NO_REFERENCES
   {
     using V = cuda::std::variant<int&>;
     int x   = 42;
@@ -207,7 +207,7 @@ TEST_FUNC void test_const_rvalue_get()
     assert(cuda::std::get<1>(cuda::std::move(v)) == 42);
   }
 // FIXME: Remove these once reference support is reinstated
-#if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
+#ifndef TEST_VARIANT_HAS_NO_REFERENCES
   {
     using V = cuda::std::variant<int&>;
     int x   = 42;

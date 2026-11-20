@@ -61,7 +61,7 @@ CUB_TEST("Deferred problem-size conversion does not read the source on the host"
   using offset_t        = cub::detail::num_items_offset_t<decltype(count)>;
   const auto kernel_arg = cub::detail::make_num_items_kernel_arg(count);
 
-#if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
+#ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
   static_assert(cuda::args::__is_deferred_v<cuda::std::remove_cv_t<decltype(kernel_arg)>>);
   REQUIRE(cuda::args::__unwrap(kernel_arg) == nullptr);
   REQUIRE(cuda::args::__lowest_(kernel_arg) == count_t{10});

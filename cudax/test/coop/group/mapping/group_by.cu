@@ -73,6 +73,7 @@ __device__ void test_group_by(Config config)
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == 32 / N);
+      static_assert(Result::static_group_rank() == (32 / N == 1 ? 0 : cuda::std::dynamic_extent));
       CHECK(result.group_count() == cuda::gpu_thread.count(cuda::warp) / N);
       CHECK(result.group_rank() == cuda::gpu_thread.rank(cuda::warp) / N);
 
@@ -128,6 +129,7 @@ __device__ void test_group_by(Config config)
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == cuda::std::dynamic_extent);
+      static_assert(Result::static_group_rank() == cuda::std::dynamic_extent);
       CHECK(result.group_count() == cuda::gpu_thread.count(cuda::warp) / N);
       CHECK(result.group_rank() == cuda::gpu_thread.rank(cuda::warp) / N);
 
@@ -193,6 +195,7 @@ __device__ void test_group_by_non_exhaustive(Config config)
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == 32 / N);
+      static_assert(Result::static_group_rank() == (32 / N == 1 ? 0 : cuda::std::dynamic_extent));
       static_assert(Result::static_unit_count() == N);
       static_assert(Result::is_always_exhaustive() == (32 % N == 0));
       static_assert(Result::is_always_contiguous());
@@ -253,6 +256,7 @@ __device__ void test_group_by_non_exhaustive(Config config)
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == cuda::std::dynamic_extent);
+      static_assert(Result::static_group_rank() == cuda::std::dynamic_extent);
       static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
       static_assert(!Result::is_always_exhaustive());
       static_assert(Result::is_always_contiguous());

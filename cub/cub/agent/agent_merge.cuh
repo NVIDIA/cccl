@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -149,7 +149,7 @@ struct agent_t
   Offset* key1_beg_offsets;
 
   template <bool IsFullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(Offset tile_idx, Offset tile_base, int num_remaining)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void consume_tile(Offset tile_idx, Offset tile_base, int num_remaining)
   {
     const Offset diag0 = items_per_tile * tile_idx;
     Offset diag1       = diag0 + items_per_tile;
@@ -354,7 +354,7 @@ struct agent_t
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()()
   {
     const Offset tile_idx  = blockIdx.x;
     const Offset tile_base = tile_idx * items_per_tile;

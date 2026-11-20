@@ -2112,7 +2112,7 @@ struct ProxySentinel
   }
 };
 
-#if !defined(_LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES)
+#ifndef _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
 template <cuda::std::ranges::input_range Base>
   requires cuda::std::ranges::view<Base>
 struct ProxyRange

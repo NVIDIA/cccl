@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -117,7 +117,7 @@ template <class _Tp>
 
 [[nodiscard]] _CCCL_API constexpr int fpclassify(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_FPCLASSIFY)
+#ifdef _CCCL_BUILTIN_FPCLASSIFY
   return _CCCL_BUILTIN_FPCLASSIFY(FP_NAN, FP_INFINITE, FP_NORMAL, FP_SUBNORMAL, FP_ZERO, __x);
 #else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
@@ -153,7 +153,7 @@ template <class _Tp>
   {
     _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__fpclassify_storage(__x);)
   }
-#if defined(_CCCL_BUILTIN_FPCLASSIFY)
+#ifdef _CCCL_BUILTIN_FPCLASSIFY
   return _CCCL_BUILTIN_FPCLASSIFY(FP_NAN, FP_INFINITE, FP_NORMAL, FP_SUBNORMAL, FP_ZERO, __x);
 #else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
@@ -167,7 +167,7 @@ template <class _Tp>
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API constexpr int fpclassify(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_FPCLASSIFY)
+#  ifdef _CCCL_BUILTIN_FPCLASSIFY
   return _CCCL_BUILTIN_FPCLASSIFY(FP_NAN, FP_INFINITE, FP_NORMAL, FP_SUBNORMAL, FP_ZERO, __x);
 #  else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
@@ -206,6 +206,13 @@ template <class _Tp>
   return ::cuda::std::__fpclassify_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
+
+#if _CCCL_HAS_NVFP8_UE5M3()
+[[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_fp8_ue5m3 __x) noexcept
+{
+  return ::cuda::std::__fpclassify_impl(__x);
+}
+#endif // _CCCL_HAS_NVFP8_UE5M3()
 
 #if _CCCL_HAS_NVFP8_E8M0()
 [[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_fp8_e8m0 __x) noexcept

@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -70,7 +70,7 @@ deferred_reduce_grid_size(NumItemsT num_items, int launched_grid_size) noexcept
   constexpr ReducePassPolicy policy = _CUB::detail::current_policy<PolicySelector>().multi_tile;
   constexpr int tile_size           = policy.threads_per_block * policy.items_per_thread;
   const NumItemsT num_tiles         = ::cuda::ceil_div(num_items, NumItemsT{tile_size});
-  return static_cast<int>(::cuda::std::min(static_cast<NumItemsT>(launched_grid_size), num_tiles));
+  return static_cast<int>((::cuda::std::min) (static_cast<NumItemsT>(launched_grid_size), num_tiles));
 }
 
 /**
@@ -157,7 +157,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(
 
   using ftype              = typename AccumT::ftype;
   constexpr int bin_length = AccumT::max_index + AccumT::max_fold;
-  const int tid            = threads_per_block * blockIdx.x + threadIdx.x;
+  const int tid            = (threads_per_block * blockIdx.x) + threadIdx.x;
 
   ftype* shared_bins = _CUB::detail::rfa::get_shared_bin_array<ftype, bin_length>();
 
@@ -183,10 +183,10 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(
     // TODO(NaderAlAwar): The chunk body is intentionally duplicated from the 32-bit loop below because extracting it
     // into a device function changes the SASS of the immediate instantiations. Changes here must also be applied to
     // the copy below.
-    constexpr auto num_items_per_chunk = num_items_t{::cuda::std::numeric_limits<int>::max()};
+    constexpr auto num_items_per_chunk = num_items_t{(::cuda::std::numeric_limits<int>::max)()};
     for (num_items_t remaining = num_items; remaining != 0;)
     {
-      const auto chunk_num_items = static_cast<int>(::cuda::std::min(remaining, num_items_per_chunk));
+      const auto chunk_num_items = static_cast<int>((::cuda::std::min) (remaining, num_items_per_chunk));
 
       _CCCL_PRAGMA_UNROLL_FULL()
       for (unsigned i = tid; i < static_cast<unsigned>(chunk_num_items); i += (n_threads * items_per_thread))
@@ -195,7 +195,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int j = 0; j < items_per_thread; j++)
         {
-          const unsigned idx = i + j * n_threads;
+          const unsigned idx = i + (j * n_threads);
           if (idx < static_cast<unsigned>(chunk_num_items))
           {
             items[j] = transform_op(d_in[idx]);
@@ -239,7 +239,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(
       ftype items[items_per_thread] = {};
       for (int j = 0; j < items_per_thread; j++)
       {
-        const unsigned idx = i + j * n_threads;
+        const unsigned idx = i + (j * n_threads);
         if (idx < static_cast<unsigned>(num_items))
         {
           items[j] = transform_op(d_in[idx]);

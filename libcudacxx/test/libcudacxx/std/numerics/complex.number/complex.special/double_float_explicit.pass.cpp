@@ -15,7 +15,7 @@
 //     constexpr complex(const complex<float>&);
 // };
 
-#if defined(__clang__)
+#ifdef __clang__
 #  define _CCCL_IMPLICIT_SYSTEM_HEADER_CLANG
 #elif defined(_MSC_VER)
 #  define _CCCL_IMPLICIT_SYSTEM_HEADER_MSVC

@@ -4,7 +4,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -41,7 +41,7 @@ struct execution_policy : cpp::execution_policy<Derived>
   using tag_type = tag;
 
   // allow conversion to tag when it is not a successor
-  operator tag() const
+  _CCCL_HOST_API operator tag() const
   {
     return tag();
   }

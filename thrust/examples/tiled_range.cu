@@ -56,7 +56,7 @@ public:
 
   iterator end() const
   {
-    return begin() + tiles * (last - first);
+    return begin() + (tiles * (last - first));
   }
 
 private:
