@@ -29,8 +29,9 @@
 #endif // _CCCL_HAS_NVBF16()
 
 template <class Atomic, class T>
-TEST_HOST_DEVICE_FUNC void test_operations(Atomic& atom, T value)
+TEST_HOST_DEVICE_FUNC void test_operations(Atomic& storage, T value)
 {
+  auto& atom = *opaque_local_address(&storage);
   (void) atom.fetch_add(value, cuda::std::memory_order_relaxed);
   (void) atom.fetch_sub(value, cuda::std::memory_order_relaxed);
   (void) (atom += value);
