@@ -3,18 +3,15 @@
 
 .. _cudax-mgmn-shuffle:
 
-Distributed HashGraph permutations
-=================================
+Distributed permutations
+========================
 
 ``<cuda/experimental/mgmn/shuffle>`` provides ``shuffle`` and ``shuffle_copy``
-in ``cuda::experimental::mgmn``. The implementation adapts the NCCL HashGraph
-construction pipeline and its seeded permutation generator to MGMN. It does
-not depend on an external HashGraph installation, MPI, or NVSHMEM.
-
-This is an experimental permutation implementation. It preserves every input
-occurrence and produces the original number of elements on each rank. It does
-**not** currently guarantee uniform sampling of all permutations or repeatable
-ordering for a fixed seed. In particular, CSR insertion uses atomic reservations.
+in ``cuda::experimental::mgmn``. This is an experimental permutation
+implementation. It preserves every input occurrence and produces the original
+number of elements on each rank. It does **not** currently guarantee uniform
+sampling of all permutations or repeatable ordering for a fixed seed.
+Construction uses atomic reservations whose ordering can vary between executions.
 Its output is not specified to match ``thrust::shuffle``.
 
 Calling convention
@@ -72,23 +69,12 @@ sample from its generator. Every participant must obtain the same seed, includin
 when all inputs are empty. A call with no local communicators consumes nothing.
 Concurrent single-communicator calls must use separate generator objects.
 
-Implementation boundary
------------------------
+Implementation
+--------------
 
-The private engine retains HashGraph's coarse histogram, adaptive hash-range
-ownership, shared-counter record packing, NCCL exchange, local rebinning and
-CSR scatter. Records carry the computed hash alongside the payload instead of
-rehashing the same generated key in each construction phase. CUB supplies scans;
-MGMN supplies communication and execution resources. A final interval exchange
-restores the original per-rank sizes, as required for distributed iterator output.
-
-The port uses 64-bit indices/counts, XXH32 hash buckets, approximately eight
-records per bucket, 1024 communication bins and up to 16384 local rebinning bins.
-These are inherited algorithm choices, not architecture-specific performance
-claims. No graph query interface, benchmark I/O, stream pool, communication runtime
-bootstrap, or symmetric allocation support is imported.
-
+The implementation adapts the HashGraph algorithm for dense static hash table
+construction to generate permutations.
 The adapted kernels retain the original HashGraph Apache-2.0 notice.
 The eight-byte XXH32 specialization retains its original NVIDIA and xxHash BSD
-notices. New MGMN
-coordination and API files use CCCL's Apache-2.0 WITH LLVM-exception license.
+notices. New MGMN coordination and API files use CCCL's
+Apache-2.0 WITH LLVM-exception license.
