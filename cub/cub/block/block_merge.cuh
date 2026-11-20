@@ -77,13 +77,13 @@ template <typename KeyIt1, typename KeyIt2, typename OffsetT = int, typename Com
 [[nodiscard]] _CCCL_DEVICE_API OffsetT
 block_merge_path(KeyIt1 keys1, KeyIt2 keys2, OffsetT count1, OffsetT count2, OffsetT diagonal, CompareOp compare_op)
 {
-  static_assert(::cuda::std::is_integral_v<OffsetT>);
+  static_assert(::cuda::std::__cccl_is_integer_v<OffsetT>);
   using CounterT _CCCL_NODEBUG = ::cuda::std::conditional_t<(sizeof(OffsetT) < sizeof(int)), int, OffsetT>;
   const CounterT a_count       = count1;
   const CounterT b_count       = count2;
   const CounterT target        = diagonal;
   CounterT first               = target < b_count ? CounterT{0} : target - b_count;
-  CounterT last                = (::cuda::std::min) (target, a_count);
+  CounterT last                = (::cuda::min) (target, a_count);
 
   if (first < last)
   {
@@ -93,7 +93,7 @@ block_merge_path(KeyIt1 keys1, KeyIt2 keys2, OffsetT count1, OffsetT count2, Off
     // Clamp its upper end before converting back to the integral offset type.
     const CounterT estimate =
       prediction >= static_cast<float>(last) ? last - CounterT{1} : static_cast<CounterT>(prediction);
-    const CounterT pivot = ::cuda::std::clamp(estimate, first, last - CounterT{1});
+    const CounterT pivot = ::cuda::clamp(estimate, first, last - CounterT{1});
     const auto left      = compare_op(keys2[target - CounterT{1} - pivot], keys1[pivot]);
 
     if (left)
@@ -135,7 +135,7 @@ block_merge_path(KeyIt1 keys1, KeyIt2 keys2, OffsetT count1, OffsetT count2, Off
   const CounterT span = last - first;
 
   return static_cast<OffsetT>(
-    first + CUB_NS_QUALIFIER::MergePath(keys1 + first, keys2 + (target - last), span, span, span, compare_op));
+    first + _CUB::MergePath(keys1 + first, keys2 + (target - last), span, span, span, compare_op));
 }
 
 struct block_merge_window
@@ -158,8 +158,8 @@ struct block_merge_layout
   static constexpr unsigned int tile_size = BlockThreads * ItemsPerThread;
   static constexpr unsigned int warps     = BlockThreads / detail::warp_threads;
   static constexpr bool full_warps =
-    BlockThreads % detail::warp_threads == 0 && warps > 0 && (warps & (warps - 1)) == 0;
-  static constexpr int log_warps = CUB_NS_QUALIFIER::Log2<(warps > 0 ? warps : 1)>::VALUE;
+    BlockThreads % warp_threads == 0 && warps > 0 && ::cuda::is_power_of_two(warps);
+  static constexpr int log_warps = ::cuda::ilog2(warps > 0 ? warps : 1);
 
   [[nodiscard]] _CCCL_DEVICE_API static block_merge_window thread_window(unsigned int tid, int total)
   {
