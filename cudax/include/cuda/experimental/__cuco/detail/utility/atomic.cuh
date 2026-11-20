@@ -21,7 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__memory/address_space.h>
 #include <cuda/__memory/is_aligned.h>
+#include <cuda/__ptx/instructions/ld.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__cstddef/types.h>
@@ -42,7 +44,8 @@
 //! toolkit (NVIDIA/cccl#9983).
 //!
 //! There are no cluster-scope intrinsics, so `thread_scope_cluster` uses the device-scope ones, which are stronger.
-//! Loads and stores are volatile accesses, which the PTX memory model treats as relaxed system-scope operations.
+//! `__atomic_load` and `__atomic_store` are volatile accesses, which the PTX memory model treats as relaxed
+//! system-scope operations.
 
 namespace cuda::experimental::cuco::detail
 {
@@ -122,6 +125,56 @@ template <class _Tp>
   using __word_type        = __atomic_word_t<_Tp>;
   const __word_type __bits = *reinterpret_cast<const volatile __word_type*>(__address);
   return ::cuda::std::bit_cast<_Tp>(__bits);
+}
+
+//! @brief Reads the word that `__atomic_compare_exchange` swaps for the object at `__address` while other threads may
+//! be swapping it.
+//!
+//! A plain load would let the compiler narrow, widen, merge, or drop the read. A word in global memory is read with one
+//! weak PTX load of exactly the swapped word instead. `__atomic_load` is not used there because a strong load is
+//! several times slower when many threads probe the same slots.
+//!
+//! The load still races with the swap, so the value may already be stale when the caller sees it. Re-read it only
+//! after an atomic operation: a loop that only waits on this load may never observe a change, so wait with
+//! `__atomic_load` instead.
+//!
+//! @tparam _Tp Type of the object, 1, 2, 4, or 8 bytes in size
+//!
+//! @param __address Address of the object
+//!
+//! @return The object held by the swapped word
+template <class _Tp>
+[[nodiscard]] _CCCL_DEVICE_API _Tp __weak_load(const _Tp* __address) noexcept
+{
+  static_assert(sizeof(_Tp) == 1 || sizeof(_Tp) == 2 || sizeof(_Tp) == 4 || sizeof(_Tp) == 8,
+                "cuCO atomics require a 1, 2, 4, or 8 byte type");
+
+  using __word_type = __atomic_word_t<_Tp>;
+
+  // `cuda::ptx::ld` reads global memory only, so an object in other memory, such as shared memory, takes a volatile
+  // load. `cuda::ptx::ld` is not volatile, which would keep the compiler from optimizing the code around it, so
+  // `ptxas` may hoist it out of a loop that has no atomic operation.
+  if (!::cuda::device::is_address_from(__address, ::cuda::device::address_space::global))
+  {
+    const __word_type __word = *reinterpret_cast<const volatile __word_type*>(__address);
+    return ::cuda::std::bit_cast<_Tp>(__word);
+  }
+
+  if constexpr (sizeof(_Tp) <= 2)
+  {
+    _CCCL_ASSERT(::cuda::is_aligned(__address, sizeof(_Tp)), "cuCO atomics require a naturally aligned address");
+    constexpr ::cuda::std::uintptr_t __align_mask = sizeof(unsigned int) - 1;
+    const auto __address_value                    = reinterpret_cast<::cuda::std::uintptr_t>(__address);
+    const auto* const __aligned = reinterpret_cast<const unsigned int*>(__address_value & ~__align_mask);
+    const auto __offset         = static_cast<unsigned int>((__address_value & __align_mask) * 8);
+    const auto __word           = ::cuda::ptx::ld(::cuda::ptx::space_global, __aligned);
+    return ::cuda::std::bit_cast<_Tp>(static_cast<__word_type>(__word >> __offset));
+  }
+  else
+  {
+    const auto* const __word = reinterpret_cast<const __word_type*>(__address);
+    return ::cuda::std::bit_cast<_Tp>(::cuda::ptx::ld(::cuda::ptx::space_global, __word));
+  }
 }
 
 template <class _Tp>

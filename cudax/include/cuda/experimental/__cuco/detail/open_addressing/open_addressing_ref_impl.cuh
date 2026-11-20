@@ -372,11 +372,11 @@ public:
 
     while (true)
     {
-      const auto __bucket_slots = __storage_ref[*__probing_iter];
-
-      for (auto& __slot_content : __bucket_slots)
+      for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
       {
-        const auto __eq_res = __predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(
+        auto* const __slot_ptr    = __get_slot_ptr(*__probing_iter, __i);
+        const auto __slot_content = __load_slot(__slot_ptr);
+        const auto __eq_res       = __predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(
           __key, __extract_key(__slot_content));
 
         if constexpr (!__allows_duplicates)
@@ -389,8 +389,7 @@ public:
         }
         if (__eq_res == detail::__equal_result::__available)
         {
-          const auto __intra_bucket_index = &__slot_content - __bucket_slots.data();
-          switch (__attempt_insert(__get_slot_ptr(*__probing_iter, __intra_bucket_index), __slot_content, __val))
+          switch (__attempt_insert(__slot_ptr, __slot_content, __val))
           {
             case __insert_result::__duplicate: {
               if constexpr (!__allows_duplicates)
@@ -514,14 +513,12 @@ public:
 
     while (true)
     {
-      const auto __bucket_slots = __storage_ref[*__probing_iter];
-
       for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
       {
-        const auto __slot = __bucket_slots[__i];
+        auto* const __slot_ptr = __get_slot_ptr(*__probing_iter, __i);
+        const auto __slot      = __load_slot(__slot_ptr);
         const auto __state =
           __predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(__key, __extract_key(__slot));
-        auto* const __slot_ptr = __get_slot_ptr(*__probing_iter, __i);
 
         if (__state == detail::__equal_result::__equal)
         {
@@ -575,9 +572,8 @@ public:
     while (true)
     {
       const auto __bucket_slots = __storage_ref[*__probing_iter];
-      // Only read when a slot is available, which overwrites it; starting from the first slot lets
-      // single-slot buckets use the loaded value directly.
-      auto __expected_slot = __bucket_slots[0];
+      // The first slot, which the scan below reuses, until an available or equal slot overwrites it.
+      auto __expected_slot = __load_slot(__bucket_slots.data());
       // Zero, not -1, so every lane forms an in-bounds slot index below.
       auto __probing_result = __bucket_probing_results{detail::__equal_result::__unequal, 0};
 
@@ -587,7 +583,7 @@ public:
       {
         if (__probing_result.__state == detail::__equal_result::__unequal)
         {
-          const auto __slot = __bucket_slots[__i];
+          const auto __slot = __i == 0 ? __expected_slot : __load_slot(__bucket_slots.data() + __i);
           const auto __state =
             __predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(__key, __extract_key(__slot));
           if (__state == detail::__equal_result::__available
@@ -751,11 +747,12 @@ public:
   //! @brief Finds the slot holding the probe key `__key`.
   //!
   //! @tparam _ProbeKey Probe key type
+  //! @tparam _ConcurrentKeySwaps Whether other threads may be inserting keys by swapping them during the search
   //!
   //! @param __key The key to search for
   //!
   //! @return An iterator to the slot holding `__key`, or `end()` if `__key` is not present
-  template <class _ProbeKey>
+  template <class _ProbeKey, bool _ConcurrentKeySwaps = false>
   [[nodiscard]] _CCCL_DEVICE_API __iterator find(_ProbeKey __key) const noexcept
   {
     static_assert(__cg_size == 1, "Non-CG operation is incompatible with the current probing scheme");
@@ -769,7 +766,8 @@ public:
 
       for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
       {
-        switch (__predicate.template operator()<detail::__is_insert::__no>(__key, __extract_key(__bucket_slots[__i])))
+        switch (__predicate.template operator()<detail::__is_insert::__no>(
+          __key, __search_key<_ConcurrentKeySwaps>(__bucket_slots.data() + __i)))
         {
           case detail::__equal_result::__empty:
             return end();
@@ -792,12 +790,13 @@ public:
   //!
   //! @tparam _ProbeKey Probe key type
   //! @tparam _ParentCG Type of parent Cooperative Group
+  //! @tparam _ConcurrentKeySwaps Whether other threads may be inserting keys by swapping them during the search
   //!
   //! @param __group The Cooperative Group used to perform the group find
   //! @param __key The key to search for
   //!
   //! @return An iterator to the slot holding `__key`, or `end()` if `__key` is not present
-  template <class _ProbeKey, class _ParentCG>
+  template <class _ProbeKey, class _ParentCG, bool _ConcurrentKeySwaps = false>
   [[nodiscard]] _CCCL_DEVICE_API __iterator
   find(::cooperative_groups::thread_block_tile<__cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
   {
@@ -813,8 +812,8 @@ public:
       auto __intra_bucket_index = ::cuda::std::int32_t{-1};
       for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
       {
-        const auto __res =
-          __predicate.template operator()<detail::__is_insert::__no>(__key, __extract_key(__bucket_slots[__i]));
+        const auto __res = __predicate.template operator()<detail::__is_insert::__no>(
+          __key, __search_key<_ConcurrentKeySwaps>(__bucket_slots.data() + __i));
         if (__res != detail::__equal_result::__unequal)
         {
           __state              = __res;
@@ -951,7 +950,7 @@ public:
     }
   }
 
-  template <bool _SupportsErase>
+  template <bool _SupportsErase, bool _SwapsKey>
   struct __find_insert_slot_fn
   {
     template <class _Index, class _ProbeKey>
@@ -964,8 +963,11 @@ public:
     {
       if (__result.__state == detail::__equal_result::__unequal)
       {
-        const auto __state = __self.__predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(
-          __key, __self.__extract_key(__bucket_slots[__i()]));
+        auto* const __slot_ptr = __bucket_slots.data() + __i();
+        const auto __slot_key =
+          _SwapsKey ? __self.__load_key(__slot_ptr) : __self.__extract_key(__self.__load_slot(__slot_ptr));
+        const auto __state =
+          __self.__predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(__key, __slot_key);
         // The insertion predicate handles duplicate policy and never returns __empty.
         __result.__state = __state;
         if (__state != detail::__equal_result::__unequal)
@@ -983,18 +985,20 @@ public:
   //! already holding an equal key when duplicates are disallowed; otherwise skips the bucket.
   //!
   //! @tparam _SupportsErase Whether insertion must recognize a distinct erased sentinel
+  //! @tparam _SwapsKey Whether the caller claims a slot by swapping its key instead of with `__attempt_insert`
   //! @tparam _ProbeKey Type of the probe key
   //!
   //! @param __key The key being inserted
   //! @param __bucket_slots The bucket to scan
   //!
   //! @return The probing result for @p __bucket_slots
-  template <bool _SupportsErase, class _ProbeKey>
+  template <bool _SupportsErase, bool _SwapsKey = false, class _ProbeKey>
   [[nodiscard]] _CCCL_DEVICE_API __bucket_probing_results
   __find_insert_slot(const _ProbeKey& __key, __bucket_type __bucket_slots) const noexcept
   {
     auto __result = __bucket_probing_results{detail::__equal_result::__unequal, -1};
-    ::cuda::static_for<__bucket_size>(__find_insert_slot_fn<_SupportsErase>{}, *this, __key, __bucket_slots, __result);
+    ::cuda::static_for<__bucket_size>(
+      __find_insert_slot_fn<_SupportsErase, _SwapsKey>{}, *this, __key, __bucket_slots, __result);
     return __result;
   }
 
@@ -1022,6 +1026,70 @@ public:
       }
     }
     return __res;
+  }
+
+  //! @brief Reads the key of a slot that other threads may be inserting into by swapping its key.
+  //!
+  //! @param __slot_ptr Pointer to the slot
+  //! @return The slot's key
+  [[nodiscard]] _CCCL_DEVICE_API __key_type __load_key(const __value_type* __slot_ptr) const noexcept
+  {
+    if constexpr (__has_payload)
+    {
+      return detail::__weak_load(&__slot_ptr->first);
+    }
+    else
+    {
+      return detail::__weak_load(__slot_ptr);
+    }
+  }
+
+  //! @brief Reads the key of a slot during a search.
+  //!
+  //! @tparam _ConcurrentKeySwaps Whether other threads may be inserting keys by swapping them during the search
+  //!
+  //! @param __slot_ptr Pointer to the slot
+  //! @return The slot's key
+  template <bool _ConcurrentKeySwaps>
+  [[nodiscard]] _CCCL_DEVICE_API __key_type __search_key(const __value_type* __slot_ptr) const noexcept
+  {
+    if constexpr (_ConcurrentKeySwaps)
+    {
+      return __load_key(__slot_ptr);
+    }
+    else
+    {
+      return __extract_key(*__slot_ptr);
+    }
+  }
+
+  //! @brief Reads a slot that other threads may be inserting into with `__attempt_insert`.
+  //!
+  //! Reads exactly the word that `__attempt_insert` swaps: the whole slot when it is swapped as one word, otherwise
+  //! only the key. The payload of a separately written slot is not read and is returned as the empty sentinel.
+  //!
+  //! @param __slot_ptr Pointer to the slot
+  //! @return The slot content to probe and to pass as the expected value of `__attempt_insert`
+  [[nodiscard]] _CCCL_DEVICE_API __value_type __load_slot(const __value_type* __slot_ptr) const noexcept
+  {
+    if constexpr (__has_payload)
+    {
+      if constexpr (__has_packable_representation)
+      {
+        if (__storage_ref.__is_packed_cas_aligned())
+        {
+          using __packed_type =
+            ::cuda::std::__make_nbit_uint_t<sizeof(__value_type) * ::cuda::std::numeric_limits<unsigned char>::digits>;
+          return ::cuda::std::bit_cast<__value_type>(
+            detail::__weak_load(reinterpret_cast<const __packed_type*>(__slot_ptr)));
+        }
+      }
+      return {__load_key(__slot_ptr), empty_value_sentinel()};
+    }
+    else
+    {
+      return __load_key(__slot_ptr);
+    }
   }
 
   //!

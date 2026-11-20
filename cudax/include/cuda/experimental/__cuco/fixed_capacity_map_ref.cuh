@@ -623,7 +623,7 @@ private:
     // claiming a reusable slot, otherwise assignment could create a duplicate.
     if constexpr (_SupportsErase)
     {
-      if (const auto __slot = find(__value.first); __slot != end())
+      if (const auto __slot = __impl.template find<key_type, true>(__value.first); __slot != end())
       {
         detail::__atomic_store(&__slot->second, __value.second);
         return;
@@ -638,7 +638,7 @@ private:
       for (int __i = 0; __i < bucket_size; ++__i)
       {
         const auto __state = __impl.predicate().template operator()<detail::__is_insert::__yes, _SupportsErase>(
-          __value.first, __slots[__i].first);
+          __value.first, __impl.__load_key(&__slots[__i]));
         if (__state == detail::__equal_result::__equal)
         {
           detail::__atomic_store(&__slots[__i].second, __value.second);
@@ -661,7 +661,7 @@ private:
     // Search past erased slots before reusing one, as in the scalar overload.
     if constexpr (_SupportsErase)
     {
-      if (const auto __slot = find(__group, __value.first); __slot != end())
+      if (const auto __slot = __impl.template find<key_type, _ParentCG, true>(__group, __value.first); __slot != end())
       {
         if (__group.thread_rank() == 0)
         {
@@ -678,7 +678,7 @@ private:
     while (true)
     {
       const auto [__state, __index] =
-        __impl.template __find_insert_slot<_SupportsErase>(__value.first, __storage[*__iter]);
+        __impl.template __find_insert_slot<_SupportsErase, true>(__value.first, __storage[*__iter]);
       const auto __equal = __group.ballot(__state == detail::__equal_result::__equal);
       if (__equal)
       {
