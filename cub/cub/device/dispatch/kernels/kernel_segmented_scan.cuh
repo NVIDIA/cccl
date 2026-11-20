@@ -432,7 +432,7 @@ public:
 
   //! @brief Scan contiguous segments of segment_size items each
   template <::cuda::std::size_t NumSegments = max_segments, ::cuda::std::enable_if_t<(NumSegments > 1), int> = 0>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void scan_fixed_size_segments(OffsetT segment_size, int n_segments)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_fixed_size_segments(OffsetT segment_size, int n_segments)
   {
     _CCCL_ASSERT(segment_size > 0, "Segment size should be positive");
     _CCCL_ASSERT(n_segments > 0 && n_segments <= NumSegments, "Number of segments per worker is out of range");
@@ -734,7 +734,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_scan_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
+__launch_bounds__(_CUB::detail::current_policy<PolicySelector>().block.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void device_fixed_size_segmented_scan_kernel(
     const InputIteratorT d_in,
     const OutputIteratorT d_out,
@@ -744,13 +744,13 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
     const InitValueT init_value,
     const int segments_per_block)
 {
-  static constexpr auto policy = current_policy<PolicySelector>();
+  static constexpr auto policy = _CUB::detail::current_policy<PolicySelector>();
   static_assert(policy.block.load_modifier != CacheLoadModifier::LOAD_LDG,
                 "The memory consistency model does not apply to texture accesses");
 
   struct policy_getter
   {
-    constexpr auto operator()() const
+    _CCCL_HOST_DEVICE_API constexpr auto operator()() const
     {
       return policy;
     }

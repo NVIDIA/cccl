@@ -44,7 +44,7 @@ struct compose_op
 {
   __host__ __device__ affine_t operator()(affine_t f, affine_t g) const
   {
-    return {g.a * f.a, g.a * f.b + g.b};
+    return {g.a * f.a, (g.a * f.b) + g.b};
   }
 };
 
@@ -52,7 +52,7 @@ struct make_affine
 {
   __host__ __device__ affine_t operator()(cuda::std::int64_t i) const
   {
-    return {static_cast<unsigned>(i % 5 + 1), static_cast<unsigned>(i % 11)};
+    return {static_cast<unsigned>((i % 5) + 1), static_cast<unsigned>(i % 11)};
   }
 };
 
@@ -95,7 +95,7 @@ struct check_ones_op
   __device__ void operator()(cuda::std::int64_t i, cuda::std::int64_t value) const
   {
     atomicAdd(counters + 1, 1ull);
-    if (value != i % segment_size + 1)
+    if (value != (i % segment_size) + 1)
     {
       atomicAdd(counters, 1ull);
     }
@@ -111,7 +111,7 @@ CUB_TEST("DeviceSegmentedScan fixed-size overloads work", "[segmented][scan][fix
 
   // Ranges from many segments per block to segments spanning several tiles
   const int segment_size  = GENERATE(1, 2, 3, 31, 64, 575, 576, 577, 1151, 1152, 1153, 5000);
-  const auto num_segments = static_cast<cuda::std::int64_t>(GENERATE_COPY(1, 2, 3, 17, (1 << 16) / segment_size + 1));
+  const auto num_segments = static_cast<cuda::std::int64_t>(GENERATE_COPY(1, 2, 3, 17, ((1 << 16) / segment_size) + 1));
   const auto num_items    = num_segments * segment_size;
   CAPTURE(c2h::type_name<value_t>(), segment_size, num_segments);
 
@@ -190,7 +190,7 @@ CUB_TEST("DeviceSegmentedScan fixed-size overloads accept cuda::args segment siz
          static_segment_sizes)
 {
   constexpr int segment_size = c2h::get<0, TestType>::value;
-  const auto num_segments    = static_cast<cuda::std::int64_t>(GENERATE_COPY(1, 17, (1 << 16) / segment_size + 1));
+  const auto num_segments    = static_cast<cuda::std::int64_t>(GENERATE_COPY(1, 17, ((1 << 16) / segment_size) + 1));
   const auto num_items       = num_segments * segment_size;
   CAPTURE(segment_size, num_segments);
 
