@@ -62,7 +62,7 @@ class block_merge_register_staged
       }
 
       const int threads = 1 << layout_t::pair_thread_log(log_runs, round);
-      mask |= length <= (static_cast<int>(items_per_thread) + 1) * threads ? 1 << round : 0;
+      mask |= length <= (static_cast<int>(items_per_thread) + 1) * threads ? 1u << round : 0u;
     }
     return mask;
   }
