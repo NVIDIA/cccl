@@ -75,6 +75,7 @@ struct flag_correct_writes_op
   }
 };
 
+// NOLINTBEGIN(readability-non-const-parameter)
 template <typename ExpectedValuesItT>
 flag_correct_writes_op<ExpectedValuesItT> make_checking_write_op(
   ExpectedValuesItT expected_it,
@@ -85,6 +86,7 @@ flag_correct_writes_op<ExpectedValuesItT> make_checking_write_op(
   return flag_correct_writes_op<ExpectedValuesItT>{
     expected_it, d_correctness_flags, d_out_of_range_writes, num_elements};
 }
+// NOLINTEND(readability-non-const-parameter)
 
 // Struct to help verify results for large problem sizes in a memory-efficient way:
 // We use a tabulate iterator that, whenever the algorithm-under-test writes an item, checks whether that item

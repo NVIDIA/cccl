@@ -198,7 +198,7 @@ __launch_bounds__(_CUB::detail::current_policy<PolicySelector>().large_reduce.th
       // segments per kernel invocation, which is capped at INT32_MAX. The segment id must therefore be
       // computed in 64 bits.
       const ::cuda::std::int64_t global_segment_id =
-        static_cast<::cuda::std::int64_t>(bid) * segments_per_block + sid_within_block;
+        (static_cast<::cuda::std::int64_t>(bid) * segments_per_block) + sid_within_block;
 
       if (global_segment_id < num_segments)
       {
@@ -404,7 +404,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
     // The number of blocks may be rounded up such that the segment id of the last block exceeds the largest int, so
     // the segment id must be computed in 64-bit to avoid overflow
     const ::cuda::std::int64_t global_segment_id =
-      static_cast<::cuda::std::int64_t>(bid) * segments_per_small_block + sid_within_block;
+      (static_cast<::cuda::std::int64_t>(bid) * segments_per_small_block) + sid_within_block;
 
     const auto segment_begin = global_segment_id * segment_size;
 
@@ -438,7 +438,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
     // The number of blocks may be rounded up such that the segment id of the last block exceeds the largest int, so
     // the segment id must be computed in 64-bit to avoid overflow
     const ::cuda::std::int64_t global_segment_id =
-      static_cast<::cuda::std::int64_t>(bid) * segments_per_medium_block + sid_within_block;
+      (static_cast<::cuda::std::int64_t>(bid) * segments_per_medium_block) + sid_within_block;
 
     const auto segment_begin = global_segment_id * segment_size;
 
