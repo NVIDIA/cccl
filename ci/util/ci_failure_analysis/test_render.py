@@ -87,7 +87,7 @@ class RenderNoticeTest(unittest.TestCase):
             ),
             "list not retrieved and a missing log": (
                 dict(unlisted_failed_job_count=None, missing_log_job_count=1),
-                [UNKNOWN, "Collected 2 of 2 failed jobs (1 without logs)."],
+                [UNKNOWN, "Collected 2 failed jobs (1 without logs)."],
             ),
             "the only job has no log": (
                 dict(

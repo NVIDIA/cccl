@@ -239,11 +239,13 @@ def missing_logs_notice(
     if unlisted_failed_job_count or missing_log_job_count:
         total = failed_job_count + (unlisted_failed_job_count or 0)
         job_label = "job" if total == 1 else "jobs"
+        # Without GitHub's list of failed jobs, the total is unknown.
+        of_total = "" if unlisted_failed_job_count is None else f" of {total}"
         without_logs = (
             f" ({missing_log_job_count} without logs)" if missing_log_job_count else ""
         )
         notices.append(
-            f"Collected {failed_job_count} of {total} failed {job_label}{without_logs}."
+            f"Collected {failed_job_count}{of_total} failed {job_label}{without_logs}."
         )
     return "\n\n".join(notices) or None
 
