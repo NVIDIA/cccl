@@ -20,13 +20,15 @@
 #include <thrust/system/hpx/detail/execution_policy.h>
 #include <thrust/system/hpx/detail/function.h>
 
+#include <cuda/std/iterator>
+
 #include <hpx/parallel/algorithms/count.hpp>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::hpx::detail
 {
 template <typename DerivedPolicy, typename InputIterator, typename EqualityComparable>
-typename thrust::iterator_traits<InputIterator>::difference_type
+typename ::cuda::std::iterator_traits<InputIterator>::difference_type
 count(execution_policy<DerivedPolicy>& exec [[maybe_unused]],
       InputIterator first,
       InputIterator last,
@@ -46,7 +48,7 @@ count(execution_policy<DerivedPolicy>& exec [[maybe_unused]],
 }
 
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-typename thrust::iterator_traits<InputIterator>::difference_type count_if(
+typename ::cuda::std::iterator_traits<InputIterator>::difference_type count_if(
   execution_policy<DerivedPolicy>& exec [[maybe_unused]], InputIterator first, InputIterator last, Predicate pred)
 {
   // wrap pred

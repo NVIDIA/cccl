@@ -187,6 +187,24 @@ public:
     return params_;
   }
 
+  // Scheduling properties (e.g. with_stacksize) are queried from the executor;
+  // a property that changes the executor rebinds the policy to the executor it
+  // returns, as for HPX's own execution policies.
+  template <::hpx::scheduling_property Tag, typename Property>
+    requires(std::invocable<Tag, executor_type const&, Property>)
+  [[nodiscard]] auto query(Tag tag, Property&& prop) const
+  {
+    return ::hpx::execution::experimental::create_rebound_policy(
+      derived(), tag(executor(), std::forward<Property>(prop)), parameters());
+  }
+
+  template <::hpx::scheduling_property Tag>
+    requires(std::invocable<Tag, executor_type const&>)
+  [[nodiscard]] decltype(auto) query(Tag tag) const
+  {
+    return tag(executor());
+  }
+
 private:
   executor_type exec_;
   executor_parameters_type params_;
