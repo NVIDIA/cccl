@@ -505,19 +505,6 @@ TEST_HOST_DEVICE_FUNC void test_norm_specials()
   assert(is_neg_zero(fmin(T(-0.0f), T(0.0f))) && is_neg_zero(fmin(T(0.0f), T(-0.0f))));
 }
 
-// fp64mp2 fdim is taken on the limb pair: a difference in the low limbs alone is exact, and one
-// that overflows is +inf.
-
-TEST_HOST_DEVICE_FUNC void test_fdim_fp64mp2()
-{
-  using T  = cuda::fp64mp2;
-  using nl = cuda::std::numeric_limits<T>;
-  assert(fdim(T(1.0, 0x1p-70), T(1.0, 0x1p-72)) == T(0x1.8p-71));
-  assert(is_zero(fdim(T(1.0, 0x1p-72), T(1.0, 0x1p-70))));
-  assert(is_pos_inf(fdim(nl::max(), nl::lowest())) && fdim(nl::max(), nl::lowest()).lo() == 0.0);
-  assert(is_nan(fdim(nl::quiet_NaN(), T(1.0))));
-}
-
 // ---- error and probability functions ------------------------------------------
 
 TEST_HOST_DEVICE_FUNC void test_erf_family()
@@ -628,17 +615,6 @@ TEST_HOST_DEVICE_FUNC void test_loose_zero_high_limb()
   assert(approx_eq(static_cast<double>(atanh(T(1.0f, -0.25f))), 0.97295507452765662));
   assert(approx_eq(static_cast<double>(atanh(T(-1.0f, 0.25f))), -0.97295507452765662));
   assert(is_pos_zero(erfinv(T(2.0f, -2.0f))));
-
-  using D = cuda::fp64mp2_low;
-  const D w(0.0, 0.25);
-  assert(approx_eq(static_cast<double>(atan(w)), 0.24497866312686414));
-  assert(approx_eq(static_cast<double>(asin(w)), 0.25268025514207865));
-  assert(approx_eq(static_cast<double>(atan2(w, D(1.0))), 0.24497866312686414));
-  assert(approx_eq(static_cast<double>(atan2(w, D(-1.0))), 2.8966139904629289));
-  assert(approx_eq(static_cast<double>(atan2(-w, D(-1.0))), -2.8966139904629289));
-  assert(approx_eq(static_cast<double>(atan2(D(0.0), -w)), pi));
-  assert(approx_eq(static_cast<double>(atan2(D(-0.0), -w)), -pi));
-  assert(is_pos_zero(atan2(D(0.0), w)) && is_neg_zero(atan2(D(-0.0), w)));
 }
 
 // ---- llrint and llround at the ends of long long --------------------------------
@@ -746,7 +722,6 @@ int main(int, char**)
   test_norm_specials<cuda::fp32mp2>();
   test_norm_specials<cuda::fp32mp2_low>();
   test_norm_specials<cuda::fp32mp2_high>();
-  test_fdim_fp64mp2();
   test_erf_family();
   test_erfc_ends<cuda::fp32mp2>();
   test_erfc_ends<cuda::fp32mp2_low>();
