@@ -37,4 +37,10 @@ AST_MATCHER_FUNCTION(DeclarationMatcher, isInNamespaceCudaStd)
   // Require a namespace boundary so cuda::std_extra does not match.
   return hasDeclContext(namespaceDecl(matchesName("^::cuda::std($|::)")));
 }
+
+AST_MATCHER_FUNCTION(DeclarationMatcher, isInNamespaceCub)
+{
+  // Require a namespace boundary so cub_extra does not match.
+  return hasDeclContext(namespaceDecl(matchesName("^::cub($|::)")));
+}
 } // namespace clang::tidy::cccl::util

@@ -43,14 +43,14 @@ template <>
 struct __cccl_select<true>
 {
   template <class _Tp>
-  using type = _Tp;
+  using __type _CCCL_NODEBUG = _Tp;
 };
 
 template <bool _Bp, class _Tp = void>
-using __cccl_enable_if_t _CCCL_NODEBUG = typename __cccl_select<_Bp>::template type<_Tp>;
+using __cccl_enable_if_t _CCCL_NODEBUG = typename __cccl_select<_Bp>::template __type<_Tp>;
 
 template <class _Tp, bool _Bp>
-using __cccl_requires_t _CCCL_NODEBUG = typename __cccl_select<_Bp>::template type<_Tp>;
+using __cccl_requires_t _CCCL_NODEBUG = typename __cccl_select<_Bp>::template __type<_Tp>;
 
 #if _CCCL_HAS_CONCEPTS() || defined(_CCCL_DOXYGEN_INVOKED)
 #  define _CCCL_TEMPLATE(...)                template <__VA_ARGS__>

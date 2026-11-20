@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 from __future__ import annotations
 
+import re
 from argparse import ArgumentParser, Namespace
 from dataclasses import dataclass
 from datetime import datetime
@@ -48,6 +49,8 @@ using namespace ast_matchers; // NOLINT(google-build-using-namespace)
 class {title_check_name}Check final : public ClangTidyCheck
 {{
 public:
+  using ClangTidyCheck::ClangTidyCheck;
+
   [[nodiscard]] std::optional<TraversalKind> getCheckTraversalKind() const override
   {{
     return TK_IgnoreUnlessSpelledInSource;
@@ -91,10 +94,10 @@ class Options:
     title_check_name: str
 
     def __init__(self, base_name: str) -> None:
-        if any(map(str.isspace, base_name)):
-            raise ValueError(
-                "Invalid base check name, should be separated by '-', not ' '"
-            )
+        base_name = base_name.strip().casefold()
+        if not re.fullmatch(r"[a-z\-]+", base_name):
+            m = f"Invalid base check name '{base_name}', should be separated by '-'"
+            raise ValueError(m)
 
         self.dash_check_name = base_name
         self.underscore_check_name = base_name.replace("-", "_")
