@@ -147,6 +147,16 @@ TEST_CASE("TestDeviceReferenceManipulation", "[device_reference]")
   // reset
   ref = 0;
 
+  // test postfix decrement
+  const T1 x2 = ref--;
+  REQUIRE(0 == x2);
+  REQUIRE(-1 == ref);
+  REQUIRE(-1 == *ptr);
+  REQUIRE(-1 == v[0]);
+
+  // reset
+  ref = 0;
+
   // test subtraction-assignment
   ref -= 5;
   REQUIRE(-5 == ref);
@@ -199,6 +209,15 @@ TEST_CASE("TestDeviceReferenceManipulation", "[device_reference]")
   REQUIRE(1 == v[0]);
 
   // reset
+  ref = 3;
+
+  // test AND-assignment
+  ref &= 1;
+  REQUIRE(1 == ref);
+  REQUIRE(1 == *ptr);
+  REQUIRE(1 == v[0]);
+
+  // reset
   ref = 0;
 
   // test OR-assignment
@@ -219,6 +238,70 @@ TEST_CASE("TestDeviceReferenceManipulation", "[device_reference]")
   // test equality of const references
   const thrust::device_reference<const T1> ref1 = v[0];
   REQUIRE(ref1 == ref);
+}
+
+// Applies each increment, decrement and compound assignment operator of a device_reference in device code, and stores
+// the value returned and the value referred to afterwards
+template <typename T>
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+__global__
+#endif
+  void manipulate_device_reference(thrust::device_ptr<T> ptr, T* results)
+{
+  thrust::device_reference<T> ref = *ptr;
+  int i                           = 0;
+
+  ref          = 0;
+  results[i++] = ++ref;
+  results[i++] = ref;
+  ref          = 0;
+  results[i++] = ref++;
+  results[i++] = ref;
+  ref          = 0;
+  results[i++] = --ref;
+  results[i++] = ref;
+  ref          = 0;
+  results[i++] = ref--;
+  results[i++] = ref;
+  ref          = 0;
+  results[i++] = ref += 5;
+  ref          = 0;
+  results[i++] = ref -= 5;
+  ref          = 1;
+  results[i++] = ref *= 5;
+  ref          = 5;
+  results[i++] = ref /= 5;
+  ref          = 5;
+  results[i++] = ref %= 5;
+  ref          = 1;
+  results[i++] = ref <<= 1;
+  ref          = 2;
+  results[i++] = ref >>= 1;
+  ref          = 3;
+  results[i++] = ref &= 1;
+  ref          = 0;
+  results[i++] = ref |= 1;
+  ref          = 1;
+  results[i++] = ref ^= 1;
+  results[i++] = *ptr;
+}
+
+TEST_CASE("TestDeviceReferenceManipulationInDeviceCode", "[device_reference]")
+{
+  using T = int;
+
+  thrust::device_vector<T> v(1, 0);
+  thrust::device_vector<T> results(19, 42);
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  manipulate_device_reference<<<1, 1>>>(v.data(), thrust::raw_pointer_cast(results.data()));
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+#else
+  manipulate_device_reference(v.data(), thrust::raw_pointer_cast(results.data()));
+#endif
+
+  const thrust::host_vector<T> expected{1, 1, 0, 1, -1, -1, 0, -1, 5, -5, 5, 1, 0, 2, 1, 1, 1, 0, 0};
+  REQUIRE(expected == results);
 }
 
 TEST_CASE("TestDeviceReferenceSwap", "[device_reference]")
