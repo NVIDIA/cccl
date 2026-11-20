@@ -56,11 +56,38 @@ find_and_copy_job_artifact_from() {
   fi
 }
 
+# Like find_and_copy_job_artifact_from, but keeps each file's path relative to the repo root.
+# Use this for files that every build tree has: a job can have one tree per preset, plus the
+# dependency sub-builds under `_deps/`. Copied into a single directory, they would overwrite
+# each other.
+# A leading '.' is dropped from the copied file's name (`.ninja_log` -> `ninja_log`), because
+# hidden files are excluded from uploaded artifacts.
+find_and_copy_job_artifact_tree_from() {
+  local root="$1"
+  local name="$2"
+  local found=false
+  local file file_name dest_dir
+  while IFS= read -r -d '' file; do
+    found=true
+    file_name="${file##*/}"
+    dest_dir="$job_artifacts/${file%/*}"
+    mkdir -p "$dest_dir"
+    cp -v "$file" "$dest_dir/${file_name#.}"
+  done < <(find "$root"/ -maxdepth 4 -name "$name" -type f -print0 2>/dev/null)
+
+  if [[ "$found" == false ]]; then
+    echo "No file matching '$name' found in '$root'."
+    return 1
+  fi
+}
+
+# The workflow-results action reads sccache_stats.json from the top of the job's directory.
 find_and_copy_job_artifact_from /tmp  "sccache*.log"       || : # Nonfatal if not found
 find_and_copy_job_artifact_from build "sccache_stats.json" || : # Nonfatal if not found
-find_and_copy_job_artifact_from build ".ninja_log"         || : # Nonfatal if not found
-find_and_copy_job_artifact_from build "build.ninja"        || : # Nonfatal if not found
-find_and_copy_job_artifact_from build "rules.ninja"        || : # Nonfatal if not found
-find_and_copy_job_artifact_from build "ctest.log"          || : # Nonfatal if not found
+
+find_and_copy_job_artifact_tree_from build ".ninja_log"  || : # Nonfatal if not found
+find_and_copy_job_artifact_tree_from build "build.ninja" || : # Nonfatal if not found
+find_and_copy_job_artifact_tree_from build "rules.ninja" || : # Nonfatal if not found
+find_and_copy_job_artifact_tree_from build "ctest.log"   || : # Nonfatal if not found
 
 ci/util/artifacts/upload/register.sh "zz_jobs-$job_id" "$jobs_artifact_dir"

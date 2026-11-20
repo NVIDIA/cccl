@@ -95,6 +95,14 @@ Apart from build artifacts, every job records its own outcome. At exit it calls
 artifact containing a ``success`` file only when the exit code was zero. The ``ci:`` gate reads
 these records to compute the single pass/fail for the run — see :ref:`infra-ci-overview`.
 
+The same artifact carries the job's build diagnostics when they exist. The sccache statistics
+and sccache logs sit next to the ``success`` file. Ninja files and the CTest log keep their path
+relative to the repository root below the job's directory (for example
+``<job_id>/build/<infix>/<preset>/build.ninja``; Windows build trees have no ``<infix>``),
+because a job can have several build trees that each write their own. The Ninja build log is
+stored as ``ninja_log`` rather than ``.ninja_log``, because hidden files are excluded from
+uploaded artifacts.
+
 Python wheels
 -------------
 
