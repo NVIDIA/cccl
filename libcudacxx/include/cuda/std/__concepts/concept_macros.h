@@ -42,9 +42,15 @@ struct __cccl_select
 template <>
 struct __cccl_select<true>
 {
+  using __type _CCCL_NODEBUG = void;
+  using __int _CCCL_NODEBUG  = int;
+
   template <class _Tp>
-  using type = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
+
+template <bool _Bp>
+using __cccl_constraint_t _CCCL_NODEBUG = typename __cccl_select<_Bp>::__type;
 
 template <bool _Bp, class _Tp = void>
 using __cccl_enable_if_t _CCCL_NODEBUG = typename __cccl_select<_Bp>::template type<_Tp>;
@@ -60,9 +66,11 @@ using __cccl_requires_t _CCCL_NODEBUG = typename __cccl_select<_Bp>::template ty
 #  define _CCCL_TRAILING_REQUIRES(...)       ->__VA_ARGS__ _CCCL_TRAILING_REQUIRES_IMPL_
 #  define _CCCL_CONCEPT                      concept
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
+// Leave __cccl_select unqualified: NVCC 13.4 otherwise drops leading "::"
+// from qualified names in its template arguments when generating host code.
 #  define _CCCL_TEMPLATE(...) template <__VA_ARGS__
-#  define _CCCL_REQUIRES(...) , bool _CcclTrue = true, __cccl_enable_if_t < __VA_ARGS__ && _CcclTrue, int > = 0 >
-#  define _CCCL_AND           &&_CcclTrue, int > = 0, __cccl_enable_if_t <
+#  define _CCCL_REQUIRES(...) , bool _CcclTrue = true, typename __cccl_select < __VA_ARGS__ && _CcclTrue > ::__int = 0 >
+#  define _CCCL_AND           &&_CcclTrue > ::__int = 0, typename __cccl_select <
 #  define _CCCL_TRAILING_REQUIRES(...)       ->__cccl_requires_t < __VA_ARGS__ _CCCL_TRAILING_REQUIRES_IMPL_
 #  define _CCCL_TRAILING_REQUIRES_IMPL_(...) , __VA_ARGS__ >
 #  define _CCCL_CONCEPT                      inline constexpr bool
@@ -73,29 +81,20 @@ using __cccl_requires_t _CCCL_NODEBUG = typename __cccl_select<_Bp>::template ty
 template <class...>
 struct __cccl_tag;
 
-template <class>
-_CCCL_API constexpr bool __cccl_is_true()
-{
-  return true;
-}
+// Share the detection overloads between requires-expressions and encode the result
+// in their return types to avoid instantiating and evaluating constexpr bodies.
+template <class _Impl, class... _Args, class = decltype(&_Impl::template __cccl_well_formed<void, _Args...>)>
+_CCCL_API auto __cccl_requires_expr(int) -> char (&)[1];
 
-#if _CCCL_COMPILER(MSVC)
-template <bool _Bp>
-_CCCL_API inline __cccl_enable_if_t<_Bp> __cccl_requires()
-{}
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-template <bool _Bp, __cccl_enable_if_t<_Bp, int> = 0>
-inline constexpr int __cccl_requires = 0;
-#endif // !_CCCL_COMPILER(MSVC)
+template <class, class...>
+_CCCL_API auto __cccl_requires_expr(...) -> char (&)[2];
 
-template <class _Tp, class... _Args>
-extern _Tp __cccl_make_dependent;
-
-template <class _Impl, class... _Args>
-using __cccl_requires_expr_impl _CCCL_NODEBUG = decltype(__cccl_make_dependent<_Impl, _Args...>);
+// Substitute requirements as separate types to stop at the first failure.
+template <class...>
+using __cccl_concept_void_t _CCCL_NODEBUG = void;
 
 template <typename _Tp>
-_CCCL_API constexpr void __cccl_unused(_Tp&&) noexcept
+_CCCL_TRIVIAL_API constexpr void __cccl_unused(_Tp&&) noexcept
 {}
 
 // So that we can refer to the ::cuda::std namespace below
@@ -125,17 +124,8 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 #  define _CCCL_HAS_NOEXCEPT_MANGLING() 1
 #endif
 
-// We use this macro to ignore the result of required expressions. It is needed because
-// gcc < 10 complains about ignored [[nodiscard]] expressions when emulating concepts.
-#if _CCCL_COMPILER(GCC, <, 10)
-#  define _CCCL_CONCEPT_IGNORE_RESULT_(...) static_cast<void>(__VA_ARGS__)
-#else
-#  define _CCCL_CONCEPT_IGNORE_RESULT_(...) __VA_ARGS__
-#endif
-
 // The "0" or "1" suffixes indicate whether _REQ is parenthesized or not.
 #define _CCCL_CONCEPT_REQUIREMENT_0(_REQ) _CCCL_PP_SWITCH(_CCCL_CONCEPT_REQUIREMENT, _REQ)
-#define _CCCL_CONCEPT_REQUIREMENT_1(_REQ) _CCCL_CONCEPT_IGNORE_RESULT_ _REQ
 
 // Permissible requirements are of the form (where ... indicates that the pattern can
 // contain commas):
@@ -211,6 +201,7 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 #  define _CCCL_CONCEPT_REQUIREMENT_(_REQ)                            \
     _CCCL_PP_CAT(_CCCL_CONCEPT_REQUIREMENT_, _CCCL_PP_IS_PAREN(_REQ)) \
     (_REQ);
+#  define _CCCL_CONCEPT_REQUIREMENT_1(_REQ) _CCCL_PP_EXPAND _REQ
 
 // The following macros handle the various special forms of requirements:
 #  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_DEFAULT(_REQ)  _REQ
@@ -230,65 +221,61 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 
 // "_CCCL_CONCEPT_FRAGMENT(Foo, ARGS...)(REQS...)" expands into:
 //
-// _CCCL_API inline auto Foo_CCCL_CONCEPT_FRAGMENT_impl_(ARGS...)
-//   -> __cccl_enable_if_t<
-//        ::__cccl_is_true<decltype(_CCCL_CONCEPT_REQUIREMENT_(REQS)..., void())>()>
-// {}
+// _CCCL_API auto Foo_CCCL_CONCEPT_FRAGMENT_impl_(ARGS...)
+//   -> ::__cccl_concept_void_t<_CCCL_CONCEPT_REQUIREMENT_(REQS)..., void>;
 //
-// template <class... As>
-// _CCCL_API inline auto Foo_CCCL_CONCEPT_FRAGMENT_(::__cccl_tag<As...>*,
-//                                                  decltype(&Foo_CCCL_CONCEPT_FRAGMENT_impl_<As...>))
+// template <class... As, class = decltype(&Foo_CCCL_CONCEPT_FRAGMENT_impl_<As...>)>
+// _CCCL_API inline auto Foo_CCCL_CONCEPT_FRAGMENT_(::__cccl_tag<As...>*)
 //   -> char(&)[1];
 //
-// template <class... As>
 // _CCCL_API inline auto Foo_CCCL_CONCEPT_FRAGMENT_(...)
 //   -> char(&)[2]
 //
-#  define _CCCL_CONCEPT_FRAGMENT(_NAME, ...)                                                                        \
-    _CCCL_API inline auto _NAME##_CCCL_CONCEPT_FRAGMENT_impl_ _CCCL_CONCEPT_FRAGMENT_REQUIREMENTS_##__VA_ARGS__> {} \
-    template <class... _As>                                                                                         \
-    _CCCL_API inline auto _NAME##_CCCL_CONCEPT_FRAGMENT_(                                                           \
-      ::__cccl_tag<_As...>*, decltype(&_NAME##_CCCL_CONCEPT_FRAGMENT_impl_<_As...>)) -> char (&)[1];                \
+#  define _CCCL_CONCEPT_FRAGMENT(_NAME, ...)                                                              \
+    _CCCL_API auto _NAME##_CCCL_CONCEPT_FRAGMENT_impl_ _CCCL_CONCEPT_FRAGMENT_REQUIREMENTS_##__VA_ARGS__; \
+    template <class... _As, class = decltype(&_NAME##_CCCL_CONCEPT_FRAGMENT_impl_<_As...>)>               \
+    _CCCL_API inline auto _NAME##_CCCL_CONCEPT_FRAGMENT_(::__cccl_tag<_As...>*) -> char (&)[1];           \
     _CCCL_API inline auto _NAME##_CCCL_CONCEPT_FRAGMENT_(...) -> char (&)[2]
-#  define _CCCL_CONCEPT_FRAGMENT_REQUIREMENTS_requires(...) \
-    (__VA_ARGS__)->__cccl_enable_if_t < _CCCL_CONCEPT_FRAGMENT_REQUIREMENTS_IMPL_
+#  define _CCCL_CONCEPT_FRAGMENT_REQUIREMENTS_requires(...) (__VA_ARGS__)->_CCCL_CONCEPT_FRAGMENT_REQUIREMENTS_IMPL_
 #  define _CCCL_CONCEPT_FRAGMENT_REQUIREMENTS_IMPL_(...) \
-    ::__cccl_is_true<decltype(_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_REQUIREMENT_, __VA_ARGS__) void())>()
+    ::__cccl_concept_void_t<_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_REQUIREMENT_, __VA_ARGS__) void>
 
 // Called with each individual requirement in the list of requirements
-#  define _CCCL_CONCEPT_REQUIREMENT_(_REQ) \
-    void(), _CCCL_PP_CAT(_CCCL_CONCEPT_REQUIREMENT_, _CCCL_PP_IS_PAREN(_REQ))(_REQ),
+#  define _CCCL_CONCEPT_REQUIREMENT_(_REQ)  _CCCL_PP_CAT(_CCCL_CONCEPT_REQUIREMENT_, _CCCL_PP_IS_PAREN(_REQ))(_REQ),
 
 // The following macros handle the various special forms of requirements:
-#  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_DEFAULT(_REQ) _CCCL_CONCEPT_IGNORE_RESULT_(_REQ)
+// Casting expressions to void checks prvalue materialization and ignores nodiscard results.
+#  define _CCCL_CONCEPT_REQUIREMENT_1(_REQ) decltype(static_cast<void> _REQ)
+#  define _CCCL_CONCEPT_REQUIRES_(...)      ::__cccl_constraint_t<__VA_ARGS__>
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_DEFAULT(_REQ) decltype(static_cast<void>(_REQ))
 #  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_REQUIRES(_REQ) \
-    ::__cccl_requires<_CCCL_CONCEPT_EAT_REQUIRES_(_REQ)>
+    _CCCL_CONCEPT_REQUIRES_(_CCCL_CONCEPT_EAT_REQUIRES_(_REQ))
 #  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_NOEXCEPT(_REQ) _CCCL_CONCEPT_NOEXCEPT_REQUIREMENT_(_REQ)
-#  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_TYPENAME(_REQ) \
-    static_cast<::__cccl_tag<_CCCL_CONCEPT_EAT_TYPENAME_(_REQ)>*>(nullptr)
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_TYPENAME(_REQ) _CCCL_CONCEPT_EAT_TYPENAME_(_REQ)
 #  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_SAME_AS(_REQ) \
-    ::__cccl_requires<::cuda::std::same_as<_CCCL_CONCEPT_SAME_AS_REQUIREMENT_(_REQ)>>
-#  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_SATISFIES(_REQ)                                                  \
-    ::__cccl_requires < _CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES_(_REQ) < decltype(_CCCL_CONCEPT_EAT_SATISFIES_(_REQ)) \
-      >>
+    _CCCL_CONCEPT_REQUIRES_(::cuda::std::same_as<_CCCL_CONCEPT_SAME_AS_REQUIREMENT_(_REQ)>)
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE__CCCL_SWITCH_SATISFIES(_REQ) \
+    _CCCL_CONCEPT_REQUIRES_(                                          \
+      _CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES_(_REQ) < decltype(_CCCL_CONCEPT_EAT_SATISFIES_(_REQ)) >)
 
 // Converts "_Same_as(TYPE) EXPR..." to "TYPE, decltype(EXPR...)"
 #  define _CCCL_CONCEPT_SAME_AS_REQUIREMENT_(_REQ) \
     _CCCL_CONCEPT_GET_TYPE_FROM_SAME_AS_(_REQ), decltype(_CCCL_CONCEPT_EAT_SAME_AS_(_REQ))
 
 #  if _CCCL_HAS_NOEXCEPT_MANGLING()
-// Converts "noexcept(EXPR)" to "::__cccl_requires<noexcept(EXPR)>"
-#    define _CCCL_CONCEPT_NOEXCEPT_REQUIREMENT_(_REQ) ::__cccl_requires<_REQ>
+// Checks that "noexcept(EXPR)" is true.
+#    define _CCCL_CONCEPT_NOEXCEPT_REQUIREMENT_(_REQ) _CCCL_CONCEPT_REQUIRES_(_REQ)
 #  else
 // If the compiler cannot mangle noexcept expressions, just check that the expression is
-// well-formed. This converts "noexcept(EXPR)" to "static_cast<void>(EXPR)"
-#    define _CCCL_CONCEPT_NOEXCEPT_REQUIREMENT_(_REQ) _CCCL_CONCEPT_IGNORE_RESULT_(_CCCL_CONCEPT_EAT_NOEXCEPT_(_REQ))
+// well-formed. This converts "noexcept(EXPR)" to "decltype(static_cast<void>(EXPR))"
+#    define _CCCL_CONCEPT_NOEXCEPT_REQUIREMENT_(_REQ) decltype(static_cast<void>(_CCCL_CONCEPT_EAT_NOEXCEPT_(_REQ)))
 #  endif
 
 // "_CCCL_FRAGMENT(Foo, Args...)" expands to
-// "(1 == sizeof(Foo_CCCL_CONCEPT_FRAGMENT_(static_cast<::__cccl_tag<Args...>*>(nullptr), nullptr)))"
+// "(1 == sizeof((Foo_CCCL_CONCEPT_FRAGMENT_)(static_cast<::__cccl_tag<Args...>*>(nullptr))))"
+// Suppress ADL to avoid instantiating the template arguments just to find the overloads.
 #  define _CCCL_FRAGMENT(_NAME, ...) \
-    (1 == sizeof(_NAME##_CCCL_CONCEPT_FRAGMENT_(static_cast<::__cccl_tag<__VA_ARGS__>*>(nullptr), nullptr)))
+    (1 == sizeof((_NAME##_CCCL_CONCEPT_FRAGMENT_)(static_cast<::__cccl_tag<__VA_ARGS__>*>(nullptr))))
 
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
@@ -311,15 +298,14 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 #  define _CCCL_REQUIRES_EXPR(_TY, ...) _CCCL_REQUIRES_EXPR_IMPL(_TY, _CCCL_REQUIRES_EXPR_ID(_TY), __VA_ARGS__)
-#  define _CCCL_REQUIRES_EXPR_IMPL(_TY, _ID, ...)                                                                    \
-    ::__cccl_requires_expr_impl<                                                                                     \
-      struct _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID) _CCCL_REQUIRES_EXPR_TPARAM_REFS                         \
-        _TY>::__cccl_is_satisfied(static_cast<::__cccl_tag<void _CCCL_REQUIRES_EXPR_TPARAM_REFS _TY>*>(nullptr), 0); \
-    struct _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID)                                                           \
-    {                                                                                                                \
-      using __cccl_self_t _CCCL_NODEBUG = _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID);                           \
-      template <class _CCCL_REQUIRES_EXPR_TPARAM_DEFNS _TY>                                                          \
-      _CCCL_API inline static auto __cccl_well_formed(__VA_ARGS__) _CCCL_REQUIRES_EXPR_REQUIREMENTS_
+#  define _CCCL_REQUIRES_EXPR_IMPL(_TY, _ID, ...)                                            \
+    (1                                                                                       \
+     == sizeof(::__cccl_requires_expr<struct _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID) \
+                                        _CCCL_REQUIRES_EXPR_TPARAM_REFS _TY>(0)));           \
+    struct _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID)                                   \
+    {                                                                                        \
+      template <class _CCCL_REQUIRES_EXPR_TPARAM_DEFNS _TY>                                  \
+      _CCCL_API static auto __cccl_well_formed(__VA_ARGS__) _CCCL_REQUIRES_EXPR_REQUIREMENTS_
 
 // Expands "T1, T2, variadic T3" to ", class T1, class T2, class... T3"
 #  define _CCCL_REQUIRES_EXPR_TPARAM_DEFNS(...) _CCCL_PP_FOR_EACH(_CCCL_REQUIRES_EXPR_TPARAM_DEFN, __VA_ARGS__)
@@ -370,17 +356,8 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 
 #  define _CCCL_REQUIRES_EXPR_EAT_VARIADIC_variadic
 
-#  define _CCCL_REQUIRES_EXPR_REQUIREMENTS_(...)                                              \
-    ->decltype(_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_REQUIREMENT_, __VA_ARGS__) void()) {}          \
-    template <class... _Args, class = decltype(&__cccl_self_t::__cccl_well_formed<_Args...>)> \
-    _CCCL_API static constexpr bool __cccl_is_satisfied(::__cccl_tag<_Args...>*, int)         \
-    {                                                                                         \
-      return true;                                                                            \
-    }                                                                                         \
-    _CCCL_API static constexpr bool __cccl_is_satisfied(void*, long)                          \
-    {                                                                                         \
-      return false;                                                                           \
-    }                                                                                         \
+#  define _CCCL_REQUIRES_EXPR_REQUIREMENTS_(...)                                                \
+    ->::__cccl_concept_void_t<_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_REQUIREMENT_, __VA_ARGS__) void>; \
     }
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
