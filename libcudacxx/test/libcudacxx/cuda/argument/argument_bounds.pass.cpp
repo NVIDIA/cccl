@@ -139,6 +139,15 @@ TEST_FUNC constexpr bool test()
       cuda::args::runtime_bounds<int>{0, 50}));
   }
 
+  // Runtime tags do not constrain the compile-time limits or static element validation.
+  {
+    using bounds_t = cuda::args::runtime_bounds<int>;
+    static_assert(cuda::args::__wrapper_static_lowest<int, bounds_t>() == cuda::std::numeric_limits<int>::lowest());
+    static_assert(cuda::args::__wrapper_static_highest<int, bounds_t>() == (cuda::std::numeric_limits<int>::max)());
+    static_assert(cuda::args::__has_bounds_intersection<int, bounds_t>(bounds_t{1, 8}));
+    cuda::args::__validate_static_element_bounds<int, bounds_t>(42);
+  }
+
   // Runtime bounds validation with no static bounds only requires operator< and operator==.
   {
     minimal_comparable_value values[] = {{10}, {20}};
@@ -180,10 +189,10 @@ TEST_FUNC constexpr bool test()
 
   // Bounds types accepted by argument wrapper template parameters
   {
-    static_assert(cuda::args::__valid_static_bounds_v<int, cuda::args::no_bounds>);
-    static_assert(cuda::args::__valid_static_bounds_v<int, cuda::args::static_bounds<1, 8>>);
-    static_assert(!cuda::args::__valid_static_bounds_v<int, cuda::args::runtime_bounds<int>>);
-    static_assert(!cuda::args::__valid_static_bounds_v<int, int>);
+    static_assert(cuda::args::__valid_bounds_v<int, cuda::args::no_bounds>);
+    static_assert(cuda::args::__valid_bounds_v<int, cuda::args::static_bounds<1, 8>>);
+    static_assert(cuda::args::__valid_bounds_v<int, cuda::args::runtime_bounds<int>>);
+    static_assert(!cuda::args::__valid_bounds_v<int, int>);
   }
 
   return true;
