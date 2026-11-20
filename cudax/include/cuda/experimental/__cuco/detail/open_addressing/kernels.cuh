@@ -333,6 +333,10 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __insert_and_find_n
 }
 
 //! @brief Find with predicate.
+//!
+//! Unselected keys skip the probe. Every lane of a cooperative group evaluates `__pred`, which is
+//! cheaper than broadcasting one lane's result, so `__pred` must return the same result for the same
+//! stencil value.
 template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
 _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __find_if_n(
   _InputIt __first,
@@ -358,15 +362,21 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __find_if_n(
       {
         using __value_t       = typename ::cuda::std::iterator_traits<_InputIt>::value_type;
         const __value_t __key = *(__first + __idx);
-        const auto __selected = __pred(*(__stencil + __idx));
-        const auto __found    = __selected ? __ref.find(__key) : __ref.end();
+        const bool __selected = __pred(*(__stencil + __idx));
         /*
          * The ld.relaxed.gpu instruction causes L1 to flush more frequently, causing increased
          * sector stores from L2 to global memory. By writing results to shared memory and then
          * synchronizing before writing back to global, we no longer rely on L1, preventing the
          * increase in sector stores from L2 to global and improving performance.
          */
-        __output_buffer[__thread_idx] = __find_output(__ref, __found);
+        // Overwriting the sentinel output on a hit, rather than selecting an iterator and comparing
+        // it with end(), generates less code.
+        auto __output = __find_output(__ref, __ref.end());
+        if (__selected)
+        {
+          __output = __find_output(__ref, __ref.find(__key));
+        }
+        __output_buffer[__thread_idx] = __output;
       }
       __block.sync();
       if (__idx < __n)
@@ -381,14 +391,7 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __find_if_n(
       {
         using __value_t       = typename ::cuda::std::iterator_traits<_InputIt>::value_type;
         const __value_t __key = *(__first + __idx);
-
-        bool __selected = false;
-        if (__tile.thread_rank() == 0)
-        {
-          __selected = __pred(*(__stencil + __idx));
-        }
-        __selected         = __tile.shfl(__selected, 0);
-        const auto __found = __selected ? __ref.find(__tile, __key) : __ref.end();
+        const auto __found    = __pred(*(__stencil + __idx)) ? __ref.find(__tile, __key) : __ref.end();
 
         if (__tile.thread_rank() == 0)
         {

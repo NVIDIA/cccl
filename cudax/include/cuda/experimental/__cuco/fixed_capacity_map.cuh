@@ -507,6 +507,8 @@ public:
   //! For each key `__first[i]`, writes whether the key is present when `__pred(__stencil[i])` is
   //! true; otherwise writes false.
   //!
+  //! @pre `__pred` returns the same result for the same stencil value.
+  //! @note `__pred` may be invoked more than once for the same stencil element.
   //! @note This function synchronizes the given stream. For asynchronous execution use
   //! `contains_if_async`.
   //!
@@ -540,6 +542,9 @@ public:
   //!
   //! For each key `__first[i]`, writes whether the key is present when `__pred(__stencil[i])` is
   //! true; otherwise writes false.
+  //!
+  //! @pre `__pred` returns the same result for the same stencil value.
+  //! @note `__pred` may be invoked more than once for the same stencil element.
   //!
   //! @tparam _InputIt Device accessible random access input iterator
   //! @tparam _StencilIt Device accessible random access iterator whose value type is convertible to
@@ -605,6 +610,8 @@ public:
   //! @brief For each key `__first[i]` with `__pred(__stencil[i]) == true` writes the associated payload,
   //! or `empty_value_sentinel()` if the key is not present; writes `empty_value_sentinel()` for the rest.
   //!
+  //! @pre `__pred` returns the same result for the same stencil value.
+  //! @note `__pred` may be invoked more than once for the same stencil element.
   //! @note This function synchronizes the given stream. For asynchronous execution use `find_if_async`.
   //!
   //! @tparam _InputIt Device accessible input iterator
@@ -632,6 +639,9 @@ public:
   }
 
   //! @brief Asynchronous version of `find_if`.
+  //!
+  //! @pre `__pred` returns the same result for the same stencil value.
+  //! @note `__pred` may be invoked more than once for the same stencil element.
   //!
   //! @tparam _InputIt Device accessible input iterator
   //! @tparam _StencilIt Device accessible random access iterator whose value type is convertible to
