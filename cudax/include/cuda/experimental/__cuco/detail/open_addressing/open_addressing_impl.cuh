@@ -550,6 +550,54 @@ public:
       __container_ref);
   }
 
+  //!
+  //! @brief Counts the occurrences of keys in `[__first, __last)` contained in the container
+  //!
+  //! @return The sum of total occurrences of all keys in `[__first, __last)`
+  template <typename _InputIt, typename _Ref>
+  _CCCL_HOST_API __size_type
+  count(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _Ref __container_ref) const
+  {
+    return this->count_if(
+      __stream, __first, __last, ::cuda::constant_iterator<bool>{true}, ::cuda::std::identity{}, __container_ref);
+  }
+
+  //! @brief Counts the occurrences of keys in `[__first, __last)` contained in the container
+  //! if `pred` of the corresponding stencil returns true.
+  //!
+  //! @return The sum of total occurrences of all keys in `[__first, __last)`
+  template <typename _InputIt, typename _StencilIt, typename _Predicate, typename _Ref>
+  _CCCL_HOST_API __size_type count_if(
+    ::cuda::stream_ref __stream,
+    _InputIt __first,
+    _InputIt __last,
+    _StencilIt __stencil,
+    _Predicate __pred,
+    _Ref __container_ref) const
+  {
+    const auto __num_keys = detail::__distance(__first, __last);
+    if (__num_keys == 0)
+    {
+      __stream.sync();
+      return 0;
+    }
+
+    auto __counter = __make_counter(__stream);
+
+    const auto __grid_size = detail::__grid_size(__num_keys, __cg_size, 4);
+    const auto __config    = ::cuda::make_config(
+      ::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<detail::__default_block_size>());
+
+    using __kernel_type =
+      void (*)(_InputIt, detail::__index_type, _StencilIt, _Predicate, typename _Ref::size_type*, _Ref);
+
+    const __kernel_type __kernel = __open_addressing::__count_if_n<__cg_size, detail::__default_block_size>;
+    ::cuda::launch(
+      __stream, __config, __kernel, __first, __num_keys, __stencil, __pred, __counter.data(), __container_ref);
+
+    return __read_counter(__counter, __stream);
+  }
+
   //! @brief Asynchronously applies `__callback_op` to a copy of every slot matching each key in
   //! `[__first, __last)`.
   //!

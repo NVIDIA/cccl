@@ -12,3 +12,7 @@ cudax_add_catch2_test(test_target cuco.fixed_capacity_set.capacity ${cudax_targe
 cudax_add_catch2_test(test_target cuco.fixed_capacity_set.ref ${cudax_target}
   test_ref.cu
 )
+
+cudax_add_catch2_test(test_target cuco.fixed_capacity_set.count ${cudax_target}
+  test_count.cu
+)
