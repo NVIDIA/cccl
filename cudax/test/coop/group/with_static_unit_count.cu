@@ -199,12 +199,7 @@ __device__ void test_nonuniform(const Group& group, const Parent& parent, unsign
     using Mapping = typename decltype(view)::__mapping_result_type;
     static_assert(cudax::coop::__group_mapping_result<Mapping>);
 
-    // Old nvcc complains about parent being captured by reference and used in constant expression.
-#if _CCCL_CUDA_COMPILER(NVCC, <, 12, 9) || _CCCL_COMPILER(MSVC)
     constexpr auto group_rank = view.static_rank(cudax::coop::parent_group);
-#else // ^^^ needs fallback ^^^ / vvv no fallback vvv
-    constexpr auto group_rank = view.static_rank(parent);
-#endif // ^^^ no fallback ^^^
     static_assert(count == Original::static_unit_count(group_rank));
     static_assert(
       cuda::std::is_same_v<
@@ -213,6 +208,8 @@ __device__ void test_nonuniform(const Group& group, const Parent& parent, unsign
                                       Original::is_always_exhaustive(),
                                       Original::is_always_contiguous()>>);
     CHECK(group_rank == group.__mapping_result().group_rank());
+    CHECK(view.rank(parent) == group_rank);
+    CHECK(view.template rank_as<unsigned>(parent) == group_rank);
 
     check_mapping(group, view);
 
@@ -255,12 +252,7 @@ __device__ void test_nonuniform_groups(Config config, Counts counts)
   const cudax::coop::virtual_group virtual_group{cuda::warp, parent, mapping};
   test_nonuniform(virtual_group, parent, 1);
   virtual_group.with_static_unit_count([&](auto view) {
-  // Old nvcc complains about parent being captured by reference and used in constant expression.
-#if _CCCL_CUDA_COMPILER(NVCC, <, 12, 9) || _CCCL_COMPILER(MSVC)
     constexpr auto rank = view.static_rank(cudax::coop::parent_group);
-#else // ^^^ needs fallback ^^^ / vvv no fallback vvv
-    constexpr auto rank = view.static_rank(parent);
-#endif // ^^^ no fallback ^^^
     static_assert(rank < 3);
     CHECK(view.rank(parent) == rank);
     CHECK(view.template rank_as<unsigned>(parent) == rank);
@@ -285,12 +277,7 @@ __device__ void test_nonuniform_groups(Config config, Counts counts)
   group.with_static_unit_count([&](auto view) {
     CHECK(view.count(parent) == group.count(parent));
 
-    // Old nvcc complains about parent being captured by reference and used in constant expression.
-#if _CCCL_CUDA_COMPILER(NVCC, <, 12, 9) || _CCCL_COMPILER(MSVC)
     constexpr auto rank = view.static_rank(cudax::coop::parent_group);
-#else // ^^^ needs fallback ^^^ / vvv no fallback vvv
-    constexpr auto rank = view.static_rank(parent);
-#endif // ^^^ no fallback ^^^
     static_assert(rank < 3);
     CHECK(view.rank(parent) == rank);
     CHECK(view.template rank_as<unsigned>(parent) == rank);
