@@ -80,14 +80,14 @@ TEST_HOST_DEVICE_FUNC constexpr bool test_interface()
   engine.seed(0);
   assert(engine == Engine{0});
 
-  // Discarding 16 outputs matches 16 calls to operator().
+  // Exercise the jump path during constant evaluation for both engines.
   engine.seed(1234);
   auto step_engine = engine;
-  for (int i = 0; i < 16; ++i)
+  for (int i = 0; i < 256; ++i)
   {
     static_cast<void>(step_engine());
   }
-  engine.discard(16);
+  engine.discard(256);
   assert(engine == step_engine);
 
   return true;
@@ -96,7 +96,7 @@ TEST_HOST_DEVICE_FUNC constexpr bool test_interface()
 template <class Engine>
 TEST_HOST_DEVICE_FUNC constexpr void test_discard()
 {
-  for (auto count : {0ull, 1ull, 15ull, 16ull, 17ull, 127ull, 1000ull})
+  for (auto count : {0ull, 1ull, 63ull, 64ull, 65ull, 255ull, 256ull, 257ull, 1000ull})
   {
     Engine step_engine{42};
     auto jump_engine = step_engine;

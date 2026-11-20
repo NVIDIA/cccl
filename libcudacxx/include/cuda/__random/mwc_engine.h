@@ -91,51 +91,65 @@ class __mwc_engine
     return false;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr __state __add_mod(const __state& __lhs, const __state& __rhs) noexcept
+  // Return lhs * rhs / R modulo m, where b = 2^32 and R = b^(lag + 1).
+  [[nodiscard]] _CCCL_API static constexpr __state
+  __montgomery_multiply(const __state& __lhs, const __state& __rhs) noexcept
   {
-    __state __sum{};
-    ::cuda::std::uint64_t __carry = 0;
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int __i = 0; __i <= _Lag; ++__i)
-    {
-      const ::cuda::std::uint64_t __word = ::cuda::std::uint64_t{__lhs[__i]} + __rhs[__i] + __carry;
-      __sum[__i]                         = static_cast<result_type>(__word);
-      __carry                            = __word >> 32;
-    }
+    constexpr int __words = _Lag + 1;
+    constexpr int __bits  = ::cuda::std::numeric_limits<__state_t>::digits;
+    __state_t __product[2 * __words + 1]{};
 
-    constexpr auto __mod = __modulus();
-    if (__carry || !__less(__sum, __mod))
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int __i = 0; __i < __words; ++__i)
     {
-      ::cuda::std::uint64_t __borrow = 0;
+      ::cuda::std::uint64_t __carry = 0;
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int __i = 0; __i <= _Lag; ++__i)
+      for (int __j = 0; __j < __words; ++__j)
       {
-        const ::cuda::std::uint64_t __sub = ::cuda::std::uint64_t{__mod[__i]} + __borrow;
-        __borrow                          = ::cuda::std::uint64_t{__sum[__i]} < __sub;
-        __sum[__i]                        = static_cast<result_type>(::cuda::std::uint64_t{__sum[__i]} - __sub);
+        const auto __sum     = (::cuda::std::uint64_t{__lhs[__i]} * __rhs[__j]) + __product[__i + __j] + __carry;
+        __product[__i + __j] = static_cast<__state_t>(__sum);
+        __carry              = __sum >> __bits;
       }
+      __product[__i + __words] = static_cast<__state_t>(__carry);
     }
-    return __sum;
-  }
 
-  [[nodiscard]] _CCCL_API static constexpr __state __multiply_mod(const __state& __lhs, const __state& __rhs) noexcept
-  {
-    __state __factor = __lhs;
-    __state __product{};
+    // Since m = a*b^lag - 1, adding u*m cancels the low word u
+    // Skip that word and add u*a at the lag offset. After all rounds the low half is discarded
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int __i = 0; __i <= _Lag; ++__i)
+    for (int __i = 0; __i < __words; ++__i)
     {
-      // pragma unroll causes compilation stuck here
-      for (int __bit = 0; __bit < ::cuda::std::numeric_limits<result_type>::digits; ++__bit)
+      const auto __sum      = (::cuda::std::uint64_t{__product[__i]} * _Multiplier) + __product[__i + _Lag];
+      __product[__i + _Lag] = static_cast<__state_t>(__sum);
+      auto __carry          = __sum >> __bits;
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int __j = __i + __words; __j <= 2 * __words; ++__j)
       {
-        if ((__rhs[__i] >> __bit) & 1)
-        {
-          __product = __add_mod(__product, __factor);
-        }
-        __factor = __add_mod(__factor, __factor);
+        const auto __word = __product[__j] + __carry;
+        __product[__j]    = static_cast<__state_t>(__word);
+        __carry           = __word >> __bits;
       }
     }
-    return __product;
+
+    // The reduced product is below 2*m, so at most one subtraction is needed
+    __state __result{};
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int __i = 0; __i < __words; ++__i)
+    {
+      __result[__i] = __product[__words + __i];
+    }
+    constexpr auto __mod = __modulus();
+    if (__product[2 * __words] != 0 || !__less(__result, __mod))
+    {
+      bool __borrow = false;
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int __i = 0; __i < __words; ++__i)
+      {
+        const auto __sub = ::cuda::std::uint64_t{__mod[__i]} + __borrow;
+        __borrow         = __result[__i] < __sub;
+        __result[__i]    = static_cast<__state_t>(__result[__i] - __sub);
+      }
+    }
+    return __result;
   }
 
 public:
@@ -216,8 +230,9 @@ public:
   //! @brief Advances by @p __count outputs in O(log(__count)) time
   _CCCL_API constexpr void discard(unsigned long long __count) noexcept
   {
-    // Direct stepping avoids modular arithmetic overhead for short skips
-    if (__count < 16)
+    // Direct stepping is cheaper for short skips, especially for the wider Montgomery product.
+    constexpr unsigned __jump_threshold = _Lag == 1 ? 64u : 256u;
+    if (__count < __jump_threshold)
     {
       while (__count--)
       {
@@ -226,19 +241,20 @@ public:
       return;
     }
 
-    // One transition multiplies the state by b^-1 = a*b^(lag-1) modulo m
+    // Keep the state in ordinary form and the jump powers in Montgomery form.
+    // The first power represents one transition: b^-1 * R = b^lag.
     __state __power{};
-    __power[_Lag - 1] = _Multiplier;
+    __power[_Lag] = 1;
     while (__count)
     {
       if (__count & 1)
       {
-        __state_ = __multiply_mod(__state_, __power);
+        __state_ = __montgomery_multiply(__state_, __power);
       }
       __count >>= 1;
       if (__count)
       {
-        __power = __multiply_mod(__power, __power);
+        __power = __montgomery_multiply(__power, __power);
       }
     }
   }
