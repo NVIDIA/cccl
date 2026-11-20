@@ -68,7 +68,9 @@ if [[ "${#diagnostics[@]}" -gt 0 ]]; then
     | tar --null -T - -P --transform 's,^/,,' -cf - \
     | gzip > "$diagnostics_archive" || :
   # Remove the archive if it is unreadable or empty:
-  [[ -n "$(tar -tz 2>/dev/null < "$diagnostics_archive")" ]] || rm -f "$diagnostics_archive" || :
+  if ! members="$(tar -tz 2>/dev/null < "$diagnostics_archive")" || [[ -z "$members" ]]; then
+    rm -f "$diagnostics_archive" || :
+  fi
 fi
 
 ci/util/artifacts/upload/register.sh "zz_jobs-$job_id" "$jobs_artifact_dir"
