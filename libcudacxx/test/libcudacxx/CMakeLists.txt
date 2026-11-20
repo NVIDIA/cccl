@@ -275,6 +275,7 @@ if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
         "${libcudacxx_LIT}"
           -vv --no-progress-bar --time-tests
           ${libcudacxx_LIT_FLAGS}
+          -j $ENV{LIT_PARALLEL_LEVEL}
           "-Dexecutor=\"NoopExecutor()\""
           "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
     # gersemi: on

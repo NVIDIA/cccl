@@ -41,6 +41,11 @@ if (-not $env:PARALLEL_LEVEL) {
 } else {
     $PARALLEL_LEVEL = [int]$env:PARALLEL_LEVEL
 }
+if (-not $env:LIT_PARALLEL_LEVEL) {
+    $LIT_PARALLEL_LEVEL = $N_CPUS_MINUS_1
+} else {
+    $LIT_PARALLEL_LEVEL = [int]$env:LIT_PARALLEL_LEVEL
+}
 
 # Safely check environment variables with defaults
 $USE_SCCACHE_DIST = if ($env:USE_SCCACHE_DIST) { [bool]::Parse($env:USE_SCCACHE_DIST) } else { $false }
@@ -53,9 +58,11 @@ if ($USE_SCCACHE_DIST -and $SCCACHE_DIST_URL_SET -and $PARALLEL_LEVEL -le 0) {
     # * 1.5Mb for the shell launched by ninja
     # * 6MiB for each sccache client process
     # * round up to 10MiB
-    $mem_per_job = 10 * 1024
-    # Assume preprocessor invocations take ~300Mb or so
-    $mem_for_preprocessing = $N_CPUS * 300 * 1024
+    $mem_per_compile_job = 10 * 1024
+    # Assume each lit precompile worker needs ~500MiB
+    $mem_per_lit_job = 500 * 1024
+    # Assume preprocessor invocations take ~100Mb or so
+    $mem_for_preprocessing = $N_CPUS * 100 * 1024
     # It's usually around 400-600MiB, but be conservative
     # and assume the sccache daemon will use 1GiB of RAM
     $mem_for_sccache_daemon = 1 * 1024 * 1024
@@ -63,17 +70,24 @@ if ($USE_SCCACHE_DIST -and $SCCACHE_DIST_URL_SET -and $PARALLEL_LEVEL -le 0) {
     $mem_available = (Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory
     # Stay under 95% for CI
     $mem_available = [math]::Floor($mem_available * 95 / 100)
+    $mem_for_jobs = $mem_available - $mem_for_sccache_daemon - $mem_for_preprocessing
     # Total job count is available memory after accounting for `nproc` concurrent preprocessor
     # calls divided by the amount of memory required to invoke the sccache thin client process
-    $PARALLEL_LEVEL = [math]::Floor(($mem_available - $mem_for_sccache_daemon - $mem_for_preprocessing) / $mem_per_job)
+    $PARALLEL_LEVEL = [math]::Floor($mem_for_jobs / $mem_per_compile_job)
+    $LIT_PARALLEL_LEVEL = [math]::Floor($mem_for_jobs / $mem_per_lit_job)
 }
 
 if ($PARALLEL_LEVEL -le 0) {
     $PARALLEL_LEVEL = $N_CPUS_MINUS_1
 }
 
+if ($LIT_PARALLEL_LEVEL -le 0) {
+    $LIT_PARALLEL_LEVEL = $N_CPUS_MINUS_1
+}
+
 # Export to environment block
 $env:PARALLEL_LEVEL = $PARALLEL_LEVEL
+$env:LIT_PARALLEL_LEVEL = $LIT_PARALLEL_LEVEL
 
 Write-Host "=== Docker Container Resource Info ==="
 Write-Host "Number of Processors: $script:N_CPUS"
@@ -143,6 +157,7 @@ Write-Host "CUDAHOSTCXX=$env:CUDAHOSTCXX"
 Write-Host "TBB_ROOT=$env:TBB_ROOT"
 Write-Host "NVCC_VERSION=$NVCC_VERSION"
 Write-Host "PARALLEL_LEVEL=$env:PARALLEL_LEVEL"
+Write-Host "LIT_PARALLEL_LEVEL=$env:LIT_PARALLEL_LEVEL"
 Write-Host "CMAKE_BUILD_PARALLEL_LEVEL=$env:CMAKE_BUILD_PARALLEL_LEVEL"
 Write-Host "CTEST_PARALLEL_LEVEL=$env:CTEST_PARALLEL_LEVEL"
 Write-Host "CCCL_BUILD_INFIX=$env:CCCL_BUILD_INFIX"

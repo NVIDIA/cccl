@@ -164,6 +164,7 @@ N_CPUS_MINUS_1="$((N_CPUS > 1 ? N_CPUS - 1 : 1))"
 readonly N_CPUS
 readonly N_CPUS_MINUS_1
 declare PARALLEL_LEVEL="${PARALLEL_LEVEL:=$N_CPUS_MINUS_1}"
+declare LIT_PARALLEL_LEVEL="${LIT_PARALLEL_LEVEL:=$N_CPUS_MINUS_1}"
 
 # If PARALLEL_LEVEL <= 0, assume build cluster and tune parallelism to as many
 # concurrent preprocessor calls we think we can do without OOM'ing the machine
@@ -172,9 +173,11 @@ if "${USE_SCCACHE_DIST:-false}" && [[ -n "${SCCACHE_DIST_URL:+x}" ]] && [[ "$PAR
     # * 1.5Mb for the shell launched by ninja
     # * 6MiB for each sccache client process
     # * round up to 10MiB
-    mem_per_job="$((10 * 1024))"
-    # Assume preprocessor invocations take ~300Mb or so
-    mem_for_preprocessing="$((N_CPUS * 300 * 1024))"
+    mem_per_compile_job="$((10 * 1024))"
+    # Assume each lit precompile worker needs ~500MiB
+    mem_per_lit_job="$((500 * 1024))"
+    # Assume preprocessor invocations take ~100Mb or so
+    mem_for_preprocessing="$((N_CPUS * 100 * 1024))"
     # It's usually around 400-600MiB, but be conservative
     # and assume the sccache daemon will use 1GiB of RAM
     mem_for_sccache_daemon="$((1 * 1024 * 1024))"
@@ -182,16 +185,23 @@ if "${USE_SCCACHE_DIST:-false}" && [[ -n "${SCCACHE_DIST_URL:+x}" ]] && [[ "$PAR
     mem_available="$(grep MemAvailable /proc/meminfo | tr -s '[:space:]' | cut -d' ' -f2)"
     # Stay under 95% for CI
     mem_available="$((mem_available * 95 / 100))"
+    mem_for_jobs="$((mem_available - mem_for_sccache_daemon - mem_for_preprocessing))"
     # Total job count is available memory after accounting for `nproc` concurrent preprocessor
     # calls divided by the amount of memory required to invoke the sccache thin client process
-    PARALLEL_LEVEL="$(((mem_available - mem_for_sccache_daemon - mem_for_preprocessing) / mem_per_job / 10))"
+    PARALLEL_LEVEL="$((mem_for_jobs / mem_per_compile_job))"
+    LIT_PARALLEL_LEVEL="$((mem_for_jobs / mem_per_lit_job))"
 fi
 
 if [[ "$PARALLEL_LEVEL" -le 0 ]]; then
     PARALLEL_LEVEL="$N_CPUS_MINUS_1"
 fi
 
+if [[ "$LIT_PARALLEL_LEVEL" -le 0 ]]; then
+    LIT_PARALLEL_LEVEL="$N_CPUS_MINUS_1"
+fi
+
 export PARALLEL_LEVEL
+export LIT_PARALLEL_LEVEL
 
 if [[ -z ${CCCL_BUILD_INFIX+x} ]]; then
     CCCL_BUILD_INFIX=""
@@ -264,6 +274,7 @@ print_environment_details() {
       CUDAHOSTCXX \
       NVCC_VERSION \
       PARALLEL_LEVEL \
+      LIT_PARALLEL_LEVEL \
       CMAKE_BUILD_PARALLEL_LEVEL \
       CTEST_PARALLEL_LEVEL \
       CCCL_CI_COMMAND_TIMEOUT \
