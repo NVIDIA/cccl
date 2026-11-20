@@ -27,7 +27,8 @@ import pytest
 
 _PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 _REPO_ROOT = _PACKAGE_ROOT.parents[1]
-_DOCS_ROOT = _REPO_ROOT / "docs" / "python" / "coop_cutlass"
+_SPHINX_ROOT = _REPO_ROOT / "docs"
+_DOCS_ROOT = _SPHINX_ROOT / "python" / "coop_cutlass"
 _SOURCE_ROOT = _PACKAGE_ROOT / "cuda" / "coop" / "cutlass"
 
 if not _DOCS_ROOT.is_dir():
@@ -37,10 +38,15 @@ if not _DOCS_ROOT.is_dir():
     )
 
 _LITERALINCLUDE = re.compile(r"^(\s*)\.\. literalinclude::(.*)$")
+_LIST_MARKER = re.compile(r"^\s*(?:[-+*]|(?:\d+|#)\.)\s+")
+_EXPLICIT_MARKUP = re.compile(r"\.\.\s+(?:[\w:-]+::|\[|_|\|)")
+_LITERAL_DIRECTIVE = re.compile(r"\.\. (?:code|code-block|sourcecode|raw)::")
 _OPTION = re.compile(r":([\w-]+):\s*(.*)")
 _MARKER_OPTIONS = ("start-after", "start-at", "end-before", "end-at")
 _UNIQUE_MARKER_OPTIONS = ("start-after", "end-before")
-_GITHUB_URL = re.compile(r"https://github\.com/[^\s>]+")
+_GITHUB_BLOB = re.compile(
+    r"https://github\.com/NVIDIA/cccl/blob/([^/\s>?#][^\s>?#]*)"
+)
 # Every directive that documents an object: the autodoc family and
 # hand-written ``py:`` entries.
 _AUTODOC = re.compile(r"^\s*\.\. (auto\w+|py:\w+)::")
@@ -60,6 +66,39 @@ class _Include:
     text_above: str = field(repr=False)
 
 
+def _rst_lines(text: str) -> list[str]:
+    """Hide comments and literal blocks while preserving source positions."""
+    lines = text.expandtabs().splitlines()
+    ignored_indent = None
+    for index, line in enumerate(lines):
+        content = line.lstrip()
+        indent = len(line) - len(content)
+        if ignored_indent is not None:
+            if not content or indent > ignored_indent:
+                lines[index] = ""
+                continue
+            ignored_indent = None
+
+        if marker := _LIST_MARKER.match(line):
+            indent = marker.end()
+            content = line[indent:]
+            lines[index] = " " * indent + content
+        if content.rstrip() == "..":
+            # A blank line after a bare ".." terminates the empty comment.
+            if index + 1 < len(lines) and lines[index + 1].strip():
+                ignored_indent = indent
+        elif content.startswith(".. "):
+            if not _EXPLICIT_MARKUP.match(content) or _LITERAL_DIRECTIVE.match(
+                content
+            ):
+                ignored_indent = indent
+        elif content.rstrip().endswith("::"):
+            ignored_indent = indent
+        if ignored_indent is not None:
+            lines[index] = ""
+    return lines
+
+
 def _parse_includes(
     text: str, source: Path, first_line: int = 1
 ) -> list[_Include]:
@@ -68,7 +107,7 @@ def _parse_includes(
     The file name sits on the directive line or, as in the package
     docstrings, on the line below it. Options follow until a blank line.
     """
-    lines = text.splitlines()
+    lines = _rst_lines(text)
     includes = []
     for index, line in enumerate(lines):
         directive = _LITERALINCLUDE.match(line)
@@ -133,6 +172,15 @@ def _marker_problems(lines: list[str], options: dict[str, str]) -> list[str]:
     on the first of those lines. A ``start-after`` or ``end-before`` marker
     must also be unique so that the include keeps pointing at one region.
     """
+    for first, second in (
+        ("start-at", "start-after"),
+        ("end-at", "end-before"),
+    ):
+        if first in options and second in options:
+            return [f"cannot use both :{first}: and :{second}:"]
+    if "pyobject" in options and options.keys() & _MARKER_OPTIONS:
+        return ["select the snippet with :pyobject: or with start/end markers"]
+
     problems = []
     start = 0  # Sphinx searches for the end text below this line number.
     for name in _MARKER_OPTIONS:
@@ -160,21 +208,27 @@ def _marker_problems(lines: list[str], options: dict[str, str]) -> list[str]:
     return problems
 
 
+def _include_path(target: str, directory: Path) -> Path:
+    if target.startswith("/"):
+        return (_SPHINX_ROOT / target.lstrip("/")).resolve()
+    return (directory / target).resolve()
+
+
 def _include_problems(include: _Include, directory: Path) -> list[str]:
     """Check the file and markers of one directive read from ``directory``."""
-    path = directory / include.target
+    path = _include_path(include.target, directory)
     if not path.is_file():
-        return [f"file not found: {os.path.normpath(path)}"]
+        return [f"file not found: {path}"]
     lines = path.read_text(encoding="utf-8").splitlines()
     return _marker_problems(lines, include.options)
 
 
 def _link_problems(include: _Include) -> list[str]:
     """Require a GitHub link to the included file above a docstring include."""
-    path = os.path.normpath(_DOCS_ROOT / include.target)
+    path = _include_path(include.target, _DOCS_ROOT)
     repo_path = Path(os.path.relpath(path, _REPO_ROOT)).as_posix()
-    links = _GITHUB_URL.findall(include.text_above)
-    if any(link.endswith("/" + repo_path) for link in links):
+    paths = _GITHUB_BLOB.findall(include.text_above)
+    if any(path.endswith("/" + repo_path) for path in paths):
         return []
     return [f"no GitHub link to {repo_path} above the directive"]
 
@@ -188,7 +242,7 @@ def _automodules_without_reset(text: str) -> list[str]:
     """
     missing = []
     pending = None
-    for number, line in enumerate(text.splitlines(), 1):
+    for number, line in enumerate(_rst_lines(text), 1):
         if line.strip() == _PUBLIC_MODULE:
             pending = None
         elif directive := _AUTODOC.match(line):
@@ -295,6 +349,69 @@ def test_include_checker_reports_broken_directives(tmp_path: Path) -> None:
     ]
 
 
+def test_nested_includes_and_commented_examples(tmp_path: Path) -> None:
+    page = """\
+.. Disabled example:
+
+   .. literalinclude:: removed.py
+
+* .. note::
+
+     .. literalinclude:: nested.py
+
+  .. code-block:: rst
+
+     .. literalinclude:: documentation-only.py
+
+* .. literalinclude:: listed.py
+
+* Example::
+
+     .. literalinclude:: shown-only.py
+
+  .. literalinclude:: after-example.py
+"""
+    includes = _parse_includes(page, tmp_path / "page.rst")
+    assert [(item.line, item.target) for item in includes] == [
+        (7, "nested.py"),
+        (13, "listed.py"),
+        (19, "after-example.py"),
+    ]
+
+
+@pytest.mark.parametrize(
+    "options,problem",
+    [
+        (
+            {"start-at": "value", "start-after": "# begin"},
+            "cannot use both :start-at: and :start-after:",
+        ),
+        (
+            {"end-at": "value", "end-before": "# last"},
+            "cannot use both :end-at: and :end-before:",
+        ),
+        (
+            {"pyobject": "scan", "end-before": "# last"},
+            "select the snippet with :pyobject: or with start/end markers",
+        ),
+    ],
+)
+def test_include_checker_rejects_conflicting_selectors(
+    options: dict[str, str], problem: str
+) -> None:
+    assert _marker_problems(_EXAMPLE_FILE.splitlines(), options) == [problem]
+
+
+def test_root_relative_include_finds_file_and_link() -> None:
+    target = "/python/coop_cutlass/debugger_walkthrough.py"
+    link = f"https://github.com/NVIDIA/cccl/blob/main/docs{target}"
+    (include,) = _parse_includes(
+        f"{link}\n\n.. literalinclude:: {target}", _DOCS_ROOT / "api.rst"
+    )
+    assert _include_problems(include, _DOCS_ROOT) == []
+    assert _link_problems(include) == []
+
+
 _EXAMPLE_MODULE = '''\
 def scan():
     """Scan values.
@@ -309,23 +426,35 @@ def scan():
 '''
 
 
+@pytest.mark.parametrize(
+    "original,replacement,valid",
+    [
+        ("main", "feature/scan", True),
+        ("main", "v3.0", True),
+        ("main", "a" * 40, True),
+        ("scan.py>", "reduce.py>", False),
+        ("NVIDIA/cccl", "other/cccl", False),
+        ("NVIDIA/cccl", "NVIDIA/other", False),
+        ("blob/main", "tree/main", False),
+    ],
+)
 def test_docstring_checker_requires_link_to_included_file(
-    tmp_path: Path,
+    tmp_path: Path, original: str, replacement: str, valid: bool
 ) -> None:
     module = tmp_path / "example.py"
-    module.write_text(_EXAMPLE_MODULE, encoding="utf-8")
-    (linked,) = _docstring_includes(tmp_path)
     module.write_text(
-        _EXAMPLE_MODULE.replace("scan.py>", "reduce.py>"), encoding="utf-8"
+        _EXAMPLE_MODULE.replace(original, replacement), encoding="utf-8"
     )
-    (unlinked,) = _docstring_includes(tmp_path)
+    (include,) = _docstring_includes(tmp_path)
 
-    assert (linked.line, linked.options) == (7, {"language": "python"})
-    assert _link_problems(linked) == []
-    assert _link_problems(unlinked) == [
-        "no GitHub link to python/cuda_coop_cutlass/examples/scan.py "
-        "above the directive"
-    ]
+    assert (include.line, include.options) == (7, {"language": "python"})
+    if valid:
+        assert _link_problems(include) == []
+    else:
+        assert _link_problems(include) == [
+            "no GitHub link to python/cuda_coop_cutlass/examples/scan.py "
+            "above the directive"
+        ]
 
 
 _API_SECTION = f"""\
@@ -343,6 +472,13 @@ _API_AUTOMODULE = "line 1: .. automodule:: cuda.coop.cutlass._temp_storage"
     "text,missing",
     [
         pytest.param(_API_SECTION, [], id="reset-follows"),
+        pytest.param(
+            _API_SECTION.replace(
+                _PUBLIC_MODULE, f".. Disabled reset:\n\n   {_PUBLIC_MODULE}"
+            ),
+            [_API_AUTOMODULE],
+            id="commented-reset",
+        ),
         pytest.param(
             _API_SECTION.replace(_PUBLIC_MODULE, ""),
             [_API_AUTOMODULE],
