@@ -46,6 +46,13 @@
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#ifdef empty_bases
+#  pragma push_macro("empty_bases")
+#  undef empty_bases
+#  define _CUDAX_POP_MACRO_empty_bases
+#endif // defined(empty_bases)
+
 namespace cuda::experimental::execution
 {
 struct task_scheduler;
@@ -712,6 +719,11 @@ _CCCL_HOST_DEVICE_API auto __receiver_proxy_base<_Rcvr, _Proxy>::query(const get
 }
 } // namespace __detail
 } // namespace cuda::experimental::execution
+
+#ifdef _CUDAX_POP_MACRO_empty_bases
+#  pragma pop_macro("empty_bases")
+#  undef _CUDAX_POP_MACRO_empty_bases
+#endif // defined(_CUDAX_POP_MACRO_empty_bases)
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 

@@ -38,6 +38,13 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
+// Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
+#  ifdef empty_bases
+#    pragma push_macro("empty_bases")
+#    undef empty_bases
+#    define _LIBCUDACXX_POP_MACRO_empty_bases
+#  endif // defined(empty_bases)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_MR
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document this
 
@@ -1175,6 +1182,11 @@ template <class... _DstProperties, class... _SrcProperties>
 }
 
 _CCCL_END_NAMESPACE_CUDA_MR
+
+#  ifdef _LIBCUDACXX_POP_MACRO_empty_bases
+#    pragma pop_macro("empty_bases")
+#    undef _LIBCUDACXX_POP_MACRO_empty_bases
+#  endif // defined(_LIBCUDACXX_POP_MACRO_empty_bases)
 
 #  include <cuda/std/__cccl/epilogue.h>
 
