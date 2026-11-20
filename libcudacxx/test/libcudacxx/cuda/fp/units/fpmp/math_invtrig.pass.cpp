@@ -12,7 +12,8 @@
 // and the C99 Annex F special values, with the sign of zero. The low and the default accuracy
 // levels share the table-driven kernel and its bounds; fpmp2_accuracy::high has polynomial
 // kernels behind the same entry code and is held to tighter bounds on the same arguments. The
-// special values are checked at every level.
+// special values are checked at every level and for fp64mp2 as well, and so are the fp64mp2
+// asin and acos next to the ends of the domain.
 
 #include <cuda/fpmp>
 #include <cuda/std/cassert>
@@ -219,7 +220,8 @@ TEST_HOST_DEVICE_FUNC bool same(F x, F y)
   return x == y && cuda::std::signbit(x) == cuda::std::signbit(y);
 }
 
-// r is k pi/4 for a nonzero k: the high limb to within 4 ulp, and the sign.
+// r is k pi/4 for a nonzero k: the high limb to within 4 ulp (fp64mp2 has a binary64 fallback
+// whose library is not correctly rounded), and the sign.
 template <class T, class F>
 TEST_HOST_DEVICE_FUNC bool is_quarter_turns(T r, int k)
 {
@@ -398,6 +400,32 @@ TEST_HOST_DEVICE_FUNC void test_atan2_special_values()
   }
 }
 
+// fp64mp2 asin and acos of |x| = 1 - t for a t that only the low limb holds, down to the smallest
+// subnormal: acos(1 - t) = sqrt(2 t) to first order, asin(1 - t) = pi/2 - acos(1 - t) and
+// acos(-(1 - t)) = pi - acos(1 - t). The high limb is checked to a few ulp, which holds for the
+// binary128 and for the binary64 bodies; summing the limbs first gave 0, pi/2 and pi.
+TEST_HOST_DEVICE_FUNC void test_fp64mp2_near_one()
+{
+  const double pi  = 3.14159265358979323846;
+  const double t[] = {0x1p-60, 0x1p-70, 0x1p-200, 0x1p-1000, cuda::std::numeric_limits<double>::denorm_min()};
+  for (double ti : t)
+  {
+    const double s = cuda::std::sqrt(2.0) * cuda::std::sqrt(ti);
+
+    const cuda::fp64mp2 c = cuda::acos(cuda::fp64mp2(1.0, -ti));
+    assert(cuda::std::fabs(c.hi() - s) <= 1e-13 * s);
+
+    const cuda::fp64mp2 cn = cuda::acos(cuda::fp64mp2(-1.0, ti));
+    assert(cuda::std::fabs(cn.hi() - (pi - s)) <= 2e-15);
+
+    const cuda::fp64mp2 a = cuda::asin(cuda::fp64mp2(1.0, -ti));
+    assert(cuda::std::fabs(a.hi() - (0.5 * pi - s)) <= 1e-15);
+
+    const cuda::fp64mp2 an = cuda::asin(cuda::fp64mp2(-1.0, ti));
+    assert(cuda::std::fabs(an.hi() + (0.5 * pi - s)) <= 1e-15);
+  }
+}
+
 int main(int, char**)
 {
   // asin, acos, atan, atan2: the largest error MPFR sweeps of 2M to 4M arguments per range
@@ -409,12 +437,17 @@ int main(int, char**)
   test_accuracy<cuda::fp32mp2>(table_tolerance);
   test_accuracy<cuda::fp32mp2_low>(table_tolerance);
   test_accuracy<cuda::fp32mp2_high>(high_tolerance);
+  test_fp64mp2_near_one();
   test_special_values<cuda::fp32mp2, float>();
   test_special_values<cuda::fp32mp2_low, float>();
   test_special_values<cuda::fp32mp2_high, float>();
+  test_special_values<cuda::fp64mp2, double>();
+  test_special_values<cuda::fp64mp2_high, double>();
   test_atan2_special_values<cuda::fp32mp2, float>();
   test_atan2_special_values<cuda::fp32mp2_low, float>();
   test_atan2_special_values<cuda::fp32mp2_high, float>();
+  test_atan2_special_values<cuda::fp64mp2, double>();
+  test_atan2_special_values<cuda::fp64mp2_high, double>();
 
   return 0;
 }
