@@ -329,7 +329,7 @@ template <class _Tp>
   }
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
-  __abcd_results<_Tp> __partials = __complex_calculate_partials(__a, __b, __c, __d);
+  __abcd_results<_Tp> __partials = ::cuda::std::__complex_calculate_partials(__a, __b, __c, __d);
 
   _Tp __x = __partials.__ac - __partials.__bd;
   _Tp __y = __partials.__ad + __partials.__bc;
@@ -389,7 +389,7 @@ template <class _Tp>
     }
     if (__recalc)
     {
-      __partials = __complex_calculate_partials(__a, __b, __c, __d);
+      __partials = ::cuda::std::__complex_calculate_partials(__a, __b, __c, __d);
 
       __x = numeric_limits<_Tp>::infinity() * (__partials.__ac - __partials.__bd);
       __y = numeric_limits<_Tp>::infinity() * (__partials.__ad + __partials.__bc);
@@ -482,8 +482,8 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
   }
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
-  __abcd_results<_Tp> __partials = __complex_calculate_partials(__a, __b, __c, __d);
-  __ab_results<_Tp> __denom_vec  = __complex_piecewise_mul(__c, __d, __c, __d);
+  __abcd_results<_Tp> __partials = ::cuda::std::__complex_calculate_partials(__a, __b, __c, __d);
+  __ab_results<_Tp> __denom_vec  = ::cuda::std::__complex_piecewise_mul(__c, __d, __c, __d);
 
   _Tp __denom = __denom_vec.__a + __denom_vec.__b;
   _Tp __x     = ::cuda::std::__constexpr_scalbn((__partials.__ac + __partials.__bd) / __denom, -__ilogbw);

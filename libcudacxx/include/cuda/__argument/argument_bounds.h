@@ -62,7 +62,7 @@ class static_bounds
 public:
   static_assert(::cuda::std::is_same_v<decltype(_Lower), decltype(_Upper)>,
                 "Static bounds endpoints must have the same type");
-  static_assert(__bounds_less_equal(_Lower, _Upper), "Lower bound must be <= upper bound");
+  static_assert(::cuda::args::__bounds_less_equal(_Lower, _Upper), "Lower bound must be <= upper bound");
 
   [[nodiscard]] _CCCL_API static constexpr decltype(_Lower) lower() noexcept
   {
@@ -121,8 +121,8 @@ template <class _Tp>
 template <class _Tp>
 class runtime_bounds
 {
-  _Tp __lower_ = __type_lowest<_Tp>();
-  _Tp __upper_ = __type_highest<_Tp>();
+  _Tp __lower_ = ::cuda::args::__type_lowest<_Tp>();
+  _Tp __upper_ = ::cuda::args::__type_highest<_Tp>();
 
 public:
   _CCCL_HIDE_FROM_ABI constexpr runtime_bounds() noexcept = default;
@@ -131,7 +131,8 @@ public:
       : __lower_(__lower)
       , __upper_(__upper)
   {
-    _CCCL_ASSERT(__bounds_less_equal(__lower, __upper), "Runtime lower bound must be <= runtime upper bound");
+    _CCCL_ASSERT(::cuda::args::__bounds_less_equal(__lower, __upper),
+                 "Runtime lower bound must be <= runtime upper bound");
   }
 
   [[nodiscard]] _CCCL_API constexpr _Tp lower() const noexcept

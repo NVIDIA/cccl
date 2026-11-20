@@ -390,8 +390,8 @@ public:
 
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(input_iterator<_Iter2>)
-  _CCCL_API friend constexpr iter_rvalue_reference_t<_Iter2>
-  iter_move(const common_iterator& __i) noexcept(noexcept(::cuda::std::ranges::iter_move(declval<const _Iter&>())))
+  _CCCL_API friend constexpr iter_rvalue_reference_t<_Iter2> iter_move(const common_iterator& __i) noexcept(
+    noexcept(::cuda::std::ranges::iter_move(::cuda::std::declval<const _Iter&>())))
   {
     _CCCL_ASSERT(__i.__hold_.__holds_first(), "Attempted to iter_move a non-dereferenceable common_iterator");
     return ::cuda::std::ranges::iter_move(__i.__hold_.__first_);

@@ -69,7 +69,7 @@ struct __swap_ranges_transform_fn
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp __lhs, _Up __rhs)
   {
     using ::cuda::std::swap;
-    swap(__lhs, __rhs);
+    swap(__lhs, __rhs); // NOLINT(cccl-avoid-adl)
     return ::cuda::std::tuple{__lhs, __rhs};
   }
 };

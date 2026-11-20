@@ -133,11 +133,11 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void delay()
                  {
                    if (gridDim.x < GridThreshold)
                    {
-                     __threadfence_block();
+                     ::__threadfence_block();
                    }
                    else
                    {
-                     __nanosleep(Delay);
+                     ::__nanosleep(Delay);
                    }
                  }
                }));
@@ -153,11 +153,11 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void delay(unsigned int ns)
                  {
                    if (gridDim.x < GridThreshold)
                    {
-                     __threadfence_block();
+                     ::__threadfence_block();
                    }
                    else
                    {
-                     __nanosleep(ns);
+                     ::__nanosleep(ns);
                    }
                  }
                }));
@@ -168,14 +168,14 @@ template <unsigned int Delay>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void always_delay()
 {
   _CCCL_IKET_RANGE_PUSH(Delay);
-  NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(Delay);));
+  NV_IF_TARGET(NV_PROVIDES_SM_70, (::__nanosleep(Delay);));
   _CCCL_IKET_RANGE_POP();
 }
 
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void always_delay([[maybe_unused]] unsigned int ns)
 {
   _CCCL_IKET_RANGE_PUSH(Delay);
-  NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(ns);));
+  NV_IF_TARGET(NV_PROVIDES_SM_70, (::__nanosleep(ns);));
   _CCCL_IKET_RANGE_POP();
 }
 
@@ -808,7 +808,7 @@ public:
     while (true)
     {
       _CCCL_IKET_RANGE_PUSH(__any_sync);
-      auto any_invalid = __any_sync(0xffffffff, (tile_descriptor.status == SCAN_TILE_INVALID));
+      auto any_invalid = ::__any_sync(0xffffffff, (tile_descriptor.status == SCAN_TILE_INVALID));
       _CCCL_IKET_RANGE_POP();
       if (!any_invalid)
       {
@@ -981,8 +981,8 @@ struct ScanTileState<T, false>
       //_CCCL_IKET_RANGE_PUSH(LoadTileStatus);
       status = _CUB::detail::load_relaxed(d_tile_status + TILE_STATUS_PADDING + tile_idx);
       //_CCCL_IKET_RANGE_POP();
-      __threadfence();
-    } while (__any_sync(0xffffffff, (status == SCAN_TILE_INVALID)));
+      ::__threadfence();
+    } while (::__any_sync(0xffffffff, (status == SCAN_TILE_INVALID)));
 
     //_CCCL_IKET_RANGE_PUSH(LoadTileAggr);
     if (status == StatusWord(SCAN_TILE_PARTIAL))
@@ -1215,7 +1215,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
       // _CCCL_IKET_RANGE_POP();
       tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
 
-    } while (__any_sync(0xffffffff, (tile_descriptor.status == SCAN_TILE_INVALID)));
+    } while (::__any_sync(0xffffffff, (tile_descriptor.status == SCAN_TILE_INVALID)));
 
     status      = tile_descriptor.status;
     value.value = tile_descriptor.value;
@@ -1362,7 +1362,7 @@ private:
     exclusive_prefix = window_aggregate;
 
     // Keep sliding the window back until we come across a tile whose inclusive prefix is known
-    while (__all_sync(0xffffffff, (predecessor_status != StatusWord(SCAN_TILE_INCLUSIVE))))
+    while (::__all_sync(0xffffffff, (predecessor_status != StatusWord(SCAN_TILE_INCLUSIVE))))
     {
       predecessor_idx -= detail::warp_threads;
 
@@ -1414,7 +1414,7 @@ private:
     {
       tile_status.WaitForValid(predecessor_idx, predecessor_status, value, construct_delay());
       const int my_is_inclusive     = (predecessor_status == StatusWord(SCAN_TILE_INCLUSIVE));
-      const int anchor_is_inclusive = __shfl_sync(0xffffffff, my_is_inclusive, anchor_tile_lane);
+      const int anchor_is_inclusive = ::__shfl_sync(0xffffffff, my_is_inclusive, anchor_tile_lane);
       if (anchor_is_inclusive)
       {
         break;

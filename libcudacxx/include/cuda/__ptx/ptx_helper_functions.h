@@ -96,14 +96,14 @@ _CCCL_DEVICE_API inline ::cuda::std::uint32_t __as_ptr_smem(const void* __ptr)
 _CCCL_DEVICE_API inline ::cuda::std::uint32_t __as_ptr_dsmem(const void* __ptr)
 {
   // No difference in implementation to __as_ptr_smem.
-  return __as_ptr_smem(__ptr);
+  return ::cuda::ptx::__as_ptr_smem(__ptr);
 }
 
 _CCCL_DEVICE_API inline ::cuda::std::uint32_t __as_ptr_remote_dsmem(const void* __ptr)
 {
   // No difference in implementation to __as_ptr_smem.
   // Consider adding debug asserts here.
-  return __as_ptr_smem(__ptr);
+  return ::cuda::ptx::__as_ptr_smem(__ptr);
 }
 
 _CCCL_DEVICE_API inline ::cuda::std::uint64_t __as_ptr_gmem(const void* __ptr)
@@ -128,14 +128,14 @@ template <typename _Tp>
 _CCCL_DEVICE_API _Tp* __from_ptr_dsmem(::cuda::std::size_t __ptr)
 {
   // Consider adding debug asserts here.
-  return __from_ptr_smem<_Tp>(__ptr);
+  return ::cuda::ptx::__from_ptr_smem<_Tp>(__ptr);
 }
 
 template <typename _Tp>
 _CCCL_DEVICE_API _Tp* __from_ptr_remote_dsmem(::cuda::std::size_t __ptr)
 {
   // Consider adding debug asserts here.
-  return __from_ptr_smem<_Tp>(__ptr);
+  return ::cuda::ptx::__from_ptr_smem<_Tp>(__ptr);
 }
 
 template <typename _Tp>

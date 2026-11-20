@@ -188,7 +188,7 @@ struct device_memory_pool : device_memory_pool_ref
   //! @param __properties Optional, additional properties of the pool to be
   //! created.
   _CCCL_HOST_API device_memory_pool(::cuda::device_ref __device_id, memory_pool_properties __properties = {})
-      : device_memory_pool_ref(__create_cuda_mempool(
+      : device_memory_pool_ref(::cuda::__create_cuda_mempool(
           __properties,
           ::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __device_id.get()},
           ::CU_MEM_ALLOCATION_TYPE_PINNED))

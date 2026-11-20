@@ -16,7 +16,7 @@ __device__ static inline void prefetch_L1(
 template <typename = void>
 _CCCL_DEVICE_API void prefetch_L1(const void* __addr)
 {
-  asm volatile("prefetch.global.L1 [%0];" : : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm volatile("prefetch.global.L1 [%0];" : : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
 }
 #endif // __cccl_ptx_isa >= 200
 
@@ -30,7 +30,7 @@ __device__ static inline void prefetch_L2(
 template <typename = void>
 _CCCL_DEVICE_API void prefetch_L2(const void* __addr)
 {
-  asm volatile("prefetch.global.L2 [%0];" : : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm volatile("prefetch.global.L2 [%0];" : : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
 }
 #endif // __cccl_ptx_isa >= 200
 
@@ -58,7 +58,7 @@ __device__ static inline void prefetch_L2_evict_last(
 template <typename = void>
 _CCCL_DEVICE_API void prefetch_L2_evict_last(const void* __addr)
 {
-  asm volatile("prefetch.global.L2::evict_last [%0];" : : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm volatile("prefetch.global.L2::evict_last [%0];" : : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
 }
 #endif // __cccl_ptx_isa >= 740
 
@@ -72,7 +72,7 @@ __device__ static inline void prefetch_L2_evict_normal(
 template <typename = void>
 _CCCL_DEVICE_API void prefetch_L2_evict_normal(const void* __addr)
 {
-  asm volatile("prefetch.global.L2::evict_normal [%0];" : : "l"(__as_ptr_gmem(__addr)) : "memory");
+  asm volatile("prefetch.global.L2::evict_normal [%0];" : : "l"(::cuda::ptx::__as_ptr_gmem(__addr)) : "memory");
 }
 #endif // __cccl_ptx_isa >= 740
 

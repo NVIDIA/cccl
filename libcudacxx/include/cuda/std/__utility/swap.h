@@ -52,7 +52,7 @@ swap(_Tp (&__a)[_Np], _Tp (&__b)[_Np]) noexcept(__is_nothrow_swappable<_Tp>::val
 {
   for (size_t __i = 0; __i != _Np; ++__i)
   {
-    swap(__a[__i], __b[__i]);
+    swap(__a[__i], __b[__i]); // NOLINT(cccl-avoid-adl)
   }
 }
 

@@ -38,7 +38,7 @@ template <class _Policy>
 {
   if constexpr (__is_callable_v<get_stream_t, const _Policy&>)
   {
-    return __ensure_current_context{get_stream(__policy)};
+    return __ensure_current_context{::cuda::get_stream(__policy)};
   }
   else
   {

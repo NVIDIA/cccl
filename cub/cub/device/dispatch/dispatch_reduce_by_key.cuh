@@ -421,7 +421,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
     {
       // Get device ordinal
       int device_ordinal;
-      error = CubDebug(cudaGetDevice(&device_ordinal));
+      error = CubDebug(::cudaGetDevice(&device_ordinal));
       if (cudaSuccess != error)
       {
         break;
@@ -511,7 +511,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
 
       // Get max x-dimension of grid
       int max_dim_x;
-      error = CubDebug(cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal));
+      error = CubDebug(::cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal));
       if (cudaSuccess != error)
       {
         break;
@@ -823,12 +823,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     }
 
     int device_ordinal{};
-    if (const auto error = CubDebug(cudaGetDevice(&device_ordinal)))
+    if (const auto error = CubDebug(::cudaGetDevice(&device_ordinal)))
     {
       return error;
     }
     int max_dim_x{};
-    if (const auto error = CubDebug(cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal)))
+    if (const auto error = CubDebug(::cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal)))
     {
       return error;
     }

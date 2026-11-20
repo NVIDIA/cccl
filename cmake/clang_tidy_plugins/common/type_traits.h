@@ -28,6 +28,7 @@ constexpr auto SMOL_LEN = 64;
     auto ret = PrintingPolicy{decl.getASTContext().getLangOpts()};
 
     ret.SuppressInlineNamespace = llvm::to_underlying(PrintingPolicy::SuppressInlineNamespaceMode::All);
+    ret.SuppressUnwrittenScope  = true;
     return ret;
   }();
   auto name   = SmallString<SMOL_LEN>{};

@@ -45,13 +45,13 @@ void iter_swap(_I1, _I2) = delete;
 template <class _T1, class _T2>
 _CCCL_CONCEPT __unqualified_iter_swap = _CCCL_REQUIRES_EXPR((_T1, _T2), _T1&& __x, _T2&& __y)(
   requires(__class_or_enum<remove_cvref_t<_T1>> || __class_or_enum<remove_cvref_t<_T2>>),
-  ((void) iter_swap(::cuda::std::forward<_T1>(__x), ::cuda::std::forward<_T2>(__y))));
+  ((void) iter_swap(::cuda::std::forward<_T1>(__x), ::cuda::std::forward<_T2>(__y)))); // NOLINT(cccl-avoid-adl)
 
 #if _CCCL_HAS_NOEXCEPT_MANGLING() // older GCC cannot use noexcept inside a requires clause
 template <class _T1, class _T2>
 _CCCL_CONCEPT __noexcept_unqualified_iter_swap = _CCCL_REQUIRES_EXPR((_T1, _T2), _T1&& __x, _T2&& __y)(
   requires(__unqualified_iter_swap<_T1, _T2>),
-  noexcept(iter_swap(::cuda::std::forward<_T1>(__x), ::cuda::std::forward<_T2>(__y))));
+  noexcept(iter_swap(::cuda::std::forward<_T1>(__x), ::cuda::std::forward<_T2>(__y)))); // NOLINT(cccl-avoid-adl)
 #else // ^^^ _CCCL_HAS_NOEXCEPT_MANGLING() ^^^ / vvv !_CCCL_HAS_NOEXCEPT_MANGLING() vvv
 template <class _T1, class _T2, bool = __unqualified_iter_swap<_T1, _T2>>
 inline constexpr bool __noexcept_unqualified_iter_swap = false;
@@ -119,7 +119,7 @@ struct __fn
   _CCCL_API constexpr void
   _CCCL_STATIC_CALL_OPERATOR(_T1&& __x, _T2&& __y) noexcept(__noexcept_unqualified_iter_swap<_T1, _T2>)
   {
-    (void) iter_swap(::cuda::std::forward<_T1>(__x), ::cuda::std::forward<_T2>(__y));
+    (void) iter_swap(::cuda::std::forward<_T1>(__x), ::cuda::std::forward<_T2>(__y)); // NOLINT(cccl-avoid-adl)
   }
 
   _CCCL_TEMPLATE(class _T1, class _T2)

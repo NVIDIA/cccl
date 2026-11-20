@@ -319,7 +319,7 @@ struct AgentRadixSortUpsweep
     __syncthreads();
 
     // Bucket tile of keys
-    cuda::static_for<KEYS_PER_THREAD>([&](auto ic) {
+    ::cuda::static_for<KEYS_PER_THREAD>([&](auto ic) {
       Bucket(keys[ic]);
     });
   }

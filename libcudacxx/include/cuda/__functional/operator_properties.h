@@ -52,7 +52,7 @@ template <class _Op>
 }
 
 template <class _Op, class _Tp, class _Enable = void>
-inline constexpr bool __is_associative_v = __is_associative_static_assert<_Op>();
+inline constexpr bool __is_associative_v = ::cuda::__is_associative_static_assert<_Op>();
 
 // strictly speaking, plus (+) and multiply (*) are not associative because of overflow UB
 template <class _Tp>
@@ -620,8 +620,8 @@ template <class _Op, class _Tp>
 inline constexpr bool has_identity_element_v<
   _Op,
   _Tp,
-  ::cuda::std::enable_if_t<!::cuda::std::is_same_v<decltype(identity_element<_Op, _Tp>()), __no_identity_element>>> =
-  true;
+  ::cuda::std::enable_if_t<
+    !::cuda::std::is_same_v<decltype(::cuda::identity_element<_Op, _Tp>()), __no_identity_element>>> = true;
 
 /***********************************************************************************************************************
  * Absorbing Element
@@ -723,8 +723,8 @@ template <class _Op, class _Tp>
 inline constexpr bool has_absorbing_element_v<
   _Op,
   _Tp,
-  ::cuda::std::enable_if_t<!::cuda::std::is_same_v<decltype(absorbing_element<_Op, _Tp>()), __no_absorbing_element>>> =
-  true;
+  ::cuda::std::enable_if_t<
+    !::cuda::std::is_same_v<decltype(::cuda::absorbing_element<_Op, _Tp>()), __no_absorbing_element>>> = true;
 
 _CCCL_END_NAMESPACE_CUDA
 

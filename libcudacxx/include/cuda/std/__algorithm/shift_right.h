@@ -112,7 +112,7 @@ _CCCL_API constexpr _ForwardIterator __shift_right(
       ::cuda::std::move(__first, __mid, __trail);
       return __ret;
     }
-    swap(*__mid, *__trail);
+    swap(*__mid, *__trail); // NOLINT(cccl-avoid-adl)
     ++__mid;
     ++__trail;
     ++__lead;
@@ -133,7 +133,7 @@ _CCCL_API constexpr _ForwardIterator shift_right(
   }
 
   using _IterCategory = __iterator_traits_category_or_concept_t<_ForwardIterator>;
-  return __shift_right(__first, __last, __n, _IterCategory());
+  return ::cuda::std::__shift_right(__first, __last, __n, _IterCategory());
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

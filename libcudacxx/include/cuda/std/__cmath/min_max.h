@@ -75,7 +75,7 @@ template <class _Tp>
 [[nodiscard]] _CCCL_TRIVIAL_DEVICE_API _Tp __fmax_bf16_pre_sm80(_Tp __x, _Tp __y) noexcept
 {
   float __result;
-  asm("max.f32 %0, %1, %2;" : "=f"(__result) : "f"(__bfloat162float(__x)), "f"(__bfloat162float(__y)));
+  asm("max.f32 %0, %1, %2;" : "=f"(__result) : "f"(::__bfloat162float(__x)), "f"(::__bfloat162float(__y)));
   return ::cuda::std::__fp_from_storage<_Tp>(static_cast<uint16_t>(::__float_as_uint(__result) >> 16));
 }
 
@@ -83,7 +83,7 @@ template <class _Tp>
 [[nodiscard]] _CCCL_TRIVIAL_DEVICE_API _Tp __fmin_bf16_pre_sm80(_Tp __x, _Tp __y) noexcept
 {
   float __result;
-  asm("min.f32 %0, %1, %2;" : "=f"(__result) : "f"(__bfloat162float(__x)), "f"(__bfloat162float(__y)));
+  asm("min.f32 %0, %1, %2;" : "=f"(__result) : "f"(::__bfloat162float(__x)), "f"(::__bfloat162float(__y)));
   return ::cuda::std::__fp_from_storage<_Tp>(static_cast<uint16_t>(::__float_as_uint(__result) >> 16));
 }
 #endif // _CCCL_HAS_NVBF16() && _CCCL_CUDA_COMPILATION()
@@ -157,7 +157,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
   if constexpr (is_same_v<_Tp, ::__half>)
   {
 #  if _CCCL_CTK_AT_LEAST(12, 2)
-    return __hmax(__x, __y);
+    return ::__hmax(__x, __y);
 #  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                       (return __hmax(__x, __y);),
@@ -306,7 +306,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
   if constexpr (is_same_v<_Tp, ::__half>)
   {
 #  if _CCCL_CTK_AT_LEAST(12, 2)
-    return __hmin(__x, __y);
+    return ::__hmin(__x, __y);
 #  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                       (return __hmin(__x, __y);),

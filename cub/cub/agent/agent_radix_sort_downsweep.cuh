@@ -597,7 +597,7 @@ struct AgentRadixSortDownsweep
       }
     }
 
-    short_circuit = __syncthreads_and(short_circuit);
+    short_circuit = ::__syncthreads_and(short_circuit);
   }
 
   /**
@@ -646,7 +646,7 @@ struct AgentRadixSortDownsweep
       }
     }
 
-    short_circuit = __syncthreads_and(short_circuit);
+    short_circuit = ::__syncthreads_and(short_circuit);
   }
 
   /**

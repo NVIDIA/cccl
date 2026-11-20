@@ -67,7 +67,7 @@ template <size_t _Size>
 }
 
 template <size_t _Size>
-using __cuda_atomic_rmw_type_t _CCCL_NODEBUG = decltype(__cuda_atomic_rmw_type_impl<_Size>());
+using __cuda_atomic_rmw_type_t _CCCL_NODEBUG = decltype(::cuda::std::__cuda_atomic_rmw_type_impl<_Size>());
 
 template <class _Type, class _RmwType>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _RmwType
@@ -171,6 +171,7 @@ _CCCL_HOST_DEVICE_API __cuda_atomic_rmw_result<__unv<_Pointee>> __cuda_atomic_rm
   }
 
   __rmw_type __old;
+  // NOLINTNEXTLINE(cccl-avoid-adl)
   __cuda_atomic_load(__backend, __aligned, __old, __initial_order, _RmwOperand{}, __scope, __cuda_atomic_mmio_disable{});
 
   while (true)
@@ -183,8 +184,16 @@ _CCCL_HOST_DEVICE_API __cuda_atomic_rmw_result<__unv<_Pointee>> __cuda_atomic_rm
     }
 
     const __rmw_type __attempt = ::cuda::std::__cuda_atomic_rmw_replace(__old, __update.__value, __offset);
-    if (__cuda_atomic_compare_exchange(
-          __backend, __aligned, __old, __old, __attempt, __cuda_atomic_cas_weak{}, __order, _RmwOperand{}, __scope))
+    if (__cuda_atomic_compare_exchange( // NOLINT(cccl-avoid-adl)
+          __backend,
+          __aligned,
+          __old,
+          __old,
+          __attempt,
+          __cuda_atomic_cas_weak{},
+          __order,
+          _RmwOperand{},
+          __scope))
     {
       return {__logical_old, true};
     }

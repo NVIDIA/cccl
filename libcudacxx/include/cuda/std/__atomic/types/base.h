@@ -112,7 +112,7 @@ template <class _Scope>
 template <class _Sco>
 _CCCL_HOST_DEVICE_API void __atomic_thread_fence_dispatch(memory_order __order, [[maybe_unused]] _Sco __scope)
 {
-  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(__cuda_atomic_thread_fence, __scope, __order);
+  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(::cuda::std::__cuda_atomic_thread_fence, __scope, __order);
 }
 
 _CCCL_HOST_DEVICE_API inline void __atomic_thread_fence_dispatch(memory_order __order)
@@ -122,7 +122,7 @@ _CCCL_HOST_DEVICE_API inline void __atomic_thread_fence_dispatch(memory_order __
 
 _CCCL_HOST_DEVICE_API inline void __atomic_signal_fence_dispatch(memory_order __order)
 {
-  _CCCL_DISPATCH_ATOMIC_BACKEND(__cuda_atomic_signal_fence, __order);
+  _CCCL_DISPATCH_ATOMIC_BACKEND(::cuda::std::__cuda_atomic_signal_fence, __order);
 }
 
 template <typename _Sto, typename _Up, __atomic_storage_is_base<_Sto> = 0>
@@ -134,21 +134,22 @@ _CCCL_HOST_DEVICE_API void __atomic_init_dispatch(_Sto* __a, _Up __val)
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE_API void __atomic_store_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
 {
-  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(__cuda_atomic_store_dispatch, _Sco{}, __a->get(), __val, __order);
+  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(::cuda::std::__cuda_atomic_store_dispatch, _Sco{}, __a->get(), __val, __order);
 }
 
 template <typename _Sto, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE_API auto __atomic_load_dispatch(const _Sto* __a, memory_order __order, _Sco = {})
   -> __atomic_underlying_remove_cv_t<_Sto>
 {
-  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(__cuda_atomic_load_dispatch, _Sco{}, __a->get(), __order);
+  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(::cuda::std::__cuda_atomic_load_dispatch, _Sco{}, __a->get(), __order);
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE_API auto __atomic_exchange_dispatch(_Sto* __a, _Up __value, memory_order __order, _Sco = {})
   -> __atomic_underlying_remove_cv_t<_Sto>
 {
-  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(__cuda_atomic_exchange_dispatch, _Sco{}, __a->get(), __value, __order);
+  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(
+    ::cuda::std::__cuda_atomic_exchange_dispatch, _Sco{}, __a->get(), __value, __order);
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
@@ -156,7 +157,7 @@ _CCCL_HOST_DEVICE_API bool __atomic_compare_exchange_strong_dispatch(
   _Sto* __a, _Up* __expected, _Up __val, memory_order __success, memory_order __failure, _Sco = {})
 {
   _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(
-    __cuda_atomic_compare_exchange_dispatch,
+    ::cuda::std::__cuda_atomic_compare_exchange_dispatch,
     _Sco{},
     __a->get(),
     __expected,
@@ -171,7 +172,7 @@ _CCCL_HOST_DEVICE_API bool __atomic_compare_exchange_weak_dispatch(
   _Sto* __a, _Up* __expected, _Up __val, memory_order __success, memory_order __failure, _Sco = {})
 {
   _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(
-    __cuda_atomic_compare_exchange_dispatch,
+    ::cuda::std::__cuda_atomic_compare_exchange_dispatch,
     _Sco{},
     __a->get(),
     __expected,
@@ -185,49 +186,56 @@ template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_
 _CCCL_HOST_DEVICE_API auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {})
   -> __atomic_underlying_remove_cv_t<_Sto>
 {
-  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(__cuda_atomic_fetch_add_dispatch, _Sco{}, __a->get(), __delta, __order);
+  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(
+    ::cuda::std::__cuda_atomic_fetch_add_dispatch, _Sco{}, __a->get(), __delta, __order);
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE_API auto __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {})
   -> __atomic_underlying_remove_cv_t<_Sto>
 {
-  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(__cuda_atomic_fetch_sub_dispatch, _Sco{}, __a->get(), __delta, __order);
+  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(
+    ::cuda::std::__cuda_atomic_fetch_sub_dispatch, _Sco{}, __a->get(), __delta, __order);
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE_API auto __atomic_fetch_and_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
   -> __atomic_underlying_remove_cv_t<_Sto>
 {
-  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(__cuda_atomic_fetch_and_dispatch, _Sco{}, __a->get(), __pattern, __order);
+  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(
+    ::cuda::std::__cuda_atomic_fetch_and_dispatch, _Sco{}, __a->get(), __pattern, __order);
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE_API auto __atomic_fetch_or_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
   -> __atomic_underlying_remove_cv_t<_Sto>
 {
-  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(__cuda_atomic_fetch_or_dispatch, _Sco{}, __a->get(), __pattern, __order);
+  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(
+    ::cuda::std::__cuda_atomic_fetch_or_dispatch, _Sco{}, __a->get(), __pattern, __order);
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE_API auto __atomic_fetch_xor_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
   -> __atomic_underlying_remove_cv_t<_Sto>
 {
-  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(__cuda_atomic_fetch_xor_dispatch, _Sco{}, __a->get(), __pattern, __order);
+  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(
+    ::cuda::std::__cuda_atomic_fetch_xor_dispatch, _Sco{}, __a->get(), __pattern, __order);
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE_API auto __atomic_fetch_max_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
   -> __atomic_underlying_remove_cv_t<_Sto>
 {
-  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(__cuda_atomic_fetch_max_dispatch, _Sco{}, __a->get(), __val, __order);
+  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(
+    ::cuda::std::__cuda_atomic_fetch_max_dispatch, _Sco{}, __a->get(), __val, __order);
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE_API auto __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
   -> __atomic_underlying_remove_cv_t<_Sto>
 {
-  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(__cuda_atomic_fetch_min_dispatch, _Sco{}, __a->get(), __val, __order);
+  _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(
+    ::cuda::std::__cuda_atomic_fetch_min_dispatch, _Sco{}, __a->get(), __val, __order);
 }
 
 #undef _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND

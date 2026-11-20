@@ -75,7 +75,7 @@ struct Squad : SquadDesc
     // barrier 0 is reserved for __syncthreads(). We use barrier ids 1, ...
     const int barrierIdx = this->mSquadIdx + 1;
 
-    __barrier_sync_count(barrierIdx, this->threadCount());
+    ::__barrier_sync_count(barrierIdx, this->threadCount());
   }
 };
 // squadDispatch

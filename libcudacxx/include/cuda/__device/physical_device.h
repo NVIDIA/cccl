@@ -282,7 +282,7 @@ __make_physical_devices(::cuda::std::size_t __device_count)
 
 [[nodiscard]] _CCCL_HOST_API inline __physical_devices_view __physical_devices()
 {
-  static const auto __device_count = __physical_devices_count();
+  static const auto __device_count = ::cuda::__physical_devices_count();
   // Not `const`: `__simple_vector::data() const` returns a `const` pointer, but callers mutate cached device state.
   static auto __devices = ::cuda::__make_physical_devices(__device_count);
   return {__devices.data(), __device_count};

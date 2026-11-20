@@ -35,14 +35,14 @@ _CCCL_DEVICE_API void mbarrier_expect_tx(
   {
     asm("mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1; // 1."
         :
-        : "r"(__as_ptr_smem(__addr)), "r"(__txCount)
+        : "r"(::cuda::ptx::__as_ptr_smem(__addr)), "r"(__txCount)
         : "memory");
   }
   else if constexpr (__scope == scope_cluster)
   {
     asm("mbarrier.expect_tx.relaxed.cluster.shared::cta.b64 [%0], %1; // 1."
         :
-        : "r"(__as_ptr_smem(__addr)), "r"(__txCount)
+        : "r"(::cuda::ptx::__as_ptr_smem(__addr)), "r"(__txCount)
         : "memory");
   }
 }
@@ -77,14 +77,14 @@ _CCCL_DEVICE_API void mbarrier_expect_tx(
   {
     asm("mbarrier.expect_tx.relaxed.cta.shared::cluster.b64 [%0], %1; // 2."
         :
-        : "r"(__as_ptr_dsmem(__addr)), "r"(__txCount)
+        : "r"(::cuda::ptx::__as_ptr_dsmem(__addr)), "r"(__txCount)
         : "memory");
   }
   else if constexpr (__scope == scope_cluster)
   {
     asm("mbarrier.expect_tx.relaxed.cluster.shared::cluster.b64 [%0], %1; // 2."
         :
-        : "r"(__as_ptr_dsmem(__addr)), "r"(__txCount)
+        : "r"(::cuda::ptx::__as_ptr_dsmem(__addr)), "r"(__txCount)
         : "memory");
   }
 }

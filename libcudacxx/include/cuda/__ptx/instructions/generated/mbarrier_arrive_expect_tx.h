@@ -36,14 +36,14 @@ _CCCL_DEVICE_API ::cuda::std::uint64_t mbarrier_arrive_expect_tx(
   {
     asm("mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2; // 8. "
         : "=l"(__state)
-        : "r"(__as_ptr_smem(__addr)), "r"(__tx_count)
+        : "r"(::cuda::ptx::__as_ptr_smem(__addr)), "r"(__tx_count)
         : "memory");
   }
   else if constexpr (__scope == scope_cluster)
   {
     asm("mbarrier.arrive.expect_tx.release.cluster.shared::cta.b64 %0, [%1], %2; // 8. "
         : "=l"(__state)
-        : "r"(__as_ptr_smem(__addr)), "r"(__tx_count)
+        : "r"(::cuda::ptx::__as_ptr_smem(__addr)), "r"(__tx_count)
         : "memory");
   }
   return __state;
@@ -77,7 +77,7 @@ _CCCL_DEVICE_API void mbarrier_arrive_expect_tx(
   // __space == space_cluster (due to parameter type constraint)
   asm("mbarrier.arrive.expect_tx.release.cluster.shared::cluster.b64   _, [%0], %1; // 9. "
       :
-      : "r"(__as_ptr_remote_dsmem(__addr)), "r"(__tx_count)
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__addr)), "r"(__tx_count)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -112,14 +112,14 @@ _CCCL_DEVICE_API ::cuda::std::uint64_t mbarrier_arrive_expect_tx(
   {
     asm("mbarrier.arrive.expect_tx.relaxed.cta.shared::cta.b64 %0, [%1], %2;"
         : "=l"(__state)
-        : "r"(__as_ptr_dsmem(__addr)), "r"(__txCount)
+        : "r"(::cuda::ptx::__as_ptr_dsmem(__addr)), "r"(__txCount)
         : "memory");
   }
   else if constexpr (__scope == scope_cluster)
   {
     asm("mbarrier.arrive.expect_tx.relaxed.cluster.shared::cta.b64 %0, [%1], %2;"
         : "=l"(__state)
-        : "r"(__as_ptr_dsmem(__addr)), "r"(__txCount)
+        : "r"(::cuda::ptx::__as_ptr_dsmem(__addr)), "r"(__txCount)
         : "memory");
   }
   return __state;
@@ -153,7 +153,7 @@ _CCCL_DEVICE_API void mbarrier_arrive_expect_tx(
   // __space == space_cluster (due to parameter type constraint)
   asm("mbarrier.arrive.expect_tx.relaxed.cluster.shared::cluster.b64 _, [%0], %1;"
       :
-      : "r"(__as_ptr_dsmem(__addr)), "r"(__txCount)
+      : "r"(::cuda::ptx::__as_ptr_dsmem(__addr)), "r"(__txCount)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 860

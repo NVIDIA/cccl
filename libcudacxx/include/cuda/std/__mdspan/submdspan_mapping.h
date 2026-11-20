@@ -101,7 +101,7 @@ _CCCL_REQUIRES(__matching_number_of_slices<typename _LayoutMapping::extents_type
 {
   using _Extents                = typename _LayoutMapping::extents_type;
   using _IndexType              = typename _Extents::index_type;
-  const auto __filtered_indices = __filter_slices_convertible_to_index<_IndexType, _Slices...>(
+  const auto __filtered_indices = ::cuda::std::__filter_slices_convertible_to_index<_IndexType, _Slices...>(
     index_sequence<>{}, ::cuda::std::index_sequence_for<_Slices...>());
   return ::cuda::std::__submdspan_strides(__filtered_indices, __mapping, __slices...);
 }

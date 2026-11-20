@@ -113,7 +113,7 @@ struct agent_t
 
       if (index < num_items && predicate(input_items[i]))
       {
-        atomicMin(&temp_storage.block_result, index);
+        ::atomicMin(&temp_storage.block_result, index);
         // every thread goes over multiple elements per thread for every tile. If a thread finds a local minimum it
         // doesn't need to proceed further (inner early exit).
         return true;
@@ -134,7 +134,7 @@ struct agent_t
         // bugs like: http://github.com/NVIDIA/cccl/issues/3591
         if (predicate(THRUST_NS_QUALIFIER::raw_reference_cast(d_in[index])))
         {
-          atomicMin(&temp_storage.block_result, index);
+          ::atomicMin(&temp_storage.block_result, index);
           return true;
         }
       }
@@ -181,13 +181,13 @@ struct agent_t
           ? ConsumeTile(tile_offset, ::cuda::std::bool_constant<attempt_vectorization>{})
           : ConsumeTile(tile_offset, ::cuda::std::false_type{});
 
-      const bool found_block = __syncthreads_or(found_thread);
+      const bool found_block = ::__syncthreads_or(found_thread);
       if (found_block)
       {
         // our block found it, update global position and exit
         if (threadIdx.x == 0 && temp_storage.block_result < num_items)
         {
-          atomicMin(found_pos_ptr, temp_storage.block_result);
+          ::atomicMin(found_pos_ptr, temp_storage.block_result);
         }
         return;
       }

@@ -70,7 +70,7 @@ public:
         // According to the standard `inf` is a valid input, but it causes the
         // distribution to hang, so we replace it with the maximum representable
         // mean.
-        : __mean_{isinf(__mean) ? numeric_limits<double>::max() : __mean}
+        : __mean_{::cuda::std::isinf(__mean) ? numeric_limits<double>::max() : __mean}
     {
       if (__mean_ < 10)
       {

@@ -220,7 +220,7 @@ template <int NumTileStatesPerThread, typename AccumT, typename ScanOpT>
     {
       // Bitmask with 1 bits indicating which lane has a tile aggregate
       const ::cuda::std::uint32_t warp_has_aggregate_mask =
-        __ballot_sync(0xffffffffu, regTmpStates[idx].state == scan_state::tile_aggregate);
+        ::__ballot_sync(0xffffffffu, regTmpStates[idx].state == scan_state::tile_aggregate);
 
       // Bitmask with 1 bits for all rightmost lanes having a tile aggregate
       const ::cuda::std::uint32_t warp_right_aggregates_mask = warp_has_aggregate_mask & (~warp_has_aggregate_mask - 1);
@@ -306,7 +306,7 @@ template <int NumTileStatesPerThread, typename AccumT, typename ScanOpT>
     {
       // Bitmask with 1 bits indicating which lane has a tile aggregate
       const ::cuda::std::uint32_t warp_has_aggregate_mask =
-        __ballot_sync(0xffffffffu, regTmpStates[idx].state == scan_state::tile_aggregate);
+        ::__ballot_sync(0xffffffffu, regTmpStates[idx].state == scan_state::tile_aggregate);
 
       // Bitmask with 1 bits for the contiguous run of lanes having a tile aggregate starting from LSB
       const ::cuda::std::uint32_t warp_right_aggregates_mask = warp_has_aggregate_mask & (~warp_has_aggregate_mask - 1);
@@ -322,7 +322,7 @@ template <int NumTileStatesPerThread, typename AccumT, typename ScanOpT>
       }
 
       const bool use_value    = lanemaskEq & warp_right_aggregates_mask;
-      const AccumT value      = use_value ? regTmpStates[idx].value : cuda::identity_element<ScanOpT, AccumT>();
+      const AccumT value      = use_value ? regTmpStates[idx].value : ::cuda::identity_element<ScanOpT, AccumT>();
       const AccumT local_aggr = warp_reduce_t{temp_storage}.Reduce(value, scan_op);
 
       if (expected_count == 32)

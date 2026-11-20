@@ -234,7 +234,7 @@ template <class _Tp>
   }
 
   // __hypot_sq_scaled is now in [-0.25, 0.5], we can use a log1p polynomial estimate.
-  const _Tp __log1p_poly = __internal_unsafe_log1p_poly(__hypot_sq_scaled);
+  const _Tp __log1p_poly = ::cuda::std::__internal_unsafe_log1p_poly(__hypot_sq_scaled);
 
   // Scale our answer back up.
   _Tp __abs_rescaled = ::cuda::std::fma(__numbers<_Tp>::__ln2(), __exp_d, __log1p_poly);

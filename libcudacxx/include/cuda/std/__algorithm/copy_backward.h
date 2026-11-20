@@ -54,7 +54,7 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Up* __copy_backward(_Tp* __first, _Tp* _
   const ptrdiff_t __n = __last - __first;
   if (__n > 0)
   {
-    if (__dispatch_memmove(__result - __n, __first, __n))
+    if (::cuda::std::__dispatch_memmove(__result - __n, __first, __n))
     {
       return __result - __n;
     }

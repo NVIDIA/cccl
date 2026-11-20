@@ -98,7 +98,7 @@ _CCCL_API constexpr bool __constexpr_tail_overlap(_Tp* __first, _Up* __needle, [
 #ifdef _CCCL_BUILTIN_CONSTANT_P
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (return _CCCL_BUILTIN_CONSTANT_P(__first < __needle) && __first < __needle;),
-                    (return __constexpr_tail_overlap_fallback(__first, __needle, __last);))
+                    (return ::cuda::std::__constexpr_tail_overlap_fallback(__first, __needle, __last);))
 #else // ^^^ _CCCL_BUILTIN_CONSTANT_P ^^^ / vvv !_CCCL_BUILTIN_CONSTANT_P vvv
   return __constexpr_tail_overlap_fallback(__first, __needle, __last);
 #endif // !_CCCL_BUILTIN_CONSTANT_P
@@ -115,11 +115,11 @@ _CCCL_API constexpr pair<_Tp*, _Up*> __copy(_Tp* __first, _Tp* __last, _Up* __re
   const ptrdiff_t __n = __last - __first;
   if (__n > 0)
   {
-    if (__dispatch_memmove(__result, __first, __n))
+    if (::cuda::std::__dispatch_memmove(__result, __first, __n))
     {
       return pair{__last, __result + __n};
     }
-    if (__constexpr_tail_overlap(__first, __result, __last))
+    if (::cuda::std::__constexpr_tail_overlap(__first, __result, __last))
     {
       for (ptrdiff_t __i = __n; __i > 0; --__i)
       {

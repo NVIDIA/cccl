@@ -720,7 +720,7 @@ public:
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>> Sort(KeyT (&keys)[ItemsPerThread], DecomposerT decomposer)
   {
-    Sort(keys, decomposer, 0, detail::radix::traits_t<KeyT>::default_end_bit(decomposer));
+    Sort(keys, decomposer, 0, _CUB::detail::radix::traits_t<KeyT>::default_end_bit(decomposer));
   }
 
   //! @rst
@@ -934,7 +934,7 @@ public:
     !::cuda::std::is_convertible_v<DecomposerT, int>>
   Sort(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], DecomposerT decomposer)
   {
-    Sort(keys, values, decomposer, 0, detail::radix::traits_t<KeyT>::default_end_bit(decomposer));
+    Sort(keys, values, decomposer, 0, _CUB::detail::radix::traits_t<KeyT>::default_end_bit(decomposer));
   }
 
   //! @rst
@@ -1130,7 +1130,7 @@ public:
       keys,
       values,
       0,
-      detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
+      _CUB::detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
       ::cuda::std::true_type(),
       detail::bool_constant_v<KEYS_ONLY>,
       decomposer);
@@ -1349,7 +1349,7 @@ public:
       keys,
       values,
       0,
-      detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
+      _CUB::detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
       ::cuda::std::true_type(),
       detail::bool_constant_v<KEYS_ONLY>,
       decomposer);
@@ -1555,7 +1555,7 @@ public:
       keys,
       values,
       0,
-      detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
+      _CUB::detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
       ::cuda::std::false_type(),
       detail::bool_constant_v<KEYS_ONLY>,
       decomposer);
@@ -1767,7 +1767,7 @@ public:
       keys,
       values,
       0,
-      detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
+      _CUB::detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
       ::cuda::std::false_type(),
       detail::bool_constant_v<KEYS_ONLY>,
       decomposer);
@@ -1968,7 +1968,7 @@ public:
       keys,
       values,
       0,
-      detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
+      _CUB::detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
       ::cuda::std::true_type(),
       detail::bool_constant_v<KEYS_ONLY>,
       decomposer);
@@ -2179,7 +2179,7 @@ public:
       keys,
       values,
       0,
-      detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
+      _CUB::detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
       ::cuda::std::true_type(),
       detail::bool_constant_v<KEYS_ONLY>,
       decomposer);

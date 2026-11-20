@@ -173,14 +173,14 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half cbrt(__half __x) noexcept
 {
-  return __float2half(::cuda::std::cbrt(__half2float(__x)));
+  return ::__float2half(::cuda::std::cbrt(::__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 cbrt(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(::cuda::std::cbrt(__bfloat162float(__x)));
+  return ::__float2bfloat16(::cuda::std::cbrt(::__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 

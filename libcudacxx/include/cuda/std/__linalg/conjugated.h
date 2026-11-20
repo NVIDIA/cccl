@@ -46,7 +46,8 @@ template <class _NestedAccessor>
 class conjugated_accessor
 {
   using __nested_element_type _CCCL_NODEBUG = typename _NestedAccessor::element_type;
-  using __nc_result_type _CCCL_NODEBUG      = decltype(conj_if_needed(::cuda::std::declval<__nested_element_type>()));
+  using __nc_result_type _CCCL_NODEBUG =
+    decltype(::cuda::std::linalg::conj_if_needed(::cuda::std::declval<__nested_element_type>()));
 
 public:
   using element_type     = add_const_t<__nc_result_type>;
@@ -76,7 +77,7 @@ public:
 
   _CCCL_API constexpr reference access(data_handle_type __p, size_t __i) const noexcept
   {
-    return conj_if_needed(__nested_element_type(__nested_accessor_.access(__p, __i)));
+    return ::cuda::std::linalg::conj_if_needed(__nested_element_type(__nested_accessor_.access(__p, __i)));
   }
 
   [[nodiscard]] _CCCL_API constexpr typename offset_policy::data_handle_type

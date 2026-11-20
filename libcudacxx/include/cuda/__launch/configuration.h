@@ -623,7 +623,7 @@ struct kernel_config
   {
     // can't use fully qualified kernel_config name here because of nvcc bug,
     // TODO remove __make_config_from_tuple once fixed
-    return __make_config_from_tuple(
+    return ::cuda::__make_config_from_tuple(
       __hierarchy.combine(__other_config.hierarchy()),
       ::cuda::std::tuple_cat(__options, ::cuda::std::apply(__filter_options<_Options...>{}, __other_config.options())));
   }
@@ -667,14 +667,14 @@ template <typename _Dimensions, typename... _Options, typename _NewLevel>
 _CCCL_HOST_API constexpr auto
 operator&(const kernel_config<_Dimensions, _Options...>& config, const _NewLevel& new_level) noexcept
 {
-  return kernel_config(hierarchy_add_level(config.hierarchy(), new_level), config.options());
+  return kernel_config(::cuda::hierarchy_add_level(config.hierarchy(), new_level), config.options());
 }
 
 template <typename _NewLevel, typename _Dimensions, typename... _Options>
 _CCCL_HOST_API constexpr auto
 operator&(const _NewLevel& new_level, const kernel_config<_Dimensions, _Options...>& config) noexcept
 {
-  return kernel_config(hierarchy_add_level(config.hierarchy(), new_level), config.options());
+  return kernel_config(::cuda::hierarchy_add_level(config.hierarchy(), new_level), config.options());
 }
 
 template <typename _L1, typename _Dims1, typename _L2, typename _Dims2>
@@ -754,7 +754,8 @@ template <int _ThreadsPerBlock>
 _CCCL_HOST_API constexpr auto distribute(int numElements) noexcept
 {
   const int blocksPerGrid = (numElements + _ThreadsPerBlock - 1) / _ThreadsPerBlock;
-  return make_config(make_hierarchy(grid_dims(blocksPerGrid), block_dims<_ThreadsPerBlock>()));
+  return ::cuda::make_config(
+    ::cuda::make_hierarchy(::cuda::grid_dims(blocksPerGrid), ::cuda::block_dims<_ThreadsPerBlock>()));
 }
 
 template <class... _Levels, class... _Options>
@@ -826,8 +827,9 @@ template <typename _Dimensions, typename... _Options>
 template <class _Dims, class... _Opts>
 _CCCL_DEVICE_API decltype(auto) dynamic_shared_memory(const kernel_config<_Dims, _Opts...>& __config) noexcept
 {
-  auto& __opt = __detail::find_option_in_tuple<__detail::launch_option_kind::dynamic_shared_memory>(__config.options());
-  using _Opt  = ::cuda::std::remove_reference_t<decltype(__opt)>;
+  auto& __opt =
+    ::cuda::__detail::find_option_in_tuple<__detail::launch_option_kind::dynamic_shared_memory>(__config.options());
+  using _Opt = ::cuda::std::remove_reference_t<decltype(__opt)>;
   static_assert(!::cuda::std::is_same_v<_Opt, __detail::option_not_found>,
                 "Dynamic shared memory option not found in the kernel configuration");
   extern __shared__ unsigned char __cccl_device_dyn_smem[];

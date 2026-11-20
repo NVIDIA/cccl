@@ -19,7 +19,7 @@ _CCCL_DEVICE_API void clusterlaunchcontrol_try_cancel(void* __addr, ::cuda::std:
 {
   asm("clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.b128 [%0], [%1];"
       :
-      : "r"(__as_ptr_smem(__addr)), "r"(__as_ptr_smem(__smem_bar))
+      : "r"(::cuda::ptx::__as_ptr_smem(__addr)), "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 860
@@ -39,7 +39,7 @@ _CCCL_DEVICE_API void clusterlaunchcontrol_try_cancel_multicast(void* __addr, ::
   asm("clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128 "
       "[%0], [%1];"
       :
-      : "r"(__as_ptr_smem(__addr)), "r"(__as_ptr_smem(__smem_bar))
+      : "r"(::cuda::ptx::__as_ptr_smem(__addr)), "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 860

@@ -87,7 +87,7 @@ _CCCL_API constexpr size_t __select_align_fn_2_(size_t __len, size_t __min, size
 
 _CCCL_API constexpr size_t __select_align_fn_(size_t __len, size_t __a1, size_t __a2)
 {
-  return __select_align_fn_2_(__len, __a2 < __a1 ? __a2 : __a1, __a1 < __a2 ? __a2 : __a1);
+  return ::cuda::std::__select_align_fn_2_(__len, __a2 < __a1 ? __a2 : __a1, __a1 < __a2 ? __a2 : __a1);
 }
 
 template <class... _Tys>

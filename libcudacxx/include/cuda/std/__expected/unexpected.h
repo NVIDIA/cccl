@@ -119,7 +119,7 @@ public:
   {
     static_assert(is_swappable_v<_Err>, "E must be swappable");
     using ::cuda::std::swap;
-    swap(__unex_, __other.__unex_);
+    swap(__unex_, __other.__unex_); // NOLINT(cccl-avoid-adl)
   }
 
   _CCCL_EXEC_CHECK_DISABLE

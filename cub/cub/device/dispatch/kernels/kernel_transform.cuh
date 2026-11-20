@@ -446,7 +446,7 @@ _CCCL_DEVICE_API void memcpy_async_aligned(void* dst, const void* src, unsigned 
     asm volatile(
       "cp.async.cg.shared.global [%0], [%1], %2, %3;"
       :
-      : "r"(static_cast<uint32_t>(__cvta_generic_to_shared(static_cast<char*>(dst) + offset))),
+      : "r"(static_cast<uint32_t>(::__cvta_generic_to_shared(static_cast<char*>(dst) + offset))),
         "l"(static_cast<const char*>(src) + offset),
         "n"(ldgsts_size_and_align),
         "n"(ldgsts_size_and_align)
@@ -788,10 +788,10 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
   if constexpr (max_alignment > 16)
   {
     // manual alignment is necessary for correctness
-    uint32_t smem32 = __cvta_generic_to_shared(smem_with_barrier);
+    uint32_t smem32 = ::__cvta_generic_to_shared(smem_with_barrier);
     smem32          = ::cuda::round_up(smem32, tile_padding);
     asm("" : "+r"(smem32)); // avoid NVVM pulling the alignment code into the kernel, gains up to 8.7% some runs on H200
-    smem_with_barrier = static_cast<char*>(__cvta_shared_to_generic(smem32));
+    smem_with_barrier = static_cast<char*>(::__cvta_shared_to_generic(smem32));
   }
 
   uint64_t& bar = *reinterpret_cast<uint64_t*>(smem_with_barrier);
@@ -885,10 +885,10 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
     if (inner_blocks)
     {
       // use one thread to set up the entire bulk copy
-      if (cuda::device::__block_elect_one())
+      if (::cuda::device::__block_elect_one())
       {
         _CCCL_IKET_RANGE_PUSH(BarrierSetup);
-        ptx::mbarrier_init(&bar, 1);
+        ::cuda::ptx::mbarrier_init(&bar, 1);
         _CCCL_IKET_RANGE_POP();
         // an update to the CUDA memory model blesses skipping the following fence
         // ptx::fence_proxy_async(ptx::space_shared);
@@ -939,7 +939,7 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
         _CCCL_IKET_RANGE_POP();
 
         _CCCL_IKET_RANGE_PUSH(ExpectTx);
-        ptx::mbarrier_arrive_expect_tx(
+        ::cuda::ptx::mbarrier_arrive_expect_tx(
           ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ptx::sem_relaxed_t, ptx::sem_release_t>{},
           ptx::scope_cta,
           ptx::space_shared,
@@ -956,11 +956,11 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
     }
     else
     {
-      const bool elected = cuda::device::__block_elect_one();
+      const bool elected = ::cuda::device::__block_elect_one();
       if (elected)
       {
         _CCCL_IKET_RANGE_PUSH(BarrierSetup);
-        ptx::mbarrier_init(&bar, 1);
+        ::cuda::ptx::mbarrier_init(&bar, 1);
         _CCCL_IKET_RANGE_POP();
         // an update to the CUDA memory model blesses skipping the following fence
         // ptx::fence_proxy_async(ptx::space_shared);
@@ -998,7 +998,7 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
       if (elected)
       {
         _CCCL_IKET_RANGE_PUSH(ExpectTx);
-        ptx::mbarrier_arrive_expect_tx(
+        ::cuda::ptx::mbarrier_arrive_expect_tx(
           ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ptx::sem_relaxed_t, ptx::sem_release_t>{},
           ptx::scope_cta,
           ptx::space_shared,
@@ -1044,7 +1044,7 @@ _CCCL_DEVICE_API void transform_kernel_ublkcp(
   // all threads wait for bulk copy
   _CCCL_IKET_RANGE_PUSH(SyncAndBarrierWait);
   __syncthreads();
-  while (!ptx::mbarrier_try_wait_parity(&bar, 0))
+  while (!::cuda::ptx::mbarrier_try_wait_parity(&bar, 0))
   {
   }
   _CCCL_IKET_RANGE_POP(); // SyncAndBarrierWait

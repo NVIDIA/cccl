@@ -112,7 +112,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::std::__cc
   {
     if (__b < _Tp{0} && (__e % 2u == 1))
     {
-      __res = cuda::neg(__res);
+      __res = ::cuda::neg(__res);
     }
   }
   return static_cast<_Tp>(__res);

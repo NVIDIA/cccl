@@ -145,7 +145,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   }
 
   // Check for failure to launch
-  if (const auto error = CubDebug(cudaPeekAtLastError()))
+  if (const auto error = CubDebug(::cudaPeekAtLastError()))
   {
     return error;
   }
@@ -302,7 +302,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     }
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(::cudaPeekAtLastError()))
     {
       return error;
     }
@@ -369,7 +369,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   }
 
   // Check for failure to launch
-  if (const auto error = CubDebug(cudaPeekAtLastError()))
+  if (const auto error = CubDebug(::cudaPeekAtLastError()))
   {
     return error;
   }

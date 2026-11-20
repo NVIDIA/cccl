@@ -19,7 +19,7 @@ _CCCL_DEVICE_API void stmatrix_m8n8(_B16* __gmem_ptr, const ::cuda::std::uint32_
 {
   asm volatile("stmatrix.sync.aligned.m8n8.x1.shared.b16 [%0], {%1};"
                :
-               : "r"(__as_ptr_smem(__gmem_ptr)), "r"(__input_var[0])
+               : "r"(::cuda::ptx::__as_ptr_smem(__gmem_ptr)), "r"(__input_var[0])
                : "memory");
 }
 #endif // __cccl_ptx_isa >= 780
@@ -37,7 +37,7 @@ _CCCL_DEVICE_API void stmatrix_m8n8(_B16* __gmem_ptr, const ::cuda::std::uint32_
 {
   asm volatile("stmatrix.sync.aligned.m8n8.x2.shared.b16 [%0], {%1, %2};"
                :
-               : "r"(__as_ptr_smem(__gmem_ptr)), "r"(__input_var[0]), "r"(__input_var[1])
+               : "r"(::cuda::ptx::__as_ptr_smem(__gmem_ptr)), "r"(__input_var[0]), "r"(__input_var[1])
                : "memory");
 }
 #endif // __cccl_ptx_isa >= 780
@@ -56,7 +56,11 @@ _CCCL_DEVICE_API void stmatrix_m8n8(_B16* __gmem_ptr, const ::cuda::std::uint32_
   asm volatile(
     "stmatrix.sync.aligned.m8n8.x4.shared.b16 [%0], {%1, %2, %3, %4};"
     :
-    : "r"(__as_ptr_smem(__gmem_ptr)), "r"(__input_var[0]), "r"(__input_var[1]), "r"(__input_var[2]), "r"(__input_var[3])
+    : "r"(::cuda::ptx::__as_ptr_smem(__gmem_ptr)),
+      "r"(__input_var[0]),
+      "r"(__input_var[1]),
+      "r"(__input_var[2]),
+      "r"(__input_var[3])
     : "memory");
 }
 #endif // __cccl_ptx_isa >= 780
@@ -74,7 +78,7 @@ _CCCL_DEVICE_API void stmatrix_m8n8_trans(_B16* __gmem_ptr, const ::cuda::std::u
 {
   asm volatile("stmatrix.sync.aligned.m8n8.x1.trans.shared.b16 [%0], {%1};"
                :
-               : "r"(__as_ptr_smem(__gmem_ptr)), "r"(__input_var[0])
+               : "r"(::cuda::ptx::__as_ptr_smem(__gmem_ptr)), "r"(__input_var[0])
                : "memory");
 }
 #endif // __cccl_ptx_isa >= 780
@@ -92,7 +96,7 @@ _CCCL_DEVICE_API void stmatrix_m8n8_trans(_B16* __gmem_ptr, const ::cuda::std::u
 {
   asm volatile("stmatrix.sync.aligned.m8n8.x2.trans.shared.b16 [%0], {%1, %2};"
                :
-               : "r"(__as_ptr_smem(__gmem_ptr)), "r"(__input_var[0]), "r"(__input_var[1])
+               : "r"(::cuda::ptx::__as_ptr_smem(__gmem_ptr)), "r"(__input_var[0]), "r"(__input_var[1])
                : "memory");
 }
 #endif // __cccl_ptx_isa >= 780
@@ -111,7 +115,11 @@ _CCCL_DEVICE_API void stmatrix_m8n8_trans(_B16* __gmem_ptr, const ::cuda::std::u
   asm volatile(
     "stmatrix.sync.aligned.m8n8.x4.trans.shared.b16 [%0], {%1, %2, %3, %4};"
     :
-    : "r"(__as_ptr_smem(__gmem_ptr)), "r"(__input_var[0]), "r"(__input_var[1]), "r"(__input_var[2]), "r"(__input_var[3])
+    : "r"(::cuda::ptx::__as_ptr_smem(__gmem_ptr)),
+      "r"(__input_var[0]),
+      "r"(__input_var[1]),
+      "r"(__input_var[2]),
+      "r"(__input_var[3])
     : "memory");
 }
 #endif // __cccl_ptx_isa >= 780
@@ -130,7 +138,7 @@ _CCCL_DEVICE_API void stmatrix_m16n8_trans(_B8* __gmem_ptr, const ::cuda::std::u
 {
   asm volatile("stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [%0], {%1};"
                :
-               : "r"(__as_ptr_smem(__gmem_ptr)), "r"(__input_var[0])
+               : "r"(::cuda::ptx::__as_ptr_smem(__gmem_ptr)), "r"(__input_var[0])
                : "memory");
 }
 #endif // __cccl_ptx_isa >= 860
@@ -149,7 +157,7 @@ _CCCL_DEVICE_API void stmatrix_m16n8_trans(_B8* __gmem_ptr, const ::cuda::std::u
 {
   asm volatile("stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [%0], {%1, %2};"
                :
-               : "r"(__as_ptr_smem(__gmem_ptr)), "r"(__input_var[0]), "r"(__input_var[1])
+               : "r"(::cuda::ptx::__as_ptr_smem(__gmem_ptr)), "r"(__input_var[0]), "r"(__input_var[1])
                : "memory");
 }
 #endif // __cccl_ptx_isa >= 860
@@ -169,7 +177,11 @@ _CCCL_DEVICE_API void stmatrix_m16n8_trans(_B8* __gmem_ptr, const ::cuda::std::u
   asm volatile(
     "stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [%0], {%1, %2, %3, %4};"
     :
-    : "r"(__as_ptr_smem(__gmem_ptr)), "r"(__input_var[0]), "r"(__input_var[1]), "r"(__input_var[2]), "r"(__input_var[3])
+    : "r"(::cuda::ptx::__as_ptr_smem(__gmem_ptr)),
+      "r"(__input_var[0]),
+      "r"(__input_var[1]),
+      "r"(__input_var[2]),
+      "r"(__input_var[3])
     : "memory");
 }
 #endif // __cccl_ptx_isa >= 860

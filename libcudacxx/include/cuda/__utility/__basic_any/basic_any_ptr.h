@@ -99,7 +99,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
                      _CCCL_AND ::cuda::std::same_as<__normalized_interface_of<__basic_any<_Super>*>, _Interface*>)
   _CCCL_HOST_DEVICE_API explicit __basic_any(_OtherInterface<_Super>* __self) noexcept
   {
-    __convert_from(__basic_any_from(__self));
+    __convert_from(::cuda::__basic_any_from(__self));
   }
 
   _CCCL_TEMPLATE(template <class...> class _OtherInterface, class _Super)
@@ -108,7 +108,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
                      _CCCL_AND ::cuda::std::same_as<__normalized_interface_of<__basic_any<_Super> const*>, _Interface*>)
   _CCCL_HOST_DEVICE_API explicit __basic_any(_OtherInterface<_Super> const* __self) noexcept
   {
-    __convert_from(__basic_any_from(__self));
+    __convert_from(::cuda::__basic_any_from(__self));
   }
 
   //!
@@ -259,7 +259,7 @@ private:
   _CCCL_HOST_DEVICE_API void __convert_from(__basic_any<_OtherInterface*> const& __other) noexcept
   {
     using __other_interface_t _CCCL_NODEBUG = ::cuda::std::remove_const_t<_OtherInterface>;
-    auto __to_vptr = __try_vptr_cast<__other_interface_t, interface_type>(__other.__get_vptr());
+    auto __to_vptr = ::cuda::__try_vptr_cast<__other_interface_t, interface_type>(__other.__get_vptr());
     auto __to_optr = __to_vptr ? *__other.__get_optr() : nullptr;
     __ref_.__set_ref(__to_vptr, __to_optr);
   }

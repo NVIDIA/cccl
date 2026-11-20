@@ -37,7 +37,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   // __op == op_min (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.min.bf16  [%0], [%1], %2; // 4."
       :
-      : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -73,7 +73,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   // __op == op_max (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.max.bf16  [%0], [%1], %2; // 4."
       :
-      : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -109,7 +109,7 @@ _CCCL_DEVICE_API void cp_reduce_async_bulk(
   // __op == op_add (due to parameter type constraint)
   asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.noftz.bf16  [%0], [%1], %2; // 5."
       :
-      : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800

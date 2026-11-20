@@ -17,7 +17,7 @@ __device__ static inline void mbarrier_init(
 template <typename = void>
 _CCCL_DEVICE_API void mbarrier_init(::cuda::std::uint64_t* __addr, const ::cuda::std::uint32_t& __count)
 {
-  asm("mbarrier.init.shared.b64 [%0], %1;" : : "r"(__as_ptr_smem(__addr)), "r"(__count) : "memory");
+  asm("mbarrier.init.shared.b64 [%0], %1;" : : "r"(::cuda::ptx::__as_ptr_smem(__addr)), "r"(__count) : "memory");
 }
 #endif // __cccl_ptx_isa >= 700
 

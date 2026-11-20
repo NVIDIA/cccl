@@ -129,13 +129,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
   int device_ordinal;
-  if (const auto error = CubDebug(cudaGetDevice(&device_ordinal)))
+  if (const auto error = CubDebug(::cudaGetDevice(&device_ordinal)))
   {
     return error;
   }
 
   int sm_count;
-  if (const auto error = CubDebug(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal)))
+  if (const auto error = CubDebug(::cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal)))
   {
     return error;
   }

@@ -86,7 +86,7 @@ struct accumulating_transform_output_op
   {
     promote_op.advance(partition_size);
     using ::cuda::std::swap;
-    swap(d_previous_aggregate, d_aggregate_out);
+    ::cuda::std::swap(d_previous_aggregate, d_aggregate_out);
     first_partition = false;
     last_partition  = next_partition_is_the_last;
   }

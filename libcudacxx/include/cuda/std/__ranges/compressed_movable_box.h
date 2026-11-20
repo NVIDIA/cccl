@@ -102,7 +102,7 @@ template <class _Tp>
 }
 
 //! @brief Base class for @c __compressed_movable_box to store a T and ensure it is always copyable
-template <size_t _Index, class _Tp, __compressed_box_specialization = __compressed_box_choose<_Tp>()>
+template <size_t _Index, class _Tp, __compressed_box_specialization = ::cuda::std::__compressed_box_choose<_Tp>()>
 struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_base;
 
 //! @brief Simple wrapper around a non-empty T to access it within a @c __compressed_movable_box
@@ -145,7 +145,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_base<_Index, _Tp, __compresse
   template <class... _Args>
   _CCCL_API constexpr void __construct(_Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
   {
-    ::cuda::std::__construct_at(cuda::std::addressof(__elem_), ::cuda::std::forward<_Args>(__args)...);
+    ::cuda::std::__construct_at(::cuda::std::addressof(__elem_), ::cuda::std::forward<_Args>(__args)...);
   }
 };
 
@@ -347,7 +347,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_base<_Index, _Tp, __compresse
 //! @brief We only need to do something for types that require the engaged state
 template <class _Tp>
 inline constexpr __smf_availability __compressed_box_copy_construct_available =
-  (is_copy_constructible_v<_Tp> && __compressed_box_choose<_Tp>() != __compressed_box_specialization::__with_engaged)
+  (is_copy_constructible_v<_Tp>
+   && ::cuda::std::__compressed_box_choose<_Tp>() != __compressed_box_specialization::__with_engaged)
     ? __smf_availability::__trivial
   : is_copy_constructible_v<_Tp>
     ? __smf_availability::__available
@@ -397,7 +398,8 @@ __compressed_box_copy_base<_Index, _Tp, __smf_availability::__deleted> : __compr
 //! @brief We only need to do something for types that require the engaged state
 template <class _Tp>
 inline constexpr __smf_availability __compressed_box_move_construct_available =
-  (is_move_constructible_v<_Tp> && __compressed_box_choose<_Tp>() != __compressed_box_specialization::__with_engaged)
+  (is_move_constructible_v<_Tp>
+   && ::cuda::std::__compressed_box_choose<_Tp>() != __compressed_box_specialization::__with_engaged)
     ? __smf_availability::__trivial
   : is_move_constructible_v<_Tp>
     ? __smf_availability::__available
@@ -691,7 +693,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1> : __compresse
   _CCCL_API friend constexpr void
   swap(__compressed_movable_box& __x, __compressed_movable_box& __y) noexcept(is_nothrow_swappable_v<_Elem1>)
   {
-    swap(__x.__get<0>(), __y.__get<0>());
+    swap(__x.__get<0>(), __y.__get<0>()); // NOLINT(cccl-avoid-adl)
   }
 };
 
@@ -788,8 +790,10 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2>
   _CCCL_API friend constexpr void swap(__compressed_movable_box& __x, __compressed_movable_box& __y) noexcept(
     is_nothrow_swappable_v<_Elem1> && is_nothrow_swappable_v<_Elem2>)
   {
+    // NOLINTBEGIN(cccl-avoid-adl)
     swap(__x.__get<0>(), __y.__get<0>());
     swap(__x.__get<1>(), __y.__get<1>());
+    // NOLINTEND(cccl-avoid-adl)
   }
 };
 
@@ -922,9 +926,11 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2, _Elem
   _CCCL_API friend constexpr void swap(__compressed_movable_box& __x, __compressed_movable_box& __y) noexcept(
     is_nothrow_swappable_v<_Elem1> && is_nothrow_swappable_v<_Elem2> && is_nothrow_swappable_v<_Elem3>)
   {
+    // NOLINTBEGIN(cccl-avoid-adl)
     swap(__x.__get<0>(), __y.__get<0>());
     swap(__x.__get<1>(), __y.__get<1>());
     swap(__x.__get<2>(), __y.__get<2>());
+    // NOLINTEND(cccl-avoid-adl)
   }
 };
 

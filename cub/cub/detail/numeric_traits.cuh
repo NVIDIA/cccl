@@ -83,7 +83,7 @@ struct BaseTraits<UNSIGNED_INTEGER, true, UnsignedBitsT, T>
   {
     UnsignedBits retval_bits = MAX_KEY;
     T retval;
-    memcpy(&retval, &retval_bits, sizeof(T));
+    ::memcpy(&retval, &retval_bits, sizeof(T));
     return retval;
   }
 
@@ -93,7 +93,7 @@ struct BaseTraits<UNSIGNED_INTEGER, true, UnsignedBitsT, T>
   {
     UnsignedBits retval_bits = LOWEST_KEY;
     T retval;
-    memcpy(&retval, &retval_bits, sizeof(T));
+    ::memcpy(&retval, &retval_bits, sizeof(T));
     return retval;
   }
 

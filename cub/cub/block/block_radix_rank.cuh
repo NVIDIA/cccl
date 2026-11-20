@@ -753,7 +753,7 @@ public:
 
       // Mask of peers who have same digit as me
       ::cuda::std::uint32_t peer_mask =
-        detail::warp_in_block_matcher_t<RadixBits, PARTIAL_WARP_THREADS, WARPS - 1>::match_any(digit, warp_id);
+        _CUB::detail::warp_in_block_matcher_t<RadixBits, PARTIAL_WARP_THREADS, WARPS - 1>::match_any(digit, warp_id);
 
       // Pointer to smem digit counter for this key
       digit_counters[ITEM] = &temp_storage.aliasable.warp_digit_counters[digit][warp_id];
@@ -762,7 +762,7 @@ public:
       const DigitCounterT warp_digit_prefix = *digit_counters[ITEM];
 
       // Warp-sync
-      __syncwarp(0xFFFFFFFF);
+      ::__syncwarp(0xFFFFFFFF);
 
       // Number of peers having same digit as me
       const int32_t digit_count = ::cuda::std::popcount(peer_mask);
@@ -777,7 +777,7 @@ public:
       }
 
       // Warp-sync
-      __syncwarp(0xFFFFFFFF);
+      ::__syncwarp(0xFFFFFFFF);
 
       // Number of prior keys having same digit
       ranks[ITEM] = warp_digit_prefix + DigitCounterT(peer_digit_prefix);
@@ -1007,7 +1007,7 @@ struct BlockRadixRankMatchEarlyCounts
           match_masks[bin] = 0;
         }
       }
-      __syncwarp(WARP_MASK);
+      ::__syncwarp(WARP_MASK);
 
       // compute private per-part histograms
       const int part = lane % NumParts;
@@ -1015,14 +1015,14 @@ struct BlockRadixRankMatchEarlyCounts
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int u = 0; u < KeysPerThread; ++u)
       {
-        atomicAdd(&warp_histograms[Digit(keys[u])][part], 1);
+        ::atomicAdd(&warp_histograms[Digit(keys[u])][part], 1);
       }
 
       // sum different parts;
       // no extra work is necessary if NumParts == 1
       if constexpr (NumParts > 1)
       {
-        __syncwarp(WARP_MASK);
+        ::__syncwarp(WARP_MASK);
         constexpr int WARP_BINS_PER_THREAD = RADIX_DIGITS / WARP_THREADS;
         int bins[WARP_BINS_PER_THREAD];
 
@@ -1098,8 +1098,8 @@ struct BlockRadixRankMatchEarlyCounts
       {
         ::cuda::std::uint32_t bin           = Digit(keys[u]);
         ::cuda::std::uint32_t* p_match_mask = &match_masks[bin];
-        atomicOr(p_match_mask, lane_mask);
-        __syncwarp(WARP_MASK);
+        ::atomicOr(p_match_mask, lane_mask);
+        ::__syncwarp(WARP_MASK);
         ::cuda::std::uint32_t bin_mask = *p_match_mask;
         // TODO(bgruber): __bit_log2 regresses cub.bench.radix_sort.keys.base up to 30% on H200, see cccl_private/#586
         // int leader      = ::cuda::std::__bit_log2(bin_mask);
@@ -1109,14 +1109,14 @@ struct BlockRadixRankMatchEarlyCounts
         if (lane == leader)
         {
           // atomic is a bit faster
-          warp_offset = atomicAdd(&warp_offsets[bin], popc);
+          warp_offset = ::atomicAdd(&warp_offsets[bin], popc);
         }
-        warp_offset = __shfl_sync(WARP_MASK, warp_offset, leader);
+        warp_offset = ::__shfl_sync(WARP_MASK, warp_offset, leader);
         if (lane == leader)
         {
           *p_match_mask = 0;
         }
-        __syncwarp(WARP_MASK);
+        ::__syncwarp(WARP_MASK);
         ranks[u] = warp_offset + popc - 1;
       }
     }
@@ -1132,7 +1132,7 @@ struct BlockRadixRankMatchEarlyCounts
       {
         ::cuda::std::uint32_t bin = Digit(keys[u]);
         ::cuda::std::uint32_t bin_mask =
-          detail::warp_in_block_matcher_t<RadixBits, PARTIAL_WARP_THREADS, BLOCK_WARPS - 1>::match_any(bin, warp);
+          _CUB::detail::warp_in_block_matcher_t<RadixBits, PARTIAL_WARP_THREADS, BLOCK_WARPS - 1>::match_any(bin, warp);
         // TODO(bgruber): __bit_log2 regresses cub.bench.radix_sort.keys.base up to 30% on H200, see cccl_private/#586
         // int leader      = ::cuda::std::__bit_log2(bin_mask);
         const int leader = (WARP_THREADS - 1) - ::cuda::std::countl_zero(bin_mask);
@@ -1141,9 +1141,9 @@ struct BlockRadixRankMatchEarlyCounts
         if (lane == leader)
         {
           // atomic is a bit faster
-          warp_offset = atomicAdd(&warp_offsets[bin], popc);
+          warp_offset = ::atomicAdd(&warp_offsets[bin], popc);
         }
-        warp_offset = __shfl_sync(WARP_MASK, warp_offset, leader);
+        warp_offset = ::__shfl_sync(WARP_MASK, warp_offset, leader);
         ranks[u]    = warp_offset + popc - 1;
       }
     }

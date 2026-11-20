@@ -63,7 +63,7 @@ _CCCL_HOST_DEVICE_API _Tp __cuda_atomic_add(_Tp __lhs, _Tp __rhs)
   if constexpr (is_same_v<_Tp, __half>)
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
-                      (return __hadd(__lhs, __rhs);),
+                      (return ::__hadd(__lhs, __rhs);),
                       (return __float2half(__atomic_adl_float<_Tp>{__half2float(__lhs) + __half2float(__rhs)});))
   }
   else
@@ -76,8 +76,8 @@ _CCCL_HOST_DEVICE_API _Tp __cuda_atomic_add(_Tp __lhs, _Tp __rhs)
       (return __hadd(__lhs, __rhs);),
       NV_IS_DEVICE,
       ( // Preserve bfloat16 subnormals when fast math flushes float subnormals.
-        return __float2bfloat16(
-                 __atomic_adl_float<_Tp>{__fmaf_ieee_rn(__bfloat162float(__lhs), 1.0f, __bfloat162float(__rhs))});),
+        return ::__float2bfloat16(__atomic_adl_float<_Tp>{
+          ::__fmaf_ieee_rn(::__bfloat162float(__lhs), 1.0f, ::__bfloat162float(__rhs))});),
       NV_IS_HOST,
       (return __float2bfloat16(__atomic_adl_float<_Tp>{__bfloat162float(__lhs) + __bfloat162float(__rhs)});))
   }
@@ -95,7 +95,7 @@ _CCCL_HOST_DEVICE_API _Tp __cuda_atomic_sub(_Tp __lhs, _Tp __rhs)
   if constexpr (is_same_v<_Tp, __half>)
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
-                      (return __hsub(__lhs, __rhs);),
+                      (return ::__hsub(__lhs, __rhs);),
                       (return __float2half(__atomic_adl_float<_Tp>{__half2float(__lhs) - __half2float(__rhs)});))
   }
   else
@@ -108,8 +108,8 @@ _CCCL_HOST_DEVICE_API _Tp __cuda_atomic_sub(_Tp __lhs, _Tp __rhs)
       (return __hsub(__lhs, __rhs);),
       NV_IS_DEVICE,
       ( // Preserve bfloat16 subnormals when fast math flushes float subnormals.
-        return __float2bfloat16(
-                 __atomic_adl_float<_Tp>{__fmaf_ieee_rn(__bfloat162float(__rhs), -1.0f, __bfloat162float(__lhs))});),
+        return ::__float2bfloat16(__atomic_adl_float<_Tp>{
+          ::__fmaf_ieee_rn(::__bfloat162float(__rhs), -1.0f, ::__bfloat162float(__lhs))});),
       NV_IS_HOST,
       (return __float2bfloat16(__atomic_adl_float<_Tp>{__bfloat162float(__lhs) - __bfloat162float(__rhs)});))
   }
@@ -142,7 +142,7 @@ _CCCL_HOST_DEVICE_API bool __cuda_atomic_less(_Tp __lhs, _Tp __rhs)
     }
 #else // ^^^ CTK below 12.2 ^^^ / vvv CTK 12.2 or newer vvv
     // Intentionally unqualified to avoid including <cuda_fp16.h> and <cuda_bf16.h>.
-    return __hlt(__lhs, __rhs);
+    return ::__hlt(__lhs, __rhs);
 #endif // CTK 12.2 or newer
   }
   else

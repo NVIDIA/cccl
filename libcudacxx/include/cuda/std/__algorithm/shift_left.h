@@ -74,7 +74,7 @@ _CCCL_API constexpr _ForwardIterator shift_left(
   }
 
   using _IterCategory = __iterator_traits_category_or_concept_t<_ForwardIterator>;
-  return __shift_left(__first, __last, __n, _IterCategory());
+  return ::cuda::std::__shift_left(__first, __last, __n, _IterCategory());
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

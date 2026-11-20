@@ -194,12 +194,12 @@ struct bit_ordered_conversion_policy_t
 
   _CCCL_HOST_DEVICE_API static bit_ordered_type to_bit_ordered(detail::identity_decomposer_t, bit_ordered_type val)
   {
-    return Traits<T>::TwiddleIn(val);
+    return _CUB::Traits<T>::TwiddleIn(val);
   }
 
   _CCCL_HOST_DEVICE_API static bit_ordered_type from_bit_ordered(detail::identity_decomposer_t, bit_ordered_type val)
   {
-    return Traits<T>::TwiddleOut(val);
+    return _CUB::Traits<T>::TwiddleOut(val);
   }
 };
 
@@ -405,7 +405,7 @@ struct digit_f
       if (bits_to_copy)
       {
         const bit_ordered_type ordered_src =
-          BaseDigitExtractor<T>::ProcessFloatMinusZero(reinterpret_cast<bit_ordered_type&>(src));
+          _CUB::BaseDigitExtractor<T>::ProcessFloatMinusZero(reinterpret_cast<bit_ordered_type&>(src));
 
         const ::cuda::std::uint32_t mask = (1 << bits_to_copy) - 1;
         dst                              = dst | (((ordered_src >> src_bit_start) & mask) << dst_bit_start);

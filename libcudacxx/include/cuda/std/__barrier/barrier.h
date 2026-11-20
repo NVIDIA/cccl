@@ -100,7 +100,7 @@ public:
       __completion();
       __arrived.store(__new_expected, memory_order_relaxed);
       __phase.store(!__old_phase, memory_order_release);
-      __atomic_notify_all(::cuda::std::addressof(__phase.__a), __scope_to_tag<_Sco>{});
+      ::cuda::std::__atomic_notify_all(::cuda::std::addressof(__phase.__a), __scope_to_tag<_Sco>{});
     }
     return __old_phase;
   }

@@ -25,18 +25,18 @@ _CCCL_DEVICE_API void st_async(_Type* __addr, const _Type& __value, ::cuda::std:
   {
     asm("st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.b32 [%0], %1, [%2];    // 1. "
         :
-        : "r"(__as_ptr_remote_dsmem(__addr)),
+        : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__addr)),
           "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__value)),
-          "r"(__as_ptr_remote_dsmem(__remote_bar))
+          "r"(::cuda::ptx::__as_ptr_remote_dsmem(__remote_bar))
         : "memory");
   }
   else if constexpr (sizeof(_Type) == 8)
   {
     asm("st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.b64 [%0], %1, [%2];    // 1. "
         :
-        : "r"(__as_ptr_remote_dsmem(__addr)),
+        : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__addr)),
           "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__value)),
-          "r"(__as_ptr_remote_dsmem(__remote_bar))
+          "r"(::cuda::ptx::__as_ptr_remote_dsmem(__remote_bar))
         : "memory");
   }
 }
@@ -61,20 +61,20 @@ _CCCL_DEVICE_API void st_async(_Type* __addr, const _Type (&__value)[2], ::cuda:
   {
     asm("st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v2.b32 [%0], {%1, %2}, [%3]; // 2. "
         :
-        : "r"(__as_ptr_remote_dsmem(__addr)),
+        : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__addr)),
           "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__value[0])),
           "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__value[1])),
-          "r"(__as_ptr_remote_dsmem(__remote_bar))
+          "r"(::cuda::ptx::__as_ptr_remote_dsmem(__remote_bar))
         : "memory");
   }
   else if constexpr (sizeof(_Type) == 8)
   {
     asm("st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v2.b64 [%0], {%1, %2}, [%3]; // 2. "
         :
-        : "r"(__as_ptr_remote_dsmem(__addr)),
+        : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__addr)),
           "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__value[0])),
           "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__value[1])),
-          "r"(__as_ptr_remote_dsmem(__remote_bar))
+          "r"(::cuda::ptx::__as_ptr_remote_dsmem(__remote_bar))
         : "memory");
   }
 }
@@ -95,12 +95,12 @@ _CCCL_DEVICE_API void st_async(_B32* __addr, const _B32 (&__value)[4], ::cuda::s
   static_assert(sizeof(_B32) == 4, "");
   asm("st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v4.b32 [%0], {%1, %2, %3, %4}, [%5];    // 3. "
       :
-      : "r"(__as_ptr_remote_dsmem(__addr)),
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__addr)),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__value[0])),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__value[1])),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__value[2])),
         "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__value[3])),
-        "r"(__as_ptr_remote_dsmem(__remote_bar))
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 810

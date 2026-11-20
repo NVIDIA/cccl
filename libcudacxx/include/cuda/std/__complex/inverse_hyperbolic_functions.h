@@ -73,7 +73,7 @@ template <typename _Tp>
 __internal_double_Tp_sqrt_unsafe(_Tp __hi, _Tp __lo) noexcept
 {
   // rsqrt
-  const _Tp __initial_guess = __internal_rsqrt_inverse_hyperbloic<_Tp>(__hi);
+  const _Tp __initial_guess = ::cuda::std::__internal_rsqrt_inverse_hyperbloic<_Tp>(__hi);
 
   // Newton-Raphson, assume we have a reasonable rsqrt above and
   // that we don't need to update the first term (__initial_guess).

@@ -40,7 +40,7 @@ struct SmemAllocator
   [[nodiscard]] _CCCL_DEVICE_API static ::cuda::std::uint32_t dynamic_smem_base() noexcept
   {
     extern __shared__ char warpSpeedDynamicSmemBase[];
-    return __cvta_generic_to_shared(warpSpeedDynamicSmemBase);
+    return ::__cvta_generic_to_shared(warpSpeedDynamicSmemBase);
   }
 
   // SmemAllocator is a non-copyable, non-movable type. It must be passed by
@@ -66,7 +66,7 @@ struct SmemAllocator
         NV_IS_DEVICE,
         (
           // Convert allocated smem address to generic pointer
-          const void* mPtrAllocation = __cvta_shared_to_generic(ptrAllocation32);
+          const void* mPtrAllocation = ::__cvta_shared_to_generic(ptrAllocation32);
           // Ensure alignment calculation does not move down into rest of kernel code.
           return _CUB::detail::warpspeed::optimizeSmemPtr(mPtrAllocation);))
     }

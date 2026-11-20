@@ -53,13 +53,13 @@ struct __hidden_friend_swap_found
 {};
 
 template <class _Tp>
-_CCCL_API inline auto __swap(_Tp& __lhs, _Tp& __rhs) -> decltype(swap(__lhs, __rhs));
+_CCCL_API inline auto __swap(_Tp& __lhs, _Tp& __rhs) -> decltype(swap(__lhs, __rhs)); // NOLINT(cccl-avoid-adl)
 _CCCL_API inline auto __swap(...) -> __hidden_friend_swap_found;
 
 // Note: Cannot be a concept, or the constraints of swap are cyclic
 template <class _Tp>
 inline constexpr bool __has_hidden_friend_swap =
-  _CCCL_REQUIRES_EXPR((_Tp), _Tp& __val)(_Same_as(void) __detect_hidden_friend_swap::__swap(__val, __val));
+  _CCCL_REQUIRES_EXPR((_Tp), _Tp& __val)(_Same_as(void)::cuda::std::__detect_hidden_friend_swap::__swap(__val, __val));
 } // namespace __detect_hidden_friend_swap
 
 namespace __detect_adl_swap
@@ -71,13 +71,13 @@ struct __no_adl_swap_found
 {};
 
 template <class _Tp>
-_CCCL_API inline auto __swap(_Tp& __lhs, _Tp& __rhs) -> decltype(swap(__lhs, __rhs));
+_CCCL_API inline auto __swap(_Tp& __lhs, _Tp& __rhs) -> decltype(swap(__lhs, __rhs)); // NOLINT(cccl-avoid-adl)
 _CCCL_API inline auto __swap(...) -> __no_adl_swap_found;
 
 // Note: Cannot be a concept, or the constraints of swap are cyclic
 template <class _Tp>
-inline constexpr bool __has_no_adl_swap =
-  _CCCL_REQUIRES_EXPR((_Tp), _Tp& __val)(_Same_as(__no_adl_swap_found) __detect_adl_swap::__swap(__val, __val));
+inline constexpr bool __has_no_adl_swap = _CCCL_REQUIRES_EXPR((_Tp), _Tp& __val)(
+  _Same_as(__no_adl_swap_found)::cuda::std::__detect_adl_swap::__swap(__val, __val));
 } // namespace __detect_adl_swap
 
 template <class _Tp>
@@ -107,14 +107,18 @@ namespace __detail
 
 template <class _Tp, class _Up = _Tp>
 _CCCL_CONCEPT __swappable_with = _CCCL_REQUIRES_EXPR((_Tp, _Up), _Tp __x, _Up __y)(
+  // NOLINTBEGIN(cccl-avoid-adl)
   swap(static_cast<_Tp&&>(__x), static_cast<_Up&&>(__y)), //
   swap(static_cast<_Up&&>(__y), static_cast<_Tp&&>(__x)));
+// NOLINTEND(cccl-avoid-adl)
 
 // Not replaced with a concept because GCC cannot mangle the noexcept function declaration
 template <class _Tp, class _Up = _Tp, bool _Swappable = __swappable_with<_Tp, _Up>>
 inline constexpr bool __nothrow_swappable_with =
+  // NOLINTBEGIN(cccl-avoid-adl)
   noexcept(swap(::cuda::std::declval<_Tp>(), ::cuda::std::declval<_Up>()))
   && noexcept(swap(::cuda::std::declval<_Up>(), ::cuda::std::declval<_Tp>()));
+// NOLINTEND(cccl-avoid-adl)
 
 template <class _Tp, class _Up>
 inline constexpr bool __nothrow_swappable_with<_Tp, _Up, false> = false;

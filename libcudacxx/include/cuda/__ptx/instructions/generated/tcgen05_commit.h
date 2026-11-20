@@ -24,14 +24,14 @@ _CCCL_DEVICE_API void tcgen05_commit(::cuda::ptx::cta_group_t<_Cta_Group> __cta_
   {
     asm volatile("tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64 [%0];"
                  :
-                 : "r"(__as_ptr_dsmem(__smem_bar))
+                 : "r"(::cuda::ptx::__as_ptr_dsmem(__smem_bar))
                  : "memory");
   }
   else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile("tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.b64 [%0];"
                  :
-                 : "r"(__as_ptr_dsmem(__smem_bar))
+                 : "r"(::cuda::ptx::__as_ptr_dsmem(__smem_bar))
                  : "memory");
   }
 }
@@ -57,14 +57,14 @@ _CCCL_DEVICE_API void tcgen05_commit_multicast(
   {
     asm volatile("tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64 [%0], %1;"
                  :
-                 : "r"(__as_ptr_dsmem(__smem_bar)), "h"(__ctaMask)
+                 : "r"(::cuda::ptx::__as_ptr_dsmem(__smem_bar)), "h"(__ctaMask)
                  : "memory");
   }
   else if constexpr (__cta_group == cta_group_2)
   {
     asm volatile("tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64 [%0], %1;"
                  :
-                 : "r"(__as_ptr_dsmem(__smem_bar)), "h"(__ctaMask)
+                 : "r"(::cuda::ptx::__as_ptr_dsmem(__smem_bar)), "h"(__ctaMask)
                  : "memory");
   }
 }

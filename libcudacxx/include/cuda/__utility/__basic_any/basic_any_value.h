@@ -86,7 +86,7 @@ public:
                  // _CCCL_AND ::cuda::std::constructible_from<_Up, _Tp>
                  _CCCL_AND __satisfies<_Up, _Interface>)
   _CCCL_HOST_DEVICE_API __basic_any(_Tp&& __value) noexcept(
-    __is_small<_Up, __movable>(__size_, __align_) && ::cuda::std::is_nothrow_constructible_v<_Up, _Tp>)
+    ::cuda::__is_small<_Up, __movable>(__size_, __align_) && ::cuda::std::is_nothrow_constructible_v<_Up, _Tp>)
   {
     __emplace<_Up>(static_cast<_Tp&&>(__value));
   }
@@ -100,7 +100,7 @@ public:
   _CCCL_TEMPLATE(class _Tp, class _Up = ::cuda::std::decay_t<_Tp>, class... _Args)
   _CCCL_REQUIRES(__initializable_from<_Up, _Args...> _CCCL_AND __satisfies<_Up, _Interface>)
   _CCCL_HOST_DEVICE_API explicit __basic_any(::cuda::std::in_place_type_t<_Tp>, _Args&&... __args) noexcept(
-    __is_small<_Up, __movable>(__size_, __align_) && __nothrow_initializable_from<_Up, _Args...>)
+    ::cuda::__is_small<_Up, __movable>(__size_, __align_) && __nothrow_initializable_from<_Up, _Args...>)
   {
     __emplace<_Up>(static_cast<_Args&&>(__args)...);
   }
@@ -116,7 +116,7 @@ public:
   _CCCL_HOST_DEVICE_API explicit __basic_any(
     ::cuda::std::in_place_type_t<_Tp>,
     ::cuda::std::initializer_list<_Up> __il,
-    _Args&&... __args) noexcept(__is_small<_Vp, __movable>(__size_, __align_)
+    _Args&&... __args) noexcept(::cuda::__is_small<_Vp, __movable>(__size_, __align_)
                                 && __nothrow_initializable_from<_Vp, ::cuda::std::initializer_list<_Up>&, _Args...>)
   {
     __emplace<_Vp>(__il, static_cast<_Args&&>(__args)...);
@@ -129,7 +129,7 @@ public:
   _CCCL_TEMPLATE(class _Tp, class _Up = ::cuda::std::decay_t<_Tp>, class _Fn, class... _Args)
   _CCCL_REQUIRES(__emplaceable_from<_Up, _Fn, _Args...> _CCCL_AND __satisfies<_Up, _Interface>)
   _CCCL_HOST_DEVICE_API explicit __basic_any(::cuda::in_place_from_type_t<_Tp>, _Fn&& __fn, _Args&&... __args) noexcept(
-    __is_small<_Up, __movable>(__size_, __align_) && __nothrow_emplaceable_from<_Up, _Fn, _Args...>)
+    ::cuda::__is_small<_Up, __movable>(__size_, __align_) && __nothrow_emplaceable_from<_Up, _Fn, _Args...>)
   {
     __emplace_from<_Up>(static_cast<_Fn&&>(__fn), static_cast<_Args&&>(__args)...);
   }
@@ -307,7 +307,7 @@ public:
     if (!__in_situ() && !__other.__in_situ())
     {
       ::cuda::std::swap(__vptr_, __other.__vptr_);
-      __swap_ptr_ptr(__buffer_, __other.__buffer_);
+      ::cuda::__swap_ptr_ptr(__buffer_, __other.__buffer_);
     }
 
     __basic_any __tmp;
@@ -329,7 +329,7 @@ public:
   _CCCL_TEMPLATE(class _Tp, class _Up = ::cuda::std::decay_t<_Tp>, class... _Args)
   _CCCL_REQUIRES(__initializable_from<_Up, _Args...>)
   _CCCL_HOST_DEVICE_API auto emplace(_Args&&... __args) noexcept(
-    __is_small<_Up, __movable>(__size_, __align_) && __nothrow_initializable_from<_Up, _Args...>) -> _Up&
+    ::cuda::__is_small<_Up, __movable>(__size_, __align_) && __nothrow_initializable_from<_Up, _Args...>) -> _Up&
   {
     reset();
     return __emplace<_Up>(static_cast<_Args&&>(__args)...);
@@ -342,7 +342,7 @@ public:
   _CCCL_TEMPLATE(class _Tp, class _Up, class _Vp = ::cuda::std::decay_t<_Tp>, class... _Args)
   _CCCL_REQUIRES(__initializable_from<_Vp, ::cuda::std::initializer_list<_Up>&, _Args...>)
   _CCCL_HOST_DEVICE_API auto emplace(::cuda::std::initializer_list<_Up> __il, _Args&&... __args) noexcept(
-    __is_small<_Vp, __movable>(__size_, __align_)
+    ::cuda::__is_small<_Vp, __movable>(__size_, __align_)
     && __nothrow_initializable_from<_Vp, ::cuda::std::initializer_list<_Up>&, _Args...>) -> _Vp&
   {
     reset();
@@ -356,7 +356,7 @@ public:
   _CCCL_TEMPLATE(class _Tp, class _Up = ::cuda::std::decay_t<_Tp>, class _Fn, class... _Args)
   _CCCL_REQUIRES(__emplaceable_from<_Up, _Fn, _Args...>)
   _CCCL_HOST_DEVICE_API auto emplace_from(_Fn&& __fn, _Args&&... __args) noexcept(
-    __is_small<_Up, __movable>(__size_, __align_) && __nothrow_emplaceable_from<_Up, _Fn, _Args...>) -> _Up&
+    ::cuda::__is_small<_Up, __movable>(__size_, __align_) && __nothrow_emplaceable_from<_Up, _Fn, _Args...>) -> _Up&
   {
     reset();
     return __emplace_from<_Up>(static_cast<_Fn&&>(__fn), static_cast<_Args&&>(__args)...);
@@ -434,10 +434,10 @@ private:
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class... _Args>
   _CCCL_HOST_DEVICE_API auto __emplace(_Args&&... __args) noexcept(
-    __is_small<_Tp, __movable>(__size_, __align_) && __nothrow_initializable_from<_Tp, _Args...>) -> _Tp&
+    ::cuda::__is_small<_Tp, __movable>(__size_, __align_) && __nothrow_initializable_from<_Tp, _Args...>) -> _Tp&
   {
     using __pointer_t = _Tp*;
-    if constexpr (__is_small<_Tp, __movable>(__size_, __align_))
+    if constexpr (::cuda::__is_small<_Tp, __movable>(__size_, __align_))
     {
       // in-place construction
       if constexpr (::cuda::std::constructible_from<_Tp, _Args...>)
@@ -467,17 +467,17 @@ private:
     }
 
     const __vptr_for<_Interface> __vptr = ::cuda::__get_vtable_ptr_for<_Interface, _Tp>();
-    __vptr_.__set(__vptr, __is_small<_Tp, __movable>(__size_, __align_));
+    __vptr_.__set(__vptr, ::cuda::__is_small<_Tp, __movable>(__size_, __align_));
     return *::cuda::std::launder(static_cast<_Tp*>(__get_optr()));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Fn, class... _Args>
   _CCCL_HOST_DEVICE_API auto __emplace_from(_Fn&& __fn, _Args&&... __args) noexcept(
-    __is_small<_Tp, __movable>(__size_, __align_) && __nothrow_emplaceable_from<_Tp, _Fn, _Args...>) -> _Tp&
+    ::cuda::__is_small<_Tp, __movable>(__size_, __align_) && __nothrow_emplaceable_from<_Tp, _Fn, _Args...>) -> _Tp&
   {
     using __pointer_t = _Tp*;
-    if constexpr (__is_small<_Tp, __movable>(__size_, __align_))
+    if constexpr (::cuda::__is_small<_Tp, __movable>(__size_, __align_))
     {
       // in-place construction
       ::new (__buffer_) _Tp(static_cast<_Fn&&>(__fn)(static_cast<_Args&&>(__args)...));
@@ -489,7 +489,7 @@ private:
     }
 
     __vptr_for<_Interface> __vptr = ::cuda::__get_vtable_ptr_for<_Interface, _Tp>();
-    __vptr_.__set(__vptr, __is_small<_Tp, __movable>(__size_, __align_));
+    __vptr_.__set(__vptr, ::cuda::__is_small<_Tp, __movable>(__size_, __align_));
     return *::cuda::std::launder(static_cast<_Tp*>(__get_optr()));
   }
 
@@ -509,7 +509,7 @@ private:
     {
       __convert_from(__from); // will copy from the source
     }
-    else if (auto __to_vptr = __vptr_cast<__src_interface_t, _Interface>(__from.__get_vptr()))
+    else if (auto __to_vptr = ::cuda::__vptr_cast<__src_interface_t, _Interface>(__from.__get_vptr()))
     {
       if (!__from.__in_situ())
       {
@@ -541,7 +541,7 @@ private:
   {
     _CCCL_ASSERT(!has_value(), "forgot to clear the destination object first");
     using __src_interface_t _CCCL_NODEBUG = __remove_ireference_t<::cuda::std::remove_reference_t<_SrcInterface>>;
-    if (auto __to_vptr = __vptr_cast<__src_interface_t, _Interface>(__from.__get_vptr()))
+    if (auto __to_vptr = ::cuda::__vptr_cast<__src_interface_t, _Interface>(__from.__get_vptr()))
     {
       bool const __small = __from.__copy_to(__buffer_, __size_, __align_);
       __vptr_.__set(__to_vptr, __small);
@@ -553,7 +553,7 @@ private:
   _CCCL_REQUIRES(__any_castable_to<_SrcCvAny, __basic_any>)
   _CCCL_HOST_DEVICE_API auto __assign_from(_SrcCvAny&& __src) -> __basic_any&
   {
-    if (!__ptr_eq(this, &__src))
+    if (!::cuda::__ptr_eq(this, &__src))
     {
       reset();
       __convert_from(static_cast<_SrcCvAny&&>(__src));

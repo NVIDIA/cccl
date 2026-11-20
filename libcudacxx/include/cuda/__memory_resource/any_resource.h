@@ -65,7 +65,7 @@ struct __with_property
   {
     if constexpr (!::cuda::std::is_void_v<__property_result_t<_Property>>)
     {
-      return get_property(__obj, _Property());
+      return get_property(__obj, _Property()); // NOLINT(cccl-avoid-adl)
     }
     else
     {
@@ -229,7 +229,7 @@ struct __with_try_get_property
     }
     else if (__prop)
     {
-      return get_property(*__prop, _Property{});
+      return get_property(*__prop, _Property{}); // NOLINT(cccl-avoid-adl)
     }
     else
     {
@@ -347,13 +347,13 @@ struct _CCCL_DECLSPEC_EMPTY_BASES synchronous_resource_ref
   _CCCL_HOST_API synchronous_resource_ref&
   operator=(const synchronous_resource_ref<_OtherProperties...>& __other) noexcept
   {
-    __basic_any_access::__cast_to(__other.__get_base(), __get_base());
+    ::cuda::__basic_any_access::__cast_to(__other.__get_base(), __get_base());
     return *this;
   }
 
   _CCCL_HOST_API synchronous_resource_ref& operator=(const synchronous_resource_ref& __other) noexcept
   {
-    __basic_any_access::__cast_to(__other.__get_base(), __get_base());
+    ::cuda::__basic_any_access::__cast_to(__other.__get_base(), __get_base());
     return *this;
   }
 
@@ -409,13 +409,13 @@ struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
   _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
   _CCCL_HOST_API resource_ref& operator=(const resource_ref<_OtherProperties...>& __other) noexcept
   {
-    __basic_any_access::__cast_to(__other.__get_base(), __get_base());
+    ::cuda::__basic_any_access::__cast_to(__other.__get_base(), __get_base());
     return *this;
   }
 
   _CCCL_HOST_API resource_ref& operator=(const resource_ref& __other) noexcept
   {
-    __basic_any_access::__cast_to(__other.__get_base(), __get_base());
+    ::cuda::__basic_any_access::__cast_to(__other.__get_base(), __get_base());
     return *this;
   }
 

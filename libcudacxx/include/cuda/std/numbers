@@ -235,45 +235,45 @@ namespace numbers
 {
 #if !_CCCL_OS(WINDOWS)
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT auto e_v = __numbers<_Tp>::__e();
+_CCCL_GLOBAL_CONSTANT auto e_v = ::cuda::std::__numbers<_Tp>::__e();
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT auto log2e_v = __numbers<_Tp>::__log2e();
+_CCCL_GLOBAL_CONSTANT auto log2e_v = ::cuda::std::__numbers<_Tp>::__log2e();
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT auto log10e_v = __numbers<_Tp>::__log10e();
+_CCCL_GLOBAL_CONSTANT auto log10e_v = ::cuda::std::__numbers<_Tp>::__log10e();
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT auto pi_v = __numbers<_Tp>::__pi();
+_CCCL_GLOBAL_CONSTANT auto pi_v = ::cuda::std::__numbers<_Tp>::__pi();
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT auto inv_pi_v = __numbers<_Tp>::__inv_pi();
+_CCCL_GLOBAL_CONSTANT auto inv_pi_v = ::cuda::std::__numbers<_Tp>::__inv_pi();
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT auto inv_sqrtpi_v = __numbers<_Tp>::__inv_sqrtpi();
+_CCCL_GLOBAL_CONSTANT auto inv_sqrtpi_v = ::cuda::std::__numbers<_Tp>::__inv_sqrtpi();
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT auto ln2_v = __numbers<_Tp>::__ln2();
+_CCCL_GLOBAL_CONSTANT auto ln2_v = ::cuda::std::__numbers<_Tp>::__ln2();
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT auto ln10_v = __numbers<_Tp>::__ln10();
+_CCCL_GLOBAL_CONSTANT auto ln10_v = ::cuda::std::__numbers<_Tp>::__ln10();
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT auto sqrt2_v = __numbers<_Tp>::__sqrt2();
+_CCCL_GLOBAL_CONSTANT auto sqrt2_v = ::cuda::std::__numbers<_Tp>::__sqrt2();
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT auto sqrt3_v = __numbers<_Tp>::__sqrt3();
+_CCCL_GLOBAL_CONSTANT auto sqrt3_v = ::cuda::std::__numbers<_Tp>::__sqrt3();
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT auto inv_sqrt3_v = __numbers<_Tp>::__inv_sqrt3();
+_CCCL_GLOBAL_CONSTANT auto inv_sqrt3_v = ::cuda::std::__numbers<_Tp>::__inv_sqrt3();
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT auto egamma_v = __numbers<_Tp>::__egamma();
+_CCCL_GLOBAL_CONSTANT auto egamma_v = ::cuda::std::__numbers<_Tp>::__egamma();
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT auto phi_v = __numbers<_Tp>::__phi();
+_CCCL_GLOBAL_CONSTANT auto phi_v = ::cuda::std::__numbers<_Tp>::__phi();
 
-_CCCL_GLOBAL_CONSTANT auto e          = __numbers<double>::__e();
-_CCCL_GLOBAL_CONSTANT auto log2e      = __numbers<double>::__log2e();
-_CCCL_GLOBAL_CONSTANT auto log10e     = __numbers<double>::__log10e();
-_CCCL_GLOBAL_CONSTANT auto pi         = __numbers<double>::__pi();
-_CCCL_GLOBAL_CONSTANT auto inv_pi     = __numbers<double>::__inv_pi();
-_CCCL_GLOBAL_CONSTANT auto inv_sqrtpi = __numbers<double>::__inv_sqrtpi();
-_CCCL_GLOBAL_CONSTANT auto ln2        = __numbers<double>::__ln2();
-_CCCL_GLOBAL_CONSTANT auto ln10       = __numbers<double>::__ln10();
-_CCCL_GLOBAL_CONSTANT auto sqrt2      = __numbers<double>::__sqrt2();
-_CCCL_GLOBAL_CONSTANT auto sqrt3      = __numbers<double>::__sqrt3();
-_CCCL_GLOBAL_CONSTANT auto inv_sqrt3  = __numbers<double>::__inv_sqrt3();
-_CCCL_GLOBAL_CONSTANT auto egamma     = __numbers<double>::__egamma();
-_CCCL_GLOBAL_CONSTANT auto phi        = __numbers<double>::__phi();
+_CCCL_GLOBAL_CONSTANT auto e          = ::cuda::std::__numbers<double>::__e();
+_CCCL_GLOBAL_CONSTANT auto log2e      = ::cuda::std::__numbers<double>::__log2e();
+_CCCL_GLOBAL_CONSTANT auto log10e     = ::cuda::std::__numbers<double>::__log10e();
+_CCCL_GLOBAL_CONSTANT auto pi         = ::cuda::std::__numbers<double>::__pi();
+_CCCL_GLOBAL_CONSTANT auto inv_pi     = ::cuda::std::__numbers<double>::__inv_pi();
+_CCCL_GLOBAL_CONSTANT auto inv_sqrtpi = ::cuda::std::__numbers<double>::__inv_sqrtpi();
+_CCCL_GLOBAL_CONSTANT auto ln2        = ::cuda::std::__numbers<double>::__ln2();
+_CCCL_GLOBAL_CONSTANT auto ln10       = ::cuda::std::__numbers<double>::__ln10();
+_CCCL_GLOBAL_CONSTANT auto sqrt2      = ::cuda::std::__numbers<double>::__sqrt2();
+_CCCL_GLOBAL_CONSTANT auto sqrt3      = ::cuda::std::__numbers<double>::__sqrt3();
+_CCCL_GLOBAL_CONSTANT auto inv_sqrt3  = ::cuda::std::__numbers<double>::__inv_sqrt3();
+_CCCL_GLOBAL_CONSTANT auto egamma     = ::cuda::std::__numbers<double>::__egamma();
+_CCCL_GLOBAL_CONSTANT auto phi        = ::cuda::std::__numbers<double>::__phi();
 #endif // !_CCCL_OS(WINDOWS)
 } // namespace numbers
 

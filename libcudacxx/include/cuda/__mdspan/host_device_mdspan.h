@@ -52,7 +52,7 @@ public:
 
   _CCCL_API friend constexpr void swap(host_mdspan& __x, host_mdspan& __y) noexcept
   {
-    swap(static_cast<__base&>(__x), static_cast<__base&>(__y));
+    swap(static_cast<__base&>(__x), static_cast<__base&>(__y)); // NOLINT(cccl-avoid-adl)
   }
 };
 
@@ -114,7 +114,7 @@ public:
 
   _CCCL_API friend constexpr void swap(device_mdspan& __x, device_mdspan& __y) noexcept
   {
-    swap(static_cast<__base&>(__x), static_cast<__base&>(__y));
+    swap(static_cast<__base&>(__x), static_cast<__base&>(__y)); // NOLINT(cccl-avoid-adl)
   }
 };
 
@@ -177,7 +177,7 @@ public:
 
   _CCCL_API friend constexpr void swap(managed_mdspan& __x, managed_mdspan& __y) noexcept
   {
-    swap(static_cast<__base&>(__x), static_cast<__base&>(__y));
+    swap(static_cast<__base&>(__x), static_cast<__base&>(__y)); // NOLINT(cccl-avoid-adl)
   }
 };
 

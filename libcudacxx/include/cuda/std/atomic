@@ -150,13 +150,13 @@ _CCCL_HOST_DEVICE_API inline bool atomic_is_lock_free(const atomic<_Tp>* __o) no
 template <class _Tp>
 _CCCL_HOST_DEVICE_API inline void atomic_init(volatile atomic<_Tp>* __o, _Tp __d) noexcept
 {
-  __atomic_init_dispatch(::cuda::std::addressof(__o->__a), __d);
+  ::cuda::std::__atomic_init_dispatch(::cuda::std::addressof(__o->__a), __d);
 }
 
 template <class _Tp>
 _CCCL_HOST_DEVICE_API inline void atomic_init(atomic<_Tp>* __o, _Tp __d) noexcept
 {
-  __atomic_init_dispatch(::cuda::std::addressof(__o->__a), __d);
+  ::cuda::std::__atomic_init_dispatch(::cuda::std::addressof(__o->__a), __d);
 }
 
 // atomic_store
@@ -604,55 +604,55 @@ struct atomic_flag
 
   _CCCL_HOST_DEVICE_API inline bool test(memory_order __m = memory_order_seq_cst) const volatile noexcept
   {
-    return _CCCL_ATOMIC_FLAG_TYPE(true) == __atomic_load_dispatch(&__a, __m, __thread_scope_system_tag{});
+    return _CCCL_ATOMIC_FLAG_TYPE(true) == ::cuda::std::__atomic_load_dispatch(&__a, __m, __thread_scope_system_tag{});
   }
   _CCCL_HOST_DEVICE_API inline bool test(memory_order __m = memory_order_seq_cst) const noexcept
   {
-    return _CCCL_ATOMIC_FLAG_TYPE(true) == __atomic_load_dispatch(&__a, __m, __thread_scope_system_tag{});
+    return _CCCL_ATOMIC_FLAG_TYPE(true) == ::cuda::std::__atomic_load_dispatch(&__a, __m, __thread_scope_system_tag{});
   }
 
   _CCCL_HOST_DEVICE_API inline bool test_and_set(memory_order __m = memory_order_seq_cst) volatile noexcept
   {
-    return __atomic_exchange_dispatch(&__a, _CCCL_ATOMIC_FLAG_TYPE(true), __m, __thread_scope_system_tag{});
+    return ::cuda::std::__atomic_exchange_dispatch(&__a, _CCCL_ATOMIC_FLAG_TYPE(true), __m, __thread_scope_system_tag{});
   }
   _CCCL_HOST_DEVICE_API inline bool test_and_set(memory_order __m = memory_order_seq_cst) noexcept
   {
-    return __atomic_exchange_dispatch(&__a, _CCCL_ATOMIC_FLAG_TYPE(true), __m, __thread_scope_system_tag{});
+    return ::cuda::std::__atomic_exchange_dispatch(&__a, _CCCL_ATOMIC_FLAG_TYPE(true), __m, __thread_scope_system_tag{});
   }
   _CCCL_HOST_DEVICE_API inline void clear(memory_order __m = memory_order_seq_cst) volatile noexcept
   {
-    __atomic_store_dispatch(&__a, _CCCL_ATOMIC_FLAG_TYPE(false), __m, __thread_scope_system_tag{});
+    ::cuda::std::__atomic_store_dispatch(&__a, _CCCL_ATOMIC_FLAG_TYPE(false), __m, __thread_scope_system_tag{});
   }
   _CCCL_HOST_DEVICE_API inline void clear(memory_order __m = memory_order_seq_cst) noexcept
   {
-    __atomic_store_dispatch(&__a, _CCCL_ATOMIC_FLAG_TYPE(false), __m, __thread_scope_system_tag{});
+    ::cuda::std::__atomic_store_dispatch(&__a, _CCCL_ATOMIC_FLAG_TYPE(false), __m, __thread_scope_system_tag{});
   }
 
   _CCCL_HOST_DEVICE_API inline void wait(_CCCL_ATOMIC_FLAG_TYPE __v, memory_order __m = memory_order_seq_cst) const
     volatile noexcept
   {
-    __atomic_wait(&__a, __v, __m, __thread_scope_system_tag{});
+    ::cuda::std::__atomic_wait(&__a, __v, __m, __thread_scope_system_tag{});
   }
   _CCCL_HOST_DEVICE_API inline void
   wait(_CCCL_ATOMIC_FLAG_TYPE __v, memory_order __m = memory_order_seq_cst) const noexcept
   {
-    __atomic_wait(&__a, __v, __m, __thread_scope_system_tag{});
+    ::cuda::std::__atomic_wait(&__a, __v, __m, __thread_scope_system_tag{});
   }
   _CCCL_HOST_DEVICE_API inline void notify_one() volatile noexcept
   {
-    __atomic_notify_one(&__a, __thread_scope_system_tag{});
+    ::cuda::std::__atomic_notify_one(&__a, __thread_scope_system_tag{});
   }
   _CCCL_HOST_DEVICE_API inline void notify_one() noexcept
   {
-    __atomic_notify_one(&__a, __thread_scope_system_tag{});
+    ::cuda::std::__atomic_notify_one(&__a, __thread_scope_system_tag{});
   }
   _CCCL_HOST_DEVICE_API inline void notify_all() volatile noexcept
   {
-    __atomic_notify_all(&__a, __thread_scope_system_tag{});
+    ::cuda::std::__atomic_notify_all(&__a, __thread_scope_system_tag{});
   }
   _CCCL_HOST_DEVICE_API inline void notify_all() noexcept
   {
-    __atomic_notify_all(&__a, __thread_scope_system_tag{});
+    ::cuda::std::__atomic_notify_all(&__a, __thread_scope_system_tag{});
   }
 
   _CCCL_HIDE_FROM_ABI atomic_flag() noexcept = default;
@@ -775,12 +775,12 @@ _CCCL_HOST_DEVICE_API inline void atomic_flag_notify_all(atomic_flag* __o) noexc
 
 _CCCL_HOST_DEVICE_API inline void atomic_thread_fence(memory_order __m) noexcept
 {
-  __atomic_thread_fence_dispatch(__m);
+  ::cuda::std::__atomic_thread_fence_dispatch(__m);
 }
 
 _CCCL_HOST_DEVICE_API inline void atomic_signal_fence(memory_order __m) noexcept
 {
-  __atomic_signal_fence_dispatch(__m);
+  ::cuda::std::__atomic_signal_fence_dispatch(__m);
 }
 
 // Atomics for standard typedef types

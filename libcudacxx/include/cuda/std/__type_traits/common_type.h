@@ -42,7 +42,7 @@ using common_type_t _CCCL_NODEBUG = typename common_type<_Tp...>::type;
 
 // Let COND_RES(X, Y) be:
 template <class _Tp, class _Up>
-using __cond_type _CCCL_NODEBUG = decltype(false ? declval<_Tp>() : declval<_Up>());
+using __cond_type _CCCL_NODEBUG = decltype(false ? ::cuda::std::declval<_Tp>() : ::cuda::std::declval<_Up>());
 
 // We need to ensure that extended floating point types like __half and __nv bfloat16 have a common type with real
 // floating point types

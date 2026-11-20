@@ -353,14 +353,14 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half log1p(__half __x) noexcept
 {
-  return __float2half(::cuda::std::log1pf(__half2float(__x)));
+  return ::__float2half(::cuda::std::log1pf(::__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 log1p(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(::cuda::std::log1pf(__bfloat162float(__x)));
+  return ::__float2bfloat16(::cuda::std::log1pf(::__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 

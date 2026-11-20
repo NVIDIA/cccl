@@ -53,10 +53,12 @@ public:
 #if !defined(__ANDROID_API__) || __ANDROID_API__ >= 29
     // The host time comes from `timespec_get` and not from `::std::chrono::system_clock`. The host's <chrono> is
     // expensive to compile (in C++20 it includes <format>), and <cuda/std/atomic> reaches this header.
-    NV_IF_ELSE_TARGET(NV_IS_HOST,
-                      (::cuda::std::timespec __ts{}; (void) ::cuda::std::timespec_get(&__ts, TIME_UTC);
-                       return time_point(duration_cast<duration>(seconds(__ts.tv_sec) + nanoseconds(__ts.tv_nsec)));),
-                      (return time_point(duration_cast<duration>(nanoseconds(::cuda::ptx::get_sreg_globaltimer())));))
+    NV_IF_ELSE_TARGET(
+      NV_IS_HOST,
+      (::cuda::std::timespec __ts{}; (void) ::cuda::std::timespec_get(&__ts, TIME_UTC);
+       return time_point(duration_cast<duration>(seconds(__ts.tv_sec) + nanoseconds(__ts.tv_nsec)));),
+      (return time_point(
+                ::cuda::std::chrono::duration_cast<duration>(nanoseconds(::cuda::ptx::get_sreg_globaltimer())));))
 #else // ^^^ has timespec_get ^^^ / vvv no timespec_get vvv
     NV_IF_ELSE_TARGET(
       NV_IS_HOST,

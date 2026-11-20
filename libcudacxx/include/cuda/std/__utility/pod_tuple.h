@@ -298,8 +298,8 @@ __apply(_Fn&& __fn, _Tuple&& __tupl, _Us&&... __us) noexcept(__detail::__nothrow
 #undef _CCCL_TUPLE_GET
 
 template <class _Fn, class _Tuple, class... _Us>
-using __apply_result_t _CCCL_NODEBUG =
-  decltype(::cuda::std::__apply(declval<_Fn>(), declval<_Tuple>(), declval<_Us>()...));
+using __apply_result_t _CCCL_NODEBUG = decltype(::cuda::std::__apply(
+  ::cuda::std::declval<_Fn>(), ::cuda::std::declval<_Tuple>(), ::cuda::std::declval<_Us>()...));
 
 template <class _Fn, class _Tuple, class... _Us>
 _CCCL_CONCEPT __applicable = __detail::__applicable_v<_Fn, _Tuple, _Us...>;
@@ -377,7 +377,7 @@ _CCCL_TRIVIAL_API constexpr auto __get(_Tuple&& __tupl) noexcept -> auto&&
   }
   else
   {
-    return __detail::__get<_Index>(static_cast<_Tuple&&>(__tupl));
+    return ::cuda::std::__detail::__get<_Index>(static_cast<_Tuple&&>(__tupl));
   }
 }
 
@@ -426,7 +426,7 @@ _CCCL_API auto __remove_rvalue_ref(_Tp&&) noexcept -> _Tp;
 
 template <size_t _Index, class _Tuple>
 using __tuple_element_t _CCCL_NODEBUG =
-  decltype(::cuda::std::__remove_rvalue_ref(::cuda::std::__get<_Index>(declval<_Tuple>())));
+  decltype(::cuda::std::__remove_rvalue_ref(::cuda::std::__get<_Index>(::cuda::std::declval<_Tuple>())));
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

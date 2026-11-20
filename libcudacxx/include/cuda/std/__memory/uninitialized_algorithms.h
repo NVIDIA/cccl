@@ -92,7 +92,7 @@ _CCCL_API inline pair<_InputIterator, _ForwardIterator> __uninitialized_copy(
   _InputIterator __ifirst, _Sentinel1 __ilast, _ForwardIterator __ofirst, _EndPredicate __stop_copying)
 {
   _ForwardIterator __idx = __ofirst;
-  auto __guard           = __make_exception_guard(__simple_rollback<_ForwardIterator>{__ofirst, __idx});
+  auto __guard           = ::cuda::std::__make_exception_guard(__simple_rollback<_ForwardIterator>{__ofirst, __idx});
   for (; __ifirst != __ilast && !__stop_copying(__idx); ++__ifirst, (void) ++__idx)
   {
     ::new (::cuda::std::__voidify(*__idx)) _ValueType(*__ifirst);
@@ -120,7 +120,7 @@ _CCCL_API inline pair<_InputIterator, _ForwardIterator>
 __uninitialized_copy_n(_InputIterator __ifirst, _Size __n, _ForwardIterator __ofirst, _EndPredicate __stop_copying)
 {
   _ForwardIterator __idx = __ofirst;
-  auto __guard           = __make_exception_guard(__simple_rollback<_ForwardIterator>{__ofirst, __idx});
+  auto __guard           = ::cuda::std::__make_exception_guard(__simple_rollback<_ForwardIterator>{__ofirst, __idx});
   for (; __n > 0 && !__stop_copying(__idx); ++__ifirst, (void) ++__idx, (void) --__n)
   {
     ::new (::cuda::std::__voidify(*__idx)) _ValueType(*__ifirst);
@@ -146,7 +146,7 @@ template <class _ValueType, class _ForwardIterator, class _Sentinel, class _Tp>
 _CCCL_API inline _ForwardIterator __uninitialized_fill(_ForwardIterator __first, _Sentinel __last, const _Tp& __x)
 {
   _ForwardIterator __idx = __first;
-  auto __guard           = __make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
+  auto __guard           = ::cuda::std::__make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
   for (; __idx != __last; ++__idx)
   {
     ::new (::cuda::std::__voidify(*__idx)) _ValueType(__x);
@@ -170,7 +170,7 @@ template <class _ValueType, class _ForwardIterator, class _Size, class _Tp>
 _CCCL_API inline _ForwardIterator __uninitialized_fill_n(_ForwardIterator __first, _Size __n, const _Tp& __x)
 {
   _ForwardIterator __idx = __first;
-  auto __guard           = __make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
+  auto __guard           = ::cuda::std::__make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
   for (; __n > 0; ++__idx, (void) --__n)
   {
     ::new (::cuda::std::__voidify(*__idx)) _ValueType(__x);
@@ -194,7 +194,7 @@ template <class _ValueType, class _ForwardIterator, class _Sentinel>
 _CCCL_API inline _ForwardIterator __uninitialized_default_construct(_ForwardIterator __first, _Sentinel __last)
 {
   auto __idx   = __first;
-  auto __guard = __make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
+  auto __guard = ::cuda::std::__make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
   for (; __idx != __last; ++__idx)
   {
     ::new (::cuda::std::__voidify(*__idx)) _ValueType;
@@ -219,7 +219,7 @@ template <class _ValueType, class _ForwardIterator, class _Size>
 _CCCL_API inline _ForwardIterator __uninitialized_default_construct_n(_ForwardIterator __first, _Size __n)
 {
   auto __idx   = __first;
-  auto __guard = __make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
+  auto __guard = ::cuda::std::__make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
   for (; __n > 0; ++__idx, (void) --__n)
   {
     ::new (::cuda::std::__voidify(*__idx)) _ValueType;
@@ -243,7 +243,7 @@ template <class _ValueType, class _ForwardIterator, class _Sentinel>
 _CCCL_API inline _ForwardIterator __uninitialized_value_construct(_ForwardIterator __first, _Sentinel __last)
 {
   auto __idx   = __first;
-  auto __guard = __make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
+  auto __guard = ::cuda::std::__make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
   for (; __idx != __last; ++__idx)
   {
     ::new (::cuda::std::__voidify(*__idx)) _ValueType();
@@ -267,7 +267,7 @@ template <class _ValueType, class _ForwardIterator, class _Size>
 _CCCL_API inline _ForwardIterator __uninitialized_value_construct_n(_ForwardIterator __first, _Size __n)
 {
   auto __idx   = __first;
-  auto __guard = __make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
+  auto __guard = ::cuda::std::__make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
   for (; __n > 0; ++__idx, (void) --__n)
   {
     ::new (::cuda::std::__voidify(*__idx)) _ValueType();
@@ -297,7 +297,7 @@ _CCCL_API inline pair<_InputIterator, _ForwardIterator> __uninitialized_move(
   _InputIterator __ifirst, _Sentinel1 __ilast, _ForwardIterator __ofirst, _EndPredicate __stop_moving)
 {
   auto __idx   = __ofirst;
-  auto __guard = __make_exception_guard(__simple_rollback<_ForwardIterator>{__ofirst, __idx});
+  auto __guard = ::cuda::std::__make_exception_guard(__simple_rollback<_ForwardIterator>{__ofirst, __idx});
   for (; __ifirst != __ilast && !__stop_moving(__idx); ++__idx, (void) ++__ifirst)
   {
     ::new (::cuda::std::__voidify(*__idx)) _ValueType(_IterOps::__iter_move(__ifirst));
@@ -325,7 +325,7 @@ _CCCL_API inline pair<_InputIterator, _ForwardIterator>
 __uninitialized_move_n(_InputIterator __ifirst, _Size __n, _ForwardIterator __ofirst, _EndPredicate __stop_moving)
 {
   auto __idx   = __ofirst;
-  auto __guard = __make_exception_guard(__simple_rollback<_ForwardIterator>{__ofirst, __idx});
+  auto __guard = ::cuda::std::__make_exception_guard(__simple_rollback<_ForwardIterator>{__ofirst, __idx});
   for (; __n > 0 && !__stop_moving(__idx); ++__idx, (void) ++__ifirst, --__n)
   {
     ::new (::cuda::std::__voidify(*__idx)) _ValueType(_IterOps::__iter_move(__ifirst));

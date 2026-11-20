@@ -98,14 +98,14 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline __half acos(__half __x) noexcept
 {
-  return __float2half(::cuda::std::acosf(__half2float(__x)));
+  return ::__float2half(::cuda::std::acosf(::__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 acos(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(::cuda::std::acosf(__bfloat162float(__x)));
+  return ::__float2bfloat16(::cuda::std::acosf(::__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
@@ -179,14 +179,14 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline __half asin(__half __x) noexcept
 {
-  return __float2half(::cuda::std::asinf(__half2float(__x)));
+  return ::__float2half(::cuda::std::asinf(::__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 asin(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(::cuda::std::asinf(__bfloat162float(__x)));
+  return ::__float2bfloat16(::cuda::std::asinf(::__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
@@ -260,14 +260,14 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline __half atan(__half __x) noexcept
 {
-  return __float2half(::cuda::std::atanf(__half2float(__x)));
+  return ::__float2half(::cuda::std::atanf(::__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 atan(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(::cuda::std::atanf(__bfloat162float(__x)));
+  return ::__float2bfloat16(::cuda::std::atanf(::__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
@@ -341,14 +341,14 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline __half atan2(__half __x, __half __y) noexcept
 {
-  return __float2half(::cuda::std::atan2f(__half2float(__x), __half2float(__y)));
+  return ::__float2half(::cuda::std::atan2f(::__half2float(__x), ::__half2float(__y)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 atan2(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
 {
-  return __float2bfloat16(::cuda::std::atan2f(__bfloat162float(__x), __bfloat162float(__y)));
+  return ::__float2bfloat16(::cuda::std::atan2f(::__bfloat162float(__x), ::__bfloat162float(__y)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 

@@ -208,8 +208,8 @@ struct agent_t
       auto keys2_buffer = keys_buffers.last(_CUB::detail::LoadToSharedBufferSizeBytes<key_type>(keys2_count_tile));
       _CCCL_ASSERT(keys1_buffer.end() <= keys2_buffer.begin(),
                    "Keys buffer needs to be appropriately sized (internal)");
-      keys1_shared = data(load2sh.CopyAsync(keys1_buffer, keys1_src));
-      keys2_shared = data(load2sh.CopyAsync(keys2_buffer, keys2_src));
+      keys1_shared = ::cuda::std::data(load2sh.CopyAsync(keys1_buffer, keys1_src));
+      keys2_shared = ::cuda::std::data(load2sh.CopyAsync(keys2_buffer, keys2_src));
       auto token   = load2sh.Commit();
       // Needed for using keys1_shared as one big buffer including both ranges in SerialMerge
       keys2_offset = static_cast<int>(keys2_shared - keys1_shared);
@@ -308,8 +308,8 @@ struct agent_t
                      "Items buffer needs to be appropriately sized (internal)");
         // block_store_keys above uses shared memory, so make sure all threads are done before we write
         __syncthreads();
-        items1_shared            = data(load2sh.CopyAsync(items1_buffer, items1_src));
-        item_type* items2_shared = data(load2sh.CopyAsync(items2_buffer, items2_src));
+        items1_shared            = ::cuda::std::data(load2sh.CopyAsync(items1_buffer, items1_src));
+        item_type* items2_shared = ::cuda::std::data(load2sh.CopyAsync(items2_buffer, items2_src));
         auto token               = load2sh.Commit();
         const int items2_offset  = static_cast<int>(items2_shared - items1_shared);
         translate_indices(items2_offset);

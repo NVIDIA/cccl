@@ -195,7 +195,8 @@ inline constexpr size_t __npos = static_cast<size_t>(-1);
 } // namespace __detail
 
 template <class _Env, class _Query, class... _Args>
-using __query_result_t _CCCL_NODEBUG = decltype(__detail::__query_result_<_Env, _Query, _Args...>());
+using __query_result_t _CCCL_NODEBUG =
+  decltype(::cuda::std::execution::__detail::__query_result_<_Env, _Query, _Args...>());
 
 template <class _Env, class _Query, class... _Args>
 _CCCL_CONCEPT __queryable_with = _IsValidExpansion<__query_result_t, _Env, _Query, _Args...>::value;
@@ -426,7 +427,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
   {
     // NOLINTNEXTLINE (modernize-avoid-c-arrays)
     constexpr bool __flags[] = {__queryable_with<_Envs, _Query, _Args...>..., false};
-    constexpr size_t __idx   = __detail::__find_pos(__flags, __flags + sizeof...(_Envs));
+    constexpr size_t __idx   = ::cuda::std::execution::__detail::__find_pos(__flags, __flags + sizeof...(_Envs));
     if constexpr (__idx != __detail::__npos)
     {
       return ::cuda::std::__get<__idx>(__self.__envs_);
@@ -562,7 +563,7 @@ struct get_env_t
 _CCCL_GLOBAL_CONSTANT get_env_t get_env{};
 
 template <class _Ty>
-using env_of_t _CCCL_NODEBUG = decltype(get_env(::cuda::std::declval<_Ty>()));
+using env_of_t _CCCL_NODEBUG = decltype(::cuda::std::execution::get_env(::cuda::std::declval<_Ty>()));
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // forwarding_query_t
@@ -581,7 +582,7 @@ _CCCL_GLOBAL_CONSTANT struct forwarding_query_t
 } forwarding_query{};
 
 template <class _Tag>
-_CCCL_CONCEPT __forwarding_query = forwarding_query(_Tag{});
+_CCCL_CONCEPT __forwarding_query = ::cuda::std::execution::forwarding_query(_Tag{});
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // __query_or
@@ -614,7 +615,7 @@ struct __query_or_t
 _CCCL_GLOBAL_CONSTANT __detail::__query_or_t __query_or{};
 
 template <class _Env, class _Query, class _Default, class... _Args>
-using __query_result_or_t _CCCL_NODEBUG = decltype(__query_or(
+using __query_result_or_t _CCCL_NODEBUG = decltype(::cuda::std::execution::__query_or(
   ::cuda::std::declval<_Env>(),
   ::cuda::std::declval<_Query>(),
   ::cuda::std::declval<_Default>(),

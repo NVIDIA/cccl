@@ -50,7 +50,7 @@ template <class _InputIterator1, class _InputIterator2, class _Compare>
 [[nodiscard]] _CCCL_API constexpr bool lexicographical_compare(
   _InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _InputIterator2 __last2, _Compare __comp)
 {
-  return __lexicographical_compare<__comp_ref_type<_Compare>>(__first1, __last1, __first2, __last2, __comp);
+  return ::cuda::std::__lexicographical_compare<__comp_ref_type<_Compare>>(__first1, __last1, __first2, __last2, __comp);
 }
 
 template <class _InputIterator1, class _InputIterator2>

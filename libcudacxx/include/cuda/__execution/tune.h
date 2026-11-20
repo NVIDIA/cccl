@@ -116,7 +116,8 @@ template <class... _PolicySelectors>
 
   // we use the return type of the policy_selector as tag
   using tuning_env = ::cuda::std::execution::env<
-    ::cuda::std::execution::prop<decltype(__detect_policy_return_type<_PolicySelectors>()), _PolicySelectors>...>;
+    ::cuda::std::execution::prop<decltype(::cuda::execution::__detect_policy_return_type<_PolicySelectors>()),
+                                 _PolicySelectors>...>;
 
   return ::cuda::std::execution::prop{__get_tuning_t{}, tuning_env{}};
 }

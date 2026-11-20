@@ -288,11 +288,11 @@ struct WarpReduceShfl
 
     if constexpr (is_warp_vote_any_op<ReductionOp, T>)
     {
-      return __any_sync(member_mask, input && (AllValidLanes || lane_id <= last_lane));
+      return ::__any_sync(member_mask, input && (AllValidLanes || lane_id <= last_lane));
     }
     else if constexpr (is_warp_vote_all_op<ReductionOp, T>)
     {
-      return __all_sync(member_mask, input || (!AllValidLanes && lane_id > last_lane));
+      return ::__all_sync(member_mask, input || (!AllValidLanes && lane_id > last_lane));
     }
     else
     {
@@ -330,7 +330,7 @@ struct WarpReduceShfl
   SegmentedReduce(const T input, const FlagT flag, ReductionOp reduction_op)
   {
     // Get the start flags for each thread in the warp.
-    unsigned warp_flags = __ballot_sync(member_mask, flag);
+    unsigned warp_flags = ::__ballot_sync(member_mask, flag);
     // Convert to tail-segmented
     warp_flags >>= HeadSegmented;
     // Mask out the bits below the current thread

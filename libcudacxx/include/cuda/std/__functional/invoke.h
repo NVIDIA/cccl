@@ -243,7 +243,7 @@ inline constexpr bool __nothrow_invocable_r_imp = false;
 template <class _Ret, class _Fp, class... _Args>
 inline constexpr bool __nothrow_invocable_r_imp<true, false, _Ret, _Fp, _Args...> =
   noexcept(::cuda::std::__cccl_test_noexcept_conversion<_Ret>(
-    ::cuda::std::__invoke(declval<_Fp>(), ::cuda::std::declval<_Args>()...)));
+    ::cuda::std::__invoke(::cuda::std::declval<_Fp>(), ::cuda::std::declval<_Args>()...)));
 
 template <class _Ret, class _Fp, class... _Args>
 inline constexpr bool __nothrow_invocable_r_imp<true, true, _Ret, _Fp, _Args...> =

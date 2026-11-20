@@ -33,7 +33,10 @@ _CCCL_DEVICE_API void cp_async_bulk(
   // __space == space_global (due to parameter type constraint)
   asm("cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes [%0], [%1], %2, [%3];"
       :
-      : "r"(__as_ptr_smem(__dstMem)), "l"(__as_ptr_gmem(__srcMem)), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
+      : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
+        "l"(::cuda::ptx::__as_ptr_gmem(__srcMem)),
+        "r"(__size),
+        "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -65,7 +68,10 @@ _CCCL_DEVICE_API void cp_async_bulk(
   // __space == space_global (due to parameter type constraint)
   asm("cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes [%0], [%1], %2, [%3];"
       :
-      : "r"(__as_ptr_smem(__dstMem)), "l"(__as_ptr_gmem(__srcMem)), "r"(__size), "r"(__as_ptr_smem(__smem_bar))
+      : "r"(::cuda::ptx::__as_ptr_smem(__dstMem)),
+        "l"(::cuda::ptx::__as_ptr_gmem(__srcMem)),
+        "r"(__size),
+        "r"(::cuda::ptx::__as_ptr_smem(__smem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 860
@@ -97,10 +103,10 @@ _CCCL_DEVICE_API void cp_async_bulk(
   // __space == space_shared (due to parameter type constraint)
   asm("cp.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes [%0], [%1], %2, [%3];"
       :
-      : "r"(__as_ptr_remote_dsmem(__dstMem)),
-        "r"(__as_ptr_smem(__srcMem)),
+      : "r"(::cuda::ptx::__as_ptr_remote_dsmem(__dstMem)),
+        "r"(::cuda::ptx::__as_ptr_smem(__srcMem)),
         "r"(__size),
-        "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
+        "r"(::cuda::ptx::__as_ptr_remote_dsmem(__rdsmem_bar))
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -172,7 +178,7 @@ _CCCL_DEVICE_API void cp_async_bulk(
   // __space == space_shared (due to parameter type constraint)
   asm("cp.async.bulk.global.shared::cta.bulk_group [%0], [%1], %2;"
       :
-      : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
+      : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size)
       : "memory");
 }
 #endif // __cccl_ptx_isa >= 800
@@ -202,10 +208,11 @@ _CCCL_DEVICE_API void cp_async_bulk_cp_mask(
 {
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
-  asm("cp.async.bulk.global.shared::cta.bulk_group.cp_mask [%0], [%1], %2, %3;"
-      :
-      : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size), "h"(__byteMask)
-      : "memory");
+  asm(
+    "cp.async.bulk.global.shared::cta.bulk_group.cp_mask [%0], [%1], %2, %3;"
+    :
+    : "l"(::cuda::ptx::__as_ptr_gmem(__dstMem)), "r"(::cuda::ptx::__as_ptr_smem(__srcMem)), "r"(__size), "h"(__byteMask)
+    : "memory");
 }
 #endif // __cccl_ptx_isa >= 860
 

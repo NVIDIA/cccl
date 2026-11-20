@@ -100,7 +100,7 @@ template <class _Tp, auto _Fn, class _Ret, bool _IsConst, bool _IsNothrow, class
 __override_fn_([[maybe_unused]] ::cuda::std::__maybe_const<_IsConst, void>* __pv,
                [[maybe_unused]] _Args... __args) noexcept(_IsNothrow) -> _Ret
 {
-  return __override_fn_dispatch_impl<_Tp, decltype(_Fn), _Ret, _IsConst, _IsNothrow, _Args...>(
+  return ::cuda::__override_fn_dispatch_impl<_Tp, decltype(_Fn), _Ret, _IsConst, _IsNothrow, _Args...>(
     _Fn, __pv, static_cast<_Args&&>(__args)...);
 }
 
@@ -170,7 +170,7 @@ template <auto _Fn>
 struct __virtual_fn
 {
   using __function_t _CCCL_NODEBUG = decltype(__virtual_override_fn<decltype(_Fn)>);
-  using __result_t _CCCL_NODEBUG   = decltype(__get_virtual_result(__function_t{}));
+  using __result_t _CCCL_NODEBUG   = decltype(::cuda::__get_virtual_result(__function_t{}));
 
   static constexpr bool __const_fn   = decltype(::cuda::__is_virtual_const(__function_t{}))::value;
   static constexpr bool __nothrow_fn = noexcept(::cuda::__get_virtual_result(__function_t{}));

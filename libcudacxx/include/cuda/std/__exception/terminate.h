@@ -73,7 +73,7 @@ _CCCL_API inline  terminate_handler get_terminate() noexcept
 
 [[noreturn]] _CCCL_API inline void terminate() noexcept
 {
-  __cccl_terminate();
+  ::cuda::std::__cccl_terminate();
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD_NOVERSION

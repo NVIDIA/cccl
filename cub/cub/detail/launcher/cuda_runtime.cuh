@@ -132,13 +132,13 @@ struct TripleChevronFactory
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION cudaError_t MaxSharedMemory(int& max_shared_memory) const
   {
     int device = 0;
-    auto error = CubDebug(cudaGetDevice(&device));
+    auto error = CubDebug(::cudaGetDevice(&device));
     if (error != cudaSuccess)
     {
       return error;
     }
 
-    return cudaDeviceGetAttribute(&max_shared_memory, cudaDevAttrMaxSharedMemoryPerBlock, device);
+    return ::cudaDeviceGetAttribute(&max_shared_memory, cudaDevAttrMaxSharedMemoryPerBlock, device);
   }
 
   template <typename Kernel>
@@ -182,8 +182,8 @@ struct KernelConfig
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
   {
-    threads_per_block = cub::detail::MakePolicyWrapper(agent_policy).ThreadsPerBlock();
-    items_per_thread  = cub::detail::MakePolicyWrapper(agent_policy).ItemsPerThread();
+    threads_per_block = _CUB::detail::MakePolicyWrapper(agent_policy).ThreadsPerBlock();
+    items_per_thread  = _CUB::detail::MakePolicyWrapper(agent_policy).ItemsPerThread();
     tile_size         = threads_per_block * items_per_thread;
     return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, threads_per_block);
   }

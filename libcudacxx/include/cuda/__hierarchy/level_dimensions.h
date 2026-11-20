@@ -185,7 +185,7 @@ template <class _Dims>
 [[nodiscard]] _CCCL_API constexpr auto grid_dims(_Dims __dims) noexcept
 {
   static_assert(__detail::__dimensions_handler<_Dims>::__is_type_supported);
-  auto __translated_dims = __detail::__dimensions_handler<_Dims>::__translate(__dims);
+  auto __translated_dims = ::cuda::__detail::__dimensions_handler<_Dims>::__translate(__dims);
   return hierarchy_level_desc<grid_level, decltype(__translated_dims)>(__translated_dims);
 }
 
@@ -210,7 +210,7 @@ template <class _Dims>
 [[nodiscard]] _CCCL_API constexpr auto cluster_dims(_Dims __dims) noexcept
 {
   static_assert(__detail::__dimensions_handler<_Dims>::__is_type_supported);
-  auto __translated_dims = __detail::__dimensions_handler<_Dims>::__translate(__dims);
+  auto __translated_dims = ::cuda::__detail::__dimensions_handler<_Dims>::__translate(__dims);
   return hierarchy_level_desc<cluster_level, decltype(__translated_dims)>(__translated_dims);
 }
 
@@ -235,7 +235,7 @@ template <class _Dims>
 [[nodiscard]] _CCCL_API constexpr auto block_dims(_Dims __dims) noexcept
 {
   static_assert(__detail::__dimensions_handler<_Dims>::__is_type_supported);
-  auto __translated_dims = __detail::__dimensions_handler<_Dims>::__translate(__dims);
+  auto __translated_dims = ::cuda::__detail::__dimensions_handler<_Dims>::__translate(__dims);
   return hierarchy_level_desc<block_level, decltype(__translated_dims)>(__translated_dims);
 }
 _CCCL_END_NAMESPACE_CUDA

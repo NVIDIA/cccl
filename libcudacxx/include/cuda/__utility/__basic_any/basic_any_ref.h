@@ -196,7 +196,7 @@ private:
   __set_ref(_VTable const* __other, ::cuda::std::__maybe_const<__is_const_ref, void>* __obj) noexcept
   {
     using _OtherInterface = typename _VTable::interface_type;
-    __vptr_               = __try_vptr_cast<_OtherInterface, interface_type>(__other);
+    __vptr_               = ::cuda::__try_vptr_cast<_OtherInterface, interface_type>(__other);
     __optr_               = __vptr_ ? __obj : nullptr;
   }
 
@@ -210,7 +210,7 @@ private:
   __set_ref(__iset_vptr<_Interfaces...> __other, ::cuda::std::__maybe_const<__is_const_ref, void>* __obj) noexcept
   {
     using _OtherInterface = __iset_<_Interfaces...>;
-    __vptr_               = __try_vptr_cast<_OtherInterface, interface_type>(__other);
+    __vptr_               = ::cuda::__try_vptr_cast<_OtherInterface, interface_type>(__other);
     __optr_               = __vptr_ ? __obj : nullptr;
   }
 
@@ -222,7 +222,7 @@ private:
     {
       _CCCL_THROW(::std::bad_any_cast);
     }
-    auto __to_vptr = __vptr_cast<__src_interface_t, interface_type>(__from.__get_vptr());
+    auto __to_vptr = ::cuda::__vptr_cast<__src_interface_t, interface_type>(__from.__get_vptr());
     __set_ref(__to_vptr, __from.__get_optr());
   }
 

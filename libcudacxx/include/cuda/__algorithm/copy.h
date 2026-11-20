@@ -185,8 +185,8 @@ _CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __d
 {
   ::cuda::__detail::__copy_bytes_impl(
     __stream,
-    ::cuda::std::span(launch_transform(__stream, ::cuda::std::forward<_SrcTy>(__src))),
-    ::cuda::std::span(launch_transform(__stream, ::cuda::std::forward<_DstTy>(__dst))),
+    ::cuda::std::span(::cuda::launch_transform(__stream, ::cuda::std::forward<_SrcTy>(__src))),
+    ::cuda::std::span(::cuda::launch_transform(__stream, ::cuda::std::forward<_DstTy>(__dst))),
     __config);
 }
 
@@ -199,8 +199,8 @@ _CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __d
 {
   ::cuda::__detail::__copy_bytes_impl(
     __stream,
-    ::cuda::__as_mdspan(launch_transform(__stream, ::cuda::std::forward<_SrcTy>(__src))),
-    ::cuda::__as_mdspan(launch_transform(__stream, ::cuda::std::forward<_DstTy>(__dst))),
+    ::cuda::__as_mdspan(::cuda::launch_transform(__stream, ::cuda::std::forward<_SrcTy>(__src))),
+    ::cuda::__as_mdspan(::cuda::launch_transform(__stream, ::cuda::std::forward<_DstTy>(__dst))),
     __config);
 }
 

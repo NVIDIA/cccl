@@ -68,6 +68,7 @@ concept __exchangeable =
 template <class _Tp, class _Up>
 _CCCL_CONCEPT_FRAGMENT(
   __unqualified_swappable_with_,
+  // NOLINTNEXTLINE(cccl-avoid-adl)
   requires(_Tp&& __t, _Up&& __u)((swap(::cuda::std::forward<_Tp>(__t), ::cuda::std::forward<_Up>(__u)))));
 
 template <class _Tp, class _Up>
@@ -108,9 +109,9 @@ struct __fn
   _CCCL_TEMPLATE(class _Tp, class _Up)
   _CCCL_REQUIRES(__unqualified_swappable_with<_Tp, _Up>)
   _CCCL_API constexpr void _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t, _Up&& __u) noexcept(
-    noexcept(swap(::cuda::std::forward<_Tp>(__t), ::cuda::std::forward<_Up>(__u))))
+    noexcept(swap(::cuda::std::forward<_Tp>(__t), ::cuda::std::forward<_Up>(__u)))) // NOLINT(cccl-avoid-adl)
   {
-    swap(::cuda::std::forward<_Tp>(__t), ::cuda::std::forward<_Up>(__u));
+    swap(::cuda::std::forward<_Tp>(__t), ::cuda::std::forward<_Up>(__u)); // NOLINT(cccl-avoid-adl)
   }
 
   // 2.2   Otherwise, if `E1` and `E2` are lvalues of array types with equal extent and...

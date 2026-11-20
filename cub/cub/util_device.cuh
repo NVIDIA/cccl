@@ -74,7 +74,7 @@ _CCCL_KERNEL_ATTRIBUTES void EmptyKernel()
 CUB_RUNTIME_FUNCTION inline int CurrentDevice()
 {
   int device = -1;
-  if (CubDebug(cudaGetDevice(&device)))
+  if (CubDebug(::cudaGetDevice(&device)))
   {
     return -1;
   }
@@ -97,10 +97,10 @@ public:
       : target_device_(target_device)
       , original_device_(target_device)
   {
-    static_cast<void>(CubDebug(cudaGetDevice(&original_device_)));
+    static_cast<void>(CubDebug(::cudaGetDevice(&original_device_)));
     if (original_device_ != target_device_)
     {
-      static_cast<void>(CubDebug(cudaSetDevice(target_device_)));
+      static_cast<void>(CubDebug(::cudaSetDevice(target_device_)));
     }
   }
 
@@ -110,7 +110,7 @@ public:
   {
     if (original_device_ != target_device_)
     {
-      static_cast<void>(CubDebug(cudaSetDevice(original_device_)));
+      static_cast<void>(CubDebug(::cudaSetDevice(original_device_)));
     }
   }
 };
@@ -123,7 +123,7 @@ namespace detail
 CUB_RUNTIME_FUNCTION inline int device_count_uncached()
 {
   int count = -1;
-  if (CubDebug(cudaGetDeviceCount(&count)))
+  if (CubDebug(::cudaGetDeviceCount(&count)))
   {
     // CUDA makes no guarantees about the state of the output parameter if
     // `cudaGetDeviceCount` fails; in practice, they don't, but out of
@@ -274,7 +274,7 @@ public:
           // Clear the global CUDA error state which may have been
           // set by the last call. Otherwise, errors may "leak" to
           // unrelated kernel launches.
-          static_cast<void>(cudaGetLastError());
+          static_cast<void>(::cudaGetLastError());
         }
 
         // Release the lock by setting the state to `DeviceEntryReady`.
@@ -447,13 +447,13 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersionUncached(int& sm_version, int d
   {
     int major = 0;
     int minor = 0;
-    error     = CubDebug(cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, device));
+    error     = CubDebug(::cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, device));
     if (cudaSuccess != error)
     {
       break;
     }
 
-    error = CubDebug(cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, device));
+    error = CubDebug(::cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, device));
     if (cudaSuccess != error)
     {
       break;
@@ -520,27 +520,27 @@ MaxPotentialDynamicSmemBytes(int& max_dyn_smem_bytes, KernelPtr kernel_ptr) noex
   max_dyn_smem_bytes = -1;
 
   cudaFuncAttributes kernel_attrs{};
-  if (const auto error = CubDebug(cudaFuncGetAttributes(&kernel_attrs, kernel_ptr)))
+  if (const auto error = CubDebug(::cudaFuncGetAttributes(&kernel_attrs, kernel_ptr)))
   {
     return error;
   }
 
   int curr_device{};
-  if (const auto error = CubDebug(cudaGetDevice(&curr_device)))
+  if (const auto error = CubDebug(::cudaGetDevice(&curr_device)))
   {
     return error;
   }
 
   int reserved_smem_size{};
   if (const auto error =
-        CubDebug(cudaDeviceGetAttribute(&reserved_smem_size, cudaDevAttrReservedSharedMemoryPerBlock, curr_device)))
+        CubDebug(::cudaDeviceGetAttribute(&reserved_smem_size, cudaDevAttrReservedSharedMemoryPerBlock, curr_device)))
   {
     return error;
   }
 
   int max_smem_size_optin{};
   if (const auto error =
-        CubDebug(cudaDeviceGetAttribute(&max_smem_size_optin, cudaDevAttrMaxSharedMemoryPerBlockOptin, curr_device)))
+        CubDebug(::cudaDeviceGetAttribute(&max_smem_size_optin, cudaDevAttrMaxSharedMemoryPerBlockOptin, curr_device)))
   {
     return error;
   }
@@ -571,14 +571,14 @@ CUB_RUNTIME_FUNCTION inline cudaError_t HasUVA(bool& has_uva)
 {
   has_uva           = false;
   int device        = -1;
-  cudaError_t error = CubDebug(cudaGetDevice(&device));
+  cudaError_t error = CubDebug(::cudaGetDevice(&device));
   if (cudaSuccess != error)
   {
     return error;
   }
 
   int uva = 0;
-  error   = CubDebug(cudaDeviceGetAttribute(&uva, cudaDevAttrUnifiedAddressing, device));
+  error   = CubDebug(::cudaDeviceGetAttribute(&uva, cudaDevAttrUnifiedAddressing, device));
   if (cudaSuccess != error)
   {
     return error;
@@ -635,7 +635,7 @@ template <typename KernelPtr>
 _CCCL_VISIBILITY_HIDDEN CUB_RUNTIME_FUNCTION inline cudaError_t
 MaxSmOccupancy(int& max_sm_occupancy, KernelPtr kernel_ptr, int threads_per_block, int dynamic_smem_bytes = 0)
 {
-  return CubDebug(cudaOccupancyMaxActiveBlocksPerMultiprocessor(
+  return CubDebug(::cudaOccupancyMaxActiveBlocksPerMultiprocessor(
     &max_sm_occupancy, kernel_ptr, threads_per_block, dynamic_smem_bytes));
 }
 

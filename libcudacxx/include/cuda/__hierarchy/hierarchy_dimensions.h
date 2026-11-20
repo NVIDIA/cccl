@@ -104,7 +104,7 @@ struct __make_hierarchy
     else if constexpr (!_Reversed)
     {
       return __apply_reverse(::cuda::std::tie(__ls...),
-                             __reverse_indices(::cuda::std::index_sequence_for<_Levels2...>()));
+                             ::cuda::__detail::__reverse_indices(::cuda::std::index_sequence_for<_Levels2...>()));
     }
     else
     {
@@ -134,7 +134,8 @@ __get_levels_range_end(const _LDims& __lvl, [[maybe_unused]] const _Levels&... _
   }
   else
   {
-    return ::cuda::std::tuple_cat(::cuda::std::tie(__lvl), __get_levels_range_end<_LUnit>(__levels...));
+    return ::cuda::std::tuple_cat(
+      ::cuda::std::tie(__lvl), ::cuda::__detail::__get_levels_range_end<_LUnit>(__levels...));
   }
 }
 
@@ -145,11 +146,11 @@ __get_levels_range_start(const _LTopDims& __ltop, const _Levels&... __levels) no
 {
   if constexpr (::cuda::std::is_same_v<_LTop, __level_type_of<_LTopDims>>)
   {
-    return __get_levels_range_end<_LUnit>(__ltop, __levels...);
+    return ::cuda::__detail::__get_levels_range_end<_LUnit>(__ltop, __levels...);
   }
   else
   {
-    return __get_levels_range_start<_LTop, _LUnit>(__levels...);
+    return ::cuda::__detail::__get_levels_range_start<_LTop, _LUnit>(__levels...);
   }
 }
 
@@ -158,7 +159,7 @@ __get_levels_range_start(const _LTopDims& __ltop, const _Levels&... __levels) no
 template <class _LTop, class _LUnit, class... _Levels>
 [[nodiscard]] _CCCL_API constexpr auto __get_levels_range(const _Levels&... __levels) noexcept
 {
-  return __get_levels_range_start<_LTop, _LUnit>(__levels...);
+  return ::cuda::__detail::__get_levels_range_start<_LTop, _LUnit>(__levels...);
 }
 } // namespace __detail
 
@@ -492,7 +493,7 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES hierarchy(const _BottomUnit&, const ::cuda::std
 template <class _LUnit = void, class _L1, class... _LevelDescs>
 _CCCL_API constexpr auto make_hierarchy(_L1 __l1, _LevelDescs... __ls) noexcept
 {
-  return __detail::__make_hierarchy<_LUnit>()(__detail::__as_level(__l1), __detail::__as_level(__ls)...);
+  return __detail::__make_hierarchy<_LUnit>()(::cuda::__detail::__as_level(__l1), ::cuda::__detail::__as_level(__ls)...);
 }
 
 /**
@@ -522,7 +523,7 @@ _CCCL_API constexpr auto make_hierarchy(_L1 __l1, _LevelDescs... __ls) noexcept
 template <class _NewLevel, class _Unit, class... _LevelDescs>
 _CCCL_API constexpr auto hierarchy_add_level(const hierarchy<_Unit, _LevelDescs...>& __hierarchy, _NewLevel __lnew)
 {
-  auto __new_level     = __detail::__as_level(__lnew);
+  auto __new_level     = ::cuda::__detail::__as_level(__lnew);
   using __added_level  = decltype(__new_level);
   using __top_level    = __level_type_of<::cuda::std::__type_index_c<0, _LevelDescs...>>;
   using __bottom_level = __level_type_of<::cuda::std::__type_index_c<sizeof...(_LevelDescs) - 1, _LevelDescs...>>;

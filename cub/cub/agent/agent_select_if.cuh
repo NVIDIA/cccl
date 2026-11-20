@@ -442,7 +442,7 @@ struct AgentSelectIf
 
     if constexpr (prefetch_before_items)
     {
-      BlockPrefetch<BLOCK_THREADS, AgentSelectIfPolicyT::LOAD_PREFETCH>::Prefetch(
+      _CUB::detail::BlockPrefetch<BLOCK_THREADS, AgentSelectIfPolicyT::LOAD_PREFETCH>::Prefetch(
         (GetInputIterator() + streaming_context.input_offset()) + tile_offset, num_tile_items);
 
       InitializeSelections<IsFirstTile, IsLastTile>(

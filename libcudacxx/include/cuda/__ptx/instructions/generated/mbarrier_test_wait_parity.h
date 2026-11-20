@@ -25,7 +25,7 @@ mbarrier_test_wait_parity(::cuda::std::uint64_t* __addr, const ::cuda::std::uint
       "selp.b32 %0, 1, 0, P_OUT; \n"
       "}"
       : "=r"(__waitComplete)
-      : "r"(__as_ptr_smem(__addr)), "r"(__phaseParity)
+      : "r"(::cuda::ptx::__as_ptr_smem(__addr)), "r"(__phaseParity)
       : "memory");
   return static_cast<bool>(__waitComplete);
 }
@@ -61,7 +61,7 @@ _CCCL_DEVICE_API bool mbarrier_test_wait_parity(
         "selp.b32 %0, 1, 0, P_OUT; \n"
         "}"
         : "=r"(__waitComplete)
-        : "r"(__as_ptr_smem(__addr)), "r"(__phaseParity)
+        : "r"(::cuda::ptx::__as_ptr_smem(__addr)), "r"(__phaseParity)
         : "memory");
   }
   else if constexpr (__scope == scope_cluster)
@@ -72,7 +72,7 @@ _CCCL_DEVICE_API bool mbarrier_test_wait_parity(
         "selp.b32 %0, 1, 0, P_OUT; \n"
         "}"
         : "=r"(__waitComplete)
-        : "r"(__as_ptr_smem(__addr)), "r"(__phaseParity)
+        : "r"(::cuda::ptx::__as_ptr_smem(__addr)), "r"(__phaseParity)
         : "memory");
   }
   return static_cast<bool>(__waitComplete);
@@ -109,7 +109,7 @@ _CCCL_DEVICE_API bool mbarrier_test_wait_parity(
         "selp.b32 %0, 1, 0, P_OUT; \n"
         "}"
         : "=r"(__waitComplete)
-        : "r"(__as_ptr_smem(__addr)), "r"(__phaseParity)
+        : "r"(::cuda::ptx::__as_ptr_smem(__addr)), "r"(__phaseParity)
         : "memory");
   }
   else if constexpr (__scope == scope_cluster)
@@ -120,7 +120,7 @@ _CCCL_DEVICE_API bool mbarrier_test_wait_parity(
         "selp.b32 %0, 1, 0, P_OUT; \n"
         "}"
         : "=r"(__waitComplete)
-        : "r"(__as_ptr_smem(__addr)), "r"(__phaseParity)
+        : "r"(::cuda::ptx::__as_ptr_smem(__addr)), "r"(__phaseParity)
         : "memory");
   }
   return static_cast<bool>(__waitComplete);

@@ -37,7 +37,7 @@ namespace detail::warpspeed
 
 [[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint64_t makeWarpUniform(::cuda::std::uint64_t x)
 {
-  return __shfl_sync(~0, x, 0);
+  return ::__shfl_sync(~0, x, 0);
 }
 } // namespace detail::warpspeed
 

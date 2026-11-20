@@ -235,7 +235,7 @@ template <class _SrcInterface, class _DstInterface>
   }
   else
   {
-    auto __dst_vptr = __try_vptr_cast<_SrcInterface, _DstInterface>(__src_vptr);
+    auto __dst_vptr = ::cuda::__try_vptr_cast<_SrcInterface, _DstInterface>(__src_vptr);
     if (!__dst_vptr && __src_vptr)
     {
       _CCCL_THROW(::std::bad_any_cast);
