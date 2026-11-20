@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -39,11 +39,11 @@ unary_negate : public __unary_function<typename _Predicate::argument_type, bool>
   _Predicate __pred_;
 
 public:
-  constexpr _CCCL_API inline explicit unary_negate(const _Predicate& __pred)
+  constexpr _CCCL_API explicit unary_negate(const _Predicate& __pred)
       : __pred_(__pred)
   {}
   _CCCL_EXEC_CHECK_DISABLE
-  constexpr _CCCL_API inline bool operator()(const typename _Predicate::argument_type& __x) const
+  constexpr _CCCL_API bool operator()(const typename _Predicate::argument_type& __x) const
   {
     return !__pred_(__x);
   }

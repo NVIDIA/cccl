@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -31,16 +31,26 @@
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__warp/warp_shuffle.h>
+#include <cuda/hierarchy>
+#include <cuda/std/__bit/countr.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/array>
 #include <cuda/std/optional>
 
 #include <cuda/experimental/__utility/result_policy.cuh>
 #include <cuda/experimental/coop/__algorithm/shuffle_down.cuh>
+#include <cuda/experimental/coop/__group/concepts.cuh>
+#include <cuda/experimental/coop/__group/fwd.cuh>
+#include <cuda/experimental/coop/__group/group_view.cuh>
 #include <cuda/experimental/coop/__group/queries.cuh>
-#include <cuda/experimental/coop/group>
+#include <cuda/experimental/coop/__group/this_group.cuh>
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 

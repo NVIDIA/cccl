@@ -3,16 +3,18 @@
 // Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
+// Expanded boundary coverage across all integer types exceeds the default Clang constexpr step limit.
+// CONSTEXPR_STEPS: 15000000
+
 #include <cuda/cmath>
 #include <cuda/std/cassert>
-#include <cuda/std/cmath>
 #include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
-#include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
@@ -51,10 +53,22 @@ TEST_FUNC constexpr void test_ceil_log2()
 }
 
 template <class T>
+TEST_FUNC constexpr int reference_log10(T value)
+{
+  int result = 0;
+  while (value >= 10)
+  {
+    value /= 10;
+    ++result;
+  }
+  return result;
+}
+
+template <class T>
 TEST_FUNC constexpr void test_log10()
 {
   int i = 0;
-  for (T value = 1; value <= cuda::std::numeric_limits<T>::max() / 10; value *= 10)
+  for (T value = 1;; value *= 10)
   {
     assert(cuda::ilog10(value) == i);
     assert(cuda::ilog10(value + value / 2) == i);
@@ -65,22 +79,23 @@ TEST_FUNC constexpr void test_log10()
       assert(cuda::ilog10(value - value / 2) == i - 1);
       assert(cuda::ilog10(value - value / 2 - 1) == i - 1);
     }
+    if (value > cuda::std::numeric_limits<T>::max() / 10)
+    {
+      break;
+    }
     i++;
   }
-#if !TEST_COMPILER(MSVC)
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
-  {
-    constexpr auto max_v = cuda::std::numeric_limits<T>::max();
-    assert(cuda::ilog10(max_v) == static_cast<int>(cuda::std::floor(cuda::std::log10(max_v))));
-  }
-#endif // !TEST_COMPILER(MSVC)
+  constexpr auto max_v = cuda::std::numeric_limits<T>::max();
+  assert(cuda::ilog10(max_v) == reference_log10(max_v));
+  assert(cuda::ilog10<const T>(max_v) == cuda::std::numeric_limits<T>::digits10);
+  assert(cuda::ilog10(static_cast<T>(max_v - 1)) == reference_log10(static_cast<T>(max_v - 1)));
 }
 
 template <class T>
 TEST_FUNC constexpr void test_ceil_log10()
 {
   int i = 0;
-  for (T value = 1; value <= cuda::std::numeric_limits<T>::max() / 10; value *= 10)
+  for (T value = 1;; value *= 10)
   {
     assert(cuda::ceil_ilog10(value) == i);
     assert(cuda::ceil_ilog10(static_cast<T>(value + 1)) == i + 1);
@@ -91,15 +106,38 @@ TEST_FUNC constexpr void test_ceil_log10()
       assert(cuda::ceil_ilog10(value - value / 2) == i);
       assert(cuda::ceil_ilog10(value - value / 2 - 1) == i);
     }
+    if (value > cuda::std::numeric_limits<T>::max() / 10)
+    {
+      break;
+    }
     i++;
   }
-#if !TEST_COMPILER(MSVC)
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
+  constexpr auto max_v = cuda::std::numeric_limits<T>::max();
+  assert(cuda::ceil_ilog10(max_v) == reference_log10(static_cast<T>(max_v - 1)) + 1);
+}
+
+template <class T>
+TEST_FUNC constexpr void test_log10_binary_boundaries()
+{
+  // The approximation changes at powers of two; the exact correction changes at powers of ten.
+  for (T value = 1;; value *= 2)
   {
-    constexpr auto max_v = cuda::std::numeric_limits<T>::max();
-    assert(cuda::ceil_ilog10(max_v) == static_cast<int>(cuda::std::ceil(cuda::std::log10(max_v))));
+    assert(cuda::ilog10(value) == reference_log10(value));
+    assert(cuda::ceil_ilog10(value) == (value == 1 ? 0 : reference_log10(static_cast<T>(value - 1)) + 1));
+    if (value > 1)
+    {
+      auto before = static_cast<T>(value - 1);
+      auto after  = static_cast<T>(value + 1);
+      assert(cuda::ilog10(before) == reference_log10(before));
+      assert(cuda::ilog10(after) == reference_log10(after));
+      assert(cuda::ceil_ilog10(before) == (before == 1 ? 0 : reference_log10(static_cast<T>(before - 1)) + 1));
+      assert(cuda::ceil_ilog10(after) == reference_log10(value) + 1);
+    }
+    if (value > cuda::std::numeric_limits<T>::max() / 2)
+    {
+      break;
+    }
   }
-#endif // !TEST_COMPILER(MSVC)
 }
 
 template <class T>
@@ -109,6 +147,7 @@ TEST_FUNC constexpr void test()
   test_ceil_log2<T>();
   test_log10<T>();
   test_ceil_log10<T>();
+  test_log10_binary_boundaries<T>();
 }
 
 TEST_FUNC constexpr bool test()

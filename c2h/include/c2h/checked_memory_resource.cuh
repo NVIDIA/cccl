@@ -38,7 +38,7 @@ public:
   {}
 
   [[nodiscard]] _CCCL_HOST_API void*
-  allocate_sync(std::size_t bytes, std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment)
+  allocate_sync(std::size_t bytes, std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment) const
   {
     return ::c2h::detail::checked_device_allocate(m_device, bytes, alignment);
   }
@@ -46,7 +46,7 @@ public:
   _CCCL_HOST_API void deallocate_sync(
     void* ptr,
     [[maybe_unused]] std::size_t bytes,
-    [[maybe_unused]] std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
+    [[maybe_unused]] std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment) const noexcept
   {
     ::c2h::detail::checked_device_deallocate(m_device, ptr);
   }
@@ -163,7 +163,7 @@ public:
   {}
 
   [[nodiscard]] _CCCL_HOST_API void*
-  allocate_sync(std::size_t bytes, std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment)
+  allocate_sync(std::size_t bytes, std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment) const
   {
     return ::c2h::detail::checked_host_allocate(m_device, bytes, alignment);
   }
@@ -228,6 +228,21 @@ make_host_buffer(::cuda::stream_ref stream, ::cuda::device_ref device, ::cuda::s
   auto result =
     ::cuda::make_buffer<T>(stream, checked_host_buffer_memory_resource{device}, values.size(), ::cuda::no_init);
   ::cuda::std::uninitialized_copy(values.begin(), values.end(), result.begin());
+  return result;
+}
+
+// Creates an initialized host buffer backed by the checked C2H memory resource.
+//
+// Note: This overload supports streams whose device cannot be queried, including the legacy default stream.
+// Requires: device must refer to the current C2H test device.
+// Requires: stream must be valid for device. The legacy default stream is supported.
+template <typename T>
+[[nodiscard]] auto
+make_host_buffer(cuda::stream_ref stream, cuda::device_ref device, std::size_t num_items, const T& value)
+{
+  auto result = ::c2h::make_host_buffer<T>(stream, device, num_items, cuda::no_init);
+  ::cuda::std::uninitialized_fill_n(result.begin(), num_items, value);
+
   return result;
 }
 

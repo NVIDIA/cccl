@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -25,6 +25,7 @@
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#include <cuda/__iterator/contiguous_iterator_adaptor.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__concepts/equality_comparable.h>
@@ -61,7 +62,7 @@ struct __transform_iterator_category_base<_Fn,
                                           _Iter,
                                           ::cuda::std::enable_if_t<::cuda::std::__has_forward_traversal<_Iter>>>
 {
-  using _Cat = typename ::cuda::std::iterator_traits<_Iter>::iterator_category;
+  using _Cat _CCCL_NODEBUG = typename ::cuda::std::iterator_traits<_Iter>::iterator_category;
 
   using iterator_category = ::cuda::std::conditional_t<
     ::cuda::std::is_reference_v<::cuda::std::invoke_result_t<_Fn&, ::cuda::std::iter_reference_t<_Iter>>>,
@@ -232,6 +233,18 @@ public:
   {
     return ::cuda::std::move(__iter());
   }
+
+#ifndef _CCCL_DOXYGEN_INVOKED
+  //! @brief Rebuilds the stored iterator in place over the storage at @p __ptr.
+  //! @param[in] __ptr The address of the storage that replaces the storage this iterator reads from.
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__iter_can_rebind<_Iter, _Tp>)
+  _CCCL_API constexpr void __rebind(_Tp* __ptr)
+  {
+    ::cuda::__rebind_iterator_adaptor(__iter(), __ptr);
+  }
+#endif // !_CCCL_DOXYGEN_INVOKED
 
   //! @brief Dereferences the stored iterator and applies the stored functor to the result
   _CCCL_EXEC_CHECK_DISABLE

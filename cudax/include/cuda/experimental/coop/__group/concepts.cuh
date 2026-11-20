@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -70,9 +70,15 @@ _CCCL_CONCEPT __group_mapping_result = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __v
   _Same_as(::cuda::std::size_t) _Tp::static_group_count(),
   (::cuda::std::integral_constant<::cuda::std::size_t, _Tp::static_group_count()>::value),
   _Same_as(::cuda::std::uint32_t) __v.group_count(),
+  _Same_as(::cuda::std::size_t) _Tp::static_group_rank(),
+  (::cuda::std::integral_constant<::cuda::std::size_t, _Tp::static_group_rank()>::value),
   _Same_as(::cuda::std::uint32_t) __v.group_rank(),
   _Same_as(::cuda::std::size_t) _Tp::static_unit_count(),
   (::cuda::std::integral_constant<::cuda::std::size_t, _Tp::static_unit_count()>::value),
+  _Same_as(bool) _Tp::has_uniform_static_unit_count(),
+  (::cuda::std::bool_constant<_Tp::has_uniform_static_unit_count()>::value),
+  _Same_as(::cuda::std::size_t) _Tp::static_unit_count(::cuda::std::size_t{}),
+  (::cuda::std::integral_constant<::cuda::std::size_t, _Tp::static_unit_count(::cuda::std::size_t{0})>::value),
   _Same_as(::cuda::std::uint32_t) __v.unit_count(),
   _Same_as(::cuda::std::uint32_t) __v.unit_rank(),
   _Same_as(::cuda::device::lane_mask) __v.lane_mask(),

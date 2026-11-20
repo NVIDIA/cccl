@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -34,7 +34,7 @@ template <class _Tp>
 inline constexpr bool negation_v = !_Tp::value;
 
 template <class _Tp>
-using _Not = negation<_Tp>;
+using _Not _CCCL_NODEBUG = negation<_Tp>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

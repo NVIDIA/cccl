@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -118,7 +118,7 @@ public:
 
 // __perfect_forward implements a perfect-forwarding call wrapper as explained in [func.require].
 template <class _Op, class... _Args>
-using __perfect_forward = __perfect_forward_impl<_Op, index_sequence_for<_Args...>, _Args...>;
+using __perfect_forward _CCCL_NODEBUG = __perfect_forward_impl<_Op, index_sequence_for<_Args...>, _Args...>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

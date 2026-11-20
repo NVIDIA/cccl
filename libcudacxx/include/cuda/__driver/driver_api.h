@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -66,6 +66,10 @@
     } while (0)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
+
+// Isolate the status-returning driver APIs from the earlier pointer/error-code-returning ABI which was publicly
+// visible.
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 
 _CCCL_HOST_API inline void __throw_if_failed(
   __driver_status __status,
@@ -631,7 +635,8 @@ template <::CUpointer_attribute _Attr>
 }
 
 template <::CUpointer_attribute _Attr>
-using __pointer_attribute_value_type_t = decltype(::cuda::__driver::__pointer_attribute_value_type_t_impl<_Attr>());
+using __pointer_attribute_value_type_t _CCCL_NODEBUG =
+  decltype(::cuda::__driver::__pointer_attribute_value_type_t_impl<_Attr>());
 
 template <::CUpointer_attribute _Attr>
 [[nodiscard]] _CCCL_HOST_API inline __driver_status
@@ -1474,6 +1479,8 @@ __cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType 
 #  undef _CCCLRT_DEFAULT_STREAM_WITHOUT_CONTEXT_MESSAGE
 #  undef _CCCLRT_STREAM_ERROR_MESSAGE
 #  undef _CCCLRT_CALL_STREAM_DRIVER_FN
+
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
 _CCCL_END_NAMESPACE_CUDA_DRIVER
 

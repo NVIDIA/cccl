@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-bit-bit_reverse:
 
-``cuda::bit_reverse``
-=====================
+``cuda::bit_reverse`` (deprecated)
+==================================
 
 Defined in the ``<cuda/bit>`` header.
 
@@ -10,12 +10,14 @@ Defined in the ``<cuda/bit>`` header.
    namespace cuda {
 
    template <typename T>
-   [[nodiscard]] __host__ __device__ constexpr
+   [[nodiscard, deprecated]] __host__ __device__ constexpr
    T bit_reverse(T value) noexcept;
 
    } // namespace cuda
 
 The function reverses the order of bits in a value.
+
+.. warning:: This function is deprecated and will be removed in next major release. Please, use ``cuda::std::bit_reverse`` instead.
 
 **Parameters**
 

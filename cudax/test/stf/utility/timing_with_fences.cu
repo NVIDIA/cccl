@@ -27,11 +27,11 @@ static __global__ void cuda_sleep_kernel(long long int clock_cnt)
 void cuda_sleep(double ms, cudaStream_t stream)
 {
   int device;
-  cudaGetDevice(&device);
+  cuda_safe_call(cudaGetDevice(&device));
 
   // cudaDevAttrClockRate: Peak clock frequency in kilohertz;
   int clock_rate;
-  cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device);
+  cuda_safe_call(cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device));
 
   const long long int clock_cnt = (long long int) (ms * clock_rate);
   cuda_sleep_kernel<<<1, 1, 0, stream>>>(clock_cnt);
@@ -45,7 +45,8 @@ void run(int NTASKS, int ms)
   int dummy[1];
   auto handle = ctx.logical_data(dummy);
 
-  cudaEvent_t start, stop;
+  cudaEvent_t start;
+  cudaEvent_t stop;
   cuda_safe_call(cudaEventCreate(&start));
   cuda_safe_call(cudaEventCreate(&stop));
 

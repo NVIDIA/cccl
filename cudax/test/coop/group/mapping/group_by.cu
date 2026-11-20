@@ -12,6 +12,8 @@
 #include <cuda/hierarchy>
 #include <cuda/launch>
 #include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
@@ -37,11 +39,11 @@ __device__ void test_group_by(Config config)
     static_assert(!cuda::std::is_default_constructible_v<Mapping>);
 
     // Test the mapping is constructible from uint32_t.
-    static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::uint32_t>);
+    static_assert(cuda::std::is_constructible_v<Mapping, cuda::std::uint32_t>);
 
     // Test the mapping is constructible & deductible from constant_wrapper<N>.
     {
-      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::constant_wrapper<N>>);
+      static_assert(cuda::std::is_constructible_v<Mapping, cuda::std::constant_wrapper<N>>);
 
       // NOLINTNEXTLINE(misc-const-correctness)
       cudax::coop::group_by mapping{cuda::std::cw<N>};
@@ -65,14 +67,13 @@ __device__ void test_group_by(Config config)
 
       static_assert(cudax::coop::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
                       cuda::gpu_thread, parent_group, prev_mapping_result))>);
-      static_assert(
-        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const cudax::coop::group_by mapping{cuda::std::cw<N>};
       auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == 32 / N);
+      static_assert(Result::static_group_rank() == (32 / N == 1 ? 0 : cuda::std::dynamic_extent));
       CHECK(result.group_count() == cuda::gpu_thread.count(cuda::warp) / N);
       CHECK(result.group_rank() == cuda::gpu_thread.rank(cuda::warp) / N);
 
@@ -98,7 +99,7 @@ __device__ void test_group_by(Config config)
 
     // Test the mapping is constructible & deducible from uint32_t.
     {
-      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::uint32_t>);
+      static_assert(cuda::std::is_constructible_v<Mapping, cuda::std::uint32_t>);
 
       // NOLINTNEXTLINE(misc-const-correctness)
       cudax::coop::group_by mapping{static_cast<cuda::std::uint32_t>(N)};
@@ -106,7 +107,7 @@ __device__ void test_group_by(Config config)
     }
 
     // Test the mapping is constructible from constant_wrapper<N>.
-    static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::constant_wrapper<N>>);
+    static_assert(cuda::std::is_constructible_v<Mapping, cuda::std::constant_wrapper<N>>);
 
     // Test the mapping is not constructible from non_exhaustive_t and uint32_t.
     static_assert(!cuda::std::is_constructible_v<Mapping, const cudax::coop::non_exhaustive_t&, cuda::std::uint32_t>);
@@ -122,14 +123,13 @@ __device__ void test_group_by(Config config)
 
       static_assert(cudax::coop::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
                       cuda::gpu_thread, parent_group, prev_mapping_result))>);
-      static_assert(
-        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const cudax::coop::group_by mapping{static_cast<cuda::std::uint32_t>(N)};
       auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == cuda::std::dynamic_extent);
+      static_assert(Result::static_group_rank() == cuda::std::dynamic_extent);
       CHECK(result.group_count() == cuda::gpu_thread.count(cuda::warp) / N);
       CHECK(result.group_rank() == cuda::gpu_thread.rank(cuda::warp) / N);
 
@@ -161,11 +161,11 @@ __device__ void test_group_by_non_exhaustive(Config config)
     static_assert(!cuda::std::is_default_constructible_v<Mapping>);
 
     // Test the mapping is constructible from uint32_t.
-    static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::uint32_t>);
+    static_assert(cuda::std::is_constructible_v<Mapping, cuda::std::uint32_t>);
 
     // Test the mapping is constructible & deductible from constant_wrapper<N>.
     {
-      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::constant_wrapper<N>>);
+      static_assert(cuda::std::is_constructible_v<Mapping, cuda::std::constant_wrapper<N>>);
 
       // NOLINTNEXTLINE(misc-const-correctness)
       cudax::coop::group_by mapping{cuda::std::cw<N>};
@@ -189,14 +189,13 @@ __device__ void test_group_by_non_exhaustive(Config config)
 
       static_assert(cudax::coop::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
                       cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, prev_mapping_result))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(
-        cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const cudax::coop::group_by mapping{cuda::std::cw<N>};
       auto result  = mapping.map(cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == 32 / N);
+      static_assert(Result::static_group_rank() == (32 / N == 1 ? 0 : cuda::std::dynamic_extent));
       static_assert(Result::static_unit_count() == N);
       static_assert(Result::is_always_exhaustive() == (32 % N == 0));
       static_assert(Result::is_always_contiguous());
@@ -227,7 +226,7 @@ __device__ void test_group_by_non_exhaustive(Config config)
 
     // Test the mapping is constructible & deducible from uint32_t.
     {
-      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::uint32_t>);
+      static_assert(cuda::std::is_constructible_v<Mapping, cuda::std::uint32_t>);
 
       // NOLINTNEXTLINE(misc-const-correctness)
       cudax::coop::group_by mapping{static_cast<cuda::std::uint32_t>(N)};
@@ -235,7 +234,7 @@ __device__ void test_group_by_non_exhaustive(Config config)
     }
 
     // Test the mapping is constructible from constant_wrapper<N>.
-    static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::constant_wrapper<N>>);
+    static_assert(cuda::std::is_constructible_v<Mapping, cuda::std::constant_wrapper<N>>);
 
     // Test the mapping is not constructible from non_exhaustive_t and uint32_t.
     static_assert(!cuda::std::is_constructible_v<Mapping, const cudax::coop::non_exhaustive_t&, cuda::std::uint32_t>);
@@ -251,14 +250,13 @@ __device__ void test_group_by_non_exhaustive(Config config)
 
       static_assert(cudax::coop::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
                       cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, prev_mapping_result))>);
-      static_assert(noexcept(cuda::std::declval<const Mapping>().map(
-        cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, prev_mapping_result)));
 
       const cudax::coop::group_by mapping{static_cast<cuda::std::uint32_t>(N)};
       auto result  = mapping.map(cudax::coop::non_exhaustive, cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == cuda::std::dynamic_extent);
+      static_assert(Result::static_group_rank() == cuda::std::dynamic_extent);
       static_assert(Result::static_unit_count() == cuda::std::dynamic_extent);
       static_assert(!Result::is_always_exhaustive());
       static_assert(Result::is_always_contiguous());

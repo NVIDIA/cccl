@@ -18,7 +18,7 @@ TEST_CASE("TestReverseIteratorTraits", "[reverse_iterator]")
 
   static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
   static_assert(cuda::std::is_same_v<traits::value_type, int>);
-  static_assert(cuda::std::is_same_v<traits::pointer, void>);
+  static_assert(cuda::std::is_same_v<traits::pointer, void>); // NOLINT(cccl-simplify-type-traits)
   static_assert(cuda::std::is_same_v<traits::reference, int&>);
   static_assert(cuda::std::is_same_v<traits::iterator_category, category>);
 

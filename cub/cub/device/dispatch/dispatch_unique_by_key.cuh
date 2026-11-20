@@ -11,7 +11,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -263,7 +263,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
     // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
     void* allocations[2] = {nullptr, nullptr};
     if (const auto error =
-          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+          CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -280,7 +280,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
     }
 
     // Log init_kernel configuration
-    num_tiles                = ::cuda::std::max(1, num_tiles);
+    num_tiles                = (::cuda::std::max) (1, num_tiles);
     const int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
 
     _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
@@ -300,7 +300,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -317,13 +317,13 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
     dim3 scan_grid_size;
     scan_grid_size.z = 1;
     scan_grid_size.y = ::cuda::ceil_div(num_tiles, max_dim_x);
-    scan_grid_size.x = ::cuda::std::min(num_tiles, max_dim_x);
+    scan_grid_size.x = (::cuda::std::min) (num_tiles, max_dim_x);
 
     // Log select_if_kernel configuration
 #ifdef CUB_DEBUG_LOG
     constexpr bool cub_debug_log_unique_by_key_kernel = true;
 #else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
-    const bool cub_debug_log_unique_by_key_kernel = detail::logging_enabled();
+    const bool cub_debug_log_unique_by_key_kernel = _CUB::detail::logging_enabled();
 #endif // !CUB_DEBUG_LOG
     if (cub_debug_log_unique_by_key_kernel)
     {
@@ -368,7 +368,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
     }
 
     // Sync the stream if specified to flush runtime errors
-    return CubDebug(detail::DebugSyncStream(stream));
+    return CubDebug(_CUB::detail::DebugSyncStream(stream));
   }
 
   template <typename ActivePolicyT>
@@ -378,7 +378,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
     {
       _CCCL_HOST_DEVICE constexpr auto operator()() const -> UniqueByKeyPolicy
       {
-        return detail::unique_by_key::convert_policy<ActivePolicyT>();
+        return _CUB::detail::unique_by_key::convert_policy<ActivePolicyT>();
       }
     };
 
@@ -523,7 +523,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  return detail::dispatch_compute_cap(policy_selector, cc, [&]([[maybe_unused]] auto policy_getter) {
+  return _CUB::detail::dispatch_compute_cap(policy_selector, cc, [&]([[maybe_unused]] auto policy_getter) {
 #ifdef CUB_DEFINE_RUNTIME_POLICIES
     // vsmem is not supported in CCCL.C, so just use the policy directly
     const UniqueByKeyPolicy active_policy     = policy_getter();
@@ -541,7 +541,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     const ::cuda::std::size_t vsmem_per_block = vsmem_helper_impl<typename vsmem_adapted_agents::agent_t>::vsmem_per_block;
 #endif
 
-    detail::log_dispatch("DeviceSelect (unique by key)", cc, active_policy);
+    _CUB::detail::log_dispatch("DeviceSelect (unique by key)", cc, active_policy);
 
     const auto threads_per_block = active_policy.threads_per_block;
     const auto items_per_thread  = active_policy.items_per_thread;
@@ -562,7 +562,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
     void* allocations[2] = {nullptr, nullptr};
     if (const auto error =
-          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+          CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -580,7 +580,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
     // Log init_kernel configuration
     static constexpr int init_kernel_threads = 128;
-    num_tiles                                = ::cuda::std::max(1, num_tiles);
+    num_tiles                                = (::cuda::std::max) (1, num_tiles);
     const int init_grid_size                 = ::cuda::ceil_div(num_tiles, init_kernel_threads);
 
     _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
@@ -598,7 +598,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -615,12 +615,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     dim3 scan_grid_size;
     scan_grid_size.z = 1;
     scan_grid_size.y = ::cuda::ceil_div(num_tiles, max_dim_x);
-    scan_grid_size.x = ::cuda::std::min(num_tiles, max_dim_x);
+    scan_grid_size.x = (::cuda::std::min) (num_tiles, max_dim_x);
 
 #ifdef CUB_DEBUG_LOG
     constexpr bool cub_debug_log_unique_by_key_kernel = true;
 #else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
-    const bool cub_debug_log_unique_by_key_kernel = detail::logging_enabled();
+    const bool cub_debug_log_unique_by_key_kernel = _CUB::detail::logging_enabled();
 #endif // !CUB_DEBUG_LOG
     if (cub_debug_log_unique_by_key_kernel)
     {
@@ -661,7 +661,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       return error;
     }
 
-    return CubDebug(detail::DebugSyncStream(stream));
+    return CubDebug(_CUB::detail::DebugSyncStream(stream));
   });
 }
 } // namespace detail::unique_by_key

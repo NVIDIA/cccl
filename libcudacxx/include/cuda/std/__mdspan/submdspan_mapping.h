@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -176,13 +176,9 @@ _CCCL_API constexpr bool __is_unit_stride_slice()
     return true;
   }
   // [mdspan.sub.map.common-9.3]
-  else if constexpr (is_convertible_v<_SliceType, full_extent_t>)
-  {
-    return true;
-  }
   else
   {
-    return false;
+    return is_convertible_v<_SliceType, full_extent_t>;
   }
   // NOLINTEND(bugprone-branch-clone)
 }

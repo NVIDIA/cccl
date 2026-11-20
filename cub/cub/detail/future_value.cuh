@@ -6,7 +6,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -49,11 +49,11 @@ struct FutureValue
   using value_type    = T;
   using iterator_type = IterT;
 
-  explicit _CCCL_HOST_DEVICE _CCCL_FORCEINLINE FutureValue(IterT iter)
+  explicit _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE FutureValue(IterT iter)
       : m_iter(iter)
   {}
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T() const noexcept
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE operator T() const noexcept
   {
     return *m_iter;
   }

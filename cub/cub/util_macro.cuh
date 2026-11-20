@@ -10,7 +10,7 @@
 
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -49,14 +49,14 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 // TODO(bgruber): drop in CCCL 4.0 when we drop the public dispatchers
 #ifndef CUB_DEFINE_SUB_POLICY_GETTER
-#  define CUB_DEFINE_SUB_POLICY_GETTER(name)                            \
-    _CCCL_HOST_DEVICE static constexpr auto name()                      \
-    {                                                                   \
-      return MakePolicyWrapper(typename StaticPolicyT::name##Policy()); \
+#  define CUB_DEFINE_SUB_POLICY_GETTER(name)                                          \
+    _CCCL_HOST_DEVICE_API static constexpr auto name()                                \
+    {                                                                                 \
+      return _CUB::detail::MakePolicyWrapper(typename StaticPolicyT::name##Policy()); \
     }
 #endif
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES)
+#ifdef CUB_DEFINE_RUNTIME_POLICIES
 #  define CUB_DETAIL_STATIC_ISH_ASSERT(expr, msg) _CCCL_ASSERT(expr, msg)
 #  define CUB_DETAIL_CONSTEXPR_ISH
 #else // ^^^ CUB_DEFINE_RUNTIME_POLICIES ^^^ / vvv !CUB_DEFINE_RUNTIME_POLICIES vvv

@@ -90,7 +90,7 @@ However, the CUDA runtime in ``lib_b`` will not find any kernel registered at th
 will fail to launch the kernel.
 
 A simple example program that exemplifies this can be found
-`on github <https://github.com/NVIDIA/cccl/tree/main/docs/cub/developer/visibility/examples/device_kernel_visibility>`_
+`on github <https://github.com/NVIDIA/cccl/tree/main/docs/cccl/development/visibility/examples/device_kernel_visibility>`_
 
 .. code-block:: bash
 

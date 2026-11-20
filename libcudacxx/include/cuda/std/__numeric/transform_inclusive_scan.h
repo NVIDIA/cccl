@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -49,8 +49,8 @@ _CCCL_API constexpr _OutputIterator transform_inclusive_scan(
 {
   if (__first != __last)
   {
-    typename iterator_traits<_InputIterator>::value_type __init = __u(*__first);
-    *__result++                                                 = __init;
+    const typename iterator_traits<_InputIterator>::value_type __init = __u(*__first);
+    *__result++                                                       = __init;
     if (++__first != __last)
     {
       return ::cuda::std::transform_inclusive_scan(__first, __last, __result, __b, __u, __init);

@@ -64,29 +64,33 @@ CUB_TEST("DispatchUniqueByKey::Dispatch: custom policy hub", "[select_unique_by_
     DispatchUniqueByKey<key_t*, value_t*, key_t*, value_t*, offset_t*, eq_op_t, offset_t, policy_hub_t>;
 
   size_t temp_size = 0;
-  dispatch_t::Dispatch(
-    nullptr,
-    temp_size,
-    thrust::raw_pointer_cast(d_keys_in.data()),
-    thrust::raw_pointer_cast(d_vals_in.data()),
-    thrust::raw_pointer_cast(d_keys_out.data()),
-    thrust::raw_pointer_cast(d_vals_out.data()),
-    thrust::raw_pointer_cast(d_num_selected.data()),
-    eq_op_t{},
-    static_cast<offset_t>(h_keys_in.size()),
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      nullptr,
+      temp_size,
+      thrust::raw_pointer_cast(d_keys_in.data()),
+      thrust::raw_pointer_cast(d_vals_in.data()),
+      thrust::raw_pointer_cast(d_keys_out.data()),
+      thrust::raw_pointer_cast(d_vals_out.data()),
+      thrust::raw_pointer_cast(d_num_selected.data()),
+      eq_op_t{},
+      static_cast<offset_t>(h_keys_in.size()),
+      /* stream */ nullptr));
   c2h::device_vector<unsigned char> temp_storage(temp_size, thrust::no_init);
-  dispatch_t::Dispatch(
-    thrust::raw_pointer_cast(temp_storage.data()),
-    temp_size,
-    thrust::raw_pointer_cast(d_keys_in.data()),
-    thrust::raw_pointer_cast(d_vals_in.data()),
-    thrust::raw_pointer_cast(d_keys_out.data()),
-    thrust::raw_pointer_cast(d_vals_out.data()),
-    thrust::raw_pointer_cast(d_num_selected.data()),
-    eq_op_t{},
-    static_cast<offset_t>(h_keys_in.size()),
-    /* stream */ nullptr);
+  REQUIRE(
+    cudaSuccess
+    == dispatch_t::Dispatch(
+      thrust::raw_pointer_cast(temp_storage.data()),
+      temp_size,
+      thrust::raw_pointer_cast(d_keys_in.data()),
+      thrust::raw_pointer_cast(d_vals_in.data()),
+      thrust::raw_pointer_cast(d_keys_out.data()),
+      thrust::raw_pointer_cast(d_vals_out.data()),
+      thrust::raw_pointer_cast(d_num_selected.data()),
+      eq_op_t{},
+      static_cast<offset_t>(h_keys_in.size()),
+      /* stream */ nullptr));
 
   const auto num_selected = static_cast<std::size_t>(d_num_selected[0]);
   d_keys_out.resize(num_selected);

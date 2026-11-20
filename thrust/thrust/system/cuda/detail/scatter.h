@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -15,6 +15,7 @@
 
 #if _CCCL_CUDA_COMPILATION()
 #  include <thrust/iterator/permutation_iterator.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/transform.h>
 
 #  include <cuda/__functional/address_stability.h>
@@ -24,7 +25,7 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
 template <class Derived, class ItemsIt, class MapIt, class ResultIt>
-void _CCCL_HOST_DEVICE
+void _CCCL_HOST_DEVICE_API
 scatter(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, MapIt map, ResultIt result)
 {
   cuda_cub::transform(
@@ -36,7 +37,7 @@ scatter(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, MapIt ma
 }
 
 template <class Derived, class ItemsIt, class MapIt, class StencilIt, class ResultIt, class Predicate>
-void _CCCL_HOST_DEVICE scatter_if(
+void _CCCL_HOST_DEVICE_API scatter_if(
   execution_policy<Derived>& policy,
   ItemsIt first,
   ItemsIt last,
@@ -56,7 +57,7 @@ void _CCCL_HOST_DEVICE scatter_if(
 }
 
 template <class Derived, class ItemsIt, class MapIt, class StencilIt, class ResultIt>
-void _CCCL_HOST_DEVICE scatter_if(
+void _CCCL_HOST_DEVICE_API scatter_if(
   execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, MapIt map, StencilIt stencil, ResultIt result)
 {
   cuda_cub::scatter_if(

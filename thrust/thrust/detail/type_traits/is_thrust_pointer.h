@@ -19,13 +19,13 @@ struct pointer_raw_pointer_impl
 template <typename T>
 struct pointer_raw_pointer_impl<T*>
 {
-  using type = T*;
+  using type _CCCL_NODEBUG = T*;
 };
 
 template <typename Ptr>
 struct pointer_raw_pointer_impl<Ptr, ::cuda::std::void_t<typename Ptr::raw_pointer>>
 {
-  using type = typename Ptr::raw_pointer;
+  using type _CCCL_NODEBUG = typename Ptr::raw_pointer;
 };
 } // namespace pointer_traits_detail
 

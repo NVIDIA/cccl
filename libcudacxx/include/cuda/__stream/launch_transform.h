@@ -13,7 +13,7 @@
 
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -49,7 +49,7 @@ _CCCL_API constexpr auto __ixnay_xvalue(_Tp&& __value) noexcept(::cuda::std::is_
 } // namespace __detail
 
 template <typename _Tp>
-using __remove_rvalue_reference_t =
+using __remove_rvalue_reference_t _CCCL_NODEBUG =
   decltype(__detail::__ixnay_xvalue(::cuda::std::declval<_Tp>()) // NOLINT(modernize-type-traits)
   );
 
@@ -78,11 +78,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __launch_transform_t
   // Types that want to customize `launch_transform` should define overloads of
   // transform_launch_argument that are find-able by ADL.
   template <typename _Arg>
-  using __transform_result_t = __remove_rvalue_reference_t<decltype(transform_launch_argument(
+  using __transform_result_t _CCCL_NODEBUG = __remove_rvalue_reference_t<decltype(transform_launch_argument(
     ::cuda::stream_ref{::cudaStream_t{}}, ::cuda::std::declval<_Arg>()))>;
 
   template <typename _Arg>
-  using __transformed_argument_t =
+  using __transformed_argument_t _CCCL_NODEBUG =
     __remove_rvalue_reference_t<decltype(::cuda::std::declval<_Arg>().transformed_argument())>;
 
   // The use of `optional` here is to move the destruction of the object returned from
@@ -119,7 +119,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __launch_transform_t
     using ::cuda::std::optional<_Tp>::optional;
     // Use of explicit destructor is intentional. Without it, the argument may have a trivial
     // destructor and hence would be performed by the callee.
-    ~__optional_with_a_destructor() {} // NOLINT(modernize-use-equals-default)
+    _CCCL_HOST_API ~__optional_with_a_destructor() {} // NOLINT(modernize-use-equals-default)
 
     template <class _Fn>
     _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Tp& __emplace_from_fn(_Fn&& __fn)

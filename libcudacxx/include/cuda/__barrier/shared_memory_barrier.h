@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -68,6 +68,9 @@ class shared_memory_barrier : private ::cuda::__shared_mbarrier_impl<_Scope>
     _Scope>(::cuda::shared_memory_barrier<_Scope>& __b);
 
 public:
+  //! @brief The thread scope of the barrier.
+  static constexpr thread_scope scope = _Scope;
+
   //! @brief Result of a status-bearing wait operation.
   //!
   //! An `operation_status` records whether the waited phase completed and whether a status report was produced. If a

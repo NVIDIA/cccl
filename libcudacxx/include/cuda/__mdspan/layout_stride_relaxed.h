@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -110,14 +110,14 @@ public:
   static_assert(_Extents::rank() == _Strides::rank(),
                 "layout_stride_relaxed::mapping: extents and strides must have the same rank");
 
-  using extents_type = _Extents;
-  using strides_type = _Strides;
-  using index_type   = typename extents_type::index_type;
-  using size_type    = typename extents_type::size_type;
-  using rank_type    = typename extents_type::rank_type;
-  using offset_type  = decltype(::cuda::std::__de_ice(_OffsetType{}));
-  using layout_type  = layout_stride_relaxed;
-  using __base       = ::cuda::std::__mdspan_ebco<_Extents, _Strides, _OffsetType>;
+  using extents_type         = _Extents;
+  using strides_type         = _Strides;
+  using index_type           = typename extents_type::index_type;
+  using size_type            = typename extents_type::size_type;
+  using rank_type            = typename extents_type::rank_type;
+  using offset_type          = decltype(::cuda::std::__de_ice(_OffsetType{}));
+  using layout_type          = layout_stride_relaxed;
+  using __base _CCCL_NODEBUG = ::cuda::std::__mdspan_ebco<_Extents, _Strides, _OffsetType>;
 
 private:
   static constexpr rank_type __rank_    = extents_type::rank();

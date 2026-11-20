@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -36,7 +36,6 @@ namespace chrono
 {
 class month_day
 {
-private:
   chrono::month __month_;
   chrono::day __day_;
 
@@ -157,7 +156,6 @@ public:
 
 class month_day_last
 {
-private:
   chrono::month __month_;
 
 public:

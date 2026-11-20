@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -40,7 +40,7 @@ public:
       , __phase(::cuda::std::move(__phase_))
   {}
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool operator()() const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator()() const
   {
     return __this->__try_wait(__phase);
   }
@@ -58,7 +58,7 @@ public:
       , __parity(__parity_)
   {}
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool operator()() const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator()() const
   {
     return __this->__try_wait_parity(__parity);
   }

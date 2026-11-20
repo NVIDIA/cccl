@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -21,6 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__bit/bit_compress.h>
+#include <cuda/std/__bit/bit_expand.h>
+#include <cuda/std/__bit/bit_repeat.h>
 #include <cuda/std/__bit/bit_reverse.h>
 #include <cuda/std/__bit/byteswap.h>
 #include <cuda/std/__bit/countl.h>
@@ -34,12 +37,14 @@
 #include <cuda/std/__bit/shr.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__simd/basic_vec.h>
+#include <cuda/std/__simd/concepts.h>
 #include <cuda/std/__simd/exposition.h>
 #include <cuda/std/__simd/type_traits.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/__type_traits/make_signed.h>
+#include <cuda/std/__type_traits/num_bits.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -227,6 +232,47 @@ struct __simd_rotr_scalar_generator
   }
 };
 
+template <typename _Vp0, typename _Vp1>
+struct __simd_bit_repeat_generator
+{
+  const _Vp0& __v0_;
+  const _Vp1& __v1_;
+
+  template <typename _Idx>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr typename _Vp0::value_type operator()(_Idx) const noexcept(false)
+  {
+    const auto __count = __v1_[_Idx::value];
+    // Check the original count before the conversion. Scalar bit_repeat checks the converted count.
+    _CCCL_IF_CONSTEVAL_DEFAULT
+    {
+      _CCCL_VERIFY(__count > 0, "bit_repeat: count must be positive");
+    }
+    else
+    {
+      _CCCL_ASSERT(__count > 0, "bit_repeat: count must be positive");
+    }
+    constexpr auto __width = static_cast<typename _Vp1::value_type>(__num_bits_v<typename _Vp0::value_type>);
+    if (__count >= __width)
+    {
+      return __v0_[_Idx::value];
+    }
+    return ::cuda::std::bit_repeat(__v0_[_Idx::value], static_cast<int>(__count));
+  }
+};
+
+template <typename _Vp>
+struct __simd_bit_repeat_scalar_generator
+{
+  const _Vp& __v_;
+  const int __count_;
+
+  template <typename _Idx>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr typename _Vp::value_type operator()(_Idx) const noexcept(false)
+  {
+    return ::cuda::std::bit_repeat(__v_[_Idx::value], __count_);
+  }
+};
+
 template <typename _Vp, typename _Result>
 struct __simd_bit_width_generator
 {
@@ -302,6 +348,32 @@ struct __simd_popcount_generator
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __result_t operator()(_Idx) const noexcept
   {
     return static_cast<__result_t>(::cuda::std::popcount(__v_[_Idx::value]));
+  }
+};
+
+template <typename _Vec>
+struct __simd_bit_compress_generator
+{
+  const _Vec& __v_;
+  const _Vec& __mask_;
+
+  template <typename _Idx>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr typename _Vec::value_type operator()(_Idx) const noexcept
+  {
+    return ::cuda::std::bit_compress(__v_[_Idx::value], __mask_[_Idx::value]);
+  }
+};
+
+template <typename _Vec>
+struct __simd_bit_expand_generator
+{
+  const _Vec& __v_;
+  const _Vec& __mask_;
+
+  template <typename _Idx>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr typename _Vec::value_type operator()(_Idx) const noexcept
+  {
+    return ::cuda::std::bit_expand(__v_[_Idx::value], __mask_[_Idx::value]);
   }
 };
 
@@ -435,6 +507,26 @@ _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
   return __vec_t{__simd_rotr_scalar_generator<__vec_t>{__v, __s}};
 }
 
+_CCCL_TEMPLATE(typename _Tp0, typename _Abi0, typename _Tp1, typename _Abi1)
+_CCCL_REQUIRES(__simd_vec_type<basic_vec<_Tp0, _Abi0>> _CCCL_AND __simd_vec_type<basic_vec<_Tp1, _Abi1>> _CCCL_AND
+                 __simd_is_valid_rotate_v<_Tp0, _Abi0, _Tp1, _Abi1>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+bit_repeat(const basic_vec<_Tp0, _Abi0>& __v0, const basic_vec<_Tp1, _Abi1>& __v1) noexcept(false)
+{
+  using __vec0_t _CCCL_NODEBUG = basic_vec<_Tp0, _Abi0>;
+  using __vec1_t _CCCL_NODEBUG = basic_vec<_Tp1, _Abi1>;
+  return __vec0_t{__simd_bit_repeat_generator<__vec0_t, __vec1_t>{__v0, __v1}};
+}
+
+_CCCL_TEMPLATE(typename _Tp, typename _Abi)
+_CCCL_REQUIRES(__simd_vec_type<basic_vec<_Tp, _Abi>> _CCCL_AND __cccl_is_unsigned_integer_v<_Tp>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+bit_repeat(const basic_vec<_Tp, _Abi>& __v, const int __count) noexcept(false)
+{
+  using __vec_t _CCCL_NODEBUG = basic_vec<_Tp, _Abi>;
+  return __vec_t{__simd_bit_repeat_scalar_generator<__vec_t>{__v, __count}};
+}
+
 template <typename _Tp, typename _Vp>
 using __simd_bit_count_result_t _CCCL_NODEBUG = rebind_t<make_signed_t<_Tp>, _Vp>;
 
@@ -490,6 +582,35 @@ _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
   using __vec_t _CCCL_NODEBUG    = basic_vec<_Tp, _Abi>;
   using __result_t _CCCL_NODEBUG = __simd_bit_count_result_t<_Tp, __vec_t>;
   return __result_t{__simd_popcount_generator<__vec_t, __result_t>{__v}};
+}
+
+_CCCL_TEMPLATE(typename _Vec)
+_CCCL_REQUIRES(__simd_vec_type<_Vec> _CCCL_AND __cccl_is_unsigned_integer_v<typename _Vec::value_type>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Vec bit_compress(const _Vec& __v, const _Vec& __mask) noexcept
+{
+  return _Vec{__simd_bit_compress_generator<_Vec>{__v, __mask}};
+}
+
+_CCCL_TEMPLATE(typename _Vec)
+_CCCL_REQUIRES(__simd_vec_type<_Vec> _CCCL_AND __cccl_is_unsigned_integer_v<typename _Vec::value_type>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Vec
+bit_compress(const _Vec& __v, typename _Vec::value_type __mask) noexcept
+{
+  return ::cuda::std::simd::bit_compress(__v, _Vec{__mask});
+}
+
+_CCCL_TEMPLATE(typename _Vec)
+_CCCL_REQUIRES(__simd_vec_type<_Vec> _CCCL_AND __cccl_is_unsigned_integer_v<typename _Vec::value_type>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Vec bit_expand(const _Vec& __v, const _Vec& __mask) noexcept
+{
+  return _Vec{__simd_bit_expand_generator<_Vec>{__v, __mask}};
+}
+
+_CCCL_TEMPLATE(typename _Vec)
+_CCCL_REQUIRES(__simd_vec_type<_Vec> _CCCL_AND __cccl_is_unsigned_integer_v<typename _Vec::value_type>)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Vec bit_expand(const _Vec& __v, typename _Vec::value_type __mask) noexcept
+{
+  return ::cuda::std::simd::bit_expand(__v, _Vec{__mask});
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD_SIMD

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -38,7 +38,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief Source access order for copy_bytes
-enum class source_access_order
+enum class source_access_order // NOLINT(readability-enum-initial-value)
 {
   //! @brief Access source in stream order
   stream = 0x1,

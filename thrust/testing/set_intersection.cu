@@ -52,7 +52,8 @@ void test_set_intersection_simple()
 {
   using Iterator = typename Vector::iterator;
 
-  Vector a{0, 2, 4}, b{0, 3, 3, 4};
+  Vector a{0, 2, 4};
+  Vector b{0, 3, 3, 4};
   Vector ref{0, 4};
 
   Vector result(2);

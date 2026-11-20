@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -204,6 +204,13 @@ inline constexpr ::cuda::std::size_t vector_size_v<::__nv_fp8x2_e5m2> = 2;
 template <>
 inline constexpr ::cuda::std::size_t vector_size_v<::__nv_fp8x4_e5m2> = 4;
 #  endif // _CCCL_HAS_NVFP8_E5M2()
+
+#  if _CCCL_HAS_NVFP8_UE5M3()
+template <>
+inline constexpr ::cuda::std::size_t vector_size_v<::__nv_fp8x2_ue5m3> = 2;
+template <>
+inline constexpr ::cuda::std::size_t vector_size_v<::__nv_fp8x4_ue5m3> = 4;
+#  endif // _CCCL_HAS_NVFP8_UE5M3()
 
 #  if _CCCL_HAS_NVFP8_E8M0()
 template <>

@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -278,7 +278,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> sub_overflow(const _Lhs __lhs
   // We want to use __builtin_sub_overflow only in host code. When compiling CUDA source file, we cannot use it in
   // constant expressions, because it doesn't work before nvcc 13.1 and is buggy in 13.1. When compiling C++ source
   // file, we can use it all the time.
-#if defined(_CCCL_BUILTIN_SUB_OVERFLOW)
+#ifdef _CCCL_BUILTIN_SUB_OVERFLOW
 #  if _CCCL_CUDA_COMPILATION()
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
 #  endif // _CCCL_CUDA_COMPILATION()
@@ -349,7 +349,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> sub_overflow(const _Lhs __lhs
       {
         return overflow_result<_ActualResult>{__sub_ret, __is_out_of_range};
       }
-      else // rhs >= 0 -> lhs - rhs < result_min? -> lhs < result_min + rhs
+      // rhs >= 0 -> lhs - rhs < result_min? -> lhs < result_min + rhs
       {
         // Now, the problem is to compute 'result_min + rhs' correctly
         //      note: rhs >= 0, result_min < 0
@@ -368,7 +368,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> sub_overflow(const _Lhs __lhs
           const bool __is_underflow = ::cuda::std::cmp_less(__lhs, __usum);
           return overflow_result<_ActualResult>{__sub_ret, __is_underflow};
         }
-        else // * otherwise, rhs > result_max and we need to use the unsigned common type
+        // * otherwise, rhs > result_max and we need to use the unsigned common type
         {
           using _SumType            = make_unsigned_t<common_type_t<_Rhs, _ActualResult>>;
           const auto __usum         = ::cuda::__add_as_unsigned<_SumType>(__signed_min, __rhs);
@@ -392,7 +392,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> sub_overflow(const _Lhs __lhs
     {
       return overflow_result<_ActualResult>{__sub_ret, __is_out_of_range};
     }
-    else // lhs >= 0 && rhs < 0 -> lhs - rhs > result_max? -> lhs > result_max + rhs
+    // lhs >= 0 && rhs < 0 -> lhs - rhs > result_max? -> lhs > result_max + rhs
     {
       using _Up                     = make_unsigned_t<common_type_t<_Rhs, _ActualResult>>;
       constexpr auto __unsigned_max = numeric_limits<_ActualResult>::max();

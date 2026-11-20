@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -46,7 +46,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float fdim(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_FDIMF)
+#ifdef _CCCL_BUILTIN_FDIMF
   return _CCCL_BUILTIN_FDIMF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_FDIMF ^^^ / vvv !_CCCL_BUILTIN_FDIMF vvv
   return ::fdimf(__x, __y);
@@ -55,7 +55,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline float fdimf(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_FDIMF)
+#ifdef _CCCL_BUILTIN_FDIMF
   return _CCCL_BUILTIN_FDIMF(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_FDIMF ^^^ / vvv !_CCCL_BUILTIN_FDIMF vvv
   return ::fdimf(__x, __y);
@@ -64,7 +64,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline double fdim(double __x, double __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_FDIM)
+#ifdef _CCCL_BUILTIN_FDIM
   return _CCCL_BUILTIN_FDIM(__x, __y);
 #else // ^^^ _CCCL_BUILTIN_FDIM ^^^ / vvv !_CCCL_BUILTIN_FDIM vvv
   return ::fdim(__x, __y);
@@ -74,7 +74,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double fdim(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_FDIML)
+#  ifdef _CCCL_BUILTIN_FDIML
   return _CCCL_BUILTIN_FDIML(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_FDIML ^^^ / vvv !_CCCL_BUILTIN_FDIML vvv
   return ::fdiml(__x, __y);
@@ -83,7 +83,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline long double fdiml(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_FDIML)
+#  ifdef _CCCL_BUILTIN_FDIML
   return _CCCL_BUILTIN_FDIML(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_FDIML ^^^ / vvv !_CCCL_BUILTIN_FDIML vvv
   return ::fdiml(__x, __y);

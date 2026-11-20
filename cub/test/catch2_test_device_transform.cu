@@ -752,10 +752,10 @@ CUB_TEST("DeviceTransform::Transform buffer start alignment",
     10, // try to hit sub-size-alignment, small and full tile code paths
     130,
     100'000,
-    128 * 22 /* blackwell u8 tilesize */ + 2,
-    128 * 11 /* blackwell u16 tilesize */ + 2,
-    128 * 6 /* blackwell u32 tilesize */ + 2,
-    128 * 3 /* blackwell u64 tilesize */ + 2);
+    (128 * 22) /* blackwell u8 tilesize */ + 2,
+    (128 * 11) /* blackwell u16 tilesize */ + 2,
+    (128 * 6) /* blackwell u32 tilesize */ + 2,
+    (128 * 3) /* blackwell u64 tilesize */ + 2);
 
   // we should hit byte offsets up until 64 (128 is the highest bulk_copy_alignment)
   const int offset_a = GENERATE(1, 2, 4, 8, 15, 16, 32, 64, 127);
@@ -935,7 +935,7 @@ __global__ void fill_pdl_kernel(T* data, size_t n, T value)
 
   for (int j = 0; j < ItemsPerPthread; j++)
   {
-    const int i = threadIdx.x + j * ThreadsPerBlock;
+    const int i = threadIdx.x + (j * ThreadsPerBlock);
     if (i < n)
     {
       data[i] = value;
@@ -970,8 +970,11 @@ CUB_TEST("DeviceTransform::Transform PDL overlap check", "[device][transform]", 
   // completely async work of filling, 2x transforming and 1x reduction. we also avoid using the launch wrapper, since
   // it would synchronize
   fill_pdl(thrust::raw_pointer_cast(data.data()), num_items, 42);
-  cub::DeviceTransform::Transform(cuda::std::make_tuple(data.begin()), data.begin(), num_items, cuda::std::negate{});
-  cub::DeviceTransform::Transform(cuda::std::make_tuple(data.begin()), flags.begin(), num_items, _1 == -42);
+  REQUIRE(cudaSuccess
+          == cub::DeviceTransform::Transform(
+            cuda::std::make_tuple(data.begin()), data.begin(), num_items, cuda::std::negate{}));
+  REQUIRE(cudaSuccess
+          == cub::DeviceTransform::Transform(cuda::std::make_tuple(data.begin()), flags.begin(), num_items, _1 == -42));
   thrust::reduce_into(
     thrust::cuda::par_nosync, flags.begin(), flags.end(), result.begin(), true, cuda::std::logical_and{});
   REQUIRE(result[0]); // access finally synchronize

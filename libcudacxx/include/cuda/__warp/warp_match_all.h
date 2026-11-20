@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -27,6 +27,7 @@
 #  include <cuda/__type_traits/is_bitwise_comparable.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/__warp/lane_mask.h>
+#  include <cuda/std/__bit/clear_padding.h>
 #  include <cuda/std/__cstring/memcpy.h>
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__type_traits/is_same.h>
@@ -55,9 +56,9 @@ warp_match_all(const _Tp& __data, const lane_mask __lane_mask = lane_mask::all()
     constexpr int __ratio = ::cuda::ceil_div(sizeof(_Tp), sizeof(::cuda::std::uint32_t));
     ::cuda::std::uint32_t __array[__ratio]{};
 
-#  if defined(_CCCL_BUILTIN_CLEAR_PADDING)
-    auto __data_copy = __data;
-    _CCCL_BUILTIN_CLEAR_PADDING(&__data_copy);
+#  ifdef _CCCL_BUILTIN_CLEAR_PADDING
+    auto __data_copy = ::cuda::std::__create_copy(__data);
+    ::cuda::std::__clear_padding(__data_copy);
     const auto __data_ptr = ::cuda::std::addressof(__data_copy);
 #  else // ^^^ _CCCL_BUILTIN_CLEAR_PADDING ^^^ / vvv !_CCCL_BUILTIN_CLEAR_PADDING vvv
     static_assert(is_bitwise_comparable_v<_Tp>, "data must be bitwise comparable");

@@ -14,7 +14,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -218,7 +218,7 @@ struct __allocator_traits_rebind<_Alloc<_Tp, _Args...>, _Up, false>
 };
 
 template <class _Alloc, class _Tp>
-using __allocator_traits_rebind_t = typename __allocator_traits_rebind<_Alloc, _Tp>::type;
+using __allocator_traits_rebind_t _CCCL_NODEBUG = typename __allocator_traits_rebind<_Alloc, _Tp>::type;
 
 // __has_allocate_hint
 template <class _Alloc, class _SizeType, class _ConstVoidPtr, class = void>
@@ -346,13 +346,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   using rebind_traits = allocator_traits<rebind_alloc<_Tp>>;
 
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static pointer allocate(allocator_type& __a, size_type __n)
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_CXX20 static pointer allocate(allocator_type& __a, size_type __n)
   {
     return __a.allocate(__n);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static pointer
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_CXX20 static pointer
   allocate(allocator_type& __a, size_type __n, [[maybe_unused]] const_void_pointer __hint)
   {
     if constexpr (__has_allocate_hint<_Alloc, size_type, const_void_pointer>)

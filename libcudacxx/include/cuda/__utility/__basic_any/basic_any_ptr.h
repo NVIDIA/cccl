@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -54,7 +54,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface*>
   //!
   //! Constructors
   //!
-  __basic_any() = default;
+  _CCCL_HIDE_FROM_ABI __basic_any() = default;
 
   _CCCL_NODEBUG_HOST_DEVICE_API __basic_any(::cuda::std::nullptr_t) {}
 

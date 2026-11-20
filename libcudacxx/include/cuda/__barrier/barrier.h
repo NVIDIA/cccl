@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -36,6 +36,9 @@ class barrier : public ::cuda::std::__barrier_base<_CompletionF, _Sco>
   static_assert(_Sco != thread_scope_cluster, "cuda::barrier does not support thread_scope_cluster");
 
 public:
+  //! @brief The thread scope of the barrier.
+  static constexpr thread_scope scope = _Sco;
+
   _CCCL_HIDE_FROM_ABI barrier() = default;
 
   barrier(const barrier&)            = delete;

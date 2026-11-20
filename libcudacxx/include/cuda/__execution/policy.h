@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -28,7 +28,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION
 
-using __cub_parallel_unsequenced_policy =
+using __cub_parallel_unsequenced_policy _CCCL_NODEBUG =
   ::cuda::std::execution::__execution_policy_base<::cuda::std::execution::__with_backend<
     static_cast<uint32_t>(::cuda::std::execution::__execution_policy::__parallel_unsequenced),
     ::cuda::std::execution::__execution_backend::__cuda>()>;

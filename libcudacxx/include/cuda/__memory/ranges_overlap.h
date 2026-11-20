@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -74,7 +74,7 @@ ranges_overlap(_Tp __lhs_begin, _Tp __lhs_end, _Tp __rhs_begin, _Tp __rhs_end) n
       _CCCL_ASSERT(__rhs_begin <= __rhs_end, "rhs range is invalid");
       return __lhs_begin < __rhs_end && __rhs_begin < __lhs_end;
     }
-    else
+    else // NOLINT(readability-else-after-return)
     {
       const auto __ptr_lhs_begin = ::cuda::std::to_address(__lhs_begin);
       const auto __ptr_lhs_end   = ::cuda::std::to_address(__lhs_end);

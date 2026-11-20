@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -46,7 +46,7 @@ struct FindIfPolicy
   }
 
 #if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const FindIfPolicy& p)
+  _CCCL_HOST_API friend ::std::ostream& operator<<(::std::ostream& os, const FindIfPolicy& p)
   {
     return os
         << "FindIfPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
@@ -89,7 +89,7 @@ struct policy_selector
       // 1-byte and 4-byte inputs: intentionally left untuned
     }
     // FindIfPolicy (GTX670: 154.0 @ 48M 4B items) - single policy for all ccs
-    const auto scaled = scale_mem_bound(128, 16, input_type_size);
+    const auto scaled = _CUB::detail::scale_mem_bound(128, 16, input_type_size);
     return FindIfPolicy{scaled.threads_per_block, scaled.items_per_thread, 4, LOAD_LDG};
   }
 };

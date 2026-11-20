@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config/config.h> // IWYU pragma: export
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -20,5 +20,5 @@
 #include <thrust/version.h> // IWYU pragma: export
 
 #if _CCCL_HOSTED()
-#  include <cuda/__nvtx/nvtx.h>
+#  include <cuda/__nvtx/nvtx.h> // IWYU pragma: export
 #endif // _CCCL_HOSTED()

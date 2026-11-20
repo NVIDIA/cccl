@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -41,7 +41,7 @@ template <>
 struct _OrImpl<false>
 {
   template <class _Res, class...>
-  using _Result = _Res;
+  using _Result _CCCL_NODEBUG = _Res;
 };
 
 // _Or always performs lazy evaluation of its arguments.

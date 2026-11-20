@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -47,7 +47,7 @@
 #endif // _CCCL_ENABLE_FREESTANDING
 
 // In tile mode the builtin is tile annotated which can have unintended consequences in SIMT code with e.g int128
-#if defined(__CUDACC_TILE__)
+#ifdef __CUDACC_TILE__
 #  undef _CCCL_HAS_BUILTIN_STD_MOVE
 #  define _CCCL_HAS_BUILTIN_STD_MOVE() 0
 #endif // defined(__CUDACC_TILE__)
@@ -71,7 +71,7 @@
 #endif // _CCCL_FREESTANDING()
 
 // In tile mode the builtin is tile annotated which can have unintended consequences in SIMT code with e.g int128
-#if defined(__CUDACC_TILE__)
+#ifdef __CUDACC_TILE__
 #  undef _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT
 #  define _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() 0
 #endif // defined(__CUDACC_TILE__)
@@ -118,7 +118,7 @@ using ::std::move;
       // vvv !_CCCL_HAS_BUILTIN_STD_MOVE() || !(_CCCL_HAS_CONCEPTS() || _CCCL_COMPILER(NVRTC)) vvv
 
 template <class _Tp>
-[[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr remove_reference_t<_Tp>&& move(_Tp&& __t) noexcept
+[[nodiscard]] _CCCL_INTRINSIC _CCCL_NODEBUG_API constexpr remove_reference_t<_Tp>&& move(_Tp&& __t) noexcept
 {
   return static_cast<remove_reference_t<_Tp>&&>(__t);
 }
@@ -138,7 +138,8 @@ using __move_if_noexcept_result_t =
   conditional_t<!is_nothrow_move_constructible_v<_Tp> && is_copy_constructible_v<_Tp>, const _Tp&, _Tp&&>;
 
 template <class _Tp>
-[[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr __move_if_noexcept_result_t<_Tp> move_if_noexcept(_Tp& __x) noexcept
+[[nodiscard]] _CCCL_INTRINSIC _CCCL_NODEBUG_API constexpr __move_if_noexcept_result_t<_Tp>
+move_if_noexcept(_Tp& __x) noexcept
 {
   return ::cuda::std::move(__x);
 }

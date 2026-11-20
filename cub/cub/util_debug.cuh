@@ -14,7 +14,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -108,7 +108,7 @@ CUB_NAMESPACE_BEGIN
  *
  * \return The CUDA error.
  */
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cudaError_t
 Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]] int line)
 {
   // Clear the global CUDA error state which may have been set by the last
@@ -164,18 +164,17 @@ Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]]
  * \brief Debug macro
  */
 #ifndef CubDebug
-#  define CubDebug(e) /* NOLINT(readability-identifier-naming) */ \
-    CUB_NS_QUALIFIER::Debug((cudaError_t) (e), __FILE__, __LINE__)
+#  define CubDebug(e) /* NOLINT(readability-identifier-naming) */ _CUB::Debug((cudaError_t) (e), __FILE__, __LINE__)
 #endif
 
 /**
  * \brief Debug macro with exit
  */
 #ifndef CubDebugExit
-#  define CubDebugExit(e) /* NOLINT(readability-identifier-naming) */   \
-    if (CUB_NS_QUALIFIER::Debug((cudaError_t) (e), __FILE__, __LINE__)) \
-    {                                                                   \
-      exit(1);                                                          \
+#  define CubDebugExit(e) /* NOLINT(readability-identifier-naming) */ \
+    if (_CUB::Debug((cudaError_t) (e), __FILE__, __LINE__))           \
+    {                                                                 \
+      exit(1);                                                        \
     }
 #endif
 

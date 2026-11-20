@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -50,7 +50,7 @@ template <class _Tp,
           class = decltype(::new (::cuda::std::declval<void*>()) _Tp(::cuda::std::declval<_Args>()...))>
 _CCCL_API constexpr _Tp* construct_at(_Tp* __location, _Args&&... __args)
 {
-#    if defined(_CCCL_BUILTIN_ADDRESSOF)
+#    ifdef _CCCL_BUILTIN_ADDRESSOF
   return ::new (::cuda::std::__voidify(*__location)) _Tp(::cuda::std::forward<_Args>(__args)...);
 #    else
   return ::new (const_cast<void*>(static_cast<const volatile void*>(__location)))
@@ -87,7 +87,7 @@ struct __check_narrowing<_To, _From, void_t<decltype(_To{::cuda::std::declval<_F
 #else // ^^^ _CCCL_COMPILER(NVHPC, <, 25, 5) ^^^ / vvv !_CCCL_COMPILER(NVHPC, <, 25, 5) vvv
 // We cannot allow narrowing conversions between arithmetic types as the assignment will generate an error
 template <class _Tp, class... _Args>
-using __check_narrowing =
+using __check_narrowing _CCCL_NODEBUG =
   conditional_t<sizeof...(_Args) == 1, __cccl_internal::__is_non_narrowing_convertible<_Tp, _Args...>, true_type>;
 #endif // !_CCCL_COMPILER(NVHPC, <, 25, 5)
 

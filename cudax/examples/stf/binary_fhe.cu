@@ -31,7 +31,7 @@ public:
       : values(v)
       , ctx(ctx)
   {
-    l = ctx.logical_data(&values[0], values.size());
+    l = ctx.logical_data(values.data(), values.size());
   }
 
   void set_symbol(std::string s)

@@ -183,7 +183,7 @@ TEST_CASE("copy d2d large element 64 bytes", "[copy][d2d][large_element]")
   {
     for (int j = 0; j < 64; ++j)
     {
-      data[i].data[j] = static_cast<char>((i * 64 + j) % 128);
+      data[i].data[j] = static_cast<char>(((i * 64) + j) % 128);
     }
   }
   test_copy<layout_right>(data, N);
@@ -218,7 +218,7 @@ TEST_CASE("copy d2d large element 128 bytes 2D contiguous", "[copy][d2d][large_e
   {
     for (int j = 0; j < 128; ++j)
     {
-      data[i].data[j] = static_cast<char>((i * 128 + j) % 128);
+      data[i].data[j] = static_cast<char>(((i * 128) + j) % 128);
     }
   }
   test_copy<layout_right>(data, M, N);
@@ -248,7 +248,7 @@ TEST_CASE("copy d2d contiguous kernel remainder", "[copy][d2d][contiguous][remai
   {
     for (int j = 0; j < 128; ++j)
     {
-      h_src[i].data[j] = static_cast<char>((i * 128 + j) % 128);
+      h_src[i].data[j] = static_cast<char>(((i * 128) + j) % 128);
     }
   }
 
@@ -258,7 +258,7 @@ TEST_CASE("copy d2d contiguous kernel remainder", "[copy][d2d][contiguous][remai
   {
     for (int j = 0; j < N; ++j)
     {
-      h_expected[static_cast<std::size_t>(i) * Ld + j] = h_src[static_cast<std::size_t>(i) * Ld + j];
+      h_expected[(static_cast<std::size_t>(i) * Ld) + j] = h_src[(static_cast<std::size_t>(i) * Ld) + j];
     }
   }
 
@@ -489,7 +489,7 @@ TEST_CASE("copy d2d large count > INT_MAX", "[copy][d2d][large][.]")
 
   size_t free_mem  = 0;
   size_t total_mem = 0;
-  cudaMemGetInfo(&free_mem, &total_mem);
+  REQUIRE(cudaSuccess == cudaMemGetInfo(&free_mem, &total_mem));
   if (free_mem < required + (size_t{256} << 20))
   {
     SKIP("Not enough GPU memory (" << (free_mem >> 20) << " MB free, need ~" << (required >> 20) << " MB)");
@@ -525,7 +525,7 @@ TEST_CASE("copy d2d contiguous kernel outer size > max grid y", "[copy][d2d][con
 
   size_t free_mem  = 0;
   size_t total_mem = 0;
-  cudaMemGetInfo(&free_mem, &total_mem);
+  REQUIRE(cudaSuccess == cudaMemGetInfo(&free_mem, &total_mem));
   if (free_mem < required + (size_t{256} << 20))
   {
     SKIP("Not enough GPU memory (" << (free_mem >> 20) << " MB free, need ~" << (required >> 20) << " MB)");
@@ -548,5 +548,5 @@ TEST_CASE("copy d2d contiguous kernel outer size > max grid y", "[copy][d2d][con
 
   REQUIRE(d_dst[0] == static_cast<char>(0x42));
   REQUIRE(d_dst[size_t{M - 1} * N] == static_cast<char>(0x42));
-  REQUIRE(d_dst[size_t{M} * N - 1] == static_cast<char>(0x42));
+  REQUIRE(d_dst[(size_t{M} * N) - 1] == static_cast<char>(0x42));
 }

@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -14,4 +14,4 @@
 #endif // no system header
 
 // omp system inherits sequence
-#include <thrust/system/cpp/detail/sequence.h>
+#include <thrust/system/cpp/detail/sequence.h> // IWYU pragma: export

@@ -9,7 +9,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -73,7 +73,7 @@ CUB_NAMESPACE_BEGIN
 //! @param[in] items
 //!   Data to store
 template <typename T, int ItemsPerThread, typename OutputIteratorT>
-_CCCL_DEVICE _CCCL_FORCEINLINE void
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
 StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread])
 {
   OutputIteratorT thread_itr = block_itr + (linear_tid * ItemsPerThread); // NOLINT(bugprone-misplaced-widening-cast)
@@ -118,7 +118,7 @@ StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
 //! @param[in] valid_items
 //!   Number of valid items to write
 template <typename T, int ItemsPerThread, typename OutputIteratorT>
-_CCCL_DEVICE _CCCL_FORCEINLINE void
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
 StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
 {
   OutputIteratorT thread_itr = block_itr + (linear_tid * ItemsPerThread); // NOLINT(bugprone-misplaced-widening-cast)
@@ -170,7 +170,7 @@ StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
 //! @param[in] items
 //!   Data to store
 template <typename T, int ItemsPerThread>
-_CCCL_DEVICE _CCCL_FORCEINLINE void
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
 StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerThread])
 {
   // Find biggest memory access word that T is a whole multiple of
@@ -182,7 +182,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
   using vector_t = typename CubVector<device_word_t, vector_size>::Type;
 
   // The staging array is accessed as vectors and as T, so it needs the stricter of the two alignments
-  constexpr auto staging_alignment = ::cuda::std::max(alignof(vector_t), alignof(T));
+  constexpr auto staging_alignment = (::cuda::std::max) (alignof(vector_t), alignof(T));
 
   // Add the alignment check to ensure the vectorized storing can proceed.
   if (::cuda::std::is_sufficiently_aligned<staging_alignment>(block_ptr))
@@ -197,12 +197,12 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
     }
 
     // Direct-store using vector types
-    StoreDirectBlocked(linear_tid, reinterpret_cast<vector_t*>(block_ptr), vec_items);
+    _CUB::StoreDirectBlocked(linear_tid, reinterpret_cast<vector_t*>(block_ptr), vec_items);
   }
   else
   {
     // Direct-store using original type when the address is misaligned
-    StoreDirectBlocked(linear_tid, block_ptr, items);
+    _CUB::StoreDirectBlocked(linear_tid, block_ptr, items);
   }
 }
 
@@ -242,7 +242,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
 //! @param[in] items
 //!   Data to store
 template <int BlockThreads, typename T, int ItemsPerThread, typename OutputIteratorT>
-_CCCL_DEVICE _CCCL_FORCEINLINE void
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
 StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread])
 {
   OutputIteratorT thread_itr = block_itr + linear_tid;
@@ -290,7 +290,7 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
 //! @param[in] valid_items
 //!   Number of valid items to write
 template <int BlockThreads, typename T, int ItemsPerThread, typename OutputIteratorT>
-_CCCL_DEVICE _CCCL_FORCEINLINE void
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
 StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
 {
   OutputIteratorT thread_itr = block_itr + linear_tid;
@@ -344,7 +344,7 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
 //! @param[out] items
 //!   Data to load
 template <typename T, int ItemsPerThread, typename OutputIteratorT>
-_CCCL_DEVICE _CCCL_FORCEINLINE void
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
 StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread])
 {
   const int tid         = linear_tid & (detail::warp_threads - 1);
@@ -398,7 +398,7 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[Ite
 //! @param[in] valid_items
 //!   Number of valid items to write
 template <typename T, int ItemsPerThread, typename OutputIteratorT>
-_CCCL_DEVICE _CCCL_FORCEINLINE void
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
 StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
 {
   const int tid         = linear_tid & (detail::warp_threads - 1);
@@ -577,9 +577,9 @@ namespace detail
 }
 } // namespace detail
 
-inline ::std::ostream& operator<<(::std::ostream& os, BlockStoreAlgorithm algo)
+_CCCL_HOST_API inline ::std::ostream& operator<<(::std::ostream& os, BlockStoreAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
@@ -587,12 +587,12 @@ CUB_NAMESPACE_END
 
 #if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
 template <::cuda::std::same_as<char> CharT>
-struct std::formatter<CUB_NS_QUALIFIER::BlockStoreAlgorithm, CharT> : formatter<const CharT*, CharT>
+struct std::formatter<_CUB::BlockStoreAlgorithm, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const CUB_NS_QUALIFIER::BlockStoreAlgorithm& algo, FmtCtx& ctx) const
+  _CCCL_HOST_API auto format(const _CUB::BlockStoreAlgorithm& algo, FmtCtx& ctx) const
   {
-    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+    return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(algo), ctx);
   }
 };
 #endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
@@ -732,9 +732,9 @@ class BlockStore
     }
   }
 
-  using _TempStorage = decltype(temp_storage_helper());
+  using _TempStorage _CCCL_NODEBUG = decltype(temp_storage_helper());
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
   {
     __shared__ _TempStorage private_storage;
     return private_storage;
@@ -759,9 +759,9 @@ public:
    *    First appears in CUDA Toolkit 12.3.
    * @endrst
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockStore()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockStore()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
@@ -775,9 +775,9 @@ public:
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockStore(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockStore(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}
@@ -833,15 +833,15 @@ public:
   //! @param[in] items
   //!   Data to store
   template <typename OutputIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
   {
     if constexpr (Algorithm == BLOCK_STORE_DIRECT)
     {
-      StoreDirectBlocked(linear_tid, block_itr, items);
+      _CUB::StoreDirectBlocked(linear_tid, block_itr, items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_STRIPED)
     {
-      StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
+      _CUB::StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_VECTORIZE)
     {
@@ -851,22 +851,22 @@ public:
                     && !::cuda::std::is_volatile_v<
                        ::cuda::std::remove_reference_t<detail::it_reference_t<OutputIteratorT>>>)
       {
-        StoreDirectBlockedVectorized(linear_tid, ::cuda::std::to_address(block_itr), items);
+        _CUB::StoreDirectBlockedVectorized(linear_tid, ::cuda::std::to_address(block_itr), items);
       }
       else
       {
-        StoreDirectBlocked(linear_tid, block_itr, items);
+        _CUB::StoreDirectBlocked(linear_tid, block_itr, items);
       }
     }
     else if constexpr (Algorithm == BLOCK_STORE_TRANSPOSE)
     {
       block_exchange(temp_storage).BlockedToStriped(items);
-      StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
+      _CUB::StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE || Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
     {
       block_exchange(temp_storage).BlockedToWarpStriped(items);
-      StoreDirectWarpStriped(linear_tid, block_itr, items);
+      _CUB::StoreDirectWarpStriped(linear_tid, block_itr, items);
     }
   }
 
@@ -923,15 +923,15 @@ public:
   //! @param[in] valid_items
   //!   Number of valid items to write
   template <typename OutputIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
   {
     if constexpr (Algorithm == BLOCK_STORE_DIRECT || Algorithm == BLOCK_STORE_VECTORIZE)
     {
-      StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
+      _CUB::StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_STRIPED)
     {
-      StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, valid_items);
+      _CUB::StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, valid_items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_TRANSPOSE)
     {
@@ -942,7 +942,7 @@ public:
         temp_storage.valid_items = valid_items;
       }
       __syncthreads();
-      StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, temp_storage.valid_items);
+      _CUB::StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, temp_storage.valid_items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE || Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
     {
@@ -953,7 +953,7 @@ public:
         temp_storage.valid_items = valid_items;
       }
       __syncthreads();
-      StoreDirectWarpStriped(linear_tid, block_itr, items, temp_storage.valid_items);
+      _CUB::StoreDirectWarpStriped(linear_tid, block_itr, items, temp_storage.valid_items);
     }
   }
 
@@ -964,7 +964,8 @@ public:
 template <class Policy, class It, class T = cub::detail::it_value_t<It>>
 struct BlockStoreType
 {
-  using type = cub::BlockStore<T, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, Policy::STORE_ALGORITHM>;
+  using type _CCCL_NODEBUG =
+    cub::BlockStore<T, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, Policy::STORE_ALGORITHM>;
 };
 #endif // _CCCL_DOXYGEN_INVOKED
 

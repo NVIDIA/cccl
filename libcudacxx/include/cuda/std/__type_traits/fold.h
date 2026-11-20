@@ -12,7 +12,7 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -35,10 +35,10 @@ template <bool... _Preds>
 inline constexpr bool __fold_or_v = (_Preds || ...);
 
 template <bool... _Preds>
-using __fold_and = bool_constant<bool((_Preds && ...))>; // cast to bool to avoid error from gcc < 8
+using __fold_and _CCCL_NODEBUG = bool_constant<bool((_Preds && ...))>; // cast to bool to avoid error from gcc < 8
 
 template <bool... _Preds>
-using __fold_or = bool_constant<bool((_Preds || ...))>; // cast to bool to avoid error from gcc < 8
+using __fold_or _CCCL_NODEBUG = bool_constant<bool((_Preds || ...))>; // cast to bool to avoid error from gcc < 8
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
