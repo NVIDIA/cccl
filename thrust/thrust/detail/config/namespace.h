@@ -5,7 +5,7 @@
 
 // Internal config header that is only included through thrust/detail/config/config.h
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -93,7 +93,7 @@
 #    define THRUST_DETAIL_ABI_NS_BEGIN
 #    define THRUST_DETAIL_ABI_NS_END
 #  else // not defined(THRUST_DISABLE_ABI_NAMESPACE)
-#    if defined(_NVHPC_CUDA)
+#    ifdef _NVHPC_CUDA
 #      define THRUST_DETAIL_ABI_NS_BEGIN                                                                            \
         inline namespace _CCCL_PP_CAT(                                                                              \
           _CCCL_PP_CAT(_CCCL_PP_CAT(_V_, THRUST_VERSION), _CCCL_PP_SPLICE_WITH(_, _SM, NV_TARGET_SM_INTEGER_LIST)), \

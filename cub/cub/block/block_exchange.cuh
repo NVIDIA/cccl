@@ -10,7 +10,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -129,9 +129,9 @@ class BlockExchange
   static constexpr int TILE_ITEMS  = BLOCK_THREADS * ItemsPerThread;
   static constexpr int TIME_SLICES = WarpTimeSlicing ? WARPS : 1;
   static constexpr int TIME_SLICED_THREADS =
-    WarpTimeSlicing ? ::cuda::std::min(BLOCK_THREADS, WARP_THREADS) : BLOCK_THREADS;
+    WarpTimeSlicing ? (::cuda::std::min) (BLOCK_THREADS, WARP_THREADS) : BLOCK_THREADS;
   static constexpr int TIME_SLICED_ITEMS        = TIME_SLICED_THREADS * ItemsPerThread;
-  static constexpr int WARP_TIME_SLICED_THREADS = ::cuda::std::min(BLOCK_THREADS, WARP_THREADS);
+  static constexpr int WARP_TIME_SLICED_THREADS = (::cuda::std::min) (BLOCK_THREADS, WARP_THREADS);
   static constexpr int WARP_TIME_SLICED_ITEMS   = WARP_TIME_SLICED_THREADS * ItemsPerThread;
 
   // Insert padding to avoid bank conflicts during raking when items per thread is a power of two and > 4 (otherwise

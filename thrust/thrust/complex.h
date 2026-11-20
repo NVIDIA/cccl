@@ -10,7 +10,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -18,13 +18,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/type_traits.h>
-#include <thrust/type_traits/is_trivially_relocatable.h>
-
 #include <cuda/std/__host_stdlib/istream>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/common_type.h>
-#include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__type_traits/remove_reference.h> // IWYU pragma: keep
 
 #if _CCCL_HOSTED()
 #  include <complex>
@@ -1153,7 +1150,7 @@ _CCCL_HOST_DEVICE_API bool operator!=(const complex<T0>& x, const T1& y);
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/complex/complex.inl>
+#include <thrust/detail/complex/complex.inl> // IWYU pragma: export
 
 #undef THRUST_STD_COMPLEX_REAL
 #undef THRUST_STD_COMPLEX_IMAG

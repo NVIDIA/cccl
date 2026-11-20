@@ -19,7 +19,7 @@
 #include <cuda/std/__cccl/system_header.h>
 
 // We want to ensure that all warning emitting from this header are suppressed
-#if defined(_CCCL_FORCE_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_FORCE_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_FORCE_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header

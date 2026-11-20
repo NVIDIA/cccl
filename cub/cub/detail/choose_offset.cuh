@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -59,7 +59,7 @@ template <::cuda::std::uint64_t MaxItems>
 struct choose_offset_for_max
 {
   using type _CCCL_NODEBUG =
-    ::cuda::std::_If<(MaxItems <= ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max()),
+    ::cuda::std::_If<(MaxItems <= (::cuda::std::numeric_limits<::cuda::std::uint32_t>::max)()),
                      ::cuda::std::uint32_t,
                      unsigned long long>;
 };
@@ -123,7 +123,7 @@ struct choose_signed_offset
   {
     _CCCL_DIAG_PUSH
     _CCCL_DIAG_SUPPRESS_MSVC(4127) /* conditional expression is constant */
-    if (sizeof(NumItemsT) >= 8 && num_items > static_cast<NumItemsT>(::cuda::std::numeric_limits<type>::max()))
+    if (sizeof(NumItemsT) >= 8 && num_items > static_cast<NumItemsT>((::cuda::std::numeric_limits<type>::max)()))
     {
       return cudaErrorInvalidValue;
     }

@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -94,7 +94,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
   using local_offset_t  = ::cuda::std::int32_t;
   using global_offset_t = OffsetT;
   static constexpr bool use_streaming_invocation =
-    ::cuda::std::numeric_limits<OffsetT>::max() > ::cuda::std::numeric_limits<local_offset_t>::max();
+    (::cuda::std::numeric_limits<OffsetT>::max)() > (::cuda::std::numeric_limits<local_offset_t>::max)();
   using streaming_context_t = ::cuda::std::
     conditional_t<use_streaming_invocation, streaming_context<KeysInputIteratorT, AccumT, global_offset_t>, NullType>;
   using ScanTileStateT                                      = ReduceByKeyScanTileState<AccumT, local_offset_t>;
@@ -129,12 +129,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
   auto capped_num_items_per_invocation = num_items;
   if constexpr (use_streaming_invocation)
   {
-    capped_num_items_per_invocation = static_cast<global_offset_t>(::cuda::std::numeric_limits<local_offset_t>::max());
+    capped_num_items_per_invocation =
+      static_cast<global_offset_t>((::cuda::std::numeric_limits<local_offset_t>::max)());
     capped_num_items_per_invocation -= (capped_num_items_per_invocation % tile_size);
   }
 
   const auto max_num_items_per_invocation =
-    use_streaming_invocation ? ::cuda::std::min(capped_num_items_per_invocation, num_items) : num_items;
+    use_streaming_invocation ? (::cuda::std::min) (capped_num_items_per_invocation, num_items) : num_items;
   auto const num_partitions =
     (num_items == 0) ? global_offset_t{1} : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
 
@@ -175,7 +176,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
       return error;
     }
 
-    const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
+    const int init_grid_size = (::cuda::std::max) (1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
     _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
     if (const auto error = CubDebug(
           detail::TripleChevronFactory{}(init_grid_size, init_kernel_threads, 0, stream)

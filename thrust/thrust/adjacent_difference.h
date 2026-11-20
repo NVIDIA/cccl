@@ -9,7 +9,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#ifdef _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
 #  pragma clang system_header
@@ -254,4 +254,4 @@ adjacent_difference(InputIterator first, InputIterator last, OutputIterator resu
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/adjacent_difference.inl>
+#include <thrust/detail/adjacent_difference.inl> // IWYU pragma: export
