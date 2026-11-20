@@ -4,6 +4,7 @@
 #
 # Usage:
 #   ./gen_docs.bash                    - Build documentation
+#   ./gen_docs.bash --label 3.4.2      - Build as release 3.4.2 (default: unstable)
 #   ./gen_docs.bash --allow-dep-install - Build, auto-install missing system deps
 #   ./gen_docs.bash clean              - Clean build directory
 #   ./gen_docs.bash clean --all        - Clean build directory and Doxygen build
@@ -17,27 +18,33 @@ set -euo pipefail
 ALLOW_DEP_INSTALL=false
 CLEAN=false
 CLEAN_ALL=false
+LABEL=""
 
-for arg in "$@"; do
-    case "$arg" in
+while [[ $# -gt 0 ]]; do
+    case "$1" in
         --allow-dep-install) ALLOW_DEP_INSTALL=true ;;
         clean)               CLEAN=true ;;
         --all)               CLEAN_ALL=true ;;
-        *)                   echo "Unknown argument: $arg"; exit 1 ;;
+        --label)             LABEL="${2:-}"; shift ;;
+        --label=*)           LABEL="${1#*=}" ;;
+        *)                   echo "Unknown argument: $1"; exit 1 ;;
     esac
+    shift
 done
 
 SCRIPT_PATH=$(cd "$(dirname "${0}")"; pwd -P)
-cd "$SCRIPT_PATH"
+# Work in the C++ Sphinx project. Files shared with the other builds are in docs/.
+CPP_DIR="${SCRIPT_PATH}/cpp"
+cd "$CPP_DIR"
 
 BUILDDIR="_build"
-DOXYGEN_BUILD_DIR="${SCRIPT_PATH}/_build/doxygen-build"
-DOXYGEN_SRC_DIR="${SCRIPT_PATH}/_build/doxygen-src"
+DOXYGEN_BUILD_DIR="${CPP_DIR}/_build/doxygen-build"
+DOXYGEN_SRC_DIR="${CPP_DIR}/_build/doxygen-src"
 
 # Handle clean command (before dep checks — clean doesn't need deps)
 if [[ "$CLEAN" = true ]]; then
     echo "Cleaning build directory..."
-    rm -rf "${BUILDDIR:?}"/*
+    rm -rf "${BUILDDIR:?}"/* "${SCRIPT_PATH}/_build/artifacts/docs/cpp"
     if [[ "$CLEAN_ALL" = true ]]; then
         echo "Also removing Doxygen source and build directories..."
         rm -rf "${DOXYGEN_SRC_DIR}" "${DOXYGEN_BUILD_DIR}"
@@ -123,7 +130,7 @@ if [[ -z "$(find img -name '*.png')" ]]; then
     wget -q https://docs.nvidia.com/cuda/_static/Logo_and_CUDA.png -O img/logo.png
 
     # Parse files and collects unique names ending with .png
-    imgs="$(grep -R -o -h '[[:alpha:][:digit:]_]*.png' ../cub/cub | uniq)"
+    imgs="$(grep -R -o -h '[[:alpha:][:digit:]_]*.png' ../../cub/cub | uniq)"
     declare -a imgs="($imgs)"
     imgs+=( "cub_overview.png" "nested_composition.png" "tile.png" "blocked.png" "striped.png" )
 
@@ -184,7 +191,7 @@ build_doxygen() {
     ninja
 
     echo "Doxygen 1.9.6 built successfully at ${DOXYGEN_BIN}"
-    cd "${SCRIPT_PATH}"
+    cd "${CPP_DIR}"
 }
 
 # Check if custom Doxygen needs to be built
@@ -200,23 +207,23 @@ fi
 echo "Checking for documentation dependencies..."
 
 # Use virtual environment if it exists, otherwise create one
-if [[ -d "env" ]]; then
+if [[ -d "${SCRIPT_PATH}/env" ]]; then
     echo "Using existing virtual environment..."
     # shellcheck disable=SC1091
-    source env/bin/activate
+    source "${SCRIPT_PATH}/env/bin/activate"
 else
     echo "Creating virtual environment..."
-    python3 -m venv env
+    python3 -m venv "${SCRIPT_PATH}/env"
     # shellcheck disable=SC1091
-    source env/bin/activate
+    source "${SCRIPT_PATH}/env/bin/activate"
 fi
 
 # Check if dependencies are installed in the virtual environment
 if ! python -c "import sphinx" 2>/dev/null; then
     echo "Installing documentation dependencies..."
-    python3 -m pip install -r requirements.txt || {
+    python3 -m pip install -r "${SCRIPT_PATH}/requirements.txt" || {
         echo "Error: Failed to install documentation dependencies"
-        echo "Please install manually: pip install -r requirements.txt"
+        echo "Please install manually: pip install -r docs/requirements.txt"
         exit 1
     }
 fi
@@ -260,12 +267,16 @@ else
     echo "Skipping Doxygen (not installed)"
 fi
 
-VERSION="${SPHINX_CCCL_VER:-unstable}"
-BASE_URL="${CCCL_DOCS_BASE_URL:-https://nvidia.github.io/cccl/}"
-BASE_URL="${BASE_URL%/}/"
-IS_LATEST="${CCCL_DOCS_IS_LATEST:-true}"
+VERSION="${LABEL:-${SPHINX_CCCL_VER:-unstable}}"
+if [[ ! "${VERSION}" =~ ^(unstable|[0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+    echo "Error: the version must be 'unstable' or MAJOR.MINOR.PATCH, got '${VERSION}'." >&2
+    exit 1
+fi
+# conf.py reads the version from this variable.
+export SPHINX_CCCL_VER="${VERSION}"
 
-HTML_DIR="${BUILDDIR}/html"
+# This folder becomes /cccl/cpp/ in the published site.
+HTML_DIR="${SCRIPT_PATH}/_build/artifacts/docs/cpp"
 VERSIONED_HTML_DIR="${HTML_DIR}/${VERSION}"
 
 # Full builds validate the regenerated API sources from a fresh Sphinx state.
@@ -280,36 +291,13 @@ mkdir -p "${VERSIONED_HTML_DIR}"
 # Use the virtual environment's Python
 python -m sphinx.cmd.build -b html -d "${BUILDDIR}/doctrees" -j auto "." "${VERSIONED_HTML_DIR}" "${SPHINXOPTS[@]}"
 
-# Copy objects.inv to the root to support intersphinx consumers
-if [[ -f "${VERSIONED_HTML_DIR}/objects.inv" ]]; then
+# /cccl/cpp/ redirects to the unstable docs.
+cp "${SCRIPT_PATH}/common/redirect.html" "${HTML_DIR}/index.html"
+
+# Copy objects.inv to the root to support intersphinx consumers. Only the
+# unstable build updates it.
+if [[ "${VERSION}" == "unstable" && -f "${VERSIONED_HTML_DIR}/objects.inv" ]]; then
     cp "${VERSIONED_HTML_DIR}/objects.inv" "${HTML_DIR}/objects.inv"
 fi
 
-# Scrape docs to generate page list
-./scrape_docs.bash "${VERSIONED_HTML_DIR}"
-
-cp "./404.html" "${HTML_DIR}/404.html"
-cp "./index.html" "${HTML_DIR}/index.html"
-
-# Provide version metadata for the theme switcher
-cat > "${HTML_DIR}/nv-versions.json" <<EOF
-[
-  {
-    "name": "${VERSION}",
-    "version": "${VERSION}",
-    "url": "${BASE_URL}${VERSION}/",
-    "latest": ${IS_LATEST},
-    "preferred": ${IS_LATEST}
-  }
-]
-EOF
-
-cat > "${HTML_DIR}/versions.json" <<EOF
-{
-  "${VERSION}": "${VERSION}"
-}
-EOF
-
-touch "${HTML_DIR}/.nojekyll"
-
-echo "Documentation build complete! HTML output is in ${BUILDDIR}/html/"
+echo "C++ documentation build complete: ${VERSIONED_HTML_DIR}"

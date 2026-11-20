@@ -95,7 +95,7 @@ def reduce_batched(
     Notes
     -----
     See the :doc:`Batched Warp Reduction visualization
-    </python/coop_cutlass/visualizations/reduce-batched>` for lane and result
+    </coop_cutlass/visualizations/reduce-batched>` for lane and result
     ownership.
 
     Examples

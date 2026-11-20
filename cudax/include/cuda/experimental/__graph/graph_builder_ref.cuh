@@ -72,10 +72,6 @@ namespace cuda::experimental
 //! - Methods that interact with CUDA APIs may throw ``cuda::std::cuda_error`` if the
 //!   underlying CUDA operation fails.
 //! - Move operations leave the source object in a valid but unspecified state.
-//!
-//! \rst
-//! .. _cudax-graph-graph-builder:
-//! \endrst
 struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder_ref
 {
   //! \brief Constructs a new, empty CUDA graph.

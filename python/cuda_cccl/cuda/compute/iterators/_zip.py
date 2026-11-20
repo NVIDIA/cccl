@@ -21,7 +21,7 @@ class ZipIterator(IteratorBase):
 
     At each position, yields a tuple of values from all underlying iterators.
 
-    Similar to `thrust::zip_iterator <https://nvidia.github.io/cccl/thrust/api/classthrust_1_1zip__iterator.html>`_.
+    Similar to `thrust::zip_iterator <https://nvidia.github.io/cccl/cpp/unstable/thrust/api/classthrust_1_1zip__iterator.html>`_.
 
     Example:
         The code snippet below demonstrates how to zip together an array and a

@@ -1,10 +1,10 @@
 # CUDA STF Python Package
 
-[`cuda.stf._experimental`](https://nvidia.github.io/cccl/python/stf.html)
+[`cuda.stf._experimental`](https://nvidia.github.io/cccl/python/unstable/stf.html)
 provides Python bindings to **CUDASTF (Sequential Task Flow)**: you define logical
 data and submit tasks that read or write that data, and STF infers the
 dependencies and orchestrates execution and data movement. It is part of the
-[CUDA Core Compute Libraries](https://nvidia.github.io/cccl/cpp.html#cccl-cpp-libraries).
+[CUDA Core Compute Libraries](https://nvidia.github.io/cccl/cpp/unstable/).
 
 The API is exposed under the `_experimental` subpackage because it is still
 evolving and may change without notice. CUDASTF is currently **Linux-only**.
@@ -87,6 +87,6 @@ owned    = torch.from_dlpack(arr)          # DLPack: the tensor keeps it alive
 
 For complete documentation, examples, and API reference, visit:
 
-- **Full Documentation**: [nvidia.github.io/cccl/python/stf.html](https://nvidia.github.io/cccl/python/stf.html)
+- **Full Documentation**: [nvidia.github.io/cccl/python/unstable/stf.html](https://nvidia.github.io/cccl/python/unstable/stf.html)
 - **Repository**: [github.com/NVIDIA/cccl](https://github.com/NVIDIA/cccl)
 - **Examples**: [github.com/NVIDIA/cccl/tree/main/python/cuda_stf/tests/stf](https://github.com/NVIDIA/cccl/tree/main/python/cuda_stf/tests/stf)

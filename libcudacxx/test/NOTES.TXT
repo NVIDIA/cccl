@@ -13,7 +13,7 @@ an LLVM release.
 
 1. Update _LIBCUDACXX_VERSION in `__config`
 2. Update the __cccl_version file.
-3. Update the version number in `docs/conf.py`
+3. Update the version number in `docs/cpp/conf.py`
 4. Create ABI lists for the previous release under `lib/abi`
 
 //===---------------------------------------------------------------------===//

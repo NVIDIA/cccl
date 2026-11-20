@@ -7,7 +7,7 @@ The ``cuda.stf._experimental`` module provides a Python binding to the **Sequent
 Task Flow (STF)** model for CUDA: you define logical data and submit tasks that read
 or write that data; STF infers dependencies and orchestrates execution and data
 movement. For the full description of the model, see the
-:ref:`C++ CUDASTF documentation <stf>`.
+:doc:`C++ CUDASTF documentation <cpp:cudax/stf>`.
 
 Install the module with ``pip install cuda-stf[cu13]`` (or ``[cu12]``). Install
 ``cuda-cccl`` as well when using ``cuda.compute`` or compiling external C++ code
@@ -439,7 +439,7 @@ tokens, multi-GPU, FDTD), and ``examples/`` holds larger end-to-end programs
 (conjugate gradient, Cholesky, Burger, neural ODE).
 
 For the full STF programming model, graph visualization, and C++ API, see
-:ref:`CUDASTF (C++) <stf>`.
+:doc:`CUDASTF (C++) <cpp:cudax/stf>`.
 
 API Reference
 -------------

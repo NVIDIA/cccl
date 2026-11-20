@@ -42,10 +42,6 @@ namespace cuda::experimental
 //! \note The `graph` object is not directly constructible. One is obtained
 //!       by calling the `instantiate()` method on a `graph_builder` object.
 //! \sa cuda::experimental::graph_builder
-//!
-//! \rst
-//! .. _cudax-graph-graph:
-//! \endrst
 struct _CCCL_TYPE_VISIBILITY_DEFAULT graph
 {
   //! \brief Move constructor for `graph`.
