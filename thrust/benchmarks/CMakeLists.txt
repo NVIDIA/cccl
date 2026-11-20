@@ -25,11 +25,20 @@ endfunction()
 
 set(SASS_OBJECTS_DIR "${CMAKE_CURRENT_BINARY_DIR}/objects")
 
-function(add_bench target_name bench_name bench_src config_device)
+# With own_main TRUE, NVBench's main() is compiled as one of the benchmark's own
+# sources instead of coming from nvbench::main.
+function(add_bench target_name bench_name bench_src config_device own_main)
   set(bench_target ${bench_name})
   set(${target_name} ${bench_target} PARENT_SCOPE)
 
-  cccl_add_executable(${bench_target} SOURCES "${bench_src}")
+  set(bench_srcs "${bench_src}")
+  set(nvbench_target nvbench::main)
+  if (own_main)
+    list(APPEND bench_srcs "${benches_root}/hpx_nvbench_main.cpp")
+    set(nvbench_target nvbench::nvbench)
+  endif()
+
+  cccl_add_executable(${bench_target} SOURCES ${bench_srcs})
   if ("${config_device}" STREQUAL "CUDA")
     # Target objects exclude linked helper kernels from SASS comparisons.
     file(
@@ -41,14 +50,16 @@ function(add_bench target_name bench_name bench_src config_device)
     ${bench_target}
     PRIVATE #
       cccl.nvbench_helper
-      nvbench::main
+      ${nvbench_target}
   )
 endfunction()
 
 function(thrust_wrap_bench_in_cpp cpp_file_var cu_file thrust_target)
   thrust_get_target_property(prefix ${thrust_target} PREFIX)
   set(wrapped_source_file "${cu_file}")
-  set(cpp_file "${CMAKE_CURRENT_BINARY_DIR}/${prefix}/${cu_file}.cpp")
+  # relative to the benchmarks: an absolute path can't be appended on Windows
+  file(RELATIVE_PATH cu_file_rel "${benches_root}" "${cu_file}")
+  set(cpp_file "${CMAKE_CURRENT_BINARY_DIR}/${prefix}/${cu_file_rel}.cpp")
   configure_file(
     "${Thrust_SOURCE_DIR}/cmake/wrap_source_file.cpp.in"
     "${cpp_file}"
@@ -65,7 +76,20 @@ function(add_bench_dir bench_dir)
   foreach (bench_src IN LISTS bench_srcs)
     foreach (thrust_target IN LISTS THRUST_TARGETS)
       thrust_get_target_property(config_prefix ${thrust_target} PREFIX)
+      thrust_get_target_property(config_host ${thrust_target} HOST)
       thrust_get_target_property(config_device ${thrust_target} DEVICE)
+
+      # HPX's runtime has to run before the benchmark's main() does. With the
+      # MSVC ABI HPX::auto_wrap_main can't wrap a main() from a library, so
+      # NVBench's main() is compiled into the benchmark (see add_bench).
+      set(uses_hpx FALSE)
+      if ("${config_host}" STREQUAL "HPX" OR "${config_device}" STREQUAL "HPX")
+        set(uses_hpx TRUE)
+      endif()
+      set(own_main FALSE)
+      if (uses_hpx AND (MSVC OR CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC"))
+        set(own_main TRUE)
+      endif()
 
       # Wrap the .cu file in .cpp for non-CUDA backends
       if ("CUDA" STREQUAL "${config_device}")
@@ -79,12 +103,12 @@ function(add_bench_dir bench_dir)
       register_cccl_benchmark("${bench_name}" "")
 
       string(APPEND bench_name ".base")
-      add_bench(base_bench_target ${bench_name} "${real_bench_src}" "${config_device}")
+      add_bench(base_bench_target ${bench_name} "${real_bench_src}" "${config_device}" ${own_main})
       cccl_configure_target(${bench_name})
       target_link_libraries(${bench_name} PRIVATE ${thrust_target})
 
       # HPX Integration: Ensures HPX runtime is started
-      if (("${config_host}" STREQUAL "HPX" OR "${config_device}" STREQUAL "HPX")
+      if (uses_hpx
 	      AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))
 	    # Wrap main so HPX's __wrap_main runs before nvbench main.
 	    target_link_libraries(${bench_name} PRIVATE HPX::hpx HPX::auto_wrap_main)
