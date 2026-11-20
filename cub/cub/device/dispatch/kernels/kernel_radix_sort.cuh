@@ -34,6 +34,7 @@
 #include <cub/grid/grid_mapping.cuh>
 #include <cub/util_arch.cuh>
 
+#include <cuda/__memory/uninitialized.h>
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cstddef/types.h>
@@ -405,8 +406,12 @@ __launch_bounds__(_CUB::detail::current_policy<PolicySelector>().single_tile.thr
   } temp_storage;
 
   // Keys and values for the block
-  KeyT keys[ITEMS_PER_THREAD];
-  ValueT values[ITEMS_PER_THREAD];
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+  ::cuda::__uninitialized<KeyT[ITEMS_PER_THREAD]> keys_storage;
+  auto& keys = keys_storage.alias();
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+  ::cuda::__uninitialized<ValueT[ITEMS_PER_THREAD]> values_storage;
+  auto& values = values_storage.alias();
 
   // Get default (min/max) value for out-of-bounds keys
   bit_ordered_type default_key_bits =

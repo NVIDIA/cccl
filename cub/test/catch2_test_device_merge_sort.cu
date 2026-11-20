@@ -10,21 +10,19 @@
 #include <thrust/equal.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/random.h>
-#include <thrust/reverse.h>
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
-#include <thrust/tabulate.h>
 
 #include <cuda/buffer>
 #include <cuda/iterator>
 #include <cuda/std/iterator>
-#include <cuda/std/type_traits>
 
 #include <algorithm>
 
 #include "catch2_large_array_sort_helper.cuh"
 #include "catch2_test_device_merge_sort_common.cuh"
 #include "catch2_test_launch_helper.h"
+#include "catch2_test_non_default_constructible.cuh"
 #include "cub_test_macros.h"
 #include <c2h/catch2_allocation_failure.h>
 #include <c2h/device_and_stream.h>
@@ -502,67 +500,6 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
       c2h::skip_if_allocation_failure();
     }
   }
-}
-
-// A trivially copyable type without a default constructor
-struct not_default_constructible_t
-{
-  int value;
-
-  __host__ __device__ explicit not_default_constructible_t(int v)
-      : value(v)
-  {}
-
-  __host__ __device__ friend bool
-  operator==(const not_default_constructible_t& lhs, const not_default_constructible_t& rhs)
-  {
-    return lhs.value == rhs.value;
-  }
-
-  __host__ __device__ friend bool
-  operator!=(const not_default_constructible_t& lhs, const not_default_constructible_t& rhs)
-  {
-    return !(lhs == rhs);
-  }
-
-  __host__ __device__ friend bool
-  operator<(const not_default_constructible_t& lhs, const not_default_constructible_t& rhs)
-  {
-    return lhs.value < rhs.value;
-  }
-
-  // for printing mismatches
-  friend std::ostream& operator<<(std::ostream& os, const not_default_constructible_t& v)
-  {
-    return os << v.value;
-  }
-};
-
-static_assert(!cuda::std::is_default_constructible_v<not_default_constructible_t>);
-static_assert(cuda::std::is_trivially_copyable_v<not_default_constructible_t>);
-
-struct make_not_default_constructible_op_t
-{
-  __host__ __device__ not_default_constructible_t operator()(int i) const
-  {
-    return not_default_constructible_t{i};
-  }
-};
-
-// Device storage for not_default_constructible_t, which thrust::device_vector cannot hold. Elements are constructed on
-// the device. Holds 0, 1, ..., num_items - 1, or the same values in reverse order.
-inline auto make_ndc_buffer(const cuda::stream& stream, int num_items, bool reversed = false)
-{
-  auto buffer =
-    cuda::make_device_buffer<not_default_constructible_t>(stream, c2h::current_device(), num_items, cuda::no_init);
-  const auto policy = thrust::cuda::par.on(stream.get());
-  thrust::tabulate(policy, buffer.data(), buffer.data() + num_items, make_not_default_constructible_op_t{});
-  if (reversed)
-  {
-    thrust::reverse(policy, buffer.data(), buffer.data() + num_items);
-  }
-  stream.sync();
-  return buffer;
 }
 
 CUB_TEST("DeviceMergeSort::SortKeysCopy works with non-default-constructible keys", "[merge][sort][device]", CUB_SMALL)
