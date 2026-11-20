@@ -262,6 +262,12 @@ struct ScanBySegmentOp
   }
 };
 
+// TODO(fbusato): Temporary workaround for the Thrust scan-by-key regression. Remove once the Thrust fix lands in
+// CCCL 4.0 (see thrust/thrust/system/cuda/detail/scan_by_key.h)
+// Selects the recursive shuffle loop in the inclusive scan-by-key look-back callback.
+struct recursive_lookback_scan_op : ScanBySegmentOp<::cuda::std::plus<>>
+{};
+
 template <class OpT>
 inline constexpr bool basic_binary_op_v =
   ::cuda::__is_cuda_std_plus_v<OpT> || ::cuda::__is_cuda_minimum_v<OpT> || ::cuda::__is_cuda_maximum_v<OpT>;

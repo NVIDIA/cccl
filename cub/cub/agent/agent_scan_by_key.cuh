@@ -34,11 +34,13 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_operators.cuh>
 
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -189,8 +191,15 @@ struct AgentScanByKey
   using BlockDiscontinuityKeysT = BlockDiscontinuity<KeyT, BLOCK_THREADS, 1, 1>;
 
   using DelayConstructorT = typename AgentScanByKeyPolicyT::detail::delay_constructor_t;
+
+  // TODO(fbusato): Temporary workaround for the Thrust scan-by-key regression. Remove once the Thrust fix lands in
+  // CCCL 4.0 (see thrust/thrust/system/cuda/detail/scan_by_key.h)
+  static constexpr bool use_recursive_lookback =
+    IS_INCLUSIVE
+    && ::cuda::std::is_same_v<AccumT, ::cuda::std::int16_t> && ::cuda::std::is_same_v<ScanOpT, ::cuda::std::plus<>>;
+  using TilePrefixScanOpT = ::cuda::std::_If<use_recursive_lookback, recursive_lookback_scan_op, ReduceBySegmentOpT>;
   using TilePrefixCallbackT =
-    TilePrefixCallbackOp<FlagValuePairT, ReduceBySegmentOpT, ScanTileStateT, DelayConstructorT>;
+    TilePrefixCallbackOp<FlagValuePairT, TilePrefixScanOpT, ScanTileStateT, DelayConstructorT>;
 
   using BlockScanT = BlockScan<FlagValuePairT, BLOCK_THREADS, AgentScanByKeyPolicyT::SCAN_ALGORITHM, 1, 1>;
 
@@ -402,7 +411,7 @@ struct AgentScanByKey
       ZipValuesAndFlags<IsLastTile>(num_remaining, values, segment_flags, scan_items);
 
       FlagValuePairT tile_aggregate;
-      TilePrefixCallbackT prefix_op(tile_state, storage.scan_storage.prefix, pair_scan_op, tile_idx);
+      TilePrefixCallbackT prefix_op(tile_state, storage.scan_storage.prefix, TilePrefixScanOpT{pair_scan_op}, tile_idx);
       ScanTile(scan_items, tile_aggregate, prefix_op, bool_constant_v<IS_INCLUSIVE>);
     }
 
