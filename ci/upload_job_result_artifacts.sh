@@ -81,8 +81,8 @@ find_and_copy_job_artifact_tree_from() {
   fi
 }
 
-# The workflow-results action reads sccache_stats.json from the top of the job's directory.
 find_and_copy_job_artifact_from /tmp  "sccache*.log"       || : # Nonfatal if not found
+# The workflow-results action reads this file from the top of the job's directory:
 find_and_copy_job_artifact_from build "sccache_stats.json" || : # Nonfatal if not found
 
 find_and_copy_job_artifact_tree_from build ".ninja_log"  || : # Nonfatal if not found

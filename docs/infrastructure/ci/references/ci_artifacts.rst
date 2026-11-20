@@ -96,12 +96,23 @@ artifact containing a ``success`` file only when the exit code was zero. The ``c
 these records to compute the single pass/fail for the run — see :ref:`infra-ci-overview`.
 
 The same artifact carries the job's build diagnostics when they exist. The sccache statistics
-and sccache logs sit next to the ``success`` file. Ninja files and the CTest log keep their path
-relative to the repository root below the job's directory (for example
-``<job_id>/build/<infix>/<preset>/build.ninja``; Windows build trees have no ``<infix>``),
-because a job can have several build trees that each write their own. The Ninja build log is
-stored as ``ninja_log`` rather than ``.ninja_log``, because hidden files are excluded from
-uploaded artifacts.
+and sccache logs sit next to the ``success`` file. The other files keep their path relative to
+the repository root below the job's directory, because a job can produce several files of the
+same name:
+
+- ``<job_id>/build/<infix>/<preset>/`` — each build tree's ``build.ninja``,
+  ``CMakeFiles/rules.ninja``, and Ninja build log. Windows build trees have no ``<infix>``, so
+  the dependency sub-builds under ``_deps/`` are within the search depth, and their
+  ``build.ninja`` and Ninja build log are included too.
+- ``<job_id>/build/<infix>/<test_preset>/ctest.log`` — the CTest log. Its directory is named
+  after the test preset, which can differ from the build tree's name (for example,
+  ``libcudacxx-lit`` tests the ``libcudacxx`` build tree).
+
+The Ninja build log is stored as ``ninja_log`` rather than ``.ninja_log``, because hidden files
+are excluded from uploaded artifacts. Pass it to ``ci/ninja_summary.py`` with ``--log-file``.
+
+A Linux job that fails uploads no artifacts, so its diagnostics are not available. Windows jobs
+upload them either way.
 
 Python wheels
 -------------
