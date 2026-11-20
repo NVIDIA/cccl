@@ -67,8 +67,8 @@ inline constexpr bool is_single_value_wrapper_v<::cuda::args::immediate<ArgT, St
 template <auto Value, typename T>
 inline constexpr bool is_single_value_wrapper_v<::cuda::args::constant<Value, T>> = true;
 
-template <typename ArgT, typename StaticBoundsT>
-inline constexpr bool is_single_value_wrapper_v<::cuda::args::deferred<ArgT, StaticBoundsT>> = true;
+template <typename ArgT, typename BoundsT>
+inline constexpr bool is_single_value_wrapper_v<::cuda::args::deferred<ArgT, BoundsT>> = true;
 
 // Classify argument roles here; validate the wrapped count type after selecting the overload.
 template <typename NumItemsT>
@@ -2533,7 +2533,7 @@ public:
   //!  **[inferred]** Random-access iterator type used to access the initial value on device
   //!
   //! @tparam InitValueBoundsT
-  //!  **[inferred]** Static bounds on `init_value`
+  //!  **[inferred]** Bounds type for `init_value`
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
@@ -2635,7 +2635,7 @@ public:
   //!  **[inferred]** Random-access iterator type used to access the initial value on device
   //!
   //! @tparam InitValueBoundsT
-  //!  **[inferred]** Static bounds on `init_value`
+  //!  **[inferred]** Bounds type for `init_value`
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
