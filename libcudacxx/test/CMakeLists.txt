@@ -144,6 +144,9 @@ if (LIBCUDACXX_CODEGEN_FILECHECK_TESTS)
     OR random-sass IN_LIST LIBCUDACXX_CODEGEN_FILECHECK_TESTS
   )
     set(libcudacxx_codegen_filecheck_random_sass ON)
+  endif()
+  if (
+    all IN_LIST LIBCUDACXX_CODEGEN_FILECHECK_TESTS
     OR cmath-ptx IN_LIST LIBCUDACXX_CODEGEN_FILECHECK_TESTS
   )
     set(libcudacxx_codegen_filecheck_cmath_ptx ON)
@@ -175,6 +178,7 @@ if (LIBCUDACXX_CODEGEN_FILECHECK_TESTS)
   endif()
   if (libcudacxx_codegen_filecheck_random_sass)
     add_subdirectory(random_codegen)
+  endif()
   if (libcudacxx_codegen_filecheck_cmath_ptx)
     add_subdirectory(cmath_codegen)
   endif()
