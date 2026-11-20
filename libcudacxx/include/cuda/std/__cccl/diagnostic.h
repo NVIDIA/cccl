@@ -22,19 +22,23 @@
 #  pragma system_header
 #endif // no system header
 
+// The pragma namespaces `clang` and `GCC` are not reserved identifiers, so stringize the pragmas without expanding
+// user macros of the same name.
+#define _CCCL_DIAG_PRAGMA(...) _Pragma(#__VA_ARGS__)
+
 // Enable us to selectively silence host compiler warnings
 #if _CCCL_COMPILER(CLANG)
-#  define _CCCL_DIAG_PUSH                     _CCCL_PRAGMA(clang diagnostic push)
-#  define _CCCL_DIAG_POP                      _CCCL_PRAGMA(clang diagnostic pop)
-#  define _CCCL_DIAG_SUPPRESS_CLANG(_WARNING) _CCCL_PRAGMA(clang diagnostic ignored _WARNING)
+#  define _CCCL_DIAG_PUSH                     _CCCL_DIAG_PRAGMA(clang diagnostic push)
+#  define _CCCL_DIAG_POP                      _CCCL_DIAG_PRAGMA(clang diagnostic pop)
+#  define _CCCL_DIAG_SUPPRESS_CLANG(_WARNING) _CCCL_DIAG_PRAGMA(clang diagnostic ignored _WARNING)
 #  define _CCCL_DIAG_SUPPRESS_GCC(_WARNING)
 #  define _CCCL_DIAG_SUPPRESS_NVHPC(_WARNING)
 #  define _CCCL_DIAG_SUPPRESS_MSVC(_WARNING)
 #elif _CCCL_COMPILER(GCC)
-#  define _CCCL_DIAG_PUSH _CCCL_PRAGMA(GCC diagnostic push)
-#  define _CCCL_DIAG_POP  _CCCL_PRAGMA(GCC diagnostic pop)
+#  define _CCCL_DIAG_PUSH _CCCL_DIAG_PRAGMA(GCC diagnostic push)
+#  define _CCCL_DIAG_POP  _CCCL_DIAG_PRAGMA(GCC diagnostic pop)
 #  define _CCCL_DIAG_SUPPRESS_CLANG(_WARNING)
-#  define _CCCL_DIAG_SUPPRESS_GCC(_WARNING) _CCCL_PRAGMA(GCC diagnostic ignored _WARNING)
+#  define _CCCL_DIAG_SUPPRESS_GCC(_WARNING) _CCCL_DIAG_PRAGMA(GCC diagnostic ignored _WARNING)
 #  define _CCCL_DIAG_SUPPRESS_NVHPC(_WARNING)
 #  define _CCCL_DIAG_SUPPRESS_MSVC(_WARNING)
 #elif _CCCL_COMPILER(NVHPC)
