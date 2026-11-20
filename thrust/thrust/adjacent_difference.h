@@ -254,4 +254,4 @@ adjacent_difference(InputIterator first, InputIterator last, OutputIterator resu
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/adjacent_difference.inl>
+#include <thrust/detail/adjacent_difference.inl> // IWYU pragma: export

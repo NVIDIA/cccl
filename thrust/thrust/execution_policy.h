@@ -16,8 +16,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/execution_policy.h>
-#include <thrust/detail/seq.h>
+#include <thrust/detail/execution_policy.h> // IWYU pragma: export
+#include <thrust/detail/seq.h> // IWYU pragma: export
 
 //! \cond
 

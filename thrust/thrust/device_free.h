@@ -18,7 +18,6 @@
 #endif // no system header
 
 #include <thrust/detail/malloc_and_free.h>
-#include <thrust/device_free.h>
 #include <thrust/device_ptr.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/select_system.h>

@@ -182,4 +182,4 @@ _CCCL_HOST_DEVICE_API void shuffle_copy(RandomIterator first, RandomIterator las
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/shuffle.inl>
+#include <thrust/detail/shuffle.inl> // IWYU pragma: export
