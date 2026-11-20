@@ -548,11 +548,15 @@ struct ViewedParentKernel
   }
 };
 
+// Same-unit views preserve the group's mapping result type without requiring device construction.
+template <class Group>
+using group_view_t = cudax::coop::group_view<typename Group::unit_type, Group, typename Group::__mapping_result_type>;
+
 void test_viewed_parent_types()
 {
   using Config = decltype(cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<128>()));
   using Parent = cudax::coop::this_block<Config::hierarchy_type>;
-  using View   = decltype(cudax::coop::group_view{cuda::std::declval<Parent>()});
+  using View   = group_view_t<Parent>;
   static_assert(cuda::std::is_same_v<cudax::coop::__viewed_group_t<View>, Parent>);
   static_assert(cudax::coop::__is_parent_group_query_v<Parent, Parent>);
   static_assert(cudax::coop::__is_parent_group_query_v<View, Parent>);
@@ -563,8 +567,8 @@ void test_viewed_parent_types()
   using Sync        = Parent::__synchronizer_instance_type;
   using Virtual     = cudax::coop::virtual_group<cuda::thread_level, Parent, Result>;
   using Generic     = cudax::coop::generic_group<cuda::thread_level, Parent, Result, Sync>;
-  using VirtualView = decltype(cudax::coop::group_view{cuda::std::declval<Virtual>()});
-  using GenericView = decltype(cudax::coop::group_view{cuda::std::declval<Generic>()});
+  using VirtualView = group_view_t<Virtual>;
+  using GenericView = group_view_t<Generic>;
   static_assert(can_rank_parent<VirtualView, Parent>);
   static_assert(can_rank_parent<GenericView, Parent>);
 }
