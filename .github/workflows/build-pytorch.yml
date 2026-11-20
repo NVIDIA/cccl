@@ -29,9 +29,11 @@ on:
 jobs:
   build-pytorch:
     name: Build PyTorch
+    # Fresh CUDA tracing bypasses the cache; allow the same 24-hour budget as FlashInfer.
+    timeout-minutes: 1440
     runs-on: |-
       ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) &&
-          'linux-amd64-cpu16m' || 'ubuntu-latest' }}
+          'linux-amd64-cpu32' || 'ubuntu-latest' }}
     permissions:
       id-token: write
       contents: read
@@ -100,13 +102,16 @@ jobs:
 
           echo "::add-mask::$SCCACHE_DIST_AUTH_TOKEN"
 
+          # Trace actual NVCC compilations, with bounded local parallelism instead of sccache.
+          # CPU32 provides 500 GB of disk for traces; keep NVCC concurrency capped at 16.
+          parallel_level=$(nproc)
           .devcontainer/launch.sh \
             --docker \
             --cuda 13.4 \
             --host gcc14 \
             --cuda-ext \
             --env "AWS_ROLE_ARN=" \
-            --env "PARALLEL_LEVEL=$(ulimit -Hn)" \
+            --env "PARALLEL_LEVEL=$(( parallel_level < 16 ? parallel_level : 16 ))" \
             --env "CCCL_TAG=${CCCL_TAG}" \
             --env "CCCL_VERSION=${CCCL_VERSION}" \
             --env "GITHUB_SHA=$GITHUB_SHA" \
@@ -115,5 +120,26 @@ jobs:
             --env "SCCACHE_DIST_URL=$SCCACHE_DIST_URL" \
             --env "SCCACHE_DIST_AUTH_TYPE=token" \
             --env "SCCACHE_DIST_AUTH_TOKEN=$SCCACHE_DIST_AUTH_TOKEN" \
+            --env "DISABLE_SCCACHE=1" \
+            --env "CMAKE_CUDA_COMPILER_LAUNCHER=" \
+            --env "NVCC_APPEND_FLAGS=${NVCC_APPEND_FLAGS:+${NVCC_APPEND_FLAGS} }--fdevice-time-trace=-" \
+            --env "USE_CCACHE=OFF" \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
             -- /ci.sh
+
+      - name: Summarize compile-time traces
+        if: ${{ always() }}
+        run: |
+          PYTHONPATH="$GITHUB_WORKSPACE${PYTHONPATH:+:$PYTHONPATH}" \
+            python3 -m ci.compile_time.summarize_third_party \
+              --project pytorch --trace-dir build --source-root /home/coder/cccl/build \
+              --output "$RUNNER_TEMP/compile-time-reports"
+
+      - name: Upload compile-time reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: pytorch-compile-time-reports
+          path: ${{ runner.temp }}/compile-time-reports
+          if-no-files-found: error
+          retention-days: 90
