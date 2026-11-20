@@ -300,10 +300,10 @@ using __static_value_type_t _CCCL_NODEBUG = ::cuda::std::conditional_t<
   ::cuda::std::
     conditional_t<::cuda::std::in_range<::cuda::std::int64_t>(Value), ::cuda::std::int64_t, ::cuda::std::uint64_t>>;
 
-template <class ElementT, class StaticBounds>
+template <class ElementT, class Bounds>
 struct __retype_static_bounds
 {
-  using type _CCCL_NODEBUG = StaticBounds; // no_bounds or runtime_bounds
+  using type _CCCL_NODEBUG = Bounds; // no_bounds or runtime_bounds
 };
 
 template <class ElementT, auto Lowest, auto Highest>
@@ -312,8 +312,8 @@ struct __retype_static_bounds<ElementT, ::cuda::args::static_bounds<Lowest, High
   using type _CCCL_NODEBUG = ::cuda::args::static_bounds<static_cast<ElementT>(Lowest), static_cast<ElementT>(Highest)>;
 };
 
-template <class ElementT, class StaticBounds>
-using __retype_static_bounds_t _CCCL_NODEBUG = typename __retype_static_bounds<ElementT, StaticBounds>::type;
+template <class ElementT, class Bounds>
+using __retype_static_bounds_t _CCCL_NODEBUG = typename __retype_static_bounds<ElementT, Bounds>::type;
 
 //! @brief Plain values carry no `auto` NTTP and pass through unchanged.
 _CCCL_TEMPLATE(class Tp)
