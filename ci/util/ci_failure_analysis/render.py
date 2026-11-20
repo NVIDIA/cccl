@@ -144,6 +144,7 @@ def load_analysis_context(analysis_file):
         "jobs",
         "groups",
         "missing_log_job_count",
+        "unlisted_failed_job_count",
         "analysis_skipped",
     }
     missing = sorted(expected_fields - set(context))
@@ -164,6 +165,16 @@ def load_analysis_context(analysis_file):
         raise ValidationError(
             f"missing_log_job_count must be an integer between 0 and {len(jobs)}"
         )
+    # None means the collector could not read GitHub's list of failed jobs at all.
+    unlisted_failed_job_count = context["unlisted_failed_job_count"]
+    if unlisted_failed_job_count is not None and (
+        not isinstance(unlisted_failed_job_count, int)
+        or isinstance(unlisted_failed_job_count, bool)
+        or unlisted_failed_job_count < 0
+    ):
+        raise ValidationError(
+            "unlisted_failed_job_count must be null or a non-negative integer"
+        )
     analysis_skipped = context["analysis_skipped"]
     if not isinstance(analysis_skipped, bool):
         raise ValidationError("analysis_skipped must be a boolean")
@@ -179,7 +190,14 @@ def load_analysis_context(analysis_file):
 
     run = context["run"]
     validate_run(run)
-    return analysis, jobs, run, missing_log_job_count, analysis_skipped
+    return (
+        analysis,
+        jobs,
+        run,
+        missing_log_job_count,
+        analysis_skipped,
+        unlisted_failed_job_count,
+    )
 
 
 def validate_repository(repository):
@@ -203,21 +221,31 @@ def select_evidence_lines(group, limit=3):
 
 
 def missing_logs_notice(
-    missing_log_job_count, failed_job_count, analysis_skipped=False
+    missing_log_job_count,
+    failed_job_count,
+    analysis_skipped=False,
+    unlisted_failed_job_count=0,
 ):
-    if not missing_log_job_count and not analysis_skipped:
-        return None
-    job_label = "job" if failed_job_count == 1 else "jobs"
-    count = (
-        f"Logs unavailable for {missing_log_job_count} of "
-        f"{failed_job_count} failed {job_label}."
-    )
+    notices = []
     if analysis_skipped:
-        return (
+        notices.append(
             "AI analysis skipped: no job logs or failure annotations were available."
-            f"\n\n{count}"
         )
-    return count
+    if unlisted_failed_job_count is None:
+        notices.append(
+            "CI could not get the list of failed jobs from GitHub, so this report may "
+            "be incomplete."
+        )
+    if unlisted_failed_job_count or missing_log_job_count:
+        total = failed_job_count + (unlisted_failed_job_count or 0)
+        job_label = "job" if total == 1 else "jobs"
+        without_logs = (
+            f" ({missing_log_job_count} without logs)" if missing_log_job_count else ""
+        )
+        notices.append(
+            f"Collected {failed_job_count} of {total} failed {job_label}{without_logs}."
+        )
+    return "\n\n".join(notices) or None
 
 
 # GitHub report.
@@ -356,9 +384,12 @@ def render_github_report(
     include_all_jobs,
     missing_log_job_count=0,
     analysis_skipped=False,
+    unlisted_failed_job_count=0,
 ):
     lines = ["### AI failure analysis", ""]
-    notice = missing_logs_notice(missing_log_job_count, len(jobs), analysis_skipped)
+    notice = missing_logs_notice(
+        missing_log_job_count, len(jobs), analysis_skipped, unlisted_failed_job_count
+    )
     if notice:
         lines.extend([notice, ""])
     for index, group in enumerate(analysis["groups"], start=1):
@@ -470,6 +501,7 @@ def render_slack_thread(
     run_number,
     missing_log_job_count=0,
     analysis_skipped=False,
+    unlisted_failed_job_count=0,
 ):
     failed_job_count = sum(len(group["job_ids"]) for group in analysis["groups"])
     group_count = len(analysis["groups"])
@@ -488,7 +520,9 @@ def render_slack_thread(
                 "",
             ]
         )
-    notice = missing_logs_notice(missing_log_job_count, len(jobs), analysis_skipped)
+    notice = missing_logs_notice(
+        missing_log_job_count, len(jobs), analysis_skipped, unlisted_failed_job_count
+    )
     if notice:
         overview_lines.extend([notice, ""])
     for index, group in enumerate(analysis["groups"], start=1):
@@ -548,9 +582,14 @@ def parse_args():
 def main():
     args = parse_args()
     validate_repository(args.repository)
-    analysis, jobs, run, missing_log_job_count, analysis_skipped = (
-        load_analysis_context(args.analysis_file)
-    )
+    (
+        analysis,
+        jobs,
+        run,
+        missing_log_job_count,
+        analysis_skipped,
+        unlisted_failed_job_count,
+    ) = load_analysis_context(args.analysis_file)
     run_id = str(run["id"])
 
     if args.format in ("github-comment", "github-verbose-summary"):
@@ -563,6 +602,7 @@ def main():
             include_all_jobs,
             missing_log_job_count,
             analysis_skipped,
+            unlisted_failed_job_count,
         )
     else:
         slack_thread = render_slack_thread(
@@ -573,6 +613,7 @@ def main():
             str(run["number"]),
             missing_log_job_count,
             analysis_skipped,
+            unlisted_failed_job_count,
         )
         rendered = (
             json.dumps(

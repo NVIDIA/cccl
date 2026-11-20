@@ -6,10 +6,10 @@ supplied JSON schema.
 
 ## Evidence
 
-The workflow has already collected the complete failed-job manifest and available
-failure logs in `CI_LOG_DIR`:
+The workflow has already collected the failed-job manifest and available failure logs in
+`CI_LOG_DIR`. The manifest may be incomplete; analyze only the jobs that `jobs.json` lists.
 
-- `jobs.json` contains the metadata and GitHub failure annotations for every failed job.
+- `jobs.json` contains the metadata and GitHub failure annotations for each listed job.
   Each job's `log_path` points to its collected log; an empty string means log retrieval
   failed or returned an empty log.
 - `pr.diff`, when present, contains the pull request diff.
@@ -35,8 +35,8 @@ not run builds or tests.
   mechanism, and likely remediation. One fix must plausibly resolve the whole group.
 - Normalize timestamps, runner paths, generated IDs, and matrix parameters. A shared
   tool, step, or exit code alone does not establish equivalence.
-- Put each non-derivative failed job in exactly one group. Omit gate jobs that failed only
-  because another job failed.
+- Put each non-derivative failed job listed in `jobs.json` in exactly one group. Omit gate
+  jobs that failed only because another job failed.
 - Keep failures separate when equivalence is uncertain. Order groups by developer value:
   likely code or configuration failures first, then actionable environment or dependency
   failures.
