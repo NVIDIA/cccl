@@ -165,11 +165,11 @@ private:
 
     using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       temp_storage...,
       env,
       [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::segmented_scan::dispatch_fixed_size<EnforceInclusive>(
+        return _CUB::detail::segmented_scan::dispatch_fixed_size<EnforceInclusive>(
           d_temp_storage,
           temp_storage_bytes,
           d_in,

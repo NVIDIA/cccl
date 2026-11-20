@@ -130,7 +130,7 @@ _CCCL_API OffsetT host_segment_size(SegmentSizeT segment_size)
   if constexpr (validation::all_ok && !validation::args_traits::is_deferred)
   {
     // Unary plus promotes character types, which in_range does not accept
-    const auto size = +params::get_param(segment_size, 0);
+    const auto size = +_CUB::detail::params::get_param(segment_size, 0);
     return ::cuda::std::in_range<OffsetT>(size) ? static_cast<OffsetT>(size) : OffsetT{-1};
   }
   else
@@ -352,7 +352,7 @@ _CCCL_API _CCCL_FORCEINLINE cudaError_t dispatch_fixed_size(
   KernelLauncherFactory launcher_factory = {})
 {
   static constexpr auto int64_max = (::cuda::std::numeric_limits<::cuda::std::int64_t>::max)();
-  const OffsetT segment_size      = host_segment_size<OffsetT>(segment_size_arg);
+  const OffsetT segment_size      = _CUB::detail::segmented_scan::host_segment_size<OffsetT>(segment_size_arg);
 
   // The total number of items is used to advance d_in and d_out, so it must fit into int64_t
   if (num_segments < 0 || segment_size < 0 || (segment_size > 0 && num_segments > int64_max / segment_size))
@@ -379,7 +379,7 @@ _CCCL_API _CCCL_FORCEINLINE cudaError_t dispatch_fixed_size(
 
   const SegmentedScanPolicy active_policy = policy_selector(cc);
 
-  detail::log_dispatch("DeviceSegmentedScan (fixed size)", cc, active_policy);
+  _CUB::detail::log_dispatch("DeviceSegmentedScan (fixed size)", cc, active_policy);
 
   _CCCL_ASSERT((active_policy.block.load_modifier != CacheLoadModifier::LOAD_LDG),
                "The memory consistency model does not apply to texture accesses");
@@ -421,7 +421,7 @@ _CCCL_API _CCCL_FORCEINLINE cudaError_t dispatch_fixed_size(
       return error;
     }
 
-    if (const auto error = CubDebug(DebugSyncStream(stream)); cudaSuccess != error)
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)); cudaSuccess != error)
     {
       return error;
     }
