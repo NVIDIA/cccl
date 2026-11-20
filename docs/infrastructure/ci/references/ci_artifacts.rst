@@ -95,31 +95,13 @@ Apart from build artifacts, every job records its own outcome. At exit it calls
 artifact containing a ``success`` file only when the exit code was zero. The ``ci:`` gate reads
 these records to compute the single pass/fail for the run — see :ref:`infra-ci-overview`.
 
-The record also holds the job's ``sccache_stats.json`` when a build wrote one; the run summary
-takes its cache hit rates from it. The ``workflow-results`` action downloads the record of
-every job in the run, so nothing else belongs in this artifact.
-
-Build diagnostics
------------------
-
-The same script uploads the job's build diagnostics, when it finds any, as a separate
-``zz_diagnostics-<job_id>`` artifact that no CI job downloads. Each file keeps its source path
-below the job's directory, because a job can produce several files of the same name:
-
-- ``<job_id>/tmp/sccache*.log`` — the sccache server logs.
-- ``<job_id>/build/<infix>/<preset>/`` — each build tree's ``build.ninja``,
-  ``CMakeFiles/rules.ninja``, and Ninja build log. Windows build trees have no ``<infix>``, so
-  the dependency sub-builds under ``_deps/`` are within the search depth, and their
-  ``build.ninja`` and Ninja build log are included too.
-- ``<job_id>/build/<infix>/<test_preset>/ctest.log`` — the CTest log. Its directory is named
-  after the test preset, which can differ from the build tree's name (for example,
-  ``libcudacxx-lit`` tests the ``libcudacxx`` build tree).
-
-The Ninja build log is stored as ``ninja_log`` rather than ``.ninja_log``, because hidden files
-are excluded from uploaded artifacts. Pass it to ``ci/ninja_summary.py`` with ``--log-file``.
-
-A Linux job that fails uploads no artifacts, so its diagnostics are not available. Windows jobs
-upload them either way.
+The same artifact carries the job's build diagnostics when they exist. The sccache statistics
+and sccache logs sit next to the ``success`` file. Ninja files and the CTest log keep their path
+relative to the repository root below the job's directory (for example
+``<job_id>/build/<infix>/<preset>/build.ninja``; Windows build trees have no ``<infix>``),
+because a job can have several build trees that each write their own. The Ninja build log is
+stored as ``ninja_log`` rather than ``.ninja_log``, because hidden files are excluded from
+uploaded artifacts.
 
 Python wheels
 -------------

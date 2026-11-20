@@ -44,13 +44,6 @@ if [[ "$exit_code" -eq 0 ]]; then
   touch "$job_artifacts/success"
 fi
 
-# Build diagnostics are uploaded as a separate artifact. The workflow-results action downloads
-# the `zz_jobs-*` artifact of every job in the run, so that one only holds what the action reads.
-diagnostics_artifact_dir="$ARTIFACT_UPLOAD_STAGE/job_diagnostics"
-
-# This job's diagnostics directory:
-job_diagnostics="$diagnostics_artifact_dir/$job_id"
-
 # Finds a matching file in the root and copies it to the artifact directory.
 find_and_copy_job_artifact_from() {
   root="$1"
@@ -63,13 +56,13 @@ find_and_copy_job_artifact_from() {
   fi
 }
 
-# Finds matching files in the root and copies them to the diagnostics directory, keeping each
-# file's path (relative to the repo root for a relative root). The same file name can exist in
-# several directories: a job can have one build tree per preset, plus the dependency sub-builds
-# under `_deps/`. Copied into a single directory, such files would overwrite each other.
+# Like find_and_copy_job_artifact_from, but keeps each file's path relative to the repo root.
+# Use this for files that every build tree has: a job can have one tree per preset, plus the
+# dependency sub-builds under `_deps/`. Copied into a single directory, they would overwrite
+# each other.
 # A leading '.' is dropped from the copied file's name (`.ninja_log` -> `ninja_log`), because
 # hidden files are excluded from uploaded artifacts.
-find_and_copy_job_diagnostics_from() {
+find_and_copy_job_artifact_tree_from() {
   local root="$1"
   local name="$2"
   local found=false
@@ -77,7 +70,7 @@ find_and_copy_job_diagnostics_from() {
   while IFS= read -r -d '' file; do
     found=true
     file_name="${file##*/}"
-    dest_dir="$job_diagnostics/${file%/*}"
+    dest_dir="$job_artifacts/${file%/*}"
     mkdir -p "$dest_dir"
     cp -v "$file" "$dest_dir/${file_name#.}"
   done < <(find "$root"/ -maxdepth 4 -name "$name" -type f -print0 2>/dev/null)
@@ -88,20 +81,13 @@ find_and_copy_job_diagnostics_from() {
   fi
 }
 
-# The workflow-results action reads this file from the top of the job's artifact directory.
+# The workflow-results action reads sccache_stats.json from the top of the job's directory.
+find_and_copy_job_artifact_from /tmp  "sccache*.log"       || : # Nonfatal if not found
 find_and_copy_job_artifact_from build "sccache_stats.json" || : # Nonfatal if not found
 
-find_and_copy_job_diagnostics_from /tmp  "sccache*.log" || : # Nonfatal if not found
-find_and_copy_job_diagnostics_from build ".ninja_log"   || : # Nonfatal if not found
-find_and_copy_job_diagnostics_from build "build.ninja"  || : # Nonfatal if not found
-find_and_copy_job_diagnostics_from build "rules.ninja"  || : # Nonfatal if not found
-find_and_copy_job_diagnostics_from build "ctest.log"    || : # Nonfatal if not found
+find_and_copy_job_artifact_tree_from build ".ninja_log"  || : # Nonfatal if not found
+find_and_copy_job_artifact_tree_from build "build.ninja" || : # Nonfatal if not found
+find_and_copy_job_artifact_tree_from build "rules.ninja" || : # Nonfatal if not found
+find_and_copy_job_artifact_tree_from build "ctest.log"   || : # Nonfatal if not found
 
-# Skip the diagnostics artifact if no file was copied. Registering it must not fail the job.
-if [[ -n "$(find "$job_diagnostics" -type f -print -quit 2>/dev/null)" ]]; then
-  ci/util/artifacts/upload/register.sh "zz_diagnostics-$job_id" "$diagnostics_artifact_dir" || :
-fi
-
-# Registered last: artifacts are uploaded in this order and a failed upload skips the rest, so
-# the job's record is only uploaded if every other artifact was.
 ci/util/artifacts/upload/register.sh "zz_jobs-$job_id" "$jobs_artifact_dir"
