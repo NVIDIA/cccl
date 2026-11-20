@@ -684,7 +684,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   }
 
   const int reduce_device_occupancy = sm_occupancy * sm_count;
-  const int max_blocks              = reduce_device_occupancy * detail::subscription_factor;
+  _CCCL_ASSERT(active_policy.multi_tile.oversubscription_factor > 0, "oversubscription_factor must be positive");
+  const int max_blocks = reduce_device_occupancy * active_policy.multi_tile.oversubscription_factor;
 
   // NOLINTNEXTLINE(misc-const-correctness)
   [[maybe_unused]] AccumT* d_block_reductions = nullptr; // buffer for per-block aggregates for the two-phase code path

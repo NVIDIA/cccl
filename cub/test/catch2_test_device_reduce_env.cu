@@ -61,7 +61,7 @@ struct reduce_tuning
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ReducePolicy
   {
     const auto policy =
-      cub::ReducePassPolicy{ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
+      cub::ReducePassPolicy{ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT, 5};
     return {policy, policy};
   }
 };
@@ -86,7 +86,7 @@ struct nondeterministic_reduce_tuning
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ReducePolicy
   {
     const auto policy =
-      cub::ReducePassPolicy{128, 4, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC, cub::LOAD_DEFAULT};
+      cub::ReducePassPolicy{128, 4, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC, cub::LOAD_DEFAULT, 5};
     return {policy, policy};
   }
 };
@@ -1804,25 +1804,27 @@ CUB_TEST("Test ReducePolicy properties", "[reduce][device]", CUB_SMALL)
 
   // aggregate init
   constexpr auto p1_multi = cub::ReducePassPolicy{
-    256, 16, 4, cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS, cub::CacheLoadModifier::LOAD_LDG};
+    256, 16, 4, cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS, cub::CacheLoadModifier::LOAD_LDG, 5};
   constexpr auto p1_single = cub::ReducePassPolicy{
-    128, 8, 2, cub::BlockReduceAlgorithm::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY, cub::CacheLoadModifier::LOAD_DEFAULT};
+    128, 8, 2, cub::BlockReduceAlgorithm::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY, cub::CacheLoadModifier::LOAD_DEFAULT, 5};
   constexpr auto p1 = cub::ReducePolicy{p1_multi, p1_single};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2_multi = cub::ReducePassPolicy{
-    .threads_per_block = 256,
-    .items_per_thread  = 16,
-    .vec_size          = 4,
-    .reduce_algorithm  = cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS,
-    .load_modifier     = cub::CacheLoadModifier::LOAD_LDG};
+    .threads_per_block       = 256,
+    .items_per_thread        = 16,
+    .vec_size                = 4,
+    .reduce_algorithm        = cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS,
+    .load_modifier           = cub::CacheLoadModifier::LOAD_LDG,
+    .oversubscription_factor = 5};
   constexpr auto p2_single = cub::ReducePassPolicy{
-    .threads_per_block = 128,
-    .items_per_thread  = 8,
-    .vec_size          = 2,
-    .reduce_algorithm  = cub::BlockReduceAlgorithm::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
-    .load_modifier     = cub::CacheLoadModifier::LOAD_DEFAULT};
+    .threads_per_block       = 128,
+    .items_per_thread        = 8,
+    .vec_size                = 2,
+    .reduce_algorithm        = cub::BlockReduceAlgorithm::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
+    .load_modifier           = cub::CacheLoadModifier::LOAD_DEFAULT,
+    .oversubscription_factor = 5};
   constexpr auto p2 = cub::ReducePolicy{.multi_tile = p2_multi, .single_tile = p2_single};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2_multi  = p1_multi;
@@ -1845,19 +1847,23 @@ CUB_TEST("Test ReducePolicy properties", "[reduce][device]", CUB_SMALL)
     os << p;
     return os.str();
   };
-  REQUIRE(to_string(p1_multi)
-          == "ReducePassPolicy { .threads_per_block = 256, .items_per_thread = 16, .vec_size = 4"
-             ", .reduce_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS, .load_modifier = LOAD_LDG }");
+  REQUIRE(
+    to_string(p1_multi)
+    == "ReducePassPolicy { .threads_per_block = 256, .items_per_thread = 16, .vec_size = 4"
+       ", .reduce_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS, .load_modifier = LOAD_LDG, .oversubscription_factor = 5 }");
   REQUIRE(to_string(p1_single)
           == "ReducePassPolicy { .threads_per_block = 128, .items_per_thread = 8, .vec_size = 2"
-             ", .reduce_algorithm = BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY, .load_modifier = LOAD_DEFAULT }");
-  REQUIRE(to_string(p1)
-          == "ReducePolicy { .multi_tile = ReducePassPolicy { .threads_per_block = 256"
-             ", .items_per_thread = 16, .vec_size = 4"
-             ", .reduce_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS, .load_modifier = LOAD_LDG }"
-             ", .single_tile = ReducePassPolicy { .threads_per_block = 128"
-             ", .items_per_thread = 8, .vec_size = 2"
-             ", .reduce_algorithm = BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY, .load_modifier = LOAD_DEFAULT } }");
+             ", .reduce_algorithm = BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY, .load_modifier = LOAD_DEFAULT, "
+             ".oversubscription_factor = 5 }");
+  REQUIRE(
+    to_string(p1)
+    == "ReducePolicy { .multi_tile = ReducePassPolicy { .threads_per_block = 256"
+       ", .items_per_thread = 16, .vec_size = 4"
+       ", .reduce_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS, .load_modifier = LOAD_LDG, .oversubscription_factor = 5 }"
+       ", .single_tile = ReducePassPolicy { .threads_per_block = 128"
+       ", .items_per_thread = 8, .vec_size = 2"
+       ", .reduce_algorithm = BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY, .load_modifier = LOAD_DEFAULT, "
+       ".oversubscription_factor = 5 } }");
 }
 
 CUB_TEST("Test ReduceByKeyPolicy properties", "[reduce][device]", CUB_SMALL)
